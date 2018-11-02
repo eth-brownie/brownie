@@ -54,12 +54,6 @@ class Contract:
             return web3.toHex(result)
         return _call if self._abi[name] else _tx
 
-print("Compiling contracts...")
-_compiled = solc.compile_files(
-    ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]],
-    optimize = CONFIG['solc']['optimize']
-)
-
 if '--network' in sys.argv:
     name = sys.argv[sys.argv.index('--network')+1]
     try:
@@ -70,6 +64,15 @@ else:
     netconf = CONFIG['networks']['development']
 
 if 'test-rpc' in netconf:
-    rpc = Popen(netconf['test-rpc'], stdout = DEVNULL, stdin = DEVNULL)
+    rpc = Popen(netconf['test-rpc'].split(' '), stdout = DEVNULL, stdin = DEVNULL)
+else:
+    rpc = None
+
+print("Compiling contracts...")
+_compiled = solc.compile_files(
+    ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]],
+    optimize = CONFIG['solc']['optimize']
+)
+
 web3 = Network.web3 = Web3(HTTPProvider(netconf['host']))
 Network.accounts = Network.web3.eth.accounts
