@@ -1,0 +1,12 @@
+{
+    "setup":"base",
+    "networks":{
+        "development":{
+            "test-rpc":"ganache-cli",
+            "host":"http://127.0.0.1:8545"
+        }
+    },
+    "solc":{
+        "optimize":true
+    }
+}
