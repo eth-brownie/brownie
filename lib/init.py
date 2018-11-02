@@ -6,6 +6,8 @@ import sys
 
 if not os.path.exists('tests'):
     os.mkdir('tests')
+
+if not os.path.exists('tests/__init__.py'):
     open('tests/__init__.py','a')
 
 if not os.path.exists('brownie-config.json'):
