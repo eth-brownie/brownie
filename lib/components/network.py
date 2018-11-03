@@ -19,6 +19,9 @@ class Network:
     def __init__(self):
         pass
 
+    def __getattr__(self,name):
+        return getattr(web3,name)
+
     def deploy(self, name, *args):
         if type(args[-1]) is dict:
             args, tx = (args[:-1], args[-1])
@@ -39,9 +42,7 @@ class Network:
         if not hasattr(self, name):
             setattr(self, name, contract)
         else:
-            i = 1
-            while hasattr(self,name+str(i)):
-                i += 1
+            i = next(i for i in range(1,10000) if not hasattr(self, name+str(i)))
             setattr(self, name+str(i), contract)
         return contract
 
@@ -76,10 +77,12 @@ if '--network' in sys.argv:
     name = sys.argv[sys.argv.index('--network')+1]
     try:
         netconf = CONFIG['networks'][name]
+        print("Using network '{}'".format(name))
     except KeyError:
         sys.exit("ERROR: Network '{}' is not defined in config.json".format(name))
 else:
     netconf = CONFIG['networks']['development']
+    print("Using network 'development'")
 
 if 'test-rpc' in netconf:
     rpc = Popen(netconf['test-rpc'].split(' '), stdout = DEVNULL, stdin = DEVNULL)
