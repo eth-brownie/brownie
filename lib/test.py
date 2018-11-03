@@ -10,6 +10,24 @@ PASS = "\033[92m\u2713\x1b[0m"
 FAIL = "\033[91m\u2717\x1b[0m"
 
 
+def handle_error(fn, network):
+    try:
+        fn(network, network.accounts)
+        print(PASS)
+        return True
+    except AssertionError as e:
+        print(FAIL+" ({})".format(e))
+    except Exception as e:
+        if '--verbose' in sys.argv:
+            print(FAIL+"\n\n{}{}: {}\n".format(
+                ''.join(traceback.format_tb(sys.exc_info()[2])),
+                sys.exc_info()[0].__name__,
+                sys.exc_info()[1]
+                ))
+        else:
+            print(FAIL+" (unhandled {})".format(type(e).__name__))
+    return False
+
 
 if "--help" in sys.argv:
     sys.exit("""Usage: brownie test [filename] [options]
@@ -37,36 +55,26 @@ else:
 from lib.components.config import CONFIG
 from lib.components.network import Network
 
-for name in test_files:
+for name in test_files: 
     module = importlib.import_module("tests."+name)
     test_names = open("tests/{}.py".format(name),'r').read().split("\ndef ")[1:]
     test_names = [i.split("(")[0] for i in test_names if i[0]!="_"]
     if not test_names:
         print("WARNING: Could not find any test functions in {}.py".format(name))
         continue
+    network = Network()
+    print("{}: {} test{}".format(
+            name, len(test_names),"s" if len(test_names)!=1 else ""))
     if hasattr(module, "DEPLOYMENT"):
-        setup = importlib.import_module("deployments."+module.SETUP_MODULE.rstrip('.py'))
-        setup.setup(network, network.accounts)
-    print("Found {} tests in '{}'".format(len(test_names),name))
+        sys.stdout.write("  Running deployment script '{}'... ".format(module.DEPLOYMENT.rstrip('.py')))
+        setup = importlib.import_module("deployments."+module.DEPLOYMENT.rstrip('.py'))
+        if not handle_error(setup.deploy, network):
+            continue
+    
     for c,t in enumerate(test_names, start=1):
-        network = Network()
         fn = getattr(module,t)
         if fn.__doc__:
             sys.stdout.write("{} ({}/{})...  ".format(fn.__doc__,c,len(test_names)))
         else:
-            sys.stdout.write("Running test '{}' ({}/{})...  ".format(t,c,len(test_names)))
-        try:
-            fn(network, network.accounts)
-            print('okaaay')
-            print(PASS)
-        except AssertionError as e:
-            print(FAIL+" ({})".format(e))
-        except Exception as e:
-            if '--verbose' in sys.argv:
-                print(FAIL+"\n\n{}{}: {}\n".format(
-                    ''.join(traceback.format_tb(sys.exc_info()[2])),
-                    sys.exc_info()[0].__name__,
-                    sys.exc_info()[1]
-                    ))
-            else:
-                print(FAIL+" (unhandled {})".format(type(e).__name__))
+            sys.stdout.write("  Running test '{}' ({}/{})...  ".format(t,c,len(test_names)))
+        handle_error(fn, network)

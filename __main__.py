@@ -12,9 +12,11 @@ if len(sys.argv)<2 or sys.argv[1] not in cmd:
 Usage:  brownie <command> [options]
 
 Commands:
-  init     Initialize a new brownie project.
-  test     Run python tests in /tests folder.""")
-
+  deploy   Run a script in the /deployments folder
+  init     Initialize a new brownie project
+  test     Run test scripts in the /tests folder
+  
+Type brownie <command> --help for more information about a specific command.""")
 
 importlib.import_module("lib."+sys.argv[1])
 if ('lib.components.network' in sys.modules and
