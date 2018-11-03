@@ -6,26 +6,22 @@ import sys
 import traceback
 
 
-PASS = "\033[92m\u2713\x1b[0m"
-FAIL = "\033[91m\u2717\x1b[0m"
-
-
 def handle_error(fn, network):
     try:
         fn(network, network.accounts)
-        print(PASS)
+        print("\033[92m\u2713\x1b[0m")
         return True
     except AssertionError as e:
-        print(FAIL+" ({})".format(e))
+        print("\033[91m\u2717\x1b[0m ({})".format(e))
     except Exception as e:
         if '--verbose' in sys.argv:
-            print(FAIL+"\n\n{}{}: {}\n".format(
+            print("\033[91m\u203C\x1b[0m\n\n{}{}: {}\n".format(
                 ''.join(traceback.format_tb(sys.exc_info()[2])),
                 sys.exc_info()[0].__name__,
                 sys.exc_info()[1]
                 ))
         else:
-            print(FAIL+" (unhandled {})".format(type(e).__name__))
+            print("\033[91m\u203C\x1b[0m ({})".format(type(e).__name__))
     return False
 
 
