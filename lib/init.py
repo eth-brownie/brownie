@@ -4,6 +4,10 @@ import json
 import os
 import sys
 
+
+if not os.path.exists('contracts'):
+    os.mkdir('contracts')
+
 if not os.path.exists('tests'):
     os.mkdir('tests')
 
