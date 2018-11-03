@@ -49,14 +49,14 @@ class Contract:
 
     def __init__(self, address, abi, owner):
         self._contract = web3.eth.contract(address = address, abi = abi)
-        self._abi = dict((
+        self.abi = dict((
             i['name'],
             True if i['stateMutability'] in ['view','pure'] else False
             ) for i in abi if i['type']=="function")
         self.owner = owner
     
     def __getattr__(self, name):
-        if name not in self._abi:
+        if name not in self.abi:
             return getattr(self._contract, name)
         def _call(*args):
             result = getattr(self._contract.functions,name)(*args).call()
@@ -70,7 +70,7 @@ class Contract:
                 tx = {'from': self.owner}
             result = getattr(self._contract.functions,name)(*args).transact(tx)
             return web3.toHex(result)
-        return _call if self._abi[name] else _tx
+        return _call if self.abi[name] else _tx
 
 if '--network' in sys.argv:
     name = sys.argv[sys.argv.index('--network')+1]
