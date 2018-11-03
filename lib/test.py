@@ -38,7 +38,7 @@ for name in test_files:
         continue
     for c,t in enumerate(test_names, start=1):
         network = Network()
-        if setup_module:
+        if setup_module and not hasattr(module, 'NO_SETUP'):
             setup_module.setup(network, network.accounts)
         if hasattr(module, 'setup'):
             try: module.setup(network. network.accounts)

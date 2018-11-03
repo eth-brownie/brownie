@@ -1,5 +1,5 @@
 {
-    "setup":"base",
+    "setup":"base_setup",
     "networks":{
         "development":{
             "test-rpc":"ganache-cli",
