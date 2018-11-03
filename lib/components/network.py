@@ -31,7 +31,11 @@ class Network:
         )
         txid = contract.constructor(*args).transact(tx)
         txreceipt = self.web3.eth.waitForTransactionReceipt(txid)
-        contract = Contract(txreceipt.contractAddress, interface['abi'])
+        contract = Contract(
+            txreceipt.contractAddress,
+            interface['abi'],
+            tx['from']
+        )
         if not hasattr(self, name):
             setattr(self, name, contract)
         else:

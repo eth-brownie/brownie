@@ -2,10 +2,22 @@
 
 import importlib
 import os
-import solc
-from subprocess import Popen, DEVNULL
 import sys
-from web3 import Web3, HTTPProvider
+
+
+if "--help" in sys.argv:
+    sys.exit("""Usage: brownie test [filename] [options]
+
+Options:
+  [filename]         Only run tests from a specific file
+  --network [name]   Use a specific network outlined in config.json (default development)
+  --verbose          Show full traceback when a test fails
+
+By default, brownie will load every .py file found in the tests folder and call every
+function with a name starting in test.  A fresh environment is created before each test
+by calling the setup function in the base_setup file (if present) as well as the setup
+function in the active file.
+""")
 
 from lib.components.config import CONFIG
 from lib.components.network import Network
@@ -45,5 +57,8 @@ for name in test_files:
             except Exception as e:
                 print("ERROR: {} while running setup function in {}.".format(e, name))
                 break
-        print("Running function '{}' in {} ({}/{})...".format(t,name,len(test_names),c))
-        getattr(module,t)(network, network.accounts)
+        print("Running '{}' in {} ({}/{})...".format(t,name,len(test_names),c))
+        try:
+            getattr(module,t)(network, network.accounts)
+        except Exception as e:
+            print("ERROR: '{}' has failed due to {} - {}".format(t, type(e).__name__, e))

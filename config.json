@@ -2,7 +2,7 @@
     "setup":"base_setup",
     "networks":{
         "development":{
-            "test-rpc":"ganache-cli",
+            "test-rpc":"ganache-cli -a 20",
             "host":"http://127.0.0.1:8545"
         }
     },
