@@ -20,7 +20,10 @@ class Network:
         pass
 
     def deploy(self, name, *args):
-        args, tx = _format_args(args)
+        if type(args[-1]) is dict:
+            args, tx = (args[:-1], args[-1])
+        else:
+            tx = {'from': web3.eth.accounts[0]}
         interface = next(v for k,v in _compiled.items() if k.split(':')[-1] == name)
         contract = self.web3.eth.contract(
             abi = interface['abi'],
@@ -28,17 +31,25 @@ class Network:
         )
         txid = contract.constructor(*args).transact(tx)
         txreceipt = self.web3.eth.waitForTransactionReceipt(txid)
-        setattr(self, name, Contract(txreceipt.contractAddress, interface['abi']))
-        return getattr(self, name)
+        contract = Contract(txreceipt.contractAddress, interface['abi'])
+        if not hasattr(self, name):
+            setattr(self, name, contract)
+        else:
+            i = 1
+            while hasattr(self,name+str(i)):
+                i += 1
+            setattr(self, name+str(i), contract)
+        return contract
 
 class Contract:
 
-    def __init__(self, address, abi):
+    def __init__(self, address, abi, owner):
         self._contract = web3.eth.contract(address = address, abi = abi)
         self._abi = dict((
             i['name'],
             True if i['stateMutability'] in ['view','pure'] else False
             ) for i in abi if i['type']=="function")
+        self.owner = owner
     
     def __getattr__(self, name):
         if name not in self._abi:
@@ -49,7 +60,10 @@ class Contract:
                 return web3.toHex(result) if type(result) is bytes else result
             return [(web3.toHex(i) if type(i) is bytes else i) for i in result]
         def _tx(*args):
-            args, tx = _format_args(args)
+            if type(args[-1]) is dict:
+                args, tx = (args[:-1], args[-1])
+            else:
+                tx = {'from': self.owner}
             result = getattr(self._contract.functions,name)(*args).transact(tx)
             return web3.toHex(result)
         return _call if self._abi[name] else _tx

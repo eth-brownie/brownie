@@ -45,5 +45,5 @@ for name in test_files:
             except Exception as e:
                 print("ERROR: {} while running setup function in {}.".format(e, name))
                 break
-        print("Running {} in {} ({}/{})...".format(t,name,len(test_names),c))
+        print("Running function '{}' in {} ({}/{})...".format(t,name,len(test_names),c))
         getattr(module,t)(network, network.accounts)
