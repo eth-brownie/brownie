@@ -26,3 +26,11 @@ brownie init
 ```
 
 From there, type `brownie` for basic usage information.
+
+## Development
+
+This project is still in early development and should be considered an alpha. Future changes may break existing functionality. Pull requests are welcomed.
+
+## License
+
+This project is licensed under the MIT license.
