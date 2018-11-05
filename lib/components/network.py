@@ -72,12 +72,16 @@ class Contract:
         def _tx(*args):
             if type(args[-1]) is dict:
                 args, tx = (args[:-1], args[-1])
+                if 'from' not in tx:
+                    tx['from'] = self.owner
+                if 'value' in tx and type(tx['value']) is float:
+                    tx['value'] = int(tx['value'])
             else:
                 tx = {'from': self.owner}
             result = getattr(self._contract.functions,name)(*args).transact(tx)
             if '--gas' in sys.argv:
-                receipt = web3.eth.getTransactionReceipt(result)
-                print("{}: {} gas".format(name, receipt['gasUsed']))
+                txreceipt = web3.eth.getTransactionReceipt(result)
+                print("{}: {} gas".format(name, txreceipt['gasUsed']))
             return web3.toHex(result)
         return _call if self.abi[name] else _tx
 
