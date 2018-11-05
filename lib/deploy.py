@@ -12,6 +12,7 @@ Arguments:
   <filename>         The name of the deployment script to run
 
 Options:
+  --gas              Show gas costs for each successful transaction
   --network [name]   Use a specific network outlined in config.json (default development)
   --verbose          Show full traceback when a deployment fails
 

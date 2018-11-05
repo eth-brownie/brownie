@@ -16,7 +16,7 @@ Commands:
   deploy   Run a script in the /deployments folder
   init     Initialize a new brownie project
   test     Run test scripts in the /tests folder
-  
+
 Type brownie <command> --help for more information about a specific command.""")
 
 import lib.init

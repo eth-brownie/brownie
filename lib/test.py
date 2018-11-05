@@ -30,6 +30,7 @@ if "--help" in sys.argv:
 
 Options:
   [filename]         Only run tests from a specific file
+  --gas              Show gas costs for each successful transaction
   --network [name]   Use a specific network outlined in config.json (default development)
   --verbose          Show full traceback when a test fails
 

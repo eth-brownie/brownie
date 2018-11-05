@@ -37,6 +37,8 @@ class Network:
         )
         txid = contract.constructor(*args).transact(tx)
         txreceipt = self.web3.eth.waitForTransactionReceipt(txid)
+        if '--gas' in sys.argv:
+            print("deploy {}: {} gas".format(name, txreceipt['gasUsed']))
         contract = Contract(
             txreceipt.contractAddress,
             interface['abi'],
@@ -73,6 +75,9 @@ class Contract:
             else:
                 tx = {'from': self.owner}
             result = getattr(self._contract.functions,name)(*args).transact(tx)
+            if '--gas' in sys.argv:
+                receipt = web3.eth.getTransactionReceipt(result)
+                print("{}: {} gas".format(name, receipt['gasUsed']))
             return web3.toHex(result)
         return _call if self.abi[name] else _tx
 
