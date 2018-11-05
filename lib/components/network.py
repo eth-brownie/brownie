@@ -30,7 +30,7 @@ class Network:
             args, tx = (args[:-1], args[-1])
         else:
             tx = {'from': web3.eth.accounts[0]}
-        interface = next(v for k,v in _compiled.items() if k.split(':')[-1] == name)
+        interface = next(v for k,v in compiled.items() if k.split(':')[-1] == name)
         contract = self.web3.eth.contract(
             abi = interface['abi'],
             bytecode = interface['bin']
