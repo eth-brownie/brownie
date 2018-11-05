@@ -50,6 +50,10 @@ class Network:
             i = next(i for i in range(1,10000) if not hasattr(self, name+str(i)))
             setattr(self, name+str(i), contract)
         return contract
+    
+    def contract(self, name, address, owner = None):
+        interface = next(v for k,v in compiled.items() if k.split(':')[-1] == name)
+        return Contract(address, interface['abi'], owner)
 
 class Contract:
 
