@@ -70,7 +70,7 @@ for name in test_files:
     for c,t in enumerate(test_names, start=1):
         fn = getattr(module,t)
         if fn.__doc__:
-            sys.stdout.write("{} ({}/{})...  ".format(fn.__doc__,c,len(test_names)))
+            sys.stdout.write("  {} ({}/{})...  ".format(fn.__doc__,c,len(test_names)))
         else:
             sys.stdout.write("  Running test '{}' ({}/{})...  ".format(t,c,len(test_names)))
         handle_error(fn, network)
