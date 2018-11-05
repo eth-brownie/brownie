@@ -9,10 +9,13 @@ from web3 import Web3, HTTPProvider
 from lib.components.config import CONFIG
 
 
-def _format_args(args):
-    if type(args[-1]) is dict:
-        return args[:-1], args[-1]
-    return args, {'from': web3.eth.accounts[0]}
+class RPC(Popen):
+
+    def __init__(self, cmd):
+        super().__init__(cmd.split(' '), stdout = DEVNULL, stdin = DEVNULL)
+    
+    def __del__(self):
+        self.terminate()
 
 class Network:
 
@@ -92,11 +95,9 @@ if '--network' in sys.argv:
 else:
     netconf = CONFIG['networks']['development']
     print("Using network 'development'")
-
+    
 if 'test-rpc' in netconf:
-    rpc = Popen(netconf['test-rpc'].split(' '), stdout = DEVNULL, stdin = DEVNULL)
-else:
-    rpc = None
+    rpc = RPC(netconf['test-rpc'])
 
 print("Compiling contracts...")
 _compiled = solc.compile_files(

@@ -18,9 +18,11 @@ Commands:
   
 Type brownie <command> --help for more information about a specific command.""")
 
+
+
 importlib.import_module("lib."+sys.argv[1])
-if ('lib.components.network' in sys.modules and
-    sys.modules['lib.components.network'].rpc):
-    sys.modules['lib.components.network'].rpc.terminate()
+#if ('lib.components.network' in sys.modules and
+#    sys.modules['lib.components.network'].rpc):
+#    sys.modules['lib.components.network'].rpc.terminate()
 
     
