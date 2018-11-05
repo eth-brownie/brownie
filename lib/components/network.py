@@ -95,15 +95,14 @@ if '--network' in sys.argv:
 else:
     netconf = CONFIG['networks']['development']
     print("Using network 'development'")
-    
 if 'test-rpc' in netconf:
     rpc = RPC(netconf['test-rpc'])
 
+contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 
+if not contract_files:
+    sys.exit("ERROR: Cannot find any .sol files in contracts folder")
 print("Compiling contracts...")
-_compiled = solc.compile_files(
-    ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]],
-    optimize = CONFIG['solc']['optimize']
-)
+compiled = solc.compile_files(contract_files, optimize=CONFIG['solc']['optimize'])
 
 web3 = Network.web3 = Web3(HTTPProvider(netconf['host']))
 Network.accounts = Network.web3.eth.accounts
