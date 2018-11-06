@@ -46,6 +46,4 @@ while True:
     except:
         print("{}{}: {}".format(
                 ''.join(traceback.format_tb(sys.exc_info()[2])),
-                sys.exc_info()[0].__name__,
-                sys.exc_info()[1]
-                ))
+                sys.exc_info()[0].__name__, sys.exc_info()[1]))
