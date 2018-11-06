@@ -85,15 +85,13 @@ class _AccountBase(str):
 
     def __init__(self, addr):
         self.address = addr
+        self.nonce = web3.eth.getTransactionCount(self.address)
 
     def __repr__(self):
         return "<Account object '{}'>".format(self.address)
 
     def __str__(self):
         return self.address
-    
-    def nonce(self):
-        return web3.eth.getTransactionCount(self.address)
 
     def balance(self):
         return web3.eth.getBalance(self.address)
@@ -105,6 +103,7 @@ class _AccountBase(str):
             bytecode = interface['bin']
         )
         txreceipt = self._contract_call(contract.constructor, args, {})
+        self.nonce += 1
         if '--gas' in sys.argv:
             print("deploy {}: {} gas".format(name, txreceipt['gasUsed']))
         contract = Contract(
@@ -128,11 +127,13 @@ class Account(_AccountBase):
             'value': int(amount),
             'gasPrice': gas_price or web3.eth.gasPrice,
             })
+        self.nonce += 1
         return web3.toHex(txid)
 
     def _contract_call(self, fn, args, tx):
         tx['from'] = self.address
         txid = fn(*args).transact(tx)
+        self.nonce += 1
         return web3.eth.waitForTransactionReceipt(txid)
 
 class LocalAccount(_AccountBase):
@@ -140,7 +141,7 @@ class LocalAccount(_AccountBase):
     def transfer(self, to, amount, gas_price=None):
         signed_tx = self._acct.signTransaction({
             'from': self.address,
-            'nonce': self.nonce(),
+            'nonce': self.nonce,
             'gasPrice': gas_price or web3.eth.gasPrice,
             'gas': 21000,
             'to': to,
@@ -148,18 +149,20 @@ class LocalAccount(_AccountBase):
             'data': ""
             }).rawTransaction
         txid = web3.eth.sendRawTransaction(signed_tx)
+        self.nonce += 1
         return web3.toHex(txid)
 
     def _contract_call(self, fn, args, tx):
         tx.update({
             'from':self.address,
-            'nonce':self.nonce(),
+            'nonce':self.nonce,
             'gasPrice': web3.eth.gasPrice,
-            'gas': fn(*args).estimateGas(),
+            'gas': fn(*args).estimateGas({'from': self.address}),
             })
         raw = fn(*args).buildTransaction(tx)
         txid = web3.eth.sendRawTransaction(
             self._acct.signTransaction(raw).rawTransaction)
+        self.nonce += 1
         return web3.eth.waitForTransactionReceipt(txid)
 
 if '--network' in sys.argv:
