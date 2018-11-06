@@ -46,6 +46,9 @@ class Contract:
             i['name'],
             True if i['stateMutability'] in ['view','pure'] else False
             ) for i in abi if i['type']=="function")
+        self.topics = dict((
+            i['name'],web3.toHex(web3.sha3(text="{}({})".format(i['name'],",".join(x['type'] for x in i['inputs']))))
+        ) for i in abi if i['type']=="event")
         self.owner = owner
     
     def __getattr__(self, name):
