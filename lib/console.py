@@ -43,16 +43,16 @@ while True:
         to_save = [i._priv_key for i in accounts if hasattr(i, '_priv_key')]
         filename, pwd = cmd.split(' ', maxsplit=4)[2:]
         encrypted = FernetKey(pwd).encrypt(json.dumps(to_save), False)
-        open(filename+".dat", 'w').write(encrypted)
-        print("Local accounts saved as {}.dat".format(filename))
+        open(filename+".acc", 'w').write(encrypted)
+        print("Local accounts saved as {}.acc".format(filename))
         continue
     if cmd[:13] == "load accounts":
         filename, pwd = cmd.split(' ', maxsplit=4)[2:]
-        encrypted = open(filename+".dat","r").read()
+        encrypted = open(filename+".acc","r").read()
         decrypted = json.loads(FernetKey(pwd).decrypt(encrypted))
         for i in decrypted:
             network.add_account(i)
-        print("Local accounts loaded from {}.dat".format(filename))
+        print("Local accounts loaded from {}.acc".format(filename))
         continue
     _exec_result = None
     cmd = "_exec_result = "+cmd
