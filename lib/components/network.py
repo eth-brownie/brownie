@@ -31,10 +31,12 @@ class Network:
         return Contract(address, interface['abi'], owner)
 
     def add_account(self, priv_key):
-        acct = web3.eth.account.privateKeyToAccount(priv_key)
-        self.accounts.append(LocalAccount(acct.address))
-        self.accounts[-1]._acct = acct
-        return self.accounts[-1]
+        w3account = web3.eth.account.privateKeyToAccount(priv_key)
+        account = LocalAccount(w3account.address)
+        account._acct = w3account
+        account._priv_key = priv_key
+        self.accounts.append(account)
+        return account
 
 class Contract:
 
@@ -134,10 +136,6 @@ class Account(_AccountBase):
         return web3.eth.waitForTransactionReceipt(txid)
 
 class LocalAccount(_AccountBase):
-
-    #def __init__(self, priv_key):
-    #    self._acct = web3.eth.account.privateKeyToAccount(priv_key)
-    #    self.address = self._acct.address
 
     def transfer(self, to, amount, gas_price=None):
         signed_tx = self._acct.signTransaction({
