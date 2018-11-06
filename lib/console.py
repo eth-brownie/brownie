@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import builtins
 import importlib
 import os
 import sys
@@ -20,8 +21,7 @@ sys.path.insert(0, "")
 from lib.components.network import Network
 
 network = Network()
-
-    
+accounts = network.accounts
 
 while True:
     cmd = input('>>> ')
