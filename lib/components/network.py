@@ -60,7 +60,7 @@ class Contract:
                 return web3.toHex(result) if type(result) is bytes else result
             return [(web3.toHex(i) if type(i) is bytes else i) for i in result]
         def _tx(*args):
-            if type(args[-1]) is dict:
+            if args and type(args[-1]) is dict:
                 args, tx = (args[:-1], args[-1])
                 if 'from' not in tx:
                     tx['from'] = self.owner
