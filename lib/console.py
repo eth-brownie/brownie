@@ -3,6 +3,7 @@
 import importlib
 import json
 import os
+import readline
 import sys
 import traceback
 
