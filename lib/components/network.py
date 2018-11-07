@@ -84,6 +84,9 @@ class Contract:
         except ValueError:
             return True
 
+    def balance(self):
+        return web3.eth.getBalance(self._contract.address)
+
 class _AccountBase(str):
 
     def __init__(self, addr):
