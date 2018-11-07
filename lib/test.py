@@ -6,24 +6,6 @@ import sys
 import traceback
 
 
-def handle_error(fn, network):
-    try:
-        fn(network, network.accounts)
-        print("\033[92m\u2713\x1b[0m")
-        return True
-    except AssertionError as e:
-        print("\033[91m\u2717\x1b[0m ({})".format(e))
-    except Exception as e:
-        if '--verbose' in sys.argv:
-            print("\033[91m\u203C\x1b[0m\n\n{}{}: {}\n".format(
-                ''.join(traceback.format_tb(sys.exc_info()[2])),
-                sys.exc_info()[0].__name__,
-                sys.exc_info()[1]
-                ))
-        else:
-            print("\033[91m\u203C\x1b[0m ({})".format(type(e).__name__))
-    return False
-
 
 if "--help" in sys.argv:
     sys.exit("""Usage: brownie test [filename] [options]
@@ -59,14 +41,15 @@ for name in test_files:
     if not test_names:
         print("WARNING: Could not find any test functions in {}.py".format(name))
         continue
-    network = Network()
+    network = Network(module)
     print("{}: {} test{}".format(
             name, len(test_names),"s" if len(test_names)!=1 else ""))
-    if hasattr(module, "DEPLOYMENT"):
-        sys.stdout.write("  Running deployment script '{}'... ".format(module.DEPLOYMENT.rstrip('.py')))
-        setup = importlib.import_module("deployments."+module.DEPLOYMENT.rstrip('.py'))
-        if not handle_error(setup.deploy, network):
-            continue
+    # if hasattr(module, "DEPLOYMENT"):
+    #     sys.stdout.write("  Running deployment script '{}'... ".format(module.DEPLOYMENT.rstrip('.py')))
+    #     setup = importlib.import_module("deployments."+module.DEPLOYMENT.rstrip('.py'))
+    #     network._apply(setup)
+    #     if not handle_error(setup.deploy, network):
+    #         continue
     
     for c,t in enumerate(test_names, start=1):
         fn = getattr(module,t)
@@ -74,4 +57,17 @@ for name in test_files:
             sys.stdout.write("  {} ({}/{})...  ".format(fn.__doc__,c,len(test_names)))
         else:
             sys.stdout.write("  Running test '{}' ({}/{})...  ".format(t,c,len(test_names)))
-        handle_error(fn, network)
+        try:
+            fn()
+            print("\033[92m\u2713\x1b[0m")
+        except AssertionError as e:
+            print("\033[91m\u2717\x1b[0m ({})".format(e))
+        except Exception as e:
+            if '--verbose' in sys.argv:
+                print("\033[91m\u203C\x1b[0m\n\n{}{}: {}\n".format(
+                    ''.join(traceback.format_tb(sys.exc_info()[2])),
+                    sys.exc_info()[0].__name__,
+                    sys.exc_info()[1]
+                    ))
+            else:
+                print("\033[91m\u203C\x1b[0m ({})".format(type(e).__name__))

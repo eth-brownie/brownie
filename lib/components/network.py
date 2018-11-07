@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+from collections import OrderedDict
+import importlib
 import os
 import solc
 from subprocess import Popen, DEVNULL
@@ -20,19 +22,18 @@ class RPC(Popen):
 
 class Network:
 
-    def __init__(self):
+    def __init__(self, module):
+        self._module = module
         self.accounts = [Account(i) for i in web3.eth.accounts]
-
-    def __getattr__(self, name):
-        return getattr(web3, name)
+        for name, interface in compiled.items():
+            setattr(self, name.split(':')[-1], ContractDeployer(interface))
+        self._exposed = dict(
+            [(i,getattr(self,i)) for i in dir(self) if i[0]!='_'] +
+            [(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()])
+        module.__dict__.update(self._exposed)
+        if hasattr(module, 'DEPLOYMENT'):
+            self.run(module.DEPLOYMENT)
     
-    def contract(self, name, address, owner = None):
-        try:
-            interface = next(v for k,v in compiled.items() if k.split(':')[-1] == name)
-        except StopIteration:
-            raise AttributeError("Cannot find a contract named '{}'".format(name))
-        return Contract(address, interface['abi'], owner)
-
     def add_account(self, priv_key):
         w3account = web3.eth.account.privateKeyToAccount(priv_key)
         account = LocalAccount(w3account.address)
@@ -41,21 +42,81 @@ class Network:
         self.accounts.append(account)
         return account
 
-class Contract:
+    def run(self, name):
+        module = importlib.import_module("deployments."+name)
+        module.__dict__.update(self._exposed)
+        print("Running deployment script '{}'...".format(name))
+        try:
+            module.deploy()
+            print("Deployment of '{}' was successful.".format(name))
+        except Exception as e:
+            print("ERROR: Deployment of '{}' failed due to {} - {}".format(
+                    name, type(e).__name__, e))
 
-    def __init__(self, address, abi, owner):
-        self._contract = web3.eth.contract(address = address, abi = abi)
-        self.abi = dict((
-            i['name'],
-            True if i['stateMutability'] in ['view','pure'] else False
-            ) for i in abi if i['type']=="function")
+    def reset(self):
+        Network(self._module)
+        print("Environment has been reset.")
+        # todo - make this reset the RPC as well
+
+
+
+
+
+class _ContractBase:
+
+    def __init__(self, abi):
+        self.abi = abi
         self.topics = dict((
             i['name'],web3.toHex(web3.sha3(text="{}({})".format(i['name'],",".join(x['type'] for x in i['inputs']))))
         ) for i in abi if i['type']=="event")
+
+class ContractDeployer(_ContractBase):
+
+    def __init__(self, interface):
+        self.bytecode = interface['bin']
+        self._deployed = OrderedDict()
+        super().__init__(interface['abi'])
+    
+    def deploy(self, account, *args):
+        contract = web3.eth.contract(abi = self.abi, bytecode = self.bytecode)
+        txreceipt = account._contract_call(contract.constructor, args, {})
+        if '--gas' in sys.argv:
+            print("deploy {}: {} gas".format(name, txreceipt['gasUsed']))
+        return self.at(txreceipt['contractAddress'], account)
+    
+    def at(self, address, owner = None):
+        address = web3.toChecksumAddress(address)
+        if address in self._deployed:
+            return self._deployed[address]
+        self._deployed[address] = Contract(address, self.abi, owner)
+        return self._deployed[address]
+    
+    def addresses(self):
+        return list(self._deployed)
+
+    def __iter__(self):
+        return iter(self._deployed.values())
+
+    def __getitem__(self, i):
+        return list(self._deployed.values())[i]
+
+
+class Contract(_ContractBase):
+
+    def __init__(self, address, abi, owner):
+        super().__init__(abi)
+        self._contract = web3.eth.contract(address = address, abi = abi)
+        self._fn_map = dict((
+            i['name'],
+            True if i['stateMutability'] in ['view','pure'] else False
+            ) for i in abi if i['type']=="function")
         self.owner = owner
     
+    def __repr__(self):
+        return "<Contract object '{}'>".format(self.address)
+
     def __getattr__(self, name):
-        if name not in self.abi:
+        if name not in self._fn_map:
             return getattr(self._contract, name)
         def _call(*args):
             result = getattr(self._contract.functions,name)(*args).call()
@@ -76,10 +137,10 @@ class Contract:
             if '--gas' in sys.argv:
                 print("{}: {} gas".format(name, txreceipt['gasUsed']))
             return web3.toHex(txreceipt['transactionHash'])
-        return _call if self.abi[name] else _tx
+        return _call if self._fn_map[name] else _tx
 
     def revert(self, name, *args):
-        if name not in self.abi:
+        if name not in self._fn_map:
             raise AttributeError("{} is not a valid function.".format(name))
         try:
             self.__getattr__(name)(*args)
@@ -105,31 +166,9 @@ class _AccountBase(str):
     def balance(self):
         return web3.eth.getBalance(self.address)
 
-    def deploy(self, name, *args):
-        try:
-            interface = next(v for k,v in compiled.items() if k.split(':')[-1] == name)
-        except StopIteration:
-            raise ValueError("Cannot find a contract named {}".format(name))
-        contract = web3.eth.contract(
-            abi = interface['abi'],
-            bytecode = interface['bin']
-        )
-        txreceipt = self._contract_call(contract.constructor, args, {})
-        self.nonce += 1
-        if '--gas' in sys.argv:
-            print("deploy {}: {} gas".format(name, txreceipt['gasUsed']))
-        contract = Contract(
-            txreceipt.contractAddress,
-            interface['abi'],
-            self
-        )
-        if not hasattr(self, name):
-            setattr(self, name, contract)
-        else:
-            i = next(i for i in range(1,10000) if not hasattr(self, name+str(i)))
-            setattr(self, name+str(i), contract)
-        return contract
-    
+    def deploy(self, contract, *args):
+        return contract.deploy(self, *args)
+
     def revert(self, cmd, *args):
         if cmd not in ['transfer', 'deploy']:
             raise AttributeError("Unknown command")

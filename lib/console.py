@@ -23,23 +23,11 @@ sys.path.insert(0, "")
 
 from lib.components.network import Network
 
-network = Network()
-accounts = network.accounts
+Network(sys.modules[__name__])
 
 while True:
     cmd = input('>>> ')
     if cmd == "exit()": sys.exit()
-    if cmd.split(' ')[0] == "deploy":
-        cmd = cmd.split(' ')[1]
-        _module = importlib.import_module("deployments."+cmd)
-        print("Running deployment script '{}'...".format(cmd))
-        try:
-            _module.deploy(network, network.accounts)
-            print("Deployment of '{}' was successful.".format(cmd))
-        except Exception as e:
-            print("ERROR: Deployment of '{}' failed due to {} - {}".format(
-                    cmd, type(e).__name__, e))
-        continue
     if cmd[:13] == "save accounts":
         to_save = [i._priv_key for i in accounts if hasattr(i, '_priv_key')]
         filename, pwd = cmd.split(' ', maxsplit=4)[2:]
