@@ -27,7 +27,10 @@ class Network:
         return getattr(web3, name)
     
     def contract(self, name, address, owner = None):
-        interface = next(v for k,v in compiled.items() if k.split(':')[-1] == name)
+        try:
+            interface = next(v for k,v in compiled.items() if k.split(':')[-1] == name)
+        except StopIteration:
+            raise ValueError("Cannot find a contract named {}".format(name))
         return Contract(address, interface['abi'], owner)
 
     def add_account(self, priv_key):
@@ -103,7 +106,10 @@ class _AccountBase(str):
         return web3.eth.getBalance(self.address)
 
     def deploy(self, name, *args):
-        interface = next(v for k,v in compiled.items() if k.split(':')[-1] == name)
+        try:
+            interface = next(v for k,v in compiled.items() if k.split(':')[-1] == name)
+        except StopIteration:
+            raise ValueError("Cannot find a contract named {}".format(name))
         contract = web3.eth.contract(
             abi = interface['abi'],
             bytecode = interface['bin']
