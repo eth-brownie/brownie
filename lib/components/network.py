@@ -6,6 +6,7 @@ import os
 import solc
 from subprocess import Popen, DEVNULL
 import sys
+import time
 from web3 import Web3, HTTPProvider
 
 from lib.components.config import CONFIG
@@ -23,17 +24,49 @@ class RPC(Popen):
 class Network:
 
     def __init__(self, module):
+        self._clean_dict = list(module.__dict__)
+        if '--network' in sys.argv:
+            name = sys.argv[sys.argv.index('--network')+1]
+            try:
+                netconf = CONFIG['networks'][name]
+                print("Using network '{}'".format(name))
+            except KeyError:
+                sys.exit("ERROR: Network '{}' is not defined in config.json".format(name))
+        else:
+            netconf = CONFIG['networks']['development']
+            print("Using network 'development'")
+        self._rpc = None
+        if 'test-rpc' in netconf:
+            print("Running '{}'...".format(netconf['test-rpc']))
+            self._rpc = Popen(
+                netconf['test-rpc'].split(' '),
+                stdout = DEVNULL,
+                stdin = DEVNULL,
+                stderr = DEVNULL)
+        global web3
+        web3 = Web3(HTTPProvider(netconf['host']))
+        for i in range(20):
+            if web3.isConnected():
+                break
+            if i == 19:
+               raise ConnectionError("Could not connect to {}".format(netconf['host']))
+            time.sleep(0.1) 
         self._module = module
         self.accounts = [Account(i) for i in web3.eth.accounts]
         for name, interface in compiled.items():
             setattr(self, name.split(':')[-1], ContractDeployer(interface))
-        self._exposed = dict(
+        self._network_dict = dict(
             [(i,getattr(self,i)) for i in dir(self) if i[0]!='_'] +
             [(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()])
-        module.__dict__.update(self._exposed)
+        module.__dict__.update(self._network_dict)
+        print("Brownie environment is ready.")
         if hasattr(module, 'DEPLOYMENT'):
             self.run(module.DEPLOYMENT)
     
+    def __del__(self):
+        if self._rpc:
+            self._rpc.terminate()
+
     def add_account(self, priv_key):
         w3account = web3.eth.account.privateKeyToAccount(priv_key)
         account = LocalAccount(w3account.address)
@@ -44,7 +77,7 @@ class Network:
 
     def run(self, name):
         module = importlib.import_module("deployments."+name)
-        module.__dict__.update(self._exposed)
+        module.__dict__.update(self._network_dict)
         print("Running deployment script '{}'...".format(name))
         try:
             module.deploy()
@@ -54,12 +87,14 @@ class Network:
                     name, type(e).__name__, e))
 
     def reset(self):
+        if self._rpc:
+            print("Resetting environment...")
+            self._rpc.terminate()
+        else:
+            print("Resetting local environment...")
+        for i in [i for i in self._module.__dict__ if i not in self._clean_dict]:
+            del self._module.__dict__[i]
         Network(self._module)
-        print("Environment has been reset.")
-        # todo - make this reset the RPC as well
-
-
-
 
 
 class _ContractBase:
@@ -235,18 +270,18 @@ class LocalAccount(_AccountBase):
         self.nonce += 1
         return web3.eth.waitForTransactionReceipt(txid)
 
-if '--network' in sys.argv:
-    name = sys.argv[sys.argv.index('--network')+1]
-    try:
-        netconf = CONFIG['networks'][name]
-        print("Using network '{}'".format(name))
-    except KeyError:
-        sys.exit("ERROR: Network '{}' is not defined in config.json".format(name))
-else:
-    netconf = CONFIG['networks']['development']
-    print("Using network 'development'")
-if 'test-rpc' in netconf:
-    rpc = RPC(netconf['test-rpc'])
+# if '--network' in sys.argv:
+#     name = sys.argv[sys.argv.index('--network')+1]
+#     try:
+#         netconf = CONFIG['networks'][name]
+#         print("Using network '{}'".format(name))
+#     except KeyError:
+#         sys.exit("ERROR: Network '{}' is not defined in config.json".format(name))
+# else:
+#     netconf = CONFIG['networks']['development']
+#     print("Using network 'development'")
+# if 'test-rpc' in netconf:
+#     rpc = RPC(netconf['test-rpc'])
 
 contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 
 if not contract_files:
@@ -254,4 +289,4 @@ if not contract_files:
 print("Compiling contracts...")
 compiled = solc.compile_files(contract_files, optimize=CONFIG['solc']['optimize'])
 
-web3 = Web3(HTTPProvider(netconf['host']))
+#web3 = Web3(HTTPProvider(netconf['host']))
