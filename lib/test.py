@@ -21,8 +21,6 @@ function that does not begin with an underscore. A fresh environment is created
 between each new file. Test scripts can optionally specify which deployment
 script to run by setting a string 'DEPLOYMENT'.""")
 
-sys.path.insert(0, "")
-
 if len(sys.argv)>2 and sys.argv[2][:2]!="--":
     if not os.path.exists('tests/{}.py'.format(sys.argv[2])):
         sys.exit("ERROR: Cannot find tests/{}.py".format(sys.argv[2]))
@@ -44,13 +42,6 @@ for name in test_files:
     network = Network(module)
     print("{}: {} test{}".format(
             name, len(test_names),"s" if len(test_names)!=1 else ""))
-    # if hasattr(module, "DEPLOYMENT"):
-    #     sys.stdout.write("  Running deployment script '{}'... ".format(module.DEPLOYMENT.rstrip('.py')))
-    #     setup = importlib.import_module("deployments."+module.DEPLOYMENT.rstrip('.py'))
-    #     network._apply(setup)
-    #     if not handle_error(setup.deploy, network):
-    #         continue
-    
     for c,t in enumerate(test_names, start=1):
         fn = getattr(module,t)
         if fn.__doc__:

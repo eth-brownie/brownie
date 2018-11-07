@@ -18,11 +18,7 @@ Options:
 
 TODO - Write some stuff here""")
 
-sys.path.insert(0, "")
-
-
 from lib.components.network import Network
-
 Network(sys.modules[__name__])
 
 while True:

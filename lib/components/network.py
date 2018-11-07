@@ -11,15 +11,6 @@ from web3 import Web3, HTTPProvider
 
 from lib.components.config import CONFIG
 
-      
-
-class RPC(Popen):
-
-    def __init__(self, cmd):
-        super().__init__(cmd.split(' '), stdout = DEVNULL, stdin = DEVNULL)
-    
-    def __del__(self):
-        self.terminate()
 
 class Network:
 
@@ -105,6 +96,7 @@ class _ContractBase:
             i['name'],web3.toHex(web3.sha3(text="{}({})".format(i['name'],",".join(x['type'] for x in i['inputs']))))
         ) for i in abi if i['type']=="event")
 
+
 class ContractDeployer(_ContractBase):
 
     def __init__(self, interface):
@@ -186,6 +178,7 @@ class Contract(_ContractBase):
     def balance(self):
         return web3.eth.getBalance(self._contract.address)
 
+
 class _AccountBase(str):
 
     def __init__(self, addr):
@@ -241,6 +234,7 @@ class Account(_AccountBase):
         self.nonce += 1
         return web3.eth.waitForTransactionReceipt(txid)
 
+
 class LocalAccount(_AccountBase):
 
     def transfer(self, to, amount, gas_price=None):
@@ -270,23 +264,9 @@ class LocalAccount(_AccountBase):
         self.nonce += 1
         return web3.eth.waitForTransactionReceipt(txid)
 
-# if '--network' in sys.argv:
-#     name = sys.argv[sys.argv.index('--network')+1]
-#     try:
-#         netconf = CONFIG['networks'][name]
-#         print("Using network '{}'".format(name))
-#     except KeyError:
-#         sys.exit("ERROR: Network '{}' is not defined in config.json".format(name))
-# else:
-#     netconf = CONFIG['networks']['development']
-#     print("Using network 'development'")
-# if 'test-rpc' in netconf:
-#     rpc = RPC(netconf['test-rpc'])
 
 contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 
 if not contract_files:
     sys.exit("ERROR: Cannot find any .sol files in contracts folder")
 print("Compiling contracts...")
 compiled = solc.compile_files(contract_files, optimize=CONFIG['solc']['optimize'])
-
-#web3 = Web3(HTTPProvider(netconf['host']))

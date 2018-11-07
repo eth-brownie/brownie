@@ -18,7 +18,6 @@ Options:
 
 Use deploy to run scripts intended to deploy contracts onto the network.""")
 
-sys.path.insert(0, "")
 name = sys.argv[2]
 
 if not os.path.exists('deployments/{}.py'.format(name)):
