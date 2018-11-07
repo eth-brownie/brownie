@@ -30,7 +30,7 @@ class Network:
         try:
             interface = next(v for k,v in compiled.items() if k.split(':')[-1] == name)
         except StopIteration:
-            raise ValueError("Cannot find a contract named {}".format(name))
+            raise AttributeError("Cannot find a contract named '{}'".format(name))
         return Contract(address, interface['abi'], owner)
 
     def add_account(self, priv_key):
@@ -78,7 +78,7 @@ class Contract:
             return web3.toHex(txreceipt['transactionHash'])
         return _call if self.abi[name] else _tx
 
-    def revert(self,name,*args):
+    def revert(self, name, *args):
         if name not in self.abi:
             raise AttributeError("{} is not a valid function.".format(name))
         try:
@@ -128,7 +128,25 @@ class _AccountBase(str):
         else:
             i = next(i for i in range(1,10000) if not hasattr(self, name+str(i)))
             setattr(self, name+str(i), contract)
-        return contract 
+        return contract
+    
+    def revert(self, cmd, *args):
+        if cmd not in ['transfer', 'deploy']:
+            raise AttributeError("Unknown command")
+        try:
+            getattr(self, cmd)(*args)
+            return False
+        except ValueError:
+            return True
+    
+    def estimate_gas(self, to, amount, data=""):
+        return web3.eth.estimateGas({
+            'from':self.address,
+            'to':to,
+            'data':data,
+            'value':int(amount)
+            })
+
 
 class Account(_AccountBase):
 
@@ -138,6 +156,7 @@ class Account(_AccountBase):
             'to': to,
             'value': int(amount),
             'gasPrice': gas_price or web3.eth.gasPrice,
+            'gas': self.estimate_gas(to, amount)
             })
         self.nonce += 1
         return web3.toHex(txid)
@@ -155,7 +174,7 @@ class LocalAccount(_AccountBase):
             'from': self.address,
             'nonce': self.nonce,
             'gasPrice': gas_price or web3.eth.gasPrice,
-            'gas': 21000,
+            'gas': self.estimate_gas(to, amount),
             'to': to,
             'value': int(amount),
             'data': ""
