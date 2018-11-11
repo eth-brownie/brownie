@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 
 import importlib
+import os
+import sys
+import traceback
 
 from lib.components.config import CONFIG
 from lib.components.eth import web3, COMPILED
@@ -33,6 +36,9 @@ class Network:
         return account
 
     def run(self, name):
+        if not os.path.exists('deployments/{}.py'.format(name)):
+            print("ERROR: Cannot find deployments/{}.py".format(name))
+            return
         module = importlib.import_module("deployments."+name)
         module.__dict__.update(self._network_dict)
         print("Running deployment script '{}'...".format(name))
@@ -40,8 +46,10 @@ class Network:
             module.deploy()
             print("Deployment of '{}' was successful.".format(name))
         except Exception as e:
-            print("ERROR: Deployment of '{}' failed due to {} - {}".format(
-                    name, type(e).__name__, e))
+            if '--verbose' in sys.argv:
+                print("".join(traceback.format_tb(sys.exc_info()[2])))
+            print("ERROR: Deployment of '{}' failed from unhandled {}: {}".format(
+                name, type(e).__name__, e))
 
     def reset(self):
         for i in [i for i in self._module.__dict__ if i not in self._clean_dict]:

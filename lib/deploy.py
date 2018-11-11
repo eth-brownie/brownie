@@ -27,12 +27,4 @@ from lib.components.config import CONFIG
 from lib.components.network import Network
 
 module = importlib.import_module("deployments."+name)
-Network(module)
-print("Running deployment script '{}'...".format(name))
-try: module.deploy()
-except Exception as e:
-    sys.exit(
-        "ERROR: Deployment of '{}' failed due to {} - {}".format(
-            name, type(e).__name__, e)
-        )
-sys.exit("Deployment of '{}' was successful.".format(name))
+Network(module).run(sys.argv[2])
