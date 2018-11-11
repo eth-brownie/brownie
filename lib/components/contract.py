@@ -12,8 +12,7 @@ class _ContractBase:
         self.topics = dict((
             i['name'], 
             web3.toHex(web3.sha3(
-                text=i['name']+",".join(x['type'] for x in i['inputs'])
-                ))
+                text="{}({})".format(i['name'],",".join(x['type'] for x in i['inputs']))))
         ) for i in abi if i['type']=="event")
 
 

@@ -1,13 +1,9 @@
 #!/usr/bin/python3
 
 import importlib
-import json
-import os
-import solc
-import sys
 
-from lib.components.config import CONFIG, BROWNIE_FOLDER
-from lib.components.eth import web3
+from lib.components.config import CONFIG
+from lib.components.eth import web3, COMPILED
 from lib.components.account import Account
 from lib.components.contract import ContractDeployer
 
@@ -18,7 +14,7 @@ class Network:
         self._clean_dict = list(module.__dict__)
         self._module = module
         self.accounts = [Account(i) for i in web3.eth.accounts]
-        for name, interface in compiled.items():
+        for name, interface in COMPILED.items():
             setattr(self, name.split(':')[-1], ContractDeployer(interface))
         self._network_dict = dict(
             [(i,getattr(self,i)) for i in dir(self) if i[0]!='_'] +
@@ -52,23 +48,3 @@ class Network:
             del self._module.__dict__[i]
         web3._reset()
         self.__init__(self._module)
-
-
-contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 
-if not contract_files:
-    sys.exit("ERROR: Cannot find any .sol files in contracts folder")
-print("Compiling contracts...")
-compiled = solc.compile_files(contract_files, optimize=CONFIG['solc']['optimize'])
-
-try:
-    topics = json.load(open(BROWNIE_FOLDER+"/topics.json"))
-except (FileNotFoundError, json.decoder.JSONDecodeError):
-    topics = {}
-
-events = [x for i in compiled.values() for x in i['abi'] if x['type']=="event"]
-topics.update(dict((
-    web3.toHex(web3.sha3(text=i['name']+",".join(x['type'] for x in i['inputs']))),
-    [i['name'], [(x['name'],x['type'],x['indexed']) for x in i['inputs']]]
-    ) for i in events))
-
-json.dump(topics, open(BROWNIE_FOLDER+"/topics.json", 'w'))

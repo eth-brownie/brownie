@@ -1,12 +1,15 @@
 #!/usr/bin/python3
 
 from hexbytes import HexBytes
+import json
+import os
+import solc
 from subprocess import Popen, DEVNULL
 import sys
 import time
 from web3 import Web3, HTTPProvider
 
-from lib.components.config import CONFIG
+from lib.components.config import CONFIG, BROWNIE_FOLDER
 
 
 class web3:
@@ -51,7 +54,6 @@ class web3:
     def _reset(self):
         self.__init__()
 
-web3 = web3()
 
 class TransactionReceipt:
 
@@ -79,10 +81,33 @@ Gas Used: {0.gasUsed}{1}
 {3}""".format(
     self, "\nContract Deployed at: "+self.contractAddress if self.contractAddress else "",
     "\nInput: "+self.input if not self.contractAddress else "",
-    "Events: {}\n".format(
-        "\n".join(["{}"])
+    #[i['topics'] for i in self.logs]
+    "Events:\n{}\n".format(
+        "\n\n".join(["{}\n{}".format(TOPICS[web3.toHex(i['topics'][0])], i) for i in self.logs])
     ) if self.logs else ""
     ))
 
     def __repr__(self):
         return "<Transaction object '{}'>".format(self.hash)
+    
+
+web3 = web3()
+
+contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 
+if not contract_files:
+    sys.exit("ERROR: Cannot find any .sol files in contracts folder")
+print("Compiling contracts...")
+COMPILED = solc.compile_files(contract_files, optimize=CONFIG['solc']['optimize'])
+
+try:
+    TOPICS = json.load(open(BROWNIE_FOLDER+"/topics.json", 'r'))
+except (FileNotFoundError, json.decoder.JSONDecodeError):
+    TOPICS = {}
+
+events = [x for i in COMPILED.values() for x in i['abi'] if x['type']=="event"]
+TOPICS.update(dict((
+    web3.toHex(web3.sha3(text="{}({})".format(i['name'],",".join(x['type'] for x in i['inputs'])))),
+    [i['name'], [(x['name'],x['type'],x['indexed']) for x in i['inputs']]]
+    ) for i in events))
+
+json.dump(TOPICS, open(BROWNIE_FOLDER+"/topics.json", 'w'))
