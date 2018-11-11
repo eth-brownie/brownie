@@ -20,14 +20,17 @@ class _ContractBase:
 class ContractDeployer(_ContractBase):
 
     def __init__(self, interface):
+        self.tx = None
         self.bytecode = interface['bin']
         self._deployed = OrderedDict()
         super().__init__(interface['abi'])
     
     def deploy(self, account, *args):
         contract = web3.eth.contract(abi = self.abi, bytecode = self.bytecode)
-        receipt = account._contract_call(contract.constructor, args, {})
-        return self.at(receipt.contractAddress, account)
+        tx = account._contract_call(contract.constructor, args, {})
+        deployed = self.at(tx.contractAddress, account)
+        deployed.tx = tx
+        return deployed
     
     def at(self, address, owner = None):
         address = web3.toChecksumAddress(address)

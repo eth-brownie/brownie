@@ -111,10 +111,6 @@ Gas Used: {0.gasUsed}
                     value = web3.toHex(value)
                 print("    {}: {}".format(key, value))
         print()
-        
-        
-
-
 
     def __repr__(self):
         return "<Transaction object '{}'>".format(self.hash)
