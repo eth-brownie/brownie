@@ -122,7 +122,10 @@ contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in 
 if not contract_files:
     sys.exit("ERROR: Cannot find any .sol files in contracts folder")
 print("Compiling contracts...")
-COMPILED = solc.compile_files(contract_files, optimize=CONFIG['solc']['optimize'])
+COMPILED = solc.compile_files(
+    contract_files,
+    optimize = CONFIG['solc']['optimize'],
+    optimize_runs = CONFIG['solc']['runs'])
 
 try:
     TOPICS = json.load(open(BROWNIE_FOLDER+"/topics.json", 'r'))

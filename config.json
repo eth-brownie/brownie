@@ -9,6 +9,7 @@
         }
     },
     "solc":{
-        "optimize":true
+        "optimize":true,
+        "runs":200
     }
 }
