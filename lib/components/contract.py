@@ -35,7 +35,7 @@ class ContractDeployer(_ContractBase):
         self._deployed[address] = Contract(address, self.abi, owner)
         return self._deployed[address]
     
-    def addresses(self):
+    def list(self):
         return list(self._deployed)
 
     def __iter__(self):
