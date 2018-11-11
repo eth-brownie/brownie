@@ -56,3 +56,13 @@ class Network:
             del self._module.__dict__[i]
         web3._reset()
         self.__init__(self._module)
+
+    def verbose(self):
+        if '--verbose' not in sys.argv:
+            sys.argv.append('--verbose')
+        print("Verbose mode enabled.")
+    
+    def quiet(self):
+        if '--verbose' in sys.argv:
+            sys.argv.remove('--verbose')
+        print("Verbose mode disabled.")

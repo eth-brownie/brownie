@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from eth_abi import decode_abi, decode_single
 from hexbytes import HexBytes
 import json
 import os
@@ -60,32 +61,60 @@ class TransactionReceipt:
     def __init__(self, txid):
         
         tx = web3.eth.getTransaction(txid)
+        print("\nTransaction sent: {}".format(txid.hex()))
         for k,v in tx.items():
             if type(v) is HexBytes:
-                v = web3.toHex(v)
+                v = v.hex()
             setattr(self, k, v)
         if not tx.blockNumber:
-            print("Transaction sent: {}".format(web3.toHex(txid)))
-            print ("Waiting for confirmation...")
+            print("Waiting for confirmation...")
         receipt = web3.eth.waitForTransactionReceipt(txid)
         for k,v in [(k,v) for k,v in receipt.items() if k not in tx]:
             if type(v) is HexBytes:
-                v = web3.toHex(v)
+                v = v.hex()
             setattr(self, k, v)
+        if '--verbose' in sys.argv:
+            self.verbose()
+        else:
+            print("Transaction confirmed in block {}.".format(self.blockNumber))
+    
+    
+    def verbose(self):    
         print("""
 Transaction was Mined
 ---------------------
-Tx Hash: {0.hash}{2}
+Tx Hash: {0.hash}
+From: {0.from}
+{1}{2}
 Block: {0.blockNumber}
-Gas Used: {0.gasUsed}{1}
-{3}""".format(
-    self, "\nContract Deployed at: "+self.contractAddress if self.contractAddress else "",
-    "\nInput: "+self.input if not self.contractAddress else "",
-    #[i['topics'] for i in self.logs]
-    "Events:\n{}\n".format(
-        "\n\n".join(["{}\n{}".format(TOPICS[web3.toHex(i['topics'][0])], i) for i in self.logs])
-    ) if self.logs else ""
-    ))
+Gas Used: {0.gasUsed}
+""".format(
+    self,
+    ("New Contract Address: "+self.contractAddress if self.contractAddress
+     else "To: {0.to}\nValue: {0.value}".format(self)),
+    "\nFunction Signature: "+self.input[:10] if (self.input!="0x00" and not self.contractAddress) else ""))
+    
+        if self.logs:
+            print("  Events In This Transaction\n  ---------------------------")
+        for event in self.logs:
+            topic = TOPICS[event.topics[0].hex()]
+            print("  "+topic[0])
+            for i, (key, type_) in enumerate([i[:2] for i in topic[1] if i[2]], start=1):
+                value = decode_single(type_, event.topics[i])
+                if type(value) is bytes:
+                    value = web3.toHex(value)
+                print("    {}: {}".format(key, value))
+            names = [i[0] for i in topic[1] if not i[2]]
+            decoded = decode_abi([i[1] if i[1]!="bytes" else "bytes[]" for i in topic[1] if not i[2]], HexBytes(event.data))
+            for key, value in zip(names, decoded):
+                if type(value) is bytes:
+                    value = web3.toHex(value)
+                print("    {}: {}".format(key, value))
+        print()
+        
+        
+
+
 
     def __repr__(self):
         return "<Transaction object '{}'>".format(self.hash)
@@ -106,7 +135,7 @@ except (FileNotFoundError, json.decoder.JSONDecodeError):
 
 events = [x for i in COMPILED.values() for x in i['abi'] if x['type']=="event"]
 TOPICS.update(dict((
-    web3.toHex(web3.sha3(text="{}({})".format(i['name'],",".join(x['type'] for x in i['inputs'])))),
+    web3.sha3(text="{}({})".format(i['name'],",".join(x['type'] for x in i['inputs']))).hex(),
     [i['name'], [(x['name'],x['type'],x['indexed']) for x in i['inputs']]]
     ) for i in events))
 
