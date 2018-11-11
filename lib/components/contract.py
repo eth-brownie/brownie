@@ -3,14 +3,17 @@
 from collections import OrderedDict
 import sys
 
-from lib.components.eth import web3
+from lib.components.eth import web3, TransactionReceipt
 
 class _ContractBase:
 
     def __init__(self, abi):
         self.abi = abi
         self.topics = dict((
-            i['name'],web3.toHex(web3.sha3(text="{}({})".format(i['name'],",".join(x['type'] for x in i['inputs']))))
+            i['name'], 
+            web3.toHex(web3.sha3(
+                text=i['name']+",".join(x['type'] for x in i['inputs'])
+                ))
         ) for i in abi if i['type']=="event")
 
 
@@ -23,10 +26,8 @@ class ContractDeployer(_ContractBase):
     
     def deploy(self, account, *args):
         contract = web3.eth.contract(abi = self.abi, bytecode = self.bytecode)
-        txreceipt = account._contract_call(contract.constructor, args, {})
-        if '--gas' in sys.argv:
-            print("deploy {}: {} gas".format(name, txreceipt['gasUsed']))
-        return self.at(txreceipt['contractAddress'], account)
+        receipt = account._contract_call(contract.constructor, args, {})
+        return self.at(receipt.contractAddress, account)
     
     def at(self, address, owner = None):
         address = web3.toChecksumAddress(address)
@@ -77,10 +78,7 @@ class Contract(_ContractBase):
             else:
                 tx = {'from': self.owner}
             fn = getattr(self._contract.functions,name)
-            txreceipt = tx['from']._contract_call(fn, args, tx)
-            if '--gas' in sys.argv:
-                print("{}: {} gas".format(name, txreceipt['gasUsed']))
-            return web3.toHex(txreceipt['transactionHash'])
+            return tx['from']._contract_call(fn, args, tx)
         return _call if self._fn_map[name] else _tx
 
     def revert(self, name, *args):

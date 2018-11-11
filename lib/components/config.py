@@ -4,7 +4,8 @@ import json
 import os
 import sys
 
-CONFIG = json.load(open(sys.modules['__main__'].__file__.rsplit('/',maxsplit = 1)[0]+'/config.json', 'r'))
+BROWNIE_FOLDER = sys.modules['__main__'].__file__.rsplit('/',maxsplit = 1)[0]
+CONFIG = json.load(open(BROWNIE_FOLDER+'/config.json', 'r'))
 
 conf_path = os.path.abspath('.')+"/tests/config.json"
 if os.path.exists(conf_path):

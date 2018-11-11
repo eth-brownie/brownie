@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from lib.components.eth import web3
+from lib.components.eth import web3,TransactionReceipt
 
 
 class _AccountBase(str):
@@ -50,13 +50,13 @@ class Account(_AccountBase):
             'gas': self.estimate_gas(to, amount)
             })
         self.nonce += 1
-        return web3.toHex(txid)
+        return TransactionReceipt(txid)
 
     def _contract_call(self, fn, args, tx):
         tx['from'] = self.address
         txid = fn(*args).transact(tx)
         self.nonce += 1
-        return web3.eth.waitForTransactionReceipt(txid)
+        return TransactionReceipt(txid)
 
 
 class LocalAccount(_AccountBase):
@@ -73,7 +73,7 @@ class LocalAccount(_AccountBase):
             }).rawTransaction
         txid = web3.eth.sendRawTransaction(signed_tx)
         self.nonce += 1
-        return web3.toHex(txid)
+        return TransactionReceipt(txid)
 
     def _contract_call(self, fn, args, tx):
         tx.update({
@@ -86,5 +86,5 @@ class LocalAccount(_AccountBase):
         txid = web3.eth.sendRawTransaction(
             self._acct.signTransaction(raw).rawTransaction)
         self.nonce += 1
-        return web3.eth.waitForTransactionReceipt(txid)
+        return TransactionReceipt(txid)
 

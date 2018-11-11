@@ -1,14 +1,16 @@
 #!/usr/bin/python3
 
 import importlib
+import json
 import os
 import solc
 import sys
 
-from lib.components.config import CONFIG
+from lib.components.config import CONFIG, BROWNIE_FOLDER
 from lib.components.eth import web3
 from lib.components.account import Account
 from lib.components.contract import ContractDeployer
+
 
 class Network:
 
@@ -57,3 +59,16 @@ if not contract_files:
     sys.exit("ERROR: Cannot find any .sol files in contracts folder")
 print("Compiling contracts...")
 compiled = solc.compile_files(contract_files, optimize=CONFIG['solc']['optimize'])
+
+try:
+    topics = json.load(open(BROWNIE_FOLDER+"/topics.json"))
+except (FileNotFoundError, json.decoder.JSONDecodeError):
+    topics = {}
+
+events = [x for i in compiled.values() for x in i['abi'] if x['type']=="event"]
+topics.update(dict((
+    web3.toHex(web3.sha3(text=i['name']+",".join(x['type'] for x in i['inputs']))),
+    [i['name'], [(x['name'],x['type'],x['indexed']) for x in i['inputs']]]
+    ) for i in events))
+
+json.dump(topics, open(BROWNIE_FOLDER+"/topics.json", 'w'))

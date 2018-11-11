@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from hexbytes import HexBytes
 from subprocess import Popen, DEVNULL
 import sys
 import time
@@ -51,3 +52,37 @@ class web3:
         self.__init__()
 
 web3 = web3()
+
+class TransactionReceipt:
+
+    def __init__(self, txid):
+        
+        tx = web3.eth.getTransaction(txid)
+        for k,v in tx.items():
+            if type(v) is HexBytes:
+                v = web3.toHex(v)
+            setattr(self, k, v)
+        if not tx.blockNumber:
+            print("Transaction sent: {}".format(web3.toHex(txid)))
+            print ("Waiting for confirmation...")
+        receipt = web3.eth.waitForTransactionReceipt(txid)
+        for k,v in [(k,v) for k,v in receipt.items() if k not in tx]:
+            if type(v) is HexBytes:
+                v = web3.toHex(v)
+            setattr(self, k, v)
+        print("""
+Transaction was Mined
+---------------------
+Tx Hash: {0.hash}{2}
+Block: {0.blockNumber}
+Gas Used: {0.gasUsed}{1}
+{3}""".format(
+    self, "\nContract Deployed at: "+self.contractAddress if self.contractAddress else "",
+    "\nInput: "+self.input if not self.contractAddress else "",
+    "Events: {}\n".format(
+        "\n".join(["{}"])
+    ) if self.logs else ""
+    ))
+
+    def __repr__(self):
+        return "<Transaction object '{}'>".format(self.hash)
