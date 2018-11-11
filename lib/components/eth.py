@@ -121,7 +121,9 @@ web3 = web3()
 contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 
 if not contract_files:
     sys.exit("ERROR: Cannot find any .sol files in contracts folder")
-print("Compiling contracts...")
+print("Compiling contracts...\n Optimizer: {}".format(
+    "Enabled   Runs: {}".format(CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"
+))
 COMPILED = solc.compile_files(
     contract_files,
     optimize = CONFIG['solc']['optimize'],
