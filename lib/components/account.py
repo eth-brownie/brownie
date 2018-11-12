@@ -20,15 +20,6 @@ class _AccountBase(str):
 
     def deploy(self, contract, *args):
         return contract.deploy(self, *args)
-
-    def revert(self, cmd, *args):
-        if cmd not in ['transfer', 'deploy']:
-            raise AttributeError("Unknown command")
-        try:
-            getattr(self, cmd)(*args)
-            return False
-        except ValueError:
-            return True
     
     def estimate_gas(self, to, amount, data=""):
         return web3.eth.estimateGas({

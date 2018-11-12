@@ -1,4 +1,5 @@
 {
+    "default_network": "development",
     "networks":{
         "development":{
             "test-rpc":"ganache-cli -a 20",
@@ -11,5 +12,20 @@
     "solc":{
         "optimize":true,
         "runs":200
+    },
+    "logging":{
+        "test":{
+            "tx":0,
+            "exc":[1,2]
+
+        },
+        "deploy":{
+            "tx":[1,2],
+            "exc":2
+        },
+        "console":{
+            "tx":1,
+            "exc":2
+        }
     }
 }

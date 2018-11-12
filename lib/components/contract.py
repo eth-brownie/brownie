@@ -84,14 +84,5 @@ class Contract(_ContractBase):
             return tx['from']._contract_call(fn, args, tx)
         return _call if self._fn_map[name] else _tx
 
-    def revert(self, name, *args):
-        if name not in self._fn_map:
-            raise AttributeError("{} is not a valid function.".format(name))
-        try:
-            self.__getattr__(name)(*args)
-            return False
-        except ValueError:
-            return True
-
     def balance(self):
         return web3.eth.getBalance(self._contract.address)

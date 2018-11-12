@@ -32,7 +32,7 @@ else:
 from lib.components.config import CONFIG
 from lib.components.network import Network
 
-for name in test_files: 
+for name in test_files:
     module = importlib.import_module("tests."+name)
     test_names = open("tests/{}.py".format(name),'r').read().split("\ndef ")[1:]
     test_names = [i.split("(")[0] for i in test_names if i[0]!="_"]
@@ -54,7 +54,7 @@ for name in test_files:
         except AssertionError as e:
             print("\033[91m\u2717\x1b[0m ({})".format(e))
         except Exception as e:
-            if '--verbose' in sys.argv:
+            if CONFIG['logging']['exc']>=2:
                 print("\033[91m\u203C\x1b[0m\n\n{}{}: {}\n".format(
                     ''.join(traceback.format_tb(sys.exc_info()[2])),
                     sys.exc_info()[0].__name__,

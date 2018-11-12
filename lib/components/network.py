@@ -9,9 +9,12 @@ from lib.components.config import CONFIG
 from lib.components.eth import web3, COMPILED
 from lib.components.account import Account
 from lib.components.contract import ContractDeployer
+import lib.components.check as check
 
 
 class Network:
+
+    check = check
 
     def __init__(self, module):
         self._clean_dict = list(module.__dict__)
@@ -46,23 +49,24 @@ class Network:
             module.deploy()
             print("Deployment of '{}' was successful.".format(name))
         except Exception as e:
-            if '--verbose' in sys.argv:
+            if CONFIG['logging']['exc']>=2:
                 print("".join(traceback.format_tb(sys.exc_info()[2])))
             print("ERROR: Deployment of '{}' failed from unhandled {}: {}".format(
                 name, type(e).__name__, e))
 
-    def reset(self):
+    def reset(self, network=None):
+        if network:
+            if network not in CONFIG['networks']:
+                print("ERROR: Network '{}' is not defined in config.json".format(network))
+            CONFIG['default_network'] = network
         for i in [i for i in self._module.__dict__ if i not in self._clean_dict]:
             del self._module.__dict__[i]
         web3._reset()
         self.__init__(self._module)
 
-    def verbose(self):
-        if '--verbose' not in sys.argv:
-            sys.argv.append('--verbose')
-        print("Verbose mode enabled.")
-    
-    def quiet(self):
-        if '--verbose' in sys.argv:
-            sys.argv.remove('--verbose')
-        print("Verbose mode disabled.")
+    def logging(self, value = None):
+        if type(value) is not int or not 0<=value<=2:
+            print("Logging options:\n 0 - Quiet\n 1 - Normal\n 2 - Verbose")
+        else:
+            CONFIG['logging'] = int(value)
+            print("Logging level set to {}.".format(value))

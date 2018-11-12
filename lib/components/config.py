@@ -13,3 +13,10 @@ if os.path.exists(conf_path):
         if type(v) is dict and k in CONFIG:
             CONFIG[k].update(v)
         else: CONFIG[k] = v
+
+CONFIG['logging'] = CONFIG['logging'][sys.argv[1]]
+for k,v in [(k,v) for k,v in CONFIG['logging'].items() if type(v) is list]:
+    CONFIG['logging'][k] = v[1 if '--verbose' in sys.argv else 0]
+
+if '--network' in sys.argv:
+    CONFIG['default_network'] = sys.argv[sys.argv.index('--network')+1]

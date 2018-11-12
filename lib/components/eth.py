@@ -19,7 +19,7 @@ class web3:
     
     def __init__(self):
         if '--network' in sys.argv:
-            name = sys.argv[sys.argv.index('--network')+1]
+            name = CONFIG['default_network']
             try:
                 netconf = CONFIG['networks'][name]
                 print("Using network '{}'".format(name))
@@ -61,25 +61,26 @@ class TransactionReceipt:
     def __init__(self, txid):
         
         tx = web3.eth.getTransaction(txid)
-        print("\nTransaction sent: {}".format(txid.hex()))
+        if CONFIG['logging']['tx']:
+            print("\nTransaction sent: {}".format(txid.hex()))
         for k,v in tx.items():
             if type(v) is HexBytes:
                 v = v.hex()
             setattr(self, k, v)
-        if not tx.blockNumber:
+        if not tx.blockNumber and CONFIG['logging']['tx']:
             print("Waiting for confirmation...")
         receipt = web3.eth.waitForTransactionReceipt(txid)
         for k,v in [(k,v) for k,v in receipt.items() if k not in tx]:
             if type(v) is HexBytes:
                 v = v.hex()
             setattr(self, k, v)
-        if '--verbose' in sys.argv:
-            self.verbose()
-        else:
+        if CONFIG['logging']['tx'] >= 2:
+            self.info()
+        elif CONFIG['logging']['tx']:
             print("Transaction confirmed in block {}.".format(self.blockNumber))
     
     
-    def verbose(self):    
+    def info(self):    
         print("""
 Transaction was Mined
 ---------------------

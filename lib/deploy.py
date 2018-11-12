@@ -14,7 +14,8 @@ Arguments:
 Options:
   --gas              Show gas costs for each successful transaction
   --network [name]   Use a specific network outlined in config.json (default development)
-  --verbose          Show full traceback when a deployment fails
+  --verbose          Verbose reporting
+  --quiet            Minimal reporting
 
 Use deploy to run scripts intended to deploy contracts onto the network.""")
 
