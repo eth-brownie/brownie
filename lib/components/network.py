@@ -64,9 +64,10 @@ class Network:
         web3._reset()
         self.__init__(self._module)
 
-    def logging(self, value = None):
-        if type(value) is not int or not 0<=value<=2:
-            print("Logging options:\n 0 - Quiet\n 1 - Normal\n 2 - Verbose")
+    def logging(self, **kwargs):
+        if not kwargs or [k for k,v in kwargs.items() if
+            k not in ('tx','exc') or type(v) is not int or not 0<=v<=2]:
+            print("logging(tx=n, exc=n)\n\n 0 - Quiet\n 1 - Normal\n 2 - Verbose")
         else:
-            CONFIG['logging'] = int(value)
-            print("Logging level set to {}.".format(value))
+            CONFIG['logging'].update(kwargs)
+            print(CONFIG['logging'])
