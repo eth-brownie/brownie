@@ -3,6 +3,27 @@
 from lib.components.eth import web3,TransactionReceipt
 
 
+class Accounts(list):
+
+    def __init__(self, accounts):
+        super().__init__([Account(i) for i in accounts])
+
+    def add(self, priv_key):
+        w3account = web3.eth.account.privateKeyToAccount(priv_key)
+        account = LocalAccount(w3account.address)
+        account._acct = w3account
+        account._priv_key = priv_key
+        self.append(account)
+        return account
+    
+    def at(self, address):
+        address = web3.toChecksumAddress(address)
+        try:
+            return next(i for i in self if i == address)
+        except StopIteration:
+            print("ERROR: No account exists for {}".format(address))
+
+
 class _AccountBase(str):
 
     def __init__(self, addr):

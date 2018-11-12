@@ -82,7 +82,7 @@ class Contract(_ContractBase):
                 tx = {'from': self.owner}
             fn = getattr(self._contract.functions,name)
             return tx['from']._contract_call(fn, args, tx)
-        return _call if self._fn_map[name] else _tx
+        return _call if self._fn_map[name] else _tx 
 
     def balance(self):
         return web3.eth.getBalance(self._contract.address)

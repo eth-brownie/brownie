@@ -6,7 +6,8 @@
             "host":"http://127.0.0.1:8545"
         },
         "ropsten":{
-            "host":"https://ropsten.infura.io/2wxAHRhp93rceOy6mAN0"
+            "host":"https://ropsten.infura.io/2wxAHRhp93rceOy6mAN0",
+            "persist":true
         }
     },
     "solc":{

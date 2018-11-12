@@ -18,16 +18,12 @@ class web3:
     _rpc = None
     
     def __init__(self):
-        if '--network' in sys.argv:
-            name = CONFIG['default_network']
-            try:
-                netconf = CONFIG['networks'][name]
-                print("Using network '{}'".format(name))
-            except KeyError:
-                sys.exit("ERROR: Network '{}' is not defined in config.json".format(name))
-        else:
-            netconf = CONFIG['networks']['development']
-            print("Using network 'development'")
+        name = CONFIG['default_network']
+        try:
+            netconf = CONFIG['networks'][name]
+            print("Using network '{}'".format(name))
+        except KeyError:
+            sys.exit("ERROR: Network '{}' is not defined in config.json".format(name))
         if self._rpc:
             print("Resetting environment...")
             self._rpc.terminate()

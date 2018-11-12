@@ -1,13 +1,9 @@
 #!/usr/bin/python3
 
-import importlib
-import json
-import os
 import readline
 import sys
 import traceback
 
-from lib.services.fernet import FernetKey
 
 if "--help" in sys.argv:
     sys.exit("""Usage: brownie console [options]
@@ -24,21 +20,6 @@ Network(sys.modules[__name__])
 while True:
     cmd = input('>>> ')
     if cmd == "exit()": sys.exit()
-    if cmd[:13] == "save accounts":
-        to_save = [i._priv_key for i in accounts if hasattr(i, '_priv_key')]
-        filename, pwd = cmd.split(' ', maxsplit=4)[2:]
-        encrypted = FernetKey(pwd).encrypt(json.dumps(to_save), False)
-        open(filename+".acc", 'w').write(encrypted)
-        print("Local accounts saved as {}.acc".format(filename))
-        continue
-    if cmd[:13] == "load accounts":
-        filename, pwd = cmd.split(' ', maxsplit=4)[2:]
-        encrypted = open(filename+".acc","r").read()
-        decrypted = json.loads(FernetKey(pwd).decrypt(encrypted))
-        for i in decrypted:
-            network.add_account(i)
-        print("Local accounts loaded from {}.acc".format(filename))
-        continue
     _exec_result = None
     cmd = "_exec_result = "+cmd
     try:

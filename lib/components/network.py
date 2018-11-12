@@ -1,13 +1,16 @@
 #!/usr/bin/python3
 
+from getpass import getpass
 import importlib
+import json
 import os
 import sys
 import traceback
 
+from lib.services.fernet import FernetKey
 from lib.components.config import CONFIG
 from lib.components.eth import web3, COMPILED
-from lib.components.account import Account
+from lib.components.account import Accounts, LocalAccount
 from lib.components.contract import ContractDeployer
 import lib.components.check as check
 
@@ -19,24 +22,49 @@ class Network:
     def __init__(self, module):
         self._clean_dict = list(module.__dict__)
         self._module = module
-        self.accounts = [Account(i) for i in web3.eth.accounts]
+        self.accounts = Accounts(web3.eth.accounts)
         for name, interface in COMPILED.items():
             setattr(self, name.split(':')[-1], ContractDeployer(interface))
         self._network_dict = dict(
             [(i,getattr(self,i)) for i in dir(self) if i[0]!='_'] +
             [(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()])
         module.__dict__.update(self._network_dict)
+        netconf = CONFIG['networks'][CONFIG['default_network']]
+        if 'persist' in netconf and netconf['persist']:
+            if 'password' not in netconf:
+                netconf['password'] = getpass(
+                    "Enter the persistence password for '{}': ".format(
+                        CONFIG['default_network']))
+            if os.path.exists(CONFIG['default_network']+".brownie"):
+                print("Loading persistent environment...")
+                encrypted = open("environments/"+CONFIG['default_network']+".brownie","r").read()
+                decrypted = json.loads(FernetKey(netconf['password']).decrypt(encrypted))
+                for priv_key in decrypted['accounts']:
+                    self.accounts.add(priv_key)
+                for contract,address in [(k,x) for k,v in decrypted['contracts'].items() for x in v]:
+                    getattr(self,contract).at(*address) 
         print("Brownie environment is ready.")
         if hasattr(module, 'DEPLOYMENT'):
             self.run(module.DEPLOYMENT)
 
-    def add_account(self, priv_key):
-        w3account = web3.eth.account.privateKeyToAccount(priv_key)
-        account = LocalAccount(w3account.address)
-        account._acct = w3account
-        account._priv_key = priv_key
-        self.accounts.append(account)
-        return account
+    def __del__(self):
+        try:
+            netconf = CONFIG['networks'][CONFIG['default_network']]
+            if 'persist' not in netconf or not netconf['persist']:
+                return
+            print("Saving environment...")
+            to_save = {'accounts':[], 'contracts':{}}
+            for account in [i for i in self.accounts if type(i) is LocalAccount]:
+                to_save['accounts'].append(account._priv_key)
+            for name, contract in [(k,v) for k,v in self.__dict__.items() if type(v) is ContractDeployer]:
+                to_save['contracts'][name] = [[i.address, i.owner] for i in contract]
+            encrypted = FernetKey(netconf['password']).encrypt(json.dumps(to_save), False)
+            open("environments/"+CONFIG['default_network']+".brownie", 'w').write(encrypted)
+        except Exception as e:
+            if CONFIG['logging']['exc']>=2:
+                print("".join(traceback.format_tb(sys.exc_info()[2])))
+            print("ERROR: Unable to save environment due to unhandled {}: {}".format(
+                name, type(e).__name__, e))
 
     def run(self, name):
         if not os.path.exists('deployments/{}.py'.format(name)):

@@ -6,6 +6,7 @@ import sys
 FOLDERS = [
     'contracts',
     'deployments',
+    'environments',
     'tests'
 ]
 FILES = [
@@ -21,6 +22,7 @@ This command creates the default structure for the brownie environment:
 
 /contracts            Solidity contracts
 /deployments          Python scripts relating to contract deployment
+/environments         Persistent testing environment files
 /tests                Python scripts for unit testing
 brownie-config.json   Overrides default brownie settings""")
 
