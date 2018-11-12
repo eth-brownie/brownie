@@ -31,6 +31,12 @@ class Network:
         module.__dict__.update(self._network_dict)
         netconf = CONFIG['networks'][CONFIG['default_network']]
         if 'persist' in netconf and netconf['persist']:
+            if not web3.eth.blockNumber:
+                print(
+                "WARNING: This appears to be a local RPC network. Persistence is not possible."
+                "\n         Remove 'persist': true from config.json to silence this warning.")
+            netconf['persist'] = False
+        if 'persist' in netconf and netconf['persist']:
             if 'password' not in netconf:
                 netconf['password'] = getpass(
                     "Enter the persistence password for '{}': ".format(
@@ -64,7 +70,7 @@ class Network:
             if CONFIG['logging']['exc']>=2:
                 print("".join(traceback.format_tb(sys.exc_info()[2])))
             print("ERROR: Unable to save environment due to unhandled {}: {}".format(
-                name, type(e).__name__, e))
+                type(e).__name__, e))
 
     def run(self, name):
         if not os.path.exists('deployments/{}.py'.format(name)):
