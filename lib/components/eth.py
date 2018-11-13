@@ -40,7 +40,7 @@ class web3:
                 break
             if i == 19:
                raise ConnectionError("Could not connect to {}".format(netconf['host']))
-            time.sleep(0.1)
+            time.sleep(0.2)
         for name, fn in [(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()]:
             setattr(self, name, fn)
 
