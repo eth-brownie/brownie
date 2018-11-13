@@ -48,6 +48,9 @@ class ContractDeployer(_ContractBase):
     def __getitem__(self, i):
         return list(self._deployed.values())[i]
 
+    def __len__(self):
+        return len(self._deployed)
+
 
 class Contract(_ContractBase):
 

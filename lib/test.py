@@ -3,6 +3,7 @@
 import importlib
 import os
 import sys
+import time
 import traceback
 
 
@@ -39,7 +40,7 @@ for name in test_files:
     if not test_names:
         print("WARNING: Could not find any test functions in {}.py".format(name))
         continue
-    network = Network(module)
+    Network(module)
     print("{}: {} test{}".format(
             name, len(test_names),"s" if len(test_names)!=1 else ""))
     for c,t in enumerate(test_names, start=1):
@@ -48,9 +49,12 @@ for name in test_files:
             sys.stdout.write("  {} ({}/{})...  ".format(fn.__doc__,c,len(test_names)))
         else:
             sys.stdout.write("  Running test '{}' ({}/{})...  ".format(t,c,len(test_names)))
+        sys.stdout.flush()
         try:
+            sblock, stime = module.eth.blockNumber, time.time()
             fn()
-            print("\033[92m\u2713\x1b[0m")
+            print("\033[92m\u2713\x1b[0m ({} tx in {:.4f}s)".format(
+                module.eth.blockNumber-sblock,time.time()-stime))
         except AssertionError as e:
             print("\033[91m\u2717\x1b[0m ({})".format(e))
         except Exception as e:
