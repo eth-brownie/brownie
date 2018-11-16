@@ -10,9 +10,9 @@ class Accounts(list):
 
     def add(self, priv_key):
         w3account = web3.eth.account.privateKeyToAccount(priv_key)
-        account = LocalAccount(w3account.address)
-        account._acct = w3account
-        account._priv_key = priv_key
+        account = LocalAccount(w3account.address, w3account, priv_key)
+        #account._acct = w3account
+        #account._priv_key = priv_key
         self.append(account)
         return account
     
@@ -34,7 +34,7 @@ class _AccountBase(str):
         return "<Account object '{}'>".format(self.address)
 
     def __str__(self):
-        return self.address
+        return self.__repr__()
 
     def balance(self):
         return web3.eth.getBalance(self.address)
@@ -72,6 +72,14 @@ class Account(_AccountBase):
 
 
 class LocalAccount(_AccountBase):
+
+    def __new__(cls, address, *args):
+        return super().__new__(cls, address)
+
+    def __init__(self, address, account, priv_key):
+        self._acct = account
+        self._priv_key = priv_key
+        super().__init__(address)
 
     def transfer(self, to, amount, gas_price=None):
         signed_tx = self._acct.signTransaction({

@@ -7,8 +7,9 @@ from lib.components.eth import web3, TransactionReceipt
 
 class _ContractBase:
 
-    def __init__(self, abi):
+    def __init__(self, name, abi):
         self.abi = abi
+        self.name = name
         self.topics = dict((
             i['name'], 
             web3.sha3(
@@ -19,12 +20,27 @@ class _ContractBase:
 
 class ContractDeployer(_ContractBase):
 
-    def __init__(self, interface):
+    def __init__(self, name, interface):
         self.tx = None
         self.bytecode = interface['bin']
         self._deployed = OrderedDict()
-        super().__init__(interface['abi'])
+        super().__init__(name, interface['abi'])
     
+    def __iter__(self):
+        return iter(self._deployed.values())
+
+    def __getitem__(self, i):
+        return list(self._deployed.values())[i]
+
+    def __len__(self):
+        return len(self._deployed)
+
+    def __repr__(self):
+        return "<{} ContractDeployer object>".format(self.name)
+
+    def list(self):
+        return list(self._deployed)
+
     def deploy(self, account, *args):
         contract = web3.eth.contract(abi = self.abi, bytecode = self.bytecode)
         tx = account._contract_call(contract.constructor, args, {})
@@ -36,26 +52,17 @@ class ContractDeployer(_ContractBase):
         address = web3.toChecksumAddress(address)
         if address in self._deployed:
             return self._deployed[address]
-        self._deployed[address] = Contract(address, self.abi, owner)
+        self._deployed[address] = Contract(address, self.name, self.abi, owner)
         return self._deployed[address]
-    
-    def list(self):
-        return list(self._deployed)
-
-    def __iter__(self):
-        return iter(self._deployed.values())
-
-    def __getitem__(self, i):
-        return list(self._deployed.values())[i]
-
-    def __len__(self):
-        return len(self._deployed)
 
 
-class Contract(_ContractBase):
+class Contract(str,_ContractBase):
 
-    def __init__(self, address, abi, owner):
-        super().__init__(abi)
+    def __new__(cls, address, *args):
+        return super().__new__(cls, address)
+
+    def __init__(self, address, name, abi, owner):
+        super().__init__(name, abi)
         self._contract = web3.eth.contract(address = address, abi = abi)
         self._fn_map = dict((
             i['name'],
@@ -64,7 +71,10 @@ class Contract(_ContractBase):
         self.owner = owner
     
     def __repr__(self):
-        return "<Contract object '{}'>".format(self.address)
+        return "<{0.name} Contract object '{0.address}'>".format(self)
+
+    def __str__(self):
+        return self.__repr__()
 
     def __getattr__(self, name):
         if name not in self._fn_map:

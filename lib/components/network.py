@@ -24,7 +24,8 @@ class Network:
         self._module = module
         self.accounts = Accounts(web3.eth.accounts)
         for name, interface in COMPILED.items():
-            setattr(self, name.split(':')[-1], ContractDeployer(interface))
+            name = name.split(':')[-1]
+            setattr(self, name, ContractDeployer(name, interface))
         self._network_dict = dict(
             [(i,getattr(self,i)) for i in dir(self) if i[0]!='_'] +
             [(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()])
