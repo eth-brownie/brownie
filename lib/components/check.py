@@ -2,6 +2,8 @@
 
 import sys
 
+from lib.components.account import VMError
+
 def true(statement, fail_msg = "Expected statement to be true"):
     if not statement:
         raise AssertionError(fail_msg)
@@ -13,14 +15,14 @@ def false(statement, fail_msg = "Expected statement to be False"):
 def reverts(fn, args, fail_msg = "Expected transaction to revert"):
     try: 
         fn(*args)
-    except ValueError:
+    except VMError:
         return
     raise AssertionError(fail_msg)
 
 def confirms(fn, args, fail_msg = "Expected transaction to confirm"):
     try:
         return fn(*args)
-    except ValueError:
+    except VMError:
         raise AssertionError(fail_msg)
 
 def equal(a, b, fail_msg = "Expected values to be equal"):
