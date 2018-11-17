@@ -56,7 +56,14 @@ for name in test_files:
             print("\033[92m\u2713\x1b[0m ({} tx in {:.4f}s)".format(
                 module.eth.blockNumber-sblock,time.time()-stime))
         except AssertionError as e:
-            print("\033[91m\u2717\x1b[0m ({})".format(e))
+            if CONFIG['logging']['exc']>=2:
+                print("\033[91m\u2717\x1b[0m\n\n{}{}: {}\n".format(
+                    traceback.format_tb(sys.exc_info()[2])[-2],
+                    sys.exc_info()[0].__name__,
+                    sys.exc_info()[1]
+                    ))
+            else:
+                print("\033[91m\u2717\x1b[0m ({})".format(e))
         except Exception as e:
             if CONFIG['logging']['exc']>=2:
                 print("\033[91m\u203C\x1b[0m\n\n{}{}: {}\n".format(

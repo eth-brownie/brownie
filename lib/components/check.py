@@ -27,8 +27,8 @@ def confirms(fn, args, fail_msg = "Expected transaction to confirm"):
 
 def equal(a, b, fail_msg = "Expected values to be equal"):
     if a != b:
-        raise AssertionError(fail_msg)
+        raise AssertionError(fail_msg+": {} != {}".format(a,b))
 
 def not_equal(a, b, fail_msg = "Expected values to be not equal"):
     if a == b:
-        raise AssertionError(fail_msg)
+        raise AssertionError(fail_msg+": {} == {}".format(a,b))
