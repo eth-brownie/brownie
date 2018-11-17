@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import json
+
 from lib.components.eth import web3,TransactionReceipt
 
 
@@ -54,19 +56,27 @@ class _AccountBase(str):
 class Account(_AccountBase):
 
     def transfer(self, to, amount, gas_price=None):
-        txid = web3.eth.sendTransaction({
-            'from': self.address,
-            'to': to,
-            'value': int(amount),
-            'gasPrice': gas_price or web3.eth.gasPrice,
-            'gas': self.estimate_gas(to, amount)
-            })
-        self.nonce += 1
-        return TransactionReceipt(txid)
+        try:
+            txid = web3.eth.sendTransaction({
+                'from': self.address,
+                'to': to,
+                'value': int(amount),
+                'gasPrice': gas_price or web3.eth.gasPrice,
+                'gas': self.estimate_gas(to, amount)
+                })
+            self.nonce += 1
+            return TransactionReceipt(txid)
+        except ValueError as e:
+            err = eval(str(e))
+            print("ERROR: "+err['message'])
 
     def _contract_call(self, fn, args, tx):
         tx['from'] = self.address
-        txid = fn(*args).transact(tx)
+        try: txid = fn(*args).transact(tx)
+        except ValueError as e:
+            err = eval(str(e))
+            print("ERROR: "+err['message'])
+            return
         self.nonce += 1
         return TransactionReceipt(txid)
 
@@ -82,29 +92,36 @@ class LocalAccount(_AccountBase):
         super().__init__(address)
 
     def transfer(self, to, amount, gas_price=None):
-        signed_tx = self._acct.signTransaction({
-            'from': self.address,
-            'nonce': self.nonce,
-            'gasPrice': gas_price or web3.eth.gasPrice,
-            'gas': self.estimate_gas(to, amount),
-            'to': to,
-            'value': int(amount),
-            'data': ""
-            }).rawTransaction
-        txid = web3.eth.sendRawTransaction(signed_tx)
-        self.nonce += 1
-        return TransactionReceipt(txid)
+        try:
+            signed_tx = self._acct.signTransaction({
+                'from': self.address,
+                'nonce': self.nonce,
+                'gasPrice': gas_price or web3.eth.gasPrice,
+                'gas': self.estimate_gas(to, amount),
+                'to': to,
+                'value': int(amount),
+                'data': ""
+                }).rawTransaction
+            txid = web3.eth.sendRawTransaction(signed_tx)
+            self.nonce += 1
+            return TransactionReceipt(txid)
+        except ValueError as e:
+            err = eval(str(e))
+            print("ERROR: "+err['message'])
 
     def _contract_call(self, fn, args, tx):
-        tx.update({
-            'from':self.address,
-            'nonce':self.nonce,
-            'gasPrice': web3.eth.gasPrice,
-            'gas': fn(*args).estimateGas({'from': self.address}),
-            })
-        raw = fn(*args).buildTransaction(tx)
-        txid = web3.eth.sendRawTransaction(
-            self._acct.signTransaction(raw).rawTransaction)
-        self.nonce += 1
-        return TransactionReceipt(txid)
-
+        try:
+            tx.update({
+                'from':self.address,
+                'nonce':self.nonce,
+                'gasPrice': web3.eth.gasPrice,
+                'gas': fn(*args).estimateGas({'from': self.address}),
+                })
+            raw = fn(*args).buildTransaction(tx)
+            txid = web3.eth.sendRawTransaction(
+                self._acct.signTransaction(raw).rawTransaction)
+            self.nonce += 1
+            return TransactionReceipt(txid)
+        except ValueError as e:
+            err = eval(str(e))
+            print("ERROR: "+err['message'])
