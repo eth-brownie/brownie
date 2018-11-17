@@ -6,7 +6,7 @@ import sys
 import time
 import traceback
 
-
+from lib.components.account import VirtualMachineError
 
 if "--help" in sys.argv:
     sys.exit("""Usage: brownie test [filename] [options]
@@ -59,6 +59,15 @@ for name in test_files:
             if CONFIG['logging']['exc']>=2:
                 print("\033[91m\u2717\x1b[0m\n\n{}{}: {}\n".format(
                     traceback.format_tb(sys.exc_info()[2])[-2],
+                    sys.exc_info()[0].__name__,
+                    sys.exc_info()[1]
+                    ))
+            else:
+                print("\033[91m\u2717\x1b[0m ({})".format(e))
+        except VirtualMachineError as e:
+            if CONFIG['logging']['exc']>=2:
+                print("\033[91m\u2717\x1b[0m\n\n{}{}: {}\n".format(
+                    traceback.format_tb(sys.exc_info()[2])[-3],
                     sys.exc_info()[0].__name__,
                     sys.exc_info()[1]
                     ))

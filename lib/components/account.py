@@ -4,7 +4,7 @@ import json
 
 from lib.components.eth import web3,TransactionReceipt
 
-class VMError(Exception):
+class VirtualMachineError(Exception):
 
     def __init__(self,e):
         super().__init__(eval(str(e))['message'])
@@ -72,13 +72,13 @@ class Account(_AccountBase):
             self.nonce += 1
             return TransactionReceipt(txid)
         except ValueError as e:
-            raise VMError(e)
+            raise VirtualMachineError(e)
 
     def _contract_call(self, fn, args, tx):
         tx['from'] = self.address
         try: txid = fn(*args).transact(tx)
         except ValueError as e:
-            raise VMError(e)
+            raise VirtualMachineError(e)
         self.nonce += 1
         return TransactionReceipt(txid)
 
@@ -108,7 +108,7 @@ class LocalAccount(_AccountBase):
             self.nonce += 1
             return TransactionReceipt(txid)
         except ValueError as e:
-            raise VMError(e)
+            raise VirtualMachineError(e)
 
     def _contract_call(self, fn, args, tx):
         try:
@@ -124,4 +124,4 @@ class LocalAccount(_AccountBase):
             self.nonce += 1
             return TransactionReceipt(txid)
         except ValueError as e:
-            raise VMError(e)
+            raise VirtualMachineError(e)
