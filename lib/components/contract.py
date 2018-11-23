@@ -12,10 +12,18 @@ class _ContractBase:
         self.name = name
         self.topics = dict((
             i['name'], 
-            web3.sha3(
-                text="{}({})".format(i['name'],",".join(x['type'] for x in i['inputs']))
+            web3.sha3(text="{}({})".format(i['name'],
+                ",".join(x['type'] for x in i['inputs']))
                 ).hex()
         ) for i in abi if i['type']=="event")
+        self.signatures = dict((
+            i['name'],
+            web3.sha3(text="{}({})".format(i['name'],
+                ",".join(x['type'] for x in i['inputs'])
+                )).hex()[:10]
+        ) for i in abi if i['type']=="function")
+            
+            
 
 
 class ContractDeployer(_ContractBase):
