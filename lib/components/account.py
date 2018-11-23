@@ -18,8 +18,6 @@ class Accounts(list):
     def add(self, priv_key):
         w3account = web3.eth.account.privateKeyToAccount(priv_key)
         account = LocalAccount(w3account.address, w3account, priv_key)
-        #account._acct = w3account
-        #account._priv_key = priv_key
         self.append(account)
         return account
     
@@ -74,7 +72,7 @@ class Account(_AccountBase):
         except ValueError as e:
             raise VirtualMachineError(e)
 
-    def _contract_call(self, fn, args, tx):
+    def _contract_tx(self, fn, args, tx):
         tx['from'] = self.address
         try: txid = fn(*args).transact(tx)
         except ValueError as e:
@@ -110,7 +108,7 @@ class LocalAccount(_AccountBase):
         except ValueError as e:
             raise VirtualMachineError(e)
 
-    def _contract_call(self, fn, args, tx):
+    def _contract_tx(self, fn, args, tx):
         try:
             tx.update({
                 'from':self.address,

@@ -43,7 +43,7 @@ class ContractDeployer(_ContractBase):
 
     def deploy(self, account, *args):
         contract = web3.eth.contract(abi = self.abi, bytecode = self.bytecode)
-        tx = account._contract_call(contract.constructor, args, {})
+        tx = account._contract_tx(contract.constructor, args, {})
         deployed = self.at(tx.contractAddress, account)
         deployed.tx = tx
         return deployed
@@ -64,10 +64,12 @@ class Contract(str,_ContractBase):
     def __init__(self, address, name, abi, owner):
         super().__init__(name, abi)
         self._contract = web3.eth.contract(address = address, abi = abi)
-        self._fn_map = dict((
-            i['name'],
-            True if i['stateMutability'] in ['view','pure'] else False
-            ) for i in abi if i['type']=="function")
+        for i in [i for i in abi if i['type']=="function"]:
+            fn = getattr(self._contract.functions,i['name'])
+            if i['stateMutability'] in ('view','pure'):
+                setattr(self, i['name'], ContractCall(fn, i, owner))
+            else:
+                setattr(self, i['name'], ContractTx(fn, i, owner))
         self.owner = owner
     
     def __repr__(self):
@@ -77,25 +79,35 @@ class Contract(str,_ContractBase):
         return self.__repr__()
 
     def __getattr__(self, name):
-        if name not in self._fn_map:
-            return getattr(self._contract, name)
-        def _call(*args):
-            result = getattr(self._contract.functions,name)(*args).call()
-            if type(result) is not list:
-                return web3.toHex(result) if type(result) is bytes else result
-            return [(web3.toHex(i) if type(i) is bytes else i) for i in result]
-        def _tx(*args):
-            if args and type(args[-1]) is dict:
-                args, tx = (args[:-1], args[-1])
-                if 'from' not in tx:
-                    tx['from'] = self.owner
-                if 'value' in tx and type(tx['value']) is float:
-                    tx['value'] = int(tx['value'])
-            else:
-                tx = {'from': self.owner}
-            fn = getattr(self._contract.functions,name)
-            return tx['from']._contract_call(fn, args, tx)
-        return _call if self._fn_map[name] else _tx 
+        return getattr(self._contract, name)
 
     def balance(self):
         return web3.eth.getBalance(self._contract.address)
+
+class _ContractMethod:
+
+    def __init__(self, fn, abi, owner):
+        self._fn = fn
+        self._abi = abi
+        self._owner = owner
+
+class ContractTx(_ContractMethod):
+
+    def __call__(self, *args):
+        if args and type(args[-1]) is dict:
+            args, tx = (args[:-1], args[-1])
+            if 'from' not in tx:
+                tx['from'] = self._owner
+            if 'value' in tx and type(tx['value']) is float:
+                tx['value'] = int(tx['value'])
+        else:
+            tx = {'from': self._owner}
+        return tx['from']._contract_tx(self._fn, args, tx)
+
+class ContractCall(_ContractMethod):
+
+    def __call__(self, *args):
+        result = self._fn(*args).call()
+        if type(result) is not list:
+            return web3.toHex(result) if type(result) is bytes else result
+        return [(web3.toHex(i) if type(i) is bytes else i) for i in result]
