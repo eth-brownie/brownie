@@ -88,8 +88,41 @@ class _ContractMethod:
 
     def __init__(self, fn, abi, owner):
         self._fn = fn
-        self._abi = abi
+        self.abi = abi
         self._owner = owner
+        self.sig = web3.sha3(text="{}({})".format(
+            abi['name'],
+            ",".join(i['type'] for i in abi['inputs'])
+            )).hex()[:10]
+
+    def _format_inputs(self, inputs, types):
+        inputs = list(inputs)
+        if len(inputs) != len(types):
+            raise AttributeError(
+                "{} requires the following arguments: {}".format(
+                self.abi['name'],",".join(i['type'] for i in self.abi['inputs'])))
+        for i, type_ in enumerate(types):
+            if type_[-1]=="]":
+                t,length = type_.rstrip(']').split('[')
+                if length!="" and len(inputs[i])!=int(length):
+                    raise ValueError(
+                        "'{}': Argument {}, sequence has a length of {}, should be {}".format(
+                            self.abi['name'], i, len(inputs[i]), type_))
+                inputs[i] = self._format_inputs(inputs[i],[t]*len(inputs[i]))
+                continue
+            try:
+                if "int" in type_:
+                    inputs[i]=int(inputs[i])
+                elif "bytes" in type_ and type(inputs[i]) is not bytes:
+                    if type(inputs[i]) is str:
+                        inputs[i]=inputs[i].encode()
+                    else:
+                        inputs[i]=int(inputs[i]).to_bytes(int(type_[5:]),"big")
+            except:
+                raise ValueError(
+                    "'{}': Argument {}, could not convert {} '{}' to type {}".format(
+                        self.abi['name'],i,type(inputs[i]),inputs[i],type_))
+        return inputs
 
 class ContractTx(_ContractMethod):
 
@@ -102,11 +135,13 @@ class ContractTx(_ContractMethod):
                 tx['value'] = int(tx['value'])
         else:
             tx = {'from': self._owner}
+        args = self._format_inputs(args, [i['type'] for i in self.abi['inputs']])
         return tx['from']._contract_tx(self._fn, args, tx)
 
 class ContractCall(_ContractMethod):
 
     def __call__(self, *args):
+        args = self._format_inputs(args, [i['type'] for i in self.abi['inputs']])
         result = self._fn(*args).call()
         if type(result) is not list:
             return web3.toHex(result) if type(result) is bytes else result

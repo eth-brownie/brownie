@@ -22,7 +22,7 @@ class Network:
     def __init__(self, module):
         self._clean_dict = list(module.__dict__)
         self._module = module
-        self.accounts = Accounts(web3.eth.accounts)
+        self.accounts = self.a = Accounts(web3.eth.accounts)
         for name, interface in COMPILED.items():
             name = name.split(':')[-1]
             setattr(self, name, ContractDeployer(name, interface))
