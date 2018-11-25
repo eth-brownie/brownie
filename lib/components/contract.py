@@ -9,6 +9,10 @@ class _ContractBase:
 
     def __init__(self, name, abi):
         self.abi = abi
+        names = [i['name'] for i in abi if i['type']=="function"]
+        duplicates = set(i for i in names if names.count(i)>1)
+        if duplicates:
+            raise ValueError("Ambiguous contract functions in {}: {}".format(name, ",".join(duplicates)))
         self.name = name
         self.topics = dict((
             i['name'], 
@@ -122,14 +126,14 @@ class _ContractMethod:
                 if "int" in type_:
                     inputs[i]=int(inputs[i])
                 elif "bytes" in type_ and type(inputs[i]) is not bytes:
-                    if type(inputs[i]) is str:
-                        inputs[i]=inputs[i].encode()
-                    else:
+                    if type(inputs[i]) is not str:
                         inputs[i]=int(inputs[i]).to_bytes(int(type_[5:]),"big")
+                    elif inputs[i][:2]!="0x":
+                        inputs[i]=inputs[i].encode() 
             except:
                 raise ValueError(
                     "'{}': Argument {}, could not convert {} '{}' to type {}".format(
-                        self.abi['name'],i,type(inputs[i]),inputs[i],type_))
+                        self.abi['name'],i,type(inputs[i]).__name__,inputs[i],type_))
         return inputs
 
 class ContractTx(_ContractMethod):
