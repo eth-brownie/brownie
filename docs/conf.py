@@ -16,20 +16,17 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-def setup(sphinx):
-    from pygments_lexer_solidity import SolidityLexer
-    sphinx.add_lexer('Solidity', SolidityLexer())
 
 # -- Project information -----------------------------------------------------
 
-project = u'Brownie'
-copyright = u'2018, Benjamin Hauser'
-author = u'Benjamin Hauser'
+project = 'Brownie'
+copyright = '2018, Benjamin Hauser'
+author = 'Benjamin Hauser'
 
 # The short X.Y version
-version = u''
+version = ''
 # The full version, including alpha/beta/rc tags
-release = u''
+release = '0.1.0b'
 
 
 # -- General configuration ---------------------------------------------------
@@ -66,11 +63,10 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
-highlight_language = 'Python'
+pygments_style = None
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -78,7 +74,7 @@ highlight_language = 'Python'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -128,12 +124,21 @@ latex_elements = {
     # 'figure_align': 'htbp',
 }
 
+# Grouping the document tree into LaTeX files. List of tuples
+# (source start file, target name, title,
+#  author, documentclass [howto, manual, or own class]).
+latex_documents = [
+    (master_doc, 'Brownie.tex', 'Brownie Documentation',
+     'Benjamin Hauser', 'manual'),
+]
+
+
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'brownie', u'Brownie Documentation',
+    (master_doc, 'brownie', 'Brownie Documentation',
      [author], 1)
 ]
 
@@ -144,8 +149,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'SFTProtocol', u'SFT Protocol Documentation',
-     author, 'SFTProtocol', 'One line description of project.',
+    (master_doc, 'Brownie', 'Brownie Documentation',
+     author, 'Brownie', 'One line description of project.',
      'Miscellaneous'),
 ]
 

@@ -1,3 +1,6 @@
 __pycache__
 .vscode
 topics.json
+docs/_build
+docs/_static
+docs/_templates

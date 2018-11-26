@@ -1,5 +1,20 @@
-#######
-Brownie
-#######
+.. Brownie documentation master file, created by
+   sphinx-quickstart on Mon Nov 26 18:27:59 2018.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
 
-I guess I should write something here...
+Welcome to Brownie's documentation!
+===================================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
