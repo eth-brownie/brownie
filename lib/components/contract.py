@@ -12,7 +12,8 @@ class _ContractBase:
         names = [i['name'] for i in abi if i['type']=="function"]
         duplicates = set(i for i in names if names.count(i)>1)
         if duplicates:
-            raise ValueError("Ambiguous contract functions in {}: {}".format(name, ",".join(duplicates)))
+            raise ValueError("Ambiguous contract functions in {}: {}".format(
+                name, ",".join(duplicates)))
         self.name = name
         self.topics = dict((
             i['name'], 
@@ -106,6 +107,12 @@ class _ContractMethod:
             abi['name'],
             ",".join(i['type'] for i in abi['inputs'])
             )).hex()[:10]
+
+    def __repr__(self):
+        return "<{} object '{}({})'>".format(
+            type(self).__name__,
+            self.abi['name'],
+            ",".join(i['type'] for i in self.abi['inputs']))
 
     def _format_inputs(self, inputs, types):
         inputs = list(inputs)

@@ -126,6 +126,11 @@ COMPILED = solc.compile_files(
     optimize = CONFIG['solc']['optimize'],
     optimize_runs = CONFIG['solc']['runs'])
 
+names = [i.split(':')[1] for i in COMPILED.keys()]
+duplicates = set(i for i in names if names.count(i)>1)
+if duplicates:
+    raise ValueError("Multiple contracts with the same name: {}".format(name, ",".join(duplicates)))
+
 try:
     TOPICS = json.load(open(BROWNIE_FOLDER+"/topics.json", 'r'))
 except (FileNotFoundError, json.decoder.JSONDecodeError):
