@@ -10,18 +10,17 @@ A simple python framework for ethereum smart contract testing.
 
 ## Installation
 
-```
-git clone https://github.com/iamdefinitelyahuman/brownie
-cd brownie
-chmod +x install.sh
-./install.sh
+Ubuntu:
+
+```bash
+curl https://github.com/iamdefinitelyahuman/brownie-install.sh | sh
 ```
 
 ## Quick Usage
 
 To set up the default folder and file structure for brownie use:
 
-```
+```bash
 brownie init
 ```
 
@@ -29,7 +28,7 @@ From there, type `brownie` for basic usage information.
 
 ## Development
 
-This project is still in early development and should be considered an alpha. Future changes may break existing functionality. Pull requests are welcomed.
+This project is still in early development and should be considered a beta. Future changes may break existing functionality. Pull requests are welcomed.
 
 ## License
 
