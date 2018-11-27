@@ -26,10 +26,14 @@ brownie init
 
 From there, type `brownie` for basic usage information.
 
+## Documentation
+
+Brownie documentation is hosted at [Read the Docs](https://eth-brownie.readthedocs.io/en/latest/).
+
 ## Development
 
 This project is still in early development and should be considered a beta. Future changes may break existing functionality. Pull requests are welcomed.
 
 ## License
 
-This project is licensed under the MIT license.
+This project is licensed under the [MIT license](LICENSE).
