@@ -3,6 +3,7 @@
 import os
 import sys
 
+BROWNIE_FOLDER = sys.modules['__main__'].__file__.rsplit('/', maxsplit = 1)[0]
 FOLDERS = [
     'contracts',
     'deployments',
@@ -12,7 +13,7 @@ FOLDERS = [
 FILES = [
     ('deployments/__init__.py',''),
     ('tests/__init__.py',''),
-    ('brownie-config.json','{\n\n}')
+    ('brownie-config.json', open(BROWNIE_FOLDER+'/config.json', 'r').read())
 ]
 
 if ["init", "--help"] == sys.argv[1:3]:
@@ -27,8 +28,7 @@ This command creates the default structure for the brownie environment:
 brownie-config.json   Overrides default brownie settings""")
 
 if sys.argv[1] == "init":
-    folder = sys.modules['__main__'].__file__.rsplit('/',maxsplit = 1)[0]
-    if folder in os.path.abspath('.'):
+    if BROWNIE_FOLDER in os.path.abspath('.'):
         sys.exit(
             "ERROR: You cannot init the main brownie installation folder.\n"
             "Create a new folder for your project and run brownie init there.")
