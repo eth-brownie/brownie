@@ -1,20 +1,36 @@
-.. Brownie documentation master file, created by
-   sphinx-quickstart on Mon Nov 26 18:27:59 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+=======
+Brownie
+=======
 
-Welcome to Brownie's documentation!
-===================================
+Brownie is a simple python framework for ethereum smart contract testing.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+.. warning::
+    This project is still in early development and should be considered a beta. Future changes may break existing functionality.
 
+Dependencies
+============
 
+Brownie has the following dependencies:
 
-Indices and tables
-==================
+* `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__
+* `py-solc <https://github.com/ethereum/py-solc>`__
+* `web3py <https://github.com/ethereum/web3.py>`__
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Installation
+============
+
+**Ubuntu**
+
+::
+
+    curl https://github.com/iamdefinitelyahuman/brownie-install.sh | sh
+
+Table of Contents
+=================
+
+.. toctree::   :maxdepth: 2
+
+    init.rst
+    deploy.rst
+    test.rst
+    console.rst
