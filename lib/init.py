@@ -30,7 +30,7 @@ brownie-config.json   Overrides default brownie settings""")
 if sys.argv[1] == "init":
     if BROWNIE_FOLDER in os.path.abspath('.'):
         sys.exit(
-            "ERROR: You cannot init the main brownie installation folder.\n"
+            "ERROR: You cannot init inside the main brownie installation folder.\n"
             "Create a new folder for your project and run brownie init there.")
 
     if '--force' not in sys.argv and (
