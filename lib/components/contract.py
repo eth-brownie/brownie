@@ -14,7 +14,7 @@ class _ContractBase:
         if duplicates:
             raise ValueError("Ambiguous contract functions in {}: {}".format(
                 name, ",".join(duplicates)))
-        self.name = name
+        self._name = name
         self.topics = dict((
             i['name'], 
             web3.sha3(text="{}({})".format(i['name'],
@@ -49,7 +49,7 @@ class ContractDeployer(_ContractBase):
         return len(self._deployed)
 
     def __repr__(self):
-        return "<{} ContractDeployer object>".format(self.name)
+        return "<{} ContractDeployer object>".format(self._name)
 
     def list(self):
         return list(self._deployed)
@@ -67,7 +67,7 @@ class ContractDeployer(_ContractBase):
         address = web3.toChecksumAddress(address)
         if address in self._deployed:
             return self._deployed[address]
-        self._deployed[address] = Contract(address, self.name, self.abi, owner)
+        self._deployed[address] = Contract(address, self._name, self.abi, owner)
         return self._deployed[address]
 
 
@@ -88,7 +88,7 @@ class Contract(str,_ContractBase):
         self.owner = owner
     
     def __repr__(self):
-        return "<{0.name} Contract object '{0.address}'>".format(self)
+        return "<{0._name} Contract object '{0.address}'>".format(self)
 
     def __str__(self):
         return self.__repr__()
@@ -158,7 +158,7 @@ def _format_inputs(name, inputs, types):
                 inputs[i] = _format_inputs(name, inputs[i],[t]*len(inputs[i]))
                 continue
             try:
-                if "int" in type_:
+                elif "int" in type_:
                     inputs[i]=int(inputs[i])
                 elif "bytes" in type_ and type(inputs[i]) is not bytes:
                     if type(inputs[i]) is not str:

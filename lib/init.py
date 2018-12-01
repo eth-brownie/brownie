@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import os
+import shutil
 import sys
 
 BROWNIE_FOLDER = sys.modules['__main__'].__file__.rsplit('/', maxsplit = 1)[0]
@@ -21,11 +22,11 @@ if ["init", "--help"] == sys.argv[1:3]:
 
 This command creates the default structure for the brownie environment:
 
-/contracts            Solidity contracts
-/deployments          Python scripts relating to contract deployment
-/environments         Persistent testing environment files
-/tests                Python scripts for unit testing
-brownie-config.json   Overrides default brownie settings""")
+contracts/            Solidity contracts
+deployments/          Python scripts relating to contract deployment
+environments/         Persistent testing environment files
+tests/                Python scripts for unit testing
+brownie-config.json   Project configuration file""")
 
 if sys.argv[1] == "init":
     if BROWNIE_FOLDER in os.path.abspath('.'):
@@ -38,6 +39,16 @@ if sys.argv[1] == "init":
         os.path.exists('../../brownie.config.json')
         ):
         sys.exit("ERROR: Cannot init a brownie subfolder. Use --force to override.")
+
+if sys.argv[1]=="init" and len(sys.argv)>2:
+    folder=BROWNIE_FOLDER+'/projects/'+sys.argv[2]
+    if not os.path.exists(folder):
+        sys.exit("ERROR: No project exists with the name '{}'.".format(sys.argv[2]))
+    try:
+        shutil.copytree(folder, sys.argv[2])
+    except FileExistsError:
+        sys.exit("ERROR: One or more files for this project already exist.")
+    sys.exit("Project was created in ./{}".format(sys.argv[2]))
 
 init = False
 for folder in [i for i in FOLDERS if not os.path.exists(i)]:
