@@ -25,12 +25,26 @@ Installation
 
     curl https://github.com/iamdefinitelyahuman/brownie-install.sh | sh
 
+Quick Usage
+===========
+
+To set up the default folder and file structure for brownie use:
+
+::
+
+    brownie init
+
+From there, type ``brownie`` for basic usage information.
+
+See the :ref:`quickstart` section for a more in depth tutorial to get you familiar with Brownie.
+
 Table of Contents
 =================
 
 .. toctree::   :maxdepth: 2
 
     init.rst
+    quickstart.rst
     deploy.rst
     test.rst
     console.rst

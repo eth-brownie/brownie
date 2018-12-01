@@ -18,7 +18,7 @@ FILES = [
 ]
 
 if ["init", "--help"] == sys.argv[1:3]:
-    sys.exit("""Usage: brownie init
+    sys.exit("""Usage: brownie init [project]
 
 This command creates the default structure for the brownie environment:
 
@@ -26,7 +26,11 @@ contracts/            Solidity contracts
 deployments/          Python scripts relating to contract deployment
 environments/         Persistent testing environment files
 tests/                Python scripts for unit testing
-brownie-config.json   Project configuration file""")
+brownie-config.json   Project configuration file
+
+You can optionally specify a project name, which deploys an already existing
+project into a new folder with the same name. Type 'brownie init tutorial'
+to create a tutorial project that you can explore.""")
 
 if sys.argv[1] == "init":
     if BROWNIE_FOLDER in os.path.abspath('.'):
