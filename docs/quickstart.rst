@@ -6,8 +6,6 @@ Quickstart
 
 This page will walk you through the basics of using Brownie.
 
-
-
 Initializing a New Project
 ==========================
 
@@ -25,10 +23,11 @@ This will create the following project structure within the folder:
 * ``test/``: Directory for test scripts
 * ``brownie-config.json``: Configuration file for the project
 
-You can also initialize already existing projects. For the purposes of this document, we will use the project ``token`` which is a very basic ERC-20 implementation:
+You can also initialize already existing projects. For the purposes of this document, we will use the ``token`` project, which is a very basic ERC-20 implementation:
 
 ::
 
     brownie init token
 
 This will create a new folder ``token/`` and deploy the project inside it.
+
