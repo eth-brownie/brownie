@@ -60,9 +60,7 @@ class TransactionReceipt:
         if CONFIG['logging']['tx']:
             print("\nTransaction sent: {}".format(txid.hex()))
         for k,v in tx.items():
-            if type(v) is HexBytes:
-                v = v.hex()
-            setattr(self, k, v)
+            setattr(self, k, v.hex() if type(v) is HexBytes else v)
         if not tx.blockNumber and CONFIG['logging']['tx']:
             print("Waiting for confirmation...")
         receipt = web3.eth.waitForTransactionReceipt(txid)
@@ -73,10 +71,11 @@ class TransactionReceipt:
         if CONFIG['logging']['tx'] >= 2:
             self.info()
         elif CONFIG['logging']['tx']:
-            print("Transaction confirmed in block {}.".format(self.blockNumber))
+            print("Transaction confirmed: block {}  gas spent {}".format(
+                tx.blockNumber, tx.gasUsed))
     
     
-    def info(self):    
+    def info(self):
         print("""
 Transaction was Mined
 ---------------------
@@ -118,9 +117,8 @@ web3 = web3()
 contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 
 if not contract_files:
     sys.exit("ERROR: Cannot find any .sol files in contracts folder")
-print("Compiling contracts...\n Optimizer: {}".format(
-    "Enabled   Runs: {}".format(CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"
-))
+print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
+        CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"))
 COMPILED = solc.compile_files(
     contract_files,
     optimize = CONFIG['solc']['optimize'],

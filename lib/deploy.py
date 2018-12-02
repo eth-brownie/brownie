@@ -11,12 +11,6 @@ if "--help" in sys.argv or len(sys.argv)<3 or sys.argv[2][:2]=="--":
 Arguments:
   <filename>         The name of the deployment script to run
 
-Options:
-  --gas              Show gas costs for each successful transaction
-  --network [name]   Use a specific network outlined in config.json (default development)
-  --verbose          Verbose reporting
-  --quiet            Minimal reporting
-
 Use deploy to run scripts intended to deploy contracts onto the network.""")
 
 name = sys.argv[2]

@@ -158,7 +158,7 @@ def _format_inputs(name, inputs, types):
                 inputs[i] = _format_inputs(name, inputs[i],[t]*len(inputs[i]))
                 continue
             try:
-                elif "int" in type_:
+                if "int" in type_:
                     inputs[i]=int(inputs[i])
                 elif "bytes" in type_ and type(inputs[i]) is not bytes:
                     if type(inputs[i]) is not str:

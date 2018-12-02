@@ -9,11 +9,7 @@ import traceback
 if "--help" in sys.argv:
     sys.exit("""Usage: brownie console [options]
 
-Options:
-  --gas              Show gas costs for each successful transaction
-  --network [name]   Use a specific network outlined in config.json (default development)
-
-TODO - Write some stuff here""")
+Connects to the network and opens the brownie console.""")
 
 from lib.components.network import Network
 Network(sys.modules[__name__])

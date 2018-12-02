@@ -13,11 +13,8 @@ if "--help" in sys.argv:
 
 Options:
   [filename]         Only run tests from a specific file
-  --gas              Show gas costs for each successful transaction
-  --network [name]   Use a specific network outlined in config.json (default development)
-  --verbose          Show full traceback when a test fails
 
-By default brownie runs every python script in the tests folder, and calls every
+By default brownie runs every script in the tests folder, and calls every
 function that does not begin with an underscore. A fresh environment is created
 between each new file. Test scripts can optionally specify which deployment
 script to run by setting a string 'DEPLOYMENT'.""")
