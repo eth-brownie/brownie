@@ -12,6 +12,10 @@ from web3 import Web3, HTTPProvider
 
 from lib.components.config import CONFIG, BROWNIE_FOLDER
 
+UNITS = {
+    'kwei': 3, 'babbage': 3, 'mwei': 6, 'lovelace': 6, 'gwei': 9, 'shannon': 9,
+    'microether': 12, 'szabo': 12, 'milliether': 15, 'finney': 15, 'ether': 18
+}
 
 class web3:
 
@@ -110,7 +114,26 @@ Gas Used: {0.gasUsed}
 
     def __repr__(self):
         return "<Transaction object '{}'>".format(self.hash)
-    
+
+
+def wei(s):
+    if type(s) is float and 'e' in str(s):
+        num,dec = str(s).split('e+')
+        num = num.split('.') if '.' in num else [num, ""]
+        return int(num[0]+num[1]+"0"*(int(dec)-len(num[1])))
+    if type(s) is not str or " " not in s:
+        return int(s)
+    for unit, dec in UNITS.items():
+        if " "+unit not in s: continue
+        num = s.split(' ')[0]
+        num = num.split('.') if '.' in num else [num, ""]
+        return int(num[0]+num[1]+"0"*(int(dec)-len(num[1])))
+    try:
+        return int(s)
+    except ValueError:
+        raise ValueError("Unknown denomination: {}".format(s))    
+
+
 
 web3 = web3()
 

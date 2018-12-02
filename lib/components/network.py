@@ -9,7 +9,7 @@ import traceback
 
 from lib.services.fernet import FernetKey
 from lib.components.config import CONFIG
-from lib.components.eth import web3, COMPILED
+from lib.components.eth import web3, wei, COMPILED
 from lib.components.account import Accounts, LocalAccount
 from lib.components.contract import ContractDeployer
 import lib.components.check as check
@@ -23,6 +23,7 @@ class Network:
         self._clean_dict = list(module.__dict__)
         self._module = module
         self.accounts = self.a = Accounts(web3.eth.accounts)
+        self.wei = wei
         for name, interface in COMPILED.items():
             name = name.split(':')[-1]
             setattr(self, name, ContractDeployer(name, interface))

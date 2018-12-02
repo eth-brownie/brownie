@@ -3,7 +3,7 @@
 from collections import OrderedDict
 import sys
 
-from lib.components.eth import web3, TransactionReceipt
+from lib.components.eth import web3, TransactionReceipt, wei
 
 class _ContractBase:
 
@@ -151,7 +151,7 @@ def _format_inputs(name, inputs, types):
         for i, type_ in enumerate(types):
             if type_[-1]=="]":
                 t,length = type_.rstrip(']').split('[')
-                if length!="" and len(inputs[i])!=int(length):
+                if length != "" and len(inputs[i]) != int(length):
                     raise ValueError(
                         "'{}': Argument {}, sequence has a length of {}, should be {}".format(
                             name, i, len(inputs[i]), type_))
@@ -159,7 +159,7 @@ def _format_inputs(name, inputs, types):
                 continue
             try:
                 if "int" in type_:
-                    inputs[i]=int(inputs[i])
+                    inputs[i] = wei(inputs[i])
                 elif "bytes" in type_ and type(inputs[i]) is not bytes:
                     if type(inputs[i]) is not str:
                         inputs[i]=int(inputs[i]).to_bytes(int(type_[5:]),"big")

@@ -2,7 +2,7 @@
 
 import json
 
-from lib.components.eth import web3,TransactionReceipt
+from lib.components.eth import web3, TransactionReceipt, wei
 
 class VirtualMachineError(Exception):
 
@@ -52,7 +52,7 @@ class _AccountBase(str):
             'from':self.address,
             'to':to,
             'data':data,
-            'value':int(amount)
+            'value':wei(amount)
             })
 
 
@@ -63,8 +63,8 @@ class Account(_AccountBase):
             txid = web3.eth.sendTransaction({
                 'from': self.address,
                 'to': to,
-                'value': int(amount),
-                'gasPrice': gas_price or web3.eth.gasPrice,
+                'value': wei(amount),
+                'gasPrice': wei(gas_price) or web3.eth.gasPrice,
                 'gas': self.estimate_gas(to, amount)
                 })
             self.nonce += 1
@@ -96,10 +96,10 @@ class LocalAccount(_AccountBase):
             signed_tx = self._acct.signTransaction({
                 'from': self.address,
                 'nonce': self.nonce,
-                'gasPrice': gas_price or web3.eth.gasPrice,
+                'gasPrice': wei(gas_price) or web3.eth.gasPrice,
                 'gas': self.estimate_gas(to, amount),
                 'to': to,
-                'value': int(amount),
+                'value': wei(amount),
                 'data': ""
                 }).rawTransaction
             txid = web3.eth.sendRawTransaction(signed_tx)
