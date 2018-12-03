@@ -12,10 +12,6 @@ from web3 import Web3, HTTPProvider
 
 from lib.components.config import CONFIG, BROWNIE_FOLDER
 
-UNITS = {
-    'kwei': 3, 'babbage': 3, 'mwei': 6, 'lovelace': 6, 'gwei': 9, 'shannon': 9,
-    'microether': 12, 'szabo': 12, 'milliether': 15, 'finney': 15, 'ether': 18
-}
 
 class web3:
 
@@ -105,7 +101,8 @@ Gas Used: {0.gasUsed}
                     value = web3.toHex(value)
                 print("    {}: {}".format(key, value))
             names = [i[0] for i in topic[1] if not i[2]]
-            decoded = decode_abi([i[1] if i[1]!="bytes" else "bytes[]" for i in topic[1] if not i[2]], HexBytes(event.data))
+            types = [i[1] if i[1]!="bytes" else "bytes[]" for i in topic[1] if not i[2]]
+            decoded = decode_abi(types, HexBytes(event.data))
             for key, value in zip(names, decoded):
                 if type(value) is bytes:
                     value = web3.toHex(value)
@@ -120,47 +117,53 @@ def wei(s):
     if type(s) is float and 'e' in str(s):
         num,dec = str(s).split('e+')
         num = num.split('.') if '.' in num else [num, ""]
-        return int(num[0]+num[1]+"0"*(int(dec)-len(num[1])))
+        return int(num[0]+num[1][:dec]+"0"*(int(dec)-len(num[1])))
     if type(s) is not str or " " not in s:
         return int(s)
     for unit, dec in UNITS.items():
         if " "+unit not in s: continue
         num = s.split(' ')[0]
         num = num.split('.') if '.' in num else [num, ""]
-        return int(num[0]+num[1]+"0"*(int(dec)-len(num[1])))
+        return int(num[0]+num[1][:dec]+"0"*(int(dec)-len(num[1])))
     try:
         return int(s)
     except ValueError:
         raise ValueError("Unknown denomination: {}".format(s))    
 
+def _compile():
+    contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 
+    if not contract_files:
+        sys.exit("ERROR: Cannot find any .sol files in contracts folder")
+    print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
+            CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"))
+    compiled = solc.compile_files(
+        contract_files,
+        optimize = CONFIG['solc']['optimize'],
+        optimize_runs = CONFIG['solc']['runs'])
+    names = [i.split(':')[1] for i in compiled.keys()]
+    duplicates = set(i for i in names if names.count(i)>1)
+    if duplicates:
+        raise ValueError("Multiple contracts with the same name: {}".format(
+            ",".join(duplicates)))
+    return compiled
 
+def _topics():
+    try:
+        topics = json.load(open(BROWNIE_FOLDER+"/topics.json", 'r'))
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        topics = {}
+    events = [x for i in COMPILED.values() for x in i['abi'] if x['type']=="event"]
+    topics.update(dict((
+        web3.sha3(text="{}({})".format(i['name'],",".join(x['type'] for x in i['inputs']))).hex(),
+        [i['name'], [(x['name'],x['type'],x['indexed']) for x in i['inputs']]]
+        ) for i in events))
+    json.dump(topics, open(BROWNIE_FOLDER+"/topics.json", 'w'))
+    return topics
 
 web3 = web3()
-
-contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 
-if not contract_files:
-    sys.exit("ERROR: Cannot find any .sol files in contracts folder")
-print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
-        CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"))
-COMPILED = solc.compile_files(
-    contract_files,
-    optimize = CONFIG['solc']['optimize'],
-    optimize_runs = CONFIG['solc']['runs'])
-
-names = [i.split(':')[1] for i in COMPILED.keys()]
-duplicates = set(i for i in names if names.count(i)>1)
-if duplicates:
-    raise ValueError("Multiple contracts with the same name: {}".format(name, ",".join(duplicates)))
-
-try:
-    TOPICS = json.load(open(BROWNIE_FOLDER+"/topics.json", 'r'))
-except (FileNotFoundError, json.decoder.JSONDecodeError):
-    TOPICS = {}
-
-events = [x for i in COMPILED.values() for x in i['abi'] if x['type']=="event"]
-TOPICS.update(dict((
-    web3.sha3(text="{}({})".format(i['name'],",".join(x['type'] for x in i['inputs']))).hex(),
-    [i['name'], [(x['name'],x['type'],x['indexed']) for x in i['inputs']]]
-    ) for i in events))
-
-json.dump(TOPICS, open(BROWNIE_FOLDER+"/topics.json", 'w'))
+UNITS = {
+    'kwei': 3, 'babbage': 3, 'mwei': 6, 'lovelace': 6, 'gwei': 9, 'shannon': 9,
+    'microether': 12, 'szabo': 12, 'milliether': 15, 'finney': 15, 'ether': 18
+}
+COMPILED = _compile()
+TOPICS = _topics()
