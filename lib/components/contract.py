@@ -67,6 +67,8 @@ class ContractDeployer(_ContractBase):
         address = web3.toChecksumAddress(address)
         if address in self._deployed:
             return self._deployed[address]
+        if web3.eth.getCode(address).hex() == "0x00":
+            raise ValueError("No contract deployed at {}".format(address))
         self._deployed[address] = Contract(address, self._name, self.abi, owner)
         return self._deployed[address]
 

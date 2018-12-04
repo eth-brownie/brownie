@@ -18,6 +18,7 @@ print("Brownie environment is ready.")
 while True:
     cmd = input('>>> ')
     if cmd == "exit()": sys.exit()
+    if not cmd: continue
     _exec_result = None
     cmd = "_exec_result = "+cmd
     try:
