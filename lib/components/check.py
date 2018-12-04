@@ -2,8 +2,7 @@
 
 import sys
 
-from lib.components.account import VirtualMachineError
-from lib.components.eth import wei
+from lib.components.eth import wei, VirtualMachineError
 
 def true(statement, fail_msg = "Expected statement to be true"):
     if not statement:

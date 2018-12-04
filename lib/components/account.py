@@ -2,12 +2,9 @@
 
 import json
 
-from lib.components.eth import web3, TransactionReceipt, wei
+from lib.components.eth import web3, wei, TransactionReceipt, VirtualMachineError
 
-class VirtualMachineError(Exception):
 
-    def __init__(self,e):
-        super().__init__(eval(str(e))['message'])
 
 
 class Accounts(list):

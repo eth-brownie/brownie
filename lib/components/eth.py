@@ -12,6 +12,10 @@ from web3 import Web3, HTTPProvider
 
 from lib.components.config import CONFIG, BROWNIE_FOLDER
 
+class VirtualMachineError(Exception):
+
+    def __init__(self,e):
+        super().__init__(eval(str(e))['message'])
 
 class web3:
 
@@ -71,8 +75,8 @@ class TransactionReceipt:
         if CONFIG['logging']['tx'] >= 2:
             self.info()
         elif CONFIG['logging']['tx']:
-            print("Transaction confirmed: block {}  gas spent {}".format(
-                tx.blockNumber, tx.gasUsed))
+            print("Transaction confirmed - block: {}   gas spent: {}".format(
+                tx.blockNumber, receipt.gasUsed))
     
     
     def info(self):
@@ -114,17 +118,21 @@ Gas Used: {0.gasUsed}
 
 
 def wei(s):
-    if type(s) is float and 'e' in str(s):
+    if s is None: return 0
+    if type(s) is float and 'e+' in str(s):
         num,dec = str(s).split('e+')
         num = num.split('.') if '.' in num else [num, ""]
-        return int(num[0]+num[1][:dec]+"0"*(int(dec)-len(num[1])))
+        return int(num[0]+num[1][:int(dec)]+"0"*(int(dec)-len(num[1])))
     if type(s) is not str or " " not in s:
-        return int(s)
+        try: return int(s)
+        except:
+            print(s,type(s))
+            raise
     for unit, dec in UNITS.items():
         if " "+unit not in s: continue
         num = s.split(' ')[0]
         num = num.split('.') if '.' in num else [num, ""]
-        return int(num[0]+num[1][:dec]+"0"*(int(dec)-len(num[1])))
+        return int(num[0]+num[1][:int(dec)]+"0"*(int(dec)-len(num[1])))
     try:
         return int(s)
     except ValueError:

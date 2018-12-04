@@ -17,19 +17,23 @@ import lib.components.check as check
 
 class Network:
 
-    check = check
-
     def __init__(self, module):
-        self._clean_dict = list(module.__dict__)
         self._module = module
-        self.accounts = self.a = Accounts(web3.eth.accounts)
-        self.wei = wei
+        accounts = Accounts(web3.eth.accounts)
+        self._network_dict = {
+            'a': accounts,
+            'accounts': accounts,
+            'check': check,
+            'logging': self.logging,
+            'reset': self.reset,
+            'run': self.run,
+            'wei': wei }
+        self._network_dict.update([(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()])
         for name, interface in COMPILED.items():
             name = name.split(':')[-1]
-            setattr(self, name, ContractDeployer(name, interface))
-        self._network_dict = dict(
-            [(i,getattr(self,i)) for i in dir(self) if i[0]!='_'] +
-            [(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()])
+            if name in self._network_dict:
+                raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
+            self._network_dict[name] = ContractDeployer(name, interface)
         module.__dict__.update(self._network_dict)
         netconf = CONFIG['networks'][CONFIG['active_network']]
         if 'persist' in netconf and netconf['persist']:
@@ -48,7 +52,7 @@ class Network:
                 encrypted = open("environments/"+CONFIG['active_network']+".brownie","r").read()
                 decrypted = json.loads(FernetKey(netconf['password']).decrypt(encrypted))
                 for priv_key in decrypted['accounts']:
-                    self.accounts.add(priv_key)
+                    self._network_dict['accounts'].add(priv_key)
                 for contract,address in [(k,x) for k,v in decrypted['contracts'].items() for x in v]:
                     getattr(self,contract).at(*address) 
         print("Brownie environment is ready.")
@@ -62,9 +66,9 @@ class Network:
                 return
             print("Saving environment...")
             to_save = {'accounts':[], 'contracts':{}}
-            for account in [i for i in self.accounts if type(i) is LocalAccount]:
+            for account in [i for i in self._network_dict['accounts'] if type(i) is LocalAccount]:
                 to_save['accounts'].append(account._priv_key)
-            for name, contract in [(k,v) for k,v in self.__dict__.items() if type(v) is ContractDeployer]:
+            for name, contract in [(k,v) for k,v in self._network_dict.items() if type(v) is ContractDeployer]:
                 to_save['contracts'][name] = [[i.address, i.owner] for i in contract]
             encrypted = FernetKey(netconf['password']).encrypt(json.dumps(to_save), False)
             open("environments/"+CONFIG['active_network']+".brownie", 'w').write(encrypted)
@@ -95,8 +99,6 @@ class Network:
             if network not in CONFIG['networks']:
                 print("ERROR: Network '{}' is not defined in config.json".format(network))
             CONFIG['active_network'] = network
-        for i in [i for i in self._module.__dict__ if i not in self._clean_dict]:
-            del self._module.__dict__[i]
         web3._reset()
         self.__init__(self._module)
 

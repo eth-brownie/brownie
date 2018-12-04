@@ -12,7 +12,7 @@ class _ContractBase:
         names = [i['name'] for i in abi if i['type']=="function"]
         duplicates = set(i for i in names if names.count(i)>1)
         if duplicates:
-            raise ValueError("Ambiguous contract functions in {}: {}".format(
+            raise AttributeError("Ambiguous contract functions in {}: {}".format(
                 name, ",".join(duplicates)))
         self._name = name
         self.topics = dict((
@@ -78,14 +78,16 @@ class Contract(str,_ContractBase):
 
     def __init__(self, address, name, abi, owner):
         super().__init__(name, abi)
+        self._owner = owner
         self._contract = web3.eth.contract(address = address, abi = abi)
         for i in [i for i in abi if i['type']=="function"]:
+            if hasattr(self, i['name']):
+                raise AttributeError("Namespace collision: '{}.{}'".format(name, i['name']))
             fn = getattr(self._contract.functions,i['name'])
             if i['stateMutability'] in ('view','pure'):
                 setattr(self, i['name'], ContractCall(fn, i, owner))
             else:
                 setattr(self, i['name'], ContractTx(fn, i, owner))
-        self.owner = owner
     
     def __repr__(self):
         return "<{0._name} Contract object '{0.address}'>".format(self)

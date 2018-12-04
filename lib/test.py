@@ -6,7 +6,7 @@ import sys
 import time
 import traceback
 
-from lib.components.account import VirtualMachineError
+from lib.components.eth import VirtualMachineError
 
 if "--help" in sys.argv:
     sys.exit("""Usage: brownie test [filename] [options]
