@@ -8,7 +8,7 @@ Brownie is a simple python framework for ethereum smart contract testing.
     All code starting with ``$`` is meant to be run on your terminal. Code starting with ``>>>`` is meant to run inside the Brownie console.
 
 .. warning::
-    This project is still in early development and should be considered a beta. Future changes may break existing functionality.
+    This project is still in development and should be considered a beta. Future changes may break existing functionality.
 
 Dependencies
 ============
@@ -53,4 +53,6 @@ Table of Contents
     deploy.rst
     test.rst
     console.rst
+    persist.rst
     config.rst
+    api.rst
