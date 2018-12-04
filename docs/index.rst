@@ -29,7 +29,7 @@ This installs brownie at ``/usr/local/lib/brownie/`` and creates a virtual envir
 
 ::
 
-    $ curl https://github.com/iamdefinitelyahuman/brownie-install.sh | sh
+    $ curl https://raw.githubusercontent.com/iamdefinitelyahuman/brownie/master/brownie-install.sh | sh
 
 Quick Usage
 ===========

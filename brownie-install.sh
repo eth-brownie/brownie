@@ -8,7 +8,7 @@ pip install -r requirements.txt
 deactivate
 
 echo '#!/bin/bash' > /usr/local/bin/brownie
-echo 'source env/bin/activate' >> /usr/local/bin/brownie
+echo 'source /usr/local/lib/brownie/env/bin/activate' >> /usr/local/bin/brownie
 echo 'python /usr/local/lib/brownie "$@"' >> /usr/local/bin/brownie
 echo 'deactivate' >> /usr/local/bin/brownie
 chmod +x /usr/local/bin/brownie
