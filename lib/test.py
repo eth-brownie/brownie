@@ -20,6 +20,7 @@ between each new file. Test scripts can optionally specify which deployment
 script to run by setting a string 'DEPLOYMENT'.""")
 
 if len(sys.argv)>2 and sys.argv[2][:2]!="--":
+    sys.argv[2] = sys.argv[2].replace('.py','')
     if not os.path.exists('tests/{}.py'.format(sys.argv[2])):
         sys.exit("ERROR: Cannot find tests/{}.py".format(sys.argv[2]))
     test_files = [sys.argv[2]]
@@ -30,52 +31,66 @@ else:
 from lib.components.config import CONFIG
 from lib.components.network import Network
 
+traceback_info = []
+
+def _format_tb(test, desc, exc, match):
+    sys.stdout.write("\r \033[91m{}\x1b[0m {} ({})\n".format(
+        '\u2717' if exc[0] in (AssertionError, VirtualMachineError) else '\u203C',
+        desc, exc[0].__name__ ))
+    sys.stdout.flush()
+    traceback_info.append((test, "{}  {}: {}".format(
+        next(i for i in traceback.format_tb(exc[2])[::-1] if match in i),
+        exc[0].__name__, exc[1])))
+
 for name in test_files:
     module = importlib.import_module("tests."+name)
     test_names = open("tests/{}.py".format(name),'r').read().split("\ndef ")[1:]
     test_names = [i.split("(")[0] for i in test_names if i[0]!="_"]
     if not test_names:
-        print("WARNING: Could not find any test functions in {}.py".format(name))
+        print("\nWARNING: Could not find any test functions in {}.py".format(name))
         continue
-    Network(module)
-    print("{}: {} test{}".format(
+    print("\nRunning {}.py - {} test{}".format(
             name, len(test_names),"s" if len(test_names)!=1 else ""))
-    for c,t in enumerate(test_names, start=1):
-        fn = getattr(module,t)
-        if fn.__doc__:
-            sys.stdout.write("  {} ({}/{})...  ".format(fn.__doc__,c,len(test_names)))
-        else:
-            sys.stdout.write("  Running test '{}' ({}/{})...  ".format(t,c,len(test_names)))
+    Network(module)
+    if hasattr(module, 'DEPLOYMENT'):
+        sys.stdout.write("   Deployment '{}'...".format(module.DEPLOYMENT))
         sys.stdout.flush()
         try:
-            sblock, stime = module.eth.blockNumber, time.time()
-            fn()
-            print("\033[92m\u2713\x1b[0m ({} tx in {:.4f}s)".format(
-                module.eth.blockNumber-sblock,time.time()-stime))
-        except AssertionError as e:
-            if CONFIG['logging']['exc']>=2:
-                print("\033[91m\u2717\x1b[0m\n\n{}{}: {}\n".format(
-                    traceback.format_tb(sys.exc_info()[2])[-2],
-                    sys.exc_info()[0].__name__,
-                    sys.exc_info()[1]
-                    ))
-            else:
-                print("\033[91m\u2717\x1b[0m ({})".format(e))
-        except VirtualMachineError as e:
-            if CONFIG['logging']['exc']>=2:
-                print("\033[91m\u2717\x1b[0m\n\n{}{}: {}\n".format(
-                    traceback.format_tb(sys.exc_info()[2])[-3],
-                    sys.exc_info()[0].__name__,
-                    sys.exc_info()[1]
-                    ))
-            else:
-                print("\033[91m\u2717\x1b[0m ({})".format(e))
+            stime = time.time()
+            module.run(module.DEPLOYMENT)
+            sys.stdout.write("\r \033[92m\u2713\x1b[0m Deployment '{}' ({:.4f}s)\n".format(
+                module.DEPLOYMENT,time.time()-stime))
+            sys.stdout.flush()
         except Exception as e:
-            if CONFIG['logging']['exc']>=2:
-                print("\033[91m\u203C\x1b[0m\n\n{}{}: {}\n".format(
-                    ''.join(traceback.format_tb(sys.exc_info()[2])),
-                    sys.exc_info()[0].__name__,
-                    sys.exc_info()[1]
-                    ))
-            else:
-                print("\033[91m\u203C\x1b[0m ({})".format(type(e).__name__))
+            _format_tb(
+                "{}.deploy".format(module.DEPLOYMENT),
+                "Deployment '{}'".format(module.DEPLOYMENT),
+                sys.exc_info(),
+                'deployments/'+module.DEPLOYMENT)
+            continue
+    for c,t in enumerate(test_names, start=1):
+        fn = getattr(module,t)
+        sys.stdout.write("   {} ({}/{})...  ".format(
+            fn.__doc__ or t,c,len(test_names)))
+        sys.stdout.flush()
+        try:
+            stime = time.time()
+            fn()
+            sys.stdout.write("\r \033[92m\u2713\x1b[0m {} ({:.4f}s)\n".format(
+                fn.__doc__ or t,time.time()-stime))
+            sys.stdout.flush()
+        except Exception as e:
+            _format_tb(
+                "{}.{}".format(name,t),
+                fn.__doc__ or t,
+                sys.exc_info(),
+                'tests/'+name)
+
+if not traceback_info:
+    sys.exit("\nSUCCESS: All tests passed.")
+
+print("\nWARNING: {} test{} failed.".format(
+    len(traceback_info), "s" if len(traceback_info)>1 else ""))
+
+for err in traceback_info:
+    print("\nException info for {0[0]}:\n{0[1]}".format(err))

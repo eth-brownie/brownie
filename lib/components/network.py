@@ -54,10 +54,7 @@ class Network:
                 for priv_key in decrypted['accounts']:
                     self._network_dict['accounts'].add(priv_key)
                 for contract,address in [(k,x) for k,v in decrypted['contracts'].items() for x in v]:
-                    getattr(self,contract).at(*address) 
-        print("Brownie environment is ready.")
-        if hasattr(module, 'DEPLOYMENT'):
-            self.run(module.DEPLOYMENT)
+                    getattr(self,contract).at(*address)
 
     def __del__(self):
         try:
@@ -81,18 +78,9 @@ class Network:
     def run(self, name):
         if not os.path.exists('deployments/{}.py'.format(name)):
             print("ERROR: Cannot find deployments/{}.py".format(name))
-            return
         module = importlib.import_module("deployments."+name)
         module.__dict__.update(self._network_dict)
-        print("Running deployment script '{}'...".format(name))
-        try:
-            module.deploy()
-            print("Deployment of '{}' was successful.".format(name))
-        except Exception as e:
-            if CONFIG['logging']['exc']>=2:
-                print("".join(traceback.format_tb(sys.exc_info()[2])))
-            print("ERROR: Deployment of '{}' failed from unhandled {}: {}".format(
-                name, type(e).__name__, e))
+        module.deploy()
 
     def reset(self, network=None):
         if network:
@@ -101,6 +89,7 @@ class Network:
             CONFIG['active_network'] = network
         web3._reset()
         self.__init__(self._module)
+        print("Brownie environment is ready.")
 
     def logging(self, **kwargs):
         if not kwargs or [k for k,v in kwargs.items() if

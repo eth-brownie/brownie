@@ -5,8 +5,6 @@ import json
 from lib.components.eth import web3, wei, TransactionReceipt, VirtualMachineError
 
 
-
-
 class Accounts(list):
 
     def __init__(self, accounts):

@@ -12,6 +12,7 @@ from web3 import Web3, HTTPProvider
 
 from lib.components.config import CONFIG, BROWNIE_FOLDER
 
+
 class VirtualMachineError(Exception):
 
     def __init__(self,e):
@@ -77,7 +78,8 @@ class TransactionReceipt:
         elif CONFIG['logging']['tx']:
             print("Transaction confirmed - block: {}   gas spent: {}".format(
                 tx.blockNumber, receipt.gasUsed))
-    
+            if not self.contractAddress: return
+            print("Contract deployed at: {}".format(self.contractAddress))
     
     def info(self):
         print("""
@@ -167,6 +169,7 @@ def _topics():
         ) for i in events))
     json.dump(topics, open(BROWNIE_FOLDER+"/topics.json", 'w'))
     return topics
+
 
 web3 = web3()
 UNITS = {

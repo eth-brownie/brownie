@@ -13,6 +13,7 @@ Connects to the network and opens the brownie console.""")
 
 from lib.components.network import Network
 Network(sys.modules[__name__])
+print("Brownie environment is ready.")
 
 while True:
     cmd = input('>>> ')
