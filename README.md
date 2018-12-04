@@ -1,19 +1,19 @@
 # Brownie
 
-A simple python framework for ethereum smart contract testing.
+Brownie is a simple python framework for testing, deploying and interacting with ethereum smart contracts.
 
 ## Dependency
 
 - [ganache-cli](https://github.com/trufflesuite/ganache-cli)
-- [py-solc](https://github.com/ethereum/py-solc)
-- [web3py](https://github.com/ethereum/web3.py)
+- [Python 3.7](https://www.python.org/downloads/release/python-371/) (and python-dev)
+- [solc](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages)
 
 ## Installation
 
 Ubuntu:
 
 ```bash
-curl https://github.com/iamdefinitelyahuman/brownie-install.sh | sh
+curl https://raw.githubusercontent.com/iamdefinitelyahuman/brownie/master/brownie-install.sh | sh
 ```
 
 ## Quick Usage
@@ -32,7 +32,7 @@ Brownie documentation is hosted at [Read the Docs](https://eth-brownie.readthedo
 
 ## Development
 
-This project is still in early development and should be considered a beta. Future changes may break existing functionality. Pull requests are welcomed.
+This project is still in development and should be considered a beta. Future changes may break existing functionality. Pull requests are welcomed.
 
 ## License
 
