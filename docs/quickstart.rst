@@ -6,6 +6,8 @@ Quickstart
 
 This page will walk you through the basics of using Brownie. Please review the rest of the documentation to learn more about specific functionality.
 
+.. note:: This project relies heavily upon Web3.py. This documentation assumes a basic familiarity with it. You may wish to view the `Web3.py docs <https://web3py.readthedocs.io/en/stable/index.html>`__ if you have not used it previously.
+
 Initializing a New Project
 ==========================
 

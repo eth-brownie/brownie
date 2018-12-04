@@ -2,7 +2,7 @@
 Brownie
 =======
 
-Brownie is a simple python framework for ethereum smart contract testing.
+Brownie is a simple python framework for testing, deploying and interacting with ethereum smart contracts.
 
 .. note::
     All code starting with ``$`` is meant to be run on your terminal. Code starting with ``>>>`` is meant to run inside the Brownie console.
@@ -16,17 +16,18 @@ Dependencies
 Brownie has the following dependencies:
 
 * `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__
-* `py-solc <https://github.com/ethereum/py-solc>`__
-* `web3py <https://github.com/ethereum/web3.py>`__
+* `Python 3.7 <https://www.python.org/downloads/release/python-371/>`__ (and python3-dev)
+* `solc <https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages>`__
 
-.. note:: This project relies heavily upon Web3.py. This documentation assumes a basic familiarity with it. You may wish to view the `Web3.py docs <https://web3py.readthedocs.io/en/stable/index.html>`__ if you have not used it previously.
 
 Installation
 ============
 
 **Ubuntu**
 
-.. code-block:: bash
+This installs brownie at ``/usr/local/lib/brownie/`` and creates a virtual environment with all the required packages.
+
+::
 
     $ curl https://github.com/iamdefinitelyahuman/brownie-install.sh | sh
 
@@ -35,7 +36,7 @@ Quick Usage
 
 To set up the default folder and file structure for brownie use:
 
-.. code-block:: bash
+::
 
     $ brownie init
 
@@ -48,8 +49,8 @@ Table of Contents
 
 .. toctree::   :maxdepth: 2
 
-    init.rst
     quickstart.rst
+    init.rst
     deploy.rst
     test.rst
     console.rst
