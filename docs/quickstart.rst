@@ -4,16 +4,14 @@
 Quickstart
 ==========
 
-This page will walk you through the basics of using Brownie.
-
-.. note:: This page is just a quickstart, it doesn't go into much detail. Please review the rest of the Brownie documentation to learn more.
+This page will walk you through the basics of using Brownie. Please review the rest of the documentation to learn more about specific functionality.
 
 Initializing a New Project
 ==========================
 
 The first step to using Brownie is to initialize a new project. To do this, create a new empty folder and then type:
 
-.. code-block:: bash
+::
 
     $ brownie init
 
@@ -27,7 +25,7 @@ This will create the following project structure within the folder:
 
 You can also initialize already existing projects. For the purposes of this document, we will use the ``token`` project, which is a very basic ERC-20 implementation:
 
-.. code-block:: bash
+::
 
     $ brownie init token
 
@@ -39,7 +37,7 @@ Deploying a Project
 
 The simplest way to deploy a project is to run a deployment script:
 
-.. code-block:: bash
+::
 
     $ brownie deploy
 
@@ -57,7 +55,7 @@ Testing a Project
 
 To run all of the test scripts in ``test/``:
 
-.. code-block:: bash
+::
 
     $ brownie test
 
@@ -168,7 +166,7 @@ You can access the ``Web3.py`` library:
     <function Web3.sha3 at 0x7facfa6e3ae8>
 
 
-Use ``wei`` for conversions:
+Use ``wei`` to convert values to wei:
 
 .. code-block:: python
 
@@ -178,4 +176,6 @@ Use ``wei`` for conversions:
     15330000000000000000
     >>> wei(1.3829e36)
     1382900000000000000000000000000000000
+    >>> wei("8.26 shannon")
+    8260000000
 

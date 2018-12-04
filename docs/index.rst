@@ -53,3 +53,4 @@ Table of Contents
     deploy.rst
     test.rst
     console.rst
+    config.rst
