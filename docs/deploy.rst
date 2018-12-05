@@ -8,7 +8,7 @@ To deploy a project:
 
     brownie deploy [script]
 
-Deployment scripts are stored in the ``deploy/`` folder. Each deployment script should contain a single function named ``deploy()`` that takes no arguments. A deployment script will look something like this:
+Deployment scripts are stored in the ``deploy/`` folder. Each deployment script should contain a single method named ``deploy`` that takes no arguments. A deployment script will look something like this:
 
 .. literalinclude:: ../projects/token/deployments/token.py
     :linenos:

@@ -2,12 +2,6 @@
 
 Brownie is a simple python framework for testing, deploying and interacting with ethereum smart contracts.
 
-## Dependency
-
-- [ganache-cli](https://github.com/trufflesuite/ganache-cli)
-- [Python 3.7](https://www.python.org/downloads/release/python-371/) (and python-dev)
-- [solc](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages)
-
 ## Installation
 
 Ubuntu:
