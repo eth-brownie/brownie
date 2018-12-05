@@ -23,7 +23,7 @@ class web3:
     _rpc = None
     
     def __init__(self):
-        name = CONFIG['default_network']
+        name = CONFIG['active_network']
         try:
             netconf = CONFIG['networks'][name]
             print("Using network '{}'".format(name))

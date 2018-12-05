@@ -26,5 +26,7 @@ if '--network' in sys.argv:
 else:
     CONFIG['active_network'] = CONFIG['default_network']
 
+print(CONFIG['active_network'])
+
 if CONFIG['active_network'] not in CONFIG['networks']:
     sys.exit("ERROR: No network named '{}'".format(CONFIG['active_network']))

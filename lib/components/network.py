@@ -7,7 +7,7 @@ import os
 import sys
 import traceback
 
-from lib.services.fernet import FernetKey
+from lib.services.fernet import FernetKey, InvalidToken
 from lib.components.config import CONFIG
 from lib.components.eth import web3, wei, COMPILED
 from lib.components.account import Accounts, LocalAccount
@@ -41,20 +41,31 @@ class Network:
                 print(
                 "WARNING: This appears to be a local RPC network. Persistence is not possible."
                 "\n         Remove 'persist': true from config.json to silence this warning.")
-            netconf['persist'] = False
-        if 'persist' in netconf and netconf['persist']:
-            if 'password' not in netconf:
-                netconf['password'] = getpass(
-                    "Enter the persistence password for '{}': ".format(
-                        CONFIG['active_network']))
-            if os.path.exists(CONFIG['active_network']+".brownie"):
-                print("Loading persistent environment...")
-                encrypted = open("environments/"+CONFIG['active_network']+".brownie","r").read()
-                decrypted = json.loads(FernetKey(netconf['password']).decrypt(encrypted))
-                for priv_key in decrypted['accounts']:
-                    self._network_dict['accounts'].add(priv_key)
-                for contract,address in [(k,x) for k,v in decrypted['contracts'].items() for x in v]:
-                    getattr(self,contract).at(*address)
+                netconf['persist'] = False
+        while True:
+            if 'persist' not in netconf or not netconf['persist']:
+                return
+            try:
+                if 'password' not in netconf:
+                    netconf['password'] = getpass(
+                        "Enter the persistence password for '{}': ".format(
+                            CONFIG['active_network']))
+                if os.path.exists('environments/{}.env'.format(CONFIG['active_network'])):
+                    encrypted = open("environments/"+CONFIG['active_network']+".env","r").read()
+                    decrypted = json.loads(FernetKey(netconf['password']).decrypt(encrypted))
+                    print("Loading persistent environment...")
+                    for priv_key in decrypted['accounts']:
+                        self._network_dict['accounts'].add(priv_key)
+                    for contract,address in [(k,x) for k,v in decrypted['contracts'].items() for x in v]:
+                        getattr(self,contract).at(*address)
+                break
+            except InvalidToken:
+                print("Password is incorrect, please try again or CTRL-C to disable persistence.")
+                del netconf['password']
+            except KeyboardInterrupt:
+                netconf['persist'] = False
+                print("\nPersistence disabled.")
+
 
     def __del__(self):
         try:
@@ -68,7 +79,7 @@ class Network:
             for name, contract in [(k,v) for k,v in self._network_dict.items() if type(v) is ContractDeployer]:
                 to_save['contracts'][name] = [[i.address, i.owner] for i in contract]
             encrypted = FernetKey(netconf['password']).encrypt(json.dumps(to_save), False)
-            open("environments/"+CONFIG['active_network']+".brownie", 'w').write(encrypted)
+            open("environments/"+CONFIG['active_network']+".env", 'w').write(encrypted)
         except Exception as e:
             if CONFIG['logging']['exc']>=2:
                 print("".join(traceback.format_tb(sys.exc_info()[2])))
