@@ -6,7 +6,7 @@ import sys
 
 from lib.components.config import BROWNIE_FOLDER, CONFIG
 
-__version__="0.1.0b"
+__version__="0.9.0b"
 
 cmd = [i[:-3] for i in os.listdir(BROWNIE_FOLDER+"/lib") if i[-3:]==".py"]
 sys.path.insert(0, "")

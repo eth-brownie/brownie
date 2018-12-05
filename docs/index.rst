@@ -7,9 +7,6 @@ Brownie is a simple python framework for testing, deploying and interacting with
 .. note::
     All code starting with ``$`` is meant to be run on your terminal. Code starting with ``>>>`` is meant to run inside the Brownie console.
 
-.. warning::
-    This project is still in development and should be considered a beta. Future changes may break existing functionality.
-
 Table of Contents
 =================
 

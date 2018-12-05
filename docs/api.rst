@@ -71,9 +71,15 @@ These methods are used in the console.
 
 .. py:method:: logging(tx = None, exc = None)
 
+    Adjusts the logging verbosity. See :ref:`config` for more information on logging levels.
+
 .. py:method:: reset(network = None)
 
+    Reboots the local RPC client and resets the brownie environment. You can also optionally switch to a different network.
+
 .. py:method:: run(script)
+
+    Runs a deployment script. See :ref:`deploy` for more information.
 
 Accounts
 ========
