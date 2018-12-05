@@ -10,7 +10,7 @@ The console feels similar to a normal python interpreter. Load it by typing:
 
     $ brownie console
 
-Brownie will compile your contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`.  Below are some examples of common tasks.
+Brownie will compile your contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`. Below are some examples of common tasks.
 
 Basic Functionality
 ===================

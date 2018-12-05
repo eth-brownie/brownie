@@ -10,42 +10,18 @@ Brownie is a simple python framework for testing, deploying and interacting with
 .. warning::
     This project is still in development and should be considered a beta. Future changes may break existing functionality.
 
-Installation
-============
-
-To install on Ubuntu:
-
-::
-
-    $ curl https://raw.githubusercontent.com/iamdefinitelyahuman/brownie/master/brownie-install.sh | sh
-
-
-See the :ref:`install` section for more in depth information.
-
-Quick Usage
-===========
-
-To set up the default folder and file structure for brownie use:
-
-::
-
-    $ brownie init
-
-From there, type ``brownie`` for basic usage information.
-
-See the :ref:`quickstart` section for a more in depth tutorial to get you familiar with Brownie.
-
 Table of Contents
 =================
 
 .. toctree::   :maxdepth: 2
 
+    overview.rst
     quickstart.rst
     install.rst
+    config.rst
     init.rst
     deploy.rst
     test.rst
     console.rst
     persist.rst
-    config.rst
     api.rst

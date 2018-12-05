@@ -45,26 +45,32 @@ class Network:
         while True:
             if 'persist' not in netconf or not netconf['persist']:
                 return
+            exists = os.path.exists('environments/{}.env'.format(CONFIG['active_network']))
+            if not exists:
+                print("Persistent environment for '{}' has not yet been declared.".format(
+                    CONFIG['active_network']))
+                netconf['password'] = getpass(
+                    "Please set a password for the persisten environment: ")
+                return
             try:
                 if 'password' not in netconf:
                     netconf['password'] = getpass(
                         "Enter the persistence password for '{}': ".format(
                             CONFIG['active_network']))
-                if os.path.exists('environments/{}.env'.format(CONFIG['active_network'])):
-                    encrypted = open("environments/"+CONFIG['active_network']+".env","r").read()
-                    decrypted = json.loads(FernetKey(netconf['password']).decrypt(encrypted))
-                    print("Loading persistent environment...")
-                    for priv_key in decrypted['accounts']:
-                        self._network_dict['accounts'].add(priv_key)
-                    for contract,address in [(k,x) for k,v in decrypted['contracts'].items() for x in v]:
-                        getattr(self,contract).at(*address)
+                encrypted = open("environments/"+CONFIG['active_network']+".env","r").read()
+                decrypted = json.loads(FernetKey(netconf['password']).decrypt(encrypted))
+                print("Loading persistent environment...")
+                for priv_key in decrypted['accounts']:
+                    self._network_dict['accounts'].add(priv_key)
+                for contract,address in [(k,x) for k,v in decrypted['contracts'].items() for x in v]:
+                    getattr(self,contract).at(*address)
                 break
             except InvalidToken:
                 print("Password is incorrect, please try again or CTRL-C to disable persistence.")
                 del netconf['password']
             except KeyboardInterrupt:
                 netconf['persist'] = False
-                print("\nPersistence disabled.")
+                print("\nPersistence has been disabled.")
 
 
     def __del__(self):
