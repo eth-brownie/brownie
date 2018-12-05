@@ -27,8 +27,8 @@ class Network:
             'logging': self.logging,
             'reset': self.reset,
             'run': self.run,
+            'web3': web3,
             'wei': wei }
-        self._network_dict.update([(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()])
         for name, interface in COMPILED.items():
             name = name.split(':')[-1]
             if name in self._network_dict:
