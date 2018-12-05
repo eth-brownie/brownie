@@ -92,7 +92,7 @@ You can create as many test scripts as needed. Here is an example test script fr
 Using The Console
 =================
 
-The console works similarly to a normal python interpreter. You can use it to directly interact with your project:
+The console feels similar to a normal python interpreter. You can use it to directly interact with your project:
 
 ::
 
@@ -156,16 +156,12 @@ To call a contract or send a transaction:
     >>> Token[0].balanceOf(accounts[1])
     10000000000000000000
 
-You can access the ``Web3.py`` library:
+A simplified implementation of the ``Web3.py`` library is available:
 
 .. code-block:: python
 
-    >>> eth
-    <web3.eth.Eth object at 0x7facfa6e5c50>
-    >>> net
-    <web3.net.Net object at 0x7facfd050cc0>
-    >>> sha3
-    <function Web3.sha3 at 0x7facfa6e3ae8>
+    >>> web3
+    <lib.components.eth.web3 object at 0x7f4c1d4b7dd8>
 
 
 Use ``wei`` to convert values to wei:

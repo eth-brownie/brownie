@@ -2,17 +2,19 @@
 Deploying A Project
 ===================
 
+To deploy a project:
+
 ::
 
     brownie deploy [script]
 
-Deployment scripts are stored in the ``deploy`` folder. A deployment script will look something like this:
+Deployment scripts are stored in the ``deploy/`` folder. Each deployment script should contain a single function named ``deploy()`` that takes no arguments. A deployment script will look something like this:
 
-::
+.. literalinclude:: ../projects/token/deployments/token.py
+    :linenos:
+    :language: python
+    :lines: 3-
 
-    def deploy():
-        kyc = accounts[0].deploy(KYCRegistrar, [accounts[0]], 0)
-        issuer = accounts[1].deploy(IssuingEntity, [accounts[1]], 1)
-        token = accounts[1].deploy(SecurityToken, issuer, "Test Token", "TST", 1000000)
-        issuer.addToken(token)
-        issuer.setRegistrar(kyc, True)
+This deploys the ``Token`` contract from ``contracts/Token.sol`` using ``web3.eth.accounts[0]``.
+
+For available classes and methods when writing a deployment script, see the :ref:`api` documentation.
