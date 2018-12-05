@@ -97,7 +97,7 @@ You can also use ``ContractDeployer.at`` to access an already existing contract:
 
 You can call any available contract method or send a transaction by using the class method of the same name, with the intended arguments.
 
-For transactions you can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transactionn will be sent from the same address that deployed the contract.
+For transactions you can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
 .. code-block:: python
 

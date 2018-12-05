@@ -119,26 +119,25 @@ Gas Used: {0.gasUsed}
         return "<Transaction object '{}'>".format(self.hash)
 
 
-def wei(s):
-    if s is None: return 0
-    if type(s) is float and 'e+' in str(s):
-        num,dec = str(s).split('e+')
-        num = num.split('.') if '.' in num else [num, ""]
-        return int(num[0]+num[1][:int(dec)]+"0"*(int(dec)-len(num[1])))
-    if type(s) is not str or " " not in s:
-        try: return int(s)
-        except:
-            print(s,type(s))
-            raise
+def wei(value):
+    if value is None:
+        return 0
+    if type(value) is float and "e+" in str(value):
+        num, dec = str(value).split("e+")
+        num = num.split(".") if "." in num else [num, ""]
+        return int(num[0] + num[1][:int(dec)] + "0" * (int(dec) - len(num[1])))
+    if type(value) is not str or " " not in value:
+        return int(value)
     for unit, dec in UNITS.items():
-        if " "+unit not in s: continue
-        num = s.split(' ')[0]
-        num = num.split('.') if '.' in num else [num, ""]
-        return int(num[0]+num[1][:int(dec)]+"0"*(int(dec)-len(num[1])))
+        if " " + unit not in value:
+            continue
+        num = value.split(" ")[0]
+        num = num.split(".") if "." in num else [num, ""]
+        return int(num[0] + num[1][:int(dec)] + "0" * (int(dec) - len(num[1])))
     try:
-        return int(s)
+        return int(value)
     except ValueError:
-        raise ValueError("Unknown denomination: {}".format(s))    
+        raise ValueError("Unknown denomination: {}".format(value))    
 
 def _compile():
     contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 

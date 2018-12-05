@@ -109,7 +109,7 @@ class _ContractMethod:
         self._fn = fn
         self.abi = abi
         self._owner = owner
-        self.sig = web3.sha3(text="{}({})".format(
+        self.signature = web3.sha3(text="{}({})".format(
             abi['name'],
             ",".join(i['type'] for i in abi['inputs'])
             )).hex()[:10]
