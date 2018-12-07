@@ -8,6 +8,10 @@ import traceback
 
 from lib.components.eth import VirtualMachineError
 
+GREEN = "\033[92m"
+RED = "\r \033[91m"
+DEFAULT = "\x1b[0m"
+
 if "--help" in sys.argv:
     sys.exit("""Usage: brownie test [filename] [options]
 
@@ -34,13 +38,15 @@ from lib.components.network import Network
 traceback_info = []
 
 def _format_tb(test, desc, exc, match):
-    sys.stdout.write("\r \033[91m{}\x1b[0m {} ({})\n".format(
+    sys.stdout.write("{}{}{} {} ({})\n".format(RED, 
         '\u2717' if exc[0] in (AssertionError, VirtualMachineError) else '\u203C',
-        desc, exc[0].__name__ ))
+        DEFAULT, desc, exc[0].__name__ ))
     sys.stdout.flush()
+    tb = [i.replace(os.path.abspath(".")+"/","") for i in traceback.format_tb(exc[2])]
+    start = tb.index(next(i for i in tb if match in i))
+    stop = tb.index(next(i for i in tb[::-1] if match in i)) + 1
     traceback_info.append((test, "{}  {}: {}".format(
-        next(i for i in traceback.format_tb(exc[2])[::-1] if match in i),
-        exc[0].__name__, exc[1])))
+        "".join(tb[start:stop]), exc[0].__name__, exc[1])))
 
 for name in test_files:
     module = importlib.import_module("tests."+name)
@@ -58,8 +64,8 @@ for name in test_files:
         try:
             stime = time.time()
             module.run(module.DEPLOYMENT)
-            sys.stdout.write("\r \033[92m\u2713\x1b[0m Deployment '{}' ({:.4f}s)\n".format(
-                module.DEPLOYMENT,time.time()-stime))
+            sys.stdout.write("\r {}\u2713{} Deployment '{}' ({:.4f}s)\n".format(
+                GREEN, DEFAULT, module.DEPLOYMENT, time.time()-stime))
             sys.stdout.flush()
         except Exception as e:
             _format_tb(
@@ -76,8 +82,8 @@ for name in test_files:
         try:
             stime = time.time()
             fn()
-            sys.stdout.write("\r \033[92m\u2713\x1b[0m {} ({:.4f}s)\n".format(
-                fn.__doc__ or t,time.time()-stime))
+            sys.stdout.write("\r {}\u2713{} {} ({:.4f}s)\n".format(
+                GREEN, DEFAULT, fn.__doc__ or t, time.time()-stime))
             sys.stdout.flush()
         except Exception as e:
             _format_tb(
@@ -87,10 +93,10 @@ for name in test_files:
                 'tests/'+name)
 
 if not traceback_info:
-    sys.exit("\nSUCCESS: All tests passed.")
+    sys.exit("\n{}SUCCESS: All tests passed.{}".format(GREEN, DEFAULT))
 
-print("\nWARNING: {} test{} failed.".format(
-    len(traceback_info), "s" if len(traceback_info)>1 else ""))
+print("\n{}WARNING: {} test{} failed.{}".format(
+    RED, len(traceback_info), "s" if len(traceback_info)>1 else "", DEFAULT))
 
 for err in traceback_info:
     print("\nException info for {0[0]}:\n{0[1]}".format(err))
