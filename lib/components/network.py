@@ -30,7 +30,6 @@ class Network:
             'web3': web3,
             'wei': wei }
         for name, interface in COMPILED.items():
-            name = name.split(':')[-1]
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
             self._network_dict[name] = ContractDeployer(name, interface)
