@@ -150,53 +150,67 @@ def _compile():
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")
     print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
             CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"))
-    
-#    for name in contract_files
-    input_json = {
-        'language':"Solidity",
-        'sources':dict((i,{'content':open(i).read().replace('\n','').replace('    ',' ')}) for i in contract_files),
-        'settings':{
-            'outputSelection':{
-                '*':{
-                    '*':["abi","evm.bytecode","evm.deployedBytecode"],
-                    '':["ast","legacyAST"],
-                },
+    compiler_info = dict((('version', solc.get_solc_version_string().strip('\n')),),**CONFIG['solc'])
+    FINAL = {}
+    for filename in contract_files:
+        names = [[x.strip('\t') for x in i.split(' ') if x] for i in open(filename).readlines()] 
+        for contractname in [i[1] for i in names if i[0] in ("contract","library")]:
+            json_file = './build/contracts/{}.json'.format(contractname)
+            if os.path.exists(json_file):
+                try:
+                    compiled = json.load(open(json_file))
+                    if (compiled['compiler'] == compiler_info and
+                        compiled['updatedAt'] >= os.path.getmtime(filename)):
+                        FINAL[contractname] = compiled
+                        continue
+                except: pass
+            input_json = {
+                'language':"Solidity",
+                'sources':{filename:{'content':open(filename).read()}},
+                'settings':{
+                    'outputSelection':{
+                        '*':{
+                            '*':["abi","evm.bytecode","evm.deployedBytecode"],
+                            '':["ast","legacyAST"],
+                        }
+                    },
+                    "optimizer":{
+                        "enabled":CONFIG['solc']['optimize'],
+                        "runs":CONFIG['solc']['runs']
+                    }
+                }
             }
-        }
-    }
-    
-    compiled = solc.compile_standard(
-        input_json,
-        optimize = CONFIG['solc']['optimize'],
-        optimize_runs = CONFIG['solc']['runs'],
-        
-        )
-    names = [x for k,v in compiled['contracts'].items() for x in v.keys()]
-    duplicates = set(i for i in names if names.count(i)>1)
-    if duplicates:
-        raise ValueError("Multiple contracts with the same name: {}".format(
-            ",".join(duplicates)))
-    
-    
-    for file_,name,data in [(k,x,y) for k,v in compiled['contracts'].items() for x,y in v.items()]:
-        fp = open('./build/contracts/{}.json'.format(name),'w')
-        json.dump({
-            'abi': data['abi'],
-            'ast': compiled['sources'][file_]['ast'],
-            'bytecode': data['evm']['bytecode']['object'],
-            'compiler':dict((('version', solc.get_solc_version_string().strip('\n')),),**CONFIG['solc']),
-            'contractName': name,
-            'deployedBytecode': data['evm']['deployedBytecode']['object'],
-            'deployedSourceMap': data['evm']['deployedBytecode']['sourceMap'],
-            'legacyAST':compiled['sources'][file_]['legacyAST'],
-            'networks':{},
-            #'schemaVersion',
-            'source':input_json['sources'][file_]['content'],
-            'sourceMap':data['evm']['bytecode']['sourceMap'],
-            'sourcePath':file_,  
-            'updatedAt':int(time.time())
-            },fp, sort_keys=True, indent=4)
-    return compiled
+            print(" {}...".format(contractname))
+            compiled = solc.compile_standard(
+                input_json,
+                optimize = CONFIG['solc']['optimize'],
+                optimize_runs = CONFIG['solc']['runs'],
+                allow_paths = ".")
+            for contractname, data in compiled['contracts'][filename].items():
+                try:
+                    networks = json.load(open('./build/contracts/{}.json'.format(contractname)))['networks']
+                except:
+                    networks = {}
+                FINAL[contractname] = {
+                    'abi': data['abi'],
+                    'ast': compiled['sources'][filename]['ast'],
+                    'bytecode': data['evm']['bytecode']['object'],
+                    'compiler':compiler_info,
+                    'contractName': contractname,
+                    'deployedBytecode': data['evm']['deployedBytecode']['object'],
+                    'deployedSourceMap': data['evm']['deployedBytecode']['sourceMap'],
+                    #'legacyAST':compiled['sources'][filename]['legacyAST'],
+                    'networks':networks,
+                    #'schemaVersion',
+                    'source':input_json['sources'][filename]['content'],
+                    'sourceMap':data['evm']['bytecode']['sourceMap'],
+                    'sourcePath':filename,  
+                    'updatedAt':int(time.time())
+                }
+                fp = open('./build/contracts/{}.json'.format(contractname),'w')
+                json.dump(FINAL[contractname],fp, sort_keys=True, indent=4)
+            break
+    return FINAL
 
 
 

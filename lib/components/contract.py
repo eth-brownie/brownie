@@ -1,9 +1,12 @@
 #!/usr/bin/python3
 
 from collections import OrderedDict
+import json
 import sys
+import time
 
 from lib.components.eth import web3, TransactionReceipt, wei
+from lib.components.config import CONFIG
 
 class _ContractBase:
 
@@ -35,7 +38,7 @@ class ContractDeployer(_ContractBase):
 
     def __init__(self, name, interface):
         self.tx = None
-        self.bytecode = interface['bin']
+        self.bytecode = interface['bytecode']
         self._deployed = OrderedDict()
         super().__init__(name, interface['abi'])
     
@@ -59,17 +62,25 @@ class ContractDeployer(_ContractBase):
         types = [i['type'] for i in next(i for i in self.abi if i['type']=="constructor")['inputs']]
         args = _format_inputs("constructor", args, types)
         tx = account._contract_tx(contract.constructor, args, {})
-        deployed = self.at(tx.contractAddress, account)
-        deployed.tx = tx
+        deployed = self.at(tx.contractAddress, account, tx)
         return deployed
     
-    def at(self, address, owner = None):
+    def at(self, address, owner = None, tx = None):
         address = web3.toChecksumAddress(address)
         if address in self._deployed:
             return self._deployed[address]
         if web3.eth.getCode(address).hex() == "0x00":
             raise ValueError("No contract deployed at {}".format(address))
         self._deployed[address] = Contract(address, self._name, self.abi, owner)
+        self._deployed[address].tx = tx
+        json_file = './build/contracts/{}.json'.format(self._name)
+        data = json.load(open(json_file))
+        data['networks'][str(int(time.time()))] = {
+            'address': address,
+            'transactionHash': tx.hash,
+            'network': CONFIG['active_network']
+        }
+        json.dump(data, open(json_file,'w'), sort_keys=True, indent=4)
         return self._deployed[address]
 
 
