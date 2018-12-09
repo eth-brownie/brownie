@@ -8,7 +8,6 @@ BROWNIE_FOLDER = sys.modules['__main__'].__file__.rsplit('/', maxsplit = 1)[0]
 FOLDERS = [
     'contracts',
     'deployments',
-    'environments',
     'tests'
 ]
 FILES = [
@@ -25,9 +24,9 @@ Options:
 
 Creates the default structure for the brownie environment:
 
+build/                Compiled contracts and network data
 contracts/            Solidity contracts
 deployments/          Python scripts relating to contract deployment
-environments/         Persistent testing environment files
 tests/                Python scripts for unit testing
 brownie-config.json   Project configuration file
 
@@ -68,6 +67,10 @@ for filename, content in [i for i in FILES if not os.path.exists(i[0])]:
     init = True
     if sys.argv[1] == "init":
         open(filename,'a').write(content)
+
+for folder in ('./build', './build/contracts','./build/networks'):
+        if not os.path.exists(folder):
+            os.mkdir(folder)
 
 if init:
     if sys.argv[1] == "init":

@@ -41,7 +41,7 @@ class Network:
         if 'persist' not in netconf or not netconf['persist']:
             return
         while True:
-            persist_file = 'build/{}.json'.format(CONFIG['active_network'])
+            persist_file = 'build/networks/{}.json'.format(CONFIG['active_network'])
             exists = os.path.exists(persist_file)
             if not exists:
                 print("Persistent environment for '{}' has not yet been declared.".format(
@@ -89,7 +89,7 @@ class Network:
             to_save = []
             for account in [i for i in self._network_dict['accounts'] if type(i) is LocalAccount]:
                 to_save.append(self._key.encrypt(account._priv_key, False))
-            persist_file = 'build/{}.json'.format(CONFIG['active_network'])
+            persist_file = 'build/networks/{}.json'.format(CONFIG['active_network'])
             data = json.load(open(persist_file))
             data['height'] = web3.eth.blockNumber
             data['accounts'] = to_save

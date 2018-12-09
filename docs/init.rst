@@ -11,6 +11,7 @@ The first step to using Brownie is to initialize a new project. To do this, crea
 
 This will create the following project structure within the folder:
 
+* ``build``: Directory for compiled conntracts and network data
 * ``contracts/``: Directory for solidity contracts
 * ``deployments/``: Directory for deployment scripts
 * ``environments/``: Directory for persistent environment data files

@@ -165,9 +165,6 @@ def get_compiled():
     return COMPILED
 
 def compile_contracts():
-    for folder in ('./build', './build/contracts'):
-        if not os.path.exists(folder):
-            os.mkdir(folder)
     contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 
     if not contract_files:
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")
@@ -210,7 +207,7 @@ def compile_contracts():
                         "runs": CONFIG['solc']['runs'] }
                 }
             }
-            print(" {}...".format(name))
+            print(" - {}...".format(name))
             compiled = solc.compile_standard(
                 input_json,
                 optimize = CONFIG['solc']['optimize'],
