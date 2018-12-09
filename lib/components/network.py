@@ -9,13 +9,16 @@ import traceback
 
 from lib.services.fernet import FernetKey, InvalidToken
 from lib.components.config import CONFIG
-from lib.components.eth import web3, wei, COMPILED
+from lib.components.eth import web3, wei, compile_contracts, get_compiled, clear_contracts
+import lib.components.eth as ethh
 from lib.components.account import Accounts, LocalAccount
 from lib.components.contract import ContractDeployer
 import lib.components.check as check
 
 
 class Network:
+
+    _key = None
 
     def __init__(self, module):
         self._module = module
@@ -29,63 +32,68 @@ class Network:
             'run': self.run,
             'web3': web3,
             'wei': wei }
-        for name, interface in COMPILED.items():
-            name = name.split(':')[-1]
+        for name, interface in get_compiled().items():
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
-            self._network_dict[name] = ContractDeployer(name, interface)
+            self._network_dict[name] = ContractDeployer(name, interface, CONFIG['active_network'])
         module.__dict__.update(self._network_dict)
         netconf = CONFIG['networks'][CONFIG['active_network']]
-        if 'persist' in netconf and netconf['persist']:
-            if not web3.eth.blockNumber:
-                print(
-                "WARNING: This appears to be a local RPC network. Persistence is not possible."
-                "\n         Remove 'persist': true from config.json to silence this warning.")
-                netconf['persist'] = False
+        if 'persist' not in netconf or not netconf['persist']:
+            return
         while True:
-            if 'persist' not in netconf or not netconf['persist']:
-                return
-            exists = os.path.exists('environments/{}.env'.format(CONFIG['active_network']))
+            persist_file = 'build/networks/{}.json'.format(CONFIG['active_network'])
+            exists = os.path.exists(persist_file)
             if not exists:
                 print("Persistent environment for '{}' has not yet been declared.".format(
                     CONFIG['active_network']))
-                netconf['password'] = getpass(
-                    "Please set a password for the persisten environment: ")
+                self._key = FernetKey(getpass(
+                    "Please set a password for the persistent environment: "))
+                json.dump({
+                    'height': web3.eth.blockNumber,
+                    'password': self._key.encrypt('password', False)},
+                    open(persist_file, 'w'), sort_keys=True, indent=4)
                 return
             try:
-                if 'password' not in netconf:
-                    netconf['password'] = getpass(
+                data = json.load(open(persist_file))
+                if data['height'] > web3.eth.blockNumber:
+                    print(
+                        "WARNING: This appears to be a local RPC network. Persistence is not possible."
+                        "\n         Remove 'persist': true from config.json to silence this warning.")
+                    netconf['persist'] = False
+                    return
+                if not self._key:
+                    self._key = FernetKey(getpass(
                         "Enter the persistence password for '{}': ".format(
-                            CONFIG['active_network']))
-                encrypted = open("environments/"+CONFIG['active_network']+".env","r").read()
-                decrypted = json.loads(FernetKey(netconf['password']).decrypt(encrypted))
+                            CONFIG['active_network'])))
+                self._key.decrypt(data['password'])
+                print(self._key)
                 print("Loading persistent environment...")
-                for priv_key in decrypted['accounts']:
-                    self._network_dict['accounts'].add(priv_key)
-                for contract,address in [(k,x) for k,v in decrypted['contracts'].items() for x in v]:
-                    getattr(self,contract).at(*address)
+                for priv_key in data['accounts']:
+                    self._network_dict['accounts'].add(self._key.decrypt(priv_key))
                 break
             except InvalidToken:
+                self._key = None
                 print("Password is incorrect, please try again or CTRL-C to disable persistence.")
-                del netconf['password']
             except KeyboardInterrupt:
-                netconf['persist'] = False
+                self._key = None
                 print("\nPersistence has been disabled.")
+                return
 
 
-    def __del__(self):
+    def save(self):
         try:
             netconf = CONFIG['networks'][CONFIG['active_network']]
             if 'persist' not in netconf or not netconf['persist']:
                 return
             print("Saving environment...")
-            to_save = {'accounts':[], 'contracts':{}}
+            to_save = []
             for account in [i for i in self._network_dict['accounts'] if type(i) is LocalAccount]:
-                to_save['accounts'].append(account._priv_key)
-            for name, contract in [(k,v) for k,v in self._network_dict.items() if type(v) is ContractDeployer]:
-                to_save['contracts'][name] = [[i.address, i.owner] for i in contract]
-            encrypted = FernetKey(netconf['password']).encrypt(json.dumps(to_save), False)
-            open("environments/"+CONFIG['active_network']+".env", 'w').write(encrypted)
+                to_save.append(self._key.encrypt(account._priv_key, False))
+            persist_file = 'build/networks/{}.json'.format(CONFIG['active_network'])
+            data = json.load(open(persist_file))
+            data['height'] = web3.eth.blockNumber
+            data['accounts'] = to_save
+            json.dump(data, open(persist_file,'w'), sort_keys=True, indent=4)
         except Exception as e:
             if CONFIG['logging']['exc']>=2:
                 print("".join(traceback.format_tb(sys.exc_info()[2])))
@@ -103,8 +111,15 @@ class Network:
         if network:
             if network not in CONFIG['networks']:
                 print("ERROR: Network '{}' is not defined in config.json".format(network))
-            CONFIG['active_network'] = network
+            if network != CONFIG['active_network']:
+                self.save()
+                CONFIG['active_network'] = network
+                self._key = None
         web3._reset()
+        netconf = CONFIG['networks'][CONFIG['active_network']]
+        if 'persist' in netconf and netconf['persist']:
+            clear_contracts(CONFIG['active_network'])
+        compile_contracts()
         self.__init__(self._module)
         print("Brownie environment is ready.")
 

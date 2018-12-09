@@ -59,20 +59,22 @@ class web3:
 
 class TransactionReceipt:
 
-    def __init__(self, txid):
+    def __init__(self, txid, silent=False):
         
         tx = web3.eth.getTransaction(txid)
-        if CONFIG['logging']['tx']:
+        if CONFIG['logging']['tx'] and not silent:
             print("\nTransaction sent: {}".format(txid.hex()))
         for k,v in tx.items():
             setattr(self, k, v.hex() if type(v) is HexBytes else v)
-        if not tx.blockNumber and CONFIG['logging']['tx']:
+        if not tx.blockNumber and CONFIG['logging']['tx'] and not silent:
             print("Waiting for confirmation...")
         receipt = web3.eth.waitForTransactionReceipt(txid)
         for k,v in [(k,v) for k,v in receipt.items() if k not in tx]:
             if type(v) is HexBytes:
                 v = v.hex()
             setattr(self, k, v)
+        if silent:
+            return
         if CONFIG['logging']['tx'] >= 2:
             self.info()
         elif CONFIG['logging']['tx']:
@@ -139,22 +141,101 @@ def wei(value):
     except ValueError:
         raise ValueError("Unknown denomination: {}".format(value))    
 
-def _compile():
+def add_contract(name, address, txid, owner):
+    json_file = './build/contracts/{}.json'.format(name)
+    data = COMPILED[name]
+    data['networks'][str(int(time.time()))] = {
+        'address': address,
+        'transactionHash': txid,
+        'network': CONFIG['active_network'],
+        'owner': owner }
+    json.dump(COMPILED[name], open(json_file, 'w'), sort_keys=True, indent=4)
+
+def clear_contracts(network):
+    for name, data in COMPILED.items():
+        networks = data['networks'].copy()
+        data['networks'] = dict((k,v) for k,v in networks.items() if v['network']!=network)
+        if networks == data['networks']:
+            continue
+        json_file = './build/contracts/{}.json'.format(name)
+        json.dump(COMPILED[name], open(json_file, 'w'), sort_keys=True, indent=4)
+    
+
+def get_compiled():
+    return COMPILED
+
+def compile_contracts():
     contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 
     if not contract_files:
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")
     print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
-            CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"))
-    compiled = solc.compile_files(
-        contract_files,
-        optimize = CONFIG['solc']['optimize'],
-        optimize_runs = CONFIG['solc']['runs'])
-    names = [i.split(':')[1] for i in compiled.keys()]
-    duplicates = set(i for i in names if names.count(i)>1)
-    if duplicates:
-        raise ValueError("Multiple contracts with the same name: {}".format(
-            ",".join(duplicates)))
-    return compiled
+        CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"))
+    compiler_info = CONFIG['solc'].copy()
+    compiler_info['version'] = solc.get_solc_version_string().strip('\n')
+    final = {}
+    for filename in contract_files:
+        names = [[x.strip('\t') for x in i.split(' ') if x]
+                 for i in open(filename).readlines()]
+        for name in [i[1] for i in names if i[0] in ("contract", "library")]:
+            json_file = './build/contracts/{}.json'.format(name)
+            if os.path.exists(json_file):
+                try:
+                    compiled = json.load(open(json_file))
+                    if (compiled['compiler'] == compiler_info and
+                        compiled['updatedAt'] >= os.path.getmtime(filename)):
+                        networks = dict(
+                            (k,v) for k,v in compiled['networks'].items()
+                            if 'persist' in CONFIG['networks'][v['network']] and 
+                            CONFIG['networks'][v['network']]['persist'])
+                        if networks != compiled['networks']:
+                            compiled['networks'] = networks
+                            json.dump(compiled, open(json_file, 'w'),
+                                      sort_keys = True, indent = 4)
+                        final[name] = compiled
+                        continue
+                except (json.JSONDecodeError, FileNotFoundError):
+                    pass
+            input_json = {
+                'language': "Solidity",
+                'sources': {filename: {'content': open(filename).read()}},
+                'settings': {
+                    'outputSelection': {'*': {
+                        '*': ["abi", "evm.bytecode", "evm.deployedBytecode"],
+                        '': ["ast", "legacyAST"] } },
+                    "optimizer": {
+                        "enabled": CONFIG['solc']['optimize'],
+                        "runs": CONFIG['solc']['runs'] }
+                }
+            }
+            print(" - {}...".format(name))
+            compiled = solc.compile_standard(
+                input_json,
+                optimize = CONFIG['solc']['optimize'],
+                optimize_runs = CONFIG['solc']['runs'],
+                allow_paths = ".")
+            for name, data in compiled['contracts'][filename].items():
+                json_file = './build/contracts/{}.json'.format(name)
+                evm = data['evm']
+                final[name] = {
+                    'abi': data['abi'],
+                    'ast': compiled['sources'][filename]['ast'],
+                    'bytecode': evm['bytecode']['object'],
+                    'compiler': compiler_info,
+                    'contractName': name,
+                    'deployedBytecode': evm['deployedBytecode']['object'],
+                    'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
+                    #'legacyAST': compiled['sources'][filename]['legacyAST'],
+                    'networks': {},
+                    #'schemaVersion': 0,
+                    'source': input_json['sources'][filename]['content'],
+                    'sourceMap': evm['bytecode']['sourceMap'],
+                    'sourcePath': filename,  
+                    'updatedAt': int(time.time())
+                }
+                json.dump(final[name], open(json_file, 'w'),
+                          sort_keys=True, indent=4)
+            break
+    return final
 
 def _topics():
     try:
@@ -163,7 +244,8 @@ def _topics():
         topics = {}
     events = [x for i in COMPILED.values() for x in i['abi'] if x['type']=="event"]
     topics.update(dict((
-        web3.sha3(text="{}({})".format(i['name'],",".join(x['type'] for x in i['inputs']))).hex(),
+        web3.sha3(text="{}({})".format(
+            i['name'], ",".join(x['type'] for x in i['inputs']))).hex(),
         [i['name'], [(x['name'],x['type'],x['indexed']) for x in i['inputs']]]
         ) for i in events))
     json.dump(topics, open(BROWNIE_FOLDER+"/topics.json", 'w'))
@@ -173,7 +255,6 @@ def _topics():
 web3 = web3()
 UNITS = {
     'kwei': 3, 'babbage': 3, 'mwei': 6, 'lovelace': 6, 'gwei': 9, 'shannon': 9,
-    'microether': 12, 'szabo': 12, 'milliether': 15, 'finney': 15, 'ether': 18
-}
-COMPILED = _compile()
+    'microether': 12, 'szabo': 12, 'milliether': 15, 'finney': 15, 'ether': 18 }
+COMPILED = compile_contracts()
 TOPICS = _topics()

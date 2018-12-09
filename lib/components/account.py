@@ -12,6 +12,8 @@ class Accounts(list):
 
     def add(self, priv_key):
         w3account = web3.eth.account.privateKeyToAccount(priv_key)
+        if w3account.address in self:
+            return self.at(w3account.address)
         account = LocalAccount(w3account.address, w3account, priv_key)
         self.append(account)
         return account
