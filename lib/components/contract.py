@@ -1,12 +1,9 @@
 #!/usr/bin/python3
 
 from collections import OrderedDict
-import json
-import sys
-import time
 
-from lib.components.eth import web3, TransactionReceipt, wei
-from lib.components.config import CONFIG
+from lib.components.eth import web3, wei, add_contract
+
 
 class _ContractBase:
 
@@ -30,9 +27,6 @@ class _ContractBase:
                 ",".join(x['type'] for x in i['inputs'])
                 )).hex()[:10]
         ) for i in abi if i['type']=="function")
-            
-            
-
 
 class ContractDeployer(_ContractBase):
 
@@ -73,16 +67,8 @@ class ContractDeployer(_ContractBase):
             raise ValueError("No contract deployed at {}".format(address))
         self._deployed[address] = Contract(address, self._name, self.abi, owner)
         self._deployed[address].tx = tx
-        json_file = './build/contracts/{}.json'.format(self._name)
-        data = json.load(open(json_file))
-        data['networks'][str(int(time.time()))] = {
-            'address': address,
-            'transactionHash': tx.hash,
-            'network': CONFIG['active_network']
-        }
-        json.dump(data, open(json_file,'w'), sort_keys=True, indent=4)
+        add_contract(self._name, address, tx.hash, owner)
         return self._deployed[address]
-
 
 class Contract(str,_ContractBase):
 

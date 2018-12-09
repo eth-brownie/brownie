@@ -9,7 +9,7 @@ import traceback
 
 from lib.services.fernet import FernetKey, InvalidToken
 from lib.components.config import CONFIG
-from lib.components.eth import web3, wei, COMPILED
+from lib.components.eth import web3, wei, compile_contracts, COMPILED
 from lib.components.account import Accounts, LocalAccount
 from lib.components.contract import ContractDeployer
 import lib.components.check as check
@@ -35,7 +35,9 @@ class Network:
             self._network_dict[name] = ContractDeployer(name, interface)
         module.__dict__.update(self._network_dict)
         netconf = CONFIG['networks'][CONFIG['active_network']]
-        if 'persist' in netconf and netconf['persist']:
+        if 'persist' not in netconf:
+            netconf['persist'] = False
+        elif netconf['persist']:
             if not web3.eth.blockNumber:
                 print(
                 "WARNING: This appears to be a local RPC network. Persistence is not possible."
@@ -104,6 +106,7 @@ class Network:
                 print("ERROR: Network '{}' is not defined in config.json".format(network))
             CONFIG['active_network'] = network
         web3._reset()
+        compile_contracts()
         self.__init__(self._module)
         print("Brownie environment is ready.")
 
