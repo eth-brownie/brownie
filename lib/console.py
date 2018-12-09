@@ -12,12 +12,14 @@ if "--help" in sys.argv:
 Connects to the network and opens the brownie console.""")
 
 from lib.components.network import Network
-Network(sys.modules[__name__])
+network = Network(sys.modules[__name__])
 print("Brownie environment is ready.")
 
 while True:
     cmd = input('>>> ')
-    if cmd == "exit()": sys.exit()
+    if cmd == "exit()":
+        network.save()
+        sys.exit()
     if not cmd: continue
     _exec_result = None
     cmd = "_exec_result = "+cmd
