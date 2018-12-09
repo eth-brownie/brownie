@@ -9,7 +9,8 @@ import traceback
 
 from lib.services.fernet import FernetKey, InvalidToken
 from lib.components.config import CONFIG
-from lib.components.eth import web3, wei, compile_contracts, COMPILED
+from lib.components.eth import web3, wei, compile_contracts, get_compiled, clear_contracts
+import lib.components.eth as ethh
 from lib.components.account import Accounts, LocalAccount
 from lib.components.contract import ContractDeployer
 import lib.components.check as check
@@ -29,15 +30,16 @@ class Network:
             'run': self.run,
             'web3': web3,
             'wei': wei }
-        for name, interface in COMPILED.items():
+        
+        for name, interface in get_compiled().items():
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
-            self._network_dict[name] = ContractDeployer(name, interface)
+            self._network_dict[name] = ContractDeployer(name, interface, CONFIG['active_network'])
         module.__dict__.update(self._network_dict)
         netconf = CONFIG['networks'][CONFIG['active_network']]
         if 'persist' not in netconf:
             netconf['persist'] = False
-        elif netconf['persist']:
+        if netconf['persist']:
             if not web3.eth.blockNumber:
                 print(
                 "WARNING: This appears to be a local RPC network. Persistence is not possible."
@@ -51,7 +53,7 @@ class Network:
                 print("Persistent environment for '{}' has not yet been declared.".format(
                     CONFIG['active_network']))
                 netconf['password'] = getpass(
-                    "Please set a password for the persisten environment: ")
+                    "Please set a password for the persistent environment: ")
                 return
             try:
                 if 'password' not in netconf:
@@ -63,8 +65,6 @@ class Network:
                 print("Loading persistent environment...")
                 for priv_key in decrypted['accounts']:
                     self._network_dict['accounts'].add(priv_key)
-                for contract,address in [(k,x) for k,v in decrypted['contracts'].items() for x in v]:
-                    getattr(self,contract).at(*address)
                 break
             except InvalidToken:
                 print("Password is incorrect, please try again or CTRL-C to disable persistence.")
@@ -83,8 +83,6 @@ class Network:
             to_save = {'accounts':[], 'contracts':{}}
             for account in [i for i in self._network_dict['accounts'] if type(i) is LocalAccount]:
                 to_save['accounts'].append(account._priv_key)
-            for name, contract in [(k,v) for k,v in self._network_dict.items() if type(v) is ContractDeployer]:
-                to_save['contracts'][name] = [[i.address, i.owner] for i in contract]
             encrypted = FernetKey(netconf['password']).encrypt(json.dumps(to_save), False)
             open("environments/"+CONFIG['active_network']+".env", 'w').write(encrypted)
         except Exception as e:
@@ -106,6 +104,9 @@ class Network:
                 print("ERROR: Network '{}' is not defined in config.json".format(network))
             CONFIG['active_network'] = network
         web3._reset()
+        netconf = CONFIG['networks'][CONFIG['active_network']]
+        if 'persist' in netconf and netconf['persist']:
+            clear_contracts(CONFIG['active_network'])
         compile_contracts()
         self.__init__(self._module)
         print("Brownie environment is ready.")

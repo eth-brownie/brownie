@@ -59,20 +59,22 @@ class web3:
 
 class TransactionReceipt:
 
-    def __init__(self, txid):
+    def __init__(self, txid, silent=False):
         
         tx = web3.eth.getTransaction(txid)
-        if CONFIG['logging']['tx']:
+        if CONFIG['logging']['tx'] and not silent:
             print("\nTransaction sent: {}".format(txid.hex()))
         for k,v in tx.items():
             setattr(self, k, v.hex() if type(v) is HexBytes else v)
-        if not tx.blockNumber and CONFIG['logging']['tx']:
+        if not tx.blockNumber and CONFIG['logging']['tx'] and not silent:
             print("Waiting for confirmation...")
         receipt = web3.eth.waitForTransactionReceipt(txid)
         for k,v in [(k,v) for k,v in receipt.items() if k not in tx]:
             if type(v) is HexBytes:
                 v = v.hex()
             setattr(self, k, v)
+        if silent:
+            return
         if CONFIG['logging']['tx'] >= 2:
             self.info()
         elif CONFIG['logging']['tx']:
@@ -149,6 +151,19 @@ def add_contract(name, address, txid, owner):
         'owner': owner }
     json.dump(COMPILED[name], open(json_file, 'w'), sort_keys=True, indent=4)
 
+def clear_contracts(network):
+    for name, data in COMPILED.items():
+        networks = data['networks'].copy()
+        data['networks'] = dict((k,v) for k,v in networks.items() if v['network']!=network)
+        if networks == data['networks']:
+            continue
+        json_file = './build/contracts/{}.json'.format(name)
+        json.dump(COMPILED[name], open(json_file, 'w'), sort_keys=True, indent=4)
+    
+
+def get_compiled():
+    return COMPILED
+
 def compile_contracts():
     for folder in ('./build', './build/contracts'):
         if not os.path.exists(folder):
@@ -157,7 +172,7 @@ def compile_contracts():
     if not contract_files:
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")
     print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
-            CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"))
+        CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"))
     compiler_info = CONFIG['solc'].copy()
     compiler_info['version'] = solc.get_solc_version_string().strip('\n')
     final = {}
@@ -223,8 +238,7 @@ def compile_contracts():
                 json.dump(final[name], open(json_file, 'w'),
                           sort_keys=True, indent=4)
             break
-    global COMPILED
-    COMPILED = final
+    return final
 
 def _topics():
     try:
@@ -245,5 +259,5 @@ web3 = web3()
 UNITS = {
     'kwei': 3, 'babbage': 3, 'mwei': 6, 'lovelace': 6, 'gwei': 9, 'shannon': 9,
     'microether': 12, 'szabo': 12, 'milliether': 15, 'finney': 15, 'ether': 18 }
-compile_contracts()
+COMPILED = compile_contracts()
 TOPICS = _topics()

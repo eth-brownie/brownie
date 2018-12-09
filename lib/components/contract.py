@@ -2,8 +2,7 @@
 
 from collections import OrderedDict
 
-from lib.components.eth import web3, wei, add_contract
-
+from lib.components.eth import web3, wei, add_contract, TransactionReceipt
 
 class _ContractBase:
 
@@ -30,11 +29,23 @@ class _ContractBase:
 
 class ContractDeployer(_ContractBase):
 
-    def __init__(self, name, interface):
+    def __init__(self, name, interface, network):
         self.tx = None
         self.bytecode = interface['bytecode']
         self._deployed = OrderedDict()
+        self._network = network
         super().__init__(name, interface['abi'])
+        for k, data in sorted(
+                [(k,v) for k,v in interface['networks'].items() if 
+                 v['network']==network], key = lambda k: int(k[0])):
+            if web3.eth.getCode(data['address']).hex() == "0x00":
+                print("WARNING: No contract deployed at {}.".format(data['address']))
+            self._deployed[data['address']] = Contract(
+                data['address'],
+                self._name,
+                self.abi,
+                data['owner'],
+                TransactionReceipt(data['transactionHash'], True))
     
     def __iter__(self):
         return iter(self._deployed.values())
@@ -65,18 +76,19 @@ class ContractDeployer(_ContractBase):
             return self._deployed[address]
         if web3.eth.getCode(address).hex() == "0x00":
             raise ValueError("No contract deployed at {}".format(address))
-        self._deployed[address] = Contract(address, self._name, self.abi, owner)
-        self._deployed[address].tx = tx
+        self._deployed[address] = Contract(address, self._name, self.abi, owner, tx)
         add_contract(self._name, address, tx.hash, owner)
         return self._deployed[address]
+            
 
 class Contract(str,_ContractBase):
 
     def __new__(cls, address, *args):
         return super().__new__(cls, address)
 
-    def __init__(self, address, name, abi, owner):
+    def __init__(self, address, name, abi, owner, tx=None):
         super().__init__(name, abi)
+        self.tx = tx
         self._owner = owner
         self._contract = web3.eth.contract(address = address, abi = abi)
         for i in [i for i in abi if i['type']=="function"]:
