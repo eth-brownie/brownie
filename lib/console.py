@@ -16,7 +16,11 @@ network = Network(sys.modules[__name__])
 print("Brownie environment is ready.")
 
 while True:
-    cmd = input('>>> ')
+    try:
+        cmd = input('>>> ')
+    except KeyboardInterrupt:
+        print()
+        cmd = "exit()"
     if cmd == "exit()":
         network.save()
         sys.exit()
