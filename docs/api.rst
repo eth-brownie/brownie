@@ -135,7 +135,7 @@ Account classes are not meant to be instantiated directly. The ``Accounts`` cont
 
     * ``contract``: A ``ContractDeployer`` instance of the contract to be deployed.
     * ``*args``: Contract constructor arguments.
-    * ``**kwargs``: Addresses for any required contract mappings. Used when the bytecode includes a contract reference in the form of ``__contracts/Contract.sol:Contract__``.
+    * ``**kwargs``: Addresses for any required libraries.
 
     You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
@@ -194,7 +194,7 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
 
     * ``account``: An ``Account`` instance to deploy the contract from.
     * ``*args``: Contract constructor arguments.
-    * ``**kwargs``: Addresses for any required contract mappings. Used when the bytecode includes a contract reference in the form of ``__contracts/Contract.sol:Contract__``.
+    * ``**kwargs``: Addresses for any required libraries.
 
     You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 

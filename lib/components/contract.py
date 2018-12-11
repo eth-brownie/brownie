@@ -69,7 +69,7 @@ class ContractDeployer(_ContractBase):
             for marker in re.findall('_{1,}[^_]*_{1,}',self.bytecode):
                 contract = marker.split(':')[1].rstrip('_')
                 if contract not in kwargs:
-                    raise AttributeError("You must specify a contract address for {}".format(contract))
+                    raise AttributeError("You must specify an address for the {} library".format(contract))
                 bytecode = self.bytecode.replace(marker, kwargs[contract][-40:])
         else:
             bytecode = self.bytecode
