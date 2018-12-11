@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from collections import OrderedDict
+import re
 
 from lib.components.eth import web3, wei, add_contract, TransactionReceipt
 
@@ -26,6 +27,7 @@ class _ContractBase:
                 ",".join(x['type'] for x in i['inputs'])
                 )).hex()[:10]
         ) for i in abi if i['type']=="function")
+
 
 class ContractDeployer(_ContractBase):
 
@@ -62,11 +64,24 @@ class ContractDeployer(_ContractBase):
     def list(self):
         return list(self._deployed)
 
-    def deploy(self, account, *args):
-        contract = web3.eth.contract(abi = self.abi, bytecode = self.bytecode)
-        types = [i['type'] for i in next(i for i in self.abi if i['type']=="constructor")['inputs']]
-        args = _format_inputs("constructor", args, types)
-        tx = account._contract_tx(contract.constructor, args, {})
+    def deploy(self, account, *args, **kwargs):
+        if '_' in self.bytecode:
+            for marker in re.findall('_{1,}[^_]*_{1,}',self.bytecode):
+                contract = marker.split(':')[1].rstrip('_')
+                if contract not in kwargs:
+                    raise AttributeError("You must specify a contract address for {}".format(contract))
+                bytecode = self.bytecode.replace(marker, kwargs[contract][-40:])
+        else:
+            bytecode = self.bytecode
+        args, tx = _get_tx(account, args)
+        contract = web3.eth.contract(abi = self.abi, bytecode = bytecode)
+        try:
+            types = [i['type'] for i in next(i for i in self.abi if i['type']=="constructor")['inputs']]
+            args = _format_inputs("constructor", args, types)
+        except StopIteration:
+            if args:
+                raise AttributeError("This contract takes no constructor arguments.")
+        tx = account._contract_tx(contract.constructor, args, tx)
         deployed = self.at(tx.contractAddress, account, tx)
         return deployed
     
@@ -89,6 +104,7 @@ class Contract(str,_ContractBase):
     def __init__(self, address, name, abi, owner, tx=None):
         super().__init__(name, abi)
         self.tx = tx
+        self.bytecode = tx.input[2:]
         self._owner = owner
         self._contract = web3.eth.contract(address = address, abi = abi)
         for i in [i for i in abi if i['type']=="function"]:
@@ -136,14 +152,7 @@ class _ContractMethod:
 class ContractTx(_ContractMethod):
 
     def __call__(self, *args):
-        if args and type(args[-1]) is dict:
-            args, tx = (args[:-1], args[-1])
-            if 'from' not in tx:
-                tx['from'] = self._owner
-            if 'value' in tx and type(tx['value']) is float:
-                tx['value'] = int(tx['value'])
-        else:
-            tx = {'from': self._owner}
+        args, tx = _get_tx(self._owner, args)
         return tx['from']._contract_tx(self._fn, self._format_inputs(args), tx)
 
 class ContractCall(_ContractMethod):
@@ -154,6 +163,17 @@ class ContractCall(_ContractMethod):
             return web3.toHex(result) if type(result) is bytes else result
         return [(web3.toHex(i) if type(i) is bytes else i) for i in result]
 
+
+def _get_tx(owner, args):
+        if args and type(args[-1]) is dict:
+            args, tx = (args[:-1], args[-1])
+            if 'from' not in tx:
+                tx['from'] = owner
+            for key in [i for i in ['value','gas','gasPrice'] if i in tx]:
+                tx[key] = wei(tx[key])
+        else:
+            tx = {'from': owner}
+        return args, tx
 
 def _format_inputs(name, inputs, types):
         inputs = list(inputs)

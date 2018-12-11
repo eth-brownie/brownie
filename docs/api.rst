@@ -118,12 +118,13 @@ Account classes are not meant to be instantiated directly. The ``Accounts`` cont
 
     Estimates the gas required to perform a transaction. Raises a ``VirtualMachineError`` if the transaction would revert.
 
-.. py:classmethod:: Account.transfer(to, amount, gas_price=None)
+.. py:classmethod:: Account.transfer(to, amount, gas=None, gas_price=None)
 
     Transfers ether.
 
     * ``to``: Recipient address.
     * ``amount``: Amount to send, in wei_.
+    * ``gas``: Gas limit, in wei_. If none is given, the price is set using ``web3.eth.estimateGas``.
     * ``gas_price``: Gas price, in wei_. If none is given, the price is set using ``web3.eth.gasPrice``.
 
     Returns a ``TransactionReceipt`` instance.
@@ -134,6 +135,9 @@ Account classes are not meant to be instantiated directly. The ``Accounts`` cont
 
     * ``contract``: A ``ContractDeployer`` instance of the contract to be deployed.
     * ``*args``: Contract constructor arguments.
+    * ``**kwargs``: Addresses for any required contract mappings. Used when the bytecode includes a contract reference in the form of ``__contracts/Contract.sol:Contract__``.
+
+    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
     Returns a ``Contract`` instance.
 
@@ -156,7 +160,7 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
 
 .. py:attribute:: ContractDeployer.bytecode
 
-    The deployed bytecode of the contract.
+    The bytecode of the contract, without any applied constructor arguments.
 
 .. py:attribute:: ContractDeployer.signatures
 
@@ -184,12 +188,15 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
 
     Returns a list of every deployed contract instance in the container.
 
-.. py:classmethod:: ContractDeployer.deploy(account, *args)
+.. py:classmethod:: ContractDeployer.deploy(account, *args, **kwargs)
 
     Deploys the contract.
 
     * ``account``: An ``Account`` instance to deploy the contract from.
     * ``*args``: Contract constructor arguments.
+    * ``**kwargs``: Addresses for any required contract mappings. Used when the bytecode includes a contract reference in the form of ``__contracts/Contract.sol:Contract__``.
+
+    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
     Returns a ``Contract`` instance.
 
@@ -207,6 +214,10 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
 .. py:attribute:: Contract.tx
 
     The ``TransactionReceipt`` of the transaction that deployed the contract. If the contract was not deployed during this instance of brownie, it will be ``None``.
+
+.. py:attribute:: Contract.bytecode
+
+    The bytecode of the deployed contract, including constructor arguments.
 
 .. py:classmethod:: Contract.balance()
 

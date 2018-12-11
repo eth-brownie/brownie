@@ -41,8 +41,8 @@ class _AccountBase(str):
     def balance(self):
         return web3.eth.getBalance(self.address)
 
-    def deploy(self, contract, *args):
-        return contract.deploy(self, *args)
+    def deploy(self, contract, *args, **kwargs):
+        return contract.deploy(self, *args, **kwargs)
     
     def estimate_gas(self, to, amount, data=""):
         return web3.eth.estimateGas({
@@ -55,14 +55,14 @@ class _AccountBase(str):
 
 class Account(_AccountBase):
 
-    def transfer(self, to, amount, gas_price=None):
+    def transfer(self, to, amount, gas=None, gas_price=None):
         try:
             txid = web3.eth.sendTransaction({
                 'from': self.address,
                 'to': to,
                 'value': wei(amount),
                 'gasPrice': wei(gas_price) or web3.eth.gasPrice,
-                'gas': self.estimate_gas(to, amount)
+                'gas': wei(gas) or self.estimate_gas(to, amount)
                 })
             self.nonce += 1
             return TransactionReceipt(txid)
@@ -88,13 +88,13 @@ class LocalAccount(_AccountBase):
         self._priv_key = priv_key
         super().__init__(address)
 
-    def transfer(self, to, amount, gas_price=None):
+    def transfer(self, to, amount, gas=None, gas_price=None):
         try:
             signed_tx = self._acct.signTransaction({
                 'from': self.address,
                 'nonce': self.nonce,
                 'gasPrice': wei(gas_price) or web3.eth.gasPrice,
-                'gas': self.estimate_gas(to, amount),
+                'gas': wei(gas) or self.estimate_gas(to, amount),
                 'to': to,
                 'value': wei(amount),
                 'data': ""
