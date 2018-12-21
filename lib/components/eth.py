@@ -61,7 +61,10 @@ class TransactionReceipt:
 
     def __init__(self, txid, silent=False):
         
-        tx = web3.eth.getTransaction(txid)
+        while True:
+            tx = web3.eth.getTransaction(txid)
+            if tx: break
+            time.sleep(0.5)
         if CONFIG['logging']['tx'] and not silent:
             print("\nTransaction sent: {}".format(txid.hex()))
         for k,v in tx.items():
@@ -79,7 +82,7 @@ class TransactionReceipt:
             self.info()
         elif CONFIG['logging']['tx']:
             print("Transaction confirmed - block: {}   gas spent: {}".format(
-                tx.blockNumber, receipt.gasUsed))
+                receipt.blockNumber, receipt.gasUsed))
             if not self.contractAddress: return
             print("Contract deployed at: {}".format(self.contractAddress))
     

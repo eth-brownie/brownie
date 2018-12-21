@@ -43,11 +43,8 @@ class ContractDeployer(_ContractBase):
             if web3.eth.getCode(data['address']).hex() == "0x00":
                 print("WARNING: No contract deployed at {}.".format(data['address']))
             self._deployed[data['address']] = Contract(
-                data['address'],
-                self._name,
-                self.abi,
-                data['owner'],
-                TransactionReceipt(data['transactionHash'], True))
+                data['address'], self._name, self.abi, data['owner'],
+                TransactionReceipt(data['transactionHash'], True) if data['transactionHash'] else None)
     
     def __iter__(self):
         return iter(self._deployed.values())
@@ -92,7 +89,7 @@ class ContractDeployer(_ContractBase):
         if web3.eth.getCode(address).hex() == "0x00":
             raise ValueError("No contract deployed at {}".format(address))
         self._deployed[address] = Contract(address, self._name, self.abi, owner, tx)
-        add_contract(self._name, address, tx.hash, owner)
+        add_contract(self._name, address, tx.hash if tx else None, owner)
         return self._deployed[address]
             
 
@@ -104,7 +101,7 @@ class Contract(str,_ContractBase):
     def __init__(self, address, name, abi, owner, tx=None):
         super().__init__(name, abi)
         self.tx = tx
-        self.bytecode = tx.input[2:]
+        self.bytecode = web3.eth.getCode(address).hex()[2:]
         self._owner = owner
         self._contract = web3.eth.contract(address = address, abi = abi)
         for i in [i for i in abi if i['type']=="function"]:
@@ -153,6 +150,10 @@ class ContractTx(_ContractMethod):
 
     def __call__(self, *args):
         args, tx = _get_tx(self._owner, args)
+        if not tx['from']:
+            raise AttributeError(
+                "Contract has no owner, you must supply a tx dict with a 'from'"
+                " field as the last argument.")
         return tx['from']._contract_tx(self._fn, self._format_inputs(args), tx)
 
 class ContractCall(_ContractMethod):
