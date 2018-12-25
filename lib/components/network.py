@@ -66,7 +66,6 @@ class Network:
                         "Enter the persistence password for '{}': ".format(
                             CONFIG['active_network'])))
                 self._key.decrypt(data['password'])
-                print(self._key)
                 print("Loading persistent environment...")
                 for priv_key in data['accounts']:
                     self._network_dict['accounts'].add(self._key.decrypt(priv_key))

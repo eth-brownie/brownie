@@ -211,11 +211,18 @@ def compile_contracts():
                 }
             }
             print(" - {}...".format(name))
-            compiled = solc.compile_standard(
-                input_json,
-                optimize = CONFIG['solc']['optimize'],
-                optimize_runs = CONFIG['solc']['runs'],
-                allow_paths = ".")
+            try:
+                compiled = solc.compile_standard(
+                    input_json,
+                    optimize = CONFIG['solc']['optimize'],
+                    optimize_runs = CONFIG['solc']['runs'],
+                    allow_paths = ".")
+            except solc.exceptions.SolcError as e:
+                err = json.loads(e.stdout_data)
+                print("\nERROR: Unable to compile {} due to the following errors:\n".format(filename))
+                for i in err['errors']:
+                    print(i['formattedMessage'])
+                sys.exit()
             for name, data in compiled['contracts'][filename].items():
                 json_file = './build/contracts/{}.json'.format(name)
                 evm = data['evm']
