@@ -16,7 +16,12 @@ from lib.components.config import CONFIG, BROWNIE_FOLDER
 class VirtualMachineError(Exception):
 
     def __init__(self,e):
-        super().__init__(eval(str(e))['message'])
+        msg = eval(str(e))['message']
+        if len(msg.split('revert ',maxsplit=1))>1:
+            self.revert_msg = msg.split('revert ')[1]
+        else:
+            self.revert_msg = None
+        super().__init__(msg)
 
 class web3:
 

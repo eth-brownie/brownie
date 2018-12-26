@@ -62,7 +62,11 @@ These classes and methods relate to the Ethereum blockchain:
 
 .. py:exception:: VirtualMachineError
 
-    Raised whenever a transaction causes the EVM to revert.
+    Raised whenever a transaction results in an EVM exception.
+
+.. py:attribute:: VirtualMachineError.revert_msg
+
+    Contains the EVM revert error message, if any.
 
 Console
 =======
@@ -267,15 +271,17 @@ The check module exposes the following methods that are used in place of ``asser
 
     Raises if ``statement`` does not evaluate to False.
 
-.. py:method:: check.reverts(fn, args, fail_msg = "Expected transaction to revert")
+.. py:method:: check.reverts(fn, args, fail_msg = "Expected transaction to revert", revert_msg=None)
 
-    Performs the given contract call ``fn`` with arguments ``args``. Raises if the call does not cause the EVM to revert.
+    Performs the given contract call ``fn`` with arguments ``args``. Raises if the call does not cause the EVM to throw an exception.
+
+    If ``revert_msg`` is not ``None``, the check will only pass if the EVM reverts with a specific message.
 
 .. py:method:: check.confirms(fn, args, fail_msg = "Expected transaction to confirm")
 
-    Performs the given contract call ``fn`` with arguments ``args``. Raises if the call causes the EVM to revert.
+    Performs the given contract call ``fn`` with arguments ``args``. Raises if the call causes the EVM to throw an exception.
 
-    This method is useful if you want to give a specific error message for this function. If you do not require one, you can simply attempt the call and the test will still fail if the call reverts.
+    Used if you want to give a specific error message for this function. If you do not require one, you can simply attempt the call and the test will still fail if the call throws.
 
 .. py:method:: check.equal(a, b, fail_msg = "Expected values to be equal")
 

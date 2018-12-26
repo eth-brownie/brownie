@@ -9,7 +9,7 @@ import traceback
 from lib.components.eth import VirtualMachineError
 
 GREEN = "\033[92m"
-RED = "\r \033[91m"
+RED = "\033[91m"
 DEFAULT = "\x1b[0m"
 
 if "--help" in sys.argv:
