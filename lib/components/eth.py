@@ -59,8 +59,8 @@ class web3:
 
 class TransactionReceipt:
 
-    def __init__(self, txid, silent=False):
-        
+    def __init__(self, txid, silent=False, name=None):
+        self.fn_name = name
         while True:
             tx = web3.eth.getTransaction(txid)
             if tx: break
@@ -99,7 +99,7 @@ Gas Used: {0.gasUsed}
     self,
     ("New Contract Address: "+self.contractAddress if self.contractAddress
      else "To: {0.to}\nValue: {0.value}".format(self)),
-    "\nFunction Signature: "+self.input[:10] if (self.input!="0x00" and not self.contractAddress) else ""))
+    "\nFunction: {} ({})".format(self.fn_name, self.input[:10]) if (self.input!="0x00" and not self.contractAddress) else ""))
     
         if self.logs:
             print("  Events In This Transaction\n  ---------------------------")

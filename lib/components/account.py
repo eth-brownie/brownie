@@ -69,13 +69,13 @@ class Account(_AccountBase):
         except ValueError as e:
             raise VirtualMachineError(e)
 
-    def _contract_tx(self, fn, args, tx):
+    def _contract_tx(self, fn, args, tx, name):
         tx['from'] = self.address
         try: txid = fn(*args).transact(tx)
         except ValueError as e:
             raise VirtualMachineError(e)
         self.nonce += 1
-        return TransactionReceipt(txid)
+        return TransactionReceipt(txid, name=name)
 
 
 class LocalAccount(_AccountBase):
@@ -105,7 +105,7 @@ class LocalAccount(_AccountBase):
         except ValueError as e:
             raise VirtualMachineError(e)
 
-    def _contract_tx(self, fn, args, tx):
+    def _contract_tx(self, fn, args, tx, name):
         try:
             tx.update({
                 'from':self.address,
@@ -117,6 +117,6 @@ class LocalAccount(_AccountBase):
             txid = web3.eth.sendRawTransaction(
                 self._acct.signTransaction(raw).rawTransaction)
             self.nonce += 1
-            return TransactionReceipt(txid)
+            return TransactionReceipt(txid, name=name)
         except ValueError as e:
             raise VirtualMachineError(e)

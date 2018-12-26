@@ -78,7 +78,7 @@ class ContractDeployer(_ContractBase):
         except StopIteration:
             if args:
                 raise AttributeError("This contract takes no constructor arguments.")
-        tx = account._contract_tx(contract.constructor, args, tx)
+        tx = account._contract_tx(contract.constructor, args, tx, "constructor")
         deployed = self.at(tx.contractAddress, account, tx)
         return deployed
     
@@ -108,10 +108,11 @@ class Contract(str,_ContractBase):
             if hasattr(self, i['name']):
                 raise AttributeError("Namespace collision: '{}.{}'".format(name, i['name']))
             fn = getattr(self._contract.functions,i['name'])
+            name = "{}.{}".format(self._name, i['name'])
             if i['stateMutability'] in ('view','pure'):
-                setattr(self, i['name'], ContractCall(fn, i, owner))
+                setattr(self, i['name'], ContractCall(fn, i, name, owner))
             else:
-                setattr(self, i['name'], ContractTx(fn, i, owner))
+                setattr(self, i['name'], ContractTx(fn, i, name, owner))
     
     def __repr__(self):
         return "<{0._name} Contract object '{0.address}'>".format(self)
@@ -127,8 +128,9 @@ class Contract(str,_ContractBase):
 
 class _ContractMethod:
 
-    def __init__(self, fn, abi, owner):
+    def __init__(self, fn, abi, name, owner):
         self._fn = fn
+        self._name = name
         self.abi = abi
         self._owner = owner
         self.signature = web3.sha3(text="{}({})".format(
@@ -154,7 +156,7 @@ class ContractTx(_ContractMethod):
             raise AttributeError(
                 "Contract has no owner, you must supply a tx dict with a 'from'"
                 " field as the last argument.")
-        return tx['from']._contract_tx(self._fn, self._format_inputs(args), tx)
+        return tx['from']._contract_tx(self._fn, self._format_inputs(args), tx, self._name)
 
 class ContractCall(_ContractMethod):
 
