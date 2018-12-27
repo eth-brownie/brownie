@@ -3,7 +3,7 @@
 from collections import OrderedDict
 import re
 
-from lib.components.eth import web3, wei, add_contract, TransactionReceipt
+from lib.components.eth import web3, wei, add_contract, TransactionReceipt, VirtualMachineError
 
 class _ContractBase:
 
@@ -161,7 +161,10 @@ class ContractTx(_ContractMethod):
 class ContractCall(_ContractMethod):
 
     def __call__(self, *args):
-        result = self._fn(*self._format_inputs(args)).call()
+        try: 
+            result = self._fn(*self._format_inputs(args)).call()
+        except ValueError as e:
+            raise VirtualMachineError(e)
         if type(result) is not list:
             return web3.toHex(result) if type(result) is bytes else result
         return [(web3.toHex(i) if type(i) is bytes else i) for i in result]
