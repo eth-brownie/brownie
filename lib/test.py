@@ -6,7 +6,7 @@ import sys
 import time
 import traceback
 
-from lib.components.eth import VirtualMachineError
+from lib.components.eth import VirtualMachineError,TransactionReceipt
 
 GREEN = "\033[92m"
 RED = "\033[91m"
@@ -17,6 +17,7 @@ if "--help" in sys.argv:
 
 Options:
   [filename]         Only run tests from a specific file
+  --gas              Display gas profile for function calls
 
 By default brownie runs every script in the tests folder, and calls every
 function that does not begin with an underscore. A fresh environment is created
@@ -93,7 +94,12 @@ for name in test_files:
                 'tests/'+name)
 
 if not traceback_info:
-    sys.exit("\n{}SUCCESS: All tests passed.{}".format(GREEN, DEFAULT))
+    print("\n{}SUCCESS: All tests passed.{}".format(GREEN, DEFAULT))
+    if '--gas' in sys.argv:
+        print('\nGas Profile:')
+        for i in sorted(TransactionReceipt.gas_profiles):
+            print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i,TransactionReceipt.gas_profiles[i]))
+    sys.exit()
 
 print("\n{}WARNING: {} test{} failed.{}".format(
     RED, len(traceback_info), "s" if len(traceback_info)>1 else "", DEFAULT))

@@ -64,6 +64,8 @@ class web3:
 
 class TransactionReceipt:
 
+    gas_profiles = {}
+    
     def __init__(self, txid, silent=False, name=None):
         self.fn_name = name
         while True:
@@ -81,6 +83,13 @@ class TransactionReceipt:
             if type(v) is HexBytes:
                 v = v.hex()
             setattr(self, k, v)
+        if name and '--gas' in sys.argv:
+            self.gas_profiles.setdefault(name,{'avg':0,'high':0,'low':float('inf'),'count':0})
+            gas = self.gas_profiles[name]
+            gas['avg'] = (gas['avg']*gas['count']+receipt.gasUsed)/(gas['count']+1)
+            gas['count']+=1
+            gas['high'] = max(gas['high'],receipt.gasUsed)
+            gas['low'] = min(gas['low'],receipt.gasUsed)
         if silent:
             return
         if CONFIG['logging']['tx'] >= 2:
@@ -104,7 +113,7 @@ Gas Used: {0.gasUsed}
     self,
     ("New Contract Address: "+self.contractAddress if self.contractAddress
      else "To: {0.to}\nValue: {0.value}".format(self)),
-    "\nFunction: {} ({})".format(self.fn_name, self.input[:10]) if (self.input!="0x00" and not self.contractAddress) else ""))
+    "\nFunction: {}".format(self.fn_name) if (self.input!="0x00" and not self.contractAddress) else ""))
     
         if self.logs:
             print("  Events In This Transaction\n  ---------------------------")

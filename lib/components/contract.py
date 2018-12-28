@@ -78,7 +78,7 @@ class ContractDeployer(_ContractBase):
         except StopIteration:
             if args:
                 raise AttributeError("This contract takes no constructor arguments.")
-        tx = account._contract_tx(contract.constructor, args, tx, "constructor")
+        tx = account._contract_tx(contract.constructor, args, tx, self._name+".constructor")
         deployed = self.at(tx.contractAddress, account, tx)
         return deployed
     
