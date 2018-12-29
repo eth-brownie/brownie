@@ -24,16 +24,17 @@ function that does not begin with an underscore. A fresh environment is created
 between each new file. Test scripts can optionally specify which deployment
 script to run by setting a string 'DEPLOYMENT'.""")
 
+from lib.components import config
+
 if len(sys.argv)>2 and sys.argv[2][:2]!="--":
     sys.argv[2] = sys.argv[2].replace('.py','')
-    if not os.path.exists('tests/{}.py'.format(sys.argv[2])):
+    if not os.path.exists(config['folders']['project']+'/tests/{}.py'.format(sys.argv[2])):
         sys.exit("ERROR: Cannot find tests/{}.py".format(sys.argv[2]))
     test_files = [sys.argv[2]]
 else:
-    test_files = [i[:-3] for i in os.listdir('tests') if i[-3:] == ".py"]
+    test_files = [i[:-3] for i in os.listdir(config['folders']['project']+'/tests') if i[-3:] == ".py"]
     test_files.remove('__init__')
 
-from lib.components.config import CONFIG
 from lib.components.network import Network
 
 traceback_info = []
@@ -51,7 +52,7 @@ def _format_tb(test, desc, exc, match):
 
 for name in test_files:
     module = importlib.import_module("tests."+name)
-    test_names = open("tests/{}.py".format(name),'r').read().split("\ndef ")[1:]
+    test_names = open(config['folders']['project']+"/tests/{}.py".format(name),'r').read().split("\ndef ")[1:]
     test_names = [i.split("(")[0] for i in test_names if i[0]!="_"]
     if not test_names:
         print("\nWARNING: Could not find any test functions in {}.py".format(name))

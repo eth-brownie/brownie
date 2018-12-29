@@ -4,8 +4,19 @@ import json
 import os
 import sys
 
-BROWNIE_FOLDER = sys.modules['__main__'].__file__.rsplit('/',maxsplit = 1)[0]
-CONFIG = json.load(open(BROWNIE_FOLDER+'/config.json', 'r'))
+folder = sys.modules['__main__'].__file__.rsplit('/',maxsplit = 1)[0]
+CONFIG = json.load(open(folder+'/config.json', 'r'))
+CONFIG['folders'] = {
+    'brownie': folder,
+    'project': os.path.abspath('.')
+}
+
+folders = os.path.abspath('.').split('/')
+for i in range(len(folders),0,-1):
+    folder = '/'.join(folders[:i])
+    if os.path.exists(folder+'/brownie-config.json'):
+        CONFIG['folders']['project'] = folder
+        break
 
 conf_path = os.path.abspath('.')+"/brownie-config.json"
 if os.path.exists(conf_path):
@@ -28,3 +39,5 @@ else:
 
 if CONFIG['active_network'] not in CONFIG['networks']:
     sys.exit("ERROR: No network named '{}'".format(CONFIG['active_network']))
+
+sys.modules[__name__] = CONFIG

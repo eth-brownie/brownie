@@ -10,7 +10,7 @@ import sys
 import time
 from web3 import Web3, HTTPProvider
 
-from lib.components.config import CONFIG, BROWNIE_FOLDER
+from lib.components import config
 
 
 class VirtualMachineError(Exception):
@@ -28,9 +28,9 @@ class web3:
     _rpc = None
     
     def __init__(self):
-        name = CONFIG['active_network']
+        name = config['active_network']
         try:
-            netconf = CONFIG['networks'][name]
+            netconf = config['networks'][name]
             print("Using network '{}'".format(name))
         except KeyError:
             sys.exit("ERROR: Network '{}' is not defined in config.json".format(name))
@@ -72,7 +72,7 @@ class TransactionReceipt:
             tx = web3.eth.getTransaction(txid)
             if tx: break
             time.sleep(0.5)
-        if CONFIG['logging']['tx'] and not silent:
+        if config['logging']['tx'] and not silent:
             print("\nTransaction sent: {}".format(txid.hex()))
         for k,v in tx.items():
             setattr(self, k, v.hex() if type(v) is HexBytes else v)
@@ -92,9 +92,9 @@ class TransactionReceipt:
             gas['low'] = min(gas['low'],receipt.gasUsed)
         if silent:
             return
-        if CONFIG['logging']['tx'] >= 2:
+        if config['logging']['tx'] >= 2:
             self.info()
-        elif CONFIG['logging']['tx']:
+        elif config['logging']['tx']:
             print("Transaction confirmed - block: {}   gas spent: {}".format(
                 receipt.blockNumber, receipt.gasUsed))
             if not self.contractAddress: return
@@ -164,7 +164,7 @@ def add_contract(name, address, txid, owner):
     data['networks'][str(int(time.time()))] = {
         'address': address,
         'transactionHash': txid,
-        'network': CONFIG['active_network'],
+        'network': config['active_network'],
         'owner': owner }
     json.dump(COMPILED[name], open(json_file, 'w'), sort_keys=True, indent=4)
 
@@ -182,19 +182,19 @@ def get_compiled():
     return COMPILED
 
 def compile_contracts():
-    contract_files = ["{}/{}".format(i[0],x) for i in os.walk('contracts') for x in i[2]] 
+    contract_files = ["{}/{}".format(i[0],x) for i in os.walk(config['folders']['project']+'/contracts') for x in i[2]] 
     if not contract_files:
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")
     print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
-        CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"))
-    compiler_info = CONFIG['solc'].copy()
+        config['solc']['runs']) if config['solc']['optimize'] else "Disabled"))
+    compiler_info = config['solc'].copy()
     compiler_info['version'] = solc.get_solc_version_string().strip('\n')
     final = {}
     for filename in contract_files:
         names = [[x.strip('\t') for x in i.split(' ') if x]
                  for i in open(filename).readlines()]
         for name in [i[1] for i in names if i[0] in ("contract", "library")]:
-            json_file = './build/contracts/{}.json'.format(name)
+            json_file = config['folders']['project']+'/build/contracts/{}.json'.format(name)
             if os.path.exists(json_file):
                 try:
                     compiled = json.load(open(json_file))
@@ -202,8 +202,8 @@ def compile_contracts():
                         compiled['updatedAt'] >= os.path.getmtime(filename)):
                         networks = dict(
                             (k,v) for k,v in compiled['networks'].items()
-                            if 'persist' in CONFIG['networks'][v['network']] and 
-                            CONFIG['networks'][v['network']]['persist'])
+                            if 'persist' in config['networks'][v['network']] and 
+                            config['networks'][v['network']]['persist'])
                         if networks != compiled['networks']:
                             compiled['networks'] = networks
                             json.dump(compiled, open(json_file, 'w'),
@@ -220,16 +220,16 @@ def compile_contracts():
                         '*': ["abi", "evm.bytecode", "evm.deployedBytecode"],
                         '': ["ast", "legacyAST"] } },
                     "optimizer": {
-                        "enabled": CONFIG['solc']['optimize'],
-                        "runs": CONFIG['solc']['runs'] }
+                        "enabled": config['solc']['optimize'],
+                        "runs": config['solc']['runs'] }
                 }
             }
             print(" - {}...".format(name))
             try:
                 compiled = solc.compile_standard(
                     input_json,
-                    optimize = CONFIG['solc']['optimize'],
-                    optimize_runs = CONFIG['solc']['runs'],
+                    optimize = config['solc']['optimize'],
+                    optimize_runs = config['solc']['runs'],
                     allow_paths = ".")
             except solc.exceptions.SolcError as e:
                 err = json.loads(e.stdout_data)
@@ -238,7 +238,7 @@ def compile_contracts():
                     print(i['formattedMessage'])
                 sys.exit()
             for name, data in compiled['contracts'][filename].items():
-                json_file = './build/contracts/{}.json'.format(name)
+                json_file = config['folders']['project']+'/build/contracts/{}.json'.format(name)
                 evm = data['evm']
                 final[name] = {
                     'abi': data['abi'],
@@ -263,7 +263,7 @@ def compile_contracts():
 
 def _topics():
     try:
-        topics = json.load(open(BROWNIE_FOLDER+"/topics.json", 'r'))
+        topics = json.load(open(config['folders']['brownie']+"/topics.json", 'r'))
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         topics = {}
     events = [x for i in COMPILED.values() for x in i['abi'] if x['type']=="event"]
@@ -272,7 +272,7 @@ def _topics():
             i['name'], ",".join(x['type'] for x in i['inputs']))).hex(),
         [i['name'], [(x['name'],x['type'],x['indexed']) for x in i['inputs']]]
         ) for i in events))
-    json.dump(topics, open(BROWNIE_FOLDER+"/topics.json", 'w'))
+    json.dump(topics, open(config['folders']['brownie']+"/topics.json", 'w'))
     return topics
 
 

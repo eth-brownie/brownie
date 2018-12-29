@@ -4,12 +4,12 @@ import importlib
 import os
 import sys
 
-from lib.components.config import BROWNIE_FOLDER, CONFIG
+from lib.components import config
 
 __version__="0.9.0b"  # did you change this in docs/conf.py as well?
 
-cmd = [i[:-3] for i in os.listdir(BROWNIE_FOLDER+"/lib") if i[-3:]==".py"]
-sys.path.insert(0, "")
+cmd = [i[:-3] for i in os.listdir(config['folders']['brownie']+"/lib") if i[-3:]==".py"]
+sys.path.insert(0, config['folders']['project'])
 
 print("Brownie v{} - Python development framework for Ethereum\n".format(__version__))
 

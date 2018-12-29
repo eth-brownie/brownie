@@ -19,7 +19,7 @@ name = sys.argv[2].replace(".py","")
 if not os.path.exists('deployments/{}.py'.format(name)):
     sys.exit("ERROR: Cannot find deployments/{}.py".format(name))
 
-from lib.components.config import CONFIG
+from lib.components import config
 from lib.components.network import Network
 
 module = importlib.import_module("deployments."+name)
@@ -28,7 +28,7 @@ try:
     Network(module).run(name)
     print("\nSUCCESS: deployment script '{}' completed successfully.".format(name))      
 except Exception as e:
-   if CONFIG['logging']['exc']>=2:
+   if config['logging']['exc']>=2:
        print("".join(traceback.format_tb(sys.exc_info()[2])))
    print("ERROR: Deployment of '{}' failed from unhandled {}: {}".format(
        name, type(e).__name__, e))
