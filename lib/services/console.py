@@ -22,7 +22,7 @@ class Console:
             sys.stdout.write(self._prompt+ln)
             sys.stdout.flush()
 
-    def run(self, globals_dict, history_file = None, exit_fn = None):
+    def run(self, globals_dict, history_file = None):
         builtins.print = self._print
         local_dict = {}
         if history_file:
@@ -41,12 +41,10 @@ class Console:
                     print()
                     cmd = "exit()"
                 if cmd == "exit()":
-                    if exit_fn:
-                        exit_fn()
                     if history_file:
                         readline.remove_history_item(readline.get_current_history_length() - 1)
                         readline.write_history_file(history_file)
-                    sys.exit()
+                    return
                 if not cmd.strip():
                     continue
                 if cmd.rstrip()[-1] == ":":

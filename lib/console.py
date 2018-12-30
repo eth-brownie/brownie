@@ -15,4 +15,5 @@ from lib.services import console
 network = Network(sys.modules[__name__])
 print("Brownie environment is ready.")
 
-console.run(globals(), config['folders']['project']+'/build/.history', network.save)
+console.run(globals(), config['folders']['project']+'/build/.history')
+network.save()
