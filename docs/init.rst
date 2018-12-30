@@ -18,6 +18,8 @@ This will create the following project structure within the folder:
 * ``test/``: Directory for test scripts
 * ``brownie-config.json``: Configuration file for the project
 
+Once initiated, you can run brownie commands from any subfolder within the project.
+
 You can also initialize already existing projects. This is useful if you wish to define templates for common starting points on new projects. To initialize the 'token' project, which is provided as a demo:
 
 ::
