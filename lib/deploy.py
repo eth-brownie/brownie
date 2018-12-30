@@ -14,12 +14,13 @@ Arguments:
 
 Use deploy to run scripts intended to deploy contracts onto the network.""")
 
-name = sys.argv[2].replace(".py","")
-
-if not os.path.exists('deployments/{}.py'.format(name)):
-    sys.exit("ERROR: Cannot find deployments/{}.py".format(name))
 
 from lib.components import config
+
+name = sys.argv[2].replace(".py","")
+if not os.path.exists(config['folders']['project']+'/deployments/{}.py'.format(name)):
+    sys.exit("ERROR: Cannot find deployments/{}.py".format(name))
+
 from lib.components.network import Network
 
 module = importlib.import_module("deployments."+name)

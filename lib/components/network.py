@@ -9,7 +9,7 @@ import traceback
 
 from lib.services.fernet import FernetKey, InvalidToken
 from lib.components import config
-from lib.components.eth import web3, wei, compile_contracts, get_compiled, clear_contracts
+from lib.components.eth import web3, wei, compile_contracts
 import lib.components.eth as ethh
 from lib.components.account import Accounts, LocalAccount
 from lib.components.contract import ContractDeployer
@@ -20,7 +20,7 @@ class Network:
 
     _key = None
 
-    def __init__(self, module):
+    def __init__(self, module, clear_network = None):
         self._module = module
         accounts = Accounts(web3.eth.accounts)
         self._network_dict = {
@@ -32,7 +32,7 @@ class Network:
             'run': self.run,
             'web3': web3,
             'wei': wei }
-        for name, interface in get_compiled().items():
+        for name, interface in compile_contracts(clear_network).items():
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
             self._network_dict[name] = ContractDeployer(name, interface, config['active_network'])
@@ -88,7 +88,7 @@ class Network:
             to_save = []
             for account in [i for i in self._network_dict['accounts'] if type(i) is LocalAccount]:
                 to_save.append(self._key.encrypt(account._priv_key, False))
-            persist_file = 'build/networks/{}.json'.format(config['active_network'])
+            persist_file = config['folders']['project']+'/build/networks/{}.json'.format(config['active_network'])
             data = json.load(open(persist_file))
             data['height'] = web3.eth.blockNumber
             data['accounts'] = to_save
@@ -102,6 +102,7 @@ class Network:
     def run(self, name):
         if not os.path.exists(config['folders']['project']+'/deployments/{}.py'.format(name)):
             print("ERROR: Cannot find deployments/{}.py".format(name))
+            print('penis')
             return
         module = importlib.import_module("deployments."+name)
         module.__dict__.update(self._network_dict)
@@ -115,13 +116,14 @@ class Network:
                 self.save()
                 config['active_network'] = network
                 self._key = None
-        web3._reset()
+        web3._reset(False)
         netconf = config['networks'][config['active_network']]
-        if 'persist' in netconf and netconf['persist']:
-            clear_contracts(config['active_network'])
-        compile_contracts()
-        self.__init__(self._module)
-        print("Brownie environment is ready.")
+        if 'persist' not in netconf:
+            netconf['persist'] = False
+        self.__init__(
+            self._module,
+            config['active_network'] if netconf['persist'] else None)
+        return "Brownie environment is ready."
 
     def logging(self, **kwargs):
         if not kwargs or [k for k,v in kwargs.items() if

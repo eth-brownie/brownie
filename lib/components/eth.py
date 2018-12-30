@@ -27,18 +27,21 @@ class web3:
 
     _rpc = None
     
-    def __init__(self):
+    def __init__(self, verbose = True):
         name = config['active_network']
         try:
             netconf = config['networks'][name]
-            print("Using network '{}'".format(name))
+            if verbose:
+                print("Using network '{}'".format(name))
         except KeyError:
             sys.exit("ERROR: Network '{}' is not defined in config.json".format(name))
         if self._rpc:
-            print("Resetting environment...")
+            if verbose:
+                print("Resetting environment...")
             self._rpc.terminate()
         if 'test-rpc' in netconf:
-            print("Running '{}'...".format(netconf['test-rpc']))
+            if verbose:
+                print("Running '{}'...".format(netconf['test-rpc']))
             self._rpc = Popen(
                 netconf['test-rpc'].split(' '),
                 stdout = DEVNULL,
@@ -58,8 +61,8 @@ class web3:
         if self._rpc:
             self._rpc.terminate()
 
-    def _reset(self):
-        self.__init__()
+    def _reset(self, verbose = True):
+        self.__init__(verbose)
 
 
 class TransactionReceipt:
@@ -159,7 +162,7 @@ def wei(value):
         raise ValueError("Unknown denomination: {}".format(value))    
 
 def add_contract(name, address, txid, owner):
-    json_file = './build/contracts/{}.json'.format(name)
+    json_file = config['folders']['project']+'/build/contracts/{}.json'.format(name)
     data = COMPILED[name]
     data['networks'][str(int(time.time()))] = {
         'address': address,
@@ -168,25 +171,11 @@ def add_contract(name, address, txid, owner):
         'owner': owner }
     json.dump(COMPILED[name], open(json_file, 'w'), sort_keys=True, indent=4)
 
-def clear_contracts(network):
-    for name, data in COMPILED.items():
-        networks = data['networks'].copy()
-        data['networks'] = dict((k,v) for k,v in networks.items() if v['network']!=network)
-        if networks == data['networks']:
-            continue
-        json_file = './build/contracts/{}.json'.format(name)
-        json.dump(COMPILED[name], open(json_file, 'w'), sort_keys=True, indent=4)
-    
-
-def get_compiled():
-    return COMPILED
-
-def compile_contracts():
+def compile_contracts(clear_network = None):
     contract_files = ["{}/{}".format(i[0],x) for i in os.walk(config['folders']['project']+'/contracts') for x in i[2]] 
     if not contract_files:
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")
-    print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
-        config['solc']['runs']) if config['solc']['optimize'] else "Disabled"))
+    msg = False
     compiler_info = config['solc'].copy()
     compiler_info['version'] = solc.get_solc_version_string().strip('\n')
     final = {}
@@ -203,7 +192,8 @@ def compile_contracts():
                         networks = dict(
                             (k,v) for k,v in compiled['networks'].items()
                             if 'persist' in config['networks'][v['network']] and 
-                            config['networks'][v['network']]['persist'])
+                            config['networks'][v['network']]['persist'] and
+                            v['network'] != clear_network)
                         if networks != compiled['networks']:
                             compiled['networks'] = networks
                             json.dump(compiled, open(json_file, 'w'),
@@ -212,6 +202,10 @@ def compile_contracts():
                         continue
                 except (json.JSONDecodeError, FileNotFoundError):
                     pass
+            if not msg:
+                print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
+                      config['solc']['runs']) if config['solc']['optimize'] else "Disabled"))
+                msg = True
             input_json = {
                 'language': "Solidity",
                 'sources': {filename: {'content': open(filename).read()}},
@@ -259,6 +253,8 @@ def compile_contracts():
                 json.dump(final[name], open(json_file, 'w'),
                           sort_keys=True, indent=4)
             break
+    global COMPILED
+    COMPILED = final
     return final
 
 def _topics():

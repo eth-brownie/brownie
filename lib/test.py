@@ -50,6 +50,8 @@ def _format_tb(test, desc, exc, match):
     traceback_info.append((test, "{}  {}: {}".format(
         "".join(tb[start:stop]), exc[0].__name__, exc[1])))
 
+network = None
+
 for name in test_files:
     module = importlib.import_module("tests."+name)
     test_names = open(config['folders']['project']+"/tests/{}.py".format(name),'r').read().split("\ndef ")[1:]
@@ -57,9 +59,11 @@ for name in test_files:
     if not test_names:
         print("\nWARNING: Could not find any test functions in {}.py".format(name))
         continue
+    if network:
+        network.reset()
     print("\nRunning {}.py - {} test{}".format(
             name, len(test_names),"s" if len(test_names)!=1 else ""))
-    Network(module)
+    network = Network(module)
     if hasattr(module, 'DEPLOYMENT'):
         sys.stdout.write("   Deployment '{}'...".format(module.DEPLOYMENT))
         sys.stdout.flush()

@@ -17,8 +17,6 @@ FILES = [
     ('brownie-config.json', open(config['folders']['brownie']+'/config.json', 'r').read())
 ]
 
-
-
 if ["init", "--help"] == sys.argv[1:3]:
     sys.exit("""Usage: brownie init [project]
 
@@ -85,6 +83,7 @@ if init:
 elif sys.argv[1] == "init":
     sys.exit("ERROR: Brownie was already initiated in this folder.")
 
-for folder in ('./build', './build/contracts','./build/networks'):
-        if not os.path.exists(folder):
-            os.mkdir(folder)
+for folder in ('build', 'build/contracts','build/networks'):
+    folder = "{}/{}".format(config['folders']['project'],folder)
+    if not os.path.exists(folder):
+        os.mkdir(folder)
