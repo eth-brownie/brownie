@@ -11,12 +11,14 @@ if "--help" in sys.argv:
 
 Connects to the network and opens the brownie console.""")
 
+from lib.components import config
 from lib.components.network import Network
+
 network = Network(sys.modules[__name__])
 print("Brownie environment is ready.")
 
 try:
-    readline.read_history_file('./build/.history')
+    readline.read_history_file(config['folders']['project']+'/build/.history')
 except FileNotFoundError:
     pass
 
@@ -35,7 +37,7 @@ while True:
         if cmd == "exit()":
             network.save()
             readline.remove_history_item(readline.get_current_history_length() - 1)
-            readline.write_history_file('./build/.history')
+            readline.write_history_file(config['folders']['project']+'/build/.history')
             sys.exit()
         if not cmd.strip():
             continue
