@@ -78,7 +78,6 @@ class Network:
                 print("\nPersistence has been disabled.")
                 return
 
-
     def save(self):
         try:
             netconf = config['networks'][config['active_network']]
@@ -102,7 +101,6 @@ class Network:
     def run(self, name):
         if not os.path.exists(config['folders']['project']+'/deployments/{}.py'.format(name)):
             print("ERROR: Cannot find deployments/{}.py".format(name))
-            print('penis')
             return
         module = importlib.import_module("deployments."+name)
         module.__dict__.update(self._network_dict)
