@@ -33,7 +33,7 @@ class Alert:
                 msg = msg.format(start_value, value)
                 print("{}ALERT{}: {}".format(RED, DEFAULT, msg))
             if callback:
-                callback(value)
+                callback(start_value, value)
             _instances.discard(self)
             return
 

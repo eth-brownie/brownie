@@ -290,3 +290,37 @@ The check module exposes the following methods that are used in place of ``asser
 .. py:method:: check.not_equal(a, b, fail_msg = "Expected values to be not equal")
 
     Raises if ``a == b``.
+
+.. _api_alert:
+
+Alert
+=====
+
+The alert module is used to set up notifications and callbacks based on state changes in the blockchain.
+
+.. py:class:: Alert(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None)
+
+    An alert object. It is active immediately upon creation of the instance.
+
+    * ``fn``: A callable to check for the state change.
+    * ``args``: Arguments to supply to the callable.
+    * ``kwargs``: Keyword arguments to supply to the callable.
+    * ``delay``: Number of seconds to wait between checking for changes.
+    * ``msg``: String to display upon change. The string will have ``.format(initial_value, new_value)`` applied before displaying.
+    * ``callback``: A callback function to call upon a change in value. It should accept two arguments, the initial value and the new value.
+
+.. py:classmethod:: Alert.stop()
+
+    Stops the alert.
+
+.. py:method:: new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None)
+
+    Alias for creating a new alert.
+
+.. py:method:: show()
+
+    Returns a list of all currently active alerts.
+
+.. py:method:: stop_all()
+
+    Stops all currently active alerts.
