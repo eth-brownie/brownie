@@ -10,9 +10,9 @@ import traceback
 from lib.services.fernet import FernetKey, InvalidToken
 from lib.components import config
 from lib.components.eth import web3, wei, compile_contracts
-import lib.components.eth as ethh
 from lib.components.account import Accounts, LocalAccount
 from lib.components.contract import ContractDeployer
+from lib.components import alert
 import lib.components.check as check
 
 
@@ -26,6 +26,7 @@ class Network:
         self._network_dict = {
             'a': accounts,
             'accounts': accounts,
+            'alert': alert,
             'check': check,
             'logging': self.logging,
             'reset': self.reset,
@@ -114,6 +115,7 @@ class Network:
                 self.save()
                 config['active_network'] = network
                 self._key = None
+        alert.stop_all()
         web3._reset(False)
         netconf = config['networks'][config['active_network']]
         if 'persist' not in netconf:

@@ -3,24 +3,25 @@
 import builtins
 import readline
 import sys
-import threading
+from threading import Lock
 import traceback
 
 
 class Console:
 
     def __init__(self):
-        self._print_lock = threading.Lock()
+        self._print_lock = Lock()
         self._multiline = False
         self._prompt = ">>> "
 
-    def _print(self, *args, sep=' ', end='\n'):
+    def _print(self, *args, sep=' ', end='\n', file=sys.stdout, flush=False):
         with self._print_lock:
             ln = readline.get_line_buffer()
-            sys.stdout.write('\r'+' '*(len(ln)+4)+'\r')
-            sys.stdout.write(sep.join(str(i) for i in args)+end)
-            sys.stdout.write(self._prompt+ln)
-            sys.stdout.flush()
+            file.write('\r'+' '*(len(ln)+4)+'\r')
+            file.write(sep.join(str(i) for i in args)+end)
+            file.write(self._prompt+ln)
+            file.flush()
+            
 
     def run(self, globals_dict, history_file = None):
         builtins.print = self._print
