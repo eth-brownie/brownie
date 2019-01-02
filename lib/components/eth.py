@@ -120,22 +120,12 @@ Gas Used: {0.gasUsed}
     
         if self.logs:
             print("  Events In This Transaction\n  ---------------------------")
-        for event in self.logs:
-            topic = TOPICS[event.topics[0].hex()]
-            print("  "+topic[0])
-            for i, (key, type_) in enumerate([i[:2] for i in topic[1] if i[2]], start=1):
-                value = decode_single(type_, event.topics[i])
-                if type(value) is bytes:
-                    value = web3.toHex(value)
-                print("    {}: {}".format(key, value))
-            names = [i[0] for i in topic[1] if not i[2]]
-            types = [i[1] if i[1]!="bytes" else "bytes[]" for i in topic[1] if not i[2]]
-            decoded = decode_abi(types, HexBytes(event.data))
-            for key, value in zip(names, decoded):
-                if type(value) is bytes:
-                    value = web3.toHex(value)
-                print("    {}: {}".format(key, value))
-        print()
+            for event in self.logs:
+                data = _decode_event(event)
+                print("  "+data['name'])
+                for i in data['data']:
+                    print("    {0[key]}: {0[value]}".format(i))
+            print()
 
     def __repr__(self):
         return "<Transaction object '{}'>".format(self.hash)
@@ -257,18 +247,34 @@ def compile_contracts(clear_network = None):
     COMPILED = final
     return final
 
-def _topics():
+
+def _decode_event(event):
+    topic = TOPICS[event.topics[0].hex()]
+    result = {'name':topic['name'], 'data':[]}
+    types = [i['type'] if i['type']!="bytes" else "bytes[]" for i in topic['inputs'] if not i['indexed']]
+    decoded = list(decode_abi(types, HexBytes(event.data)))[::-1]
+    topics = event.topics[:0:-1]
+    for i in topic['inputs']:
+        value = decode_single(i['type'], topics.pop()) if i['indexed'] else decoded.pop()
+        if type(value) is bytes:
+            value = web3.toHex(value)
+        result['data'].append({'key': i['name'], 'value': value})
+    return result
+
+def _generate_topics():
     try:
         topics = json.load(open(config['folders']['brownie']+"/topics.json", 'r'))
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         topics = {}
     events = [x for i in COMPILED.values() for x in i['abi'] if x['type']=="event"]
-    topics.update(dict((
-        web3.sha3(text="{}({})".format(
-            i['name'], ",".join(x['type'] for x in i['inputs']))).hex(),
-        [i['name'], [(x['name'],x['type'],x['indexed']) for x in i['inputs']]]
-        ) for i in events))
-    json.dump(topics, open(config['folders']['brownie']+"/topics.json", 'w'))
+    for i in events:
+        key = web3.sha3(text="{}({})".format(
+            i['name'], ",".join(x['type'] for x in i['inputs']))).hex()
+        topics[key] = {'name':i['name'], 'inputs':i['inputs']}
+    json.dump(
+        topics, open(config['folders']['brownie']+"/topics.json", 'w'),
+        sort_keys=True, indent=4
+    )
     return topics
 
 
@@ -277,4 +283,4 @@ UNITS = {
     'kwei': 3, 'babbage': 3, 'mwei': 6, 'lovelace': 6, 'gwei': 9, 'shannon': 9,
     'microether': 12, 'szabo': 12, 'milliether': 15, 'finney': 15, 'ether': 18 }
 COMPILED = compile_contracts()
-TOPICS = _topics()
+TOPICS = _generate_topics()
