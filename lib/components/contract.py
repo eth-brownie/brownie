@@ -1,9 +1,16 @@
 #!/usr/bin/python3
 
 from collections import OrderedDict
+import eth_event
 import re
 
-from lib.components.eth import web3, wei, add_contract, TransactionReceipt, VirtualMachineError
+from lib.components.eth import (
+    web3,
+    wei,
+    add_contract,
+    TransactionReceipt,
+    VirtualMachineError
+)
 
 class _ContractBase:
 
@@ -15,12 +22,7 @@ class _ContractBase:
             raise AttributeError("Ambiguous contract functions in {}: {}".format(
                 name, ",".join(duplicates)))
         self._name = name
-        self.topics = dict((
-            i['name'], 
-            web3.sha3(text="{}({})".format(i['name'],
-                ",".join(x['type'] for x in i['inputs']))
-                ).hex()
-        ) for i in abi if i['type']=="event")
+        self.topics = eth_event.get_topics(abi)
         self.signatures = dict((
             i['name'],
             web3.sha3(text="{}({})".format(i['name'],

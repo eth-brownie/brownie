@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from eth_abi import decode_abi, decode_single
+import eth_event
 from hexbytes import HexBytes
 import json
 import os
@@ -22,6 +22,7 @@ class VirtualMachineError(Exception):
         else:
             self.revert_msg = None
         super().__init__(msg)
+
 
 class web3:
 
@@ -121,10 +122,10 @@ Gas Used: {0.gasUsed}
         if self.logs:
             print("  Events In This Transaction\n  ---------------------------")
             for event in self.logs:
-                data = _decode_event(event)
+                data = eth_event.decode_event(event, TOPICS[event.topics[0].hex()])
                 print("  "+data['name'])
                 for i in data['data']:
-                    print("    {0[key]}: {0[value]}".format(i))
+                    print("    {0[name]}: {0[value]}".format(i))
             print()
 
     def __repr__(self):
@@ -246,20 +247,7 @@ def compile_contracts(clear_network = None):
     global COMPILED
     COMPILED = final
     return final
-
-
-def _decode_event(event):
-    topic = TOPICS[event.topics[0].hex()]
-    result = {'name':topic['name'], 'data':[]}
-    types = [i['type'] if i['type']!="bytes" else "bytes[]" for i in topic['inputs'] if not i['indexed']]
-    decoded = list(decode_abi(types, HexBytes(event.data)))[::-1]
-    topics = event.topics[:0:-1]
-    for i in topic['inputs']:
-        value = decode_single(i['type'], topics.pop()) if i['indexed'] else decoded.pop()
-        if type(value) is bytes:
-            value = web3.toHex(value)
-        result['data'].append({'key': i['name'], 'value': value})
-    return result
+ 
 
 def _generate_topics():
     try:
@@ -267,10 +255,7 @@ def _generate_topics():
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         topics = {}
     events = [x for i in COMPILED.values() for x in i['abi'] if x['type']=="event"]
-    for i in events:
-        key = web3.sha3(text="{}({})".format(
-            i['name'], ",".join(x['type'] for x in i['inputs']))).hex()
-        topics[key] = {'name':i['name'], 'inputs':i['inputs']}
+    topics.update(eth_event.get_event_abi(events))
     json.dump(
         topics, open(config['folders']['brownie']+"/topics.json", 'w'),
         sort_keys=True, indent=4

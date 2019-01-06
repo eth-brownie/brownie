@@ -7,6 +7,7 @@ cryptography==2.4.2
 cytoolz==0.9.0.1
 eth-abi==1.2.2
 eth-account==0.3.0
+eth-event==0.1.1
 eth-hash==0.2.0
 eth-keyfile==0.5.1
 eth-keys==0.2.0b3
@@ -17,6 +18,7 @@ hexbytes==0.1.0
 idna==2.7
 lru-dict==1.1.6
 parsimonious==0.8.1
+playsound==1.2.2
 py-solc==3.2.0
 pycparser==2.19
 pycryptodome==3.7.2
