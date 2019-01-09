@@ -80,7 +80,7 @@ class TransactionReceipt:
             print("\nTransaction sent: {}".format(txid.hex()))
         for k,v in tx.items():
             setattr(self, k, v.hex() if type(v) is HexBytes else v)
-        if not tx.blockNumber and CONFIG['logging']['tx'] and not silent:
+        if not tx.blockNumber and config['logging']['tx'] and not silent:
             print("Waiting for confirmation...")
         receipt = web3.eth.waitForTransactionReceipt(txid)
         for k,v in [(k,v) for k,v in receipt.items() if k not in tx]:
