@@ -17,7 +17,7 @@ GREEN = "\033[92m"
 RED = "\033[91m"
 DEFAULT = "\x1b[0m"
 
-__doc__ = """Usage: brownie [options] test [<filename>]
+__doc__ = """Usage: brownie test [<filename>] [options]
 
 Arguments:
   <filename>         Only run tests from a specific file
@@ -56,7 +56,7 @@ def _format_tb(test, desc, exc, match):
 
 
 def main():
-    args = docopt(__doc__, options_first=True)
+    args = docopt(__doc__)
     if args['<filename>']:
         name = args['<filename>'].replace(".py", "")
         if not os.path.exists("tests/{}.py".format(name)):

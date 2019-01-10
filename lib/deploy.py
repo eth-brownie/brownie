@@ -11,7 +11,7 @@ from lib.components import config
 CONFIG = config.CONFIG
 
 
-__doc__ = """Usage: brownie [options] deploy <filename>
+__doc__ = """Usage: brownie deploy <filename> [options]
 
 Arguments:
   <filename>         The name of the deployment script to run
@@ -25,7 +25,7 @@ Use deploy to run scripts intended to deploy contracts onto the network.
 """.format(CONFIG['default_network'])
 
 def main():
-    args = docopt(__doc__, options_first=True)
+    args = docopt(__doc__)
     name = args['<filename>'].replace(".py", "")
     if not os.path.exists("deployments/{}.py".format(name)):
         sys.exit("ERROR: Cannot find deployments/{}.py".format(name))
@@ -36,8 +36,8 @@ def main():
         Network(module).run(name)
         print("\nDeployment script '{}' completed successfully.".format(name))      
     except Exception as e:
-    if CONFIG['logging']['exc']>=2:
-        print("".join(traceback.format_tb(sys.exc_info()[2])))
-    print("ERROR: Deployment of '{}' failed from unhandled {}: {}".format(
-        name, type(e).__name__, e
-    ))
+        if CONFIG['logging']['exc']>=2:
+            print("".join(traceback.format_tb(sys.exc_info()[2])))
+        print("ERROR: Deployment of '{}' failed from unhandled {}: {}".format(
+            name, type(e).__name__, e
+        ))

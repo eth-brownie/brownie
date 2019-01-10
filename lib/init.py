@@ -20,7 +20,7 @@ FILES = [
     )
 ]
 
-__doc__ = """Usage: brownie [options] init [<project>]
+__doc__ = """Usage: brownie init [<project>] [options]
 
 Arguments:
   <project>           Make a copy of an existing project
@@ -44,7 +44,7 @@ at {}/projects
 
 
 def main():
-    args = docopt(__doc__, options_first=True)
+    args = docopt(__doc__)
     if (CONFIG['folders']['brownie'] in os.path.abspath('.') and 
         CONFIG['folders']['brownie']+"/projects/" not in os.path.abspath('.')):
         sys.exit(

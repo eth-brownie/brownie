@@ -12,8 +12,7 @@ CONFIG = config.CONFIG
 
 __version__ = "0.9.0b"  # did you change this in docs/conf.py as well?
 
-
-__doc__ = """Usage:  brownie [options] <command> [<args>...]
+__doc__ = """Usage:  brownie <command> [<args>...] [options]
 
 Commands:
   console            Load the console
@@ -26,21 +25,25 @@ Options:
   --network [name]   Use a specific network (default {})
   --verbose          Enable verbose reporting
 
-Type 'brownie help <command>' for specific options and more information about
+Type 'brownie <command> --help' for specific options and more information about
 each command.""".format(CONFIG['default_network'])
 
-print("Brownie v{} - Python development framework for Ethereum\n".format(__version__))
-args = docopt(__doc__, options_first=True)
+if sys.argv[1][0] != "-":
+    try:
+        idx = next(sys.argv.index(i) for i in sys.argv if i[0]=="-")
+        opts = sys.argv[idx:]
+        sys.argv = sys.argv[:idx]
+    except StopIteration:
+        opts = []
 
-if args['<command>'] == "help" and args['<args>']:
-    sys.argv[sys.argv.index('help')] = "--help"
-    args['<command>'] = args['<args>'][0]
+print("Brownie v{} - Python development framework for Ethereum\n".format(__version__))
+args = docopt(__doc__)
+sys.argv += opts
 
 lib_folder = __file__[:__file__.rfind('/')]+"/lib"
 cmd_list = [i[:-3] for i in os.listdir(lib_folder) if i[-3:]==".py"]
 if args['<command>'] not in cmd_list:
     sys.exit("Invalid command. Try 'brownie --help' for available commands.")
-
 
 if args['<command>'] != "init":
     if not init.check_for_project():
@@ -49,5 +52,4 @@ if args['<command>'] != "init":
             "\nType 'brownie init' to create the file structure."
         )
     init.create_build_folders()
-
 importlib.import_module("lib."+args['<command>']).main()

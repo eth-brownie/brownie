@@ -11,7 +11,7 @@ from lib.components import config
 CONFIG = config.CONFIG
 
 
-__doc__ = """Usage: brownie [options] console
+__doc__ = """Usage: brownie console [options]
 
 Options:
   --help             Display this message
@@ -22,7 +22,7 @@ Connects to the network and opens the brownie console.
 """.format(CONFIG['default_network'])
 
 def main():
-    args = docopt(__doc__, options_first=True)
+    args = docopt(__doc__)
 
     network = Network(sys.modules[__name__])
     print("Brownie environment is ready.")
