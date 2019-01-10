@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from docopt import docopt
 import os
 import shutil
 import sys
@@ -7,24 +8,25 @@ import sys
 from lib.components import config
 CONFIG = config.CONFIG
 
-FOLDERS = [
-    'contracts',
-    'deployments',
-    'tests'
-]
+
+FOLDERS = ["contracts", "deployments", "tests"]
+BUILD_FOLDERS = ["build", "build/contracts", "build/networks"]
 FILES = [
-    ('deployments/__init__.py',''),
-    ('tests/__init__.py',''),
-    ('brownie-config.json', open(CONFIG['folders']['brownie']+'/config.json', 'r').read())
+    ("deployments/__init__.py", ""),
+    ("tests/__init__.py", ""),
+    (
+        "brownie-config.json",
+        open(CONFIG['folders']['brownie']+"/config.json", 'r').read()
+    )
 ]
 
-if ["init", "--help"] == sys.argv[1:3]:
-    sys.exit("""Usage: brownie init [project]
+__doc__ = """Usage: brownie [options] init [<project>]
 
-Options:
-  [project]  Make a copy of an existing project
+Arguments:
+  project             Make a copy of an existing project
 
-Creates the default structure for the brownie environment:
+brownie init is used to create new brownie projects. It creates the default
+structure for the brownie environment:
 
 build/                Compiled contracts and network data
 contracts/            Solidity contracts
@@ -34,9 +36,11 @@ brownie-config.json   Project configuration file
 
 You can optionally specify a project name, which deploys an already existing
 project into a new folder with the same name. Existing projects can be found
-at {}/projects""".format(CONFIG['folders']['brownie']))
+at {}/projects""".format(CONFIG['folders']['brownie'])
 
-if sys.argv[1] == "init":
+
+def main():
+    args = docopt(__doc__, options_first=True)
     if (CONFIG['folders']['brownie'] in os.path.abspath('.') and 
         CONFIG['folders']['brownie']+"/projects/" not in os.path.abspath('.')):
         sys.exit(
@@ -49,42 +53,39 @@ if sys.argv[1] == "init":
                      " project. Use --force to override.")
         CONFIG['folders']['project'] = os.path.abspath('.')
 
-    if len(sys.argv) > 2:
-        folder = CONFIG['folders']['brownie'] + '/projects/' + sys.argv[2]
+    if check_for_project():
+        sys.exit("ERROR: Brownie was already initiated in this folder.")
+
+    if args['<project>']:
+        folder = CONFIG['folders']['brownie'] + "/projects/" + args['<project>']
         if not os.path.exists(folder):
-            sys.exit("ERROR: No project exists with the name '{}'.".format(sys.argv[2]))
+            sys.exit("ERROR: No project exists with the name '{}'".format(args['<project>']))
         try:
-            shutil.copytree(folder, sys.argv[2])
+            shutil.copytree(folder, args['<project>'])
         except FileExistsError:
             sys.exit("ERROR: One or more files for this project already exist.")
-        sys.exit("Project was created in ./{}".format(sys.argv[2]))
+        sys.exit("Project was created in ./{}".format(args['<project>']))
+    
+    create_project()
+    create_build_folders()
+    sys.exit("Brownie environment has been initiated.")
 
-def _fullpath(f):
-    return "{}/{}".format(CONFIG['folders']['project'], f)
 
-init = False
-for folder in [i for i in FOLDERS if not os.path.exists(_fullpath(i))]:
-    init = True
-    if sys.argv[1] == "init":
-        os.mkdir(_fullpath(folder))
+def check_for_project():
+    os.chdir(CONFIG['folders']['project'])
+    if [i for i in FOLDERS if not os.path.exists(i)]:
+        return False
+    if [i for i in FILES if not os.path.exists(i[0])]:
+        return False
+    return True
 
-for filename, content in [i for i in FILES if not os.path.exists(_fullpath(i[0]))]:
-    init = True
-    if sys.argv[1] == "init":
-        open(_fullpath(filename), 'a').write(content)
+def create_project():
+    os.chdir(CONFIG['folders']['project'])
+    for folder in [i for i in FOLDERS if not os.path.exists(i)]:
+        os.mkdir(folder)
+    for filename, content in [i for i in FILES if not os.path.exists(i[0])]:
+        open(filename, 'w').write(content)
 
-if init:
-    if sys.argv[1] == "init":
-        sys.exit("Brownie environment has been initiated for {}".format(
-            os.path.abspath('.')))
-    else:
-        sys.exit(
-            "ERROR: Brownie environment has not been initiated for this folder."
-            "\nType 'brownie init' to create the file structure.")
-elif sys.argv[1] == "init":
-    sys.exit("ERROR: Brownie was already initiated in this folder.")
-
-for folder in ('build', 'build/contracts','build/networks'):
-    folder = "{}/{}".format(CONFIG['folders']['project'],folder)
-    if not os.path.exists(folder):
+def create_build_folders():
+    for folder in [i for i in BUILD_FOLDERS if not os.path.exists(i)]:
         os.mkdir(folder)
