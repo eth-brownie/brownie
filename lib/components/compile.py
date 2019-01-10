@@ -18,7 +18,7 @@ CONFIG['solc']['version'] = solc.get_solc_version_string().strip('\n')
 _changed = {}
 _contracts = {}
 
-def check_if_changed(filename, contract):
+def check_if_changed(filename, contract, clear=None):
     if contract in _changed:
         return _changed[contract]
     json_file = 'build/contracts/{}.json'.format(contract)
@@ -35,7 +35,7 @@ def check_if_changed(filename, contract):
             (k,v) for k,v in compiled['networks'].items()
             if 'persist' in CONFIG['networks'][v['network']] and 
             CONFIG['networks'][v['network']]['persist'] and
-            v['network'] != clear_network)
+            v['network'] != clear)
         if networks != compiled['networks']:
             compiled['networks'] = networks
             json.dump(compiled, open(json_file, 'w'),
@@ -80,7 +80,7 @@ def compile_contracts(clear_network = None):
                 name = name[0]
             else:
                 inheritance_map[name] = set()
-            check_if_changed(filename, name)
+            check_if_changed(filename, name, clear_network)
 
     for i in range(len(inheritance_map)):
         for base, inherited in [(k,x) for k,v in inheritance_map.copy().items() if v for x in v]:
@@ -94,6 +94,7 @@ def compile_contracts(clear_network = None):
         ):
             check = [i for i in inheritance_map[name] if check_if_changed(filename, i)]
             if not check and not check_if_changed(filename, name):
+                _contracts[name] = json.load(open('build/contracts/{}.json'.format(name)))
                 continue
             if not msg:
                 print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
