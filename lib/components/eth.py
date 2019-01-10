@@ -4,12 +4,14 @@ import eth_event
 from hexbytes import HexBytes
 import json
 import os
+import re
 import solc
 from subprocess import Popen, DEVNULL
 import sys
 import time
 from web3 import Web3, HTTPProvider
 
+from lib.components.compile import compile_contracts
 from lib.components import config
 CONFIG = config.CONFIG
 
@@ -157,109 +159,14 @@ def wei(value):
     except ValueError:
         raise ValueError("Unknown denomination: {}".format(value))    
 
-def add_contract(name, address, txid, owner):
-    json_file = CONFIG['folders']['project']+'/build/contracts/{}.json'.format(name)
-    data = COMPILED[name]
-    data['networks'][str(int(time.time()))] = {
-        'address': address,
-        'transactionHash': txid,
-        'network': CONFIG['active_network'],
-        'owner': owner }
-    json.dump(COMPILED[name], open(json_file, 'w'), sort_keys=True, indent=4)
-
-def compile_contracts(clear_network = None):
-    contract_files = ["{}/{}".format(i[0],x) for i in os.walk(CONFIG['folders']['project']+'/contracts') for x in i[2]] 
-    if not contract_files:
-        sys.exit("ERROR: Cannot find any .sol files in contracts folder")
-    msg = False
-    compiler_info = CONFIG['solc'].copy()
-    compiler_info['version'] = solc.get_solc_version_string().strip('\n')
-    final = {}
-    for filename in contract_files:
-        names = [[x.strip('\t') for x in i.split(' ') if x]
-                 for i in open(filename).readlines()]
-        for name in [i[1] for i in names if i[0] in ("contract", "library")]:
-            json_file = CONFIG['folders']['project']+'/build/contracts/{}.json'.format(name)
-            if os.path.exists(json_file):
-                try:
-                    compiled = json.load(open(json_file))
-                    if (compiled['compiler'] == compiler_info and
-                        compiled['updatedAt'] >= os.path.getmtime(filename)):
-                        networks = dict(
-                            (k,v) for k,v in compiled['networks'].items()
-                            if 'persist' in CONFIG['networks'][v['network']] and 
-                            CONFIG['networks'][v['network']]['persist'] and
-                            v['network'] != clear_network)
-                        if networks != compiled['networks']:
-                            compiled['networks'] = networks
-                            json.dump(compiled, open(json_file, 'w'),
-                                      sort_keys = True, indent = 4)
-                        final[name] = compiled
-                        continue
-                except (json.JSONDecodeError, FileNotFoundError):
-                    pass
-            if not msg:
-                print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
-                      CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"))
-                msg = True
-            input_json = {
-                'language': "Solidity",
-                'sources': {filename: {'content': open(filename).read()}},
-                'settings': {
-                    'outputSelection': {'*': {
-                        '*': ["abi", "evm.bytecode", "evm.deployedBytecode"],
-                        '': ["ast", "legacyAST"] } },
-                    "optimizer": {
-                        "enabled": CONFIG['solc']['optimize'],
-                        "runs": CONFIG['solc']['runs'] }
-                }
-            }
-            print(" - {}...".format(name))
-            try:
-                compiled = solc.compile_standard(
-                    input_json,
-                    optimize = CONFIG['solc']['optimize'],
-                    optimize_runs = CONFIG['solc']['runs'],
-                    allow_paths = ".")
-            except solc.exceptions.SolcError as e:
-                err = json.loads(e.stdout_data)
-                print("\nERROR: Unable to compile {} due to the following errors:\n".format(filename))
-                for i in err['errors']:
-                    print(i['formattedMessage'])
-                sys.exit()
-            for name, data in compiled['contracts'][filename].items():
-                json_file = CONFIG['folders']['project']+'/build/contracts/{}.json'.format(name)
-                evm = data['evm']
-                final[name] = {
-                    'abi': data['abi'],
-                    'ast': compiled['sources'][filename]['ast'],
-                    'bytecode': evm['bytecode']['object'],
-                    'compiler': compiler_info,
-                    'contractName': name,
-                    'deployedBytecode': evm['deployedBytecode']['object'],
-                    'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
-                    #'legacyAST': compiled['sources'][filename]['legacyAST'],
-                    'networks': {},
-                    #'schemaVersion': 0,
-                    'source': input_json['sources'][filename]['content'],
-                    'sourceMap': evm['bytecode']['sourceMap'],
-                    'sourcePath': filename,  
-                    'updatedAt': int(time.time())
-                }
-                json.dump(final[name], open(json_file, 'w'),
-                          sort_keys=True, indent=4)
-            break
-    global COMPILED
-    COMPILED = final
-    return final
- 
 
 def _generate_topics():
     try:
         topics = json.load(open(CONFIG['folders']['brownie']+"/topics.json", 'r'))
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         topics = {}
-    events = [x for i in COMPILED.values() for x in i['abi'] if x['type']=="event"]
+    contracts = compile_contracts()
+    events = [x for i in contracts.values() for x in i['abi'] if x['type']=="event"]
     topics.update(eth_event.get_event_abi(events))
     json.dump(
         topics, open(CONFIG['folders']['brownie']+"/topics.json", 'w'),
@@ -272,5 +179,5 @@ web3 = web3()
 UNITS = {
     'kwei': 3, 'babbage': 3, 'mwei': 6, 'lovelace': 6, 'gwei': 9, 'shannon': 9,
     'microether': 12, 'szabo': 12, 'milliether': 15, 'finney': 15, 'ether': 18 }
-COMPILED = compile_contracts()
+
 TOPICS = _generate_topics()
