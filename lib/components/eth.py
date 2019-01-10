@@ -68,10 +68,12 @@ class web3:
 
 class TransactionReceipt:
 
-    gas_profiles = {}
+    _gas_profiles = {}
+    _txhistory = []
     
     def __init__(self, txid, silent=False, name=None):
         self.fn_name = name
+        self._txhistory.append(self)
         while True:
             tx = web3.eth.getTransaction(txid)
             if tx: break
@@ -88,12 +90,14 @@ class TransactionReceipt:
                 v = v.hex()
             setattr(self, k, v)
         if name and '--gas' in sys.argv:
-            self.gas_profiles.setdefault(name,{'avg':0,'high':0,'low':float('inf'),'count':0})
-            gas = self.gas_profiles[name]
+            self._gas_profiles.setdefault(name,{'avg':0,'high':0,'low':float('inf'),'count':0})
+            gas = self._gas_profiles[name]
             gas['avg'] = (gas['avg']*gas['count']+receipt.gasUsed)/(gas['count']+1)
             gas['count']+=1
             gas['high'] = max(gas['high'],receipt.gasUsed)
             gas['low'] = min(gas['low'],receipt.gasUsed)
+        self.gasLimit = self.gas
+        del self.gas
         if silent:
             return
         if config['logging']['tx'] >= 2:

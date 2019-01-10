@@ -102,8 +102,8 @@ if not traceback_info:
     print("\n{}SUCCESS: All tests passed.{}".format(GREEN, DEFAULT))
     if '--gas' in sys.argv:
         print('\nGas Profile:')
-        for i in sorted(TransactionReceipt.gas_profiles):
-            print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i,TransactionReceipt.gas_profiles[i]))
+        for i in sorted(TransactionReceipt._gas_profiles):
+            print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i,TransactionReceipt._gas_profiles[i]))
     sys.exit()
 
 print("\n{}WARNING: {} test{} failed.{}".format(
