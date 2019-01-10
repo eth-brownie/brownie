@@ -9,13 +9,8 @@ import traceback
 
 from lib.services.fernet import FernetKey, InvalidToken
 from lib.components import config
-from lib.components.eth import (
-    web3,
-    wei,
-    compile_contracts,
-    TransactionReceipt
-)
-
+from lib.components.compile import compile_contracts
+from lib.components.eth import web3, wei, TransactionReceipt
 from lib.components.account import Accounts, LocalAccount
 from lib.components.contract import ContractDeployer
 from lib.components import alert

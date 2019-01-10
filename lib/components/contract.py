@@ -4,10 +4,10 @@ from collections import OrderedDict
 import eth_event
 import re
 
+from lib.components.compile import add_contract
 from lib.components.eth import (
     web3,
     wei,
-    add_contract,
     TransactionReceipt,
     VirtualMachineError
 )
