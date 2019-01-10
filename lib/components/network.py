@@ -21,6 +21,8 @@ from lib.components.contract import ContractDeployer
 from lib.components import alert
 import lib.components.check as check
 
+CONFIG = config.CONFIG
+
 
 class Network:
 
@@ -43,17 +45,17 @@ class Network:
         for name, interface in compile_contracts(clear_network).items():
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
-            self._network_dict[name] = ContractDeployer(name, interface, config['active_network'])
+            self._network_dict[name] = ContractDeployer(name, interface, CONFIG['active_network'])
         module.__dict__.update(self._network_dict)
-        netconf = config['networks'][config['active_network']]
+        netconf = CONFIG['networks'][CONFIG['active_network']]
         if 'persist' not in netconf or not netconf['persist']:
             return
         while True:
-            persist_file = config['folders']['project']+'/build/networks/{}.json'.format(config['active_network'])
+            persist_file = CONFIG['folders']['project']+'/build/networks/{}.json'.format(CONFIG['active_network'])
             exists = os.path.exists(persist_file)
             if not exists:
                 print("Persistent environment for '{}' has not yet been declared.".format(
-                    config['active_network']))
+                    CONFIG['active_network']))
                 self._key = FernetKey(getpass(
                     "Please set a password for the persistent environment: "))
                 json.dump({
@@ -72,7 +74,7 @@ class Network:
                 if not self._key:
                     self._key = FernetKey(getpass(
                         "Enter the persistence password for '{}': ".format(
-                            config['active_network'])))
+                            CONFIG['active_network'])))
                 self._key.decrypt(data['password'])
                 print("Loading persistent environment...")
                 for priv_key in data['accounts']:
@@ -88,26 +90,26 @@ class Network:
 
     def save(self):
         try:
-            netconf = config['networks'][config['active_network']]
+            netconf = CONFIG['networks'][CONFIG['active_network']]
             if 'persist' not in netconf or not netconf['persist']:
                 return
             print("Saving environment...")
             to_save = []
             for account in [i for i in self._network_dict['accounts'] if type(i) is LocalAccount]:
                 to_save.append(self._key.encrypt(account._priv_key, False))
-            persist_file = config['folders']['project']+'/build/networks/{}.json'.format(config['active_network'])
+            persist_file = CONFIG['folders']['project']+'/build/networks/{}.json'.format(CONFIG['active_network'])
             data = json.load(open(persist_file))
             data['height'] = web3.eth.blockNumber
             data['accounts'] = to_save
             json.dump(data, open(persist_file,'w'), sort_keys=True, indent=4)
         except Exception as e:
-            if config['logging']['exc']>=2:
+            if CONFIG['logging']['exc']>=2:
                 print("".join(traceback.format_tb(sys.exc_info()[2])))
             print("ERROR: Unable to save environment due to unhandled {}: {}".format(
                 type(e).__name__, e))
 
     def run(self, name):
-        if not os.path.exists(config['folders']['project']+'/deployments/{}.py'.format(name)):
+        if not os.path.exists(CONFIG['folders']['project']+'/deployments/{}.py'.format(name)):
             print("ERROR: Cannot find deployments/{}.py".format(name))
             return
         module = importlib.import_module("deployments."+name)
@@ -116,20 +118,20 @@ class Network:
 
     def reset(self, network=None):
         if network:
-            if network not in config['networks']:
+            if network not in CONFIG['networks']:
                 print("ERROR: Network '{}' is not defined in config.json".format(network))
-            if network != config['active_network']:
+            if network != CONFIG['active_network']:
                 self.save()
-                config['active_network'] = network
+                CONFIG['active_network'] = network
                 self._key = None
         alert.stop_all()
         web3._reset(False)
-        netconf = config['networks'][config['active_network']]
+        netconf = CONFIG['networks'][CONFIG['active_network']]
         if 'persist' not in netconf:
             netconf['persist'] = False
         self.__init__(
             self._module,
-            config['active_network'] if netconf['persist'] else None)
+            CONFIG['active_network'] if netconf['persist'] else None)
         return "Brownie environment is ready."
 
     def logging(self, **kwargs):
@@ -137,5 +139,5 @@ class Network:
             k not in ('tx','exc') or type(v) is not int or not 0<=v<=2]:
             print("logging(tx=n, exc=n)\n\n 0 - Quiet\n 1 - Normal\n 2 - Verbose")
         else:
-            config['logging'].update(kwargs)
-            print(config['logging'])
+            CONFIG['logging'].update(kwargs)
+            print(CONFIG['logging'])

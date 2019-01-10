@@ -5,6 +5,7 @@ import shutil
 import sys
 
 from lib.components import config
+CONFIG = config.CONFIG
 
 FOLDERS = [
     'contracts',
@@ -14,7 +15,7 @@ FOLDERS = [
 FILES = [
     ('deployments/__init__.py',''),
     ('tests/__init__.py',''),
-    ('brownie-config.json', open(config['folders']['brownie']+'/config.json', 'r').read())
+    ('brownie-config.json', open(CONFIG['folders']['brownie']+'/config.json', 'r').read())
 ]
 
 if ["init", "--help"] == sys.argv[1:3]:
@@ -33,23 +34,23 @@ brownie-config.json   Project configuration file
 
 You can optionally specify a project name, which deploys an already existing
 project into a new folder with the same name. Existing projects can be found
-at {}/projects""".format(config['folders']['brownie']))
+at {}/projects""".format(CONFIG['folders']['brownie']))
 
 if sys.argv[1] == "init":
-    if (config['folders']['brownie'] in os.path.abspath('.') and 
-        config['folders']['brownie']+"/projects/" not in os.path.abspath('.')):
+    if (CONFIG['folders']['brownie'] in os.path.abspath('.') and 
+        CONFIG['folders']['brownie']+"/projects/" not in os.path.abspath('.')):
         sys.exit(
             "ERROR: Cannot init inside the main brownie installation folder.\n"
             "Create a new folder for your project and run brownie init there.")
 
-    if config['folders']['project'] != os.path.abspath('.'):
+    if CONFIG['folders']['project'] != os.path.abspath('.'):
         if '--force' not in sys.argv:
             sys.exit("ERROR: Cannot init the subfolder of an existing brownie"
                      " project. Use --force to override.")
-        config['folders']['project'] = os.path.abspath('.')
+        CONFIG['folders']['project'] = os.path.abspath('.')
 
     if len(sys.argv) > 2:
-        folder = config['folders']['brownie'] + '/projects/' + sys.argv[2]
+        folder = CONFIG['folders']['brownie'] + '/projects/' + sys.argv[2]
         if not os.path.exists(folder):
             sys.exit("ERROR: No project exists with the name '{}'.".format(sys.argv[2]))
         try:
@@ -59,7 +60,7 @@ if sys.argv[1] == "init":
         sys.exit("Project was created in ./{}".format(sys.argv[2]))
 
 def _fullpath(f):
-    return "{}/{}".format(config['folders']['project'], f)
+    return "{}/{}".format(CONFIG['folders']['project'], f)
 
 init = False
 for folder in [i for i in FOLDERS if not os.path.exists(_fullpath(i))]:
@@ -84,6 +85,6 @@ elif sys.argv[1] == "init":
     sys.exit("ERROR: Brownie was already initiated in this folder.")
 
 for folder in ('build', 'build/contracts','build/networks'):
-    folder = "{}/{}".format(config['folders']['project'],folder)
+    folder = "{}/{}".format(CONFIG['folders']['project'],folder)
     if not os.path.exists(folder):
         os.mkdir(folder)

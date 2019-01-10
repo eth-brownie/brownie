@@ -16,9 +16,10 @@ Use deploy to run scripts intended to deploy contracts onto the network.""")
 
 
 from lib.components import config
+CONFIG = config.CONFIG
 
 name = sys.argv[2].replace(".py","")
-if not os.path.exists(config['folders']['project']+'/deployments/{}.py'.format(name)):
+if not os.path.exists(CONFIG['folders']['project']+'/deployments/{}.py'.format(name)):
     sys.exit("ERROR: Cannot find deployments/{}.py".format(name))
 
 from lib.components.network import Network
@@ -29,7 +30,7 @@ try:
     Network(module).run(name)
     print("\nSUCCESS: deployment script '{}' completed successfully.".format(name))      
 except Exception as e:
-   if config['logging']['exc']>=2:
+   if CONFIG['logging']['exc']>=2:
        print("".join(traceback.format_tb(sys.exc_info()[2])))
    print("ERROR: Deployment of '{}' failed from unhandled {}: {}".format(
        name, type(e).__name__, e))

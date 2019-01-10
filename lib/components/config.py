@@ -39,5 +39,3 @@ else:
 
 if CONFIG['active_network'] not in CONFIG['networks']:
     sys.exit("ERROR: No network named '{}'".format(CONFIG['active_network']))
-
-sys.modules[__name__] = CONFIG
