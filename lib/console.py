@@ -18,7 +18,8 @@ Options:
   --network [name]   Use a specific network (default {})
   --verbose          Enable verbose reporting
 
-Connects to the network and opens the brownie console."""
+Connects to the network and opens the brownie console.
+""".format(CONFIG['default_network'])
 
 def main():
     args = docopt(__doc__, options_first=True)

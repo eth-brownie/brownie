@@ -39,7 +39,8 @@ brownie-config.json   Project configuration file
 
 You can optionally specify a project name, which deploys an already existing
 project into a new folder with the same name. Existing projects can be found
-at {}/projects""".format(CONFIG['folders']['brownie'])
+at {}/projects
+""".format(CONFIG['folders']['brownie'])
 
 
 def main():
