@@ -16,10 +16,10 @@ __version__ = "0.9.0b"  # did you change this in docs/conf.py as well?
 __doc__ = """Usage:  brownie [options] <command> [<args>...]
 
 Commands:
-  console  Load the console
-  deploy   Run a script in the /deployments folder
-  init     Initialize a new brownie project
-  test     Run test scripts in the /tests folder
+  console            Load the console
+  deploy             Run a script in the /deployments folder
+  init               Initialize a new brownie project
+  test               Run test scripts in the /tests folder
 
 Options:
   --help             Display this message

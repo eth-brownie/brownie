@@ -23,7 +23,10 @@ FILES = [
 __doc__ = """Usage: brownie [options] init [<project>]
 
 Arguments:
-  project             Make a copy of an existing project
+  <project>           Make a copy of an existing project
+
+Options:
+  --help              Display this message
 
 brownie init is used to create new brownie projects. It creates the default
 structure for the brownie environment:
