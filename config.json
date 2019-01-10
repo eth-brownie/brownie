@@ -1,32 +1,32 @@
 {
     "default_network": "development",
-    "networks":{
-        "development":{
-            "test-rpc":"ganache-cli -a 20",
-            "host":"http://127.0.0.1:8545"
+    "networks": {
+        "development": {
+            "test-rpc": "ganache-cli -a 20",
+            "host": "http://127.0.0.1:8545"
         },
-        "ropsten":{
-            "host":"https://ropsten.infura.io/",
-            "persist":true
+        "ropsten": {
+            "host": "https://ropsten.infura.io/",
+            "persist": true
         }
     },
     "solc":{
-        "optimize":true,
-        "runs":200
+        "optimize": true,
+        "runs": 200
     },
-    "logging":{
-        "test":{
-            "tx":0,
-            "exc":[1,2]
+    "logging": {
+        "test": {
+            "tx": 0,
+            "exc": [1, 2]
 
         },
-        "deploy":{
-            "tx":[1,2],
-            "exc":2
+        "deploy": {
+            "tx": [1, 2],
+            "exc": 2
         },
-        "console":{
-            "tx":1,
-            "exc":2
+        "console": {
+            "tx": 1,
+            "exc": 2
         }
     }
 }

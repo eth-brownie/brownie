@@ -19,8 +19,7 @@ Dependencies
 Brownie has the following dependencies:
 
 * `pip <https://pypi.org/project/pip/>`__
-* `python3.7 <https://www.python.org/downloads/release/python-371/>`__ and python3-dev
+* `python3.6 <https://www.python.org/downloads/release/python-368/>`__ , python3.6-dev, python3.6-venv
 * `solc <https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages>`__
-* `virtualenv <https://pypi.org/project/virtualenv/>`__
 
 If you wish to run a local test environment you must also install an Ethereum client which supports the standard JSON RPC API. By default, Brownie is set to work with `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__, but you can easily change this by editing the ``brownie-config.json`` file in your project.

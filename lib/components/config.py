@@ -4,8 +4,11 @@ import json
 import os
 import sys
 
-folder = sys.modules['__main__'].__file__.rsplit('/',maxsplit = 1)[0]
-CONFIG = json.load(open(folder+'/config.json', 'r'))
+
+folder = sys.modules['__main__'].__file__
+folder = folder[:folder.rfind("/")]
+sys.path.insert(0, folder)
+CONFIG = json.load(open(folder+"/config.json", 'r'))
 CONFIG['folders'] = {
     'brownie': folder,
     'project': os.path.abspath('.')
@@ -17,10 +20,10 @@ for i in range(len(folders),0,-1):
     if os.path.exists(folder+'/brownie-config.json'):
         CONFIG['folders']['project'] = folder
         break
+sys.path.insert(1, ".")
 
-conf_path = os.path.abspath('.')+"/brownie-config.json"
-if os.path.exists(conf_path):
-    for k,v in json.load(open(conf_path, 'r')).items():
+if os.path.exists("brownie-config.json"):
+    for k,v in json.load(open("brownie-config.json", 'r')).items():
         if type(v) is dict and k in CONFIG:
             CONFIG[k].update(v)
         else: CONFIG[k] = v
@@ -39,5 +42,3 @@ else:
 
 if CONFIG['active_network'] not in CONFIG['networks']:
     sys.exit("ERROR: No network named '{}'".format(CONFIG['active_network']))
-
-sys.modules[__name__] = CONFIG

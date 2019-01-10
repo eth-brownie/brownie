@@ -14,7 +14,6 @@ This will create the following project structure within the folder:
 * ``build``: Directory for compiled conntracts and network data
 * ``contracts/``: Directory for solidity contracts
 * ``deployments/``: Directory for deployment scripts
-* ``environments/``: Directory for persistent environment data files
 * ``test/``: Directory for test scripts
 * ``brownie-config.json``: Configuration file for the project
 

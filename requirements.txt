@@ -5,6 +5,7 @@ cffi==1.11.5
 chardet==3.0.4
 cryptography==2.4.2
 cytoolz==0.9.0.1
+docopt==0.6.2
 eth-abi==1.2.2
 eth-account==0.3.0
 eth-event==0.1.1

@@ -11,6 +11,7 @@ import time
 from web3 import Web3, HTTPProvider
 
 from lib.components import config
+CONFIG = config.CONFIG
 
 
 class VirtualMachineError(Exception):
@@ -29,9 +30,9 @@ class web3:
     _rpc = None
     
     def __init__(self, verbose = True):
-        name = config['active_network']
+        name = CONFIG['active_network']
         try:
-            netconf = config['networks'][name]
+            netconf = CONFIG['networks'][name]
             if verbose:
                 print("Using network '{}'".format(name))
         except KeyError:
@@ -68,19 +69,21 @@ class web3:
 
 class TransactionReceipt:
 
-    gas_profiles = {}
+    _gas_profiles = {}
+    _txhistory = []
     
     def __init__(self, txid, silent=False, name=None):
         self.fn_name = name
+        self._txhistory.append(self)
         while True:
             tx = web3.eth.getTransaction(txid)
             if tx: break
             time.sleep(0.5)
-        if config['logging']['tx'] and not silent:
+        if CONFIG['logging']['tx'] and not silent:
             print("\nTransaction sent: {}".format(txid.hex()))
         for k,v in tx.items():
             setattr(self, k, v.hex() if type(v) is HexBytes else v)
-        if not tx.blockNumber and config['logging']['tx'] and not silent:
+        if not tx.blockNumber and CONFIG['logging']['tx'] and not silent:
             print("Waiting for confirmation...")
         receipt = web3.eth.waitForTransactionReceipt(txid)
         for k,v in [(k,v) for k,v in receipt.items() if k not in tx]:
@@ -88,17 +91,19 @@ class TransactionReceipt:
                 v = v.hex()
             setattr(self, k, v)
         if name and '--gas' in sys.argv:
-            self.gas_profiles.setdefault(name,{'avg':0,'high':0,'low':float('inf'),'count':0})
-            gas = self.gas_profiles[name]
+            self._gas_profiles.setdefault(name,{'avg':0,'high':0,'low':float('inf'),'count':0})
+            gas = self._gas_profiles[name]
             gas['avg'] = (gas['avg']*gas['count']+receipt.gasUsed)/(gas['count']+1)
             gas['count']+=1
             gas['high'] = max(gas['high'],receipt.gasUsed)
             gas['low'] = min(gas['low'],receipt.gasUsed)
+        self.gasLimit = self.gas
+        del self.gas
         if silent:
             return
-        if config['logging']['tx'] >= 2:
+        if CONFIG['logging']['tx'] >= 2:
             self.info()
-        elif config['logging']['tx']:
+        elif CONFIG['logging']['tx']:
             print("Transaction confirmed - block: {}   gas spent: {}".format(
                 receipt.blockNumber, receipt.gasUsed))
             if not self.contractAddress: return
@@ -153,28 +158,28 @@ def wei(value):
         raise ValueError("Unknown denomination: {}".format(value))    
 
 def add_contract(name, address, txid, owner):
-    json_file = config['folders']['project']+'/build/contracts/{}.json'.format(name)
+    json_file = CONFIG['folders']['project']+'/build/contracts/{}.json'.format(name)
     data = COMPILED[name]
     data['networks'][str(int(time.time()))] = {
         'address': address,
         'transactionHash': txid,
-        'network': config['active_network'],
+        'network': CONFIG['active_network'],
         'owner': owner }
     json.dump(COMPILED[name], open(json_file, 'w'), sort_keys=True, indent=4)
 
 def compile_contracts(clear_network = None):
-    contract_files = ["{}/{}".format(i[0],x) for i in os.walk(config['folders']['project']+'/contracts') for x in i[2]] 
+    contract_files = ["{}/{}".format(i[0],x) for i in os.walk(CONFIG['folders']['project']+'/contracts') for x in i[2]] 
     if not contract_files:
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")
     msg = False
-    compiler_info = config['solc'].copy()
+    compiler_info = CONFIG['solc'].copy()
     compiler_info['version'] = solc.get_solc_version_string().strip('\n')
     final = {}
     for filename in contract_files:
         names = [[x.strip('\t') for x in i.split(' ') if x]
                  for i in open(filename).readlines()]
         for name in [i[1] for i in names if i[0] in ("contract", "library")]:
-            json_file = config['folders']['project']+'/build/contracts/{}.json'.format(name)
+            json_file = CONFIG['folders']['project']+'/build/contracts/{}.json'.format(name)
             if os.path.exists(json_file):
                 try:
                     compiled = json.load(open(json_file))
@@ -182,8 +187,8 @@ def compile_contracts(clear_network = None):
                         compiled['updatedAt'] >= os.path.getmtime(filename)):
                         networks = dict(
                             (k,v) for k,v in compiled['networks'].items()
-                            if 'persist' in config['networks'][v['network']] and 
-                            config['networks'][v['network']]['persist'] and
+                            if 'persist' in CONFIG['networks'][v['network']] and 
+                            CONFIG['networks'][v['network']]['persist'] and
                             v['network'] != clear_network)
                         if networks != compiled['networks']:
                             compiled['networks'] = networks
@@ -195,7 +200,7 @@ def compile_contracts(clear_network = None):
                     pass
             if not msg:
                 print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
-                      config['solc']['runs']) if config['solc']['optimize'] else "Disabled"))
+                      CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"))
                 msg = True
             input_json = {
                 'language': "Solidity",
@@ -205,16 +210,16 @@ def compile_contracts(clear_network = None):
                         '*': ["abi", "evm.bytecode", "evm.deployedBytecode"],
                         '': ["ast", "legacyAST"] } },
                     "optimizer": {
-                        "enabled": config['solc']['optimize'],
-                        "runs": config['solc']['runs'] }
+                        "enabled": CONFIG['solc']['optimize'],
+                        "runs": CONFIG['solc']['runs'] }
                 }
             }
             print(" - {}...".format(name))
             try:
                 compiled = solc.compile_standard(
                     input_json,
-                    optimize = config['solc']['optimize'],
-                    optimize_runs = config['solc']['runs'],
+                    optimize = CONFIG['solc']['optimize'],
+                    optimize_runs = CONFIG['solc']['runs'],
                     allow_paths = ".")
             except solc.exceptions.SolcError as e:
                 err = json.loads(e.stdout_data)
@@ -223,7 +228,7 @@ def compile_contracts(clear_network = None):
                     print(i['formattedMessage'])
                 sys.exit()
             for name, data in compiled['contracts'][filename].items():
-                json_file = config['folders']['project']+'/build/contracts/{}.json'.format(name)
+                json_file = CONFIG['folders']['project']+'/build/contracts/{}.json'.format(name)
                 evm = data['evm']
                 final[name] = {
                     'abi': data['abi'],
@@ -251,13 +256,13 @@ def compile_contracts(clear_network = None):
 
 def _generate_topics():
     try:
-        topics = json.load(open(config['folders']['brownie']+"/topics.json", 'r'))
+        topics = json.load(open(CONFIG['folders']['brownie']+"/topics.json", 'r'))
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         topics = {}
     events = [x for i in COMPILED.values() for x in i['abi'] if x['type']=="event"]
     topics.update(eth_event.get_event_abi(events))
     json.dump(
-        topics, open(config['folders']['brownie']+"/topics.json", 'w'),
+        topics, open(CONFIG['folders']['brownie']+"/topics.json", 'w'),
         sort_keys=True, indent=4
     )
     return topics

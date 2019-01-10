@@ -3,7 +3,6 @@
 import time
 from threading import Thread
 
-from lib.components import config
 
 RED = "\033[91m"
 DEFAULT = "\x1b[0m"
