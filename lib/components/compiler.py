@@ -1,15 +1,11 @@
 #!/usr/bin/python3
 
-import eth_event
-from hexbytes import HexBytes
 import json
 import os
 import re
 import solc
-from subprocess import Popen, DEVNULL
 import sys
 import time
-from web3 import Web3, HTTPProvider
 
 from lib.components import config
 CONFIG = config.CONFIG
@@ -18,7 +14,7 @@ CONFIG['solc']['version'] = solc.get_solc_version_string().strip('\n')
 _changed = {}
 _contracts = {}
 
-def check_if_changed(filename, contract, clear=None):
+def _check_changed(filename, contract, clear=None):
     if contract in _changed:
         return _changed[contract]
     json_file = 'build/contracts/{}.json'.format(contract)
@@ -31,22 +27,34 @@ def check_if_changed(filename, contract, clear=None):
             compiled['updatedAt'] < os.path.getmtime(filename)):
             _changed[contract] = True
             return True
-        networks = dict(
-            (k,v) for k,v in compiled['networks'].items()
-            if 'persist' in CONFIG['networks'][v['network']] and 
-            CONFIG['networks'][v['network']]['persist'] and
-            v['network'] != clear)
-        if networks != compiled['networks']:
-            compiled['networks'] = networks
-            json.dump(compiled, open(json_file, 'w'),
-                        sort_keys = True, indent = 4)
         _changed[contract] = False
         return False
     except (json.JSONDecodeError, FileNotFoundError):
         _changed[contract] = True
         return True
 
+def clear_persistence(network_name):
+    for filename in os.listdir("build/contracts"):
+        compiled = json.load(open("build/contracts/"+filename))
+        networks = dict(
+            (k,v) for k,v in compiled['networks'].items()
+            if 'persist' in CONFIG['networks'][v['network']] and 
+            CONFIG['networks'][v['network']]['persist'] and
+            v['network'] != network_name
+        )
+        if networks != compiled['networks']:
+            compiled['networks'] = networks
+            json.dump(
+                compiled,
+                open("build/contracts/"+filename, 'w'),
+                sort_keys=True,
+                indent=4
+            )
+
+
 def add_contract(name, address, txid, owner):
+    if not CONFIG['networks'][CONFIG['active_network']]['persist']:
+        return
     json_file = "build/contracts/{}.json".format(name)
     _contracts[name]['networks'][str(int(time.time()))] = {
         'address': address,
@@ -56,10 +64,10 @@ def add_contract(name, address, txid, owner):
     json.dump(_contracts[name], open(json_file, 'w'), sort_keys=True, indent=4)
 
 
-def compile_contracts(clear_network = None):
-    if _contracts and not clear_network:
+def compile_contracts():
+    if _contracts:
         return _contracts
-    _contracts.clear()
+    clear_persistence(None)
     contract_files = ["{}/{}".format(i[0], x) for i in os.walk("contracts") for x in i[2]] 
     if not contract_files:
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")
@@ -80,7 +88,7 @@ def compile_contracts(clear_network = None):
                 name = name[0]
             else:
                 inheritance_map[name] = set()
-            check_if_changed(filename, name, clear_network)
+            _check_changed(filename, name)
 
     for i in range(len(inheritance_map)):
         for base, inherited in [(k,x) for k,v in inheritance_map.copy().items() if v for x in v]:
@@ -92,8 +100,8 @@ def compile_contracts(clear_network = None):
             re.findall("\ncontract (.*?) ", code, re.DOTALL) +
             re.findall('\nlibrary (.*?) ', code, re.DOTALL)
         ):
-            check = [i for i in inheritance_map[name] if check_if_changed(filename, i)]
-            if not check and not check_if_changed(filename, name):
+            check = [i for i in inheritance_map[name] if _check_changed(filename, i)]
+            if not check and not _check_changed(filename, name):
                 _contracts[name] = json.load(open('build/contracts/{}.json'.format(name)))
                 continue
             if not msg:
@@ -147,6 +155,5 @@ def compile_contracts(clear_network = None):
                 json.dump(_contracts[name], open(json_file, 'w'),
                           sort_keys=True, indent=4)
             break
-
     return _contracts
  

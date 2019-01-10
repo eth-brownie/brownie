@@ -3,15 +3,12 @@
 import eth_event
 from hexbytes import HexBytes
 import json
-import os
-import re
-import solc
 from subprocess import Popen, DEVNULL
 import sys
 import time
 from web3 import Web3, HTTPProvider
 
-from lib.components.compile import compile_contracts
+from lib.components.compiler import compile_contracts
 from lib.components import config
 CONFIG = config.CONFIG
 
@@ -29,9 +26,20 @@ class VirtualMachineError(Exception):
 
 class web3:
 
-    _rpc = None
-    
-    def __init__(self, verbose = True):
+    def __init__(self):
+        self._rpc = None
+        self._init = True
+
+    def __del__(self):
+        if self._rpc:
+            self._rpc.terminate()
+
+    def _run(self):
+        if self._init or sys.argv[1] == "console":
+            verbose = True
+            self._init = False
+        else:
+            verbose = False
         name = CONFIG['active_network']
         try:
             netconf = CONFIG['networks'][name]
@@ -50,7 +58,8 @@ class web3:
                 netconf['test-rpc'].split(' '),
                 stdout = DEVNULL,
                 stdin = DEVNULL,
-                stderr = DEVNULL)
+                stderr = DEVNULL
+            )
         web3 = Web3(HTTPProvider(netconf['host']))
         for i in range(20):
             if web3.isConnected():
@@ -60,13 +69,9 @@ class web3:
             time.sleep(0.2)
         for name, fn in [(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()]:
             setattr(self, name, fn)
-
-    def __del__(self):
-        if self._rpc:
-            self._rpc.terminate()
-
-    def _reset(self, verbose = True):
-        self.__init__(verbose)
+    
+    #def _reset(self, verbose = True):
+    #    self.__init__(verbose)
 
 
 class TransactionReceipt:

@@ -66,7 +66,6 @@ def main():
         test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
         test_files.remove('__init__')
 
-    network = None
     for name in test_files:
         module = importlib.import_module("tests."+name)
         test_names = open(
@@ -77,12 +76,10 @@ def main():
             print("\nWARNING: Cannot find test functions in {}.py".format(name))
             continue
         
-        if network:
-            network.reset()
+        network = Network(module)
         print("\nRunning {}.py - {} test{}".format(
                 name, len(test_names),"s" if len(test_names)!=1 else ""
         ))
-        network = Network(module)
         if hasattr(module, 'DEPLOYMENT'):
             sys.stdout.write("   Deployment '{}'...".format(module.DEPLOYMENT))
             sys.stdout.flush()

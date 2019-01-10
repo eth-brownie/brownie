@@ -7,15 +7,14 @@ import os
 import sys
 import traceback
 
-from lib.services.fernet import FernetKey, InvalidToken
-from lib.components import config
-from lib.components.compile import compile_contracts
+from lib.components import alert
+from lib.components import compiler
 from lib.components.eth import web3, wei, TransactionReceipt
 from lib.components.account import Accounts, LocalAccount
 from lib.components.contract import ContractDeployer
-from lib.components import alert
+from lib.services.fernet import FernetKey, InvalidToken
 import lib.components.check as check
-
+from lib.components import config
 CONFIG = config.CONFIG
 
 
@@ -23,7 +22,10 @@ class Network:
 
     _key = None
 
-    def __init__(self, module, clear_network = None):
+    def __init__(self, module):
+        if 'persist' not in CONFIG['networks'][CONFIG['active_network']]:
+            CONFIG['networks'][CONFIG['active_network']]['persist'] = False
+        web3._run()
         self._module = module
         accounts = Accounts(web3.eth.accounts)
         self._network_dict = {
@@ -37,13 +39,13 @@ class Network:
             'txhistory': TransactionReceipt._txhistory,
             'web3': web3,
             'wei': wei }
-        for name, interface in compile_contracts(clear_network).items():
+        for name, interface in compiler.compile_contracts().items():
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
             self._network_dict[name] = ContractDeployer(name, interface, CONFIG['active_network'])
         module.__dict__.update(self._network_dict)
         netconf = CONFIG['networks'][CONFIG['active_network']]
-        if 'persist' not in netconf or not netconf['persist']:
+        if not netconf['persist']:
             return
         while True:
             persist_file = CONFIG['folders']['project']+'/build/networks/{}.json'.format(CONFIG['active_network'])
@@ -120,13 +122,13 @@ class Network:
                 CONFIG['active_network'] = network
                 self._key = None
         alert.stop_all()
-        web3._reset(False)
+        #web3._reset(False)
         netconf = CONFIG['networks'][CONFIG['active_network']]
         if 'persist' not in netconf:
             netconf['persist'] = False
-        self.__init__(
-            self._module,
-            CONFIG['active_network'] if netconf['persist'] else None)
+        elif netconf['persist']:
+            compiler.clear_persistence(CONFIG['active_network'])
+        self.__init__(self._module)
         return "Brownie environment is ready."
 
     def logging(self, **kwargs):
