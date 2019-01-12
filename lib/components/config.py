@@ -9,6 +9,9 @@ def set_network(name):
     try:
         CONFIG['active_network'] = CONFIG['networks'][name]
         CONFIG['active_network']['name'] = name
+        for key,value in CONFIG['network_defaults'].items():
+            if key not in CONFIG['active_network']:
+                CONFIG['active_network'][key] = value
         if 'persist' not in CONFIG['active_network']:
             CONFIG['active_network']['persist'] = False
     except KeyError:
@@ -48,4 +51,4 @@ except:
 if '--network' in sys.argv:
     set_network(sys.argv[sys.argv.index('--network')+1])
 else:
-    set_network(CONFIG['default_network'])
+    set_network(CONFIG['network_defaults']['name'])

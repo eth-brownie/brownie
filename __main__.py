@@ -26,9 +26,9 @@ Options:
   --verbose             Enable verbose reporting
 
 Type 'brownie <command> --help' for specific options and more information about
-each command.""".format(CONFIG['default_network'])
+each command.""".format(CONFIG['network_defaults']['name'])
 
-if sys.argv[1][0] != "-":
+if len(sys.argv)>1 and sys.argv[1][0] != "-":
     try:
         idx = next(sys.argv.index(i) for i in sys.argv if i[0]=="-")
         opts = sys.argv[idx:]

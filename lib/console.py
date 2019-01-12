@@ -19,7 +19,7 @@ Options:
   --verbose          Enable verbose reporting
 
 Connects to the network and opens the brownie console.
-""".format(CONFIG['default_network'])
+""".format(CONFIG['network_defaults']['name'])
 
 def main():
     args = docopt(__doc__)
