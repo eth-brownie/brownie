@@ -12,6 +12,11 @@ The console feels similar to a normal python interpreter. Load it by typing:
 
 Brownie will compile your contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`. Below are some examples of common tasks.
 
+Configuration
+=============
+
+You can view and edit the configuration settings through the ``config`` dictionary. Changes that are made are only active as long as brownie is running - modifying the dictionary does not modify ``config.json``. See :ref:`config` for more information.
+
 Basic Functionality
 ===================
 
@@ -21,7 +26,7 @@ The following methods and classes are available:
 * ``reset(network=None)``: Reset the local RPC environment.
 * ``run(script)``: Runs a deployment script.
 * ``wei(value)``: Converts strings and floats to an integer denoted in wei
-* ``web3``: A minimal implementation of the Web3.py `Web3 API <https://web3py.readthedocs.io/en/stable/web3.main.html>`__
+* ``web3``: A minimal implementation of the `Web3 API <https://web3py.readthedocs.io/en/stable/web3.main.html>`__
 
 Working with Accounts
 =====================
