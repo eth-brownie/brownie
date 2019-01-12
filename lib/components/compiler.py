@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from hashlib import sha1
 import json
 import os
 import re
@@ -23,13 +24,15 @@ def _check_changed(filename, contract, clear=None):
         return True
     try:
         compiled = json.load(open(json_file))
-        if (compiled['compiler'] != CONFIG['solc'] or
-            compiled['updatedAt'] < os.path.getmtime(filename)):
+        if (
+            compiled['compiler'] != CONFIG['solc'] or
+            compiled['sha1'] != sha1(open(filename, 'rb').read()).hexdigest()
+        ):
             _changed[contract] = True
             return True
         _changed[contract] = False
         return False
-    except (json.JSONDecodeError, FileNotFoundError):
+    except (json.JSONDecodeError, FileNotFoundError, KeyError):
         _changed[contract] = True
         return True
 
@@ -77,16 +80,13 @@ def compile_contracts():
     for filename in contract_files:
         code = open(filename).read()
         for name in (
-            re.findall("\ncontract (.*?) {", code, re.DOTALL) +
-            re.findall('\nlibrary (.*?) {', code, re.DOTALL)
+            re.findall("\n(?:contract|library|interface) (.*?) {", code, re.DOTALL)
         ):
-            if " is " in name:
-                name = name.split(' ')
-                inheritance_map[name[0]] = set([i.strip(',') for i in name[2:]])
-                name = name[0]
-            else:
-                inheritance_map[name] = set()
-            _check_changed(filename, name)
+            names = [i.strip(',') for i in name.split(' ')]
+            if names[0] in inheritance_map:
+                raise ValueError("Multiple contracts named {}".format(names[0]))
+            inheritance_map[names[0]] = set(names[2:])
+            _check_changed(filename, names[0])
 
     for i in range(len(inheritance_map)):
         for base, inherited in [(k,x) for k,v in inheritance_map.copy().items() if v for x in v]:
@@ -94,10 +94,10 @@ def compile_contracts():
     
     for filename in contract_files:
         code = open(filename).read()
-        for name in (
-            re.findall("\ncontract (.*?) ", code, re.DOTALL) +
-            re.findall('\nlibrary (.*?) ', code, re.DOTALL)
+        for match in (
+            re.findall("\n(?:contract|library|interface) [^ ]{1,}", code)
         ):
+            type_, name = match.split(' ')
             check = [i for i in inheritance_map[name] if _check_changed(filename, i)]
             if not check and not _check_changed(filename, name):
                 _contracts[name] = json.load(open('build/contracts/{}.json'.format(name)))
@@ -145,10 +145,11 @@ def compile_contracts():
                     #'legacyAST': compiled['sources'][filename]['legacyAST'],
                     'networks': {},
                     #'schemaVersion': 0,
+                    'sha1': sha1(open(filename, 'rb').read()).hexdigest(),
                     'source': input_json['sources'][filename]['content'],
                     'sourceMap': evm['bytecode']['sourceMap'],
-                    'sourcePath': filename,  
-                    'updatedAt': int(time.time())
+                    'sourcePath': filename,
+                    'type': type_.strip('\n')
                 }
                 json.dump(_contracts[name], open(json_file, 'w'),
                           sort_keys=True, indent=4)
