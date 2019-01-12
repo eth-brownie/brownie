@@ -5,6 +5,19 @@ import os
 import sys
 
 
+def set_network(name):
+    try:
+        CONFIG['active_network'] = CONFIG['networks'][name]
+        CONFIG['active_network']['name'] = name
+        for key,value in CONFIG['network_defaults'].items():
+            if key not in CONFIG['active_network']:
+                CONFIG['active_network'][key] = value
+        if 'persist' not in CONFIG['active_network']:
+            CONFIG['active_network']['persist'] = False
+    except KeyError:
+        raise KeyError("Network '{}' is not defined in config.json".format(name))
+
+
 folder = sys.modules['__main__'].__file__
 folder = folder[:folder.rfind("/")]
 sys.path.insert(0, folder)
@@ -36,9 +49,6 @@ except:
     CONFIG['logging'] = {"tx":1 ,"exc":1}
 
 if '--network' in sys.argv:
-    CONFIG['active_network'] = sys.argv[sys.argv.index('--network')+1]
+    set_network(sys.argv[sys.argv.index('--network')+1])
 else:
-    CONFIG['active_network'] = CONFIG['default_network']
-
-if CONFIG['active_network'] not in CONFIG['networks']:
-    sys.exit("ERROR: No network named '{}'".format(CONFIG['active_network']))
+    set_network(CONFIG['network_defaults']['name'])

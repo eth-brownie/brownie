@@ -3,7 +3,8 @@
 import json
 
 from lib.components.eth import web3, wei, TransactionReceipt, VirtualMachineError
-
+from lib.components import config
+CONFIG = config.CONFIG
 
 class Accounts(list):
 
@@ -50,19 +51,27 @@ class _AccountBase(str):
             'to':to,
             'data':data,
             'value':wei(amount)
-            })
+        })
+    
+    def _gas_limit(self, to, amount, data=""):
+        if CONFIG['active_network']['gas_limit']:
+            return CONFIG['active_network']['gas_limit']
+        return estimate_gas(to, amount, data)
+
+    def _gas_price(self):
+        return CONFIG['active_network']['gas_price'] or web3.eth.gasPrice
 
 
 class Account(_AccountBase):
 
-    def transfer(self, to, amount, gas=None, gas_price=None):
+    def transfer(self, to, amount, gas_limit=None, gas_price=None):
         try:
             txid = web3.eth.sendTransaction({
                 'from': self.address,
                 'to': to,
                 'value': wei(amount),
-                'gasPrice': wei(gas_price) or web3.eth.gasPrice,
-                'gas': wei(gas) or self.estimate_gas(to, amount)
+                'gasPrice': wei(gas_price) or self._gas_price(),
+                'gas': wei(gas_limit) or self._gas_limit(to, amount)
                 })
             self.nonce += 1
             return TransactionReceipt(txid)
@@ -71,6 +80,10 @@ class Account(_AccountBase):
 
     def _contract_tx(self, fn, args, tx, name):
         tx['from'] = self.address
+        if CONFIG['active_network']['gas_price']:
+            tx['gasPrice'] = CONFIG['active_network']['gas_price']
+        if CONFIG['active_network']['gas_limit']:
+            tx['gas'] = CONFIG['active_network']['gas_limit']
         try: txid = fn(*args).transact(tx)
         except ValueError as e:
             raise VirtualMachineError(e)
@@ -88,13 +101,13 @@ class LocalAccount(_AccountBase):
         self._priv_key = priv_key
         super().__init__(address)
 
-    def transfer(self, to, amount, gas=None, gas_price=None):
+    def transfer(self, to, amount, gas_limit=None, gas_price=None):
         try:
             signed_tx = self._acct.signTransaction({
                 'from': self.address,
                 'nonce': self.nonce,
-                'gasPrice': wei(gas_price) or web3.eth.gasPrice,
-                'gas': wei(gas) or self.estimate_gas(to, amount),
+                'gasPrice': wei(gas_price) or self._gas_price(),
+                'gas': wei(gas_limit) or self._gas_limit(to, amount),
                 'to': to,
                 'value': wei(amount),
                 'data': ""
@@ -110,8 +123,11 @@ class LocalAccount(_AccountBase):
             tx.update({
                 'from':self.address,
                 'nonce':self.nonce,
-                'gasPrice': web3.eth.gasPrice,
-                'gas': fn(*args).estimateGas({'from': self.address}),
+                'gasPrice': self._gas_price(),
+                'gas': (
+                    CONFIG['active_network']['gas_limit'] or
+                    fn(*args).estimateGas({'from': self.address})
+                )
                 })
             raw = fn(*args).buildTransaction(tx)
             txid = web3.eth.sendRawTransaction(

@@ -17,17 +17,21 @@ Settings
 
 The following settings are available:
 
-.. py:attribute:: default_network
-
-    The default network to initialize when brownie is loaded.
-
 .. py:attribute:: networks
 
     Defines the available networks. The following properties can be set:
 
     * ``host``: The address and port of the RPC API you wish to connect to. If using `Infura <https://infura.io/>`__, be sure to obtain and include your own network access token in the address.
+    * ``persist``: If set to true, information such as addresses that contracts are deployed at will be saved in the ``build/`` folder so they can be accessed the next time you run Brownie. See :ref:`persist`.
     * ``test-rpc``: Optional. If given, this command will be run in a shell when brownie is started. In this way you can initialize Ganache or another local environment automatically when Brownie starts.
-    * ``persist``: Optional. If set to true, information such as addresses that contracts are deployed at will be saved in the ``environments/`` folder so they can be accessed the next time you run Brownie. See :ref:`persist`.
+    * ``gas_price``: The default gas price for all transactions. If left as false the gas price will be determined using ``web3.eth.gasPrice``.
+    * ``gas_limit``: The default gas limit for all transactions. If left as false the gas limit will be determined using ``web3.eth.estimateGas``.
+
+.. py:attribute:: network_defaults
+
+    Default networks settings, used when specific properties aren't defined for individual networks.
+
+    You must specify a ``name`` property. This is the default network to use when brownie is loaded.
 
 .. py:attribute:: solc
 

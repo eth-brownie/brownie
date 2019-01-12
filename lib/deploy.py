@@ -22,7 +22,7 @@ Options:
   --verbose          Enable verbose reporting
 
 Use deploy to run scripts intended to deploy contracts onto the network.
-""".format(CONFIG['default_network'])
+""".format(CONFIG['network_defaults']['name'])
 
 def main():
     args = docopt(__doc__)

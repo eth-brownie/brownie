@@ -140,7 +140,7 @@ Account classes are not meant to be instantiated directly. The ``Accounts`` cont
     * ``contract``: A ``ContractDeployer`` instance of the contract to be deployed.
     * ``*args``: Contract constructor arguments.
 
-    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
+    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument.
 
     Returns a ``Contract`` instance.
 
@@ -191,7 +191,7 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
 
     Returns a list of every deployed contract instance in the container.
 
-.. py:classmethod:: ContractDeployer.deploy(account, *args, **kwargs)
+.. py:classmethod:: ContractDeployer.deploy(account, *args)
 
     Deploys the contract.
 
@@ -199,6 +199,8 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
     * ``*args``: Contract constructor arguments.
 
     You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
+
+    If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``IndexError`` is raised.
 
     Returns a ``Contract`` instance.
 

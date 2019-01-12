@@ -40,32 +40,27 @@ class web3:
             self._init = False
         else:
             verbose = False
-        name = CONFIG['active_network']
-        try:
-            netconf = CONFIG['networks'][name]
-            if verbose:
-                print("Using network '{}'".format(name))
-        except KeyError:
-            sys.exit("ERROR: Network '{}' is not defined in config.json".format(name))
+        if verbose:
+            print("Using network '{}'".format(CONFIG['active_network']['name']))
         if self._rpc:
             if verbose:
                 print("Resetting environment...")
             self._rpc.terminate()
-        if 'test-rpc' in netconf:
+        if 'test-rpc' in CONFIG['active_network']:
             if verbose:
-                print("Running '{}'...".format(netconf['test-rpc']))
+                print("Running '{}'...".format(CONFIG['active_network']['test-rpc']))
             self._rpc = Popen(
-                netconf['test-rpc'].split(' '),
+                CONFIG['active_network']['test-rpc'].split(' '),
                 stdout = DEVNULL,
                 stdin = DEVNULL,
                 stderr = DEVNULL
             )
-        web3 = Web3(HTTPProvider(netconf['host']))
+        web3 = Web3(HTTPProvider(CONFIG['active_network']['host']))
         for i in range(20):
             if web3.isConnected():
                 break
             if i == 19:
-               raise ConnectionError("Could not connect to {}".format(netconf['host']))
+               raise ConnectionError("Could not connect to {}".format(CONFIG['active_network']['host']))
             time.sleep(0.2)
         for name, fn in [(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()]:
             setattr(self, name, fn)

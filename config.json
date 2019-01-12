@@ -1,5 +1,10 @@
 {
-    "default_network": "development",
+    "network_defaults":{
+        "name": "development",
+        "persist": false,
+        "gas_limit": false,
+        "gas_price": false
+    },
     "networks": {
         "development": {
             "test-rpc": "ganache-cli -a 20",
