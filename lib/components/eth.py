@@ -143,8 +143,10 @@ def wei(value):
         num, dec = str(value).split("e+")
         num = num.split(".") if "." in num else [num, ""]
         return int(num[0] + num[1][:int(dec)] + "0" * (int(dec) - len(num[1])))
-    if type(value) is not str or " " not in value:
+    if type(value) is not str:
         return int(value)
+    if value[:2] == "0x":
+        return int(value, 16)
     for unit, dec in UNITS.items():
         if " " + unit not in value:
             continue

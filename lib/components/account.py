@@ -56,7 +56,7 @@ class _AccountBase(str):
     def _gas_limit(self, to, amount, data=""):
         if CONFIG['active_network']['gas_limit']:
             return CONFIG['active_network']['gas_limit']
-        return estimate_gas(to, amount, data)
+        return self.estimate_gas(to, amount, data)
 
     def _gas_price(self):
         return CONFIG['active_network']['gas_price'] or web3.eth.gasPrice

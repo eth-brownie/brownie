@@ -202,7 +202,7 @@ def _format_inputs(name, inputs, types):
                 name,",".join(types)))
         for i, type_ in enumerate(types):
             if type_[-1]=="]":
-                t,length = type_.rstrip(']').split('[')
+                t,length = type_.rstrip(']').rsplit('[', maxsplit=1)
                 if length != "" and len(inputs[i]) != int(length):
                     raise ValueError(
                         "'{}': Argument {}, sequence has a length of {}, should be {}".format(
