@@ -70,7 +70,7 @@ class ContractDeployer(_ContractBase):
     def deploy(self, account, *args):
         if '_' in self.bytecode:
             for marker in re.findall('_{1,}[^_]*_{1,}', self.bytecode):
-                contract = marker.split(':')[1].rstrip('_')
+                contract = marker.strip('_')
                 if contract not in self._network:
                     raise NameError(
                         "Contract requires an unknown library - " + contract
