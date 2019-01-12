@@ -134,7 +134,7 @@ def compile_contracts():
             break
         if not input_json:
             continue
-        print(" - {}...".format(name))
+        print(" - {}...".format(filename.split('/')[-1]))
         try:
             compiled = solc.compile_standard(
                 input_json,
@@ -158,10 +158,10 @@ def compile_contracts():
             evm = data['evm']
             ref = [(k, x) for v in evm['bytecode']['linkReferences'].values()
                    for k, x in v.items()]
-            for name, loc in [(i[0],x['start']*2) for i in ref for x in i[1]]:
+            for n, loc in [(i[0],x['start']*2) for i in ref for x in i[1]]:
                 evm['bytecode']['object'] = "{}__{:_<36}__{}".format(
                     evm['bytecode']['object'][:loc],
-                    name[:36],
+                    n[:36],
                     evm['bytecode']['object'][loc+40:]
                 )
             _contracts[name] = {
