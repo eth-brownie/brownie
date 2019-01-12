@@ -94,17 +94,20 @@ def compile_contracts():
     
     for filename in contract_files:
         code = open(filename).read()
-        for match in (
-            re.findall("\n(?:contract|library|interface) [^ ]{1,}", code)
+        input_json = {}
+        for name in (
+            re.findall("\n(?:contract|library|interface) (.*?) ", code, re.DOTALL)
         ):
-            type_, name = match.split(' ')
             check = [i for i in inheritance_map[name] if _check_changed(filename, i)]
             if not check and not _check_changed(filename, name):
                 _contracts[name] = json.load(open('build/contracts/{}.json'.format(name)))
                 continue
             if not msg:
-                print("Compiling contracts...\n Optimizer: {}".format("Enabled   Runs: {}".format(
-                      CONFIG['solc']['runs']) if CONFIG['solc']['optimize'] else "Disabled"))
+                print("Compiling contracts...")
+                print("Optimizer: {}".format(
+                    "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
+                    CONFIG['solc']['optimize'] else "Disabled"
+                ))
                 msg = True
             input_json = {
                 'language': "Solidity",
@@ -118,41 +121,52 @@ def compile_contracts():
                         "runs": CONFIG['solc']['runs'] }
                 }
             }
-            print(" - {}...".format(name))
-            try:
-                compiled = solc.compile_standard(
-                    input_json,
-                    optimize = CONFIG['solc']['optimize'],
-                    optimize_runs = CONFIG['solc']['runs'],
-                    allow_paths = ".")
-            except solc.exceptions.SolcError as e:
-                err = json.loads(e.stdout_data)
-                print("\nERROR: Unable to compile {} due to the following errors:\n".format(filename))
-                for i in err['errors']:
-                    print(i['formattedMessage'])
-                sys.exit()
-            for name, data in compiled['contracts'][filename].items():
-                json_file = "build/contracts/{}.json".format(name)
-                evm = data['evm']
-                _contracts[name] = {
-                    'abi': data['abi'],
-                    'ast': compiled['sources'][filename]['ast'],
-                    'bytecode': evm['bytecode']['object'],
-                    'compiler': compiler_info,
-                    'contractName': name,
-                    'deployedBytecode': evm['deployedBytecode']['object'],
-                    'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
-                    #'legacyAST': compiled['sources'][filename]['legacyAST'],
-                    'networks': {},
-                    #'schemaVersion': 0,
-                    'sha1': sha1(open(filename, 'rb').read()).hexdigest(),
-                    'source': input_json['sources'][filename]['content'],
-                    'sourceMap': evm['bytecode']['sourceMap'],
-                    'sourcePath': filename,
-                    'type': type_.strip('\n')
-                }
-                json.dump(_contracts[name], open(json_file, 'w'),
-                          sort_keys=True, indent=4)
             break
+        if not input_json:
+            continue
+        print(" - {}...".format(name))
+        try:
+            compiled = solc.compile_standard(
+                input_json,
+                optimize = CONFIG['solc']['optimize'],
+                optimize_runs = CONFIG['solc']['runs'],
+                allow_paths = ".")
+        except solc.exceptions.SolcError as e:
+            err = json.loads(e.stdout_data)
+            print("\nERROR: Unable to compile {} due to the following errors:\n".format(filename))
+            for i in err['errors']:
+                print(i['formattedMessage'])
+            sys.exit()
+        hash_ = sha1(open(filename, 'rb').read()).hexdigest()
+        for match in (
+            re.findall("\n(?:contract|library|interface) [^ ]{1,}", code)
+        ):
+            type_, name = match.strip('\n').split(' ')
+            data = compiled['contracts'][filename][name]
+            json_file = "build/contracts/{}.json".format(name)
+            evm = data['evm']
+            _contracts[name] = {
+                'abi': data['abi'],
+                'ast': compiled['sources'][filename]['ast'],
+                'bytecode': evm['bytecode']['object'],
+                'compiler': compiler_info,
+                'contractName': name,
+                'deployedBytecode': evm['deployedBytecode']['object'],
+                'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
+                #'legacyAST': compiled['sources'][filename]['legacyAST'],
+                'networks': {},
+                #'schemaVersion': 0,
+                'sha1': hash_,
+                'source': input_json['sources'][filename]['content'],
+                'sourceMap': evm['bytecode']['sourceMap'],
+                'sourcePath': filename,
+                'type': type_
+            }
+            json.dump(
+                _contracts[name],
+                open(json_file, 'w'),
+                sort_keys=True,
+                indent=4
+            )
     return _contracts
  
