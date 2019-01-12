@@ -43,7 +43,7 @@ class ContractDeployer(_ContractBase):
         super().__init__(name, interface['abi'])
         for k, data in sorted([
             (k,v) for k,v in interface['networks'].items() if 
-            v['network']==CONFIG['active_network']
+            v['network']==CONFIG['active_network']['name']
         ], key=lambda k: int(k[0])):
             if web3.eth.getCode(data['address']).hex() == "0x00":
                 print("WARNING: No contract deployed at {}.".format(data['address']))
@@ -101,7 +101,7 @@ class ContractDeployer(_ContractBase):
         if web3.eth.getCode(address).hex() == "0x00":
             raise ValueError("No contract deployed at {}".format(address))
         self._deployed[address] = Contract(address, self._name, self.abi, owner, tx)
-        if CONFIG['networks'][CONFIG['active_network']]['persist']:
+        if CONFIG['active_network']['persist']:
             add_contract(self._name, address, tx.hash if tx else None, owner)
         return self._deployed[address]
             

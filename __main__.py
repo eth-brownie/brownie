@@ -12,18 +12,18 @@ CONFIG = config.CONFIG
 
 __version__ = "0.9.0b"  # did you change this in docs/conf.py as well?
 
-__doc__ = """Usage:  brownie <command> [<args>...] [options]
+__doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
 Commands:
-  console            Load the console
-  deploy             Run a script in the /deployments folder
-  init               Initialize a new brownie project
-  test               Run test scripts in the /tests folder
+  console               Load the console
+  deploy                Run a script in the /deployments folder
+  init                  Initialize a new brownie project
+  test                  Run test scripts in the /tests folder
 
 Options:
-  --help             Display this message
-  --network [name]   Use a specific network (default {})
-  --verbose          Enable verbose reporting
+  -h --help             Display this message
+  --network <name>      Use a specific network (default {})
+  --verbose             Enable verbose reporting
 
 Type 'brownie <command> --help' for specific options and more information about
 each command.""".format(CONFIG['default_network'])
@@ -52,4 +52,5 @@ if args['<command>'] != "init":
             "\nType 'brownie init' to create the file structure."
         )
     init.create_build_folders()
+
 importlib.import_module("lib."+args['<command>']).main()

@@ -14,8 +14,8 @@ CONFIG = config.CONFIG
 __doc__ = """Usage: brownie console [options]
 
 Options:
-  --help             Display this message
-  --network [name]   Use a specific network (default {})
+  -h --help             Display this message
+  -n --network <name>   Use a specific network (default {})
   --verbose          Enable verbose reporting
 
 Connects to the network and opens the brownie console.

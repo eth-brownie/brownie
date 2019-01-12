@@ -132,7 +132,7 @@ def compile_contracts():
                     print(i['formattedMessage'])
                 sys.exit()
             for name, data in compiled['contracts'][filename].items():
-                json_file = CONFIG['folders']['project']+'/build/contracts/{}.json'.format(name)
+                json_file = "build/contracts/{}.json".format(name)
                 evm = data['evm']
                 _contracts[name] = {
                     'abi': data['abi'],
