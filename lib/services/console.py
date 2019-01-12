@@ -3,6 +3,7 @@
 import builtins
 import readline
 import sys
+import json
 from threading import Lock
 import traceback
 
@@ -25,7 +26,7 @@ class Console:
 
     def run(self, globals_dict, history_file = None):
         builtins.print = self._print
-        local_dict = {}
+        local_ = {}
         if history_file:
             try:
                 readline.read_history_file(history_file)
@@ -70,12 +71,20 @@ class Console:
             self._prompt = ""
             try:
                 try: 
-                    local_dict['_exec_result']=None
-                    exec('_exec_result = ' + cmd, globals_dict, local_dict)
-                    if local_dict['_exec_result'] != None:
-                        print(local_dict['_exec_result'])
+                    local_['_result'] = None
+                    exec('_result = ' + cmd, globals_dict, local_)
+                    if local_['_result'] != None:
+                        if type(local_['_result']) in [list, dict]:
+                            print(json.dumps(
+                                local_['_result'],
+                                default=str,
+                                indent=4,
+                                sort_keys=True
+                            ))
+                        else:
+                            print(local_['_result'])
                 except SyntaxError:
-                    exec(cmd, globals_dict, local_dict)    
+                    exec(cmd, globals_dict, local_)
             except:
                 print("{}{}: {}".format(
                         "".join(traceback.format_tb(sys.exc_info()[2])[1:]),

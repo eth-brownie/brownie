@@ -8,7 +8,7 @@ from lib.components.network import Network
 from lib.services import console
 
 from lib.components import config
-CONFIG = config.CONFIG
+config = config.CONFIG
 
 
 __doc__ = """Usage: brownie console [options]
@@ -19,7 +19,7 @@ Options:
   --verbose          Enable verbose reporting
 
 Connects to the network and opens the brownie console.
-""".format(CONFIG['network_defaults']['name'])
+""".format(config['network_defaults']['name'])
 
 def main():
     args = docopt(__doc__)
