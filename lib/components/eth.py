@@ -69,9 +69,6 @@ class web3:
             time.sleep(0.2)
         for name, fn in [(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()]:
             setattr(self, name, fn)
-    
-    #def _reset(self, verbose = True):
-    #    self.__init__(verbose)
 
 
 class TransactionReceipt:

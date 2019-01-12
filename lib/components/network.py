@@ -42,7 +42,7 @@ class Network:
         for name, interface in compiler.compile_contracts().items():
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
-            self._network_dict[name] = ContractDeployer(name, interface, CONFIG['active_network'])
+            self._network_dict[name] = ContractDeployer(name, interface, self._network_dict)
         module.__dict__.update(self._network_dict)
         netconf = CONFIG['networks'][CONFIG['active_network']]
         if not netconf['persist']:

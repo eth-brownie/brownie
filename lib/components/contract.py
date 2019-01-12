@@ -11,6 +11,8 @@ from lib.components.eth import (
     TransactionReceipt,
     VirtualMachineError
 )
+from lib.components import config
+CONFIG = config.CONFIG
 
 class _ContractBase:
 
@@ -39,11 +41,13 @@ class ContractDeployer(_ContractBase):
         self._deployed = OrderedDict()
         self._network = network
         super().__init__(name, interface['abi'])
-        for k, data in sorted(
-                [(k,v) for k,v in interface['networks'].items() if 
-                 v['network']==network], key = lambda k: int(k[0])):
+        for k, data in sorted([
+            (k,v) for k,v in interface['networks'].items() if 
+            v['network']==CONFIG['active_network']
+        ], key=lambda k: int(k[0])):
             if web3.eth.getCode(data['address']).hex() == "0x00":
                 print("WARNING: No contract deployed at {}.".format(data['address']))
+                continue
             self._deployed[data['address']] = Contract(
                 data['address'], self._name, self.abi, data['owner'],
                 TransactionReceipt(data['transactionHash'], True) if data['transactionHash'] else None)
@@ -63,13 +67,19 @@ class ContractDeployer(_ContractBase):
     def list(self):
         return list(self._deployed)
 
-    def deploy(self, account, *args, **kwargs):
+    def deploy(self, account, *args):
         if '_' in self.bytecode:
             for marker in re.findall('_{1,}[^_]*_{1,}',self.bytecode):
                 contract = marker.split(':')[1].rstrip('_')
-                if contract not in kwargs:
-                    raise AttributeError("You must specify an address for the {} library".format(contract))
-                bytecode = self.bytecode.replace(marker, kwargs[contract][-40:])
+                if contract not in self._network:
+                    raise NameError(
+                        "Contract requires an unknown library - " + contract
+                    )
+                elif not len(self._network[contract]):
+                    raise IndexError(
+                        "Contract requires the {} library but it has not been deployed yet".format(contract)
+                    )
+                bytecode = self.bytecode.replace(marker, self._network[contract][-1][-40:])
         else:
             bytecode = self.bytecode
         args, tx = _get_tx(account, args)
@@ -91,7 +101,8 @@ class ContractDeployer(_ContractBase):
         if web3.eth.getCode(address).hex() == "0x00":
             raise ValueError("No contract deployed at {}".format(address))
         self._deployed[address] = Contract(address, self._name, self.abi, owner, tx)
-        add_contract(self._name, address, tx.hash if tx else None, owner)
+        if CONFIG['networks'][CONFIG['active_network']]['persist']:
+            add_contract(self._name, address, tx.hash if tx else None, owner)
         return self._deployed[address]
             
 

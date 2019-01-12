@@ -53,8 +53,6 @@ def clear_persistence(network_name):
 
 
 def add_contract(name, address, txid, owner):
-    if not CONFIG['networks'][CONFIG['active_network']]['persist']:
-        return
     json_file = "build/contracts/{}.json".format(name)
     _contracts[name]['networks'][str(int(time.time()))] = {
         'address': address,
