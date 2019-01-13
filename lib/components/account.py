@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import eth_keys
 import json
 import os
 
@@ -101,7 +102,8 @@ class LocalAccount(_AccountBase):
 
     def __init__(self, address, account, priv_key):
         self._acct = account
-        self._priv_key = priv_key
+        self.private_key = priv_key.hex()
+        self.public_key = eth_keys.keys.PrivateKey(priv_key).public_key
         super().__init__(address)
 
     def transfer(self, to, amount, gas_limit=None, gas_price=None):

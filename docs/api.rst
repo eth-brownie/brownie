@@ -148,9 +148,13 @@ Account classes are not meant to be instantiated directly. The ``Accounts`` cont
 
     Functionally identical to ``Account``. The only difference is that a ``LocalAccount`` is one where the private key was directly inputted, and so is not found in ``web3.eth.accounts``.
 
-.. py:attribute:: LocalAccount._priv_key
+.. py:attribute:: LocalAccount.public_key
 
-    The private key for a local account.
+    The local account's public key.
+
+.. py:attribute:: LocalAccount.private_key
+
+    The local account's private key.
 
 Contracts
 =========
