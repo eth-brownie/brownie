@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import os
 
 from lib.components.eth import web3, wei, TransactionReceipt, VirtualMachineError
 from lib.components import config
@@ -11,7 +12,9 @@ class Accounts(list):
     def __init__(self, accounts):
         super().__init__([Account(i) for i in accounts])
 
-    def add(self, priv_key):
+    def add(self, priv_key = None):
+        if not priv_key:
+            priv_key=web3.sha3(os.urandom(8192))
         w3account = web3.eth.account.privateKeyToAccount(priv_key)
         if w3account.address in self:
             return self.at(w3account.address)

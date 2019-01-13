@@ -96,7 +96,7 @@ Account classes are not meant to be instantiated directly. The ``Accounts`` cont
 
 .. py:classmethod:: Accounts.add(priv_key)
 
-    Creates a new ``LocalAccount`` with private key ``priv_key``, appends it to the container, and returns the new account instance.
+    Creates a new ``LocalAccount`` with private key ``priv_key``, appends it to the container, and returns the new account instance.  If no private key is entered, one is randomly generated.
 
 .. py:classmethod:: Accounts.at(address)
 
@@ -147,6 +147,10 @@ Account classes are not meant to be instantiated directly. The ``Accounts`` cont
 .. py:class:: LocalAccount
 
     Functionally identical to ``Account``. The only difference is that a ``LocalAccount`` is one where the private key was directly inputted, and so is not found in ``web3.eth.accounts``.
+
+.. py:attribute:: LocalAccount._priv_key
+
+    The private key for a local account.
 
 Contracts
 =========

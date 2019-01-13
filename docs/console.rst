@@ -47,7 +47,7 @@ The container class ``accounts`` (or just ``a``) allows you to access all your l
     >>> accounts[1].balance()
     110000000000000000000
 
-You can import accounts with ``accounts.add``, which takes a private key as the only argument:
+You can import accounts with ``accounts.add``, which takes a private key as the only argument. If you do not enter a private key, one is randomly generated:
 
 .. code-block:: python
 
@@ -59,6 +59,9 @@ You can import accounts with ``accounts.add``, which takes a private key as the 
     21
     >>> accounts[20]
     <Account object '0x405De4AeCb9c1cE75152F82F956E09F4eda3b351'>
+    >>> accounts.add()
+    <Account object '0xc1b3a737C147E8d85f600F8082f42F0511ED5278'>
+
 
 Working with Contracts
 ======================
