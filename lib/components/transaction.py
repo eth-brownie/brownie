@@ -47,7 +47,6 @@ def raise_or_return_tx(exc):
     raise VirtualMachineError(exc)
 
 
-
 class TransactionReceipt:
 
     def __init__(self, txid, silent=False, name=None):
@@ -75,10 +74,9 @@ class TransactionReceipt:
         self.gasLimit = self.gas
         del self.gas
         self.events = []
-        for event in receipt.logs:
-            self.events.append(
-                eth_event.decode_event(event, TOPICS[event.topics[0].hex()])
-            )
+        self.events = eth_event.decode_logs(receipt.logs, TOPICS)
+        if not self.status:
+            self.events = eth_event.decode_trace(web3.providers[0].make_request('debug_traceTransaction',[txid,{}]), TOPICS)
         if silent:
             return
         if CONFIG['logging']['tx'] >= 2:
@@ -121,6 +119,7 @@ def _print_tx(tx):
                 print("    {0[name]}: {0[value]}".format(i))
         print()
 
+
 def _profile_gas(fn_name, gas_used):
     gas_profile.setdefault(
         fn_name,
@@ -138,6 +137,7 @@ def _profile_gas(fn_name, gas_used):
         'low': min(gas['low'], gas_used)
     })
     gas['count'] += 1
+
 
 def _generate_topics():
     try:
