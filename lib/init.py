@@ -68,6 +68,11 @@ def main():
             shutil.copytree(folder, args['<project>'])
         except FileExistsError:
             sys.exit("ERROR: One or more files for this project already exist.")
+        if not os.path.exists(args['<project>']+"/brownie-config.json"):
+            shutil.copyfile(
+                CONFIG['folders']['brownie']+'/config.json',
+                args['<project>']+"/brownie-config.json"
+            )
         sys.exit("Project was created in ./{}".format(args['<project>']))
     
     create_project()
