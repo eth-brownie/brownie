@@ -5,12 +5,8 @@ import eth_event
 import re
 
 from lib.components.compiler import add_contract
-from lib.components.eth import (
-    web3,
-    wei,
-    TransactionReceipt,
-    VirtualMachineError
-)
+from lib.components.eth import web3, wei
+from lib.components.transaction import TransactionReceipt, VirtualMachineError
 from lib.components import config
 CONFIG = config.CONFIG
 

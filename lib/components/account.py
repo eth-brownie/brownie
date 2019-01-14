@@ -4,7 +4,12 @@ import eth_keys
 import json
 import os
 
-from lib.components.eth import web3, wei, TransactionReceipt, VirtualMachineError
+from lib.components.transaction import (
+    TransactionReceipt,
+    VirtualMachineError,
+    raise_or_return_tx
+)
+from lib.components.eth import web3, wei
 from lib.components import config
 CONFIG = config.CONFIG
 
@@ -76,11 +81,11 @@ class Account(_AccountBase):
                 'value': wei(amount),
                 'gasPrice': wei(gas_price) or self._gas_price(),
                 'gas': wei(gas_limit) or self._gas_limit(to, amount)
-                })
-            self.nonce += 1
-            return TransactionReceipt(txid)
+            })
         except ValueError as e:
-            raise VirtualMachineError(e)
+            txid = raise_or_return_tx(e)
+        self.nonce += 1
+        return TransactionReceipt(txid)
 
     def _contract_tx(self, fn, args, tx, name):
         tx['from'] = self.address
@@ -88,9 +93,10 @@ class Account(_AccountBase):
             tx['gasPrice'] = CONFIG['active_network']['gas_price']
         if CONFIG['active_network']['gas_limit']:
             tx['gas'] = CONFIG['active_network']['gas_limit']
-        try: txid = fn(*args).transact(tx)
+        try:
+            txid = fn(*args).transact(tx)
         except ValueError as e:
-            raise VirtualMachineError(e)
+            txid = raise_or_return_tx(e)
         self.nonce += 1
         return TransactionReceipt(txid, name=name)
 
@@ -116,12 +122,12 @@ class LocalAccount(_AccountBase):
                 'to': to,
                 'value': wei(amount),
                 'data': ""
-                }).rawTransaction
+            }).rawTransaction
             txid = web3.eth.sendRawTransaction(signed_tx)
-            self.nonce += 1
-            return TransactionReceipt(txid)
         except ValueError as e:
-            raise VirtualMachineError(e)
+            txid = raise_or_return_tx(e)
+        self.nonce += 1
+        return TransactionReceipt(txid)
 
     def _contract_tx(self, fn, args, tx, name):
         try:
@@ -133,11 +139,12 @@ class LocalAccount(_AccountBase):
                     CONFIG['active_network']['gas_limit'] or
                     fn(*args).estimateGas({'from': self.address})
                 )
-                })
+            })
             raw = fn(*args).buildTransaction(tx)
             txid = web3.eth.sendRawTransaction(
-                self._acct.signTransaction(raw).rawTransaction)
-            self.nonce += 1
-            return TransactionReceipt(txid, name=name)
+                self._acct.signTransaction(raw).rawTransaction
+            )
         except ValueError as e:
-            raise VirtualMachineError(e)
+            txid = raise_or_return_tx(e)
+        self.nonce += 1
+        return TransactionReceipt(txid, name=name)

@@ -7,7 +7,7 @@ import sys
 import time
 import traceback
 
-from lib.components.eth import VirtualMachineError,TransactionReceipt
+from lib.components.transaction import VirtualMachineError,TransactionReceipt
 from lib.components.network import Network
 from lib.components import config
 CONFIG = config.CONFIG

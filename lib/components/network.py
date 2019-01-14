@@ -9,9 +9,10 @@ import traceback
 
 from lib.components import alert
 from lib.components import compiler
-from lib.components.eth import web3, wei, TransactionReceipt
+from lib.components.eth import web3, wei
 from lib.components.account import Accounts, LocalAccount
 from lib.components.contract import ContractDeployer
+from lib.components import transaction as tx
 from lib.services.fernet import FernetKey, InvalidToken
 import lib.components.check as check
 from lib.components import config
@@ -34,7 +35,7 @@ class Network:
             'logging': self.logging,
             'reset': self.reset,
             'run': self.run,
-            'txhistory': TransactionReceipt._txhistory,
+            'txhistory': tx.tx_history,
             'web3': web3,
             'wei': wei }
         for name, interface in compiler.compile_contracts().items():
