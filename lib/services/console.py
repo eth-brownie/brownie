@@ -27,6 +27,7 @@ class Console:
     def run(self, globals_dict, history_file = None):
         builtins.print = self._print
         local_ = {}
+        globals_dict['dir'] = _brownie_dir
         if history_file:
             try:
                 readline.read_history_file(history_file)
@@ -90,5 +91,8 @@ class Console:
                         "".join(traceback.format_tb(sys.exc_info()[2])[1:]),
                         sys.exc_info()[0].__name__, sys.exc_info()[1]))
             self._prompt = ">>> "
+
+def _brownie_dir(*args):
+    return [i for i in builtins.dir(*args) if i[0]!="_"]
 
 sys.modules[__name__] = Console()
