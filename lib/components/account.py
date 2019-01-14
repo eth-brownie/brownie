@@ -18,6 +18,13 @@ class Accounts(list):
     def __init__(self, accounts):
         super().__init__([Account(i) for i in accounts])
 
+    def __contains__(self, address):
+        try:
+            address = web3.toChecksumAddress(address)
+            return super().__contains__(address)
+        except ValueError:
+            return False
+
     def add(self, priv_key = None):
         if not priv_key:
             priv_key=web3.sha3(os.urandom(8192))
@@ -27,13 +34,16 @@ class Accounts(list):
         account = LocalAccount(w3account.address, w3account, priv_key)
         self.append(account)
         return account
-    
+
     def at(self, address):
-        address = web3.toChecksumAddress(address)
+        try:
+            address = web3.toChecksumAddress(address)
+        except ValueError:
+            raise ValueError("{} is not a valid address".format(address))
         try:
             return next(i for i in self if i == address)
         except StopIteration:
-            print("ERROR: No account exists for {}".format(address))
+            raise ValueError("No account exists for {}".format(address))
 
 
 class _AccountBase(str):
@@ -85,9 +95,9 @@ class Account(_AccountBase):
         except ValueError as e:
             txid = raise_or_return_tx(e)
         self.nonce += 1
-        return TransactionReceipt(txid)
+        return TransactionReceipt(txid, self)
 
-    def _contract_tx(self, fn, args, tx, name):
+    def _contract_tx(self, fn, args, tx, name, callback=None):
         tx['from'] = self.address
         if CONFIG['active_network']['gas_price']:
             tx['gasPrice'] = CONFIG['active_network']['gas_price']
@@ -98,7 +108,7 @@ class Account(_AccountBase):
         except ValueError as e:
             txid = raise_or_return_tx(e)
         self.nonce += 1
-        return TransactionReceipt(txid, name=name)
+        return TransactionReceipt(txid, self, name=name, callback=callback)
 
 
 class LocalAccount(_AccountBase):
@@ -127,7 +137,7 @@ class LocalAccount(_AccountBase):
         except ValueError as e:
             txid = raise_or_return_tx(e)
         self.nonce += 1
-        return TransactionReceipt(txid)
+        return TransactionReceipt(txid, self)
 
     def _contract_tx(self, fn, args, tx, name):
         try:
@@ -147,4 +157,4 @@ class LocalAccount(_AccountBase):
         except ValueError as e:
             txid = raise_or_return_tx(e)
         self.nonce += 1
-        return TransactionReceipt(txid, name=name)
+        return TransactionReceipt(txid, self, name=name)

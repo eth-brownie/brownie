@@ -38,7 +38,8 @@ class web3:
                 CONFIG['active_network']['test-rpc'].split(' '),
                 stdout = DEVNULL,
                 stdin = DEVNULL,
-                stderr = DEVNULL
+                stderr = DEVNULL,
+                start_new_session = True
             )
         web3 = Web3(HTTPProvider(CONFIG['active_network']['host']))
         for i in range(20):

@@ -4,6 +4,7 @@ from collections import OrderedDict
 import eth_event
 import re
 
+from lib.components.account import Accounts
 from lib.components.compiler import add_contract
 from lib.components.eth import web3, wei
 from lib.components.transaction import TransactionReceipt, VirtualMachineError
@@ -45,8 +46,14 @@ class ContractDeployer(_ContractBase):
                 print("WARNING: No contract deployed at {}.".format(data['address']))
                 continue
             self._deployed[data['address']] = Contract(
-                data['address'], self._name, self.abi, data['owner'],
-                TransactionReceipt(data['transactionHash'], True) if data['transactionHash'] else None)
+                data['address'],
+                self._name,
+                self.abi, data['owner'],
+                (
+                    TransactionReceipt(data['transactionHash'], silent=True)
+                    if data['transactionHash'] else None
+                )
+            )
     
     def __iter__(self):
         return iter(self._deployed.values())
@@ -86,9 +93,14 @@ class ContractDeployer(_ContractBase):
         except StopIteration:
             if args:
                 raise AttributeError("This contract takes no constructor arguments.")
-        tx = account._contract_tx(contract.constructor, args, tx, self._name+".constructor")
-        deployed = self.at(tx.contractAddress, account, tx)
-        return deployed
+        tx = account._contract_tx(contract.constructor, args, tx, self._name+".constructor", self._at)
+        if tx.contract_address:
+            return self.at(tx.contract_address)
+        return tx
+        
+    def _at(self, tx):
+        self.at(tx.contract_address, tx.sender, tx)
+
     
     def at(self, address, owner = None, tx = None):
         address = web3.toChecksumAddress(address)

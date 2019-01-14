@@ -4,7 +4,9 @@ import eth_event
 from hexbytes import HexBytes
 import json
 import sys
+import threading
 import time
+
 
 from lib.components.compiler import compile_contracts
 from lib.components.eth import web3
@@ -12,18 +14,22 @@ from lib.components import config
 CONFIG = config.CONFIG
 
 
-GREEN = "\033[92m"
-RED = "\033[91m"
+COLORS = {
+    -1: "\033[93m",
+    0: "\033[91m",
+    1: "\033[92m"
+}
+
 DEFAULT = "\x1b[0m"
 
 TX_INFO="""
 Transaction was Mined
 ---------------------
-Tx Hash: {0.hash}
-From: {0.from}
+Tx Hash: {0.txid}
+From: {0.sender}
 {1}{2}
-Block: {0.blockNumber}
-Gas Used: {0.gasUsed}
+Block: {0.block_number}
+Gas Used: {0.gas_used}
 """
 
 gas_profile = {}
@@ -42,58 +48,109 @@ class VirtualMachineError(Exception):
 
 def raise_or_return_tx(exc):
     data = eval(str(exc))
-    if 'data' in data:
-        return list(data['data'].keys())[0]
-    raise VirtualMachineError(exc)
+    try:
+        return next(i for i in data['data'].keys() if i[:2]=="0x")
+    except StopIteration:
+        raise VirtualMachineError(exc)
 
 
 class TransactionReceipt:
 
-    def __init__(self, txid, silent=False, name=None):
+    def __init__(self, txid, sender=None, silent=False, name=None, callback=None):
         if type(txid) is not str:
             txid = txid.hex()
-        self.fn_name = name
-        tx_history.append(self)
-        while True:
-            tx = web3.eth.getTransaction(txid)
-            if tx: break
-            time.sleep(0.5)
+        if txid == "stack":
+            print(name)
+            sys.exit()
         if CONFIG['logging']['tx'] and not silent:
             print("\nTransaction sent: {}".format(txid))
-        for k,v in tx.items():
-            setattr(self, k, v.hex() if type(v) is HexBytes else v)
-        if not tx.blockNumber and CONFIG['logging']['tx'] and not silent:
-            print("Waiting for confirmation...")
-        receipt = web3.eth.waitForTransactionReceipt(txid)
-        for k,v in [(k,v) for k,v in receipt.items() if k not in tx]:
-            if type(v) is HexBytes:
-                v = v.hex()
-            setattr(self, k, v)
-        if name and '--gas' in sys.argv:
-            _profile_gas(name, receipt.gasUsed)
-        self.gasLimit = self.gas
-        del self.gas
-        self.events = []
-        self.events = eth_event.decode_logs(receipt.logs, TOPICS)
-        if not self.status:
-            self.events = eth_event.decode_trace(web3.providers[0].make_request('debug_traceTransaction',[txid,{}]), TOPICS)
-        if silent:
+        tx_history.append(self)
+        self.__dict__.update({
+            'fn_name': name,
+            'txid': txid,
+            'sender': sender,
+            'receiver': None,
+            'value': None,
+            'gas_price': None,
+            'gas_limit': None,
+            'input': None,
+            'nonce': None,
+            'block_number': None,
+            'txindex': None,
+            'gas_used': None,
+            'contract_address': None,
+            'logs': [],
+            'events': [],
+            'status': -1
+        })
+        t = threading.Thread(
+            target=self._await_confirm,
+            args=[silent, callback],
+            daemon=True
+        )
+        t.start()
+        try:
+            t.join()
+        except KeyboardInterrupt:
             return
-        if CONFIG['logging']['tx'] >= 2:
-            self.info()
-        elif CONFIG['logging']['tx']:
-            print("{} confirmed - block: {}   gas spent: {}".format(
-                name or "Transaction", receipt.blockNumber, receipt.gasUsed
-            ))
-            if not self.contractAddress:
-                return
-            print("Contract deployed at: {}".format(self.contractAddress))
+
+    def _await_confirm(self, silent, callback):
+        while True:
+            tx = web3.eth.getTransaction(self.txid)
+            if tx: break
+            time.sleep(0.5)
+        if not self.sender:
+            self.sender = tx['from']
+        self.__dict__.update({
+            'receiver': tx['to'],
+            'value': tx['value'],
+            'gas_price': tx['gasPrice'],
+            'gas_limit': tx['gas'],
+            'input': tx['input'],
+            'nonce': tx['nonce'],
+        })
+        if not tx['blockNumber'] and CONFIG['logging']['tx'] and not silent:
+            print("Waiting for confirmation...")
+        receipt = web3.eth.waitForTransactionReceipt(self.txid)
+        self.__dict__.update({
+            'block_number': receipt['blockNumber'],
+            'txindex': receipt['transactionIndex'],
+            'gas_used': receipt['gasUsed'],
+            'contract_address': receipt['contractAddress'],
+            'logs': receipt['logs'],
+            'events': eth_event.decode_logs(receipt['logs'], TOPICS),
+            'status': receipt['status']
+        })
+        if self.fn_name and '--gas' in sys.argv:
+            _profile_gas(self.fn_name, receipt['gasUsed'])
+        if not self.status:
+            self.events = eth_event.decode_trace(
+                web3.providers[0].make_request(
+                    'debug_traceTransaction',
+                    [self.txid,{}]
+                ),
+                TOPICS
+            )
+        if not silent:
+            if CONFIG['logging']['tx'] >= 2:
+                self.info()
+            elif CONFIG['logging']['tx']:
+                print("{} confirmed - block: {}   gas used: {}".format(
+                    self.fn_name or "Transaction", self.block_number, self.gas_used
+                ))
+                if receipt['contractAddress']:
+                    print("{} deployed at: {}".format(
+                        self.fn_name.split('.')[0],
+                        receipt['contractAddress']
+                    ))
+        if callback:
+            callback(self)
 
     def __repr__(self):
         return "<Transaction object '{}{}{}'>".format(
-            DEFAULT if self.status else RED, self.hash, DEFAULT
+            COLORS[self.status], self.txid, DEFAULT
         )
-        
+
     def info(self):
         return _print_tx(self)
 
@@ -102,12 +159,12 @@ def _print_tx(tx):
     print(TX_INFO.format(
         tx,
         (
-            "New Contract Address: "+tx.contractAddress if tx.contractAddress
-            else "To: {0.to}\nValue: {0.value}".format(tx)
+            "New Contract Address: "+tx.contract_address if tx.contract_address
+            else "To: {0.receiver}\nValue: {0.value}".format(tx)
         ),
         (
             "\nFunction: {}".format(tx.fn_name) if 
-            (tx.input!="0x00" and not tx.contractAddress) else ""
+            (tx.input!="0x00" and not tx.contract_address) else ""
         )
     ))
     
@@ -148,8 +205,10 @@ def _generate_topics():
     events = [x for i in contracts.values() for x in i['abi'] if x['type']=="event"]
     topics.update(eth_event.get_event_abi(events))
     json.dump(
-        topics, open(CONFIG['folders']['brownie']+"/topics.json", 'w'),
-        sort_keys=True, indent=4
+        topics,
+        open(CONFIG['folders']['brownie']+"/topics.json", 'w'),
+        sort_keys=True,
+        indent=4
     )
     return topics
 
