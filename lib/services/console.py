@@ -75,9 +75,13 @@ class Console:
                     local_['_result'] = None
                     exec('_result = ' + cmd, globals_dict, local_)
                     if local_['_result'] != None:
-                        if type(local_['_result']) is dict:
+                        r = local_['_result']
+                        if type(r) is dict or (
+                            type(r) is list and 
+                            len(r) == len([i for i in r if type(i) is dict])
+                        ):
                             print(json.dumps(
-                                local_['_result'],
+                                r,
                                 default=str,
                                 indent=4,
                                 sort_keys=True
