@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
+import eth_abi
 import eth_event
 from hexbytes import HexBytes
 import json
 import sys
 import threading
 import time
-
 
 from lib.components.compiler import compile_contracts
 from lib.components.eth import web3
@@ -81,7 +81,8 @@ class TransactionReceipt:
             'contract_address': None,
             'logs': [],
             'events': [],
-            'status': -1
+            'status': -1,
+            'revert_msg': None
         })
         t = threading.Thread(
             target=self._await_confirm,
@@ -124,13 +125,15 @@ class TransactionReceipt:
         if self.fn_name and '--gas' in sys.argv:
             _profile_gas(self.fn_name, receipt['gasUsed'])
         if not self.status:
-            self.events = eth_event.decode_trace(
-                web3.providers[0].make_request(
-                    'debug_traceTransaction',
-                    [self.txid,{}]
-                ),
-                TOPICS
+            trace = web3.providers[0].make_request(
+                'debug_traceTransaction',
+                [self.txid,{}]
             )
+            memory = trace['result']['structLogs'][-1]['memory']
+            idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
+            data = HexBytes("".join(memory[idx:])[8:]+"00000000")
+            self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
+            self.events = eth_event.decode_trace(trace, TOPICS)
         if not silent:
             if CONFIG['logging']['tx'] >= 2:
                 self.info()

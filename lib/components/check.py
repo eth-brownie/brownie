@@ -19,7 +19,7 @@ def reverts(fn, args, fail_msg="Expected transaction to revert", revert_msg=None
     except VirtualMachineError as e:
         if not revert_msg or revert_msg == e.revert_msg:
             return
-    if not tx.status:
+    if not tx.status and (not revert_msg or revert_msg == tx.revert_msg):
         return
     raise AssertionError(fail_msg)
 
