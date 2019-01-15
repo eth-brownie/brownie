@@ -32,7 +32,8 @@ class Network:
             'accounts': accounts,
             'alert': alert,
             'check': check,
-            'logging': self.logging,
+            'gas': gas,
+            'logging': logging,
             'reset': self.reset,
             'run': self.run,
             'txhistory': tx.tx_history,
@@ -124,10 +125,25 @@ class Network:
         self.__init__(self._module)
         return "Brownie environment is ready."
 
-    def logging(self, **kwargs):
-        if not kwargs or [k for k,v in kwargs.items() if
-            k not in ('tx','exc') or type(v) is not int or not 0<=v<=2]:
-            print("logging(tx=n, exc=n)\n\n 0 - Quiet\n 1 - Normal\n 2 - Verbose")
+def logging(**kwargs):
+    if not kwargs or [k for k,v in kwargs.items() if
+        k not in ('tx','exc') or type(v) is not int or not 0<=v<=2]:
+        print("logging(tx=n, exc=n)\n\n 0 - Quiet\n 1 - Normal\n 2 - Verbose")
+    else:
+        CONFIG['logging'].update(kwargs)
+        print(CONFIG['logging'])
+
+def gas(*args):
+    if args:
+        if args[0] in ("auto", None, False, True):
+            CONFIG['active_network']['gas_limit'] = False
         else:
-            CONFIG['logging'].update(kwargs)
-            print(CONFIG['logging'])
+            try:
+                CONFIG['active_network']['gas_limit'] = int(args[0])
+            except:
+                return "Invalid gas limit."
+    return "Gas limit is set to {}".format(
+        CONFIG['active_network']['gas_limit'] or "automatic"
+    )
+
+    
