@@ -14,23 +14,12 @@ from lib.components import config
 CONFIG = config.CONFIG
 
 
-COLORS = {
-    -1: "\033[93m",
-    0: "\033[91m",
-    1: "\033[92m"
-}
-
 DEFAULT = "\x1b[0m"
-
-TX_INFO="""
-Transaction was Mined
----------------------
-Tx Hash: {0.txid}
-From: {0.sender}
-{1}{2}
-Block: {0.block_number}
-Gas Used: {0.gas_used}
-"""
+COLORS = {
+    -1: "\033[93m", # yellow
+    0: "\033[91m", # red
+    1: DEFAULT
+}
 
 gas_profile = {}
 tx_history = []
@@ -130,16 +119,26 @@ class TransactionReceipt:
                 [self.txid,{}]
             )
             memory = trace['result']['structLogs'][-1]['memory']
-            idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
-            data = HexBytes("".join(memory[idx:])[8:]+"00000000")
-            self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
+            try:
+                idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
+                data = HexBytes("".join(memory[idx:])[8:]+"00000000")
+                self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
+            except StopIteration:
+                pass
             self.events = eth_event.decode_trace(trace, TOPICS)
         if not silent:
             if CONFIG['logging']['tx'] >= 2:
                 self.info()
             elif CONFIG['logging']['tx']:
-                print("{} confirmed - block: {}   gas used: {}".format(
-                    self.fn_name or "Transaction", self.block_number, self.gas_used
+                print("{} confirmed {}- block: {}   gas used: {}".format(
+                    self.fn_name or "Transaction",
+                    "" if self.status else "({}{}{}) ".format(
+                        COLORS[0],
+                        tx.revert_msg or "reverted",
+                        DEFAULT
+                    ),
+                    self.block_number,
+                    self.gas_used
                 ))
                 if receipt['contractAddress']:
                     print("{} deployed at: {}".format(
@@ -158,16 +157,31 @@ class TransactionReceipt:
         return _print_tx(self)
 
 
+TX_INFO="""
+Transaction was Mined{3}
+---------------------
+Tx Hash: {0.txid}
+From: {1}
+{2}
+Block: {0.block_number}
+Gas Used: {0.gas_used}
+"""
+
+
 def _print_tx(tx):
     print(TX_INFO.format(
         tx,
+        tx.sender if type(tx.sender) is str else tx.sender.address,
         (
             "New Contract Address: "+tx.contract_address if tx.contract_address
-            else "To: {0.receiver}\nValue: {0.value}".format(tx)
+            else "To: {0.receiver}\nValue: {0.value}{1}".format(
+                tx, "\nFunction: {}".format(tx.fn_name) if tx.input!="0x00" else ""
+            )
         ),
-        (
-            "\nFunction: {}".format(tx.fn_name) if 
-            (tx.input!="0x00" and not tx.contract_address) else ""
+        "" if tx.status else " ({}{}{})".format(
+            COLORS[0],
+            tx.revert_msg or "reverted",
+            DEFAULT
         )
     ))
     
