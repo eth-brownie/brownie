@@ -7,6 +7,10 @@ import json
 from threading import Lock
 import traceback
 
+BLUE = "\x1b[36m"
+YELLOW = "\x1b[33m"
+DEFAULT = "\x1b[0m"
+
 
 class Console:
 
@@ -97,6 +101,11 @@ class Console:
             self._prompt = ">>> "
 
 def _brownie_dir(*args):
-    return [i for i in builtins.dir(*args) if i[0]!="_"]
+    results = [(i,getattr(args[0],i)) for i in builtins.dir(*args) if i[0]!="_"]
+    print("["+"{}, ".format(DEFAULT).join("{}{}".format(
+        BLUE if callable(i[1]) else YELLOW, i[0]
+    ) for i in results)+DEFAULT+"]")
+    
+    
 
 sys.modules[__name__] = Console()

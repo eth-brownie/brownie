@@ -135,7 +135,7 @@ class TransactionReceipt:
                     self.fn_name or "Transaction",
                     "" if self.status else "({}{}{}) ".format(
                         COLORS[0],
-                        tx.revert_msg or "reverted",
+                        self.revert_msg or "reverted",
                         DEFAULT
                     ),
                     self.block_number,
