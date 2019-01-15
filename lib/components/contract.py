@@ -94,12 +94,13 @@ class ContractDeployer(_ContractBase):
             if args:
                 raise AttributeError("This contract takes no constructor arguments.")
         tx = account._contract_tx(contract.constructor, args, tx, self._name+".constructor", self._at)
-        if tx.contract_address:
+        if tx.status == 1:
             return self.at(tx.contract_address)
         return tx
         
     def _at(self, tx):
-        self.at(tx.contract_address, tx.sender, tx)
+        if tx.status == 1:
+            self.at(tx.contract_address, tx.sender, tx)
 
     
     def at(self, address, owner = None, tx = None):
@@ -147,6 +148,7 @@ class Contract(str,_ContractBase):
     def balance(self):
         return web3.eth.getBalance(self._contract.address)
 
+
 class _ContractMethod:
 
     def __init__(self, fn, abi, name, owner):
@@ -169,6 +171,7 @@ class _ContractMethod:
         types = [i['type'] for i in self.abi['inputs']]
         return _format_inputs(self.abi['name'], args, types)
 
+
 class ContractTx(_ContractMethod):
 
     def __call__(self, *args):
@@ -178,6 +181,7 @@ class ContractTx(_ContractMethod):
                 "Contract has no owner, you must supply a tx dict with a 'from'"
                 " field as the last argument.")
         return tx['from']._contract_tx(self._fn, self._format_inputs(args), tx, self._name)
+
 
 class ContractCall(_ContractMethod):
 
@@ -201,6 +205,7 @@ def _get_tx(owner, args):
         else:
             tx = {'from': owner}
         return args, tx
+
 
 def _format_inputs(name, inputs, types):
         inputs = list(inputs)
