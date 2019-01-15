@@ -42,7 +42,8 @@ class Console:
                 try:
                     cmd = input(self._prompt)
                 except KeyboardInterrupt:
-                    print("\nUse exit() or Ctrl-D (i.e. EOF) to exit.")
+                    sys.stdout.write("\nUse exit() or Ctrl-D (i.e. EOF) to exit.\n")
+                    sys.stdout.flush()
                     continue
                 except EOFError:
                     print()
@@ -100,6 +101,7 @@ class Console:
                         sys.exc_info()[0].__name__, sys.exc_info()[1]))
             self._prompt = ">>> "
 
+
 def _brownie_dir(obj=None):
     if not obj:
         obj = sys.modules[__name__]
@@ -107,7 +109,6 @@ def _brownie_dir(obj=None):
     print("["+"{}, ".format(DEFAULT).join("{}{}".format(
         BLUE if callable(i[1]) else YELLOW, i[0]
     ) for i in results)+DEFAULT+"]")
-    
     
 
 sys.modules[__name__] = Console()
