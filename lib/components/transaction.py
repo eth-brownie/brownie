@@ -82,7 +82,8 @@ class TransactionReceipt:
         try:
             t.join()
         except KeyboardInterrupt:
-            return
+            if sys.argv[1] != "console":
+                raise
 
     def _await_confirm(self, silent, callback):
         while True:
