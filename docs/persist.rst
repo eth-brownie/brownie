@@ -13,4 +13,6 @@ When enabled, persistence will maintain:
 
 The first time Brownie is run on a network with persistence enabled, it will ask you to set a password. The persistent data is then encrypted and stored at ``build/networks/[network].json``. The next time you load Brownie you will be asked to enter the password. You can instead enter CTRL-C to use the network without persistence.
 
-You can use the ``reset`` command in the console to forget the addresses of deployed contracts on the active network. Or delete the ``build/networks/`` folder to erase all persistent data.
+You can use the ``reset`` command in the console to forget the addresses of deployed contracts on the active network. Local accounts that were added with ``accounts.add`` will not not be removed, they must be deleted manually from the ``accounts`` container.
+
+You can also delete the ``build/networks/`` folder to erase all persistent data.

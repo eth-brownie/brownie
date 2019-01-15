@@ -100,8 +100,10 @@ class Console:
                         sys.exc_info()[0].__name__, sys.exc_info()[1]))
             self._prompt = ">>> "
 
-def _brownie_dir(*args):
-    results = [(i,getattr(args[0],i)) for i in builtins.dir(*args) if i[0]!="_"]
+def _brownie_dir(obj=None):
+    if not obj:
+        obj = sys.modules[__name__]
+    results = [(i,getattr(obj,i)) for i in builtins.dir(obj) if i[0]!="_"]
     print("["+"{}, ".format(DEFAULT).join("{}{}".format(
         BLUE if callable(i[1]) else YELLOW, i[0]
     ) for i in results)+DEFAULT+"]")

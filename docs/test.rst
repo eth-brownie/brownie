@@ -20,7 +20,7 @@ Tests rely heavily on functions in the Brownie ``check`` module. You can read ab
 
 The network is reset between running each test script. Tests cannot access any state changes that occured from a previous test.
 
-.. note:: If you do not set a default gas limit in the configuration file, ``web3.eth.estimateGas`` is called to estimate. Transactions that would cause the EVM to revert will fail during this estimation and so will not be broadcasted. You will not have access to any information about the failed transaction.
+.. note:: If you do not set a default gas limit in the configuration file, ``web3.eth.estimateGas`` is called to estimate. Transactions that would cause the EVM to revert will raise a VirtualMachineError during this estimation and so will not be broadcasted. You will not have access to any information about the failed transaction.
 
 In order to define the base contract setup, each test script should include a variable ``DEPLOYMENT`` that gives the name of a deployment script to run.
 

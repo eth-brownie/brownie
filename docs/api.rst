@@ -6,6 +6,8 @@ Brownie API
 
 The following classes and methods are available when developing brownie scripts or using the console.
 
+When using the console, you can call the builtin ``dir`` function to see available methods and attributes for any class. Callables are highlighed in blue, attributes in yellow.
+
 Eth
 ===
 
@@ -14,30 +16,6 @@ These classes and methods relate to the Ethereum blockchain:
 .. py:class:: web3
 
     Brownie implementation of ``web3py.web3``. Only some class methods are exposed. See the `Web3.py docs <https://web3py.readthedocs.io/en/stable/index.html>`__ for more information.
-
-.. py:class:: TransactionReceipt
-
-    An instance of this class is returned whenever a transaction is completed. Contains a combination of values from ``web3.eth.getTransaction`` and ``web3.eth.getTransactionReceipt``.
-
-.. py:classmethod:: TransactionReceipt.info()
-
-    Provides verbose information about the transaction.
-
-    ::
-
-        >>> tx = accounts[0].transfer(accounts[1], 100)
-        <Transaction object '0x2facf2d1d2fdfa10956b7beb89cedbbe1ba9f4a2f0592f8a949d6c0318ec8f66'>
-        >>> tx.info()
-
-        Transaction was Mined
-        ---------------------
-        Tx Hash: 0x2facf2d1d2fdfa10956b7beb89cedbbe1ba9f4a2f0592f8a949d6c0318ec8f66
-        From: 0x5fe657e72E76E7ACf73EBa6FA07ecB40b7312d80
-        To: 0x5814fC82d51732c412617Dfaecb9c05e3B823253
-        Value: 100
-        Function Signature: 0x0
-        Block: 1
-        Gas Used: 21000
 
 .. _wei:
 
@@ -60,14 +38,6 @@ These classes and methods relate to the Ethereum blockchain:
         >>> wei(8.38e32)
         838000000000000000000000000000000
 
-.. py:exception:: VirtualMachineError
-
-    Raised whenever a transaction results in an EVM exception.
-
-.. py:attribute:: VirtualMachineError.revert_msg
-
-    Contains the EVM revert error message, if any.
-
 Console
 =======
 
@@ -84,6 +54,111 @@ These methods are used in the console.
 .. py:method:: run(script)
 
     Runs a deployment script. See :ref:`deploy` for more information.
+
+
+Transactions
+============
+
+.. py:class:: TransactionReceipt
+
+    An instance of this class is returned whenever a transaction is broadcasted. When printed in the console, they will appear yellow if the transaction is still pending or red if the transaction caused the EVM to revert.
+
+    Many of the attributes will be set to ``None`` while the transaction is still pending.
+
+.. py:attribute:: TransactionReceipt.block_number
+
+    The block height at which the transaction confirmed.
+
+.. py:attribute:: TransactionReceipt.contract_address
+
+    The address of the contract deployed as a result of this transaction, if any.
+
+.. py:attribute:: TransactionReceipt.events
+
+    A dictionary of decoded event logs for this transaction. This is still available if the transaction reverts.
+
+.. py:attribute:: TransactionReceipt.fn_name
+
+    The name of the contract and function called by the transaction.
+
+.. py:attribute:: TransactionReceipt.gas_limit
+
+    The gas limit of the transaction, in wei.
+
+.. py:attribute:: TransactionReceipt.gas_price
+
+    The gas price of the transaction, in wei.
+
+.. py:attribute:: TransactionReceipt.gas_used
+
+    The amount of gas consumed by the transaction, in wei.
+
+.. py:attribute:: TransactionReceipt.input
+
+    The complete calldata of the transaction.
+
+.. py:attribute:: TransactionReceipt.logs
+
+    The unencrypted event logs for the transaction. Not available if the transaction reverts.
+
+.. py:attribute:: TransactionReceipt.nonce
+
+    The nonce of the transaction.
+
+.. py:attribute:: TransactionReceipt.receiver
+
+    The address the transaction was sent to, as a string.
+
+.. py:attribute:: TransactionReceipt.revert_msg
+
+    The error string returned when a transaction causes the EVM to revert, if any.
+
+.. py:attribute:: TransactionReceipt.sender
+
+    The address the transaction was sent from. Where possible, this will be an Account instance instead of a string.
+
+.. py:attribute:: TransactionReceipt.status
+
+    The status of the transaction: -1 for pending, 0 for failed, 1 for success.
+
+.. py:attribute:: TransactionReceipt.txid
+
+    The transaction hash.
+
+.. py:attribute:: TransactionReceipt.txindex
+
+    The integer of the transaction's index position in the block.
+
+.. py:attribute:: TransactionReceipt.value
+
+    The value of the transaction, in wei.
+
+.. py:classmethod:: TransactionReceipt.info()
+
+    Provides verbose information about the transaction, including event logs and the error string if a transaction reverts.
+
+    ::
+
+        >>> tx = accounts[0].transfer(accounts[1], 100)
+        <Transaction object '0x2facf2d1d2fdfa10956b7beb89cedbbe1ba9f4a2f0592f8a949d6c0318ec8f66'>
+        >>> tx.info()
+
+        Transaction was Mined
+        ---------------------
+        Tx Hash: 0x2facf2d1d2fdfa10956b7beb89cedbbe1ba9f4a2f0592f8a949d6c0318ec8f66
+        From: 0x5fe657e72E76E7ACf73EBa6FA07ecB40b7312d80
+        To: 0x5814fC82d51732c412617Dfaecb9c05e3B823253
+        Value: 100
+        Block: 1
+        Gas Used: 21000
+
+.. py:exception:: VirtualMachineError
+
+    Raised when a call to a contract causes an EVM exception.  Transactions that result in a revert will still return a TransactionReceipt instead of raising.
+
+.. py:attribute:: VirtualMachineError.revert_msg
+
+    Contains the EVM revert error message, if any.
 
 Accounts
 ========
@@ -142,7 +217,7 @@ Account classes are not meant to be instantiated directly. The ``Accounts`` cont
 
     You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument.
 
-    Returns a ``Contract`` instance.
+    Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
 
 .. py:class:: LocalAccount
 
@@ -210,7 +285,7 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
 
     If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``IndexError`` is raised.
 
-    Returns a ``Contract`` instance.
+    Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
 
 .. py:classmethod:: ContractDeployer.at(address, owner=None)
 
@@ -248,7 +323,15 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
         >>> Token[0].allowance(accounts[0], accounts[2])
         0
 
-.. py:class:: Contract.ContractTx(*args)
+.. py:attribute:: ContractCall.abi
+
+    The contract ABI specific to this method.
+
+.. py:attribute:: ContractCall.signature
+
+    The bytes4 signature of this method.
+
+.. py:class:: ContractTx(*args)
 
     A contract method that requires a transaction in order to call.
 
@@ -263,6 +346,14 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
         Transaction sent: 0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0
         Transaction confirmed - block: 2   gas spent: 51049
         <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
+
+.. py:attribute:: ContractTx.abi
+
+    The contract ABI specific to this method.
+
+.. py:attribute:: ContractTx.signature
+
+    The bytes4 signature of this method.
 
 .. _api_check:
 
@@ -281,7 +372,7 @@ The check module exposes the following methods that are used in place of ``asser
 
 .. py:method:: check.reverts(fn, args, fail_msg = "Expected transaction to revert", revert_msg=None)
 
-    Performs the given contract call ``fn`` with arguments ``args``. Raises if the call does not cause the EVM to throw an exception.
+    Performs the given contract call ``fn`` with arguments ``args``. Raises if the call does not cause the EVM to revert. This check will work regardless of if the revert happens from a call or a transaction.
 
     If ``revert_msg`` is not ``None``, the check will only pass if the EVM reverts with a specific message.
 

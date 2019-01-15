@@ -33,10 +33,10 @@ class Network:
             'alert': alert,
             'check': check,
             'gas': gas,
+            'history': tx.tx_history,
             'logging': logging,
             'reset': self.reset,
             'run': self.run,
-            'txhistory': tx.tx_history,
             'web3': web3,
             'wei': wei }
         for name, interface in compiler.compile_contracts().items():
