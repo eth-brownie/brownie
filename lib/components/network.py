@@ -9,9 +9,10 @@ import traceback
 
 from lib.components import alert
 from lib.components import compiler
-from lib.components.eth import web3, wei, TransactionReceipt
+from lib.components.eth import web3, wei
+from lib.components import contract
 from lib.components.account import Accounts, LocalAccount
-from lib.components.contract import ContractDeployer
+from lib.components import transaction as tx
 from lib.services.fernet import FernetKey, InvalidToken
 import lib.components.check as check
 from lib.components import config
@@ -31,10 +32,11 @@ class Network:
             'accounts': accounts,
             'alert': alert,
             'check': check,
-            'logging': self.logging,
+            'gas': gas,
+            'history': tx.tx_history,
+            'logging': logging,
             'reset': self.reset,
             'run': self.run,
-            'txhistory': TransactionReceipt._txhistory,
             'web3': web3,
             'wei': wei }
         for name, interface in compiler.compile_contracts().items():
@@ -42,7 +44,7 @@ class Network:
                 continue
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
-            self._network_dict[name] = ContractDeployer(name, interface, self._network_dict)
+            self._network_dict[name] = contract.ContractDeployer(name, interface, self._network_dict)
         module.__dict__.update(self._network_dict)
         if not CONFIG['active_network']['persist']:
             return
@@ -118,15 +120,31 @@ class Network:
             self.save()
             config.set_network(network)
             self._key = None
+        contract.deployed_contracts.clear()
         if CONFIG['active_network']['persist']:
             compiler.clear_persistence(CONFIG['active_network']['name'])
         self.__init__(self._module)
         return "Brownie environment is ready."
 
-    def logging(self, **kwargs):
-        if not kwargs or [k for k,v in kwargs.items() if
-            k not in ('tx','exc') or type(v) is not int or not 0<=v<=2]:
-            print("logging(tx=n, exc=n)\n\n 0 - Quiet\n 1 - Normal\n 2 - Verbose")
+def logging(**kwargs):
+    if not kwargs or [k for k,v in kwargs.items() if
+        k not in ('tx','exc') or type(v) is not int or not 0<=v<=2]:
+        print("logging(tx=n, exc=n)\n\n 0 - Quiet\n 1 - Normal\n 2 - Verbose")
+    else:
+        CONFIG['logging'].update(kwargs)
+        print(CONFIG['logging'])
+
+def gas(*args):
+    if args:
+        if args[0] in ("auto", None, False, True):
+            CONFIG['active_network']['gas_limit'] = False
         else:
-            CONFIG['logging'].update(kwargs)
-            print(CONFIG['logging'])
+            try:
+                CONFIG['active_network']['gas_limit'] = int(args[0])
+            except:
+                return "Invalid gas limit."
+    return "Gas limit is set to {}".format(
+        CONFIG['active_network']['gas_limit'] or "automatic"
+    )
+
+    

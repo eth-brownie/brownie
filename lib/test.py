@@ -7,7 +7,7 @@ import sys
 import time
 import traceback
 
-from lib.components.eth import VirtualMachineError,TransactionReceipt
+from lib.components import transaction as tx
 from lib.components.network import Network
 from lib.components import config
 CONFIG = config.CONFIG
@@ -40,7 +40,7 @@ def _format_tb(test, desc, exc, match):
         RED, 
         '\u2717' if exc[0] in (
             AssertionError,
-            VirtualMachineError
+            tx.VirtualMachineError
         ) else '\u203C',
         DEFAULT,
         desc, exc[0].__name__
@@ -125,8 +125,8 @@ def main():
         print("\n{}SUCCESS: All tests passed.{}".format(GREEN, DEFAULT))
         if '--gas' in sys.argv:
             print('\nGas Profile:')
-            for i in sorted(TransactionReceipt._gas_profiles):
-                print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i,TransactionReceipt._gas_profiles[i]))
+            for i in sorted(tx.gas_profile):
+                print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, tx.gas_profile[i]))
         sys.exit()
 
     print("\n{}WARNING: {} test{} failed.{}".format(

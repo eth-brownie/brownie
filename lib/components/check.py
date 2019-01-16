@@ -2,7 +2,8 @@
 
 import sys
 
-from lib.components.eth import wei, VirtualMachineError
+from lib.components.eth import wei
+from lib.components.transaction import VirtualMachineError
 
 def true(statement, fail_msg="Expected statement to be true"):
     if not statement:
@@ -14,10 +15,12 @@ def false(statement, fail_msg="Expected statement to be False"):
 
 def reverts(fn, args, fail_msg="Expected transaction to revert", revert_msg=None):
     try: 
-        fn(*args)
+        tx = fn(*args)
     except VirtualMachineError as e:
         if not revert_msg or revert_msg == e.revert_msg:
             return
+    if not tx.status and (not revert_msg or revert_msg == tx.revert_msg):
+        return
     raise AssertionError(fail_msg)
 
 def confirms(fn, args, fail_msg="Expected transaction to confirm"):

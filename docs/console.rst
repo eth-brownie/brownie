@@ -20,13 +20,17 @@ You can view and edit the configuration settings through the ``config`` dictiona
 Basic Functionality
 ===================
 
-The following methods and classes are available:
+The following methods, classes and containers are available:
 
+* ``gas(value)``: View or modify the current gas limit.
+* ``history``: A list containing every transaction broadcasted during the console session.
 * ``logging(tx=None, exc=None)``: Adjusts the console verbosity.
 * ``reset(network=None)``: Reset the local RPC environment.
 * ``run(script)``: Runs a deployment script.
 * ``wei(value)``: Converts strings and floats to an integer denoted in wei
 * ``web3``: A minimal implementation of the `Web3 API <https://web3py.readthedocs.io/en/stable/web3.main.html>`__
+
+You can call the builtin ``dir`` function to see available methods and attributes for any class. Callables are highlighed in blue, attributes in yellow.
 
 Working with Accounts
 =====================
@@ -123,6 +127,8 @@ For transactions you can optionally include a dictionary of `transaction paramet
     >>> Token[0].balanceOf(accounts[1])
     10000000000000000000
 
+If the gas limit is set to calculate automatically, transactions that revert will raise a VirtualMachineError. If the gas limit is fixed they will return a TransactionReceipt marked as reverted (printed in red).
+
 Alerts and Callbacks
 ====================
 
@@ -159,3 +165,12 @@ You can use the :ref:`api_alert` module to receive notifications or setup callba
     Transaction sent: 0x8fcd15e38eed0a5c9d3d807d593b0ea508ba5abc892428eb2e0bb0b8f7dc3083
     Transaction confirmed - block: 2   gas spent: 21000
     ALERT: Account 3 balance has changed from 100000000000000000000 to 101000000000000000000
+
+Unconfirmed Transactions
+========================
+
+If you are working on a chain where blocks are not mined automatically, you can press ``CTRL-C`` while waiting for a transaction to confirm and return to the console.  You will still be returned a TransactionReceipt instance, however it will be marked as pending (printed in yellow). A notification is shown when the transaction confirms.
+
+If you send another transaction before the previous one has confirmed, it will still broadcast with the next sequential nonce.
+
+You can view the ``history`` list to quickly view the status of any pending transactions without having to assign them unique names.

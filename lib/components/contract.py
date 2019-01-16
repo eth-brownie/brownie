@@ -4,15 +4,21 @@ from collections import OrderedDict
 import eth_event
 import re
 
+from lib.components.transaction import TransactionReceipt, VirtualMachineError
 from lib.components.compiler import add_contract
-from lib.components.eth import (
-    web3,
-    wei,
-    TransactionReceipt,
-    VirtualMachineError
-)
+from lib.components.eth import web3, wei
+
 from lib.components import config
 CONFIG = config.CONFIG
+
+
+deployed_contracts = {}
+
+def find_contract(address):
+    address = web3.toChecksumAddress(address)
+    contracts = [x for v in deployed_contracts.values() for x in v.values()]
+    return next((i for i in contracts if i == address), False)
+
 
 class _ContractBase:
 
@@ -38,7 +44,7 @@ class ContractDeployer(_ContractBase):
     def __init__(self, name, interface, network):
         self.tx = None
         self.bytecode = interface['bytecode']
-        self._deployed = OrderedDict()
+        deployed_contracts[name] = OrderedDict()
         self._network = network
         super().__init__(name, interface['abi'])
         for k, data in sorted([
@@ -48,24 +54,30 @@ class ContractDeployer(_ContractBase):
             if web3.eth.getCode(data['address']).hex() == "0x00":
                 print("WARNING: No contract deployed at {}.".format(data['address']))
                 continue
-            self._deployed[data['address']] = Contract(
-                data['address'], self._name, self.abi, data['owner'],
-                TransactionReceipt(data['transactionHash'], True) if data['transactionHash'] else None)
+            deployed_contracts[name][data['address']] = Contract(
+                data['address'],
+                self._name,
+                self.abi, data['owner'],
+                (
+                    TransactionReceipt(data['transactionHash'], silent=True)
+                    if data['transactionHash'] else None
+                )
+            )
     
     def __iter__(self):
-        return iter(self._deployed.values())
+        return iter(deployed_contracts[self._name].values())
 
     def __getitem__(self, i):
-        return list(self._deployed.values())[i]
+        return list(deployed_contracts[self._name].values())[i]
 
     def __len__(self):
-        return len(self._deployed)
+        return len(deployed_contracts[self._name])
 
     def __repr__(self):
         return "<{} ContractDeployer object>".format(self._name)
 
     def list(self):
-        return list(self._deployed)
+        return list(deployed_contracts[self._name])
 
     def deploy(self, account, *args):
         if '_' in self.bytecode:
@@ -90,20 +102,32 @@ class ContractDeployer(_ContractBase):
         except StopIteration:
             if args:
                 raise AttributeError("This contract takes no constructor arguments.")
-        tx = account._contract_tx(contract.constructor, args, tx, self._name+".constructor")
-        deployed = self.at(tx.contractAddress, account, tx)
-        return deployed
+        tx = account._contract_tx(contract.constructor, args, tx, self._name+".constructor", self._at)
+        if tx.status == 1:
+            return self.at(tx.contract_address)
+        return tx
+        
+    def _at(self, tx):
+        if tx.status == 1:
+            self.at(tx.contract_address, tx.sender, tx)
+
     
     def at(self, address, owner = None, tx = None):
         address = web3.toChecksumAddress(address)
-        if address in self._deployed:
-            return self._deployed[address]
+        if address in deployed_contracts[self._name]:
+            return deployed_contracts[self._name][address]
+        contract = find_contract(address)
+        if contract:
+            raise ValueError("Contract '{}' already declared at {}".format(
+                contract._name, address
+            ))
         if web3.eth.getCode(address).hex() == "0x00":
             raise ValueError("No contract deployed at {}".format(address))
-        self._deployed[address] = Contract(address, self._name, self.abi, owner, tx)
+        contract = Contract(address, self._name, self.abi, owner, tx)
+        deployed_contracts[self._name][address] = contract
         if CONFIG['active_network']['persist']:
             add_contract(self._name, address, tx.hash if tx else None, owner)
-        return self._deployed[address]
+        return deployed_contracts[self._name]
             
 
 class Contract(str,_ContractBase):
@@ -139,6 +163,7 @@ class Contract(str,_ContractBase):
     def balance(self):
         return web3.eth.getBalance(self._contract.address)
 
+
 class _ContractMethod:
 
     def __init__(self, fn, abi, name, owner):
@@ -161,6 +186,7 @@ class _ContractMethod:
         types = [i['type'] for i in self.abi['inputs']]
         return _format_inputs(self.abi['name'], args, types)
 
+
 class ContractTx(_ContractMethod):
 
     def __call__(self, *args):
@@ -170,6 +196,7 @@ class ContractTx(_ContractMethod):
                 "Contract has no owner, you must supply a tx dict with a 'from'"
                 " field as the last argument.")
         return tx['from']._contract_tx(self._fn, self._format_inputs(args), tx, self._name)
+
 
 class ContractCall(_ContractMethod):
 
@@ -193,6 +220,7 @@ def _get_tx(owner, args):
         else:
             tx = {'from': owner}
         return args, tx
+
 
 def _format_inputs(name, inputs, types):
         inputs = list(inputs)

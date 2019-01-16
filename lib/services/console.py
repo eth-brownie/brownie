@@ -7,6 +7,10 @@ import json
 from threading import Lock
 import traceback
 
+BLUE = "\x1b[36m"
+YELLOW = "\x1b[33m"
+DEFAULT = "\x1b[0m"
+
 
 class Console:
 
@@ -27,6 +31,7 @@ class Console:
     def run(self, globals_dict, history_file = None):
         builtins.print = self._print
         local_ = {}
+        globals_dict['dir'] = _brownie_dir
         if history_file:
             try:
                 readline.read_history_file(history_file)
@@ -37,7 +42,8 @@ class Console:
                 try:
                     cmd = input(self._prompt)
                 except KeyboardInterrupt:
-                    print("\nUse exit() or Ctrl-D (i.e. EOF) to exit.")
+                    sys.stdout.write("\nUse exit() or Ctrl-D (i.e. EOF) to exit.\n")
+                    sys.stdout.flush()
                     continue
                 except EOFError:
                     print()
@@ -74,9 +80,13 @@ class Console:
                     local_['_result'] = None
                     exec('_result = ' + cmd, globals_dict, local_)
                     if local_['_result'] != None:
-                        if type(local_['_result']) in [list, dict]:
+                        r = local_['_result']
+                        if type(r) is dict or (
+                            type(r) is list and 
+                            len(r) == len([i for i in r if type(i) is dict])
+                        ):
                             print(json.dumps(
-                                local_['_result'],
+                                r,
                                 default=str,
                                 indent=4,
                                 sort_keys=True
@@ -90,5 +100,15 @@ class Console:
                         "".join(traceback.format_tb(sys.exc_info()[2])[1:]),
                         sys.exc_info()[0].__name__, sys.exc_info()[1]))
             self._prompt = ">>> "
+
+
+def _brownie_dir(obj=None):
+    if not obj:
+        obj = sys.modules[__name__]
+    results = [(i,getattr(obj,i)) for i in builtins.dir(obj) if i[0]!="_"]
+    print("["+"{}, ".format(DEFAULT).join("{}{}".format(
+        BLUE if callable(i[1]) else YELLOW, i[0]
+    ) for i in results)+DEFAULT+"]")
+    
 
 sys.modules[__name__] = Console()

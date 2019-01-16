@@ -4,7 +4,12 @@ import eth_keys
 import json
 import os
 
-from lib.components.eth import web3, wei, TransactionReceipt, VirtualMachineError
+from lib.components.transaction import (
+    TransactionReceipt,
+    VirtualMachineError,
+    raise_or_return_tx
+)
+from lib.components.eth import web3, wei
 from lib.components import config
 CONFIG = config.CONFIG
 
@@ -12,6 +17,13 @@ class Accounts(list):
 
     def __init__(self, accounts):
         super().__init__([Account(i) for i in accounts])
+
+    def __contains__(self, address):
+        try:
+            address = web3.toChecksumAddress(address)
+            return super().__contains__(address)
+        except ValueError:
+            return False
 
     def add(self, priv_key = None):
         if not priv_key:
@@ -22,13 +34,16 @@ class Accounts(list):
         account = LocalAccount(w3account.address, w3account, priv_key)
         self.append(account)
         return account
-    
+
     def at(self, address):
-        address = web3.toChecksumAddress(address)
+        try:
+            address = web3.toChecksumAddress(address)
+        except ValueError:
+            raise ValueError("{} is not a valid address".format(address))
         try:
             return next(i for i in self if i == address)
         except StopIteration:
-            print("ERROR: No account exists for {}".format(address))
+            raise ValueError("No account exists for {}".format(address))
 
 
 class _AccountBase(str):
@@ -76,23 +91,24 @@ class Account(_AccountBase):
                 'value': wei(amount),
                 'gasPrice': wei(gas_price) or self._gas_price(),
                 'gas': wei(gas_limit) or self._gas_limit(to, amount)
-                })
-            self.nonce += 1
-            return TransactionReceipt(txid)
+            })
         except ValueError as e:
-            raise VirtualMachineError(e)
+            txid = raise_or_return_tx(e)
+        self.nonce += 1
+        return TransactionReceipt(txid, self)
 
-    def _contract_tx(self, fn, args, tx, name):
+    def _contract_tx(self, fn, args, tx, name, callback=None):
         tx['from'] = self.address
         if CONFIG['active_network']['gas_price']:
             tx['gasPrice'] = CONFIG['active_network']['gas_price']
         if CONFIG['active_network']['gas_limit']:
             tx['gas'] = CONFIG['active_network']['gas_limit']
-        try: txid = fn(*args).transact(tx)
+        try:
+            txid = fn(*args).transact(tx)
         except ValueError as e:
-            raise VirtualMachineError(e)
+            txid = raise_or_return_tx(e)
         self.nonce += 1
-        return TransactionReceipt(txid, name=name)
+        return TransactionReceipt(txid, self, name=name, callback=callback)
 
 
 class LocalAccount(_AccountBase):
@@ -116,12 +132,12 @@ class LocalAccount(_AccountBase):
                 'to': to,
                 'value': wei(amount),
                 'data': ""
-                }).rawTransaction
+            }).rawTransaction
             txid = web3.eth.sendRawTransaction(signed_tx)
-            self.nonce += 1
-            return TransactionReceipt(txid)
         except ValueError as e:
-            raise VirtualMachineError(e)
+            txid = raise_or_return_tx(e)
+        self.nonce += 1
+        return TransactionReceipt(txid, self)
 
     def _contract_tx(self, fn, args, tx, name):
         try:
@@ -133,11 +149,12 @@ class LocalAccount(_AccountBase):
                     CONFIG['active_network']['gas_limit'] or
                     fn(*args).estimateGas({'from': self.address})
                 )
-                })
+            })
             raw = fn(*args).buildTransaction(tx)
             txid = web3.eth.sendRawTransaction(
-                self._acct.signTransaction(raw).rawTransaction)
-            self.nonce += 1
-            return TransactionReceipt(txid, name=name)
+                self._acct.signTransaction(raw).rawTransaction
+            )
         except ValueError as e:
-            raise VirtualMachineError(e)
+            txid = raise_or_return_tx(e)
+        self.nonce += 1
+        return TransactionReceipt(txid, self, name=name)
