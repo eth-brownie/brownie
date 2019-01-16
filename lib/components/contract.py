@@ -4,7 +4,6 @@ from collections import OrderedDict
 import eth_event
 import re
 
-from lib.components.account import Accounts
 from lib.components.compiler import add_contract
 from lib.components.eth import web3, wei
 from lib.components.transaction import TransactionReceipt, VirtualMachineError

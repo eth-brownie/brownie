@@ -170,14 +170,31 @@ class TransactionReceipt:
             trace = web3.providers[0].make_request(
                 'debug_traceTransaction',
                 [self.txid,{}]
-            )
+            )['result']['structLogs']
             if 'error' in trace:
                 raise ValueError(trace['error']['message'])
             self._trace = trace
         return self._trace
+    
+    def call_path(self):
+        path = [(self.receiver,0)]
+        trace = [i for i in self.debug() if i['op'] in (
+            "CALL", "CALLCODE", "DELEGATECALL", "STATICCALL", "RETURN"
+        )]
+        for i in trace[:-1]:
+            if i['op'] != "RETURN":
+                path.append((
+                    web3.toChecksumAddress(i['stack'][-2][-40:]),
+                    path[-1][1] + 1
+                ))
+            else:
+                path.append(
+                    next(i for i in path[::-1] if i[1]+1 == path[-1][1])
+                )
+        return [i[0] for i in path]
 
 
-TX_INFO="""
+TX_INFO = """
 Transaction was Mined{3}
 ---------------------
 Tx Hash: {0.txid}
