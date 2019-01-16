@@ -15,6 +15,7 @@ CONFIG = config.CONFIG
 
 
 DEFAULT = "\x1b[0m"
+DARK = "\033[90m"
 COLORS = {
     -1: "\033[93m", # yellow
     0: "\033[91m", # red
@@ -55,6 +56,7 @@ class TransactionReceipt:
             print("\nTransaction sent: {}".format(txid))
         tx_history.append(self)
         self.__dict__.update({
+            '_trace': None,
             'fn_name': name,
             'txid': txid,
             'sender': sender,
@@ -109,24 +111,30 @@ class TransactionReceipt:
             'gas_used': receipt['gasUsed'],
             'contract_address': receipt['contractAddress'],
             'logs': receipt['logs'],
-            'events': eth_event.decode_logs(receipt['logs'], TOPICS),
             'status': receipt['status']
         })
+        try:
+            self.events = eth_event.decode_logs(receipt['logs'], TOPICS)
+        except:
+            pass
         if self.fn_name and '--gas' in sys.argv:
             _profile_gas(self.fn_name, receipt['gasUsed'])
         if not self.status:
-            trace = web3.providers[0].make_request(
-                'debug_traceTransaction',
-                [self.txid,{}]
-            )
-            memory = trace['result']['structLogs'][-1]['memory']
             try:
-                idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
-                data = HexBytes("".join(memory[idx:])[8:]+"00000000")
-                self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
-            except StopIteration:
+                trace = self.debug()
+                memory = trace[-1]['memory']
+                try:
+                    idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
+                    data = HexBytes("".join(memory[idx:])[8:]+"00000000")
+                    self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
+                except StopIteration:
+                    pass
+                try:
+                    self.events = eth_event.decode_trace(trace, TOPICS)
+                except:
+                    pass
+            except ValueError:
                 pass
-            self.events = eth_event.decode_trace(trace, TOPICS)
         if not silent:
             if CONFIG['logging']['tx'] >= 2:
                 self.info()
@@ -156,6 +164,17 @@ class TransactionReceipt:
 
     def info(self):
         return _print_tx(self)
+
+    def debug(self):
+        if not self._trace:
+            trace = web3.providers[0].make_request(
+                'debug_traceTransaction',
+                [self.txid,{}]
+            )
+            if 'error' in trace:
+                raise ValueError(trace['error']['message'])
+            self._trace = trace
+        return self._trace
 
 
 TX_INFO="""
@@ -191,7 +210,9 @@ def _print_tx(tx):
         for event in tx.events:
             print("  "+event['name'])
             for i in event['data']:
-                print("    {0[name]}: {0[value]}".format(i))
+                print("    {0[name]}: {1}{0[value]}{2}".format(
+                    i, DARK if not i['decoded'] else "", DEFAULT)
+                )
         print()
 
 
