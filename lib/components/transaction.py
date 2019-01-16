@@ -179,13 +179,15 @@ class TransactionReceipt:
     
     def call_path(self):
         path = [(self.receiver or self.contract_address, 1)]
-        trace = [i for i in self.debug() if i['op'] in (
+        
+        trace = self.debug()
+        idx = [i for i in range(len(trace)-1) if trace[i]['op'] in (
             "CALL", "CALLCODE", "DELEGATECALL", "STATICCALL", "RETURN"
-        )]
-        for i in trace[:-1]:
-            if i['op'] != "RETURN":
+        ) and trace[i+1]['depth']!=trace[i]['depth']]
+        for log in [trace[i] for i in idx]:
+            if log['op'] != "RETURN":
                 path.append((
-                    web3.toChecksumAddress(i['stack'][-2][-40:]),
+                    web3.toChecksumAddress(log['stack'][-2][-40:]),
                     path[-1][1] + 1
                 ))
             else:
@@ -227,11 +229,11 @@ def _print_tx(tx):
         )
     ))
     if tx.events:
-        print("   Events In This Transaction\n  ---------------------------")
+        print("    Events In This Transaction\n    ---------------------------")
         for event in tx.events:
-            print("   "+event['name'])
+            print("    "+event['name'])
             for i in event['data']:
-                print("      {0[name]}: {1}{0[value]}{2}".format(
+                print("        {0[name]}: {1}{0[value]}{2}".format(
                     i, DARK if not i['decoded'] else "", DEFAULT)
                 )
         print()
