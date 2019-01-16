@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 
+from lib.components import contract
 from lib.components.compiler import compile_contracts
 from lib.components.eth import web3
 from lib.components import config
@@ -177,7 +178,7 @@ class TransactionReceipt:
         return self._trace
     
     def call_path(self):
-        path = [(self.receiver,0)]
+        path = [(self.receiver or self.contract_address, 1)]
         trace = [i for i in self.debug() if i['op'] in (
             "CALL", "CALLCODE", "DELEGATECALL", "STATICCALL", "RETURN"
         )]
@@ -191,7 +192,11 @@ class TransactionReceipt:
                 path.append(
                     next(i for i in path[::-1] if i[1]+1 == path[-1][1])
                 )
-        return [i[0] for i in path]
+        for i in path[:-1]:
+            _print_path(i[0], i[1], COLORS[-1])
+        _print_path(path[-1][0], path[-1][1], COLORS[
+            0 if self.debug()[-1]['op'] != "RETURN" else -1
+        ])
 
 
 TX_INFO = """
@@ -221,16 +226,24 @@ def _print_tx(tx):
             DEFAULT
         )
     ))
-    
     if tx.events:
-        print("  Events In This Transaction\n  ---------------------------")
+        print("   Events In This Transaction\n  ---------------------------")
         for event in tx.events:
-            print("  "+event['name'])
+            print("   "+event['name'])
             for i in event['data']:
-                print("    {0[name]}: {1}{0[value]}{2}".format(
+                print("      {0[name]}: {1}{0[value]}{2}".format(
                     i, DARK if not i['decoded'] else "", DEFAULT)
                 )
         print()
+
+
+def _print_path(address, depth, color):
+    c = contract.find_contract(address)
+    if c:
+        result = "{}{}  {}{}".format(color,c._name,DARK,address)
+    else:
+        result = color+address
+    print("    "*depth+result+DEFAULT)
 
 
 def _profile_gas(fn_name, gas_used):
