@@ -140,7 +140,7 @@ class TransactionReceipt:
             if CONFIG['logging']['tx'] >= 2:
                 self.info()
             elif CONFIG['logging']['tx']:
-                print("{} confirmed {}- block: {}   gas used: {}".format(
+                print("{} confirmed {}- block: {}   gas used: {} ({:.2%})".format(
                     self.fn_name or "Transaction",
                     "" if self.status else "({}{}{}) ".format(
                         COLORS[0],
@@ -148,7 +148,8 @@ class TransactionReceipt:
                         DEFAULT
                     ),
                     self.block_number,
-                    self.gas_used
+                    self.gas_used,
+                    self.gas_used / self.gas_limit
                 ))
                 if receipt['contractAddress']:
                     print("{} deployed at: {}".format(
@@ -208,7 +209,7 @@ Tx Hash: {0.txid}
 From: {1}
 {2}
 Block: {0.block_number}
-Gas Used: {0.gas_used}
+Gas Used: {0.gas_used} / {0.gas_limit} ({4:.1%})
 """
 
 
@@ -225,8 +226,9 @@ def _print_tx(tx):
         "" if tx.status else " ({}{}{})".format(
             COLORS[0],
             tx.revert_msg or "reverted",
-            DEFAULT
-        )
+            DEFAULT,
+        ),
+        tx.gas_used / tx.gas_limit
     ))
     if tx.events:
         print("    Events In This Transaction\n    ---------------------------")
