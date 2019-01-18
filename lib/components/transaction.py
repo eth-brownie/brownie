@@ -12,16 +12,9 @@ from lib.components import contract
 from lib.components.compiler import compile_contracts
 from lib.components.eth import web3
 from lib.components import config
+from lib.services.color import color
 CONFIG = config.CONFIG
 
-
-DEFAULT = "\x1b[0m"
-DARK = "\033[90m"
-COLORS = {
-    -1: "\033[93m", # yellow
-    0: "\033[91m", # red
-    1: DEFAULT
-}
 
 gas_profile = {}
 tx_history = []
@@ -143,9 +136,7 @@ class TransactionReceipt:
                 print("{} confirmed {}- block: {}   gas used: {} ({:.2%})".format(
                     self.fn_name or "Transaction",
                     "" if self.status else "({}{}{}) ".format(
-                        COLORS[0],
-                        self.revert_msg or "reverted",
-                        DEFAULT
+                        color('red'), self.revert_msg or "reverted", color()
                     ),
                     self.block_number,
                     self.gas_used,
@@ -160,8 +151,9 @@ class TransactionReceipt:
             callback(self)
 
     def __repr__(self):
+        c = {-1: 'bright yellow', 0: 'red', 1: None}
         return "<Transaction object '{}{}{}'>".format(
-            COLORS[self.status], self.txid, DEFAULT
+            color(c[self.status]), self.txid, color()
         )
 
     def info(self):
@@ -178,7 +170,7 @@ class TransactionReceipt:
             self._trace = trace
         return self._trace
     
-    def call_path(self):
+    def call_trace(self):
         path = [(self.receiver or self.contract_address, 1)]
         
         trace = self.debug()
@@ -196,10 +188,12 @@ class TransactionReceipt:
                     next(i for i in path[::-1] if i[1]+1 == path[-1][1])
                 )
         for i in path[:-1]:
-            _print_path(i[0], i[1], COLORS[-1])
-        _print_path(path[-1][0], path[-1][1], COLORS[
-            0 if self.debug()[-1]['op'] != "RETURN" else -1
-        ])
+            _print_path(i[0], i[1], 'yellow')
+        _print_path(
+            path[-1][0],
+            path[-1][1],
+            'bright red' if self.debug()[-1]['op'] != "RETURN" else 'yellow'
+        )
 
 
 TX_INFO = """
@@ -224,30 +218,28 @@ def _print_tx(tx):
             )
         ),
         "" if tx.status else " ({}{}{})".format(
-            COLORS[0],
-            tx.revert_msg or "reverted",
-            DEFAULT,
+            color('red'), tx.revert_msg or "reverted",color()
         ),
         tx.gas_used / tx.gas_limit
     ))
     if tx.events:
-        print("    Events In This Transaction\n    ---------------------------")
+        print("   Events In This Transaction\n   --------------------------")
         for event in tx.events:
-            print("    "+event['name'])
+            print("   "+color('bright yellow')+event['name']+color())
             for i in event['data']:
-                print("        {0[name]}: {1}{0[value]}{2}".format(
-                    i, DARK if not i['decoded'] else "", DEFAULT)
+                print("      {2}{0[name]}: {1}{0[value]}{3}".format(
+                    i, color('bright black') if not i['decoded'] else color('bright blue'), color('blue'), color())
                 )
         print()
 
 
-def _print_path(address, depth, color):
+def _print_path(address, depth, col):
     c = contract.find_contract(address)
     if c:
-        result = "{}{}  {}{}".format(color,c._name,DARK,address)
+        result = "{}{}  {}{}".format(color(col),c._name,color('bright black'),address)
     else:
-        result = color+address
-    print("    "*depth+result+DEFAULT)
+        result = color(col)+address
+    print("   "*depth+result+color())
 
 
 def _profile_gas(fn_name, gas_used):

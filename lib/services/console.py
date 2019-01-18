@@ -3,13 +3,10 @@
 import builtins
 import readline
 import sys
-import json
 from threading import Lock
 import traceback
 
-BLUE = "\x1b[36m"
-YELLOW = "\x1b[33m"
-DEFAULT = "\x1b[0m"
+from lib.services.color import color, print_json
 
 
 class Console:
@@ -85,12 +82,7 @@ class Console:
                             type(r) is list and 
                             len(r) == len([i for i in r if type(i) is dict])
                         ):
-                            print(json.dumps(
-                                r,
-                                default=str,
-                                indent=4,
-                                sort_keys=True
-                            ))
+                            print_json(r)
                         else:
                             print(local_['_result'])
                 except SyntaxError:
@@ -106,9 +98,9 @@ def _brownie_dir(obj=None):
     if not obj:
         obj = sys.modules[__name__]
     results = [(i,getattr(obj,i)) for i in builtins.dir(obj) if i[0]!="_"]
-    print("["+"{}, ".format(DEFAULT).join("{}{}".format(
-        BLUE if callable(i[1]) else YELLOW, i[0]
-    ) for i in results)+DEFAULT+"]")
+    print("["+"{}, ".format(color()).join("{}{}".format(
+        color('cyan') if callable(i[1]) else color('yellow'), i[0]
+    ) for i in results)+color()+"]")
     
 
 sys.modules[__name__] = Console()
