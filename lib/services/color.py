@@ -4,6 +4,7 @@ import json
 from pygments import highlight
 from pygments.lexers import JsonLexer, PythonLexer
 from pygments.formatters import TerminalFormatter
+import sys
 
 
 BASE = "\x1b[0;"
@@ -24,17 +25,52 @@ COLORS = {
     'white': "37"
 }
 
-def color(name=None):
-	if not name:
-		return BASE+"m"
-	name = name.split()
-	if len(name) == 2:
-		return BASE+MODIFIERS[name[0]]+COLORS[name[1]]+"m"
-	return BASE+COLORS[name[0]]+"m"
+class Color:
+    
+    key = None
+    value = None
 
-def print_json(value):
-	msg = json.dumps(value, default=str, indent=4, sort_keys=True)
-	print(highlight(msg, JsonLexer(), TerminalFormatter()))
+    def set_colors(self, key, value):
+        self.key = key
+        self.value = value
+    
+    def __call__(self, color = None):
+        if not color:
+            return BASE+"m"
+        color = color.split()
+        if len(color) == 2:
+            return BASE+MODIFIERS[color[0]]+COLORS[color[1]]+"m"
+        return BASE+COLORS[color[0]]+"m"
 
-def print_python(*args):
-	print(highliht(" ".join(args), PythonLexer(), TerminalFormatter()))
+    def __str__(self):
+        return BASE+"m"
+
+    def __getitem__(self, color):
+        return self(color)
+
+    def json(self, value):
+        msg = json.dumps(value, default=str, indent=4, sort_keys=True)
+        print(highlight(msg, JsonLexer(), TerminalFormatter()))
+
+    def print_colors(self, msg, key = None, value=None):
+        if key is None:
+            key = self.key
+        if value is None:
+            value = self.value
+        for line in msg.split('\n'):
+            if ':' not in line:
+                print(line)
+                continue
+            line = line.split(':')
+            line[0] = self(key)+line[0]
+            line[-1] = self(value)+line[-1]
+            for i in range(1,len(line)-1):
+                line[i] = self(value)+line[i][:line[i].index('  ')+1]+self(key)+line[i][line[i].index('  ')+1:]
+            line = ":".join(line)
+        
+            for s in ('(',')','/'):
+                line = line.split(s)
+                line = s.join([self(value)+i+self(key) for i in line])
+            print(line+self())
+
+sys.modules[__name__] = Color()

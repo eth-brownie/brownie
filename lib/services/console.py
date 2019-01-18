@@ -6,8 +6,9 @@ import sys
 from threading import Lock
 import traceback
 
-from lib.services.color import color, print_json
-
+from lib.components import config
+from lib.services import color
+CONFIG = config.CONFIG
 
 class Console:
 
@@ -82,7 +83,7 @@ class Console:
                             type(r) is list and 
                             len(r) == len([i for i in r if type(i) is dict])
                         ):
-                            print_json(r)
+                            color.json(r)
                         else:
                             print(local_['_result'])
                 except SyntaxError:
@@ -99,7 +100,7 @@ def _brownie_dir(obj=None):
         obj = sys.modules[__name__]
     results = [(i,getattr(obj,i)) for i in builtins.dir(obj) if i[0]!="_"]
     print("["+"{}, ".format(color()).join("{}{}".format(
-        color('cyan') if callable(i[1]) else color('yellow'), i[0]
+        color(CONFIG['colors']['callable']) if callable(i[1]) else color(CONFIG['colors']['value']), i[0]
     ) for i in results)+color()+"]")
     
 

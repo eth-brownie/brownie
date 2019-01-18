@@ -15,6 +15,11 @@
             "persist": true
         }
     },
+    "colors":{
+        "key": "",
+        "value": "bright blue",
+        "callable": "bright yellow"
+    },
     "solc":{
         "optimize": true,
         "runs": 200
