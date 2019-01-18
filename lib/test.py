@@ -5,17 +5,13 @@ import importlib
 import os
 import sys
 import time
-import traceback
 
-from lib.components import transaction as tx
 from lib.components.network import Network
+from lib.components import transaction as tx
+from lib.services import color
 from lib.components import config
 CONFIG = config.CONFIG
 
-
-GREEN = "\033[92m"
-RED = "\033[91m"
-DEFAULT = "\x1b[0m"
 
 __doc__ = """Usage: brownie test [<filename>] [options]
 
@@ -35,24 +31,18 @@ script to run by setting a string 'DEPLOYMENT'."""
 
 traceback_info = []
 
-def _format_tb(test, desc, exc, match):
-    sys.stdout.write("{}{}{} {} ({})\n".format(
-        RED, 
+def _format_tb(test, desc, exc, filename):
+    sys.stdout.write("\r {0[red]}{1}{0[dark white]} {2} ({0[red]}{3}{0[dark white]}){0}\n".format(
+        color, 
         '\u2717' if exc[0] in (
             AssertionError,
             tx.VirtualMachineError
         ) else '\u203C',
-        DEFAULT,
-        desc, exc[0].__name__
+        desc,
+        exc[0].__name__
     ))
     sys.stdout.flush()
-    abs_path = os.path.abspath(".")+"/"
-    tb = [i.replace(abs_path, "") for i in traceback.format_tb(exc[2])]
-    start = tb.index(next(i for i in tb if match in i))
-    stop = tb.index(next(i for i in tb[::-1] if match in i)) + 1
-    traceback_info.append((test, "{}  {}: {}".format(
-        "".join(tb[start:stop]), exc[0].__name__, exc[1]
-    )))
+    traceback_info.append((test, color.format_tb(exc, filename)))
 
 
 def main():
@@ -60,7 +50,7 @@ def main():
     if args['<filename>']:
         name = args['<filename>'].replace(".py", "")
         if not os.path.exists("tests/{}.py".format(name)):
-            sys.exit("ERROR: Cannot find tests/{}.py".format(name))
+            sys.exit("{0[bright red]}ERROR{0}: Cannot find {0[bright yellow]}tests/{1}.py{0}".format(color, name))
         test_files = [name]
     else:
         test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
@@ -73,12 +63,12 @@ def main():
         ).read().split("\ndef ")[1:]
         test_names = [i.split("(")[0] for i in test_names if i[0]!="_"]
         if not test_names:
-            print("\nWARNING: Cannot find test functions in {}.py".format(name))
+            print("\n{0[bright red]}WARNING{0}: Cannot find test functions in {0[bright yellow]}{1}.py{0}".format(color, name))
             continue
         
         network = Network(module)
-        print("\nRunning {}.py - {} test{}".format(
-                name, len(test_names),"s" if len(test_names)!=1 else ""
+        print("\nRunning {0[bright yellow]}{1}.py{0} - {2} test{3}".format(
+                color, name, len(test_names),"s" if len(test_names)!=1 else ""
         ))
         if hasattr(module, 'DEPLOYMENT'):
             sys.stdout.write("   Deployment '{}'...".format(module.DEPLOYMENT))
@@ -87,8 +77,8 @@ def main():
                 stime = time.time()
                 module.run(module.DEPLOYMENT)
                 sys.stdout.write(
-                    "\r {}\u2713{} Deployment '{}' ({:.4f}s)\n".format(
-                        GREEN, DEFAULT, module.DEPLOYMENT, time.time()-stime
+                    "\r {0[bright green]}\u2713{0} Deployment '{1}' ({2:.4f}s)\n".format(
+                        color, module.DEPLOYMENT, time.time()-stime
                     )
                 )
                 sys.stdout.flush()
@@ -109,8 +99,8 @@ def main():
             try:
                 stime = time.time()
                 fn()
-                sys.stdout.write("\r {}\u2713{} {} ({:.4f}s)\n".format(
-                    GREEN, DEFAULT, fn.__doc__ or t, time.time()-stime
+                sys.stdout.write("\r {0[bright green]}\u2713{0} {1} ({2:.4f}s)\n".format(
+                    color, fn.__doc__ or t, time.time()-stime
                 ))
                 sys.stdout.flush()
             except Exception as e:
@@ -122,15 +112,15 @@ def main():
                 )
 
     if not traceback_info:
-        print("\n{}SUCCESS: All tests passed.{}".format(GREEN, DEFAULT))
+        print("\n{0[bright green]}SUCCESS{0}: All tests passed.".format(color))
         if '--gas' in sys.argv:
             print('\nGas Profile:')
             for i in sorted(tx.gas_profile):
                 print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, tx.gas_profile[i]))
         sys.exit()
 
-    print("\n{}WARNING: {} test{} failed.{}".format(
-        RED, len(traceback_info), "s" if len(traceback_info)>1 else "", DEFAULT
+    print("\n{0[bright red]}WARNING{0}: {1} test{2} failed.{0}".format(
+        color, len(traceback_info), "s" if len(traceback_info)>1 else ""
     ))
 
     for err in traceback_info:

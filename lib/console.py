@@ -5,7 +5,7 @@ import sys
 import time
 
 from lib.components.network import Network
-from lib.services import console
+from lib.services.console import Console
 
 from lib.components import config
 config = config.CONFIG
@@ -27,5 +27,5 @@ def main():
     network = Network(sys.modules[__name__])
     print("Brownie environment is ready.")
 
-    console.run(globals(), "build/.history")
+    Console(globals(), "build/.history")
     network.save()

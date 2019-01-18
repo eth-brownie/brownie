@@ -15,6 +15,14 @@
             "persist": true
         }
     },
+    "colors":{
+        "key": "",
+        "value": "bright blue",
+        "callable": "bright cyan",
+        "module": "bright blue",
+        "contract": "bright magenta",
+        "contract_method": "bright magenta"
+    },
     "solc":{
         "optimize": true,
         "runs": 200

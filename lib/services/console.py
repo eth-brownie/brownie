@@ -3,35 +3,27 @@
 import builtins
 import readline
 import sys
-import json
 from threading import Lock
 import traceback
 
-BLUE = "\x1b[36m"
-YELLOW = "\x1b[33m"
-DEFAULT = "\x1b[0m"
+from lib.components import config
+from lib.components.contract import _ContractBase, _ContractMethod
+from lib.services import color
+CONFIG = config.CONFIG
 
+
+REMOVE = ['Network', 'Console', 'docopt', 'main', 'sys']
 
 class Console:
 
-    def __init__(self):
+    def __init__(self, globals_dict, history_file = None):
         self._print_lock = Lock()
         self._multiline = False
         self._prompt = ">>> "
-
-    def _print(self, *args, sep=' ', end='\n', file=sys.stdout, flush=False):
-        with self._print_lock:
-            ln = readline.get_line_buffer()
-            file.write('\r'+' '*(len(ln)+4)+'\r')
-            file.write(sep.join(str(i) for i in args)+end)
-            file.write(self._prompt+ln)
-            file.flush()
-            
-
-    def run(self, globals_dict, history_file = None):
         builtins.print = self._print
         local_ = {}
-        globals_dict['dir'] = _brownie_dir
+        self.__dict__.update(dict((k,v) for k,v in globals_dict.items() if k[0]!="_" and k not in REMOVE))
+        self.__dict__['dir'] = self._dir
         if history_file:
             try:
                 readline.read_history_file(history_file)
@@ -78,37 +70,51 @@ class Console:
             try:
                 try: 
                     local_['_result'] = None
-                    exec('_result = ' + cmd, globals_dict, local_)
+                    exec('_result = ' + cmd, self.__dict__, local_)
                     if local_['_result'] != None:
                         r = local_['_result']
                         if type(r) is dict or (
                             type(r) is list and 
                             len(r) == len([i for i in r if type(i) is dict])
                         ):
-                            print(json.dumps(
-                                r,
-                                default=str,
-                                indent=4,
-                                sort_keys=True
-                            ))
+                            color.json(r)
                         else:
                             print(local_['_result'])
                 except SyntaxError:
-                    exec(cmd, globals_dict, local_)
+                    exec(cmd, self.__dict__, local_)
             except:
-                print("{}{}: {}".format(
-                        "".join(traceback.format_tb(sys.exc_info()[2])[1:]),
-                        sys.exc_info()[0].__name__, sys.exc_info()[1]))
+                print(color.format_tb(sys.exc_info(), start=1))
+                #print("{}{}: {}".format(
+                #        "".join(traceback.format_tb(sys.exc_info()[2])[1:]),
+                #        sys.exc_info()[0].__name__, sys.exc_info()[1]))
             self._prompt = ">>> "
 
+    def _print(self, *args, sep=' ', end='\n', file=sys.stdout, flush=False):
+        with self._print_lock:
+            ln = readline.get_line_buffer()
+            file.write('\r'+' '*(len(ln)+4)+'\r')
+            file.write(sep.join(str(i) for i in args)+end)
+            file.write(self._prompt+ln)
+            file.flush()
 
-def _brownie_dir(obj=None):
-    if not obj:
-        obj = sys.modules[__name__]
-    results = [(i,getattr(obj,i)) for i in builtins.dir(obj) if i[0]!="_"]
-    print("["+"{}, ".format(DEFAULT).join("{}{}".format(
-        BLUE if callable(i[1]) else YELLOW, i[0]
-    ) for i in results)+DEFAULT+"]")
-    
+    def _dir(self, obj=None):
+        if obj is None:
+            obj = self
+        results = [(i,getattr(obj,i)) for i in builtins.dir(obj) if i[0]!="_"]
+        print("["+"{}, ".format(color()).join(
+            _dir_color(i[1])+i[0] for i in results
+        )+color()+"]")
 
-sys.modules[__name__] = Console()
+def _dir_color(obj):
+    if type(obj).__name__ == "module":
+        return color(CONFIG['colors']['module'])
+    try:
+        if issubclass(type(obj), _ContractBase):
+            return color(CONFIG['colors']['contract'])
+        if issubclass(type(obj), _ContractMethod):
+            return color(CONFIG['colors']['contract_method'])
+    except TypeError:
+        pass
+    if not callable(obj):
+        return color(CONFIG['colors']['value'])
+    return color(CONFIG['colors']['callable'])

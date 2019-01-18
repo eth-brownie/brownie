@@ -12,16 +12,9 @@ from lib.components import contract
 from lib.components.compiler import compile_contracts
 from lib.components.eth import web3
 from lib.components import config
+from lib.services import color
 CONFIG = config.CONFIG
 
-
-DEFAULT = "\x1b[0m"
-DARK = "\033[90m"
-COLORS = {
-    -1: "\033[93m", # yellow
-    0: "\033[91m", # red
-    1: DEFAULT
-}
 
 gas_profile = {}
 tx_history = []
@@ -54,7 +47,7 @@ class TransactionReceipt:
             print(name)
             sys.exit()
         if CONFIG['logging']['tx'] and not silent:
-            print("\nTransaction sent: {}".format(txid))
+            color.print_colors("\nTransaction sent: "+txid)
         tx_history.append(self)
         self.__dict__.update({
             '_trace': None,
@@ -84,6 +77,8 @@ class TransactionReceipt:
         t.start()
         try:
             t.join()
+            if sys.argv[1] != "console" and not self.status:
+                raise VirtualMachineError('{"message": "revert '+(self.revert_msg or "")+'"}')
         except KeyboardInterrupt:
             if sys.argv[1] != "console":
                 raise
@@ -140,19 +135,16 @@ class TransactionReceipt:
             if CONFIG['logging']['tx'] >= 2:
                 self.info()
             elif CONFIG['logging']['tx']:
-                print("{} confirmed {}- block: {}   gas used: {} ({:.2%})".format(
+                color.print_colors("{} confirmed {}- block: {}   gas used: {} ({:.2%})".format(
                     self.fn_name or "Transaction",
-                    "" if self.status else "({}{}{}) ".format(
-                        COLORS[0],
-                        self.revert_msg or "reverted",
-                        DEFAULT
-                    ),
+                    "" if self.status else "({0[red]}{1}{0}) ".format(
+                        color, self.revert_msg or "reverted"),
                     self.block_number,
                     self.gas_used,
                     self.gas_used / self.gas_limit
                 ))
                 if receipt['contractAddress']:
-                    print("{} deployed at: {}".format(
+                    color.print_colors("{} deployed at: {}".format(
                         self.fn_name.split('.')[0],
                         receipt['contractAddress']
                     ))
@@ -160,8 +152,9 @@ class TransactionReceipt:
             callback(self)
 
     def __repr__(self):
+        c = {-1: 'bright yellow', 0: 'red', 1: None}
         return "<Transaction object '{}{}{}'>".format(
-            COLORS[self.status], self.txid, DEFAULT
+            color(c[self.status]), self.txid, color
         )
 
     def info(self):
@@ -178,7 +171,7 @@ class TransactionReceipt:
             self._trace = trace
         return self._trace
     
-    def call_path(self):
+    def call_trace(self):
         path = [(self.receiver or self.contract_address, 1)]
         
         trace = self.debug()
@@ -196,10 +189,23 @@ class TransactionReceipt:
                     next(i for i in path[::-1] if i[1]+1 == path[-1][1])
                 )
         for i in path[:-1]:
-            _print_path(i[0], i[1], COLORS[-1])
-        _print_path(path[-1][0], path[-1][1], COLORS[
-            0 if self.debug()[-1]['op'] != "RETURN" else -1
-        ])
+            _print_path(i[0], i[1], 'bright yellow')
+        _print_path(
+            path[-1][0],
+            path[-1][1],
+            'bright red' if self.debug()[-1]['op'] != "RETURN" else 'bright yellow'
+        )
+
+
+def _add_colors(line):
+    if ':' not in line:
+        print(line)
+        return
+    line = color()+line[:line.index(':')+1]+color('bright blue')+line[line.index(':')+1:]
+    for s in ('(',')','/'):
+        line = line.split(s)
+        line = s.join([color('bright blue')+i+color() for i in line])
+    print(line+color())
 
 
 TX_INFO = """
@@ -214,7 +220,7 @@ Gas Used: {0.gas_used} / {0.gas_limit} ({4:.1%})
 
 
 def _print_tx(tx):
-    print(TX_INFO.format(
+    formatted = (TX_INFO.format(
         tx,
         tx.sender if type(tx.sender) is str else tx.sender.address,
         (
@@ -223,31 +229,30 @@ def _print_tx(tx):
                 tx, "\nFunction: {}".format(tx.fn_name) if tx.input!="0x00" else ""
             )
         ),
-        "" if tx.status else " ({}{}{})".format(
-            COLORS[0],
-            tx.revert_msg or "reverted",
-            DEFAULT,
+        "" if tx.status else " ({0[red]}{1}{0})".format(
+            color, tx.revert_msg or "reverted"
         ),
         tx.gas_used / tx.gas_limit
     ))
+    color.print_colors(formatted)
     if tx.events:
-        print("    Events In This Transaction\n    ---------------------------")
+        print("   Events In This Transaction\n   --------------------------")
         for event in tx.events:
-            print("    "+event['name'])
+            print("   "+color('bright yellow')+event['name']+color())
             for i in event['data']:
-                print("        {0[name]}: {1}{0[value]}{2}".format(
-                    i, DARK if not i['decoded'] else "", DEFAULT)
-                )
+                color.print_colors(
+                    "      {0[name]}: {0[value]}".format(i),
+                    value = None if i['decoded'] else "bright black")
         print()
 
 
-def _print_path(address, depth, color):
+def _print_path(address, depth, col):
     c = contract.find_contract(address)
     if c:
-        result = "{}{}  {}{}".format(color,c._name,DARK,address)
+        result = "{}{}  {}{}".format(color(col),c._name,color('bright black'),address)
     else:
-        result = color+address
-    print("    "*depth+result+DEFAULT)
+        result = color(col)+address
+    print("   "*depth+result+color())
 
 
 def _profile_gas(fn_name, gas_used):
