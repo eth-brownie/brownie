@@ -156,7 +156,7 @@ Transactions
 
     Returns the structLogs from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#debug_tracetransaction>`__ RPC method. Note that if you are using Infura this method is not available.
 
-.. py:classmethod:: TransactionReceipt.call_path()
+.. py:classmethod:: TransactionReceipt.call_trace()
 
     Displays the sequence of contracts that were called in executing this transaction. If the transaction reverted, the final contract will be highlighed in red.
 
