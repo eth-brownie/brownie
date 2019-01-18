@@ -16,6 +16,17 @@ from lib.services import color
 CONFIG = config.CONFIG
 
 
+TX_INFO = """
+Transaction was Mined{3}
+---------------------
+Tx Hash: {0.txid}
+From: {1}
+{2}
+Block: {0.block_number}
+Gas Used: {0.gas_used} / {0.gas_limit} ({4:.1%})
+"""
+
+
 gas_profile = {}
 tx_history = []
 
@@ -172,8 +183,8 @@ class TransactionReceipt:
         return self._trace
     
     def call_trace(self):
-        path = [(self.receiver or self.contract_address, 1)]
-        
+        # address, fn, depth
+        path = [(self.receiver or self.contract_address, self.input[:10], 1)]
         trace = self.debug()
         idx = [i for i in range(len(trace)-1) if trace[i]['op'] in (
             "CALL", "CALLCODE", "DELEGATECALL", "STATICCALL", "RETURN"
@@ -182,19 +193,16 @@ class TransactionReceipt:
             if log['op'] != "RETURN":
                 path.append((
                     web3.toChecksumAddress(log['stack'][-2][-40:]),
-                    path[-1][1] + 1
+                    "0x"+log['memory'][int(log['stack'][-4], 16)//32][:8],
+                    path[-1][2] + 1
                 ))
             else:
                 path.append(
-                    next(i for i in path[::-1] if i[1]+1 == path[-1][1])
+                    next(i for i in path[::-1] if i[2]+1 == path[-1][2])
                 )
         for i in path[:-1]:
-            _print_path(i[0], i[1], 'bright yellow')
-        _print_path(
-            path[-1][0],
-            path[-1][1],
-            'bright red' if self.debug()[-1]['op'] != "RETURN" else 'bright yellow'
-        )
+            _print_path(*i, 'yellow')
+        _print_path(*path[-1], 'red' if trace[-1]['op'] != "RETURN" else 'yellow')
 
 
 def _add_colors(line):
@@ -206,17 +214,6 @@ def _add_colors(line):
         line = line.split(s)
         line = s.join([color('bright blue')+i+color() for i in line])
     print(line+color())
-
-
-TX_INFO = """
-Transaction was Mined{3}
----------------------
-Tx Hash: {0.txid}
-From: {1}
-{2}
-Block: {0.block_number}
-Gas Used: {0.gas_used} / {0.gas_limit} ({4:.1%})
-"""
 
 
 def _print_tx(tx):
@@ -242,17 +239,28 @@ def _print_tx(tx):
             for i in event['data']:
                 color.print_colors(
                     "      {0[name]}: {0[value]}".format(i),
-                    value = None if i['decoded'] else "bright black")
+                    value = None if i['decoded'] else "dark white")
         print()
 
 
-def _print_path(address, depth, col):
+def _print_path(address, fn, depth, col):
     c = contract.find_contract(address)
     if c:
-        result = "{}{}  {}{}".format(color(col),c._name,color('bright black'),address)
+        try:
+            name = "{}.{}{}".format(
+                c._name,
+                color('bright '+col),
+                next(k for k,v in c.signatures.items() if v==fn)
+            )
+        except StopIteration:
+            name = "{}{}.{}".format(c._name, color('dark white'), fn)
     else:
-        result = color(col)+address
-    print("   "*depth+result+color())
+        name = "????{}.{}".format(color('dark white'), fn)
+    print(
+        "   "*depth +
+        "{}{} {}({})".format(color(col), name, color('dark white'), address) +
+        color()
+    )
 
 
 def _profile_gas(fn_name, gas_used):
