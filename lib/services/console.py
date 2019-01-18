@@ -83,9 +83,10 @@ class Console:
                 except SyntaxError:
                     exec(cmd, self.__dict__, local_)
             except:
-                print("{}{}: {}".format(
-                        "".join(traceback.format_tb(sys.exc_info()[2])[1:]),
-                        sys.exc_info()[0].__name__, sys.exc_info()[1]))
+                print(color.format_tb(sys.exc_info(), start=1))
+                #print("{}{}: {}".format(
+                #        "".join(traceback.format_tb(sys.exc_info()[2])[1:]),
+                #        sys.exc_info()[0].__name__, sys.exc_info()[1]))
             self._prompt = ">>> "
 
     def _print(self, *args, sep=' ', end='\n', file=sys.stdout, flush=False):
