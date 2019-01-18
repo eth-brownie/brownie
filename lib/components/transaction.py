@@ -77,6 +77,8 @@ class TransactionReceipt:
         t.start()
         try:
             t.join()
+            if sys.argv[1] != "console" and not self.status:
+                raise VirtualMachineError('{"message": "revert '+(self.revert_msg or "")+'"}')
         except KeyboardInterrupt:
             if sys.argv[1] != "console":
                 raise

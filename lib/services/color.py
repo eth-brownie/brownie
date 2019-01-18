@@ -5,7 +5,7 @@ from pygments import highlight
 from pygments.lexers import JsonLexer, PythonLexer
 from pygments.formatters import TerminalFormatter
 import sys
-
+import traceback
 
 BASE = "\x1b[0;"
 
@@ -24,6 +24,12 @@ COLORS = {
     'cyan': "36",
     'white': "37"
 }
+
+TB_BASE = (
+    "  {0[dark white]}File {0[bright magenta]}{1[1]}{0[dark white]}, line "
+    "{0[bright cyan]}{1[3]}{0[dark white]}, in {0[bright blue]}{1[5]}{0}\n{2}\n"
+)
+
 
 class Color:
     
@@ -72,5 +78,21 @@ class Color:
                 line = line.split(s)
                 line = s.join([self(value)+i+self(key) for i in line])
             print(line+self())
+
+    def format_tb(self, exc, filename = None):
+        tb = [i.replace("./", "") for i in traceback.format_tb(exc[2])]
+        if filename:
+            start = tb.index(next(i for i in tb if filename in i))
+            stop = tb.index(next(i for i in tb[::-1] if filename in i)) + 1
+            tb = tb[start:stop]
+        for i in range(len(tb)):
+            info, code = tb[i].split('\n')[:2]
+            info = [x.strip(',') for x in info.strip().split(' ')]
+            tb[i] = TB_BASE.format(self, info, code)
+        tb.append("{0[bright red]}{1}{0}: {2}".format(self, exc[0].__name__, exc[1]))
+        return "".join(tb)
+
+
+
 
 sys.modules[__name__] = Color()
