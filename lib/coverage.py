@@ -1,5 +1,12 @@
+from docopt import docopt
+import os
 import re
+import shutil   
 
+if os.path.exists('.coverage'):
+    shutil.rmtree('.coverage')
+
+shutil.copytree('contracts', '.coverage')
 
 data = open('IssuingEntity.sol','r').read()
 

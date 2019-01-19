@@ -5,7 +5,7 @@ import sys
 import time
 from web3 import Web3, HTTPProvider
 
-from lib.components import config
+from lib.services import config
 CONFIG = config.CONFIG
 
 

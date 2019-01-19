@@ -9,9 +9,9 @@ import threading
 import time
 
 from lib.components import contract
-from lib.components.compiler import compile_contracts
 from lib.components.eth import web3
-from lib.components import config
+from lib.services.compiler import compile_contracts
+from lib.services import config
 from lib.services import color
 CONFIG = config.CONFIG
 

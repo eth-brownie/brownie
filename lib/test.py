@@ -9,7 +9,7 @@ import time
 from lib.components.network import Network
 from lib.components import transaction as tx
 from lib.services import color
-from lib.components import config
+from lib.services import config
 CONFIG = config.CONFIG
 
 

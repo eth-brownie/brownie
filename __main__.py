@@ -6,7 +6,7 @@ import os
 import sys
 
 import lib.init as init
-from lib.components import config
+from lib.services import config
 CONFIG = config.CONFIG
 
 
@@ -15,10 +15,11 @@ __version__ = "0.9.0b"  # did you change this in docs/conf.py as well?
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
 Commands:
+  init                  Initialize a new brownie project
   console               Load the console
   deploy                Run a script in the /deployments folder
-  init                  Initialize a new brownie project
   test                  Run test scripts in the /tests folder
+  coverage              Analyze test script coverage
 
 Options:
   -h --help             Display this message

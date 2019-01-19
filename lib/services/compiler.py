@@ -8,7 +8,7 @@ import solc
 import sys
 import time
 
-from lib.components import config
+from lib.services import config
 CONFIG = config.CONFIG
 CONFIG['solc']['version'] = solc.get_solc_version_string().strip('\n')
 

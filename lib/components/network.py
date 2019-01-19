@@ -8,14 +8,14 @@ import sys
 import traceback
 
 from lib.components import alert
-from lib.components import compiler
 from lib.components.eth import web3, wei
 from lib.components import contract
 from lib.components.account import Accounts, LocalAccount
 from lib.components import transaction as tx
-from lib.services.fernet import FernetKey, InvalidToken
 import lib.components.check as check
-from lib.components import config
+from lib.services.fernet import FernetKey, InvalidToken
+from lib.services import compiler
+from lib.services import config
 CONFIG = config.CONFIG
 
 
