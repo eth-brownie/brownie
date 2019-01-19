@@ -67,12 +67,12 @@ def add_contract(name, address, txid, owner):
     json.dump(_contracts[name], open(json_file, 'w'), sort_keys=True, indent=4)
 
 
-def compile_contracts():
+def compile_contracts(folder = "contracts"):
     if _contracts:
         return _contracts
     clear_persistence(None)
     contract_files = [
-        "{}/{}".format(i[0], x) for i in os.walk("contracts") for x in i[2]
+        "{}/{}".format(i[0], x) for i in os.walk(folder) for x in i[2]
     ]
     if not contract_files:
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")

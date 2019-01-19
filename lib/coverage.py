@@ -3,94 +3,147 @@ import os
 import re
 import shutil   
 
-if os.path.exists('.coverage'):
-    shutil.rmtree('.coverage')
+from lib.services.compiler import compile_contracts
 
-shutil.copytree('contracts', '.coverage')
 
-data = open('IssuingEntity.sol','r').read()
+REVERT_HOLDER = ":::COVERAGE-REVERT:::"
+EVENT_HOLDER = ":::COVERAGE-EVENT:::"
 
-revert = ":::COVERAGE-REVERT:::"
-event = "0x00"
+__doc__ = """Usage: brownie coverage [<filename>] [options]
 
-def _replace(span, repl):
-    global data
-    data = data[:span[0]] + repl.format(revert=revert, event=event) + data[span[1]:]
+Arguments:
+  <filename>         Only run tests from a specific file
 
-def _matches(pattern):
+Options:
+  --help             Display this message
+  --verbose          Enable verbose reporting
+  --gas              Display gas profile for function calls
+
+Coverage will modify the contracts and run your unit tests to get estimate
+of how much coverage you have.  so simple..."""
+
+
+def _replace(contract, span, repl):
+    return (
+        contract[:span[0]] +
+        repl.format(revert=REVERT_HOLDER, event=EVENT_HOLDER) +
+        contract[span[1]:]
+    )
+
+
+def _matches(contract, pattern):
     return [(
         i.span(),
         i.group().replace('{','{{').replace('}','}}')
-    ) for i in list(re.finditer(pattern, data))[::-1]]
-
-# remove comments
-for span, match in _matches('\/\*[\s\S]*?\*\/'):
-    _replace(span, "")
-
-# remove more comments
-for span, match in _matches('\/\/.*'):
-    _replace(span, "")
-
-# add coverage event
-for span, match in _matches('contract[^{]*{'):
-    _replace(span, match+" event Coverage(bytes4 id);")
-
-#reverts
-for span, match in _matches('revert *\([^;]*(?=;)'):
-    _replace(span, 'revert("{revert}")')
+    ) for i in list(re.finditer(pattern, contract))[::-1]]
 
 
-# requires with an an error string - change the string
-for span, match in _matches('require *\([^;]*(?=")'):
-    _replace(span, match[:match.index('"')]+'"{revert}')
+def generate_new_contract(filename):
+    contract = open(filename,'r').read()
 
-# requires without an error string - add one
-for span, match in _matches('require[^"]*?(?=\;)'):
-    _replace(span, match[:-1]+',"{revert}")')
+    # remove comments /* */
+    for span, match in _matches(contract, '\/\*[\s\S]*?\*\/'):
+        contract = _replace(contract, span, "")
 
-# requires involving &&
-for span, match in _matches("require *\([^;]*&&"):
-    _replace(span, match.replace('&&',',"{revert}"); require('))
+    # remove comments //
+    for span, match in _matches(contract, '\/\/.*'):
+        contract = _replace(contract, span, "")
 
-# requires involving ||
-for span, match in _matches("require *\([^;]*\|\|[^;]*;"):
-    new = " ".join(match.split())
-    new = "if "+new[7:new.index(',')]+') {{ emit Coverage({event}); }} else {{ revert("{revert}"); }}'
-    for i in range(new.count('||')):
-        new = new[:new.index('||')]+') {{ emit Coverage({event}); }} else if ('+ new[new.index('||')+2:]
-    _replace(span, new)
+    # add coverage event at start of contract
+    for span, match in _matches(contract, 'contract[^{]*{'):
+        contract = _replace(contract, span, match+" event Coverage(bytes4 id);")
 
-# beginning of a function
-for span, match in _matches('function[\s\S]*?{'):
-    if 'view' in match or 'pure' in match:
-        continue
-    #match = match.replace('{','{{').replace('}','}}')
-    _replace(span, match+' emit Coverage({event});')
+    #reverts
+    for span, match in _matches(contract, 'revert *\([^;]*(?=;)'):
+        contract = _replace(contract, span, 'revert("{revert}")')
 
-# put brackets around if statements
-for span, match in _matches('if *\([^{;]*?\)[^){]{1,}?;(?! *})'):
-    match = match[:match.rindex(')')]+') {{ '+ match[match.rindex(')')+1:] + ' }}'
-    _replace(span, match)
+    # requires with an an error string - change the string
+    for span, match in _matches(contract, 'require *\([^;]*(?=")'):
+        contract = _replace(contract, span, match[:match.index('"')]+'"{revert}')
 
-# place events on if statements that don't use ||
-for span, match in _matches('if *\([^|;]*?\{'):
-    #match = match.replace('{','{{').replace('}','}}')
-    _replace(span, match+" emit Coverage({event}); ")
+    # requires without an error string - add one
+    for span, match in _matches(contract, 'require[^"]*?(?=\;)'):
+        contract = _replace(contract, span, match[:-1]+',"{revert}")')
 
-for span, match in _matches('else *{'):
-    #match = match.replace('{','{{').replace('}','}}')
-    _replace(span, match+" emit Coverage({event}); ")
+    # requires involving &&
+    for span, match in _matches(contract, "require *\([^;]*&&"):
+        contract = _replace(
+            contract,
+            span,
+            match.replace('&&',',"{revert}"); require(')
+        )
+
+    # requires involving ||
+    for span, match in _matches(contract, "require *\([^;]*\|\|[^;]*;"):
+        new = " ".join(match.split())
+        new = (
+            "if " + 
+            new[7:new.index(',')] + 
+            ') {{ emit Coverage({event}); }} else {{ revert("{revert}"); }}'
+        )
+        for i in range(new.count('||')):
+            new = (
+                new[:new.index('||')] + 
+                ') {{ emit Coverage({event}); }} else if (' +
+                new[new.index('||')+2:]
+            )
+        contract = _replace(contract, span, new)
+
+    # beginning of a function
+    for span, match in _matches(contract, 'function[\s\S]*?{'):
+        if 'view' in match or 'pure' in match:
+            continue
+        contract = _replace(contract, span, match+' emit Coverage({event});')
+
+    # put brackets around if statements
+    for span, match in _matches(contract, 'if *\([^{;]*?\)[^){]{1,}?;(?! *})'):
+        match = (
+            match[:match.rindex(')')] + 
+            ') {{ ' +
+            match[match.rindex(')')+1:] + 
+            ' }}'
+        )
+        contract = _replace(contract, span, match)
+
+    # place events on if statements that don't use ||
+    for span, match in _matches(contract, 'if *\([^|;]*?\{'):
+        contract = _replace(contract, span, match+" emit Coverage({event}); ")
+
+    for span, match in _matches(contract, 'else *{'):
+        contract = _replace(contract, span, match+" emit Coverage({event}); ")
+
+    #events on if statements using ||
+    for span, match in _matches(contract, 'if[^{]*?\|\|[^{]*{'):
+        match = match.replace('\n','').replace('\t','')
+        items = match.split('||')
+        items[0]+=") {{ emit Coverage({event}); }}"
+        items[-1] = "if (" + items[-1]+" emit Coverage({event}); }}"
+        for i in range(1,len(items)-1):
+            items[i] = "if ("+items[i]+") {{ emit Coverage({event}); }}"
+        contract = _replace(contract, span, match+" ".join(items))
+
+    open(filename,'w').write(contract)
 
 
-#events on if statements using ||
-for span, match in _matches('if[^{]*?\|\|[^{]*{'):
-    match = match.replace('\n','').replace('\t','')
-    items = match.split('||')
-    items[0]+=") {{ emit Coverage({event}); }}"
-    items[-1] = "if (" + items[-1]+" emit Coverage({event}); }}"
-    for i in range(1,len(items)-1):
-        items[i] = "if ("+items[i]+") {{ emit Coverage({event}); }}"
-    _replace(span, match+" ".join(items))
+def main():
+    if os.path.exists('.coverage'):
+        shutil.rmtree('.coverage')
 
+    if not os.path.exists('.coverage'):
+        shutil.copytree('contracts', '.coverage')
 
-print(data)
+    os.rename('build/contracts','build/.contracts')
+    os.mkdir('build/contracts')
+
+    contract_files = [
+        "{}/{}".format(i[0], x) for i in os.walk('.coverage') for x in i[2]
+    ]
+    try:
+        for filename in contract_files:
+            generate_new_contract(filename)
+        compile_contracts('.coverage')
+    finally:
+        #shutil.rmtree('.coverage')
+        shutil.rmtree('build/contracts')
+        os.rename('build/.contracts','build/contracts')
+
