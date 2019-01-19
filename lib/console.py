@@ -24,30 +24,17 @@ Connects to the network and opens the brownie console.
 """.format(CONFIG['network_defaults']['name'])
 
 
-REMOVE = [
-    'Network',
-    'Console',
-    'docopt'
-    'main',
-    'sys',
-    'CONFIG',
-    'Lock',
-    'REMOVE',
-    'builtins',
-    'readline'
-]
-
-
 class Console:
 
     def __init__(self):
         self._print_lock = Lock()
         self._multiline = False
         self._prompt = ">>> "
-        builtins.print = self._print
+        self.__dict__.update({'dir': self._dir, 'time': time})
+
+    def _run(self):
         local_ = {}
-        self.__dict__.update(dict((k,v) for k,v in globals().items() if k[0]!="_" and k not in REMOVE))
-        self.__dict__['dir'] = self._dir
+        builtins.print = self._print
         try:
             readline.read_history_file("build/.history")
         except FileNotFoundError:
@@ -141,8 +128,10 @@ def _dir_color(obj):
 def main():
     args = docopt(__doc__)
 
-    network = Network(sys.modules[__name__])
+    console = Console()
+
+    network = Network(console)
     print("Brownie environment is ready.")
 
-    Console()
+    console._run()
     network.save()

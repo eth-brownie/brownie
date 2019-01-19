@@ -27,6 +27,7 @@ class Network:
         web3._run()
         self._module = module
         accounts = Accounts(web3.eth.accounts)
+        tx.tx_history.clear()
         self._network_dict = {
             'a': accounts,
             'accounts': accounts,
