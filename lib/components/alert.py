@@ -3,9 +3,7 @@
 import time
 from threading import Thread
 
-
-RED = "\033[91m"
-DEFAULT = "\x1b[0m"
+from lib.services import color
 
 _instances = set()
 
@@ -30,7 +28,7 @@ class Alert:
                 continue
             if msg:
                 msg = msg.format(start_value, value)
-                print("{}ALERT{}: {}".format(RED, DEFAULT, msg))
+                print("{0[bright red]}ALERT{0}: {1}".format(color, msg))
             if callback:
                 callback(start_value, value)
             _instances.discard(self)
