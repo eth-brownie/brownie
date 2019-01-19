@@ -174,6 +174,7 @@ def compile_contracts():
                 'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
                 # 'legacyAST': compiled['sources'][filename]['legacyAST'],
                 'networks': {},
+                'opcodes': evm['deployedBytecode']['opcodes'],
                 # 'schemaVersion': 0,
                 'sha1': hash_,
                 'source': input_json['sources'][filename]['content'],
