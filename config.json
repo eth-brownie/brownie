@@ -40,6 +40,11 @@
         "console": {
             "tx": 1,
             "exc": 2
+        },
+        "coverage": {
+            "tx": 0,
+            "exc": [1, 2]
+
         }
     }
 }

@@ -2,12 +2,14 @@ from docopt import docopt
 import os
 import re
 import shutil   
+import sys
 
+from lib.test import run_test
+from lib.services import color
 from lib.services.compiler import compile_contracts
 
 
-REVERT_HOLDER = ":::COVERAGE-REVERT:::"
-EVENT_HOLDER = ":::COVERAGE-EVENT:::"
+HOLDER = ":::COVERAGE:::"
 
 __doc__ = """Usage: brownie coverage [<filename>] [options]
 
@@ -26,7 +28,7 @@ of how much coverage you have.  so simple..."""
 def _replace(contract, span, repl):
     return (
         contract[:span[0]] +
-        repl.format(revert=REVERT_HOLDER, event=EVENT_HOLDER) +
+        repl.format(holder=HOLDER) +
         contract[span[1]:]
     )
 
@@ -38,7 +40,7 @@ def _matches(contract, pattern):
     ) for i in list(re.finditer(pattern, contract))[::-1]]
 
 
-def generate_new_contract(filename):
+def generate_new_contract(filename, count):
     contract = open(filename,'r').read()
 
     # remove comments /* */
@@ -53,24 +55,28 @@ def generate_new_contract(filename):
     for span, match in _matches(contract, 'contract[^{]*{'):
         contract = _replace(contract, span, match+" event Coverage(bytes4 id);")
 
-    #reverts
+    # returns
+    for span, match in _matches(contract, 'return '):
+        contract = _replace(contract, span, 'emit Coverage({holder}); return ')
+    
+    # reverts
     for span, match in _matches(contract, 'revert *\([^;]*(?=;)'):
-        contract = _replace(contract, span, 'revert("{revert}")')
+        contract = _replace(contract, span, 'revert("{holder}")')
 
     # requires with an an error string - change the string
     for span, match in _matches(contract, 'require *\([^;]*(?=")'):
-        contract = _replace(contract, span, match[:match.index('"')]+'"{revert}')
+        contract = _replace(contract, span, match[:match.index('"')]+'"{holder}')
 
     # requires without an error string - add one
     for span, match in _matches(contract, 'require[^"]*?(?=\;)'):
-        contract = _replace(contract, span, match[:-1]+',"{revert}")')
+        contract = _replace(contract, span, match[:-1]+',"{holder}")')
 
     # requires involving &&
     for span, match in _matches(contract, "require *\([^;]*&&"):
         contract = _replace(
             contract,
             span,
-            match.replace('&&',',"{revert}"); require(')
+            match.replace('&&',',"{holder}"); require(')
         )
 
     # requires involving ||
@@ -79,12 +85,12 @@ def generate_new_contract(filename):
         new = (
             "if " + 
             new[7:new.index(',')] + 
-            ') {{ emit Coverage({event}); }} else {{ revert("{revert}"); }}'
+            ') {{ emit Coverage({holder}); }} else {{ revert("{holder}"); }}'
         )
         for i in range(new.count('||')):
             new = (
                 new[:new.index('||')] + 
-                ') {{ emit Coverage({event}); }} else if (' +
+                ') {{ emit Coverage({holder}); }} else if (' +
                 new[new.index('||')+2:]
             )
         contract = _replace(contract, span, new)
@@ -93,7 +99,7 @@ def generate_new_contract(filename):
     for span, match in _matches(contract, 'function[\s\S]*?{'):
         if 'view' in match or 'pure' in match:
             continue
-        contract = _replace(contract, span, match+' emit Coverage({event});')
+        contract = _replace(contract, span, match+' emit Coverage({holder});')
 
     # put brackets around if statements
     for span, match in _matches(contract, 'if *\([^{;]*?\)[^){]{1,}?;(?! *})'):
@@ -107,25 +113,40 @@ def generate_new_contract(filename):
 
     # place events on if statements that don't use ||
     for span, match in _matches(contract, 'if *\([^|;]*?\{'):
-        contract = _replace(contract, span, match+" emit Coverage({event}); ")
+        contract = _replace(contract, span, match+" emit Coverage({holder}); ")
 
     for span, match in _matches(contract, 'else *{'):
-        contract = _replace(contract, span, match+" emit Coverage({event}); ")
+        contract = _replace(contract, span, match+" emit Coverage({holder}); ")
 
     #events on if statements using ||
     for span, match in _matches(contract, 'if[^{]*?\|\|[^{]*{'):
         match = match.replace('\n','').replace('\t','')
         items = match.split('||')
-        items[0]+=") {{ emit Coverage({event}); }}"
-        items[-1] = "if (" + items[-1]+" emit Coverage({event}); }}"
+        items[0]+=") {{ emit Coverage({holder}); }}"
+        items[-1] = "if (" + items[-1]+" emit Coverage({holder}); }}"
         for i in range(1,len(items)-1):
-            items[i] = "if ("+items[i]+") {{ emit Coverage({event}); }}"
+            items[i] = "if ("+items[i]+") {{ emit Coverage({holder}); }}"
         contract = _replace(contract, span, match+" ".join(items))
 
+    while contract.count(HOLDER):
+        count += 1
+        contract = contract.replace(HOLDER,"0x{:0>8}".format(hex(count)[2:]), 1)
+
     open(filename,'w').write(contract)
+    return count
 
 
 def main():
+    args = docopt(__doc__)
+    if args['<filename>']:
+        name = args['<filename>'].replace(".py", "")
+        if not os.path.exists("tests/{}.py".format(name)):
+            sys.exit("{0[bright red]}ERROR{0}: Cannot find {0[bright yellow]}tests/{1}.py{0}".format(color, name))
+        test_files = [name]
+    else:
+        test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
+        test_files.remove('__init__')
+    
     if os.path.exists('.coverage'):
         shutil.rmtree('.coverage')
 
@@ -138,10 +159,21 @@ def main():
     contract_files = [
         "{}/{}".format(i[0], x) for i in os.walk('.coverage') for x in i[2]
     ]
+
     try:
+        count = -1
         for filename in contract_files:
-            generate_new_contract(filename)
+            count = generate_new_contract(filename, count)
         compile_contracts('.coverage')
+        for filename in test_files:
+            history, tb = run_test(filename)
+            if not tb:
+                continue
+            sys.exit(
+                "\n{0[bright red]}ERROR{0}: Cannot ".format(color) +
+                "calculate coverage while tests are failing\n\n" + 
+                "Exception info for {}:\n{}".format(tb[0], tb[1])
+            )
     finally:
         #shutil.rmtree('.coverage')
         shutil.rmtree('build/contracts')
