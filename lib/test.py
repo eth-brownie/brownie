@@ -29,8 +29,6 @@ between each new file. Test scripts can optionally specify which deployment
 script to run by setting a string 'DEPLOYMENT'."""
 
 
-traceback_info = []
-
 def _format_tb(test, desc, exc, filename):
     sys.stdout.write("\r {0[red]}{1}{0[dark white]} {2} ({0[red]}{3}{0[dark white]}){0}\n".format(
         color, 
@@ -42,20 +40,11 @@ def _format_tb(test, desc, exc, filename):
         exc[0].__name__
     ))
     sys.stdout.flush()
-    traceback_info.append((test, color.format_tb(exc, filename)))
+    return (test, color.format_tb(exc, filename))
 
 
-def main():
-    args = docopt(__doc__)
-    if args['<filename>']:
-        name = args['<filename>'].replace(".py", "")
-        if not os.path.exists("tests/{}.py".format(name)):
-            sys.exit("{0[bright red]}ERROR{0}: Cannot find {0[bright yellow]}tests/{1}.py{0}".format(color, name))
-        test_files = [name]
-    else:
-        test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
-        test_files.remove('__init__')
-
+def run_tests(test_files):
+    traceback_info = []
     for name in test_files:
         module = importlib.import_module("tests."+name)
         test_names = open(
@@ -83,12 +72,12 @@ def main():
                 )
                 sys.stdout.flush()
             except Exception as e:
-                _format_tb(
+                traceback_info.append(_format_tb(
                     "{}.deploy".format(module.DEPLOYMENT),
                     "Deployment '{}'".format(module.DEPLOYMENT),
                     sys.exc_info(),
                     "deployments/"+module.DEPLOYMENT
-                )
+                ))
                 continue
         for c,t in enumerate(test_names, start=1):
             fn = getattr(module,t)
@@ -104,12 +93,26 @@ def main():
                 ))
                 sys.stdout.flush()
             except Exception as e:
-                _format_tb(
+                traceback_info.append(_format_tb(
                     "{}.{}".format(name,t),
                     fn.__doc__ or t,
                     sys.exc_info(),
                     "tests/"+name
-                )
+                ))
+    return traceback_info
+
+
+def main():
+    args = docopt(__doc__)
+    if args['<filename>']:
+        name = args['<filename>'].replace(".py", "")
+        if not os.path.exists("tests/{}.py".format(name)):
+            sys.exit("{0[bright red]}ERROR{0}: Cannot find {0[bright yellow]}tests/{1}.py{0}".format(color, name))
+        test_files = [name]
+    else:
+        test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
+        test_files.remove('__init__')
+    traceback_info = run_tests(test_files)
 
     if not traceback_info:
         print("\n{0[bright green]}SUCCESS{0}: All tests passed.".format(color))
