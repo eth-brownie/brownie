@@ -43,64 +43,59 @@ def _format_tb(test, desc, exc, filename):
     return (test, color.format_tb(exc, filename))
 
 
-def run_tests(test_files):
-    traceback_info = []
-    for name in test_files:
-        module = importlib.import_module("tests."+name)
-        test_names = open(
-            "tests/{}.py".format(name), 'r'
-        ).read().split("\ndef ")[1:]
-        test_names = [i.split("(")[0] for i in test_names if i[0]!="_"]
-        if not test_names:
-            print("\n{0[bright red]}WARNING{0}: Cannot find test functions in {0[bright yellow]}{1}.py{0}".format(color, name))
-            continue
-        
-        network = Network(module)
-        print("\nRunning {0[bright yellow]}{1}.py{0} - {2} test{3}".format(
-                color, name, len(test_names),"s" if len(test_names)!=1 else ""
-        ))
-        if hasattr(module, 'DEPLOYMENT'):
-            sys.stdout.write("   Deployment '{}'...".format(module.DEPLOYMENT))
-            sys.stdout.flush()
-            try:
-                stime = time.time()
-                module.run(module.DEPLOYMENT)
-                sys.stdout.write(
-                    "\r {0[bright green]}\u2713{0} Deployment '{1}' ({2:.4f}s)\n".format(
-                        color, module.DEPLOYMENT, time.time()-stime
-                    )
+def run_test(filename):
+    module = importlib.import_module("tests."+filename)
+    test_names = open(
+        "tests/{}.py".format(filename), 'r'
+    ).read().split("\ndef ")[1:]
+    test_names = [i.split("(")[0] for i in test_names if i[0]!="_"]
+    if not test_names:
+        print("\n{0[bright red]}WARNING{0}: Cannot find test functions in {0[bright yellow]}{1}.py{0}".format(color, name))
+        return [], False
+    network = Network(module)
+    print("\nRunning {0[bright yellow]}{1}.py{0} - {2} test{3}".format(
+            color, filename, len(test_names),"s" if len(test_names)!=1 else ""
+    ))
+    if hasattr(module, 'DEPLOYMENT'):
+        sys.stdout.write("   Deployment '{}'...".format(module.DEPLOYMENT))
+        sys.stdout.flush()
+        try:
+            stime = time.time()
+            module.run(module.DEPLOYMENT)
+            sys.stdout.write(
+                "\r {0[bright green]}\u2713{0} Deployment '{1}' ({2:.4f}s)\n".format(
+                    color, module.DEPLOYMENT, time.time()-stime
                 )
-                sys.stdout.flush()
-            except Exception as e:
-                traceback_info.append(_format_tb(
-                    "{}.deploy".format(module.DEPLOYMENT),
-                    "Deployment '{}'".format(module.DEPLOYMENT),
-                    sys.exc_info(),
-                    "deployments/"+module.DEPLOYMENT
-                ))
-                continue
-        for c,t in enumerate(test_names, start=1):
-            fn = getattr(module,t)
-            sys.stdout.write("   {} ({}/{})...  ".format(
-                fn.__doc__ or t,c,len(test_names)
+            )
+            sys.stdout.flush()
+        except Exception as e:
+            return tx.tx_history.copy(), _format_tb(
+                "{}.deploy".format(module.DEPLOYMENT),
+                "Deployment '{}'".format(module.DEPLOYMENT),
+                sys.exc_info(),
+                "deployments/"+module.DEPLOYMENT
+            )
+    for c,t in enumerate(test_names, start=1):
+        fn = getattr(module,t)
+        sys.stdout.write("   {} ({}/{})...  ".format(
+            fn.__doc__ or t,c,len(test_names)
+        ))
+        sys.stdout.flush()
+        try:
+            stime = time.time()
+            fn()
+            sys.stdout.write("\r {0[bright green]}\u2713{0} {1} ({2:.4f}s)\n".format(
+                color, fn.__doc__ or t, time.time()-stime
             ))
             sys.stdout.flush()
-            try:
-                stime = time.time()
-                fn()
-                sys.stdout.write("\r {0[bright green]}\u2713{0} {1} ({2:.4f}s)\n".format(
-                    color, fn.__doc__ or t, time.time()-stime
-                ))
-                sys.stdout.flush()
-            except Exception as e:
-                traceback_info.append(_format_tb(
-                    "{}.{}".format(name,t),
-                    fn.__doc__ or t,
-                    sys.exc_info(),
-                    "tests/"+name
-                ))
-    return traceback_info
-
+            return tx.tx_history.copy(), False
+        except Exception as e:
+            return tx.tx_history.copy(), _format_tb(
+                "{}.{}".format(filename,t),
+                fn.__doc__ or t,
+                sys.exc_info(),
+                "tests/"+filename
+            )
 
 def main():
     args = docopt(__doc__)
@@ -112,7 +107,11 @@ def main():
     else:
         test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
         test_files.remove('__init__')
-    traceback_info = run_tests(test_files)
+
+    for filename in test_files:
+        history, tb = run_test(filename)
+        if tb:
+            traceback_info.append(tb)
 
     if not traceback_info:
         print("\n{0[bright green]}SUCCESS{0}: All tests passed.".format(color))
