@@ -78,7 +78,8 @@ class TransactionReceipt:
             'logs': [],
             'events': [],
             'status': -1,
-            'revert_msg': None
+            'revert_msg': None,
+            'return_value': None
         })
         t = threading.Thread(
             target=self._await_confirm,
@@ -126,22 +127,7 @@ class TransactionReceipt:
             pass
         if self.fn_name and '--gas' in sys.argv:
             _profile_gas(self.fn_name, receipt['gasUsed'])
-        if not self.status:
-            try:
-                trace = self.debug()
-                memory = trace[-1]['memory']
-                try:
-                    idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
-                    data = HexBytes("".join(memory[idx:])[8:]+"00000000")
-                    self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
-                except StopIteration:
-                    pass
-                try:
-                    self.events = eth_event.decode_trace(trace, topics())
-                except:
-                    pass
-            except ValueError:
-                pass
+        self._evaluate_trace()
         if not silent:
             if CONFIG['logging']['tx'] >= 2:
                 self.info()
@@ -162,11 +148,52 @@ class TransactionReceipt:
         if callback:
             callback(self)
 
+    def _evaluate_trace(self):
+        if self.input=="0x" and self.gas_used == 21000:
+            return
+        try:
+            trace = self.debug()
+        except ValueError:
+            return
+        if self.status:
+            log = trace[-1]
+            if log['op'] != "RETURN":
+                return
+            c = contract.find_contract(self.receiver or self.contract_address)
+            if not c:
+                return
+            abi = [i['type'] for i in getattr(c, self.fn_name.split('.')[1]).abi['outputs']]
+            offset = int(log['stack'][-1], 16)//32
+            length = int(log['stack'][-2], 16)//32
+            data = HexBytes("".join(log['memory'][offset:offset+length]))
+            self.return_value = eth_abi.decode_abi(abi, data)
+            if len(self.return_value) == 1:
+                self.return_value = self.return_value[0]
+        else:
+            memory = trace[-1]['memory']
+            try:
+                idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
+                data = HexBytes("".join(memory[idx:])[8:]+"00000000")
+                self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
+            except StopIteration:
+                pass
+            try:
+                self.events = eth_event.decode_trace(trace, topics())
+            except:
+                pass
+        
+    
     def __repr__(self):
         c = {-1: 'bright yellow', 0: 'red', 1: None}
         return "<Transaction object '{}{}{}'>".format(
             color(c[self.status]), self.txid, color
         )
+
+    def __eq__(self, other):
+        return self.return_value == other
+    
+    def __int__(self):
+        return int(self.return_value)
 
     def info(self):
         return _print_tx(self)
