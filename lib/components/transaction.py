@@ -121,7 +121,7 @@ class TransactionReceipt:
             'status': receipt['status']
         })
         try:
-            self.events = eth_event.decode_logs(receipt['logs'], TOPICS)
+            self.events = eth_event.decode_logs(receipt['logs'], topics())
         except:
             pass
         if self.fn_name and '--gas' in sys.argv:
@@ -137,7 +137,7 @@ class TransactionReceipt:
                 except StopIteration:
                     pass
                 try:
-                    self.events = eth_event.decode_trace(trace, TOPICS)
+                    self.events = eth_event.decode_trace(trace, topics())
                 except:
                     pass
             except ValueError:
@@ -282,20 +282,21 @@ def _profile_gas(fn_name, gas_used):
     gas['count'] += 1
 
 
-def _generate_topics():
+_topics = {}
+def topics():
+    if _topics:
+        return _topics
     try:
         topics = json.load(open(CONFIG['folders']['brownie']+"/topics.json", 'r'))
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         topics = {}
     contracts = compile_contracts()
     events = [x for i in contracts.values() for x in i['abi'] if x['type']=="event"]
-    topics.update(eth_event.get_event_abi(events))
+    _topics.update(eth_event.get_event_abi(events))
     json.dump(
-        topics,
+        _topics,
         open(CONFIG['folders']['brownie']+"/topics.json", 'w'),
         sort_keys=True,
         indent=4
     )
-    return topics
-
-TOPICS = _generate_topics()
+    return _topics

@@ -88,7 +88,6 @@ def run_test(filename):
                 color, fn.__doc__ or t, time.time()-stime
             ))
             sys.stdout.flush()
-            return tx.tx_history.copy(), False
         except Exception as e:
             return tx.tx_history.copy(), _format_tb(
                 "{}.{}".format(filename,t),
@@ -96,9 +95,11 @@ def run_test(filename):
                 sys.exc_info(),
                 "tests/"+filename
             )
+    return tx.tx_history.copy(), False
 
 def main():
     args = docopt(__doc__)
+    traceback_info = []
     if args['<filename>']:
         name = args['<filename>'].replace(".py", "")
         if not os.path.exists("tests/{}.py".format(name)):

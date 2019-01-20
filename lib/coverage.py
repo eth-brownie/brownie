@@ -52,9 +52,13 @@ def generate_new_contract(filename, count):
         contract = _replace(contract, span, "")
 
     # add coverage event at start of contract
-    for span, match in _matches(contract, 'contract[^{]*{'):
+    for span, match in _matches(contract, '(contract|library)[^{]*{'):
         contract = _replace(contract, span, match+" event Coverage(bytes4 id);")
 
+    # remove view/pure
+    for span, match in _matches(contract, 'function[^{]*?(view|pure)'):
+        contract = _replace(contract, span, match[:-4])
+    
     # returns
     for span, match in _matches(contract, 'return '):
         contract = _replace(contract, span, 'emit Coverage({holder}); return ')
@@ -98,6 +102,7 @@ def generate_new_contract(filename, count):
     # beginning of a function
     for span, match in _matches(contract, 'function[\s\S]*?{'):
         if 'view' in match or 'pure' in match:
+            print(match)
             continue
         contract = _replace(contract, span, match+' emit Coverage({holder});')
 
@@ -167,13 +172,15 @@ def main():
         compile_contracts('.coverage')
         for filename in test_files:
             history, tb = run_test(filename)
-            if not tb:
-                continue
-            sys.exit(
-                "\n{0[bright red]}ERROR{0}: Cannot ".format(color) +
-                "calculate coverage while tests are failing\n\n" + 
-                "Exception info for {}:\n{}".format(tb[0], tb[1])
-            )
+            if tb:
+                sys.exit(
+                    "\n{0[bright red]}ERROR{0}: Cannot ".format(color) +
+                    "calculate coverage while tests are failing\n\n" + 
+                    "Exception info for {}:\n{}".format(tb[0], tb[1])
+                )
+            for event in [x for i in history for x in i.events]:
+                print(event)
+
     finally:
         #shutil.rmtree('.coverage')
         shutil.rmtree('build/contracts')
