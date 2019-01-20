@@ -230,6 +230,10 @@ class TransactionReceipt:
         for i in path[:-1]:
             _print_path(*i, 'yellow')
         _print_path(*path[-1], 'red' if trace[-1]['op'] not in ("RETURN", "STOP") else 'yellow')
+    
+    def err(self):
+        trace = self.debug()
+
 
 
 def _add_colors(line):

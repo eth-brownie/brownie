@@ -124,8 +124,8 @@ def compile_contracts(folder = "contracts"):
                 'sources': {filename: {'content': open(filename).read()}},
                 'settings': {
                     'outputSelection': {'*': {
-                        '*': ["abi", "evm.bytecode", "evm.deployedBytecode"],
-                        '': ["ast", "legacyAST"]}},
+                        '*': ["abi","evm.legacyAssembly", "evm.assembly", "evm.bytecode", "evm.deployedBytecode"],
+                        '': ["ast"]}},#, "legacyAST"]}},
                     "optimizer": {
                         "enabled": CONFIG['solc']['optimize'],
                         "runs": CONFIG['solc']['runs']}
@@ -164,6 +164,15 @@ def compile_contracts(folder = "contracts"):
                     n[:36],
                     evm['bytecode']['object'][loc+40:]
                 )
+            pc = {}
+            if evm['legacyAssembly']:#['.data']:
+                idx = 0
+                for op in evm['legacyAssembly']['.data']['0']['.code']:
+                    pc[idx] = [op['begin'],op['end']]
+                    idx += 1
+                    if 'value' not in op:
+                        continue
+                    idx += 0 - -len(op['value'])//2
             _contracts[name] = {
                 'abi': data['abi'],
                 'ast': compiled['sources'][filename]['ast'],
@@ -180,7 +189,9 @@ def compile_contracts(folder = "contracts"):
                 'source': input_json['sources'][filename]['content'],
                 'sourceMap': evm['bytecode']['sourceMap'],
                 'sourcePath': filename,
-                'type': type_
+                'type': type_,
+                'legacyAssembly': evm['legacyAssembly'],
+                'pcMap':pc
             }
             json.dump(
                 _contracts[name],

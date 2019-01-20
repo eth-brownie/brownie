@@ -40,12 +40,12 @@ class Network:
             'run': self.run,
             'web3': web3,
             'wei': wei }
-        for name, interface in compiler.compile_contracts().items():
-            if interface['type'] == "interface":
+        for name, build in compiler.compile_contracts().items():
+            if build['type'] == "interface":
                 continue
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
-            self._network_dict[name] = contract.ContractDeployer(name, interface, self._network_dict)
+            self._network_dict[name] = contract.ContractDeployer(build, self._network_dict)
         module.__dict__.update(self._network_dict)
         if not CONFIG['active_network']['persist']:
             return
