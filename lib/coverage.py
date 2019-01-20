@@ -169,6 +169,7 @@ def main():
         count = -1
         for filename in contract_files:
             count = generate_new_contract(filename, count)
+        results = dict((i,0) for i in range(count))
         compile_contracts('.coverage')
         for filename in test_files:
             history, tb = run_test(filename)
@@ -178,8 +179,10 @@ def main():
                     "calculate coverage while tests are failing\n\n" + 
                     "Exception info for {}:\n{}".format(tb[0], tb[1])
                 )
-            for event in [x for i in history for x in i.events]:
-                print(event)
+            for event in [x for i in history for x in i.events if x['name']=="Coverage"]:
+                results[int(event['data'][0]['value'], 16)] += 1
+        pct = list(results.values()).count(0)/len(results)
+        print("\nCoverage is currently at {0[bright cyan]}{1:.1%}{0}".format(color,pct))
 
     finally:
         #shutil.rmtree('.coverage')
