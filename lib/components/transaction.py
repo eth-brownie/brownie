@@ -274,8 +274,10 @@ class TransactionReceipt:
         n = [i for i in range(len(source)) if source[i]=="\n"]
         start = n.index(next(i for i in n if i>=span[0]))
         stop = n.index(next(i for i in n if i>=span[1]))
+        ln = start
         start = n[max(start-5, 0)]
         stop = n[min(stop+4, len(n)-1)]
+        print('{0[yellow]}{1}{0}, line {0[bright blue]}{2}{0}:'.format(color, trace['contract'], ln+1))
         print("{0[dark white]}{1}{0}{2}{0[dark white]}{3}{0}".format(
             color,
             source[start:span[0]],
