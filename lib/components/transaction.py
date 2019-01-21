@@ -198,75 +198,90 @@ class TransactionReceipt:
     def info(self):
         return _print_tx(self)
 
-    def debug(self):
-        if not self._trace:
-            trace = web3.providers[0].make_request(
-                'debug_traceTransaction',
-                [self.txid,{}]
-            )['result']['structLogs']
-            if 'error' in trace:
-                raise ValueError(trace['error']['message'])
-            self._trace = trace
-        return self._trace
-    
-    def call_trace(self):
-        # address, fn, depth
-        path = [(self.receiver or self.contract_address, self.input[:10], 1)]
-        trace = self.debug()
-        trace[0]['address'] = self.receiver or self.contract_address
-        #idx = [i for i in range(len(trace)-1) if trace[i]['op'] in (
-        #    "CALL", "CALLCODE", "DELEGATECALL", "STATICCALL", "RETURN"
-        #) and trace[i+1]['depth']!=trace[i]['depth']]
+    def debug(self, idx = None):
+        if self._trace:
+            return self._trace[idx] if idx else self._trace
+        self._trace = trace = web3.providers[0].make_request(
+            'debug_traceTransaction',
+            [self.txid,{}]
+        )['result']['structLogs']
+        if 'error' in trace:
+            raise ValueError(trace['error']['message'])
+        c = contract.find_contract(self.receiver or self.contract_address)
+        if not c:
+            return self._trace[idx] if idx else self._trace
+        
+        last = {0: {
+            'address': self.receiver or self.contract_address,
+            'contract':c._name,
+            'fn': [self.fn_name.split('.')[1]],
+            'jumpDepth':1
+        }}
+        trace[0].update(last[0])
+        trace[0]['fn'] = last[0]['fn'][-1]
+        pc = c._build['pcMap']['0']
+        trace[0]['source'] = [pc['start'], pc['stop']]
         for i in range(1, len(trace)):
+            if trace[i]['depth'] > trace[i-1]['depth']:
+                address = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
+                c = contract.find_contract(address)
+                sig = "0x"+trace[i-1]['memory'][int(trace[i-1]['stack'][-4], 16)//32][:8]
+                last[trace[i]['depth']] = {
+                    'address': address,
+                    'contract': c._name,
+                    'fn': [next(k for k,v in c.signatures.items() if v==sig)],
+                    }
+            trace[i].update({
+                'address': last[trace[i]['depth']]['address'],
+                'contract': last[trace[i]['depth']]['contract'],
+                'fn': last[trace[i]['depth']]['fn'][-1],
+                'jumpDepth': len(set(last[trace[i]['depth']]['fn']))
+            })
+            c = contract.find_contract(trace[i]['address'])
+            pc = c._build['pcMap'][str(trace[i]['pc'])]
+            trace[i]['source'] = [pc['start'], pc['stop']]
+            # jump 'i' is moving into an internal function
+            if pc['jump'] == 'i':
+                    source = c._build['source'][pc['start']:pc['stop']]
+                    if source[:7] not in ("library", "contrac") and "(" in source:
+                        fn = source[:source.index('(')].split('.')[-1]
+                    else:
+                        fn = last[trace[i]['depth']]['fn'][-1]
+                    last[trace[i]['depth']]['fn'].append(fn)   
+            # jump 'o' is coming out of an internal function
+            elif pc['jump'] == "o" and len(last[trace[i]['depth']]['fn'])>1 :
+                last[trace[i]['depth']]['fn'].pop()
+        return self._trace[idx] if idx else self._trace
             
-            # TODO
-            # jump 'i' tells us which internal functions are being called via JUMP
-            # jump 'o' is returning from the function
-            # should be able to trace a call between each function
-            
-            if trace[i-1]['depth'] == trace[i]['depth']:
-                trace[i]['address'] = trace[i-1]['address']
-                continue
-            if trace[i-1]['op'] not in ("RETURN", "REVERT", "STOP"):
-                trace[i]['address'] = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
-                path.append((
-                    trace[i]['address'],
-                    "0x"+trace[i-1]['memory'][int(trace[i-1]['stack'][-4], 16)//32][:8],
-                    trace[i]['depth'] + 1
-                ))
-            else:
-                path.append(
-                    next(x for x in path[::-1] if x[2]+1 == path[-1][2])
-                )
-                trace[i]['address'] = path[-1][0]
-        # for log in [trace[i] for i in idx]:
-        #     if log['op'] != "RETURN":
-        #         path.append((
-        #             web3.toChecksumAddress(log['stack'][-2][-40:]),
-        #             "0x"+log['memory'][int(log['stack'][-4], 16)//32][:8],
-        #             path[-1][2] + 1
-        #         ))
-        #     else:
-        #         path.append(
-        #             next(i for i in path[::-1] if i[2]+1 == path[-1][2])
-        #         )
-        for i in path[:-1]:
-            _print_path(*i, 'yellow')
-        _print_path(*path[-1], 'red' if trace[-1]['op'] not in ("RETURN", "STOP") else 'yellow')
-    
-    
-    # TODO expand upon me!
-    def err(self, idx):
+    def call_trace(self):
         trace = self.debug()
-        c = contract.find_contract(trace[idx]['address'])
-        
-        pc = c._build['pcMap'][str(trace[idx]['pc'])]
-        print(trace[idx]['op'])
-        print(pc)
-        
-        #print(c._build['source'][pc['start']:pc['stop']])
+        _print_path(trace[0], "yellow", 0)
+        for i in range(1, len(trace)):
+            if (
+                trace[i]['depth'] == trace[i-1]['depth'] and
+                trace[i]['jumpDepth'] == trace[i-1]['jumpDepth']
+            ):
+                continue
+            _print_path(trace[i], "yellow" if trace[i-1]['op']!="REVERT" else "red", i)
 
-
+    def error(self):
+        try:
+            trace = next(i for i in self.debug() if i['op']=="REVERT") 
+        except StopIteration:
+            return
+        span = trace['source']
+        source = contract.find_contract(trace['address'])._build['source']
+        n = [i for i in range(len(source)) if source[i]=="\n"]
+        start = n.index(next(i for i in n if i>=span[0]))
+        stop = n.index(next(i for i in n if i>=span[1]))
+        start = n[max(start-5, 0)]
+        stop = n[min(stop+4, len(n)-1)]
+        print("{0[dark white]}{1}{0}{2}{0[dark white]}{3}{0}".format(
+            color,
+            source[start:span[0]],
+            source[span[0]:span[1]],
+            source[span[1]:stop]
+        ))
 
 def _add_colors(line):
     if ':' not in line:
@@ -306,22 +321,11 @@ def _print_tx(tx):
         print()
 
 
-def _print_path(address, fn, depth, col):
-    c = contract.find_contract(address)
-    if c:
-        try:
-            name = "{}.{}{}".format(
-                c._name,
-                color('bright '+col),
-                next(k for k,v in c.signatures.items() if v==fn)
-            )
-        except StopIteration:
-            name = "{}{}.{}".format(c._name, color('dark white'), fn)
-    else:
-        name = "????{}.{}".format(color('dark white'), fn)
+def _print_path(trace, col, idx):
+    name = "{0[contract]}.{1}{0[fn]}".format(trace, color('bright '+col))
     print(
-        "   "*depth +
-        "{}{} {}({})".format(color(col), name, color('dark white'), address) +
+        "   "*trace['depth'] +
+        "{}{} {}{} ({})".format(color(col), name, color('dark white'), idx, trace['address']) +
         color()
     )
 
