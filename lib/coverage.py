@@ -19,18 +19,21 @@ Arguments:
 Options:
   --help             Display this message
   --verbose          Enable verbose reporting
-  --gas              Display gas profile for function calls
 
 Coverage will modify the contracts and run your unit tests to get estimate
 of how much coverage you have.  so simple..."""
 
+count = -1
+coverage_index={}
 
 def _replace(contract, span, repl):
+    global count
+    count += 1
+    repl = repl.format(holder="0x{:0>8}".format(hex(count)[2:]))
     return (
-        contract[:span[0]] +
-        repl.format(holder=HOLDER) +
-        contract[span[1]:]
-    )
+        contract[:span[0]] + repl + contract[span[1]:],
+        len(repl) - (span[1]-span[0])
+    ) 
 
 
 def _matches(contract, pattern):
@@ -40,44 +43,70 @@ def _matches(contract, pattern):
     ) for i in list(re.finditer(pattern, contract))[::-1]]
 
 
-def generate_new_contract(filename, count):
+def generate_new_contract(filename):#, count):
     contract = open(filename,'r').read()
+    offset = {}
 
     # remove comments /* */
     for span, match in _matches(contract, '\/\*[\s\S]*?\*\/'):
-        contract = _replace(contract, span, "")
+        contract, offset[span[1]] = _replace(contract, span, "")
 
     # remove comments //
     for span, match in _matches(contract, '\/\/.*'):
-        contract = _replace(contract, span, "")
+        contract, offset[span[1]] = _replace(contract, span, "")
 
     # add coverage event at start of contract
     for span, match in _matches(contract, '(contract|library)[^{]*{'):
-        contract = _replace(contract, span, match+" event Coverage(bytes4 id);")
+        contract, offset[span[1]] = _replace(contract, span, match+" event Coverage(bytes4 id);")
 
     # remove view/pure
     for span, match in _matches(contract, 'function[^{]*?(view|pure)'):
-        contract = _replace(contract, span, match[:-4])
+        contract, offset[span[1]] = _replace(contract, span, match[:-4])
     
     # returns
     for span, match in _matches(contract, 'return '):
-        contract = _replace(contract, span, 'emit Coverage({holder}); return ')
-    
+        o = sum(offset[i] for i in sorted(offset) if i<span[0])
+        coverage_index[count+1] = (
+            filename,
+            span[0] - o,
+            span[1] - o
+        )
+        contract, offset[span[1]] = _replace(contract, span, 'emit Coverage({holder}); return ')
+        
+
     # reverts
     for span, match in _matches(contract, 'revert *\([^;]*(?=;)'):
-        contract = _replace(contract, span, 'revert("{holder}")')
+        o = sum(offset[i] for i in sorted(offset) if i<span[0])
+        coverage_index[count+1] = (
+            filename,
+            span[0] - o,
+            span[1] - o
+        )
+        contract, offset[span[1]] = _replace(contract, span, 'revert("{holder}")')
 
     # requires with an an error string - change the string
     for span, match in _matches(contract, 'require *\([^;]*(?=")'):
-        contract = _replace(contract, span, match[:match.index('"')]+'"{holder}')
+        o = sum(offset[i] for i in sorted(offset) if i<span[0])
+        coverage_index[count+1] = (
+            filename,
+            span[0] - o,
+            span[1] - o
+        )
+        contract, offset[span[1]] = _replace(contract, span, match[:match.index('"')]+'"{holder}')
 
     # requires without an error string - add one
     for span, match in _matches(contract, 'require[^"]*?(?=\;)'):
-        contract = _replace(contract, span, match[:-1]+',"{holder}")')
+        o = sum(offset[i] for i in sorted(offset) if i<span[0])
+        coverage_index[count+1] = (
+            filename,
+            span[0] - o,
+            span[1] - o
+        )
+        contract, offset[span[1]] = _replace(contract, span, match[:-1]+',"{holder}")')
 
     # requires involving &&
     for span, match in _matches(contract, "require *\([^;]*&&"):
-        contract = _replace(
+        contract, offset[span[1]] = _replace(
             contract,
             span,
             match.replace('&&',',"{holder}"); require(')
@@ -97,14 +126,14 @@ def generate_new_contract(filename, count):
                 ') {{ emit Coverage({holder}); }} else if (' +
                 new[new.index('||')+2:]
             )
-        contract = _replace(contract, span, new)
+        contract, offset[span[1]] = _replace(contract, span, new)
 
     # beginning of a function
     for span, match in _matches(contract, 'function[\s\S]*?{'):
         if 'view' in match or 'pure' in match:
             print(match)
             continue
-        contract = _replace(contract, span, match+' emit Coverage({holder});')
+        contract, offset[span[1]] = _replace(contract, span, match+' emit Coverage({holder});')
 
     # put brackets around if statements
     for span, match in _matches(contract, 'if *\([^{;]*?\)[^){]{1,}?;(?! *})'):
@@ -114,14 +143,14 @@ def generate_new_contract(filename, count):
             match[match.rindex(')')+1:] + 
             ' }}'
         )
-        contract = _replace(contract, span, match)
+        contract, offset[span[1]] = _replace(contract, span, match)
 
     # place events on if statements that don't use ||
     for span, match in _matches(contract, 'if *\([^|;]*?\{'):
-        contract = _replace(contract, span, match+" emit Coverage({holder}); ")
+        contract, offset[span[1]] = _replace(contract, span, match+" emit Coverage({holder}); ")
 
     for span, match in _matches(contract, 'else *{'):
-        contract = _replace(contract, span, match+" emit Coverage({holder}); ")
+        contract, offset[span[1]] = _replace(contract, span, match+" emit Coverage({holder}); ")
 
     #events on if statements using ||
     for span, match in _matches(contract, 'if[^{]*?\|\|[^{]*{'):
@@ -131,14 +160,14 @@ def generate_new_contract(filename, count):
         items[-1] = "if (" + items[-1]+" emit Coverage({holder}); }}"
         for i in range(1,len(items)-1):
             items[i] = "if ("+items[i]+") {{ emit Coverage({holder}); }}"
-        contract = _replace(contract, span, match+" ".join(items))
+        contract, offset[span[1]] = _replace(contract, span, match+" ".join(items))
 
-    while contract.count(HOLDER):
-        count += 1
-        contract = contract.replace(HOLDER,"0x{:0>8}".format(hex(count)[2:]), 1)
+    #while contract.count(HOLDER):
+    #    count += 1
+    #    contract = contract.replace(HOLDER,"0x{:0>8}".format(hex(count)[2:]), 1)
 
     open(filename,'w').write(contract)
-    return count
+    #return count
 
 
 def main():
@@ -146,7 +175,10 @@ def main():
     if args['<filename>']:
         name = args['<filename>'].replace(".py", "")
         if not os.path.exists("tests/{}.py".format(name)):
-            sys.exit("{0[bright red]}ERROR{0}: Cannot find {0[bright yellow]}tests/{1}.py{0}".format(color, name))
+            sys.exit(
+                "{0[bright red]}ERROR{0}: Cannot find".format(color) +
+                " {0[bright yellow]}tests/{1}.py{0}".format(color, name)
+            )
         test_files = [name]
     else:
         test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
@@ -166,10 +198,15 @@ def main():
     ]
 
     try:
-        count = -1
+        #count = -1
         for filename in contract_files:
-            count = generate_new_contract(filename, count)
+            generate_new_contract(filename)#, count)
         results = dict((i,0) for i in range(count))
+        o = open('contracts/Token.sol','r').read()
+        for i in coverage_index.values():
+            if "Token" not in i[0]: continue
+            print(o[i[1]:i[2]])
+        #print(coverage_index)
         compile_contracts('.coverage')
         for filename in test_files:
             history, tb = run_test(filename)
@@ -182,7 +219,7 @@ def main():
             for event in [x for i in history for x in i.events if x['name']=="Coverage"]:
                 results[int(event['data'][0]['value'], 16)] += 1
         pct = list(results.values()).count(0)/len(results)
-        print("\nCoverage is currently at {0[bright cyan]}{1:.1%}{0}".format(color,pct))
+        print("\nTest coverage is currently at {0[bright cyan]}{1:.1%}{0}".format(color,pct))
 
     finally:
         #shutil.rmtree('.coverage')

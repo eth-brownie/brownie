@@ -149,6 +149,7 @@ def compile_contracts(folder = "contracts"):
                 print(i['formattedMessage'])
             sys.exit()
         hash_ = sha1(open(filename, 'rb').read()).hexdigest()
+        id_map = dict((v['id'],k) for k,v in compiled['sources'].items())
         for match in (
             re.findall("\n(?:contract|library|interface) [^ ]{1,}", code)
         ):
@@ -165,14 +166,52 @@ def compile_contracts(folder = "contracts"):
                     evm['bytecode']['object'][loc+40:]
                 )
             pc = {}
-            if evm['legacyAssembly']:#['.data']:
+            
+            # needs some error handling
+            # needs cleanup
+            if evm['legacyAssembly']:
+                opcodes = evm['deployedBytecode']['opcodes']
+                while True:
+                    try:
+                        i = opcodes[:-1].rindex(' STOP')
+                    except ValueError:
+                        break
+                    if 'JUMPDEST' in opcodes[i:]: 
+                        break
+                    opcodes = opcodes[:i+5]
+                opcodes = [i for i in opcodes.split(" ") if "0x" not in i][::-1]
                 idx = 0
-                for op in evm['legacyAssembly']['.data']['0']['.code']:
-                    pc[idx] = [op['begin'],op['end']]
+                last = evm['deployedBytecode']['sourceMap'].split(';')[0].split(':')
+                for i in range(3):
+                    last[i] = int(last[i])
+                pc['0'] = {
+                    'start': last[0],
+                    'stop': last[0]+last[1],
+                    'op': opcodes.pop(),
+                    'contract': id_map[last[2]],
+                    'jump': last[3]
+                }
+                for value in evm['deployedBytecode']['sourceMap'].split(';')[1:]:
+                    o = idx
                     idx += 1
-                    if 'value' not in op:
+                    if pc[str(o)]['op'][:4] == "PUSH":
+                        idx += int(pc[str(o)]['op'][4:])
+                    if not value:
+                        pc[str(idx)] = pc[str(o)].copy()
+                        pc[str(idx)]['op'] = opcodes.pop()
                         continue
-                    idx += 0 - -len(op['value'])//2
+                    value = (value+":::").split(':')[:4]
+                    for i in range(3):
+                        value[i] = int(value[i] or last[i])
+                    value[3] = value[3] or last[3]
+                    last = value
+                    pc[str(idx)] = {
+                        'start': last[0],
+                        'stop': last[0]+last[1],
+                        'op': opcodes.pop(),
+                        'contract': id_map[last[2]] if last[2]!=-1 else False,
+                        'jump': last[3]
+                    }
             _contracts[name] = {
                 'abi': data['abi'],
                 'ast': compiled['sources'][filename]['ast'],
