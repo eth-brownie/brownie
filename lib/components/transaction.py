@@ -134,7 +134,7 @@ class TransactionReceipt:
             elif CONFIG['logging']['tx']:
                 color.print_colors("{} confirmed {}- block: {}   gas used: {} ({:.2%})".format(
                     self.fn_name or "Transaction",
-                    "" if self.status else "({0[red]}{1}{0}) ".format(
+                    "" if self.status else "({0[error]}{1}{0}) ".format(
                         color, self.revert_msg or "reverted"),
                     self.block_number,
                     self.gas_used,
@@ -210,17 +210,23 @@ class TransactionReceipt:
         c = contract.find_contract(self.receiver or self.contract_address)
         if not c:
             return self._trace[idx] if idx else self._trace
-        
         last = {0: {
             'address': self.receiver or self.contract_address,
             'contract':c._name,
             'fn': [self.fn_name.split('.')[1]],
-            'jumpDepth':1
         }}
-        trace[0].update(last[0])
-        trace[0]['fn'] = last[0]['fn'][-1]
         pc = c._build['pcMap']['0']
-        trace[0]['source'] = [pc['start'], pc['stop']]
+        trace[0].update({
+            'address': last[0]['address'],
+            'contractName': last[0]['contract'],
+            'fn': last[0]['fn'][-1],
+            'jumpDepth': 1,
+            'source': {
+                'filename': pc['contract'],
+                'start': pc['start'],
+                'stop': pc['stop']
+            }
+        })
         for i in range(1, len(trace)):
             if trace[i]['depth'] > trace[i-1]['depth']:
                 address = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
@@ -233,13 +239,17 @@ class TransactionReceipt:
                     }
             trace[i].update({
                 'address': last[trace[i]['depth']]['address'],
-                'contract': last[trace[i]['depth']]['contract'],
+                'contractName': last[trace[i]['depth']]['contract'],
                 'fn': last[trace[i]['depth']]['fn'][-1],
                 'jumpDepth': len(set(last[trace[i]['depth']]['fn']))
             })
             c = contract.find_contract(trace[i]['address'])
             pc = c._build['pcMap'][str(trace[i]['pc'])]
-            trace[i]['source'] = [pc['start'], pc['stop']]
+            trace[i]['source'] = {
+                'filename': pc['contract'],
+                'start': pc['start'],
+                'stop': pc['stop']
+            }
             # jump 'i' is moving into an internal function
             if pc['jump'] == 'i':
                     source = c._build['source'][pc['start']:pc['stop']]
@@ -255,30 +265,37 @@ class TransactionReceipt:
             
     def call_trace(self):
         trace = self.debug()
-        _print_path(trace[0], "yellow", 0)
+        last = 0
         for i in range(1, len(trace)):
             if (
                 trace[i]['depth'] == trace[i-1]['depth'] and
                 trace[i]['jumpDepth'] == trace[i-1]['jumpDepth']
             ):
                 continue
-            _print_path(trace[i], "yellow" if trace[i-1]['op']!="REVERT" else "red", i)
+            _print_path(trace[i-1], last)
+            last = i-1
+        _print_path(trace[-1], last)
 
     def error(self):
         try:
             trace = next(i for i in self.debug() if i['op']=="REVERT") 
         except StopIteration:
             return
-        span = trace['source']
-        source = contract.find_contract(trace['address'])._build['source']
+        span = (trace['source']['start'], trace['source']['stop'])
+        source = open(trace['source']['filename'],'r').read()
         n = [i for i in range(len(source)) if source[i]=="\n"]
         start = n.index(next(i for i in n if i>=span[0]))
         stop = n.index(next(i for i in n if i>=span[1]))
-        ln = start
-        start = n[max(start-5, 0)]
-        stop = n[min(stop+4, len(n)-1)]
-        print('{0[yellow]}{1}{0}, line {0[bright blue]}{2}{0}:'.format(color, trace['contract'], ln+1))
-        print("{0[dark white]}{1}{0}{2}{0[dark white]}{3}{0}".format(
+        ln = start + 1
+        start = n[max(start-4, 0)]
+        stop = n[min(stop+3, len(n)-1)]
+        print(
+            ('{0[dull]}File {0[string]}"{1}"{0[dull]}, ' +
+            'line {0[value]}{2}{0[dull]}, in {0[callable]}{3}').format(
+                color, trace['source']['filename'], ln, trace['fn']
+            )
+        )
+        print("{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
             color,
             source[start:span[0]],
             source[span[0]:span[1]],
@@ -289,10 +306,10 @@ def _add_colors(line):
     if ':' not in line:
         print(line)
         return
-    line = color()+line[:line.index(':')+1]+color('bright blue')+line[line.index(':')+1:]
+    line = color()+line[:line.index(':')+1]+color('value')+line[line.index(':')+1:]
     for s in ('(',')','/'):
         line = line.split(s)
-        line = s.join([color('bright blue')+i+color() for i in line])
+        line = s.join([color('value')+i+color() for i in line])
     print(line+color())
 
 
@@ -306,7 +323,7 @@ def _print_tx(tx):
                 tx, "\nFunction: {}".format(tx.fn_name) if tx.input!="0x00" else ""
             )
         ),
-        "" if tx.status else " ({0[red]}{1}{0})".format(
+        "" if tx.status else " ({0[error]}{1}{0})".format(
             color, tx.revert_msg or "reverted"
         ),
         tx.gas_used / tx.gas_limit
@@ -319,15 +336,16 @@ def _print_tx(tx):
             for i in event['data']:
                 color.print_colors(
                     "      {0[name]}: {0[value]}".format(i),
-                    value = None if i['decoded'] else "dark white")
+                    value = None if i['decoded'] else "dull")
         print()
 
 
-def _print_path(trace, col, idx):
-    name = "{0[contract]}.{1}{0[fn]}".format(trace, color('bright '+col))
+def _print_path(trace, idx):
+    col = "yellow" if trace['op']!="REVERT" else "red"
+    name = "{0[contractName]}.{1}{0[fn]}".format(trace, color('bright '+col))
     print(
         "   "*trace['depth'] +
-        "{}{} {}{} ({})".format(color(col), name, color('dark white'), idx, trace['address']) +
+        "{}{} {}{} ({})".format(color(col), name, color('dull'), idx, trace['address']) +
         color()
     )
 

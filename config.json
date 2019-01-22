@@ -21,7 +21,10 @@
         "callable": "bright cyan",
         "module": "bright blue",
         "contract": "bright magenta",
-        "contract_method": "bright magenta"
+        "contract_method": "bright magenta",
+        "string": "bright magenta",
+        "dull": "dark white",
+        "error": "bright red"
     },
     "solc":{
         "optimize": true,
