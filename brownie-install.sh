@@ -5,6 +5,7 @@ git clone --depth=1 https://github.com/iamdefinitelyahuman/brownie
 chmod -R 777 /usr/local/lib/brownie
 cd brownie
 python3.6 -m venv venv
+venv/bin/pip install wheel
 venv/bin/pip install -r requirements.txt
 
 echo '#!/bin/bash' > /usr/local/bin/brownie
