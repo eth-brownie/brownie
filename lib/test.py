@@ -30,7 +30,7 @@ script to run by setting a string 'DEPLOYMENT'."""
 
 
 def _format_tb(test, desc, exc, filename):
-    sys.stdout.write("\r {0[red]}{1}{0[dark white]} {2} ({0[red]}{3}{0[dark white]}){0}\n".format(
+    sys.stdout.write("\r {0[red]}{1}{0[dull]} {2} ({0[red]}{3}{0[dull]}){0}\n".format(
         color, 
         '\u2717' if exc[0] in (
             AssertionError,
