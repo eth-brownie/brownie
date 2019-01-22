@@ -38,7 +38,9 @@ def main():
         test_files.remove('__init__')
     
     compiled = deepcopy(compile_contracts())
+    pc = {}
     for i in compiled:
+        pc[i] = compiled[i]['pcMap']
         compiled[i] = dict((int(k),0) for k,v in compiled[i]['pcMap'].items() if v['contract'])
     for filename in test_files:
         history, tb = run_test(filename)
@@ -53,6 +55,11 @@ def main():
             if trace['pc'] in c:
                 c[trace['pc']] += 1
     results = [x for v in compiled.values() for x in v.values()]
-    print(results.count(0)/len(results))
-
+    spans = dict((i,[]) for i in compiled)
+    for key,value in [(k,x) for k,v in compiled.items() for x,y in v.items() if not y]:
+        print(key,value)
+    
+    #print(results.count(0)/len(results))
+    #print(spans)
+    #print(pc)
     # pcMap doesn't work on constructor since it's only generated for deployed bytecode
