@@ -115,7 +115,7 @@ Transactions
 
 .. py:attribute:: TransactionReceipt.return_value
 
-    The value returned from the called function.
+    The value returned from the called function, if any.
 
 .. py:attribute:: TransactionReceipt.sender
 
@@ -124,6 +124,18 @@ Transactions
 .. py:attribute:: TransactionReceipt.status
 
     The status of the transaction: -1 for pending, 0 for failed, 1 for success.
+
+.. py:attribute:: TransactionReceipt.trace
+
+    The structLog from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#debug_tracetransaction>`__ RPC method. If you are using Infura this attribute is not available.
+
+    Along with the standard data, the structLog also contains the following additional information:
+
+    * ``address``: The address of the contract that executed this opcode
+    * ``contractName``: The name of the contract
+    * ``fn``: The name of the function
+    * ``jumpDepth``: The number of jumps made since entering this contract. The initial function has a value of 1.
+    * ``source``: The start and end offset of the source code associated with this opcode.
 
 .. py:attribute:: TransactionReceipt.txid
 
@@ -139,7 +151,7 @@ Transactions
 
 .. py:classmethod:: TransactionReceipt.info()
 
-    Provides verbose information about the transaction, including event logs and the error string if a transaction reverts.
+    Displays verbose information about the transaction, including event logs and the error string if a transaction reverts.
 
     ::
 
@@ -155,18 +167,6 @@ Transactions
         Value: 100
         Block: 1
         Gas Used: 21000
-
-.. py:classmethod:: TransactionReceipt.debug(idx = None)
-
-    Returns the structLog at index ``idx`` from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#debug_tracetransaction>`__ RPC method, or all structLogs if no value is given. If you are using Infura this method is not available.
-
-    Along with the regular fields, the structLog also contains the following information:
-
-    * ``address``: The address of the contract that executed this opcode
-    * ``contractName``: The name of the contract
-    * ``fn``: The name of the function
-    * ``jumpDepth``: The number of jumps made since entering this contract. The initial function has a value of 1.
-    * ``source``: The start and end offset of the source code associated with this opcode.
 
 .. py:classmethod:: TransactionReceipt.call_trace()
 

@@ -76,10 +76,7 @@ class TransactionReceipt:
             'gas_used': None,
             'contract_address': None,
             'logs': [],
-            'events': [],
             'status': -1,
-            'revert_msg': None,
-            'return_value': None
         })
         t = threading.Thread(
             target=self._await_confirm,
@@ -127,7 +124,6 @@ class TransactionReceipt:
             pass
         if self.fn_name and '--gas' in sys.argv:
             _profile_gas(self.fn_name, receipt['gasUsed'])
-        self._evaluate_trace()
         if not silent:
             if CONFIG['logging']['tx'] >= 2:
                 self.info()
@@ -148,41 +144,6 @@ class TransactionReceipt:
         if callback:
             callback(self)
 
-    def _evaluate_trace(self):
-        if self.input=="0x" and self.gas_used == 21000:
-            return
-        try:
-            trace = self.debug()
-        except ValueError:
-            return
-        if self.status:
-            log = trace[-1]
-            if log['op'] != "RETURN":
-                return
-            c = contract.find_contract(self.receiver or self.contract_address)
-            if not c:
-                return
-            abi = [i['type'] for i in getattr(c, self.fn_name.split('.')[1]).abi['outputs']]
-            offset = int(log['stack'][-1], 16)//32
-            length = int(log['stack'][-2], 16)//32
-            data = HexBytes("".join(log['memory'][offset:offset+length]))
-            self.return_value = eth_abi.decode_abi(abi, data)
-            if len(self.return_value) == 1:
-                self.return_value = self.return_value[0]
-        else:
-            memory = trace[-1]['memory']
-            try:
-                idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
-                data = HexBytes("".join(memory[idx:])[8:]+"00000000")
-                self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
-            except StopIteration:
-                pass
-            try:
-                self.events = eth_event.decode_trace(trace, topics())
-            except:
-                pass
-        
-    
     def __repr__(self):
         c = {-1: 'bright yellow', 0: 'red', 1: None}
         return "<Transaction object '{}{}{}'>".format(
@@ -195,21 +156,34 @@ class TransactionReceipt:
     def __int__(self):
         return int(self.return_value)
 
+    def __getattr__(self, attr):
+        if attr not in ('events','return_value', 'revert_msg', 'trace'):
+            raise AttributeError(
+                "'TransactionReceipt' object has no attribute '{}'".format(attr)
+            )
+        if self.status == -1:
+            return None
+        self._get_trace()
+        if self.trace:
+            self._evaluate_trace()
+        return self.__dict__[attr]
+
     def info(self):
         return _print_tx(self)
 
-    def debug(self, idx = None):
-        if self._trace:
-            return self._trace[idx] if idx else self._trace
-        self._trace = trace = web3.providers[0].make_request(
+    def _get_trace(self):
+        self.trace = []
+        self.return_value = None
+        self.revert_msg = None
+        if self.input=="0x" and self.gas_used == 21000:
+            return
+        self.trace = trace = web3.providers[0].make_request(
             'debug_traceTransaction',
             [self.txid,{}]
         )['result']['structLogs']
         if 'error' in trace:
             raise ValueError(trace['error']['message'])
         c = contract.find_contract(self.receiver or self.contract_address)
-        if not c:
-            return self._trace[idx] if idx else self._trace
         last = {0: {
             'address': self.receiver or self.contract_address,
             'contract':c._name,
@@ -261,10 +235,41 @@ class TransactionReceipt:
             # jump 'o' is coming out of an internal function
             elif pc['jump'] == "o" and len(last[trace[i]['depth']]['fn'])>1 :
                 last[trace[i]['depth']]['fn'].pop()
-        return self._trace[idx] if idx else self._trace
+
+    def _evaluate_trace(self):
+        if self.status:
+            # get return value
+            log = self.trace[-1]
+            if log['op'] != "RETURN":
+                return
+            c = contract.find_contract(self.receiver or self.contract_address)
+            if not c:
+                return
+            abi = [i['type'] for i in getattr(c, self.fn_name.split('.')[1]).abi['outputs']]
+            offset = int(log['stack'][-1], 16)//32
+            length = int(log['stack'][-2], 16)//32
+            data = HexBytes("".join(log['memory'][offset:offset+length]))
+            self.return_value = eth_abi.decode_abi(abi, data)
+            if len(self.return_value) == 1:
+                self.return_value = self.return_value[0]
+        else:
+            self.events = []
+            # get revert message
+            memory = self.trace[-1]['memory']
+            try:
+                idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
+                data = HexBytes("".join(memory[idx:])[8:]+"00000000")
+                self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
+            except StopIteration:
+                pass
+            try:
+                # get events from trace
+                self.events = eth_event.decode_trace(self.trace, topics())
+            except:
+                pass
             
     def call_trace(self):
-        trace = self.debug()
+        trace = self.trace
         last = 0
         for i in range(1, len(trace)):
             if (
@@ -278,7 +283,7 @@ class TransactionReceipt:
 
     def error(self):
         try:
-            trace = next(i for i in self.debug() if i['op']=="REVERT") 
+            trace = next(i for i in self.trace if i['op']=="REVERT") 
         except StopIteration:
             return
         span = (trace['source']['start'], trace['source']['stop'])
