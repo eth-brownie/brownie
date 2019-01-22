@@ -113,17 +113,17 @@ class Console:
 
 def _dir_color(obj):
     if type(obj).__name__ == "module":
-        return color(CONFIG['colors']['module'])
+        return color('module')
     try:
         if issubclass(type(obj), _ContractBase):
-            return color(CONFIG['colors']['contract'])
+            return color('contract')
         if issubclass(type(obj), _ContractMethod):
-            return color(CONFIG['colors']['contract_method'])
+            return color('contract_method')
     except TypeError:
         pass
     if not callable(obj):
-        return color(CONFIG['colors']['value'])
-    return color(CONFIG['colors']['callable'])
+        return color('value')
+    return color('callable')
 
 def main():
     args = docopt(__doc__)

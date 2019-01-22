@@ -7,6 +7,9 @@ from pygments.formatters import TerminalFormatter
 import sys
 import traceback
 
+from lib.services import config
+CONFIG = config.CONFIG
+
 BASE = "\x1b[0;"
 
 MODIFIERS = {
@@ -31,16 +34,20 @@ TB_BASE = (
 )
 
 
+
+
 class Color:
     
     key = None
     value = None
-
+    
     def set_colors(self, key, value):
         self.key = key
         self.value = value
     
     def __call__(self, color = None):
+        if color in CONFIG['colors']:
+            color = CONFIG['colors'][color]
         if not color:
             return BASE+"m"
         color = color.split()
@@ -60,9 +67,9 @@ class Color:
 
     def print_colors(self, msg, key = None, value=None):
         if key is None:
-            key = self.key
+            key = 'key'
         if value is None:
-            value = self.value
+            value = 'value'
         for line in msg.split('\n'):
             if ':' not in line:
                 print(line)
