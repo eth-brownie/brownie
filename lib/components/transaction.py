@@ -273,7 +273,7 @@ class TransactionReceipt:
             ):
                 continue
             _print_path(trace[i-1], last)
-            last = i-1
+            last = i
         _print_path(trace[-1], last)
 
     def error(self):

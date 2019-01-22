@@ -177,7 +177,7 @@ Transactions
         >>> tx = Token[0].transferFrom(accounts[2], accounts[3], "10000 ether")
     
         Transaction sent: 0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753
-        Token.transferFrom confirmed (reverted) - block: 4   gas used: 25425 (0.42%)
+        Token.transferFrom confirmed (reverted) - block: 4   gas used: 25425 (26.42%)
         
         >>> tx.call_trace()
         Token.transferFrom 0 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
@@ -186,6 +186,21 @@ Transactions
 .. py:classmethod:: TransactionReceipt.error()
 
     Displays the source code that caused the first revert in the transaction, if any.
+
+    ::
+
+        >>> tx.error()
+        File "contracts/SafeMath.sol", line 9:
+            
+                c = a + b;
+                require(c >= a);
+            }
+            function sub(uint a, uint b) internal pure returns (uint c) {
+                require(b <= a);
+                c = a - b;
+            }
+            function mul(uint a, uint b) internal pure returns (uint c) {
+                c = a * b;
 
 .. py:exception:: VirtualMachineError
 
