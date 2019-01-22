@@ -113,6 +113,10 @@ Transactions
 
     The error string returned when a transaction causes the EVM to revert, if any.
 
+.. py:attribute:: TransactionReceipt.return_value
+
+    The value returned from the called function.
+
 .. py:attribute:: TransactionReceipt.sender
 
     The address the transaction was sent from. Where possible, this will be an Account instance instead of a string.
@@ -152,13 +156,36 @@ Transactions
         Block: 1
         Gas Used: 21000
 
-.. py:classmethod:: TransactionReceipt.debug()
+.. py:classmethod:: TransactionReceipt.debug(idx = None)
 
-    Returns the structLogs from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#debug_tracetransaction>`__ RPC method. Note that if you are using Infura this method is not available.
+    Returns the structLog at index ``idx`` from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#debug_tracetransaction>`__ RPC method, or all structLogs if no value is given. If you are using Infura this method is not available.
+
+    Along with the regular fields, the structLog also contains the following information:
+
+    * ``address``: The address of the contract that executed this opcode
+    * ``contractName``: The name of the contract
+    * ``fn``: The name of the function
+    * ``jumpDepth``: The number of jumps made since entering this contract. The initial function has a value of 1.
+    * ``source``: The start and end offset of the source code associated with this opcode.
 
 .. py:classmethod:: TransactionReceipt.call_trace()
 
-    Displays the sequence of contracts that were called in executing this transaction. If the transaction reverted, the final contract will be highlighed in red.
+    Displays the sequence of contracts and functions called while executing this transaction, and the structLog index where each call or jump occured. Any functions that terminated with a ``REVERT`` opcode are highlighted in red.
+
+    ::
+
+        >>> tx = Token[0].transferFrom(accounts[2], accounts[3], "10000 ether")
+    
+        Transaction sent: 0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753
+        Token.transferFrom confirmed (reverted) - block: 4   gas used: 25425 (0.42%)
+        
+        >>> tx.call_trace()
+        Token.transferFrom 0 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
+        Token.sub 86 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
+
+.. py:classmethod:: TransactionReceipt.error()
+
+    Displays the source code that caused the first revert in the transaction, if any.
 
 .. py:exception:: VirtualMachineError
 
