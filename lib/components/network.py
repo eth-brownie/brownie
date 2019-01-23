@@ -8,14 +8,14 @@ import sys
 import traceback
 
 from lib.components import alert
-from lib.components import compiler
 from lib.components.eth import web3, wei
 from lib.components import contract
 from lib.components.account import Accounts, LocalAccount
 from lib.components import transaction as tx
-from lib.services.fernet import FernetKey, InvalidToken
 import lib.components.check as check
-from lib.components import config
+from lib.services.fernet import FernetKey, InvalidToken
+from lib.services import compiler
+from lib.services import config
 CONFIG = config.CONFIG
 
 
@@ -27,6 +27,7 @@ class Network:
         web3._run()
         self._module = module
         accounts = Accounts(web3.eth.accounts)
+        tx.tx_history.clear()
         self._network_dict = {
             'a': accounts,
             'accounts': accounts,
@@ -39,12 +40,12 @@ class Network:
             'run': self.run,
             'web3': web3,
             'wei': wei }
-        for name, interface in compiler.compile_contracts().items():
-            if interface['type'] == "interface":
+        for name, build in compiler.compile_contracts().items():
+            if build['type'] == "interface":
                 continue
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
-            self._network_dict[name] = contract.ContractDeployer(name, interface, self._network_dict)
+            self._network_dict[name] = contract.ContractDeployer(build, self._network_dict)
         module.__dict__.update(self._network_dict)
         if not CONFIG['active_network']['persist']:
             return

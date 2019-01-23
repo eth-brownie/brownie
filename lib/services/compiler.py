@@ -8,7 +8,7 @@ import solc
 import sys
 import time
 
-from lib.components import config
+from lib.services import config
 CONFIG = config.CONFIG
 CONFIG['solc']['version'] = solc.get_solc_version_string().strip('\n')
 
@@ -67,12 +67,12 @@ def add_contract(name, address, txid, owner):
     json.dump(_contracts[name], open(json_file, 'w'), sort_keys=True, indent=4)
 
 
-def compile_contracts():
+def compile_contracts(folder = "contracts"):
     if _contracts:
         return _contracts
     clear_persistence(None)
     contract_files = [
-        "{}/{}".format(i[0], x) for i in os.walk("contracts") for x in i[2]
+        "{}/{}".format(i[0], x) for i in os.walk(folder) for x in i[2]
     ]
     if not contract_files:
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")
@@ -124,8 +124,8 @@ def compile_contracts():
                 'sources': {filename: {'content': open(filename).read()}},
                 'settings': {
                     'outputSelection': {'*': {
-                        '*': ["abi", "evm.bytecode", "evm.deployedBytecode"],
-                        '': ["ast", "legacyAST"]}},
+                        '*': ["abi","evm.legacyAssembly", "evm.assembly", "evm.bytecode", "evm.deployedBytecode"],
+                        '': ["ast"]}},#, "legacyAST"]}},
                     "optimizer": {
                         "enabled": CONFIG['solc']['optimize'],
                         "runs": CONFIG['solc']['runs']}
@@ -149,6 +149,7 @@ def compile_contracts():
                 print(i['formattedMessage'])
             sys.exit()
         hash_ = sha1(open(filename, 'rb').read()).hexdigest()
+        id_map = dict((v['id'],k) for k,v in compiled['sources'].items())
         for match in (
             re.findall("\n(?:contract|library|interface) [^ ]{1,}", code)
         ):
@@ -164,6 +165,53 @@ def compile_contracts():
                     n[:36],
                     evm['bytecode']['object'][loc+40:]
                 )
+            pc = {}
+            
+            # needs some error handling
+            # needs cleanup
+            if evm['legacyAssembly']:
+                opcodes = evm['deployedBytecode']['opcodes']
+                while True:
+                    try:
+                        i = opcodes[:-1].rindex(' STOP')
+                    except ValueError:
+                        break
+                    if 'JUMPDEST' in opcodes[i:]: 
+                        break
+                    opcodes = opcodes[:i+5]
+                opcodes = [i for i in opcodes.split(" ") if "0x" not in i][::-1]
+                idx = 0
+                last = evm['deployedBytecode']['sourceMap'].split(';')[0].split(':')
+                for i in range(3):
+                    last[i] = int(last[i])
+                pc['0'] = {
+                    'start': last[0],
+                    'stop': last[0]+last[1],
+                    'op': opcodes.pop(),
+                    'contract': id_map[last[2]],
+                    'jump': last[3]
+                }
+                for value in evm['deployedBytecode']['sourceMap'].split(';')[1:]:
+                    o = idx
+                    idx += 1
+                    if pc[str(o)]['op'][:4] == "PUSH":
+                        idx += int(pc[str(o)]['op'][4:])
+                    if not value:
+                        pc[str(idx)] = pc[str(o)].copy()
+                        pc[str(idx)]['op'] = opcodes.pop()
+                        continue
+                    value = (value+":::").split(':')[:4]
+                    for i in range(3):
+                        value[i] = int(value[i] or last[i])
+                    value[3] = value[3] or last[3]
+                    last = value
+                    pc[str(idx)] = {
+                        'start': last[0],
+                        'stop': last[0]+last[1],
+                        'op': opcodes.pop(),
+                        'contract': id_map[last[2]] if last[2]!=-1 else False,
+                        'jump': last[3]
+                    }
             _contracts[name] = {
                 'abi': data['abi'],
                 'ast': compiled['sources'][filename]['ast'],
@@ -180,7 +228,9 @@ def compile_contracts():
                 'source': input_json['sources'][filename]['content'],
                 'sourceMap': evm['bytecode']['sourceMap'],
                 'sourcePath': filename,
-                'type': type_
+                'type': type_,
+                'legacyAssembly': evm['legacyAssembly'],
+                'pcMap':pc
             }
             json.dump(
                 _contracts[name],

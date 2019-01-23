@@ -5,10 +5,10 @@ import eth_event
 import re
 
 from lib.components.transaction import TransactionReceipt, VirtualMachineError
-from lib.components.compiler import add_contract
 from lib.components.eth import web3, wei
 
-from lib.components import config
+from lib.services.compiler import add_contract
+from lib.services import config
 CONFIG = config.CONFIG
 
 
@@ -22,42 +22,43 @@ def find_contract(address):
 
 class _ContractBase:
 
-    def __init__(self, name, abi):
-        self.abi = abi
-        names = [i['name'] for i in abi if i['type']=="function"]
+    def __init__(self, build):
+        self._build = build
+        self.abi = build['abi']
+        self._name = build['contractName']
+        names = [i['name'] for i in self.abi if i['type']=="function"]
         duplicates = set(i for i in names if names.count(i)>1)
         if duplicates:
             raise AttributeError("Ambiguous contract functions in {}: {}".format(
-                name, ",".join(duplicates)))
-        self._name = name
-        self.topics = eth_event.get_topics(abi)
+                self._name, ",".join(duplicates)))
+        self.topics = eth_event.get_topics(self.abi)
         self.signatures = dict((
             i['name'],
             web3.sha3(text="{}({})".format(i['name'],
                 ",".join(x['type'] for x in i['inputs'])
                 )).hex()[:10]
-        ) for i in abi if i['type']=="function")
+        ) for i in self.abi if i['type']=="function")
 
 
 class ContractDeployer(_ContractBase):
 
-    def __init__(self, name, interface, network):
+    def __init__(self, build, network):
         self.tx = None
-        self.bytecode = interface['bytecode']
-        deployed_contracts[name] = OrderedDict()
+        self.bytecode = build['bytecode']
         self._network = network
-        super().__init__(name, interface['abi'])
+        super().__init__(build)
+        deployed_contracts[self._name] = OrderedDict()
         for k, data in sorted([
-            (k,v) for k,v in interface['networks'].items() if 
+            (k,v) for k,v in build['networks'].items() if 
             v['network']==CONFIG['active_network']['name']
         ], key=lambda k: int(k[0])):
             if web3.eth.getCode(data['address']).hex() == "0x00":
                 print("WARNING: No contract deployed at {}.".format(data['address']))
                 continue
-            deployed_contracts[name][data['address']] = Contract(
+            deployed_contracts[self._name][data['address']] = Contract(
                 data['address'],
-                self._name,
-                self.abi, data['owner'],
+                self._build,
+                data['owner'],
                 (
                     TransactionReceipt(data['transactionHash'], silent=True)
                     if data['transactionHash'] else None
@@ -123,7 +124,7 @@ class ContractDeployer(_ContractBase):
             ))
         if web3.eth.getCode(address).hex() == "0x00":
             raise ValueError("No contract deployed at {}".format(address))
-        contract = Contract(address, self._name, self.abi, owner, tx)
+        contract = Contract(address, self._build, owner, tx)
         deployed_contracts[self._name][address] = contract
         if CONFIG['active_network']['persist']:
             add_contract(self._name, address, tx.hash if tx else None, owner)
@@ -135,15 +136,15 @@ class Contract(str,_ContractBase):
     def __new__(cls, address, *args):
         return super().__new__(cls, address)
 
-    def __init__(self, address, name, abi, owner, tx=None):
-        super().__init__(name, abi)
+    def __init__(self, address, build, owner, tx=None):
+        super().__init__(build)
         self.tx = tx
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         self._owner = owner
-        self._contract = web3.eth.contract(address = address, abi = abi)
-        for i in [i for i in abi if i['type']=="function"]:
+        self._contract = web3.eth.contract(address = address, abi = self.abi)
+        for i in [i for i in self.abi if i['type']=="function"]:
             if hasattr(self, i['name']):
-                raise AttributeError("Namespace collision: '{}.{}'".format(name, i['name']))
+                raise AttributeError("Namespace collision: '{}.{}'".format(self._name, i['name']))
             fn = getattr(self._contract.functions,i['name'])
             name = "{}.{}".format(self._name, i['name'])
             if i['stateMutability'] in ('view','pure'):

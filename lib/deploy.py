@@ -6,8 +6,7 @@ import os
 import sys
 
 from lib.components.network import Network
-from lib.services import color
-from lib.components import config
+from lib.services import color, config
 CONFIG = config.CONFIG
 
 
