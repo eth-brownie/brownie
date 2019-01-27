@@ -25,6 +25,7 @@ The following methods, classes and containers are available:
 * ``gas(value)``: View or modify the current gas limit.
 * ``history``: A list containing every transaction broadcasted during the console session.
 * ``logging(tx=None, exc=None)``: Adjusts the console verbosity.
+* ``rpc``: Methods for interacting with the local RPC.
 * ``reset(network=None)``: Reset the local RPC environment.
 * ``run(script)``: Runs a deployment script.
 * ``wei(value)``: Converts strings and floats to an integer denoted in wei
