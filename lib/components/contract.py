@@ -46,7 +46,8 @@ class ContractDeployer(_ContractBase):
         self.tx = None
         self.bytecode = build['bytecode']
         self._network = network
-        build['pcMap'] = dict((i.pop('pc'),i) for i in build['pcMap'])
+        if type(build['pcMap']) is list:
+            build['pcMap'] = dict((i.pop('pc'),i) for i in build['pcMap'])
         super().__init__(build)
         deployed_contracts[self._name] = OrderedDict()
         for k, data in sorted([
