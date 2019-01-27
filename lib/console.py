@@ -5,7 +5,6 @@ from docopt import docopt
 import readline
 import sys
 from threading import Lock
-import time
 
 from lib.components.network import Network
 from lib.components.contract import _ContractBase, _ContractMethod
@@ -30,7 +29,7 @@ class Console:
         self._print_lock = Lock()
         self._multiline = False
         self._prompt = ">>> "
-        self.__dict__.update({'dir': self._dir, 'time': time})
+        self.__dict__.update({'dir': self._dir})
 
     def _run(self):
         local_ = {}

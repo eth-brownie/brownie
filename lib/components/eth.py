@@ -39,13 +39,16 @@ class Rpc:
         self._time_offset = 0
         self._snapshot_id = False
         self._network = network
-    
+
     def __del__(self):
         self._rpc.terminate()
-    
+
     def _kill(self):
         self._rpc.terminate()
-    
+
+    def time(self):
+        return int(time.time()+self._time_offset)
+
     def sleep(self, seconds):
         if type(seconds) is not int:
             raise TypeError("seconds must be an integer value")
@@ -53,13 +56,17 @@ class Rpc:
             "evm_increaseTime", [seconds]
         )['result']
 
-    def time(self):
-        return int(time.time()+self._time_offset)
-    
+    def mine(self, blocks = 1):
+        if type(blocks) is not int:
+            raise TypeError("blocks must be an integer value")
+        for i in range(blocks):
+             web3.providers[0].make_request("evm_mine",[])
+        return "Block height at {}".format(web3.eth.blockNumber)
+
     def snapshot(self):
         self._snapshot_id = web3.providers[0].make_request("evm_snapshot",[])['result']
         return "Snapshot taken at block height {}".format(web3.eth.blockNumber)
-    
+
     def revert(self):
         if not self._snapshot_id:
             raise ValueError("No snapshot set")
@@ -74,14 +81,6 @@ class Rpc:
         ):
             history.pop()
         return "Block height reverted to {}".format(height)
-
-    def mine(self, blocks = 1):
-        if type(blocks) is not int:
-            raise TypeError("blocks must be an integer value")
-        for i in range(blocks):
-             web3.providers[0].make_request("evm_mine",[])
-        return "Block height at {}".format(web3.eth.blockNumber)
-
 
 
 def wei(value):
