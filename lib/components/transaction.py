@@ -9,9 +9,9 @@ import threading
 import time
 
 from lib.components import contract
-from lib.components.compiler import compile_contracts
 from lib.components.eth import web3
-from lib.components import config
+from lib.services.compiler import compile_contracts
+from lib.services import config
 from lib.services import color
 CONFIG = config.CONFIG
 
@@ -76,9 +76,7 @@ class TransactionReceipt:
             'gas_used': None,
             'contract_address': None,
             'logs': [],
-            'events': [],
             'status': -1,
-            'revert_msg': None
         })
         t = threading.Thread(
             target=self._await_confirm,
@@ -121,34 +119,18 @@ class TransactionReceipt:
             'status': receipt['status']
         })
         try:
-            self.events = eth_event.decode_logs(receipt['logs'], TOPICS)
+            self.events = eth_event.decode_logs(receipt['logs'], topics())
         except:
             pass
         if self.fn_name and '--gas' in sys.argv:
             _profile_gas(self.fn_name, receipt['gasUsed'])
-        if not self.status:
-            try:
-                trace = self.debug()
-                memory = trace[-1]['memory']
-                try:
-                    idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
-                    data = HexBytes("".join(memory[idx:])[8:]+"00000000")
-                    self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
-                except StopIteration:
-                    pass
-                try:
-                    self.events = eth_event.decode_trace(trace, TOPICS)
-                except:
-                    pass
-            except ValueError:
-                pass
         if not silent:
             if CONFIG['logging']['tx'] >= 2:
                 self.info()
             elif CONFIG['logging']['tx']:
                 color.print_colors("{} confirmed {}- block: {}   gas used: {} ({:.2%})".format(
                     self.fn_name or "Transaction",
-                    "" if self.status else "({0[red]}{1}{0}) ".format(
+                    "" if self.status else "({0[error]}{1}{0}) ".format(
                         color, self.revert_msg or "reverted"),
                     self.block_number,
                     self.gas_used,
@@ -168,51 +150,171 @@ class TransactionReceipt:
             color(c[self.status]), self.txid, color
         )
 
+    def __eq__(self, other):
+        return self.return_value == other
+    
+    def __int__(self):
+        return int(self.return_value)
+
+    def __getattr__(self, attr):
+        if attr not in ('events','return_value', 'revert_msg', 'trace'):
+            raise AttributeError(
+                "'TransactionReceipt' object has no attribute '{}'".format(attr)
+            )
+        if self.status == -1:
+            return None
+        self._get_trace()
+        if self.trace:
+            self._evaluate_trace()
+        return self.__dict__[attr]
+
     def info(self):
         return _print_tx(self)
 
-    def debug(self):
-        if not self._trace:
-            trace = web3.providers[0].make_request(
-                'debug_traceTransaction',
-                [self.txid,{}]
-            )['result']['structLogs']
-            if 'error' in trace:
-                raise ValueError(trace['error']['message'])
-            self._trace = trace
-        return self._trace
-    
-    def call_trace(self):
-        # address, fn, depth
-        path = [(self.receiver or self.contract_address, self.input[:10], 1)]
-        trace = self.debug()
-        idx = [i for i in range(len(trace)-1) if trace[i]['op'] in (
-            "CALL", "CALLCODE", "DELEGATECALL", "STATICCALL", "RETURN"
-        ) and trace[i+1]['depth']!=trace[i]['depth']]
-        for log in [trace[i] for i in idx]:
-            if log['op'] != "RETURN":
-                path.append((
-                    web3.toChecksumAddress(log['stack'][-2][-40:]),
-                    "0x"+log['memory'][int(log['stack'][-4], 16)//32][:8],
-                    path[-1][2] + 1
-                ))
-            else:
-                path.append(
-                    next(i for i in path[::-1] if i[2]+1 == path[-1][2])
-                )
-        for i in path[:-1]:
-            _print_path(*i, 'yellow')
-        _print_path(*path[-1], 'red' if trace[-1]['op'] not in ("RETURN", "STOP") else 'yellow')
+    def _get_trace(self):
+        self.trace = []
+        self.return_value = None
+        self.revert_msg = None
+        if self.input=="0x" and self.gas_used == 21000:
+            return
+        self.trace = trace = web3.providers[0].make_request(
+            'debug_traceTransaction',
+            [self.txid,{}]
+        )['result']['structLogs']
+        if 'error' in trace:
+            raise ValueError(trace['error']['message'])
+        c = contract.find_contract(self.receiver or self.contract_address)
+        last = {0: {
+            'address': self.receiver or self.contract_address,
+            'contract':c._name,
+            'fn': [self.fn_name.split('.')[1]],
+        }}
+        pc = c._build['pcMap'][0]
+        trace[0].update({
+            'address': last[0]['address'],
+            'contractName': last[0]['contract'],
+            'fn': last[0]['fn'][-1],
+            'jumpDepth': 1,
+            'source': {
+                'filename': pc['contract'],
+                'start': pc['start'],
+                'stop': pc['stop']
+            }
+        })
+        for i in range(1, len(trace)):
+            if trace[i]['depth'] > trace[i-1]['depth']:
+                address = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
+                c = contract.find_contract(address)
+                sig = "0x"+trace[i-1]['memory'][int(trace[i-1]['stack'][-4], 16)//32][:8]
+                last[trace[i]['depth']] = {
+                    'address': address,
+                    'contract': c._name,
+                    'fn': [next(k for k,v in c.signatures.items() if v==sig)],
+                    }
+            trace[i].update({
+                'address': last[trace[i]['depth']]['address'],
+                'contractName': last[trace[i]['depth']]['contract'],
+                'fn': last[trace[i]['depth']]['fn'][-1],
+                'jumpDepth': len(set(last[trace[i]['depth']]['fn']))
+            })
+            c = contract.find_contract(trace[i]['address'])
+            pc = c._build['pcMap'][trace[i]['pc']]
+            trace[i]['source'] = {
+                'filename': pc['contract'],
+                'start': pc['start'],
+                'stop': pc['stop']
+            }
+            # jump 'i' is moving into an internal function
+            if pc['jump'] == 'i':
+                    source = c._build['source'][pc['start']:pc['stop']]
+                    if source[:7] not in ("library", "contrac") and "(" in source:
+                        fn = source[:source.index('(')].split('.')[-1]
+                    else:
+                        fn = last[trace[i]['depth']]['fn'][-1]
+                    last[trace[i]['depth']]['fn'].append(fn)   
+            # jump 'o' is coming out of an internal function
+            elif pc['jump'] == "o" and len(last[trace[i]['depth']]['fn'])>1 :
+                last[trace[i]['depth']]['fn'].pop()
 
+    def _evaluate_trace(self):
+        if self.status:
+            # get return value
+            log = self.trace[-1]
+            if log['op'] != "RETURN":
+                return
+            c = contract.find_contract(self.receiver or self.contract_address)
+            if not c:
+                return
+            abi = [i['type'] for i in getattr(c, self.fn_name.split('.')[1]).abi['outputs']]
+            offset = int(log['stack'][-1], 16)//32
+            length = int(log['stack'][-2], 16)//32
+            data = HexBytes("".join(log['memory'][offset:offset+length]))
+            self.return_value = eth_abi.decode_abi(abi, data)
+            if len(self.return_value) == 1:
+                self.return_value = self.return_value[0]
+        else:
+            self.events = []
+            # get revert message
+            memory = self.trace[-1]['memory']
+            try:
+                idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
+                data = HexBytes("".join(memory[idx:])[8:]+"00000000")
+                self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
+            except StopIteration:
+                pass
+            try:
+                # get events from trace
+                self.events = eth_event.decode_trace(self.trace, topics())
+            except:
+                pass
+            
+    def call_trace(self):
+        trace = self.trace
+        last = 0
+        for i in range(1, len(trace)):
+            if (
+                trace[i]['depth'] == trace[i-1]['depth'] and
+                trace[i]['jumpDepth'] == trace[i-1]['jumpDepth']
+            ):
+                continue
+            _print_path(trace[i-1], last)
+            last = i
+        _print_path(trace[-1], last)
+
+    def error(self):
+        try:
+            trace = next(i for i in self.trace if i['op']=="REVERT") 
+        except StopIteration:
+            return
+        span = (trace['source']['start'], trace['source']['stop'])
+        source = open(trace['source']['filename'],'r').read()
+        n = [i for i in range(len(source)) if source[i]=="\n"]
+        start = n.index(next(i for i in n if i>=span[0]))
+        stop = n.index(next(i for i in n if i>=span[1]))
+        ln = start + 1
+        start = n[max(start-4, 0)]
+        stop = n[min(stop+3, len(n)-1)]
+        print(
+            ('{0[dull]}File {0[string]}"{1}"{0[dull]}, ' +
+            'line {0[value]}{2}{0[dull]}, in {0[callable]}{3}').format(
+                color, trace['source']['filename'], ln, trace['fn']
+            )
+        )
+        print("{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
+            color,
+            source[start:span[0]],
+            source[span[0]:span[1]],
+            source[span[1]:stop]
+        ))
 
 def _add_colors(line):
     if ':' not in line:
         print(line)
         return
-    line = color()+line[:line.index(':')+1]+color('bright blue')+line[line.index(':')+1:]
+    line = color()+line[:line.index(':')+1]+color('value')+line[line.index(':')+1:]
     for s in ('(',')','/'):
         line = line.split(s)
-        line = s.join([color('bright blue')+i+color() for i in line])
+        line = s.join([color('value')+i+color() for i in line])
     print(line+color())
 
 
@@ -226,7 +328,7 @@ def _print_tx(tx):
                 tx, "\nFunction: {}".format(tx.fn_name) if tx.input!="0x00" else ""
             )
         ),
-        "" if tx.status else " ({0[red]}{1}{0})".format(
+        "" if tx.status else " ({0[error]}{1}{0})".format(
             color, tx.revert_msg or "reverted"
         ),
         tx.gas_used / tx.gas_limit
@@ -239,26 +341,16 @@ def _print_tx(tx):
             for i in event['data']:
                 color.print_colors(
                     "      {0[name]}: {0[value]}".format(i),
-                    value = None if i['decoded'] else "dark white")
+                    value = None if i['decoded'] else "dull")
         print()
 
 
-def _print_path(address, fn, depth, col):
-    c = contract.find_contract(address)
-    if c:
-        try:
-            name = "{}.{}{}".format(
-                c._name,
-                color('bright '+col),
-                next(k for k,v in c.signatures.items() if v==fn)
-            )
-        except StopIteration:
-            name = "{}{}.{}".format(c._name, color('dark white'), fn)
-    else:
-        name = "????{}.{}".format(color('dark white'), fn)
+def _print_path(trace, idx):
+    col = "yellow" if trace['op']!="REVERT" else "red"
+    name = "{0[contractName]}.{1}{0[fn]}".format(trace, color('bright '+col))
     print(
-        "   "*depth +
-        "{}{} {}({})".format(color(col), name, color('dark white'), address) +
+        "   "*trace['depth'] +
+        "{}{} {}{} ({})".format(color(col), name, color('dull'), idx, trace['address']) +
         color()
     )
 
@@ -282,20 +374,21 @@ def _profile_gas(fn_name, gas_used):
     gas['count'] += 1
 
 
-def _generate_topics():
+_topics = {}
+def topics():
+    if _topics:
+        return _topics
     try:
         topics = json.load(open(CONFIG['folders']['brownie']+"/topics.json", 'r'))
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         topics = {}
     contracts = compile_contracts()
     events = [x for i in contracts.values() for x in i['abi'] if x['type']=="event"]
-    topics.update(eth_event.get_event_abi(events))
+    _topics.update(eth_event.get_event_abi(events))
     json.dump(
-        topics,
+        _topics,
         open(CONFIG['folders']['brownie']+"/topics.json", 'w'),
         sort_keys=True,
         indent=4
     )
-    return topics
-
-TOPICS = _generate_topics()
+    return _topics

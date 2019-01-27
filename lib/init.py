@@ -5,7 +5,7 @@ import os
 import shutil
 import sys
 
-from lib.components import config
+from lib.services import config
 CONFIG = config.CONFIG
 
 

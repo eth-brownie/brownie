@@ -4,8 +4,6 @@ import json
 import os
 import sys
 
-from lib.services import color
-
 def set_network(name):
     try:
         CONFIG['active_network'] = CONFIG['networks'][name]
@@ -27,8 +25,6 @@ CONFIG['folders'] = {
     'brownie': folder,
     'project': os.path.abspath('.')
 }
-
-color.set_colors(CONFIG['colors']['key'], CONFIG['colors']['value'])
 
 folders = os.path.abspath('.').split('/')
 for i in range(len(folders),0,-1):

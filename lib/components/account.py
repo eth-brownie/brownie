@@ -10,7 +10,7 @@ from lib.components.transaction import (
     raise_or_return_tx
 )
 from lib.components.eth import web3, wei
-from lib.components import config
+from lib.services import config
 CONFIG = config.CONFIG
 
 class Accounts(list):

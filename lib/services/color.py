@@ -7,6 +7,9 @@ from pygments.formatters import TerminalFormatter
 import sys
 import traceback
 
+from lib.services import config
+CONFIG = config.CONFIG
+
 BASE = "\x1b[0;"
 
 MODIFIERS = {
@@ -26,21 +29,16 @@ COLORS = {
 }
 
 TB_BASE = (
-    "  {0[dark white]}File {0[bright magenta]}{1[1]}{0[dark white]}, line "
-    "{0[bright cyan]}{1[3]}{0[dark white]}, in {0[bright blue]}{1[5]}{0}{2}"
+    "  {0[dull]}File {0[string]}{1[1]}{0[dull]}, line "
+    "{0[value]}{1[3]}{0[dull]}, in {0[callable]}{1[5]}{0}{2}"
 )
 
 
 class Color:
-    
-    key = None
-    value = None
 
-    def set_colors(self, key, value):
-        self.key = key
-        self.value = value
-    
     def __call__(self, color = None):
+        if color in CONFIG['colors']:
+            color = CONFIG['colors'][color]
         if not color:
             return BASE+"m"
         color = color.split()
@@ -60,9 +58,9 @@ class Color:
 
     def print_colors(self, msg, key = None, value=None):
         if key is None:
-            key = self.key
+            key = 'key'
         if value is None:
-            value = self.value
+            value = 'value'
         for line in msg.split('\n'):
             if ':' not in line:
                 print(line)
@@ -94,7 +92,7 @@ class Color:
             info, code = tb[i].split('\n')[:2]
             info = [x.strip(',') for x in info.strip().split(' ')]
             tb[i] = TB_BASE.format(self, info, "\n"+code if code else "")
-        tb.append("{0[bright red]}{1}{0}: {2}".format(self, exc[0].__name__, exc[1]))
+        tb.append("{0[error]}{1}{0}: {2}".format(self, exc[0].__name__, exc[1]))
         return "\n".join(tb)
 
 

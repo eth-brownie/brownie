@@ -8,7 +8,7 @@ import solc
 import sys
 import time
 
-from lib.components import config
+from lib.services import config
 CONFIG = config.CONFIG
 CONFIG['solc']['version'] = solc.get_solc_version_string().strip('\n')
 
@@ -67,12 +67,12 @@ def add_contract(name, address, txid, owner):
     json.dump(_contracts[name], open(json_file, 'w'), sort_keys=True, indent=4)
 
 
-def compile_contracts():
+def compile_contracts(folder = "contracts"):
     if _contracts:
         return _contracts
     clear_persistence(None)
     contract_files = [
-        "{}/{}".format(i[0], x) for i in os.walk("contracts") for x in i[2]
+        "{}/{}".format(i[0], x) for i in os.walk(folder) for x in i[2]
     ]
     if not contract_files:
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")
@@ -124,8 +124,8 @@ def compile_contracts():
                 'sources': {filename: {'content': open(filename).read()}},
                 'settings': {
                     'outputSelection': {'*': {
-                        '*': ["abi", "evm.bytecode", "evm.deployedBytecode"],
-                        '': ["ast", "legacyAST"]}},
+                        '*': ["abi", "evm.assembly", "evm.bytecode", "evm.deployedBytecode"],
+                        '': ["ast"]}},#, "legacyAST"]}},
                     "optimizer": {
                         "enabled": CONFIG['solc']['optimize'],
                         "runs": CONFIG['solc']['runs']}
@@ -149,6 +149,7 @@ def compile_contracts():
                 print(i['formattedMessage'])
             sys.exit()
         hash_ = sha1(open(filename, 'rb').read()).hexdigest()
+        compiled = generate_pcMap(compiled)
         for match in (
             re.findall("\n(?:contract|library|interface) [^ ]{1,}", code)
         ):
@@ -172,15 +173,14 @@ def compile_contracts():
                 'contractName': name,
                 'deployedBytecode': evm['deployedBytecode']['object'],
                 'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
-                # 'legacyAST': compiled['sources'][filename]['legacyAST'],
                 'networks': {},
                 'opcodes': evm['deployedBytecode']['opcodes'],
-                # 'schemaVersion': 0,
                 'sha1': hash_,
                 'source': input_json['sources'][filename]['content'],
                 'sourceMap': evm['bytecode']['sourceMap'],
                 'sourcePath': filename,
-                'type': type_
+                'type': type_,
+                'pcMap': evm['deployedBytecode']['pcMap']
             }
             json.dump(
                 _contracts[name],
@@ -189,3 +189,59 @@ def compile_contracts():
                 indent=4
             )
     return _contracts
+
+def generate_pcMap(compiled):
+    id_map = dict((v['id'],k) for k,v in compiled['sources'].items())
+    for filename, name in [(k,x) for k,v in compiled['contracts'].items() for x in v]:
+        bytecode = compiled['contracts'][filename][name]['evm']['deployedBytecode']
+    
+        if not bytecode['object']:
+            bytecode['pcMap'] = []
+            continue
+        pcMap = []
+        opcodes = bytecode['opcodes']
+        source_map = bytecode['sourceMap']
+        while True:
+            try:
+                i = opcodes[:-1].rindex(' STOP')
+            except ValueError:
+                break
+            if 'JUMPDEST' in opcodes[i:]: 
+                break
+            opcodes = opcodes[:i+5]
+        opcodes = opcodes.split(" ")[::-1]
+        pc = 0
+        last = source_map.split(';')[0].split(':')
+        for i in range(3):
+            last[i] = int(last[i])
+        pcMap.append({
+            'start': last[0],
+            'stop': last[0]+last[1],
+            'op': opcodes.pop(),
+            'contract': id_map[last[2]],
+            'jump': last[3],
+            'pc': 0
+        })
+        pcMap[0]['value'] = opcodes.pop()
+        for value in source_map.split(';')[1:]:
+            pc += 1
+            if pcMap[-1]['op'][:4] == "PUSH":
+                pc += int(pcMap[-1]['op'][4:])
+            if value:
+                value = (value+":::").split(':')[:4]
+                for i in range(3):
+                    value[i] = int(value[i] or last[i])
+                value[3] = value[3] or last[3]
+                last = value
+            pcMap.append({
+                'start': last[0],
+                'stop': last[0]+last[1],
+                'op': opcodes.pop(),
+                'contract': id_map[last[2]] if last[2]!=-1 else False,
+                'jump': last[3],
+                'pc': pc
+            })
+            if opcodes[-1][:2] == "0x":
+                pcMap[-1]['value'] = opcodes.pop()
+        bytecode['pcMap'] = pcMap
+    return compiled
