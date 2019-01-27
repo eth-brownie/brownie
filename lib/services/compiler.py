@@ -149,7 +149,7 @@ def compile_contracts(folder = "contracts"):
                 print(i['formattedMessage'])
             sys.exit()
         hash_ = sha1(open(filename, 'rb').read()).hexdigest()
-        id_map = dict((v['id'],k) for k,v in compiled['sources'].items())
+        compiled = generate_pcMap(compiled)
         for match in (
             re.findall("\n(?:contract|library|interface) [^ ]{1,}", code)
         ):
@@ -165,54 +165,6 @@ def compile_contracts(folder = "contracts"):
                     n[:36],
                     evm['bytecode']['object'][loc+40:]
                 )
-            pc = []
-            
-            # needs some error handling
-            # needs cleanup
-            if evm['legacyAssembly']:
-                opcodes = evm['deployedBytecode']['opcodes']
-                while True:
-                    try:
-                        i = opcodes[:-1].rindex(' STOP')
-                    except ValueError:
-                        break
-                    if 'JUMPDEST' in opcodes[i:]: 
-                        break
-                    opcodes = opcodes[:i+5]
-                opcodes = opcodes.split(" ")[::-1]
-                idx = 0
-                last = evm['deployedBytecode']['sourceMap'].split(';')[0].split(':')
-                for i in range(3):
-                    last[i] = int(last[i])
-                pc.append({
-                    'start': last[0],
-                    'stop': last[0]+last[1],
-                    'op': opcodes.pop(),
-                    'contract': id_map[last[2]],
-                    'jump': last[3],
-                    'pc': 0
-                })
-                pc[0]['value'] = opcodes.pop()
-                for value in evm['deployedBytecode']['sourceMap'].split(';')[1:]:
-                    idx += 1
-                    if pc[-1]['op'][:4] == "PUSH":
-                        idx += int(pc[-1]['op'][4:])
-                    if value:
-                        value = (value+":::").split(':')[:4]
-                        for i in range(3):
-                            value[i] = int(value[i] or last[i])
-                        value[3] = value[3] or last[3]
-                        last = value
-                    pc.append({
-                        'start': last[0],
-                        'stop': last[0]+last[1],
-                        'op': opcodes.pop(),
-                        'contract': id_map[last[2]] if last[2]!=-1 else False,
-                        'jump': last[3],
-                        'pc': idx
-                    })
-                    if opcodes[-1][:2] == "0x":
-                        pc[-1]['value'] = opcodes.pop()
             _contracts[name] = {
                 'abi': data['abi'],
                 'ast': compiled['sources'][filename]['ast'],
@@ -228,7 +180,7 @@ def compile_contracts(folder = "contracts"):
                 'sourceMap': evm['bytecode']['sourceMap'],
                 'sourcePath': filename,
                 'type': type_,
-                'pcMap':pc
+                'pcMap': evm['deployedBytecode']['pcMap']
             }
             json.dump(
                 _contracts[name],
@@ -237,3 +189,59 @@ def compile_contracts(folder = "contracts"):
                 indent=4
             )
     return _contracts
+
+def generate_pcMap(compiled):
+    id_map = dict((v['id'],k) for k,v in compiled['sources'].items())
+    for filename, name in [(k,x) for k,v in compiled['contracts'].items() for x in v]:
+        bytecode = compiled['contracts'][filename][name]['evm']['deployedBytecode']
+    
+        if not bytecode['object']:
+            bytecode['pcMap'] = []
+            continue
+        pcMap = []
+        opcodes = bytecode['opcodes']
+        source_map = bytecode['sourceMap']
+        while True:
+            try:
+                i = opcodes[:-1].rindex(' STOP')
+            except ValueError:
+                break
+            if 'JUMPDEST' in opcodes[i:]: 
+                break
+            opcodes = opcodes[:i+5]
+        opcodes = opcodes.split(" ")[::-1]
+        pc = 0
+        last = source_map.split(';')[0].split(':')
+        for i in range(3):
+            last[i] = int(last[i])
+        pcMap.append({
+            'start': last[0],
+            'stop': last[0]+last[1],
+            'op': opcodes.pop(),
+            'contract': id_map[last[2]],
+            'jump': last[3],
+            'pc': 0
+        })
+        pcMap[0]['value'] = opcodes.pop()
+        for value in source_map.split(';')[1:]:
+            pc += 1
+            if pcMap[-1]['op'][:4] == "PUSH":
+                pc += int(pcMap[-1]['op'][4:])
+            if value:
+                value = (value+":::").split(':')[:4]
+                for i in range(3):
+                    value[i] = int(value[i] or last[i])
+                value[3] = value[3] or last[3]
+                last = value
+            pcMap.append({
+                'start': last[0],
+                'stop': last[0]+last[1],
+                'op': opcodes.pop(),
+                'contract': id_map[last[2]] if last[2]!=-1 else False,
+                'jump': last[3],
+                'pc': pc
+            })
+            if opcodes[-1][:2] == "0x":
+                pcMap[-1]['value'] = opcodes.pop()
+        bytecode['pcMap'] = pcMap
+    return compiled
