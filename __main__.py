@@ -19,7 +19,6 @@ Commands:
   console               Load the console
   deploy                Run a script in the /deployments folder
   test                  Run test scripts in the /tests folder
-  coverage              Analyze test script coverage
 
 Options:
   -h --help             Display this message

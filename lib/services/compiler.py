@@ -124,7 +124,7 @@ def compile_contracts(folder = "contracts"):
                 'sources': {filename: {'content': open(filename).read()}},
                 'settings': {
                     'outputSelection': {'*': {
-                        '*': ["abi","evm.legacyAssembly", "evm.assembly", "evm.bytecode", "evm.deployedBytecode"],
+                        '*': ["abi", "evm.assembly", "evm.bytecode", "evm.deployedBytecode"],
                         '': ["ast"]}},#, "legacyAST"]}},
                     "optimizer": {
                         "enabled": CONFIG['solc']['optimize'],
@@ -165,7 +165,7 @@ def compile_contracts(folder = "contracts"):
                     n[:36],
                     evm['bytecode']['object'][loc+40:]
                 )
-            pc = {}
+            pc = []
             
             # needs some error handling
             # needs cleanup
@@ -179,39 +179,40 @@ def compile_contracts(folder = "contracts"):
                     if 'JUMPDEST' in opcodes[i:]: 
                         break
                     opcodes = opcodes[:i+5]
-                opcodes = [i for i in opcodes.split(" ") if "0x" not in i][::-1]
+                opcodes = opcodes.split(" ")[::-1]
                 idx = 0
                 last = evm['deployedBytecode']['sourceMap'].split(';')[0].split(':')
                 for i in range(3):
                     last[i] = int(last[i])
-                pc['0'] = {
+                pc.append({
                     'start': last[0],
                     'stop': last[0]+last[1],
                     'op': opcodes.pop(),
                     'contract': id_map[last[2]],
-                    'jump': last[3]
-                }
+                    'jump': last[3],
+                    'pc': 0
+                })
+                pc[0]['value'] = opcodes.pop()
                 for value in evm['deployedBytecode']['sourceMap'].split(';')[1:]:
-                    o = idx
                     idx += 1
-                    if pc[str(o)]['op'][:4] == "PUSH":
-                        idx += int(pc[str(o)]['op'][4:])
-                    if not value:
-                        pc[str(idx)] = pc[str(o)].copy()
-                        pc[str(idx)]['op'] = opcodes.pop()
-                        continue
-                    value = (value+":::").split(':')[:4]
-                    for i in range(3):
-                        value[i] = int(value[i] or last[i])
-                    value[3] = value[3] or last[3]
-                    last = value
-                    pc[str(idx)] = {
+                    if pc[-1]['op'][:4] == "PUSH":
+                        idx += int(pc[-1]['op'][4:])
+                    if value:
+                        value = (value+":::").split(':')[:4]
+                        for i in range(3):
+                            value[i] = int(value[i] or last[i])
+                        value[3] = value[3] or last[3]
+                        last = value
+                    pc.append({
                         'start': last[0],
                         'stop': last[0]+last[1],
                         'op': opcodes.pop(),
                         'contract': id_map[last[2]] if last[2]!=-1 else False,
-                        'jump': last[3]
-                    }
+                        'jump': last[3],
+                        'pc': idx
+                    })
+                    if opcodes[-1][:2] == "0x":
+                        pc[-1]['value'] = opcodes.pop()
             _contracts[name] = {
                 'abi': data['abi'],
                 'ast': compiled['sources'][filename]['ast'],
@@ -220,16 +221,13 @@ def compile_contracts(folder = "contracts"):
                 'contractName': name,
                 'deployedBytecode': evm['deployedBytecode']['object'],
                 'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
-                # 'legacyAST': compiled['sources'][filename]['legacyAST'],
                 'networks': {},
                 'opcodes': evm['deployedBytecode']['opcodes'],
-                # 'schemaVersion': 0,
                 'sha1': hash_,
                 'source': input_json['sources'][filename]['content'],
                 'sourceMap': evm['bytecode']['sourceMap'],
                 'sourcePath': filename,
                 'type': type_,
-                'legacyAssembly': evm['legacyAssembly'],
                 'pcMap':pc
             }
             json.dump(

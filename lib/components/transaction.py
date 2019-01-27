@@ -189,7 +189,7 @@ class TransactionReceipt:
             'contract':c._name,
             'fn': [self.fn_name.split('.')[1]],
         }}
-        pc = c._build['pcMap']['0']
+        pc = c._build['pcMap'][0]
         trace[0].update({
             'address': last[0]['address'],
             'contractName': last[0]['contract'],
@@ -218,7 +218,7 @@ class TransactionReceipt:
                 'jumpDepth': len(set(last[trace[i]['depth']]['fn']))
             })
             c = contract.find_contract(trace[i]['address'])
-            pc = c._build['pcMap'][str(trace[i]['pc'])]
+            pc = c._build['pcMap'][trace[i]['pc']]
             trace[i]['source'] = {
                 'filename': pc['contract'],
                 'start': pc['start'],
