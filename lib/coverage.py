@@ -2,7 +2,7 @@ from copy import deepcopy
 from docopt import docopt
 import os
 import re
-import shutil   
+import shutil
 import sys
 
 from lib.test import run_test
@@ -41,9 +41,11 @@ def main():
     pc = {}
     source = {}
     targets = {}
+    jumps = {}
     for name in compiled:
         pc = compiled[name]['pcMap']
         targets[name] = {}
+        jumps[name] = {}
         for i in range(1,len(pc)-1):
             if not pc[i]['contract']:
                 continue
@@ -87,11 +89,11 @@ def main():
                     s = next(x for x in pc[i-2::-1] if x['op']!="JUMPDEST" and _contains(x, pc[i]))
                 except StopIteration:
                     continue
-                targets[name][pc[i]['pc']] = {
-                    'count':0,
+                jumps[name][pc[i]['pc']] = {
+                    True: 0,
+                    False: 0,
+                    'req': s['pc'], # this pc must also execute for the jump to be valid
                     'source': source[s['contract']][s['start']:s['stop']],
-                    'jump': True,
-                    'msg': "jumpi"
                 }
 
 
@@ -103,11 +105,27 @@ def main():
                 "calculate coverage while tests are failing\n\n" + 
                 "Exception info for {}:\n{}".format(tb[0], tb[1])
             )
-        for trace in [x for i in history[1:] for x in i.trace]:
-            c = targets[trace['contractName']]
-            if trace['pc'] in c:
-                c[trace['pc']]['count'] += 1
-#    print([k for k,v in targets['Token'].items() if not v['count']])
+        for tx in history:
+            if not tx.receiver:
+                continue
+            ops = []
+            for i in range(len(tx.trace)):
+                t = tx.trace[i]
+                pc = t['pc']
+                ops.append(pc)
+                name = t['contractName']
+                if not name:
+                    continue
+                if pc in targets[name]:
+                    targets[name][pc]['count'] += 1
+                if pc in jumps[name]:
+                    if jumps[name][pc]['req'] not in ops:
+                        continue
+                    key = False if tx.trace[i+1]['pc'] == pc+1 else True
+                    jumps[name][pc][key] += 1
+
+    print([k for k,v in targets['Token'].items() if not v['count']])
+    print([(k,v[True],v[False]) for k,v in jumps['Token'].items()])
 
 # pcMap comparisons
 
