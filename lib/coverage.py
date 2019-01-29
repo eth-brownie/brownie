@@ -107,7 +107,7 @@ def main():
             c = targets[trace['contractName']]
             if trace['pc'] in c:
                 c[trace['pc']]['count'] += 1
-    print(k for k,v in targets['Token'].items() if not v['count'])
+#    print([k for k,v in targets['Token'].items() if not v['count']])
 
 # pcMap comparisons
 

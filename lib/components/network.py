@@ -8,7 +8,7 @@ import sys
 import traceback
 
 from lib.components import alert
-from lib.components.eth import web3, wei
+from lib.components.eth import Rpc, web3, wei
 from lib.components import contract
 from lib.components.account import Accounts, LocalAccount
 from lib.components import transaction as tx
@@ -22,10 +22,34 @@ CONFIG = config.CONFIG
 class Network:
 
     _key = None
+    _init = True
+    _rpc = None
 
     def __init__(self, module):
-        web3._run()
+        self._key = None
+        self._init = True
+        self._network_dict = {'rpc': None}
         self._module = module
+        self.setup()
+
+    
+    def setup(self):
+        if self._init or sys.argv[1] == "console":
+            verbose = True
+            self._init = False
+        else:
+            verbose = False
+        if self._network_dict['rpc']:
+            self._network_dict['rpc']._kill()
+        if verbose:
+            print("Using network '{}'".format(CONFIG['active_network']['name']))
+        if 'test-rpc' in CONFIG['active_network']:
+            if verbose:
+                print("Running '{}'...".format(CONFIG['active_network']['test-rpc']))
+            rpc = Rpc(self)
+        else:
+            rpc = None
+        web3._connect()
         accounts = Accounts(web3.eth.accounts)
         tx.tx_history.clear()
         self._network_dict = {
@@ -38,15 +62,17 @@ class Network:
             'logging': logging,
             'reset': self.reset,
             'run': self.run,
+            'rpc': rpc,
             'web3': web3,
-            'wei': wei }
+            'wei': wei
+        }
         for name, build in compiler.compile_contracts().items():
             if build['type'] == "interface":
                 continue
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
             self._network_dict[name] = contract.ContractDeployer(build, self._network_dict)
-        module.__dict__.update(self._network_dict)
+        self._module.__dict__.update(self._network_dict)
         if not CONFIG['active_network']['persist']:
             return
         while True:
@@ -56,7 +82,8 @@ class Network:
                 print("Persistent environment for '{}' has not yet been declared.".format(
                     CONFIG['active_network']['name']))
                 self._key = FernetKey(getpass(
-                    "Please set a password for the persistent environment: "))
+                    "Please set a password for the persistent environment: "
+                ))
                 json.dump({
                     'height': web3.eth.blockNumber,
                     'password': self._key.encrypt('password', False)},
@@ -124,7 +151,7 @@ class Network:
         contract.deployed_contracts.clear()
         if CONFIG['active_network']['persist']:
             compiler.clear_persistence(CONFIG['active_network']['name'])
-        self.__init__(self._module)
+        self.setup()
         return "Brownie environment is ready."
 
 def logging(**kwargs):

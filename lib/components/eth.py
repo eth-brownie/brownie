@@ -12,44 +12,75 @@ CONFIG = config.CONFIG
 class web3:
 
     def __init__(self):
-        self._rpc = None
         self._init = True
 
-    def __del__(self):
-        if self._rpc:
-            self._rpc.terminate()
-
-    def _run(self):
-        if self._init or sys.argv[1] == "console":
-            verbose = True
-            self._init = False
-        else:
-            verbose = False
-        if verbose:
-            print("Using network '{}'".format(CONFIG['active_network']['name']))
-        if self._rpc:
-            if verbose:
-                print("Resetting environment...")
-            self._rpc.terminate()
-        if 'test-rpc' in CONFIG['active_network']:
-            if verbose:
-                print("Running '{}'...".format(CONFIG['active_network']['test-rpc']))
-            self._rpc = Popen(
-                CONFIG['active_network']['test-rpc'].split(' '),
-                stdout = DEVNULL,
-                stdin = DEVNULL,
-                stderr = DEVNULL,
-                start_new_session = True
-            )
+    def _connect(self):
         web3 = Web3(HTTPProvider(CONFIG['active_network']['host']))
-        for i in range(20):
-            if web3.isConnected():
-                break
-            if i == 19:
-               raise ConnectionError("Could not connect to {}".format(CONFIG['active_network']['host']))
-            time.sleep(0.2)
         for name, fn in [(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()]:
             setattr(self, name, fn)
+        for i in range(20):
+            if web3.isConnected():
+                return
+            time.sleep(0.2)
+        raise ConnectionError("Could not connect to {}".format(
+            CONFIG['active_network']['host']
+        ))
+
+class Rpc:
+
+    def __init__(self, network):
+        self._rpc = Popen(
+            CONFIG['active_network']['test-rpc'].split(' '),
+            stdout = DEVNULL,
+            stdin = DEVNULL,
+            stderr = DEVNULL,
+            start_new_session = True
+        )
+        self._time_offset = 0
+        self._snapshot_id = False
+        self._network = network
+
+    def __del__(self):
+        self._rpc.terminate()
+
+    def _kill(self):
+        self._rpc.terminate()
+
+    def time(self):
+        return int(time.time()+self._time_offset)
+
+    def sleep(self, seconds):
+        if type(seconds) is not int:
+            raise TypeError("seconds must be an integer value")
+        self._time_offset = web3.providers[0].make_request(
+            "evm_increaseTime", [seconds]
+        )['result']
+
+    def mine(self, blocks = 1):
+        if type(blocks) is not int:
+            raise TypeError("blocks must be an integer value")
+        for i in range(blocks):
+             web3.providers[0].make_request("evm_mine",[])
+        return "Block height at {}".format(web3.eth.blockNumber)
+
+    def snapshot(self):
+        self._snapshot_id = web3.providers[0].make_request("evm_snapshot",[])['result']
+        return "Snapshot taken at block height {}".format(web3.eth.blockNumber)
+
+    def revert(self):
+        if not self._snapshot_id:
+            raise ValueError("No snapshot set")
+        web3.providers[0].make_request("evm_revert",[self._snapshot_id])
+        self.snapshot()
+        self._network._network_dict['accounts']._check_nonce()
+        height = web3.eth.blockNumber
+        history = self._network._network_dict['history']
+        while history and (
+            history[-1].block_number > height or
+            not history[-1].block_number
+        ):
+            history.pop()
+        return "Block height reverted to {}".format(height)
 
 
 def wei(value):

@@ -45,6 +45,9 @@ class Accounts(list):
         except StopIteration:
             raise ValueError("No account exists for {}".format(address))
 
+    def _check_nonce(self):
+        for i in self:
+            i.nonce = web3.eth.getTransactionCount(i)
 
 class _AccountBase(str):
 

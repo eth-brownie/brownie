@@ -17,6 +17,32 @@ These classes and methods relate to the Ethereum blockchain:
 
     Brownie implementation of ``web3py.web3``. Only some class methods are exposed. See the `Web3.py docs <https://web3py.readthedocs.io/en/stable/index.html>`__ for more information.
 
+.. _rpc:
+
+.. py:class:: Rpc
+
+    Exposes methods for interacting with ``ganache-cli`` when running a local RPC environment.
+
+.. py:classmethod:: Rpc.time()
+
+    Returns the current epoch time in the RPC.
+
+.. py:classmethod:: Rpc.sleep(seconds)
+
+    Advances the RPC time.
+
+.. py:classmethod:: Rpc.mine(blocks = 1)
+
+    Forces new blocks to be mined.
+
+.. py:classmethod:: Rpc.snapshot()
+
+    Creates a snapshot at the current block height.
+
+.. py:classmethod:: Rpc.revert()
+
+    Reverts the blockchain to the latest snapshot. Raises ``ValueError`` if no snapshot has been taken.
+
 .. _wei:
 
 .. py:method:: wei(value)
