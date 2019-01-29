@@ -27,13 +27,8 @@ def isolate_functions(compiled):
         else:
             continue
         if fn not in fn_map:
-            fn_map[fn] = {
-                'name': fn,
-                'start':op['start'],
-                'stop': op['stop'],
-                'pc':set(),
-                'contract':op['contract']
-            }
+            fn_map[fn] = _base(op)
+            fn_map[fn]['name']=fn
         fn_map[fn]['pc'].add(op['pc'])
     
     fn_map = _sort(fn_map.values())
@@ -69,17 +64,10 @@ def isolate_lines(compiled):
             )
         except StopIteration:
             continue
-        line_map[op['contract']].append({
-            'start': req['start'],
-            'stop': req['stop'],
-            'pc': set([req['pc']]),  # one of these opcodes must fire
-            'contract': req['contract'],
-            'jump': op['pc'], # after this opcode, it must do the next sequential opcode AND change to a different opcode
-            True: set(),
-            False: set(),
-            'tx': set()
+        line_map[op['contract']].append(_base(req))
+        line_map[op['contract']][-1].update({
+            'jump':op['pc'], 'true': set(), 'false': set()
         })
-    
     for op in _oplist(pcMap):
         if ';' in source(op):
             continue
@@ -88,16 +76,8 @@ def isolate_lines(compiled):
         try:
             ln = _next(line_map[op['contract']], op)
         except StopIteration:
-            line_map[op['contract']].append({
-                'start': op['start'],
-                'stop': op['stop'],
-                'pc': set([op['pc']]),
-                'contract': op['contract'],
-                'jump': False,
-                'tx': set()
-            })
+            line_map[op['contract']].append(_base(op))
             continue
-        
         if op['stop'] > ln['stop']:
             if ln['jump']:
                 continue
@@ -117,6 +97,27 @@ def isolate_lines(compiled):
             i+=1
     return [x for v in line_map.values() for x in v]
 
+def get_coverage_map(compiled):
+    fn_map = {}
+    line_map = {}
+    for contract in compiled:
+        fn_map[contract] = isolate_functions(compiled[contract])
+        line_map[contract] = isolate_lines(compiled[contract])
+        for fn in fn_map[contract]:
+            for ln in [
+                i for i in line_map[contract] if
+                i['contract']==fn['contract'] and
+                i['start']==fn['start'] and i['stop']==fn['stop']
+            ]:
+                line_map[contract].remove(ln)
+            for ln in [
+                i for i in line_map[contract] if
+                i['contract']==fn['contract'] and
+                i['start']>=fn['start'] and i['stop']<=fn['stop']
+            ]:
+                ln['name'] = fn['name']
+    return fn_map, line_map
+
 
 def _next(list_, op):
     return next(
@@ -129,3 +130,14 @@ def _sort(list_):
 
 def _oplist(pcMap, op=None):
     return [i for i in pcMap if i['contract'] and (not op or op==i['op'])]
+
+def _base(op):
+    return {
+        'name': None,
+        'start':op['start'],
+        'stop': op['stop'],
+        'pc':set([op['pc']]),
+        'contract':op['contract'],
+        'jump': False,
+        'tx':set()
+    }

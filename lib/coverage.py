@@ -4,11 +4,13 @@ import os
 import re
 import shutil
 import sys
+import json
 
 from lib.test import run_test
 from lib.services import color
 from lib.services.compiler import compile_contracts
 
+from lib.components.bytecode import get_coverage_map
 
 __doc__ = """Usage: brownie coverage [<filename>] [options]
 
@@ -38,64 +40,7 @@ def main():
         test_files.remove('__init__')
     
     compiled = deepcopy(compile_contracts())
-    pc = {}
-    source = {}
-    targets = {}
-    jumps = {}
-    for name in compiled:
-        pc = compiled[name]['pcMap']
-        targets[name] = {}
-        jumps[name] = {}
-        for i in range(1,len(pc)-1):
-            if not pc[i]['contract']:
-                continue
-            if pc[i]['contract'] not in source:
-                source[pc[i]['contract']] = open(pc[i]['contract']).read()
-            if pc[i]['op'] == "REVERT":
-                targets[name][pc[i]['pc']] = {
-                    'count':0,
-                    'source': source[pc[i]['contract']][pc[i]['start']:pc[i]['stop']],
-                    'msg': "revert not hit"
-                }
-            elif pc[i]['op'] in ("JUMP", "RETURN") and pc[i+1]['op'] == "JUMPDEST":
-                if _contains(pc[i], pc[i+1]):
-                    targets[name][pc[i]['pc']] = {
-                        'count':0,
-                        'source': source[pc[i]['contract']][pc[i]['start']:pc[i]['stop']],
-                        'msg': "return not hit"
-                    }
-                elif not _overlap(pc[i], pc[i+1]):
-                    targets[name][pc[i]['pc']] = {
-                        'count':0,
-                        'source': source[pc[i]['contract']][pc[i]['start']:pc[i]['stop']],
-                        'msg': "final return not hit"
-                    }
-            elif pc[i]['op'] == "JUMPDEST" and pc[i-1]['op'] in ("JUMP", "RETURN", "REVERT"):
-                if pc[i-1]['op']=="REVERT" and _same(pc[i], pc[i-1]):
-                    targets[name][pc[i]['pc']] = {
-                        'count':0,
-                        'source': source[pc[i]['contract']][pc[i]['start']:pc[i]['stop']],
-                        'msg': "did not make it past revert"
-                    }
-                elif not _overlap(pc[i], pc[i-1]):
-                    targets[name][pc[i]['pc']] = {
-                        'count':0,
-                        'source': source[pc[i]['contract']][pc[i]['start']:pc[i]['stop']],
-                        'msg': "function was not called"
-                    }
-            elif pc[i]['op'] == "JUMPI" and pc[i+1]['op']!="INVALID":
-                
-                try:
-                    s = next(x for x in pc[i-2::-1] if x['op']!="JUMPDEST" and _contains(x, pc[i]))
-                except StopIteration:
-                    continue
-                jumps[name][pc[i]['pc']] = {
-                    True: 0,
-                    False: 0,
-                    'req': s['pc'], # this pc must also execute for the jump to be valid
-                    'source': source[s['contract']][s['start']:s['stop']],
-                }
-
+    fn_map, line_map = get_coverage_map(compiled)
 
     for filename in test_files:
         history, tb = run_test(filename)
@@ -108,37 +53,45 @@ def main():
         for tx in history:
             if not tx.receiver:
                 continue
-            ops = []
             for i in range(len(tx.trace)):
                 t = tx.trace[i]
                 pc = t['pc']
-                ops.append(pc)
                 name = t['contractName']
                 if not name:
                     continue
-                if pc in targets[name]:
-                    targets[name][pc]['count'] += 1
-                if pc in jumps[name]:
-                    if jumps[name][pc]['req'] not in ops:
+                try:
+                    fn = next(i for i in fn_map[name] if pc in i['pc'])
+                    fn['tx'].add(tx)
+                    if t['op']!="JUMPI":
+                        ln = next(i for i in line_map[name] if pc in i['pc'])
+                        ln['tx'].add(tx)
                         continue
-                    key = False if tx.trace[i+1]['pc'] == pc+1 else True
-                    jumps[name][pc][key] += 1
+                    ln = next(i for i in line_map[name] if pc==i['jump'])
+                    if tx not in ln['tx']:
+                        continue
+                    key = 'false' if tx.trace[i+1]['pc'] == pc+1 else 'true'
+                    ln[key].add(tx)
+                except StopIteration:
+                    continue
 
-    print([k for k,v in targets['Token'].items() if not v['count']])
-    print([(k,v[True],v[False]) for k,v in jumps['Token'].items()])
+    for ln in [x for v in line_map.values() for x in v]:
+        if ln['jump']:
+            ln['true'] = len(ln['true'])
+            ln['false'] = len(ln['false'])
+        ln['tx'] = len(ln['tx'])
+        del ln['pc']
 
-# pcMap comparisons
-
-def _same(a, b):
-    return a['start']==b['start'] and a['stop']==b['stop']
-
-# a is fully contained by b
-def _contains(a, b):
-    if _same(a,b): return False
-    return a['start']>=b['start'] and a['stop']<=b['stop']
-
-# a and b overlap in any way
-def _overlap(a, b):
-    if a['start']<b['start']:
-        return a['stop']>b['start']
-    return b['stop']>a['start']
+    for contract in fn_map:
+        for fn in fn_map[contract].copy():
+            print(fn['name'])
+            fn['tx'] = len(fn['tx'])
+            del fn['pc']
+            line_fn = [i for i in line_map[contract] if i['name']==fn['name']]
+            if not fn['tx'] or not [i for i in line_fn if i['tx']]:
+                for ln in line_fn:
+                    line_map[contract].remove(ln)
+            elif line_fn:
+                fn_map[contract].remove(fn)
+        fn_map[contract].extend(line_map[contract])
+    
+    json.dump(fn_map, open('coverage.json', 'w'), sort_keys=True, indent=4)
