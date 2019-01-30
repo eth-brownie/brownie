@@ -204,9 +204,9 @@ def generate_pcMap(compiled):
     '''
     Generates an expanded sourceMap useful for debugging.
     [{
-        'contract': path the contract source code
-        'jump': the jump instruction as supplied in the sourceMap (-,i,o)
-        'op': opcode
+        'contract': relative path of the contract source code
+        'jump': jump instruction as supplied in the sourceMap (-,i,o)
+        'op': opcode string
         'pc': program counter as given by debug_traceTransaction
         'start': source code start offset
         'stop': source code stop offset

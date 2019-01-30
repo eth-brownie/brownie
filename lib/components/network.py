@@ -57,6 +57,7 @@ class Network:
             'accounts': accounts,
             'alert': alert,
             'check': check,
+            'config': CONFIG,
             'gas': gas,
             'history': tx.tx_history,
             'logging': logging,
