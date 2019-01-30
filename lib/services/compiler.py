@@ -208,8 +208,8 @@ def generate_pcMap(compiled):
         'jump': the jump instruction as supplied in the sourceMap (-,i,o)
         'op': opcode
         'pc': program counter as given by debug_traceTransaction
-        'start': sourcecode start offset
-        'stop': source stop offset
+        'start': source code start offset
+        'stop': source code stop offset
         'value': value of the instruction, if any
     }, ... ]
     '''

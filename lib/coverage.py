@@ -60,33 +60,37 @@ def main():
                 if not name:
                     continue
                 try:
+                    # find the function map item and record the tx
                     fn = next(i for i in fn_map[name] if pc in i['pc'])
                     fn['tx'].add(tx)
                     if t['op']!="JUMPI":
+                        # if not a JUMPI, find the line map item and record
                         ln = next(i for i in line_map[name] if pc in i['pc'])
                         ln['tx'].add(tx)
                         continue
+                    # if a JUMPI, we need to have hit the jump pc AND a related opcode
                     ln = next(i for i in line_map[name] if pc==i['jump'])
                     if tx not in ln['tx']:
                         continue
+                    # if the next opcode is not pc+1, the JUMPI was executed truthy
                     key = 'false' if tx.trace[i+1]['pc'] == pc+1 else 'true'
                     ln[key].add(tx)
+                # pc didn't exist in map
                 except StopIteration:
                     continue
 
     for ln in [x for v in line_map.values() for x in v]:
         if ln['jump']:
-            ln['true'] = len(ln['true'])
-            ln['false'] = len(ln['false'])
-        ln['tx'] = len(ln['tx'])
+            ln['jump'] = [len(ln.pop('true')), len(ln.pop('false'))]
+        ln['count'] = len(ln.pop('tx'))
         del ln['pc']
 
     for contract in fn_map:
         for fn in fn_map[contract].copy():
-            fn['tx'] = len(fn['tx'])
+            fn['count'] = len(fn.pop('tx'))
             del fn['pc']
-            line_fn = [i for i in line_map[contract] if i['name']==fn['name']]
-            if not fn['tx'] or not [i for i in line_fn if i['tx']]:
+            line_fn = [i for i in line_map[contract] if i['method']==fn['method']]
+            if not fn['count'] or not [i for i in line_fn if i['count']]:
                 for ln in line_fn:
                     line_map[contract].remove(ln)
             elif line_fn:
@@ -97,10 +101,8 @@ def main():
     print("Coverage analysis complete")
     for contract in fn_map:
         print(contract)
-        for fn in set(i['name'] for i in fn_map[contract] if i['name']):
-            x = [i for i in fn_map[contract] if i['name']==fn]
+        for fn in set(i['method'] for i in fn_map[contract] if i['method']):
+            x = [i for i in fn_map[contract] if i['method']==fn]
 
             # verbosity!
-            # code cleanup!
-            # commenting, because this stuff is confusing af
             # docs
