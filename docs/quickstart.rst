@@ -20,7 +20,7 @@ This will create the following project structure within the folder:
 * ``build/``: Directory for compiled contracts and network data
 * ``contracts/``: Directory for solidity contracts
 * ``deployments/``: Directory for deployment scripts
-* ``test/``: Directory for test scripts
+* ``tests/``: Directory for test scripts
 * ``brownie-config.json``: Configuration file for the project
 
 You can also initialize already existing projects. For the purposes of this document, we will use the ``token`` project, which is a very basic ERC-20 implementation:
