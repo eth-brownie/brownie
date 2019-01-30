@@ -9,8 +9,13 @@ import json
 from lib.test import run_test
 from lib.services import color
 from lib.services.compiler import compile_contracts
-
 from lib.components.bytecode import get_coverage_map
+
+COVERAGE_COLORS = [
+    (0.5, "bright red"),
+    (0.85, "bright yellow"),
+    (1, "bright green")
+]
 
 __doc__ = """Usage: brownie coverage [<filename>] [options]
 
@@ -23,6 +28,7 @@ Options:
 
 Coverage will modify the contracts and run your unit tests to get estimate
 of how much coverage you have.  so simple..."""
+
 
 def main():
     args = docopt(__doc__)
@@ -98,11 +104,29 @@ def main():
         fn_map[contract].extend(line_map[contract])
 
     json.dump(fn_map, open('coverage.json', 'w'), sort_keys=True, indent=4)
-    print("Coverage analysis complete")
+    print("\nCoverage analysis complete!")
     for contract in fn_map:
-        print(contract)
-        for fn in set(i['method'] for i in fn_map[contract] if i['method']):
-            x = [i for i in fn_map[contract] if i['method']==fn]
-
-            # verbosity!
-            # docs
+        fn_list = sorted(set(i['method'] for i in fn_map[contract] if i['method']))
+        if not fn_list:
+            continue
+        print("\n  contract: {0[contract]}{1}{0}".format(color, contract))
+        for fn in fn_list:
+            map_ = [i for i in fn_map[contract] if i['method']==fn]
+            count = 0
+            for i in map_:
+                if not i['count']:
+                    continue
+                if not i['jump']:
+                    count+=1
+                    continue
+                if i['jump'][0]:
+                    count+=1
+                if i['jump'][1]:
+                    count+=1
+            total = sum([1 if not i['jump'] else 2 for i in map_])
+            pct = count / total
+            c = next(i[1] for i in COVERAGE_COLORS if pct<=i[0])
+            print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
+                color, fn, color(c), pct
+            ))
+    print("\nDetailed results saved to coverage.json")

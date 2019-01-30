@@ -71,7 +71,7 @@ def _isolate_functions(compiled):
         if s[:8]=="function":
             fn = s[9:s.index('(')]
         elif " public " in s:
-            fn = s[s.index(" public ")+8:].split(' =')[0]
+            fn = s[s.index(" public ")+8:].split(' =')[0].strip()
         else:
             continue
         if fn not in fn_map:
