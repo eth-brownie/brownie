@@ -150,6 +150,9 @@ class TransactionReceipt:
             color(c[self.status]), self.txid, color
         )
 
+    def __hash__(self):
+        return hash(self.txid)
+
     def __eq__(self, other):
         return self.return_value == other
     

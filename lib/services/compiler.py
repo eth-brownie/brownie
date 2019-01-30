@@ -4,13 +4,14 @@ from hashlib import sha1
 import json
 import os
 import re
-import solc
+import solcx
 import sys
 import time
 
 from lib.services import config
 CONFIG = config.CONFIG
-CONFIG['solc']['version'] = solc.get_solc_version_string().strip('\n')
+solcx.set_solc_version(CONFIG['solc']['version'])
+CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
 
 _changed = {}
 _contracts = {}
@@ -68,6 +69,10 @@ def add_contract(name, address, txid, owner):
 
 
 def compile_contracts(folder = "contracts"):
+    '''
+    Compiles the project with solc and saves the results
+    in the build/contracts folder.
+    '''
     if _contracts:
         return _contracts
     clear_persistence(None)
@@ -78,7 +83,7 @@ def compile_contracts(folder = "contracts"):
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")
     msg = False
     compiler_info = CONFIG['solc'].copy()
-    compiler_info['version'] = solc.get_solc_version_string().strip('\n')
+    compiler_info['version'] = solcx.get_solc_version_string().strip('\n')
 
     inheritance_map = {}
     for filename in contract_files:
@@ -124,8 +129,13 @@ def compile_contracts(folder = "contracts"):
                 'sources': {filename: {'content': open(filename).read()}},
                 'settings': {
                     'outputSelection': {'*': {
-                        '*': ["abi", "evm.assembly", "evm.bytecode", "evm.deployedBytecode"],
-                        '': ["ast"]}},#, "legacyAST"]}},
+                        '*': [
+                            "abi",
+                            "evm.assembly",
+                            "evm.bytecode",
+                            "evm.deployedBytecode"
+                        ],
+                        '': ["ast"]}},
                     "optimizer": {
                         "enabled": CONFIG['solc']['optimize'],
                         "runs": CONFIG['solc']['runs']}
@@ -136,13 +146,13 @@ def compile_contracts(folder = "contracts"):
             continue
         print(" - {}...".format(filename.split('/')[-1]))
         try:
-            compiled = solc.compile_standard(
+            compiled = solcx.compile_standard(
                 input_json,
                 optimize=CONFIG['solc']['optimize'],
                 optimize_runs=CONFIG['solc']['runs'],
                 allow_paths="."
             )
-        except solc.exceptions.SolcError as e:
+        except solcx.exceptions.SolcError as e:
             err = json.loads(e.stdout_data)
             print("\nUnable to compile {}:\n".format(filename))
             for i in err['errors']:
@@ -191,6 +201,18 @@ def compile_contracts(folder = "contracts"):
     return _contracts
 
 def generate_pcMap(compiled):
+    '''
+    Generates an expanded sourceMap useful for debugging.
+    [{
+        'contract': relative path of the contract source code
+        'jump': jump instruction as supplied in the sourceMap (-,i,o)
+        'op': opcode string
+        'pc': program counter as given by debug_traceTransaction
+        'start': source code start offset
+        'stop': source code stop offset
+        'value': value of the instruction, if any
+    }, ... ]
+    '''
     id_map = dict((v['id'],k) for k,v in compiled['sources'].items())
     for filename, name in [(k,x) for k,v in compiled['contracts'].items() for x in v]:
         bytecode = compiled['contracts'][filename][name]['evm']['deployedBytecode']

@@ -28,7 +28,8 @@
     },
     "solc":{
         "optimize": true,
-        "runs": 200
+        "runs": 200,
+        "version": "0.4.25"
     },
     "logging": {
         "test": {

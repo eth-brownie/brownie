@@ -39,6 +39,7 @@ The following settings are available:
 
     * ``optimize``: Set to true if you wish to use contract optimization.
     * ``runs``: The number of times the optimizer should run.
+    * ``version``: The version of solc to use. Should be written as ``v0.x.x``
 
 .. py:attribute:: logging
 
