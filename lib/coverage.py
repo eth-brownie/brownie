@@ -129,4 +129,4 @@ def main():
             print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
                 color, fn, color(c), pct
             ))
-    print("\nDetailed results saved to coverage.json")
+    print("\nDetailed results saved to builld/coverage.json")
