@@ -83,7 +83,6 @@ def main():
 
     for contract in fn_map:
         for fn in fn_map[contract].copy():
-            print(fn['name'])
             fn['tx'] = len(fn['tx'])
             del fn['pc']
             line_fn = [i for i in line_map[contract] if i['name']==fn['name']]
@@ -93,5 +92,15 @@ def main():
             elif line_fn:
                 fn_map[contract].remove(fn)
         fn_map[contract].extend(line_map[contract])
-    
+
     json.dump(fn_map, open('coverage.json', 'w'), sort_keys=True, indent=4)
+    print("Coverage analysis complete")
+    for contract in fn_map:
+        print(contract)
+        for fn in set(i['name'] for i in fn_map[contract] if i['name']):
+            x = [i for i in fn_map[contract] if i['name']==fn]
+
+            # verbosity!
+            # code cleanup!
+            # commenting, because this stuff is confusing af
+            # docs

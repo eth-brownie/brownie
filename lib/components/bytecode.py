@@ -89,11 +89,20 @@ def isolate_lines(compiled):
         while True:
             if len(ln_map)<=i+1:
                 break
-            if not (ln_map[i]['jump'] or ln_map[i+1]['jump']):
-                if ln_map[i]['stop'] >= ln_map[i+1]['start']:
-                    ln_map[i]['pc'] |= ln_map[i+1]['pc']
-                    del ln_map[i+1]
-                    continue
+            if ln_map[i]['jump']:
+                i+=1
+                continue
+            if ln_map[i+1]['jump']:
+                if ln_map[i]['stop']>ln_map[i+1]['start']:
+                    del ln_map[i]
+                else:
+                    i+=1
+                continue
+            if ln_map[i]['stop'] >= ln_map[i+1]['start']:
+                ln_map[i]['pc'] |= ln_map[i+1]['pc']
+                ln_map[i]['stop'] = max(ln_map[i]['stop'], ln_map[i+1]['stop'])
+                del ln_map[i+1]
+                continue
             i+=1
     return [x for v in line_map.values() for x in v]
 
