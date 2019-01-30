@@ -19,18 +19,21 @@ from lib.services import config
 CONFIG = config.CONFIG
 
 
+class _ImportableBrownie:
+    pass
+
 class Network:
 
     _key = None
     _init = True
     _rpc = None
 
-    def __init__(self, module):
+    def __init__(self):
         self._key = None
         self._init = True
         self._network_dict = {'rpc': None}
-        self._module = module
-        self.setup()
+        sys.modules['brownie'] = _ImportableBrownie()
+        #self.setup()
 
     
     def setup(self):
@@ -39,8 +42,6 @@ class Network:
             self._init = False
         else:
             verbose = False
-        if self._network_dict['rpc']:
-            self._network_dict['rpc']._kill()
         if verbose:
             print("Using network '{}'".format(CONFIG['active_network']['name']))
         if 'test-rpc' in CONFIG['active_network']:
@@ -73,7 +74,9 @@ class Network:
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
             self._network_dict[name] = contract.ContractDeployer(build, self._network_dict)
-        self._module.__dict__.update(self._network_dict)
+        sys.modules['brownie'].__dict__ = self._network_dict
+        for module in [v for k,v in sys.modules.items() if k[:7]=='scripts']:
+            importlib.reload(module)
         if not CONFIG['active_network']['persist']:
             return
         while True:
@@ -116,6 +119,12 @@ class Network:
                 print("\nPersistence has been disabled.")
                 return
 
+    def get_namespace(self, module):
+        module.__dict__.update(self._network_dict)
+
+    def __getattr__(self, attr):
+        return self._network_dict[attr]
+    
     def save(self):
         try:
             if not CONFIG['active_network']['persist']:
@@ -136,12 +145,11 @@ class Network:
                 type(e).__name__, e))
 
     def run(self, name):
-        if not os.path.exists("deployments/{}.py".format(name)):
-            print("ERROR: Cannot find deployments/{}.py".format(name))
-            return
-        module = importlib.import_module("deployments."+name)
-        module.__dict__.update(self._network_dict)
-        module.deploy()
+        #if not os.path.exists("scripts/{}.py".format(name)):
+        #    print("ERROR: Cannot find scripts/{}.py".format(name))
+        #    return
+        module = importlib.import_module("scripts."+name)
+        module.main()
 
     def reset(self, network=None):
         alert.stop_all()
@@ -152,6 +160,8 @@ class Network:
         contract.deployed_contracts.clear()
         if CONFIG['active_network']['persist']:
             compiler.clear_persistence(CONFIG['active_network']['name'])
+        if self._network_dict['rpc']:
+            self._network_dict['rpc']._kill()
         self.setup()
         return "Brownie environment is ready."
 

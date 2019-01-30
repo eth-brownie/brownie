@@ -29,73 +29,60 @@ between each new file. Test scripts can optionally specify which deployment
 script to run by setting a string 'DEPLOYMENT'."""
 
 
-def _format_tb(test, desc, exc, filename):
-    sys.stdout.write("\r {0[red]}{1}{0[dull]} {2} ({0[red]}{3}{0[dull]}){0}\n".format(
-        color, 
-        '\u2717' if exc[0] in (
-            AssertionError,
-            tx.VirtualMachineError
-        ) else '\u203C',
-        desc,
-        exc[0].__name__
-    ))
+
+def _run_test(module, fn_name, count, total):
+    fn = getattr(module, fn_name)
+    desc = fn.__doc__ or fn_name
+    sys.stdout.write("   {} ({}/{})...  ".format(desc, count, total))
     sys.stdout.flush()
-    return (test, color.format_tb(exc, filename))
+    try:
+        stime = time.time()
+        fn()
+        sys.stdout.write("\r {0[bright green]}\u2713{0} {1} ({2:.4f}s)\n".format(
+            color, desc, time.time()-stime
+        ))
+        sys.stdout.flush()
+        return []
+    except Exception as e:
+        sys.stdout.write("\r {0[red]}{1}{0[dull]} {2} ({0[red]}{3}{0[dull]}){0}\n".format(
+            color, 
+            '\u2717' if type(e) in (
+                AssertionError,
+                tx.VirtualMachineError
+            ) else '\u203C',
+            desc,
+            type(e).__name__
+        ))
+        sys.stdout.flush()
+        filename = module.__file__.lstrip('./')
+        fn_name = filename[:-2]+fn_name
+        return [(fn_name, color.format_tb(sys.exc_info(), filename))]
 
 
-def run_test(filename):
+def run_test(filename, network):
+    network.reset()
     module = importlib.import_module("tests."+filename)
     test_names = open(
         "tests/{}.py".format(filename), 'r'
     ).read().split("\ndef ")[1:]
     test_names = [i.split("(")[0] for i in test_names if i[0]!="_"]
+    traceback_info = []
     if not test_names:
         print("\n{0[bright red]}WARNING{0}: Cannot find test functions in {0[bright yellow]}{1}.py{0}".format(color, name))
-        return [], False
-    network = Network(module)
+        return [], []
     print("\nRunning {0[bright yellow]}{1}.py{0} - {2} test{3}".format(
             color, filename, len(test_names),"s" if len(test_names)!=1 else ""
     ))
-    if hasattr(module, 'DEPLOYMENT'):
-        sys.stdout.write("   Deployment '{}'...".format(module.DEPLOYMENT))
-        sys.stdout.flush()
-        try:
-            stime = time.time()
-            module.run(module.DEPLOYMENT)
-            sys.stdout.write(
-                "\r {0[bright green]}\u2713{0} Deployment '{1}' ({2:.4f}s)\n".format(
-                    color, module.DEPLOYMENT, time.time()-stime
-                )
-            )
-            sys.stdout.flush()
-        except Exception as e:
-            return tx.tx_history.copy(), _format_tb(
-                "{}.deploy".format(module.DEPLOYMENT),
-                "Deployment '{}'".format(module.DEPLOYMENT),
-                sys.exc_info(),
-                "deployments/"+module.DEPLOYMENT
-            )
+    if 'setup' in test_names:
+        test_names.remove('setup')
+        traceback_info += _run_test(module, 'setup', 0, len(test_names))
+        if traceback_info:
+            return tx.tx_history.copy(), traceback_info
+    network.rpc.snapshot()
     for c,t in enumerate(test_names, start=1):
-        fn = getattr(module,t)
-        sys.stdout.write("   {} ({}/{})...  ".format(
-            fn.__doc__ or t,c,len(test_names)
-        ))
-        sys.stdout.flush()
-        try:
-            stime = time.time()
-            fn()
-            sys.stdout.write("\r {0[bright green]}\u2713{0} {1} ({2:.4f}s)\n".format(
-                color, fn.__doc__ or t, time.time()-stime
-            ))
-            sys.stdout.flush()
-        except Exception as e:
-            return tx.tx_history.copy(), _format_tb(
-                "{}.{}".format(filename,t),
-                fn.__doc__ or t,
-                sys.exc_info(),
-                "tests/"+filename
-            )
-    return tx.tx_history.copy(), False
+        network.rpc.revert()
+        traceback_info += _run_test(module,t,c,len(test_names))
+    return tx.tx_history.copy(), traceback_info
 
 def main():
     args = docopt(__doc__)
@@ -109,11 +96,11 @@ def main():
         test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
         test_files.remove('__init__')
 
+    network = Network()
     for filename in test_files:
-        history, tb = run_test(filename)
+        history, tb = run_test(filename, network)
         if tb:
-            traceback_info.append(tb)
-
+            traceback_info += tb
     if not traceback_info:
         print("\n{0[bright green]}SUCCESS{0}: All tests passed.".format(color))
         if '--gas' in sys.argv:

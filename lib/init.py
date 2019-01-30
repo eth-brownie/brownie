@@ -9,10 +9,10 @@ from lib.services import config
 CONFIG = config.CONFIG
 
 
-FOLDERS = ["contracts", "deployments", "tests"]
+FOLDERS = ["contracts", "scripts", "tests"]
 BUILD_FOLDERS = ["build", "build/contracts", "build/networks"]
 FILES = [
-    ("deployments/__init__.py", ""),
+    ("scripts/__init__.py", ""),
     ("tests/__init__.py", ""),
     (
         "brownie-config.json",
