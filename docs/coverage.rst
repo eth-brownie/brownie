@@ -12,7 +12,7 @@ To check your unit test coverage, type:
 
     $ brownie coverage
 
-This will run all the test scripts in the ``test/`` folder and give an estimate of test coverage:
+This will run all the test scripts in the ``tests/`` folder and give an estimate of test coverage:
 
 ::
 

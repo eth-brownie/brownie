@@ -14,7 +14,7 @@ This will create the following project structure within the folder:
 * ``build/``: Directory for compiled conntracts and network data
 * ``contracts/``: Directory for solidity contracts
 * ``deployments/``: Directory for deployment scripts
-* ``test/``: Directory for test scripts
+* ``tests/``: Directory for test scripts
 * ``brownie-config.json``: Configuration file for the project
 
 Once initiated, you can run brownie commands from any subfolder within the project.

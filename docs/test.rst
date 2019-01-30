@@ -2,7 +2,7 @@
 Testing A Project
 =================
 
-Test scripts are stored in the ``test/`` folder. To run every test at once, type:
+Test scripts are stored in the ``tests/`` folder. To run every test at once, type:
 
 ::
 
