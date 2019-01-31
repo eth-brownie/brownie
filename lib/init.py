@@ -9,10 +9,10 @@ from lib.services import config
 CONFIG = config.CONFIG
 
 
-FOLDERS = ["contracts", "deployments", "tests"]
+FOLDERS = ["contracts", "scripts", "tests"]
 BUILD_FOLDERS = ["build", "build/contracts", "build/networks"]
 FILES = [
-    ("deployments/__init__.py", ""),
+    ("scripts/__init__.py", ""),
     ("tests/__init__.py", ""),
     (
         "brownie-config.json",
@@ -33,7 +33,7 @@ structure for the brownie environment:
 
 build/                Compiled contracts and network data
 contracts/            Solidity contracts
-deployments/          Python scripts relating to contract deployment
+scripts/              Python scripts that are not for testing
 tests/                Python scripts for unit testing
 brownie-config.json   Project configuration file
 

@@ -85,9 +85,12 @@ class Color:
     def format_tb(self, exc, filename = None, start = None, stop = None):
         tb = [i.replace("./", "") for i in traceback.format_tb(exc[2])]
         if filename:
-            start = tb.index(next(i for i in tb if filename in i))
-            stop = tb.index(next(i for i in tb[::-1] if filename in i)) + 1
-        tb = tb[start:stop]
+            try:
+                start = tb.index(next(i for i in tb if filename in i))
+                stop = tb.index(next(i for i in tb[::-1] if filename in i)) + 1
+                tb = tb[start:stop]
+            except Exception:
+                pass
         for i in range(len(tb)):
             info, code = tb[i].split('\n')[:2]
             info = [x.strip(',') for x in info.strip().split(' ')]

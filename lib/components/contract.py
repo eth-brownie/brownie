@@ -3,6 +3,7 @@
 from collections import OrderedDict
 import eth_event
 import re
+import sys
 
 from lib.components.transaction import TransactionReceipt, VirtualMachineError
 from lib.components.eth import web3, wei
@@ -189,10 +190,17 @@ class _ContractMethod:
         types = [i['type'] for i in self.abi['inputs']]
         return _format_inputs(self.abi['name'], args, types)
 
-
-class ContractTx(_ContractMethod):
-
-    def __call__(self, *args):
+    def call(self, *args):
+        args, tx = _get_tx(self._owner, args)
+        try: 
+            result = self._fn(*self._format_inputs(args)).call(tx)
+        except ValueError as e:
+            raise VirtualMachineError(e)
+        if type(result) is not list:
+            return web3.toHex(result) if type(result) is bytes else result
+        return [(web3.toHex(i) if type(i) is bytes else i) for i in result]
+    
+    def transact(self, *args):
         args, tx = _get_tx(self._owner, args)
         if not tx['from']:
             raise AttributeError(
@@ -201,16 +209,18 @@ class ContractTx(_ContractMethod):
         return tx['from']._contract_tx(self._fn, self._format_inputs(args), tx, self._name)
 
 
+class ContractTx(_ContractMethod):
+
+    def __call__(self, *args):
+        return self.transact(*args)
+
+
 class ContractCall(_ContractMethod):
 
     def __call__(self, *args):
-        try: 
-            result = self._fn(*self._format_inputs(args)).call()
-        except ValueError as e:
-            raise VirtualMachineError(e)
-        if type(result) is not list:
-            return web3.toHex(result) if type(result) is bytes else result
-        return [(web3.toHex(i) if type(i) is bytes else i) for i in result]
+        if sys.argv[1] in ('test', 'coverage') and CONFIG['test']['always_transact']:
+            return self.transact(*args)
+        return self.call(*args)
 
 
 def _get_tx(owner, args):

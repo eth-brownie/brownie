@@ -41,6 +41,14 @@ The following settings are available:
     * ``runs``: The number of times the optimizer should run.
     * ``version``: The version of solc to use. Should be written as ``v0.x.x``
 
+.. py:attribute:: test
+
+    Properties that affect the configuration while running tests. See :ref:`test` for detailed information on the effects of these settings.
+
+    * ``always_transact``: If ``true``, calls to ``view`` and ``pure`` functions will still execute as transactions during tests.
+
+    * ``gas_limit``: If set to an integer, this value will over-ride the default gas limit setting when running tests.
+
 .. py:attribute:: logging
 
     Default logging levels for each brownie mode.
@@ -49,6 +57,10 @@ The following settings are available:
     * ``exc``: Exception information
 
     Valid values range from 0 (nothing) to 2 (detailed). When given as a 2 item list, it corresponds to normal/verbose. When given as a single value, adding the '--verbose' tag will do nothing.
+
+.. py:attribute:: colors
+
+    Defines the colors associated with specific data types when using Brownie. Setting a value as an empty string will use the terminal's default color.
 
 Default Settings
 ================

@@ -201,10 +201,10 @@ Transactions
     ::
 
         >>> tx = Token[0].transferFrom(accounts[2], accounts[3], "10000 ether")
-    
+
         Transaction sent: 0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753
         Token.transferFrom confirmed (reverted) - block: 4   gas used: 25425 (26.42%)
-        
+
         >>> tx.call_trace()
         Token.transferFrom 0 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
         Token.sub 86 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
@@ -217,7 +217,7 @@ Transactions
 
         >>> tx.error()
         File "contracts/SafeMath.sol", line 9:
-            
+
                 c = a + b;
                 require(c >= a);
             }
@@ -388,7 +388,7 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
 
 .. py:class:: ContractCall(*args)
 
-    Calls a contract method that does not require a transaction, and returns the result. ``args`` must match the required inputs for the method.
+    Calls a non state-changing contract method without broadcasting a transaction, and returns the result. ``args`` must match the required inputs for the method.
 
     The expected inputs are shown in the method's ``__repr__`` value.
 
@@ -407,9 +407,13 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
 
     The bytes4 signature of this method.
 
+.. py:classmethod:: ContractCall.transact(*args)
+
+    Sends a transaction to the method and returns a ``TransactionReceipt``.
+
 .. py:class:: ContractTx(*args)
 
-    A contract method that requires a transaction in order to call.
+    Sends a transaction to a potentially state-changing contract method. Returns a ``TransactionReceipt``.
 
     You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
@@ -430,6 +434,10 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
 .. py:attribute:: ContractTx.signature
 
     The bytes4 signature of this method.
+
+.. py:classmethod:: ContractTx.call(*args)
+
+    Calls the contract method without broadcasting a transaction, and returns the result.
 
 .. _api_check:
 

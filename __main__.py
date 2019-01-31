@@ -15,15 +15,16 @@ __version__ = "0.9.0b"  # did you change this in docs/conf.py as well?
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
 Commands:
-  init                  Initialize a new brownie project
-  console               Load the console
-  deploy                Run a script in the /deployments folder
-  test                  Run test scripts in the /tests folder
+  init               Initialize a new brownie project
+  console            Load the console
+  run                Run a script in the /scripts folder
+  test               Run test scripts in the /tests folder
+  coverage           Evaluate test coverage
 
 Options:
-  -h --help             Display this message
-  --network <name>      Use a specific network (default {})
-  --verbose             Enable verbose reporting
+  -h --help          Display this message
+  --network <name>   Use a specific network (default {})
+  --verbose          Enable verbose reporting
 
 Type 'brownie <command> --help' for specific options and more information about
 each command.""".format(CONFIG['network_defaults']['name'])

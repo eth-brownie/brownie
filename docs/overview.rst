@@ -13,4 +13,4 @@ Brownie has three main uses:
 
 * **Deployment**: Automate the deployment of many contracts onto the blockchain, and any transactions needed to initialize or integrate the contracts.
 * **Testing**: Write unit tests in python and evaluate test coverage based on stack trace analysis. We make *no promises*.
-* **Interaction**: Use the Brownie console to interact with your contracts on the main-net, or for quick testing in a local environment.
+* **Interaction**: Write scripts or use the console to interact with your contracts on the main-net, or for quick testing in a local environment.

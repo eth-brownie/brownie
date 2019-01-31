@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-import sys
-
 from lib.components.eth import wei
 from lib.components.transaction import VirtualMachineError
 
