@@ -61,6 +61,8 @@ def _run_test(module, fn_name, count, total):
 
 def run_test(filename, network):
     network.reset()
+    if type(CONFIG['test']['gas_limit']) is int:
+        network.gas(CONFIG['test']['gas_limit'])
     module = importlib.import_module("tests."+filename)
     test_names = open(
         "tests/{}.py".format(filename), 'r'

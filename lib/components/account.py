@@ -76,7 +76,7 @@ class _AccountBase(str):
         })
     
     def _gas_limit(self, to, amount, data=""):
-        if CONFIG['active_network']['gas_limit']:
+        if type(CONFIG['active_network']['gas_limit']) is int:
             return CONFIG['active_network']['gas_limit']
         return self.estimate_gas(to, amount, data)
 
@@ -102,9 +102,9 @@ class Account(_AccountBase):
 
     def _contract_tx(self, fn, args, tx, name, callback=None):
         tx['from'] = self.address
-        if CONFIG['active_network']['gas_price']:
+        if type(CONFIG['active_network']['gas_price']) is int:
             tx['gasPrice'] = CONFIG['active_network']['gas_price']
-        if CONFIG['active_network']['gas_limit']:
+        if type(CONFIG['active_network']['gas_limit']) is int:
             tx['gas'] = CONFIG['active_network']['gas_limit']
         try:
             txid = fn(*args).transact(tx)

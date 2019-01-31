@@ -156,6 +156,12 @@ class TransactionReceipt:
     def __eq__(self, other):
         return self.return_value == other
     
+    def __lt__(self, other):
+        return self.return_value < other
+
+    def __le__(self, other):
+        return self.return_value <= other
+    
     def __int__(self):
         return int(self.return_value)
 
