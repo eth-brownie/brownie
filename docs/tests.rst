@@ -1,6 +1,9 @@
-=================
-Testing A Project
-=================
+
+.. _test:
+
+====================
+Testing Your Project
+====================
 
 Test scripts are stored in the ``tests/`` folder. To run every test at once, type:
 
@@ -23,8 +26,6 @@ You can include docstrings in the functions to give more verbosity while they ru
 Tests rely heavily on functions in the Brownie ``check`` module. You can read about them in the API :ref:`api_check` documentation.
 
 The test RPC is fully reset between running each script. Tests cannot access any state changes that occured from a previous test.
-
-.. note:: If you do not set a default gas limit in the configuration file, ``web3.eth.estimateGas`` is called to estimate. Transactions that would cause the EVM to revert will raise a VirtualMachineError during this estimation and so will not be broadcasted. You will not have access to any information about the failed transaction.
 
 As with scripts, every test should begin with ``from brownie import *``, in order to give access to the :ref:`api`. You can also import and execute scripts as a part of your setup process.
 
@@ -60,3 +61,35 @@ Below you can see an example of the output from Brownie when the test script exe
     AssertionError: Accounts 2 balance is wrong: 5000000000000000000 != 1000000000000000000
 
 For available classes and methods when writing a test script, see the :ref:`api` documentation.
+
+Settings and Considerations
+===========================
+
+The following test configuration settings are available in ``brownie-config.json``.  These settings will affect the behaviour of your tests.
+
+.. code-block:: javascript
+
+    {
+        "test": {
+            "always_transact": true,
+            "gas_limit": 65000000
+        }
+    }
+
+.. py:attribute:: always_transact
+
+    If set to ``true``:
+
+        * Methods with a state mutability of ``view`` or ``pure`` are still called as a transaction
+        * Calls will consume gas, increase the block height and the nonce of the caller.
+        * You may supply a transaction dictionary as the last argument as you would with any other transaction.
+        * You will be returned a ``TransactionReceipt`` instead of the function response. Equality and comparison operators still work as normal.
+
+    If set to ``false``:
+
+        * Methods will be called with the normal behaviour.
+        * Test coverage will report 0% for all ``view`` and ``pure`` methods.
+
+.. py:attribute:: gas_limit
+
+    If set to an integer, this value will over-ride the default gas limit setting for whatever network you are testing on. When the gas limit is set to automatic, transactions that would cause the EVM to revert will raise a ``VirtualMachineError`` during this estimation and so will not be broadcasted. You will not have access to any information about the failed transaction.
