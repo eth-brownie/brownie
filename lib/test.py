@@ -38,13 +38,13 @@ def _run_test(module, fn_name, count, total):
     try:
         stime = time.time()
         fn()
-        sys.stdout.write("\r {0[bright green]}\u2713{0} {1} ({2:.4f}s)\n".format(
+        sys.stdout.write("\r {0[success]}\u2713{0} {1} ({2:.4f}s)\n".format(
             color, desc, time.time()-stime
         ))
         sys.stdout.flush()
         return []
     except Exception as e:
-        sys.stdout.write("\r {0[red]}{1}{0[dull]} {2} ({0[red]}{3}{0[dull]}){0}\n".format(
+        sys.stdout.write("\r {0[error]}{1}{0[dull]} {2} ({0[error]}{3}{0[dull]}){0}\n".format(
             color, 
             '\u2717' if type(e) in (
                 AssertionError,
@@ -68,9 +68,9 @@ def run_test(filename, network):
     test_names = [i.split("(")[0] for i in test_names if i[0]!="_"]
     traceback_info = []
     if not test_names:
-        print("\n{0[bright red]}WARNING{0}: Cannot find test functions in {0[bright yellow]}{1}.py{0}".format(color, name))
+        print("\n{0[error]}WARNING{0}: Cannot find test functions in {0[module]}{1}.py{0}".format(color, name))
         return [], []
-    print("\nRunning {0[bright yellow]}{1}.py{0} - {2} test{3}".format(
+    print("\nRunning {0[module]}{1}.py{0} - {2} test{3}".format(
             color, filename, len(test_names),"s" if len(test_names)!=1 else ""
     ))
     if 'setup' in test_names:
@@ -90,7 +90,7 @@ def main():
     if args['<filename>']:
         name = args['<filename>'].replace(".py", "")
         if not os.path.exists("tests/{}.py".format(name)):
-            sys.exit("{0[bright red]}ERROR{0}: Cannot find {0[bright yellow]}tests/{1}.py{0}".format(color, name))
+            sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}tests/{1}.py{0}".format(color, name))
         test_files = [name]
     else:
         test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
@@ -102,14 +102,14 @@ def main():
         if tb:
             traceback_info += tb
     if not traceback_info:
-        print("\n{0[bright green]}SUCCESS{0}: All tests passed.".format(color))
+        print("\n{0[success]}SUCCESS{0}: All tests passed.".format(color))
         if '--gas' in sys.argv:
             print('\nGas Profile:')
             for i in sorted(tx.gas_profile):
                 print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, tx.gas_profile[i]))
         sys.exit()
 
-    print("\n{0[bright red]}WARNING{0}: {1} test{2} failed.{0}".format(
+    print("\n{0[error]}WARNING{0}: {1} test{2} failed.{0}".format(
         color, len(traceback_info), "s" if len(traceback_info)>1 else ""
     ))
 

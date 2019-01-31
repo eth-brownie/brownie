@@ -28,14 +28,15 @@ class Network:
     _init = True
     _rpc = None
 
-    def __init__(self):
+    def __init__(self, module = None, setup = False):
         self._key = None
         self._init = True
         self._network_dict = {'rpc': None}
         sys.modules['brownie'] = _ImportableBrownie()
-        #self.setup()
+        self._module = module
+        if module or setup:
+            self.setup()
 
-    
     def setup(self):
         if self._init or sys.argv[1] == "console":
             verbose = True
@@ -74,6 +75,8 @@ class Network:
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
             self._network_dict[name] = contract.ContractDeployer(build, self._network_dict)
+        if self._module:
+            self._module.__dict__.update(self._network_dict)
         sys.modules['brownie'].__dict__ = self._network_dict
         for module in [v for k,v in sys.modules.items() if k[:7]=='scripts']:
             importlib.reload(module)

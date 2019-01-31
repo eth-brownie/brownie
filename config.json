@@ -24,7 +24,8 @@
         "contract_method": "bright magenta",
         "string": "bright magenta",
         "dull": "dark white",
-        "error": "bright red"
+        "error": "bright red",
+        "success": "bright green"
     },
     "solc":{
         "optimize": true,

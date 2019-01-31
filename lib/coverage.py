@@ -7,9 +7,10 @@ import sys
 import json
 
 from lib.test import run_test
+from lib.components.network import Network
+from lib.components.bytecode import get_coverage_map
 from lib.services import color
 from lib.services.compiler import compile_contracts
-from lib.components.bytecode import get_coverage_map
 
 COVERAGE_COLORS = [
     (0.5, "bright red"),
@@ -37,8 +38,8 @@ def main():
         name = args['<filename>'].replace(".py", "")
         if not os.path.exists("tests/{}.py".format(name)):
             sys.exit(
-                "{0[bright red]}ERROR{0}: Cannot find".format(color) +
-                " {0[bright yellow]}tests/{1}.py{0}".format(color, name)
+                "{0[error]}ERROR{0}: Cannot find".format(color) +
+                " {0[module]}tests/{1}.py{0}".format(color, name)
             )
         test_files = [name]
     else:
@@ -48,13 +49,13 @@ def main():
     compiled = deepcopy(compile_contracts())
     fn_map, line_map = get_coverage_map(compiled)
 
+    network = Network()
     for filename in test_files:
-        history, tb = run_test(filename)
+        history, tb = run_test(filename, network)
         if tb:
             sys.exit(
                 "\n{0[error]}ERROR{0}: Cannot ".format(color) +
-                "calculate coverage while tests are failing\n\n" + 
-                "Exception info for {}:\n{}".format(tb[0], tb[1])
+                "calculate coverage while tests are failing\n"
             )
         for tx in history:
             if not tx.receiver:
@@ -129,4 +130,4 @@ def main():
             print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
                 color, fn, color(c), pct
             ))
-    print("\nDetailed results saved to builld/coverage.json")
+    print("\nDetailed results saved to {0[string]}builld/coverage.json{0}".format(color))
