@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import eth_keys
+from hexbytes import HexBytes
 import json
 import os
 
@@ -27,7 +28,7 @@ class Accounts(list):
 
     def add(self, priv_key = None):
         if not priv_key:
-            priv_key=web3.sha3(os.urandom(8192))
+            priv_key=web3.sha3(os.urandom(8192)).hex()
         w3account = web3.eth.account.privateKeyToAccount(priv_key)
         if w3account.address in self:
             return self.at(w3account.address)
@@ -121,8 +122,8 @@ class LocalAccount(_AccountBase):
 
     def __init__(self, address, account, priv_key):
         self._acct = account
-        self.private_key = priv_key.hex()
-        self.public_key = eth_keys.keys.PrivateKey(priv_key).public_key
+        self.private_key = priv_key
+        self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
 
     def transfer(self, to, amount, gas_limit=None, gas_price=None):
