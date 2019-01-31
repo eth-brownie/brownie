@@ -109,7 +109,7 @@ class TransactionReceipt:
         })
         if not tx['blockNumber'] and CONFIG['logging']['tx'] and not silent:
             print("Waiting for confirmation...")
-        receipt = web3.eth.waitForTransactionReceipt(self.txid)
+        receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
         self.__dict__.update({
             'block_number': receipt['blockNumber'],
             'txindex': receipt['transactionIndex'],
@@ -186,12 +186,13 @@ class TransactionReceipt:
         self.revert_msg = None
         if self.input=="0x" and self.gas_used == 21000:
             return
-        self.trace = trace = web3.providers[0].make_request(
+        trace = web3.providers[0].make_request(
             'debug_traceTransaction',
             [self.txid,{}]
-        )['result']['structLogs']
+        )
         if 'error' in trace:
             raise ValueError(trace['error']['message'])
+        self.trace = trace = trace['result']['structLogs']
         c = contract.find_contract(self.receiver or self.contract_address)
         last = {0: {
             'address': self.receiver or self.contract_address,

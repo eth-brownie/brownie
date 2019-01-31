@@ -8,6 +8,7 @@ from threading import Lock
 
 from lib.components.network import Network
 from lib.components.contract import _ContractBase, _ContractMethod
+from lib.components.transaction import TransactionReceipt
 from lib.services import color, config
 CONFIG = config.CONFIG
 
@@ -79,15 +80,15 @@ class Console:
                 try: 
                     local_['_result'] = None
                     exec('_result = ' + cmd, self.__dict__, local_)
-                    if local_['_result'] != None:
-                        r = local_['_result']
+                    r = local_['_result']
+                    if type(r) is TransactionReceipt or r != None:
                         if type(r) is dict or (
                             type(r) is list and 
                             len(r) == len([i for i in r if type(i) is dict])
                         ):
                             color.json(r)
                         else:
-                            print(local_['_result'])
+                            print(r)
                 except SyntaxError:
                     exec(cmd, self.__dict__, local_)
             except:
