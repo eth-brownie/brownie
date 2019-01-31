@@ -67,7 +67,6 @@ You can import accounts with ``accounts.add``, which takes a private key as the 
     >>> accounts.add()
     <Account object '0xc1b3a737C147E8d85f600F8082f42F0511ED5278'>
 
-
 Working with Contracts
 ======================
 
@@ -128,7 +127,20 @@ For transactions you can optionally include a dictionary of `transaction paramet
     >>> Token[0].balanceOf(accounts[1])
     10000000000000000000
 
-If the gas limit is set to calculate automatically, transactions that revert will raise a VirtualMachineError. If the gas limit is fixed they will return a TransactionReceipt marked as reverted (printed in red).
+If the gas limit is set to calculate automatically, transactions that revert will raise a ``VirtualMachineError``. If the gas limit is fixed they will return a ``TransactionReceipt`` marked as reverted (printed in red).
+
+Debugging Tools
+===============
+
+.. note:: Debugging functionality relies on the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#debug_tracetransaction>`__ RPC method. If you are using Infura this attribute is not available.
+
+When a transaction reverts and the gas limit is not set to automatic, you are still returned a ``TransactionReceipt``. From this instance you can call the following attributes and methods to help determine why it reverted:
+
+* ``TransactionReceipt.revert_msg``: The error string returned when the EVM reverted, if any.
+* ``TransactionReceipt.trace``: The call trace structLog as a list.
+* ``TransactionReceipt.events``: The events that were emitted before the transaction reverted.
+* ``TransactionReceipt.error()``: Displays the filename, line number, and line of code that caused the revert.
+* ``TransactionReceipt.call_trace()``: Displays the sequence of contracts and functions called while executing this transaction, and the structLog list index where each call or jump occured. Any functions that terminated with a ``REVERT`` opcode are highlighted in red.
 
 Alerts and Callbacks
 ====================
@@ -170,8 +182,8 @@ You can use the :ref:`api_alert` module to receive notifications or setup callba
 Unconfirmed Transactions
 ========================
 
-If you are working on a chain where blocks are not mined automatically, you can press ``CTRL-C`` while waiting for a transaction to confirm and return to the console.  You will still be returned a TransactionReceipt instance, however it will be marked as pending (printed in yellow). A notification is shown when the transaction confirms.
+If you are working on a chain where blocks are not mined automatically, you can press ``CTRL-C`` while waiting for a transaction to confirm and return to the console.  You will still be returned a ``TransactionReceipt instance``, however it will be marked as pending (printed in yellow). A notification is displayed when the transaction confirms.
 
-If you send another transaction before the previous one has confirmed, it will still broadcast with the next sequential nonce.
+If you send another transaction from the same account before the previous one has confirmed, it will still broadcast with the next sequential nonce.
 
 You can view the ``history`` list to quickly view the status of any pending transactions without having to assign them unique names.

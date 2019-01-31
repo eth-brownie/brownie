@@ -21,15 +21,15 @@ These classes and methods relate to the Ethereum blockchain:
 
 .. py:class:: Rpc
 
-    Exposes methods for interacting with ``ganache-cli`` when running a local RPC environment.
+    Exposes methods for interacting with ``ganache-cli`` when running a local RPC environment. When using the console or writing tests, an instance of this class is available as ``rpc``.
 
 .. py:classmethod:: Rpc.time()
 
-    Returns the current epoch time in the RPC.
+    Returns the current epoch time in the RPC as an integer.
 
 .. py:classmethod:: Rpc.sleep(seconds)
 
-    Advances the RPC time.
+    Advances the RPC time. You can only advance the time by whole seconds.
 
 .. py:classmethod:: Rpc.mine(blocks = 1)
 
@@ -101,7 +101,7 @@ Transactions
 
 .. py:attribute:: TransactionReceipt.events
 
-    A dictionary of decoded event logs for this transaction. This is still available if the transaction reverts.
+    A dictionary of decoded event logs for this transaction. If you are connected to an RPC client that allows for ``debug_traceTransaction``, event data is still available when the transaction reverts.
 
 .. py:attribute:: TransactionReceipt.fn_name
 
@@ -141,7 +141,7 @@ Transactions
 
 .. py:attribute:: TransactionReceipt.return_value
 
-    The value returned from the called function, if any.
+    The value returned from the called function, if any. Only available if the RPC client allows ``debug_traceTransaction``.
 
 .. py:attribute:: TransactionReceipt.sender
 
