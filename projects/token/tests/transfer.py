@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 
-DEPLOYMENT = "token"
+from brownie import *
+import scripts.token
+
+def setup():
+    scripts.token.deploy()
 
 def transfer():
     '''Transfer tokens'''

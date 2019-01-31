@@ -1,11 +1,15 @@
 #!/usr/bin/python3
 
-DEPLOYMENT = "token"
+from brownie import *
+import scripts.token
+
+def setup():
+    scripts.token.deploy()
+    global token
+    token = Token[0]
 
 def approve():
     '''Set approval'''
-    global token
-    token = Token[0]
     token.approve(accounts[1], "10 ether", {'from':accounts[0]})
     check.equal(token.allowance(accounts[0], accounts[1]), "10 ether", "Allowance is wrong")
     check.equal(token.allowance(accounts[0], accounts[2]), 0, "Allowance is wrong")
@@ -14,6 +18,7 @@ def approve():
 
 def transfer():
     '''Transfer tokens with transferFrom'''
+    token.approve(accounts[1], "6 ether", {'from':accounts[0]})
     token.transferFrom(accounts[0], accounts[2], "5 ether", {'from':accounts[1]})
     check.equal(token.balanceOf(accounts[2]), "5 ether", "Accounts 2 balance is wrong")
     check.equal(token.balanceOf(accounts[1]), 0, "Accounts 1 balance is wrong")
