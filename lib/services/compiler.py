@@ -63,7 +63,7 @@ def add_contract(name, address, txid, owner):
     _contracts[name]['networks'][str(int(time.time()))] = {
         'address': address,
         'transactionHash': txid,
-        'network': CONFIG['active_network'],
+        'network': CONFIG['active_network']['name'],
         'owner': owner}
     json.dump(_contracts[name], open(json_file, 'w'), sort_keys=True, indent=4)
 

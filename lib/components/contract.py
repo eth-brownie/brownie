@@ -131,7 +131,7 @@ class ContractDeployer(_ContractBase):
         deployed_contracts[self._name][address] = contract
         if CONFIG['active_network']['persist']:
             add_contract(self._name, address, tx.hash if tx else None, owner)
-        return deployed_contracts[self._name]
+        return deployed_contracts[self._name][address]
             
 
 class Contract(str,_ContractBase):
@@ -192,6 +192,8 @@ class _ContractMethod:
 
     def call(self, *args):
         args, tx = _get_tx(self._owner, args)
+        if not tx['from']:
+            del tx['from']
         try: 
             result = self._fn(*self._format_inputs(args)).call(tx)
         except ValueError as e:

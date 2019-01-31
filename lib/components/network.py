@@ -136,7 +136,7 @@ class Network:
             to_save = []
             for account in [i for i in self._network_dict['accounts'] if type(i) is LocalAccount]:
                 to_save.append(self._key.encrypt(account._priv_key, False))
-            persist_file = CONFIG['folders']['project']+'/build/networks/{}.json'.format(CONFIG['active_network'])
+            persist_file = CONFIG['folders']['project']+'/build/networks/{}.json'.format(CONFIG['active_network']['name'])
             data = json.load(open(persist_file))
             data['height'] = web3.eth.blockNumber
             data['accounts'] = to_save
@@ -156,7 +156,7 @@ class Network:
 
     def reset(self, network=None):
         alert.stop_all()
-        if network and CONFIG[network] != CONFIG['active_network']:
+        if network and CONFIG[network] != CONFIG['active_network']['name']:
             self.save()
             config.set_network(network)
             self._key = None
