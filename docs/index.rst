@@ -18,9 +18,9 @@ Table of Contents
     config.rst
     init.rst
     compile.rst
-    deploy.rst
-    test.rst
-    coverage.rst
     console.rst
+    scripts.rst
+    tests.rst
+    coverage.rst
     persist.rst
     api.rst

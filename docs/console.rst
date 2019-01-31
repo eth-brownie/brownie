@@ -27,11 +27,11 @@ The following methods, classes and containers are available:
 * ``logging(tx=None, exc=None)``: Adjusts the console verbosity.
 * ``rpc``: Methods for interacting with the local RPC.
 * ``reset(network=None)``: Reset the local RPC environment.
-* ``run(script)``: Runs a deployment script.
+* ``run(script)``: Executes the ``main`` function of a script in the ``scripts/`` folder.
 * ``wei(value)``: Converts strings and floats to an integer denoted in wei
 * ``web3``: A minimal implementation of the `Web3 API <https://web3py.readthedocs.io/en/stable/web3.main.html>`__
 
-You can call the builtin ``dir`` function to see available methods and attributes for any class. Callables are highlighed in blue, attributes in yellow.
+You can use the builtin ``dir`` function to see available methods and attributes for any class. Classes, methods and attributes are highlighted in different colors.
 
 Working with Accounts
 =====================

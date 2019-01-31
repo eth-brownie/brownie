@@ -71,7 +71,7 @@ def run_test(filename, network):
         print("\n{0[error]}WARNING{0}: Cannot find test functions in {0[module]}{1}.py{0}".format(color, name))
         return [], []
     print("\nRunning {0[module]}{1}.py{0} - {2} test{3}".format(
-            color, filename, len(test_names),"s" if len(test_names)!=1 else ""
+            color, filename, len(test_names)-1,"s" if len(test_names)!=2 else ""
     ))
     if 'setup' in test_names:
         test_names.remove('setup')

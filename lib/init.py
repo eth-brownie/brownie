@@ -33,7 +33,7 @@ structure for the brownie environment:
 
 build/                Compiled contracts and network data
 contracts/            Solidity contracts
-deployments/          Python scripts relating to contract deployment
+scripts/              Python scripts that are not for testing
 tests/                Python scripts for unit testing
 brownie-config.json   Project configuration file
 

@@ -19,7 +19,7 @@ This will create the following project structure within the folder:
 
 * ``build/``: Directory for compiled contracts and network data
 * ``contracts/``: Directory for solidity contracts
-* ``deployments/``: Directory for deployment scripts
+* ``scripts/``: Directory for any scripts that are not tests
 * ``tests/``: Directory for test scripts
 * ``brownie-config.json``: Configuration file for the project
 
@@ -31,28 +31,39 @@ You can also initialize already existing projects. For the purposes of this docu
 
 This will create a new folder ``token/`` and deploy the project inside it.
 
-Deploying a Project
-===================
+Interacting with your Project
+=============================
 
-The simplest way to deploy a project is to run a deployment script:
+The brownie console is useful when you want to interact directly with contracts deployed on a non-local chain, or for quick testing as you develop. It feels similar to a python interpreter. To open it:
 
 ::
 
-    $ brownie deploy
+    $ brownie console
 
-If you look at the token project, you will find an example one at ``deployments/token.py``:
+Brownie will compile your contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`.
 
-.. literalinclude:: ../projects/token/deployments/token.py
+Running Scripts
+===============
+
+You can write scripts to automate contract deployment and interaction:
+
+::
+
+    $ brownie run
+
+If you look at the token project, you will find an example one at ``scripts/token.py``:
+
+.. literalinclude:: ../projects/token/scripts/token.py
     :linenos:
     :language: python
     :lines: 3-
 
-This deploys the ``Token`` contract from ``contracts/Token.sol`` using ``web3.eth.accounts[0]``.
+Calling the ``deploy`` method deploys the ``Token`` contract from ``contracts/Token.sol`` using ``web3.eth.accounts[0]``.
 
 Testing a Project
 =================
 
-To run all of the test scripts in ``test/``:
+To run all of the test scripts in ``tests/``:
 
 ::
 
@@ -86,14 +97,3 @@ You can create as many test scripts as needed. Here is an example test script fr
     :linenos:
     :language: python
     :lines: 3-
-
-Using The Console
-=================
-
-The console feels similar to a python interpreter. It is useful when you want to interact directly with contracts deployed on a non-local chain, or for quick testing as you develop. To open it:
-
-::
-
-    $ brownie console
-
-Brownie will compile your contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`.
