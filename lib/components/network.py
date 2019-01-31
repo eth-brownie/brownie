@@ -14,11 +14,11 @@ from lib.components.account import Accounts, LocalAccount
 from lib.components import transaction as tx
 import lib.components.check as check
 from lib.services.fernet import FernetKey, InvalidToken
-from lib.services import compiler
-from lib.services import config
+from lib.services import compiler, config, color
 CONFIG = config.CONFIG
 
 
+# added to sys.modules['brownie'] to allow 'from brownie import *' in scripts
 class _ImportableBrownie:
     pass
 
@@ -44,10 +44,10 @@ class Network:
         else:
             verbose = False
         if verbose:
-            print("Using network '{}'".format(CONFIG['active_network']['name']))
+            print("Using network '{0[string]}{1}{0}'".format(color, CONFIG['active_network']['name']))
         if 'test-rpc' in CONFIG['active_network']:
             if verbose:
-                print("Running '{}'...".format(CONFIG['active_network']['test-rpc']))
+                print("Running '{0[string]}{1}{0}'...".format(color, CONFIG['active_network']['test-rpc']))
             rpc = Rpc(self)
         else:
             rpc = None
@@ -77,9 +77,12 @@ class Network:
             self._network_dict[name] = contract.ContractDeployer(build, self._network_dict)
         if self._module:
             self._module.__dict__.update(self._network_dict)
+        
+        # update _ImportableBrownie dict and reload all scripts
         sys.modules['brownie'].__dict__ = self._network_dict
         for module in [v for k,v in sys.modules.items() if k[:7]=='scripts']:
             importlib.reload(module)
+        
         if not CONFIG['active_network']['persist']:
             return
         while True:
@@ -122,12 +125,9 @@ class Network:
                 print("\nPersistence has been disabled.")
                 return
 
-    def get_namespace(self, module):
-        module.__dict__.update(self._network_dict)
-
     def __getattr__(self, attr):
         return self._network_dict[attr]
-    
+
     def save(self):
         try:
             if not CONFIG['active_network']['persist']:
@@ -144,13 +144,13 @@ class Network:
         except Exception as e:
             if CONFIG['logging']['exc']>=2:
                 print("".join(traceback.format_tb(sys.exc_info()[2])))
-            print("ERROR: Unable to save environment due to unhandled {}: {}".format(
-                type(e).__name__, e))
+            print("{0[error]}ERROR{0}: Unable to save environment due to unhandled {1}: {2}".format(
+                color, type(e).__name__, e))
 
     def run(self, name):
-        #if not os.path.exists("scripts/{}.py".format(name)):
-        #    print("ERROR: Cannot find scripts/{}.py".format(name))
-        #    return
+        if not os.path.exists("scripts/{}.py".format(name)):
+            print("{0[error]}ERROR{0}: Cannot find scripts/{1}.py".format(color, name))
+            return
         module = importlib.import_module("scripts."+name)
         module.main()
 
@@ -185,8 +185,8 @@ def gas(*args):
                 CONFIG['active_network']['gas_limit'] = int(args[0])
             except:
                 return "Invalid gas limit."
-    return "Gas limit is set to {}".format(
-        CONFIG['active_network']['gas_limit'] or "automatic"
+    return "Gas limit is set to {0[value]}{1}{0}".format(
+        color, CONFIG['active_network']['gas_limit'] or "automatic"
     )
 
     
