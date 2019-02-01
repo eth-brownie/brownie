@@ -153,6 +153,11 @@ class TransactionReceipt:
     def __hash__(self):
         return hash(self.txid)
 
+    def __bool__(self):
+        if self.status < 1:
+            return False
+        return bool(self.return_value)
+
     def __eq__(self, other):
         return self.return_value == other
     
@@ -164,6 +169,9 @@ class TransactionReceipt:
     
     def __int__(self):
         return int(self.return_value)
+
+    def __getitem__(self, item):
+        return self.return_value[item]
 
     def __getattr__(self, attr):
         if attr not in ('events','return_value', 'revert_msg', 'trace'):

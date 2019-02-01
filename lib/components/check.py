@@ -2,6 +2,8 @@
 
 from lib.components.eth import wei
 from lib.components.transaction import VirtualMachineError
+from lib.services import config
+CONFIG = config.CONFIG
 
 def true(statement, fail_msg="Expected statement to be true"):
     if not statement:

@@ -253,6 +253,8 @@ def _format_inputs(name, inputs, types):
                 inputs[i] = _format_inputs(name, inputs[i],[t]*len(inputs[i]))
                 continue
             try:
+                if type(inputs[i]) is TransactionReceipt:
+                    inputs[i] = inputs[i].return_value
                 if "int" in type_:
                     inputs[i] = wei(inputs[i])
                 elif "bytes" in type_ and type(inputs[i]) is not bytes:
