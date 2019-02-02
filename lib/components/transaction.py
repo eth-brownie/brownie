@@ -36,7 +36,7 @@ class VirtualMachineError(Exception):
     def __init__(self, exc):
         msg = eval(str(exc))['message']
         if len(msg.split('revert ', maxsplit=1))>1:
-            self.revert_msg = msg.split('revert ')[1]
+            self.revert_msg = msg.split('revert ')[-1]
         else:
             self.revert_msg = None
         super().__init__(msg)
@@ -51,7 +51,7 @@ def raise_or_return_tx(exc):
 
 class TransactionReceipt:
 
-    def __init__(self, txid, sender=None, silent=False, name=None, callback=None):
+    def __init__(self, txid, sender=None, silent=False, name='', callback=None):
         if type(txid) is not str:
             txid = txid.hex()
         if txid == "stack":
@@ -205,7 +205,7 @@ class TransactionReceipt:
         last = {0: {
             'address': self.receiver or self.contract_address,
             'contract':c._name,
-            'fn': [self.fn_name.split('.')[1]],
+            'fn': [self.fn_name.split('.')[-1]],
         }}
         pc = c._build['pcMap'][0]
         trace[0].update({
@@ -263,7 +263,7 @@ class TransactionReceipt:
             c = contract.find_contract(self.receiver or self.contract_address)
             if not c:
                 return
-            abi = [i['type'] for i in getattr(c, self.fn_name.split('.')[1]).abi['outputs']]
+            abi = [i['type'] for i in getattr(c, self.fn_name.split('.')[-1]).abi['outputs']]
             offset = int(log['stack'][-1], 16)//32
             length = int(log['stack'][-2], 16)//32
             data = HexBytes("".join(log['memory'][offset:offset+length]))
