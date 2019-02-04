@@ -42,6 +42,8 @@ if os.path.exists("brownie-config.json"):
 
 try:
     CONFIG['logging'] = CONFIG['logging'][sys.argv[1]]
+    CONFIG['logging'].setdefault('tx',0)
+    CONFIG['logging'].setdefault('exc',0)
     for k,v in [(k,v) for k,v in CONFIG['logging'].items() if type(v) is list]:
        CONFIG['logging'][k] = v[1 if '--verbose' in sys.argv else 0]
 except:

@@ -45,7 +45,7 @@ def raise_or_return_tx(exc):
     data = eval(str(exc))
     try:
         return next(i for i in data['data'].keys() if i[:2]=="0x")
-    except StopIteration:
+    except Exception:
         raise VirtualMachineError(exc)
 
 

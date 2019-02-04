@@ -40,7 +40,7 @@ def main():
         print("\n{0[success]}SUCCESS{0}: script '{0[module]}{1}{0}' completed.".format(color, name))      
     except Exception as e:
         if CONFIG['logging']['exc']>=2:
-            print("\n"+color.format_tb(sys.exc_info(), "scripts/"+name))
+            print("\n"+color.format_tb(sys.exc_info()))
         print("\n{0[error]}ERROR{0}: Script '{0[module]}{1}{0}' failed from unhandled {2}: {3}".format(
             color, name, type(e).__name__, e
         ))

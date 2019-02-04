@@ -143,7 +143,7 @@ class LocalAccount(_AccountBase):
         self.nonce += 1
         return TransactionReceipt(txid, self)
 
-    def _contract_tx(self, fn, args, tx, name):
+    def _contract_tx(self, fn, args, tx, name, callback=None):
         try:
             tx.update({
                 'from':self.address,
@@ -161,4 +161,4 @@ class LocalAccount(_AccountBase):
         except ValueError as e:
             txid = raise_or_return_tx(e)
         self.nonce += 1
-        return TransactionReceipt(txid, self, name=name)
+        return TransactionReceipt(txid, self, name=name, callback=callback)
