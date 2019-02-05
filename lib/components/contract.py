@@ -221,7 +221,8 @@ class ContractCall(_ContractMethod):
 
     def __call__(self, *args):
         if sys.argv[1] in ('test', 'coverage') and CONFIG['test']['always_transact']:
-            return self.transact(*args)
+            tx = self.transact(*args)
+            return tx.return_value
         return self.call(*args)
 
 
@@ -253,8 +254,6 @@ def _format_inputs(name, inputs, types):
                 inputs[i] = _format_inputs(name, inputs[i],[t]*len(inputs[i]))
                 continue
             try:
-                if type(inputs[i]) is TransactionReceipt:
-                    inputs[i] = inputs[i].return_value
                 if "int" in type_:
                     inputs[i] = wei(inputs[i])
                 elif "bytes" in type_ and type(inputs[i]) is not bytes:

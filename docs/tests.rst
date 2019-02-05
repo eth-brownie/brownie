@@ -83,7 +83,7 @@ The following test configuration settings are available in ``brownie-config.json
         * Methods with a state mutability of ``view`` or ``pure`` are still called as a transaction
         * Calls will consume gas, increase the block height and the nonce of the caller.
         * You may supply a transaction dictionary as the last argument as you would with any other transaction.
-        * You will be returned a ``TransactionReceipt`` instead of the function response. Equality and comparison operators still work as normal.
+        * You will still be returned the return value of the transaction, not a ``TransactionReceipt``.
 
     If set to ``false``:
 

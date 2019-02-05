@@ -8,7 +8,6 @@ from threading import Lock
 
 from lib.components.network import Network
 from lib.components.contract import _ContractBase, _ContractMethod
-from lib.components.transaction import TransactionReceipt
 from lib.services import color, config
 CONFIG = config.CONFIG
 
@@ -81,7 +80,7 @@ class Console:
                     local_['_result'] = None
                     exec('_result = ' + cmd, self.__dict__, local_)
                     r = local_['_result']
-                    if type(r) is TransactionReceipt or r != None:
+                    if r != None:
                         if type(r) is dict or (
                             type(r) is list and 
                             len(r) == len([i for i in r if type(i) is dict])
