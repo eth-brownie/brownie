@@ -167,6 +167,9 @@ class Contract(str,_ContractBase):
     def balance(self):
         return web3.eth.getBalance(self._contract.address)
 
+    def methods(self):
+        return [i for i in self.abi if i['type']=="function"]
+
 
 class _ContractMethod:
 
