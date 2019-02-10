@@ -88,8 +88,9 @@ class Rpc:
 
 
 def _watch_rpc(rpc):
-    if not rpc.wait():
-            return
+    code = rpc.wait()
+    if not code or code == -15:
+        return
     print("{0[error]}ERROR{0}: Local RPC has terminated with exit code {0[value]}{1}{0}".format(
         color, rpc.poll()
     ))
