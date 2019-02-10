@@ -2,10 +2,12 @@
 
 from subprocess import Popen, DEVNULL
 import sys
+from threading import Thread
 import time
 from web3 import Web3, HTTPProvider
 
 from lib.services import config
+from lib.services import color
 CONFIG = config.CONFIG
 
 
@@ -29,16 +31,18 @@ class web3:
 class Rpc:
 
     def __init__(self, network):
-        self._rpc = Popen(
+        rpc = Popen(
             CONFIG['active_network']['test-rpc'].split(' '),
             stdout = DEVNULL,
             stdin = DEVNULL,
             stderr = DEVNULL,
             start_new_session = True
         )
+        self._rpc = rpc
         self._time_offset = 0
         self._snapshot_id = False
         self._network = network
+        Thread(target=_watch_rpc, args=[rpc], daemon=True).start()
 
     def __del__(self):
         self._rpc.terminate()
@@ -81,6 +85,14 @@ class Rpc:
         ):
             history.pop()
         return "Block height reverted to {}".format(height)
+
+
+def _watch_rpc(rpc):
+    if not rpc.wait():
+            return
+    print("{0[error]}ERROR{0}: Local RPC has terminated with exit code {0[value]}{1}{0}".format(
+        color, rpc.poll()
+    ))
 
 
 def wei(value):
