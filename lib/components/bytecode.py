@@ -149,11 +149,12 @@ def _isolate_lines(compiled):
                 continue
             ln['stop'] = op['stop']
         ln['pc'].add(op['pc'])
-        i = 0
         
-        # sort the current coverage map and merge overlaps where possible
-        line_map[op['contract']] = _sort(line_map[op['contract']])
-        ln_map = line_map[op['contract']]
+    # sort the coverage map and merge overlaps where possible
+    for contract in line_map:
+        line_map[contract] = _sort(line_map[contract])
+        ln_map = line_map[contract]
+        i = 0
         while True:
             if len(ln_map)<=i+1:
                 break
