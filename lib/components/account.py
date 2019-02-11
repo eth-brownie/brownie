@@ -14,27 +14,39 @@ from lib.components.eth import web3, wei
 from lib.services import config
 CONFIG = config.CONFIG
 
-class Accounts(list):
+class Accounts:
 
     def __init__(self, accounts):
-        super().__init__([Account(i) for i in accounts])
+        self._accounts = [Account(i) for i in accounts]
 
     def __contains__(self, address):
         try:
             address = web3.toChecksumAddress(address)
-            return super().__contains__(address)
+            return address in self._accounts
         except ValueError:
             return False
+
+    def __str__(self):
+        return str(self._accounts)
+    
+    def __iter__(self):
+        return iter(self._accounts)
+
+    def __getitem__(self, key):
+        return self._accounts[key]
 
     def add(self, priv_key = None):
         if not priv_key:
             priv_key=web3.sha3(os.urandom(8192)).hex()
         w3account = web3.eth.account.privateKeyToAccount(priv_key)
-        if w3account.address in self:
+        if w3account.address in self._accounts:
             return self.at(w3account.address)
         account = LocalAccount(w3account.address, w3account, priv_key)
-        self.append(account)
+        self._accounts.append(account)
         return account
+
+    def remove(self, address):
+        self._accounts.remove(address)
 
     def at(self, address):
         try:
@@ -42,12 +54,12 @@ class Accounts(list):
         except ValueError:
             raise ValueError("{} is not a valid address".format(address))
         try:
-            return next(i for i in self if i == address)
+            return next(i for i in self._accounts if i == address)
         except StopIteration:
             raise ValueError("No account exists for {}".format(address))
 
     def _check_nonce(self):
-        for i in self:
+        for i in self._accounts:
             i.nonce = web3.eth.getTransactionCount(i)
 
 class _AccountBase(str):
