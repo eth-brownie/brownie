@@ -9,7 +9,7 @@ from lib.components.transaction import TransactionReceipt, VirtualMachineError
 from lib.components.eth import web3, wei
 
 from lib.services.compiler import add_contract
-from lib.services import config
+from lib.services import config, color
 CONFIG = config.CONFIG
 
 
@@ -74,14 +74,17 @@ class ContractDeployer(_ContractBase):
     def __getitem__(self, i):
         return list(deployed_contracts[self._name].values())[i]
 
+    def __delitem__(self, key):
+        del deployed_contracts[self._name][self[key].address]
+    
     def __len__(self):
         return len(deployed_contracts[self._name])
 
     def __repr__(self):
-        return "<{} ContractDeployer object>".format(self._name)
+        return str(list(deployed_contracts[self._name].values()))
 
-    def list(self):
-        return list(deployed_contracts[self._name])
+    def remove(self, item):
+        del deployed_contracts[self._name][str(item)]
 
     def deploy(self, account, *args):
         if '_' in self.bytecode:
@@ -115,7 +118,6 @@ class ContractDeployer(_ContractBase):
         if tx.status == 1:
             self.at(tx.contract_address, tx.sender, tx)
 
-    
     def at(self, address, owner = None, tx = None):
         address = web3.toChecksumAddress(address)
         if address in deployed_contracts[self._name]:
@@ -132,12 +134,9 @@ class ContractDeployer(_ContractBase):
         if CONFIG['active_network']['persist']:
             add_contract(self._name, address, tx.hash if tx else None, owner)
         return deployed_contracts[self._name][address]
-            
 
-class Contract(str,_ContractBase):
 
-    def __new__(cls, address, *args):
-        return super().__new__(cls, address)
+class Contract(_ContractBase):
 
     def __init__(self, address, build, owner, tx=None):
         super().__init__(build)
@@ -147,7 +146,9 @@ class Contract(str,_ContractBase):
         self._contract = web3.eth.contract(address = address, abi = self.abi)
         for i in [i for i in self.abi if i['type']=="function"]:
             if hasattr(self, i['name']):
-                raise AttributeError("Namespace collision: '{}.{}'".format(self._name, i['name']))
+                raise AttributeError(
+                    "Namespace collision: '{}.{}'".format(self._name, i['name'])
+                )
             fn = getattr(self._contract.functions,i['name'])
             name = "{}.{}".format(self._name, i['name'])
             if i['stateMutability'] in ('view','pure'):
@@ -156,14 +157,23 @@ class Contract(str,_ContractBase):
                 setattr(self, i['name'], ContractTx(fn, i, name, owner))
     
     def __repr__(self):
-        return "<{0._name} Contract object '{0.address}'>".format(self)
+        return "<{0._name} Contract object '{1[string]}{0.address}{1}'>".format(self, color)
 
     def __str__(self):
-        return self.__repr__()
+        return self._contract.address
 
     def __getattr__(self, name):
         return getattr(self._contract, name)
 
+    def __eq__(self, other):
+        if type(other) is str:
+            try:
+                address = web3.toChecksumAddress(other)
+                return address == self.address
+            except ValueError:
+                return False
+        return super().__eq__(other)
+    
     def balance(self):
         return web3.eth.getBalance(self._contract.address)
 
@@ -254,6 +264,8 @@ def _format_inputs(name, inputs, types):
                 inputs[i] = _format_inputs(name, inputs[i],[t]*len(inputs[i]))
                 continue
             try:
+                if "address" in type_:
+                    inputs[i] = str(inputs[i])
                 if "int" in type_:
                     inputs[i] = wei(inputs[i])
                 elif "bytes" in type_ and type(inputs[i]) is not bytes:

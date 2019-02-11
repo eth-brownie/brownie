@@ -14,6 +14,7 @@ from lib.components.eth import web3, wei
 from lib.services import config, color
 CONFIG = config.CONFIG
 
+
 class Accounts:
 
     def __init__(self, accounts):
@@ -34,6 +35,9 @@ class Accounts:
 
     def __getitem__(self, key):
         return self._accounts[key]
+
+    def __delitem__(self, key):
+        del self._accounts[key]
 
     def add(self, priv_key = None):
         if not priv_key:
@@ -60,7 +64,8 @@ class Accounts:
 
     def _check_nonce(self):
         for i in self._accounts:
-            i.nonce = web3.eth.getTransactionCount(i)
+            i.nonce = web3.eth.getTransactionCount(str(i))
+
 
 class _AccountBase:
 
@@ -73,6 +78,15 @@ class _AccountBase:
 
     def __str__(self):
         return self.address
+
+    def __eq__(self, other):
+        if type(other) is str:
+            try:
+                address = web3.toChecksumAddress(other)
+                return address == self.address
+            except ValueError:
+                return False
+        return super().__eq__(other)
 
     def balance(self):
         return web3.eth.getBalance(self.address)
@@ -87,7 +101,7 @@ class _AccountBase:
             'data':data,
             'value':wei(amount)
         })
-    
+
     def _gas_limit(self, to, amount, data=""):
         if type(CONFIG['active_network']['gas_limit']) is int:
             return CONFIG['active_network']['gas_limit']
@@ -128,9 +142,6 @@ class Account(_AccountBase):
 
 
 class LocalAccount(_AccountBase):
-
-    def __new__(cls, address, *args):
-        return super().__new__(cls, address)
 
     def __init__(self, address, account, priv_key):
         self._acct = account
