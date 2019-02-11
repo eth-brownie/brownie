@@ -11,7 +11,7 @@ from lib.components.transaction import (
     raise_or_return_tx
 )
 from lib.components.eth import web3, wei
-from lib.services import config
+from lib.services import config, color
 CONFIG = config.CONFIG
 
 class Accounts:
@@ -26,7 +26,7 @@ class Accounts:
         except ValueError:
             return False
 
-    def __str__(self):
+    def __repr__(self):
         return str(self._accounts)
     
     def __iter__(self):
@@ -62,17 +62,17 @@ class Accounts:
         for i in self._accounts:
             i.nonce = web3.eth.getTransactionCount(i)
 
-class _AccountBase(str):
+class _AccountBase:
 
     def __init__(self, addr):
         self.address = addr
         self.nonce = web3.eth.getTransactionCount(self.address)
 
     def __repr__(self):
-        return "<Account object '{}'>".format(self.address)
+        return "<Account object '{0[string]}{1}{0}'>".format(color, self.address)
 
     def __str__(self):
-        return self.__repr__()
+        return self.address
 
     def balance(self):
         return web3.eth.getBalance(self.address)
@@ -83,7 +83,7 @@ class _AccountBase(str):
     def estimate_gas(self, to, amount, data=""):
         return web3.eth.estimateGas({
             'from':self.address,
-            'to':to,
+            'to':str(to),
             'data':data,
             'value':wei(amount)
         })
@@ -103,7 +103,7 @@ class Account(_AccountBase):
         try:
             txid = web3.eth.sendTransaction({
                 'from': self.address,
-                'to': to,
+                'to': str(to),
                 'value': wei(amount),
                 'gasPrice': wei(gas_price) or self._gas_price(),
                 'gas': wei(gas_limit) or self._gas_limit(to, amount)
