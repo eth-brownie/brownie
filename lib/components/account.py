@@ -5,12 +5,9 @@ from hexbytes import HexBytes
 import json
 import os
 
-from lib.components.transaction import (
-    TransactionReceipt,
-    VirtualMachineError,
-    raise_or_return_tx
-)
+from lib.components.transaction import TransactionReceipt, raise_or_return_tx
 from lib.components.eth import web3, wei
+from lib.services.bip44 import HDPrivateKey, HDKey
 from lib.services import config, color
 CONFIG = config.CONFIG
 
@@ -39,6 +36,10 @@ class Accounts:
     def __delitem__(self, key):
         del self._accounts[key]
 
+    def _check_nonce(self):
+        for i in self._accounts:
+            i.nonce = web3.eth.getTransactionCount(str(i))
+
     def add(self, priv_key = None):
         if not priv_key:
             priv_key=web3.sha3(os.urandom(8192)).hex()
@@ -48,9 +49,6 @@ class Accounts:
         account = LocalAccount(w3account.address, w3account, priv_key)
         self._accounts.append(account)
         return account
-
-    def remove(self, address):
-        self._accounts.remove(address)
 
     def at(self, address):
         try:
@@ -62,9 +60,18 @@ class Accounts:
         except StopIteration:
             raise ValueError("No account exists for {}".format(address))
 
-    def _check_nonce(self):
-        for i in self._accounts:
-            i.nonce = web3.eth.getTransactionCount(str(i))
+    def mnemonic(self, phrase, count=10):
+        master_key = HDPrivateKey.master_key_from_mnemonic(phrase)
+        acct_priv_key = HDKey.from_path(master_key, "m/44'/60'/0'")[-1]
+        for i in range(count):
+            priv_key = HDKey.from_path(acct_priv_key, "0/{}".format(i))[-1]
+            self.add(priv_key._key.to_hex())
+
+    def remove(self, address):
+        self._accounts.remove(address)
+
+    def clear(self):
+        self._accounts.clear()
 
 
 class _AccountBase:
