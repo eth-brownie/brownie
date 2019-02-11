@@ -23,7 +23,6 @@ playsound==1.2.2
 py-solc-x==0.1.0
 pycparser==2.19
 pycryptodome==3.7.2
-Pygments==2.3.1
 requests==2.20.1
 rlp==1.0.3
 semantic-version==2.6.0

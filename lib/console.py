@@ -81,13 +81,10 @@ class Console:
                     exec('_result = ' + cmd, self.__dict__, local_)
                     r = local_['_result']
                     if r != None:
-                        if type(r) is dict or (
-                            type(r) is list and 
-                            len(r) == len([i for i in r if type(i) is dict])
-                        ):
+                        if type(r) is dict and r:
                             color.json(r)
                         else:
-                            print(r)
+                            print(repr(r))
                 except SyntaxError:
                     exec(cmd, self.__dict__, local_)
             except:

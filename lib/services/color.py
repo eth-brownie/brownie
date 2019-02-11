@@ -1,9 +1,5 @@
 #!/usr/bin/python3
 
-import json
-from pygments import highlight
-from pygments.lexers import JsonLexer, PythonLexer
-from pygments.formatters import TerminalFormatter
 import sys
 import traceback
 
@@ -52,9 +48,32 @@ class Color:
     def __getitem__(self, color):
         return self(color)
 
-    def json(self, value):
-        msg = json.dumps(value, default=str, indent=4, sort_keys=True)
-        print(highlight(msg, JsonLexer(), TerminalFormatter()))
+    def json(self, value, indent = 0, start=True):
+        if start:
+            sys.stdout.write(' '*indent+'{}{{'.format(self['dull']))
+        indent+=4
+        for c,k in enumerate(sorted(value)):
+            if c:
+                sys.stdout.write(',')
+            sys.stdout.write('\n'+' '*indent)
+            
+            if type(k) is str:
+                sys.stdout.write("'{0[key]}{1}{0[dull]}': ".format(self, k))
+            else:
+                sys.stdout.write("{0[key]}{1}{0[dull]}: ".format(self, k))
+            if type(value[k]) is dict:
+                sys.stdout.write('{')
+                self.json(value[k], indent,False)
+                continue
+            if type(value[k]) is str:
+                sys.stdout.write('"{0[string]}{1}{0[dull]}"'.format(self, value[k]))
+            else:
+                sys.stdout.write('{0[value]}{1}{0[dull]}'.format(self, value[k]))
+        indent-=4
+        sys.stdout.write('\n'+' '*indent+'}')
+        if start:
+            sys.stdout.write('\n{}'.format(self))
+        sys.stdout.flush()
 
     def print_colors(self, msg, key = None, value=None):
         if key is None:
@@ -94,6 +113,8 @@ class Color:
         for i in range(len(tb)):
             info, code = tb[i].split('\n')[:2]
             info = [x.strip(',') for x in info.strip().split(' ')]
+            if 'site-packages/' in info[1]:
+                info[1] = '"'+info[1].split('site-packages/')[1]
             tb[i] = TB_BASE.format(self, info, "\n"+code if code else "")
         tb.append("{0[error]}{1}{0}: {2}".format(self, exc[0].__name__, exc[1]))
         return "\n".join(tb)
