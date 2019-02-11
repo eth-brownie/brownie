@@ -6,7 +6,7 @@ import os
 import sys
 
 import lib.init as init
-from lib.services import config
+from lib.services import config, color
 CONFIG = config.CONFIG
 
 
@@ -54,4 +54,7 @@ if args['<command>'] != "init":
         )
     init.create_build_folders()
 
-importlib.import_module("lib."+args['<command>']).main()
+try:
+    importlib.import_module("lib."+args['<command>']).main()
+except Exception:
+    print(color.format_tb(sys.exc_info()))
