@@ -29,31 +29,51 @@ between each new file. Test scripts can optionally specify which deployment
 script to run by setting a string 'DEPLOYMENT'."""
 
 
+class ExpectedFailing(Exception): pass
+
 
 def _run_test(module, fn_name, count, total):
     fn = getattr(module, fn_name)
     desc = fn.__doc__ or fn_name
     sys.stdout.write("   {} ({}/{})...  ".format(desc, count, total))
     sys.stdout.flush()
+    if fn.__defaults__:
+        args = dict(zip(
+            fn.__code__.co_varnames[:len(fn.__defaults__)],
+            fn.__defaults__
+        ))
+        if 'skip' in args and args['skip']:
+            sys.stdout.write("\r {0[pending]}\u229d{0[dull]} {1} ({0[pending]}skipped{0[dull]}){0}\n".format(color, desc))
+            return []
+    else:
+        args = {}
     try:
         stime = time.time()
         fn()
+        if 'pending' in args and args['pending']:
+            raise ExpectedFailing("Test was expected to fail")
         sys.stdout.write("\r {0[success]}\u2713{0} {1} ({2:.4f}s)\n".format(
             color, desc, time.time()-stime
         ))
         sys.stdout.flush()
         return []
     except Exception as e:
-        sys.stdout.write("\r {0[error]}{1}{0[dull]} {2} ({0[error]}{3}{0[dull]}){0}\n".format(
-            color, 
+        if type(e) != ExpectedFailing and 'pending' in args and args['pending']:
+            c = [color('success'),color('dull'),color()]
+        else:
+            c = [color('error'),color('dull'),color()]
+        sys.stdout.write("\r {0[0]}{1}{0[1]} {2} ({0[0]}{3}{0[1]}){0[2]}\n".format(
+            c, 
             '\u2717' if type(e) in (
                 AssertionError,
                 tx.VirtualMachineError
             ) else '\u203C',
             desc,
-            type(e).__name__
+            type(e).__name__,
         ))
         sys.stdout.flush()
+        if type(e) != ExpectedFailing and 'pending' in args and args['pending']:
+            return []
         filename = module.__file__.lstrip('./')
         fn_name = filename[:-2]+fn_name
         return [(fn_name, color.format_tb(sys.exc_info(), filename))]
@@ -64,10 +84,15 @@ def run_test(filename, network):
     if type(CONFIG['test']['gas_limit']) is int:
         network.gas(CONFIG['test']['gas_limit'])
     module = importlib.import_module("tests."+filename)
-    test_names = open(
-        "tests/{}.py".format(filename), 'r'
-    ).read().split("\ndef ")[1:]
-    test_names = [i.split("(")[0] for i in test_names if i[0]!="_"]
+    test_names = [
+        i for i in dir(module) if i not in dir(sys.modules['brownie'])
+        and i[0]!="_" and callable(getattr(module, i))
+    ]
+    code = open("tests/{}.py".format(filename)).read()
+    test_names = sorted(
+        test_names,
+        key= lambda k: code.index(" {}(".format(k))
+    )
     traceback_info = []
     if not test_names:
         print("\n{0[error]}WARNING{0}: Cannot find test functions in {0[module]}{1}.py{0}".format(color, name))
@@ -85,6 +110,7 @@ def run_test(filename, network):
         network.rpc.revert()
         traceback_info += _run_test(module,t,c,len(test_names))
     return tx.tx_history.copy(), traceback_info
+
 
 def main():
     args = docopt(__doc__)

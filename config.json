@@ -53,6 +53,7 @@
         "string": "bright magenta",
         "dull": "dark white",
         "error": "bright red",
-        "success": "bright green"
+        "success": "bright green",
+        "pending": "bright yellow"
     }
 }
