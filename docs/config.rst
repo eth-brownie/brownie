@@ -6,7 +6,7 @@ Editing the Config File
 
 Every project has a file ``brownie-config.json`` that holds all the configuration settings.
 
-The defaut configuration is as follows:
+The defaut configuration is as follows. When using the brownie console you can view or edit configuration settings through the ``config`` dict.
 
 .. literalinclude:: ../config.json
     :linenos:

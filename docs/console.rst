@@ -36,7 +36,7 @@ You can use the builtin ``dir`` function to see available methods and attributes
 Working with Accounts
 =====================
 
-The container class ``accounts`` (or just ``a``) allows you to access all your local accounts:
+The container class ``accounts`` (or just ``a``) allows you to access all your local accounts.
 
 .. code-block:: python
 
@@ -52,7 +52,18 @@ The container class ``accounts`` (or just ``a``) allows you to access all your l
     >>> accounts[1].balance()
     110000000000000000000
 
-You can import accounts with ``accounts.add``, which takes a private key as the only argument. If you do not enter a private key, one is randomly generated:
+You can generate accounts from a seed phrase using ``accounts.mnemonic``. The generation scheme is compatible with MetaMask and other popular wallets.
+
+.. code-block:: python
+
+    >>> accounts.clear()
+    >>> len(accounts)
+    0
+    >>> accounts.mnemonic("caught rare sport prison casino post object exile clutch enough race pulp")
+    >>> len(accounts)
+    10
+
+You can also import accounts individually with ``accounts.add``, which takes a private key as the only argument. If you do not enter a private key one is randomly generated.
 
 .. code-block:: python
 
@@ -70,37 +81,37 @@ You can import accounts with ``accounts.add``, which takes a private key as the 
 Working with Contracts
 ======================
 
-Each contract in the project has a ``ContractDeployer`` class, which allows you to deploy new contracts and is a container that holds specific instances of that contract. To deploy a contract, include the deploying account as the first argument followed by the constructor arguments:
+Each contract in the project has a ``ContractDeployer`` class, which allows you to deploy new contracts and is a container that holds specific instances of that contract. To deploy a contract, include the deploying account as the first argument followed by the constructor arguments.
 
 .. code-block:: python
 
     >>> Token
-    <Token ContractDeployer object>
+    []
     >>> Token.deploy(accounts[1], "Test Token", "TST", 18, "1000 ether")
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
     Transaction confirmed - block: 2   gas spent: 594186
     Contract deployed at: 0x5419710735c2D6c3e4db8F30EF2d361F70a4b380
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
-    >>> Token[0]
-    <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+    >>> Token
+    [<Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>]
 
-Alternatively, you can deploy from ``account`` with the contract as the first argument:
+Alternatively, you can deploy from ``account`` with the contract as the first argument.
 
 .. code-block:: python
 
     >>> Token
-    <Token ContractDeployer object>
+    []
     >>> accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
     Transaction confirmed - block: 2   gas spent: 594186
     Contract deployed at: 0x5419710735c2D6c3e4db8F30EF2d361F70a4b380
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
-    >>> Token[0]
+    >>> Token
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
-You can also use ``ContractDeployer.at`` to access an already existing contract:
+You can also use ``ContractDeployer.at`` to access an already existing contract.
 
 .. code-block:: python
 

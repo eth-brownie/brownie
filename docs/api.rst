@@ -6,7 +6,7 @@ Brownie API
 
 The following classes and methods are available when developing brownie scripts or using the console.
 
-When using the console, you can call the builtin ``dir`` function to see available methods and attributes for any class. Callables are highlighed in blue, attributes in yellow.
+When using the console, you can call the builtin ``dir`` function to see available methods and attributes for any class. By default, callables are highlighed in cyan and attributes in blue.
 
 Eth
 ===
@@ -243,7 +243,7 @@ Account classes are not meant to be instantiated directly. The ``Accounts`` cont
 
 .. py:class:: Accounts
 
-    Singleton container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects. This is a sub-type of ``list`` so all list methods are also available.
+    Singleton list-like container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects.
 
 .. py:classmethod:: Accounts.add(priv_key)
 
@@ -253,9 +253,21 @@ Account classes are not meant to be instantiated directly. The ``Accounts`` cont
 
     Given an address, returns the corresponding ``Account`` or ``LocalAccount`` from the container.
 
+.. py:classmethod:: Accounts.mnemonic(phrase, count=10)
+
+    Generates ``LocalAccount`` instances from a seed phrase based on the BIP44 standard. Compatible with `MetaMask <https://metamask.io>`__ and other popular wallets.
+
+.. py:classmethod:: Accounts.remove(address)
+
+    Removes an address from the container. The address may be given as a string or an ``Account`` instance.
+
+.. py:classmethod:: Accounts.clear()
+
+    Empties the container.
+
 .. py:class:: Account
 
-    An ethereum address that you control the private key for, and so can send transactions from. It is a sub-class of ``str``, so if given as a method argument it will be interpreted as the public address.
+    An ethereum address that you control the private key for, and so can send transactions from.
 
 .. py:attribute:: Account.address
 
@@ -346,10 +358,6 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
         >>> Token.topics['Transfer']
         0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
 
-.. py:classmethod:: ContractDeployer.list()
-
-    Returns a list of every deployed contract instance in the container.
-
 .. py:classmethod:: ContractDeployer.deploy(account, *args)
 
     Deploys the contract.
@@ -370,9 +378,13 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
     * ``address``: Address where the contract is deployed. Raises a ValueError if there is no bytecode at the address.
     * ``owner``: ``Account`` instance to set as the contract owner. If transactions to the contract do not specify a ``'from'`` value, they will be sent from this account.
 
+.. py:classmethod:: ContractDeployer.remove(address)
+
+    Removes a contract instance from the container.
+
 .. py:class:: Contract
 
-    A deployed contract. This class allows you to call or send transactions to the contract. It is a sub-class of ``str``, so if given as a method argument it will be interpreted as the public address.
+    A deployed contract. This class allows you to call or send transactions to the contract.
 
 .. py:attribute:: Contract.tx
 
