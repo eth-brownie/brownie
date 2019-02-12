@@ -52,8 +52,8 @@ pycryptodome==3.7.3
 pyflakes==2.1.0
 pytest==4.2.0
 python-dateutil==2.8.0
-PyYAML==3.13
-requests==2.11.1
+PyYAML==4.2b1
+requests==2.21.0
 rlp==1.0.3
 semantic-version==2.6.0
 sha256==0.1
