@@ -36,6 +36,9 @@ class Accounts:
     def __delitem__(self, key):
         del self._accounts[key]
 
+    def __len__(self):
+        return len(self._accounts)
+    
     def _check_nonce(self):
         for i in self._accounts:
             i.nonce = web3.eth.getTransactionCount(str(i))
