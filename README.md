@@ -17,10 +17,24 @@ You may also wish to install [opview](https://github.com/HyperLink-Technology/op
 
 ## Installation
 
-Ubuntu:
+### Ubuntu
 
 ```bash
 curl https://raw.githubusercontent.com/HyperLink-Technology/brownie/master/brownie-install.sh | sh
+```
+
+### Docker
+
+To build the image:
+
+```bash
+docker build https://github.com/HyperLink-Technology/brownie.git -t brownie:1
+```
+
+You can then run brownie with:
+
+```bash
+docker run -v $PWD:/usr/src brownie brownie
 ```
 
 ## Quick Usage

@@ -6,11 +6,26 @@ Installing Brownie
 
 **Ubuntu**
 
-This installs brownie at ``/usr/local/lib/brownie/`` and creates a virtual environment with all the required packages.
+This installs brownie at ``/usr/local/lib/brownie/``, creates a virtual environment with all the required packages, and places a bash script in ``/usr/local/bin`` so you can run brownie in any folder.
 
 ::
 
     $ curl https://raw.githubusercontent.com/HyperLink-Technology/brownie/master/brownie-install.sh | sh
+
+
+**Docker**
+
+A dockerfile is provided within the github repo. To build the image:
+
+::
+
+    $ docker build https://github.com/HyperLink-Technology/brownie.git -t brownie:1
+
+You can then run brownie with:
+
+::
+
+    $ docker run -v $PWD:/usr/src brownie brownie
 
 
 Dependencies
