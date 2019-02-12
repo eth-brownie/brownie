@@ -10,7 +10,7 @@ This installs brownie at ``/usr/local/lib/brownie/`` and creates a virtual envir
 
 ::
 
-    $ curl https://raw.githubusercontent.com/iamdefinitelyahuman/brownie/master/brownie-install.sh | sh
+    $ curl https://raw.githubusercontent.com/HyperLink-Technology/brownie/master/brownie-install.sh | sh
 
 
 Dependencies
@@ -18,12 +18,13 @@ Dependencies
 
 Brownie has the following dependencies:
 
+* `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__
 * `git <https://git-scm.com/>`__
 * `pip <https://pypi.org/project/pip/>`__
 * `python3.6 <https://www.python.org/downloads/release/python-368/>`__ , python3.6-dev, python3.6-venv
 
+.. warning:: There is an issue in ganache-cli 6.3.0 relating to ``evm_revert`` that may cause tests to unexpectedly fail. At present, it is recommended to use version `6.2.5 <https://github.com/trufflesuite/ganache-cli/releases/tag/v6.2.5>`__.
+
 As brownie relies on `py-solc-x <https://github.com/iamdefinitelyahuman/py-solc-x>`__, you do not need solc installed locally but you must install all required `solc dependencies <https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages>`__.
 
-If you wish to run a local test environment you must also install an Ethereum client which supports the standard JSON RPC API. By default, Brownie is set to work with `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__, but you can easily change this by editing the ``brownie-config.json`` file in your project.
-
-You may also wish to install `opview <https://github.com/iamdefinitelyahuman/opview>`__ for test coverage visualization.
+You may also wish to install `opview <https://github.com/HyperLink-Technology/opview>`__ for test coverage visualization.

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 cd /usr/local/lib
-git clone --depth=1 https://github.com/iamdefinitelyahuman/brownie
-chmod -R 777 /usr/local/lib/brownie
+git clone --depth=1 https://github.com/HyperLink-Technology/brownie
+chown "$USER:$USER" brownie -R
 cd brownie
 python3.6 -m venv venv
 venv/bin/pip install wheel

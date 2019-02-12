@@ -7,7 +7,7 @@
     },
     "networks": {
         "development": {
-            "test-rpc": "ganache-cli -a 20",
+            "test-rpc": "ganache-cli",
             "host": "http://127.0.0.1:8545"
         },
         "ropsten": {
