@@ -271,16 +271,18 @@ class TransactionReceipt:
             
     def call_trace(self):
         trace = self.trace
-        last = 0
+        sep = max(i['jumpDepth'] for i in trace)
+        idx = 0
+        depth = 0
         for i in range(1, len(trace)):
             if (
                 trace[i]['depth'] == trace[i-1]['depth'] and
                 trace[i]['jumpDepth'] == trace[i-1]['jumpDepth']
             ):
                 continue
-            _print_path(trace[i-1], last)
-            last = i
-        _print_path(trace[-1], last)
+            _print_path(trace[i-1], idx, sep)
+            idx = i
+        _print_path(trace[-1], idx, sep)
 
     def error(self):
         try:
@@ -346,11 +348,11 @@ def _print_tx(tx):
         print()
 
 
-def _print_path(trace, idx):
-    col = "yellow" if trace['op']!="REVERT" else "red"
+def _print_path(trace, idx, sep):
+    col = "red" if trace['op'] in ("REVERT", "INVALID") else "yellow"
     name = "{0[contractName]}.{1}{0[fn]}".format(trace, color('bright '+col))
     print(
-        "   "*trace['depth'] +
+        ("  "*sep*trace['depth']) + ("  "*(trace['jumpDepth']-1)) +
         "{}{} {}{} ({})".format(color(col), name, color('dull'), idx, trace['address']) +
         color()
     )

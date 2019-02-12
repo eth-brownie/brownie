@@ -44,7 +44,7 @@
         }
     },
     "colors":{
-        "key": "blue",
+        "key": "",
         "value": "bright blue",
         "callable": "bright cyan",
         "module": "bright blue",
