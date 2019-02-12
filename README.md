@@ -4,12 +4,13 @@ Brownie is a python framework for deploying, testing and interacting with ethere
 
 ## Dependencies
 
+* [git](https://git-scm.com/)
 * [pip](https://pypi.org/project/pip/)
 * [python3.6](https://www.python.org/downloads/release/python-368/), python3.6-dev, python3.6-venv
 
 As brownie relies on [py-solc-x](https://github.com/iamdefinitelyahuman/py-solc-x), you do not need solc installed locally but you must install all required [solc dependencies](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages).
 
-If you wish to run a local test environment you must also install an Ethereum client which supports the standard JSON RPC API. By default, Brownie is set to work with [ganache-cli](https://github.com/trufflesuite/ganache-cli), but you can easily change this by editing the ``brownie-config.json`` file in your project.
+If you wish to run a local test environment you must also install an Ethereum client which supports the standard JSON RPC API. Brownie is designed to work with [ganache-cli](https://github.com/trufflesuite/ganache-cli), but you can easily change this by editing the ``brownie-config.json`` file in your project.
 
 You may also wish to install [opview](https://github.com/iamdefinitelyahuman/opview) for test coverage visualization.
 

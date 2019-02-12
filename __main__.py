@@ -3,6 +3,7 @@
 from docopt import docopt
 import importlib
 import os
+import subprocess
 import sys
 
 import lib.init as init
@@ -23,11 +24,34 @@ Commands:
 
 Options:
   -h --help          Display this message
-  --network <name>   Use a specific network (default {})
-  --verbose          Enable verbose reporting
+  --update           Update to the latest version of brownie
 
 Type 'brownie <command> --help' for specific options and more information about
 each command.""".format(CONFIG['network_defaults']['name'])
+
+
+def get_latest_commit():
+    return subprocess.check_output([
+        'git', 'log', '-n', '1', '--pretty=format:"%H"'
+    ]).decode()
+
+
+print("Brownie v{} - Python development framework for Ethereum\n".format(__version__))
+
+if '--update' in sys.argv:
+    os.chdir(CONFIG['folders']['brownie'])
+    version = get_latest_commit()
+    print("Checking for updates...")
+    subprocess.run(
+        ['git', 'pull'],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL
+    )
+    if version == get_latest_commit():
+        sys.exit("You already have the latest version of Brownie.")
+    else:
+        sys.exit("Brownie has been updated!")
 
 if len(sys.argv)>1 and sys.argv[1][0] != "-":
     try:
@@ -37,7 +61,6 @@ if len(sys.argv)>1 and sys.argv[1][0] != "-":
     except StopIteration:
         opts = []
 
-print("Brownie v{} - Python development framework for Ethereum\n".format(__version__))
 args = docopt(__doc__)
 sys.argv += opts
 

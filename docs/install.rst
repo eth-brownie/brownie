@@ -18,6 +18,7 @@ Dependencies
 
 Brownie has the following dependencies:
 
+* `git <https://git-scm.com/>`__
 * `pip <https://pypi.org/project/pip/>`__
 * `python3.6 <https://www.python.org/downloads/release/python-368/>`__ , python3.6-dev, python3.6-venv
 
