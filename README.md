@@ -17,7 +17,7 @@ You may also wish to install [opview](https://github.com/HyperLink-Technology/op
 
 ## Installation
 
-### Ubuntu
+### Ubuntu and OSX
 
 ```bash
 curl https://raw.githubusercontent.com/HyperLink-Technology/brownie/master/brownie-install.sh | sh
