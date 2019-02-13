@@ -200,10 +200,13 @@ class TransactionReceipt:
             }
         })
         for i in range(1, len(trace)):
+            # if depth has increased, tx has called into a different contract
             if trace[i]['depth'] > trace[i-1]['depth']:
                 address = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
                 c = contract.find_contract(address)
-                sig = "0x"+trace[i-1]['memory'][int(trace[i-1]['stack'][-4], 16)//32][:8]
+                stack_idx = -4 if trace[i-1]['op'] in ('CALL', 'CALLCODE') else -3
+                memory_idx = int(trace[i-1]['stack'][stack_idx], 16) * 2
+                sig = "0x" + "".join(trace[i-1]['memory'])[memory_idx:memory_idx+8]
                 last[trace[i]['depth']] = {
                     'address': address,
                     'contract': c._name,
@@ -244,9 +247,9 @@ class TransactionReceipt:
             if not c:
                 return
             abi = [i['type'] for i in getattr(c, self.fn_name.split('.')[-1]).abi['outputs']]
-            offset = int(log['stack'][-1], 16)//32
-            length = int(log['stack'][-2], 16)//32
-            data = HexBytes("".join(log['memory'][offset:offset+length]))
+            offset = int(log['stack'][-1], 16)*2
+            length = int(log['stack'][-2], 16)*2
+            data = HexBytes("".join(log['memory'])[offset:offset+length])
             self.return_value = eth_abi.decode_abi(abi, data)[0]
             if type(self.return_value) is tuple:
                 self.return_value = [
