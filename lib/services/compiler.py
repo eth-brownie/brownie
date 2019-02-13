@@ -90,9 +90,9 @@ def compile_contracts(folder = "contracts"):
         code = open(filename).read()
         for name in (
             re.findall(
-                "\n(?:contract|library|interface) (.*?) {", code, re.DOTALL)
+                "\n(?:contract|library|interface) (.*?){", code, re.DOTALL)
         ):
-            names = [i.strip(',') for i in name.split(' ')]
+            names = [i.strip(',') for i in name.strip().split(' ')]
             if names[0] in inheritance_map:
                 raise ValueError(
                     "Multiple contracts named {}".format(names[0]))
@@ -109,7 +109,7 @@ def compile_contracts(folder = "contracts"):
         code = open(filename).read()
         input_json = {}
         for name in (re.findall(
-                "\n(?:contract|library|interface) (.*?) ", code, re.DOTALL
+                "\n(?:contract|library|interface) (.*?) {0,}{", code, re.DOTALL
         )):
             check = [i for i in inheritance_map[name]
                      if _check_changed(filename, i)]
@@ -161,7 +161,7 @@ def compile_contracts(folder = "contracts"):
         hash_ = sha1(open(filename, 'rb').read()).hexdigest()
         compiled = generate_pcMap(compiled)
         for match in (
-            re.findall("\n(?:contract|library|interface) [^ ]{1,}", code)
+            re.findall("\n(?:contract|library|interface) [^ {]{1,}", code)
         ):
             type_, name = match.strip('\n').split(' ')
             data = compiled['contracts'][filename][name]
