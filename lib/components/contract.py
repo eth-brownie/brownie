@@ -213,7 +213,9 @@ class _ContractMethod:
 
     def call(self, *args):
         args, tx = _get_tx(self._owner, args)
-        if not tx['from']:
+        if tx['from']:
+            tx['from'] = str(tx['from'])
+        else:
             del tx['from']
         try: 
             result = self._fn(*self._format_inputs(args)).call(tx)
