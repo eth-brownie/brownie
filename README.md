@@ -7,7 +7,7 @@ Brownie is a python framework for deploying, testing and interacting with ethere
 * [ganache-cli](https://github.com/trufflesuite/ganache-cli)
 * [git](https://git-scm.com/)
 * [pip](https://pypi.org/project/pip/)
-* [python3.6](https://www.python.org/downloads/release/python-368/), python3.6-dev, python3.6-venv
+* [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3.6-dev, python3.6-venv
 
 > There is an issue in ganache-cli 6.3.0 relating to ``evm_revert`` that may cause tests to unexpectedly fail. At present, it is recommended to use version [6.2.5](https://github.com/trufflesuite/ganache-cli/releases/tag/v6.2.5).
 
@@ -17,7 +17,7 @@ You may also wish to install [opview](https://github.com/HyperLink-Technology/op
 
 ## Installation
 
-### Ubuntu
+### Ubuntu and OSX
 
 ```bash
 curl https://raw.githubusercontent.com/HyperLink-Technology/brownie/master/brownie-install.sh | sh

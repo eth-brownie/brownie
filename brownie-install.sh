@@ -1,10 +1,28 @@
 #!/bin/bash
 
+
+OS="`uname`"
+PY="python3"
+
 cd /usr/local/lib
 git clone --depth=1 https://github.com/HyperLink-Technology/brownie
-chown "$USER:$USER" brownie -R
+
+case "$OS" in 'Linux')
+    chown "$USER:$USER" brownie -R
+    case "`which python3.6`" in "") ;; *) PY="python3.6";; esac
+    case "`which python3.7`" in "") ;; *) PY="python3.7";; esac
+;; esac
+
+PY_VER=`$PY -c 'import sys; print(sys.version_info[1])'`
+
+if [[ $PY_VER<6 ]]
+then
+echo "ERROR: Brownie requires python3.6 or greater."
+exit 1
+fi
+
 cd brownie
-python3.6 -m venv venv
+$PY -m venv venv
 venv/bin/pip install wheel
 venv/bin/pip install -r requirements.txt
 
