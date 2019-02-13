@@ -44,10 +44,14 @@ class Network:
         else:
             verbose = False
         if verbose:
-            print("Using network '{0[string]}{1}{0}'".format(color, CONFIG['active_network']['name']))
+            print("Using network '{0[string]}{1}{0}'".format(
+                color, CONFIG['active_network']['name']
+            ))
         if 'test-rpc' in CONFIG['active_network']:
             if verbose:
-                print("Running '{0[string]}{1}{0}'...".format(color, CONFIG['active_network']['test-rpc']))
+                print("Running '{0[string]}{1}{0}'...".format(
+                    color, CONFIG['active_network']['test-rpc']
+                ))
             rpc = Rpc(self)
         else:
             rpc = None

@@ -88,17 +88,22 @@ class ContractDeployer(_ContractBase):
 
     def deploy(self, account, *args):
         if '_' in self.bytecode:
+            # find and replace unlinked library pointers in bytecode
             for marker in re.findall('_{1,}[^_]*_{1,}', self.bytecode):
                 contract = marker.strip('_')
                 if contract not in self._network:
                     raise NameError(
-                        "Contract requires an unknown library - " + contract
+                        "Contract requires unknown library '{}'".format(contract)
                     )
                 elif not len(self._network[contract]):
                     raise IndexError(
-                        "Contract requires the {} library but it has not been deployed yet".format(contract)
+                        "Contract requires '{}' library".format(contract) +
+                        " but it has not been deployed yet"
                     )
-                bytecode = self.bytecode.replace(marker, self._network[contract][-1][-40:])
+                bytecode = self.bytecode.replace(
+                    marker,
+                    self._network[contract][-1].address[-40:]
+                )
         else:
             bytecode = self.bytecode
         args, tx = _get_tx(account, args)
@@ -109,7 +114,13 @@ class ContractDeployer(_ContractBase):
         except StopIteration:
             if args:
                 raise AttributeError("This contract takes no constructor arguments.")
-        tx = account._contract_tx(contract.constructor, args, tx, self._name+".constructor", self._at)
+        tx = account._contract_tx(
+            contract.constructor,
+            args,
+            tx,
+            self._name+".constructor",
+            self._at
+        )
         if tx.status == 1:
             return self.at(tx.contract_address)
         return tx
@@ -216,9 +227,15 @@ class _ContractMethod:
         args, tx = _get_tx(self._owner, args)
         if not tx['from']:
             raise AttributeError(
-                "Contract has no owner, you must supply a tx dict with a 'from'"
-                " field as the last argument.")
-        return tx['from']._contract_tx(self._fn, self._format_inputs(args), tx, self._name)
+                "Contract has no owner, you must supply a tx dict"
+                " with a 'from' field as the last argument."
+            )
+        return tx['from']._contract_tx(
+            self._fn,
+            self._format_inputs(args),
+            tx,
+            self._name
+        )
 
 
 class ContractTx(_ContractMethod):
