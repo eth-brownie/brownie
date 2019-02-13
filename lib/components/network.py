@@ -148,6 +148,10 @@ class Network:
                 color, type(e).__name__, e))
 
     def run(self, name):
+        '''Loads a module from the scripts/ folder and runs the main() method.
+
+        Args:
+            name (string): name of the script.'''
         if not os.path.exists("scripts/{}.py".format(name)):
             print("{0[error]}ERROR{0}: Cannot find scripts/{1}.py".format(color, name))
             return
@@ -155,6 +159,10 @@ class Network:
         module.main()
 
     def reset(self, network=None):
+        '''Reboots the local RPC client and resets the brownie environment.
+        
+        Args:
+            network (string): Name of the new network to switch to.'''
         alert.stop_all()
         if network and CONFIG[network] != CONFIG['active_network']['name']:
             self.save()
@@ -169,6 +177,14 @@ class Network:
         return "Brownie environment is ready."
 
 def logging(**kwargs):
+    '''Adjusts the logging verbosity.
+
+    Each value can be set between 0 (quiet) and 2 (verbose).
+    You can modify the default value in the config.json file.
+
+    Kwargs:
+        tx (int): Adjusts the transaction verbosity.
+        exc (int): Adjusts the exception verbosity.'''
     if not kwargs or [k for k,v in kwargs.items() if
         k not in ('tx','exc') or type(v) is not int or not 0<=v<=2]:
         print("logging(tx=n, exc=n)\n\n 0 - Quiet\n 1 - Normal\n 2 - Verbose")
@@ -177,6 +193,12 @@ def logging(**kwargs):
         print(CONFIG['logging'])
 
 def gas(*args):
+    '''Displays or modifies the default gas limit.
+    
+    * If no argument is given, the current default is displayed.
+    * If an integer value is given, this will be the default gas limit.
+    * If set to "auto", None, True or False, the gas limit is determined
+      automatically.'''
     if args:
         if args[0] in ("auto", None, False, True):
             CONFIG['active_network']['gas_limit'] = False

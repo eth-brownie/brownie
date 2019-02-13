@@ -4,14 +4,14 @@
 Brownie API
 ===========
 
-The following classes and methods are available when developing brownie scripts or using the console.
+The following classes and methods are available when writing brownie scripts or using the console.
 
-When using the console, you can call the builtin ``dir`` function to see available methods and attributes for any class. By default, callables are highlighed in cyan and attributes in blue.
+From the console you can call ``dir`` to see available methods and attributes for any class. By default, callables are highlighed in cyan and attributes in blue. You can also call ``help`` on any class or method to view information on it's functionality.
 
 Eth
 ===
 
-These classes and methods relate to the Ethereum blockchain:
+These classes and methods relate to the Ethereum blockchain and test RPC:
 
 .. py:class:: web3
 
@@ -69,6 +69,16 @@ Console
 
 These methods are used in the console.
 
+.. py:method:: gas(*args)
+
+    Displays or sets the default gas limit.
+
+    * If an integer value is given, this will be the default gas limit.
+    * If set to "auto", None, True or False, the gas limit is determined
+      automatically.
+
+    .. note:: When the gas limit is calculated automatically, transactions that would revert will raise a VirtualMachineError during the gas estimation and so will not be broadcasted.
+
 .. py:method:: logging(tx = None, exc = None)
 
     Adjusts the logging verbosity. See :ref:`config` for more information on logging levels.
@@ -79,7 +89,7 @@ These methods are used in the console.
 
 .. py:method:: run(script)
 
-    Runs a deployment script. See :ref:`deploy` for more information.
+    Loads a script and runs the ``main`` method within it. See :ref:`deploy` for more information.
 
 
 Transactions

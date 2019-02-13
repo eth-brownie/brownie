@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 from subprocess import Popen, DEVNULL
-import sys
 from threading import Thread
 import time
 from web3 import Web3, HTTPProvider
@@ -12,6 +11,8 @@ CONFIG = config.CONFIG
 
 
 class web3:
+
+    '''Brownie minimal implementation of web3py'''
 
     def __init__(self):
         self._init = True
@@ -30,6 +31,9 @@ class web3:
 
 class Rpc:
 
+    '''Methods for interacting with ganache-cli when running a local
+    RPC environment.'''
+    
     def __init__(self, network):
         rpc = Popen(
             CONFIG['active_network']['test-rpc'].split(' '),
@@ -51,9 +55,14 @@ class Rpc:
         self._rpc.terminate()
 
     def time(self):
+        '''Returns the current epoch time from the test RPC as an int'''
         return int(time.time()+self._time_offset)
 
     def sleep(self, seconds):
+        '''Increases the time within the test RPC.
+        
+        Args:
+            seconds (int): Number of seconds to increase the time by.'''
         if type(seconds) is not int:
             raise TypeError("seconds must be an integer value")
         self._time_offset = web3.providers[0].make_request(
@@ -61,6 +70,10 @@ class Rpc:
         )['result']
 
     def mine(self, blocks = 1):
+        '''Increases the block height within the test RPC.
+
+        Args:
+            blocks (int): Number of new blocks to be mined.'''
         if type(blocks) is not int:
             raise TypeError("blocks must be an integer value")
         for i in range(blocks):
@@ -68,10 +81,12 @@ class Rpc:
         return "Block height at {}".format(web3.eth.blockNumber)
 
     def snapshot(self):
+        '''Takes a snapshot of the current state of the EVM.'''
         self._snapshot_id = web3.providers[0].make_request("evm_snapshot",[])['result']
         return "Snapshot taken at block height {}".format(web3.eth.blockNumber)
 
     def revert(self):
+        '''Reverts the EVM to the most recently taken snapshot.'''
         if not self._snapshot_id:
             raise ValueError("No snapshot set")
         web3.providers[0].make_request("evm_revert",[self._snapshot_id])
@@ -97,6 +112,13 @@ def _watch_rpc(rpc):
 
 
 def wei(value):
+    '''Converts a value to wei.
+    
+    Useful for the following formats:
+        * a string specifying the unit: "10 ether", "300 gwei", "0.25 shannon"
+        * a large float in scientific notation, where direct conversion to int
+          would cause inaccuracy: 8.3e32
+        * a byte string: "0x330124"'''
     if value is None:
         return 0
     if type(value) is float and "e+" in str(value):
