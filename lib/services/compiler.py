@@ -109,7 +109,7 @@ def compile_contracts(folder = "contracts"):
         code = open(filename).read()
         input_json = {}
         for name in (re.findall(
-                "\n(?:contract|library|interface) (.*?) {0,}{", code, re.DOTALL
+                "\n(?:contract|library|interface) (.*?)[ {]", code, re.DOTALL
         )):
             check = [i for i in inheritance_map[name]
                      if _check_changed(filename, i)]
