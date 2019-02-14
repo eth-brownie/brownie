@@ -41,7 +41,7 @@ You can optionally include a docstring in each test method to give more verbosit
 
 The following keyword arguments can be used to affect how a test runs:
 
-* ``pending``: If set to True, this test is expected to fail. If the test passes it will raise a ``ExpectedFailing`` exception.
+* ``pending``: If set to True, this test is expected to fail. If the test passes it will raise an ``ExpectedFailing`` exception.
 
 * ``skip``: If set to True, this test will not be run.
 
@@ -119,4 +119,15 @@ The following test configuration settings are available in ``brownie-config.json
 
 .. py:attribute:: gas_limit
 
-    If set to an integer, this value will over-ride the default gas limit setting for whatever network you are testing on. When the gas limit is set to automatic, transactions that would cause the EVM to revert will raise a ``VirtualMachineError`` during this estimation and so will not be broadcasted. You will not have access to any information about the failed transaction.
+    If set to an integer, this value will over-ride the default gas limit setting for whatever network you are testing on.
+
+    When the gas limit is calculated automatically:
+
+    * Transactions that would cause the EVM to revert will raise a ``VirtualMachineError`` during gas estimation and so will not be broadcasted.
+    * No ``TransactionReceipt`` is generated. You will not have access to any information about why it failed.
+
+    When the gas limit is a fixed value:
+
+    * Transactions that revert will be broadcasted, but still raise a ``VirtualMachineError``.
+    * Unless the call is handled with ``check.reverts`` the exception will cause the test to fail.
+    * If you need to access the ``TransactionReceipt`` you can find it the ``history`` list.

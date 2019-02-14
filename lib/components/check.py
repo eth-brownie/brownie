@@ -38,12 +38,10 @@ def reverts(fn, args, fail_msg="Expected transaction to revert", revert_msg=None
         revert_msg: If set, the check only passes if the returned revert message
                     matches the given one.'''
     try: 
-        tx = fn(*args)
+        fn(*args)
     except VirtualMachineError as e:
         if not revert_msg or revert_msg == e.revert_msg:
             return
-    if not tx.status and (not revert_msg or revert_msg == tx.revert_msg):
-        return
     raise AssertionError(fail_msg)
 
 
@@ -53,11 +51,15 @@ def confirms(fn, args, fail_msg="Expected transaction to confirm"):
     Args:
         fn: ContractTx instance to call.
         args: List or tuple of contract input args.
-        fail_msg: Message to show if the check fails.'''
+        fail_msg: Message to show if the check fails.
+        
+    Returns:
+        TransactionReceipt instance.'''
     try:
-        return fn(*args)
-    except VirtualMachineError:
-        raise AssertionError(fail_msg)
+        tx = fn(*args)
+    except VirtualMachineError as e:
+        raise AssertionError("{}\n  {}".format(fail_msg, e.source))
+    return tx
 
 
 def equal(a, b, fail_msg="Expected values to be equal"):

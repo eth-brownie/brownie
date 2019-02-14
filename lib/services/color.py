@@ -103,7 +103,7 @@ class Color:
 
     def format_tb(self, exc, filename = None, start = None, stop = None):
         tb = [i.replace("./", "") for i in traceback.format_tb(exc[2])]
-        if filename:
+        if filename and '--tb' not in sys.argv:
             try:
                 start = tb.index(next(i for i in tb if filename in i))
                 stop = tb.index(next(i for i in tb[::-1] if filename in i)) + 1

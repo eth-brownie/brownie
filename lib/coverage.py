@@ -26,6 +26,7 @@ Arguments:
 Options:
   --help             Display this message
   --verbose          Enable verbose reporting
+  --tb               Show entire python traceback on exceptions
 
 Coverage will modify the contracts and run your unit tests to get estimate
 of how much coverage you have.  so simple..."""

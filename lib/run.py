@@ -20,6 +20,7 @@ Options:
   --help             Display this message
   --network [name]   Use a specific network (default {})
   --verbose          Enable verbose reporting
+  --tb               Show entire python traceback on exceptions
 
 Use run to execute scripts that deploy or interact with contracts on the network.
 """.format(CONFIG['network_defaults']['name'])

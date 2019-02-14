@@ -22,6 +22,7 @@ Options:
   --help             Display this message
   --verbose          Enable verbose reporting
   --gas              Display gas profile for function calls
+  --tb               Show entire python traceback on exceptions
 
 By default brownie runs every script in the tests folder, and calls every
 function that does not begin with an underscore. A fresh environment is created

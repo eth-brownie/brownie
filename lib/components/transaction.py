@@ -36,15 +36,20 @@ class VirtualMachineError(Exception):
     '''Raised when a call to a contract causes an EVM exception.
     
     Attributes:
-        revert_msg: The returned error string, if any.'''
+        revert_msg: The returned error string, if any.
+        source: The contract source code where the revert occured, if available.'''
 
+    revert_msg = ""
+    source = ""
+    
     def __init__(self, exc):
-        msg = eval(str(exc))['message']
-        if len(msg.split('revert ', maxsplit=1))>1:
-            self.revert_msg = msg.split('revert ')[-1]
-        else:
-            self.revert_msg = None
-        super().__init__(msg)
+        if type(exc) is str:
+            exc = eval(str(exc))
+        if 'source' in exc:
+            self.source = exc['source']
+        if len(exc['message'].split('revert ', maxsplit=1))>1:
+            self.revert_msg = exc['message'].split('revert ')[-1]
+        super().__init__(exc)
 
 
 def raise_or_return_tx(exc):
@@ -118,7 +123,7 @@ class TransactionReceipt:
             t.join()
             if sys.argv[1] != "console" and not self.status:
                 raise VirtualMachineError(
-                    '{"message": "revert '+(self.revert_msg or "")+'"}'
+                    {"message": "revert '+(self.revert_msg or "")+'", "source":self.error(1)}
                 )
         except KeyboardInterrupt:
             if sys.argv[1] != "console":
@@ -365,7 +370,7 @@ class TransactionReceipt:
             idx = i
         _print_path(trace[-1], idx, sep)
 
-    def error(self):
+    def error(self, pad=3):
         '''Displays the source code that caused the transaction to revert.'''
         try:
             trace = next(i for i in self.trace if i['op'] in ("REVERT", "INVALID")) 
@@ -377,20 +382,21 @@ class TransactionReceipt:
         start = newlines.index(next(i for i in newlines if i>=span[0]))
         stop = newlines.index(next(i for i in newlines if i>=span[1]))
         ln = start + 1
-        start = newlines[max(start-4, 0)]
-        stop = newlines[min(stop+3, len(newlines)-1)]
-        print(
+        start = newlines[max(start-(pad+1), 0)]
+        stop = newlines[min(stop+pad, len(newlines)-1)]
+        result = (
             ('{0[dull]}File {0[string]}"{1}"{0[dull]}, ' +
             'line {0[value]}{2}{0[dull]}, in {0[callable]}{3}').format(
                 color, trace['source']['filename'], ln, trace['fn']
             )
         )
-        print("{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
+        result += ("{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
             color,
             source[start:span[0]],
             source[span[0]:span[1]],
             source[span[1]:stop]
         ))
+        return result
 
 
 def _print_path(trace, idx, sep):

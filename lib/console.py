@@ -18,6 +18,7 @@ Options:
   -h --help             Display this message
   -n --network <name>   Use a specific network (default {})
   --verbose          Enable verbose reporting
+  --tb               Show entire python traceback on exceptions
 
 Connects to the network and opens the brownie console.
 """.format(CONFIG['network_defaults']['name'])

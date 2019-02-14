@@ -410,9 +410,11 @@ TransactionReceipt Methods
         Token.transferFrom 0 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
         Token.sub 86 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
 
-.. py:classmethod:: TransactionReceipt.error()
+.. py:classmethod:: TransactionReceipt.error(pad=3)
 
     Displays the source code that caused the first revert in the transaction, if any.
+
+    * ``pad``: Number of unrelated lines to show around the relevent source code.
 
     ::
 
@@ -462,13 +464,11 @@ Module Methods
 
     Performs the given contract call ``fn`` with arguments ``args``. Raises if the call does not cause the EVM to revert. This check will work regardless of if the revert happens from a call or a transaction.
 
-    If ``revert_msg`` is not ``None``, the check will only pass if the EVM reverts with a specific message.
-
 .. py:method:: check.confirms(fn, args, fail_msg = "Expected transaction to confirm")
 
-    Performs the given contract call ``fn`` with arguments ``args``. Raises if the call causes the EVM to throw an exception.
+    Performs the given contract call ``fn`` with arguments ``args``. Raises if the call causes the EVM to revert.
 
-    Used if you want to give a specific error message for this function. If you do not require one, you can simply attempt the call and the test will still fail if the call throws.
+    Returns a ``TransactionReceipt`` instance.
 
 .. py:method:: check.equal(a, b, fail_msg = "Expected values to be equal")
 
