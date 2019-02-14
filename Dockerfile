@@ -1,6 +1,8 @@
 # run with:
 # docker build -f Dockerfile -t brownie .
 # docker run -v $PWD:/usr/src brownie brownie
+# If you need to update the version of brownie then run the docker
+# build command again
 
 FROM ubuntu:bionic
 WORKDIR /usr/src
@@ -19,4 +21,11 @@ RUN brownie init; true
 RUN brownie test
 
 # Fix UnicodeEncodeError error when running tests
-ENV PYTHONIOENCODING=utf-8 
+ENV PYTHONIOENCODING=utf-8
+
+# c.f https://github.com/moby/moby/pull/10682#issuecomment-178794901
+# Prevent Docker from caching the rest of the commands
+# This means we can re-run the build to update brownie without the
+# full re-build that adding --no-cache would cause.
+ADD http://worldclockapi.com/api/json/est/now /tmp/bustcache
+RUN brownie --update; true
