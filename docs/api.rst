@@ -8,98 +8,287 @@ The following classes and methods are available when writing brownie scripts or 
 
 From the console you can call ``dir`` to see available methods and attributes for any class. By default, callables are highlighed in cyan and attributes in blue. You can also call ``help`` on any class or method to view information on it's functionality.
 
-Eth
-===
 
-These classes and methods relate to the Ethereum blockchain and test RPC:
+Accounts
+========
 
-.. py:class:: web3
+Account classes should not be instantiated directly. The ``Accounts`` container is available as ``accounts`` (or just ``a``) and will create each ``Account`` automatically during initialization. Add more accounts using ``Accounts.add`` or ``Accounts.mnemonic``.
 
-    Brownie implementation of ``web3py.web3``. Only some class methods are exposed. See the `Web3.py docs <https://web3py.readthedocs.io/en/stable/index.html>`__ for more information.
+Accounts
+--------
 
-.. _rpc:
+.. py:class:: Accounts
 
-.. py:class:: Rpc
+    Singleton list-like container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects.
 
-    Exposes methods for interacting with ``ganache-cli`` when running a local RPC environment. When using the console or writing tests, an instance of this class is available as ``rpc``.
+.. py:classmethod:: Accounts.add(priv_key)
 
-.. py:classmethod:: Rpc.time()
+    Creates a new ``LocalAccount`` with private key ``priv_key``, appends it to the container, and returns the new account instance.  If no private key is entered, one is randomly generated.
 
-    Returns the current epoch time in the RPC as an integer.
+.. py:classmethod:: Accounts.at(address)
 
-.. py:classmethod:: Rpc.sleep(seconds)
+    Given an address, returns the corresponding ``Account`` or ``LocalAccount`` from the container.
 
-    Advances the RPC time. You can only advance the time by whole seconds.
+.. py:classmethod:: Accounts.mnemonic(phrase, count=10)
 
-.. py:classmethod:: Rpc.mine(blocks = 1)
+    Generates ``LocalAccount`` instances from a seed phrase based on the BIP44 standard. Compatible with `MetaMask <https://metamask.io>`__ and other popular wallets.
 
-    Forces new blocks to be mined.
+.. py:classmethod:: Accounts.remove(address)
 
-.. py:classmethod:: Rpc.snapshot()
+    Removes an address from the container. The address may be given as a string or an ``Account`` instance.
 
-    Creates a snapshot at the current block height.
+.. py:classmethod:: Accounts.clear()
 
-.. py:classmethod:: Rpc.revert()
+    Empties the container.
 
-    Reverts the blockchain to the latest snapshot. Raises ``ValueError`` if no snapshot has been taken.
+Account
+-------
 
-.. _wei:
+.. py:class:: Account
 
-.. py:method:: wei(value)
+    An ethereum address that you control the private key for, and so can send transactions from.
 
-    Converts a value to wei. Useful for strings where you specify the unit, or for large floats given in scientific notation, where a direct conversion to ``int`` would cause inaccuracy from floating point errors.
+Account Attributes
+******************
 
-    ``wei`` is automatically applied in all Brownie methods when an input is meant to specify an amount of ether.
+.. py:attribute:: Account.address
 
-    Some examples:
+    The public address of the account. Viewable by printing the class, you do not need to call this attribute directly.
+
+.. py:attribute:: Account.nonce
+
+    The current nonce of the address.
+
+Account Methods
+***************
+
+.. py:classmethod:: Account.balance()
+
+    Returns the current balance at the address, in wei.
+
+.. py:classmethod:: Account.estimate_gas(to, amount, data="")
+
+    Estimates the gas required to perform a transaction. Raises a ``VirtualMachineError`` if the transaction would revert.
+
+.. py:classmethod:: Account.transfer(to, amount, gas=None, gas_price=None)
+
+    Transfers ether.
+
+    * ``to``: Recipient address.
+    * ``amount``: Amount to send, in wei_.
+    * ``gas``: Gas limit, in wei_. If none is given, the price is set using ``web3.eth.estimateGas``.
+    * ``gas_price``: Gas price, in wei_. If none is given, the price is set using ``web3.eth.gasPrice``.
+
+    Returns a ``TransactionReceipt`` instance.
+
+.. py:classmethod:: Account.deploy(contract, *args)
+
+    Deploys a contract.
+
+    * ``contract``: A ``ContractContainer`` instance of the contract to be deployed.
+    * ``*args``: Contract constructor arguments.
+
+    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument.
+
+    Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
+
+LocalAccount
+------------
+
+.. py:class:: LocalAccount
+
+    Functionally identical to ``Account``. The only difference is that a ``LocalAccount`` is one where the private key was directly inputted, and so is not found in ``web3.eth.accounts``.
+
+.. py:attribute:: LocalAccount.public_key
+
+    The local account's public key.
+
+.. py:attribute:: LocalAccount.private_key
+
+    The local account's private key.
+
+Contracts
+=========
+
+Contract classes are not meant to be instantiated directly. Each ``ContractContainer`` instance is created automatically during when Brownie starts. New ``Contract`` instances are created via methods in the container.
+
+ContractContainer
+-----------------
+
+.. py:class:: ContractContainer
+
+    A container class that holds all Contracts of the same type, and is used to deploy new instances of that contract.
+
+ContractContainer Attributes
+****************************
+
+.. py:attribute:: ContractContainer.abi
+
+    The ABI of the contract.
+
+.. py:attribute:: ContractContainer.bytecode
+
+    The bytecode of the contract, without any applied constructor arguments.
+
+.. py:attribute:: ContractContainer.signatures
+
+    A dictionary of bytes4 signatures for each contract method.
 
     .. code-block:: python
 
-        >>> wei("1 ether")
-        1000000000000000000
-        >>> wei("12.49 gwei")
-        12490000000
-        >>> wei("0.029 shannon")
-        29000000
-        >>> wei(8.38e32)
-        838000000000000000000000000000000
+        >>> Token.signatures.keys()
+        dict_keys(['name', 'approve', 'totalSupply', 'transferFrom', 'decimals', 'balanceOf', 'symbol', 'transfer', 'allowance'])
+        >>> Token.signatures['transfer']
+        0xa9059cbb
 
-Console
-=======
+.. py:attribute:: ContractContainer.topics
 
-These methods are used in the console.
+    A dictionary of bytes32 topics for each contract event.
 
-.. py:method:: gas(*args)
+    .. code-block:: python
 
-    Displays or sets the default gas limit.
+        >>> Token.topics.keys()
+        dict_keys(['Transfer', 'Approval'])
+        >>> Token.topics['Transfer']
+        0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
 
-    * If an integer value is given, this will be the default gas limit.
-    * If set to "auto", None, True or False, the gas limit is determined
-      automatically.
+ContractContainer Methods
+*************************
 
-    .. note:: When the gas limit is calculated automatically, transactions that would revert will raise a VirtualMachineError during the gas estimation and so will not be broadcasted.
+.. py:classmethod:: ContractContainer.deploy(account, *args)
 
-.. py:method:: logging(tx = None, exc = None)
+    Deploys the contract.
 
-    Adjusts the logging verbosity. See :ref:`config` for more information on logging levels.
+    * ``account``: An ``Account`` instance to deploy the contract from.
+    * ``*args``: Contract constructor arguments.
 
-.. py:method:: reset(network = None)
+    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
-    Reboots the local RPC client and resets the brownie environment. You can also optionally switch to a different network.
+    If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``IndexError`` is raised.
 
-.. py:method:: run(script)
+    Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
 
-    Loads a script and runs the ``main`` method within it. See :ref:`deploy` for more information.
+.. py:classmethod:: ContractContainer.at(address, owner=None)
 
+    Returns a ``Contract`` instance.
+
+    * ``address``: Address where the contract is deployed. Raises a ValueError if there is no bytecode at the address.
+    * ``owner``: ``Account`` instance to set as the contract owner. If transactions to the contract do not specify a ``'from'`` value, they will be sent from this account.
+
+.. py:classmethod:: ContractContainer.remove(address)
+
+    Removes a contract instance from the container.
+
+Contract
+--------
+
+.. py:class:: Contract
+
+    A deployed contract. This class allows you to call or send transactions to the contract.
+
+Contract Attributes
+*******************
+
+.. py:attribute:: Contract.tx
+
+    The ``TransactionReceipt`` of the transaction that deployed the contract. If the contract was not deployed during this instance of brownie, it will be ``None``.
+
+.. py:attribute:: Contract.bytecode
+
+    The bytecode of the deployed contract, including constructor arguments.
+
+Contract Methods
+****************
+
+.. py:classmethod:: Contract.balance()
+
+    Returns the balance at the contract address, in wei.
+
+ContractCall
+------------
+
+.. py:class:: ContractCall(*args)
+
+    Calls a non state-changing contract method without broadcasting a transaction, and returns the result. ``args`` must match the required inputs for the method.
+
+    The expected inputs are shown in the method's ``__repr__`` value.
+
+    .. code-block:: python
+
+        >>> Token[0].allowance
+        <ContractCall object 'allowance(address,address)'>
+        >>> Token[0].allowance(accounts[0], accounts[2])
+        0
+
+ContractCall Attributes
+***********************
+
+.. py:attribute:: ContractCall.abi
+
+    The contract ABI specific to this method.
+
+.. py:attribute:: ContractCall.signature
+
+    The bytes4 signature of this method.
+
+ContractCall Methods
+********************
+
+.. py:classmethod:: ContractCall.transact(*args)
+
+    Sends a transaction to the method and returns a ``TransactionReceipt``.
+
+ContractTx
+----------
+
+.. py:class:: ContractTx(*args)
+
+    Sends a transaction to a potentially state-changing contract method. Returns a ``TransactionReceipt``.
+
+    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
+
+    .. code-block:: python
+
+        >>> Token[0].transfer
+        <ContractTx object 'transfer(address,uint256)'>
+        >>> Token[0].transfer(accounts[1], 100000, {'from':accounts[0]})
+
+        Transaction sent: 0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0
+        Transaction confirmed - block: 2   gas spent: 51049
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
+
+ContractTx Attributes
+*********************
+
+.. py:attribute:: ContractTx.abi
+
+    The contract ABI specific to this method.
+
+.. py:attribute:: ContractTx.signature
+
+    The bytes4 signature of this method.
+
+ContractTx Methods
+******************
+
+.. py:classmethod:: ContractTx.call(*args)
+
+    Calls the contract method without broadcasting a transaction, and returns the result.
 
 Transactions
 ============
+
+TransactionReceipt
+------------------
 
 .. py:class:: TransactionReceipt
 
     An instance of this class is returned whenever a transaction is broadcasted. When printed in the console, they will appear yellow if the transaction is still pending or red if the transaction caused the EVM to revert.
 
     Many of the attributes will be set to ``None`` while the transaction is still pending.
+
+TransactionReceipt Attributes
+*****************************
 
 .. py:attribute:: TransactionReceipt.block_number
 
@@ -185,6 +374,9 @@ Transactions
 
     The value of the transaction, in wei.
 
+TransactionReceipt Methods
+**************************
+
 .. py:classmethod:: TransactionReceipt.info()
 
     Displays verbose information about the transaction, including event logs and the error string if a transaction reverts.
@@ -238,6 +430,9 @@ Transactions
             function mul(uint a, uint b) internal pure returns (uint c) {
                 c = a * b;
 
+VirtualMachineError
+-------------------
+
 .. py:exception:: VirtualMachineError
 
     Raised when a call to a contract causes an EVM exception.  Transactions that result in a revert will still return a TransactionReceipt instead of raising.
@@ -246,225 +441,13 @@ Transactions
 
     Contains the EVM revert error message, if any.
 
-Accounts
-========
-
-Account classes are not meant to be instantiated directly. The ``Accounts`` container is available as ``accounts`` and will create each ``Account`` automatically during initialization. Add more accounts using ``Accounts.add``.
-
-.. py:class:: Accounts
-
-    Singleton list-like container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects.
-
-.. py:classmethod:: Accounts.add(priv_key)
-
-    Creates a new ``LocalAccount`` with private key ``priv_key``, appends it to the container, and returns the new account instance.  If no private key is entered, one is randomly generated.
-
-.. py:classmethod:: Accounts.at(address)
-
-    Given an address, returns the corresponding ``Account`` or ``LocalAccount`` from the container.
-
-.. py:classmethod:: Accounts.mnemonic(phrase, count=10)
-
-    Generates ``LocalAccount`` instances from a seed phrase based on the BIP44 standard. Compatible with `MetaMask <https://metamask.io>`__ and other popular wallets.
-
-.. py:classmethod:: Accounts.remove(address)
-
-    Removes an address from the container. The address may be given as a string or an ``Account`` instance.
-
-.. py:classmethod:: Accounts.clear()
-
-    Empties the container.
-
-.. py:class:: Account
-
-    An ethereum address that you control the private key for, and so can send transactions from.
-
-.. py:attribute:: Account.address
-
-    The public address of the account. Viewable by printing the class, you do not need to call this attribute directly.
-
-.. py:attribute:: Account.nonce
-
-    The current nonce of the address.
-
-.. py:classmethod:: Account.balance()
-
-    Returns the current balance at the address, in wei.
-
-.. py:classmethod:: Account.estimate_gas(to, amount, data="")
-
-    Estimates the gas required to perform a transaction. Raises a ``VirtualMachineError`` if the transaction would revert.
-
-.. py:classmethod:: Account.transfer(to, amount, gas=None, gas_price=None)
-
-    Transfers ether.
-
-    * ``to``: Recipient address.
-    * ``amount``: Amount to send, in wei_.
-    * ``gas``: Gas limit, in wei_. If none is given, the price is set using ``web3.eth.estimateGas``.
-    * ``gas_price``: Gas price, in wei_. If none is given, the price is set using ``web3.eth.gasPrice``.
-
-    Returns a ``TransactionReceipt`` instance.
-
-.. py:classmethod:: Account.deploy(contract, *args)
-
-    Deploys a contract.
-
-    * ``contract``: A ``ContractContainer`` instance of the contract to be deployed.
-    * ``*args``: Contract constructor arguments.
-
-    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument.
-
-    Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
-
-.. py:class:: LocalAccount
-
-    Functionally identical to ``Account``. The only difference is that a ``LocalAccount`` is one where the private key was directly inputted, and so is not found in ``web3.eth.accounts``.
-
-.. py:attribute:: LocalAccount.public_key
-
-    The local account's public key.
-
-.. py:attribute:: LocalAccount.private_key
-
-    The local account's private key.
-
-Contracts
-=========
-
-Contract classes are not meant to be instantiated directly. Each ``ContractContainer`` instance is created automatically during when Brownie starts. New ``Contract`` instances are created via methods in the deployer.
-
-.. py:class:: ContractContainer
-
-    A container class that holds all Contracts of the same type, and is used to deploy new instances of that contract.
-
-.. py:attribute:: ContractContainer.abi
-
-    The ABI of the contract.
-
-.. py:attribute:: ContractContainer.bytecode
-
-    The bytecode of the contract, without any applied constructor arguments.
-
-.. py:attribute:: ContractContainer.signatures
-
-    A dictionary of bytes4 signatures for each contract method.
-
-    .. code-block:: python
-
-        >>> Token.signatures.keys()
-        dict_keys(['name', 'approve', 'totalSupply', 'transferFrom', 'decimals', 'balanceOf', 'symbol', 'transfer', 'allowance'])
-        >>> Token.signatures['transfer']
-        0xa9059cbb
-
-.. py:attribute:: ContractContainer.topics
-
-    A dictionary of bytes32 topics for each contract event.
-
-    .. code-block:: python
-
-        >>> Token.topics.keys()
-        dict_keys(['Transfer', 'Approval'])
-        >>> Token.topics['Transfer']
-        0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
-
-.. py:classmethod:: ContractContainer.deploy(account, *args)
-
-    Deploys the contract.
-
-    * ``account``: An ``Account`` instance to deploy the contract from.
-    * ``*args``: Contract constructor arguments.
-
-    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
-
-    If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``IndexError`` is raised.
-
-    Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
-
-.. py:classmethod:: ContractContainer.at(address, owner=None)
-
-    Returns a ``Contract`` instance.
-
-    * ``address``: Address where the contract is deployed. Raises a ValueError if there is no bytecode at the address.
-    * ``owner``: ``Account`` instance to set as the contract owner. If transactions to the contract do not specify a ``'from'`` value, they will be sent from this account.
-
-.. py:classmethod:: ContractContainer.remove(address)
-
-    Removes a contract instance from the container.
-
-.. py:class:: Contract
-
-    A deployed contract. This class allows you to call or send transactions to the contract.
-
-.. py:attribute:: Contract.tx
-
-    The ``TransactionReceipt`` of the transaction that deployed the contract. If the contract was not deployed during this instance of brownie, it will be ``None``.
-
-.. py:attribute:: Contract.bytecode
-
-    The bytecode of the deployed contract, including constructor arguments.
-
-.. py:classmethod:: Contract.balance()
-
-    Returns the balance at the contract address, in wei.
-
-.. py:class:: ContractCall(*args)
-
-    Calls a non state-changing contract method without broadcasting a transaction, and returns the result. ``args`` must match the required inputs for the method.
-
-    The expected inputs are shown in the method's ``__repr__`` value.
-
-    .. code-block:: python
-
-        >>> Token[0].allowance
-        <ContractCall object 'allowance(address,address)'>
-        >>> Token[0].allowance(accounts[0], accounts[2])
-        0
-
-.. py:attribute:: ContractCall.abi
-
-    The contract ABI specific to this method.
-
-.. py:attribute:: ContractCall.signature
-
-    The bytes4 signature of this method.
-
-.. py:classmethod:: ContractCall.transact(*args)
-
-    Sends a transaction to the method and returns a ``TransactionReceipt``.
-
-.. py:class:: ContractTx(*args)
-
-    Sends a transaction to a potentially state-changing contract method. Returns a ``TransactionReceipt``.
-
-    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
-
-    .. code-block:: python
-
-        >>> Token[0].transfer
-        <ContractTx object 'transfer(address,uint256)'>
-        >>> Token[0].transfer(accounts[1], 100000, {'from':accounts[0]})
-
-        Transaction sent: 0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0
-        Transaction confirmed - block: 2   gas spent: 51049
-        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
-
-.. py:attribute:: ContractTx.abi
-
-    The contract ABI specific to this method.
-
-.. py:attribute:: ContractTx.signature
-
-    The bytes4 signature of this method.
-
-.. py:classmethod:: ContractTx.call(*args)
-
-    Calls the contract method without broadcasting a transaction, and returns the result.
-
 .. _api_check:
 
+Assertions
+==========
+
 Check
-=====
+-----
 
 The check module exposes the following methods that are used in place of ``assert`` when writing Brownie tests. All check methods raise an ``AssertionError`` when they fail.
 
@@ -496,10 +479,40 @@ The check module exposes the following methods that are used in place of ``asser
 
     Raises if ``a == b``.
 
+Console Methods
+===============
+
+These methods are used in the console.
+
+.. py:method:: gas(*args)
+
+    Displays or sets the default gas limit.
+
+    * If an integer value is given, this will be the default gas limit.
+    * If set to "auto", None, True or False, the gas limit is determined
+      automatically.
+
+    .. note:: When the gas limit is calculated automatically, transactions that would revert will raise a VirtualMachineError during the gas estimation and so will not be broadcasted.
+
+.. py:method:: logging(tx = None, exc = None)
+
+    Adjusts the logging verbosity. See :ref:`config` for more information on logging levels.
+
+.. py:method:: reset(network = None)
+
+    Reboots the local RPC client and resets the brownie environment. You can also optionally switch to a different network.
+
+.. py:method:: run(script)
+
+    Loads a script and runs the ``main`` method within it. See :ref:`deploy` for more information.
+
 .. _api_alert:
 
+Setting Alerts
+==============
+
 Alert
-=====
+-----
 
 The alert module is used to set up notifications and callbacks based on state changes in the blockchain.
 
@@ -529,3 +542,68 @@ The alert module is used to set up notifications and callbacks based on state ch
 .. py:method:: stop_all()
 
     Stops all currently active alerts.
+
+Number Conversions
+==================
+
+.. _wei:
+
+.. py:method:: wei(value)
+
+    Converts a value to wei. Useful for strings where you specify the unit, or for large floats given in scientific notation, where a direct conversion to ``int`` would cause inaccuracy from floating point errors.
+
+    ``wei`` is automatically applied in all Brownie methods when an input is meant to specify an amount of ether.
+
+    Some examples:
+
+    .. code-block:: python
+
+        >>> wei("1 ether")
+        1000000000000000000
+        >>> wei("12.49 gwei")
+        12490000000
+        >>> wei("0.029 shannon")
+        29000000
+        >>> wei(8.38e32)
+        838000000000000000000000000000000
+
+RPC Interaction
+===============
+
+These classes and methods are used for lower level interaction with the blockchain via the RPC.
+
+web3
+----
+
+.. py:class:: web3
+
+    Brownie implementation of ``web3py.web3``. Only some class methods are exposed. See the `Web3.py docs <https://web3py.readthedocs.io/en/stable/index.html>`__ for more information.
+
+.. _rpc:
+
+Rpc
+---
+
+.. py:class:: Rpc
+
+    Exposes methods for interacting with ``ganache-cli`` when running a local RPC environment. When using the console or writing tests, an instance of this class is available as ``rpc``.
+
+.. py:classmethod:: Rpc.time()
+
+    Returns the current epoch time in the RPC as an integer.
+
+.. py:classmethod:: Rpc.sleep(seconds)
+
+    Advances the RPC time. You can only advance the time by whole seconds.
+
+.. py:classmethod:: Rpc.mine(blocks = 1)
+
+    Forces new blocks to be mined.
+
+.. py:classmethod:: Rpc.snapshot()
+
+    Creates a snapshot at the current block height.
+
+.. py:classmethod:: Rpc.revert()
+
+    Reverts the blockchain to the latest snapshot. Raises ``ValueError`` if no snapshot has been taken.
