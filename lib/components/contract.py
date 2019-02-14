@@ -130,7 +130,6 @@ class _ContractConstructor:
     
     def __init__(self, parent, name):
         self._parent = parent
-        self.bytecode = parent.bytecode
         try:
             self.abi = [next(i for i in parent.abi if i['type']=="constructor")]
         except:
@@ -158,9 +157,10 @@ class _ContractConstructor:
         Returns:
             * Contract instance if the transaction confirms
             * TransactionReceipt if the transaction is pending or reverts'''
-        if '_' in self.bytecode:
+        bytecode = self._parent.bytecode
+        if '_' in bytecode:
             # find and replace unlinked library pointers in bytecode
-            for marker in re.findall('_{1,}[^_]*_{1,}', self.bytecode):
+            for marker in re.findall('_{1,}[^_]*_{1,}', bytecode):
                 contract = marker.strip('_')
                 if contract not in self._parent._network:
                     raise NameError(
@@ -171,12 +171,10 @@ class _ContractConstructor:
                         "Contract requires '{}' library".format(contract) +
                         " but it has not been deployed yet"
                     )
-                bytecode = self.bytecode.replace(
+                bytecode = bytecode.replace(
                     marker,
                     self._parent._network[contract][-1].address[-40:]
                 )
-        else:
-            bytecode = self.bytecode
         contract = web3.eth.contract(abi = self.abi, bytecode = bytecode)
         args, tx = _get_tx(account, args)
         tx = account._contract_tx(

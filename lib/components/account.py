@@ -117,6 +117,9 @@ class _AccountBase:
         self.address = addr
         self.nonce = web3.eth.getTransactionCount(self.address)
 
+    def __hash__(self):
+        return hash(self.address)
+    
     def __repr__(self):
         return "<Account object '{0[string]}{1}{0}'>".format(color, self.address)
 
@@ -255,7 +258,7 @@ class LocalAccount(_AccountBase):
                 'nonce': self.nonce,
                 'gasPrice': wei(gas_price) or self._gas_price(),
                 'gas': wei(gas_limit) or self._gas_limit(to, amount),
-                'to': to,
+                'to': str(to),
                 'value': wei(amount),
                 'data': ""
             }).rawTransaction
