@@ -55,7 +55,7 @@ class Alert:
         _instances.discard(self)
 
 def new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None):
-    '''Alias for creating a new alert.'''
+    '''Alias for creating a new Alert instance.'''
     return Alert(fn, args, kwargs, delay, msg, callback)
 
 def show():

@@ -445,10 +445,10 @@ VirtualMachineError
 Assertions
 ==========
 
-Check
------
+The ``check`` module exposes the following methods that are used in place of ``assert`` when writing Brownie tests. All check methods raise an ``AssertionError`` when they fail.
 
-The check module exposes the following methods that are used in place of ``assert`` when writing Brownie tests. All check methods raise an ``AssertionError`` when they fail.
+Module Methods
+--------------
 
 .. py:method:: check.true(statement, fail_msg = "Expected statement to be true")
 
@@ -507,13 +507,15 @@ These methods are used in the console.
 
 .. _api_alert:
 
-Setting Alerts
-==============
+Alerts and Callbacks
+====================
+
+The ``alert`` module is used to set up notifications and callbacks based on state changes in the blockchain.
 
 Alert
 -----
 
-The alert module is used to set up notifications and callbacks based on state changes in the blockchain.
+Alerts and callbacks are handled by creating instances of the ``Alert`` class.
 
 .. py:class:: Alert(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None)
 
@@ -530,9 +532,12 @@ The alert module is used to set up notifications and callbacks based on state ch
 
     Stops the alert.
 
+Module Methods
+--------------
+
 .. py:method:: new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None)
 
-    Alias for creating a new alert.
+    Alias for creating a new ``Alert`` instance.
 
 .. py:method:: show()
 
