@@ -5,7 +5,7 @@ import scripts.token
 
 
 def setup():
-    scripts.token.deploy()
+    scripts.token.main()
     global token
     token = Token[0]
 

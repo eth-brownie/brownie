@@ -18,34 +18,72 @@ Accounts
 
 .. py:class:: Accounts
 
-    Singleton list-like container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects.
+    Singleton list-like container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects. When printed it will display as a list.
+
+    .. code-block:: python
+
+        >>> accounts
+        [<Account object '0x7Ebaa12c5d1EE7fD498b51d4F9278DC45f8D627A'>, <Account object '0x186f79d227f5D819ACAB0C529031036D11E0a000'>, <Account object '0xC53c27492193518FE9eBff00fd3CBEB6c434Cf8b'>, <Account object '0x2929AF7BBCde235035ED72029c81b71935c49e94'>, <Account object '0xb93538FEb07b3B8433BD394594cA3744f7ee2dF1'>, <Account object '0x1E563DBB05A10367c51A751DF61167dE99A4d0A7'>, <Account object '0xa0942deAc0885096D8400D3369dc4a2dde12875b'>, <Account object '0xf427a9eC1d510D77f4cEe4CF352545071387B2e6'>, <Account object '0x2308D528e4930EFB4aF30793A3F17295a0EFa886'>, <Account object '0x2fb37EB570B1eE8Eda736c1BD1E82748Ec3d0Bf1'>]
 
 .. py:classmethod:: Accounts.add(priv_key)
 
     Creates a new ``LocalAccount`` with private key ``priv_key``, appends it to the container, and returns the new account instance.  If no private key is entered, one is randomly generated.
 
+    .. code-block:: python
+
+        >>> accounts.add()
+        <Account object '0xb094716BC0E9D3F3Fb42FF928bd76618435FeeAA'>
+        >>> accounts.add('8fa2fdfb89003176a16b707fc860d0881da0d1d8248af210df12d37860996fb2')
+        <Account object '0xc1826925377b4103cC92DeeCDF6F96A03142F37a'>
+
 .. py:classmethod:: Accounts.at(address)
 
     Given an address, returns the corresponding ``Account`` or ``LocalAccount`` from the container.
+
+    .. code-block:: python
+
+        >>> accounts.at('0xc1826925377b4103cC92DeeCDF6F96A03142F37a')
+        <Account object '0xc1826925377b4103cC92DeeCDF6F96A03142F37a'>
+
 
 .. py:classmethod:: Accounts.mnemonic(phrase, count=10)
 
     Generates ``LocalAccount`` instances from a seed phrase based on the BIP44 standard. Compatible with `MetaMask <https://metamask.io>`__ and other popular wallets.
 
+    .. code-block:: python
+
+        >>> accounts.mnemonic('strategy marriage ticket shift brown buddy decline deny budget photo sketch drama')
+        >>>
+
 .. py:classmethod:: Accounts.remove(address)
 
     Removes an address from the container. The address may be given as a string or an ``Account`` instance.
 
+    .. code-block:: python
+
+        >>> accounts.remove('0xc1826925377b4103cC92DeeCDF6F96A03142F37a')
+        >>>
+
 .. py:classmethod:: Accounts.clear()
 
     Empties the container.
+
+    .. code-block:: python
+
+        >>> accounts.clear()
+        >>>
 
 Account
 -------
 
 .. py:class:: Account
 
-    An ethereum address that you control the private key for, and so can send transactions from.
+    An ethereum address that you control the private key for, and so can send transactions from. Generated automatically and stored in the ``Accounts`` container.
+
+    .. code-block:: python
+
+        >>> accounts[0]
+        <Account object '0x7Ebaa12c5d1EE7fD498b51d4F9278DC45f8D627A'>
 
 Account Attributes
 ******************
@@ -54,31 +92,59 @@ Account Attributes
 
     The public address of the account. Viewable by printing the class, you do not need to call this attribute directly.
 
+    .. code-block:: python
+
+        >>> accounts[0].address
+        '0x7Ebaa12c5d1EE7fD498b51d4F9278DC45f8D627A'
+
 .. py:attribute:: Account.nonce
 
     The current nonce of the address.
+
+    .. code-block:: python
+
+        >>> accounts[0].nonce
+        0
 
 Account Methods
 ***************
 
 .. py:classmethod:: Account.balance()
 
-    Returns the current balance at the address, in wei.
+    Returns the current balance at the address, in wei as an int.
+
+    .. code-block:: python
+
+        >>> accounts[0].balance()
+        100000000000000000000
 
 .. py:classmethod:: Account.estimate_gas(to, amount, data="")
 
     Estimates the gas required to perform a transaction. Raises a ``VirtualMachineError`` if the transaction would revert.
 
+    * ``to``: Recipient address. Can be an ``Account`` instance or string.
+    * ``amount``: Amount to send, in wei_.
+
+    .. code-block:: python
+
+        >>> accounts[0].estimate_gas(accounts[1], "1 ether")
+        21000
+
 .. py:classmethod:: Account.transfer(to, amount, gas=None, gas_price=None)
 
     Transfers ether.
 
-    * ``to``: Recipient address.
+    * ``to``: Recipient address. Can be an ``Account`` instance or string.
     * ``amount``: Amount to send, in wei_.
-    * ``gas``: Gas limit, in wei_. If none is given, the price is set using ``web3.eth.estimateGas``.
-    * ``gas_price``: Gas price, in wei_. If none is given, the price is set using ``web3.eth.gasPrice``.
+    * ``gas``: Gas limit, in wei_. If none is given, the price is set using ``eth_estimateGas``.
+    * ``gas_price``: Gas price, in wei_. If none is given, the price is set using ``eth_gasPrice``.
 
     Returns a ``TransactionReceipt`` instance.
+
+    .. code-block:: python
+
+        >>> accounts[0].estimate_gas(accounts[1], "1 ether")
+        21000
 
 .. py:classmethod:: Account.deploy(contract, *args)
 
@@ -91,6 +157,24 @@ Account Methods
 
     Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
 
+    .. code-block:: python
+
+        >>> Token
+        []
+        >>> t = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
+
+        Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
+        Transaction confirmed - block: 1   gas spent: 594186
+        Contract deployed at: 0x5419710735c2D6c3e4db8F30EF2d361F70a4b380
+        <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+        >>>
+        >>> t
+        <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+        >>> Token
+        [<Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>]
+        >>> Token[0]
+        <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+
 LocalAccount
 ------------
 
@@ -98,13 +182,24 @@ LocalAccount
 
     Functionally identical to ``Account``. The only difference is that a ``LocalAccount`` is one where the private key was directly inputted, and so is not found in ``web3.eth.accounts``.
 
+    >>> accounts.add()
+    <LocalAccount object '0x716E8419F2926d6AcE07442675F476ace972C580'>
+    >>> accounts[-1]
+    <LocalAccount object '0x716E8419F2926d6AcE07442675F476ace972C580'>
+
 .. py:attribute:: LocalAccount.public_key
 
-    The local account's public key.
+    The local account's public key as a string.
+
+    >>> accounts[-1].public_key
+    '0x34b51e2913f5771acdddea7d353404f844b02a39ad4003c08afaa729993c43e890181327beaf352d81424cd277f4badc55be789a2817ea097bc82ea4801fee5b'
 
 .. py:attribute:: LocalAccount.private_key
 
-    The local account's private key.
+    The local account's private key as a string.
+
+    >>> accounts[-1].private_key
+    '0xd289bec8d9ad145aead13911b5bbf01936cbcd0efa0e26d5524b5ad54a61aeb8'
 
 Contracts
 =========
@@ -118,6 +213,9 @@ ContractContainer
 
     A list-like container class that holds all ``Contract`` instances of the same type, and is used to deploy new instances of that contract.
 
+    >>> Token
+    []
+
 ContractContainer Attributes
 ****************************
 
@@ -125,9 +223,15 @@ ContractContainer Attributes
 
     The ABI of the contract.
 
+    >>> Token.abi
+    [{'constant': True, 'inputs': [], 'name': 'name', 'outputs': [{'name': '', 'type': 'string'}], 'payable': False, 'stateMutability': 'view', 'type': 'function'}, {'constant': False, 'inputs': [{'name': '_spender', 'type': 'address'}, {'name': '_value', 'type': 'uint256'}], 'name': 'approve', 'outputs': [{'name': '', 'type': 'bool'}], 'payable': False, 'stateMutability': 'nonpayable', 'type': 'function'}, ... ]
+
 .. py:attribute:: ContractContainer.bytecode
 
     The bytecode of the contract, without any applied constructor arguments.
+
+    >>> Token.bytecode
+    '608060405234801561001057600080fd5b506040516107873803806107878339810160409081528151602080840151928401516060850151928501805190959490940193909291610055916000918701906100d0565b5082516100699060019060208601906100d0565b50600282905560038190553360008181526004602090815 ...
 
 .. py:attribute:: ContractContainer.signatures
 
@@ -135,6 +239,18 @@ ContractContainer Attributes
 
     .. code-block:: python
 
+        >>> Token.signatures
+        {
+            'allowance': "0xdd62ed3e",
+            'approve': "0x095ea7b3",
+            'balanceOf': "0x70a08231",
+            'decimals': "0x313ce567",
+            'name': "0x06fdde03",
+            'symbol': "0x95d89b41",
+            'totalSupply': "0x18160ddd",
+            'transfer': "0xa9059cbb",
+            'transferFrom': "0x23b872dd"
+        }
         >>> Token.signatures.keys()
         dict_keys(['name', 'approve', 'totalSupply', 'transferFrom', 'decimals', 'balanceOf', 'symbol', 'transfer', 'allowance'])
         >>> Token.signatures['transfer']
@@ -146,6 +262,11 @@ ContractContainer Attributes
 
     .. code-block:: python
 
+        >>> Token.topics
+        {
+            'Approval': "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+            'Transfer': "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+        }
         >>> Token.topics.keys()
         dict_keys(['Transfer', 'Approval'])
         >>> Token.topics['Transfer']
@@ -165,7 +286,29 @@ ContractContainer Methods
 
     If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``IndexError`` is raised.
 
-    Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
+    Returns a ``Contract`` instance upon success.
+    
+    In the console if the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
+
+    .. code-block:: python
+
+        >>> Token
+        []
+        >>> Token.deploy
+        <ContractConstructor object 'Token.constructor(string,string,uint256,uint256)'>
+        >>> t = Token.deploy(accounts[1], "Test Token", "TST", 18, "1000 ether")
+
+        Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
+        Transaction confirmed - block: 1   gas spent: 594186
+        Contract deployed at: 0x5419710735c2D6c3e4db8F30EF2d361F70a4b380
+        <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+        >>>
+        >>> t
+        <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+        >>> Token
+        [<Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>]
+        >>> Token[0]
+        <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
 .. py:classmethod:: ContractContainer.at(address, owner=None)
 
@@ -174,9 +317,32 @@ ContractContainer Methods
     * ``address``: Address where the contract is deployed. Raises a ValueError if there is no bytecode at the address.
     * ``owner``: ``Account`` instance to set as the contract owner. If transactions to the contract do not specify a ``'from'`` value, they will be sent from this account.
 
+    .. code-block:: python
+
+        >>> Token
+        [<Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>]
+        >>> Token.at('0x79447c97b6543F6eFBC91613C655977806CB18b0')
+        <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
+        >>> Token.at('0xefb1336a2E6B5dfD83D4f3a8F3D2f85b7bfb61DC')
+        File "brownie/lib/console.py", line 82, in _run
+            exec('_result = ' + cmd, self.__dict__, local_)
+        File "<string>", line 1, in <module>
+        File "brownie/lib/components/contract.py", line 121, in at
+            raise ValueError("No contract deployed at {}".format(address))
+        ValueError: No contract deployed at 0xefb1336a2E6B5dfD83D4f3a8F3D2f85b7bfb61DC
+
+
 .. py:classmethod:: ContractContainer.remove(address)
 
     Removes a contract instance from the container.
+
+    .. code-block:: python
+
+        >>> Token
+        [<Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>]
+        >>> Token.remove('0x79447c97b6543F6eFBC91613C655977806CB18b0')
+        >>> Token
+        []
 
 Contract
 --------
@@ -185,6 +351,11 @@ Contract
 
     A deployed contract. This class allows you to call or send transactions to the contract.
 
+    .. code-block:: python
+
+        >>> Token[0]
+        <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
+
 Contract Attributes
 *******************
 
@@ -192,16 +363,31 @@ Contract Attributes
 
     The bytecode of the deployed contract, including constructor arguments.
 
+    .. code-block:: python
+
+        >>> Token[0].bytecode
+        '6080604052600436106100985763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166306fdde03811461009d578063095ea7b31461012757806318160ddd1461015f57806323b872dd14610186578063313ce567146101b057806370a08231146101c557806395d89b41...
+
 .. py:attribute:: Contract.tx
 
     The ``TransactionReceipt`` of the transaction that deployed the contract. If the contract was not deployed during this instance of brownie, it will be ``None``.
+
+    .. code-block:: python
+
+        >>> Token[0].tx
+        <Transaction object '0xcede03c7e06d2b4878438b08cd0cf4515942b3ba06b3cfd7019681d18bb8902c'>
 
 Contract Methods
 ****************
 
 .. py:classmethod:: Contract.balance()
 
-    Returns the balance at the contract address, in wei.
+    Returns the balance at the contract address, in wei at an int.
+
+    .. code-block:: python
+
+        >>> Token[0].balance
+        0
 
 ContractCall
 ------------
@@ -226,9 +412,27 @@ ContractCall Attributes
 
     The contract ABI specific to this method.
 
+    .. code-block:: python
+
+        >>> Token[0].allowance.abi
+        {
+            'constant': True,
+            'inputs': [{'name': '_owner', 'type': 'address'}, {'name': '_spender', 'type': 'address'}],
+            'name': "allowance",
+            'outputs': [{'name': '', 'type': 'uint256'}],
+            'payable': False,
+            'stateMutability': "view",
+            'type': "function"
+        }
+
 .. py:attribute:: ContractCall.signature
 
     The bytes4 signature of this method.
+
+    .. code-block:: python
+
+        >>> Token[0].allowance.signature
+        '0xdd62ed3e'
 
 ContractCall Methods
 ********************
@@ -236,6 +440,16 @@ ContractCall Methods
 .. py:classmethod:: ContractCall.transact(*args)
 
     Sends a transaction to the method and returns a ``TransactionReceipt``.
+
+    .. code-block:: python
+
+        >>> tx = Token[0].allowance.transact(accounts[0], accounts[2])
+
+        Transaction sent: 0xc4f3a0addfe1e475c2466f30c750ca7a60450132b07102af610d8d56f170046b
+        Token.allowance confirmed - block: 2   gas used: 24972 (19.98%)
+        <Transaction object '0xc4f3a0addfe1e475c2466f30c750ca7a60450132b07102af610d8d56f170046b'>
+        >>> tx.return_value
+        0
 
 ContractTx
 ----------
@@ -263,9 +477,27 @@ ContractTx Attributes
 
     The contract ABI specific to this method.
 
+    .. code-block:: python
+
+        >>> Token[0].transfer.abi
+        {
+            'constant': False,
+            'inputs': [{'name': '_to', 'type': 'address'}, {'name': '_value', 'type': 'uint256'}],
+            'name': "transfer",
+            'outputs': [{'name': '', 'type': 'bool'}],
+            'payable': False,
+            'stateMutability': "nonpayable",
+            'type': "function"
+        }
+
 .. py:attribute:: ContractTx.signature
 
     The bytes4 signature of this method.
+
+    .. code-block:: python
+
+        >>> Token[0].transfer.signature
+        '0xa9059cbb'
 
 ContractTx Methods
 ******************
@@ -273,6 +505,11 @@ ContractTx Methods
 .. py:classmethod:: ContractTx.call(*args)
 
     Calls the contract method without broadcasting a transaction, and returns the result.
+
+    .. code-block:: python
+
+        >>> Token[0].transfer.call(accounts[2], 10000, {'from': accounts[0]})
+        True
 
 Transactions
 ============
@@ -286,6 +523,18 @@ TransactionReceipt
 
     Many of the attributes will be set to ``None`` while the transaction is still pending.
 
+    .. code-block:: python
+
+        >>> tx = Token[0].transfer
+        <ContractTx object 'transfer(address,uint256)'>
+        >>> Token[0].transfer(accounts[1], 100000, {'from':accounts[0]})
+
+        Transaction sent: 0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0
+        Transaction confirmed - block: 2   gas spent: 51049
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
+
 TransactionReceipt Attributes
 *****************************
 
@@ -293,61 +542,137 @@ TransactionReceipt Attributes
 
     The block height at which the transaction confirmed.
 
+    .. code-block:: python
+
+        >>> tx.block_number
+        2
+
 .. py:attribute:: TransactionReceipt.contract_address
 
     The address of the contract deployed as a result of this transaction, if any.
+
+    .. code-block:: python
+
+        >>> tx.contract_address
+        None
 
 .. py:attribute:: TransactionReceipt.events
 
     A dictionary of decoded event logs for this transaction. If you are connected to an RPC client that allows for ``debug_traceTransaction``, event data is still available when the transaction reverts.
 
+    .. code-block:: python
+
+        >>> tx.events
+        [{'name': 'Transfer', 'data': [{'name': 'from', 'type': 'address', 'value': '0x6b5132740b834674c3277aafa2c27898cbe740f6', 'decoded': True}, {'name': 'to', 'type': 'address', 'value': '0x31d504908351d2d87f3d6111f491f0b52757b592', 'decoded': True}, {'name': 'value', 'type': 'uint256', 'value': 1000000, 'decoded': True}]}]
+
 .. py:attribute:: TransactionReceipt.fn_name
 
     The name of the contract and function called by the transaction.
 
+    .. code-block:: python
+
+        >>> tx.fn_name
+        'Token.transfer'
+
 .. py:attribute:: TransactionReceipt.gas_limit
 
-    The gas limit of the transaction, in wei.
+    The gas limit of the transaction, in wei as an int.
+
+    .. code-block:: python
+
+        >>> tx.gas_limit
+        150921
 
 .. py:attribute:: TransactionReceipt.gas_price
 
-    The gas price of the transaction, in wei.
+    The gas price of the transaction, in wei as an int.
+
+    .. code-block:: python
+
+        >>> tx.gas_price
+        2000000000
 
 .. py:attribute:: TransactionReceipt.gas_used
 
-    The amount of gas consumed by the transaction, in wei.
+    The amount of gas consumed by the transaction, in wei as an int.
+
+    .. code-block:: python
+
+        >>> tx.gas_used
+        51049
 
 .. py:attribute:: TransactionReceipt.input
 
     The complete calldata of the transaction.
 
+    .. code-block:: python
+
+        >>> tx.input
+        '0xa9059cbb00000000000000000000000031d504908351d2d87f3d6111f491f0b52757b592000000000000000000000000000000000000000000000000000000000000000a'
+
+
 .. py:attribute:: TransactionReceipt.logs
 
-    The unencrypted event logs for the transaction. Not available if the transaction reverts.
+    The raw event logs for the transaction. Not available if the transaction reverts.
+
+    .. code-block:: python
+
+        >>> tx.logs
+        [AttributeDict({'logIndex': 0, 'transactionIndex': 0, 'transactionHash': HexBytes('0xa8afb59a850adff32548c65041ec253eb64e1154042b2e01e2cd8cddb02eb94f'), 'blockHash': HexBytes('0x0b93b4cf230c9ef92b990de9cd62611447d83d396f1b13204d26d28bd949543a'), 'blockNumber': 6, 'address': '0x79447c97b6543F6eFBC91613C655977806CB18b0', 'data': '0x0000000000000000000000006b5132740b834674c3277aafa2c27898cbe740f600000000000000000000000031d504908351d2d87f3d6111f491f0b52757b592000000000000000000000000000000000000000000000000000000000000000a', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef')], 'type': 'mined'})]
 
 .. py:attribute:: TransactionReceipt.nonce
 
     The nonce of the transaction.
 
+    .. code-block:: python
+
+        >>> tx.nonce
+        2
+
 .. py:attribute:: TransactionReceipt.receiver
 
     The address the transaction was sent to, as a string.
+
+    .. code-block:: python
+
+        >>> tx.receiver
+        '0x79447c97b6543F6eFBC91613C655977806CB18b0'
 
 .. py:attribute:: TransactionReceipt.revert_msg
 
     The error string returned when a transaction causes the EVM to revert, if any.
 
+    .. code-block:: python
+
+        >>> tx.revert_msg
+        None
+
 .. py:attribute:: TransactionReceipt.return_value
 
     The value returned from the called function, if any. Only available if the RPC client allows ``debug_traceTransaction``.
+
+    .. code-block:: python
+
+        >>> tx.return_value
+        True
 
 .. py:attribute:: TransactionReceipt.sender
 
     The address the transaction was sent from. Where possible, this will be an Account instance instead of a string.
 
+    .. code-block:: python
+
+        >>> tx.sender
+        <Account object '0x6B5132740b834674C3277aAfa2C27898CbE740f6'>
+
 .. py:attribute:: TransactionReceipt.status
 
     The status of the transaction: -1 for pending, 0 for failed, 1 for success.
+
+    .. code-block:: python
+
+        >>> tx.status
+        1
 
 .. py:attribute:: TransactionReceipt.trace
 
@@ -361,17 +686,59 @@ TransactionReceipt Attributes
     * ``jumpDepth``: The number of jumps made since entering this contract. The initial function has a value of 1.
     * ``source``: The start and end offset of the source code associated with this opcode.
 
+    .. code-block:: python
+
+        >>> len(tx.trace)
+        239
+        >>> tx.trace[0]
+        {
+            'address': "0x79447c97b6543F6eFBC91613C655977806CB18b0",
+            'contractName': "Token",
+            'depth': 0,
+            'error': "",
+            'fn': "transfer",
+            'gas': 128049,
+            'gasCost': 22872,
+            'jumpDepth': 1,
+            'memory': [],
+            'op': "PUSH1",
+            'pc': 0,
+            'source': {
+                'filename': "contracts/Token.sol",
+                'start': 53,
+                'stop': 2053
+            },
+            'stack': [],
+            'storage': {
+            }
+        }
+
 .. py:attribute:: TransactionReceipt.txid
 
     The transaction hash.
+
+    .. code-block:: python
+
+        >>> tx.txid
+        '0xa8afb59a850adff32548c65041ec253eb64e1154042b2e01e2cd8cddb02eb94f'
 
 .. py:attribute:: TransactionReceipt.txindex
 
     The integer of the transaction's index position in the block.
 
+    .. code-block:: python
+
+        >>> tx.txindex
+        0
+
 .. py:attribute:: TransactionReceipt.value
 
-    The value of the transaction, in wei.
+    The value of the transaction, in wei as an int.
+
+    .. code-block:: python
+
+        >>> tx.value
+        0
 
 TransactionReceipt Methods
 **************************
@@ -380,7 +747,7 @@ TransactionReceipt Methods
 
     Displays verbose information about the transaction, including event logs and the error string if a transaction reverts.
 
-    ::
+    .. code-block:: python
 
         >>> tx = accounts[0].transfer(accounts[1], 100)
         <Transaction object '0x2facf2d1d2fdfa10956b7beb89cedbbe1ba9f4a2f0592f8a949d6c0318ec8f66'>
@@ -395,11 +762,18 @@ TransactionReceipt Methods
         Block: 1
         Gas Used: 21000
 
+           Events In This Transaction
+           --------------------------
+           Transfer
+              from: 0x5fe657e72E76E7ACf73EBa6FA07ecB40b7312d80
+              to: 0x31d504908351d2d87f3d6111f491f0b52757b592
+              value: 100
+
 .. py:classmethod:: TransactionReceipt.call_trace()
 
-    Displays the sequence of contracts and functions called while executing this transaction, and the structLog index where each call or jump occured. Any functions that terminated with a ``REVERT`` opcode are highlighted in red.
+    Displays the sequence of contracts and functions called while executing this transaction, and the structLog index where each call or jump occured. Any functions that terminated with ``REVERT`` or ``INVALID`` opcodes are highlighted in red.
 
-    ::
+    .. code-block:: python
 
         >>> tx = Token[0].transferFrom(accounts[2], accounts[3], "10000 ether")
 
@@ -408,7 +782,7 @@ TransactionReceipt Methods
 
         >>> tx.call_trace()
         Token.transferFrom 0 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
-        Token.sub 86 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
+          Token.sub 86 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
 
 .. py:classmethod:: TransactionReceipt.error(pad=3)
 
@@ -416,7 +790,7 @@ TransactionReceipt Methods
 
     * ``pad``: Number of unrelated lines to show around the relevent source code.
 
-    ::
+    .. code-block:: python
 
         >>> tx.error()
         File "contracts/SafeMath.sol", line 9:
@@ -456,13 +830,50 @@ Module Methods
 
     Raises if ``statement`` does not evaluate to True.
 
+    .. code-block:: python
+
+        >>> check.true(2 + 2 == 4)
+        >>> check.true(0 > 1)
+        File "brownie/lib/components/check.py", line 18, in true
+            raise AssertionError(fail_msg)
+        AssertionError: Expected statement to be true
+        
+        >>> check.true(False, "What did you expect?")
+        File "brownie/lib/console.py", line 82, in _run
+            exec('_result = ' + cmd, self.__dict__, local_)
+        File "<string>", line 1, in <module>
+        File "/home/computer/code/python/brownie/lib/components/check.py", line 18, in true
+            raise AssertionError(fail_msg)
+        AssertionError: What did you expect?
+
 .. py:method:: check.false(statement, fail_msg = "Expected statement to be False")
 
     Raises if ``statement`` does not evaluate to False.
 
+    .. code-block:: python
+
+        >>> check.false(0 > 1)
+        >>> check.false(2 + 2 == 4)
+        File "brownie/lib/components/check.py", line 18, in true
+            raise AssertionError(fail_msg)
+        AssertionError: Expected statement to be False
+
 .. py:method:: check.reverts(fn, args, fail_msg = "Expected transaction to revert", revert_msg=None)
 
     Performs the given contract call ``fn`` with arguments ``args``. Raises if the call does not cause the EVM to revert. This check will work regardless of if the revert happens from a call or a transaction.
+
+    .. code-block:: python
+
+        >>> Token[0].balanceOf(accounts[2])
+        900
+        >>> check.reverts(Token[0].transfer, (accounts[0], 10000, {'from': accounts[2]})
+        >>> check.reverts(Token[0].transfer, (accounts[0], 900, {'from': accounts[2]}))
+            
+        Transaction sent: 0xc9e056550ec579ba6b842d27bb7f029912c865becce19ee077734a04d5198f8c
+        Token.transfer confirmed - block: 7   gas used: 20921 (15.39%)
+        File "brownie/lib/components/check.py", line 45, in reverts
+            raise AssertionError(fail_msg)
+        AssertionError: Expected transaction to revert
 
 .. py:method:: check.confirms(fn, args, fail_msg = "Expected transaction to confirm")
 
@@ -470,13 +881,55 @@ Module Methods
 
     Returns a ``TransactionReceipt`` instance.
 
+    .. code-block:: python
+
+        >>> Token[0].balanceOf(accounts[2])
+        900
+        >>> check.confirms(Token[0].transfer, (accounts[0], 900, {'from': accounts[2]}))
+            
+        Transaction sent: 0xc9e056550ec579ba6b842d27bb7f029912c865becce19ee077734a04d5198f8c
+        Token.transfer confirmed - block: 7   gas used: 20921 (15.39%)
+        
+        >>> Token[0].balanceOf(accounts[2])
+        0
+        >>> check.confirms(Token[0].transfer, (accounts[0], 900, {'from': accounts[2]}))
+        File "brownie/lib/components/check.py", line 61, in confirms
+            raise AssertionError(fail_msg)
+        AssertionError: Expected transaction to confirm
+
 .. py:method:: check.equal(a, b, fail_msg = "Expected values to be equal")
 
-    Raises if ``a != b``.
+    Raises if ``a != b``. Before comparison, both values are converted by wei_ if possible.
+
+    .. code-block:: python
+
+        >>> t = Token[0]
+        <Token Contract object '0x1F3d78dC50DbDae4D2527D2EA17D7299b90Efe50'>
+        >>> t.balanceOf(accounts[0])
+        10000
+        >>> t.balanceOf(accounts[1])
+        0
+        >>> check.equal(t.balanceOf(accounts[0]), t.balanceOf(accounts[1]))
+        File "brownie/lib/components/check.py", line 74, in equal
+            raise AssertionError(fail_msg)
+        AssertionError: Expected values to be equal
 
 .. py:method:: check.not_equal(a, b, fail_msg = "Expected values to be not equal")
 
-    Raises if ``a == b``.
+    Raises if ``a == b``. Before comparison, both values are converted by wei_ if possible.
+
+    .. code-block:: python
+
+        >>> t = Token[0]
+        <Token Contract object '0x1F3d78dC50DbDae4D2527D2EA17D7299b90Efe50'>
+        >>> t.balanceOf(accounts[1])
+        0
+        >>> t.balanceOf(accounts[2])
+        0
+        >>> check.not_equal(t.balanceOf(accounts[1]), t.balanceOf(accounts[2]))
+        File "brownie/lib/components/check.py", line 86, in not_equal
+            raise AssertionError(fail_msg)
+        AssertionError: Expected values to be not equal
 
 Console Methods
 ===============
@@ -491,19 +944,57 @@ These methods are used in the console.
     * If set to "auto", None, True or False, the gas limit is determined
       automatically.
 
-    .. note:: When the gas limit is calculated automatically, transactions that would revert will raise a VirtualMachineError during the gas estimation and so will not be broadcasted.
+    .. note:: When the gas limit is calculated automatically, transactions that would revert will raise a ``VirtualMachineError`` during the gas estimation and so will not be broadcasted.
+
+    .. code-block:: python
+
+        >>> gas()
+        Gas limit is set to automatic
+        >>> gas(1000000)
+        Gas limit is set to 1000000
+        >>> gas()
+        Gas limit is set to 1000000
+        >>> gas("auto")
+        Gas limit is set to automatic
 
 .. py:method:: logging(tx = None, exc = None)
 
     Adjusts the logging verbosity. See :ref:`config` for more information on logging levels.
 
+    .. clode-block:: python
+
+        >>> logging()
+        logging(tx=n, exc=n)
+
+         0 - Quiet
+         1 - Normal
+         2 - Verbose
+        >>> logging(tx=2)
+        {'tx': 2, 'exc': 2}
+
 .. py:method:: reset(network = None)
 
     Reboots the local RPC client and resets the brownie environment. You can also optionally switch to a different network.
 
+    .. code-block:: python
+
+        >>> reset()
+        Using network 'development'
+        Running 'ganache-cli'...
+        Brownie environment is ready.
+        >>>
+
 .. py:method:: run(script)
 
     Loads a script and runs the ``main`` method within it. See :ref:`deploy` for more information.
+
+    .. code-block:: python
+
+        >>> run('token')
+    
+        Transaction sent: 0xe4bd74210e56d4da8d53774dc333a1122c26a72a86fbba82220fcf5d2648d634
+        Token confirmed - block: 1   gas used: 594250 (85.60%)
+        Token deployed at: 0x9b473B0648eC070035a17b6caE7b92c5dD5b7Fe1
 
 .. _api_alert:
 
@@ -557,8 +1048,6 @@ Number Conversions
     Converts a value to wei. Useful for strings where you specify the unit, or for large floats given in scientific notation, where a direct conversion to ``int`` would cause inaccuracy from floating point errors.
 
     ``wei`` is automatically applied in all Brownie methods when an input is meant to specify an amount of ether.
-
-    Some examples:
 
     .. code-block:: python
 

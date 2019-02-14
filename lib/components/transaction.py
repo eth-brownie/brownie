@@ -43,13 +43,13 @@ class VirtualMachineError(Exception):
     source = ""
     
     def __init__(self, exc):
-        if type(exc) is str:
+        if type(exc) is not dict:
             exc = eval(str(exc))
         if 'source' in exc:
             self.source = exc['source']
         if len(exc['message'].split('revert ', maxsplit=1))>1:
             self.revert_msg = exc['message'].split('revert ')[-1]
-        super().__init__(exc)
+        super().__init__(exc['message'])
 
 
 def raise_or_return_tx(exc):

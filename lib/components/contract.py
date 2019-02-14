@@ -59,7 +59,7 @@ class ContractContainer(_ContractBase):
         if type(build['pcMap']) is list:
             build['pcMap'] = dict((i.pop('pc'),i) for i in build['pcMap'])
         super().__init__(build)
-        self.deploy = _ContractConstructor(self, self._name)
+        self.deploy = ContractConstructor(self, self._name)
         deployed_contracts[self._name] = OrderedDict()
         for k, data in sorted([
             (k,v) for k,v in build['networks'].items() if 
@@ -117,7 +117,7 @@ class ContractContainer(_ContractBase):
             raise ValueError("Contract '{}' already declared at {}".format(
                 contract._name, address
             ))
-        if web3.eth.getCode(address).hex() == "0x00":
+        if web3.eth.getCode(address).hex() == "0x":
             raise ValueError("No contract deployed at {}".format(address))
         contract = Contract(address, self._build, owner, tx)
         deployed_contracts[self._name][address] = contract
@@ -126,7 +126,7 @@ class ContractContainer(_ContractBase):
         return deployed_contracts[self._name][address]
 
 
-class _ContractConstructor:
+class ContractConstructor:
     
     def __init__(self, parent, name):
         self._parent = parent

@@ -119,9 +119,6 @@ class _AccountBase:
 
     def __hash__(self):
         return hash(self.address)
-    
-    def __repr__(self):
-        return "<Account object '{0[string]}{1}{0}'>".format(color, self.address)
 
     def __str__(self):
         return self.address
@@ -187,6 +184,9 @@ class Account(_AccountBase):
         address: Public address of the account.
         nonce: Current nonce of the account.'''
     
+    def __repr__(self):
+        return "<Account object '{0[string]}{1}{0}'>".format(color, self.address)
+    
     def transfer(self, to, amount, gas_limit=None, gas_price=None):
         '''Transfers ether from this account.
         
@@ -240,6 +240,9 @@ class LocalAccount(_AccountBase):
         self.private_key = priv_key
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
+
+    def __repr__(self):
+        return "<LocalAccount object '{0[string]}{1}{0}'>".format(color, self.address)
 
     def transfer(self, to, amount, gas_limit=None, gas_price=None):
         '''Transfers ether from this account.

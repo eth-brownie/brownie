@@ -4,7 +4,7 @@ from brownie import *
 import scripts.token
 
 def setup():
-    scripts.token.deploy()
+    scripts.token.main()
 
 def transfer():
     '''Transfer tokens'''

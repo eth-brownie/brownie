@@ -87,14 +87,21 @@ Each contract in the project has a ``ContractDeployer`` class, which allows you 
 
     >>> Token
     []
-    >>> Token.deploy(accounts[1], "Test Token", "TST", 18, "1000 ether")
+    >>> Token.deploy
+    <ContractConstructor object 'Token.constructor(string,string,uint256,uint256)'>
+    >>> t = Token.deploy(accounts[1], "Test Token", "TST", 18, "1000 ether")
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
-    Transaction confirmed - block: 2   gas spent: 594186
+    Transaction confirmed - block: 1   gas spent: 594186
     Contract deployed at: 0x5419710735c2D6c3e4db8F30EF2d361F70a4b380
+    <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+    >>>
+    >>> t
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
     >>> Token
     [<Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>]
+    >>> Token[0]
+    <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
 Alternatively, you can deploy from ``account`` with the contract as the first argument.
 
@@ -102,13 +109,18 @@ Alternatively, you can deploy from ``account`` with the contract as the first ar
 
     >>> Token
     []
-    >>> accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
+    >>> t = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
-    Transaction confirmed - block: 2   gas spent: 594186
+    Transaction confirmed - block: 1   gas spent: 594186
     Contract deployed at: 0x5419710735c2D6c3e4db8F30EF2d361F70a4b380
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+    >>>
+    >>> t
+    <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
     >>> Token
+    [<Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>]
+    >>> Token[0]
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
 You can also use ``ContractDeployer.at`` to access an already existing contract.

@@ -84,6 +84,8 @@ class Console:
                     if r != None:
                         if type(r) is dict and r:
                             color.json(r)
+                        elif type(r) is str:
+                            print(r)
                         else:
                             print(repr(r))
                 except SyntaxError:

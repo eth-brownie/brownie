@@ -40,7 +40,46 @@ The brownie console is useful when you want to interact directly with contracts 
 
     $ brownie console
 
-Brownie will compile your contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`.
+Brownie will compile your contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`. You can use builtins ``dir`` and ``help`` for quick reference to available methods and attributes.
+
+Here is an example of checking a balance and transfering some ether:
+
+.. code-block:: python
+
+    >>> accounts[0]
+    <Account object '0xC0BcE0346d4d93e30008A1FE83a2Cf8CfB9Ed301'>
+    >>> accounts[1].balance()
+    100000000000000000000
+    >>> accounts[0].transfer(accounts[1], "10 ether")
+
+    Transaction sent: 0x124ba3f9f9e5a8c5e7e559390bebf8dfca998ef32130ddd114b7858f255f6369
+    Transaction confirmed - block: 1   gas spent: 21000
+    <Transaction object '0x124ba3f9f9e5a8c5e7e559390bebf8dfca998ef32130ddd114b7858f255f6369'>
+    >>> accounts[1].balance()
+    110000000000000000000
+
+Deploying a contract:
+
+.. code-block:: python
+
+    >>> Token
+    []
+    >>> Token.deploy
+    <ContractConstructor object 'Token.constructor(string,string,uint256,uint256)'>
+    >>> t = Token.deploy(accounts[1], "Test Token", "TST", 18, "1000 ether")
+
+    Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
+    Transaction confirmed - block: 1   gas spent: 594186
+    Contract deployed at: 0x5419710735c2D6c3e4db8F30EF2d361F70a4b380
+    <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+    >>>
+    >>> t
+    <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+    >>> Token
+    [<Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>]
+    >>> Token[0]
+    <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+
 
 Running Scripts
 ===============
