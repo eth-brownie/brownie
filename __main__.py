@@ -4,6 +4,7 @@ from docopt import docopt
 import importlib
 import os
 import subprocess
+from subprocess import DEVNULL
 import sys
 
 import lib.init as init
@@ -11,7 +12,7 @@ from lib.services import config, color
 CONFIG = config.CONFIG
 
 
-__version__ = "0.9.0b"  # did you change this in docs/conf.py as well?
+__version__ = "0.9.0"  # did you change this in docs/conf.py as well?
 
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
@@ -27,7 +28,7 @@ Options:
   --update           Update to the latest version of brownie
 
 Type 'brownie <command> --help' for specific options and more information about
-each command.""".format(CONFIG['network_defaults']['name'])
+each command."""
 
 
 def get_latest_commit():
@@ -44,13 +45,20 @@ if '--update' in sys.argv:
     print("Checking for updates...")
     subprocess.run(
         ['git', 'pull'],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        stdin=subprocess.DEVNULL
+        stdin=DEVNULL,
+        stdout=DEVNULL,
+        stderr=DEVNULL
     )
     if version == get_latest_commit():
         sys.exit("You already have the latest version of Brownie.")
     else:
+        print("New version found, updating requirements...")
+        subprocess.run(
+            ['venv/bin/pip', 'install', '-r', 'requirements.txt'],
+            stdin=DEVNULL,
+            stdout=DEVNULL,
+            stderr=DEVNULL
+        )
         sys.exit("Brownie has been updated!")
 
 if len(sys.argv)>1 and sys.argv[1][0] != "-":
