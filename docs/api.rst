@@ -117,7 +117,7 @@ ContractContainer
 
 .. py:class:: ContractContainer
 
-    A container class that holds all Contracts of the same type, and is used to deploy new instances of that contract.
+    A list-like container class that holds all ``Contract`` instances of the same type, and is used to deploy new instances of that contract.
 
 ContractContainer Attributes
 ****************************
@@ -189,13 +189,13 @@ Contract
 Contract Attributes
 *******************
 
-.. py:attribute:: Contract.tx
-
-    The ``TransactionReceipt`` of the transaction that deployed the contract. If the contract was not deployed during this instance of brownie, it will be ``None``.
-
 .. py:attribute:: Contract.bytecode
 
     The bytecode of the deployed contract, including constructor arguments.
+
+.. py:attribute:: Contract.tx
+
+    The ``TransactionReceipt`` of the transaction that deployed the contract. If the contract was not deployed during this instance of brownie, it will be ``None``.
 
 Contract Methods
 ****************

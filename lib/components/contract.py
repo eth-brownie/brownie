@@ -43,6 +43,15 @@ class _ContractBase:
 
 class ContractContainer(_ContractBase):
 
+    '''List-like container class that holds all Contract instances of the same
+    type, and is used to deploy new instances of that contract.
+    
+    Attributes:
+        abi: Complete contract ABI.
+        bytecode: Bytecode used to deploy the contract.
+        signatures: Dictionary of {'function name': "bytes4 signature"}
+        topics: Dictionary of {'event name': "bytes32 topic"}'''
+    
     def __init__(self, build, network):
         self.tx = None
         self.bytecode = build['bytecode']
@@ -84,10 +93,22 @@ class ContractContainer(_ContractBase):
     def __repr__(self):
         return str(list(deployed_contracts[self._name].values()))
 
-    def remove(self, item):
-        del deployed_contracts[self._name][str(item)]
+    def remove(self, contract):
+        '''Removes a contract from the container.
+        
+        Args:
+            contract: Contract instance of address string of the contract.'''
+        del deployed_contracts[self._name][str(contract)]
 
     def at(self, address, owner = None, tx = None):
+        '''Returns a contract address.
+        
+        Raises ValueError if no bytecode exists at the address.
+
+        Args:
+            address: Address string of the contract.
+            owner: Default Account instance to send contract transactions from.
+            tx: Transaction ID of the contract creation.'''
         address = web3.toChecksumAddress(address)
         if address in deployed_contracts[self._name]:
             return deployed_contracts[self._name][address]
@@ -106,7 +127,7 @@ class ContractContainer(_ContractBase):
 
 
 class _ContractConstructor:
-
+    
     def __init__(self, parent, name):
         self._parent = parent
         self.bytecode = parent.bytecode
@@ -127,6 +148,16 @@ class _ContractConstructor:
         )
 
     def __call__(self, account, *args):
+        '''Deploys a contract.
+
+        Args:
+            account: Account instance to deploy the contract from.
+            *args: Constructor arguments. The last argument may optionally be
+                   a dictionary of transaction values.
+
+        Returns:
+            * Contract instance if the transaction confirms
+            * TransactionReceipt if the transaction is pending or reverts'''
         if '_' in self.bytecode:
             # find and replace unlinked library pointers in bytecode
             for marker in re.findall('_{1,}[^_]*_{1,}', self.bytecode):
@@ -146,10 +177,8 @@ class _ContractConstructor:
                 )
         else:
             bytecode = self.bytecode
-
         contract = web3.eth.contract(abi = self.abi, bytecode = bytecode)
         args, tx = _get_tx(account, args)
-
         tx = account._contract_tx(
             contract.constructor,
             _format_inputs(
@@ -166,11 +195,22 @@ class _ContractConstructor:
         return tx
 
     def _callback(self, tx):
+        # ensures the Contract instance is added to the container if the user
+        # presses CTRL-C while deployment is still pending
         if tx.status == 1:
             self._parent.at(tx.contract_address, tx.sender, tx)
 
 
 class Contract(_ContractBase):
+
+    '''Methods for interacting with a deployed contract.
+    
+    Each public contract method is available as a ContractCall or ContractTx
+    instance, created when this class is instantiated.
+
+    Attributes:
+        bytecode: Bytecode of the deployed contract, including constructor args.
+        tx: TransactionReceipt of the of the tx that deployed the contract.'''
 
     def __init__(self, address, build, owner, tx=None):
         super().__init__(build)
@@ -209,6 +249,7 @@ class Contract(_ContractBase):
         return super().__eq__(other)
 
     def balance(self):
+        '''Returns the current ether balance of the contract, in wei.'''
         return web3.eth.getBalance(self._contract.address)
 
 
@@ -235,6 +276,14 @@ class _ContractMethod:
         return _format_inputs(self.abi['name'], args, types)
 
     def call(self, *args):
+        '''Calls the contract method without broadcasting a transaction.
+        
+        Args:
+            *args: Contract method inputs. You can optionally provide a
+                   dictionary of transaction properties as the last arg.
+
+        Returns:
+            Contract method return value(s).'''
         args, tx = _get_tx(self._owner, args)
         if tx['from']:
             tx['from'] = str(tx['from'])
@@ -249,6 +298,14 @@ class _ContractMethod:
         return [(web3.toHex(i) if type(i) is bytes else i) for i in result]
 
     def transact(self, *args):
+        '''Broadcasts a transaction that calls this contract method.
+        
+        Args:
+            *args: Contract method inputs. You can optionally provide a
+                   dictionary of transaction properties as the last arg.
+
+        Returns:
+            TransactionReceipt instance.'''
         args, tx = _get_tx(self._owner, args)
         if not tx['from']:
             raise AttributeError(
@@ -265,13 +322,41 @@ class _ContractMethod:
 
 class ContractTx(_ContractMethod):
 
+    '''A public payable or non-payable contract method.
+    
+    Args:
+        abi: Contract ABI specific to this method.
+        signature: Bytes4 method signature.'''
+
     def __call__(self, *args):
+        '''Broadcasts a transaction that calls this contract method.
+        
+        Args:
+            *args: Contract method inputs. You can optionally provide a
+                   dictionary of transaction properties as the last arg.
+
+        Returns:
+            TransactionReceipt instance.'''
         return self.transact(*args)
 
 
 class ContractCall(_ContractMethod):
 
+    '''A public view or pure contract method.
+    
+    Args:
+        abi: Contract ABI specific to this method.
+        signature: Bytes4 method signature.'''
+
     def __call__(self, *args):
+        '''Calls the contract method without broadcasting a transaction.
+        
+        Args:
+            *args: Contract method inputs. You can optionally provide a
+                   dictionary of transaction properties as the last arg.
+
+        Returns:
+            Contract method return value(s).'''
         if sys.argv[1] in ('test', 'coverage') and CONFIG['test']['always_transact']:
             tx = self.transact(*args)
             return tx.return_value
@@ -279,44 +364,50 @@ class ContractCall(_ContractMethod):
 
 
 def _get_tx(owner, args):
-        if args and type(args[-1]) is dict:
-            args, tx = (args[:-1], args[-1])
-            if 'from' not in tx:
-                tx['from'] = owner
-            for key in [i for i in ['value','gas','gasPrice'] if i in tx]:
-                tx[key] = wei(tx[key])
-        else:
-            tx = {'from': owner}
-        return args, tx
+    # seperate contract inputs from tx dict
+    if args and type(args[-1]) is dict:
+        args, tx = (args[:-1], args[-1])
+        if 'from' not in tx:
+            tx['from'] = owner
+        for key in [i for i in ['value','gas','gasPrice'] if i in tx]:
+            tx[key] = wei(tx[key])
+    else:
+        tx = {'from': owner}
+    return args, tx
 
 
 def _format_inputs(name, inputs, types):
-        inputs = list(inputs)
-        if len(inputs) != len(types):
-            raise AttributeError(
-                "{} requires the following arguments: {}".format(
-                name,",".join(types)))
-        for i, type_ in enumerate(types):
-            if type_[-1]=="]":
-                t,length = type_.rstrip(']').rsplit('[', maxsplit=1)
-                if length != "" and len(inputs[i]) != int(length):
-                    raise ValueError(
-                        "'{}': Argument {}, sequence has a length of {}, should be {}".format(
-                            name, i, len(inputs[i]), type_))
-                inputs[i] = _format_inputs(name, inputs[i],[t]*len(inputs[i]))
-                continue
-            try:
-                if "address" in type_:
-                    inputs[i] = str(inputs[i])
-                if "int" in type_:
-                    inputs[i] = wei(inputs[i])
-                elif "bytes" in type_ and type(inputs[i]) is not bytes:
-                    if type(inputs[i]) is not str:
-                        inputs[i]=int(inputs[i]).to_bytes(int(type_[5:]),"big")
-                    elif inputs[i][:2]!="0x":
-                        inputs[i]=inputs[i].encode() 
-            except:
+    # format contract inputs based on ABI types
+    inputs = list(inputs)
+    if len(inputs) and not len(types):
+        raise AttributeError("{} requires no arguments".format(name))
+    if len(inputs) != len(types):
+        raise AttributeError(
+            "{} requires the following arguments: {}".format(
+            name,",".join(types)))
+    for i, type_ in enumerate(types):
+        if type_[-1]=="]":
+            # input value is an array, have to check every item
+            t,length = type_.rstrip(']').rsplit('[', maxsplit=1)
+            if length != "" and len(inputs[i]) != int(length):
                 raise ValueError(
-                    "'{}': Argument {}, could not convert {} '{}' to type {}".format(
-                        name,i,type(inputs[i]).__name__,inputs[i],type_))
-        return inputs
+                    "'{}': Argument {}, sequence has a ".format(name, i) +
+                    "length of {}, should be {}".format(len(inputs[i]), type_)
+                    )
+            inputs[i] = _format_inputs(name, inputs[i],[t]*len(inputs[i]))
+            continue
+        try:
+            if "address" in type_:
+                inputs[i] = str(inputs[i])
+            if "int" in type_:
+                inputs[i] = wei(inputs[i])
+            elif "bytes" in type_ and type(inputs[i]) is not bytes:
+                if type(inputs[i]) is not str:
+                    inputs[i]=int(inputs[i]).to_bytes(int(type_[5:]), "big")
+                elif inputs[i][:2]!="0x":
+                    inputs[i]=inputs[i].encode() 
+        except:
+            raise ValueError(
+                "'{}': Argument {}, could not convert {} '{}' to type {}".format(
+                    name,i,type(inputs[i]).__name__,inputs[i],type_))
+    return inputs
