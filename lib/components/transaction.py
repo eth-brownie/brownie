@@ -159,25 +159,25 @@ class TransactionReceipt:
             pass
         if self.fn_name and '--gas' in sys.argv:
             _profile_gas(self.fn_name, receipt['gasUsed'])
-        if silent:
-            return callback(self)
-        if CONFIG['logging']['tx'] >= 2:
-            self.info()
-        elif CONFIG['logging']['tx']:
-            color.print_colors("{} confirmed {}- block: {}   gas used: {} ({:.2%})".format(
-                self.fn_name or "Transaction",
-                "" if self.status else "({0[error]}{1}{0}) ".format(
-                    color, self.revert_msg or "reverted"),
-                self.block_number,
-                self.gas_used,
-                self.gas_used / self.gas_limit
-            ))
-            if receipt['contractAddress']:
-                color.print_colors("{} deployed at: {}".format(
-                    self.fn_name.split('.')[0],
-                    receipt['contractAddress']
+        if not silent:
+            if CONFIG['logging']['tx'] >= 2:
+                self.info()
+            elif CONFIG['logging']['tx']:
+                color.print_colors("{} confirmed {}- block: {}   gas used: {} ({:.2%})".format(
+                    self.fn_name or "Transaction",
+                    "" if self.status else "({0[error]}{1}{0}) ".format(
+                        color, self.revert_msg or "reverted"),
+                    self.block_number,
+                    self.gas_used,
+                    self.gas_used / self.gas_limit
                 ))
-        callback(self)
+                if receipt['contractAddress']:
+                    color.print_colors("{} deployed at: {}".format(
+                        self.fn_name.split('.')[0],
+                        receipt['contractAddress']
+                    ))
+        if callback:
+            callback(self)
 
     def __repr__(self):
         c = {-1: 'pending', 0: 'error', 1: None}

@@ -78,7 +78,7 @@ class Network:
                 continue
             if name in self._network_dict:
                 raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
-            self._network_dict[name] = contract.ContractDeployer(build, self._network_dict)
+            self._network_dict[name] = contract.ContractContainer(build, self._network_dict)
         if self._module:
             self._module.__dict__.update(self._network_dict)
         

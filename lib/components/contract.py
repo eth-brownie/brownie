@@ -41,7 +41,7 @@ class _ContractBase:
         ) for i in self.abi if i['type']=="function")
 
 
-class ContractDeployer(_ContractBase):
+class ContractContainer(_ContractBase):
 
     def __init__(self, build, network):
         self.tx = None
@@ -50,6 +50,7 @@ class ContractDeployer(_ContractBase):
         if type(build['pcMap']) is list:
             build['pcMap'] = dict((i.pop('pc'),i) for i in build['pcMap'])
         super().__init__(build)
+        self.deploy = _ContractConstructor(self, self._name)
         deployed_contracts[self._name] = OrderedDict()
         for k, data in sorted([
             (k,v) for k,v in build['networks'].items() if 
@@ -67,7 +68,7 @@ class ContractDeployer(_ContractBase):
                     if data['transactionHash'] else None
                 )
             )
-    
+
     def __iter__(self):
         return iter(deployed_contracts[self._name].values())
 
@@ -86,49 +87,6 @@ class ContractDeployer(_ContractBase):
     def remove(self, item):
         del deployed_contracts[self._name][str(item)]
 
-    def deploy(self, account, *args):
-        if '_' in self.bytecode:
-            # find and replace unlinked library pointers in bytecode
-            for marker in re.findall('_{1,}[^_]*_{1,}', self.bytecode):
-                contract = marker.strip('_')
-                if contract not in self._network:
-                    raise NameError(
-                        "Contract requires unknown library '{}'".format(contract)
-                    )
-                elif not len(self._network[contract]):
-                    raise IndexError(
-                        "Contract requires '{}' library".format(contract) +
-                        " but it has not been deployed yet"
-                    )
-                bytecode = self.bytecode.replace(
-                    marker,
-                    self._network[contract][-1].address[-40:]
-                )
-        else:
-            bytecode = self.bytecode
-        args, tx = _get_tx(account, args)
-        contract = web3.eth.contract(abi = self.abi, bytecode = bytecode)
-        try:
-            types = [i['type'] for i in next(i for i in self.abi if i['type']=="constructor")['inputs']]
-            args = _format_inputs("constructor", args, types)
-        except StopIteration:
-            if args:
-                raise AttributeError("This contract takes no constructor arguments.")
-        tx = account._contract_tx(
-            contract.constructor,
-            args,
-            tx,
-            self._name+".constructor",
-            self._at
-        )
-        if tx.status == 1:
-            return self.at(tx.contract_address)
-        return tx
-        
-    def _at(self, tx):
-        if tx.status == 1:
-            self.at(tx.contract_address, tx.sender, tx)
-
     def at(self, address, owner = None, tx = None):
         address = web3.toChecksumAddress(address)
         if address in deployed_contracts[self._name]:
@@ -145,6 +103,71 @@ class ContractDeployer(_ContractBase):
         if CONFIG['active_network']['persist']:
             add_contract(self._name, address, tx.hash if tx else None, owner)
         return deployed_contracts[self._name][address]
+
+
+class _ContractConstructor:
+
+    def __init__(self, parent, name):
+        self._parent = parent
+        self.bytecode = parent.bytecode
+        try:
+            self.abi = [next(i for i in parent.abi if i['type']=="constructor")]
+        except:
+            self.abi = []
+        
+        self._name = name
+
+    def __repr__(self):
+        if self.abi:
+            args = ",".join(i['type'] for i in self.abi[0]['inputs'])
+        else:
+            args = ""
+        return "<{} object '{}.constructor({})'>".format(
+            type(self).__name__, self._name, args
+        )
+
+    def __call__(self, account, *args):
+        if '_' in self.bytecode:
+            # find and replace unlinked library pointers in bytecode
+            for marker in re.findall('_{1,}[^_]*_{1,}', self.bytecode):
+                contract = marker.strip('_')
+                if contract not in self._parent._network:
+                    raise NameError(
+                        "Contract requires unknown library '{}'".format(contract)
+                    )
+                elif not len(self._parent._network[contract]):
+                    raise IndexError(
+                        "Contract requires '{}' library".format(contract) +
+                        " but it has not been deployed yet"
+                    )
+                bytecode = self.bytecode.replace(
+                    marker,
+                    self._parent._network[contract][-1].address[-40:]
+                )
+        else:
+            bytecode = self.bytecode
+
+        contract = web3.eth.contract(abi = self.abi, bytecode = bytecode)
+        args, tx = _get_tx(account, args)
+
+        tx = account._contract_tx(
+            contract.constructor,
+            _format_inputs(
+                self._name+".constructor",
+                args,
+                [i['type'] for i in self.abi[0]['inputs']] if self.abi else []
+            ),
+            tx,
+            self._name,
+            self._callback
+        )
+        if tx.status == 1:
+            return self._parent.at(tx.contract_address)
+        return tx
+
+    def _callback(self, tx):
+        if tx.status == 1:
+            self._parent.at(tx.contract_address, tx.sender, tx)
 
 
 class Contract(_ContractBase):
@@ -166,7 +189,7 @@ class Contract(_ContractBase):
                 setattr(self, i['name'], ContractCall(fn, i, name, owner))
             else:
                 setattr(self, i['name'], ContractTx(fn, i, name, owner))
-    
+
     def __repr__(self):
         return "<{0._name} Contract object '{1[string]}{0.address}{1}'>".format(self, color)
 
@@ -184,7 +207,7 @@ class Contract(_ContractBase):
             except ValueError:
                 return False
         return super().__eq__(other)
-    
+
     def balance(self):
         return web3.eth.getBalance(self._contract.address)
 
@@ -206,7 +229,7 @@ class _ContractMethod:
             type(self).__name__,
             self.abi['name'],
             ",".join(i['type'] for i in self.abi['inputs']))
-    
+
     def _format_inputs(self, args):
         types = [i['type'] for i in self.abi['inputs']]
         return _format_inputs(self.abi['name'], args, types)
@@ -224,7 +247,7 @@ class _ContractMethod:
         if type(result) is not list:
             return web3.toHex(result) if type(result) is bytes else result
         return [(web3.toHex(i) if type(i) is bytes else i) for i in result]
-    
+
     def transact(self, *args):
         args, tx = _get_tx(self._owner, args)
         if not tx['from']:

@@ -310,7 +310,7 @@ Account classes are not meant to be instantiated directly. The ``Accounts`` cont
 
     Deploys a contract.
 
-    * ``contract``: A ``ContractDeployer`` instance of the contract to be deployed.
+    * ``contract``: A ``ContractContainer`` instance of the contract to be deployed.
     * ``*args``: Contract constructor arguments.
 
     You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument.
@@ -332,21 +332,21 @@ Account classes are not meant to be instantiated directly. The ``Accounts`` cont
 Contracts
 =========
 
-Contract classes are not meant to be instantiated directly. Each ``ContractDeployer`` instance is created automatically during when Brownie starts. New ``Contract`` instances are created via methods in the deployer.
+Contract classes are not meant to be instantiated directly. Each ``ContractContainer`` instance is created automatically during when Brownie starts. New ``Contract`` instances are created via methods in the deployer.
 
-.. py:class:: ContractDeployer
+.. py:class:: ContractContainer
 
     A container class that holds all Contracts of the same type, and is used to deploy new instances of that contract.
 
-.. py:attribute:: ContractDeployer.abi
+.. py:attribute:: ContractContainer.abi
 
     The ABI of the contract.
 
-.. py:attribute:: ContractDeployer.bytecode
+.. py:attribute:: ContractContainer.bytecode
 
     The bytecode of the contract, without any applied constructor arguments.
 
-.. py:attribute:: ContractDeployer.signatures
+.. py:attribute:: ContractContainer.signatures
 
     A dictionary of bytes4 signatures for each contract method.
 
@@ -357,7 +357,7 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
         >>> Token.signatures['transfer']
         0xa9059cbb
 
-.. py:attribute:: ContractDeployer.topics
+.. py:attribute:: ContractContainer.topics
 
     A dictionary of bytes32 topics for each contract event.
 
@@ -368,7 +368,7 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
         >>> Token.topics['Transfer']
         0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
 
-.. py:classmethod:: ContractDeployer.deploy(account, *args)
+.. py:classmethod:: ContractContainer.deploy(account, *args)
 
     Deploys the contract.
 
@@ -381,14 +381,14 @@ Contract classes are not meant to be instantiated directly. Each ``ContractDeplo
 
     Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
 
-.. py:classmethod:: ContractDeployer.at(address, owner=None)
+.. py:classmethod:: ContractContainer.at(address, owner=None)
 
     Returns a ``Contract`` instance.
 
     * ``address``: Address where the contract is deployed. Raises a ValueError if there is no bytecode at the address.
     * ``owner``: ``Account`` instance to set as the contract owner. If transactions to the contract do not specify a ``'from'`` value, they will be sent from this account.
 
-.. py:classmethod:: ContractDeployer.remove(address)
+.. py:classmethod:: ContractContainer.remove(address)
 
     Removes a contract instance from the container.
 
