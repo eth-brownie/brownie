@@ -73,11 +73,13 @@ def main():
                 CONFIG['folders']['brownie']+'/config.json',
                 args['<project>']+"/brownie-config.json"
             )
-        sys.exit("Project was created in ./{}".format(args['<project>']))
+        print("Project was created in ./{}".format(args['<project>']))
+        sys.exit()
     
     create_project()
     create_build_folders()
-    sys.exit("Brownie environment has been initiated.")
+    print("Brownie environment has been initiated.")
+    sys.exit()
 
 
 def check_for_project():

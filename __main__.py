@@ -50,7 +50,8 @@ if '--update' in sys.argv:
         stderr=DEVNULL
     )
     if version == get_latest_commit():
-        sys.exit("You already have the latest version of Brownie.")
+        print("You already have the latest version of brownie.")
+        sys.exit()
     else:
         print("New version found, updating requirements...")
         subprocess.run(
@@ -59,7 +60,8 @@ if '--update' in sys.argv:
             stdout=DEVNULL,
             stderr=DEVNULL
         )
-        sys.exit("Brownie has been updated!")
+        print("Brownie has been updated!")
+        sys.exit()
 
 if len(sys.argv)>1 and sys.argv[1][0] != "-":
     try:

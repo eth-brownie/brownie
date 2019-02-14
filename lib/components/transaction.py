@@ -4,7 +4,6 @@ import eth_abi
 import eth_event
 from hexbytes import HexBytes
 import json
-import sys
 import threading
 import time
 
@@ -87,9 +86,6 @@ class TransactionReceipt:
     def __init__(self, txid, sender=None, silent=False, name='', callback=None):
         if type(txid) is not str:
             txid = txid.hex()
-        if txid == "stack":
-            print(name)
-            sys.exit()
         if CONFIG['logging']['tx'] and not silent:
             color.print_colors("\nTransaction sent: "+txid)
         tx_history.append(self)

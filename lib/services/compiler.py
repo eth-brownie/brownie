@@ -157,7 +157,7 @@ def compile_contracts(folder = "contracts"):
             print("\nUnable to compile {}:\n".format(filename))
             for i in err['errors']:
                 print(i['formattedMessage'])
-            sys.exit()
+            sys.exit(1)
         hash_ = sha1(open(filename, 'rb').read()).hexdigest()
         compiled = generate_pcMap(compiled)
         for match in (
