@@ -14,6 +14,8 @@ CONFIG = config.CONFIG
 
 class Accounts:
 
+    '''List-like container that holds all of the available Account instances.'''
+
     def __init__(self, accounts):
         self._accounts = [Account(i) for i in accounts]
 
@@ -44,6 +46,15 @@ class Accounts:
             i.nonce = web3.eth.getTransactionCount(str(i))
 
     def add(self, priv_key = None):
+        '''Creates a new ``LocalAccount`` instance and appends it to the container.
+        
+        Args:
+            priv_key: Private key of the account. If none is given, one is
+                      randomly generated.
+
+        Returns:
+            Account instance.
+        '''
         if not priv_key:
             priv_key=web3.sha3(os.urandom(8192)).hex()
         w3account = web3.eth.account.privateKeyToAccount(priv_key)
@@ -54,6 +65,15 @@ class Accounts:
         return account
 
     def at(self, address):
+        '''Retrieves an Account instance from the address string. Raises
+        ValueError if the account cannot be found.
+
+        Args:
+            address: string of the account address.
+
+        Returns:
+            Account instance.
+        '''
         try:
             address = web3.toChecksumAddress(address)
         except ValueError:
@@ -64,6 +84,13 @@ class Accounts:
             raise ValueError("No account exists for {}".format(address))
 
     def mnemonic(self, phrase, count=10):
+        '''Generates LocalAccount instances from a seed phrase based on the
+        BIP44 standard.
+
+        Args:
+            phrase: Seed phrase
+            count: Number of accounts to generate
+        '''
         master_key = HDPrivateKey.master_key_from_mnemonic(phrase)
         acct_priv_key = HDKey.from_path(master_key, "m/44'/60'/0'")[-1]
         for i in range(count):
@@ -71,14 +98,21 @@ class Accounts:
             self.add(priv_key._key.to_hex())
 
     def remove(self, address):
+        '''Removes an account instance from the container.
+
+        Args:
+            address: Account instance or address string of account to remove.'''
         self._accounts.remove(address)
 
     def clear(self):
+        '''Empties the container.'''
         self._accounts.clear()
 
 
 class _AccountBase:
 
+    '''Base class for Account and LocalAccount'''
+    
     def __init__(self, addr):
         self.address = addr
         self.nonce = web3.eth.getTransactionCount(self.address)
@@ -99,12 +133,33 @@ class _AccountBase:
         return super().__eq__(other)
 
     def balance(self):
+        '''Returns the current balance at the address, in wei.'''
         return web3.eth.getBalance(self.address)
 
-    def deploy(self, contract, *args, **kwargs):
-        return contract.deploy(self, *args, **kwargs)
+    def deploy(self, contract, *args):
+        '''Deploys a contract.
+
+        Args:
+            contract: ContractContainer instance.
+            *args: Constructor arguments. The last argument may optionally be
+                   a dictionary of transaction values.
+
+        Returns:
+            * Contract instance if the transaction confirms
+            * TransactionReceipt if the transaction is pending or reverts'''
+        return contract.deploy(self, *args)
     
     def estimate_gas(self, to, amount, data=""):
+        '''Estimates the gas cost for a transaction. Raises VirtualMachineError
+        if the transaction would revert.
+
+        Args:
+            to: Account instance or address string of transaction recipient.
+            amount: Amount of ether to send in wei.
+            data: Transaction data hexstring.
+
+        Returns:
+            Estimated gas value in wei.'''
         return web3.eth.estimateGas({
             'from':self.address,
             'to':str(to),
@@ -123,7 +178,23 @@ class _AccountBase:
 
 class Account(_AccountBase):
 
+    '''Class for interacting with an Ethereum account.
+    
+    Attributes:
+        address: Public address of the account.
+        nonce: Current nonce of the account.'''
+    
     def transfer(self, to, amount, gas_limit=None, gas_price=None):
+        '''Transfers ether from this account.
+        
+        Args:
+            to: Account instance or address string to transfer to.
+            amount: Amount of ether to send, in wei.
+            gas_limit: Gas limit of the transaction.
+            gas_price: Gas price of the transaction.
+
+        Returns:
+            TransactionReceipt instance'''
         try:
             txid = web3.eth.sendTransaction({
                 'from': self.address,
@@ -153,6 +224,14 @@ class Account(_AccountBase):
 
 class LocalAccount(_AccountBase):
 
+    '''Class for interacting with an Ethereum account.
+    
+    Attributes:
+        address: Public address of the account.
+        nonce: Current nonce of the account.
+        private_key: Account private key.
+        public_key: Account public key.'''
+
     def __init__(self, address, account, priv_key):
         self._acct = account
         self.private_key = priv_key
@@ -160,6 +239,16 @@ class LocalAccount(_AccountBase):
         super().__init__(address)
 
     def transfer(self, to, amount, gas_limit=None, gas_price=None):
+        '''Transfers ether from this account.
+        
+        Args:
+            to: Account instance or address string to transfer to.
+            amount: Amount of ether to send, in wei.
+            gas_limit: Gas limit of the transaction.
+            gas_price: Gas price of the transaction.
+
+        Returns:
+            TransactionReceipt instance'''
         try:
             signed_tx = self._acct.signTransaction({
                 'from': self.address,
