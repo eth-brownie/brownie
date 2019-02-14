@@ -9,7 +9,21 @@ _instances = set()
 
 class Alert:
 
+    '''Setup notifications and callbacks based on state changes to the blockchain.
+    The alert is immediatly active as soon as the class is insantiated.'''
+    
     def __init__(self, fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None):
+        '''Creates a new Alert.
+
+        Args:
+            fn: Callable to monitor for changes.
+            args: Positional args when checking the callable.
+            kwargs: Keyword args when checking the callable.
+            delay: Frequency to check for changes, in seconds.
+            msg: Notification string to display on change.
+            callback: Callback function to call upon change. It must accept two
+                      arguments: initial value, new value
+        '''
         if not callable(fn):
             raise TypeError("You can only set an alert on a callable object")
         self._kill = False
@@ -35,16 +49,20 @@ class Alert:
             return
 
     def stop(self):
+        '''Stops the alert'''
         self._kill = True
         self._thread.join()
         _instances.discard(self)
 
 def new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None):
+    '''Alias for creating a new alert.'''
     return Alert(fn, args, kwargs, delay, msg, callback)
 
 def show():
+    '''Returns a list of all currently active Alert instances.'''
     return list(_instances)
 
 def stop_all():
+    '''Stops all currently active Alert instances.'''
     for t in _instances.copy():
         t.stop()

@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-
 class Source:
 
     def __init__(self):
@@ -14,8 +13,7 @@ class Source:
 
 
 def get_coverage_map(compiled):
-    '''
-    Given the compiled project as supplied by compiler.compile_contracts(),
+    '''Given the compiled project as supplied by compiler.compile_contracts(),
     returns the function and line based coverage maps for unit test coverage
     evaluation.
 
@@ -32,8 +30,7 @@ def get_coverage_map(compiled):
     }
 
     Items relating to jumps also include keys 'true' and 'false', which are
-    also empty sets used in the same way as 'tx'
-    '''
+    also empty sets used in the same way as 'tx''''
     fn_map = {}
     line_map = {}
     for contract in compiled:
@@ -58,9 +55,7 @@ def get_coverage_map(compiled):
 
 
 def _isolate_functions(compiled):
-    '''
-    Identify function level coverage map items.
-    '''
+    '''Identify function level coverage map items.'''
     pcMap = compiled['pcMap']
     fn_map = {}
     source = Source()
@@ -94,14 +89,12 @@ def _isolate_functions(compiled):
 
 
 def _isolate_lines(compiled):
-    '''
-    Identify line based coverage map items.
+    '''Identify line based coverage map items.
 
     For lines where a JUMPI is not present, coverage items will merge
     to include as much of the line as possible in a single item. Where a
     JUMPI is involved, no merge will happen and overlapping non-jump items
-    are discarded.
-    '''
+    are discarded.'''
     pcMap = compiled['pcMap']
     line_map = {}
     source = Source()
@@ -178,10 +171,8 @@ def _isolate_lines(compiled):
 
 
 def _next(coverage_map, op):
-    '''
-    Given a coverage map and an item from pcMap, returns the related coverage
-    map item (based on source offset overlap).
-    '''
+    '''Given a coverage map and an item from pcMap, returns the related
+    coverage map item (based on source offset overlap).'''
     return next(
         i for i in coverage_map if i['contract']==op['contract'] and
         i['start']<=op['start']<i['stop']
