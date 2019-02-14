@@ -3,6 +3,7 @@
 from docopt import docopt
 import importlib
 import os
+import re
 import sys
 import time
 
@@ -44,7 +45,10 @@ def _run_test(module, fn_name, count, total):
             fn.__defaults__
         ))
         if 'skip' in args and args['skip']:
-            sys.stdout.write("\r {0[pending]}\u229d{0[dull]} {1} ({0[pending]}skipped{0[dull]}){0}\n".format(color, desc))
+            sys.stdout.write(
+                "\r {0[pending]}\u229d{0[dull]} {1} ".format(color, desc) +
+                "({0[pending]}skipped{0[dull]}){0}\n".format(color)
+            )
             return []
     else:
         args = {}
@@ -90,13 +94,18 @@ def run_test(filename, network):
         and i[0]!="_" and callable(getattr(module, i))
     ]
     code = open("tests/{}.py".format(filename)).read()
-    test_names = sorted(
-        test_names,
-        key= lambda k: code.index(" {}(".format(k))
-    )
+    test_names = re.findall('(?<=\ndef)[\s]{1,}[^(]*(?=\([^)]*\)[\s]*:)', code)
+    test_names = [i.strip() for i in test_names]
+    duplicates = set([i for i in test_names if test_names.count(i)>1])
+    if duplicates:
+        raise ValueError(
+            "tests/{}.py contains multiple tests of the same name: {}".format(
+                filename, ", ".join(duplicates)
+            )
+        )
     traceback_info = []
     if not test_names:
-        print("\n{0[error]}WARNING{0}: Cannot find test functions in {0[module]}{1}.py{0}".format(color, name))
+        print("\n{0[error]}WARNING{0}: No test functions in {0[module]}{1}.py{0}".format(color, name))
         return [], []
     print("\nRunning {0[module]}{1}.py{0} - {2} test{3}".format(
             color, filename, len(test_names)-1,"s" if len(test_names)!=2 else ""
