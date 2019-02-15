@@ -16,7 +16,7 @@ FILES = [
     ("tests/__init__.py", ""),
     (
         "brownie-config.json",
-        open(CONFIG['folders']['brownie']+"/config.json", 'r').read()
+        open(CONFIG['folders']['brownie']+"/config.json", encoding="utf-8").read()
     )
 ]
 
@@ -95,7 +95,7 @@ def create_project():
     for folder in [i for i in FOLDERS if not os.path.exists(i)]:
         os.mkdir(folder)
     for filename, content in [i for i in FILES if not os.path.exists(i[0])]:
-        open(filename, 'w').write(content)
+        open(filename, 'w', encoding="utf-8").write(content)
 
 def create_build_folders():
     for folder in [i for i in BUILD_FOLDERS if not os.path.exists(i)]:

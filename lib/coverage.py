@@ -105,7 +105,12 @@ def main():
                 fn_map[contract].remove(fn)
         fn_map[contract].extend(line_map[contract])
 
-    json.dump(fn_map, open("build/coverage.json", "w"), sort_keys=True, indent=4)
+    json.dump(
+        fn_map,
+        open("build/coverage.json", "w", encoding="utf-8"),
+        sort_keys=True,
+        indent=4
+    )
     print("\nCoverage analysis complete!")
     for contract in fn_map:
         fn_list = sorted(set(i['method'] for i in fn_map[contract] if i['method']))

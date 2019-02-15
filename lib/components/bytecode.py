@@ -8,7 +8,7 @@ class Source:
     def __call__(self, op):
         path = op['contract']
         if path not in self._s:
-            self._s[path] = open(path).read()
+            self._s[path] = open(path, encoding="utf-8").read()
         return self._s[path][op['start']:op['stop']]
 
 

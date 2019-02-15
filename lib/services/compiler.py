@@ -25,7 +25,7 @@ def _check_changed(filename, contract, clear=None):
         _changed[contract] = True
         return True
     try:
-        compiled = json.load(open(json_file))
+        compiled = json.load(open(json_file, encoding="utf-8"))
         if (
             compiled['compiler'] != CONFIG['solc'] or
             compiled['sha1'] != sha1(open(filename, 'rb').read()).hexdigest()
@@ -41,7 +41,7 @@ def _check_changed(filename, contract, clear=None):
 
 def clear_persistence(network_name):
     for filename in os.listdir("build/contracts"):
-        compiled = json.load(open("build/contracts/"+filename))
+        compiled = json.load(open("build/contracts/"+filename, encoding="utf-8"))
         networks = dict(
             (k, v) for k, v in compiled['networks'].items()
             if 'persist' in CONFIG['networks'][v['network']] and
@@ -52,7 +52,7 @@ def clear_persistence(network_name):
             compiled['networks'] = networks
             json.dump(
                 compiled,
-                open("build/contracts/"+filename, 'w'),
+                open("build/contracts/"+filename, 'w', encoding="utf-8"),
                 sort_keys=True,
                 indent=4
             )
@@ -65,7 +65,12 @@ def add_contract(name, address, txid, owner):
         'transactionHash': txid,
         'network': CONFIG['active_network']['name'],
         'owner': owner}
-    json.dump(_contracts[name], open(json_file, 'w'), sort_keys=True, indent=4)
+    json.dump(
+        _contracts[name],
+        open(json_file, 'w', encoding="utf-8"),
+        sort_keys=True,
+        indent=4
+    )
 
 
 def compile_contracts(folder = "contracts"):
@@ -87,7 +92,7 @@ def compile_contracts(folder = "contracts"):
 
     inheritance_map = {}
     for filename in contract_files:
-        code = open(filename).read()
+        code = open(filename, encoding="utf-8").read()
         for name in (
             re.findall(
                 "\n(?:contract|library|interface) (.*?){", code, re.DOTALL)
@@ -115,7 +120,7 @@ def compile_contracts(folder = "contracts"):
                      if _check_changed(filename, i)]
             if not check and not _check_changed(filename, name):
                 _contracts[name] = json.load(
-                    open('build/contracts/{}.json'.format(name)))
+                    open('build/contracts/{}.json'.format(name), encoding="utf-8"))
                 continue
             if not msg:
                 print("Compiling contracts...")
@@ -126,7 +131,11 @@ def compile_contracts(folder = "contracts"):
                 msg = True
             input_json = {
                 'language': "Solidity",
-                'sources': {filename: {'content': open(filename).read()}},
+                'sources': {
+                    filename: {
+                        'content': open(filename, encoding="utf-8").read()
+                    }
+                },
                 'settings': {
                     'outputSelection': {'*': {
                         '*': [
@@ -194,7 +203,7 @@ def compile_contracts(folder = "contracts"):
             }
             json.dump(
                 _contracts[name],
-                open(json_file, 'w'),
+                open(json_file, 'w', encoding="utf-8"),
                 sort_keys=True,
                 indent=4
             )

@@ -377,7 +377,7 @@ class TransactionReceipt:
         except StopIteration:
             return
         span = (trace['source']['start'], trace['source']['stop'])
-        source = open(trace['source']['filename'],'r').read()
+        source = open(trace['source']['filename'], encoding="utf-8").read()
         newlines = [i for i in range(len(source)) if source[i]=="\n"]
         start = newlines.index(next(i for i in newlines if i>=span[0]))
         stop = newlines.index(next(i for i in newlines if i>=span[1]))
@@ -434,7 +434,10 @@ def topics():
     if _topics:
         return _topics
     try:
-        topics = json.load(open(CONFIG['folders']['brownie']+"/topics.json", 'r'))
+        topics = json.load(open(
+            CONFIG['folders']['brownie']+"/topics.json",
+            encoding="utf-8"
+        ))
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         topics = {}
     contracts = compile_contracts()
@@ -442,7 +445,7 @@ def topics():
     _topics.update(eth_event.get_event_abi(events))
     json.dump(
         _topics,
-        open(CONFIG['folders']['brownie']+"/topics.json", 'w'),
+        open(CONFIG['folders']['brownie']+"/topics.json", 'w', encoding="utf-8"),
         sort_keys=True,
         indent=4
     )

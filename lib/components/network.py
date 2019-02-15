@@ -98,13 +98,18 @@ class Network:
                 self._key = FernetKey(getpass(
                     "Please set a password for the persistent environment: "
                 ))
-                json.dump({
-                    'height': web3.eth.blockNumber,
-                    'password': self._key.encrypt('password', False)},
-                    open(persist_file, 'w'), sort_keys=True, indent=4)
+                json.dump(
+                    {
+                        'height': web3.eth.blockNumber,
+                        'password': self._key.encrypt('password', False)
+                    },
+                    open(persist_file, 'w', encoding="utf-8"),
+                    sort_keys=True,
+                    indent=4
+                )
                 return
             try:
-                data = json.load(open(persist_file))
+                data = json.load(open(persist_file, encoding="utf-8"))
                 if data['height'] > web3.eth.blockNumber:
                     print(
                         "WARNING: This appears to be a local RPC network. Persistence is not possible."
@@ -141,10 +146,15 @@ class Network:
             for account in [i for i in self._network_dict['accounts'] if type(i) is LocalAccount]:
                 to_save.append(self._key.encrypt(account.private_key, False))
             persist_file = CONFIG['folders']['project']+'/build/networks/{}.json'.format(CONFIG['active_network']['name'])
-            data = json.load(open(persist_file))
+            data = json.load(open(persist_file, encoding="utf-8"))
             data['height'] = web3.eth.blockNumber
             data['accounts'] = to_save
-            json.dump(data, open(persist_file,'w'), sort_keys=True, indent=4)
+            json.dump(
+                data,
+                open(persist_file, 'w', encoding="utf-8"),
+                sort_keys=True,
+                indent=4
+            )
         except Exception as e:
             if CONFIG['logging']['exc']>=2:
                 print("".join(traceback.format_tb(sys.exc_info()[2])))
