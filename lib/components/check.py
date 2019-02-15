@@ -131,8 +131,10 @@ def not_equal(a, b, fail_msg="Expected values to be not equal"):
 
 # attempt conversion with wei before comparing equality
 def _convert(a, b):
-    try: a = wei(a)
-    except ValueError: pass
-    try: b = wei(b)
-    except ValueError: pass
+    if a not in (None, False, True):
+        try: a = wei(a)
+        except ValueError: pass
+    if b not in (None, False, True):
+        try: b = wei(b)
+        except ValueError: pass
     return a, b
