@@ -915,23 +915,6 @@ Module Methods
             raise AssertionError(fail_msg)
         AssertionError: Expected statement to be False
 
-.. py:method:: check.reverts(fn, args, fail_msg = "Expected transaction to revert", revert_msg=None)
-
-    Performs the given contract call ``fn`` with arguments ``args``. Raises if the call does not cause the EVM to revert. This check will work regardless of if the revert happens from a call or a transaction.
-
-    .. code-block:: python
-
-        >>> Token[0].balanceOf(accounts[2])
-        900
-        >>> check.reverts(Token[0].transfer, (accounts[0], 10000, {'from': accounts[2]})
-        >>> check.reverts(Token[0].transfer, (accounts[0], 900, {'from': accounts[2]}))
-            
-        Transaction sent: 0xc9e056550ec579ba6b842d27bb7f029912c865becce19ee077734a04d5198f8c
-        Token.transfer confirmed - block: 7   gas used: 20921 (15.39%)
-        File "brownie/lib/components/check.py", line 45, in reverts
-            raise AssertionError(fail_msg)
-        AssertionError: Expected transaction to revert
-
 .. py:method:: check.confirms(fn, args, fail_msg = "Expected transaction to confirm")
 
     Performs the given contract call ``fn`` with arguments ``args``. Raises if the call causes the EVM to revert.
@@ -953,6 +936,57 @@ Module Methods
         File "brownie/lib/components/check.py", line 61, in confirms
             raise AssertionError(fail_msg)
         AssertionError: Expected transaction to confirm
+
+.. py:method:: check.reverts(fn, args, fail_msg = "Expected transaction to revert", revert_msg=None)
+
+    Performs the given contract call ``fn`` with arguments ``args``. Raises if the call does not cause the EVM to revert. This check will work regardless of if the revert happens from a call or a transaction.
+
+    .. code-block:: python
+
+        >>> Token[0].balanceOf(accounts[2])
+        900
+        >>> check.reverts(Token[0].transfer, (accounts[0], 10000, {'from': accounts[2]})
+        >>> check.reverts(Token[0].transfer, (accounts[0], 900, {'from': accounts[2]}))
+            
+        Transaction sent: 0xc9e056550ec579ba6b842d27bb7f029912c865becce19ee077734a04d5198f8c
+        Token.transfer confirmed - block: 7   gas used: 20921 (15.39%)
+        File "brownie/lib/components/check.py", line 45, in reverts
+            raise AssertionError(fail_msg)
+        AssertionError: Expected transaction to revert
+
+.. py:method:: check.event_fired(tx, name, count=None, values=None)
+
+    Expects a transaction to contain an event.
+
+    * ``tx``: A ``TransactionReceipt`` instance.
+    * ``name``: Name of the event that must fire.
+    * ``count``: Number of times the event must fire. If left as ``None``, the event must fire 1 or more times.
+    * ``values``: A dict, or list of dicts, speficying key:value pairs that must be found within the events. The length of the ``values`` implies the number of events that must fire.
+
+    .. code-block:: python
+
+        >>> tx = Token[0].transfer(accounts[1], 1000, {'from': accounts[0]})
+            
+        Transaction sent: 0xaf9f68a8e72764f7475263aeb11ae544d81e45516787b93cc8797b7152195a52
+        Token.transfer confirmed - block: 3   gas used: 35985 (26.46%)
+        <Transaction object '0xaf9f68a8e72764f7475263aeb11ae544d81e45516787b93cc8797b7152195a52'>
+        >>> check.event_fired(tx, "Transfer")
+        >>> check.event_fired(tx, "Transfer", count=1)
+        >>> check.event_fired(tx, "Transfer", count=2)
+        File "brownie/lib/components/check.py", line 80, in event_fired
+            name, count, len(events)
+        AssertionError: Event Transfer - expected 2 events to fire, got 1
+        >>>
+        >>> check.event_fired(tx, "Transfer", values={'value': 1000})
+        >>> check.event_fired(tx, "Transfer", values={'value': 2000})
+        File "brownie/lib/components/check.py", line 105, in event_fired
+            name, k, v, data[k]
+        AssertionError: Event Transfer - expected value to equal 2000, got 1000
+        >>>
+        >>> check.event_fired(tx, "Transfer", values=[{'value': 1000}, {'value': 2000}])
+        File "brownie/lib/components/check.py", line 91, in event_fired
+            name, len(events), len(values)
+        AssertionError: Event Transfer - 1 events fired, 2 values to match given
 
 .. py:method:: check.equal(a, b, fail_msg = "Expected values to be equal")
 
