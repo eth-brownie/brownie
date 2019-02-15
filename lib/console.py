@@ -51,7 +51,12 @@ class Console:
                     print()
                     cmd = "exit()"
                 if cmd == "exit()":
-                    readline.remove_history_item(readline.get_current_history_length() - 1)
+                    try:
+                        readline.remove_history_item(
+                            readline.get_current_history_length() - 1
+                        )
+                    except ValueError:
+                        pass
                     readline.write_history_file("build/.history")
                     return
                 if not cmd.strip():

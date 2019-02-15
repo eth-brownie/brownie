@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-import time
-from threading import Thread
+import time as _time
+from threading import Thread as _Thread
 
-from lib.services import color
+from lib.services import color as _color
 
 _instances = set()
 
@@ -27,7 +27,7 @@ class Alert:
         if not callable(fn):
             raise TypeError("You can only set an alert on a callable object")
         self._kill = False
-        self._thread = Thread(
+        self._thread = _Thread(
             target=self._loop, daemon=True,
             args=(fn, args, kwargs, delay, msg, callback))
         self._thread.start()
@@ -36,13 +36,13 @@ class Alert:
     def _loop(self, fn, args, kwargs, delay, msg, callback):
         start_value = fn(*args, **kwargs)
         while not self._kill:
-            time.sleep(delay)
+            _time.sleep(delay)
             value = fn(*args, **kwargs)
             if value == start_value:
                 continue
             if msg:
                 msg = msg.format(start_value, value)
-                print("{0[bright red]}ALERT{0}: {1}".format(color, msg))
+                print("{0[bright red]}ALERT{0}: {1}".format(_color, msg))
             if callback:
                 callback(start_value, value)
             _instances.discard(self)

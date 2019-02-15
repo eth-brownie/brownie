@@ -3,9 +3,7 @@
 '''Assertion methods for writing brownie unit tests.'''
 
 from lib.components.eth import wei
-from lib.components.transaction import VirtualMachineError
-from lib.services import config
-CONFIG = config.CONFIG
+from lib.components.transaction import VirtualMachineError as _VMError
 
 
 def true(statement, fail_msg="Expected statement to be true"):
@@ -39,7 +37,7 @@ def reverts(fn, args, fail_msg="Expected transaction to revert", revert_msg=None
                     matches the given one.'''
     try: 
         fn(*args)
-    except VirtualMachineError as e:
+    except _VMError as e:
         if not revert_msg or revert_msg == e.revert_msg:
             return
     raise AssertionError(fail_msg)
@@ -57,7 +55,7 @@ def confirms(fn, args, fail_msg="Expected transaction to confirm"):
         TransactionReceipt instance.'''
     try:
         tx = fn(*args)
-    except VirtualMachineError as e:
+    except _VMError as e:
         raise AssertionError("{}\n  {}".format(fail_msg, e.source))
     return tx
 
