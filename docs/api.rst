@@ -8,6 +8,12 @@ The following classes and methods are available when writing brownie scripts or 
 
 .. note:: From the console you can call ``dir`` to see available methods and attributes for any class. By default, callables are highlighed in cyan and attributes in blue. You can also call ``help`` on any class or method to view information on it's functionality.
 
+.. code-block:: python
+
+    >>> dir()
+    [SafeMath, Token, a, accounts, alert, check, config, dir, gas, history, logging, reset, rpc, run, web3, wei]
+
+
 Accounts
 ========
 
@@ -24,6 +30,8 @@ Accounts
 
         >>> accounts
         [<Account object '0x7Ebaa12c5d1EE7fD498b51d4F9278DC45f8D627A'>, <Account object '0x186f79d227f5D819ACAB0C529031036D11E0a000'>, <Account object '0xC53c27492193518FE9eBff00fd3CBEB6c434Cf8b'>, <Account object '0x2929AF7BBCde235035ED72029c81b71935c49e94'>, <Account object '0xb93538FEb07b3B8433BD394594cA3744f7ee2dF1'>, <Account object '0x1E563DBB05A10367c51A751DF61167dE99A4d0A7'>, <Account object '0xa0942deAc0885096D8400D3369dc4a2dde12875b'>, <Account object '0xf427a9eC1d510D77f4cEe4CF352545071387B2e6'>, <Account object '0x2308D528e4930EFB4aF30793A3F17295a0EFa886'>, <Account object '0x2fb37EB570B1eE8Eda736c1BD1E82748Ec3d0Bf1'>]
+        >>> dir(accounts)
+        [add, at, clear, mnemonic, remove]
 
 .. py:classmethod:: Accounts.add(priv_key)
 
@@ -62,7 +70,7 @@ Accounts
     .. code-block:: python
 
         >>> accounts.remove('0xc1826925377b4103cC92DeeCDF6F96A03142F37a')
-        >>>
+        >>> 
 
 .. py:classmethod:: Accounts.clear()
 
@@ -71,7 +79,7 @@ Accounts
     .. code-block:: python
 
         >>> accounts.clear()
-        >>>
+        >>> 
 
 Account
 -------
@@ -84,6 +92,8 @@ Account
 
         >>> accounts[0]
         <Account object '0x7Ebaa12c5d1EE7fD498b51d4F9278DC45f8D627A'>
+        >>> dir(accounts[0])
+        [address, balance, deploy, estimate_gas, nonce, transfer]
 
 Account Attributes
 ******************
@@ -213,8 +223,11 @@ ContractContainer
 
     A list-like container class that holds all ``Contract`` instances of the same type, and is used to deploy new instances of that contract.
 
-    >>> Token
-    []
+    .. code-block:: python
+        >>> Token
+        []
+        >>> dir(Token)
+        [abi, at, bytecode, deploy, remove, signatures, topics, tx]
 
 ContractContainer Attributes
 ****************************
@@ -355,6 +368,8 @@ Contract
 
         >>> Token[0]
         <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
+        >>> dir(Token[0])
+        [abi, allowance, approve, balance, balanceOf, bytecode, decimals, name, signatures, symbol, topics, totalSupply, transfer, transferFrom, tx]
 
 Contract Attributes
 *******************
@@ -534,6 +549,8 @@ TransactionReceipt
         <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx
         <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
+        >>> dir(tx)
+        [block_number, call_trace, contract_address, error, events, fn_name, gas_limit, gas_price, gas_used, info, input, logs, nonce, receiver, sender, status, txid, txindex, value]
 
 TransactionReceipt Attributes
 *****************************
@@ -544,6 +561,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.block_number
         2
 
@@ -553,6 +572,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.contract_address
         None
 
@@ -562,6 +583,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.events
         [{'name': 'Transfer', 'data': [{'name': 'from', 'type': 'address', 'value': '0x6b5132740b834674c3277aafa2c27898cbe740f6', 'decoded': True}, {'name': 'to', 'type': 'address', 'value': '0x31d504908351d2d87f3d6111f491f0b52757b592', 'decoded': True}, {'name': 'value', 'type': 'uint256', 'value': 1000000, 'decoded': True}]}]
 
@@ -571,6 +594,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.fn_name
         'Token.transfer'
 
@@ -580,6 +605,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.gas_limit
         150921
 
@@ -589,6 +616,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.gas_price
         2000000000
 
@@ -598,6 +627,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.gas_used
         51049
 
@@ -607,6 +638,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.input
         '0xa9059cbb00000000000000000000000031d504908351d2d87f3d6111f491f0b52757b592000000000000000000000000000000000000000000000000000000000000000a'
 
@@ -617,6 +650,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.logs
         [AttributeDict({'logIndex': 0, 'transactionIndex': 0, 'transactionHash': HexBytes('0xa8afb59a850adff32548c65041ec253eb64e1154042b2e01e2cd8cddb02eb94f'), 'blockHash': HexBytes('0x0b93b4cf230c9ef92b990de9cd62611447d83d396f1b13204d26d28bd949543a'), 'blockNumber': 6, 'address': '0x79447c97b6543F6eFBC91613C655977806CB18b0', 'data': '0x0000000000000000000000006b5132740b834674c3277aafa2c27898cbe740f600000000000000000000000031d504908351d2d87f3d6111f491f0b52757b592000000000000000000000000000000000000000000000000000000000000000a', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef')], 'type': 'mined'})]
 
@@ -626,6 +661,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.nonce
         2
 
@@ -635,6 +672,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.receiver
         '0x79447c97b6543F6eFBC91613C655977806CB18b0'
 
@@ -644,6 +683,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.revert_msg
         None
 
@@ -653,6 +694,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.return_value
         True
 
@@ -662,6 +705,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.sender
         <Account object '0x6B5132740b834674C3277aAfa2C27898CbE740f6'>
 
@@ -671,6 +716,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.status
         1
 
@@ -688,6 +735,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> len(tx.trace)
         239
         >>> tx.trace[0]
@@ -719,6 +768,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.txid
         '0xa8afb59a850adff32548c65041ec253eb64e1154042b2e01e2cd8cddb02eb94f'
 
@@ -728,6 +779,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.txindex
         0
 
@@ -737,6 +790,8 @@ TransactionReceipt Attributes
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.value
         0
 
@@ -792,6 +847,8 @@ TransactionReceipt Methods
 
     .. code-block:: python
 
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.error()
         File "contracts/SafeMath.sol", line 9:
 
@@ -1136,6 +1193,13 @@ web3
 
     Brownie implementation of ``web3py.web3``. Only some class methods are exposed. See the `Web3.py docs <https://web3py.readthedocs.io/en/stable/index.html>`__ for more information.
 
+    .. code-block:: python
+
+        >>> web3
+        <lib.components.eth.web3 object at 0x7f44d5e2f940>
+        >>> dir(web3)
+        [admin, ens, eth, fromWei, isAddress, isChecksumAddress, isConnected, manager, middleware_stack, miner, net, parity, personal, providers, sha3, soliditySha3, testing, toBytes, toChecksumAddress, toHex, toInt, toText, toWei, txpool, version]
+
 .. _rpc:
 
 Rpc
@@ -1149,7 +1213,8 @@ Rpc
 
         >>> rpc
         <lib.components.eth.Rpc object at 0x7ffb7cbab048>
-
+        >>> dir(rpc)
+        [mine, revert, sleep, snapshot, time]
 
 .. py:classmethod:: Rpc.time()
 
