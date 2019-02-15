@@ -988,6 +988,27 @@ Module Methods
             name, len(events), len(values)
         AssertionError: Event Transfer - 1 events fired, 2 values to match given
 
+.. py:method:: check.event_not_fired(tx, name, fail_msg="Expected event not to fire")
+
+    Expects a transaction not to contain an event.
+
+    * ``tx``: A ``TransactionReceipt`` instance.
+    * ``name``: Name of the event that must fire.
+    * ``fail_msg``:  Message to show if check fails.
+
+    .. code-block:: python
+
+        >>> tx = Token[0].transfer(accounts[1], 1000, {'from': accounts[0]})
+            
+        Transaction sent: 0xaf9f68a8e72764f7475263aeb11ae544d81e45516787b93cc8797b7152195a52
+        Token.transfer confirmed - block: 3   gas used: 35985 (26.46%)
+        <Transaction object '0xaf9f68a8e72764f7475263aeb11ae544d81e45516787b93cc8797b7152195a52'>
+        >>> check.event_not_fired(tx, "Approve")
+        >>> check.event_not_fired(tx, "Transfer")
+        File "brownie/lib/components/check.py", line 80, in event_not_fired
+            name, count, len(events)
+        AssertionError: Expected event not to fire
+
 .. py:method:: check.equal(a, b, fail_msg = "Expected values to be equal")
 
     Raises if ``a != b``. Before comparison, both values are converted by wei_ if possible.

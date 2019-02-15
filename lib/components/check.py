@@ -105,6 +105,17 @@ def event_fired(tx, name, count=None, values=None):
                 )
 
 
+def event_not_fired(tx, name, fail_msg="Expected event not to fire"):
+    '''Expects a transaction not to contain an event.
+    
+    Args:
+        tx: A TransactionReceipt.
+        name: Name of the event expected to fire.
+        fail_msg: Message to show if check fails.'''
+    if [i for i in tx.events if i['name']==name]:
+        raise AssertionError(fail_msg)
+
+
 def equal(a, b, fail_msg="Expected values to be equal"):
     '''Expects two values to be equal.
 
