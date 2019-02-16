@@ -20,13 +20,13 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Brownie'
-copyright = '2018, Benjamin Hauser'
+copyright = '2019, HyperLink Technology'
 author = 'Benjamin Hauser'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.9.0b'
+release = '0.9.0'
 
 
 # -- General configuration ---------------------------------------------------
