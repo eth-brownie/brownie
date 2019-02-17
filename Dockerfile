@@ -4,6 +4,9 @@
 # If you need to update the version of brownie then run the docker
 # build command again
 
+# For developers: to run local brownie code in docker you can use something like:
+# docker run -v $PWD:/usr/src -v $PWD/../brownie/lib:/usr/local/lib/brownie/lib brownie brownie test
+
 FROM ubuntu:bionic
 WORKDIR /usr/src
 
