@@ -95,7 +95,7 @@ def run_test(filename, network):
     ]
     code = open("tests/{}.py".format(filename), encoding="utf-8").read()
     test_names = re.findall('(?<=\ndef)[\s]{1,}[^(]*(?=\([^)]*\)[\s]*:)', code)
-    test_names = [i.strip() for i in test_names]
+    test_names = [i.strip() for i in test_names if i.strip()[0] != "_"]
     duplicates = set([i for i in test_names if test_names.count(i)>1])
     if duplicates:
         raise ValueError(
