@@ -9,8 +9,9 @@ import json
 from lib.test import run_test
 from lib.components.network import Network
 from lib.components.bytecode import get_coverage_map
-from lib.services import color
+from lib.services import color, config
 from lib.services.compiler import compile_contracts
+CONFIG = config.CONFIG
 
 COVERAGE_COLORS = [
     (0.5, "bright red"),
@@ -21,15 +22,16 @@ COVERAGE_COLORS = [
 __doc__ = """Usage: brownie coverage [<filename>] [options]
 
 Arguments:
-  <filename>         Only run tests from a specific file
+  <filename>          Only run tests from a specific file
 
 Options:
-  --help             Display this message
-  --verbose          Enable verbose reporting
-  --tb               Show entire python traceback on exceptions
+  --help              Display this message
+  --verbose           Enable verbose reporting
+  --tb                Show entire python traceback on exceptions
+  --always-transact   Perform all contract calls as transactions
 
-Coverage will modify the contracts and run your unit tests to get estimate
-of how much coverage you have.  so simple..."""
+Runs unit tests and analyzes the transaction stack traces to estimate
+current test coverage. Results are saved to build/coverage.json"""
 
 
 def main():
@@ -49,8 +51,15 @@ def main():
     
     compiled = deepcopy(compile_contracts())
     fn_map, line_map = get_coverage_map(compiled)
-
     network = Network()
+
+    if args['--always-transact']:
+        CONFIG['test']['always_transact'] = True
+    print("Contract calls will be handled as: {0[value]}{1}{0}".format(
+        color,
+        "transactions" if CONFIG['test']['always_transact'] else "calls"
+    ))
+
     for filename in test_files:
         history, tb = run_test(filename, network)
         if tb:
@@ -111,12 +120,15 @@ def main():
         sort_keys=True,
         indent=4
     )
-    print("\nCoverage analysis complete!")
+    print("\nCoverage analysis complete!\n")
     for contract in fn_map:
         fn_list = sorted(set(i['method'] for i in fn_map[contract] if i['method']))
         if not fn_list:
             continue
-        print("\n  contract: {0[contract]}{1}{0}".format(color, contract))
+        if not [i for i in fn_map[contract] if i['count']]:
+            print("  contract: {0[contract]}{1}{0} - {0[bright red]}0.0%{0}".format(color, contract))
+            continue
+        print("  contract: {0[contract]}{1}{0}".format(color, contract))
         for fn in fn_list:
             map_ = [i for i in fn_map[contract] if i['method']==fn]
             count = 0
@@ -136,4 +148,5 @@ def main():
             print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
                 color, fn, color(c), pct
             ))
-    print("\nDetailed results saved to {0[string]}builld/coverage.json{0}".format(color))
+        print()
+    print("\nDetailed results saved to {0[string]}build/coverage.json{0}".format(color))
