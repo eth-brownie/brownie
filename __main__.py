@@ -12,7 +12,7 @@ from lib.services import config, color
 CONFIG = config.CONFIG
 
 
-__version__ = "0.9.0"  # did you change this in docs/conf.py as well?
+__version__ = "0.9.1"  # did you change this in docs/conf.py as well?
 
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
