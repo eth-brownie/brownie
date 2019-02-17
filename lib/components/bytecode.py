@@ -13,7 +13,7 @@ class Source:
 
 
 def get_coverage_map(compiled):
-    '''Given the compiled project as supplied by compiler.compile_contracts(),
+    """Given the compiled project as supplied by compiler.compile_contracts(),
     returns the function and line based coverage maps for unit test coverage
     evaluation.
 
@@ -30,7 +30,7 @@ def get_coverage_map(compiled):
     }
 
     Items relating to jumps also include keys 'true' and 'false', which are
-    also empty sets used in the same way as 'tx''''
+    also empty sets used in the same way as 'tx'"""
     fn_map = {}
     line_map = {}
     for contract in compiled:
