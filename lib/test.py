@@ -9,21 +9,21 @@ import time
 
 from lib.components.network import Network
 from lib.components import transaction as tx
-from lib.services import color
-from lib.services import config
+from lib.services import color, config
 CONFIG = config.CONFIG
 
 
 __doc__ = """Usage: brownie test [<filename>] [options]
 
 Arguments:
-  <filename>         Only run tests from a specific file
+  <filename>          Only run tests from a specific file
 
 Options:
-  --help             Display this message
-  --verbose          Enable verbose reporting
-  --gas              Display gas profile for function calls
-  --tb               Show entire python traceback on exceptions
+  --help              Display this message
+  --verbose           Enable verbose reporting
+  --gas               Display gas profile for function calls
+  --tb                Show entire python traceback on exceptions
+  --always-transact   Perform all contract calls as transactions
 
 By default brownie runs every script in the tests folder, and calls every
 function that does not begin with an underscore. A fresh environment is created
@@ -135,6 +135,14 @@ def main():
         test_files.remove('__init__')
 
     network = Network()
+
+    if args['--always-transact']:
+        CONFIG['test']['always_transact'] = True
+    print("Contract calls will be handled as: {0[value]}{1}{0}".format(
+        color,
+        "transactions" if CONFIG['test']['always_transact'] else "calls"
+    ))
+
     for filename in test_files:
         history, tb = run_test(filename, network)
         if tb:
