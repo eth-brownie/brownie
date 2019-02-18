@@ -177,11 +177,13 @@ class Network:
         
         Args:
             network (string): Name of the new network to switch to.'''
+        if network and network not in CONFIG['networks']:
+            raise ValueError("Unknown network - {}".format(network))
         alert.stop_all()
-        if network and CONFIG[network] != CONFIG['active_network']['name']:
+        if network and CONFIG['networks'][network] != CONFIG['active_network']['name']:
             self.save()
-            config.set_network(network)
             self._key = None
+        config.load_config(network or CONFIG['active_network']['name'])
         contract.deployed_contracts.clear()
         if CONFIG['active_network']['persist']:
             compiler.clear_persistence(CONFIG['active_network']['name'])
