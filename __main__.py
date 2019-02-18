@@ -3,16 +3,16 @@
 from docopt import docopt
 import importlib
 import os
-import subprocess
-from subprocess import DEVNULL
 import sys
 
 import lib.init as init
-from lib.services import config, color
-CONFIG = config.CONFIG
+from lib.services import color, git
 
 
-__version__ = "0.9.1"  # did you change this in docs/conf.py as well?
+__version__ = "0.9.2"  # did you change this in docs/conf.py as well?
+if git.get_branch() != "master":
+    __version__+= "-"+git.get_branch()+"-"+git.get_commit()
+
 
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
@@ -26,42 +26,35 @@ Commands:
 Options:
   -h --help          Display this message
   --update           Update to the latest version of brownie
+  --stable           Use stable build
+  --dev              Use nightly build
 
 Type 'brownie <command> --help' for specific options and more information about
 each command."""
 
-
-def get_latest_commit():
-    return subprocess.check_output([
-        'git', 'log', '-n', '1', '--pretty=format:"%H"'
-    ]).decode()
-
-
 print("Brownie v{} - Python development framework for Ethereum\n".format(__version__))
 
+
+if '--stable' in sys.argv:
+    git.checkout('master')
+    print("Using {0[value]}stable{0} brownie build".format(color))
+    sys.argv.append('--update')
+
+
+elif '--dev' in sys.argv:
+    git.checkout("develop")
+    print("Using {0[value]}nightly{0} brownie build - may be buggy!".format(color))
+    sys.argv.append('--update')
+
+
 if '--update' in sys.argv:
-    os.chdir(CONFIG['folders']['brownie'])
-    version = get_latest_commit()
     print("Checking for updates...")
-    subprocess.run(
-        ['git', 'pull'],
-        stdin=DEVNULL,
-        stdout=DEVNULL,
-        stderr=DEVNULL
-    )
-    if version == get_latest_commit():
-        print("You already have the latest version of brownie.")
-        sys.exit()
-    else:
-        print("New version found, updating requirements...")
-        subprocess.run(
-            ['venv/bin/pip', 'install', '-r', 'requirements.txt'],
-            stdin=DEVNULL,
-            stdout=DEVNULL,
-            stderr=DEVNULL
-        )
+    if git.pull():
         print("Brownie has been updated!")
-        sys.exit()
+    else:
+        print("Your version of Brownie is already up to date.")
+    sys.exit()
+
 
 if len(sys.argv)>1 and sys.argv[1][0] != "-":
     try:

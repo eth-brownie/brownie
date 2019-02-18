@@ -1,3 +1,8 @@
+0.9.2
+-----
+
+ - Add -stable and --dev flags to swap between master and develop branches
+
 0.9.1
 -----
 
