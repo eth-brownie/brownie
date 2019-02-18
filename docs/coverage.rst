@@ -2,9 +2,11 @@
 Checking Test Coverage
 ======================
 
-.. warning:: Test coverage analysis is still under development. You may encounter errors or inaccurate results.
+.. warning:: Test coverage evaluation is still under development. There may be undiscovered issues, particularly cases where conditional True/False evaluation is incorrect. Use common sense when viewing coverage reports and please report any issues you encounter.
 
 Test coverage is estimated by generating a map of opcodes associated with each function and line of the smart contract source code, and then analyzing the stack trace of each transaction to see which opcodes were executed.
+
+Because calls to view and pure methods typically are not done with a transaction, you must enable the ``always_transact`` configuration setting or your coverage for these methods will show as 0%. See the test :ref:`test_settings` documentation for more information.
 
 To check your unit test coverage, type:
 
