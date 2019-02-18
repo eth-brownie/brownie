@@ -213,6 +213,11 @@ class Contract(_ContractBase):
         super().__init__(build)
         self.tx = tx
         self.bytecode = web3.eth.getCode(address).hex()[2:]
+        if (
+            config.ARGV['mode'] != "console" and not
+            CONFIG['test']['default_contract_owner']
+        ):
+            owner = None
         self._owner = owner
         self._contract = web3.eth.contract(address = address, abi = self.abi)
         for i in [i for i in self.abi if i['type']=="function"]:
