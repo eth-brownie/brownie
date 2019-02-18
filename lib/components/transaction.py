@@ -333,6 +333,8 @@ class TransactionReceipt:
                     '0x'+i.hex() if type(i) is bytes else i
                     for i in self.return_value
                 ]
+            elif type(self.return_value) is bytes:
+                self.return_value = "0x"+self.return_value.hex()
         else:
             self.events = []
             # get revert message

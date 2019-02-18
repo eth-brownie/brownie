@@ -118,9 +118,12 @@ def wei(value):
         * a string specifying the unit: "10 ether", "300 gwei", "0.25 shannon"
         * a large float in scientific notation, where direct conversion to int
           would cause inaccuracy: 8.3e32
-        * a byte string: "0x330124"'''
+        * bytes: b'\xff\xff'
+        * hex strings: "0x330124"'''
     if value is None:
         return 0
+    if type(value) is bytes:
+        value = "0x"+value.hex()
     if type(value) is float and "e+" in str(value):
         num, dec = str(value).split("e+")
         num = num.split(".") if "." in num else [num, ""]
