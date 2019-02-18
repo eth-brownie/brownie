@@ -104,6 +104,7 @@ def run_test(filename, network):
             )
         )
     traceback_info = []
+    history = set()
     if not test_names:
         print("\n{0[error]}WARNING{0}: No test functions in {0[module]}{1}.py{0}".format(color, name))
         return [], []
@@ -119,7 +120,13 @@ def run_test(filename, network):
     for c,t in enumerate(test_names, start=1):
         network.rpc.revert()
         traceback_info += _run_test(module,t,c,len(test_names))
-    return tx.tx_history.copy(), traceback_info
+        if sys.argv[1] != "coverage":
+            continue
+        # need to retrieve stack trace before reverting the EVM
+        for i in tx.tx_history:
+            i.trace
+        history.update(tx.tx_history.copy())
+    return history, traceback_info
 
 
 def main():
