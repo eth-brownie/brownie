@@ -26,21 +26,25 @@ def false(statement, fail_msg="Expected statement to be False"):
         raise AssertionError(fail_msg)
 
 
-def reverts(fn, args, fail_msg="Expected transaction to revert", revert_msg=None):
+def reverts(fn, args, revert_msg=None):
     '''Expects a transaction to revert.
     
     Args:
         fn: ContractTx instance to call.
         args: List or tuple of contract input args.
         fail_msg: Message to show if the check fails.
-        revert_msg: If set, the check only passes if the returned revert message
-                    matches the given one.'''
+        revert_msg: If set, the check only passes if the returned
+                    revert message matches the given one.'''
     try: 
         fn(*args)
     except _VMError as e:
         if not revert_msg or revert_msg == e.revert_msg:
             return
-    raise AssertionError(fail_msg)
+        raise AssertionError(
+            "Transaction reverted with error '{}', expected '{}'".format(
+                e.revert_msg, revert_msg
+            ))
+    raise AssertionError("Expected transaction to revert")
 
 
 def confirms(fn, args, fail_msg="Expected transaction to confirm"):
