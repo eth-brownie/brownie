@@ -3,7 +3,6 @@
 from collections import OrderedDict
 import eth_event
 import re
-import sys
 
 from lib.components.transaction import TransactionReceipt, VirtualMachineError
 from lib.components.eth import web3, wei
@@ -355,7 +354,7 @@ class ContractCall(_ContractMethod):
 
         Returns:
             Contract method return value(s).'''
-        if sys.argv[1] in ('test', 'coverage') and CONFIG['test']['always_transact']:
+        if config.ARGV['mode']=="script" and CONFIG['test']['always_transact']:
             tx = self.transact(*args)
             return tx.return_value
         return self.call(*args)

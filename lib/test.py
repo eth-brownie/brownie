@@ -149,7 +149,7 @@ def main():
             traceback_info += tb
     if not traceback_info:
         print("\n{0[success]}SUCCESS{0}: All tests passed.".format(color))
-        if '--gas' in sys.argv:
+        if config.ARGV['gas']:
             print('\nGas Profile:')
             for i in sorted(tx.gas_profile):
                 print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, tx.gas_profile[i]))

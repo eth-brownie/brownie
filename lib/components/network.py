@@ -38,7 +38,7 @@ class Network:
             self.setup()
 
     def setup(self):
-        if self._init or sys.argv[1] == "console":
+        if self._init or config.ARGV['mode'] == "console":
             verbose = True
             self._init = False
         else:

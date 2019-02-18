@@ -50,6 +50,8 @@ for key in [i for i in sys.argv if i[:2]=="--"]:
         ARGV[key] = sys.argv[idx+1]
     else:
         ARGV[key] = True
+
+# used to determine various behaviours in other modules
 ARGV['mode'] = "console" if sys.argv[1] == "console" else "script"
 
 

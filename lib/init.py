@@ -52,7 +52,7 @@ def main():
             "Create a new folder for your project and run brownie init there.")
 
     if CONFIG['folders']['project'] != os.path.abspath('.'):
-        if '--force' not in sys.argv:
+        if not config.ARGV['force']:
             sys.exit("ERROR: Cannot init the subfolder of an existing brownie"
                      " project. Use --force to override.")
         CONFIG['folders']['project'] = os.path.abspath('.')
