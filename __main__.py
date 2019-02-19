@@ -9,7 +9,7 @@ import lib.init as init
 from lib.services import color, git
 
 
-__version__ = "0.9.2"  # did you change this in docs/conf.py as well?
+__version__ = "0.9.3"  # did you change this in docs/conf.py as well?
 if git.get_branch() != "master":
     __version__+= "-"+git.get_branch()+"-"+git.get_commit()
 

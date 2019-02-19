@@ -87,8 +87,8 @@ class Console:
                     exec('_result = ' + cmd, self.__dict__, local_)
                     r = local_['_result']
                     if r != None:
-                        if type(r) is dict and r:
-                            color.json(r)
+                        if type(r) in (dict, config.StrictDict) and r:
+                            color.pretty_dict(r)
                         elif type(r) is str:
                             print(r)
                         else:

@@ -4,8 +4,39 @@ import json
 import os
 import sys
 
+
+# dict subclass that prevents adding new keys when locked
+class StrictDict(dict):
+
+    def __init__(self, values={}):
+        self._locked = False
+        super().__init__()
+        self.update(values)
+
+    def __setitem__(self, key, value):
+        if self._locked and key not in self:
+            raise KeyError("{} is not a known config setting".format(key))
+        if type(value) is dict:
+            value = StrictDict(value)
+        super().__setitem__(key, value)
+
+    def update(self,arg):
+        for k,v in arg.items():
+            self.__setitem__(k,v)
+
+    def _lock(self):
+        for v in [i for i in self.values() if type(i) is StrictDict]:
+            v._lock()
+        self._locked = True
+
+    def _unlock(self):
+        for v in [i for i in self.values() if type(i) is StrictDict]:
+            v._unlock()
+        self._locked = False
+
+
 # must happen in this order, color imports CONFIG
-CONFIG = {}
+CONFIG = StrictDict()
 from lib.services import color
 
 
@@ -14,6 +45,7 @@ def load_config(network = None):
     folder = sys.modules['__main__'].__file__
     folder = folder[:folder.rfind("/")]
     sys.path.insert(0, folder)
+    CONFIG._unlock()
     CONFIG.clear()
     CONFIG.update(json.load(open(folder+"/config.json", 'r')))
     CONFIG['folders'] = {
@@ -59,6 +91,7 @@ def load_config(network = None):
             sys.exc_info()[2]
             )))
         sys.exit(1)
+    CONFIG._lock()
 
 
 # merges project .json with brownie .json 

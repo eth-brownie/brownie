@@ -48,7 +48,7 @@ class Color:
     def __getitem__(self, color):
         return self(color)
 
-    def json(self, value, indent = 0, start=True):
+    def pretty_dict(self, value, indent = 0, start=True):
         if start:
             sys.stdout.write(' '*indent+'{}{{'.format(self['dull']))
         indent+=4
@@ -61,7 +61,7 @@ class Color:
                 sys.stdout.write("'{0[key]}{1}{0[dull]}': ".format(self, k))
             else:
                 sys.stdout.write("{0[key]}{1}{0[dull]}: ".format(self, k))
-            if type(value[k]) is dict:
+            if type(value[k]) in (dict, config.StrictDict):
                 sys.stdout.write('{')
                 self.json(value[k], indent,False)
                 continue
