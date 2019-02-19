@@ -91,12 +91,12 @@ for key in [i for i in sys.argv if i[:2]=="--"]:
     if len(sys.argv) >= idx+2 and sys.argv[idx+1][:2] != "--":
         ARGV[key[2:]] = sys.argv[idx+1]
     else:
-        ARGV[key] = True
+        ARGV[key[2:]] = True
 
 # used to determine various behaviours in other modules
 if len(sys.argv)>1:
     ARGV['mode'] = "console" if sys.argv[1] == "console" else "script"
 
-
+print(ARGV._dict)
 # load config
 load_config(ARGV['network'])
