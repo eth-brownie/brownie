@@ -30,12 +30,14 @@ When running tests, the sequence of events is as follows:
 
 * The EVM is reverted to the snapshot in between calling each method.
 
-* After the final method has completed the test RPC is restarted, the next script is loaded and the process begins again.
+* After the final method has completed the test RPC is restarted, configuration settings are reset, the next script is loaded and the process begins again.
 
 Writing Tests
 =============
 
 As with scripts, every test should begin with ``from brownie import *`` in order to give access to the :ref:`api`. You can also import and execute scripts as a part of your setup process.
+
+You can define unique configuration settings for each test by modifying the ``config`` dictionary in the ``setup`` method. Any changes that you make are reset when the test completes.
 
 You can optionally include a docstring in each test method to give more verbosity during the testing process.
 
@@ -56,7 +58,6 @@ Here is an example test script from ``projects/token/tests/approve_transferFrom.
     :linenos:
     :language: python
     :lines: 3-
-
 
 Below you can see an example of the output from Brownie when the test script executes. For the example, one of the tests was modified so that it would fail.
 
@@ -89,6 +90,8 @@ Below you can see an example of the output from Brownie when the test script exe
 
 For available classes and methods when writing a test script, see the :ref:`api` documentation.
 
+.. _test_settings:
+
 Settings and Considerations
 ===========================
 
@@ -99,7 +102,8 @@ The following test configuration settings are available in ``brownie-config.json
     {
         "test": {
             "always_transact": true,
-            "gas_limit": 65000000
+            "gas_limit": 65000000,
+            "default_contract_owner": false
         }
     }
 
@@ -131,3 +135,9 @@ The following test configuration settings are available in ``brownie-config.json
     * Transactions that revert will be broadcasted, but still raise a ``VirtualMachineError``.
     * Unless the call is handled with ``check.reverts`` the exception will cause the test to fail.
     * If you need to access the ``TransactionReceipt`` you can find it the ``history`` list.
+
+.. py:attribute:: default_contract_owner
+
+    If ``True``, calls to contract transactions that do not specify a sender are broadcast from the same address that deployed the contract.
+
+    If ``False``, contracts will not remember which account they were created by. You must explicitely declare the sender of every transaction with a `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ dictionary as the last method argument. This may be considered similar to a strict mode.

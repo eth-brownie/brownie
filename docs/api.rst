@@ -70,7 +70,7 @@ Accounts
     .. code-block:: python
 
         >>> accounts.remove('0xc1826925377b4103cC92DeeCDF6F96A03142F37a')
-        >>> 
+        >>>
 
 .. py:classmethod:: Accounts.clear()
 
@@ -79,7 +79,7 @@ Accounts
     .. code-block:: python
 
         >>> accounts.clear()
-        >>> 
+        >>>
 
 Account
 -------
@@ -300,7 +300,7 @@ ContractContainer Methods
     If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``IndexError`` is raised.
 
     Returns a ``Contract`` instance upon success.
-    
+
     In the console if the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
 
     .. code-block:: python
@@ -894,7 +894,7 @@ Module Methods
         File "brownie/lib/components/check.py", line 18, in true
             raise AssertionError(fail_msg)
         AssertionError: Expected statement to be true
-        
+
         >>> check.true(False, "What did you expect?")
         File "brownie/lib/console.py", line 82, in _run
             exec('_result = ' + cmd, self.__dict__, local_)
@@ -926,10 +926,10 @@ Module Methods
         >>> Token[0].balanceOf(accounts[2])
         900
         >>> check.confirms(Token[0].transfer, (accounts[0], 900, {'from': accounts[2]}))
-            
+
         Transaction sent: 0xc9e056550ec579ba6b842d27bb7f029912c865becce19ee077734a04d5198f8c
         Token.transfer confirmed - block: 7   gas used: 20921 (15.39%)
-        
+
         >>> Token[0].balanceOf(accounts[2])
         0
         >>> check.confirms(Token[0].transfer, (accounts[0], 900, {'from': accounts[2]}))
@@ -937,7 +937,7 @@ Module Methods
             raise AssertionError(fail_msg)
         AssertionError: Expected transaction to confirm
 
-.. py:method:: check.reverts(fn, args, fail_msg = "Expected transaction to revert", revert_msg=None)
+.. py:method:: check.reverts(fn, args, revert_msg=None)
 
     Performs the given contract call ``fn`` with arguments ``args``. Raises if the call does not cause the EVM to revert. This check will work regardless of if the revert happens from a call or a transaction.
 
@@ -947,7 +947,7 @@ Module Methods
         900
         >>> check.reverts(Token[0].transfer, (accounts[0], 10000, {'from': accounts[2]})
         >>> check.reverts(Token[0].transfer, (accounts[0], 900, {'from': accounts[2]}))
-            
+
         Transaction sent: 0xc9e056550ec579ba6b842d27bb7f029912c865becce19ee077734a04d5198f8c
         Token.transfer confirmed - block: 7   gas used: 20921 (15.39%)
         File "brownie/lib/components/check.py", line 45, in reverts
@@ -966,7 +966,7 @@ Module Methods
     .. code-block:: python
 
         >>> tx = Token[0].transfer(accounts[1], 1000, {'from': accounts[0]})
-            
+
         Transaction sent: 0xaf9f68a8e72764f7475263aeb11ae544d81e45516787b93cc8797b7152195a52
         Token.transfer confirmed - block: 3   gas used: 35985 (26.46%)
         <Transaction object '0xaf9f68a8e72764f7475263aeb11ae544d81e45516787b93cc8797b7152195a52'>
@@ -999,7 +999,7 @@ Module Methods
     .. code-block:: python
 
         >>> tx = Token[0].transfer(accounts[1], 1000, {'from': accounts[0]})
-            
+
         Transaction sent: 0xaf9f68a8e72764f7475263aeb11ae544d81e45516787b93cc8797b7152195a52
         Token.transfer confirmed - block: 3   gas used: 35985 (26.46%)
         <Transaction object '0xaf9f68a8e72764f7475263aeb11ae544d81e45516787b93cc8797b7152195a52'>
@@ -1103,7 +1103,7 @@ These methods are used in the console.
     .. code-block:: python
 
         >>> run('token')
-    
+
         Transaction sent: 0xe4bd74210e56d4da8d53774dc333a1122c26a72a86fbba82220fcf5d2648d634
         Token confirmed - block: 1   gas used: 594250 (85.60%)
         Token deployed at: 0x9b473B0648eC070035a17b6caE7b92c5dD5b7Fe1
@@ -1329,7 +1329,7 @@ Rpc
         >>> accounts[0].balance()
         100000000000000000000
         >>> accounts[0].transfer(accounts[1], "10 ether")
-            
+
         Transaction sent: 0xd5d3b40eb298dfc48721807935eda48d03916a3f48b51f20bcded372113e1dca
         Transaction confirmed - block: 5   gas used: 21000 (100.00%)
         <Transaction object '0xd5d3b40eb298dfc48721807935eda48d03916a3f48b51f20bcded372113e1dca'>

@@ -17,7 +17,8 @@
     },
     "test":{
         "always_transact": true,
-        "gas_limit": 6500000
+        "gas_limit": 6500000,
+        "default_contract_owner": false
     },
     "solc":{
         "optimize": true,

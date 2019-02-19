@@ -6,7 +6,7 @@ Editing the Config File
 
 Every project has a file ``brownie-config.json`` that holds all the configuration settings.
 
-The defaut configuration is as follows. When using the brownie console you can view or edit configuration settings through the ``config`` dict.
+The defaut configuration is as follows. When using the brownie console or writing scripts, you can view and edit configuration settings through the ``config`` dict. Any changes made in this way are temporary and will be reset when you exit brownie or reset the network.
 
 .. literalinclude:: ../config.json
     :linenos:
@@ -39,15 +39,17 @@ The following settings are available:
 
     * ``optimize``: Set to true if you wish to use contract optimization.
     * ``runs``: The number of times the optimizer should run.
-    * ``version``: The version of solc to use. Should be written as ``v0.x.x``
+    * ``version``: The version of solc to use. Should be written as ``v0.x.x``.
 
 .. py:attribute:: test
 
-    Properties that affect the configuration while running tests. See :ref:`test` for detailed information on the effects of these settings.
+    Properties that affect only affect Brownie's configuration when running scripts and tests. See :ref:`test` for detailed information on the effects and implications of these settings.
 
     * ``always_transact``: If ``true``, calls to ``view`` and ``pure`` functions will still execute as transactions during tests.
 
     * ``gas_limit``: If set to an integer, this value will over-ride the default gas limit setting when running tests.
+
+    * ``default_contract_owner``: If ``false``, deployed contracts will not remember the account that they were created by and you will have to supply a ``from`` kwarg for every contract transaction.
 
 .. py:attribute:: logging
 
@@ -65,4 +67,4 @@ The following settings are available:
 Default Settings
 ================
 
-The default settings are found in ``config.json`` in the brownie install folder. Omitting any setting within a project's configuration file will cause Brownie to use the default setting instead.
+When you create a new project the configuration file is copied from ``config.json`` in the brownie install folder. Modifying this file will change the default settings for all future projects. Removing any setting within a project's local configuration file will cause Brownie to use the default setting instead.

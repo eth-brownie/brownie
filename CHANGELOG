@@ -1,3 +1,11 @@
+0.9.2
+-----
+
+ - Add --stable and --dev flags to swap between master and develop branches
+ - Better verbosity for check.reverts exception string
+ - Config settings are reset when network resets
+ - Add default_contract_owner setting
+
 0.9.1
 -----
 

@@ -4,7 +4,6 @@ import eth_abi
 import eth_event
 from hexbytes import HexBytes
 import json
-import sys
 import threading
 import time
 
@@ -121,12 +120,12 @@ class TransactionReceipt:
         t.start()
         try:
             t.join()
-            if sys.argv[1] != "console" and not self.status:
+            if config.ARGV['mode'] == "script" and not self.status:
                 raise VirtualMachineError(
                     {"message": "revert "+(self.revert_msg or ""), "source":self.error(1)}
                 )
         except KeyboardInterrupt:
-            if sys.argv[1] != "console":
+            if config.ARGV['mode'] == "script":
                 raise
 
     def _await_confirm(self, silent, callback):
@@ -159,7 +158,7 @@ class TransactionReceipt:
             self.events = eth_event.decode_logs(receipt['logs'], topics())
         except:
             pass
-        if self.fn_name and '--gas' in sys.argv:
+        if self.fn_name and config.ARGV['gas']:
             _profile_gas(self.fn_name, receipt['gasUsed'])
         if not silent:
             if CONFIG['logging']['tx'] >= 2:

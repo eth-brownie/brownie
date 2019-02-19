@@ -3,7 +3,6 @@
 from collections import OrderedDict
 import eth_event
 import re
-import sys
 
 from lib.components.transaction import TransactionReceipt, VirtualMachineError
 from lib.components.eth import web3, wei
@@ -321,10 +320,18 @@ class _ContractMethod:
 class ContractTx(_ContractMethod):
 
     '''A public payable or non-payable contract method.
-    
+
     Args:
         abi: Contract ABI specific to this method.
         signature: Bytes4 method signature.'''
+
+    def __init__(self, fn, abi, name, owner):
+        if (
+            config.ARGV['mode'] != "console" and not
+            CONFIG['test']['default_contract_owner']
+        ):
+            owner = None
+        super().__init__(fn, abi, name, owner)
 
     def __call__(self, *args):
         '''Broadcasts a transaction that calls this contract method.
@@ -355,7 +362,7 @@ class ContractCall(_ContractMethod):
 
         Returns:
             Contract method return value(s).'''
-        if sys.argv[1] in ('test', 'coverage') and CONFIG['test']['always_transact']:
+        if config.ARGV['mode']=="script" and CONFIG['test']['always_transact']:
             tx = self.transact(*args)
             return tx.return_value
         return self.call(*args)
