@@ -97,6 +97,5 @@ for key in [i for i in sys.argv if i[:2]=="--"]:
 if len(sys.argv)>1:
     ARGV['mode'] = "console" if sys.argv[1] == "console" else "script"
 
-print(ARGV._dict)
 # load config
 load_config(ARGV['network'])
