@@ -94,7 +94,8 @@ for key in [i for i in sys.argv if i[:2]=="--"]:
         ARGV[key] = True
 
 # used to determine various behaviours in other modules
-ARGV['mode'] = "console" if sys.argv[1] == "console" else "script"
+if len(sys.argv)>1:
+    ARGV['mode'] = "console" if sys.argv[1] == "console" else "script"
 
 
 # load config
