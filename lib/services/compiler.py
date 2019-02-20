@@ -39,9 +39,19 @@ def _check_changed(filename, contract, clear=None):
         return True
 
 
+def _json_load(filename):
+    try:
+        return json.load(open("build/contracts/"+filename, encoding="utf-8"))
+    except json.JSONDecodeError: 
+        raise OSError(
+            "'build/contracts/"+filename+"' appears to be corrupted. Delete it"
+            " and restart Brownie to fix this error. If this problem persists "
+            "you may need to delete your entire build/contracts folder."
+        )
+
 def clear_persistence(network_name):
     for filename in os.listdir("build/contracts"):
-        compiled = json.load(open("build/contracts/"+filename, encoding="utf-8"))
+        compiled = _json_load(filename)
         networks = dict(
             (k, v) for k, v in compiled['networks'].items()
             if 'persist' in CONFIG['networks'][v['network']] and
@@ -119,8 +129,7 @@ def compile_contracts(folder = "contracts"):
             check = [i for i in inheritance_map[name]
                      if _check_changed(filename, i)]
             if not check and not _check_changed(filename, name):
-                _contracts[name] = json.load(
-                    open('build/contracts/{}.json'.format(name), encoding="utf-8"))
+                _contracts[name] = _json_load(name+".json")
                 continue
             if not msg:
                 print("Compiling contracts...")
@@ -208,6 +217,7 @@ def compile_contracts(folder = "contracts"):
                 indent=4
             )
     return _contracts
+
 
 def generate_pcMap(compiled):
     '''
