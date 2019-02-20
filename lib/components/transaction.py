@@ -327,14 +327,12 @@ class TransactionReceipt:
             offset = int(log['stack'][-1], 16) * 2
             length = int(log['stack'][-2], 16) * 2
             data = HexBytes("".join(log['memory'])[offset:offset+length])
-            self.return_value = eth_abi.decode_abi(abi, data)[0]
-            if type(self.return_value) is tuple:
-                self.return_value = [
-                    '0x'+i.hex() if type(i) is bytes else i
-                    for i in self.return_value
-                ]
-            elif type(self.return_value) is bytes:
-                self.return_value = "0x"+self.return_value.hex()
+            self.return_value = eth_abi.decode_abi(abi, data)
+            if not self.return_value:
+                return
+            self.return_value = [_decode_abi(i) for i in self.return_value]
+            if len(self.return_value) == 1:
+                self.return_value = self.return_value[0]
         else:
             self.events = []
             # get revert message
@@ -451,3 +449,11 @@ def topics():
         indent=4
     )
     return _topics
+
+
+def _decode_abi(value):
+    if type(value) is tuple:
+        return [_decode_abi(i) for i in value]
+    elif type(value) is bytes:
+        return "0x"+value.hex()
+    return value
