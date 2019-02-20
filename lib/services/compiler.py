@@ -11,7 +11,6 @@ import time
 from lib.services import config
 CONFIG = config.CONFIG
 solcx.set_solc_version(CONFIG['solc']['version'])
-CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
 
 _changed = {}
 _contracts = {}
@@ -25,6 +24,7 @@ def _check_changed(filename, contract, clear=None):
         _changed[contract] = True
         return True
     try:
+        CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
         compiled = json.load(open(json_file, encoding="utf-8"))
         if (
             compiled['compiler'] != CONFIG['solc'] or
