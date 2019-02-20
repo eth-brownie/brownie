@@ -35,22 +35,22 @@ each command."""
 print("Brownie v{} - Python development framework for Ethereum\n".format(__version__))
 
 
-if '--stable' in sys.argv:
+if '--stable' in sys.argv and git.get_branch() != "master":
     git.checkout('master')
-    print("Using {0[value]}stable{0} brownie build".format(color))
+    print("Switching to {0[value]}stable{0} brownie build".format(color))
     sys.argv.append('--update')
 
 
-elif '--dev' in sys.argv:
+elif '--dev' in sys.argv and git.get_branch() != "develop":
     git.checkout("develop")
-    print("Using {0[value]}nightly{0} brownie build - may be buggy!".format(color))
+    print("Switching to {0[value]}nightly{0} brownie build - may be buggy!".format(color))
     sys.argv.append('--update')
 
 
 if '--update' in sys.argv:
     print("Checking for updates...")
     if git.pull():
-        print("Brownie has been updated!")
+        print("Brownie has been updated to the latest version!")
     else:
         print("Your version of Brownie is already up to date.")
     sys.exit()
