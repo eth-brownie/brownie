@@ -2,6 +2,8 @@
 -----
 
  - Raise ValueError when attempting to modify non-existant config settings
+ - Modify install script
+ - Minor bugfixes
 
 0.9.2
 -----
