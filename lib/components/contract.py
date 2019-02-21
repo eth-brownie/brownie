@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 import eth_event
+from hexbytes import HexBytes
 import re
 
 from lib.components.transaction import TransactionReceipt, VirtualMachineError
@@ -407,10 +408,12 @@ def _format_inputs(name, inputs, types):
             if "int" in type_:
                 inputs[i] = wei(inputs[i])
             elif "bytes" in type_ and type(inputs[i]) is not bytes:
+                if type(inputs[i]) is str and inputs[i][:2]=="0x":
+                    inputs[i] = int(inputs[i],16)
                 if type(inputs[i]) is not str:
                     inputs[i]=int(inputs[i]).to_bytes(int(type_[5:]), "big")
-                elif inputs[i][:2]!="0x":
-                    inputs[i]=inputs[i].encode() 
+                else:
+                    inputs[i]=inputs[i].encode()
         except:
             raise ValueError(
                 "'{}': Argument {}, could not convert {} '{}' to type {}".format(
