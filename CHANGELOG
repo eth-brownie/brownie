@@ -1,6 +1,7 @@
 0.9.4 (unreleased)
 ----- 
 
+ - Improved console formatting for lists and dicts
 
 0.9.3
 -----

@@ -89,6 +89,8 @@ class Console:
                     if r != None:
                         if type(r) in (dict, config.StrictDict) and r:
                             color.pretty_dict(r)
+                        elif type(r) is list:
+                            color.pretty_list(r)
                         elif type(r) is str:
                             print(r)
                         else:
