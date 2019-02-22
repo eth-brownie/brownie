@@ -1096,12 +1096,16 @@ These methods are used in the console.
         Brownie environment is ready.
         >>>
 
-.. py:method:: run(script)
+.. py:method:: run(script=None)
 
     Loads a script and runs the ``main`` method within it. See :ref:`deploy` for more information.
 
+    If no argument is given, returns a list of script names from the ``scripts/`` folder.
+
     .. code-block:: python
 
+        >>> run()
+        ['token']
         >>> run('token')
 
         Transaction sent: 0xe4bd74210e56d4da8d53774dc333a1122c26a72a86fbba82220fcf5d2648d634

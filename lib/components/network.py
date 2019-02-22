@@ -161,11 +161,13 @@ class Network:
             print("{0[error]}ERROR{0}: Unable to save environment due to unhandled {1}: {2}".format(
                 color, type(e).__name__, e))
 
-    def run(self, name):
+    def run(self, name=None):
         '''Loads a module from the scripts/ folder and runs the main() method.
 
         Args:
             name (string): name of the script.'''
+        if not name:
+            return([i[:-3] for i in os.listdir('scripts') if i[0]!="_" and i[-3:]==".py"])
         if not os.path.exists("scripts/{}.py".format(name)):
             print("{0[error]}ERROR{0}: Cannot find scripts/{1}.py".format(color, name))
             return
