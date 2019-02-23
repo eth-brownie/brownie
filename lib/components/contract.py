@@ -2,7 +2,6 @@
 
 from collections import OrderedDict
 import eth_event
-from hexbytes import HexBytes
 import re
 
 from lib.components.transaction import TransactionReceipt, VirtualMachineError
@@ -14,6 +13,7 @@ CONFIG = config.CONFIG
 
 
 deployed_contracts = {}
+
 
 def find_contract(address):
     address = web3.toChecksumAddress(address)
@@ -27,43 +27,43 @@ class _ContractBase:
         self._build = build
         self.abi = build['abi']
         self._name = build['contractName']
-        names = [i['name'] for i in self.abi if i['type']=="function"]
-        duplicates = set(i for i in names if names.count(i)>1)
+        names = [i['name'] for i in self.abi if i['type'] == "function"]
+        duplicates = set(i for i in names if names.count(i) > 1)
         if duplicates:
             raise AttributeError("Ambiguous contract functions in {}: {}".format(
                 self._name, ",".join(duplicates)))
         self.topics = eth_event.get_topics(self.abi)
         self.signatures = dict((
             i['name'],
-            web3.sha3(text="{}({})".format(i['name'],
-                ",".join(x['type'] for x in i['inputs'])
-                )).hex()[:10]
-        ) for i in self.abi if i['type']=="function")
+            web3.sha3(text="{}({})".format(
+                i['name'], ",".join(x['type'] for x in i['inputs'])
+            )).hex()[:10]
+        ) for i in self.abi if i['type'] == "function")
 
 
 class ContractContainer(_ContractBase):
 
     '''List-like container class that holds all Contract instances of the same
     type, and is used to deploy new instances of that contract.
-    
+
     Attributes:
         abi: Complete contract ABI.
         bytecode: Bytecode used to deploy the contract.
         signatures: Dictionary of {'function name': "bytes4 signature"}
         topics: Dictionary of {'event name': "bytes32 topic"}'''
-    
+
     def __init__(self, build, network):
         self.tx = None
         self.bytecode = build['bytecode']
         self._network = network
         if type(build['pcMap']) is list:
-            build['pcMap'] = dict((i.pop('pc'),i) for i in build['pcMap'])
+            build['pcMap'] = dict((i.pop('pc'), i) for i in build['pcMap'])
         super().__init__(build)
         self.deploy = ContractConstructor(self, self._name)
         deployed_contracts[self._name] = OrderedDict()
         for k, data in sorted([
-            (k,v) for k,v in build['networks'].items() if 
-            v['network']==CONFIG['active_network']['name']
+            (k, v) for k, v in build['networks'].items() if
+            v['network'] == CONFIG['active_network']['name']
         ], key=lambda k: int(k[0])):
             if web3.eth.getCode(data['address']).hex() == "0x00":
                 print("WARNING: No contract deployed at {}.".format(data['address']))
@@ -86,23 +86,23 @@ class ContractContainer(_ContractBase):
 
     def __delitem__(self, key):
         del deployed_contracts[self._name][self[key].address]
-    
+
     def __len__(self):
         return len(deployed_contracts[self._name])
 
-    def __repr__(self):
+    def _console_repr(self):
         return str(list(deployed_contracts[self._name].values()))
 
     def remove(self, contract):
         '''Removes a contract from the container.
-        
+
         Args:
             contract: Contract instance of address string of the contract.'''
         del deployed_contracts[self._name][str(contract)]
 
-    def at(self, address, owner = None, tx = None):
+    def at(self, address, owner=None, tx=None):
         '''Returns a contract address.
-        
+
         Raises ValueError if no bytecode exists at the address.
 
         Args:
@@ -127,14 +127,14 @@ class ContractContainer(_ContractBase):
 
 
 class ContractConstructor:
-    
+
     def __init__(self, parent, name):
         self._parent = parent
         try:
-            self.abi = [next(i for i in parent.abi if i['type']=="constructor")]
+            self.abi = [next(i for i in parent.abi if i['type'] == "constructor")]
         except:
             self.abi = []
-        
+
         self._name = name
 
     def __repr__(self):
@@ -175,7 +175,7 @@ class ContractConstructor:
                     marker,
                     self._parent._network[contract][-1].address[-40:]
                 )
-        contract = web3.eth.contract(abi = self.abi, bytecode = bytecode)
+        contract = web3.eth.contract(abi=self.abi, bytecode=bytecode)
         args, tx = _get_tx(account, args)
         tx = account._contract_tx(
             contract.constructor,
@@ -202,7 +202,7 @@ class ContractConstructor:
 class Contract(_ContractBase):
 
     '''Methods for interacting with a deployed contract.
-    
+
     Each public contract method is available as a ContractCall or ContractTx
     instance, created when this class is instantiated.
 
@@ -215,15 +215,15 @@ class Contract(_ContractBase):
         self.tx = tx
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         self._owner = owner
-        self._contract = web3.eth.contract(address = address, abi = self.abi)
-        for i in [i for i in self.abi if i['type']=="function"]:
+        self._contract = web3.eth.contract(address=address, abi=self.abi)
+        for i in [i for i in self.abi if i['type'] == "function"]:
             if hasattr(self, i['name']):
                 raise AttributeError(
                     "Namespace collision: '{}.{}'".format(self._name, i['name'])
                 )
-            fn = getattr(self._contract.functions,i['name'])
+            fn = getattr(self._contract.functions, i['name'])
             name = "{}.{}".format(self._name, i['name'])
-            if i['stateMutability'] in ('view','pure'):
+            if i['stateMutability'] in ('view', 'pure'):
                 setattr(self, i['name'], ContractCall(fn, i, name, owner))
             else:
                 setattr(self, i['name'], ContractTx(fn, i, name, owner))
@@ -275,7 +275,7 @@ class _ContractMethod:
 
     def call(self, *args):
         '''Calls the contract method without broadcasting a transaction.
-        
+
         Args:
             *args: Contract method inputs. You can optionally provide a
                    dictionary of transaction properties as the last arg.
@@ -287,7 +287,7 @@ class _ContractMethod:
             tx['from'] = str(tx['from'])
         else:
             del tx['from']
-        try: 
+        try:
             result = self._fn(*self._format_inputs(args)).call(tx)
         except ValueError as e:
             raise VirtualMachineError(e)
@@ -297,7 +297,7 @@ class _ContractMethod:
 
     def transact(self, *args):
         '''Broadcasts a transaction that calls this contract method.
-        
+
         Args:
             *args: Contract method inputs. You can optionally provide a
                    dictionary of transaction properties as the last arg.
@@ -336,7 +336,7 @@ class ContractTx(_ContractMethod):
 
     def __call__(self, *args):
         '''Broadcasts a transaction that calls this contract method.
-        
+
         Args:
             *args: Contract method inputs. You can optionally provide a
                    dictionary of transaction properties as the last arg.
@@ -349,21 +349,21 @@ class ContractTx(_ContractMethod):
 class ContractCall(_ContractMethod):
 
     '''A public view or pure contract method.
-    
+
     Args:
         abi: Contract ABI specific to this method.
         signature: Bytes4 method signature.'''
 
     def __call__(self, *args):
         '''Calls the contract method without broadcasting a transaction.
-        
+
         Args:
             *args: Contract method inputs. You can optionally provide a
                    dictionary of transaction properties as the last arg.
 
         Returns:
             Contract method return value(s).'''
-        if config.ARGV['mode']=="script" and CONFIG['test']['always_transact']:
+        if config.ARGV['mode'] == "script" and CONFIG['test']['always_transact']:
             tx = self.transact(*args)
             return tx.return_value
         return self.call(*args)
@@ -375,7 +375,7 @@ def _get_tx(owner, args):
         args, tx = (args[:-1], args[-1])
         if 'from' not in tx:
             tx['from'] = owner
-        for key in [i for i in ['value','gas','gasPrice'] if i in tx]:
+        for key in [i for i in ('value', 'gas', 'gasPrice') if i in tx]:
             tx[key] = wei(tx[key])
     else:
         tx = {'from': owner}
@@ -388,19 +388,19 @@ def _format_inputs(name, inputs, types):
     if len(inputs) and not len(types):
         raise AttributeError("{} requires no arguments".format(name))
     if len(inputs) != len(types):
-        raise AttributeError(
-            "{} requires the following arguments: {}".format(
-            name,",".join(types)))
+        raise AttributeError("{} requires the following arguments: {}".format(
+            name, ",".join(types)
+        ))
     for i, type_ in enumerate(types):
-        if type_[-1]=="]":
+        if type_[-1] == "]":
             # input value is an array, have to check every item
-            t,length = type_.rstrip(']').rsplit('[', maxsplit=1)
+            t, length = type_.rstrip(']').rsplit('[', maxsplit=1)
             if length != "" and len(inputs[i]) != int(length):
                 raise ValueError(
                     "'{}': Argument {}, sequence has a ".format(name, i) +
                     "length of {}, should be {}".format(len(inputs[i]), type_)
                     )
-            inputs[i] = _format_inputs(name, inputs[i],[t]*len(inputs[i]))
+            inputs[i] = _format_inputs(name, inputs[i], [t]*len(inputs[i]))
             continue
         try:
             if "address" in type_:
@@ -409,14 +409,14 @@ def _format_inputs(name, inputs, types):
                 inputs[i] = wei(inputs[i])
             elif "bytes" in type_ and type(inputs[i]) is not bytes:
                 if type(inputs[i]) is str:
-                    if inputs[i][:2]!="0x":
-                        inputs[i]=inputs[i].encode()
-                    elif type_!="bytes":
+                    if inputs[i][:2] != "0x":
+                        inputs[i] = inputs[i].encode()
+                    elif type_ != "bytes":
                         inputs[i] = int(inputs[i], 16).to_bytes(int(type_[5:]), "big")
                 else:
-                    inputs[i]=int(inputs[i]).to_bytes(int(type_[5:]), "big")
+                    inputs[i] = int(inputs[i]).to_bytes(int(type_[5:]), "big")
         except:
             raise ValueError(
                 "'{}': Argument {}, could not convert {} '{}' to type {}".format(
-                    name,i,type(inputs[i]).__name__,inputs[i],type_))
+                    name, i, type(inputs[i]).__name__, inputs[i], type_))
     return inputs

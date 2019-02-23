@@ -28,7 +28,7 @@ class Accounts:
         except ValueError:
             return False
 
-    def __repr__(self):
+    def _console_repr(self):
         return str(self._accounts)
 
     def __iter__(self):
@@ -122,6 +122,9 @@ class _AccountBase:
     def __hash__(self):
         return hash(self.address)
 
+    def __repr__(self):
+        return "'{0[string]}{1}{0}'".format(color, self.address)
+
     def __str__(self):
         return self.address
 
@@ -186,7 +189,7 @@ class Account(_AccountBase):
         address: Public address of the account.
         nonce: Current nonce of the account.'''
 
-    def __repr__(self):
+    def _console_repr(self):
         return "<Account object '{0[string]}{1}{0}'>".format(color, self.address)
 
     def transfer(self, to, amount, gas_limit=None, gas_price=None):
@@ -243,7 +246,7 @@ class LocalAccount(_AccountBase):
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
 
-    def __repr__(self):
+    def _console_repr(self):
         return "<LocalAccount object '{0[string]}{1}{0}'>".format(color, self.address)
 
     def transfer(self, to, amount, gas_limit=None, gas_price=None):

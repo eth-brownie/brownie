@@ -81,6 +81,8 @@ class Console:
                             color.pretty_list(r)
                         elif type(r) is str:
                             print(r)
+                        elif hasattr(r, '_console_repr'):
+                            print(r._console_repr())
                         else:
                             print(repr(r))
                 except SyntaxError:
