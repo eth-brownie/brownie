@@ -123,7 +123,7 @@ class Console:
                     readline.get_current_history_length() - 1,
                     response[:response.index("(")] + "()"
                 )
-        except ValueError:
+        except (ValueError, AttributeError):
             pass
         readline.append_history_file(1, "build/.history")
         return response
