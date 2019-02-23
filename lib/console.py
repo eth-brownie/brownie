@@ -38,27 +38,15 @@ class Console:
         try:
             readline.read_history_file("build/.history")
         except FileNotFoundError:
-            pass
+            open("build/.history", 'w').write("")
         while True:
             if not self._multiline:
                 try:
-                    cmd = input(self._prompt)
+                    cmd = self._input(self._prompt)
                 except KeyboardInterrupt:
                     sys.stdout.write("\nUse exit() or Ctrl-D (i.e. EOF) to exit.\n")
                     sys.stdout.flush()
                     continue
-                except EOFError:
-                    print()
-                    cmd = "exit()"
-                if cmd == "exit()":
-                    try:
-                        readline.remove_history_item(
-                            readline.get_current_history_length() - 1
-                        )
-                    except ValueError:
-                        pass
-                    readline.write_history_file("build/.history")
-                    return
                 if not cmd.strip():
                     continue
                 if cmd.rstrip()[-1] == ":":
@@ -66,14 +54,14 @@ class Console:
                     self._prompt = "... "
                     continue
             else:
-                try: 
-                    new_cmd = input('... ')
+                try:
+                    new_cmd = self._input("... ")
                 except KeyboardInterrupt:
                     print()
                     self._multiline = False
                     self._prompt = ">>> "
                     continue
-                if new_cmd: 
+                if new_cmd:
                     cmd += '\n' + new_cmd
                     continue
             if [i for i in ['{}', '[]', '()'] if cmd.count(i[0]) > cmd.count(i[1])]:
@@ -82,11 +70,11 @@ class Console:
             self._multiline = False
             self._prompt = ""
             try:
-                try: 
+                try:
                     local_['_result'] = None
                     exec('_result = ' + cmd, self.__dict__, local_)
                     r = local_['_result']
-                    if r != None:
+                    if r is not None:
                         if type(r) in (dict, config.StrictDict) and r:
                             color.pretty_dict(r)
                         elif type(r) is list:
@@ -97,10 +85,13 @@ class Console:
                             print(repr(r))
                 except SyntaxError:
                     exec(cmd, self.__dict__, local_)
+                except SystemExit:
+                    return
             except:
                 print(color.format_tb(sys.exc_info(), start=1))
             self._prompt = ">>> "
 
+    # replaces builtin print method, for threadsafe printing
     def _print(self, *args, sep=' ', end='\n', file=sys.stdout, flush=False):
         with self._print_lock:
             ln = readline.get_line_buffer()
@@ -109,13 +100,32 @@ class Console:
             file.write(self._prompt+ln)
             file.flush()
 
+    # replaces builtin dir method, for pretty and easier to read output
     def _dir(self, obj=None):
         if obj is None:
             obj = self
-        results = [(i,getattr(obj,i)) for i in builtins.dir(obj) if i[0]!="_"]
+        results = [(i, getattr(obj, i)) for i in builtins.dir(obj) if i[0] != "_"]
         print("["+"{}, ".format(color()).join(
             _dir_color(i[1])+i[0] for i in results
         )+color()+"]")
+
+    # save user input to readline history file, filter for private keys
+    def _input(self, prompt):
+        response = input(prompt)
+        try:
+            cls_, method = response[:response.index("(")].split(".")
+            cls_ = getattr(self, cls_)
+            method = getattr(cls_, method)
+            if hasattr(method, "_private"):
+                readline.replace_history_item(
+                    readline.get_current_history_length() - 1,
+                    response[:response.index("(")] + "()"
+                )
+        except ValueError:
+            pass
+        readline.append_history_file(1, "build/.history")
+        return response
+
 
 def _dir_color(obj):
     if type(obj).__name__ == "module":
@@ -131,13 +141,17 @@ def _dir_color(obj):
         return color('value')
     return color('callable')
 
+
 def main():
-    args = docopt(__doc__)
+    docopt(__doc__)
 
     console = Console()
-
     network = Network(console)
     print("Brownie environment is ready.")
 
-    console._run()
-    network.save()
+    try:
+        console._run()
+    except EOFError:
+        sys.stdout.write('\n')
+    finally:
+        network.save()
