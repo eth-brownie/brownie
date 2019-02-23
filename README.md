@@ -53,7 +53,17 @@ Brownie documentation is hosted at [Read the Docs](https://eth-brownie.readthedo
 
 ## Development
 
-This project is still in development and should be considered a beta. Comments, questions, criticisms and pull requests are welcomed.
+This project is still in development and should be considered a beta. Questions, comments, criticisms and pull requests are welcomed.
+
+## Contributing
+
+Help is always appreciated! In particular, Brownie needs work in the following areas before we can comfortably take it out of beta:
+
+* Tests
+* Code formatting
+* Improving the documentation
+* Support for Windows
+* More tests
 
 ## License
 
