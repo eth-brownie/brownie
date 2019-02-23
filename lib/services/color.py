@@ -38,9 +38,12 @@ class Color:
         if not color:
             return BASE+"m"
         color = color.split()
-        if len(color) == 2:
-            return BASE+MODIFIERS[color[0]]+COLORS[color[1]]+"m"
-        return BASE+COLORS[color[0]]+"m"
+        try:
+            if len(color) == 2:
+                return BASE+MODIFIERS[color[0]]+COLORS[color[1]]+"m"
+            return BASE+COLORS[color[0]]+"m"
+        except KeyError:
+            return BASE+"m"
 
     def __str__(self):
         return BASE+"m"
