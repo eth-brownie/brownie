@@ -9,7 +9,7 @@ WORKDIR /usr/src
 
 RUN  apt-get update
 
-RUN apt-get install -y python3.6 python3-pip python3-venv wget curl git npm nodejs
+RUN apt-get install -y python3.6 python3-pip python3-venv wget curl git npm nodejs sudo
 
 RUN npm install -g ganache-cli@6.2.5
 
