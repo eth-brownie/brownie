@@ -8,7 +8,7 @@ from lib.components.transaction import VirtualMachineError as _VMError
 
 def true(statement, fail_msg="Expected statement to be true"):
     '''Expects an object or statement to evaluate True.
-    
+
     Args:
         statement: The object or statement to check.
         fail_msg: Message to show if the check fails.'''
@@ -18,7 +18,7 @@ def true(statement, fail_msg="Expected statement to be true"):
 
 def false(statement, fail_msg="Expected statement to be False"):
     '''Expects an object or statement to evaluate False.
-    
+
     Args:
         statement: The object or statement to check.
         fail_msg: Message to show if the check fails.'''
@@ -28,14 +28,14 @@ def false(statement, fail_msg="Expected statement to be False"):
 
 def reverts(fn, args, revert_msg=None):
     '''Expects a transaction to revert.
-    
+
     Args:
         fn: ContractTx instance to call.
         args: List or tuple of contract input args.
         fail_msg: Message to show if the check fails.
         revert_msg: If set, the check only passes if the returned
                     revert message matches the given one.'''
-    try: 
+    try:
         fn(*args)
     except _VMError as e:
         if not revert_msg or revert_msg == e.revert_msg:
@@ -49,12 +49,12 @@ def reverts(fn, args, revert_msg=None):
 
 def confirms(fn, args, fail_msg="Expected transaction to confirm"):
     '''Expects a transaction to confirm.
-    
+
     Args:
         fn: ContractTx instance to call.
         args: List or tuple of contract input args.
         fail_msg: Message to show if the check fails.
-        
+
     Returns:
         TransactionReceipt instance.'''
     try:
@@ -66,7 +66,7 @@ def confirms(fn, args, fail_msg="Expected transaction to confirm"):
 
 def event_fired(tx, name, count=None, values=None):
     '''Expects a transaction to contain an event.
-    
+
     Args:
         tx: A TransactionReceipt.
         name: Name of the event expected to fire.
@@ -75,7 +75,7 @@ def event_fired(tx, name, count=None, values=None):
         values: A dict or list of dicts of {key:value} that must match
                 against the fired events. The length of values must also
                 match the number of events that fire.'''
-    events = [i for i in tx.events if i['name']==name]
+    events = [i for i in tx.events if i['name'] == name]
     if count is not None and count != len(events):
         raise AssertionError(
             "Event {} - expected {} events to fire, got {}".format(
@@ -94,12 +94,12 @@ def event_fired(tx, name, count=None, values=None):
             )
         )
     for i in range(len(values)):
-        data = dict((x['name'],x['value']) for x in events[i]['data'])
-        for k,v in values[i].items():
+        data = dict((x['name'], x['value']) for x in events[i]['data'])
+        for k, v in values[i].items():
             if k not in data:
                 print(data)
                 raise KeyError(
-                    "Event {} - does not contain value '{}'".format(name,k)
+                    "Event {} - does not contain value '{}'".format(name, k)
                 )
             if data[k] != v:
                 raise AssertionError(
@@ -111,12 +111,12 @@ def event_fired(tx, name, count=None, values=None):
 
 def event_not_fired(tx, name, fail_msg="Expected event not to fire"):
     '''Expects a transaction not to contain an event.
-    
+
     Args:
         tx: A TransactionReceipt.
         name: Name of the event expected to fire.
         fail_msg: Message to show if check fails.'''
-    if [i for i in tx.events if i['name']==name]:
+    if [i for i in tx.events if i['name'] == name]:
         raise AssertionError(fail_msg)
 
 
@@ -129,7 +129,7 @@ def equal(a, b, fail_msg="Expected values to be equal"):
         fail_msg: Message to show if check fails.'''
     a, b = _convert(a, b)
     if a != b:
-        raise AssertionError(fail_msg+": {} != {}".format(a,b))
+        raise AssertionError(fail_msg+": {} != {}".format(a, b))
 
 
 def not_equal(a, b, fail_msg="Expected values to be not equal"):
@@ -141,15 +141,19 @@ def not_equal(a, b, fail_msg="Expected values to be not equal"):
         fail_msg: Message to show if check fails.'''
     a, b = _convert(a, b)
     if a == b:
-        raise AssertionError(fail_msg+": {} == {}".format(a,b))
+        raise AssertionError(fail_msg+": {} == {}".format(a, b))
 
 
 # attempt conversion with wei before comparing equality
 def _convert(a, b):
     if a not in (None, False, True):
-        try: a = wei(a)
-        except ValueError: pass
+        try:
+            a = wei(a)
+        except (ValueError, TypeError):
+            pass
     if b not in (None, False, True):
-        try: b = wei(b)
-        except ValueError: pass
+        try:
+            b = wei(b)
+        except (ValueError, TypeError):
+            pass
     return a, b

@@ -3,6 +3,7 @@
 import sys
 import traceback
 
+from lib.services.datatypes import StrictDict
 from lib.services import config
 CONFIG = config.CONFIG
 
@@ -38,9 +39,12 @@ class Color:
         if not color:
             return BASE+"m"
         color = color.split()
-        if len(color) == 2:
-            return BASE+MODIFIERS[color[0]]+COLORS[color[1]]+"m"
-        return BASE+COLORS[color[0]]+"m"
+        try:
+            if len(color) == 2:
+                return BASE+MODIFIERS[color[0]]+COLORS[color[1]]+"m"
+            return BASE+COLORS[color[0]]+"m"
+        except KeyError:
+            return BASE+"m"
 
     def __str__(self):
         return BASE+"m"
@@ -48,33 +52,77 @@ class Color:
     def __getitem__(self, color):
         return self(color)
 
+    # format dicts for console printing
     def pretty_dict(self, value, indent = 0, start=True):
         if start:
             sys.stdout.write(' '*indent+'{}{{'.format(self['dull']))
         indent+=4
-        for c,k in enumerate(sorted(value)):
+        for c,k in enumerate(sorted(value, key= lambda k: str(k))):
             if c:
                 sys.stdout.write(',')
             sys.stdout.write('\n'+' '*indent)
-            
             if type(k) is str:
                 sys.stdout.write("'{0[key]}{1}{0[dull]}': ".format(self, k))
             else:
                 sys.stdout.write("{0[key]}{1}{0[dull]}: ".format(self, k))
-            if type(value[k]) in (dict, config.StrictDict):
+            if type(value[k]) in (dict, StrictDict):
                 sys.stdout.write('{')
-                self.json(value[k], indent,False)
+                self.pretty_dict(value[k], indent,False)
                 continue
-            if type(value[k]) is str:
-                sys.stdout.write('"{0[string]}{1}{0[dull]}"'.format(self, value[k]))
-            else:
-                sys.stdout.write('{0[value]}{1}{0[dull]}'.format(self, value[k]))
+            if type(value[k]) in (list, tuple):
+                sys.stdout.write(str(value[k])[0])
+                self.pretty_list(value[k], indent, False)
+                continue
+            self._write(value[k])
         indent-=4
         sys.stdout.write('\n'+' '*indent+'}')
         if start:
             sys.stdout.write('\n{}'.format(self))
         sys.stdout.flush()
 
+    # format lists for console printing
+    def pretty_list(self, value, indent = 0, start=True):
+        brackets = str(value)[0],str(value)[-1]
+        if start:
+            sys.stdout.write(' '*indent+'{}{}'.format(self['dull'],brackets[0]))
+        if value and len(value)==len([i for i in value if type(i) is dict]):
+            # list of dicts
+            sys.stdout.write('\n'+' '*(indent+4)+'{')
+            for c,i in enumerate(value):
+                if c:
+                    sys.stdout.write(',')
+                self.pretty_dict(i, indent+4, False)
+            sys.stdout.write('\n'+  ' '*indent+brackets[1])
+        elif (
+            value and len(value)==len([i for i in value if type(i) is str]) and
+            set(len(i) for i in value) == {64}
+        ):
+            # list of bytes32 hexstrings (stack trace)
+            for c,i in enumerate(value):
+                if c:
+                    sys.stdout.write(',')
+                sys.stdout.write('\n'+' '*(indent+4))
+                self._write(i)
+            sys.stdout.write('\n'+' '*indent+brackets[1])
+        else:
+            # all other cases
+            for c, i in enumerate(value):
+                if c:
+                    sys.stdout.write(', ')
+                self._write(i)
+            sys.stdout.write(brackets[1])
+        if start:
+            sys.stdout.write('\n{}'.format(self))
+        sys.stdout.flush()
+
+    def _write(self, value):
+        if type(value) is str:
+            sys.stdout.write('"{0[string]}{1}{0[dull]}"'.format(self, value))
+        else:
+            sys.stdout.write('{0[value]}{1}{0[dull]}'.format(self, value))
+
+
+    # format transaction related console outputs
     def print_colors(self, msg, key = None, value=None):
         if key is None:
             key = 'key'
