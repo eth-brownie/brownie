@@ -4,6 +4,7 @@
  - Improved console formatting for lists and dicts
  - Run method returns list of scripts when no argument is given
  - Do not keep mnemonics and private keys in readline history
+ - Use KwargTuple type for call return values
 
 0.9.3
 -----

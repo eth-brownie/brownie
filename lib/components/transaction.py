@@ -10,6 +10,7 @@ import time
 from lib.components import contract
 from lib.components.eth import web3
 from lib.services.compiler import compile_contracts
+from lib.services.datatypes import KwargTuple, format_output
 from lib.services import config
 from lib.services import color
 CONFIG = config.CONFIG
@@ -33,28 +34,33 @@ tx_history = []
 class VirtualMachineError(Exception):
 
     '''Raised when a call to a contract causes an EVM exception.
-    
+
     Attributes:
         revert_msg: The returned error string, if any.
         source: The contract source code where the revert occured, if available.'''
 
     revert_msg = ""
     source = ""
-    
+
     def __init__(self, exc):
         if type(exc) is not dict:
-            exc = eval(str(exc))
+            try:
+                exc = eval(str(exc))
+            except SyntaxError:
+                exc = {'message': str(exc)}
+        if len(exc['message'].split('revert ', maxsplit=1)) > 1:
+            self.revert_msg = exc['message'].split('revert ')[-1]
         if 'source' in exc:
             self.source = exc['source']
-        if len(exc['message'].split('revert ', maxsplit=1))>1:
-            self.revert_msg = exc['message'].split('revert ')[-1]
-        super().__init__(exc['message'])
+            super().__init__(exc['message']+"\n"+exc['source'])
+        else:
+            super().__init__(exc['message'])
 
 
 def raise_or_return_tx(exc):
     data = eval(str(exc))
     try:
-        return next(i for i in data['data'].keys() if i[:2]=="0x")
+        return next(i for i in data['data'].keys() if i[:2] == "0x")
     except Exception:
         raise VirtualMachineError(exc)
 
@@ -67,7 +73,7 @@ class TransactionReceipt:
     * Before the tx confirms, many values are set to None.
     * trace, revert_msg return_value, and events from a reverted tx
       are only available if debug_traceTransaction is enabled in the RPC.
-    
+
     Attributes:
         fn_name: Name of the method called in the transaction
         txid: Transaction ID
@@ -121,9 +127,10 @@ class TransactionReceipt:
         try:
             t.join()
             if config.ARGV['mode'] == "script" and not self.status:
-                raise VirtualMachineError(
-                    {"message": "revert "+(self.revert_msg or ""), "source":self.error(1)}
-                )
+                raise VirtualMachineError({
+                    "message": "revert "+(self.revert_msg or ""),
+                    "source": self.error(1)
+                })
         except KeyboardInterrupt:
             if config.ARGV['mode'] == "script":
                 raise
@@ -131,7 +138,8 @@ class TransactionReceipt:
     def _await_confirm(self, silent, callback):
         while True:
             tx = web3.eth.getTransaction(self.txid)
-            if tx: break
+            if tx:
+                break
             time.sleep(0.5)
         if not self.sender:
             self.sender = tx['from']
@@ -190,7 +198,7 @@ class TransactionReceipt:
         return hash(self.txid)
 
     def __getattr__(self, attr):
-        if attr not in ('events','return_value', 'revert_msg', 'trace'):
+        if attr not in ('events', 'return_value', 'revert_msg', 'trace'):
             raise AttributeError(
                 "'TransactionReceipt' object has no attribute '{}'".format(attr)
             )
@@ -227,7 +235,7 @@ class TransactionReceipt:
                 for i in event['data']:
                     color.print_colors(
                         "      {0[name]}: {0[value]}".format(i),
-                        value = None if i['decoded'] else "dull"
+                        value=None if i['decoded'] else "dull"
                     )
             print()
 
@@ -244,11 +252,11 @@ class TransactionReceipt:
         self.trace = []
         self.return_value = None
         self.revert_msg = None
-        if (self.input=="0x" and self.gas_used == 21000) or self.contract_address:
+        if (self.input == "0x" and self.gas_used == 21000) or self.contract_address:
             return
         trace = web3.providers[0].make_request(
             'debug_traceTransaction',
-            [self.txid,{}]
+            [self.txid, {}]
         )
         if 'error' in trace:
             raise ValueError(trace['error']['message'])
@@ -256,7 +264,7 @@ class TransactionReceipt:
         c = contract.find_contract(self.receiver or self.contract_address)
         last = {0: {
             'address': self.receiver or self.contract_address,
-            'contract':c._name,
+            'contract': c._name,
             'fn': [self.fn_name.split('.')[-1]],
         }}
         pc = c._build['pcMap'][0]
@@ -282,7 +290,7 @@ class TransactionReceipt:
                 last[trace[i]['depth']] = {
                     'address': address,
                     'contract': c._name,
-                    'fn': [next(k for k,v in c.signatures.items() if v==sig)],
+                    'fn': [next(k for k, v in c.signatures.items() if v == sig)],
                     }
             trace[i].update({
                 'address': last[trace[i]['depth']]['address'],
@@ -304,9 +312,9 @@ class TransactionReceipt:
                         fn = source[:source.index('(')].split('.')[-1]
                     else:
                         fn = last[trace[i]['depth']]['fn'][-1]
-                    last[trace[i]['depth']]['fn'].append(fn)   
+                    last[trace[i]['depth']]['fn'].append(fn)
             # jump 'o' is coming out of an internal function
-            elif pc['jump'] == "o" and len(last[trace[i]['depth']]['fn'])>1 :
+            elif pc['jump'] == "o" and len(last[trace[i]['depth']]['fn']) > 1:
                 last[trace[i]['depth']]['fn'].pop()
 
     def _evaluate_trace(self):
@@ -330,9 +338,13 @@ class TransactionReceipt:
             self.return_value = eth_abi.decode_abi(abi, data)
             if not self.return_value:
                 return
-            self.return_value = [_decode_abi(i) for i in self.return_value]
             if len(self.return_value) == 1:
-                self.return_value = self.return_value[0]
+                self.return_value = format_output(self.return_value[0])
+            else:
+                self.return_value = KwargTuple(
+                    self.return_value,
+                    getattr(c, self.fn_name.split('.')[-1]).abi
+                )
         else:
             self.events = []
             # get revert message
@@ -349,7 +361,7 @@ class TransactionReceipt:
                 self.events = eth_event.decode_trace(self.trace, topics())
             except:
                 pass
-            
+
     def call_trace(self):
         '''Displays the sequence of contracts and functions called while
         executing this transaction, and the structLog index where each call
@@ -358,7 +370,6 @@ class TransactionReceipt:
         trace = self.trace
         sep = max(i['jumpDepth'] for i in trace)
         idx = 0
-        depth = 0
         for i in range(1, len(trace)):
             if (
                 trace[i]['depth'] == trace[i-1]['depth'] and
@@ -372,23 +383,21 @@ class TransactionReceipt:
     def error(self, pad=3):
         '''Displays the source code that caused the transaction to revert.'''
         try:
-            trace = next(i for i in self.trace if i['op'] in ("REVERT", "INVALID")) 
+            trace = next(i for i in self.trace if i['op'] in ("REVERT", "INVALID"))
         except StopIteration:
-            return
+            return ""
         span = (trace['source']['start'], trace['source']['stop'])
         source = open(trace['source']['filename'], encoding="utf-8").read()
-        newlines = [i for i in range(len(source)) if source[i]=="\n"]
-        start = newlines.index(next(i for i in newlines if i>=span[0]))
-        stop = newlines.index(next(i for i in newlines if i>=span[1]))
+        newlines = [i for i in range(len(source)) if source[i] == "\n"]
+        start = newlines.index(next(i for i in newlines if i >= span[0]))
+        stop = newlines.index(next(i for i in newlines if i >= span[1]))
         ln = start + 1
         start = newlines[max(start-(pad+1), 0)]
         stop = newlines[min(stop+pad, len(newlines)-1)]
-        result = (
-            ('{0[dull]}File {0[string]}"{1}"{0[dull]}, ' +
-            'line {0[value]}{2}{0[dull]}, in {0[callable]}{3}').format(
-                color, trace['source']['filename'], ln, trace['fn']
-            )
-        )
+        result = ((
+            '{0[dull]}File {0[string]}"{1}"{0[dull]}, ' +
+            'line {0[value]}{2}{0[dull]}, in {0[callable]}{3}'
+        ).format(color, trace['source']['filename'], ln, trace['fn']))
         result += ("{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
             color,
             source[start:span[0]],
@@ -412,10 +421,10 @@ def _profile_gas(fn_name, gas_used):
     gas_profile.setdefault(
         fn_name,
         {
-            'avg':0,
-            'high':0,
-            'low':float('inf'),
-            'count':0
+            'avg': 0,
+            'high': 0,
+            'low': float('inf'),
+            'count': 0
         }
     )
     gas = gas_profile[fn_name]
@@ -428,6 +437,8 @@ def _profile_gas(fn_name, gas_used):
 
 
 _topics = {}
+
+
 def topics():
     '''Generates event topics and saves them in brownie/topics.json'''
     if _topics:
@@ -439,8 +450,9 @@ def topics():
         ))
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         topics = {}
+    _topics.update(topics)
     contracts = compile_contracts()
-    events = [x for i in contracts.values() for x in i['abi'] if x['type']=="event"]
+    events = [x for i in contracts.values() for x in i['abi'] if x['type'] == "event"]
     _topics.update(eth_event.get_event_abi(events))
     json.dump(
         _topics,
@@ -449,11 +461,3 @@ def topics():
         indent=4
     )
     return _topics
-
-
-def _decode_abi(value):
-    if type(value) is tuple:
-        return [_decode_abi(i) for i in value]
-    elif type(value) is bytes:
-        return "0x"+value.hex()
-    return value

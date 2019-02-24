@@ -3,6 +3,7 @@
 import sys
 import traceback
 
+from lib.services.datatypes import StrictDict
 from lib.services import config
 CONFIG = config.CONFIG
 
@@ -64,12 +65,12 @@ class Color:
                 sys.stdout.write("'{0[key]}{1}{0[dull]}': ".format(self, k))
             else:
                 sys.stdout.write("{0[key]}{1}{0[dull]}: ".format(self, k))
-            if type(value[k]) in (dict, config.StrictDict):
+            if type(value[k]) in (dict, StrictDict):
                 sys.stdout.write('{')
                 self.pretty_dict(value[k], indent,False)
                 continue
-            if type(value[k]) is list:
-                sys.stdout.write('[')
+            if type(value[k]) in (list, tuple):
+                sys.stdout.write(str(value[k])[0])
                 self.pretty_list(value[k], indent, False)
                 continue
             self._write(value[k])
@@ -81,8 +82,9 @@ class Color:
 
     # format lists for console printing
     def pretty_list(self, value, indent = 0, start=True):
+        brackets = str(value)[0],str(value)[-1]
         if start:
-            sys.stdout.write(' '*indent+'{}['.format(self['dull']))
+            sys.stdout.write(' '*indent+'{}{}'.format(self['dull'],brackets[0]))
         if value and len(value)==len([i for i in value if type(i) is dict]):
             # list of dicts
             sys.stdout.write('\n'+' '*(indent+4)+'{')
@@ -90,7 +92,7 @@ class Color:
                 if c:
                     sys.stdout.write(',')
                 self.pretty_dict(i, indent+4, False)
-            sys.stdout.write('\n'+  ' '*indent+  ']')
+            sys.stdout.write('\n'+  ' '*indent+brackets[1])
         elif (
             value and len(value)==len([i for i in value if type(i) is str]) and
             set(len(i) for i in value) == {64}
@@ -101,14 +103,14 @@ class Color:
                     sys.stdout.write(',')
                 sys.stdout.write('\n'+' '*(indent+4))
                 self._write(i)
-            sys.stdout.write('\n'+' '*indent+']')
+            sys.stdout.write('\n'+' '*indent+brackets[1])
         else:
             # all other cases
             for c, i in enumerate(value):
                 if c:
                     sys.stdout.write(', ')
                 self._write(i)
-            sys.stdout.write(']')
+            sys.stdout.write(brackets[1])
         if start:
             sys.stdout.write('\n{}'.format(self))
         sys.stdout.flush()

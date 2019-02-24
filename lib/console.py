@@ -8,6 +8,7 @@ from threading import Lock
 
 from lib.components.network import Network
 from lib.components.contract import _ContractBase, _ContractMethod
+from lib.services.datatypes import StrictDict, KwargTuple
 from lib.services import color, config
 CONFIG = config.CONFIG
 
@@ -75,9 +76,9 @@ class Console:
                     exec('_result = ' + cmd, self.__dict__, local_)
                     r = local_['_result']
                     if r is not None:
-                        if type(r) in (dict, config.StrictDict) and r:
+                        if type(r) in (dict, StrictDict) and r:
                             color.pretty_dict(r)
-                        elif type(r) is list:
+                        elif type(r) in (list, tuple, KwargTuple):
                             color.pretty_list(r)
                         elif type(r) is str:
                             print(r)

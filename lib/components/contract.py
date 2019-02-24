@@ -4,6 +4,7 @@ from collections import OrderedDict
 import eth_event
 import re
 
+from lib.services.datatypes import KwargTuple, format_output
 from lib.components.transaction import TransactionReceipt, VirtualMachineError
 from lib.components.eth import web3, wei
 
@@ -291,9 +292,10 @@ class _ContractMethod:
             result = self._fn(*self._format_inputs(args)).call(tx)
         except ValueError as e:
             raise VirtualMachineError(e)
-        if type(result) is not list:
-            return web3.toHex(result) if type(result) is bytes else result
-        return [(web3.toHex(i) if type(i) is bytes else i) for i in result]
+
+        if type(result) is not list or len(result)==1:
+            return format_output(result)
+        return KwargTuple(result, self.abi)
 
     def transact(self, *args):
         '''Broadcasts a transaction that calls this contract method.
