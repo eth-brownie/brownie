@@ -19,7 +19,7 @@ class web3:
 
     def _connect(self):
         web3 = Web3(HTTPProvider(CONFIG['active_network']['host']))
-        for name, fn in [(i,getattr(web3,i)) for i in dir(web3) if i[0].islower()]:
+        for name, fn in [(i, getattr(web3, i)) for i in dir(web3) if i[0].islower()]:
             setattr(self, name, fn)
         for i in range(20):
             if web3.isConnected():
@@ -29,18 +29,19 @@ class web3:
             CONFIG['active_network']['host']
         ))
 
+
 class Rpc:
 
     '''Methods for interacting with ganache-cli when running a local
     RPC environment.'''
-    
+
     def __init__(self, network):
         rpc = Popen(
             CONFIG['active_network']['test-rpc'].split(' '),
-            stdout = DEVNULL,
-            stdin = DEVNULL,
-            stderr = DEVNULL,
-            start_new_session = True
+            stdout=DEVNULL,
+            stdin=DEVNULL,
+            stderr=DEVNULL,
+            start_new_session=True
         )
         self._rpc = rpc
         self._time_offset = 0
@@ -60,7 +61,7 @@ class Rpc:
 
     def sleep(self, seconds):
         '''Increases the time within the test RPC.
-        
+
         Args:
             seconds (int): Number of seconds to increase the time by.'''
         if type(seconds) is not int:
@@ -69,7 +70,7 @@ class Rpc:
             "evm_increaseTime", [seconds]
         )['result']
 
-    def mine(self, blocks = 1):
+    def mine(self, blocks=1):
         '''Increases the block height within the test RPC.
 
         Args:
@@ -77,20 +78,21 @@ class Rpc:
         if type(blocks) is not int:
             raise TypeError("blocks must be an integer value")
         for i in range(blocks):
-             web3.providers[0].make_request("evm_mine",[])
+            web3.providers[0].make_request("evm_mine", [])
         return "Block height at {}".format(web3.eth.blockNumber)
 
     def snapshot(self):
         '''Takes a snapshot of the current state of the EVM.'''
-        self._snapshot_id = web3.providers[0].make_request("evm_snapshot",[])['result']
+        self._snapshot_id = web3.providers[0].make_request("evm_snapshot", [])['result']
         return "Snapshot taken at block height {}".format(web3.eth.blockNumber)
 
     def revert(self):
         '''Reverts the EVM to the most recently taken snapshot.'''
         if not self._snapshot_id:
             raise ValueError("No snapshot set")
-        web3.providers[0].make_request("evm_revert",[self._snapshot_id])
+        web3.providers[0].make_request("evm_revert", [self._snapshot_id])
         self.snapshot()
+        self.sleep(0)
         self._network._network_dict['accounts']._check_nonce()
         height = web3.eth.blockNumber
         history = self._network._network_dict['history']
@@ -113,7 +115,7 @@ def _watch_rpc(rpc):
 
 def wei(value):
     '''Converts a value to wei.
-    
+
     Useful for the following formats:
         * a string specifying the unit: "10 ether", "300 gwei", "0.25 shannon"
         * a large float in scientific notation, where direct conversion to int
@@ -141,7 +143,7 @@ def wei(value):
     try:
         return int(value)
     except ValueError:
-        raise ValueError("Unknown denomination: {}".format(value))    
+        raise ValueError("Unknown denomination: {}".format(value))
 
 
 web3 = web3()
