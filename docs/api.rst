@@ -883,37 +883,48 @@ The ``check`` module exposes the following methods that are used in place of ``a
 Module Methods
 --------------
 
-.. py:method:: check.true(statement, fail_msg = "Expected statement to be true")
+.. py:method:: check.true(statement, fail_msg = "Expected statement to be True")
 
-    Raises if ``statement`` does not evaluate to True.
+    Raises if ``statement`` is not ``True``.
 
     .. code-block:: python
 
+        >>> check.true(True)
         >>> check.true(2 + 2 == 4)
+        >>>
         >>> check.true(0 > 1)
         File "brownie/lib/components/check.py", line 18, in true
             raise AssertionError(fail_msg)
-        AssertionError: Expected statement to be true
+        AssertionError: Expected statement to be True
 
         >>> check.true(False, "What did you expect?")
-        File "brownie/lib/console.py", line 82, in _run
-            exec('_result = ' + cmd, self.__dict__, local_)
-        File "<string>", line 1, in <module>
-        File "/home/computer/code/python/brownie/lib/components/check.py", line 18, in true
+        File "brownie/lib/components/check.py", line 18, in true
             raise AssertionError(fail_msg)
         AssertionError: What did you expect?
 
+        >>> check.true(1)
+        File "brownie/lib/components/check.py", line 16, in true
+            raise AssertionError(fail_msg+" (evaluated truthfully but not True)")
+        AssertionError: Expected statement to be True (evaluated truthfully but not True)
+
+
+
 .. py:method:: check.false(statement, fail_msg = "Expected statement to be False")
 
-    Raises if ``statement`` does not evaluate to False.
+    Raises if ``statement`` is not ``False``.
 
     .. code-block:: python
 
         >>> check.false(0 > 1)
         >>> check.false(2 + 2 == 4)
-        File "brownie/lib/components/check.py", line 18, in true
+        File "brownie/lib/components/check.py", line 18, in false
             raise AssertionError(fail_msg)
         AssertionError: Expected statement to be False
+
+        >>> check.false(0)
+        File "brownie/lib/components/check.py", line 16, in false
+            raise AssertionError(fail_msg+" (evaluated falsely but not False)")
+        AssertionError: Expected statement to be False (evaluated falsely but not False)
 
 .. py:method:: check.confirms(fn, args, fail_msg = "Expected transaction to confirm")
 

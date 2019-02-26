@@ -1,5 +1,10 @@
+0.9.5 (unreleased)
+-----
+
+ - check.true and check.false require booleans to pass
+
 0.9.4
------ 
+-----
 
  - Improved console formatting for lists and dicts
  - Run method returns list of scripts when no argument is given
