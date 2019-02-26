@@ -16,7 +16,7 @@ CONFIG = config.CONFIG
 __doc__ = """Usage: brownie test [<filename>] [options]
 
 Arguments:
-  <filename>          Only run tests from a specific file
+  <filename>          Only run tests from a specific file or folder
 
 Options:
   --help              Display this message
@@ -25,10 +25,8 @@ Options:
   --tb                Show entire python traceback on exceptions
   --always-transact   Perform all contract calls as transactions
 
-By default brownie runs every script in the tests folder, and calls every
-function that does not begin with an underscore. A fresh environment is created
-between each new file. Test scripts can optionally specify which deployment
-script to run by setting a string 'DEPLOYMENT'."""
+By default brownie runs every script found in the tests folder as well as any
+subfolders. Files and folders beginning with an underscore will be skipped."""
 
 
 class ExpectedFailing(Exception): pass
@@ -88,12 +86,12 @@ def run_test(filename, network):
     network.reset()
     if type(CONFIG['test']['gas_limit']) is int:
         network.gas(CONFIG['test']['gas_limit'])
-    module = importlib.import_module("tests."+filename)
+    module = importlib.import_module(filename.replace('/','.'))
     test_names = [
         i for i in dir(module) if i not in dir(sys.modules['brownie'])
         and i[0]!="_" and callable(getattr(module, i))
     ]
-    code = open("tests/{}.py".format(filename), encoding="utf-8").read()
+    code = open("{}.py".format(filename), encoding="utf-8").read()
     test_names = re.findall('(?<=\ndef)[\s]{1,}[^(]*(?=\([^)]*\)[\s]*:)', code)
     test_names = [i.strip() for i in test_names if i.strip()[0] != "_"]
     duplicates = set([i for i in test_names if test_names.count(i)>1])
@@ -129,18 +127,30 @@ def run_test(filename, network):
     return history, traceback_info
 
 
+def get_test_files(path):
+    if path and path[:6] == "tests/":
+        path = path[6:]
+    if path and not os.path.isdir('tests/'+path):
+        name = path.replace(".py", "")
+        if not os.path.exists("tests/{}.py".format(name)):
+            sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}tests/{1}.py{0}".format(color, name))
+        return ["tests/"+name]
+    else:
+        if path:
+            folder = "tests/"+path
+        else:
+            folder = "tests"
+        return sorted(
+            i[0]+"/"+x[:-3] for i in os.walk(folder) for x in i[2] if
+            x[0]!="_" and "/_" not in i[0] and x[-3:]==".py"
+        )
+
+
+
 def main():
     args = docopt(__doc__)
     traceback_info = []
-    if args['<filename>']:
-        name = args['<filename>'].replace(".py", "")
-        if not os.path.exists("tests/{}.py".format(name)):
-            sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}tests/{1}.py{0}".format(color, name))
-        test_files = [name]
-    else:
-        test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
-        test_files.remove('__init__')
-
+    test_files = get_test_files(args['<filename>'])
     network = Network()
 
     if args['--always-transact']:

@@ -2,6 +2,7 @@
 -----
 
  - check.true and check.false require booleans to pass
+ - Allow subfolders within tests/
 
 0.9.4
 -----

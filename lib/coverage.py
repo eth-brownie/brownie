@@ -6,7 +6,7 @@ import shutil
 import sys
 import json
 
-from lib.test import run_test
+from lib.test import get_test_files, run_test
 from lib.components.network import Network
 from lib.components.bytecode import get_coverage_map
 from lib.services import color, config
@@ -37,17 +37,7 @@ current test coverage. Results are saved to build/coverage.json"""
 def main():
     args = docopt(__doc__)
 
-    if args['<filename>']:
-        name = args['<filename>'].replace(".py", "")
-        if not os.path.exists("tests/{}.py".format(name)):
-            sys.exit(
-                "{0[error]}ERROR{0}: Cannot find".format(color) +
-                " {0[module]}tests/{1}.py{0}".format(color, name)
-            )
-        test_files = [name]
-    else:
-        test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
-        test_files.remove('__init__')
+    test_files = get_test_files(args['<filename>'])
     
     compiled = deepcopy(compile_contracts())
     fn_map, line_map = get_coverage_map(compiled)
