@@ -1,0 +1,34 @@
+# Used to debug the install script
+# run with:
+# docker build -f docker/Dockerfile.local -t brownie-local .
+# docker run -it -v $PWD:/usr/src brownie-local brownie
+
+FROM ubuntu:bionic
+WORKDIR /usr/src
+
+RUN  apt-get update
+
+RUN apt-get install -y python3.6 python3-pip python3-venv wget curl git npm nodejs
+
+RUN npm install -g ganache-cli@6.2.5
+
+RUN apt-get install sudo
+COPY brownie-install.sh /usr/src/brownie-install.sh
+RUN ./brownie-install.sh
+
+# Brownie installs compilers at runtime so ensure the updates are
+# in the compiled image so it doesn't do this every time
+RUN brownie init
+RUN brownie test
+
+# Fix UnicodeEncodeError error when running tests
+ENV PYTHONIOENCODING=utf-8
+
+# c.f https://github.com/moby/moby/pull/10682#issuecomment-178794901
+# Prevent Docker from caching the rest of the commands
+# This means we can re-run the build to update brownie without the
+# full re-build that adding --no-cache would cause.
+ADD http://worldclockapi.com/api/json/est/now /tmp/bustcache
+RUN brownie --dev
+RUN cd /usr/local/lib/brownie; git branch; git log | head
+RUN cd /usr/local/lib/brownie; git pull; git branch; git log | head
