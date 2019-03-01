@@ -22,8 +22,7 @@ exit 1
 fi
 
 cd brownie
-git checkout -b develop
-git pull origin develop
+git checkout --track origin/develop
 git checkout master
 $PY -m venv venv
 venv/bin/pip install wheel
