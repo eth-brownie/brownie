@@ -5,7 +5,7 @@ PY="python3"
 
 cd /usr/local/lib
 sudo rm -f -r brownie
-sudo git clone --depth=1 https://github.com/HyperLink-Technology/brownie
+sudo git clone --depth=1 --no-single-branch https://github.com/HyperLink-Technology/brownie
 
 case "$OS" in 'Linux')
     sudo chown "$USER:$USER" brownie -R
@@ -22,8 +22,7 @@ exit 1
 fi
 
 cd brownie
-git checkout -b develop
-git pull origin develop
+git checkout --track origin/develop
 git checkout master
 $PY -m venv venv
 venv/bin/pip install wheel
