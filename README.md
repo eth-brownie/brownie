@@ -28,7 +28,7 @@ curl https://raw.githubusercontent.com/HyperLink-Technology/brownie/master/brown
 To build the image:
 
 ```bash
-docker build https://github.com/HyperLink-Technology/brownie.git -t brownie:1
+docker build https://github.com/HyperLink-Technology/brownie.git -t brownie
 ```
 
 You can then run brownie with:
