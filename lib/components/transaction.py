@@ -383,21 +383,34 @@ class TransactionReceipt:
     def error(self, pad=3):
         '''Displays the source code that caused the transaction to revert.'''
         try:
-            trace = next(i for i in self.trace if i['op'] in ("REVERT", "INVALID"))
+            idx = self.trace.index(next(i for i in self.trace if i['op'] in ("REVERT", "INVALID")))
         except StopIteration:
             return ""
-        span = (trace['source']['start'], trace['source']['stop'])
-        source = open(trace['source']['filename'], encoding="utf-8").read()
-        newlines = [i for i in range(len(source)) if source[i] == "\n"]
-        start = newlines.index(next(i for i in newlines if i >= span[0]))
-        stop = newlines.index(next(i for i in newlines if i >= span[1]))
+        while True:
+            if idx == -1:
+                return ""
+            if not self.trace[idx]['source']:
+                idx -= 1
+                continue
+            span = (self.trace[idx]['source']['start'], self.trace[idx]['source']['stop'])
+            source = open(self.trace[idx]['source']['filename'], encoding="utf-8").read()
+            if source[span[0]][:8] in ("contract","library "):
+                idx-=1
+                continue
+            newlines = [i for i in range(len(source)) if source[i] == "\n"]
+            try:
+                start = newlines.index(next(i for i in newlines if i >= span[0]))
+                stop = newlines.index(next(i for i in newlines if i >= span[1]))
+                break
+            except StopIteration:
+                idx -= 1
         ln = start + 1
         start = newlines[max(start-(pad+1), 0)]
         stop = newlines[min(stop+pad, len(newlines)-1)]
         result = ((
             '{0[dull]}File {0[string]}"{1}"{0[dull]}, ' +
             'line {0[value]}{2}{0[dull]}, in {0[callable]}{3}'
-        ).format(color, trace['source']['filename'], ln, trace['fn']))
+        ).format(color, self.trace[idx]['source']['filename'], ln, self.trace[idx]['fn']))
         result += ("{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
             color,
             source[start:span[0]],
