@@ -13,10 +13,11 @@ from lib.services import color, config
 CONFIG = config.CONFIG
 
 
-__doc__ = """Usage: brownie test [<filename>] [options]
+__doc__ = """Usage: brownie test [<filename>] [<range>] [options]
 
 Arguments:
   <filename>          Only run tests from a specific file or folder
+  <range>             Number or range of tests to run from file
 
 Options:
   --help              Display this message
@@ -35,7 +36,7 @@ class ExpectedFailing(Exception): pass
 def _run_test(module, fn_name, count, total):
     fn = getattr(module, fn_name)
     desc = fn.__doc__ or fn_name
-    sys.stdout.write("   {} ({}/{})...  ".format(desc, count, total))
+    sys.stdout.write("   {1} - {0} ({1}/{2})...  ".format(desc, count, total))
     sys.stdout.flush()
     if fn.__defaults__:
         args = dict(zip(
@@ -55,8 +56,8 @@ def _run_test(module, fn_name, count, total):
         fn()
         if 'pending' in args and args['pending']:
             raise ExpectedFailing("Test was expected to fail")
-        sys.stdout.write("\r {0[success]}\u2713{0} {1} ({2:.4f}s)\n".format(
-            color, desc, time.time()-stime
+        sys.stdout.write("\r {0[success]}\u2713{0} {3} - {1} ({2:.4f}s)\n".format(
+            color, desc, time.time()-stime, count
         ))
         sys.stdout.flush()
         return []
@@ -82,7 +83,7 @@ def _run_test(module, fn_name, count, total):
         return [(fn_name, color.format_tb(sys.exc_info(), filename))]
 
 
-def run_test(filename, network):
+def run_test(filename, network, idx):
     network.reset()
     if type(CONFIG['test']['gas_limit']) is int:
         network.gas(CONFIG['test']['gas_limit'])
@@ -106,6 +107,7 @@ def run_test(filename, network):
     if not test_names:
         print("\n{0[error]}WARNING{0}: No test functions in {0[module]}{1}.py{0}".format(color, name))
         return [], []
+
     print("\nRunning {0[module]}{1}.py{0} - {2} test{3}".format(
             color, filename, len(test_names)-1,"s" if len(test_names)!=2 else ""
     ))
@@ -115,7 +117,7 @@ def run_test(filename, network):
         if traceback_info:
             return tx.tx_history.copy(), traceback_info
     network.rpc.snapshot()
-    for c,t in enumerate(test_names, start=1):
+    for c,t in enumerate(test_names[idx], start=idx.start+1):
         network.rpc.revert()
         traceback_info += _run_test(module,t,c,len(test_names))
         if sys.argv[1] != "coverage":
@@ -151,6 +153,21 @@ def main():
     args = docopt(__doc__)
     traceback_info = []
     test_files = get_test_files(args['<filename>'])
+    
+    if len(test_files)==1 and args['<range>']:
+        try:
+            idx = args['<range>']
+            if ':' in idx:
+                idx = slice(*[int(i)-1 for i in idx.split(':')])
+            else:
+                idx = slice(int(idx)-1,int(idx))
+        except:
+            sys.exit("{0[error]}ERROR{0}: Invalid range. Must be an integer or slice (eg. 1:4)".format(color))
+    elif args['<range>']:
+        sys.exit("{0[error]}ERROR:{0} Cannot specify a range when running multiple tests files.".format(color))
+    else:
+        idx = slice(0, None)
+    
     network = Network()
 
     if args['--always-transact']:
@@ -161,7 +178,7 @@ def main():
     ))
 
     for filename in test_files:
-        history, tb = run_test(filename, network)
+        history, tb = run_test(filename, network, idx)
         if tb:
             traceback_info += tb
     if not traceback_info:

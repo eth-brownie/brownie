@@ -3,6 +3,7 @@
 
  - check.true and check.false require booleans to pass
  - Allow subfolders within tests/
+ - Only run specific tests within a file
 
 0.9.4
 -----

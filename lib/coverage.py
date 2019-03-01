@@ -19,10 +19,11 @@ COVERAGE_COLORS = [
     (1, "bright green")
 ]
 
-__doc__ = """Usage: brownie coverage [<filename>] [options]
+__doc__ = """Usage: brownie coverage [<filename>] [<range>] [options]
 
 Arguments:
-  <filename>          Only run tests from a specific file
+  <filename>          Only run tests from a specific file or folder
+  <range>             Number or range of tests to run from file
 
 Options:
   --help              Display this message
@@ -38,7 +39,20 @@ def main():
     args = docopt(__doc__)
 
     test_files = get_test_files(args['<filename>'])
-    
+    if len(test_files)==1 and args['<range>']:
+        try:
+            idx = args['<range>']
+            if ':' in idx:
+                idx = slice(*[int(i)-1 for i in idx.split(':')])
+            else:
+                idx = slice(int(idx)-1,int(idx))
+        except:
+            sys.exit("{0[error]}ERROR{0}: Invalid range. Must be an integer or slice (eg. 1:4)".format(color))
+    elif args['<range>']:
+        sys.exit("{0[error]}ERROR:{0} Cannot specify a range when running multiple tests files.".format(color))
+    else:
+        idx = slice(0, None)
+
     compiled = deepcopy(compile_contracts())
     fn_map, line_map = get_coverage_map(compiled)
     network = Network()
@@ -51,7 +65,7 @@ def main():
     ))
 
     for filename in test_files:
-        history, tb = run_test(filename, network)
+        history, tb = run_test(filename, network, idx)
         if tb:
             sys.exit(
                 "\n{0[error]}ERROR{0}: Cannot ".format(color) +
