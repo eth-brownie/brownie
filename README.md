@@ -51,10 +51,6 @@ From there, type `brownie` for basic usage information.
 
 Brownie documentation is hosted at [Read the Docs](https://eth-brownie.readthedocs.io/en/latest/).
 
-## Development
-
-This project is still in development and should be considered a beta. Questions, comments, criticisms and pull requests are welcomed.
-
 ## Contributing
 
 Help is always appreciated! In particular, Brownie needs work in the following areas before we can comfortably take it out of beta:
@@ -64,6 +60,10 @@ Help is always appreciated! In particular, Brownie needs work in the following a
 * Improving the documentation
 * Support for Windows
 * More tests
+
+Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
+
+Join us on [Gitter](https://gitter.im/HyperLink-Technology/community) for questions or discussion of the project.
 
 ## License
 
