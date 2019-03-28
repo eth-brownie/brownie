@@ -308,6 +308,8 @@ class TransactionReceipt:
         jumpDepth: Number of jumps made since entering this contract. The
                    initial value is 1.'''
         self.trace = trace = self._trace
+        if not trace:
+            return
         c = contract.find_contract(self.receiver or self.contract_address)
         last = {0: {
             'address': self.receiver or self.contract_address,
