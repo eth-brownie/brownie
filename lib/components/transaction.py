@@ -393,7 +393,7 @@ class TransactionReceipt:
         while True:
             if idx == -1:
                 return ""
-            if not self.trace[idx]['source']:
+            if not self.trace[idx]['source']['filename']:
                 idx -= 1
                 continue
             span = (self.trace[idx]['source']['start'], self.trace[idx]['source']['stop'])
