@@ -374,7 +374,7 @@ class ContractCall(_ContractMethod):
 def _get_tx(owner, args):
     # seperate contract inputs from tx dict
     if args and type(args[-1]) is dict:
-        args, tx = (args[:-1], args[-1])
+        args, tx = (args[:-1], args[-1].copy())
         if 'from' not in tx:
             tx['from'] = owner
         for key in [i for i in ('value', 'gas', 'gasPrice') if i in tx]:
