@@ -20,7 +20,7 @@ deployed_contracts = {}
 def find_contract(address):
     address = web3.toChecksumAddress(str(address))
     contracts = [x for v in deployed_contracts.values() for x in v.values()]
-    return next((i for i in contracts if i == address), False)
+    return next((i for i in contracts if i == address), None)
 
 
 class _ContractBase:
