@@ -168,7 +168,7 @@ class _AccountBase:
         return web3.eth.estimateGas({
             'from': self.address,
             'to': str(to),
-            'data': data,
+            'data': HexBytes(data),
             'value': wei(amount)
         })
 
@@ -209,7 +209,7 @@ class Account(_AccountBase):
                 'to': str(to),
                 'value': wei(amount),
                 'gasPrice': wei(gas_price) or self._gas_price(),
-                'gas': wei(gas_limit) or self._gas_limit(to, amount),
+                'gas': wei(gas_limit) or self._gas_limit(to, amount, data),
                 'data': HexBytes(data)
             })
         except ValueError as e:
@@ -266,7 +266,7 @@ class LocalAccount(_AccountBase):
                 'from': self.address,
                 'nonce': self.nonce,
                 'gasPrice': wei(gas_price) or self._gas_price(),
-                'gas': wei(gas_limit) or self._gas_limit(to, amount),
+                'gas': wei(gas_limit) or self._gas_limit(to, amount, data),
                 'to': str(to),
                 'value': wei(amount),
                 'data': HexBytes(data)
