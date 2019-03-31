@@ -214,7 +214,30 @@ LocalAccount
 Contracts
 =========
 
-Contract classes are not meant to be instantiated directly. Each ``ContractContainer`` instance is created automatically during when Brownie starts. New ``Contract`` instances are created via methods in the container.
+
+Contract classes are not meant to be instantiated directly. When launched, Brownie automatically creates ``ContractContainer`` instances from on the files in the ``contracts/`` folder. New ``Contract`` instances are created via methods in the container.
+
+Temporary contracts used for testing can be created with the ``compile_source`` method.
+
+.. py:method:: compile_source(source)
+
+    Compiles the given string and creates a ContractContainer instance.
+
+    .. code-block:: python
+
+        >>> compile_source('''pragma solidity 0.4.25;
+
+        contract SimpleTest {
+
+          string public name;
+
+          constructor (string _name) public {
+            name = _name;
+          }
+        }'''
+
+        >>> SimpleTest
+        []
 
 ContractContainer
 -----------------

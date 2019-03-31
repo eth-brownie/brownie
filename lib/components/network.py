@@ -196,6 +196,7 @@ class Network:
         return "Brownie environment is ready."
     
     def compile_source(self, source):
+        '''Compiles the given string and creates ContractContainer instances.'''
         for name, build in compiler.compile_source(source).items():
             if build['type'] == "interface":
                 continue
