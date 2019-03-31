@@ -91,6 +91,9 @@ class ContractContainer(_ContractBase):
     def __len__(self):
         return len(deployed_contracts[self._name])
 
+    def __repr__(self):
+        return "<ContractContainer object '{1[string]}{0._name}{1}'>".format(self, color)
+
     def _console_repr(self):
         return str(list(deployed_contracts[self._name].values()))
 

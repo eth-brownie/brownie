@@ -221,11 +221,11 @@ Temporary contracts used for testing can be created with the ``compile_source`` 
 
 .. py:method:: compile_source(source)
 
-    Compiles the given string and creates a ContractContainer instance.
+    Compiles the given string and returns a list of ContractContainer instances.
 
     .. code-block:: python
 
-        >>> compile_source('''pragma solidity 0.4.25;
+        >>> container = compile_source('''pragma solidity 0.4.25;
 
         contract SimpleTest {
 
@@ -236,7 +236,8 @@ Temporary contracts used for testing can be created with the ``compile_source`` 
           }
         }'''
 
-        >>> SimpleTest
+        [<ContractContainer object 'SimpleTest'>]
+        >>> container[0]
         []
 
 ContractContainer
