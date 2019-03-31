@@ -192,7 +192,7 @@ class Account(_AccountBase):
     def _console_repr(self):
         return "<Account object '{0[string]}{1}{0}'>".format(color, self.address)
 
-    def transfer(self, to, amount, gas_limit=None, gas_price=None):
+    def transfer(self, to, amount, gas_limit=None, gas_price=None, data=''):
         '''Transfers ether from this account.
 
         Args:
@@ -209,7 +209,8 @@ class Account(_AccountBase):
                 'to': str(to),
                 'value': wei(amount),
                 'gasPrice': wei(gas_price) or self._gas_price(),
-                'gas': wei(gas_limit) or self._gas_limit(to, amount)
+                'gas': wei(gas_limit) or self._gas_limit(to, amount),
+                'data': HexBytes(data)
             })
         except ValueError as e:
             txid = raise_or_return_tx(e)
@@ -249,7 +250,7 @@ class LocalAccount(_AccountBase):
     def _console_repr(self):
         return "<LocalAccount object '{0[string]}{1}{0}'>".format(color, self.address)
 
-    def transfer(self, to, amount, gas_limit=None, gas_price=None):
+    def transfer(self, to, amount, gas_limit=None, gas_price=None, data=''):
         '''Transfers ether from this account.
 
         Args:
@@ -268,7 +269,7 @@ class LocalAccount(_AccountBase):
                 'gas': wei(gas_limit) or self._gas_limit(to, amount),
                 'to': str(to),
                 'value': wei(amount),
-                'data': ""
+                'data': HexBytes(data)
             }).rawTransaction
             txid = web3.eth.sendRawTransaction(signed_tx)
         except ValueError as e:
