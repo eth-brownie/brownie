@@ -1,4 +1,4 @@
-0.9.5 (unreleased)
+0.9.5
 -----
 
  - check.true and check.false require booleans to pass
@@ -6,7 +6,11 @@
  - Only run specific tests within a file
  - More efficient transaction stack trace analysis
  - Improvements to compiler efficiency and functionality
+ - account.transfer accepts data
+ - add ContractTx.encode_abi
+ - add ContractContainer.get_method
  - Bugfixes
+
 
 0.9.4
 -----
