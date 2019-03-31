@@ -4,7 +4,9 @@
  - check.true and check.false require booleans to pass
  - Allow subfolders within tests/
  - Only run specific tests within a file
- - Only modify transaction stack trace if required (speeds up return_value checks)
+ - More efficient transaction stack trace analysis
+ - Improvements to compiler efficiency and functionality
+ - Bugfixes
 
 0.9.4
 -----
