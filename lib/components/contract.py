@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 import eth_event
+import eth_abi
 import re
 
 from lib.services.datatypes import KwargTuple, format_output
@@ -17,7 +18,7 @@ deployed_contracts = {}
 
 
 def find_contract(address):
-    address = web3.toChecksumAddress(address)
+    address = web3.toChecksumAddress(str(address))
     contracts = [x for v in deployed_contracts.values() for x in v.values()]
     return next((i for i in contracts if i == address), False)
 
@@ -40,6 +41,12 @@ class _ContractBase:
                 i['name'], ",".join(x['type'] for x in i['inputs'])
             )).hex()[:10]
         ) for i in self.abi if i['type'] == "function")
+
+    def get_method(self, calldata):
+        return next(
+            (k for k, v in self.signatures.items() if v == calldata[:10].lower()),
+            None
+        )
 
 
 class ContractContainer(_ContractBase):
@@ -113,7 +120,7 @@ class ContractContainer(_ContractBase):
             address: Address string of the contract.
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation.'''
-        address = web3.toChecksumAddress(address)
+        address = web3.toChecksumAddress(str(address))
         if address in deployed_contracts[self._name]:
             return deployed_contracts[self._name][address]
         contract = find_contract(address)
@@ -189,18 +196,19 @@ class ContractConstructor:
                 [i['type'] for i in self.abi[0]['inputs']] if self.abi else []
             ),
             tx,
-            self._name,
+            self._name+".constructor",
             self._callback
         )
         if tx.status == 1:
-            return self._parent.at(tx.contract_address)
+            tx.contract_address = self._parent.at(tx.contract_address)
+            return tx.contract_address
         return tx
 
     def _callback(self, tx):
         # ensures the Contract instance is added to the container if the user
         # presses CTRL-C while deployment is still pending
         if tx.status == 1:
-            self._parent.at(tx.contract_address, tx.sender, tx)
+            tx.contract_address = self._parent.at(tx.contract_address, tx.sender, tx)
 
 
 class Contract(_ContractBase):
@@ -296,7 +304,7 @@ class _ContractMethod:
         except ValueError as e:
             raise VirtualMachineError(e)
 
-        if type(result) is not list or len(result)==1:
+        if type(result) is not list or len(result) == 1:
             return format_output(result)
         return KwargTuple(result, self.abi)
 
@@ -321,6 +329,18 @@ class _ContractMethod:
             tx,
             self._name
         )
+
+    def encode_abi(self, *args):
+        '''Returns encoded ABI data to call the method with the given arguments.
+
+        Args:
+            *args: Contract method inputs
+
+        Returns:
+            Hexstring of encoded ABI data.'''
+        data = self._format_inputs(args)
+        types = [i['type'] for i in self.abi['inputs']]
+        return self.signature + eth_abi.encode_abi(types, data).hex()
 
 
 class ContractTx(_ContractMethod):
