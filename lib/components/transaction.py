@@ -151,6 +151,13 @@ class TransactionReceipt:
             'input': tx['input'],
             'nonce': tx['nonce'],
         })
+        if tx['to'] and contract.find_contract(tx['to']) is not None:
+            self.receiver = contract.find_contract(tx['to'])
+            if not self.fn_name:
+                self.fn_name = "{}.{}".format(
+                    self.receiver._name,
+                    self.receiver.get_method(tx['input'])
+                )
         if not tx['blockNumber'] and CONFIG['logging']['tx'] and not silent:
             print("Waiting for confirmation...")
         receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
@@ -261,8 +268,8 @@ class TransactionReceipt:
             log = trace[-1]
             if log['op'] != "RETURN":
                 return
-            c = contract.find_contract(self.receiver or self.contract_address)
-            if not c:
+            c = self.contract_address or self.receiver
+            if type(c) is str:
                 return
             abi = [
                 i['type'] for i in
@@ -310,9 +317,9 @@ class TransactionReceipt:
         self.trace = trace = self._trace
         if not trace:
             return
-        c = contract.find_contract(self.receiver or self.contract_address)
+        c = self.contract_address or self.receiver
         last = {0: {
-            'address': self.receiver or self.contract_address,
+            'address': c.address,
             'contract': c._name,
             'fn': [self.fn_name.split('.')[-1]],
         }}
