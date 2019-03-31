@@ -274,6 +274,8 @@ ContractContainer Attributes
 
     A dictionary of bytes4 signatures for each contract method.
 
+    If you have a signature and need to find the method name, use ``ContractContainer.get_method``.
+
     .. code-block:: python
 
         >>> Token.signatures
@@ -380,6 +382,22 @@ ContractContainer Methods
         >>> Token.remove('0x79447c97b6543F6eFBC91613C655977806CB18b0')
         >>> Token
         []
+
+.. py:classmethod:: ContractContainer.get_method(calldata)
+
+    Given the call data of a transaction, returns the name of the contract method as a string.
+
+    .. code-block:: python
+
+        >>> tx = Token[0].transfer(accounts[1], 1000)
+
+        Transaction sent: 0xc1fe0c7c8fd08736718aa9106662a635102604ea6db4b63a319e43474de0b420
+        Token.transfer confirmed - block: 3   gas used: 35985 (26.46%)
+        <Transaction object '0xc1fe0c7c8fd08736718aa9106662a635102604ea6db4b63a319e43474de0b420'>
+        >>> tx.input
+        0xa9059cbb00000000000000000000000066ace0365c25329a407002d22908e25adeacb9bb00000000000000000000000000000000000000000000000000000000000003e8
+        >>> Token.get_method(tx.input)
+        transfer
 
 Contract
 --------
@@ -549,6 +567,20 @@ ContractTx Methods
 
         >>> Token[0].transfer.call(accounts[2], 10000, {'from': accounts[0]})
         True
+
+.. py:classmethod:: ContractTx.encode_abi(*args)
+
+    Returns a hexstring of ABI calldata, to call the method with the given arguments.
+
+    .. code-block:: python
+
+        >>> calldata = Token[0].transfer.encode_abi(accounts[1], 1000)
+        0xa9059cbb0000000000000000000000000d36bdba474b5b442310a5bfb989903020249bba00000000000000000000000000000000000000000000000000000000000003e8
+        >>> accounts[0].transfer(Token[0], 0, data=calldata)
+            
+        Transaction sent: 0x8dbf15878104571669f9843c18afc40529305ddb842f94522094454dcde22186
+        Token.transfer confirmed - block: 2   gas used: 50985 (100.00%)
+        <Transaction object '0x8dbf15878104571669f9843c18afc40529305ddb842f94522094454dcde22186'>
 
 Transactions
 ============
