@@ -289,18 +289,17 @@ class TransactionReceipt:
                     getattr(c, self.fn_name.split('.')[-1]).abi
                 )
         else:
-            self.events = []
             # get revert message
-            memory = trace[-1]['memory']
-            try:
-                # 08c379a0 is the bytes4 signature of Error(string)
-                idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
-                data = HexBytes("".join(memory[idx:])[8:]+"00000000")
+            offset = int(trace[-1]['stack'][-1], 16) * 2
+            length = int(trace[-1]['stack'][-2], 16) * 2
+            if length:
+                data = HexBytes("".join(trace[-1]['memory'])[offset+8:offset+length])
                 self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
-            except StopIteration:
-                pass
+            else:
+                self.revert_msg = ""
             try:
                 # get events from trace
+                self.events = []
                 self.events = eth_event.decode_trace(trace, topics())
             except:
                 pass
