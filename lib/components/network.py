@@ -63,6 +63,7 @@ class Network:
             'accounts': accounts,
             'alert': alert,
             'check': check,
+            'compile_source': self.compile_source,
             'config': CONFIG,
             'gas': gas,
             'history': tx.tx_history,
@@ -193,6 +194,26 @@ class Network:
             self._network_dict['rpc']._kill()
         self.setup()
         return "Brownie environment is ready."
+
+    def compile_source(self, source):
+        '''Compiles the given string and returns ContractContainer objects.
+
+        Args:
+            source: Solidity code to compile
+
+        Returns: a list of ContractContainers'''
+        result = []
+        for name, build in compiler.compile_source(source).items():
+            if build['type'] == "interface":
+                continue
+            if name in self._network_dict:
+                raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
+            result.append(contract.ContractContainer(build, self._network_dict))
+        if not result:
+            raise TypeError("String does not contain any deployable contracts")
+        return result
+
+
 
 def logging(**kwargs):
     '''Adjusts the logging verbosity.

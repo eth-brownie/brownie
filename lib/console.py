@@ -83,7 +83,10 @@ class Console:
                         elif type(r) is str:
                             print(r)
                         elif hasattr(r, '_console_repr'):
-                            print(r._console_repr())
+                            try:
+                                print(r._console_repr())
+                            except TypeError:
+                                print(repr(r))
                         else:
                             print(repr(r))
                 except SyntaxError:

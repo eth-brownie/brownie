@@ -151,6 +151,13 @@ class TransactionReceipt:
             'input': tx['input'],
             'nonce': tx['nonce'],
         })
+        if tx['to'] and contract.find_contract(tx['to']) is not None:
+            self.receiver = contract.find_contract(tx['to'])
+            if not self.fn_name:
+                self.fn_name = "{}.{}".format(
+                    self.receiver._name,
+                    self.receiver.get_method(tx['input'])
+                )
         if not tx['blockNumber'] and CONFIG['logging']['tx'] and not silent:
             print("Waiting for confirmation...")
         receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
@@ -198,14 +205,15 @@ class TransactionReceipt:
         return hash(self.txid)
 
     def __getattr__(self, attr):
-        if attr not in ('events', 'return_value', 'revert_msg', 'trace'):
+        if attr not in ('events', 'return_value', 'revert_msg', 'trace', '_trace'):
             raise AttributeError(
                 "'TransactionReceipt' object has no attribute '{}'".format(attr)
             )
         if self.status == -1:
             return None
-        self._get_trace()
-        if self.trace:
+        if self._trace is None:
+            self._get_trace()
+        if attr == "trace":
             self._evaluate_trace()
         return self.__dict__[attr]
 
@@ -240,19 +248,13 @@ class TransactionReceipt:
             print()
 
     def _get_trace(self):
-        '''Retrieves the stack trace via debug_traceTransaction, and adds the
-        following attributes to each step:
-
-        address: The address executing this contract.
-        contractName: The name of the contract.
-        fn: The name of the function.
-        source: Start and end offset associated source code.
-        jumpDepth: Number of jumps made since entering this contract. The
-                   initial value is 1.'''
-        self.trace = []
+        '''Retrieves the stack trace via debug_traceTransaction, and finds the
+        return value, revert message and event logs in the trace.'''
         self.return_value = None
         self.revert_msg = None
+        self._trace = []
         if (self.input == "0x" and self.gas_used == 21000) or self.contract_address:
+            self.trace = []
             return
         trace = web3.providers[0].make_request(
             'debug_traceTransaction',
@@ -260,10 +262,63 @@ class TransactionReceipt:
         )
         if 'error' in trace:
             raise ValueError(trace['error']['message'])
-        self.trace = trace = trace['result']['structLogs']
-        c = contract.find_contract(self.receiver or self.contract_address)
+        self._trace = trace = trace['result']['structLogs']
+        if self.status:
+            # get return value
+            log = trace[-1]
+            if log['op'] != "RETURN":
+                return
+            c = self.contract_address or self.receiver
+            if type(c) is str:
+                return
+            abi = [
+                i['type'] for i in
+                getattr(c, self.fn_name.split('.')[-1]).abi['outputs']
+            ]
+            offset = int(log['stack'][-1], 16) * 2
+            length = int(log['stack'][-2], 16) * 2
+            data = HexBytes("".join(log['memory'])[offset:offset+length])
+            self.return_value = eth_abi.decode_abi(abi, data)
+            if not self.return_value:
+                return
+            if len(self.return_value) == 1:
+                self.return_value = format_output(self.return_value[0])
+            else:
+                self.return_value = KwargTuple(
+                    self.return_value,
+                    getattr(c, self.fn_name.split('.')[-1]).abi
+                )
+        else:
+            # get revert message
+            offset = int(trace[-1]['stack'][-1], 16) * 2
+            length = int(trace[-1]['stack'][-2], 16) * 2
+            if length:
+                data = HexBytes("".join(trace[-1]['memory'])[offset+8:offset+length])
+                self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
+            else:
+                self.revert_msg = ""
+            try:
+                # get events from trace
+                self.events = []
+                self.events = eth_event.decode_trace(trace, topics())
+            except:
+                pass
+
+    def _evaluate_trace(self):
+        '''Adds the following attributes to each step of the stack trace:
+
+        address: The address executing this contract.
+        contractName: The name of the contract.
+        fn: The name of the function.
+        source: Start and end offset associated source code.
+        jumpDepth: Number of jumps made since entering this contract. The
+                   initial value is 1.'''
+        self.trace = trace = self._trace
+        if not trace:
+            return
+        c = self.contract_address or self.receiver
         last = {0: {
-            'address': self.receiver or self.contract_address,
+            'address': c.address,
             'contract': c._name,
             'fn': [self.fn_name.split('.')[-1]],
         }}
@@ -290,7 +345,7 @@ class TransactionReceipt:
                 last[trace[i]['depth']] = {
                     'address': address,
                     'contract': c._name,
-                    'fn': [next(k for k, v in c.signatures.items() if v == sig)],
+                    'fn': [next((k for k, v in c.signatures.items() if v == sig), "")],
                     }
             trace[i].update({
                 'address': last[trace[i]['depth']]['address'],
@@ -317,51 +372,6 @@ class TransactionReceipt:
             elif pc['jump'] == "o" and len(last[trace[i]['depth']]['fn']) > 1:
                 last[trace[i]['depth']]['fn'].pop()
 
-    def _evaluate_trace(self):
-        '''Retrieves the return value, revert message and event lots from
-        a stack trace.'''
-        if self.status:
-            # get return value
-            log = self.trace[-1]
-            if log['op'] != "RETURN":
-                return
-            c = contract.find_contract(self.receiver or self.contract_address)
-            if not c:
-                return
-            abi = [
-                i['type'] for i in
-                getattr(c, self.fn_name.split('.')[-1]).abi['outputs']
-            ]
-            offset = int(log['stack'][-1], 16) * 2
-            length = int(log['stack'][-2], 16) * 2
-            data = HexBytes("".join(log['memory'])[offset:offset+length])
-            self.return_value = eth_abi.decode_abi(abi, data)
-            if not self.return_value:
-                return
-            if len(self.return_value) == 1:
-                self.return_value = format_output(self.return_value[0])
-            else:
-                self.return_value = KwargTuple(
-                    self.return_value,
-                    getattr(c, self.fn_name.split('.')[-1]).abi
-                )
-        else:
-            self.events = []
-            # get revert message
-            memory = self.trace[-1]['memory']
-            try:
-                # 08c379a0 is the bytes4 signature of Error(string)
-                idx = memory.index(next(i for i in memory if i[:8] == "08c379a0"))
-                data = HexBytes("".join(memory[idx:])[8:]+"00000000")
-                self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
-            except StopIteration:
-                pass
-            try:
-                # get events from trace
-                self.events = eth_event.decode_trace(self.trace, topics())
-            except:
-                pass
-
     def call_trace(self):
         '''Displays the sequence of contracts and functions called while
         executing this transaction, and the structLog index where each call
@@ -383,21 +393,34 @@ class TransactionReceipt:
     def error(self, pad=3):
         '''Displays the source code that caused the transaction to revert.'''
         try:
-            trace = next(i for i in self.trace if i['op'] in ("REVERT", "INVALID"))
+            idx = self.trace.index(next(i for i in self.trace if i['op'] in ("REVERT", "INVALID")))
         except StopIteration:
             return ""
-        span = (trace['source']['start'], trace['source']['stop'])
-        source = open(trace['source']['filename'], encoding="utf-8").read()
-        newlines = [i for i in range(len(source)) if source[i] == "\n"]
-        start = newlines.index(next(i for i in newlines if i >= span[0]))
-        stop = newlines.index(next(i for i in newlines if i >= span[1]))
+        while True:
+            if idx == -1:
+                return ""
+            if not self.trace[idx]['source']['filename']:
+                idx -= 1
+                continue
+            span = (self.trace[idx]['source']['start'], self.trace[idx]['source']['stop'])
+            source = open(self.trace[idx]['source']['filename'], encoding="utf-8").read()
+            if source[span[0]][:8] in ("contract", "library "):
+                idx -= 1
+                continue
+            newlines = [i for i in range(len(source)) if source[i] == "\n"]
+            try:
+                start = newlines.index(next(i for i in newlines if i >= span[0]))
+                stop = newlines.index(next(i for i in newlines if i >= span[1]))
+                break
+            except StopIteration:
+                idx -= 1
         ln = start + 1
         start = newlines[max(start-(pad+1), 0)]
         stop = newlines[min(stop+pad, len(newlines)-1)]
         result = ((
             '{0[dull]}File {0[string]}"{1}"{0[dull]}, ' +
             'line {0[value]}{2}{0[dull]}, in {0[callable]}{3}'
-        ).format(color, trace['source']['filename'], ln, trace['fn']))
+        ).format(color, self.trace[idx]['source']['filename'], ln, self.trace[idx]['fn']))
         result += ("{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
             color,
             source[start:span[0]],

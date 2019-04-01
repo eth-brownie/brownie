@@ -17,6 +17,8 @@ You can run a specific test by giving the filename without an extension, for exa
 
     $ brownie test transfer
 
+For larger projects you can also store tests within subfolders, and point Brownie to run only a specific folder. Brownie will skip any file or folder that begins with an underscore.
+
 Running Tests
 =============
 

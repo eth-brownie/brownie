@@ -6,7 +6,7 @@ import shutil
 import sys
 import json
 
-from lib.test import run_test
+from lib.test import get_test_files, run_test
 from lib.components.network import Network
 from lib.components.bytecode import get_coverage_map
 from lib.services import color, config
@@ -19,10 +19,11 @@ COVERAGE_COLORS = [
     (1, "bright green")
 ]
 
-__doc__ = """Usage: brownie coverage [<filename>] [options]
+__doc__ = """Usage: brownie coverage [<filename>] [<range>] [options]
 
 Arguments:
-  <filename>          Only run tests from a specific file
+  <filename>          Only run tests from a specific file or folder
+  <range>             Number or range of tests to run from file
 
 Options:
   --help              Display this message
@@ -37,18 +38,21 @@ current test coverage. Results are saved to build/coverage.json"""
 def main():
     args = docopt(__doc__)
 
-    if args['<filename>']:
-        name = args['<filename>'].replace(".py", "")
-        if not os.path.exists("tests/{}.py".format(name)):
-            sys.exit(
-                "{0[error]}ERROR{0}: Cannot find".format(color) +
-                " {0[module]}tests/{1}.py{0}".format(color, name)
-            )
-        test_files = [name]
+    test_files = get_test_files(args['<filename>'])
+    if len(test_files)==1 and args['<range>']:
+        try:
+            idx = args['<range>']
+            if ':' in idx:
+                idx = slice(*[int(i)-1 for i in idx.split(':')])
+            else:
+                idx = slice(int(idx)-1,int(idx))
+        except:
+            sys.exit("{0[error]}ERROR{0}: Invalid range. Must be an integer or slice (eg. 1:4)".format(color))
+    elif args['<range>']:
+        sys.exit("{0[error]}ERROR:{0} Cannot specify a range when running multiple tests files.".format(color))
     else:
-        test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
-        test_files.remove('__init__')
-    
+        idx = slice(0, None)
+
     compiled = deepcopy(compile_contracts())
     fn_map, line_map = get_coverage_map(compiled)
     network = Network()
@@ -61,7 +65,7 @@ def main():
     ))
 
     for filename in test_files:
-        history, tb = run_test(filename, network)
+        history, tb = run_test(filename, network, idx)
         if tb:
             sys.exit(
                 "\n{0[error]}ERROR{0}: Cannot ".format(color) +

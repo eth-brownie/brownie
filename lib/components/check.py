@@ -6,12 +6,14 @@ from lib.components.eth import wei
 from lib.components.transaction import VirtualMachineError as _VMError
 
 
-def true(statement, fail_msg="Expected statement to be true"):
+def true(statement, fail_msg="Expected statement to be True"):
     '''Expects an object or statement to evaluate True.
 
     Args:
         statement: The object or statement to check.
         fail_msg: Message to show if the check fails.'''
+    if statement and statement is not True:
+        raise AssertionError(fail_msg+" (evaluated truthfully but not True)")
     if not statement:
         raise AssertionError(fail_msg)
 
@@ -22,6 +24,8 @@ def false(statement, fail_msg="Expected statement to be False"):
     Args:
         statement: The object or statement to check.
         fail_msg: Message to show if the check fails.'''
+    if not statement and statement is not False:
+        raise AssertionError(fail_msg+" (evaluated falsely but not False)")
     if statement:
         raise AssertionError(fail_msg)
 

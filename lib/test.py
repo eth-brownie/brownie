@@ -13,10 +13,11 @@ from lib.services import color, config
 CONFIG = config.CONFIG
 
 
-__doc__ = """Usage: brownie test [<filename>] [options]
+__doc__ = """Usage: brownie test [<filename>] [<range>] [options]
 
 Arguments:
-  <filename>          Only run tests from a specific file
+  <filename>          Only run tests from a specific file or folder
+  <range>             Number or range of tests to run from file
 
 Options:
   --help              Display this message
@@ -25,19 +26,18 @@ Options:
   --tb                Show entire python traceback on exceptions
   --always-transact   Perform all contract calls as transactions
 
-By default brownie runs every script in the tests folder, and calls every
-function that does not begin with an underscore. A fresh environment is created
-between each new file. Test scripts can optionally specify which deployment
-script to run by setting a string 'DEPLOYMENT'."""
+By default brownie runs every script found in the tests folder as well as any
+subfolders. Files and folders beginning with an underscore will be skipped."""
 
 
-class ExpectedFailing(Exception): pass
+class ExpectedFailing(Exception):
+    pass
 
 
 def _run_test(module, fn_name, count, total):
     fn = getattr(module, fn_name)
     desc = fn.__doc__ or fn_name
-    sys.stdout.write("   {} ({}/{})...  ".format(desc, count, total))
+    sys.stdout.write("   {1} - {0} ({1}/{2})...  ".format(desc, count, total))
     sys.stdout.flush()
     if fn.__defaults__:
         args = dict(zip(
@@ -57,18 +57,18 @@ def _run_test(module, fn_name, count, total):
         fn()
         if 'pending' in args and args['pending']:
             raise ExpectedFailing("Test was expected to fail")
-        sys.stdout.write("\r {0[success]}\u2713{0} {1} ({2:.4f}s)\n".format(
-            color, desc, time.time()-stime
+        sys.stdout.write("\r {0[success]}\u2713{0} {3} - {1} ({2:.4f}s)\n".format(
+            color, desc, time.time()-stime, count
         ))
         sys.stdout.flush()
         return []
     except Exception as e:
         if type(e) != ExpectedFailing and 'pending' in args and args['pending']:
-            c = [color('success'),color('dull'),color()]
+            c = [color('success'), color('dull'), color()]
         else:
-            c = [color('error'),color('dull'),color()]
+            c = [color('error'), color('dull'), color()]
         sys.stdout.write("\r {0[0]}{1}{0[1]} {2} ({0[0]}{3}{0[1]}){0[2]}\n".format(
-            c, 
+            c,
             '\u2717' if type(e) in (
                 AssertionError,
                 tx.VirtualMachineError
@@ -84,19 +84,19 @@ def _run_test(module, fn_name, count, total):
         return [(fn_name, color.format_tb(sys.exc_info(), filename))]
 
 
-def run_test(filename, network):
+def run_test(filename, network, idx):
     network.reset()
     if type(CONFIG['test']['gas_limit']) is int:
         network.gas(CONFIG['test']['gas_limit'])
-    module = importlib.import_module("tests."+filename)
+    module = importlib.import_module(filename.replace('/', '.'))
     test_names = [
-        i for i in dir(module) if i not in dir(sys.modules['brownie'])
-        and i[0]!="_" and callable(getattr(module, i))
+        i for i in dir(module) if i not in dir(sys.modules['brownie']) and
+        i[0] != "_" and callable(getattr(module, i))
     ]
-    code = open("tests/{}.py".format(filename), encoding="utf-8").read()
+    code = open("{}.py".format(filename), encoding="utf-8").read()
     test_names = re.findall('(?<=\ndef)[\s]{1,}[^(]*(?=\([^)]*\)[\s]*:)', code)
     test_names = [i.strip() for i in test_names if i.strip()[0] != "_"]
-    duplicates = set([i for i in test_names if test_names.count(i)>1])
+    duplicates = set([i for i in test_names if test_names.count(i) > 1])
     if duplicates:
         raise ValueError(
             "tests/{}.py contains multiple tests of the same name: {}".format(
@@ -106,10 +106,11 @@ def run_test(filename, network):
     traceback_info = []
     history = set()
     if not test_names:
-        print("\n{0[error]}WARNING{0}: No test functions in {0[module]}{1}.py{0}".format(color, name))
+        print("\n{0[error]}WARNING{0}: No test functions in {0[module]}{1}.py{0}".format(color, filename))
         return [], []
+
     print("\nRunning {0[module]}{1}.py{0} - {2} test{3}".format(
-            color, filename, len(test_names)-1,"s" if len(test_names)!=2 else ""
+            color, filename, len(test_names)-1, "s" if len(test_names) != 2 else ""
     ))
     if 'setup' in test_names:
         test_names.remove('setup')
@@ -117,9 +118,9 @@ def run_test(filename, network):
         if traceback_info:
             return tx.tx_history.copy(), traceback_info
     network.rpc.snapshot()
-    for c,t in enumerate(test_names, start=1):
+    for c, t in enumerate(test_names[idx], start=idx.start + 1):
         network.rpc.revert()
-        traceback_info += _run_test(module,t,c,len(test_names))
+        traceback_info += _run_test(module, t, c, len(test_names))
         if sys.argv[1] != "coverage":
             continue
         # need to retrieve stack trace before reverting the EVM
@@ -129,17 +130,43 @@ def run_test(filename, network):
     return history, traceback_info
 
 
+def get_test_files(path):
+    if path and path[:6] == "tests/":
+        path = path[6:]
+    if path and not os.path.isdir('tests/'+path):
+        name = path.replace(".py", "")
+        if not os.path.exists("tests/{}.py".format(name)):
+            sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}tests/{1}.py{0}".format(color, name))
+        return ["tests/"+name]
+    else:
+        if path:
+            folder = "tests/"+path
+        else:
+            folder = "tests"
+        return sorted(
+            i[0]+"/"+x[:-3] for i in os.walk(folder) for x in i[2] if
+            x[0] != "_" and "/_" not in i[0] and x[-3:] == ".py"
+        )
+
+
 def main():
     args = docopt(__doc__)
     traceback_info = []
-    if args['<filename>']:
-        name = args['<filename>'].replace(".py", "")
-        if not os.path.exists("tests/{}.py".format(name)):
-            sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}tests/{1}.py{0}".format(color, name))
-        test_files = [name]
+    test_files = get_test_files(args['<filename>'])
+
+    if len(test_files) == 1 and args['<range>']:
+        try:
+            idx = args['<range>']
+            if ':' in idx:
+                idx = slice(*[int(i)-1 for i in idx.split(':')])
+            else:
+                idx = slice(int(idx)-1, int(idx))
+        except:
+            sys.exit("{0[error]}ERROR{0}: Invalid range. Must be an integer or slice (eg. 1:4)".format(color))
+    elif args['<range>']:
+        sys.exit("{0[error]}ERROR:{0} Cannot specify a range when running multiple tests files.".format(color))
     else:
-        test_files = [i[:-3] for i in os.listdir("tests") if i[-3:] == ".py"]
-        test_files.remove('__init__')
+        idx = slice(0, None)
 
     network = Network()
 
@@ -151,7 +178,7 @@ def main():
     ))
 
     for filename in test_files:
-        history, tb = run_test(filename, network)
+        history, tb = run_test(filename, network, idx)
         if tb:
             traceback_info += tb
     if not traceback_info:
@@ -163,7 +190,7 @@ def main():
         sys.exit()
 
     print("\n{0[error]}WARNING{0}: {1} test{2} failed.{0}".format(
-        color, len(traceback_info), "s" if len(traceback_info)>1 else ""
+        color, len(traceback_info), "s" if len(traceback_info) > 1 else ""
     ))
 
     for err in traceback_info:

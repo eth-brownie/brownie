@@ -214,7 +214,31 @@ LocalAccount
 Contracts
 =========
 
-Contract classes are not meant to be instantiated directly. Each ``ContractContainer`` instance is created automatically during when Brownie starts. New ``Contract`` instances are created via methods in the container.
+
+Contract classes are not meant to be instantiated directly. When launched, Brownie automatically creates ``ContractContainer`` instances from on the files in the ``contracts/`` folder. New ``Contract`` instances are created via methods in the container.
+
+Temporary contracts used for testing can be created with the ``compile_source`` method.
+
+.. py:method:: compile_source(source)
+
+    Compiles the given string and returns a list of ContractContainer instances.
+
+    .. code-block:: python
+
+        >>> container = compile_source('''pragma solidity 0.4.25;
+
+        contract SimpleTest {
+
+          string public name;
+
+          constructor (string _name) public {
+            name = _name;
+          }
+        }'''
+
+        [<ContractContainer object 'SimpleTest'>]
+        >>> container[0]
+        []
 
 ContractContainer
 -----------------
@@ -249,6 +273,8 @@ ContractContainer Attributes
 .. py:attribute:: ContractContainer.signatures
 
     A dictionary of bytes4 signatures for each contract method.
+
+    If you have a signature and need to find the method name, use ``ContractContainer.get_method``.
 
     .. code-block:: python
 
@@ -356,6 +382,22 @@ ContractContainer Methods
         >>> Token.remove('0x79447c97b6543F6eFBC91613C655977806CB18b0')
         >>> Token
         []
+
+.. py:classmethod:: ContractContainer.get_method(calldata)
+
+    Given the call data of a transaction, returns the name of the contract method as a string.
+
+    .. code-block:: python
+
+        >>> tx = Token[0].transfer(accounts[1], 1000)
+
+        Transaction sent: 0xc1fe0c7c8fd08736718aa9106662a635102604ea6db4b63a319e43474de0b420
+        Token.transfer confirmed - block: 3   gas used: 35985 (26.46%)
+        <Transaction object '0xc1fe0c7c8fd08736718aa9106662a635102604ea6db4b63a319e43474de0b420'>
+        >>> tx.input
+        0xa9059cbb00000000000000000000000066ace0365c25329a407002d22908e25adeacb9bb00000000000000000000000000000000000000000000000000000000000003e8
+        >>> Token.get_method(tx.input)
+        transfer
 
 Contract
 --------
@@ -525,6 +567,20 @@ ContractTx Methods
 
         >>> Token[0].transfer.call(accounts[2], 10000, {'from': accounts[0]})
         True
+
+.. py:classmethod:: ContractTx.encode_abi(*args)
+
+    Returns a hexstring of ABI calldata, to call the method with the given arguments.
+
+    .. code-block:: python
+
+        >>> calldata = Token[0].transfer.encode_abi(accounts[1], 1000)
+        0xa9059cbb0000000000000000000000000d36bdba474b5b442310a5bfb989903020249bba00000000000000000000000000000000000000000000000000000000000003e8
+        >>> accounts[0].transfer(Token[0], 0, data=calldata)
+            
+        Transaction sent: 0x8dbf15878104571669f9843c18afc40529305ddb842f94522094454dcde22186
+        Token.transfer confirmed - block: 2   gas used: 50985 (100.00%)
+        <Transaction object '0x8dbf15878104571669f9843c18afc40529305ddb842f94522094454dcde22186'>
 
 Transactions
 ============
@@ -883,37 +939,48 @@ The ``check`` module exposes the following methods that are used in place of ``a
 Module Methods
 --------------
 
-.. py:method:: check.true(statement, fail_msg = "Expected statement to be true")
+.. py:method:: check.true(statement, fail_msg = "Expected statement to be True")
 
-    Raises if ``statement`` does not evaluate to True.
+    Raises if ``statement`` is not ``True``.
 
     .. code-block:: python
 
+        >>> check.true(True)
         >>> check.true(2 + 2 == 4)
+        >>>
         >>> check.true(0 > 1)
         File "brownie/lib/components/check.py", line 18, in true
             raise AssertionError(fail_msg)
-        AssertionError: Expected statement to be true
+        AssertionError: Expected statement to be True
 
         >>> check.true(False, "What did you expect?")
-        File "brownie/lib/console.py", line 82, in _run
-            exec('_result = ' + cmd, self.__dict__, local_)
-        File "<string>", line 1, in <module>
-        File "/home/computer/code/python/brownie/lib/components/check.py", line 18, in true
+        File "brownie/lib/components/check.py", line 18, in true
             raise AssertionError(fail_msg)
         AssertionError: What did you expect?
 
+        >>> check.true(1)
+        File "brownie/lib/components/check.py", line 16, in true
+            raise AssertionError(fail_msg+" (evaluated truthfully but not True)")
+        AssertionError: Expected statement to be True (evaluated truthfully but not True)
+
+
+
 .. py:method:: check.false(statement, fail_msg = "Expected statement to be False")
 
-    Raises if ``statement`` does not evaluate to False.
+    Raises if ``statement`` is not ``False``.
 
     .. code-block:: python
 
         >>> check.false(0 > 1)
         >>> check.false(2 + 2 == 4)
-        File "brownie/lib/components/check.py", line 18, in true
+        File "brownie/lib/components/check.py", line 18, in false
             raise AssertionError(fail_msg)
         AssertionError: Expected statement to be False
+
+        >>> check.false(0)
+        File "brownie/lib/components/check.py", line 16, in false
+            raise AssertionError(fail_msg+" (evaluated falsely but not False)")
+        AssertionError: Expected statement to be False (evaluated falsely but not False)
 
 .. py:method:: check.confirms(fn, args, fail_msg = "Expected transaction to confirm")
 

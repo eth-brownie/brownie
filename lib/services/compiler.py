@@ -15,6 +15,33 @@ solcx.set_solc_version(CONFIG['solc']['version'])
 _changed = {}
 _contracts = {}
 
+STANDARD_JSON = {
+    'language': "Solidity",
+    'sources': {},
+    'settings': {
+        'outputSelection': {'*': {
+            '*': [
+                "abi",
+                "evm.assembly",
+                "evm.bytecode",
+                "evm.deployedBytecode"
+            ],
+            '': ["ast"]
+        }},
+        "optimizer": {
+            "enabled": CONFIG['solc']['optimize'],
+            "runs": CONFIG['solc']['runs']
+        }
+    }
+}
+
+
+class CompilerError(Exception):
+
+    def __init__(self, e):
+        err = [i['formattedMessage'] for i in json.loads(e.stdout_data)['errors']]
+        super().__init__("Compiler returned the following errors:\n\n"+"\n".join(err))
+
 
 def _check_changed(filename, contract, clear=None):
     if contract in _changed:
@@ -42,12 +69,13 @@ def _check_changed(filename, contract, clear=None):
 def _json_load(filename):
     try:
         return json.load(open("build/contracts/"+filename, encoding="utf-8"))
-    except json.JSONDecodeError: 
+    except json.JSONDecodeError:
         raise OSError(
             "'build/contracts/"+filename+"' appears to be corrupted. Delete it"
             " and restart Brownie to fix this error. If this problem persists "
             "you may need to delete your entire build/contracts folder."
         )
+
 
 def clear_persistence(network_name):
     for filename in os.listdir("build/contracts"):
@@ -83,7 +111,7 @@ def add_contract(name, address, txid, owner):
     )
 
 
-def compile_contracts(folder = "contracts"):
+def compile_contracts(folder="contracts"):
     '''
     Compiles the project with solc and saves the results
     in the build/contracts folder.
@@ -96,7 +124,6 @@ def compile_contracts(folder = "contracts"):
     ]
     if not contract_files:
         sys.exit("ERROR: Cannot find any .sol files in contracts folder")
-    msg = False
     compiler_info = CONFIG['solc'].copy()
     compiler_info['version'] = solcx.get_solc_version_string().strip('\n')
 
@@ -119,7 +146,7 @@ def compile_contracts(folder = "contracts"):
             (k, x) for k, v in inheritance_map.copy().items() if v for x in v
         ]:
             inheritance_map[base] |= inheritance_map[inherited]
-
+    to_compile = []
     for filename in contract_files:
         code = open(filename).read()
         input_json = {}
@@ -131,69 +158,69 @@ def compile_contracts(folder = "contracts"):
             if not check and not _check_changed(filename, name):
                 _contracts[name] = _json_load(name+".json")
                 continue
-            if not msg:
-                print("Compiling contracts...")
-                print("Optimizer: {}".format(
-                    "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
-                    CONFIG['solc']['optimize'] else "Disabled"
-                ))
-                msg = True
-            input_json = {
-                'language': "Solidity",
-                'sources': {
-                    filename: {
-                        'content': open(filename, encoding="utf-8").read()
-                    }
-                },
-                'settings': {
-                    'outputSelection': {'*': {
-                        '*': [
-                            "abi",
-                            "evm.assembly",
-                            "evm.bytecode",
-                            "evm.deployedBytecode"
-                        ],
-                        '': ["ast"]}},
-                    "optimizer": {
-                        "enabled": CONFIG['solc']['optimize'],
-                        "runs": CONFIG['solc']['runs']}
-                }
-            }
+            to_compile.append(filename)
             break
-        if not input_json:
-            continue
-        print(" - {}...".format(filename.split('/')[-1]))
-        try:
-            compiled = solcx.compile_standard(
-                input_json,
-                optimize=CONFIG['solc']['optimize'],
-                optimize_runs=CONFIG['solc']['runs'],
-                allow_paths="."
-            )
-        except solcx.exceptions.SolcError as e:
-            err = json.loads(e.stdout_data)
-            print("\nUnable to compile {}:\n".format(filename))
-            for i in err['errors']:
-                print(i['formattedMessage'])
-            sys.exit(1)
-        hash_ = sha1(open(filename, 'rb').read()).hexdigest()
-        compiled = generate_pcMap(compiled)
-        for match in (
-            re.findall("\n(?:contract|library|interface) [^ {]{1,}", code)
+    if not to_compile:
+        return _contracts
+    print("Compiling contracts...")
+    print("Optimizer: {}".format(
+        "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
+        CONFIG['solc']['optimize'] else "Disabled"
+    ))
+    print("\n".join(" - {}...".format(i.split('/')[-1]) for i in to_compile))
+    input_json = STANDARD_JSON.copy()
+    input_json['sources'] = dict((i, {'content': open(i).read()}) for i in to_compile)
+    build_json = _compile_and_format(input_json)
+    for name, data in build_json.items():
+        json.dump(
+            data,
+            open("build/contracts/{}.json".format(name), 'w'),
+            sort_keys=True,
+            indent=4
+        )
+    _contracts.update(build_json)
+    return _contracts
+
+
+def compile_source(source):
+    input_json = STANDARD_JSON.copy()
+    input_json['sources'] = {"<string>": {'content': source}}
+    return _compile_and_format(input_json)
+
+
+def _compile_and_format(input_json):
+    try:
+        compiled = solcx.compile_standard(
+            input_json,
+            optimize=CONFIG['solc']['optimize'],
+            optimize_runs=CONFIG['solc']['runs'],
+            allow_paths="."
+        )
+    except solcx.exceptions.SolcError as e:
+        raise CompilerError(e)
+    compiled = generate_pcMap(compiled)
+    result = {}
+    compiler_info = CONFIG['solc'].copy()
+    compiler_info['version'] = solcx.get_solc_version_string().strip('\n')
+    for filename in input_json['sources']:
+        for match in re.findall(
+            "\n(?:contract|library|interface) [^ {]{1,}",
+            input_json['sources'][filename]['content']
         ):
             type_, name = match.strip('\n').split(' ')
             data = compiled['contracts'][filename][name]
-            json_file = "build/contracts/{}.json".format(name)
             evm = data['evm']
-            ref = [(k, x) for v in evm['bytecode']['linkReferences'].values()
-                   for k, x in v.items()]
-            for n, loc in [(i[0],x['start']*2) for i in ref for x in i[1]]:
+            ref = [
+                (k, x) for v in evm['bytecode']['linkReferences'].values()
+                for k, x in v.items()
+            ]
+            for n, loc in [(i[0], x['start']*2) for i in ref for x in i[1]]:
                 evm['bytecode']['object'] = "{}__{:_<36}__{}".format(
                     evm['bytecode']['object'][:loc],
                     n[:36],
                     evm['bytecode']['object'][loc+40:]
                 )
-            _contracts[name] = {
+            result[name] = {
                 'abi': data['abi'],
                 'ast': compiled['sources'][filename]['ast'],
                 'bytecode': evm['bytecode']['object'],
@@ -203,20 +230,14 @@ def compile_contracts(folder = "contracts"):
                 'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
                 'networks': {},
                 'opcodes': evm['deployedBytecode']['opcodes'],
-                'sha1': hash_,
+                'sha1': sha1(input_json['sources'][filename]['content'].encode()).hexdigest(),
                 'source': input_json['sources'][filename]['content'],
                 'sourceMap': evm['bytecode']['sourceMap'],
                 'sourcePath': filename,
                 'type': type_,
                 'pcMap': evm['deployedBytecode']['pcMap']
             }
-            json.dump(
-                _contracts[name],
-                open(json_file, 'w', encoding="utf-8"),
-                sort_keys=True,
-                indent=4
-            )
-    return _contracts
+    return result
 
 
 def generate_pcMap(compiled):
@@ -232,10 +253,10 @@ def generate_pcMap(compiled):
         'value': value of the instruction, if any
     }, ... ]
     '''
-    id_map = dict((v['id'],k) for k,v in compiled['sources'].items())
-    for filename, name in [(k,x) for k,v in compiled['contracts'].items() for x in v]:
+    id_map = dict((v['id'], k) for k, v in compiled['sources'].items())
+    for filename, name in [(k, x) for k, v in compiled['contracts'].items() for x in v]:
         bytecode = compiled['contracts'][filename][name]['evm']['deployedBytecode']
-    
+
         if not bytecode['object']:
             bytecode['pcMap'] = []
             continue
@@ -247,7 +268,7 @@ def generate_pcMap(compiled):
                 i = opcodes[:-1].rindex(' STOP')
             except ValueError:
                 break
-            if 'JUMPDEST' in opcodes[i:]: 
+            if 'JUMPDEST' in opcodes[i:]:
                 break
             opcodes = opcodes[:i+5]
         opcodes = opcodes.split(" ")[::-1]
@@ -278,7 +299,7 @@ def generate_pcMap(compiled):
                 'start': last[0],
                 'stop': last[0]+last[1],
                 'op': opcodes.pop(),
-                'contract': id_map[last[2]] if last[2]!=-1 else False,
+                'contract': id_map[last[2]] if last[2] != -1 else False,
                 'jump': last[3],
                 'pc': pc
             })
