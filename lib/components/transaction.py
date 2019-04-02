@@ -403,7 +403,7 @@ class TransactionReceipt:
                 idx -= 1
                 continue
             span = (self.trace[idx]['source']['start'], self.trace[idx]['source']['stop'])
-            source = open(self.trace[idx]['source']['filename'], encoding="utf-8").read()
+            source = contract.find_contract(self.trace[idx]['address'])._build['source']
             if source[span[0]][:8] in ("contract", "library "):
                 idx -= 1
                 continue
