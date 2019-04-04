@@ -290,16 +290,16 @@ class TransactionReceipt:
                 )
         else:
             # get revert message
-            offset = int(trace[-1]['stack'][-1], 16) * 2
-            length = int(trace[-1]['stack'][-2], 16) * 2
-            if length:
-                data = HexBytes("".join(trace[-1]['memory'])[offset+8:offset+length])
-                self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
-            else:
-                self.revert_msg = ""
+            self.revert_msg = ""
+            self.events = []
+            if trace[-1]['op'] == "REVERT":
+                offset = int(trace[-1]['stack'][-1], 16) * 2
+                length = int(trace[-1]['stack'][-2], 16) * 2
+                if length:
+                    data = HexBytes("".join(trace[-1]['memory'])[offset+8:offset+length])
+                    self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
             try:
                 # get events from trace
-                self.events = []
                 self.events = eth_event.decode_trace(trace, topics())
             except:
                 pass
