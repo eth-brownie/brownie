@@ -1,6 +1,7 @@
 0.9.6 (unreleased)
 -----
 
+ - show source highlight when check.reverts fails with wrong message
 
 0.9.5
 -----

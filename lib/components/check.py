@@ -45,8 +45,8 @@ def reverts(fn, args, revert_msg=None):
         if not revert_msg or revert_msg == e.revert_msg:
             return
         raise AssertionError(
-            "Transaction reverted with error '{}', expected '{}'".format(
-                e.revert_msg, revert_msg
+            "Transaction reverted with error '{}', expected '{}'\n{}".format(
+                e.revert_msg, revert_msg, e.source
             ))
     raise AssertionError("Expected transaction to revert")
 
