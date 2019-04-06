@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
-from eth_hash import keccak
-from eth_keys.keys import PrivateKey
+from eth_hash.auto import keccak
+import eth_keys
 from eth_utils import to_checksum_address
 from hexbytes import HexBytes
 import os
@@ -258,7 +258,7 @@ class LocalAccount(_AccountBase):
     def __init__(self, address, account, priv_key):
         self._acct = account
         self.private_key = priv_key
-        self.public_key = PrivateKey(HexBytes(priv_key)).public_key
+        self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
 
     def _console_repr(self):

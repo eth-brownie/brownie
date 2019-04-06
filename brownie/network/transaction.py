@@ -14,8 +14,8 @@ from brownie.types import KwargTuple
 from brownie.types.convert import format_output
 from brownie.utils import color
 
-import brownie.config
-CONFIG = brownie.config.CONFIG
+import brownie.config as config
+CONFIG = config.CONFIG
 
 import brownie._registry as _registry
 _registry.add(sys.modules[__name__])

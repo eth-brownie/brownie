@@ -3,7 +3,7 @@
 from collections import OrderedDict
 import eth_abi
 import eth_event
-from eth_hash import keccak
+from eth_hash.auto import keccak
 from eth_utils import to_checksum_address
 import re
 import sys
@@ -47,7 +47,7 @@ class _ContractBase:
             i['name'],
             "0x"+keccak("{}({})".format(
                 i['name'], ",".join(x['type'] for x in i['inputs'])
-            )).hex()[:8]
+            ).encode()).hex()[:8]
         ) for i in self.abi if i['type'] == "function")
 
     def get_method(self, calldata):
@@ -150,7 +150,8 @@ class ContractConstructor:
     def __init__(self, parent, name):
         self._parent = parent
         try:
-            self.abi = [next(i for i in parent.abi if i['type'] == "constructor")]
+            self.abi = next(i for i in parent.abi if i['type'] == "constructor")
+            self.abi['name'] = "constructor"
         except:
             self.abi = {'name': "constructor", 'inputs':[]}
 
@@ -158,7 +159,7 @@ class ContractConstructor:
 
     def __repr__(self):
         if self.abi:
-            args = ",".join(i['type'] for i in self.abi[0]['inputs'])
+            args = ",".join(i['type'] for i in self.abi['inputs'])
         else:
             args = ""
         return "<{} object '{}.constructor({})'>".format(
@@ -194,7 +195,7 @@ class ContractConstructor:
                     marker,
                     list(deployed_contracts[contract])[-1].address[-40:]
                 )
-        contract = web3.eth.contract(abi=self.abi, bytecode=bytecode)
+        contract = web3.eth.contract(abi=[self.abi], bytecode=bytecode)
         args, tx = _get_tx(account, args)
         tx = account._contract_tx(
             contract.constructor,
@@ -277,7 +278,7 @@ class _ContractMethod:
         self.signature = "0x"+keccak("{}({})".format(
             abi['name'],
             ",".join(i['type'] for i in abi['inputs'])
-            )).hex()[:10]
+            ).encode()).hex()[:10]
 
     def __repr__(self):
         return "<{} object '{}({})'>".format(
