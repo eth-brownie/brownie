@@ -6,8 +6,9 @@ import os
 import sys
 
 from brownie.network.transaction import TransactionReceipt, raise_or_return_tx
-from brownie.utils import color, wei
+from brownie.utils import color
 from brownie.utils.bip44 import HDPrivateKey, HDKey
+from brownie.types.convert import wei
 
 import brownie._registry as _registry
 import brownie.config

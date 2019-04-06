@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-
-from pathlib import Path
 import json
+from pathlib import Path
+import sys
 
 from brownie.types import FalseyDict, StrictDict
 
