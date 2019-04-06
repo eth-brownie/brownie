@@ -9,7 +9,7 @@ import threading
 import time
 
 #from brownie.components import contract
-#from brownie.services.compiler import compile_contracts
+from brownie.utils.compiler import compile_contracts
 from brownie.types import KwargTuple
 from brownie.types.convert import format_output
 from brownie.utils import color
