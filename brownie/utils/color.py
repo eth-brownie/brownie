@@ -4,7 +4,6 @@ import sys
 import traceback
 
 import brownie.config
-
 CONFIG = brownie.config.CONFIG
 
 BASE = "\x1b[0;"
@@ -168,4 +167,4 @@ class Color:
         return "\n".join(tb)
 
 
-sys.modules[__name__] = Color()
+#sys.modules[__name__] = Color()
