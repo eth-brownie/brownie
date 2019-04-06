@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
+
 from hashlib import sha1
 import json
-import os
+from pathlib import Path
 import re
 import solcx
 import sys
@@ -43,19 +44,19 @@ class CompilerError(Exception):
         super().__init__("Compiler returned the following errors:\n\n"+"\n".join(err))
 
 
-def _check_changed(filename, contract, clear=None):
+def _check_changed(build, filename, contract, clear=None):
     if contract in _changed:
         return _changed[contract]
-    json_file = 'build/contracts/{}.json'.format(contract)
-    if not os.path.exists(json_file):
+    build = build.joinpath('{}.json'.format(contract))
+    if not build.exists():
         _changed[contract] = True
         return True
     try:
         CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
-        compiled = json.load(open(json_file, encoding="utf-8"))
+        compiled = json.load(build.open())
         if (
             compiled['compiler'] != CONFIG['solc'] or
-            compiled['sha1'] != sha1(open(filename, 'rb').read()).hexdigest()
+            compiled['sha1'] != sha1(filename.open('rb').read()).hexdigest()
         ):
             _changed[contract] = True
             return True
@@ -66,70 +67,70 @@ def _check_changed(filename, contract, clear=None):
         return True
 
 
-def _json_load(filename):
+def _json_load(path):
     try:
-        return json.load(open("build/contracts/"+filename, encoding="utf-8"))
+        return json.load(path.open())
     except json.JSONDecodeError:
         raise OSError(
-            "'build/contracts/"+filename+"' appears to be corrupted. Delete it"
+            str(path.resolve())+" appears to be corrupted. Delete it"
             " and restart Brownie to fix this error. If this problem persists "
             "you may need to delete your entire build/contracts folder."
         )
 
 
-def clear_persistence(network_name):
-    for filename in os.listdir("build/contracts"):
-        compiled = _json_load(filename)
-        networks = dict(
-            (k, v) for k, v in compiled['networks'].items()
-            if 'persist' in CONFIG['networks'][v['network']] and
-            CONFIG['networks'][v['network']]['persist'] and
-            v['network'] != network_name
-        )
-        if networks != compiled['networks']:
-            compiled['networks'] = networks
-            json.dump(
-                compiled,
-                open("build/contracts/"+filename, 'w', encoding="utf-8"),
-                sort_keys=True,
-                indent=4
-            )
+# def clear_persistence(network_name):
+#     for filename in os.listdir("build/contracts"):
+#         compiled = _json_load(filename)
+#         networks = dict(
+#             (k, v) for k, v in compiled['networks'].items()
+#             if 'persist' in CONFIG['networks'][v['network']] and
+#             CONFIG['networks'][v['network']]['persist'] and
+#             v['network'] != network_name
+#         )
+#         if networks != compiled['networks']:
+#             compiled['networks'] = networks
+#             json.dump(
+#                 compiled,
+#                 open("build/contracts/"+filename, 'w', encoding="utf-8"),
+#                 sort_keys=True,
+#                 indent=4
+#             )
 
 
-def add_contract(name, address, txid, owner):
-    json_file = "build/contracts/{}.json".format(name)
-    _contracts[name]['networks'][str(int(time.time()))] = {
-        'address': address,
-        'transactionHash': txid,
-        'network': CONFIG['active_network']['name'],
-        'owner': owner}
-    json.dump(
-        _contracts[name],
-        open(json_file, 'w', encoding="utf-8"),
-        sort_keys=True,
-        indent=4
-    )
+# def add_contract(name, address, txid, owner):
+#     json_file = "build/contracts/{}.json".format(name)
+#     _contracts[name]['networks'][str(int(time.time()))] = {
+#         'address': address,
+#         'transactionHash': txid,
+#         'network': CONFIG['active_network']['name'],
+#         'owner': owner}
+#     json.dump(
+#         _contracts[name],
+#         open(json_file, 'w', encoding="utf-8"),
+#         sort_keys=True,
+#         indent=4
+#     )
 
 
-def compile_contracts(folder="contracts"):
+def compile_contracts(folder):
     '''
     Compiles the project with solc and saves the results
     in the build/contracts folder.
     '''
     if _contracts:
         return _contracts
-    clear_persistence(None)
-    contract_files = [
-        "{}/{}".format(i[0], x) for i in os.walk(folder) for x in i[2]
-    ]
+    folder = Path(folder).resolve()
+    build_folder = folder.parent.joinpath('build/contracts')
+    #clear_persistence(None)
+    contract_files = list(folder.glob('**/*.sol'))
     if not contract_files:
-        sys.exit("ERROR: Cannot find any .sol files in contracts folder")
+        #sys.exit("ERROR: Cannot find any .sol files in contracts folder")
+        return {}
     compiler_info = CONFIG['solc'].copy()
     compiler_info['version'] = solcx.get_solc_version_string().strip('\n')
-
     inheritance_map = {}
     for filename in contract_files:
-        code = open(filename, encoding="utf-8").read()
+        code = filename.open().read()
         for name in (
             re.findall(
                 "\n(?:contract|library|interface) (.*?){", code, re.DOTALL)
@@ -139,8 +140,7 @@ def compile_contracts(folder="contracts"):
                 raise ValueError(
                     "Multiple contracts named {}".format(names[0]))
             inheritance_map[names[0]] = set(names[2:])
-            _check_changed(filename, names[0])
-
+            _check_changed(build_folder, filename, names[0])
     for i in range(len(inheritance_map)):
         for base, inherited in [
             (k, x) for k, v in inheritance_map.copy().items() if v for x in v
@@ -148,15 +148,15 @@ def compile_contracts(folder="contracts"):
             inheritance_map[base] |= inheritance_map[inherited]
     to_compile = []
     for filename in contract_files:
-        code = open(filename).read()
+        code = filename.open().read()
         input_json = {}
         for name in (re.findall(
                 "\n(?:contract|library|interface) (.*?)[ {]", code, re.DOTALL
         )):
             check = [i for i in inheritance_map[name]
-                     if _check_changed(filename, i)]
-            if not check and not _check_changed(filename, name):
-                _contracts[name] = _json_load(name+".json")
+                     if _check_changed(build_folder, filename, i)]
+            if not check and not _check_changed(build_folder, filename, name):
+                _contracts[name] = _json_load(build_folder.joinpath('{}.json'.format(name)))
                 continue
             to_compile.append(filename)
             break
@@ -167,14 +167,14 @@ def compile_contracts(folder="contracts"):
         "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
         CONFIG['solc']['optimize'] else "Disabled"
     ))
-    print("\n".join(" - {}...".format(i.split('/')[-1]) for i in to_compile))
+    print("\n".join(" - {}...".format(i.name) for i in to_compile))
     input_json = STANDARD_JSON.copy()
-    input_json['sources'] = dict((i, {'content': open(i).read()}) for i in to_compile)
+    input_json['sources'] = dict((str(i), {'content': i.open().read()}) for i in to_compile)
     build_json = _compile_and_format(input_json)
     for name, data in build_json.items():
         json.dump(
             data,
-            open("build/contracts/{}.json".format(name), 'w'),
+            build_folder.joinpath("{}.json".format(name)).open('w'),
             sort_keys=True,
             indent=4
         )
