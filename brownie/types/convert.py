@@ -1,6 +1,49 @@
 #!/usr/bin/python3
 
 
+# format contract inputs based on ABI types
+def format_to_abi(abi, inputs):
+    name = abi['name']
+    types = [i['type'] for i in abi['inputs']]
+    inputs = list(inputs)
+    if len(inputs) and not len(types):
+        raise AttributeError("{} requires no arguments".format(name))
+    if len(inputs) != len(types):
+        raise AttributeError("{} requires the following arguments: {}".format(
+            name, ",".join(types)
+        ))
+    for i, type_ in enumerate(types):
+        if type_[-1] == "]":
+            # input value is an array, have to check every item
+            t, length = type_.rstrip(']').rsplit('[', maxsplit=1)
+            if length != "" and len(inputs[i]) != int(length):
+                raise ValueError(
+                    "'{}': Argument {}, sequence has a ".format(name, i) +
+                    "length of {}, should be {}".format(len(inputs[i]), type_)
+                    )
+            inputs[i] = _format_inputs(name, inputs[i], [t]*len(inputs[i]))
+            continue
+        try:
+            if "address" in type_:
+                inputs[i] = str(inputs[i])
+            if "int" in type_:
+                inputs[i] = wei(inputs[i])
+            elif "bytes" in type_ and type(inputs[i]) is not bytes:
+                if type(inputs[i]) is str:
+                    if inputs[i][:2] != "0x":
+                        inputs[i] = inputs[i].encode()
+                    elif type_ != "bytes":
+                        inputs[i] = int(inputs[i], 16).to_bytes(int(type_[5:]), "big")
+                else:
+                    inputs[i] = int(inputs[i]).to_bytes(int(type_[5:]), "big")
+        except:
+            raise ValueError(
+                "'{}': Argument {}, could not convert {} '{}' to type {}".format(
+                    name, i, type(inputs[i]).__name__, inputs[i], type_))
+    return inputs
+
+
+
 def format_output(value):
     if type(value) in (tuple, list):
         return tuple(format_output(i) for i in value)

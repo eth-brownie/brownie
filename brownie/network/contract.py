@@ -6,7 +6,7 @@ import eth_abi
 import re
 
 from brownie.network.transaction import TransactionReceipt, VirtualMachineError
-from brownie.types.convert import format_output, wei
+from brownie.types.convert import format_to_abi, format_output, wei
 from brownie.types import KwargTuple
 from brownie.utils.compiler import add_contract
 from brownie.utils import color
@@ -149,7 +149,7 @@ class ContractConstructor:
         try:
             self.abi = [next(i for i in parent.abi if i['type'] == "constructor")]
         except:
-            self.abi = []
+            self.abi = {'name': "constructor", 'inputs':[]}
 
         self._name = name
 
@@ -195,11 +195,7 @@ class ContractConstructor:
         args, tx = _get_tx(account, args)
         tx = account._contract_tx(
             contract.constructor,
-            _format_inputs(
-                self._name+".constructor",
-                args,
-                [i['type'] for i in self.abi[0]['inputs']] if self.abi else []
-            ),
+            format_to_abi(self.abi, args),
             tx,
             self._name+".constructor",
             self._callback
@@ -286,10 +282,6 @@ class _ContractMethod:
             self.abi['name'],
             ",".join(i['type'] for i in self.abi['inputs']))
 
-    def _format_inputs(self, args):
-        types = [i['type'] for i in self.abi['inputs']]
-        return _format_inputs(self.abi['name'], args, types)
-
     def call(self, *args):
         '''Calls the contract method without broadcasting a transaction.
 
@@ -305,7 +297,7 @@ class _ContractMethod:
         else:
             del tx['from']
         try:
-            result = self._fn(*self._format_inputs(args)).call(tx)
+            result = self._fn(format_to_abi(self.abi, args)).call(tx)
         except ValueError as e:
             raise VirtualMachineError(e)
 
@@ -330,7 +322,7 @@ class _ContractMethod:
             )
         return tx['from']._contract_tx(
             self._fn,
-            self._format_inputs(args),
+            format_to_abi(self.abi, args),
             tx,
             self._name
         )
@@ -343,7 +335,7 @@ class _ContractMethod:
 
         Returns:
             Hexstring of encoded ABI data.'''
-        data = self._format_inputs(args)
+        data = format_to_abi(self.abi, args)
         types = [i['type'] for i in self.abi['inputs']]
         return self.signature + eth_abi.encode_abi(types, data).hex()
 
@@ -411,42 +403,3 @@ def _get_tx(owner, args):
         tx = {'from': owner}
     return args, tx
 
-
-def _format_inputs(name, inputs, types):
-    # format contract inputs based on ABI types
-    inputs = list(inputs)
-    if len(inputs) and not len(types):
-        raise AttributeError("{} requires no arguments".format(name))
-    if len(inputs) != len(types):
-        raise AttributeError("{} requires the following arguments: {}".format(
-            name, ",".join(types)
-        ))
-    for i, type_ in enumerate(types):
-        if type_[-1] == "]":
-            # input value is an array, have to check every item
-            t, length = type_.rstrip(']').rsplit('[', maxsplit=1)
-            if length != "" and len(inputs[i]) != int(length):
-                raise ValueError(
-                    "'{}': Argument {}, sequence has a ".format(name, i) +
-                    "length of {}, should be {}".format(len(inputs[i]), type_)
-                    )
-            inputs[i] = _format_inputs(name, inputs[i], [t]*len(inputs[i]))
-            continue
-        try:
-            if "address" in type_:
-                inputs[i] = str(inputs[i])
-            if "int" in type_:
-                inputs[i] = wei(inputs[i])
-            elif "bytes" in type_ and type(inputs[i]) is not bytes:
-                if type(inputs[i]) is str:
-                    if inputs[i][:2] != "0x":
-                        inputs[i] = inputs[i].encode()
-                    elif type_ != "bytes":
-                        inputs[i] = int(inputs[i], 16).to_bytes(int(type_[5:]), "big")
-                else:
-                    inputs[i] = int(inputs[i]).to_bytes(int(type_[5:]), "big")
-        except:
-            raise ValueError(
-                "'{}': Argument {}, could not convert {} '{}' to type {}".format(
-                    name, i, type(inputs[i]).__name__, inputs[i], type_))
-    return inputs
