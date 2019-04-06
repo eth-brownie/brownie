@@ -53,4 +53,3 @@ def load_project(path=None):
         raise SystemError("Could not find brownie project")
     config.CONFIG['folders']['project'] = str(Path(path).resolve())
     _create_build_folders(path)
-    print('okaaaay')

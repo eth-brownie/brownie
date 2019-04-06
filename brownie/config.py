@@ -42,16 +42,14 @@ def load_config():
         'brownie': str(Path(__file__).parents[1]),
         'project': None
     }
-    config._lock()
     return config
 
-def update_config(path, network = None):
-    path = Path(path)
-    if path.joinpath("brownie-config.json").exists():
-        _recursive_update(
-            CONFIG,
-            json.load(path.joinpath("brownie-config.json").open())
-        )
+def update_config(network = None):
+    CONFIG._unlock()
+    if CONFIG['folders']['project']:
+        path = Path(CONFIG['folders']['project']).joinpath("brownie-config.json")
+        if path.exists():
+            _recursive_update(CONFIG, json.load(path.open()))
     # modify network settings
     if not network:
         network = CONFIG['network_defaults']['name']
@@ -78,3 +76,4 @@ def _recursive_update(original, new):
 
 
 CONFIG = load_config()
+update_config()
