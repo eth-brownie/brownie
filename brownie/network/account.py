@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
-import eth_keys
+from eth_hash import keccak
+from eth_keys.keys import PrivateKey
+from eth_utils import to_checksum_address
 from hexbytes import HexBytes
 import os
 import sys
@@ -39,7 +41,7 @@ class Accounts:
 
     def __contains__(self, address):
         try:
-            address = web3.toChecksumAddress(address)
+            address = to_checksum_address(address)
             return address in self._accounts
         except ValueError:
             return False
@@ -70,7 +72,7 @@ class Accounts:
             Account instance.
         '''
         if not priv_key:
-            priv_key = web3.sha3(os.urandom(8192)).hex()
+            priv_key = "0x"+keccak(os.urandom(8192)).hex()
         w3account = web3.eth.account.privateKeyToAccount(priv_key)
         if w3account.address in self._accounts:
             return self.at(w3account.address)
@@ -89,7 +91,7 @@ class Accounts:
             Account instance.
         '''
         try:
-            address = web3.toChecksumAddress(address)
+            address = to_checksum_address(address)
         except ValueError:
             raise ValueError("{} is not a valid address".format(address))
         try:
@@ -143,7 +145,7 @@ class _AccountBase:
     def __eq__(self, other):
         if type(other) is str:
             try:
-                address = web3.toChecksumAddress(other)
+                address = to_checksum_address(other)
                 return address == self.address
             except ValueError:
                 return False
@@ -256,7 +258,7 @@ class LocalAccount(_AccountBase):
     def __init__(self, address, account, priv_key):
         self._acct = account
         self.private_key = priv_key
-        self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
+        self.public_key = PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
 
     def _console_repr(self):

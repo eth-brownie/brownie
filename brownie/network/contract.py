@@ -1,14 +1,17 @@
 #!/usr/bin/python3
 
 from collections import OrderedDict
-import eth_event
 import eth_abi
+import eth_event
+from eth_hash import keccak
+from eth_utils import to_checksum_address
 import re
+import sys
 
 from brownie.network.transaction import TransactionReceipt, VirtualMachineError
 from brownie.types.convert import format_to_abi, format_output, wei
 from brownie.types import KwargTuple
-from brownie.utils.compiler import add_contract
+#from brownie.utils.compiler import add_contract
 from brownie.utils import color
 
 import brownie._registry as _registry
@@ -23,7 +26,7 @@ deployed_contracts = {}
 
 
 def find_contract(address):
-    address = web3.toChecksumAddress(str(address))
+    address = to_checksum_address(str(address))
     contracts = [x for v in deployed_contracts.values() for x in v.values()]
     return next((i for i in contracts if i == address), None)
 
@@ -42,9 +45,9 @@ class _ContractBase:
         self.topics = eth_event.get_topics(self.abi)
         self.signatures = dict((
             i['name'],
-            web3.sha3(text="{}({})".format(
+            "0x"+keccak("{}({})".format(
                 i['name'], ",".join(x['type'] for x in i['inputs'])
-            )).hex()[:10]
+            )).hex()[:8]
         ) for i in self.abi if i['type'] == "function")
 
     def get_method(self, calldata):
@@ -125,7 +128,7 @@ class ContractContainer(_ContractBase):
             address: Address string of the contract.
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation.'''
-        address = web3.toChecksumAddress(str(address))
+        address = to_checksum_address(str(address))
         if address in deployed_contracts[self._name]:
             return deployed_contracts[self._name][address]
         contract = find_contract(address)
@@ -253,7 +256,7 @@ class Contract(_ContractBase):
     def __eq__(self, other):
         if type(other) is str:
             try:
-                address = web3.toChecksumAddress(other)
+                address = to_checksum_address(other)
                 return address == self.address
             except ValueError:
                 return False
@@ -271,7 +274,7 @@ class _ContractMethod:
         self._name = name
         self.abi = abi
         self._owner = owner
-        self.signature = web3.sha3(text="{}({})".format(
+        self.signature = "0x"+keccak("{}({})".format(
             abi['name'],
             ",".join(i['type'] for i in abi['inputs'])
             )).hex()[:10]
