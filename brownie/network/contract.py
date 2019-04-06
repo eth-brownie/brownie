@@ -5,13 +5,18 @@ import eth_event
 import eth_abi
 import re
 
-from brownie.services.datatypes import KwargTuple, format_output
-from brownie.components.transaction import TransactionReceipt, VirtualMachineError
-from brownie.components.eth import web3, wei
+from brownie.network.transaction import TransactionReceipt, VirtualMachineError
+from brownie.types.convert import format_output, wei
+from brownie.types import KwargTuple
+from brownie.utils.compiler import add_contract
+from brownie.utils import color
 
-from brownie.services.compiler import add_contract
-from brownie.services import config, color
-CONFIG = config.CONFIG
+import brownie._registry as _registry
+import brownie.config
+CONFIG = brownie.config.CONFIG
+
+web3 = None
+_registry.add(sys.modules[__name__])
 
 
 deployed_contracts = {}
@@ -60,31 +65,31 @@ class ContractContainer(_ContractBase):
         signatures: Dictionary of {'function name': "bytes4 signature"}
         topics: Dictionary of {'event name': "bytes32 topic"}'''
 
-    def __init__(self, build, network):
+    def __init__(self, build): #, network):
         self.tx = None
         self.bytecode = build['bytecode']
-        self._network = network
+        #self._network = network
         if type(build['pcMap']) is list:
             build['pcMap'] = dict((i.pop('pc'), i) for i in build['pcMap'])
         super().__init__(build)
         self.deploy = ContractConstructor(self, self._name)
         deployed_contracts[self._name] = OrderedDict()
-        for k, data in sorted([
-            (k, v) for k, v in build['networks'].items() if
-            v['network'] == CONFIG['active_network']['name']
-        ], key=lambda k: int(k[0])):
-            if web3.eth.getCode(data['address']).hex() == "0x00":
-                print("WARNING: No contract deployed at {}.".format(data['address']))
-                continue
-            deployed_contracts[self._name][data['address']] = Contract(
-                data['address'],
-                self._build,
-                data['owner'],
-                (
-                    TransactionReceipt(data['transactionHash'], silent=True)
-                    if data['transactionHash'] else None
-                )
-            )
+        # for k, data in sorted([
+        #     (k, v) for k, v in build['networks'].items() if
+        #     v['network'] == CONFIG['active_network']['name']
+        # ], key=lambda k: int(k[0])):
+        #     if web3.eth.getCode(data['address']).hex() == "0x00":
+        #         print("WARNING: No contract deployed at {}.".format(data['address']))
+        #         continue
+        #     deployed_contracts[self._name][data['address']] = Contract(
+        #         data['address'],
+        #         self._build,
+        #         data['owner'],
+        #         (
+        #             TransactionReceipt(data['transactionHash'], silent=True)
+        #             if data['transactionHash'] else None
+        #         )
+        #     )
 
     def __iter__(self):
         return iter(deployed_contracts[self._name].values())
@@ -132,8 +137,8 @@ class ContractContainer(_ContractBase):
             raise ValueError("No contract deployed at {}".format(address))
         contract = Contract(address, self._build, owner, tx)
         deployed_contracts[self._name][address] = contract
-        if CONFIG['active_network']['persist']:
-            add_contract(self._name, address, tx.hash if tx else None, owner)
+        #if CONFIG['active_network']['persist']:
+        #    add_contract(self._name, address, tx.hash if tx else None, owner)
         return deployed_contracts[self._name][address]
 
 
@@ -173,18 +178,18 @@ class ContractConstructor:
             # find and replace unlinked library pointers in bytecode
             for marker in re.findall('_{1,}[^_]*_{1,}', bytecode):
                 contract = marker.strip('_')
-                if contract not in self._parent._network:
+                if contract not in deployed_contracts:
                     raise NameError(
                         "Contract requires unknown library '{}'".format(contract)
                     )
-                elif not len(self._parent._network[contract]):
+                elif not deployed_contracts[contract]:
                     raise IndexError(
                         "Contract requires '{}' library".format(contract) +
                         " but it has not been deployed yet"
                     )
                 bytecode = bytecode.replace(
                     marker,
-                    self._parent._network[contract][-1].address[-40:]
+                    list(deployed_contracts[contract])[-1].address[-40:]
                 )
         contract = web3.eth.contract(abi=self.abi, bytecode=bytecode)
         args, tx = _get_tx(account, args)
