@@ -21,7 +21,10 @@ def format_to_abi(abi, inputs):
                     "'{}': Argument {}, sequence has a ".format(name, i) +
                     "length of {}, should be {}".format(len(inputs[i]), type_)
                     )
-            inputs[i] = _format_inputs(name, inputs[i], [t]*len(inputs[i]))
+            inputs[i] = format_to_abi(
+                {'name': name, 'inputs':[{'type': t}] * len(inputs[i])},
+                inputs[i]
+            )
             continue
         try:
             if "address" in type_:
