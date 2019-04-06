@@ -1,6 +1,54 @@
 #!/usr/bin/python3
 
 
+from .convert import format_output
+
+
+# dict subclass that prevents adding new keys when locked
+class StrictDict(dict):
+
+    def __init__(self, values={}):
+        self._locked = False
+        super().__init__()
+        self.update(values)
+
+    def __setitem__(self, key, value):
+        if self._locked and key not in self:
+            raise KeyError("{} is not a known config setting".format(key))
+        if type(value) is dict:
+            value = StrictDict(value)
+        super().__setitem__(key, value)
+
+    def update(self, arg):
+        for k, v in arg.items():
+            self.__setitem__(k, v)
+
+    def _lock(self):
+        for v in [i for i in self.values() if type(i) is StrictDict]:
+            v._lock()
+        self._locked = True
+
+    def _unlock(self):
+        for v in [i for i in self.values() if type(i) is StrictDict]:
+            v._unlock()
+        self._locked = False
+
+
+# dict container that returns False if key is not present
+class FalseyDict:
+
+    def __init__(self):
+        self._dict = {}
+
+    def __setitem__(self, key, value):
+        self._dict[key] = value
+
+    def __getitem__(self, key):
+        if key in self._dict:
+            return self._dict[key]
+        return False
+
+
 # tuple/dict hybrid used for return values
 class KwargTuple:
 
@@ -59,10 +107,3 @@ class FalseyDict:
             return self._dict[key]
         return False
 
-
-def format_output(value):
-    if type(value) in (tuple, list):
-        return tuple(format_output(i) for i in value)
-    elif type(value) is bytes:
-        return "0x"+value.hex()
-    return value
