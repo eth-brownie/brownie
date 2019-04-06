@@ -28,6 +28,7 @@ class Rpc:
         self._rpc = rpc
         self._time_offset = 0
         self._snapshot_id = False
+        self.web3 = None
         #self._network = network
         Thread(target=_watch_rpc, args=[rpc], daemon=True).start()
         _registry.add(self)
@@ -35,15 +36,17 @@ class Rpc:
         connect()
 
     def __del__(self):
+        try:
+            self.kill()
+        except (TypeError, AttributeError):
+            pass
+
+    def kill(self):
         self._rpc.terminate()
         if _registry:
             _registry.remove(self)
             _registry.active['rpc'] = None
-
-    def kill(self):
-        _registry.remove(self)
-        _registry.active['rpc'] = None
-        self._rpc.terminate()
+            _registry.reset(None)
 
     def _request(self, *args):
         return self.web3.providers[0].make_request(*args)
@@ -101,9 +104,7 @@ def _watch_rpc(rpc):
     code = rpc.wait()
     if not code or code == -15:
         return
-    print("{0[error]}ERROR{0}: Local RPC has terminated with exit code {0[value]}{1}{0}".format(
-        color, rpc.poll()
-    ))
+    raise ConnectionError("Local RPC terminated with exit code {}".format(rpc.poll()))
 
 
 def launch_rpc():
@@ -113,10 +114,12 @@ def launch_rpc():
 
 
 def connect():
+    if _registry.active['web3'] and _registry.active['web3'].isConnected():
+        raise ConnectionError("web3 already connected")
     web3 = Web3(HTTPProvider(CONFIG['active_network']['host']))
     for i in range(20):
         if web3.isConnected():
-            _registry.set_web3(web3)
+            _registry.reset(web3)
             return web3
         time.sleep(0.2)
     raise ConnectionError("Could not connect to {}".format(

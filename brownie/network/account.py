@@ -3,23 +3,38 @@
 import eth_keys
 from hexbytes import HexBytes
 import os
+import sys
 
-from brownie.components.transaction import TransactionReceipt, raise_or_return_tx
-from brownie.components.eth import web3, wei
-from brownie.services.bip44 import HDPrivateKey, HDKey
-from brownie.services import config, color
-CONFIG = config.CONFIG
+from brownie.network.transaction import TransactionReceipt, raise_or_return_tx
+from brownie.utils import color, wei
+from brownie.utils.bip44 import HDPrivateKey, HDKey
 
+import brownie._registry as _registry
+import brownie.config
+CONFIG = brownie.config.CONFIG
+
+web3 = None
+_registry.add(sys.modules[__name__])
 
 class Accounts:
 
     '''List-like container that holds all of the available Account instances.'''
 
-    def __init__(self, accounts):
-        self._accounts = [Account(i) for i in accounts]
+    def __init__(self):
+        self._accounts = []
         # prevent mnemonics and private keys from being stored in read history
         self.add.__dict__['_private'] = True
         self.mnemonic.__dict__['_private'] = True
+        _registry.add(self)
+
+    def _notify_reset(self):
+        self._accounts.clear()
+        if web3:
+            self._accounts = [Account(i) for i in web3.eth.accounts]
+
+    def _notify_revert(self):
+        for i in self._accounts:
+            i.nonce = web3.eth.getTransactionCount(str(i))
 
     def __contains__(self, address):
         try:
@@ -42,10 +57,6 @@ class Accounts:
 
     def __len__(self):
         return len(self._accounts)
-
-    def _check_nonce(self):
-        for i in self._accounts:
-            i.nonce = web3.eth.getTransactionCount(str(i))
 
     def add(self, priv_key=None):
         '''Creates a new ``LocalAccount`` instance and appends it to the container.

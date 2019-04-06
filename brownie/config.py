@@ -4,35 +4,8 @@
 from pathlib import Path
 import json
 
+from brownie.types import FalseyDict, StrictDict
 
-
-class StrictDict(dict):
-
-    def __init__(self, values={}):
-        self._locked = False
-        super().__init__()
-        self.update(values)
-
-    def __setitem__(self, key, value):
-        if self._locked and key not in self:
-            raise KeyError("{} is not a known config setting".format(key))
-        if type(value) is dict:
-            value = StrictDict(value)
-        super().__setitem__(key, value)
-
-    def update(self, arg):
-        for k, v in arg.items():
-            self.__setitem__(k, v)
-
-    def _lock(self):
-        for v in [i for i in self.values() if type(i) is StrictDict]:
-            v._lock()
-        self._locked = True
-
-    def _unlock(self):
-        for v in [i for i in self.values() if type(i) is StrictDict]:
-            v._unlock()
-        self._locked = False
 
 
 def load_config():
@@ -50,6 +23,18 @@ def update_config(network = None):
         path = Path(CONFIG['folders']['project']).joinpath("brownie-config.json")
         if path.exists():
             _recursive_update(CONFIG, json.load(path.open()))
+    
+    # set logging
+    try:
+        CONFIG['logging'] = CONFIG['logging'][sys.argv[1]]
+        CONFIG['logging'].setdefault('tx', 0)
+        CONFIG['logging'].setdefault('exc', 0)
+        for k, v in [(k, v) for k, v in CONFIG['logging'].items() if type(v) is list]:
+            CONFIG['logging'][k] = v[1 if '--verbose' in sys.argv else 0]
+    except:
+        CONFIG['logging'] = {"tx": 1, "exc": 1}
+    
+    
     # modify network settings
     if not network:
         network = CONFIG['network_defaults']['name']
@@ -74,6 +59,19 @@ def _recursive_update(original, new):
         else:
             original[k] = new[k]
 
+# move argv flags into FalseyDict
+ARGV = FalseyDict()
+for key in [i for i in sys.argv if i[:2] == "--"]:
+    idx = sys.argv.index(key)
+    if len(sys.argv) >= idx+2 and sys.argv[idx+1][:2] != "--":
+        ARGV[key[2:]] = sys.argv[idx+1]
+    else:
+        ARGV[key[2:]] = True
 
+# used to determine various behaviours in other modules
+if len(sys.argv) > 1:
+    ARGV['mode'] = "console" if sys.argv[1] == "console" else "script"
+
+# load config
 CONFIG = load_config()
 update_config()
