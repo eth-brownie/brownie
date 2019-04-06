@@ -4,10 +4,10 @@ import eth_keys
 from hexbytes import HexBytes
 import os
 
-from lib.components.transaction import TransactionReceipt, raise_or_return_tx
-from lib.components.eth import web3, wei
-from lib.services.bip44 import HDPrivateKey, HDKey
-from lib.services import config, color
+from brownie.components.transaction import TransactionReceipt, raise_or_return_tx
+from brownie.components.eth import web3, wei
+from brownie.services.bip44 import HDPrivateKey, HDKey
+from brownie.services import config, color
 CONFIG = config.CONFIG
 
 

@@ -5,8 +5,8 @@ from threading import Thread
 import time
 from web3 import Web3, HTTPProvider
 
-from lib.services import config
-from lib.services import color
+from brownie.services import config
+from brownie.services import color
 CONFIG = config.CONFIG
 
 

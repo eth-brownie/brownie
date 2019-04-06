@@ -1,36 +1,6 @@
 #!/usr/bin/python3
 
 
-# dict subclass that prevents adding new keys when locked
-class StrictDict(dict):
-
-    def __init__(self, values={}):
-        self._locked = False
-        super().__init__()
-        self.update(values)
-
-    def __setitem__(self, key, value):
-        if self._locked and key not in self:
-            raise KeyError("{} is not a known config setting".format(key))
-        if type(value) is dict:
-            value = StrictDict(value)
-        super().__setitem__(key, value)
-
-    def update(self, arg):
-        for k, v in arg.items():
-            self.__setitem__(k, v)
-
-    def _lock(self):
-        for v in [i for i in self.values() if type(i) is StrictDict]:
-            v._lock()
-        self._locked = True
-
-    def _unlock(self):
-        for v in [i for i in self.values() if type(i) is StrictDict]:
-            v._unlock()
-        self._locked = False
-
-
 # tuple/dict hybrid used for return values
 class KwargTuple:
 

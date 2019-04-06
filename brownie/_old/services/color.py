@@ -3,8 +3,8 @@
 import sys
 import traceback
 
-from lib.services.datatypes import StrictDict
-from lib.services import config
+from brownie.services.datatypes import StrictDict
+from brownie.services import config
 CONFIG = config.CONFIG
 
 BASE = "\x1b[0;"

@@ -1,102 +1,56 @@
 #!/usr/bin/python3
 
-from docopt import docopt
-import os
-import shutil
-import sys
 
-from lib.services import config
-CONFIG = config.CONFIG
+from pathlib import Path
+import shutil
+
+import brownie.config as config
 
 
 FOLDERS = ["contracts", "scripts", "tests"]
 BUILD_FOLDERS = ["build", "build/contracts", "build/networks"]
-FILES = [
-    ("scripts/__init__.py", ""),
-    ("tests/__init__.py", ""),
-    (
-        "brownie-config.json",
-        open(CONFIG['folders']['brownie']+"/config.json", encoding="utf-8").read()
-    )
-]
-
-__doc__ = """Usage: brownie init [<project>] [options]
-
-Arguments:
-  <project>           Make a copy of an existing project
-
-Options:
-  --help              Display this message
-
-brownie init is used to create new brownie projects. It creates the default
-structure for the brownie environment:
-
-build/                Compiled contracts and network data
-contracts/            Solidity contracts
-scripts/              Python scripts that are not for testing
-tests/                Python scripts for unit testing
-brownie-config.json   Project configuration file
-
-You can optionally specify a project name, which deploys an already existing
-project into a new folder with the same name. Existing projects can be found
-at {}/projects
-""".format(CONFIG['folders']['brownie'])
 
 
-def main():
-    args = docopt(__doc__)
-    if (CONFIG['folders']['brownie'] in os.path.abspath('.') and 
-        CONFIG['folders']['brownie']+"/projects/" not in os.path.abspath('.')):
-        sys.exit(
-            "ERROR: Cannot init inside the main brownie installation folder.\n"
-            "Create a new folder for your project and run brownie init there.")
+def _check_for_project(path):
+    path = Path(path).resolve()
+    for folder in [path]+list(path.parents):
+        if folder.joinpath("brownie-config.json").exists():
+            return folder
+    return None
 
-    if CONFIG['folders']['project'] != os.path.abspath('.'):
-        if not config.ARGV['force']:
-            sys.exit("ERROR: Cannot init the subfolder of an existing brownie"
-                     " project. Use --force to override.")
-        CONFIG['folders']['project'] = os.path.abspath('.')
 
-    if check_for_project():
-        sys.exit("ERROR: Brownie was already initiated in this folder.")
+def _create_build_folders(path):
+    path = Path(path).resolve()
+    for folder in [i for i in BUILD_FOLDERS]:
+        path.joinpath(folder).mkdir(exist_ok=True)
 
-    if args['<project>']:
-        folder = CONFIG['folders']['brownie'] + "/projects/" + args['<project>']
-        if not os.path.exists(folder):
-            sys.exit("ERROR: No project exists with the name '{}'".format(args['<project>']))
-        try:
-            shutil.copytree(folder, args['<project>'])
-        except FileExistsError:
-            sys.exit("ERROR: One or more files for this project already exist.")
-        if not os.path.exists(args['<project>']+"/brownie-config.json"):
-            shutil.copyfile(
-                CONFIG['folders']['brownie']+'/config.json',
-                args['<project>']+"/brownie-config.json"
-            )
-        print("Project was created in ./{}".format(args['<project>']))
-        sys.exit()
+
+def new_project(path=".", ignore_subfolder=False):
+    path = Path(path)
+    path.mkdir(exist_ok=True)
+    path = path.resolve()
+    if not ignore_subfolder:
+        check = _check_for_project(path)
+        if check and check != path:
+            raise SystemError("Cannot make a new project inside the subfolder of an existing project.")
     
-    create_project()
-    create_build_folders()
-    print("Brownie environment has been initiated.")
-    sys.exit()
+    for folder in [i for i in FOLDERS]:
+        path.joinpath(folder).mkdir(exist_ok=True)
+    if not path.joinpath('brownie-config.json').exists():
+        shutil.copy(
+            str(Path(__file__).parents[1].joinpath("config.json")),
+            str(path.joinpath('brownie-config.json'))
+        )
+    _create_build_folders(path)
+    config.CONFIG['folders']['project'] = path
+    return path
 
 
-def check_for_project():
-    os.chdir(CONFIG['folders']['project'])
-    if [i for i in FOLDERS if not os.path.exists(i)]:
-        return False
-    if [i for i in FILES if not os.path.exists(i[0])]:
-        return False
-    return True
-
-def create_project():
-    os.chdir(CONFIG['folders']['project'])
-    for folder in [i for i in FOLDERS if not os.path.exists(i)]:
-        os.mkdir(folder)
-    for filename, content in [i for i in FILES if not os.path.exists(i[0])]:
-        open(filename, 'w', encoding="utf-8").write(content)
-
-def create_build_folders():
-    for folder in [i for i in BUILD_FOLDERS if not os.path.exists(i)]:
-        os.mkdir(folder)
+def load_project(path=None):
+    if path is None:
+        path = _check_for_project('.')
+    if not path or not Path(path).joinpath("brownie-config.json").exists():
+        raise SystemError("Could not find brownie project")
+    config.CONFIG['folders']['project'] = str(Path(path).resolve())
+    _create_build_folders(path)
+    print('okaaaay')

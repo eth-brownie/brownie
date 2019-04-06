@@ -7,14 +7,14 @@ import os
 import sys
 import traceback
 
-from lib.components import alert
-from lib.components.eth import Rpc, web3, wei
-from lib.components import contract
-from lib.components.account import Accounts, LocalAccount
-from lib.components import transaction as tx
-import lib.components.check as check
-from lib.services.fernet import FernetKey, InvalidToken
-from lib.services import compiler, config, color
+from brownie.components import alert
+from brownie.components.eth import Rpc, web3, wei
+from brownie.components import contract
+from brownie.components.account import Accounts, LocalAccount
+from brownie.components import transaction as tx
+import brownie.components.check as check
+from brownie.services.fernet import FernetKey, InvalidToken
+from brownie.services import compiler, config, color
 CONFIG = config.CONFIG
 
 
@@ -86,7 +86,7 @@ class Network:
         # update _ImportableBrownie dict and reload all scripts
         sys.modules['brownie'].__dict__ = self._network_dict
         for module in [v for k,v in sys.modules.items() if k[:7]=='scripts']:
-            importlib.reload(module)
+            importbrownie.reload(module)
         
         if not CONFIG['active_network']['persist']:
             return
@@ -172,7 +172,7 @@ class Network:
         if not os.path.exists("scripts/{}.py".format(name)):
             print("{0[error]}ERROR{0}: Cannot find scripts/{1}.py".format(color, name))
             return
-        module = importlib.import_module("scripts."+name)
+        module = importbrownie.import_module("scripts."+name)
         module.main()
 
     def reset(self, network=None):

@@ -8,7 +8,7 @@ import solcx
 import sys
 import time
 
-from lib.services import config
+from brownie.services import config
 CONFIG = config.CONFIG
 solcx.set_solc_version(CONFIG['solc']['version'])
 

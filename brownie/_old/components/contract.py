@@ -5,12 +5,12 @@ import eth_event
 import eth_abi
 import re
 
-from lib.services.datatypes import KwargTuple, format_output
-from lib.components.transaction import TransactionReceipt, VirtualMachineError
-from lib.components.eth import web3, wei
+from brownie.services.datatypes import KwargTuple, format_output
+from brownie.components.transaction import TransactionReceipt, VirtualMachineError
+from brownie.components.eth import web3, wei
 
-from lib.services.compiler import add_contract
-from lib.services import config, color
+from brownie.services.compiler import add_contract
+from brownie.services import config, color
 CONFIG = config.CONFIG
 
 

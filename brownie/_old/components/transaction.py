@@ -7,12 +7,12 @@ import json
 import threading
 import time
 
-from lib.components import contract
-from lib.components.eth import web3
-from lib.services.compiler import compile_contracts
-from lib.services.datatypes import KwargTuple, format_output
-from lib.services import config
-from lib.services import color
+from brownie.components import contract
+from brownie.components.eth import web3
+from brownie.services.compiler import compile_contracts
+from brownie.services.datatypes import KwargTuple, format_output
+from brownie.services import config
+from brownie.services import color
 CONFIG = config.CONFIG
 
 

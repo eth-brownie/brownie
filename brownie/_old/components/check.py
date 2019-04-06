@@ -2,8 +2,8 @@
 
 '''Assertion methods for writing brownie unit tests.'''
 
-from lib.components.eth import wei
-from lib.components.transaction import VirtualMachineError as _VMError
+from brownie.components.eth import wei
+from brownie.components.transaction import VirtualMachineError as _VMError
 
 
 def true(statement, fail_msg="Expected statement to be True"):

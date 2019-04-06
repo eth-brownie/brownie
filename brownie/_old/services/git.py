@@ -4,7 +4,7 @@ import os
 import subprocess
 from subprocess import DEVNULL
 
-from lib.services import config
+from brownie.services import config
 CONFIG = config.CONFIG
 
 

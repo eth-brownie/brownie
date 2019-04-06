@@ -4,11 +4,11 @@ import json
 import os
 import sys
 
-from lib.services.datatypes import StrictDict, FalseyDict
+from brownie.services.datatypes import StrictDict, FalseyDict
 
 # must happen in this order, color imports CONFIG
 CONFIG = StrictDict()
-from lib.services import color
+from brownie.services import color
 
 
 def load_config(network=None):
