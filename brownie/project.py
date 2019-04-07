@@ -47,7 +47,7 @@ def new(path=".", ignore_subfolder=False):
         path.joinpath(folder).mkdir(exist_ok=True)
     if not path.joinpath('brownie-config.json').exists():
         shutil.copy(
-            str(Path(__file__).parents[1].joinpath("config.json")),
+            str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
             str(path.joinpath('brownie-config.json'))
         )
     _create_build_folders(path)

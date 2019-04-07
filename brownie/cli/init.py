@@ -2,11 +2,13 @@
 
 from docopt import docopt
 import os
+from pathlib import Path
 import shutil
 import sys
 
-import brownie.config
-CONFIG = brownie.config.CONFIG
+import brownie.project as project
+import brownie.config as config
+CONFIG = config.CONFIG
 
 
 
@@ -36,38 +38,28 @@ at {}/projects
 def main():
     args = docopt(__doc__)
     
-    if (CONFIG['folders']['brownie'] in os.path.abspath('.') and 
-        CONFIG['folders']['brownie']+"/projects/" not in os.path.abspath('.')):
+    if CONFIG['folders']['brownie'] in str(Path('.').resolve()):
         sys.exit(
             "ERROR: Cannot init inside the main brownie installation folder.\n"
             "Create a new folder for your project and run brownie init there.")
 
-    if CONFIG['folders']['project'] != os.path.abspath('.'):
-        if not config.ARGV['force']:
-            sys.exit("ERROR: Cannot init the subfolder of an existing brownie"
-                     " project. Use --force to override.")
-        CONFIG['folders']['project'] = os.path.abspath('.')
+    # TODO - remote packages
+    # if args['<project>']:
+    #     folder = CONFIG['folders']['brownie'] + "/projects/" + args['<project>']
+    #     if not os.path.exists(folder):
+    #         sys.exit("ERROR: No project exists with the name '{}'".format(args['<project>']))
+    #     try:
+    #         shutil.copytree(folder, args['<project>'])
+    #     except FileExistsError:
+    #         sys.exit("ERROR: One or more files for this project already exist.")
+    #     if not os.path.exists(args['<project>']+"/brownie-config.json"):
+    #         shutil.copyfile(
+    #             CONFIG['folders']['brownie']+'/config.json',
+    #             args['<project>']+"/brownie-config.json"
+    #         )
+    #     print("Project was created in ./{}".format(args['<project>']))
+    #     sys.exit()
 
-    if check_for_project():
-        sys.exit("ERROR: Brownie was already initiated in this folder.")
-
-    if args['<project>']:
-        folder = CONFIG['folders']['brownie'] + "/projects/" + args['<project>']
-        if not os.path.exists(folder):
-            sys.exit("ERROR: No project exists with the name '{}'".format(args['<project>']))
-        try:
-            shutil.copytree(folder, args['<project>'])
-        except FileExistsError:
-            sys.exit("ERROR: One or more files for this project already exist.")
-        if not os.path.exists(args['<project>']+"/brownie-config.json"):
-            shutil.copyfile(
-                CONFIG['folders']['brownie']+'/config.json',
-                args['<project>']+"/brownie-config.json"
-            )
-        print("Project was created in ./{}".format(args['<project>']))
-        sys.exit()
-    
-    create_project()
-    create_build_folders()
+    project.new('.', config.ARGV['force'])
     print("Brownie environment has been initiated.")
     sys.exit()
