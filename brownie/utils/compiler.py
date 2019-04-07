@@ -70,40 +70,6 @@ def _json_load(path):
         )
 
 
-# def clear_persistence(network_name):
-#     for filename in os.listdir("build/contracts"):
-#         compiled = _json_load(filename)
-#         networks = dict(
-#             (k, v) for k, v in compiled['networks'].items()
-#             if 'persist' in CONFIG['networks'][v['network']] and
-#             CONFIG['networks'][v['network']]['persist'] and
-#             v['network'] != network_name
-#         )
-#         if networks != compiled['networks']:
-#             compiled['networks'] = networks
-#             json.dump(
-#                 compiled,
-#                 open("build/contracts/"+filename, 'w', encoding="utf-8"),
-#                 sort_keys=True,
-#                 indent=4
-#             )
-
-
-# def add_contract(name, address, txid, owner):
-#     json_file = "build/contracts/{}.json".format(name)
-#     _contracts[name]['networks'][str(int(time.time()))] = {
-#         'address': address,
-#         'transactionHash': txid,
-#         'network': CONFIG['active_network']['name'],
-#         'owner': owner}
-#     json.dump(
-#         _contracts[name],
-#         open(json_file, 'w', encoding="utf-8"),
-#         sort_keys=True,
-#         indent=4
-#     )
-
-
 def compile_contracts(folder):
     '''
     Compiles the project with solc and saves the results

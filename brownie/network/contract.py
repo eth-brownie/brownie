@@ -13,7 +13,6 @@ from brownie.network.history import history
 from brownie.network.web3 import web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_to_abi, format_output, wei
-# from brownie.utils.compiler import add_contract
 from brownie.utils import color
 
 import brownie.config as config
@@ -64,22 +63,6 @@ class ContractContainer(_ContractBase):
             build['pcMap'] = dict((i.pop('pc'), i) for i in build['pcMap'])
         super().__init__(build)
         self.deploy = ContractConstructor(self, self._name)
-        # for k, data in sorted([
-        #     (k, v) for k, v in build['networks'].items() if
-        #     v['network'] == CONFIG['active_network']['name']
-        # ], key=lambda k: int(k[0])):
-        #     if web3.eth.getCode(data['address']).hex() == "0x00":
-        #         print("WARNING: No contract deployed at {}.".format(data['address']))
-        #         continue
-        #     deployed_contracts[self._name][data['address']] = Contract(
-        #         data['address'],
-        #         self._build,
-        #         data['owner'],
-        #         (
-        #             TransactionReceipt(data['transactionHash'], silent=True)
-        #             if data['transactionHash'] else None
-        #         )
-        #     )
 
     def __iter__(self):
         return iter(history.get_contracts(self._name).values())
@@ -127,8 +110,6 @@ class ContractContainer(_ContractBase):
             raise ValueError("No contract deployed at {}".format(address))
         contract = Contract(address, self._build, owner, tx)
         history.get_contracts(self._name)[address] = contract
-        # if CONFIG['active_network']['persist']:
-        #    add_contract(self._name, address, tx.hash if tx else None, owner)
         return history.get_contracts(self._name)[address]
 
 
