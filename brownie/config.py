@@ -9,10 +9,10 @@ from brownie.types import FalseyDict, StrictDict
 
 
 def _load_config():
-    path = Path(__file__).parents[1].joinpath("config.json")
+    path = Path(__file__).parent.joinpath("data/config.json")
     config = StrictDict(json.load(path.open()))
     config['folders'] = {
-        'brownie': str(Path(__file__).parents[1]),
+        'brownie': str(Path(__file__).parent),
         'project': None
     }
     # set logging

@@ -9,6 +9,9 @@ import brownie.config as config
 CONFIG = config.CONFIG
 
 
+def _get_path():
+    return Path(CONFIG['folders']['brownie']).joinpath('data/topics.json')
+
 def get_topics(abi):
     new_topics = _topics.copy()
     new_topics.update(eth_event.get_event_abi(abi))
@@ -16,7 +19,7 @@ def get_topics(abi):
         _topics.update(new_topics)
         json.dump(  
             new_topics,
-            Path(CONFIG['folders']['brownie']).joinpath('topics.json').open('w'),
+            _get_path().open('w'),
             sort_keys=True,
             indent=4
         )
@@ -38,6 +41,6 @@ def decode_trace(trace):
 
 
 try:
-    _topics = json.load(Path(CONFIG['folders']['brownie']).joinpath('topics.json').open())
+    _topics = json.load(_get_path().open())
 except (FileNotFoundError, json.decoder.JSONDecodeError):
     _topics = {}

@@ -86,7 +86,7 @@ class Accounts:
         return account
 
     def load(self, identifier):
-        json_file = Path(CONFIG['folders']['brownie']).joinpath("accounts/{}.json".format(identifier))
+        json_file = Path(CONFIG['folders']['brownie']).joinpath("data/accounts/{}.json".format(identifier))
         if not json_file.exists():
             raise FileNotFoundError("Account with this identifier does not exist")
         priv_key = web3.eth.account.decrypt(
@@ -280,7 +280,7 @@ class LocalAccount(_AccountBase):
         return "<LocalAccount object '{0[string]}{1}{0}'>".format(color, self.address)
 
     def save(self, identifier, overwrite=False):
-        path = Path(CONFIG['folders']['brownie']).joinpath('accounts')
+        path = Path(CONFIG['folders']['brownie']).joinpath('data/accounts')
         path.mkdir(exist_ok=True)
         json_file = path.joinpath("{}.json".format(identifier))
         if not overwrite and json_file.exists():
