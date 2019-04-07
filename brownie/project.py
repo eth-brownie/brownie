@@ -5,7 +5,7 @@ from pathlib import Path
 import shutil
 import sys
 
-import brownie.network.contract import ContractContainer
+from brownie.network.contract import ContractContainer
 from brownie.utils.compiler import compile_contracts
 import brownie.config
 

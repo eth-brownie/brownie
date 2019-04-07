@@ -8,7 +8,7 @@ import os
 import sys
 
 from brownie.network.web3 import web3
-from brownie.network.transaction import TransactionReceipt, raise_or_return_tx
+from brownie.network.transaction import TransactionReceipt
 from brownie.utils import color
 from brownie.utils.bip44 import HDPrivateKey, HDKey
 from brownie.types.convert import wei
@@ -311,3 +311,11 @@ class LocalAccount(_AccountBase):
             txid = raise_or_return_tx(e)
         self.nonce += 1
         return TransactionReceipt(txid, self, name=name, callback=callback)
+
+
+def raise_or_return_tx(exc):
+    data = eval(str(exc))
+    try:
+        return next(i for i in data['data'].keys() if i[:2] == "0x")
+    except Exception:
+        raise VirtualMachineError(exc)

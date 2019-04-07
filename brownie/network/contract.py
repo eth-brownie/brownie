@@ -9,7 +9,7 @@ import re
 import sys
 
 from brownie.network.web3 import web3
-from brownie.network.transaction import TransactionReceipt, VirtualMachineError
+from brownie.exceptions import VirtualMachineError
 from brownie.types.convert import format_to_abi, format_output, wei
 from brownie.types import KwargTuple
 #from brownie.utils.compiler import add_contract

@@ -8,7 +8,8 @@ import sys
 import threading
 import time
 
-import brownie.network.contract as contract
+from brownie.exceptions import VirtualMachineError
+from brownie.network.contract import find_contract
 from brownie.network.web3 import web3
 from brownie.utils.compiler import compile_contracts
 from brownie.types import KwargTuple
@@ -33,40 +34,6 @@ Gas Used: {0.gas_used} / {0.gas_limit} ({4:.1%})
 
 gas_profile = {}
 tx_history = []
-
-
-class VirtualMachineError(Exception):
-
-    '''Raised when a call to a contract causes an EVM exception.
-
-    Attributes:
-        revert_msg: The returned error string, if any.
-        source: The contract source code where the revert occured, if available.'''
-
-    revert_msg = ""
-    source = ""
-
-    def __init__(self, exc):
-        if type(exc) is not dict:
-            try:
-                exc = eval(str(exc))
-            except SyntaxError:
-                exc = {'message': str(exc)}
-        if len(exc['message'].split('revert ', maxsplit=1)) > 1:
-            self.revert_msg = exc['message'].split('revert ')[-1]
-        if 'source' in exc:
-            self.source = exc['source']
-            super().__init__(exc['message']+"\n"+exc['source'])
-        else:
-            super().__init__(exc['message'])
-
-
-def raise_or_return_tx(exc):
-    data = eval(str(exc))
-    try:
-        return next(i for i in data['data'].keys() if i[:2] == "0x")
-    except Exception:
-        raise VirtualMachineError(exc)
 
 
 class TransactionReceipt:
