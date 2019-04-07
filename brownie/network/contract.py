@@ -8,6 +8,7 @@ import eth_abi
 from eth_hash.auto import keccak
 from eth_utils import to_checksum_address
 
+import brownie._registry as _registry
 from brownie.exceptions import VirtualMachineError
 from brownie.network.event import get_topics
 from brownie.network.web3 import web3
@@ -19,9 +20,25 @@ from brownie.utils import color
 import brownie.config as config
 CONFIG = config.CONFIG
 
+_registry.add(sys.modules[__name__])
 
 deployed_contracts = {}
 
+
+def _notify_reset():
+    for value in deployed_contracts.values():
+        value.clear()
+
+def _notify_revert():
+    for name, contracts in deployed_contracts.items():
+        keep = []
+        for contract in contracts.values():
+            if contract.tx:
+                if contract.tx.block_number <= web3.eth.blockNumber:
+                    keep.append(contract)
+            elif web3.eth.getCode(contract._contract.address).hex() != "0x00":
+                keep.append(contract)
+        deployed_contracts[name] = OrderedDict((i._contract.address, i) for i in keep)
 
 def find_contract(address):
     address = to_checksum_address(str(address))
@@ -91,13 +108,6 @@ class ContractContainer(_ContractBase):
         #             if data['transactionHash'] else None
         #         )
         #     )
-
-    def _notify_reset(self):
-        deployed_contracts[self._name].clear()
-
-    def _notify_revert(self):
-        for i in self._accounts:
-            i.nonce = web3.eth.getTransactionCount(str(i))
 
     def __iter__(self):
         return iter(deployed_contracts[self._name].values())

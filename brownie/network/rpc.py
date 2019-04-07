@@ -102,16 +102,8 @@ class Rpc:
         self._request("evm_revert", [self._snapshot_id])
         self.snapshot()
         self.sleep(0)
-
-        # self._network._network_dict['accounts']._check_nonce()
-        # height = web3.eth.blockNumber
-        # history = self._network._network_dict['history']
-        # while history and (
-        #     history[-1].block_number > height or
-        #     not history[-1].block_number
-        # ):
-        #     history.pop()
-        # return "Block height reverted to {}".format(height)
+        _registry.revert()
+        return "Block height reverted to {}".format(web3.eth.blockNumber)
 
 
 def _watch_rpc(rpc):
