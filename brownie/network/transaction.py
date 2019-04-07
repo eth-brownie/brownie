@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import eth_abi
-import eth_event
 from hexbytes import HexBytes
 import json
 import sys
@@ -10,8 +9,8 @@ import time
 
 from brownie.exceptions import VirtualMachineError
 from brownie.network.contract import find_contract
+from brownie.network.event import decode_logs, decode_trace
 from brownie.network.web3 import web3
-from brownie.utils.compiler import compile_contracts
 from brownie.types import KwargTuple
 from brownie.types.convert import format_output
 from brownie.utils import color
@@ -141,7 +140,7 @@ class TransactionReceipt:
             'status': receipt['status']
         })
         try:
-            self.events = eth_event.decode_logs(receipt['logs'], topics())
+            self.events = decode_logs(receipt['logs'])
         except:
             pass
         if self.fn_name and config.ARGV['gas']:
@@ -271,7 +270,7 @@ class TransactionReceipt:
                     self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
             try:
                 # get events from trace
-                self.events = eth_event.decode_trace(trace, topics())
+                self.events = decode_trace(trace)
             except:
                 pass
 
@@ -432,30 +431,3 @@ def _profile_gas(fn_name, gas_used):
         'low': min(gas['low'], gas_used)
     })
     gas['count'] += 1
-
-
-_topics = {}
-
-
-def topics():
-    '''Generates event topics and saves them in brownie/topics.json'''
-    if _topics:
-        return _topics
-    try:
-        topics = json.load(open(
-            CONFIG['folders']['brownie']+"/topics.json",
-            encoding="utf-8"
-        ))
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        topics = {}
-    _topics.update(topics)
-    contracts = compile_contracts()
-    events = [x for i in contracts.values() for x in i['abi'] if x['type'] == "event"]
-    _topics.update(eth_event.get_event_abi(events))
-    json.dump(
-        _topics,
-        open(CONFIG['folders']['brownie']+"/topics.json", 'w', encoding="utf-8"),
-        sort_keys=True,
-        indent=4
-    )
-    return _topics

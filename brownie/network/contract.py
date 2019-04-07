@@ -2,13 +2,13 @@
 
 from collections import OrderedDict
 import eth_abi
-import eth_event
 from eth_hash.auto import keccak
 from eth_utils import to_checksum_address
 import re
 import sys
 
 from brownie.network.web3 import web3
+from bownie.network.event add get_topics
 from brownie.exceptions import VirtualMachineError
 from brownie.types.convert import format_to_abi, format_output, wei
 from brownie.types import KwargTuple
@@ -39,7 +39,7 @@ class _ContractBase:
         if duplicates:
             raise AttributeError("Ambiguous contract functions in {}: {}".format(
                 self._name, ",".join(duplicates)))
-        self.topics = eth_event.get_topics(self.abi)
+        self.topics = get_topics(self.abi)
         self.signatures = dict((
             i['name'],
             "0x"+keccak("{}({})".format(
