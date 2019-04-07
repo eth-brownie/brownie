@@ -7,6 +7,7 @@ from hexbytes import HexBytes
 import os
 import sys
 
+from brownie.network.web3 import web3
 from brownie.network.transaction import TransactionReceipt, raise_or_return_tx
 from brownie.utils import color
 from brownie.utils.bip44 import HDPrivateKey, HDKey
@@ -16,8 +17,6 @@ import brownie._registry as _registry
 import brownie.config
 CONFIG = brownie.config.CONFIG
 
-web3 = None
-_registry.add(sys.modules[__name__])
 
 class Accounts:
 
@@ -32,8 +31,10 @@ class Accounts:
 
     def _notify_reset(self):
         self._accounts.clear()
-        if web3:
+        try:
             self._accounts = [Account(i) for i in web3.eth.accounts]
+        except:
+            pass
 
     def _notify_revert(self):
         for i in self._accounts:

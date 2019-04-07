@@ -8,7 +8,8 @@ import sys
 import threading
 import time
 
-#from brownie.components import contract
+import brownie.network.contract as contract
+from brownie.network.web3 import web3
 from brownie.utils.compiler import compile_contracts
 from brownie.types import KwargTuple
 from brownie.types.convert import format_output
@@ -17,9 +18,6 @@ from brownie.utils import color
 import brownie.config as config
 CONFIG = config.CONFIG
 
-import brownie._registry as _registry
-_registry.add(sys.modules[__name__])
-web3 = None
 
 
 TX_INFO = """

@@ -8,18 +8,15 @@ from eth_utils import to_checksum_address
 import re
 import sys
 
+from brownie.network.web3 import web3
 from brownie.network.transaction import TransactionReceipt, VirtualMachineError
 from brownie.types.convert import format_to_abi, format_output, wei
 from brownie.types import KwargTuple
 #from brownie.utils.compiler import add_contract
 from brownie.utils import color
 
-import brownie._registry as _registry
 import brownie.config
 CONFIG = brownie.config.CONFIG
-
-web3 = None
-_registry.add(sys.modules[__name__])
 
 
 deployed_contracts = {}
@@ -93,6 +90,13 @@ class ContractContainer(_ContractBase):
         #             if data['transactionHash'] else None
         #         )
         #     )
+
+    def _notify_reset(self):
+        deployed_contracts[self._name].clear()
+
+    def _notify_revert(self):
+        for i in self._accounts:
+            i.nonce = web3.eth.getTransactionCount(str(i))
 
     def __iter__(self):
         return iter(deployed_contracts[self._name].values())

@@ -1,15 +1,13 @@
 #!/usr/bin/python3
 
+import atexit
 from subprocess import Popen, DEVNULL
 from threading import Thread
 import time
-from web3 import Web3, HTTPProvider
 
 import brownie._registry as _registry
 import brownie.config as config
 CONFIG = config.CONFIG
-
-
 
 
 class Rpc:
@@ -17,43 +15,60 @@ class Rpc:
     '''Methods for interacting with ganache-cli when running a local
     RPC environment.'''
 
-    def __init__(self):
-        rpc = Popen(
-            CONFIG['active_network']['test-rpc'].split(' '),
+    def __init__(self, web3):
+        self._rpc = None
+        self._time_offset = 0
+        self._snapshot_id = False
+        self.web3 = None
+        atexit.register(self.kill, False)
+
+    def launch(self, *args):
+        if self.is_active():
+            raise SystemError("RPC is already active.")
+        if 'test-rpc' not in CONFIG['active_network']:
+            raise KeyError("No test RPC defined for this network in config.json")
+        self._rpc = rpc = Popen(
+            CONFIG['active_network']['test-rpc']+list(args).split(' '),
             stdout=DEVNULL,
             stdin=DEVNULL,
             stderr=DEVNULL,
             start_new_session=True
         )
-        self._rpc = rpc
         self._time_offset = 0
         self._snapshot_id = False
-        self.web3 = None
-        #self._network = network
+        for i in range(20):
+            if self.web3.isConnected():
+                _registry.reset()
+                return web3
+            time.sleep(0.2)
+        raise ConnectionError(
+            "Cannot connect to {}".format(self.web3.providers[0].endpoint_uri)
+        )
         Thread(target=_watch_rpc, args=[rpc], daemon=True).start()
-        _registry.add(self)
-        _registry.active['rpc'] = self
-        connect()
 
-    def __del__(self):
-        try:
-            self.kill()
-        except (TypeError, AttributeError):
-            pass
 
-    def kill(self):
+    def kill(self, exc=True):
+        if not self.is_active():
+            if not exc:
+                return
+            raise SystemError("RPC is not active.")
         self._rpc.terminate()
-        if _registry:
-            _registry.remove(self)
-            _registry.active['rpc'] = None
-            _registry.reset(None)
+        self._time_offset = 0
+        self._snapshot_id = False
+        _registry.reset()
 
     def _request(self, *args):
+        if not self.is_active():
+            raise SystemError("RPC is not active.")
         return self.web3.providers[0].make_request(*args)
-        
-    
+
+    def is_active(self):
+        return self._rpc and not self._rpc.poll()
+
     def time(self):
         '''Returns the current epoch time from the test RPC as an int'''
+        if not self.is_active():
+            raise SystemError("RPC is not active.")
         return int(time.time()+self._time_offset)
 
     def sleep(self, seconds):
@@ -105,27 +120,3 @@ def _watch_rpc(rpc):
     if not code or code == -15:
         return
     raise ConnectionError("Local RPC terminated with exit code {}".format(rpc.poll()))
-
-
-def launch_rpc():
-    if _registry.active['rpc']:
-        raise ConnectionError("RPC already active")
-    return Rpc()
-
-
-def connect():
-    if _registry.active['web3'] and _registry.active['web3'].isConnected():
-        raise ConnectionError("web3 already connected")
-    web3 = Web3(HTTPProvider(CONFIG['active_network']['host']))
-    for i in range(20):
-        if web3.isConnected():
-            _registry.reset(web3)
-            return web3
-        time.sleep(0.2)
-    raise ConnectionError("Could not connect to {}".format(
-        CONFIG['active_network']['host']
-    ))
-
-
-def get_rpc():
-    return _registry.active['rpc']

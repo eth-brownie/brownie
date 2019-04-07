@@ -8,13 +8,22 @@ from brownie.types import FalseyDict, StrictDict
 
 
 
-def load_config():
+def _load_config():
     path = Path(__file__).parents[1].joinpath("config.json")
     config = StrictDict(json.load(path.open()))
     config['folders'] = {
         'brownie': str(Path(__file__).parents[1]),
         'project': None
     }
+    # set logging
+    try:
+        config['logging'] = config['logging'][sys.argv[1]]
+        config['logging'].setdefault('tx', 0)
+        config['logging'].setdefault('exc', 0)
+        for k, v in [(k, v) for k, v in config['logging'].items() if type(v) is list]:
+            config['logging'][k] = v[1 if '--verbose' in sys.argv else 0]
+    except:
+        config['logging'] = {"tx": 1, "exc": 1}
     return config
 
 def update_config(network = None):
@@ -23,24 +32,11 @@ def update_config(network = None):
         path = Path(CONFIG['folders']['project']).joinpath("brownie-config.json")
         if path.exists():
             _recursive_update(CONFIG, json.load(path.open()))
-    
-    # set logging
-    try:
-        CONFIG['logging'] = CONFIG['logging'][sys.argv[1]]
-        CONFIG['logging'].setdefault('tx', 0)
-        CONFIG['logging'].setdefault('exc', 0)
-        for k, v in [(k, v) for k, v in CONFIG['logging'].items() if type(v) is list]:
-            CONFIG['logging'][k] = v[1 if '--verbose' in sys.argv else 0]
-    except:
-        CONFIG['logging'] = {"tx": 1, "exc": 1}
-    
-    
     # modify network settings
-    if not network:
-        network = CONFIG['network_defaults']['name']
     try:
-        CONFIG['active_network'] = CONFIG['networks'][network]
-        CONFIG['active_network']['name'] = network
+        if network:
+            CONFIG['active_network'] = CONFIG['networks'][network]
+            CONFIG['active_network']['name'] = network
         for key, value in CONFIG['network_defaults'].items():
             if key not in CONFIG['active_network']:
                 CONFIG['active_network'][key] = value
@@ -73,5 +69,5 @@ if len(sys.argv) > 1:
     ARGV['mode'] = "console" if sys.argv[1] == "console" else "script"
 
 # load config
-CONFIG = load_config()
-update_config()
+CONFIG = _load_config()
+update_config(CONFIG['network_defaults']['name'])
