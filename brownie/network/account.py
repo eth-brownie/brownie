@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 
+from getpass import getpass
 from hexbytes import HexBytes
 import os
-import sys
+from pathlib import Path
+import json
 
 from eth_hash.auto import keccak
 import eth_keys
@@ -35,7 +37,7 @@ class Accounts:
         self._accounts.clear()
         try:
             self._accounts = [Account(i) for i in web3.eth.accounts]
-        except:
+        except Exception:
             pass
 
     def _notify_revert(self):
@@ -82,6 +84,16 @@ class Accounts:
         account = LocalAccount(w3account.address, w3account, priv_key)
         self._accounts.append(account)
         return account
+
+    def load(self, identifier):
+        json_file = Path(CONFIG['folders']['brownie']).joinpath("accounts/{}.json".format(identifier))
+        if not json_file.exists():
+            raise FileNotFoundError("Account with this identifier does not exist")
+        priv_key = web3.eth.account.decrypt(
+            json.load(json_file.open()),
+            getpass("Enter the password for this account: ")
+        )
+        return self.add(priv_key)
 
     def at(self, address):
         '''Retrieves an Account instance from the address string. Raises
@@ -266,6 +278,19 @@ class LocalAccount(_AccountBase):
 
     def _console_repr(self):
         return "<LocalAccount object '{0[string]}{1}{0}'>".format(color, self.address)
+
+    def save(self, identifier, overwrite=False):
+        path = Path(CONFIG['folders']['brownie']).joinpath('accounts')
+        path.mkdir(exist_ok=True)
+        json_file = path.joinpath("{}.json".format(identifier))
+        if not overwrite and json_file.exists():
+            raise FileExistsError("Account with this identifier already exists")
+        encrypted = web3.eth.account.encrypt(
+            self.private_key,
+            getpass("Enter the password to encrypt this account with: ")
+        )
+        json.dump(encrypted, json_file.open('w'))
+        print("Saved to {}".format(json_file))
 
     def transfer(self, to, amount, gas_limit=None, gas_price=None, data=''):
         '''Transfers ether from this account.

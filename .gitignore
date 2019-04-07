@@ -1,5 +1,6 @@
 __pycache__
 .vscode
+accounts
 topics.json
 docs/_build
 docs/_static
