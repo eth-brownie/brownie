@@ -20,9 +20,9 @@ rpc = _Rpc(web3)
 
 def connect(network=None, launch_rpc=False):
     if network is None:
-        network = CONFIG['active_network']['name']
+        network = CONFIG['network_defaults']['name']
     web3._connect(network)
-    if launch_rpc and 'test-rpc' not in CONFIG['active_network']:
+    if launch_rpc and 'test-rpc' in CONFIG['active_network']:
         rpc.launch()
     else:
         _registry.reset()
@@ -41,7 +41,19 @@ def reset(network=None, launch_rpc=False):
 
     Args:
         network (string): Name of the new network to switch to.'''
-    if network and network not in CONFIG['networks']:
+    if not network:
+        network = CONFIG['active_network']['name']
+    if network not in CONFIG['networks']:
         raise ValueError("Unknown network - {}".format(network))
     disconnect(launch_rpc)
     connect(network, launch_rpc)
+
+
+def show_active():
+    if not web3.providers:
+        return None
+    return CONFIG['active_network']['name']
+
+
+def is_connected():
+    return web3.isConnected()
