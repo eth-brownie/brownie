@@ -57,3 +57,23 @@ def show_active():
 
 def is_connected():
     return web3.isConnected()
+
+
+def gas_limit(*args):
+    '''Displays or modifies the default gas limit.
+
+    * If no argument is given, the current default is displayed.
+    * If an integer value is given, this will be the default gas limit.
+    * If set to "auto", None, True or False, the gas limit is determined
+      automatically.'''
+    if args:
+        if args[0] in ("auto", None, False, True):
+            CONFIG['active_network']['gas_limit'] = False
+        else:
+            try:
+                CONFIG['active_network']['gas_limit'] = int(args[0])
+            except Exception:
+                return "Invalid gas limit."
+    return "Gas limit is set to {}".format(
+        CONFIG['active_network']['gas_limit'] or "automatic"
+    )
