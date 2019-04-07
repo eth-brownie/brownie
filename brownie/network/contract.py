@@ -1,22 +1,23 @@
 #!/usr/bin/python3
 
 from collections import OrderedDict
-import eth_abi
-from eth_hash.auto import keccak
-from eth_utils import to_checksum_address
 import re
 import sys
 
-from brownie.network.web3 import web3
-from bownie.network.event add get_topics
+import eth_abi
+from eth_hash.auto import keccak
+from eth_utils import to_checksum_address
+
 from brownie.exceptions import VirtualMachineError
-from brownie.types.convert import format_to_abi, format_output, wei
+from brownie.network.event import get_topics
+from brownie.network.web3 import web3
 from brownie.types import KwargTuple
+from brownie.types.convert import format_to_abi, format_output, wei
 #from brownie.utils.compiler import add_contract
 from brownie.utils import color
 
-import brownie.config
-CONFIG = brownie.config.CONFIG
+import brownie.config as config
+CONFIG = config.CONFIG
 
 
 deployed_contracts = {}

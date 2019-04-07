@@ -4,9 +4,9 @@ import sys
 import time
 
 from .web3 import web3
-import brownie._registry as _registry
 from .rpc import Rpc as _Rpc
 from .account import Accounts as _Accounts
+import brownie._registry as _registry
 import brownie.config
 CONFIG = brownie.config
 
@@ -17,7 +17,9 @@ accounts = _Accounts()
 rpc = _Rpc(web3)
 
 
-def connect(network, launch_rpc = False):
+def connect(network = None, launch_rpc = False):
+    if network is None:
+        network = CONFIG['active_network']['name']
     web3._connect(network)
     if launch_rpc and 'test-rpc' not in CONFIG['active_network']:
         rpc.launch()

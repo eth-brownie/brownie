@@ -10,7 +10,9 @@ from brownie.utils.compiler import compile_contracts
 import brownie.config
 
 
-__all__ = ['new_project', 'load_project']
+__all__ = ['new_project', 'load_project', '__project']
+
+__project = True
 
 CONFIG = brownie.config.CONFIG
 
@@ -40,7 +42,6 @@ def new_project(path=".", ignore_subfolder=False):
         check = _check_for_project(path)
         if check and check != path:
             raise SystemError("Cannot make a new project inside the subfolder of an existing project.")
-    
     for folder in [i for i in FOLDERS]:
         path.joinpath(folder).mkdir(exist_ok=True)
     if not path.joinpath('brownie-config.json').exists():
@@ -50,7 +51,7 @@ def new_project(path=".", ignore_subfolder=False):
         )
     _create_build_folders(path)
     CONFIG['folders']['project'] = path
-    return path
+    return str(path)
 
 
 def load_project(path=None):
@@ -70,5 +71,5 @@ def load_project(path=None):
         #self._network_dict[name] = contract.ContractContainer(build, self._network_dict)
         container = ContractContainer(build)
         globals()[name] = container
-        if set(__all__).issubset(sys.modules['__main__'].__dict__):
+        if '__project' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].__dict__[name] = container

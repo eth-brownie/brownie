@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
-from pathlib import Path
-import eth_event
 import json
+from pathlib import Path
+
+import eth_event
 
 import brownie.config as config
 CONFIG = config.CONFIG

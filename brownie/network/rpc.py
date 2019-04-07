@@ -5,6 +5,7 @@ from subprocess import Popen, DEVNULL
 from threading import Thread
 import time
 
+from .web3 import web3
 import brownie._registry as _registry
 import brownie.config as config
 CONFIG = config.CONFIG
@@ -19,16 +20,15 @@ class Rpc:
         self._rpc = None
         self._time_offset = 0
         self._snapshot_id = False
-        self.web3 = None
         atexit.register(self.kill, False)
 
-    def launch(self, *args):
+    def launch(self, param_str=""):
         if self.is_active():
             raise SystemError("RPC is already active.")
         if 'test-rpc' not in CONFIG['active_network']:
             raise KeyError("No test RPC defined for this network in config.json")
         self._rpc = rpc = Popen(
-            CONFIG['active_network']['test-rpc']+list(args).split(' '),
+            (CONFIG['active_network']['test-rpc']+' '+param_str).split(' '),
             stdout=DEVNULL,
             stdin=DEVNULL,
             stderr=DEVNULL,
@@ -37,12 +37,12 @@ class Rpc:
         self._time_offset = 0
         self._snapshot_id = False
         for i in range(20):
-            if self.web3.isConnected():
+            if web3.isConnected():
                 _registry.reset()
-                return web3
+                return
             time.sleep(0.2)
         raise ConnectionError(
-            "Cannot connect to {}".format(self.web3.providers[0].endpoint_uri)
+            "Cannot connect to {}".format(web3.providers[0].endpoint_uri)
         )
         Thread(target=_watch_rpc, args=[rpc], daemon=True).start()
 
@@ -60,7 +60,7 @@ class Rpc:
     def _request(self, *args):
         if not self.is_active():
             raise SystemError("RPC is not active.")
-        return self.web3.providers[0].make_request(*args)
+        return web3.providers[0].make_request(*args)
 
     def is_active(self):
         return self._rpc and not self._rpc.poll()
@@ -89,12 +89,12 @@ class Rpc:
             raise TypeError("blocks must be an integer value")
         for i in range(blocks):
             self._request("evm_mine", [])
-        return "Block height at {}".format(self.web3.eth.blockNumber)
+        return "Block height at {}".format(web3.eth.blockNumber)
 
     def snapshot(self):
         '''Takes a snapshot of the current state of the EVM.'''
         self._snapshot_id = self._request("evm_snapshot", [])['result']
-        return "Snapshot taken at block height {}".format(self.web3.eth.blockNumber)
+        return "Snapshot taken at block height {}".format(web3.eth.blockNumber)
 
     def revert(self):
         '''Reverts the EVM to the most recently taken snapshot.'''
@@ -105,7 +105,7 @@ class Rpc:
         self.sleep(0)
         
         # self._network._network_dict['accounts']._check_nonce()
-        # height = self.web3.eth.blockNumber
+        # height = web3.eth.blockNumber
         # history = self._network._network_dict['history']
         # while history and (
         #     history[-1].block_number > height or

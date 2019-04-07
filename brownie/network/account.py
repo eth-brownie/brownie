@@ -1,17 +1,19 @@
 #!/usr/bin/python3
 
-from eth_hash.auto import keccak
-import eth_keys
-from eth_utils import to_checksum_address
 from hexbytes import HexBytes
 import os
 import sys
 
-from brownie.network.web3 import web3
+from eth_hash.auto import keccak
+import eth_keys
+from eth_utils import to_checksum_address
+
+from brownie.exceptions import VirtualMachineError
 from brownie.network.transaction import TransactionReceipt
+from brownie.network.web3 import web3
+from brownie.types.convert import wei
 from brownie.utils import color
 from brownie.utils.bip44 import HDPrivateKey, HDKey
-from brownie.types.convert import wei
 
 import brownie._registry as _registry
 import brownie.config

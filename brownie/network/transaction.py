@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 
-import eth_abi
-from hexbytes import HexBytes
 import threading
 import time
+
+import eth_abi
+from hexbytes import HexBytes
 
 from brownie.exceptions import VirtualMachineError
 from brownie.network.contract import find_contract
