@@ -7,7 +7,7 @@ import eth_abi
 from hexbytes import HexBytes
 
 from brownie.exceptions import VirtualMachineError
-from brownie.network.contract import find_contract
+from brownie.network.history import history
 from brownie.network.event import decode_logs, decode_trace
 from brownie.network.web3 import web3
 from brownie.types import KwargTuple
@@ -30,7 +30,6 @@ Gas Used: {0.gas_used} / {0.gas_limit} ({4:.1%})
 
 
 gas_profile = {}
-tx_history = []
 
 
 class TransactionReceipt:
@@ -67,7 +66,7 @@ class TransactionReceipt:
             txid = txid.hex()
         if CONFIG['logging']['tx'] and not silent:
             color.print_colors("\nTransaction sent: "+txid)
-        tx_history.append(self)
+        history._add_tx(self)
         self.__dict__.update({
             '_trace': None,
             'fn_name': name,
@@ -119,8 +118,8 @@ class TransactionReceipt:
             'input': tx['input'],
             'nonce': tx['nonce'],
         })
-        if tx['to'] and find_contract(tx['to']) is not None:
-            self.receiver = find_contract(tx['to'])
+        if tx['to'] and history.find_contract(tx['to']) is not None:
+            self.receiver = history.find_contract(tx['to'])
             if not self.fn_name:
                 self.fn_name = "{}.{}".format(
                     self.receiver._name,
@@ -299,7 +298,7 @@ class TransactionReceipt:
             # if depth has increased, tx has called into a different contract
             if trace[i]['depth'] > trace[i-1]['depth']:
                 address = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
-                c = find_contract(address)
+                c = history.find_contract(address)
                 stack_idx = -4 if trace[i-1]['op'] in ('CALL', 'CALLCODE') else -3
                 memory_idx = int(trace[i-1]['stack'][stack_idx], 16) * 2
                 sig = "0x" + "".join(trace[i-1]['memory'])[memory_idx:memory_idx+8]
@@ -314,7 +313,7 @@ class TransactionReceipt:
                 'fn': last[trace[i]['depth']]['fn'][-1],
                 'jumpDepth': len(set(last[trace[i]['depth']]['fn']))
             })
-            c = find_contract(trace[i]['address'])
+            c = history.find_contract(trace[i]['address'])
             pc = c._build['pcMap'][trace[i]['pc']]
             trace[i]['source'] = {
                 'filename': pc['contract'],
@@ -364,7 +363,7 @@ class TransactionReceipt:
                 idx -= 1
                 continue
             span = (self.trace[idx]['source']['start'], self.trace[idx]['source']['stop'])
-            c = find_contract(self.trace[idx]['address'])
+            c = history.find_contract(self.trace[idx]['address'])
             if c._build['sourcePath'] != self.trace[idx]['source']['filename']:
                 source = open(self.trace[idx]['source']['filename']).read()
             else:

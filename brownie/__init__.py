@@ -2,6 +2,7 @@
 
 from brownie.network import (
     accounts,
+    history,
     network,
     rpc,
     web3
@@ -11,11 +12,13 @@ from brownie.project import (
     __project
 )
 
+
 __all__ = [
     'accounts',
     'network',
     'rpc',
     'web3',
+    'history',
     '__project',
     'project',
     'CONFIG'

@@ -5,12 +5,13 @@ import sys
 from .web3 import web3
 from .rpc import Rpc as _Rpc
 from .account import Accounts as _Accounts
+from .history import history
 import brownie._registry as _registry
 import brownie.config
 CONFIG = brownie.config.CONFIG
 
 
-__all__ = ['accounts', 'network', 'rpc', 'web3']
+__all__ = ['accounts', 'history', 'network', 'rpc', 'web3']
 
 network = sys.modules[__name__]
 accounts = _Accounts()
