@@ -21,7 +21,7 @@ FOLDERS = ["contracts", "scripts", "tests"]
 BUILD_FOLDERS = ["build", "build/contracts", "build/networks"]
 
 
-def _check_for_project(path):
+def check_for_project(path):
     path = Path(path).resolve()
     for folder in [path]+list(path.parents):
         if folder.joinpath("brownie-config.json").exists():
@@ -40,7 +40,7 @@ def new(path=".", ignore_subfolder=False):
     path.mkdir(exist_ok=True)
     path = path.resolve()
     if not ignore_subfolder:
-        check = _check_for_project(path)
+        check = check_for_project(path)
         if check and check != path:
             raise SystemError("Cannot make a new project inside the subfolder of an existing project.")
     for folder in [i for i in FOLDERS]:
@@ -57,7 +57,7 @@ def new(path=".", ignore_subfolder=False):
 
 def load(path=None):
     if path is None:
-        path = _check_for_project('.')
+        path = check_for_project('.')
     if not path or not Path(path).joinpath("brownie-config.json").exists():
         raise SystemError("Could not find brownie project")
     path = Path(path).resolve()

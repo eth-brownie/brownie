@@ -40,12 +40,12 @@ args = docopt(__doc__)
 sys.argv += opts
 
 
-cmd_list = [i.name[:-3] for i in Path(__file__).parent.glob('*.py') if i[0]!="_"]
+cmd_list = [i.name[:-3] for i in Path(__file__).parent.glob('*.py') if i.name[0]!="_"]
 if args['<command>'] not in cmd_list:
     sys.exit("Invalid command. Try 'brownie --help' for available commands.")
 
 if args['<command>'] != "init":
-    path = project._check_for_project('.')
+    path = project.check_for_project('.')
     if not path:
         sys.exit(
             "ERROR: Brownie environment has not been initiated for this folder."

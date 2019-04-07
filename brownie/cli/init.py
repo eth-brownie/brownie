@@ -5,20 +5,10 @@ import os
 import shutil
 import sys
 
-from lib.services import config
-CONFIG = config.CONFIG
+import brownie.config
+CONFIG = brownie.config.CONFIG
 
 
-FOLDERS = ["contracts", "scripts", "tests"]
-BUILD_FOLDERS = ["build", "build/contracts", "build/networks"]
-FILES = [
-    ("scripts/__init__.py", ""),
-    ("tests/__init__.py", ""),
-    (
-        "brownie-config.json",
-        open(CONFIG['folders']['brownie']+"/config.json", encoding="utf-8").read()
-    )
-]
 
 __doc__ = """Usage: brownie init [<project>] [options]
 
@@ -45,6 +35,7 @@ at {}/projects
 
 def main():
     args = docopt(__doc__)
+    
     if (CONFIG['folders']['brownie'] in os.path.abspath('.') and 
         CONFIG['folders']['brownie']+"/projects/" not in os.path.abspath('.')):
         sys.exit(
@@ -80,23 +71,3 @@ def main():
     create_build_folders()
     print("Brownie environment has been initiated.")
     sys.exit()
-
-
-def check_for_project():
-    os.chdir(CONFIG['folders']['project'])
-    if [i for i in FOLDERS if not os.path.exists(i)]:
-        return False
-    if [i for i in FILES if not os.path.exists(i[0])]:
-        return False
-    return True
-
-def create_project():
-    os.chdir(CONFIG['folders']['project'])
-    for folder in [i for i in FOLDERS if not os.path.exists(i)]:
-        os.mkdir(folder)
-    for filename, content in [i for i in FILES if not os.path.exists(i[0])]:
-        open(filename, 'w', encoding="utf-8").write(content)
-
-def create_build_folders():
-    for folder in [i for i in BUILD_FOLDERS if not os.path.exists(i)]:
-        os.mkdir(folder)
