@@ -10,9 +10,10 @@ from brownie.utils.compiler import compile_contracts
 import brownie.config
 
 
-__all__ = ['new_project', 'load_project', '__project']
+__all__ = ['project', '__project']
 
 __project = True
+project = sys.modules[__name__]
 
 CONFIG = brownie.config.CONFIG
 
@@ -34,7 +35,7 @@ def _create_build_folders(path):
         path.joinpath(folder).mkdir(exist_ok=True)
 
 
-def new_project(path=".", ignore_subfolder=False):
+def new(path=".", ignore_subfolder=False):
     path = Path(path)
     path.mkdir(exist_ok=True)
     path = path.resolve()
@@ -54,7 +55,7 @@ def new_project(path=".", ignore_subfolder=False):
     return str(path)
 
 
-def load_project(path=None):
+def load(path=None):
     if path is None:
         path = _check_for_project('.')
     if not path or not Path(path).joinpath("brownie-config.json").exists():
@@ -66,9 +67,9 @@ def load_project(path=None):
     for name, build in compile_contracts(path.joinpath('contracts')).items():
         if build['type'] == "interface":
             continue
-        #if name in self._network_dict:
+        # if name in self._network_dict:
         #    raise AttributeError("Namespace collision between Contract '{0}' and 'Network.{0}'".format(name))
-        #self._network_dict[name] = contract.ContractContainer(build, self._network_dict)
+        # self._network_dict[name] = contract.ContractContainer(build, self._network_dict)
         container = ContractContainer(build)
         globals()[name] = container
         if '__project' in sys.modules['__main__'].__dict__:

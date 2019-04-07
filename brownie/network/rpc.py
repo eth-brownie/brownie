@@ -46,7 +46,6 @@ class Rpc:
         )
         Thread(target=_watch_rpc, args=[rpc], daemon=True).start()
 
-
     def kill(self, exc=True):
         if not self.is_active():
             if not exc:
@@ -63,7 +62,7 @@ class Rpc:
         return web3.providers[0].make_request(*args)
 
     def is_active(self):
-        return self._rpc and not self._rpc.poll()
+        return bool(self._rpc and not self._rpc.poll())
 
     def time(self):
         '''Returns the current epoch time from the test RPC as an int'''
@@ -103,7 +102,7 @@ class Rpc:
         self._request("evm_revert", [self._snapshot_id])
         self.snapshot()
         self.sleep(0)
-        
+
         # self._network._network_dict['accounts']._check_nonce()
         # height = web3.eth.blockNumber
         # history = self._network._network_dict['history']

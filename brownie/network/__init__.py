@@ -1,23 +1,23 @@
 #!/usr/bin/python3
 
 import sys
-import time
 
 from .web3 import web3
 from .rpc import Rpc as _Rpc
 from .account import Accounts as _Accounts
 import brownie._registry as _registry
 import brownie.config
-CONFIG = brownie.config
+CONFIG = brownie.config.CONFIG
 
 
-__all__ = ['accounts', 'web3', 'rpc', 'connect', 'disconnect', 'reset']
+__all__ = ['accounts', 'network', 'rpc', 'web3']
 
+network = sys.modules[__name__]
 accounts = _Accounts()
 rpc = _Rpc(web3)
 
 
-def connect(network = None, launch_rpc = False):
+def connect(network=None, launch_rpc=False):
     if network is None:
         network = CONFIG['active_network']['name']
     web3._connect(network)
@@ -27,7 +27,7 @@ def connect(network = None, launch_rpc = False):
         _registry.reset()
 
 
-def disconnect(kill_rpc = False):
+def disconnect(kill_rpc=False):
     web3.providers.clear()
     if kill_rpc and rpc.is_active():
         rpc.kill()
@@ -35,7 +35,7 @@ def disconnect(kill_rpc = False):
         _registry.reset()
 
 
-def reset(network = None, launch_rpc = False):
+def reset(network=None, launch_rpc=False):
     '''Reboots the local RPC client and resets the brownie environment.
 
     Args:
