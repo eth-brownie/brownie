@@ -6,13 +6,13 @@ import time
 import eth_abi
 from hexbytes import HexBytes
 
+from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
 from brownie.network.history import history
 from brownie.network.event import decode_logs, decode_trace
 from brownie.network.web3 import web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_output
-from brownie.utils import color
 
 import brownie.config as config
 CONFIG = config.CONFIG

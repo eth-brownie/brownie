@@ -10,11 +10,11 @@ from eth_hash.auto import keccak
 import eth_keys
 from eth_utils import to_checksum_address
 
+from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
 from brownie.network.transaction import TransactionReceipt
 from brownie.network.web3 import web3
 from brownie.types.convert import wei
-from brownie.utils import color
 from brownie.utils.bip44 import HDPrivateKey, HDKey
 
 import brownie._registry as _registry

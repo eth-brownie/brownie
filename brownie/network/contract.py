@@ -6,14 +6,13 @@ import eth_abi
 from eth_hash.auto import keccak
 from eth_utils import to_checksum_address
 
-
+from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
 from brownie.network.event import get_topics
 from brownie.network.history import history
 from brownie.network.web3 import web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_to_abi, format_output, wei
-from brownie.utils import color
 
 import brownie.config as config
 CONFIG = config.CONFIG
