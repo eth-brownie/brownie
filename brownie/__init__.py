@@ -11,18 +11,7 @@ from brownie.project import (
     project,
     __project
 )
-
-
-__all__ = [
-    'accounts',
-    'network',
-    'rpc',
-    'web3',
-    'history',
-    '__project',
-    'project',
-    'CONFIG'
-]
-
+from brownie.test import check
 import brownie.config as _config
+
 CONFIG = _config.CONFIG
