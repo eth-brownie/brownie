@@ -2,16 +2,13 @@
 
 from docopt import docopt
 import importlib
-import os
+from pathlib import Path
 import sys
 
-import lib.init as init
-from lib.services import color, git
-
+from brownie.cli.utils import color
+import brownie.project as project
 
 __version__ = "0.9.6"  # did you change this in docs/conf.py as well?
-if git.get_branch() != "master":
-    __version__+= "-"+git.get_branch()+"-"+git.get_commit()
 
 
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
@@ -25,36 +22,11 @@ Commands:
 
 Options:
   -h --help          Display this message
-  --update           Update to the latest version of brownie
-  --stable           Use stable build
-  --dev              Use nightly build
 
 Type 'brownie <command> --help' for specific options and more information about
 each command."""
 
 print("Brownie v{} - Python development framework for Ethereum\n".format(__version__))
-
-
-if '--stable' in sys.argv and git.get_branch() != "master":
-    git.checkout('master')
-    print("Switching to {0[value]}stable{0} brownie build".format(color))
-    sys.argv.append('--update')
-
-
-elif '--dev' in sys.argv and git.get_branch() != "develop":
-    git.checkout("develop")
-    print("Switching to {0[value]}nightly{0} brownie build - may be buggy!".format(color))
-    sys.argv.append('--update')
-
-
-if '--update' in sys.argv:
-    print("Checking for updates...")
-    if git.pull():
-        print("Brownie has been updated to the latest version!")
-    else:
-        print("Your version of Brownie is already up to date.")
-    sys.exit()
-
 
 if len(sys.argv)>1 and sys.argv[1][0] != "-":
     try:
@@ -67,20 +39,21 @@ if len(sys.argv)>1 and sys.argv[1][0] != "-":
 args = docopt(__doc__)
 sys.argv += opts
 
-lib_folder = __file__[:__file__.rfind('/')]+"/lib"
-cmd_list = [i[:-3] for i in os.listdir(lib_folder) if i[-3:]==".py"]
+
+cmd_list = [i.name[:-3] for i in Path(__file__).parent.glob('*.py') if i[0]!="_"]
 if args['<command>'] not in cmd_list:
     sys.exit("Invalid command. Try 'brownie --help' for available commands.")
 
 if args['<command>'] != "init":
-    if not init.check_for_project():
+    path = project._check_for_project('.')
+    if not path:
         sys.exit(
             "ERROR: Brownie environment has not been initiated for this folder."
             "\nType 'brownie init' to create the file structure."
         )
-    init.create_build_folders()
+    project.load(path)
 
 try:
-    importlib.import_module("lib."+args['<command>']).main()
+    importlib.import_module("brownie.cli."+args['<command>']).main()
 except Exception:
     print(color.format_tb(sys.exc_info()))
