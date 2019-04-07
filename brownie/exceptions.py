@@ -1,5 +1,14 @@
 #!/usr/bin/python3
 
+import json
+
+
+class CompilerError(Exception):
+
+    def __init__(self, e):
+        err = [i['formattedMessage'] for i in json.loads(e.stdout_data)['errors']]
+        super().__init__("Compiler returned the following errors:\n\n"+"\n".join(err))
+
 
 class VirtualMachineError(Exception):
 

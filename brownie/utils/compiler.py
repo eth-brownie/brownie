@@ -6,9 +6,8 @@ import json
 from pathlib import Path
 import re
 import solcx
-import sys
-import time
 
+from brownie.exceptions import CompilerError
 import brownie.config
 CONFIG = brownie.config.CONFIG
 solcx.set_solc_version(CONFIG['solc']['version'])
@@ -35,13 +34,6 @@ STANDARD_JSON = {
         }
     }
 }
-
-
-class CompilerError(Exception):
-
-    def __init__(self, e):
-        err = [i['formattedMessage'] for i in json.loads(e.stdout_data)['errors']]
-        super().__init__("Compiler returned the following errors:\n\n"+"\n".join(err))
 
 
 def _check_changed(build, filename, contract, clear=None):
@@ -121,10 +113,8 @@ def compile_contracts(folder):
         return _contracts
     folder = Path(folder).resolve()
     build_folder = folder.parent.joinpath('build/contracts')
-    #clear_persistence(None)
     contract_files = list(folder.glob('**/*.sol'))
     if not contract_files:
-        #sys.exit("ERROR: Cannot find any .sol files in contracts folder")
         return {}
     compiler_info = CONFIG['solc'].copy()
     compiler_info['version'] = solcx.get_solc_version_string().strip('\n')
