@@ -7,9 +7,19 @@ from brownie.network import (
     web3
 )
 from brownie.project import (
-    __project,
-    project
+    project,
+    __project
 )
+
+__all__ = [
+    'accounts',
+    'network',
+    'rpc',
+    'web3',
+    '__project',
+    'project',
+    'CONFIG'
+]
 
 import brownie.config as _config
 CONFIG = _config.CONFIG
