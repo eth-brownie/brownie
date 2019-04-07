@@ -2,11 +2,12 @@
 
 from docopt import docopt
 import importlib
-import os
+from pathlib import Path
 import sys
 
-from lib.components.network import Network
-from lib.services import color, config
+import brownie.config as config
+import brownie.network as network
+from brownie.cli.utils import color
 CONFIG = config.CONFIG
 
 
@@ -29,9 +30,9 @@ def main():
     args = docopt(__doc__)
     name = args['<filename>'].replace(".py", "")
     fn = args['<function>'] or "main"
-    if not os.path.exists("scripts/{}.py".format(name)):
+    if not Path(CONFIG['folders']['project']).joinpath('scripts/{}.py'.format(name)):
         sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}scripts/{1}.py{0}".format(color, name))
-    Network(setup = True)
+    network.connect(config.ARGV['network'], True)
     module = importlib.import_module("scripts."+name)
     if not hasattr(module, fn):
         sys.exit("{0[error]}ERROR{0}: {0[module]}scripts/{1}.py{0} has no '{0[callable]}{2}{0}' function.".format(color, name, fn))
