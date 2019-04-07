@@ -2,8 +2,6 @@
 
 import eth_abi
 from hexbytes import HexBytes
-import json
-import sys
 import threading
 import time
 
@@ -17,7 +15,6 @@ from brownie.utils import color
 
 import brownie.config as config
 CONFIG = config.CONFIG
-
 
 
 TX_INFO = """
@@ -121,8 +118,8 @@ class TransactionReceipt:
             'input': tx['input'],
             'nonce': tx['nonce'],
         })
-        if tx['to'] and contract.find_contract(tx['to']) is not None:
-            self.receiver = contract.find_contract(tx['to'])
+        if tx['to'] and find_contract(tx['to']) is not None:
+            self.receiver = find_contract(tx['to'])
             if not self.fn_name:
                 self.fn_name = "{}.{}".format(
                     self.receiver._name,
@@ -139,10 +136,7 @@ class TransactionReceipt:
             'logs': receipt['logs'],
             'status': receipt['status']
         })
-        try:
-            self.events = decode_logs(receipt['logs'])
-        except:
-            pass
+        self.events = decode_logs(receipt['logs'])
         if self.fn_name and config.ARGV['gas']:
             _profile_gas(self.fn_name, receipt['gasUsed'])
         if not silent:
@@ -261,18 +255,14 @@ class TransactionReceipt:
         else:
             # get revert message
             self.revert_msg = ""
-            self.events = []
             if trace[-1]['op'] == "REVERT":
                 offset = int(trace[-1]['stack'][-1], 16) * 2
                 length = int(trace[-1]['stack'][-2], 16) * 2
                 if length:
                     data = HexBytes("".join(trace[-1]['memory'])[offset+8:offset+length])
                     self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
-            try:
-                # get events from trace
-                self.events = decode_trace(trace)
-            except:
-                pass
+            # get events from trace
+            self.events = decode_trace(trace)
 
     def _evaluate_trace(self):
         '''Adds the following attributes to each step of the stack trace:
@@ -308,7 +298,7 @@ class TransactionReceipt:
             # if depth has increased, tx has called into a different contract
             if trace[i]['depth'] > trace[i-1]['depth']:
                 address = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
-                c = contract.find_contract(address)
+                c = find_contract(address)
                 stack_idx = -4 if trace[i-1]['op'] in ('CALL', 'CALLCODE') else -3
                 memory_idx = int(trace[i-1]['stack'][stack_idx], 16) * 2
                 sig = "0x" + "".join(trace[i-1]['memory'])[memory_idx:memory_idx+8]
@@ -323,7 +313,7 @@ class TransactionReceipt:
                 'fn': last[trace[i]['depth']]['fn'][-1],
                 'jumpDepth': len(set(last[trace[i]['depth']]['fn']))
             })
-            c = contract.find_contract(trace[i]['address'])
+            c = find_contract(trace[i]['address'])
             pc = c._build['pcMap'][trace[i]['pc']]
             trace[i]['source'] = {
                 'filename': pc['contract'],
@@ -332,12 +322,12 @@ class TransactionReceipt:
             }
             # jump 'i' is moving into an internal function
             if pc['jump'] == 'i':
-                    source = c._build['source'][pc['start']:pc['stop']]
-                    if source[:7] not in ("library", "contrac") and "(" in source:
-                        fn = source[:source.index('(')].split('.')[-1]
-                    else:
-                        fn = last[trace[i]['depth']]['fn'][-1]
-                    last[trace[i]['depth']]['fn'].append(fn)
+                source = c._build['source'][pc['start']:pc['stop']]
+                if source[:7] not in ("library", "contrac") and "(" in source:
+                    fn = source[:source.index('(')].split('.')[-1]
+                else:
+                    fn = last[trace[i]['depth']]['fn'][-1]
+                last[trace[i]['depth']]['fn'].append(fn)
             # jump 'o' is coming out of an internal function
             elif pc['jump'] == "o" and len(last[trace[i]['depth']]['fn']) > 1:
                 last[trace[i]['depth']]['fn'].pop()
@@ -373,7 +363,7 @@ class TransactionReceipt:
                 idx -= 1
                 continue
             span = (self.trace[idx]['source']['start'], self.trace[idx]['source']['stop'])
-            c = contract.find_contract(self.trace[idx]['address'])
+            c = find_contract(self.trace[idx]['address'])
             if c._build['sourcePath'] != self.trace[idx]['source']['filename']:
                 source = open(self.trace[idx]['source']['filename']).read()
             else:

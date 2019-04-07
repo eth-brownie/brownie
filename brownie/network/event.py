@@ -10,10 +10,10 @@ CONFIG = config.CONFIG
 
 def get_topics(abi):
     new_topics = _topics.copy()
-    new_topics.update(eth_event.get_event_abi(events))
+    new_topics.update(eth_event.get_event_abi(abi))
     if new_topics != _topics:
         _topics.update(new_topics)
-        json.dump(
+        json.dump(  
             new_topics,
             Path(CONFIG['folders']['brownie']).joinpath('topics.json').open('w'),
             sort_keys=True,
@@ -25,14 +25,14 @@ def get_topics(abi):
 def decode_logs(logs):
     try:
         eth_event.decode_logs(logs, _topics)
-    except:
+    except Exception:
         return []
 
 
 def decode_trace(trace):
     try:
         eth_event.decode_trace(trace, _topics)
-    except:
+    except Exception:
         return []
 
 
