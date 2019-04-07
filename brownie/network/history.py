@@ -69,5 +69,8 @@ class TxHistory:
             self._contracts[name] = OrderedDict()
         return self._contracts[name]
 
+    def copy(self):
+        return self._tx.copy()
+
 
 history = TxHistory()

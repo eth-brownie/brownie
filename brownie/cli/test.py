@@ -2,16 +2,19 @@
 
 from docopt import docopt
 import importlib
-import os
+from pathlib import Path
 import re
 import sys
 import time
 
-from lib.components.network import Network
-from lib.components import transaction as tx
-from lib.services import color, config
-CONFIG = config.CONFIG
+from brownie.cli.utils import color
+from brownie.exceptions import VirtualMachineError
+import brownie.network as network
+from brownie.network.history import history
+import brownie.network.transaction as transaction
 
+import brownie.config as config
+CONFIG = config.CONFIG
 
 __doc__ = """Usage: brownie test [<filename>] [<range>] [options]
 
@@ -71,7 +74,7 @@ def _run_test(module, fn_name, count, total):
             c,
             '\u2717' if type(e) in (
                 AssertionError,
-                tx.VirtualMachineError
+                VirtualMachineError
             ) else '\u203C',
             desc,
             type(e).__name__,
@@ -79,7 +82,7 @@ def _run_test(module, fn_name, count, total):
         sys.stdout.flush()
         if type(e) != ExpectedFailing and 'pending' in args and args['pending']:
             return []
-        filename = module.__file__.lstrip('./')
+        filename = str(Path(module.__file__).relative_to(CONFIG['folders']['project']))
         fn_name = filename[:-2]+fn_name
         return [(fn_name, color.format_tb(sys.exc_info(), filename))]
 
@@ -87,13 +90,14 @@ def _run_test(module, fn_name, count, total):
 def run_test(filename, network, idx):
     network.reset()
     if type(CONFIG['test']['gas_limit']) is int:
-        network.gas(CONFIG['test']['gas_limit'])
+        network.gas_limit(CONFIG['test']['gas_limit'])
+    
     module = importlib.import_module(filename.replace('/', '.'))
     test_names = [
         i for i in dir(module) if i not in dir(sys.modules['brownie']) and
         i[0] != "_" and callable(getattr(module, i))
     ]
-    code = open("{}.py".format(filename), encoding="utf-8").read()
+    code = Path(CONFIG['folders']['project']).joinpath("{}.py".format(filename)).open().read()
     test_names = re.findall('(?<=\ndef)[\s]{1,}[^(]*(?=\([^)]*\)[\s]*:)', code)
     test_names = [i.strip() for i in test_names if i.strip()[0] != "_"]
     duplicates = set([i for i in test_names if test_names.count(i) > 1])
@@ -104,7 +108,7 @@ def run_test(filename, network, idx):
             )
         )
     traceback_info = []
-    history = set()
+    test_history = set()
     if not test_names:
         print("\n{0[error]}WARNING{0}: No test functions in {0[module]}{1}.py{0}".format(color, filename))
         return [], []
@@ -116,7 +120,7 @@ def run_test(filename, network, idx):
         test_names.remove('setup')
         traceback_info += _run_test(module, 'setup', 0, len(test_names))
         if traceback_info:
-            return tx.tx_history.copy(), traceback_info
+            return history.copy(), traceback_info
     network.rpc.snapshot()
     for c, t in enumerate(test_names[idx], start=idx.start + 1):
         network.rpc.revert()
@@ -124,35 +128,39 @@ def run_test(filename, network, idx):
         if sys.argv[1] != "coverage":
             continue
         # need to retrieve stack trace before reverting the EVM
-        for i in tx.tx_history:
+        for i in history:
             i.trace
-        history.update(tx.tx_history.copy())
+        test_history.update(history.copy())
     return history, traceback_info
 
 
 def get_test_files(path):
-    if path and path[:6] == "tests/":
-        path = path[6:]
-    if path and not os.path.isdir('tests/'+path):
-        name = path.replace(".py", "")
-        if not os.path.exists("tests/{}.py".format(name)):
-            sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}tests/{1}.py{0}".format(color, name))
-        return ["tests/"+name]
+    if path[:6] != "tests/":
+        path = "tests/"+path
+    path = Path(CONFIG['folders']['project']).joinpath(path)
+    if not path.is_dir():
+        if not path.suffix:
+            path = Path(str(path)+".py")
+        if not path.exists():
+            sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}tests/{1}{0}".format(color, path.name))
+        result = [path]
     else:
-        if path:
-            folder = "tests/"+path
-        else:
-            folder = "tests"
-        return sorted(
-            i[0]+"/"+x[:-3] for i in os.walk(folder) for x in i[2] if
-            x[0] != "_" and "/_" not in i[0] and x[-3:] == ".py"
-        )
+        result = [i for i in path.glob('**/*.py') if i.name[0]!="_" and "/_" not in str(i)]
+    return [str(i.relative_to(CONFIG['folders']['project']))[:-3] for i in result]
+        # if path:
+        #     folder = "tests/"+path
+        # else:
+        #     folder = "tests"
+        # return sorted(
+        #     i[0]+"/"+x[:-3] for i in os.walk(folder) for x in i[2] if
+        #     x[0] != "_" and "/_" not in i[0] and x[-3:] == ".py"
+        # )
 
 
 def main():
     args = docopt(__doc__)
     traceback_info = []
-    test_files = get_test_files(args['<filename>'])
+    test_files = get_test_files(args['<filename>'] or '')
 
     if len(test_files) == 1 and args['<range>']:
         try:
@@ -168,8 +176,7 @@ def main():
     else:
         idx = slice(0, None)
 
-    network = Network()
-
+    network.connect(config.ARGV['network'], True)
     if args['--always-transact']:
         CONFIG['test']['always_transact'] = True
     print("Contract calls will be handled as: {0[value]}{1}{0}".format(
@@ -178,15 +185,15 @@ def main():
     ))
 
     for filename in test_files:
-        history, tb = run_test(filename, network, idx)
+        test_history, tb = run_test(filename, network, idx)
         if tb:
             traceback_info += tb
     if not traceback_info:
         print("\n{0[success]}SUCCESS{0}: All tests passed.".format(color))
         if config.ARGV['gas']:
             print('\nGas Profile:')
-            for i in sorted(tx.gas_profile):
-                print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, tx.gas_profile[i]))
+            for i in sorted(transaction.gas_profile):
+                print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, transaction.gas_profile[i]))
         sys.exit()
 
     print("\n{0[error]}WARNING{0}: {1} test{2} failed.{0}".format(

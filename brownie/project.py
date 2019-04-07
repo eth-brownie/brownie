@@ -79,7 +79,6 @@ def load(path=None):
         # if running via CLI, ensure container is available via main brownie package
         if hasattr(sys.modules['__main__'], '__brownie_cli'):
             sys.modules['brownie'].__dict__[name] = container
-            sys.modules['brownie'].__all__.append(name)
         # if running via interpreter, add to main namespace if package was imported via from
         elif '__project' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].__dict__[name] = container

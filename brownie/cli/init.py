@@ -1,9 +1,7 @@
 #!/usr/bin/python3
 
 from docopt import docopt
-import os
 from pathlib import Path
-import shutil
 import sys
 
 import brownie.project as project

@@ -3,8 +3,8 @@
 import sys
 import traceback
 
-import brownie.config
-CONFIG = brownie.config.CONFIG
+import brownie.config as config
+CONFIG = config.CONFIG
 
 BASE = "\x1b[0;"
 
@@ -165,6 +165,3 @@ class Color:
             tb[i] = TB_BASE.format(self, info, "\n"+code if code else "")
         tb.append("{0[error]}{1}{0}: {2}".format(self, exc[0].__name__, exc[1]))
         return "\n".join(tb)
-
-
-#sys.modules[__name__] = Color()
