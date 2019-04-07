@@ -9,7 +9,7 @@ from brownie.cli.utils import color
 import brownie.project as project
 
 __version__ = "0.9.6"  # did you change this in docs/conf.py as well?
-
+__brownie_cli = True
 
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 

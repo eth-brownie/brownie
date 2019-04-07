@@ -36,6 +36,8 @@ def _create_build_folders(path):
 
 
 def new(path=".", ignore_subfolder=False):
+    if CONFIG['folders']['project']:
+        raise SystemError("Project has already been loaded")
     path = Path(path)
     path.mkdir(exist_ok=True)
     path = path.resolve()
@@ -51,17 +53,21 @@ def new(path=".", ignore_subfolder=False):
             str(path.joinpath('brownie-config.json'))
         )
     _create_build_folders(path)
-    CONFIG['folders']['project'] = path
+    CONFIG['folders']['project'] = str(path)
+    sys.path.insert(0, str(path))
     return str(path)
 
 
 def load(path=None):
+    if CONFIG['folders']['project']:
+        raise SystemError("Project has already been loaded")
     if path is None:
         path = check_for_project('.')
     if not path or not Path(path).joinpath("brownie-config.json").exists():
         raise SystemError("Could not find brownie project")
     path = Path(path).resolve()
     CONFIG['folders']['project'] = str(path)
+    sys.path.insert(0, str(path))
     brownie.config.update_config()
     _create_build_folders(path)
     for name, build in compile_contracts(path.joinpath('contracts')).items():
@@ -69,5 +75,11 @@ def load(path=None):
             continue
         container = ContractContainer(build)
         globals()[name] = container
-        if '__project' in sys.modules['__main__'].__dict__:
+        __all__.append(name)
+        # if running via CLI, ensure container is available via main brownie package
+        if hasattr(sys.modules['__main__'], '__brownie_cli'):
+            sys.modules['brownie'].__dict__[name] = container
+            sys.modules['brownie'].__all__.append(name)
+        # if running via interpreter, add to main namespace if package was imported via from
+        elif '__project' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].__dict__[name] = container
