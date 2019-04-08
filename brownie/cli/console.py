@@ -2,6 +2,7 @@
 
 import builtins
 from docopt import docopt
+from pathlib import Path
 import readline
 import sys
 from threading import Lock
@@ -35,14 +36,15 @@ class Console:
         self.__dict__.update({'dir': self._dir})
         self.__dict__.update((i, getattr(brownie, i)) for i in brownie.__all__)
         del self.__dict__['project']
+        history_file = Path(CONFIG['folders']['project']).joinpath('.history')
+        if not history_file.exists():
+            history_file.open('w').write("")
+        self._readline = str(history_file)
 
     def _run(self):
         local_ = {}
         builtins.print = self._print
-        try:
-            readline.read_history_file("build/.history")
-        except FileNotFoundError:
-            open("build/.history", 'w').write("")
+        readline.read_history_file(self._readline)
         while True:
             if not self._multiline:
                 try:
@@ -132,7 +134,7 @@ class Console:
                 )
         except (ValueError, AttributeError):
             pass
-        readline.append_history_file(1, "build/.history")
+        readline.append_history_file(1, self._readline)
         return response
 
 

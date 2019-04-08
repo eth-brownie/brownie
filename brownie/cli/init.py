@@ -9,7 +9,6 @@ import brownie.config as config
 CONFIG = config.CONFIG
 
 
-
 __doc__ = """Usage: brownie init [<path>] [options]
 
 Arguments:
@@ -32,7 +31,7 @@ brownie-config.json   Project configuration file"""
 def main():
     args = docopt(__doc__)
     path = Path(args['<path>'] or '.').resolve()
-    
+
     if CONFIG['folders']['brownie'] in str(path):
         sys.exit(
             "ERROR: Cannot init inside the main brownie installation folder.\n"

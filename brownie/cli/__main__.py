@@ -28,9 +28,9 @@ each command."""
 
 print("Brownie v{} - Python development framework for Ethereum\n".format(__version__))
 
-if len(sys.argv)>1 and sys.argv[1][0] != "-":
+if len(sys.argv) > 1 and sys.argv[1][0] != "-":
     try:
-        idx = next(sys.argv.index(i) for i in sys.argv if i[0]=="-")
+        idx = next(sys.argv.index(i) for i in sys.argv if i[0] == "-")
         opts = sys.argv[idx:]
         sys.argv = sys.argv[:idx]
     except StopIteration:
@@ -40,7 +40,7 @@ args = docopt(__doc__)
 sys.argv += opts
 
 
-cmd_list = [i.name[:-3] for i in Path(__file__).parent.glob('*.py') if i.name[0]!="_"]
+cmd_list = [i.name[:-3] for i in Path(__file__).parent.glob('*.py') if i.name[0] != "_"]
 if args['<command>'] not in cmd_list:
     sys.exit("Invalid command. Try 'brownie --help' for available commands.")
 
