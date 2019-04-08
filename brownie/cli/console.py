@@ -6,6 +6,7 @@ from pathlib import Path
 import readline
 import sys
 from threading import Lock
+
 import brownie
 import brownie.network as network
 from brownie.network.contract import _ContractBase, _ContractMethod

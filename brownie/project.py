@@ -70,16 +70,15 @@ def load(path=None):
     sys.path.insert(0, str(path))
     brownie.config.update_config()
     _create_build_folders(path)
+    result = []
     for name, build in compile_contracts(path.joinpath('contracts')).items():
         if build['type'] == "interface":
             continue
         container = ContractContainer(build)
         globals()[name] = container
         __all__.append(name)
-        # if running via CLI, ensure container is available via main brownie package
-        if hasattr(sys.modules['__main__'], '__brownie_cli'):
-            sys.modules['brownie'].__dict__[name] = container
-            sys.modules['brownie'].__all__.append(name)
+        result.append(container)
         # if running via interpreter, add to main namespace if package was imported via from
-        elif '__project' in sys.modules['__main__'].__dict__:
+        if '__project' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].__dict__[name] = container
+    return result
