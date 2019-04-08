@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-
+from copy import deepcopy
 from hashlib import sha1
 import json
 from pathlib import Path
@@ -76,7 +76,7 @@ def compile_contracts(folder):
     in the build/contracts folder.
     '''
     if _contracts:
-        return _contracts
+        return deepcopy(_contracts)
     folder = Path(folder).resolve()
     build_folder = folder.parent.joinpath('build/contracts')
     contract_files = list(folder.glob('**/*.sol'))
@@ -117,7 +117,7 @@ def compile_contracts(folder):
             to_compile.append(filename)
             break
     if not to_compile:
-        return _contracts
+        return deepcopy(_contracts)
     print("Compiling contracts...")
     print("Optimizer: {}".format(
         "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
@@ -135,7 +135,7 @@ def compile_contracts(folder):
             indent=4
         )
     _contracts.update(build_json)
-    return _contracts
+    return deepcopy(_contracts)
 
 
 def compile_source(source):
