@@ -135,6 +135,8 @@ def run_test(filename, network, idx):
 
 
 def get_test_files(path):
+    if not path:
+        path = ""
     if path[:6] != "tests/":
         path = "tests/"+path
     path = Path(CONFIG['folders']['project']).joinpath(path)
@@ -147,20 +149,12 @@ def get_test_files(path):
     else:
         result = [i for i in path.glob('**/*.py') if i.name[0]!="_" and "/_" not in str(i)]
     return [str(i.relative_to(CONFIG['folders']['project']))[:-3] for i in result]
-        # if path:
-        #     folder = "tests/"+path
-        # else:
-        #     folder = "tests"
-        # return sorted(
-        #     i[0]+"/"+x[:-3] for i in os.walk(folder) for x in i[2] if
-        #     x[0] != "_" and "/_" not in i[0] and x[-3:] == ".py"
-        # )
 
 
 def main():
     args = docopt(__doc__)
     traceback_info = []
-    test_files = get_test_files(args['<filename>'] or '')
+    test_files = get_test_files(args['<filename>'])
 
     if len(test_files) == 1 and args['<range>']:
         try:
