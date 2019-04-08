@@ -3,7 +3,7 @@
 import time as _time
 from threading import Thread as _Thread
 
-from brownie.services import color as _color
+from brownie.cli.utils import color as _color
 
 _instances = set()
 
