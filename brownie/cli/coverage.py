@@ -1,16 +1,17 @@
-from copy import deepcopy
+#!/usr/bin/python3
+
 from docopt import docopt
-import os
-import re
-import shutil
+from pathlib import Path
 import sys
 import json
 
-from lib.test import get_test_files, run_test
-from lib.components.network import Network
-from lib.components.bytecode import get_coverage_map
-from lib.services import color, config
-from lib.services.compiler import compile_contracts
+from brownie.cli.test import get_test_files, run_test
+from brownie.cli.utils import color
+import brownie.network as network
+from brownie.test.coverage import get_coverage_map
+from brownie.utils.compiler import compile_contracts
+import brownie.config as config
+
 CONFIG = config.CONFIG
 
 COVERAGE_COLORS = [
@@ -53,9 +54,11 @@ def main():
     else:
         idx = slice(0, None)
 
-    compiled = deepcopy(compile_contracts())
+    compiled = compile_contracts(
+        Path(CONFIG['folders']['project']).joinpath('contracts')
+    )
     fn_map, line_map = get_coverage_map(compiled)
-    network = Network()
+    network.connect(config.ARGV['network'], True)
 
     if args['--always-transact']:
         CONFIG['test']['always_transact'] = True
@@ -120,7 +123,7 @@ def main():
 
     json.dump(
         fn_map,
-        open("build/coverage.json", "w", encoding="utf-8"),
+        Path(CONFIG['folders']['project']).joinpath("build/coverage.json").open('w'),
         sort_keys=True,
         indent=4
     )
