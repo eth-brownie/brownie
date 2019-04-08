@@ -15,7 +15,6 @@ from brownie.exceptions import VirtualMachineError
 from brownie.network.transaction import TransactionReceipt
 from brownie.network.web3 import web3
 from brownie.types.convert import wei
-from brownie.utils.bip44 import HDPrivateKey, HDKey
 
 import brownie._registry as _registry
 import brownie.config
@@ -28,9 +27,8 @@ class Accounts:
 
     def __init__(self):
         self._accounts = []
-        # prevent mnemonics and private keys from being stored in read history
+        # prevent private keys from being stored in read history
         self.add.__dict__['_private'] = True
-        self.mnemonic.__dict__['_private'] = True
         _registry.add(self)
 
     def _notify_reset(self):
@@ -113,20 +111,6 @@ class Accounts:
             return next(i for i in self._accounts if i == address)
         except StopIteration:
             raise ValueError("No account exists for {}".format(address))
-
-    def mnemonic(self, phrase, count=10):
-        '''Generates LocalAccount instances from a seed phrase based on the
-        BIP44 standard.
-
-        Args:
-            phrase: Seed phrase
-            count: Number of accounts to generate
-        '''
-        master_key = HDPrivateKey.master_key_from_mnemonic(phrase)
-        acct_priv_key = HDKey.from_path(master_key, "m/44'/60'/0'")[-1]
-        for i in range(count):
-            priv_key = HDKey.from_path(acct_priv_key, "0/{}".format(i))[-1]
-            self.add(priv_key._key.to_hex())
 
     def remove(self, address):
         '''Removes an account instance from the container.
