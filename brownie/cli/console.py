@@ -5,11 +5,12 @@ from docopt import docopt
 import readline
 import sys
 from threading import Lock
-
-from lib.components.network import Network
-from lib.components.contract import _ContractBase, _ContractMethod
-from lib.services.datatypes import StrictDict, KwargTuple
-from lib.services import color, config
+import brownie
+import brownie.network as network
+from brownie.network.contract import _ContractBase, _ContractMethod
+from brownie.types import StrictDict, KwargTuple
+from brownie.cli.utils import color
+import brownie.config as config
 CONFIG = config.CONFIG
 
 
@@ -32,6 +33,8 @@ class Console:
         self._multiline = False
         self._prompt = ">>> "
         self.__dict__.update({'dir': self._dir})
+        self.__dict__.update((i, getattr(brownie, i)) for i in brownie.__all__)
+        del self.__dict__['project']
 
     def _run(self):
         local_ = {}
@@ -151,13 +154,11 @@ def _dir_color(obj):
 def main():
     docopt(__doc__)
 
+    network.connect(config.ARGV['network'], True)
     console = Console()
-    network = Network(console)
     print("Brownie environment is ready.")
 
     try:
         console._run()
     except EOFError:
         sys.stdout.write('\n')
-    finally:
-        network.save()
