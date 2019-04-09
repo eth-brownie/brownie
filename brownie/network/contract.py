@@ -121,8 +121,11 @@ class ContractConstructor:
             self.abi = next(i for i in parent.abi if i['type'] == "constructor")
             self.abi['name'] = "constructor"
         except Exception:
-            self.abi = {'name': "constructor", 'inputs': []}
-
+            self.abi = {
+                'inputs': [],
+                'name': "constructor",
+                'type': "constructor"
+            }
         self._name = name
 
     def __repr__(self):
@@ -161,7 +164,7 @@ class ContractConstructor:
                     )
                 bytecode = bytecode.replace(
                     marker,
-                    list(history.get_contracts(contract))[-1].address[-40:]
+                    list(history.get_contracts(contract).values())[-1].address[-40:]
                 )
         contract = web3.eth.contract(abi=[self.abi], bytecode=bytecode)
         args, tx = _get_tx(account, args)
