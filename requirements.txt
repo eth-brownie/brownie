@@ -16,7 +16,7 @@ hexbytes==0.1.0
 idna==2.8
 lru-dict==1.1.6
 parsimonious==0.8.1
-py-solc-x==0.1.1
+py-solc-x==0.2.0
 pycryptodome==3.8.1
 requests==2.21.0
 rlp==1.1.0
