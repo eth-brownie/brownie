@@ -15,6 +15,7 @@ __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
 Commands:
   init               Initialize a new brownie project
+  bake               Initialize from a brownie-mix template
   console            Load the console
   run                Run a script in the /scripts folder
   test               Run test scripts in the /tests folder
