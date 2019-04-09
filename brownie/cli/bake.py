@@ -3,13 +3,14 @@
 from docopt import docopt
 from io import BytesIO
 from pathlib import Path
+import requests
 import sys
-imoprt tarfile
+import zipfile
 
 import brownie.config as config
 CONFIG = config.CONFIG
 
-MIXES_URL = "" # TODO
+MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 
 __doc__ = """Usage: brownie bake <mix> [<path>] [options]
 
@@ -28,9 +29,13 @@ For a complete list of Brownie mixes visit https://www.github.com/brownie-mixes
 """
 
 
+
 def main():
     args = docopt(__doc__)
-    path = Path(args['<path>'] or args['<mix>']).resolve()
+    path = Path(args['<path>'] or '.').resolve()
+    final_path = path.joinpath(args['<mix>'])
+    if final_path.exists():
+        sys.exit("ERROR: Bake folder already exists - {}".format(final_path))
 
     if CONFIG['folders']['brownie'] in str(path):
         sys.exit(
@@ -38,10 +43,11 @@ def main():
             "Create a new folder for your project and run brownie bake there."
         )
 
-    path.mkdir(exist_ok=True)
-    request = requests.get(MIXES_URL+"") # TODO
-    tarfile.open(BytesIO(request.content)) as tar:
-        tar.extractall(str(path))
+    print("Downloading from "+MIXES_URL.format(args['<mix>'])+" ...")
+    request = requests.get(MIXES_URL.format(args['<mix>']))
+    with zipfile.ZipFile(BytesIO(request.content)) as zf:
+        zf.extractall(str(path))
+    path.joinpath(args['<mix>']+'-mix-master').rename(final_path)
 
-    print("Brownie mix '{}' has been initiated at {}".format(args['<mix>'], path))
+    print("Brownie mix '{}' has been initiated at {}".format(args['<mix>'], final_path))
     sys.exit()
