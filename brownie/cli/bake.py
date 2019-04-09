@@ -4,6 +4,7 @@ from docopt import docopt
 from io import BytesIO
 from pathlib import Path
 import requests
+import shutil
 import sys
 import zipfile
 
@@ -48,6 +49,10 @@ def main():
     with zipfile.ZipFile(BytesIO(request.content)) as zf:
         zf.extractall(str(path))
     path.joinpath(args['<mix>']+'-mix-master').rename(final_path)
+    shutil.copy(
+        str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
+        str(finalpath.joinpath('brownie-config.json'))
+    )
 
     print("Brownie mix '{}' has been initiated at {}".format(args['<mix>'], final_path))
     sys.exit()
