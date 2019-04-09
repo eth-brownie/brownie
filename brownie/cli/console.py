@@ -21,8 +21,8 @@ __doc__ = """Usage: brownie console [options]
 Options:
   -h --help             Display this message
   -n --network <name>   Use a specific network (default {})
-  --verbose          Enable verbose reporting
-  --tb               Show entire python traceback on exceptions
+  --verbose             Enable verbose reporting
+  --tb                  Show entire python traceback on exceptions
 
 Connects to the network and opens the brownie console.
 """.format(CONFIG['network_defaults']['name'])
@@ -32,7 +32,6 @@ class Console:
 
     def __init__(self):
         self._print_lock = Lock()
-        self._multiline = False
         self._prompt = ">>> "
         self.__dict__.update({'dir': self._dir})
         self.__dict__.update((i, getattr(brownie, i)) for i in brownie.__all__)
@@ -41,40 +40,48 @@ class Console:
         if not history_file.exists():
             history_file.open('w').write("")
         self._readline = str(history_file)
+        readline.read_history_file(self._readline)
 
     def _run(self):
         local_ = {}
         builtins.print = self._print
-        readline.read_history_file(self._readline)
+        multiline = False
         while True:
-            if not self._multiline:
-                try:
+            try:
+                if not multiline:
                     cmd = self._input(self._prompt)
-                except KeyboardInterrupt:
-                    sys.stdout.write("\nUse exit() or Ctrl-D (i.e. EOF) to exit.\n")
-                    sys.stdout.flush()
-                    continue
-                if not cmd.strip():
-                    continue
-                if cmd.rstrip()[-1] == ":":
-                    self._multiline = True
-                    self._prompt = "... "
-                    continue
-            else:
-                try:
+                    if not cmd.strip():
+                        continue
+                    compile(cmd, '<stdin>', 'exec')
+                else:
                     new_cmd = self._input("... ")
-                except KeyboardInterrupt:
-                    print()
-                    self._multiline = False
+                    cmd += "\n" + new_cmd
+                    if len(compile(cmd, '<stdin>', 'exec').co_consts) > 2 and new_cmd:
+                        continue
+            except SyntaxError as e:
+                if e.msg != "unexpected EOF while parsing":
+                    self._prompt = ""
+                    print(color.format_tb(sys.exc_info(), start=1))
+                    multiline = False
                     self._prompt = ">>> "
                     continue
-                if new_cmd:
-                    cmd += '\n' + new_cmd
+                if not multiline:
+                    multiline = True
+                    self._prompt = "... "
                     continue
-            if [i for i in ['{}', '[]', '()'] if cmd.count(i[0]) > cmd.count(i[1])]:
-                self._multiline = True
+                try:
+                    compile(cmd+".", '<stdin>', 'exec')
+                except IndentationError:
+                    pass
+                except SyntaxError:
+                    continue
+            except KeyboardInterrupt:
+                sys.stdout.write("\nKeyboardInterrupt\n")
+                sys.stdout.flush()
+                multiline = False
+                self._prompt = ">>> "
                 continue
-            self._multiline = False
+            multiline = False
             self._prompt = ""
             try:
                 try:
@@ -99,7 +106,7 @@ class Console:
                     exec(cmd, self.__dict__, local_)
                 except SystemExit:
                     return
-            except:
+            except Exception:
                 print(color.format_tb(sys.exc_info(), start=1))
             self._prompt = ">>> "
 
