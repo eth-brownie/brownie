@@ -14,7 +14,7 @@ from brownie.network.web3 import web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_output
 
-import brownie.config as config
+import brownie._config as config
 CONFIG = config.CONFIG
 
 

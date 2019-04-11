@@ -8,8 +8,8 @@ import re
 import solcx
 
 from brownie.exceptions import CompilerError
-import brownie.config
-CONFIG = brownie.config.CONFIG
+import brownie._config
+CONFIG = brownie._config.CONFIG
 
 _changed = {}
 _contracts = {}

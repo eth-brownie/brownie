@@ -17,8 +17,8 @@ from brownie.network.web3 import web3
 from brownie.types.convert import wei
 
 import brownie._registry as _registry
-import brownie.config
-CONFIG = brownie.config.CONFIG
+import brownie._config
+CONFIG = brownie._config.CONFIG
 
 
 class Accounts:

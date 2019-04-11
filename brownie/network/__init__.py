@@ -7,7 +7,7 @@ from .rpc import Rpc as _Rpc
 from .account import Accounts as _Accounts
 from .history import history
 import brownie._registry as _registry
-import brownie.config as _config
+import brownie._config as _config
 CONFIG = _config.CONFIG
 
 

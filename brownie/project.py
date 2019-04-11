@@ -7,7 +7,7 @@ import sys
 
 from brownie.network.contract import ContractContainer
 from brownie.utils.compiler import compile_contracts
-import brownie.config
+import brownie._config
 
 
 __all__ = ['project', '__project']
@@ -15,7 +15,7 @@ __all__ = ['project', '__project']
 __project = True
 project = sys.modules[__name__]
 
-CONFIG = brownie.config.CONFIG
+CONFIG = brownie._config.CONFIG
 
 FOLDERS = ["contracts", "scripts", "tests"]
 BUILD_FOLDERS = ["build", "build/contracts", "build/networks"]
@@ -68,7 +68,7 @@ def load(path=None):
     path = Path(path).resolve()
     CONFIG['folders']['project'] = str(path)
     sys.path.insert(0, str(path))
-    brownie.config.update_config()
+    brownie._config.update_config()
     _create_build_folders(path)
     result = []
     for name, build in compile_contracts(path.joinpath('contracts')).items():

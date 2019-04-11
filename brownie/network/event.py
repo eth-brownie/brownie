@@ -5,7 +5,7 @@ from pathlib import Path
 
 import eth_event
 
-import brownie.config as config
+import brownie._config as config
 CONFIG = config.CONFIG
 
 
