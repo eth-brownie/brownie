@@ -3,16 +3,21 @@
 import builtins
 from docopt import docopt
 from pathlib import Path
-import readline
 import sys
 from threading import Lock
+
+if sys.platform == "win32":
+    from pyreadline import Readline
+    readline = Readline()
+else:
+    import readline
 
 import brownie
 import brownie.network as network
 from brownie.network.contract import _ContractBase, _ContractMethod
 from brownie.types import StrictDict, KwargTuple
 from brownie.cli.utils import color
-import brownie.config as config
+import brownie._config as config
 CONFIG = config.CONFIG
 
 
@@ -142,7 +147,10 @@ class Console:
                 )
         except (ValueError, AttributeError):
             pass
-        readline.append_history_file(1, self._readline)
+        if sys.platform == "win32":
+            readline.write_history_file(self._readline)
+        else:
+            readline.append_history_file(1, self._readline)
         return response
 
 
