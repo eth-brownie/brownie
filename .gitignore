@@ -1,7 +1,11 @@
 __pycache__
 .vscode
-topics.json
+build/
+data/accounts
+data/topics.json
+dist/
 docs/_build
 docs/_static
 docs/_templates
 venv
+*egg-info/
