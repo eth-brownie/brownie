@@ -9,7 +9,7 @@ import brownie
 from brownie.cli.utils import color
 import brownie.project as project
 
-__version__ = "0.9.6"  # did you change this in docs/conf.py as well?
+__version__ = "1.0.0b"  # did you change this in docs/conf.py as well?
 
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
@@ -48,7 +48,7 @@ def main():
     if args['<command>'] not in cmd_list:
         sys.exit("Invalid command. Try 'brownie --help' for available commands.")
 
-    if args['<command>'] != "init":
+    if args['<command>'] not in ("init", "bake"):
         path = project.check_for_project('.')
         if not path:
             sys.exit(

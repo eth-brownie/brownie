@@ -51,7 +51,7 @@ def main():
     path.joinpath(args['<mix>']+'-mix-master').rename(final_path)
     shutil.copy(
         str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
-        str(finalpath.joinpath('brownie-config.json'))
+        str(final_path.joinpath('brownie-config.json'))
     )
 
     print("Brownie mix '{}' has been initiated at {}".format(args['<mix>'], final_path))
