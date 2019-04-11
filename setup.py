@@ -11,7 +11,7 @@ with open("requirements.txt", "r") as f:
 setup(
     name = 'eth-brownie',
     packages=find_packages(),
-    version = '1.0.0b',
+    version = '1.0.0b1',
     license = 'MIT',
     description = 'A Python framework for testing, deploying and interacting with Ethereum smart contracts.',
     long_description = long_description,

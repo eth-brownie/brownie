@@ -1,15 +1,12 @@
 # Brownie
 
-Brownie is a python framework for deploying, testing and interacting with ethereum smart contracts.
+Brownie is a python framework for deploying, testing and interacting with Ethereum smart contracts.
 
 ## Dependencies
 
 * [ganache-cli](https://github.com/trufflesuite/ganache-cli)
-* [git](https://git-scm.com/)
 * [pip](https://pypi.org/project/pip/)
 * [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3-dev, python3-venv
-
-> There is an issue in ganache-cli 6.3.0 relating to ``evm_revert`` that may cause tests to unexpectedly fail. At present, it is recommended to use version [6.2.5](https://github.com/trufflesuite/ganache-cli/releases/tag/v6.2.5).
 
 As brownie relies on [py-solc-x](https://github.com/iamdefinitelyahuman/py-solc-x), you do not need solc installed locally but you must install all required [solc dependencies](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages).
 
@@ -17,24 +14,8 @@ You may also wish to install [opview](https://github.com/HyperLink-Technology/op
 
 ## Installation
 
-### Ubuntu and OSX
-
 ```bash
-curl https://raw.githubusercontent.com/HyperLink-Technology/brownie/master/brownie-install.sh | sh
-```
-
-### Docker
-
-To build the image:
-
-```bash
-docker build https://github.com/HyperLink-Technology/brownie.git -t brownie
-```
-
-You can then run brownie with:
-
-```bash
-docker run -v $PWD:/usr/src brownie brownie
+pip install eth-brownie
 ```
 
 ## Quick Usage
@@ -56,14 +37,11 @@ Brownie documentation is hosted at [Read the Docs](https://eth-brownie.readthedo
 Help is always appreciated! In particular, Brownie needs work in the following areas before we can comfortably take it out of beta:
 
 * Tests
-* Code formatting
 * Improving the documentation
-* Support for Windows
 * More tests
+* Travis or other CI
 
 Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
-
-Join us on [Gitter](https://gitter.im/HyperLink-Technology/community) for questions or discussion of the project.
 
 ## License
 
