@@ -14,7 +14,7 @@ import brownie.network as network
 from brownie.network.history import history
 import brownie.network.transaction as transaction
 
-import brownie.config as config
+import brownie._config as config
 CONFIG = config.CONFIG
 
 __doc__ = """Usage: brownie test [<filename>] [<range>] [options]

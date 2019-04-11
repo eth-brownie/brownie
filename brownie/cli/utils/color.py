@@ -3,6 +3,7 @@
 import sys
 import traceback
 
+from brownie.types import StrictDict
 import brownie._config as config
 CONFIG = config.CONFIG
 
@@ -68,7 +69,7 @@ class Color:
                 sys.stdout.write("'{0[key]}{1}{0[dull]}': ".format(self, k))
             else:
                 sys.stdout.write("{0[key]}{1}{0[dull]}: ".format(self, k))
-            if type(value[k]) in (dict, brownie.config.StrictDict):
+            if type(value[k]) in (dict, StrictDict):
                 sys.stdout.write('{')
                 self.pretty_dict(value[k], indent,False)
                 continue

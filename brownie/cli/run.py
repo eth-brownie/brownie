@@ -5,7 +5,7 @@ import importlib
 from pathlib import Path
 import sys
 
-import brownie.config as config
+import brownie._config as config
 import brownie.network as network
 from brownie.cli.utils import color
 CONFIG = config.CONFIG

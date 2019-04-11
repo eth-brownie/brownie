@@ -10,7 +10,7 @@ from brownie.cli.utils import color
 import brownie.network as network
 from brownie.test.coverage import get_coverage_map
 from brownie.utils.compiler import compile_contracts
-import brownie.config as config
+import brownie._config as config
 
 CONFIG = config.CONFIG
 

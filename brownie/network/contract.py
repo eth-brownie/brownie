@@ -272,7 +272,7 @@ class _ContractMethod:
         else:
             del tx['from']
         try:
-            result = self._fn(format_to_abi(self.abi, args)).call(tx)
+            result = self._fn(*format_to_abi(self.abi, args)).call(tx)
         except ValueError as e:
             raise VirtualMachineError(e)
 

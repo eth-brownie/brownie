@@ -8,7 +8,7 @@ import shutil
 import sys
 import zipfile
 
-import brownie.config as config
+import brownie._config as config
 CONFIG = config.CONFIG
 
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
