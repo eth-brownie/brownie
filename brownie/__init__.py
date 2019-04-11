@@ -8,12 +8,12 @@ from brownie.network import (
     web3
 )
 from brownie.project import (
+    compile_source,
     project,
     __project
 )
 from brownie.test import check
 import brownie._config
-from brownie.utils.compiler import compile_source
 from brownie.utils import alert
 from brownie.types.convert import wei
 

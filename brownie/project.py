@@ -6,7 +6,7 @@ import shutil
 import sys
 
 from brownie.network.contract import ContractContainer
-from brownie.utils.compiler import compile_contracts
+from brownie.utils import compiler
 import brownie._config
 
 
@@ -71,7 +71,7 @@ def load(path=None):
     brownie._config.update_config()
     _create_build_folders(path)
     result = []
-    for name, build in compile_contracts(path.joinpath('contracts')).items():
+    for name, build in compiler.compile_contracts(path.joinpath('contracts')).items():
         if build['type'] == "interface":
             continue
         container = ContractContainer(build)
@@ -81,4 +81,13 @@ def load(path=None):
         # if running via interpreter, add to main namespace if package was imported via from
         if '__project' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].__dict__[name] = container
+    return result
+
+
+def compile_source(source):
+    result = []
+    for name, build in compiler.compile_source(source).items():
+        if build['type'] == "interface":
+            continue
+        result.append(ContractContainer(build))
     return result
