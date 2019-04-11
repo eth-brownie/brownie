@@ -2,6 +2,7 @@
 
 import atexit
 from subprocess import Popen, DEVNULL
+import sys
 from threading import Thread
 import time
 
@@ -26,14 +27,22 @@ class Rpc:
         if self.is_active():
             raise SystemError("RPC is already active.")
         if 'test-rpc' not in CONFIG['active_network']:
-            raise KeyError("No test RPC defined for this network in config.json")
-        self._rpc = rpc = Popen(
-            (CONFIG['active_network']['test-rpc']+' '+param_str).split(' '),
-            stdout=DEVNULL,
-            stdin=DEVNULL,
-            stderr=DEVNULL,
-            start_new_session=True
-        )
+            raise KeyError("No test RPC defined for this network in brownie-config.json")
+        try:
+            self._rpc = rpc = Popen(
+                (CONFIG['active_network']['test-rpc']+' '+param_str).split(' '),
+                stdout=DEVNULL,
+                stdin=DEVNULL,
+                stderr=DEVNULL,
+            #    start_new_session=True
+            )
+        except FileNotFoundError:
+            if sys.platform == "win32" and "c:" not in CONFIG['active_network']['test-rpc'].lower():
+                raise FileNotFoundError(
+                    "Cannot find test RPC - check that brownie-config.json includes"
+                    " the full path, with folders seperated by forward slashes."
+                )
+            raise FileNotFoundError("Cannot test RPC - check the filename in brownie-config.json")
         self._time_offset = 0
         self._snapshot_id = False
         for i in range(20):
