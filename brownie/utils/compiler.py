@@ -10,7 +10,6 @@ import solcx
 from brownie.exceptions import CompilerError
 import brownie.config
 CONFIG = brownie.config.CONFIG
-solcx.set_solc_version(CONFIG['solc']['version'])
 
 _changed = {}
 _contracts = {}
@@ -77,6 +76,7 @@ def compile_contracts(folder):
     '''
     if _contracts:
         return deepcopy(_contracts)
+    solcx.set_solc_version(CONFIG['solc']['version'])
     folder = Path(folder).resolve()
     build_folder = folder.parent.joinpath('build/contracts')
     contract_files = list(folder.glob('**/*.sol'))
