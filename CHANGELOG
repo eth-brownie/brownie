@@ -1,3 +1,15 @@
+1.0.0b1
+-----
+
+ - major code re-organization, brownie now works as a package and is installable via pip
+ - remove os.path in favor of pathlib.Path - allow Windows support
+ - rebuild brownie console, use compile to check for completed statements
+ - remove Accounts.mnemonic
+ - transaction.history is now a custom data class
+ - save and load accounts using standard encrypted keystore files
+ - add brownie bake to initialize projects from template
+ - many bugfixes and minor changes
+
 0.9.6 (unreleased)
 -----
 
