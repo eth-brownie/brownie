@@ -33,8 +33,7 @@ class Rpc:
                 (CONFIG['active_network']['test-rpc']+' '+param_str).split(' '),
                 stdout=DEVNULL,
                 stdin=DEVNULL,
-                stderr=DEVNULL,
-            #    start_new_session=True
+                stderr=DEVNULL
             )
         except FileNotFoundError:
             if sys.platform == "win32" and "c:" not in CONFIG['active_network']['test-rpc'].lower():

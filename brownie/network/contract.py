@@ -249,7 +249,7 @@ class _ContractMethod:
         self.signature = "0x"+keccak("{}({})".format(
             abi['name'],
             ",".join(i['type'] for i in abi['inputs'])
-            ).encode()).hex()[:10]
+            ).encode()).hex()[:8]
 
     def __repr__(self):
         return "<{} object '{}({})'>".format(
