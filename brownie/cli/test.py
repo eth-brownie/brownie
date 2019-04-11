@@ -2,6 +2,7 @@
 
 from docopt import docopt
 import importlib
+import os
 from pathlib import Path
 import re
 import sys
@@ -92,7 +93,7 @@ def run_test(filename, network, idx):
     if type(CONFIG['test']['gas_limit']) is int:
         network.gas_limit(CONFIG['test']['gas_limit'])
     
-    module = importlib.import_module(filename.replace('/', '.'))
+    module = importlib.import_module(filename.replace(os.sep, '.'))
     test_names = [
         i for i in dir(module) if i not in dir(sys.modules['brownie']) and
         i[0] != "_" and callable(getattr(module, i))
