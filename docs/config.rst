@@ -8,7 +8,7 @@ Every project has a file ``brownie-config.json`` that holds all the configuratio
 
 The defaut configuration is as follows. When using the brownie console or writing scripts, you can view and edit configuration settings through the ``config`` dict. Any changes made in this way are temporary and will be reset when you exit brownie or reset the network.
 
-.. literalinclude:: ../config.json
+.. literalinclude:: ../brownie/data/config.json
     :linenos:
     :language: json
 

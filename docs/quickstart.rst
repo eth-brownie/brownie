@@ -23,11 +23,13 @@ This will create the following project structure within the folder:
 * ``tests/``: Directory for test scripts
 * ``brownie-config.json``: Configuration file for the project
 
-You can also initialize already existing projects. For the purposes of this document, we will use the ``token`` project, which is a very basic ERC-20 implementation:
+
+
+You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`__", simple templates to build your project upon. For the purposes of this document, we will use the `token <https://github.com/brownie-mix/token-mix>`__ mix, which is a very basic ERC-20 implementation:
 
 ::
 
-    $ brownie init token
+    $ brownie bake token
 
 This will create a new folder ``token/`` and deploy the project inside it.
 
