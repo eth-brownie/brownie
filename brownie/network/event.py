@@ -28,14 +28,14 @@ def get_topics(abi):
 
 def decode_logs(logs):
     try:
-        eth_event.decode_logs(logs, _topics)
+        return eth_event.decode_logs(logs, _topics)
     except Exception:
         return []
 
 
 def decode_trace(trace):
     try:
-        eth_event.decode_trace(trace, _topics)
+        return eth_event.decode_trace(trace, _topics)
     except Exception:
         return []
 
