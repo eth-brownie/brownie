@@ -41,7 +41,7 @@ class ExpectedFailing(Exception):
 def _run_test(module, fn_name, count, total):
     fn = getattr(module, fn_name)
     desc = fn.__doc__ or fn_name
-    sys.stdout.write("   {1} - {0} ({1}/{2})...  ".format(desc, count, total))
+    sys.stdout.write("   {0} - {1} ({0}/{2})...  ".format(count, desc, total))
     sys.stdout.flush()
     if fn.__defaults__:
         args = dict(zip(
@@ -50,8 +50,8 @@ def _run_test(module, fn_name, count, total):
         ))
         if 'skip' in args and args['skip']:
             sys.stdout.write(
-                "\r {0[pending]}\u229d{0[dull]} {1} ".format(color, desc) +
-                "({0[pending]}skipped{0[dull]}){0}\n".format(color)
+                "\r {0[pending]}\u229d{0[dull]} {1} - ".format(color, count) +
+                "{1} ({0[pending]}skipped{0[dull]}){0}\n".format(color, desc)
             )
             return []
     else:
@@ -61,8 +61,8 @@ def _run_test(module, fn_name, count, total):
         fn()
         if 'pending' in args and args['pending']:
             raise ExpectedFailing("Test was expected to fail")
-        sys.stdout.write("\r {0[success]}\u2713{0} {3} - {1} ({2:.4f}s)\n".format(
-            color, desc, time.time()-stime, count
+        sys.stdout.write("\r {0[success]}\u2713{0} {1} - {2} ({3:.4f}s)\n".format(
+            color, count, desc, time.time()-stime
         ))
         sys.stdout.flush()
         return []
@@ -71,7 +71,7 @@ def _run_test(module, fn_name, count, total):
             c = [color('success'), color('dull'), color()]
         else:
             c = [color('error'), color('dull'), color()]
-        sys.stdout.write("\r {0[0]}{1}{0[1]} {2} ({0[0]}{3}{0[1]}){0[2]}\n".format(
+        sys.stdout.write("\r {0[0]}{1}{0[1]} {4} - {2} ({0[0]}{3}{0[1]}){0[2]}\n".format(
             c,
             '\u2717' if type(e) in (
                 AssertionError,
@@ -79,6 +79,7 @@ def _run_test(module, fn_name, count, total):
             ) else '\u203C',
             desc,
             type(e).__name__,
+            count
         ))
         sys.stdout.flush()
         if type(e) != ExpectedFailing and 'pending' in args and args['pending']:
