@@ -10,7 +10,7 @@ hexbytes>=0.1.0,<1.0.0
 lru-dict>=1.1.6,<2.0.0
 pypiwin32>=223;platform_system=='Windows'
 pyreadline==2.1;platform_system=='Windows'
-py-solc-x>=0.2.0
+py-solc-x>=0.2.1
 requests>=2.16.0,<3.0.0
 semantic-version>=2.6.0
 websockets>=6.0.0,<7.0.0
