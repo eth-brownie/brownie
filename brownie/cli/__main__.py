@@ -9,20 +9,21 @@ import brownie
 from brownie.cli.utils import color
 import brownie.project as project
 
-__version__ = "1.0.0b1"  # did you change this in docs/conf.py as well?
+__version__ = "1.0.0b2"  # did you change this in docs/conf.py as well?
 
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
 Commands:
-  init               Initialize a new brownie project
   bake               Initialize from a brownie-mix template
+  compile            Compiles the contract source files
   console            Load the console
+  coverage           Evaluate test coverage
+  init               Initialize a new brownie project
   run                Run a script in the /scripts folder
   test               Run test scripts in the /tests folder
-  coverage           Evaluate test coverage
 
 Options:
-  -h --help          Display this message
+  --help             Display this message
 
 Type 'brownie <command> --help' for specific options and more information about
 each command."""
@@ -55,11 +56,12 @@ def main():
                 "ERROR: Brownie environment has not been initiated for this folder."
                 "\nType 'brownie init' to create the file structure."
             )
-        for container in project.load(path):
-            setattr(brownie, container._name, container)
-            brownie.__all__.append(container._name)
-        brownie.a = brownie.accounts
-        brownie.__all__.append('a')
+        if args['<command>'] != "compile" and "--help" not in opts:
+            for container in project.load(path):
+                setattr(brownie, container._name, container)
+                brownie.__all__.append(container._name)
+            brownie.a = brownie.accounts
+            brownie.__all__.append('a')
 
     try:
         importlib.import_module("brownie.cli."+args['<command>']).main()
