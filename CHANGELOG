@@ -1,3 +1,10 @@
+1.0.0b2
+-------
+
+ - add compile command to cli
+ - bugfix in pypi package requirements
+ - show numbers on skipped and failing tests
+
 1.0.0b1
 -----
 
