@@ -79,7 +79,10 @@ def compile_contracts(folder):
     solcx.set_solc_version(CONFIG['solc']['version'])
     folder = Path(folder).resolve()
     build_folder = folder.parent.joinpath('build/contracts')
-    contract_files = list(folder.glob('**/*.sol'))
+    contract_files = [
+        i for i in list(folder.glob('**/*.sol')) if
+        "_" not in (i.name[0], i.parent.name[0])
+    ]
     if not contract_files:
         return {}
     compiler_info = CONFIG['solc'].copy()
