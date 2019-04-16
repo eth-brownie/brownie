@@ -34,9 +34,10 @@ def update_config(network = None):
             _recursive_update(CONFIG, json.load(path.open()))
     # modify network settings
     try:
-        if network:
-            CONFIG['active_network'] = CONFIG['networks'][network]
-            CONFIG['active_network']['name'] = network
+        if not network:
+            network = CONFIG['network_defaults']['name']
+        CONFIG['active_network'] = CONFIG['networks'][network].copy()
+        CONFIG['active_network']['name'] = network
         for key, value in CONFIG['network_defaults'].items():
             if key not in CONFIG['active_network']:
                 CONFIG['active_network'][key] = value
