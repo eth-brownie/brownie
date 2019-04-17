@@ -137,7 +137,7 @@ def compile_contracts(folder):
             build_folder.joinpath("{}.json".format(name)).open('w'),
             sort_keys=True,
             indent=4,
-            default=list
+            default=sorted
         )
     _contracts.update(build_json)
     return deepcopy(_contracts)
@@ -148,6 +148,9 @@ def compile_source(source):
     input_json['sources'] = {"<string>": {'content': source}}
     return _compile_and_format(input_json)
 
+
+def get_build(name):
+    return deepcopy(_contracts[name])
 
 def _compile_and_format(input_json):
     try:
