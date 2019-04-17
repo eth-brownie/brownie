@@ -12,7 +12,7 @@ class Source:
         return self._s[path][op['start']:op['stop']]
 
 
-def get_coverage_map(compiled):
+def get_coverage_map(build):
     """Given the compiled project as supplied by compiler.compile_contracts(),
     returns the function and line based coverage maps for unit test coverage
     evaluation.
@@ -20,17 +20,11 @@ def get_coverage_map(compiled):
     A coverage map item is structured as follows:
 
     {
-        "counts":{
-            "ContractName": 0
-        },
-        "contracts": {
-            "ContractName":{
-                "/path/to/contract/file.sol":{
-                    "functionName":{
-                        "fn": {},
-                        "line":[{},{},{}]
-                    }
-                }
+        
+        "/path/to/contract/file.sol":{
+            "functionName":{
+                "fn": {},
+                "line":[{},{},{}]
             }
         }
     }
@@ -48,37 +42,31 @@ def get_coverage_map(compiled):
     Items relating to jumps also include keys 'true' and 'false', which are
     also empty sets used in the same way as 'tx'"""
 
-    fn_map = {
-        "contracts": dict((i, dict((x,{}) for x in compiled[i]['allSourcePaths'])) for i in compiled),
-        "counts": dict((i, 0) for i in compiled)
-    }
+    fn_map = dict((x,{}) for x in build['allSourcePaths'])
 
-    for contract in compiled:
-        for i in _isolate_functions(compiled[contract]):
-            fn_map['contracts'][contract][i.pop('contract')][i.pop('method')] = {'fn':i,'line':[]}
-        line_map = _isolate_lines(compiled[contract])
-        if not line_map:
-            del fn_map['contracts'][contract]
-            del fn_map['counts'][contract]
-            continue
+    for i in _isolate_functions(build):
+        fn_map[i.pop('contract')][i.pop('method')] = {'fn':i,'line':[]}
+    line_map = _isolate_lines(build)
+    if not line_map:
+        return {}
 
-        # future me - i'm sorry for this line
-        for source, fn_name, fn in [(k,x,v[x]['fn']) for k,v in fn_map['contracts'][contract].items() for x in v]:
-            for ln in [
-                i for i in line_map if
-                i['contract']==source and
-                i['start']==fn['start'] and i['stop']==fn['stop']
-            ]:
-                # remove duplicate mappings
-                line_map.remove(ln)
-            for ln in [
-                i for i in line_map if
-                i['contract']==source and
-                i['start']>=fn['start'] and i['stop']<=fn['stop']
-            ]:
-                # apply method names to line mappings
-                line_map.remove(ln)
-                fn_map['contracts'][contract][ln.pop('contract')][fn_name]['line'].append(ln)
+    # future me - i'm sorry for this line
+    for source, fn_name, fn in [(k,x,v[x]['fn']) for k,v in fn_map.items() for x in v]:
+        for ln in [
+            i for i in line_map if
+            i['contract']==source and
+            i['start']==fn['start'] and i['stop']==fn['stop']
+        ]:
+            # remove duplicate mappings
+            line_map.remove(ln)
+        for ln in [
+            i for i in line_map if
+            i['contract']==source and
+            i['start']>=fn['start'] and i['stop']<=fn['stop']
+        ]:
+            # apply method names to line mappings
+            line_map.remove(ln)
+            fn_map[ln.pop('contract')][fn_name]['line'].append(ln)
     return fn_map
 
 
@@ -148,7 +136,7 @@ def _isolate_lines(compiled):
             continue
         line_map[op['contract']].append(_base(req))
         line_map[op['contract']][-1].update({
-            'jump':op['pc'], 'true': set(), 'false': set()
+            'jump':op['pc'],# 'true': set(), 'false': set()
         })
 
     # analyze all the opcodes
@@ -222,5 +210,5 @@ def _base(op):
         'stop': op['stop'],
         'pc':set([op['pc']]),
         'jump': False,
-        'tx':set()
+#        'tx':set()
     }

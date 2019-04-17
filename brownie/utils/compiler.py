@@ -8,6 +8,7 @@ import re
 import solcx
 
 from brownie.exceptions import CompilerError
+from brownie.test.coverage import get_coverage_map
 import brownie._config
 CONFIG = brownie._config.CONFIG
 
@@ -135,7 +136,8 @@ def compile_contracts(folder):
             data,
             build_folder.joinpath("{}.json".format(name)).open('w'),
             sort_keys=True,
-            indent=4
+            indent=4,
+            default=list
         )
     _contracts.update(build_json)
     return deepcopy(_contracts)
@@ -197,6 +199,7 @@ def _compile_and_format(input_json):
                 'pcMap': evm['pcMap'],
                 'allSourcePaths': sorted(set(i['contract'] for i in evm['pcMap'] if i['contract']))
             }
+            result[name]['coverageMap'] = get_coverage_map(result[name])
     return result
 
 
