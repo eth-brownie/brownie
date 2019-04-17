@@ -194,7 +194,8 @@ def _compile_and_format(input_json):
                 'sourceMap': evm['bytecode']['sourceMap'],
                 'sourcePath': filename,
                 'type': type_,
-                'pcMap': evm['deployedBytecode']['pcMap']
+                'pcMap': evm['pcMap'],
+                'allSourcePaths': sorted(set(i['contract'] for i in evm['pcMap'] if i['contract']))
             }
     return result
 
@@ -217,7 +218,7 @@ def generate_pcMap(compiled):
         bytecode = compiled['contracts'][filename][name]['evm']['deployedBytecode']
 
         if not bytecode['object']:
-            bytecode['pcMap'] = []
+            compiled['contracts'][filename][name]['evm']['pcMap'] = []
             continue
         pcMap = []
         opcodes = bytecode['opcodes']
@@ -264,5 +265,5 @@ def generate_pcMap(compiled):
             })
             if opcodes[-1][:2] == "0x":
                 pcMap[-1]['value'] = opcodes.pop()
-        bytecode['pcMap'] = pcMap
+        compiled['contracts'][filename][name]['evm']['pcMap'] = pcMap
     return compiled
