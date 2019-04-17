@@ -133,7 +133,7 @@ def run_test(filename, network, idx):
         for i in history:
             i.trace
         test_history.update(history.copy())
-    return history, traceback_info
+    return test_history, traceback_info
 
 
 def get_test_files(path):
