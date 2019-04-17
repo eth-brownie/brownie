@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+import json
+from pathlib import Path
+
 class Source:
 
     def __init__(self):
@@ -213,3 +216,40 @@ def _base(op):
         'jump': False,
 #        'tx':set()
     }
+
+
+def merge_coverage(coverage_files):
+    final = {}
+    for filename in coverage_files:
+        path = Path(filename)
+        if not path.exists():
+            continue
+        coverage = json.load(path.open())
+        for key in list(coverage):
+            if key not in final:
+                final[key] = coverage.pop(key)
+                continue
+            for source, fn_name in [(k,x) for k,v in coverage[key].items() for x in v]:
+                f = final[key][source][fn_name]
+                c = coverage[key][source][fn_name]
+                if not c['pct']:
+                    continue
+                if f['pct'] == 1 or c['pct'] == 1:
+                    final[key][source][fn_name] = {'pct': 1}
+                    continue
+                _list_to_set(f,'line').update(c['line'])
+                if 'true' in c:
+                    _list_to_set(f,'true').update(c['true'])
+                    _list_to_set(f,'false').update(c['false'])
+                for i in f['true'].intersection(f['false']):
+                    f['line'].add(i)
+                    f['true'].discard(i)
+                    f['false'].discard(i)
+    return final
+
+def _list_to_set(obj, key):
+    if key in obj:
+        obj[key] = set(obj[key])
+    else:
+        obj[key] = set()
+    return obj[key]
