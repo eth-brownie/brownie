@@ -7,6 +7,7 @@ import sys
 import json
 
 from brownie.cli.test import get_test_files, run_test
+from brownie.test.coverage import merge_coverage
 from brownie.cli.utils import color
 import brownie.network as network
 from brownie.utils.compiler import get_build
@@ -40,6 +41,7 @@ def main():
     args = docopt(__doc__)
 
     test_files = get_test_files(args['<filename>'])
+    coverage_files = []
     if len(test_files)==1 and args['<range>']:
         try:
             idx = args['<range>']
@@ -127,19 +129,19 @@ def main():
                 continue
 
             count = 0
-            coverage = {'line':[], 'true':[], 'false':[]}
+            coverage = {'line':set(), 'true':set(), 'false':set()}
             for c,i in enumerate(maps['line']):
                 if not i['count']:
                     continue
                 if not i['jump'] or False not in i['jump']:
-                    coverage['line'].append(c)
+                    coverage['line'].add(c)
                     count+=2 if i['jump'] else 1
                     continue
                 if i['jump'][0]:
-                    coverage['true'].append(c)
+                    coverage['true'].add(c)
                     count+=1
                 if i['jump'][1]:
-                    coverage['false'].append(c)
+                    coverage['false'].add(c)
                     count+=1
             pct = count / maps['total']
             if count == maps['total']:
@@ -150,6 +152,7 @@ def main():
 
         path = Path(CONFIG['folders']['project'])
         path = path.joinpath("build/coverage"+filename[5:]+".json")
+        coverage_files.append(path)
         for p in list(path.parents)[::-1]:
             if not p.exists():
                 p.mkdir()
@@ -157,37 +160,20 @@ def main():
             coverage_eval,
             path.open('w'),
             sort_keys=True,
-            indent=4
+            indent=4,
+            default=sorted
         )
 
     # TODO - beyond here things are still broken
     print("\nCoverage analysis complete!\n")
-    for contract in fn_map:
-        fn_list = sorted(set(i['method'] for i in fn_map[contract] if i['method']))
-        if not fn_list:
-            continue
-        if not [i for i in fn_map[contract] if i['count']]:
-            print("  contract: {0[contract]}{1}{0} - {0[bright red]}0.0%{0}".format(color, contract))
-            continue
+    coverage_eval = merge_coverage(coverage_files)
+
+    for contract in coverage_eval:
         print("  contract: {0[contract]}{1}{0}".format(color, contract))
-        for fn in fn_list:
-            map_ = [i for i in fn_map[contract] if i['method']==fn]
-            count = 0
-            for i in map_:
-                if not i['count']:
-                    continue
-                if not i['jump']:
-                    count+=1
-                    continue
-                if i['jump'][0]:
-                    count+=1
-                if i['jump'][1]:
-                    count+=1
-            total = sum([1 if not i['jump'] else 2 for i in map_])
-            pct = count / total
+        for fn_name, pct in [(x,v[x]['pct']) for v in coverage_eval[contract].values() for x in v]:
             c = next(i[1] for i in COVERAGE_COLORS if pct<=i[0])
             print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
-                color, fn, color(c), pct
+                color, fn_name, color(c), pct
             ))
         print()
-    print("\nDetailed results saved to {0[string]}build/coverage.json{0}".format(color))
+    print("\nDetailed reports saved in {0[string]}build/coverage{0}".format(color))
