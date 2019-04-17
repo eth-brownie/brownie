@@ -67,6 +67,7 @@ def get_coverage_map(build):
             # apply method names to line mappings
             line_map.remove(ln)
             fn_map[ln.pop('contract')][fn_name]['line'].append(ln)
+        fn_map[source][fn_name]['total'] = sum([1 if not i['jump'] else 2 for i in fn_map[source][fn_name]['line']])
     return fn_map
 
 
