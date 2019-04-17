@@ -224,7 +224,7 @@ def merge_coverage(coverage_files):
         path = Path(filename)
         if not path.exists():
             continue
-        coverage = json.load(path.open())
+        coverage = json.load(path.open())['contracts']
         for key in list(coverage):
             if key not in final:
                 final[key] = coverage.pop(key)

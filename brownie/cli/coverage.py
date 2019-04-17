@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 from docopt import docopt
+from hashlib import sha1
 from pathlib import Path
 import sys
 import json
@@ -109,9 +110,7 @@ def main():
                 except StopIteration:
                     continue
 
-
         for contract, source, fn_name, maps in [(k,w,y,z) for k,v in coverage_map.items() for w,x in v.items() for y,z in x.items()]:
-
             fn = maps['fn']
             if 'tx' not in fn or not fn['tx']:
                 coverage_eval[contract][source][fn_name] = {'pct':0}
@@ -150,9 +149,19 @@ def main():
                 coverage['pct']=round(count/maps['total'],2)
                 coverage_eval[contract][source][fn_name] = coverage
 
+        contract_files = set(x for i in coverage_eval.values() for x in i)
+        coverage_eval = {
+            'contracts': coverage_eval,
+            'sha1': dict((i, sha1(open(i, 'rb').read()).hexdigest()) for i in contract_files)
+        }
+        test_path = Path(CONFIG['folders']['project']).joinpath(filename+".py")
+        coverage_eval['sha1'][str(test_path)] = sha1(test_path.open('rb').read()).hexdigest()
+
         path = Path(CONFIG['folders']['project'])
         path = path.joinpath("build/coverage"+filename[5:]+".json")
+
         coverage_files.append(path)
+
         for p in list(path.parents)[::-1]:
             if not p.exists():
                 p.mkdir()
