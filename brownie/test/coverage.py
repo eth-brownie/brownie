@@ -20,38 +20,66 @@ def get_coverage_map(compiled):
     A coverage map item is structured as follows:
 
     {
-        'contract': path to the contract source code
-        'method': name of the contract method, if any
+        "counts":{
+            "ContractName": 0
+        },
+        "contracts": {
+            "ContractName":{
+                "/path/to/contract/file.sol":{
+                    "functionName":{
+                        "fn": {},
+                        "line":[{},{},{}]
+                    }
+                }
+            }
+        }
+    }
+
+    Each dict in fn/line is as follows:
+
+    {
         'start': source code start offset 
         'stop': source code stop offset
-        'pc': opcode program counters tied to the map item
+        'pc': set of opcode program counters tied to the map item
         'jump': pc of the JUMPI instruction, if it is a jump
         'tx': empty set, used to record transactions that hit the item
     }
 
     Items relating to jumps also include keys 'true' and 'false', which are
     also empty sets used in the same way as 'tx'"""
-    fn_map = {}
-    line_map = {}
+
+    fn_map = {
+        "contracts": dict((i, dict((x,{}) for x in compiled[i]['allSourcePaths'])) for i in compiled),
+        "counts": dict((i, 0) for i in compiled)
+    }
+
     for contract in compiled:
-        fn_map[contract] = _isolate_functions(compiled[contract])
-        line_map[contract] = _isolate_lines(compiled[contract])
-        for fn in fn_map[contract]:
+        for i in _isolate_functions(compiled[contract]):
+            fn_map['contracts'][contract][i.pop('contract')][i.pop('method')] = {'fn':i,'line':[]}
+        line_map = _isolate_lines(compiled[contract])
+        if not line_map:
+            del fn_map['contracts'][contract]
+            del fn_map['counts'][contract]
+            continue
+
+        # future me - i'm sorry for this line
+        for source, fn_name, fn in [(k,x,v[x]['fn']) for k,v in fn_map['contracts'][contract].items() for x in v]:
             for ln in [
-                i for i in line_map[contract] if
-                i['contract']==fn['contract'] and
+                i for i in line_map if
+                i['contract']==source and
                 i['start']==fn['start'] and i['stop']==fn['stop']
             ]:
                 # remove duplicate mappings
-                line_map[contract].remove(ln)
+                line_map.remove(ln)
             for ln in [
-                i for i in line_map[contract] if
-                i['contract']==fn['contract'] and
+                i for i in line_map if
+                i['contract']==source and
                 i['start']>=fn['start'] and i['stop']<=fn['stop']
             ]:
                 # apply method names to line mappings
-                ln['method'] = fn['method']
-    return fn_map, line_map
+                line_map.remove(ln)
+                fn_map['contracts'][contract][ln.pop('contract')][fn_name]['line'].append(ln)
+    return fn_map
 
 
 def _isolate_functions(compiled):
@@ -73,7 +101,7 @@ def _isolate_functions(compiled):
             fn_map[fn] = _base(op)
             fn_map[fn]['method']=fn
         fn_map[fn]['pc'].add(op['pc'])
-    
+
     fn_map = _sort(fn_map.values())
     if not fn_map:
         return []
@@ -98,7 +126,7 @@ def _isolate_lines(compiled):
     pcMap = compiled['pcMap']
     line_map = {}
     source = Source()
-    
+
     # find all the JUMPI opcodes
     for i in [pcMap.index(i) for i in _oplist(pcMap, "JUMPI")]:
         op = pcMap[i]
@@ -122,7 +150,7 @@ def _isolate_lines(compiled):
         line_map[op['contract']][-1].update({
             'jump':op['pc'], 'true': set(), 'false': set()
         })
-    
+
     # analyze all the opcodes
     for op in _oplist(pcMap):
         # ignore code that spans multiple lines
@@ -142,7 +170,7 @@ def _isolate_lines(compiled):
                 continue
             ln['stop'] = op['stop']
         ln['pc'].add(op['pc'])
-        
+
     # sort the coverage map and merge overlaps where possible
     for contract in line_map:
         line_map[contract] = _sort(line_map[contract])
@@ -190,7 +218,6 @@ def _oplist(pcMap, op=None):
 def _base(op):
     return {
         'contract':op['contract'],
-        'method': None,
         'start':op['start'],
         'stop': op['stop'],
         'pc':set([op['pc']]),
