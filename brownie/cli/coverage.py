@@ -57,6 +57,17 @@ def main():
     else:
         idx = slice(0, None)
 
+    # remove coverage data where hashes have changed
+    coverage_folder = Path(CONFIG['folders']['project']).joinpath("build/coverage")
+    for coverage_json in list(coverage_folder.glob('**/*.json')):
+        dependents = json.load(coverage_json.open())['sha1']
+        for path, hash_ in dependents.items():
+            path = Path(path)
+            if not path.exists() or sha1(path.open('rb').read()).hexdigest() != hash_:
+                print(path)
+                coverage_json.unlink()
+                break
+
     network.connect(config.ARGV['network'], True)
 
     if args['--always-transact']:
