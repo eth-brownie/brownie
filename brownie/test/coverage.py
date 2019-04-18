@@ -213,8 +213,7 @@ def _base(op):
         'start':op['start'],
         'stop': op['stop'],
         'pc':set([op['pc']]),
-        'jump': False,
-#        'tx':set()
+        'jump': False
     }
 
 

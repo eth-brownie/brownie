@@ -24,11 +24,11 @@ Arguments:
   <range>             Number or range of tests to run from file
 
 Options:
-  --help              Display this message
-  --verbose           Enable verbose reporting
-  --gas               Display gas profile for function calls
-  --tb                Show entire python traceback on exceptions
   --always-transact   Perform all contract calls as transactions
+  --gas               Display gas profile for function calls
+  --verbose           Enable verbose reporting
+  --tb                Show entire python traceback on exceptions
+  --help              Display this message
 
 By default brownie runs every script found in the tests folder as well as any
 subfolders. Files and folders beginning with an underscore will be skipped."""
