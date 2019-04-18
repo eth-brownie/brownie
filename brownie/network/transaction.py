@@ -93,13 +93,15 @@ class TransactionReceipt:
         t.start()
         try:
             t.join()
-            if config.ARGV['mode'] == "script" and not self.status:
+            if config.ARGV['cli'] == "console":
+                return
+            if not self.status:
                 raise VirtualMachineError({
                     "message": "revert "+(self.revert_msg or ""),
                     "source": self.error(1)
                 })
         except KeyboardInterrupt:
-            if config.ARGV['mode'] == "script":
+            if config.ARGV['cli'] != "console":
                 raise
 
     def _await_confirm(self, silent, callback):

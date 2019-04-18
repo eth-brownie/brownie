@@ -325,7 +325,7 @@ class ContractTx(_ContractMethod):
 
     def __init__(self, fn, abi, name, owner):
         if (
-            config.ARGV['mode'] != "console" and not
+            config.ARGV['cli'] != "console" and not
             CONFIG['test']['default_contract_owner']
         ):
             owner = None
@@ -360,7 +360,7 @@ class ContractCall(_ContractMethod):
 
         Returns:
             Contract method return value(s).'''
-        if config.ARGV['mode'] == "script" and CONFIG['test']['always_transact']:
+        if config.ARGV['cli'] != "console" and CONFIG['test']['always_transact']:
             tx = self.transact(*args)
             return tx.return_value
         return self.call(*args)

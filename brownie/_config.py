@@ -67,7 +67,7 @@ for key in [i for i in sys.argv if i[:2] == "--"]:
 
 # used to determine various behaviours in other modules
 if len(sys.argv) > 1:
-    ARGV['mode'] = "console" if sys.argv[1] == "console" else "script"
+    ARGV['cli'] = sys.argv[1]
 
 # load config
 CONFIG = _load_config()
