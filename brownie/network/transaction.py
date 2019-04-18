@@ -95,6 +95,8 @@ class TransactionReceipt:
             t.join()
             if config.ARGV['cli'] == "console":
                 return
+            if config.ARGV['cli'] == "coverage":
+                self.trace
             if not self.status:
                 raise VirtualMachineError({
                     "message": "revert "+(self.revert_msg or ""),

@@ -127,11 +127,6 @@ def run_test(filename, network, idx):
     for c, t in enumerate(test_names[idx], start=idx.start + 1):
         network.rpc.revert()
         traceback_info += _run_test(module, t, c, len(test_names))
-        if sys.argv[1] != "coverage":
-            continue
-        # need to retrieve stack trace before reverting the EVM
-        for i in history:
-            i.trace
         test_history.update(history.copy())
     return test_history, traceback_info
 
