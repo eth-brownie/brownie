@@ -107,6 +107,9 @@ def compile_contracts(folder):
         ]:
             inheritance_map[base] |= inheritance_map[inherited]
     to_compile = []
+    for path in [i for i in build_folder.glob('*.json') if i.stem not in inheritance_map]:
+        # remove build files for contracts that no longer exist
+        path.unlink()
     for filename in contract_files:
         code = filename.open().read()
         input_json = {}
