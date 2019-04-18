@@ -174,6 +174,9 @@ def _compile_and_format(input_json):
             type_, name = match.strip('\n').split(' ')
             data = compiled['contracts'][filename][name]
             evm = data['evm']
+            if not evm['bytecode']['object']:
+                # do not save build files for interfaces or ABCs
+                continue
             ref = [
                 (k, x) for v in evm['bytecode']['linkReferences'].values()
                 for k, x in v.items()
