@@ -18,7 +18,7 @@ project = sys.modules[__name__]
 CONFIG = brownie._config.CONFIG
 
 FOLDERS = ["contracts", "scripts", "tests"]
-BUILD_FOLDERS = ["build", "build/contracts", "build/networks"]
+BUILD_FOLDERS = ["build", "build/contracts", "build/coverage", "build/networks"]
 
 
 def check_for_project(path):
