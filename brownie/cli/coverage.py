@@ -29,10 +29,11 @@ Arguments:
   <range>             Number or range of tests to run from file
 
 Options:
-  --help              Display this message
+  --update            Only evaluate coverage on changed contracts/tests
+  --always-transact   Perform all contract calls as transactions
   --verbose           Enable verbose reporting
   --tb                Show entire python traceback on exceptions
-  --always-transact   Perform all contract calls as transactions
+  --help              Display this message
 
 Runs unit tests and analyzes the transaction stack traces to estimate
 current test coverage. Results are saved to build/coverage.json"""
@@ -42,7 +43,6 @@ def main():
     args = docopt(__doc__)
 
     test_files = get_test_files(args['<filename>'])
-    coverage_files = []
     if len(test_files)==1 and args['<range>']:
         try:
             idx = args['<range>']
@@ -66,13 +66,21 @@ def main():
         "transactions" if CONFIG['test']['always_transact'] else "calls"
     ))
 
+    coverage_files = []
+
     for filename in test_files:
+
+        coverage_json = Path(CONFIG['folders']['project'])
+        coverage_json = coverage_json.joinpath("build/coverage"+filename[5:]+".json")
+        coverage_files.append(coverage_json)
+        if config.ARGV['update'] and coverage_json.exists():
+            continue
+        for p in list(coverage_json.parents)[::-1]:
+            if not p.exists():
+                p.mkdir()
+
         history, tb = run_test(filename, network, idx)
-        if tb:
-            sys.exit(
-                "\n{0[error]}ERROR{0}: Cannot ".format(color) +
-                "calculate coverage while tests are failing\n"
-            )
+
         coverage_map = {}
         coverage_eval = {}
         for tx in history:
@@ -157,23 +165,14 @@ def main():
         test_path = Path(CONFIG['folders']['project']).joinpath(filename+".py")
         coverage_eval['sha1'][str(test_path)] = sha1(test_path.open('rb').read()).hexdigest()
 
-        path = Path(CONFIG['folders']['project'])
-        path = path.joinpath("build/coverage"+filename[5:]+".json")
-
-        coverage_files.append(path)
-
-        for p in list(path.parents)[::-1]:
-            if not p.exists():
-                p.mkdir()
         json.dump(
             coverage_eval,
-            path.open('w'),
+            coverage_json.open('w'),
             sort_keys=True,
             indent=4,
             default=sorted
         )
 
-    # TODO - beyond here things are still broken
     print("\nCoverage analysis complete!\n")
     coverage_eval = merge_coverage(coverage_files)
 
