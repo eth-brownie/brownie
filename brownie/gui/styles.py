@@ -4,12 +4,12 @@ from tkinter import ttk
 import tkinter as tk
 
 TEXT_STYLE = {
-    'font':("Courier", 14),
-    'background':"#383838",
-    'foreground':"#ECECEC",
-    'selectforeground':"white",
-    'selectbackground':"#4a6984",
-    'inactiveselectbackground':"#4a6984",
+    'font': ("Courier", 14),
+    'background': "#383838",
+    'foreground': "#ECECEC",
+    'selectforeground': "white",
+    'selectbackground': "#4a6984",
+    'inactiveselectbackground': "#4a6984",
     'borderwidth': 1,
     'highlightthickness': 0,
 }
@@ -27,6 +27,7 @@ TEXT_COLORS = {
 def set_style(root):
 
     style = ttk.Style()
+    style.theme_use('default')
     style.configure(
         "Treeview",
         background="#383838",
@@ -45,22 +46,28 @@ def set_style(root):
     )
     style.map(
         "Treeview.Heading",
-        background=[("active","#383838"), ("selected","#383838")],
-        foreground=[("active","#ECECEC"), ("selected","#ECECEC")]
+        background=[("active", "#383838"), ("selected", "#383838")],
+        foreground=[("active", "#ECECEC"), ("selected", "#ECECEC")]
     )
     style.configure("TNotebook", background="#272727")
-    style.configure("TNotebook.Tab", background="#272727", foreground="#a9a9a9", font=(None, 14))
+    style.configure(
+        "TNotebook.Tab",
+        background="#272727",
+        foreground="#a9a9a9",
+        font=(None, 14)
+    )
     style.map(
         "TNotebook.Tab",
-        background=[("active","#383838"), ("selected","#383838")],
-        foreground=[("active","#ECECEC"), ("selected","#ECECEC")]
+        background=[("active", "#383838"), ("selected", "#383838")],
+        foreground=[("active", "#ECECEC"), ("selected", "#ECECEC")]
     )
     style.configure(
         "TFrame",
         background="#161616",
         foreground="#ECECEC",
     )
-    style.configure("TScrollbar",
+    style.configure(
+        "TScrollbar",
         background="#272727",
         troughcolor="#383838",
         width=24,
@@ -78,19 +85,31 @@ def set_style(root):
         [(
             'Vertical.Scrollbar.trough',
             {
-                'children':[(
+                'children': [(
                     'Vertical.Scrollbar.thumb',
-                    {'expand': '1', 'sticky': 'nswe'}
+                    {
+                        'expand': '1',
+                        'sticky': 'nswe'
+                    }
                 )],
                 'sticky': 'ns'
             }
         )]
     )
-    style.configure("TCombobox",foreground="#000000", background="#555555", borderwitdh=0, arrowsize=24)
-    style.map("TCombobox", background=[("active","#666666"), ("selected","#383838")],
-        fieldbackground=[("readonly","#A9A9A9")])
-    root.option_add("*TCombobox*Listbox*Font",(None,18))
-    root.option_add("*TCombobox*Listbox.foreground","#000000")
-    root.option_add("*TCombobox*Listbox.background","#A9A9A9")
-    root.option_add("*TCombobox*Listbox.selectForeground","#ECECEC")
-    root.option_add("*TCombobox*Listbox.selectBackground","#272727")
+    style.configure(
+        "TCombobox",
+        foreground="#000000",
+        background="#555555",
+        borderwitdh=0,
+        arrowsize=24
+    )
+    style.map(
+        "TCombobox",
+        background=[("active", "#666666"), ("selected", "#383838")],
+        fieldbackground=[("readonly","#A9A9A9")]
+    )
+    root.option_add("*TCombobox*Listbox*Font", (None, 18))
+    root.option_add("*TCombobox*Listbox.foreground", "#000000")
+    root.option_add("*TCombobox*Listbox.background", "#A9A9A9")
+    root.option_add("*TCombobox*Listbox.selectForeground", "#ECECEC")
+    root.option_add("*TCombobox*Listbox.selectBackground", "#272727")
