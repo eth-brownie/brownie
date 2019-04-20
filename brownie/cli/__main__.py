@@ -18,6 +18,7 @@ Commands:
   compile            Compiles the contract source files
   console            Load the console
   coverage           Evaluate test coverage
+  gui                Load the GUI to view opcodes and test coverage
   init               Initialize a new brownie project
   run                Run a script in the /scripts folder
   test               Run test scripts in the /tests folder
