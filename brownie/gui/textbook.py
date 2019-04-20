@@ -1,11 +1,15 @@
 #!/usr/bin/python3
 
+from pathlib import Path
 import re
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk
 
 from .styles import TEXT_STYLE, TEXT_COLORS
+
+import brownie._config as config
+CONFIG = config.CONFIG
 
 class TextBook(ttk.Notebook):
 
@@ -17,17 +21,20 @@ class TextBook(ttk.Notebook):
         self._frames = []
         root.bind("<Left>", self.key_left)
         root.bind("<Right>", self.key_right)
+        base_path = Path(CONFIG['folders']['project']).joinpath('contracts')
+        for path in base_path.glob('**/*.sol'):
+            self.add(path)
 
-    def add(self, build):
-        label = build['sourcePath'].split('/')[-1]
+    def add(self, path):
+        label = path.name
         if label in [i._label for i in self._frames]:
             return
-        frame = TextBox(self, build['source'])
+        frame = TextBox(self, path.open().read())
         super().add(frame, text="   {}   ".format(label))
         frame._id = len(self._frames)
         frame._label = label
         frame._visible = True
-        frame._path = build['sourcePath']
+        frame._path = str(path)
         self._frames.append(frame)
 
     def get_frame(self, label):

@@ -15,9 +15,7 @@ class SelectContract(ttk.Combobox):
         super().__init__(parent, state='readonly', font=(None, 16))
         values = []
         for filename in self._build_path.glob('*.json'):
-            build = json.load(filename.open())
-            values.append(build['contractName'])
-            root.note.add(build)
+            values.append(filename.stem)
         self['values'] = sorted(values)
         root.note.set_visible([])
         self.bind("<<ComboboxSelected>>", self._select)
