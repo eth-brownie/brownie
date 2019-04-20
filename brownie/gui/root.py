@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 import re
-from threading import Thread
+import threading
 
 import tkinter as tk
 from tkinter import ttk
@@ -17,11 +17,17 @@ import brownie._config as config
 CONFIG = config.CONFIG
 
 
-class _Root(tk.Tk):
-    
+class Root(tk.Tk):
+
+    _active = threading.Event()
+
     def __init__(self):
         if not CONFIG['folders']['project']:
             raise SystemError("No project loaded")
+
+        if self._active.is_set():
+            raise SystemError("GUI is already active")
+        self._active.set()
 
         super().__init__(className="Opcode Viewer")
         self.bind("<Escape>", lambda k: self.destroy())
@@ -40,9 +46,7 @@ class _Root(tk.Tk):
 
         self._show_coverage = False
         self.bind("c", self._toggle_coverage)
-
-    def wait(self):
-        self._t.join()
+        set_style(self)
 
     def _toggle_coverage(self, event):
         active = self.combo.get()
@@ -71,6 +75,11 @@ class _Root(tk.Tk):
             else:
                 tag = "orange" if source.evaluate_condition(i) else "yellow"
             self.note.mark(label, tag, i['start'], i['stop'])
+
+    def destroy(self):
+        super().destroy()
+        self.quit()
+        self._active.clear()
 
 
 class Source:
@@ -113,21 +122,3 @@ class Source:
 def _maxindex(source):
     comp = [i for i in [";", "}", "{"] if i in source]
     return max([source.rindex(i) for i in comp])+1
-
-
-class GuiLauncher():
-
-    def __init__(self):
-        self._t = Thread(target=self._run, daemon=True)
-        self._t.start()
-
-    def _run(self):
-        root = _Root()
-        set_style(root)
-        root.mainloop()
-
-    def wait(self):
-        self._t.join()
-
-    def is_alive(self):
-        return self._t.is_alive()
