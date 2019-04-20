@@ -18,14 +18,16 @@ class TextBook(ttk.Notebook):
         root.bind("<Left>", self.key_left)
         root.bind("<Right>", self.key_right)
 
-    def add(self, text, label):
+    def add(self, build):
+        label = build['sourcePath'].split('/')[-1]
         if label in [i._label for i in self._frames]:
             return
-        frame = TextBox(self, text)
+        frame = TextBox(self, build['source'])
         super().add(frame, text="   {}   ".format(label))
         frame._id = len(self._frames)
         frame._label = label
         frame._visible = True
+        frame._path = build['sourcePath']
         self._frames.append(frame)
 
     def get_frame(self, label):

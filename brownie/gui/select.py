@@ -1,31 +1,30 @@
 #!/usr/bin/python3
 
 import json
-import os
+from pathlib import Path
 from tkinter import ttk
 
+import brownie._config as config
+CONFIG = config.CONFIG
 
 class SelectContract(ttk.Combobox):
 
     def __init__(self, root, parent):
         self._parent = root
+        self._build_path = Path(CONFIG['folders']['project']).joinpath('build/contracts')
         super().__init__(parent, state='readonly', font=(None, 16))
         values = []
-        for filename in sorted(os.listdir('build/contracts')):
-            if filename[-5:] != '.json':
-                continue
-            source = _load(filename)
-            if source['type'] == "interface":
-                continue
-            values.append(source['contractName'])
-            root.note.add(source['source'], source['sourcePath'].split('/')[-1])
+        for filename in self._build_path.glob('*.json'):
+            build = json.load(filename.open())
+            values.append(build['contractName'])
+            root.note.add(build)
         self['values'] = sorted(values)
         root.note.set_visible([])
         self.bind("<<ComboboxSelected>>", self._select)
 
     def _select(self, event):
         self._parent.note.set_visible([])
-        compiled = _load(self.get()+'.json')
+        compiled = json.load(self._build_path.joinpath(self.get()+'.json').open())
         self.selection_clear()
         for contract in sorted(set(
             i['contract'].split('/')[-1]
@@ -48,7 +47,3 @@ class SelectContract(ttk.Combobox):
                 tag = "NoSource"
             self._parent.tree.insert([str(op['pc']), op['op']], [tag, op['op']])
         self._parent.pcMap = dict((str(i.pop('pc')), i) for i in compiled['pcMap'])
-
-
-def _load(name):
-    return json.load(open('build/contracts/'+name))
