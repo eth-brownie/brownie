@@ -13,6 +13,7 @@ from .textbook import TextBook
 from .select import SelectContract
 from .styles import set_style
 
+from brownie.test.coverage import merge_coverage
 import brownie._config as config
 CONFIG = config.CONFIG
 
@@ -31,6 +32,10 @@ class Root(tk.Tk):
 
         super().__init__(className="Opcode Viewer")
         self.bind("<Escape>", lambda k: self.destroy())
+
+        path = Path(CONFIG['folders']['project'])
+        self.coverage_folder = path.joinpath('build/coverage')
+        self.build_folder = path.joinpath('build/contracts')
 
         self.note = TextBook(self)
         self.note.pack(side="left")
@@ -52,29 +57,40 @@ class Root(tk.Tk):
         active = self.combo.get()
         if not active:
             return
-        try:
-            coverage = json.load(open("build/coverage.json"))[active]
-        except FileNotFoundError:
-            return
         if self._show_coverage:
             self.note.unmark_all('green', 'red', 'yellow', 'orange')
             self._show_coverage = False
             return
+        frame_path = self.note.active_frame()._path
+        coverage_files = self.coverage_folder.glob('**/*.json')
+        try:
+            coverage = merge_coverage(coverage_files)[active][frame_path]
+        except KeyError:
+            return
+        build = json.load(self.build_folder.joinpath(active+'.json').open())
+        source = build['source']
+        coverage_map = build['coverageMap'][frame_path]
+        label = frame_path.split('/')[-1]
         self._show_coverage = True
-        source = Source()
-        for i in coverage:
-            label = i['contract'].split('/')[-1]
-            if not i['count']:
-                tag = "red"
-            elif not i['jump'] or 0 not in i['jump']:
-                tag = "green"
-            # if jump[0] is true, the statement resulted in a jump
-            elif i['jump'][0]:
-                tag = "yellow" if source.evaluate_condition(i) else "orange"
-            # if jump[1] is true, the statement did not result in a jump
-            else:
-                tag = "orange" if source.evaluate_condition(i) else "yellow"
-            self.note.mark(label, tag, i['start'], i['stop'])
+        for key, fn, lines in [(k,v['fn'],v['line']) for k,v in coverage_map.items()]:
+            if coverage[key]['pct'] in (0, 1):
+                self.note.mark(
+                    label,
+                    "green" if coverage[key]['pct'] else "red",
+                    fn['start'],
+                    fn['stop']
+                )
+                continue
+            for i, ln in enumerate(lines):
+                if i in coverage[key]['line']:
+                    tag = "green"
+                elif i in coverage[key]['true']:
+                    tag = "yellow" if _evaluate_branch(source, ln) else "orange"
+                elif i in coverage[key]['false']:
+                    tag = "orange" if _evaluate_branch(source, ln) else "yellow"
+                else:
+                    tag = "red"
+                self.note.mark(label, tag, ln['start'], ln['stop'])
 
     def destroy(self):
         super().destroy()
@@ -82,41 +98,31 @@ class Root(tk.Tk):
         self._active.clear()
 
 
-class Source:
-
-    def __init__(self):
-        self._s = {}
-
-    # evaluate surrounding source code to determine if a jump
-    # occured because a statement evaluated true or false
-    def evaluate_condition(self, op):
-        path = op['contract']
-        if path not in self._s:
-            self._s[path] = open(path).read()
-        s = self._s[path]
-        try:
-            idx = _maxindex(s[:op['start']])
-        except:
-            return False
-
-        # remove comments, strip whitespace
-        before = s[idx:op['start']]
-        for pattern in ('\/\*[\s\S]*?\*\/', '\/\/[^\n]*'):
-            for i in re.findall(pattern, before):
-                before = before.replace(i, "")
-        before = before.strip("\n\t (")
-
-        idx = s[op['stop']:].index(';')+len(s[:op['stop']])
-        if idx <= op['stop']:
-            return False
-        after = s[op['stop']:idx].split()
-        after = next((i for i in after if i!=")"),after[0])[0]
-        if (
-            (before[-2:] == "if" and after=="|") or
-            (before[:7] == "require" and after in (")","|"))
-        ):
-            return True
+def _evaluate_branch(source, ln):
+    start, stop = ln['start'], ln['stop']
+    try:
+        idx = _maxindex(source[:start])
+    except:
         return False
+
+    # remove comments, strip whitespace
+    before = source[idx:start]
+    for pattern in ('\/\*[\s\S]*?\*\/', '\/\/[^\n]*'):
+        for i in re.findall(pattern, before):
+            before = before.replace(i, "")
+    before = before.strip("\n\t (")
+
+    idx = source[stop:].index(';')+len(source[:stop])
+    if idx <= stop:
+        return False
+    after = source[stop:idx].split()
+    after = next((i for i in after if i!=")"),after[0])[0]
+    if (
+        (before[-2:] == "if" and after=="|") or
+        (before[:7] == "require" and after in (")","|"))
+    ):
+        return True
+    return False
 
 
 def _maxindex(source):
