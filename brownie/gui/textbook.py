@@ -5,7 +5,7 @@ import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk
 
-from lib.styles import TEXT_STYLE, TEXT_COLORS
+from .styles import TEXT_STYLE, TEXT_COLORS
 
 class TextBook(ttk.Notebook):
 

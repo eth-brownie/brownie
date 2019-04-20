@@ -6,9 +6,9 @@ import re
 import tkinter as tk
 from tkinter import ttk
 
-from lib.listview import ListView
-from lib.textbook import TextBook
-from lib.select import SelectContract
+from .listview import ListView
+from .textbook import TextBook
+from .select import SelectContract
 
 
 class Root(tk.Tk):
