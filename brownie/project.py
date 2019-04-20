@@ -72,7 +72,7 @@ def load(path=None):
     _create_build_folders(path)
     result = []
     for name, build in compiler.compile_contracts(path.joinpath('contracts')).items():
-        if build['type'] == "interface":
+        if not build['bytecode']:
             continue
         container = ContractContainer(build)
         globals()[name] = container
