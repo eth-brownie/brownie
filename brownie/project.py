@@ -18,7 +18,7 @@ project = sys.modules[__name__]
 CONFIG = brownie._config.CONFIG
 
 FOLDERS = ["contracts", "scripts", "tests"]
-BUILD_FOLDERS = ["build", "build/contracts", "build/networks"]
+BUILD_FOLDERS = ["build", "build/contracts", "build/coverage", "build/networks"]
 
 
 def check_for_project(path):
@@ -72,7 +72,7 @@ def load(path=None):
     _create_build_folders(path)
     result = []
     for name, build in compiler.compile_contracts(path.joinpath('contracts')).items():
-        if build['type'] == "interface":
+        if not build['bytecode']:
             continue
         container = ContractContainer(build)
         globals()[name] = container

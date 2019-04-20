@@ -8,6 +8,7 @@ import re
 import solcx
 
 from brownie.exceptions import CompilerError
+from brownie.test.coverage import get_coverage_map
 import brownie._config
 CONFIG = brownie._config.CONFIG
 
@@ -34,6 +35,26 @@ STANDARD_JSON = {
     }
 }
 
+BUILD_KEYS = [
+    'abi',
+    'allSourcePaths',
+    'ast',
+    'bytecode',
+    'compiler',
+    'contractName',
+    'coverageMap',
+    'deployedBytecode',
+    'deployedSourceMap',
+    'networks',
+    'opcodes',
+    'pcMap',
+    'sha1',
+    'source',
+    'sourceMap',
+    'sourcePath',
+    'type'
+]
+
 
 def _check_changed(build, filename, contract, clear=None):
     if contract in _changed:
@@ -46,6 +67,7 @@ def _check_changed(build, filename, contract, clear=None):
         CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
         compiled = json.load(build.open())
         if (
+            not set(BUILD_KEYS).issubset(compiled) or
             compiled['compiler'] != CONFIG['solc'] or
             compiled['sha1'] != sha1(filename.open('rb').read()).hexdigest()
         ):
@@ -58,16 +80,17 @@ def _check_changed(build, filename, contract, clear=None):
         return True
 
 
-def _json_load(path):
-    try:
-        return json.load(path.open())
-    except json.JSONDecodeError:
-        raise OSError(
-            str(path.resolve())+" appears to be corrupted. Delete it"
-            " and restart Brownie to fix this error. If this problem persists "
-            "you may need to delete your entire build/contracts folder."
-        )
-
+def _check_coverage_hashes():
+    # remove coverage data where hashes have changed
+    coverage_folder = Path(CONFIG['folders']['project']).joinpath("build/coverage")
+    for coverage_json in list(coverage_folder.glob('**/*.json')):
+        dependents = json.load(coverage_json.open())['sha1']
+        for path, hash_ in dependents.items():
+            path = Path(path)
+            if not path.exists() or sha1(path.open('rb').read()).hexdigest() != hash_:
+                print(path)
+                coverage_json.unlink()
+                break
 
 def compile_contracts(folder):
     '''
@@ -76,6 +99,9 @@ def compile_contracts(folder):
     '''
     if _contracts:
         return deepcopy(_contracts)
+
+    _check_coverage_hashes()
+
     solcx.set_solc_version(CONFIG['solc']['version'])
     folder = Path(folder).resolve()
     build_folder = folder.parent.joinpath('build/contracts')
@@ -106,6 +132,9 @@ def compile_contracts(folder):
         ]:
             inheritance_map[base] |= inheritance_map[inherited]
     to_compile = []
+    for path in [i for i in build_folder.glob('*.json') if i.stem not in inheritance_map]:
+        # remove build files for contracts that no longer exist
+        path.unlink()
     for filename in contract_files:
         code = filename.open().read()
         input_json = {}
@@ -115,7 +144,7 @@ def compile_contracts(folder):
             check = [i for i in inheritance_map[name]
                      if _check_changed(build_folder, filename, i)]
             if not check and not _check_changed(build_folder, filename, name):
-                _contracts[name] = _json_load(build_folder.joinpath('{}.json'.format(name)))
+                _contracts[name] = json.load(build_folder.joinpath(name+'.json').open())
                 continue
             to_compile.append(filename)
             break
@@ -135,7 +164,8 @@ def compile_contracts(folder):
             data,
             build_folder.joinpath("{}.json".format(name)).open('w'),
             sort_keys=True,
-            indent=4
+            indent=4,
+            default=sorted
         )
     _contracts.update(build_json)
     return deepcopy(_contracts)
@@ -146,6 +176,9 @@ def compile_source(source):
     input_json['sources'] = {"<string>": {'content': source}}
     return _compile_and_format(input_json)
 
+
+def get_build(name):
+    return deepcopy(_contracts[name])
 
 def _compile_and_format(input_json):
     try:
@@ -194,8 +227,10 @@ def _compile_and_format(input_json):
                 'sourceMap': evm['bytecode']['sourceMap'],
                 'sourcePath': filename,
                 'type': type_,
-                'pcMap': evm['deployedBytecode']['pcMap']
+                'pcMap': evm['pcMap'],
+                'allSourcePaths': sorted(set(i['contract'] for i in evm['pcMap'] if i['contract']))
             }
+            result[name]['coverageMap'] = get_coverage_map(result[name])
     return result
 
 
@@ -217,7 +252,7 @@ def generate_pcMap(compiled):
         bytecode = compiled['contracts'][filename][name]['evm']['deployedBytecode']
 
         if not bytecode['object']:
-            bytecode['pcMap'] = []
+            compiled['contracts'][filename][name]['evm']['pcMap'] = []
             continue
         pcMap = []
         opcodes = bytecode['opcodes']
@@ -264,5 +299,5 @@ def generate_pcMap(compiled):
             })
             if opcodes[-1][:2] == "0x":
                 pcMap[-1]['value'] = opcodes.pop()
-        bytecode['pcMap'] = pcMap
+        compiled['contracts'][filename][name]['evm']['pcMap'] = pcMap
     return compiled

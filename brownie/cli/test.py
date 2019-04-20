@@ -24,11 +24,11 @@ Arguments:
   <range>             Number or range of tests to run from file
 
 Options:
-  --help              Display this message
-  --verbose           Enable verbose reporting
-  --gas               Display gas profile for function calls
-  --tb                Show entire python traceback on exceptions
   --always-transact   Perform all contract calls as transactions
+  --gas               Display gas profile for function calls
+  --verbose           Enable verbose reporting
+  --tb                Show entire python traceback on exceptions
+  --help              Display this message
 
 By default brownie runs every script found in the tests folder as well as any
 subfolders. Files and folders beginning with an underscore will be skipped."""
@@ -127,13 +127,8 @@ def run_test(filename, network, idx):
     for c, t in enumerate(test_names[idx], start=idx.start + 1):
         network.rpc.revert()
         traceback_info += _run_test(module, t, c, len(test_names))
-        if sys.argv[1] != "coverage":
-            continue
-        # need to retrieve stack trace before reverting the EVM
-        for i in history:
-            i.trace
         test_history.update(history.copy())
-    return history, traceback_info
+    return test_history, traceback_info
 
 
 def get_test_files(path):

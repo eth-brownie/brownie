@@ -1,15 +1,17 @@
 #!/usr/bin/python3
 
+from copy import deepcopy
 from docopt import docopt
+from hashlib import sha1
 from pathlib import Path
 import sys
 import json
 
 from brownie.cli.test import get_test_files, run_test
+from brownie.test.coverage import merge_coverage
 from brownie.cli.utils import color
 import brownie.network as network
-from brownie.test.coverage import get_coverage_map
-from brownie.utils.compiler import compile_contracts
+from brownie.utils.compiler import get_build
 import brownie._config as config
 
 CONFIG = config.CONFIG
@@ -27,10 +29,11 @@ Arguments:
   <range>             Number or range of tests to run from file
 
 Options:
-  --help              Display this message
+  --update            Only evaluate coverage on changed contracts/tests
+  --always-transact   Perform all contract calls as transactions
   --verbose           Enable verbose reporting
   --tb                Show entire python traceback on exceptions
-  --always-transact   Perform all contract calls as transactions
+  --help              Display this message
 
 Runs unit tests and analyzes the transaction stack traces to estimate
 current test coverage. Results are saved to build/coverage.json"""
@@ -54,10 +57,6 @@ def main():
     else:
         idx = slice(0, None)
 
-    compiled = compile_contracts(
-        Path(CONFIG['folders']['project']).joinpath('contracts')
-    )
-    fn_map, line_map = get_coverage_map(compiled)
     network.connect(config.ARGV['network'], True)
 
     if args['--always-transact']:
@@ -67,13 +66,23 @@ def main():
         "transactions" if CONFIG['test']['always_transact'] else "calls"
     ))
 
+    coverage_files = []
+
     for filename in test_files:
+
+        coverage_json = Path(CONFIG['folders']['project'])
+        coverage_json = coverage_json.joinpath("build/coverage"+filename[5:]+".json")
+        coverage_files.append(coverage_json)
+        if config.ARGV['update'] and coverage_json.exists():
+            continue
+        for p in list(coverage_json.parents)[::-1]:
+            if not p.exists():
+                p.mkdir()
+
         history, tb = run_test(filename, network, idx)
-        if tb:
-            sys.exit(
-                "\n{0[error]}ERROR{0}: Cannot ".format(color) +
-                "calculate coverage while tests are failing\n"
-            )
+
+        coverage_map = {}
+        coverage_eval = {}
         for tx in history:
             if not tx.receiver:
                 continue
@@ -81,19 +90,25 @@ def main():
                 t = tx.trace[i]
                 pc = t['pc']
                 name = t['contractName']
-                if not name:
+                source = t['source']['filename']
+                if not name or not source:
                     continue
+                if name not in coverage_map:
+                    coverage_map[name] = get_build(name)['coverageMap']
+                    coverage_eval[name] = dict((i,{}) for i in coverage_map[name])
                 try:
                     # find the function map item and record the tx
-                    fn = next(i for i in fn_map[name] if pc in i['pc'])
-                    fn['tx'].add(tx)
+                    
+                    fn = next(v for k,v in coverage_map[name][source].items() if pc in v['fn']['pc'])
+                    fn['fn'].setdefault('tx',set()).add(tx)
                     if t['op']!="JUMPI":
                         # if not a JUMPI, find the line map item and record
-                        ln = next(i for i in line_map[name] if pc in i['pc'])
-                        ln['tx'].add(tx)
+                        next(i for i in fn['line'] if pc in i['pc']).setdefault('tx',set()).add(tx)
                         continue
                     # if a JUMPI, we need to have hit the jump pc AND a related opcode
-                    ln = next(i for i in line_map[name] if pc==i['jump'])
+                    ln = next(i for i in fn['line'] if pc==i['jump'])
+                    for key in ('tx', 'true', 'false'):
+                        ln.setdefault(key, set())
                     if tx not in ln['tx']:
                         continue
                     # if the next opcode is not pc+1, the JUMPI was executed truthy
@@ -103,57 +118,70 @@ def main():
                 except StopIteration:
                     continue
 
-    for ln in [x for v in line_map.values() for x in v]:
-        if ln['jump']:
-            ln['jump'] = [len(ln.pop('true')), len(ln.pop('false'))]
-        ln['count'] = len(ln.pop('tx'))
-        del ln['pc']
+        for contract, source, fn_name, maps in [(k,w,y,z) for k,v in coverage_map.items() for w,x in v.items() for y,z in x.items()]:
+            fn = maps['fn']
+            if 'tx' not in fn or not fn['tx']:
+                coverage_eval[contract][source][fn_name] = {'pct':0}
+                continue
+            for ln in maps['line']:
+                if 'tx' not in ln:
+                    ln['count'] = 0
+                    continue
+                if ln['jump']:
+                    ln['jump'] = [len(ln.pop('true')), len(ln.pop('false'))]
+                ln['count'] = len(ln.pop('tx'))
 
-    for contract in fn_map:
-        for fn in fn_map[contract].copy():
-            fn['count'] = len(fn.pop('tx'))
-            del fn['pc']
-            line_fn = [i for i in line_map[contract] if i['method']==fn['method']]
-            if not fn['count'] or not [i for i in line_fn if i['count']]:
-                for ln in line_fn:
-                    line_map[contract].remove(ln)
-            elif line_fn:
-                fn_map[contract].remove(fn)
-        fn_map[contract].extend(line_map[contract])
+            if not [i for i in maps['line'] if i['count']]:
+                coverage_eval[contract][source][fn_name] = {'pct':0}
+                continue
 
-    json.dump(
-        fn_map,
-        Path(CONFIG['folders']['project']).joinpath("build/coverage.json").open('w'),
-        sort_keys=True,
-        indent=4
-    )
-    print("\nCoverage analysis complete!\n")
-    for contract in fn_map:
-        fn_list = sorted(set(i['method'] for i in fn_map[contract] if i['method']))
-        if not fn_list:
-            continue
-        if not [i for i in fn_map[contract] if i['count']]:
-            print("  contract: {0[contract]}{1}{0} - {0[bright red]}0.0%{0}".format(color, contract))
-            continue
-        print("  contract: {0[contract]}{1}{0}".format(color, contract))
-        for fn in fn_list:
-            map_ = [i for i in fn_map[contract] if i['method']==fn]
             count = 0
-            for i in map_:
+            coverage = {'line':set(), 'true':set(), 'false':set()}
+            for c,i in enumerate(maps['line']):
                 if not i['count']:
                     continue
-                if not i['jump']:
-                    count+=1
+                if not i['jump'] or False not in i['jump']:
+                    coverage['line'].add(c)
+                    count+=2 if i['jump'] else 1
                     continue
                 if i['jump'][0]:
+                    coverage['true'].add(c)
                     count+=1
                 if i['jump'][1]:
+                    coverage['false'].add(c)
                     count+=1
-            total = sum([1 if not i['jump'] else 2 for i in map_])
-            pct = count / total
+            pct = count / maps['total']
+            if count == maps['total']:
+                coverage_eval[contract][source][fn_name] = {'pct': 1}
+            else:
+                coverage['pct']=round(count/maps['total'],2)
+                coverage_eval[contract][source][fn_name] = coverage
+
+        contract_files = set(x for i in coverage_eval.values() for x in i)
+        coverage_eval = {
+            'contracts': coverage_eval,
+            'sha1': dict((i, sha1(open(i, 'rb').read()).hexdigest()) for i in contract_files)
+        }
+        test_path = Path(CONFIG['folders']['project']).joinpath(filename+".py")
+        coverage_eval['sha1'][str(test_path)] = sha1(test_path.open('rb').read()).hexdigest()
+
+        json.dump(
+            coverage_eval,
+            coverage_json.open('w'),
+            sort_keys=True,
+            indent=4,
+            default=sorted
+        )
+
+    print("\nCoverage analysis complete!\n")
+    coverage_eval = merge_coverage(coverage_files)
+
+    for contract in coverage_eval:
+        print("  contract: {0[contract]}{1}{0}".format(color, contract))
+        for fn_name, pct in [(x,v[x]['pct']) for v in coverage_eval[contract].values() for x in v]:
             c = next(i[1] for i in COVERAGE_COLORS if pct<=i[0])
             print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
-                color, fn, color(c), pct
+                color, fn_name, color(c), pct
             ))
         print()
-    print("\nDetailed results saved to {0[string]}build/coverage.json{0}".format(color))
+    print("\nDetailed reports saved in {0[string]}build/coverage{0}".format(color))

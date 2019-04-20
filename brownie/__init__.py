@@ -12,6 +12,7 @@ from brownie.project import (
     project,
     __project
 )
+from brownie.gui import Gui
 from brownie.test import check
 import brownie._config
 from brownie.utils import alert
@@ -29,7 +30,8 @@ __all__ = [
     'compile_source',
     'alert',
     'wei',
-    'config'
+    'config',
+    'Gui'
 ]
 
 config = brownie._config.CONFIG
