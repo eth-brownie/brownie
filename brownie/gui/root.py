@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
 import json
+from pathlib import Path
 import re
+from threading import Thread
 
 import tkinter as tk
 from tkinter import ttk
@@ -9,13 +11,20 @@ from tkinter import ttk
 from .listview import ListView
 from .textbook import TextBook
 from .select import SelectContract
+from .styles import set_style
+
+import brownie._config as config
+CONFIG = config.CONFIG
 
 
-class Root(tk.Tk):
+class _Root(tk.Tk):
     
     def __init__(self):
+        if not CONFIG['folders']['project']:
+            raise SystemError("No project loaded")
+
         super().__init__(className="Opcode Viewer")
-        self.bind("<Escape>", lambda k: self.quit())
+        self.bind("<Escape>", lambda k: self.destroy())
 
         self.note = TextBook(self)
         self.note.pack(side="left")
@@ -31,6 +40,9 @@ class Root(tk.Tk):
 
         self._show_coverage = False
         self.bind("c", self._toggle_coverage)
+
+    def wait(self):
+        self._t.join()
 
     def _toggle_coverage(self, event):
         active = self.combo.get()
@@ -101,3 +113,21 @@ class Source:
 def _maxindex(source):
     comp = [i for i in [";", "}", "{"] if i in source]
     return max([source.rindex(i) for i in comp])+1
+
+
+class GuiLauncher():
+
+    def __init__(self):
+        self._t = Thread(target=self._run, daemon=True)
+        self._t.start()
+
+    def _run(self):
+        root = _Root()
+        set_style(root)
+        root.mainloop()
+
+    def wait(self):
+        self._t.join()
+
+    def is_alive(self):
+        return self._t.is_alive()
