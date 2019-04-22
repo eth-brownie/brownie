@@ -88,7 +88,6 @@ def _check_coverage_hashes():
         for path, hash_ in dependents.items():
             path = Path(path)
             if not path.exists() or sha1(path.open('rb').read()).hexdigest() != hash_:
-                print(path)
                 coverage_json.unlink()
                 break
 
