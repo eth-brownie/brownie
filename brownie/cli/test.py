@@ -5,6 +5,7 @@ import importlib
 import os
 from pathlib import Path
 import re
+from requests.exceptions import ReadTimeout
 import sys
 import time
 
@@ -73,10 +74,7 @@ def _run_test(module, fn_name, count, total):
             c = [color('error'), color('dull'), color()]
         sys.stdout.write("\r {0[0]}{1}{0[1]} {4} - {2} ({0[0]}{3}{0[1]}){0[2]}\n".format(
             c,
-            '\u2717' if type(e) in (
-                AssertionError,
-                VirtualMachineError
-            ) else '\u203C',
+            '\u2717' if type(e) in (AssertionError, VirtualMachineError) else '\u203C',
             desc,
             type(e).__name__,
             count
@@ -86,7 +84,7 @@ def _run_test(module, fn_name, count, total):
             return []
         filename = str(Path(module.__file__).relative_to(CONFIG['folders']['project']))
         fn_name = filename[:-2]+fn_name
-        return [(fn_name, color.format_tb(sys.exc_info(), filename))]
+        return [(fn_name, color.format_tb(sys.exc_info(), filename), type(e))]
 
 
 def run_test(filename, network, idx):
@@ -127,6 +125,11 @@ def run_test(filename, network, idx):
     for c, t in enumerate(test_names[idx], start=idx.start + 1):
         network.rpc.revert()
         traceback_info += _run_test(module, t, c, len(test_names))
+        if traceback_info and traceback_info[-1][2] == ReadTimeout:
+            print(" {0[error]}WARNING{0}: RPC crashed, terminating test".format(color))
+            network.rpc.kill(False)
+            network.rpc.launch()
+            break
         test_history.update(history.copy())
     return test_history, traceback_info
 
