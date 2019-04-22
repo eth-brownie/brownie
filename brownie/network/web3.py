@@ -15,7 +15,7 @@ CONFIG = brownie._config.CONFIG
 def connect(network):
     if network and network not in CONFIG['networks']:
         raise ValueError("Unknown network - {}".format(network))
-    brownie._config.update_config(network)
+    brownie._config.modify_network_config(network)
     if 'ws' in CONFIG['active_network']:
         web3.providers = [WebsocketProvider(CONFIG['active_network']['ws'])]
     elif 'ipc' in CONFIG['active_network']:

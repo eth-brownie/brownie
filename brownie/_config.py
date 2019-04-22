@@ -2,10 +2,13 @@
 
 import json
 from pathlib import Path
+import shutil
 import sys
 
 from brownie.types import FalseyDict, StrictDict
 
+
+IGNORE_MISSING = ['active_network', 'folders', 'logging']
 
 
 def _load_config():
@@ -26,13 +29,23 @@ def _load_config():
         config['logging'] = {"tx": 1, "exc": 1}
     return config
 
-def update_config(network = None):
+def update_config():
     CONFIG._unlock()
     if CONFIG['folders']['project']:
         path = Path(CONFIG['folders']['project']).joinpath("brownie-config.json")
         if path.exists():
-            _recursive_update(CONFIG, json.load(path.open()))
+            _recursive_update(CONFIG, json.load(path.open()), [])
+        else:
+            shutil.copy(
+                str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
+                str(path)
+            )
+            print("WARNING: No config file found for this project. A new one has been created.")
+    modify_network_config()
+
+def modify_network_config(network = None):
     # modify network settings
+    CONFIG._unlock()
     try:
         if not network:
             network = CONFIG['network_defaults']['name']
@@ -45,16 +58,22 @@ def update_config(network = None):
             CONFIG['active_network']['persist'] = False
     except KeyError:
         raise KeyError("Network '{}' is not defined in config.json".format(network))
-    CONFIG._lock()
+    finally:
+        CONFIG._lock()
 
 
 # merges project .json with brownie .json
-def _recursive_update(original, new):
+def _recursive_update(original, new, base):
     for k in new:
         if type(new[k]) is dict and k in original:
-            _recursive_update(original[k], new[k])
+            _recursive_update(original[k], new[k], base+[k])
         else:
             original[k] = new[k]
+    for k in [i for i in original if i not in new and not set(base+[i]).intersection(IGNORE_MISSING)]:
+        print(
+            "WARNING: Value '{}' not found in the config file for this project."
+            " The default setting has been used.".format(".".join(base+[k]))
+        )
 
 # move argv flags into FalseyDict
 ARGV = FalseyDict()
@@ -71,4 +90,4 @@ if len(sys.argv) > 1:
 
 # load config
 CONFIG = _load_config()
-update_config(CONFIG['network_defaults']['name'])
+modify_network_config()
