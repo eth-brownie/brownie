@@ -103,7 +103,10 @@ def main():
                     fn['fn'].setdefault('tx',set()).add(tx)
                     if t['op']!="JUMPI":
                         # if not a JUMPI, find the line map item and record
-                        next(i for i in fn['line'] if pc in i['pc']).setdefault('tx',set()).add(tx)
+                        ln = next(i for i in fn['line'] if pc in i['pc'])
+                        for key in ('tx', 'true', 'false'):
+                            ln.setdefault(key, set())
+                        ln['tx'].add(tx)
                         continue
                     # if a JUMPI, we need to have hit the jump pc AND a related opcode
                     ln = next(i for i in fn['line'] if pc==i['jump'])
@@ -128,9 +131,8 @@ def main():
                     ln['count'] = 0
                     continue
                 if ln['jump']:
-                    ln['jump'] = [len(ln.pop('true')), len(ln.pop('false'))]
-                ln['count'] = len(ln.pop('tx'))
-
+                    ln['jump'] = [len(ln['true']), len(ln['false'])]
+                ln['count'] = len(ln['tx'])
             if not [i for i in maps['line'] if i['count']]:
                 coverage_eval[contract][source][fn_name] = {'pct':0}
                 continue
@@ -162,6 +164,9 @@ def main():
             'contracts': coverage_eval,
             'sha1': dict((i, sha1(open(i, 'rb').read()).hexdigest()) for i in contract_files)
         }
+        if args['<range>']:
+            continue
+
         test_path = Path(CONFIG['folders']['project']).joinpath(filename+".py")
         coverage_eval['sha1'][str(test_path)] = sha1(test_path.open('rb').read()).hexdigest()
 
