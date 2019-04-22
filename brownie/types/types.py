@@ -49,9 +49,8 @@ class FalseyDict:
         return False
 
 
-# tuple/dict hybrid used for return values
 class KwargTuple:
-
+    '''Tuple/dict hybrid class, used for return values on callable functions'''
     def __init__(self, values, abi):
         values = format_output(values)
         self._tuple = tuple(values)
@@ -61,10 +60,6 @@ class KwargTuple:
             if not i['name']:
                 continue
             self._dict[i['name']] = values[c]
-        for i in ('count', 'index'):
-            setattr(self, i, getattr(self._tuple, i))
-        for i in ('items', 'keys', 'values'):
-            setattr(self, i, getattr(self._dict, i))
 
     def _console_repr(self):
         return repr(self._tuple)
@@ -90,7 +85,29 @@ class KwargTuple:
         return len(self._tuple)
 
     def copy(self):
+        '''KwargTuple.copy() -> a shallow copy of KwargTuple'''
         return KwargTuple(self._tuple, self._abi)
+
+    def count(self, value):
+        '''KwargTuple.count(value) -> integer -- return number of occurrences of value'''
+        return self._tuple.count(value)
+
+    def dict(self):
+        '''KwargTuple.dict() -> a dictionary of KwargTuple's named items'''
+        return self._dict
+
+    def index(self, value, *args):
+        '''KwargTuple.index(value, [start, [stop]]) -> integer -- return first index of value.
+        Raises ValueError if the value is not present.'''
+        return self._tuple.index(value, *args)
+
+    def items(self):
+        '''KwargTuple.items() -> a set-like object providing a view on KwargTuple's named items'''
+        return self._dict.items()
+
+    def keys(self):
+        '''KwargTuple.keys() -> a set-like object providing a view on KwargTuple's keys'''
+        return self._dict.values()
 
 
 # dict container that returns False if key is not present
