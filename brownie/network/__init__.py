@@ -35,7 +35,7 @@ def disconnect(kill_rpc=False):
         _registry.reset()
 
 
-def reset(network=None, launch_rpc=False):
+def reset(network=None):
     '''Reboots the local RPC client and resets the brownie environment.
 
     Args:
@@ -44,8 +44,9 @@ def reset(network=None, launch_rpc=False):
         network = CONFIG['active_network']['name']
     if network not in CONFIG['networks']:
         raise ValueError("Unknown network - {}".format(network))
-    disconnect(launch_rpc)
-    connect(network, launch_rpc)
+    reset_rpc = rpc.is_active()
+    disconnect(reset_rpc)
+    connect(network, reset_rpc)
 
 
 def show_active():

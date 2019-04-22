@@ -44,11 +44,11 @@ class Rpc:
             raise FileNotFoundError("Cannot test RPC - check the filename in brownie-config.json")
         self._time_offset = 0
         self._snapshot_id = False
-        for i in range(20):
+        for i in range(50):
             if web3.isConnected():
                 _registry.reset()
                 return
-            time.sleep(0.2)
+            time.sleep(0.1)
         raise ConnectionError(
             "Cannot connect to {}".format(web3.providers[0].endpoint_uri)
         )
@@ -62,6 +62,7 @@ class Rpc:
         self._rpc.terminate()
         self._time_offset = 0
         self._snapshot_id = False
+        self._rpc = None
         _registry.reset()
 
     def _request(self, *args):
