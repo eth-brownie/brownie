@@ -80,6 +80,10 @@ def main():
                 p.mkdir()
 
         history, tb = run_test(filename, network, idx)
+        if tb:
+            if coverage_json.exists():
+                coverage_json.unlink()
+            continue
 
         coverage_map = {}
         coverage_eval = {}
