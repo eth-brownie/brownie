@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
-from copy import deepcopy
 from docopt import docopt
 from hashlib import sha1
+import json
 from pathlib import Path
 import sys
-import json
 
 from brownie.cli.test import get_test_files, run_test
 from brownie.test.coverage import merge_coverage
@@ -163,10 +162,15 @@ def main():
                 coverage['pct']=round(count/maps['total'],2)
                 coverage_eval[contract][source][fn_name] = coverage
 
-        contract_files = set(x for i in coverage_eval.values() for x in i)
+        build_folder = Path(CONFIG['folders']['project']).joinpath('build/contracts')
+        build_files = set(build_folder.joinpath(i+'.json') for i in coverage_eval)
         coverage_eval = {
             'contracts': coverage_eval,
-            'sha1': dict((i, sha1(open(i, 'rb').read()).hexdigest()) for i in contract_files)
+            'sha1': dict((
+                str(i),
+                # hash of bytecode without final metadata
+                sha1(json.load(i.open())['bytecode'][:-68].encode()).hexdigest()
+            ) for i in build_files)
         }
         if args['<range>']:
             continue

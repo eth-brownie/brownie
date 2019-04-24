@@ -87,9 +87,19 @@ def _check_coverage_hashes():
         dependents = json.load(coverage_json.open())['sha1']
         for path, hash_ in dependents.items():
             path = Path(path)
-            if not path.exists() or sha1(path.open('rb').read()).hexdigest() != hash_:
-                coverage_json.unlink()
-                break
+            try:
+                if path.suffix != ".json":
+                    if sha1(path.open('rb').read()).hexdigest() == hash_:
+                        continue
+                elif sha1(json.load(
+                    # hash of bytecode without final metadata
+                    path.open())['bytecode'][:-68].encode()
+                ).hexdigest() == hash_:
+                    continue
+            except Exception:
+                pass
+            coverage_json.unlink()
+            break
 
 def compile_contracts(folder):
     '''
@@ -98,9 +108,6 @@ def compile_contracts(folder):
     '''
     if _contracts:
         return deepcopy(_contracts)
-
-    _check_coverage_hashes()
-
     solcx.set_solc_version(CONFIG['solc']['version'])
     folder = Path(folder).resolve()
     build_folder = folder.parent.joinpath('build/contracts')
@@ -147,26 +154,26 @@ def compile_contracts(folder):
                 continue
             to_compile.append(filename)
             break
-    if not to_compile:
-        return deepcopy(_contracts)
-    print("Compiling contracts...")
-    print("Optimizer: {}".format(
-        "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
-        CONFIG['solc']['optimize'] else "Disabled"
-    ))
-    print("\n".join(" - {}...".format(i.name) for i in to_compile))
-    input_json = STANDARD_JSON.copy()
-    input_json['sources'] = dict((str(i), {'content': i.open().read()}) for i in to_compile)
-    build_json = _compile_and_format(input_json)
-    for name, data in build_json.items():
-        json.dump(
-            data,
-            build_folder.joinpath("{}.json".format(name)).open('w'),
-            sort_keys=True,
-            indent=4,
-            default=sorted
-        )
-    _contracts.update(build_json)
+    if to_compile:
+        print("Compiling contracts...")
+        print("Optimizer: {}".format(
+            "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
+            CONFIG['solc']['optimize'] else "Disabled"
+        ))
+        print("\n".join(" - {}...".format(i.name) for i in to_compile))
+        input_json = STANDARD_JSON.copy()
+        input_json['sources'] = dict((str(i), {'content': i.open().read()}) for i in to_compile)
+        build_json = _compile_and_format(input_json)
+        for name, data in build_json.items():
+            json.dump(
+                data,
+                build_folder.joinpath("{}.json".format(name)).open('w'),
+                sort_keys=True,
+                indent=4,
+                default=sorted
+            )
+        _contracts.update(build_json)
+    _check_coverage_hashes()
     return deepcopy(_contracts)
 
 
