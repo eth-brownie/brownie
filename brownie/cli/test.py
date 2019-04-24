@@ -2,6 +2,8 @@
 
 from docopt import docopt
 import importlib
+from hashlib import sha1
+import json
 import os
 from pathlib import Path
 import re
@@ -10,6 +12,7 @@ import sys
 import time
 
 from brownie.cli.utils import color
+from brownie.test.coverage import merge_coverage, analyze_coverage
 from brownie.exceptions import VirtualMachineError
 import brownie.network as network
 from brownie.network.history import history
@@ -18,18 +21,27 @@ import brownie.network.transaction as transaction
 import brownie._config as config
 CONFIG = config.CONFIG
 
+COVERAGE_COLORS = [
+    (0.5, "bright red"),
+    (0.85, "bright yellow"),
+    (1, "bright green")
+]
+
 __doc__ = """Usage: brownie test [<filename>] [<range>] [options]
 
 Arguments:
-  <filename>          Only run tests from a specific file or folder
-  <range>             Number or range of tests to run from file
+  <filename>              Only run tests from a specific file or folder
+  <range>                 Number or range of tests to run from file
 
 Options:
-  --always-transact   Perform all contract calls as transactions
-  --gas               Display gas profile for function calls
-  --verbose           Enable verbose reporting
-  --tb                Show entire python traceback on exceptions
-  --help              Display this message
+  
+  --coverage  -c          Evaluate test coverage and display a report
+  --update  -u            Only run tests where changes have occurred
+  --gas  -g               Display gas profile for function calls
+  --always-transact  -a   Perform all contract calls as transactions
+  --verbose  -v           Enable verbose reporting
+  --tb  -t                Show entire python traceback on exceptions
+  --help  -h              Display this message
 
 By default brownie runs every script found in the tests folder as well as any
 subfolders. Files and folders beginning with an underscore will be skipped."""
@@ -153,6 +165,7 @@ def get_test_files(path):
 
 def main():
     args = docopt(__doc__)
+    config.ARGV._update_from_args(args)
     traceback_info = []
     test_files = get_test_files(args['<filename>'])
 
@@ -178,21 +191,80 @@ def main():
         "transactions" if CONFIG['test']['always_transact'] else "calls"
     ))
 
+    coverage_files = []
+
     for filename in test_files:
+        coverage_json = Path(CONFIG['folders']['project'])
+        coverage_json = coverage_json.joinpath("build/coverage"+filename[5:]+".json")
+        coverage_files.append(coverage_json)
+        if coverage_json.exists():
+            coverage_eval = json.load(coverage_json.open())['coverage']
+            if config.ARGV['update'] and (coverage_eval or not config.ARGV['coverage']):
+                continue
+        else:
+            coverage_eval = {}
         test_history, tb = run_test(filename, network, idx)
         if tb:
             traceback_info += tb
-    if not traceback_info:
-        print("\n{0[success]}SUCCESS{0}: All tests passed.".format(color))
-        if config.ARGV['gas']:
-            print('\nGas Profile:')
-            for i in sorted(transaction.gas_profile):
-                print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, transaction.gas_profile[i]))
+            if coverage_json.exists():
+                coverage_json.unlink()
+            continue
+        
+        if args['--coverage']:
+            coverage_eval = analyze_coverage(test_history)
+        build_folder = Path(CONFIG['folders']['project']).joinpath('build/contracts')
+        build_files = set(build_folder.joinpath(i+'.json') for i in coverage_eval)
+        coverage_eval = {
+            'coverage': coverage_eval,
+            'sha1': dict((
+                str(i),
+                # hash of bytecode without final metadata
+                sha1(json.load(i.open())['bytecode'][:-68].encode()).hexdigest()
+            ) for i in build_files)
+        }
+        if args['<range>']:
+            continue
+
+        test_path = Path(CONFIG['folders']['project']).joinpath(filename+".py")
+        coverage_eval['sha1'][str(test_path)] = sha1(test_path.open('rb').read()).hexdigest()
+
+        json.dump(
+            coverage_eval,
+            coverage_json.open('w'),
+            sort_keys=True,
+            indent=4,
+            default=sorted
+        )
+
+    if traceback_info:
+
+        print("\n{0[error]}WARNING{0}: {1} test{2} failed.{0}".format(
+            color, len(traceback_info), "s" if len(traceback_info) > 1 else ""
+        ))
+
+        for err in traceback_info:
+            print("\nException info for {0[0]}:\n{0[1]}".format(err))
         sys.exit()
 
-    print("\n{0[error]}WARNING{0}: {1} test{2} failed.{0}".format(
-        color, len(traceback_info), "s" if len(traceback_info) > 1 else ""
-    ))
+    print("\n{0[success]}SUCCESS{0}: All tests passed.".format(color))
+    
+    if args['--coverage']:
+        print("\nCoverage analysis:\n")
+        coverage_eval = merge_coverage(coverage_files)
 
-    for err in traceback_info:
-        print("\nException info for {0[0]}:\n{0[1]}".format(err))
+        for contract in coverage_eval:
+            print("  contract: {0[contract]}{1}{0}".format(color, contract))
+            for fn_name, pct in [(x,v[x]['pct']) for v in coverage_eval[contract].values() for x in v]:
+                c = next(i[1] for i in COVERAGE_COLORS if pct<=i[0])
+                print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
+                    color, fn_name, color(c), pct
+                ))
+            print()
+    
+    if args['--gas']:
+        print('\nGas Profile:')
+        for i in sorted(transaction.gas_profile):
+            print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, transaction.gas_profile[i]))
+
+
+    
