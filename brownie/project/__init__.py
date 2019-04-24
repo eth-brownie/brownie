@@ -6,19 +6,19 @@ import shutil
 import sys
 
 from brownie.network.contract import ContractContainer
+from brownie.project._build import Build
 from brownie.utils import compiler
 import brownie._config
-
+CONFIG = brownie._config.CONFIG
 
 __all__ = ['project', '__project']
 
 __project = True
 project = sys.modules[__name__]
+build = Build()
 
-CONFIG = brownie._config.CONFIG
 
 FOLDERS = ["contracts", "scripts", "tests"]
-BUILD_FOLDERS = ["build", "build/contracts", "build/coverage", "build/networks"]
 
 
 def check_for_project(path):
@@ -27,12 +27,6 @@ def check_for_project(path):
         if folder.joinpath("brownie-config.json").exists():
             return folder
     return None
-
-
-def _create_build_folders(path):
-    path = Path(path).resolve()
-    for folder in [i for i in BUILD_FOLDERS]:
-        path.joinpath(folder).mkdir(exist_ok=True)
 
 
 def new(path=".", ignore_subfolder=False):
@@ -52,9 +46,9 @@ def new(path=".", ignore_subfolder=False):
             str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
             str(path.joinpath('brownie-config.json'))
         )
-    _create_build_folders(path)
     CONFIG['folders']['project'] = str(path)
     sys.path.insert(0, str(path))
+    build._load()
     return str(path)
 
 
@@ -69,12 +63,13 @@ def load(path=None):
     CONFIG['folders']['project'] = str(path)
     sys.path.insert(0, str(path))
     brownie._config.update_config()
-    _create_build_folders(path)
+    compiler.set_solc_version()
+    build._load()
     result = []
-    for name, build in compiler.compile_contracts(path.joinpath('contracts')).items():
-        if not build['bytecode']:
+    for name, data in build.contracts():
+        if not data['bytecode']:
             continue
-        container = ContractContainer(build)
+        container = ContractContainer(data)
         globals()[name] = container
         __all__.append(name)
         result.append(container)

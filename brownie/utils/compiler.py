@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-from copy import deepcopy
 from hashlib import sha1
 import json
 from pathlib import Path
@@ -8,12 +7,8 @@ import re
 import solcx
 
 from brownie.exceptions import CompilerError
-from brownie.test.coverage import get_coverage_map
 import brownie._config
 CONFIG = brownie._config.CONFIG
-
-_changed = {}
-_contracts = {}
 
 STANDARD_JSON = {
     'language': "Solidity",
@@ -35,90 +30,15 @@ STANDARD_JSON = {
     }
 }
 
-BUILD_KEYS = [
-    'abi',
-    'allSourcePaths',
-    'ast',
-    'bytecode',
-    'compiler',
-    'contractName',
-    'coverageMap',
-    'deployedBytecode',
-    'deployedSourceMap',
-    'networks',
-    'opcodes',
-    'pcMap',
-    'sha1',
-    'source',
-    'sourceMap',
-    'sourcePath',
-    'type'
-]
+_sources = {}
 
 
-def _check_changed(build, filename, contract, clear=None):
-    if contract in _changed:
-        return _changed[contract]
-    build = build.joinpath('{}.json'.format(contract))
-    if not build.exists():
-        _changed[contract] = True
-        return True
-    try:
-        CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
-        compiled = json.load(build.open())
-        if (
-            not set(BUILD_KEYS).issubset(compiled) or
-            compiled['compiler'] != CONFIG['solc'] or
-            compiled['sha1'] != sha1(filename.open('rb').read()).hexdigest()
-        ):
-            _changed[contract] = True
-            return True
-        _changed[contract] = False
-        return False
-    except (json.JSONDecodeError, FileNotFoundError, KeyError):
-        _changed[contract] = True
-        return True
-
-
-def _check_coverage_hashes():
-    # remove coverage data where hashes have changed
-    coverage_folder = Path(CONFIG['folders']['project']).joinpath("build/coverage")
-    for coverage_json in list(coverage_folder.glob('**/*.json')):
-        dependents = json.load(coverage_json.open())['sha1']
-        for path, hash_ in dependents.items():
-            path = Path(path)
-            try:
-                if path.suffix != ".json":
-                    if sha1(path.open('rb').read()).hexdigest() == hash_:
-                        continue
-                elif sha1(json.load(
-                    # hash of bytecode without final metadata
-                    path.open())['bytecode'][:-68].encode()
-                ).hexdigest() == hash_:
-                    continue
-            except Exception:
-                pass
-            coverage_json.unlink()
-            break
-
-def compile_contracts(folder):
-    '''
-    Compiles the project with solc and saves the results
-    in the build/contracts folder.
-    '''
-    if _contracts:
-        return deepcopy(_contracts)
+def set_solc_version():
     solcx.set_solc_version(CONFIG['solc']['version'])
-    folder = Path(folder).resolve()
-    build_folder = folder.parent.joinpath('build/contracts')
-    contract_files = [
-        i for i in list(folder.glob('**/*.sol')) if
-        "_" not in (i.name[0], i.parent.name[0])
-    ]
-    if not contract_files:
-        return {}
-    compiler_info = CONFIG['solc'].copy()
-    compiler_info['version'] = solcx.get_solc_version_string().strip('\n')
+    CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
+
+
+def get_inheritance_map(contract_files):
     inheritance_map = {}
     for filename in contract_files:
         code = filename.open().read()
@@ -128,53 +48,32 @@ def compile_contracts(folder):
         ):
             names = [i.strip(',') for i in name.strip().split(' ')]
             if names[0] in inheritance_map:
-                raise ValueError(
-                    "Multiple contracts named {}".format(names[0]))
+                raise ValueError("Multiple contracts named {}".format(names[0]))
             inheritance_map[names[0]] = set(names[2:])
-            _check_changed(build_folder, filename, names[0])
+            #_check_changed(build_folder, filename, names[0])
     for i in range(len(inheritance_map)):
         for base, inherited in [
             (k, x) for k, v in inheritance_map.copy().items() if v for x in v
         ]:
             inheritance_map[base] |= inheritance_map[inherited]
-    to_compile = []
-    for path in [i for i in build_folder.glob('*.json') if i.stem not in inheritance_map]:
-        # remove build files for contracts that no longer exist
-        path.unlink()
-    for filename in contract_files:
-        code = filename.open().read()
-        input_json = {}
-        for name in (re.findall(
-                "\n(?:contract|library|interface) (.*?)[ {]", code, re.DOTALL
-        )):
-            check = [i for i in inheritance_map[name]
-                     if _check_changed(build_folder, filename, i)]
-            if not check and not _check_changed(build_folder, filename, name):
-                _contracts[name] = json.load(build_folder.joinpath(name+'.json').open())
-                continue
-            to_compile.append(filename)
-            break
-    if to_compile:
-        print("Compiling contracts...")
-        print("Optimizer: {}".format(
-            "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
-            CONFIG['solc']['optimize'] else "Disabled"
-        ))
-        print("\n".join(" - {}...".format(i.name) for i in to_compile))
-        input_json = STANDARD_JSON.copy()
-        input_json['sources'] = dict((str(i), {'content': i.open().read()}) for i in to_compile)
-        build_json = _compile_and_format(input_json)
-        for name, data in build_json.items():
-            json.dump(
-                data,
-                build_folder.joinpath("{}.json".format(name)).open('w'),
-                sort_keys=True,
-                indent=4,
-                default=sorted
-            )
-        _contracts.update(build_json)
-    _check_coverage_hashes()
-    return deepcopy(_contracts)
+    return inheritance_map
+
+
+def compile_contracts(contract_files):
+    '''Compiles the contract files and returns a dict of compiler outputs.'''
+    CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
+    print("Compiling contracts...")
+    print("Optimizer: {}".format(
+        "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
+        CONFIG['solc']['optimize'] else "Disabled"
+    ))
+    print("\n".join(" - {}...".format(i.name) for i in contract_files))
+    input_json = STANDARD_JSON.copy()
+    input_json['sources'] = dict((
+        str(i),
+        {'content': i.open().read()}
+    ) for i in contract_files)
+    return _compile_and_format(input_json)
 
 
 def compile_source(source):
@@ -182,9 +81,6 @@ def compile_source(source):
     input_json['sources'] = {"<string>": {'content': source}}
     return _compile_and_format(input_json)
 
-
-def get_build(name):
-    return deepcopy(_contracts[name])
 
 def _compile_and_format(input_json):
     try:
@@ -196,7 +92,7 @@ def _compile_and_format(input_json):
         )
     except solcx.exceptions.SolcError as e:
         raise CompilerError(e)
-    compiled = generate_pcMap(compiled)
+    compiled = _generate_pcMap(compiled)
     result = {}
     compiler_info = CONFIG['solc'].copy()
     compiler_info['version'] = solcx.get_solc_version_string().strip('\n')
@@ -212,6 +108,7 @@ def _compile_and_format(input_json):
                 (k, x) for v in evm['bytecode']['linkReferences'].values()
                 for k, x in v.items()
             ]
+            # standardize unlinked library tags
             for n, loc in [(i[0], x['start']*2) for i in ref for x in i[1]]:
                 evm['bytecode']['object'] = "{}__{:_<36}__{}".format(
                     evm['bytecode']['object'][:loc],
@@ -234,13 +131,15 @@ def _compile_and_format(input_json):
                 'sourcePath': filename,
                 'type': type_,
                 'pcMap': evm['pcMap'],
-                'allSourcePaths': sorted(set(i['contract'] for i in evm['pcMap'] if i['contract']))
+                'allSourcePaths': sorted(set(
+                    i['contract'] for i in evm['pcMap'] if i['contract']
+                ))
             }
-            result[name]['coverageMap'] = get_coverage_map(result[name])
+            result[name]['coverageMap'] = _generate_coverageMap(result[name])
     return result
 
 
-def generate_pcMap(compiled):
+def _generate_pcMap(compiled):
     '''
     Generates an expanded sourceMap useful for debugging.
     [{
@@ -307,3 +206,209 @@ def generate_pcMap(compiled):
                 pcMap[-1]['value'] = opcodes.pop()
         compiled['contracts'][filename][name]['evm']['pcMap'] = pcMap
     return compiled
+
+
+def _generate_coverageMap(build):
+    """Given the compiled project as supplied by compiler.compile_contracts(),
+    returns the function and line based coverage maps for unit test coverage
+    evaluation.
+
+    A coverage map item is structured as follows:
+
+    {
+        
+        "/path/to/contract/file.sol":{
+            "functionName":{
+                "fn": {},
+                "line":[{},{},{}]
+            }
+        }
+    }
+
+    Each dict in fn/line is as follows:
+
+    {
+        'start': source code start offset 
+        'stop': source code stop offset
+        'pc': set of opcode program counters tied to the map item
+        'jump': pc of the JUMPI instruction, if it is a jump
+        'tx': empty set, used to record transactions that hit the item
+    }
+
+    Items relating to jumps also include keys 'true' and 'false', which are
+    also empty sets used in the same way as 'tx'"""
+
+    fn_map = dict((x,{}) for x in build['allSourcePaths'])
+
+    for i in _isolate_functions(build):
+        fn_map[i.pop('contract')][i.pop('method')] = {'fn':i,'line':[]}
+    line_map = _isolate_lines(build)
+    if not line_map:
+        return {}
+
+    # future me - i'm sorry for this line
+    for source, fn_name, fn in [(k,x,v[x]['fn']) for k,v in fn_map.items() for x in v]:
+        for ln in [
+            i for i in line_map if
+            i['contract']==source and
+            i['start']==fn['start'] and i['stop']==fn['stop']
+        ]:
+            # remove duplicate mappings
+            line_map.remove(ln)
+        for ln in [
+            i for i in line_map if
+            i['contract']==source and
+            i['start']>=fn['start'] and i['stop']<=fn['stop']
+        ]:
+            # apply method names to line mappings
+            line_map.remove(ln)
+            fn_map[ln.pop('contract')][fn_name]['line'].append(ln)
+        fn_map[source][fn_name]['total'] = sum([1 if not i['jump'] else 2 for i in fn_map[source][fn_name]['line']])
+    return fn_map
+
+
+def _isolate_functions(compiled):
+    '''Identify function level coverage map items.'''
+    pcMap = compiled['pcMap']
+    fn_map = {}
+    for op in _oplist(pcMap, "JUMPDEST"):
+        s = _get_source(op)
+        if s[:8] in ("contract", "library ", "interfac"):
+            continue
+        if s[:8]=="function":
+            fn = s[9:s.index('(')]
+        elif " public " in s:
+            fn = s[s.index(" public ")+8:].split(' =')[0].strip()
+        else:
+            continue
+        if fn not in fn_map:
+            fn_map[fn] = _base(op)
+            fn_map[fn]['method']=fn
+        fn_map[fn]['pc'].add(op['pc'])
+
+    fn_map = _sort(fn_map.values())
+    if not fn_map:
+        return []
+    for op in _oplist(pcMap):
+        try:
+            f = _next(fn_map, op)
+        except StopIteration:
+            continue
+        if op['stop']>f['stop']:
+            continue
+        f['pc'].add(op['pc'])
+    return fn_map
+
+
+def _isolate_lines(compiled):
+    '''Identify line based coverage map items.
+
+    For lines where a JUMPI is not present, coverage items will merge
+    to include as much of the line as possible in a single item. Where a
+    JUMPI is involved, no merge will happen and overlapping non-jump items
+    are discarded.'''
+    pcMap = compiled['pcMap']
+    line_map = {}
+
+    # find all the JUMPI opcodes
+    for i in [pcMap.index(i) for i in _oplist(pcMap, "JUMPI")]:
+        op = pcMap[i]
+        if op['contract'] not in line_map:
+            line_map[op['contract']] = []
+        # if followed by INVALID or the source contains public, ignore it
+        if pcMap[i+1]['op'] == "INVALID" or " public " in _get_source(op):
+            continue
+        try:
+            # JUMPI is to the closest previous opcode that has
+            # a different source offset and is not a JUMPDEST
+            req = next(
+                x for x in pcMap[i-2::-1] if
+                x['contract'] and 
+                x['op']!="JUMPDEST" and
+                x['start']+x['stop']!=op['start']+op['stop']
+            )
+        except StopIteration:
+            continue
+        line_map[op['contract']].append(_base(req))
+        line_map[op['contract']][-1].update({
+            'jump':op['pc'],# 'true': set(), 'false': set()
+        })
+
+    # analyze all the opcodes
+    for op in _oplist(pcMap):
+        # ignore code that spans multiple lines
+        if ';' in _get_source(op):
+            continue
+        if op['contract'] not in line_map:
+            line_map[op['contract']] = []
+        # find existing related coverage map item, make a new one if none exists
+        try:
+            ln = _next(line_map[op['contract']], op)
+        except StopIteration:
+            line_map[op['contract']].append(_base(op))
+            continue
+        if op['stop'] > ln['stop']:
+            # if coverage map item is a jump, do not modify the source offsets
+            if ln['jump']:
+                continue
+            ln['stop'] = op['stop']
+        ln['pc'].add(op['pc'])
+
+    # sort the coverage map and merge overlaps where possible
+    for contract in line_map:
+        line_map[contract] = _sort(line_map[contract])
+        ln_map = line_map[contract]
+        i = 0
+        while True:
+            if len(ln_map)<=i+1:
+                break
+            if ln_map[i]['jump']:
+                i+=1
+                continue
+            # JUMPI overlaps cannot merge
+            if ln_map[i+1]['jump']:
+                if ln_map[i]['stop']>ln_map[i+1]['start']:
+                    del ln_map[i]
+                else:
+                    i+=1
+                continue
+            if ln_map[i]['stop'] >= ln_map[i+1]['start']:
+                ln_map[i]['pc'] |= ln_map[i+1]['pc']
+                ln_map[i]['stop'] = max(ln_map[i]['stop'], ln_map[i+1]['stop'])
+                del ln_map[i+1]
+                continue
+            i+=1
+    return [x for v in line_map.values() for x in v]
+
+
+def _get_source(op):
+    if op['contract'] not in _sources:
+        _sources[op['contract']] = open(op['contract']).read()
+    return _sources[op['contract']][op['start']:op['stop']]
+
+
+def _next(coverage_map, op):
+    '''Given a coverage map and an item from pcMap, returns the related
+    coverage map item (based on source offset overlap).'''
+    return next(
+        i for i in coverage_map if i['contract']==op['contract'] and
+        i['start']<=op['start']<i['stop']
+    )
+
+
+def _sort(list_):
+    return sorted(list_, key = lambda k: (k['contract'],k['start'],k['stop']))
+
+
+def _oplist(pcMap, op=None):
+    return [i for i in pcMap if i['contract'] and (not op or op==i['op'])]
+
+
+def _base(op):
+    return {
+        'contract':op['contract'],
+        'start':op['start'],
+        'stop': op['stop'],
+        'pc':set([op['pc']]),
+        'jump': False
+    }
