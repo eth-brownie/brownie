@@ -7,7 +7,7 @@ from brownie.gui import Gui
 __doc__ = """Usage: brownie gui
 
 Options:
-  --help              Display this message
+  --help -h               Display this message
 
 Opens the brownie GUI. Basic functionality is as follows:
 

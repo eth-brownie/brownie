@@ -14,14 +14,14 @@ CONFIG = config.CONFIG
 __doc__ = """Usage: brownie run <filename> [<function>] [options]
 
 Arguments:
-  <filename>         The name of the script to run
-  [<function>]       The function to call (default is main)
+  <filename>           The name of the script to run
+  [<function>]         The function to call (default is main)
 
 Options:
-  --help             Display this message
-  --network [name]   Use a specific network (default {})
-  --verbose          Enable verbose reporting
-  --tb               Show entire python traceback on exceptions
+  --network [name]     Use a specific network (default {})
+  --verbose -v         Enable verbose reporting
+  --tb -t              Show entire python traceback on exceptions
+  --help -h            Display this message
 
 Use run to execute scripts that deploy or interact with contracts on the network.
 """.format(CONFIG['network_defaults']['name'])
@@ -29,6 +29,7 @@ Use run to execute scripts that deploy or interact with contracts on the network
 
 def main():
     args = docopt(__doc__)
+    config.ARGV._update_from_args(args)
     name = args['<filename>'].replace(".py", "")
     fn = args['<function>'] or "main"
     if not Path(CONFIG['folders']['project']).joinpath('scripts/{}.py'.format(name)):

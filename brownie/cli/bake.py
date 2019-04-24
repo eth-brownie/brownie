@@ -16,12 +16,12 @@ MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 __doc__ = """Usage: brownie bake <mix> [<path>] [options]
 
 Arguments:
-  <mix>               Name of Brownie mix to initialize
-  <path>              Path to initialize to (default is name of mix)
+  <mix>                 Name of Brownie mix to initialize
+  <path>                Path to initialize to (default is name of mix)
 
 Options:
-  --force             Allow init inside a project subfolder
-  --help              Display this message
+  --force -f            Allow init inside a project subfolder
+  --help -h             Display this message
 
 Brownie mixes are ready-made templates that you can use as a starting
 point for your own project, or as a part of a tutorial.

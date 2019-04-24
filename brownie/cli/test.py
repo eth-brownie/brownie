@@ -35,13 +35,13 @@ Arguments:
 
 Options:
   
-  --coverage  -c          Evaluate test coverage and display a report
-  --update  -u            Only run tests where changes have occurred
-  --gas  -g               Display gas profile for function calls
-  --always-transact  -a   Perform all contract calls as transactions
-  --verbose  -v           Enable verbose reporting
-  --tb  -t                Show entire python traceback on exceptions
-  --help  -h              Display this message
+  --coverage -c          Evaluate test coverage and display a report
+  --update -u            Only run tests where changes have occurred
+  --gas -g               Display gas profile for function calls
+  --always-transact -a   Perform all contract calls as transactions
+  --verbose -v           Enable verbose reporting
+  --tb -t                Show entire python traceback on exceptions
+  --help -h              Display this message
 
 By default brownie runs every script found in the tests folder as well as any
 subfolders. Files and folders beginning with an underscore will be skipped."""
