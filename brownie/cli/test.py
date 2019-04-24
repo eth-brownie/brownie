@@ -54,7 +54,7 @@ class ExpectedFailing(Exception):
 def _run_test(module, fn_name, count, total):
     fn = getattr(module, fn_name)
     desc = fn.__doc__ or fn_name
-    sys.stdout.write("   {0} - {1} ({0}/{2})...  ".format(count, desc, total))
+    sys.stdout.write("   {0} - {1} ({0}/{2})...".format(count, desc, total))
     sys.stdout.flush()
     if fn.__defaults__:
         args = dict(zip(
@@ -74,7 +74,7 @@ def _run_test(module, fn_name, count, total):
         fn()
         if 'pending' in args and args['pending']:
             raise ExpectedFailing("Test was expected to fail")
-        sys.stdout.write("\r {0[success]}\u2713{0} {1} - {2} ({3:.4f}s)\n".format(
+        sys.stdout.write("\r {0[success]}\u2713{0} {1} - {2} ({3:.4f}s) \n".format(
             color, count, desc, time.time()-stime
         ))
         sys.stdout.flush()
@@ -103,7 +103,7 @@ def run_test(filename, network, idx):
     network.reset()
     if type(CONFIG['test']['gas_limit']) is int:
         network.gas_limit(CONFIG['test']['gas_limit'])
-    
+
     module = importlib.import_module(filename.replace(os.sep, '.'))
     test_names = [
         i for i in dir(module) if i not in dir(sys.modules['brownie']) and
@@ -193,65 +193,67 @@ def main():
 
     coverage_files = []
 
-    for filename in test_files:
-        coverage_json = Path(CONFIG['folders']['project'])
-        coverage_json = coverage_json.joinpath("build/coverage"+filename[5:]+".json")
-        coverage_files.append(coverage_json)
-        if coverage_json.exists():
-            coverage_eval = json.load(coverage_json.open())['coverage']
-            if config.ARGV['update'] and (coverage_eval or not config.ARGV['coverage']):
-                continue
-        else:
-            coverage_eval = {}
-            for p in list(coverage_json.parents)[::-1]:
-                if not p.exists():
-                    p.mkdir()
-
-        test_history, tb = run_test(filename, network, idx)
-        if tb:
-            traceback_info += tb
+    try:
+        for filename in test_files:
+            coverage_json = Path(CONFIG['folders']['project'])
+            coverage_json = coverage_json.joinpath("build/coverage"+filename[5:]+".json")
+            coverage_files.append(coverage_json)
             if coverage_json.exists():
-                coverage_json.unlink()
-            continue
-        
-        if args['--coverage']:
-            coverage_eval = analyze_coverage(test_history)
-        build_folder = Path(CONFIG['folders']['project']).joinpath('build/contracts')
-        build_files = set(build_folder.joinpath(i+'.json') for i in coverage_eval)
-        coverage_eval = {
-            'coverage': coverage_eval,
-            'sha1': dict((
-                str(i),
-                # hash of bytecode without final metadata
-                sha1(json.load(i.open())['bytecode'][:-68].encode()).hexdigest()
-            ) for i in build_files)
-        }
-        if args['<range>']:
-            continue
+                coverage_eval = json.load(coverage_json.open())['coverage']
+                if config.ARGV['update'] and (coverage_eval or not config.ARGV['coverage']):
+                    continue
+            else:
+                coverage_eval = {}
+                for p in list(coverage_json.parents)[::-1]:
+                    if not p.exists():
+                        p.mkdir()
 
-        test_path = Path(CONFIG['folders']['project']).joinpath(filename+".py")
-        coverage_eval['sha1'][str(test_path)] = sha1(test_path.open('rb').read()).hexdigest()
+            test_history, tb = run_test(filename, network, idx)
+            if tb:
+                traceback_info += tb
+                if coverage_json.exists():
+                    coverage_json.unlink()
+                continue
 
-        json.dump(
-            coverage_eval,
-            coverage_json.open('w'),
-            sort_keys=True,
-            indent=4,
-            default=sorted
-        )
+            if args['--coverage']:
+                coverage_eval = analyze_coverage(test_history)
+            build_folder = Path(CONFIG['folders']['project']).joinpath('build/contracts')
+            build_files = set(build_folder.joinpath(i+'.json') for i in coverage_eval)
+            coverage_eval = {
+                'coverage': coverage_eval,
+                'sha1': dict((
+                    str(i),
+                    # hash of bytecode without final metadata
+                    sha1(json.load(i.open())['bytecode'][:-68].encode()).hexdigest()
+                ) for i in build_files)
+            }
+            if args['<range>']:
+                continue
 
-    if traceback_info:
+            test_path = Path(CONFIG['folders']['project']).joinpath(filename+".py")
+            coverage_eval['sha1'][str(test_path)] = sha1(test_path.open('rb').read()).hexdigest()
 
-        print("\n{0[error]}WARNING{0}: {1} test{2} failed.{0}".format(
-            color, len(traceback_info), "s" if len(traceback_info) > 1 else ""
-        ))
-
-        for err in traceback_info:
-            print("\nException info for {0[0]}:\n{0[1]}".format(err))
+            json.dump(
+                coverage_eval,
+                coverage_json.open('w'),
+                sort_keys=True,
+                indent=4,
+                default=sorted
+            )
+    except KeyboardInterrupt:
+        print("\n\nTest execution has been terminated by KeyboardInterrupt.")
         sys.exit()
+    finally:
+        if traceback_info:
+            print("\n{0[error]}WARNING{0}: {1} test{2} failed.{0}".format(
+                color, len(traceback_info), "s" if len(traceback_info) > 1 else ""
+            ))
+            for err in traceback_info:
+                print("\nException info for {0[0]}:\n{0[1]}".format(err))
+            sys.exit()
 
     print("\n{0[success]}SUCCESS{0}: All tests passed.".format(color))
-    
+
     if args['--coverage']:
         print("\nCoverage analysis:\n")
         coverage_eval = merge_coverage(coverage_files)
@@ -264,11 +266,8 @@ def main():
                     color, fn_name, color(c), pct
                 ))
             print()
-    
+
     if args['--gas']:
         print('\nGas Profile:')
         for i in sorted(transaction.gas_profile):
             print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, transaction.gas_profile[i]))
-
-
-    
