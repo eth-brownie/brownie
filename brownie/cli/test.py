@@ -203,6 +203,10 @@ def main():
                 continue
         else:
             coverage_eval = {}
+            for p in list(coverage_json.parents)[::-1]:
+                if not p.exists():
+                    p.mkdir()
+
         test_history, tb = run_test(filename, network, idx)
         if tb:
             traceback_info += tb
