@@ -252,10 +252,15 @@ class _ContractMethod:
             ).encode()).hex()[:8]
 
     def __repr__(self):
-        return "<{} object '{}({})'>".format(
+        return "<{} {}object '{}({})'>".format(
             type(self).__name__,
+            "payable " if self.abi['stateMutability'] == "payable" else "",
             self.abi['name'],
-            ",".join(i['type'] for i in self.abi['inputs']))
+            ", ".join("{0[type]}{1}{0[name]}".format(
+                i,
+                " " if i['name'] else ""
+            ) for i in self.abi['inputs'])
+        )
 
     def call(self, *args):
         '''Calls the contract method without broadcasting a transaction.
