@@ -19,13 +19,13 @@ CONFIG = config.CONFIG
 
 
 TX_INFO = """
-Transaction was Mined{3}
+Transaction was Mined{4}
 ---------------------
-Tx Hash: {0.txid}
-From: {1}
-{2}
-Block: {0.block_number}
-Gas Used: {0.gas_used} / {0.gas_limit} ({4:.1%})
+{0[key]}Tx Hash{0}: {0[value]}{1.txid}{0}
+{0[key]}From{0}: {0[value]}{2}{0}
+{0[key]}{3}{0}
+{0[key]}Block{0}: {0[value]}{1.block_number}{0}
+{0[key]}Gas Used{0}: {0[value]}{1.gas_used}{0} / {0[value]}{1.gas_limit}{0} ({0[value]}{5:.1%}{0})
 """
 
 
@@ -65,7 +65,7 @@ class TransactionReceipt:
         if type(txid) is not str:
             txid = txid.hex()
         if CONFIG['logging']['tx'] and not silent:
-            color.print_colors("\nTransaction sent: "+txid)
+            print("\n{0[key]}Transaction sent{0}: {0[value]}{1}{0}".format(color, txid))
         history._add_tx(self)
         self.__dict__.update({
             '_trace': None,
@@ -147,16 +147,22 @@ class TransactionReceipt:
             if CONFIG['logging']['tx'] >= 2:
                 self.info()
             elif CONFIG['logging']['tx']:
-                color.print_colors("{} confirmed {}- block: {}   gas used: {} ({:.2%})".format(
+                print(
+                    ("{1} confirmed {2}- {0[key]}block{0}: {0[value]}{3}{0}   "
+                    "{0[key]}gas used{0}: {0[value]}{4}{0} ({0[value]}{5:.2%}{0})").format(
+                    color,
                     self.fn_name or "Transaction",
                     "" if self.status else "({0[error]}{1}{0}) ".format(
-                        color, self.revert_msg or "reverted"),
+                        color,
+                        self.revert_msg or "reverted"
+                    ),
                     self.block_number,
                     self.gas_used,
                     self.gas_used / self.gas_limit
                 ))
                 if receipt['contractAddress']:
-                    color.print_colors("{} deployed at: {}".format(
+                    print("{1} deployed at: {0[value]}{2}{0}".format(
+                        color,
                         self.fn_name.split('.')[0],
                         receipt['contractAddress']
                     ))
@@ -189,12 +195,13 @@ class TransactionReceipt:
         '''Displays verbose information about the transaction, including
         decoded event logs.'''
         if self.contract_address:
-            line = "New Contract Address: "+self.contract_address
+            line = "New Contract Address{0}: {0[value]}{1}".format(color, self.contract_address)
         else:
-            line = "To: {0.receiver}\nValue: {0.value}".format(self)
+            line = "To{0}: {0[value]}{1.receiver}{0}\n{0[key]}Value{0}: {0[value]}{1.value}".format(color, self)
             if self.input != "0x00":
-                line += "\nFunction: {}".format(self.fn_name)
-        formatted = (TX_INFO.format(
+                line += "\n{0[key]}Function{0}: {0[value]}{1}".format(color, self.fn_name)
+        print(TX_INFO.format(
+            color,
             self,
             self.sender if type(self.sender) is str else self.sender.address,
             line,
@@ -203,16 +210,14 @@ class TransactionReceipt:
             ),
             self.gas_used / self.gas_limit
         ))
-        color.print_colors(formatted)
         if self.events:
             print("   Events In This Transaction\n   --------------------------")
             for event in self.events:
                 print("   "+color('bright yellow')+event['name']+color())
                 for i in event['data']:
-                    color.print_colors(
-                        "      {0[name]}: {0[value]}".format(i),
-                        value=None if i['decoded'] else "dull"
-                    )
+                    print("      {0[key]}{1[name]}{0}: {2}{1[value]}{0}".format(
+                        color, i, color['value' if i['decoded'] else 'dull']
+                    ))
             print()
 
     def _get_trace(self):
