@@ -12,20 +12,20 @@ CONFIG = config.CONFIG
 __doc__ = """Usage: brownie init [<path>] [options]
 
 Arguments:
-  <path>              Path to initialize (default is the current path)
+  <path>                Path to initialize (default is the current path)
 
 Options:
-  --force             Allow init inside a project subfolder
-  --help              Display this message
+  --force -f            Allow init inside a project subfolder
+  --help -h             Display this message
 
 brownie init is used to create new brownie projects. It creates the default
 structure for the brownie environment:
 
-build/                Compiled contracts and network data
-contracts/            Solidity contracts
-scripts/              Python scripts that are not for testing
-tests/                Python scripts for unit testing
-brownie-config.json   Project configuration file"""
+build/                  Compiled contracts and network data
+contracts/              Solidity contracts
+scripts/                Python scripts that are not for testing
+tests/                  Python scripts for unit testing
+brownie-config.json     Project configuration file"""
 
 
 def main():

@@ -17,14 +17,13 @@ Commands:
   bake               Initialize from a brownie-mix template
   compile            Compiles the contract source files
   console            Load the console
-  coverage           Evaluate test coverage
   gui                Load the GUI to view opcodes and test coverage
   init               Initialize a new brownie project
   run                Run a script in the /scripts folder
   test               Run test scripts in the /tests folder
 
 Options:
-  --help             Display this message
+  --help -h          Display this message
 
 Type 'brownie <command> --help' for specific options and more information about
 each command."""
@@ -46,7 +45,7 @@ def main():
     sys.argv += opts
 
 
-    cmd_list = [i.name[:-3] for i in Path(__file__).parent.glob('*.py') if i.name[0] != "_"]
+    cmd_list = [i.stem for i in Path(__file__).parent.glob('[!_]*.py')]
     if args['<command>'] not in cmd_list:
         sys.exit("Invalid command. Try 'brownie --help' for available commands.")
 

@@ -11,8 +11,8 @@ import brownie._config as config
 __doc__ = """Usage: brownie compile [options]
 
 Options:
-  --all               Recompile all contracts
-  --help              Display this message
+  --all -a              Recompile all contracts
+  --help -h             Display this message
 
 Compiles the contract source files for this project and saves the results
 in the build/contracts folder."""

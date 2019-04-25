@@ -25,10 +25,10 @@ CONFIG = config.CONFIG
 __doc__ = """Usage: brownie console [options]
 
 Options:
-  -h --help             Display this message
-  -n --network <name>   Use a specific network (default {})
-  --verbose             Enable verbose reporting
-  --tb                  Show entire python traceback on exceptions
+  --network <name>        Use a specific network (default {})
+  --verbose -v            Enable verbose reporting
+  --tb -t                 Show entire python traceback on exceptions
+  --help -h               Display this message
 
 Connects to the network and opens the brownie console.
 """.format(CONFIG['network_defaults']['name'])
@@ -174,7 +174,8 @@ def _dir_color(obj):
 
 
 def main():
-    docopt(__doc__)
+    args = docopt(__doc__)
+    config.ARGV._update_from_args(args)
 
     network.connect(config.ARGV['network'], True)
     console = Console()

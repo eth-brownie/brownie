@@ -125,34 +125,6 @@ class Color:
         else:
             sys.stdout.write('{0[value]}{1}{0[dull]}'.format(self, value))
 
-
-    # format transaction related console outputs
-    def print_colors(self, msg, key = None, value=None):
-        if key is None:
-            key = 'key'
-        if value is None:
-            value = 'value'
-        for line in msg.split('\n'):
-            if ':' not in line:
-                print(line)
-                continue
-            line = line.split(':')
-            line[0] = self(key) + line[0]
-            line[-1] = self(value) + line[-1]
-            for i in range(1,len(line)-1):
-                line[i] = (
-                    self(value) +
-                    line[i][:line[i].index('  ')+1] +
-                    self(key) +
-                    line[i][line[i].index('  ')+1:]
-                )
-            line = ":".join(line)
-        
-            for s in ('(',')','/'):
-                line = line.split(s)
-                line = s.join([self(value)+i+self(key) for i in line])
-            print(line+self())
-
     def format_tb(self, exc, filename = None, start = None, stop = None):
         tb = [i.replace("./", "") for i in traceback.format_tb(exc[2])]
         if filename and not config.ARGV['tb']:

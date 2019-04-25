@@ -124,3 +124,5 @@ class FalseyDict:
             return self._dict[key]
         return False
 
+    def _update_from_args(self, values):
+        self._dict.update(dict((k.replace('-',''),v) for k,v in values.items()))
