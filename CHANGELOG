@@ -1,3 +1,15 @@
+1.0.0b3
+-------
+
+ - major code re-organization and refactoring
+ - allow skipping contracts with _
+ - modify test coverage file format
+ - merge test and coverage components of cli
+ - only run tests / coverage evaluation if related files have changed
+ - integrate opview as brownie gui
+ - many bugfixes and minor changes
+
+
 1.0.0b2
 -------
 
