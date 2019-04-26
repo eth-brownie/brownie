@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 
 from hashlib import sha1
-import json
-from pathlib import Path
 import re
 import solcx
 
@@ -50,7 +48,6 @@ def get_inheritance_map(contract_files):
             if names[0] in inheritance_map:
                 raise ValueError("Multiple contracts named {}".format(names[0]))
             inheritance_map[names[0]] = set(names[2:])
-            #_check_changed(build_folder, filename, names[0])
     for i in range(len(inheritance_map)):
         for base, inherited in [
             (k, x) for k, v in inheritance_map.copy().items() if v for x in v
@@ -216,7 +213,6 @@ def _generate_coverageMap(build):
     A coverage map item is structured as follows:
 
     {
-        
         "/path/to/contract/file.sol":{
             "functionName":{
                 "fn": {},
@@ -228,7 +224,7 @@ def _generate_coverageMap(build):
     Each dict in fn/line is as follows:
 
     {
-        'start': source code start offset 
+        'start': source code start offset
         'stop': source code stop offset
         'pc': set of opcode program counters tied to the map item
         'jump': pc of the JUMPI instruction, if it is a jump
@@ -238,27 +234,25 @@ def _generate_coverageMap(build):
     Items relating to jumps also include keys 'true' and 'false', which are
     also empty sets used in the same way as 'tx'"""
 
-    fn_map = dict((x,{}) for x in build['allSourcePaths'])
+    fn_map = dict((x, {}) for x in build['allSourcePaths'])
 
     for i in _isolate_functions(build):
-        fn_map[i.pop('contract')][i.pop('method')] = {'fn':i,'line':[]}
+        fn_map[i.pop('contract')][i.pop('method')] = {'fn': i, 'line': []}
     line_map = _isolate_lines(build)
     if not line_map:
         return {}
 
     # future me - i'm sorry for this line
-    for source, fn_name, fn in [(k,x,v[x]['fn']) for k,v in fn_map.items() for x in v]:
+    for source, fn_name, fn in [(k, x, v[x]['fn']) for k, v in fn_map.items() for x in v]:
         for ln in [
-            i for i in line_map if
-            i['contract']==source and
-            i['start']==fn['start'] and i['stop']==fn['stop']
+            i for i in line_map if i['contract'] == source and
+            i['start'] == fn['start'] and i['stop'] == fn['stop']
         ]:
             # remove duplicate mappings
             line_map.remove(ln)
         for ln in [
-            i for i in line_map if
-            i['contract']==source and
-            i['start']>=fn['start'] and i['stop']<=fn['stop']
+            i for i in line_map if i['contract'] == source and
+            i['start'] >= fn['start'] and i['stop'] <= fn['stop']
         ]:
             # apply method names to line mappings
             line_map.remove(ln)
@@ -275,7 +269,7 @@ def _isolate_functions(compiled):
         s = _get_source(op)
         if s[:8] in ("contract", "library ", "interfac"):
             continue
-        if s[:8]=="function":
+        if s[:8] == "function":
             fn = s[9:s.index('(')]
         elif " public " in s:
             fn = s[s.index(" public ")+8:].split(' =')[0].strip()
@@ -283,7 +277,7 @@ def _isolate_functions(compiled):
             continue
         if fn not in fn_map:
             fn_map[fn] = _base(op)
-            fn_map[fn]['method']=fn
+            fn_map[fn]['method'] = fn
         fn_map[fn]['pc'].add(op['pc'])
 
     fn_map = _sort(fn_map.values())
@@ -294,7 +288,7 @@ def _isolate_functions(compiled):
             f = _next(fn_map, op)
         except StopIteration:
             continue
-        if op['stop']>f['stop']:
+        if op['stop'] > f['stop']:
             continue
         f['pc'].add(op['pc'])
     return fn_map
@@ -322,17 +316,14 @@ def _isolate_lines(compiled):
             # JUMPI is to the closest previous opcode that has
             # a different source offset and is not a JUMPDEST
             req = next(
-                x for x in pcMap[i-2::-1] if
-                x['contract'] and 
-                x['op']!="JUMPDEST" and
-                x['start']+x['stop']!=op['start']+op['stop']
+                x for x in pcMap[i-2::-1] if x['contract'] and
+                x['op'] != "JUMPDEST" and
+                x['start'] + x['stop'] != op['start'] + op['stop']
             )
         except StopIteration:
             continue
         line_map[op['contract']].append(_base(req))
-        line_map[op['contract']][-1].update({
-            'jump':op['pc'],# 'true': set(), 'false': set()
-        })
+        line_map[op['contract']][-1].update({'jump': op['pc']})
 
     # analyze all the opcodes
     for op in _oplist(pcMap):
@@ -360,24 +351,24 @@ def _isolate_lines(compiled):
         ln_map = line_map[contract]
         i = 0
         while True:
-            if len(ln_map)<=i+1:
+            if len(ln_map) <= i + 1:
                 break
             if ln_map[i]['jump']:
-                i+=1
+                i += 1
                 continue
             # JUMPI overlaps cannot merge
             if ln_map[i+1]['jump']:
-                if ln_map[i]['stop']>ln_map[i+1]['start']:
+                if ln_map[i]['stop'] > ln_map[i+1]['start']:
                     del ln_map[i]
                 else:
-                    i+=1
+                    i += 1
                 continue
             if ln_map[i]['stop'] >= ln_map[i+1]['start']:
                 ln_map[i]['pc'] |= ln_map[i+1]['pc']
                 ln_map[i]['stop'] = max(ln_map[i]['stop'], ln_map[i+1]['stop'])
                 del ln_map[i+1]
                 continue
-            i+=1
+            i += 1
     return [x for v in line_map.values() for x in v]
 
 
@@ -391,24 +382,24 @@ def _next(coverage_map, op):
     '''Given a coverage map and an item from pcMap, returns the related
     coverage map item (based on source offset overlap).'''
     return next(
-        i for i in coverage_map if i['contract']==op['contract'] and
-        i['start']<=op['start']<i['stop']
+        i for i in coverage_map if i['contract'] == op['contract'] and
+        i['start'] <= op['start'] < i['stop']
     )
 
 
 def _sort(list_):
-    return sorted(list_, key = lambda k: (k['contract'],k['start'],k['stop']))
+    return sorted(list_, key=lambda k: (k['contract'], k['start'], k['stop']))
 
 
 def _oplist(pcMap, op=None):
-    return [i for i in pcMap if i['contract'] and (not op or op==i['op'])]
+    return [i for i in pcMap if i['contract'] and (not op or op == i['op'])]
 
 
 def _base(op):
     return {
-        'contract':op['contract'],
-        'start':op['start'],
+        'contract': op['contract'],
+        'start': op['start'],
         'stop': op['stop'],
-        'pc':set([op['pc']]),
+        'pc': set([op['pc']]),
         'jump': False
     }

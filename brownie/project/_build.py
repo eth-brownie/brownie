@@ -4,7 +4,6 @@ from copy import deepcopy
 import json
 from pathlib import Path
 import re
-import sys
 
 from brownie.utils import sha_compare as compare
 import brownie.utils.compiler as compiler
@@ -14,18 +13,8 @@ CONFIG = config.CONFIG
 BUILD_FOLDERS = ["build", "build/contracts", "build/coverage", "build/networks"]
 
 
-def compile_source(source):
-    result = []
-    for name, build in compiler.compile_source(source).items():
-        if build['type'] == "interface":
-            continue
-        result.append(ContractContainer(build))
-    return result
-
-
 def _get_changed_contracts():
     path = Path(CONFIG['folders']['project'])
-    build_path = path.joinpath('build/contracts')
     contract_files = [
         i for i in path.glob('contracts/**/*.sol') if "/_" not in str(i)
     ]
@@ -33,7 +22,6 @@ def _get_changed_contracts():
     changed = []
     for filename in contract_files:
         code = filename.open().read()
-        input_json = {}
         for name in (re.findall(
                 "\n(?:contract|library|interface) (.*?)[ {]", code, re.DOTALL
         )):
