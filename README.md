@@ -6,16 +6,23 @@ Brownie is a python framework for deploying, testing and interacting with Ethere
 
 * [ganache-cli](https://github.com/trufflesuite/ganache-cli)
 * [pip](https://pypi.org/project/pip/)
-* [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3-dev, python3-venv
+* [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3-dev, python3-tk
 
-As brownie relies on [py-solc-x](https://github.com/iamdefinitelyahuman/py-solc-x), you do not need solc installed locally but you must install all required [solc dependencies](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages).
+As Brownie relies on [py-solc-x](https://github.com/iamdefinitelyahuman/py-solc-x), you do not need solc installed locally but you must install all required [solc dependencies](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages).
 
-You may also wish to install [opview](https://github.com/HyperLink-Technology/opview) for test coverage visualization.
 
 ## Installation
 
+You can install the latest release via pip:
+
 ```bash
-pip install eth-brownie
+$ pip install eth-brownie
+```
+
+Or clone the repository and use setuptools for the most up-to-date version:
+
+```bash
+$ python3 setup.py install
 ```
 
 ## Quick Usage
