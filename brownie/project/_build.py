@@ -1,41 +1,17 @@
 #!/usr/bin/python3
 
 from copy import deepcopy
-from hashlib import sha1
 import json
 from pathlib import Path
 import re
+import sys
 
+from brownie.utils import sha_compare as compare
 import brownie.utils.compiler as compiler
 import brownie._config as config
 CONFIG = config.CONFIG
 
 BUILD_FOLDERS = ["build", "build/contracts", "build/coverage", "build/networks"]
-
-BUILD_KEYS = [
-    'abi',
-    'allSourcePaths',
-    'ast',
-    'bytecode',
-    'compiler',
-    'contractName',
-    'coverageMap',
-    'deployedBytecode',
-    'deployedSourceMap',
-    'networks',
-    'opcodes',
-    'pcMap',
-    'sha1',
-    'source',
-    'sourceMap',
-    'sourcePath',
-    'type'
-]
-
-
-_changed = {}
-
-
 
 
 def compile_source(source):
@@ -62,37 +38,12 @@ def _get_changed_contracts():
                 "\n(?:contract|library|interface) (.*?)[ {]", code, re.DOTALL
         )):
             check = [i for i in inheritance_map[name]
-                     if _check_changed(i)]
-            if not check and not _check_changed(name):
+                     if compare.compare_build_json(i)]
+            if not check and not compare.compare_build_json(name):
                 continue
             changed.append(filename)
             break
     return changed
-
-
-def _check_changed(contract):
-
-    build_path = Path(CONFIG['folders']['project']).joinpath('build/contracts')
-    if contract in _changed:
-        return _changed[contract]
-    build = build_path.joinpath('{}.json'.format(contract))
-    if not build.exists():
-        _changed[contract] = True
-        return True
-    try:
-        compiled = json.load(build.open())
-        if (
-            not set(BUILD_KEYS).issubset(compiled) or
-            compiled['compiler'] != CONFIG['solc'] or
-            compiled['sha1'] != sha1(open(compiled['sourcePath'],'rb').read()).hexdigest()
-        ):
-            _changed[contract] = True
-            return True
-        _changed[contract] = False
-        return False
-    except (json.JSONDecodeError, FileNotFoundError, KeyError):
-        _changed[contract] = True
-        return True
 
 
 def _check_coverage_hashes():
@@ -102,17 +53,11 @@ def _check_coverage_hashes():
         dependents = json.load(coverage_json.open())['sha1']
         for path, hash_ in dependents.items():
             path = Path(path)
-            try:
-                if path.suffix != ".json":
-                    if sha1(path.open('rb').read()).hexdigest() == hash_:
-                        continue
-                elif sha1(json.load(
-                    # hash of bytecode without final metadata
-                    path.open())['bytecode'][:-68].encode()
-                ).hexdigest() == hash_:
+            if path.suffix != ".json":
+                if compare.compare_ast_hash(path, hash_):
                     continue
-            except Exception:
-                pass
+            elif compare.compare_bytecode_hash(path, hash_):
+                continue
             coverage_json.unlink()
             break
 

@@ -2,7 +2,6 @@
 
 from docopt import docopt
 import importlib
-from hashlib import sha1
 import json
 import os
 from pathlib import Path
@@ -17,6 +16,7 @@ from brownie.exceptions import VirtualMachineError
 import brownie.network as network
 from brownie.network.history import history
 import brownie.network.transaction as transaction
+import brownie.utils.sha_compare as compare
 
 import brownie._config as config
 CONFIG = config.CONFIG
@@ -221,17 +221,13 @@ def main():
             build_files = set(build_folder.joinpath(i+'.json') for i in coverage_eval)
             coverage_eval = {
                 'coverage': coverage_eval,
-                'sha1': dict((
-                    str(i),
-                    # hash of bytecode without final metadata
-                    sha1(json.load(i.open())['bytecode'][:-68].encode()).hexdigest()
-                ) for i in build_files)
+                'sha1': dict((str(i), compare.get_bytecode_hash(i)) for i in build_files)
             }
             if args['<range>']:
                 continue
 
             test_path = Path(CONFIG['folders']['project']).joinpath(filename+".py")
-            coverage_eval['sha1'][str(test_path)] = sha1(test_path.open('rb').read()).hexdigest()
+            coverage_eval['sha1'][str(test_path)] = compare.get_ast_hash(test_path)
 
             json.dump(
                 coverage_eval,

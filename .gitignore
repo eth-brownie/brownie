@@ -1,8 +1,8 @@
 __pycache__
 .vscode
 build/
-data/accounts
-data/topics.json
+brownie/data/accounts
+brownie/data/topics.json
 dist/
 docs/_build
 docs/_static
