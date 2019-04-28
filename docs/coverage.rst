@@ -12,13 +12,13 @@ To check your unit test coverage, type:
 
 ::
 
-    $ brownie coverage
+    $ brownie test --coverage
 
 This will run all the test scripts in the ``tests/`` folder and give an estimate of test coverage:
 
 ::
 
-    $ brownie coverage
+    $ brownie test --coverage
     Using network 'development'
     Running 'ganache-cli -a 20'...
 
@@ -49,18 +49,16 @@ This will run all the test scripts in the ``tests/`` folder and give an estimate
         transfer - 100.0%
         transferFrom - 100.0%
 
-    Detailed results saved to build/coverage.json
-
 Brownie will output a % score for each contract method, that you can use to quickly gauge your overall coverage level.
 
-The easiest way to analyze specific test coverage is with `opview <https://github.com/iamdefinitelyahuman/opview>`__. From the project root folder, type:
+To analyze specific test coverage, type:
 
 ::
 
-    $ opview
+    $ brownie gui
 
 
-This will open the opview GUI.  Then press ``C`` to display the coverage results.  Relevant code will be highlighted in different colors:
+This will open the Brownie GUI.  Then press ``C`` to display the coverage results.  Relevant code will be highlighted in different colors:
 
 * Green - code was executed during the tests
 * Yellow - code was executed, but only evaluated truthfully
@@ -69,22 +67,4 @@ This will open the opview GUI.  Then press ``C`` to display the coverage results
 
 .. image:: opview.png
 
-Coverage JSON Structure
-=======================
-
-Analysis results are saved to ``build/coverage.json``. The file contains a list of coverage map items, formatted as follows:
-
-.. code-block:: javascript
-
-    {
-        'contract': "", // relative path to the contract source
-        'count': 0, // number of transactions that hit this item
-        'jump': false, // false, or a 2 item list of transaction counts (see below)
-        'method': "", // name of the contract method, if any
-        'start': 0, // source code offset start
-        'stop': 0 // source code offset stop
-    }
-
-If the map item involves a ``JUMPI`` opcode, the ``jump`` field will be a list of two integers. The first is the number of times the mapping evaluated as ``True``, the second is the number of times it evaluated ``False``.
-
-If the mapping does not involved a ``JUMPI`` opcode, ``jump`` will be ``false``.
+Analysis results are saved in the ``build/coverage`` folder.

@@ -17,7 +17,7 @@ The following classes and methods are available when writing brownie scripts or 
 Accounts
 ========
 
-Account classes should not be instantiated directly. The ``Accounts`` container is available as ``accounts`` (or just ``a``) and will create each ``Account`` automatically during initialization. Add more accounts using ``Accounts.add`` or ``Accounts.mnemonic``.
+Account classes should not be instantiated directly. The ``Accounts`` container is available as ``accounts`` (or just ``a``) and will create each ``Account`` automatically during initialization. Add more accounts using ``Accounts.add``.
 
 Accounts
 --------
@@ -31,7 +31,7 @@ Accounts
         >>> accounts
         [<Account object '0x7Ebaa12c5d1EE7fD498b51d4F9278DC45f8D627A'>, <Account object '0x186f79d227f5D819ACAB0C529031036D11E0a000'>, <Account object '0xC53c27492193518FE9eBff00fd3CBEB6c434Cf8b'>, <Account object '0x2929AF7BBCde235035ED72029c81b71935c49e94'>, <Account object '0xb93538FEb07b3B8433BD394594cA3744f7ee2dF1'>, <Account object '0x1E563DBB05A10367c51A751DF61167dE99A4d0A7'>, <Account object '0xa0942deAc0885096D8400D3369dc4a2dde12875b'>, <Account object '0xf427a9eC1d510D77f4cEe4CF352545071387B2e6'>, <Account object '0x2308D528e4930EFB4aF30793A3F17295a0EFa886'>, <Account object '0x2fb37EB570B1eE8Eda736c1BD1E82748Ec3d0Bf1'>]
         >>> dir(accounts)
-        [add, at, clear, mnemonic, remove]
+        [add, at, clear, remove]
 
 .. py:classmethod:: Accounts.add(priv_key)
 
@@ -52,16 +52,6 @@ Accounts
 
         >>> accounts.at('0xc1826925377b4103cC92DeeCDF6F96A03142F37a')
         <Account object '0xc1826925377b4103cC92DeeCDF6F96A03142F37a'>
-
-
-.. py:classmethod:: Accounts.mnemonic(phrase, count=10)
-
-    Generates ``LocalAccount`` instances from a seed phrase based on the BIP44 standard. Compatible with `MetaMask <https://metamask.io>`__ and other popular wallets.
-
-    .. code-block:: python
-
-        >>> accounts.mnemonic('strategy marriage ticket shift brown buddy decline deny budget photo sketch drama')
-        >>>
 
 .. py:classmethod:: Accounts.remove(address)
 

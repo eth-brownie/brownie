@@ -25,5 +25,4 @@ Table of Contents
     scripts.rst
     tests.rst
     coverage.rst
-    persist.rst
     api.rst
