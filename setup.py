@@ -11,7 +11,7 @@ with open("requirements.txt", "r") as f:
 setup(
     name = 'eth-brownie',
     packages=find_packages(),
-    version = '1.0.0b2',
+    version = '1.0.0b3',
     license = 'MIT',
     description = 'A python framework for Ethereum smart contract deployment, testing and interaction.',
     long_description = long_description,
@@ -19,7 +19,7 @@ setup(
     author = 'Benjamin Hauser',
     author_email = 'ben.hauser@hyperlink.technology',
     url = 'https://github.com/HyperLink-Technology/brownie',
-    download_url = 'https://github.com/HyperLink-Technology/brownie/archive/v1.0.0b2.tar.gz',
+    download_url = 'https://github.com/HyperLink-Technology/brownie/archive/v1.0.0b3.tar.gz',
     keywords = ['brownie'],
     install_requires = requirements,
     entry_points = {"console_scripts": ["brownie=brownie.cli.__main__:main"]},

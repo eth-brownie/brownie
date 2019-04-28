@@ -71,7 +71,10 @@ def get_ast_hash(script_path):
 
 
 def compare_ast_hash(path, hash_):
-    return get_ast_hash(path) == hash_
+    try:
+        return get_ast_hash(path) == hash_
+    except FileNotFoundError:
+        return False
 
 
 def get_bytecode_hash(build_path):
@@ -81,4 +84,7 @@ def get_bytecode_hash(build_path):
 
 
 def compare_bytecode_hash(build_path, hash_):
-    return get_bytecode_hash(build_path) == hash_
+    try:
+        return get_bytecode_hash(build_path) == hash_
+    except FileNotFoundError:
+        return False
