@@ -76,6 +76,7 @@ def compile_contracts(contract_files):
 def compile_source(source):
     input_json = STANDARD_JSON.copy()
     input_json['sources'] = {"<string>": {'content': source}}
+    _sources['<string>'] = source
     return _compile_and_format(input_json)
 
 
