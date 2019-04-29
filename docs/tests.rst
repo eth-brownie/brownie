@@ -1,9 +1,9 @@
 
 .. _test:
 
-====================
-Testing Your Project
-====================
+============
+Unit Testing
+============
 
 Test scripts are stored in the ``tests/`` folder. To run every test at once, type:
 

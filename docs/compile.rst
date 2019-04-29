@@ -1,7 +1,7 @@
 .. _compile:
 
 ===================
-Compiling A Project
+Compiling Contracts
 ===================
 
 Each time brownie is run it will check the existing contract code against the last compiled version. Any source code that has changed will be recompiled.

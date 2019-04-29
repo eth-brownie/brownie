@@ -1,8 +1,8 @@
 .. _deploy:
 
-===============
-Writing Scripts
-===============
+===================
+Deploying Contracts
+===================
 
 Scripts are useful for deploying contracts or interacting with your project on the testnet or mainnet. To run a script from the command line:
 

@@ -1,8 +1,8 @@
 .. _config:
 
-=======================
-Editing the Config File
-=======================
+======================
+The Configuration File
+======================
 
 Every project has a file ``brownie-config.json`` that holds all the configuration settings.
 

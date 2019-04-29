@@ -17,13 +17,11 @@ The first step to using Brownie is to initialize a new project. To do this, crea
 
 This will create the following project structure within the folder:
 
-* ``build/``: Directory for compiled contracts and network data
-* ``contracts/``: Directory for solidity contracts
-* ``scripts/``: Directory for any scripts that are not tests
-* ``tests/``: Directory for test scripts
+* ``build/``: Compiled contracts and test data
+* ``contracts/``: Contract source code
+* ``scripts/``: Scripts for deployment and interaction
+* ``tests/``: Scripts for testing your project
 * ``brownie-config.json``: Configuration file for the project
-
-
 
 You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`__", simple templates to build your project upon. For the purposes of this document, we will use the `token <https://github.com/brownie-mix/token-mix>`__ mix, which is a very basic ERC-20 implementation:
 
@@ -31,12 +29,12 @@ You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`__", si
 
     $ brownie bake token
 
-This will create a new folder ``token/`` and deploy the project inside it.
+This creates a new folder ``token/`` and deploys the project inside it.
 
 Interacting with your Project
 =============================
 
-The brownie console is useful when you want to interact directly with contracts deployed on a non-local chain, or for quick testing as you develop. It feels similar to a python interpreter. To open it:
+The Brownie console is useful when you want to interact directly with contracts deployed on a non-local chain, or for quick testing as you develop. It feels similar to the standard python interpreter. To open it:
 
 ::
 
@@ -77,11 +75,28 @@ Deploying a contract:
     >>>
     >>> t
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
-    >>> Token
-    [<Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>]
-    >>> Token[0]
-    <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
+Checking a token balance and transfering tokens:
+
+.. code-block:: python
+
+    >>> t
+    <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+    >>> t.balanceOf(accounts[1])
+    1000000000000000000000
+
+    >>> t.transfer
+    <ContractTx object 'transfer(address _to,uint256 _value)'>
+    >>> t.transfer(accounts[2], "100 ether", {'from': accounts[1]})
+
+    Transaction sent: 0xcd98225a77409b8d81023a3a4be15832e763cd09c74ff431236bfc6d56a74532
+    Transaction confirmed - block: 2   gas spent: 51241
+    <Transaction object '0xcd98225a77409b8d81023a3a4be15832e763cd09c74ff431236bfc6d56a74532'>
+    >>>
+    >>> t.balanceOf(accounts[1])
+    900000000000000000000
+    >>> t.balanceOf(accounts[2])
+    100000000000000000000
 
 Running Scripts
 ===============
@@ -92,17 +107,20 @@ You can write scripts to automate contract deployment and interaction:
 
     $ brownie run
 
-If you look at the token project, you will find an example one at ``scripts/token.py``:
+Within the token project, you will find an example script at `scripts/token.py <https://github.com/brownie-mix/token-mix/blob/master/scripts/token.py>`__ that is used for deployment:
 
-.. literalinclude:: ../projects/token/scripts/token.py
+.. code-block:: python
     :linenos:
-    :language: python
-    :lines: 3-
 
-Calling the ``deploy`` method deploys the ``Token`` contract from ``contracts/Token.sol`` using ``web3.eth.accounts[0]``.
+    from brownie import *
 
-Testing a Project
-=================
+    def main():
+        accounts[0].deploy(Token, "Test Token", "TEST", 18, "1000 ether")
+
+This deploys the ``Token`` contract from ``contracts/Token.sol`` using ``web3.eth.accounts[0]``.
+
+Testing your Project
+====================
 
 To run all of the test scripts in ``tests/``:
 
@@ -132,9 +150,29 @@ Running it in the token project, you will receive output similar to the followin
 
     SUCCESS: All tests passed.
 
-You can create as many test scripts as needed. Here is an example test script from the token project, ``tests/transfer.py``:
+You can create as many test scripts as needed. Here is an example test script from the token project, `tests/transfer.py <https://github.com/brownie-mix/token-mix/blob/master/tests/transfer.py>`__:
 
-.. literalinclude:: ../projects/token/tests/transfer.py
+.. code-block:: python
     :linenos:
-    :language: python
-    :lines: 3-
+
+    from brownie import *
+    import scripts.token
+
+    def setup():
+        scripts.token.main()
+
+    def transfer():
+        '''Transfer tokens'''
+        token = Token[0]
+        check.equal(token.totalSupply(), "1000 ether", "totalSupply is wrong")
+        token.transfer(accounts[1], "0.1 ether", {'from': accounts[0]})
+        check.equal(
+            token.balanceOf(accounts[1]),
+            "0.1 ether",
+            "Accounts 1 balance is wrong"
+        )
+        check.equal(
+            token.balanceOf(accounts[0]),
+            "999.9 ether",
+            "Accounts 0 balance is wrong"
+        )

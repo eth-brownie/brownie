@@ -16,6 +16,14 @@ You can also clone the `github repository <https://github.com/HyperLink-Technolo
 
     $ python3 setup.py install
 
+Once you have installed, type ``brownie`` to verify that it worked:
+
+.. parsed-literal::
+
+    $ brownie
+    Brownie |release| - Python development framework for Ethereum
+
+    Usage:  brownie <command> [<args>...] [options <args>]
 
 Dependencies
 ============

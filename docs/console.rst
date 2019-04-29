@@ -1,6 +1,6 @@
-=================
-Using The Console
-=================
+==========================
+Interacting with a Project
+==========================
 
 The console is useful when you want to interact directly with contracts deployed on a non-local chain, or for quick testing as you develop.
 
@@ -15,7 +15,7 @@ Brownie will compile your contracts, start the local RPC, and then give you a co
 Configuration
 =============
 
-You can view and edit the configuration settings through the ``config`` dictionary. Changes that are made are only active as long as brownie is running - modifying the dictionary does not modify ``config.json``. See :ref:`config` for more information.
+You can view and edit the configuration settings through the ``config`` dictionary. Changes that are made are only active as long as Brownie is running - modifying the dictionary does not modify ``config.json``. See :ref:`config` for more information.
 
 Basic Functionality
 ===================
