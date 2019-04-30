@@ -129,12 +129,13 @@ class ContractConstructor:
         self._name = name
 
     def __repr__(self):
-        if self.abi:
-            args = ",".join(i['type'] for i in self.abi['inputs'])
-        else:
-            args = ""
         return "<{} object '{}.constructor({})'>".format(
-            type(self).__name__, self._name, args
+            type(self).__name__,
+            self._name,
+            ", ".join("{0[type]}{1}{0[name]}".format(
+                i,
+                " " if i['name'] else ""
+            ) for i in self.abi['inputs'])
         )
 
     def __call__(self, account, *args):
