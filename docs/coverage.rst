@@ -1,3 +1,5 @@
+.. _coverage:
+
 ======================
 Checking Test Coverage
 ======================
