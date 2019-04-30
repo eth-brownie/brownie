@@ -10,7 +10,7 @@ Brownie
     install.rst
     init.rst
     compile.rst
-    console.rst
+    interaction.rst
     scripts.rst
     deploy.rst
     debug.rst

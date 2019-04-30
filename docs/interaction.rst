@@ -1,37 +1,24 @@
+.. _interaction:
+
 ==========================
 Interacting with a Project
 ==========================
 
-The console is useful when you want to interact directly with contracts deployed on a non-local chain, or for quick testing as you develop.
+The console is useful when you want to interact directly with contracts deployed on a non-local chain, or for quick testing as you develop.  It's also a great starting point to familiarize yourself with Brownie's functionality.
 
-The console feels similar to a normal python interpreter. Load it by typing:
+The console feels very similar to a regular python interpreter. From inside a project folder, load it by typing:
 
 ::
 
     $ brownie console
 
-Brownie will compile your contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`. Below are some examples of common tasks.
+Brownie will compile the contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`.
 
-Configuration
-=============
+.. hint::
 
-You can view and edit the configuration settings through the ``config`` dictionary. Changes that are made are only active as long as Brownie is running - modifying the dictionary does not modify ``config.json``. See :ref:`config` for more information.
+    You can call the builtin ``dir`` method to see available methods and attributes for any class. Classes, methods and attributes are highlighted in different colors.
 
-Basic Functionality
-===================
-
-The following methods, classes and containers are available:
-
-* ``gas(value)``: View or modify the current gas limit.
-* ``history``: A list containing every transaction broadcasted during the console session.
-* ``logging(tx=None, exc=None)``: Adjusts the console verbosity.
-* ``rpc``: Methods for interacting with the local RPC.
-* ``reset(network=None)``: Reset the local RPC environment.
-* ``run(script)``: Executes the ``main`` function of a script in the ``scripts/`` folder.
-* ``wei(value)``: Converts strings and floats to an integer denoted in wei
-* ``web3``: A minimal implementation of the `Web3 API <https://web3py.readthedocs.io/en/stable/web3.main.html>`__
-
-You can use the builtin ``dir`` function to see available methods and attributes for any class. Classes, methods and attributes are highlighted in different colors.
+    You can also call ``help`` on most classes and methods to get detailed information on how they work.
 
 Working with Accounts
 =====================
@@ -40,8 +27,19 @@ The container class ``accounts`` (or just ``a``) allows you to access all your l
 
 .. code-block:: python
 
+    >>> accounts
+    ['0xC0BcE0346d4d93e30008A1FE83a2Cf8CfB9Ed301', '0xf414d65808f5f59aE156E51B97f98094888e7d92', '0x055f1c2c9334a4e57ACF2C4d7ff95d03CA7d6741', '0x1B63B4495934bC1D6Cb827f7a9835d316cdBB332', '0x303E8684b9992CdFA6e9C423e92989056b6FC04b', '0x5eC14fDc4b52dE45837B7EC8016944f75fF42209', '0x22162F0D8Fd490Bde6Ffc9425472941a1a59348a', '0x1DA0dcC27950F6070c07F71d1dE881c3C67CEAab', '0xa4c7f832254eE658E650855f1b529b2d01C92359','0x275CAe3b8761CEdc5b265F3241d07d2fEc51C0d8']
     >>> accounts[0]
     <Account object '0xC0BcE0346d4d93e30008A1FE83a2Cf8CfB9Ed301'>
+
+Each individual account is represented by a class that can perform actions such as querying balance or sending ETH.
+
+.. code-block:: python
+
+    >>> accounts[0]
+    <Account object '0xC0BcE0346d4d93e30008A1FE83a2Cf8CfB9Ed301'>
+    >>> dir(accounts[0])
+    [address, balance, deploy, estimate_gas, nonce, transfer]
     >>> accounts[1].balance()
     100000000000000000000
     >>> accounts[0].transfer(accounts[1], "10 ether")
@@ -52,31 +50,35 @@ The container class ``accounts`` (or just ``a``) allows you to access all your l
     >>> accounts[1].balance()
     110000000000000000000
 
-You can generate accounts from a seed phrase using ``accounts.mnemonic``. The generation scheme is compatible with MetaMask and other popular wallets.
+You can import accounts with ``accounts.add``, which takes a private key as the only argument. If you do not enter a private key one is randomly generated.
 
 .. code-block:: python
 
-    >>> accounts.clear()
-    >>> len(accounts)
-    0
-    >>> accounts.mnemonic("caught rare sport prison casino post object exile clutch enough race pulp")
     >>> len(accounts)
     10
-
-You can also import accounts individually with ``accounts.add``, which takes a private key as the only argument. If you do not enter a private key one is randomly generated.
-
-.. code-block:: python
-
-    >>> len(accounts)
-    20
     >>> accounts.add("ce7594141801cf9b81b7ccb09e30395fc9e9e5940b1c01eed6434588bd726f94")
     <Account object '0x405De4AeCb9c1cE75152F82F956E09F4eda3b351'>
     >>> len(accounts)
-    21
-    >>> accounts[20]
+    11
+    >>> accounts[10]
     <Account object '0x405De4AeCb9c1cE75152F82F956E09F4eda3b351'>
     >>> accounts.add()
     <Account object '0xc1b3a737C147E8d85f600F8082f42F0511ED5278'>
+    >>> len(accounts)
+    12
+
+Imported accounts may be saved with an identified, and then loaded again at a later date:
+
+.. code-block:: python
+
+    >>> a.add()
+    <LocalAccount object '0xa9c2DD830DfFE8934fEb0A93BAbcb6e823e1FF05'>
+    >>> a[-1].save('my_account')
+    Enter the password to encrypt this account with:
+    Saved to brownie/data/accounts/my_account.json
+    >>> a.load('my_account')
+    Enter the password for this account:
+    <LocalAccount object '0xa9c2DD830DfFE8934fEb0A93BAbcb6e823e1FF05'>
 
 Working with Contracts
 ======================
