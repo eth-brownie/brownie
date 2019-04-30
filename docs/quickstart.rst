@@ -40,7 +40,11 @@ The Brownie console is useful when you want to interact directly with contracts 
 
     $ brownie console
 
-Brownie will compile your contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`. You can use builtins ``dir`` and ``help`` for quick reference to available methods and attributes.
+Brownie will compile your contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`.
+
+.. hint::
+
+    You can use builtins ``dir`` and ``help`` for quick reference to available methods and attributes.
 
 Here is an example of checking a balance and transfering some ether:
 
@@ -65,7 +69,7 @@ Deploying a contract:
     >>> Token
     []
     >>> Token.deploy
-    <ContractConstructor object 'Token.constructor(string,string,uint256,uint256)'>
+    <ContractConstructor object 'Token.constructor(string _symbol, string _name, uint256 _decimals, uint256 _totalSupply)'>
     >>> t = Token.deploy(accounts[1], "Test Token", "TST", 18, "1000 ether")
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
@@ -86,7 +90,7 @@ Checking a token balance and transfering tokens:
     1000000000000000000000
 
     >>> t.transfer
-    <ContractTx object 'transfer(address _to,uint256 _value)'>
+    <ContractTx object 'transfer(address _to, uint256 _value)'>
     >>> t.transfer(accounts[2], "100 ether", {'from': accounts[1]})
 
     Transaction sent: 0xcd98225a77409b8d81023a3a4be15832e763cd09c74ff431236bfc6d56a74532

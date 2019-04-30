@@ -23,7 +23,7 @@ Brownie will compile the contracts, start the local RPC, and then give you a com
 Working with Accounts
 =====================
 
-The container class ``accounts`` (or just ``a``) allows you to access all your local accounts.
+The ``accounts`` container (or just ``a``) allows you to access all your local accounts.
 
 .. code-block:: python
 
@@ -67,7 +67,7 @@ You can import accounts with ``accounts.add``, which takes a private key as the 
     >>> len(accounts)
     12
 
-Imported accounts may be saved with an identified, and then loaded again at a later date:
+Imported accounts may be saved with an identifier and then loaded again at a later date. Account data is saved in a standard json `keystore <https://goethereumbook.org/keystore/>`__ file that is compatible with most wallets.
 
 .. code-block:: python
 
@@ -87,10 +87,12 @@ Each contract in the project has a ``ContractDeployer`` class, which allows you 
 
 .. code-block:: python
 
+    >>> type(Token)
+    <class 'brownie.network.contract.ContractContainer'>
     >>> Token
     []
     >>> Token.deploy
-    <ContractConstructor object 'Token.constructor(string,string,uint256,uint256)'>
+    <ContractConstructor object 'Token.constructor(string _symbol, string _name, uint256 _decimals, uint256 _totalSupply)'>
     >>> t = Token.deploy(accounts[1], "Test Token", "TST", 18, "1000 ether")
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
@@ -143,7 +145,7 @@ For transactions you can optionally include a dictionary of `transaction paramet
     >>> Token[0].balanceOf(accounts[0])
     1000000000000000000000
     >>> Token[0].transfer
-    <ContractTx object 'transfer(address,uint256)'>
+    <ContractTx object 'transfer(address _to, uint256 _value)'>
     >>> Token[0].transfer(accounts[1], "10 ether", {'from':accounts[0]})
 
     Transaction sent: 0xcd98225a77409b8d81023a3a4be15832e763cd09c74ff431236bfc6d56a74532
@@ -153,19 +155,6 @@ For transactions you can optionally include a dictionary of `transaction paramet
     10000000000000000000
 
 If the gas limit is set to calculate automatically, transactions that revert will raise a ``VirtualMachineError``. If the gas limit is fixed they will return a ``TransactionReceipt`` marked as reverted (printed in red).
-
-Debugging Tools
-===============
-
-.. note:: Debugging functionality relies on the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#debug_tracetransaction>`__ RPC method. If you are using Infura this attribute is not available.
-
-When a transaction reverts and the gas limit is not set to automatic, you are still returned a ``TransactionReceipt``. From this instance you can call the following attributes and methods to help determine why it reverted:
-
-* ``TransactionReceipt.revert_msg``: The error string returned when the EVM reverted, if any.
-* ``TransactionReceipt.trace``: The call trace structLog as a list.
-* ``TransactionReceipt.events``: The events that were emitted before the transaction reverted.
-* ``TransactionReceipt.error()``: Displays the filename, line number, and line of code that caused the revert.
-* ``TransactionReceipt.call_trace()``: Displays the sequence of contracts and functions called while executing this transaction, and the structLog list index where each call or jump occured. Any functions that terminated with a ``REVERT`` opcode are highlighted in red.
 
 Alerts and Callbacks
 ====================
