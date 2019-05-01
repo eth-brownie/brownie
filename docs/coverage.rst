@@ -1,8 +1,10 @@
+.. _coverage:
+
 ======================
 Checking Test Coverage
 ======================
 
-.. warning:: Test coverage evaluation is still under development. There may be undiscovered issues, particularly cases where conditional True/False evaluation is incorrect. Use common sense when viewing coverage reports and please report any issues you encounter.
+.. warning:: Test coverage evaluation is still under development. There may be undiscovered issues, particularly cases where conditional True/False evaluation is incorrect. Use common sense when viewing coverage reports and please open an issue on github if you encounter any issues.
 
 Test coverage is estimated by generating a map of opcodes associated with each function and line of the smart contract source code, and then analyzing the stack trace of each transaction to see which opcodes were executed.
 

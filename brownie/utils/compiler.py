@@ -115,23 +115,23 @@ def _compile_and_format(input_json):
                 )
             result[name] = {
                 'abi': data['abi'],
+                'allSourcePaths': sorted(set(
+                    i['contract'] for i in evm['pcMap'] if i['contract']
+                )),
                 'ast': compiled['sources'][filename]['ast'],
                 'bytecode': evm['bytecode']['object'],
                 'compiler': compiler_info,
                 'contractName': name,
                 'deployedBytecode': evm['deployedBytecode']['object'],
                 'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
-                'networks': {},
+                # 'networks': {},
                 'opcodes': evm['deployedBytecode']['opcodes'],
                 'sha1': sha1(input_json['sources'][filename]['content'].encode()).hexdigest(),
                 'source': input_json['sources'][filename]['content'],
                 'sourceMap': evm['bytecode']['sourceMap'],
                 'sourcePath': filename,
                 'type': type_,
-                'pcMap': evm['pcMap'],
-                'allSourcePaths': sorted(set(
-                    i['contract'] for i in evm['pcMap'] if i['contract']
-                ))
+                'pcMap': evm['pcMap']
             }
             result[name]['coverageMap'] = _generate_coverageMap(result[name])
     return result
@@ -217,7 +217,8 @@ def _generate_coverageMap(build):
         "/path/to/contract/file.sol":{
             "functionName":{
                 "fn": {},
-                "line":[{},{},{}]
+                "line": [{}, {}, {}],
+                "total": int
             }
         }
     }
@@ -225,15 +226,12 @@ def _generate_coverageMap(build):
     Each dict in fn/line is as follows:
 
     {
+        'jump': pc of the JUMPI instruction, if it is a jump
+        'pc': list of opcode program counters tied to the map item
         'start': source code start offset
         'stop': source code stop offset
-        'pc': set of opcode program counters tied to the map item
-        'jump': pc of the JUMPI instruction, if it is a jump
-        'tx': empty set, used to record transactions that hit the item
     }
-
-    Items relating to jumps also include keys 'true' and 'false', which are
-    also empty sets used in the same way as 'tx'"""
+    """
 
     fn_map = dict((x, {}) for x in build['allSourcePaths'])
 
