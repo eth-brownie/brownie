@@ -4,13 +4,9 @@
 The Configuration File
 ======================
 
-Every project has a file ``brownie-config.json`` that holds all the configuration settings.
+Every project has a file ``brownie-config.json`` that holds all the configuration settings. You can view the default configuration file `here <https://github.com/HyperLink-Technology/brownie/blob/master/brownie/data/config.json>`__.
 
-The defaut configuration is as follows. When using the brownie console or writing scripts, you can view and edit configuration settings through the ``config`` dict. Any changes made in this way are temporary and will be reset when you exit brownie or reset the network.
-
-.. literalinclude:: ../brownie/data/config.json
-    :linenos:
-    :language: json
+When using the Brownie console or writing scripts, you can view and edit configuration settings through the ``config`` dict. Any changes made in this way are temporary and will be reset when you exit Brownie or reset the network.
 
 Settings
 ========
@@ -22,7 +18,6 @@ The following settings are available:
     Defines the available networks. The following properties can be set:
 
     * ``host``: The address and port of the RPC API you wish to connect to. If using `Infura <https://infura.io/>`__, be sure to obtain and include your own network access token in the address.
-    * ``persist``: If set to true, information such as addresses that contracts are deployed at will be saved in the ``build/`` folder so they can be accessed the next time you run Brownie. See :ref:`persist`.
     * ``test-rpc``: Optional. If given, this command will be run in a shell when brownie is started. In this way you can initialize Ganache or another local environment automatically when Brownie starts.
     * ``gas_price``: The default gas price for all transactions. If left as false the gas price will be determined using ``web3.eth.gasPrice``.
     * ``gas_limit``: The default gas limit for all transactions. If left as false the gas limit will be determined using ``web3.eth.estimateGas``.
@@ -43,7 +38,7 @@ The following settings are available:
 
 .. py:attribute:: test
 
-    Properties that affect only affect Brownie's configuration when running scripts and tests. See :ref:`test` for detailed information on the effects and implications of these settings.
+    Properties that affect only affect Brownie's configuration when running scripts and tests. See Test :ref:`test_settings` for detailed information on the effects and implications of these settings.
 
     * ``always_transact``: If ``true``, calls to ``view`` and ``pure`` functions will still execute as transactions during tests.
 
@@ -63,8 +58,3 @@ The following settings are available:
 .. py:attribute:: colors
 
     Defines the colors associated with specific data types when using Brownie. Setting a value as an empty string will use the terminal's default color.
-
-Default Settings
-================
-
-When you create a new project the configuration file is copied from ``config.json`` in the brownie install folder. Modifying this file will change the default settings for all future projects. Removing any setting within a project's local configuration file will cause Brownie to use the default setting instead.
