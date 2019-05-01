@@ -71,12 +71,12 @@ Imported accounts may be saved with an identifier and then loaded again at a lat
 
 .. code-block:: python
 
-    >>> a.add()
+    >>> accounts.add()
     <LocalAccount object '0xa9c2DD830DfFE8934fEb0A93BAbcb6e823e1FF05'>
-    >>> a[-1].save('my_account')
+    >>> accounts[-1].save('my_account')
     Enter the password to encrypt this account with:
     Saved to brownie/data/accounts/my_account.json
-    >>> a.load('my_account')
+    >>> accounts.load('my_account')
     Enter the password for this account:
     <LocalAccount object '0xa9c2DD830DfFE8934fEb0A93BAbcb6e823e1FF05'>
 
