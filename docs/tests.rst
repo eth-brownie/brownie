@@ -1,9 +1,9 @@
 
 .. _test:
 
-====================
-Testing Your Project
-====================
+============
+Unit Testing
+============
 
 Test scripts are stored in the ``tests/`` folder. To run every test at once, type:
 
@@ -24,11 +24,11 @@ Running Tests
 
 When running tests, the sequence of events is as follows:
 
-* First, brownie checks for a method named ``setup``. If it exists it is called.
+* Brownie checks for a method named ``setup``. If it exists it is called.
 
 * A snapshot of the EVM is taken.
 
-* Each method within the module is called sequentially. Methods with a name beginning in an understore are ignored. All functionality within a method is collectively considered 1 test, if an exception is raised at any time the test is considered to have failed.
+* Each method within the module is called sequentially. Methods with a name beginning in an understore are ignored. All functionality within a method is collectively considered 1 test, if an exception is raised at any time the test terminates and is considered to have failed.
 
 * The EVM is reverted to the snapshot in between calling each method.
 
@@ -45,9 +45,8 @@ You can optionally include a docstring in each test method to give more verbosit
 
 The following keyword arguments can be used to affect how a test runs:
 
-* ``pending``: If set to True, this test is expected to fail. If the test passes it will raise an ``ExpectedFailing`` exception.
-
-* ``skip``: If set to True, this test will not be run.
+* ``pending``: If set to ``True``, this test is expected to fail. If the test passes it will raise an ``ExpectedFailing`` exception.
+* ``skip``: If set to ``True``, this test will not be run.
 
 Tests rely heavily on methods in the Brownie ``check`` module as an alternative to normal ``assert`` statements. You can read about them in the API :ref:`api_check` documentation.
 
@@ -56,10 +55,92 @@ Example Test Script
 
 Here is an example test script from ``projects/token/tests/approve_transferFrom.py`` that includes setup, multiple tests methods, docstrings, and use of the pending and skipped kwargs:
 
-.. literalinclude:: ../projects/token/tests/approve_transferFrom.py
-    :linenos:
-    :language: python
-    :lines: 3-
+.. code-block:: python
+
+    from brownie import *
+    import scripts.token
+
+
+    def setup():
+        scripts.token.main()
+        global token
+        token = Token[0]
+
+
+    def balance(skip=True):
+        check.equal(
+            token.balanceOf(accounts[0], "1000 ether"),
+            "Accounts 0 balance is wrong"
+        )
+
+
+    def approve():
+        '''Set approval'''
+        token.approve(accounts[1], "10 ether", {'from': accounts[0]})
+        check.equal(
+            token.allowance(accounts[0], accounts[1]),
+            "10 ether",
+            "Allowance is wrong"
+        )
+        check.equal(
+            token.allowance(accounts[0], accounts[2]),
+            0,
+            "Allowance is wrong"
+        )
+        token.approve(accounts[1], "6 ether", {'from': accounts[0]})
+        check.equal(
+            token.allowance(accounts[0], accounts[1]),
+            "6 ether",
+            "Allowance is wrong"
+        )
+
+
+    def transfer():
+        '''Transfer tokens with transferFrom'''
+        token.approve(accounts[1], "6 ether", {'from': accounts[0]})
+        token.transferFrom(
+            accounts[0],
+            accounts[2],
+            "5 ether",
+            {'from': accounts[1]}
+        )
+        check.equal(
+            token.balanceOf(accounts[2]),
+            "5 ether",
+            "Accounts 2 balance is wrong"
+        )
+        check.equal(
+            token.balanceOf(accounts[1]),
+            0,
+            "Accounts 1 balance is wrong"
+        )
+        check.equal(
+            token.balanceOf(accounts[0]),
+            "995 ether",
+            "Accounts 0 balance is wrong"
+        )
+        check.equal(
+            token.allowance(accounts[0], accounts[1]),
+            "1 ether",
+            "Allowance is wrong"
+        )
+
+
+    def revert():
+        '''transerFrom should revert'''
+        check.reverts(
+            token.transferFrom,
+            (accounts[0], accounts[3], "10 ether", {'from': accounts[1]})
+        )
+        check.reverts(
+            token.transferFrom,
+            (accounts[0], accounts[2], "1 ether", {'from': accounts[0]})
+        )
+
+
+    def unfinished(pending=True):
+        '''This test is expected to fail'''
+        token.secretFunction(accounts[1], "10 ether")
 
 Below you can see an example of the output from Brownie when the test script executes. For the example, one of the tests was modified so that it would fail.
 

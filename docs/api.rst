@@ -567,13 +567,15 @@ ContractTx Methods
         >>> calldata = Token[0].transfer.encode_abi(accounts[1], 1000)
         0xa9059cbb0000000000000000000000000d36bdba474b5b442310a5bfb989903020249bba00000000000000000000000000000000000000000000000000000000000003e8
         >>> accounts[0].transfer(Token[0], 0, data=calldata)
-            
+
         Transaction sent: 0x8dbf15878104571669f9843c18afc40529305ddb842f94522094454dcde22186
         Token.transfer confirmed - block: 2   gas used: 50985 (100.00%)
         <Transaction object '0x8dbf15878104571669f9843c18afc40529305ddb842f94522094454dcde22186'>
 
 Transactions
 ============
+
+.. _api_tx:
 
 TransactionReceipt
 ------------------

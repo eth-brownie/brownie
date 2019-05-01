@@ -72,8 +72,7 @@ class Accounts:
                       randomly generated.
 
         Returns:
-            Account instance.
-        '''
+            Account instance.'''
         if not priv_key:
             priv_key = "0x"+keccak(os.urandom(8192)).hex()
         w3account = web3.eth.account.privateKeyToAccount(priv_key)
@@ -83,10 +82,21 @@ class Accounts:
         self._accounts.append(account)
         return account
 
-    def load(self, identifier):
-        json_file = Path(CONFIG['folders']['brownie']).joinpath("data/accounts/{}.json".format(identifier))
+    def load(self, filename=None):
+        '''Loads a local account from a keystore file.
+
+        Args:
+            filename: Keystore filename. If none is given, returns a list of
+                      available keystores.
+
+        Returns:
+            Account instance.'''
+        path = Path(CONFIG['folders']['brownie']).joinpath("data/accounts")
+        if not module:
+            return [i.stem for i in path.glob('*.json')]
+        json_file = path.joinpath("{}.json".format(filename))
         if not json_file.exists():
-            raise FileNotFoundError("Account with this identifier does not exist")
+            raise FileNotFoundError("Cannot find {}".format(json_file))
         priv_key = web3.eth.account.decrypt(
             json.load(json_file.open()),
             getpass("Enter the password for this account: ")
@@ -205,14 +215,15 @@ class Account(_AccountBase):
     def _console_repr(self):
         return "<Account object '{0[string]}{1}{0}'>".format(color, self.address)
 
-    def transfer(self, to, amount, gas_limit=None, gas_price=None, data=''):
-        '''Transfers ether from this account.
+    def transfer(self, to, amount, gas_limit=None, gas_price=None, data=""):
+        '''Broadcasts a transaction from this account.
 
         Args:
             to: Account instance or address string to transfer to.
             amount: Amount of ether to send, in wei.
             gas_limit: Gas limit of the transaction.
             gas_price: Gas price of the transaction.
+            data: Transaction data hexstring.
 
         Returns:
             TransactionReceipt instance'''
@@ -226,7 +237,7 @@ class Account(_AccountBase):
                 'data': HexBytes(data)
             })
         except ValueError as e:
-            txid = raise_or_return_tx(e)
+            txid = _raise_or_return_tx(e)
         self.nonce += 1
         return TransactionReceipt(txid, self)
 
@@ -239,7 +250,7 @@ class Account(_AccountBase):
         try:
             txid = fn(*args).transact(tx)
         except ValueError as e:
-            txid = raise_or_return_tx(e)
+            txid = _raise_or_return_tx(e)
         self.nonce += 1
         return TransactionReceipt(txid, self, name=name, callback=callback)
 
@@ -299,7 +310,7 @@ class LocalAccount(_AccountBase):
             }).rawTransaction
             txid = web3.eth.sendRawTransaction(signed_tx)
         except ValueError as e:
-            txid = raise_or_return_tx(e)
+            txid = _raise_or_return_tx(e)
         self.nonce += 1
         return TransactionReceipt(txid, self)
 
@@ -319,12 +330,12 @@ class LocalAccount(_AccountBase):
                 self._acct.signTransaction(raw).rawTransaction
             )
         except ValueError as e:
-            txid = raise_or_return_tx(e)
+            txid = _raise_or_return_tx(e)
         self.nonce += 1
         return TransactionReceipt(txid, self, name=name, callback=callback)
 
 
-def raise_or_return_tx(exc):
+def _raise_or_return_tx(exc):
     data = eval(str(exc))
     try:
         return next(i for i in data['data'].keys() if i[:2] == "0x")
