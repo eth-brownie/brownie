@@ -31,6 +31,29 @@ You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`__", si
 
 This creates a new folder ``token/`` and deploys the project inside it.
 
+Compiling your Contracts
+========================
+
+To compile your project:
+
+::
+
+    $ brownie compile
+
+You will see the following output:
+
+::
+
+    Brownie v1.0.0 - Python development framework for Ethereum
+
+    Compiling contracts...
+    Optimizer: Enabled  Runs: 200
+    - Token.sol...
+    - SafeMath.sol...
+    Brownie project has been compiled at token/build/contracts
+
+Once a contract has been complied, it will only be recompiled if the source file has changed.
+
 Interacting with your Project
 =============================
 
@@ -136,7 +159,8 @@ Running it in the token project, you will receive output similar to the followin
 
 ::
 
-    $ brownie test
+    Brownie v1.0.0 - Python development framework for Ethereum
+
     Using network 'development'
     Running 'ganache-cli -a 20'...
     Compiling contracts...

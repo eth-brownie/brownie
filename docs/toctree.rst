@@ -11,7 +11,6 @@ Brownie
     init.rst
     compile.rst
     interaction.rst
-    scripts.rst
     deploy.rst
     debug.rst
     tests.rst

@@ -18,10 +18,10 @@ You can also clone the `github repository <https://github.com/HyperLink-Technolo
 
 Once you have installed, type ``brownie`` to verify that it worked:
 
-.. parsed-literal::
+::
 
     $ brownie
-    Brownie |release| - Python development framework for Ethereum
+    Brownie v1.0.0 - Python development framework for Ethereum
 
     Usage:  brownie <command> [<args>...] [options <args>]
 

@@ -156,47 +156,6 @@ For transactions you can optionally include a dictionary of `transaction paramet
 
 If the gas limit is set to calculate automatically, transactions that revert will raise a ``VirtualMachineError``. If the gas limit is fixed they will return a ``TransactionReceipt`` marked as reverted (printed in red).
 
-Alerts and Callbacks
-====================
-
-You can use the :ref:`api_alert` module to receive notifications or setup callbacks whenever a state change occurs.
-
-Here is a basic example of an alert, watching for a changed balance:
-
-.. code-block:: python
-
-    >>> alert.new(accounts[1].balance, msg="Account 1 balance has changed from {} to {}")
-    <lib.components.alert.Alert object at 0x7f9fd25d55f8>
-    >>> alert.show()
-    [<lib.components.alert.Alert object at 0x7f9fd25d55f8>]
-    >>> accounts[2].transfer(accounts[1], "1 ether")
-
-    Transaction sent: 0x912d6ac704e7aaac01be159a4a36bbea0dc0646edb205af95b6a7d20945a2fd2
-    Transaction confirmed - block: 1   gas spent: 21000
-    <Transaction object '0x912d6ac704e7aaac01be159a4a36bbea0dc0646edb205af95b6a7d20945a2fd2'>
-    ALERT: Account 1 balance has changed from 100000000000000000000 to 101000000000000000000
-
-This example uses the alert's callback function to perform a token transfer, and sets a second alert to watch for the transfer:
-
-.. code-block:: python
-
-    >>> alert.new(accounts[3].balance, msg="Account 3 balance has changed from {} to {}")
-    <lib.components.alert.Alert object at 0x7fc743e415f8>
-    >>> def on_receive(old_value, new_value):
-    ...     accounts[2].transfer(accounts[3], new_value-old_value)
-    ...
-    >>> alert.new(accounts[2].balance, callback=on_receive)
-    <lib.components.alert.Alert object at 0x7fc743e55cf8>
-    >>> accounts[1].transfer(accounts[2],"1 ether")
-
-    Transaction sent: 0xbd1bade3862f181359f32dac02ffd1d145fdfefc99103ca0e3d28ffc7071a9eb
-    Transaction confirmed - block: 1   gas spent: 21000
-    <Transaction object '0xbd1bade3862f181359f32dac02ffd1d145fdfefc99103ca0e3d28ffc7071a9eb'>
-
-    Transaction sent: 0x8fcd15e38eed0a5c9d3d807d593b0ea508ba5abc892428eb2e0bb0b8f7dc3083
-    Transaction confirmed - block: 2   gas spent: 21000
-    ALERT: Account 3 balance has changed from 100000000000000000000 to 101000000000000000000
-
 Unconfirmed Transactions
 ========================
 
