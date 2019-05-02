@@ -122,7 +122,7 @@ class EventDict:
     _print_as_dict = True
 
     def __init__(self, events):
-        self._ordered = [EventItem(
+        self._ordered = [_EventItem(
             i['name'],
             [dict((x['name'], x['value']) for x in i['data'])],
             (pos,)
@@ -132,7 +132,7 @@ class EventDict:
             if event.name in self._dict:
                 continue
             events = [i for i in self._ordered if i.name == event.name]
-            self._dict[event.name] = EventItem(
+            self._dict[event.name] = _EventItem(
                 event.name,
                 events,
                 tuple(i.pos[0] for i in events)
@@ -178,7 +178,7 @@ class EventDict:
         '''EventDict.values() -> an object providing a view on EventDict's values'''
         return self._dict.values()
 
-class EventItem:
+class _EventItem:
     '''Dict/list hybrid container, represents one or more events with the same name
     that were fired in a transaction.
 
@@ -219,13 +219,13 @@ class EventItem:
         return iter(self._ordered)
 
     def items(self):
-        '''EventItem.items() -> a set-like object providing a view on EventItem[0]'s items'''
+        '''_EventItem.items() -> a set-like object providing a view on _EventItem[0]'s items'''
         return self._ordered[0].items()
 
     def keys(self):
-        '''EventItem.keys() -> a set-like object providing a view on EventItem[0]'s keys'''
+        '''_EventItem.keys() -> a set-like object providing a view on _EventItem[0]'s keys'''
         return self._ordered[0].keys()
 
     def values(self):
-        '''EventItem.values() -> an object providing a view on EventItem[0]'s values'''
+        '''_EventItem.values() -> an object providing a view on _EventItem[0]'s values'''
         return self._ordered[0].values()
