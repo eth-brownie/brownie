@@ -5,6 +5,7 @@ from pathlib import Path
 
 import eth_event
 
+from brownie.types import EventDict
 import brownie._config as config
 CONFIG = config.CONFIG
 
@@ -28,14 +29,14 @@ def get_topics(abi):
 
 def decode_logs(logs):
     try:
-        return eth_event.decode_logs(logs, _topics)
+        return EventDict(eth_event.decode_logs(logs, _topics))
     except Exception:
         return []
 
 
 def decode_trace(trace):
     try:
-        return eth_event.decode_trace(trace, _topics)
+        return EventDict(eth_event.decode_trace(trace, _topics))
     except Exception:
         return []
 
