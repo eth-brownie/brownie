@@ -49,22 +49,20 @@ def format_input(abi, inputs):
             )
             continue
         try:
-            if "address" in type_:
-                inputs[i] = str(inputs[i])
-            if "int" in type_:
-                inputs[i] = wei(inputs[i])
-            elif "bytes" in type_ and type(inputs[i]) is not bytes:
-                if type(inputs[i]) is str:
-                    if inputs[i][:2] != "0x":
-                        inputs[i] = inputs[i].encode()
-                    elif type_ != "bytes":
-                        inputs[i] = int(inputs[i], 16).to_bytes(int(type_[5:]), "big")
-                else:
-                    inputs[i] = int(inputs[i]).to_bytes(int(type_[5:]), "big")
-        except:
-            raise ValueError(
-                "'{}': Argument {}, could not convert {} '{}' to type {}".format(
-                    name, i, type(inputs[i]).__name__, inputs[i], type_))
+            if "uint" in type_:
+                inputs[i] = to_uint(inputs[i], type_)
+            elif "int" in type_:
+                inputs[i] = to_int(inputs[i], type_)
+            elif "bool" in type_:
+                inputs[i] = to_bool(inputs[i])
+            elif "address" in type_:
+                inputs[i] = to_address(inputs[i])
+            elif "bytes" in type_:
+                inputs[i] = to_bytes(inputs[i], type_)
+            elif "string" in type_:
+                inputs[i] = to_string(inputs[i])
+        except Exception as e:
+            raise type(e)('{}: Argument {}, {}'.format(name, i, e))
     return inputs
 
 
@@ -74,39 +72,46 @@ def _check_int_size(type_):
         raise ValueError("Invalid type: {}".format(type_))
     return size
 
+
 def to_uint(value, type_="uint256"):
     value = wei(value)
     size = _check_int_size(type_)
     if value < 0 or value >= 2**int(size):
         raise OverflowError("{} is outside allowable range for {}".format(value, type_))
+    return value
+
 
 def to_int(value, type_="int256"):
     value = wei(value)
     size = _check_int_size(type_)
     if value < -2**int(size) // 2 or value >= 2**int(size) // 2:
         raise OverflowError("{} is outside allowable range for {}".format(value, type_))
+    return value
+
 
 def to_bool(value):
     if value not in (0, 1, True, False):
         raise TypeError("Cannot convert '{}' to bool".format(value))
     return bool(value)
 
+
 def to_address(value):
     if type(value) is bytes:
         value = value.hex()
     value = eth_utils.add_0x_prefix(str(value))
     try:
-        return eth_utils.to_normalized_address(value)
+        return eth_utils.to_checksum_address(value)
     except ValueError:
         raise ValueError("{} is not a valid ETH address.")
 
-def to_bytes(value, type_="bytes32")
-    if type(value) not in (bytes, str):
-        raise ValueError("{} cannot be converted to {}".format(value, type_))
+
+def to_bytes(value, type_="bytes32"):
+    if type(value) not in (bytes, str, int):
+        raise TypeError("'{}', type {}, cannot be converted to {}".format(value, type(value), type_))
     if type_ == "byte":
         type_ = "bytes1"
     if type_ != "bytes":
-        size = type_.strip("bytes")
+        size = int(type_.strip("bytes"))
         if size < 1 or size > 32:
             raise ValueError("Invalid type: {}".format(type_))
     else:
@@ -115,16 +120,18 @@ def to_bytes(value, type_="bytes32")
         if len(eth_utils.to_hex(value)) - 2 > size:
             raise OverflowError("{} exceeds maximum length for {}".format(value, type_))
         return value
-    if type(value) is str:
-        if not eth_utils.is_hex(value):
-            raise ValueError("{} is not a valid hex string, cannot convert to {}".format(type_))
-        value = eth_utils.add_0x_prefix(value)
-        if type_ == "bytes":
-            return eth_utils.to_bytes(value)
-        try:
-            return int(value, 16).to_bytes(size, "big")
-        except OverflowError:
-            raise OverflowError("{} exceeds maximum length for {}".format(value, type_))
+    if type(value) is int:
+        value = hex(value)
+    if not eth_utils.is_hex(value):
+        raise ValueError("{} is not a valid hex string, cannot convert to {}".format(value, type_))
+    value = eth_utils.add_0x_prefix(value)
+    if type_ == "bytes":
+        return eth_utils.to_bytes(hexstr=value)
+    try:
+        return int(value, 16).to_bytes(size, "big")
+    except OverflowError:
+        raise OverflowError("{} exceeds maximum length for {}".format(value, type_))
+
 
 def to_string(value):
     value = str(value)
