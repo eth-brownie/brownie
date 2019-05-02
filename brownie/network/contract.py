@@ -4,7 +4,6 @@ import re
 
 import eth_abi
 from eth_hash.auto import keccak
-from eth_utils import to_checksum_address
 
 from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
@@ -12,7 +11,7 @@ from brownie.network.event import get_topics
 from brownie.network.history import history
 from brownie.network.web3 import web3
 from brownie.types import KwargTuple
-from brownie.types.convert import format_input, format_output, wei
+from brownie.types.convert import format_input, format_output, to_address, wei
 
 import brownie._config as config
 CONFIG = config.CONFIG
@@ -100,7 +99,7 @@ class ContractContainer(_ContractBase):
             address: Address string of the contract.
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation.'''
-        address = to_checksum_address(str(address))
+        address = to_address(address)
         if address in history.get_contracts(self._name):
             return history.get_contracts(self._name)[address]
         contract = history.find_contract(address)
@@ -233,7 +232,7 @@ class Contract(_ContractBase):
     def __eq__(self, other):
         if type(other) is str:
             try:
-                address = to_checksum_address(other)
+                address = to_address(other)
                 return address == self.address
             except ValueError:
                 return False

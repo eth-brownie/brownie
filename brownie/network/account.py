@@ -8,13 +8,12 @@ import json
 
 from eth_hash.auto import keccak
 import eth_keys
-from eth_utils import to_checksum_address
 
 from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
 from brownie.network.transaction import TransactionReceipt
 from brownie.network.web3 import web3
-from brownie.types.convert import wei
+from brownie.types.convert import to_address, wei
 
 import brownie._registry as _registry
 import brownie._config
@@ -44,7 +43,7 @@ class Accounts:
 
     def __contains__(self, address):
         try:
-            address = to_checksum_address(address)
+            address = to_address(address)
             return address in self._accounts
         except ValueError:
             return False
@@ -113,10 +112,7 @@ class Accounts:
         Returns:
             Account instance.
         '''
-        try:
-            address = to_checksum_address(address)
-        except ValueError:
-            raise ValueError("{} is not a valid address".format(address))
+        address = to_address(address)
         try:
             return next(i for i in self._accounts if i == address)
         except StopIteration:
@@ -154,7 +150,7 @@ class _AccountBase:
     def __eq__(self, other):
         if type(other) is str:
             try:
-                address = to_checksum_address(other)
+                address = to_address(other)
                 return address == self.address
             except ValueError:
                 return False

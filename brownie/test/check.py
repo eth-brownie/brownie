@@ -79,13 +79,13 @@ def event_fired(tx, name, count=None, values=None):
         values: A dict or list of dicts of {key:value} that must match
                 against the fired events. The length of values must also
                 match the number of events that fire.'''
-    events = [i for i in tx.events if i['name'] == name]
-    if count is not None and count != len(events):
+
+    if count is not None and count != tx.events.count(name):
         raise AssertionError(
             "Event {} - expected {} events to fire, got {}".format(
-                name, count, len(events)
+                name, count, tx.events.count(name)
             ))
-    elif count is None and not len(events):
+    elif count is None and not tx.events.count(name):
         raise AssertionError("Expected event '{}' to fire".format(name))
     if values is None:
         return
@@ -98,17 +98,15 @@ def event_fired(tx, name, count=None, values=None):
             )
         )
     for i in range(len(values)):
-        data = dict((x['name'], x['value']) for x in events[i]['data'])
         for k, v in values[i].items():
-            if k not in data:
-                print(data)
+            if k not in tx.events[i]:
                 raise KeyError(
                     "Event {} - does not contain value '{}'".format(name, k)
                 )
-            if data[k] != v:
+            if tx.events[i] != v:
                 raise AssertionError(
                     "Event {} - expected '{}' to equal {}, got {}".format(
-                        name, k, v, data[k]
+                        name, k, v, tx.events[i]
                     )
                 )
 
@@ -120,7 +118,7 @@ def event_not_fired(tx, name, fail_msg="Expected event not to fire"):
         tx: A TransactionReceipt.
         name: Name of the event expected to fire.
         fail_msg: Message to show if check fails.'''
-    if [i for i in tx.events if i['name'] == name]:
+    if name in tx.events:
         raise AssertionError(fail_msg)
 
 
