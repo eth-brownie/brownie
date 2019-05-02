@@ -1,8 +1,28 @@
 #!/usr/bin/python3
 
+UNITS = {
+    'kwei': 3,
+    'babbage': 3,
+    'mwei': 6,
+    'lovelace': 6,
+    'gwei': 9,
+    'shannon': 9,
+    'microether': 12,
+    'szabo': 12,
+    'milliether': 15,
+    'finney': 15,
+    'ether': 18
+}
 
-# format contract inputs based on ABI types
-def format_to_abi(abi, inputs):
+
+def format_input(abi, inputs):
+    '''Format contract inputs based on ABI types.
+
+    Args:
+        abi: contract method ABI
+        inputs: list of arguments to format
+
+    Returns a list of arguments formatted for use in a Contract tx or call.'''
     name = abi['name']
     types = [i['type'] for i in abi['inputs']]
     inputs = list(inputs)
@@ -48,6 +68,7 @@ def format_to_abi(abi, inputs):
 
 
 def format_output(value):
+    '''Converts output from a contract call into a more human-readable format.'''
     if type(value) in (tuple, list):
         return tuple(format_output(i) for i in value)
     elif type(value) is bytes:
@@ -86,18 +107,3 @@ def wei(value):
         return int(value)
     except ValueError:
         raise ValueError("Unknown denomination: {}".format(value))
-
-
-UNITS = {
-    'kwei': 3,
-    'babbage': 3,
-    'mwei': 6,
-    'lovelace': 6,
-    'gwei': 9,
-    'shannon': 9,
-    'microether': 12,
-    'szabo': 12,
-    'milliether': 15,
-    'finney': 15,
-    'ether': 18
-}

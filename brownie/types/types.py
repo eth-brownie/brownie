@@ -122,6 +122,10 @@ class EventDict:
     _print_as_dict = True
 
     def __init__(self, events):
+        '''Instantiates the class.
+
+        Args:
+            events: event data as supplied by eth_event.decode_logs or eth_event.decode_trace'''
         self._ordered = [_EventItem(
             i['name'],
             [dict((x['name'], x['value']) for x in i['data'])],
