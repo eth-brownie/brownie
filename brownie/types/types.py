@@ -222,6 +222,9 @@ class _EventItem:
     def __iter__(self):
         return iter(self._ordered)
 
+    def __eq__(self, other):
+        return other == self._ordered
+
     def items(self):
         '''_EventItem.items() -> a set-like object providing a view on _EventItem[0]'s items'''
         return self._ordered[0].items()
