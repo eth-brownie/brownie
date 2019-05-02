@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 
-
 from .convert import format_output
 
 
-# dict subclass that prevents adding new keys when locked
 class StrictDict(dict):
+    '''Dict subclass that prevents adding new keys when locked'''
+
+    _print_as_dict = True
 
     def __init__(self, values={}):
         self._locked = False
@@ -24,33 +25,23 @@ class StrictDict(dict):
             self.__setitem__(k, v)
 
     def _lock(self):
+        '''Locks the dict so that new keys cannot be added'''
         for v in [i for i in self.values() if type(i) is StrictDict]:
             v._lock()
         self._locked = True
 
     def _unlock(self):
+        '''Unlocks the dict so that new keys can be added'''
         for v in [i for i in self.values() if type(i) is StrictDict]:
             v._unlock()
         self._locked = False
 
 
-# dict container that returns False if key is not present
-class FalseyDict:
-
-    def __init__(self):
-        self._dict = {}
-
-    def __setitem__(self, key, value):
-        self._dict[key] = value
-
-    def __getitem__(self, key):
-        if key in self._dict:
-            return self._dict[key]
-        return False
-
-
 class KwargTuple:
-    '''Tuple/dict hybrid class, used for return values on callable functions'''
+    '''Tuple/dict hybrid container, used for return values on callable functions'''
+
+    _print_as_list = True
+
     def __init__(self, values, abi):
         values = format_output(values)
         self._tuple = tuple(values)
@@ -110,19 +101,131 @@ class KwargTuple:
         return self._dict.values()
 
 
-# dict container that returns False if key is not present
-class FalseyDict:
+class FalseyDict(dict):
+    '''Dict subclass that returns False if a key is not present'''
 
-    def __init__(self):
-        self._dict = {}
-
-    def __setitem__(self, key, value):
-        self._dict[key] = value
+    _print_as_dict = True
 
     def __getitem__(self, key):
-        if key in self._dict:
-            return self._dict[key]
+        if key in self:
+            return super().__getitem__(key)
         return False
 
     def _update_from_args(self, values):
-        self._dict.update(dict((k.replace('-',''),v) for k,v in values.items()))
+        '''Updates the dict from docopts.args'''
+        self.update(dict((k.lstrip("-"), v) for k,v in values.items()))
+
+
+class EventDict:
+    '''Dict/list hybrid container, base class for all events fired in a transaction.'''
+
+    _print_as_dict = True
+
+    def __init__(self, events):
+        self._ordered = [EventItem(
+            i['name'],
+            [dict((x['name'], x['value']) for x in i['data'])],
+            (pos,)
+        ) for pos, i in enumerate(events)]
+        self._dict = {}
+        for event in self._ordered:
+            if event.name in self._dict:
+                continue
+            events = [i for i in self._ordered if i.name == event.name]
+            self._dict[event.name] = EventItem(
+                event.name,
+                events,
+                tuple(i.pos[0] for i in events)
+            )
+
+    def __bool__(self):
+        return bool(self._ordered)
+
+    def __contains__(self, name):
+        '''returns True if an event fired with the given name.'''
+        return name in [i.name for i in self._ordered]
+
+    def __getitem__(self, key):
+        '''if key is int: returns the n'th event that was fired
+        if key is str: returns a _EventItem dict of all events where name == key'''
+        if type(key) is int:
+            return self._ordered[key]
+        return self._dict[key]
+
+    def __iter__(self):
+        return iter(self._ordered)
+
+    def __len__(self):
+        '''returns the number of events that fired.'''
+        return len(self._ordered)
+
+    def __str__(self):
+        return str(dict((k, [i[0] for i in v._ordered]) for k, v in self._dict.items()))
+
+    def count(self, name):
+        '''EventDict.count(name) -> integer -- return number of occurrences of name'''
+        return len([i.name for i in self._ordered if i.name == value])
+
+    def items(self):
+        '''EventDict.items() -> a set-like object providing a view on EventDict's items'''
+        return self._dict.items()
+
+    def keys(self):
+        '''EventDict.keys() -> a set-like object providing a view on EventDict's keys'''
+        return self._dict.keys()
+
+    def values(self):
+        '''EventDict.values() -> an object providing a view on EventDict's values'''
+        return self._dict.values()
+
+class EventItem:
+    '''Dict/list hybrid container, represents one or more events with the same name
+    that were fired in a transaction.
+
+    Attributes:
+        name: event name
+        pos: tuple of indexes where this event fired'''
+
+    def __init__(self, name, event_data, pos):
+        self.name = name
+        self._ordered = event_data
+        self.pos = pos
+        if len(event_data) > 1:
+            self._print_as_list = True
+        else:
+            self._print_as_dict = True
+
+    def __getitem__(self, key):
+        '''if key is int: returns the n'th event that was fired with this name
+        if key is str: returns the value of data field 'key' from the 1st event within the container '''
+        if type(key) is int:
+            return self._ordered[key]
+        return self._ordered[0][key]
+
+    def __contains__(self, name):
+        '''returns True if this event contains a value with the given name.'''
+        return name in self._ordered[0]
+
+    def __len__(self):
+        '''returns the number of events held in this container.'''
+        return len(self._ordered)
+
+    def __str__(self):
+        if len(self._ordered) == 1:
+            return str(self._ordered[0])
+        return str([i[0] for i in self._ordered])
+
+    def __iter__(self):
+        return iter(self._ordered)
+
+    def items(self):
+        '''EventItem.items() -> a set-like object providing a view on EventItem[0]'s items'''
+        return self._ordered[0].items()
+
+    def keys(self):
+        '''EventItem.keys() -> a set-like object providing a view on EventItem[0]'s keys'''
+        return self._ordered[0].keys()
+
+    def values(self):
+        '''EventItem.values() -> an object providing a view on EventItem[0]'s values'''
+        return self._ordered[0].values()
