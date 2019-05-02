@@ -41,7 +41,7 @@ def format_input(abi, inputs):
                     "'{}': Argument {}, sequence has a ".format(name, i) +
                     "length of {}, should be {}".format(len(inputs[i]), type_)
                     )
-            inputs[i] = format_to_abi(
+            inputs[i] = format_input(
                 {'name': name, 'inputs':[{'type': t}] * len(inputs[i])},
                 inputs[i]
             )
