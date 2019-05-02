@@ -3,7 +3,6 @@
 import sys
 import traceback
 
-from brownie.types import StrictDict
 import brownie._config as config
 CONFIG = config.CONFIG
 
@@ -61,7 +60,7 @@ class Color:
         if start:
             sys.stdout.write(' '*indent+'{}{{'.format(self['dull']))
         indent+=4
-        for c,k in enumerate(sorted(value, key= lambda k: str(k))):
+        for c,k in enumerate(sorted(value.keys(), key= lambda k: str(k))):
             if c:
                 sys.stdout.write(',')
             sys.stdout.write('\n'+' '*indent)
@@ -69,11 +68,11 @@ class Color:
                 sys.stdout.write("'{0[key]}{1}{0[dull]}': ".format(self, k))
             else:
                 sys.stdout.write("{0[key]}{1}{0[dull]}: ".format(self, k))
-            if type(value[k]) in (dict, StrictDict):
+            if _check_dict(value[k]):
                 sys.stdout.write('{')
                 self.pretty_dict(value[k], indent,False)
                 continue
-            if type(value[k]) in (list, tuple):
+            if _check_list(value[k]):
                 sys.stdout.write(str(value[k])[0])
                 self.pretty_list(value[k], indent, False)
                 continue
@@ -89,7 +88,7 @@ class Color:
         brackets = str(value)[0],str(value)[-1]
         if start:
             sys.stdout.write(' '*indent+'{}{}'.format(self['dull'],brackets[0]))
-        if value and len(value)==len([i for i in value if type(i) is dict]):
+        if value and len(value) == len([i for i in value if _check_dict(i)]):
             # list of dicts
             sys.stdout.write('\n'+' '*(indent+4)+'{')
             for c,i in enumerate(value):
@@ -142,3 +141,11 @@ class Color:
             tb[i] = TB_BASE.format(self, info, "\n"+code if code else "")
         tb.append("{0[error]}{1}{0}: {2}".format(self, exc[0].__name__, exc[1]))
         return "\n".join(tb)
+
+
+def _check_dict(value):
+    return value is dict or hasattr(value, '_print_as_dict')
+
+
+def _check_list(value):
+    return value in (list, tuple) or hasattr(value, "_print_as_list")

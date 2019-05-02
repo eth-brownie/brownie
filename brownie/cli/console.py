@@ -16,7 +16,6 @@ else:
 import brownie
 import brownie.network as network
 from brownie.network.contract import _ContractBase, _ContractMethod
-from brownie.types import StrictDict, KwargTuple
 from brownie.cli.utils import color
 import brownie._config as config
 CONFIG = config.CONFIG
@@ -98,9 +97,9 @@ class Console:
                     exec('_result = ' + cmd, self.__dict__, local_)
                     r = local_['_result']
                     if r is not None:
-                        if type(r) in (dict, StrictDict) and r:
+                        if r and (type(r) is dict or hasattr(r,'_print_as_dict')):
                             color.pretty_dict(r)
-                        elif type(r) in (list, tuple, KwargTuple):
+                        elif type(r) is list or hasattr(r,'_print_as_list'):
                             color.pretty_list(r)
                         elif type(r) is str:
                             print(r)
