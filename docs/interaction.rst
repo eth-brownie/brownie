@@ -156,6 +156,11 @@ For transactions you can optionally include a dictionary of `transaction paramet
 
 If the gas limit is set to calculate automatically, transactions that revert will raise a ``VirtualMachineError``. If the gas limit is fixed they will return a ``TransactionReceipt`` marked as reverted (printed in red).
 
+TODO
+ - reference KwargTuple for return values
+ - explain call vs transact and when Brownie defaults to each
+
+
 Unconfirmed Transactions
 ========================
 

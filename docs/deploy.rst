@@ -40,3 +40,8 @@ Here is a simple example script from the ``token`` project, used to deploy the `
         accounts[0].deploy(Token, "Test Token", "TEST", 18, "1000 ether")
 
 See the :ref:`api` documentation for available classes and methods when writing scripts.
+
+Linked Libraries
+================
+
+TODO
