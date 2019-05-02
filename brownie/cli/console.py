@@ -15,7 +15,6 @@ else:
 
 import brownie
 import brownie.network as network
-from brownie.network.contract import _ContractBase, _ContractMethod
 from brownie.cli.utils import color
 import brownie._config as config
 CONFIG = config.CONFIG
@@ -97,9 +96,9 @@ class Console:
                     exec('_result = ' + cmd, self.__dict__, local_)
                     r = local_['_result']
                     if r is not None:
-                        if r and (type(r) is dict or hasattr(r,'_print_as_dict')):
+                        if r and (type(r) is dict or hasattr(r, '_print_as_dict')):
                             color.pretty_dict(r)
-                        elif type(r) is list or hasattr(r,'_print_as_list'):
+                        elif type(r) is list or hasattr(r, '_print_as_list'):
                             color.pretty_list(r)
                         elif type(r) is str:
                             print(r)
@@ -160,13 +159,8 @@ class Console:
 def _dir_color(obj):
     if type(obj).__name__ == "module":
         return color('module')
-    try:
-        if issubclass(type(obj), _ContractBase):
-            return color('contract')
-        if issubclass(type(obj), _ContractMethod):
-            return color('contract_method')
-    except TypeError:
-        pass
+    if hasattr(obj, '_dir_color'):
+        return color(obj._dir_color)
     if not callable(obj):
         return color('value')
     return color('callable')

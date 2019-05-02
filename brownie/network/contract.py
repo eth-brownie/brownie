@@ -20,6 +20,8 @@ CONFIG = config.CONFIG
 
 class _ContractBase:
 
+    _dir_color = "contract"
+
     def __init__(self, build):
         self._build = build
         self.abi = build['abi']
@@ -114,6 +116,8 @@ class ContractContainer(_ContractBase):
 
 
 class ContractConstructor:
+
+    _dir_color = "contract_method"
 
     def __init__(self, parent, name):
         self._parent = parent
@@ -241,6 +245,8 @@ class Contract(_ContractBase):
 
 
 class _ContractMethod:
+
+    _dir_color = "contract_method"
 
     def __init__(self, fn, abi, name, owner):
         self._fn = fn
