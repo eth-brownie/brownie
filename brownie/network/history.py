@@ -2,8 +2,7 @@
 
 from collections import OrderedDict
 
-from eth_utils import to_checksum_address
-
+from brownie.types.convert import to_address
 from brownie.network.web3 import web3
 import brownie._registry as _registry
 
@@ -60,7 +59,7 @@ class TxHistory:
         return [i for i in self._tx if i.receiver == account or i.sender == account]
 
     def find_contract(self, address):
-        address = to_checksum_address(str(address))
+        address = to_address(address)
         contracts = [x for v in self._contracts.values() for x in v.values()]
         return next((i for i in contracts if i == address), None)
 
