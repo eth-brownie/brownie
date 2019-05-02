@@ -74,6 +74,7 @@ def _check_int_size(type_):
 
 
 def to_uint(value, type_="uint256"):
+    '''Convert a value to an unsigned integer'''
     value = wei(value)
     size = _check_int_size(type_)
     if value < 0 or value >= 2**int(size):
@@ -82,6 +83,7 @@ def to_uint(value, type_="uint256"):
 
 
 def to_int(value, type_="int256"):
+    '''Convert a value to a signed integer'''
     value = wei(value)
     size = _check_int_size(type_)
     if value < -2**int(size) // 2 or value >= 2**int(size) // 2:
@@ -90,12 +92,14 @@ def to_int(value, type_="int256"):
 
 
 def to_bool(value):
+    '''Convert a value to a boolean'''
     if value not in (0, 1, True, False):
-        raise TypeError("Cannot convert '{}' to bool".format(value))
+        raise TypeError("Cannot convert {} '{}' to bool".format(type(value), value))
     return bool(value)
 
 
 def to_address(value):
+    '''Convert a value to an address'''
     if type(value) is bytes:
         value = value.hex()
     value = eth_utils.add_0x_prefix(str(value))
@@ -106,6 +110,7 @@ def to_address(value):
 
 
 def to_bytes(value, type_="bytes32"):
+    '''Convert a value to bytes'''
     if type(value) not in (bytes, str, int):
         raise TypeError("'{}', type {}, cannot be converted to {}".format(value, type(value), type_))
     if type_ == "byte":
@@ -134,6 +139,7 @@ def to_bytes(value, type_="bytes32"):
 
 
 def to_string(value):
+    '''Convert a value to a string'''
     value = str(value)
     if eth_utils.is_hex(value):
         value = eth_utils.to_text(value)
