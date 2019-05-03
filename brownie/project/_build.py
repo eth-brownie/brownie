@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import re
 
-from . import sha_compare as compare
+from . import _sha_compare as compare
 from . import compiler
 import brownie._config as config
 CONFIG = config.CONFIG
