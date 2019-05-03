@@ -41,7 +41,28 @@ Here is a simple example script from the ``token`` project, used to deploy the `
 
 See the :ref:`api` documentation for available classes and methods when writing scripts.
 
-Linked Libraries
-================
+Unlinked Libraries
+==================
 
-TODO
+If a contract requires a library, the most recently deployed one will be used automatically. If the required library has not been deployed yet an ``IndexError`` is raised.
+
+.. code-block:: python
+
+    >>> accounts[0].deploy(MetaCoin)
+      File "eth_brownie-1.0.0b3-py3.6.egg/brownie/network/contract.py", line 162, in __call__
+        "Contract requires unknown library '{}'".format(contract)
+    NameError: Contract requires unknown library 'ConvertLib'
+    >>>
+    >>> accounts[0].deploy(ConvertLib)
+
+    Transaction sent: 0xff3f5cff35c68a73658ad367850b6fa34783b4d59026520bd61b72b6613d871c
+    ConvertLib.constructor confirmed - block: 1   gas used: 95101 (48.74%)
+    ConvertLib deployed at: 0x08c4C7F19200d5636A1665f6048105b0686DFf01
+    <ConvertLib Contract object '0x08c4C7F19200d5636A1665f6048105b0686DFf01'>
+    >>>
+    >>> accounts[0].deploy(MetaCoin)
+
+    Transaction sent: 0xd0969b36819337fc3bac27194c1ff0294dd65da8f57c729b5efd7d256b9ecfb3
+    MetaCoin.constructor confirmed - block: 2   gas used: 231857 (69.87%)
+    MetaCoin deployed at: 0x8954d0c17F3056A6C98c7A6056C63aBFD3e8FA6f
+    <MetaCoin Contract object '0x8954d0c17F3056A6C98c7A6056C63aBFD3e8FA6f'>

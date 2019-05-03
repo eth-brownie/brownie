@@ -4,11 +4,7 @@
 Network API
 ===========
 
-TODO
-
 .. py:attribute:: brownie.network
-
-    TODO
 
 
 Accounts
@@ -221,9 +217,7 @@ Contracts
 
 Contract classes are not meant to be instantiated directly. When launched, Brownie automatically creates ``ContractContainer`` instances from on the files in the ``contracts/`` folder. New ``Contract`` instances are created via methods in the container.
 
-Temporary contracts used for testing can be created with the ``compile_source`` method.
-
-
+Arguments supplied to calls or transaction methods are converted using the methods outlined in :ref:`_type-conversions`.
 
 ContractContainer
 -----------------
@@ -431,6 +425,8 @@ Contract Methods
         >>> Token[0].balance
         0
 
+.. _api-contract-call:
+
 ContractCall
 ------------
 
@@ -492,6 +488,8 @@ ContractCall Methods
         <Transaction object '0xc4f3a0addfe1e475c2466f30c750ca7a60450132b07102af610d8d56f170046b'>
         >>> tx.return_value
         0
+
+.. _api-contract-tx:
 
 ContractTx
 ----------
@@ -667,7 +665,7 @@ RPC
 Transactions
 ============
 
-.. _api_tx:
+.. _api-network-tx:
 
 TransactionReceipt
 ------------------

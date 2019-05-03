@@ -15,7 +15,6 @@ Brownie
     debug.rst
     tests.rst
     coverage.rst
-    type-conversions.rst
     config.rst
     python-package.rst
     api.rst

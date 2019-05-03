@@ -15,7 +15,3 @@ When a transaction reverts and the gas limit is not set to automatic, you are st
 
 See the :ref:`api_tx` section of the API documentation for more detailed information.
 
-TODO
-
- - examples
- - generally expand the content here

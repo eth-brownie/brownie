@@ -11,10 +11,44 @@ types.convert
 
 The ``brownie.types.convert`` module contains methods relating to data conversion.
 
-.. _wei:
+Formatting Contract Arguments
+-----------------------------
 
-wei
----
+.. py:method:: brownie.types.convert.format_input(abi, inputs)
+
+    Formats inputs based on a contract method ABI.
+
+    * ``abi``: A contract method ABI as a dict.
+    * ``inputs``: List or tuple of values to format.
+
+    Returns a list of values formatted for use by ``ContractTx`` or ``ContractCall``.
+
+    Each value in ``inputs`` is converted using the one of the methods outlined in :ref:`type-conversions`.
+
+    .. code-block:: python
+
+        >>> from brownie.types.convert import format_input
+        >>> format_input({"constant":False,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[],"payable":False,"type":"function"},["0xB8c77482e45F1F44dE1745F52C74426C631bDD52","1 ether"])
+        ['0xB8c77482e45F1F44dE1745F52C74426C631bDD52', 1000000000000000000]
+
+.. py:method:: brownie.types.convert.format_output(value)
+
+    Converts output from a contract call into a more human-readable format.
+
+    .. code-block:: python
+
+        >>> from brownie.types.convert import format_output
+        >>> format_output([b'\xaa\x00\x13'])
+        ('0xaa0013',)
+
+.. _type-conversions:
+
+Type Conversions
+----------------
+
+The following methods are used to convert arguments supplied to ``ContractTx`` and ``ContractCall``.
+
+.. _wei:
 
 .. py:method:: brownie.types.convert.wei(value)
 
@@ -34,38 +68,40 @@ wei
         >>> wei(8.38e32)
         838000000000000000000000000000000
 
-format_input
-------------
+.. py:method:: brownie.types.convert.to_uint(value, type_="uint256")
 
-.. py:method:: brownie.types.convert.format_input(abi, inputs)
+    Converts a value to an unsigned integer. This is equivalent to calling ``wei`` and then applying checks for over/underflows.
 
-    Formats inputs based on a contract method ABI.
+.. py:method:: brownie.types.convert.to_int(value, type_="int256")
 
-    * ``abi``: A contract method ABI as a dict.
-    * ``inputs``: List or tuple of values to format.
+    Converts a value to a signed integer. This is equivalent to calling ``wei`` and then applying checks for over/underflows.
 
-    Returns a list of values formatted for use by ``ContractTx`` or ``ContractCall``.
+.. py:method:: brownie.types.convert.to_bool(value)
 
-    See :ref:`type-conversions` for detailed information on how Brownie handles type conversions.
+    Converts a value to a boolean. Raises ``TypeError`` if the value is not in ``(True, False, 0, 1)``.
 
-    .. code-block:: python
+.. py:method:: brownie.types.convert.to_address(value)
 
-        >>> from brownie.types.convert import format_input
-        >>> format_input({"constant":False,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[],"payable":False,"type":"function"},["0xB8c77482e45F1F44dE1745F52C74426C631bDD52","1 ether"])
-        ['0xB8c77482e45F1F44dE1745F52C74426C631bDD52', 1000000000000000000]
+    Converts a value to a checksummed address. Raises ``ValueError`` if value cannot be converted.
 
-format_output
--------------
+.. py:method:: brownie.types.convert.to_bytes(value, type_="bytes32")
 
-.. py:method:: brownie.types.convert.format_output(value)
+    Converts a value to bytes. ``value`` can be given as bytes, a hex string, or an integer.
 
-    Converts output from a contract call into a more human-readable format.
+    Raises ``OverflowError`` if the length of the converted value exceeds that specified by ``type_``.
+
+    Pads left with ``00`` if the length of the converted value is less than that specified by ``type_``.
 
     .. code-block:: python
 
-        >>> from brownie.types.convert import format_output
-        >>> format_output([b'\xaa\x00\x13'])
-        ('0xaa0013',)
+        >>> to_bytes('0xff','bytes')
+        b'\xff'
+        >>> to_bytes('0xff','bytes16')
+        b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff'
+
+.. py:method:: brownie.types.convert.to_string(value)
+
+    Converts a value to a string encoded to bytes.
 
 types.types
 ===========
@@ -142,7 +178,7 @@ KwargTuple
             '_limit': (100, 0, 0, 0, 0, 0, 0, 0),
             '_minRating': 1
         }
-        >>> k['_minRating'] 
+        >>> k['_minRating']
         1
 
 .. py:classmethod:: KwargTuple.copy
@@ -169,6 +205,8 @@ KwargTuple
 
     Returns a set-like object providing a view on the object's keys.
 
+.. _api-types-eventdict:
+
 EventDict
 ---------
 
@@ -177,7 +215,7 @@ EventDict
     Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`__. Base class, used to hold all events that are fired in a transaction.
 
     When accessing events inside the object:
-    
+
     * If the key is given as an integer, events are handled as a list in the order that they fired. An ``_EventItem`` is returned for the specific event that fired at the given position.
     * If the key is given as a string, a ``_EventItem`` is returned that contains all the events with the given name.
 
@@ -256,7 +294,7 @@ _EventItem
     Instances of this class are created by ``EventDict``, it is not intended to be instantiated directly.
 
     When accessing events inside the object:
-    
+
     * If the key is given as an integer, events are handled as a list in the order that they fired. An ``_EventItem`` is returned for the specific event that fired at the given position.
     * If the key is given as a string, ``_EventItem`` assumes that you wish to access the first event contained within the object. ``event['value']`` is equivalent to ``event[0]['value']``.
 

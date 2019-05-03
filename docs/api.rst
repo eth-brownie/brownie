@@ -6,7 +6,9 @@ Brownie API
 
 The following classes and methods are available when writing brownie scripts or using the console.
 
-.. note:: From the console you can call ``dir`` to see available methods and attributes for any class. By default, callables are highlighed in cyan and attributes in blue. You can also call ``help`` on any class or method to view information on it's functionality.
+.. note::
+
+    From the console you can call ``dir`` to see available methods and attributes for any class. By default, callables are highlighed in cyan and attributes in blue. You can also call ``help`` on any class or method to view information on it's functionality.
 
 .. code-block:: python
 
