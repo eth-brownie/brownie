@@ -27,4 +27,3 @@ The following classes and methods are available when writing brownie scripts or 
     Project <api-project.rst>
     Test <api-test.rst>
     Types <api-types.rst>
-    Utils <api-utils.rst>
