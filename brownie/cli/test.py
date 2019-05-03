@@ -14,7 +14,7 @@ from brownie.cli.utils import color
 from brownie.test.coverage import merge_coverage, analyze_coverage
 from brownie.exceptions import VirtualMachineError
 import brownie.network as network
-from brownie.network.history import history
+from brownie.network.history import TxHistory
 import brownie.network.transaction as transaction
 import brownie.project._sha_compare as compare
 
@@ -126,13 +126,16 @@ def run_test(filename, network, idx):
         return [], []
 
     print("\nRunning {0[module]}{1}.py{0} - {2} test{3}".format(
-            color, filename, len(test_names)-1, "s" if len(test_names) != 2 else ""
+            color,
+            filename,
+            len(test_names)-1,
+            "s" if len(test_names) != 2 else ""
     ))
     if 'setup' in test_names:
         test_names.remove('setup')
         traceback_info += _run_test(module, 'setup', 0, len(test_names))
         if traceback_info:
-            return history.copy(), traceback_info
+            return TxHistory().copy(), traceback_info
     network.rpc.snapshot()
     for c, t in enumerate(test_names[idx], start=idx.start + 1):
         network.rpc.revert()
@@ -142,7 +145,7 @@ def run_test(filename, network, idx):
             network.rpc.kill(False)
             network.rpc.launch()
             break
-        test_history.update(history.copy())
+        test_history.update(TxHistory().copy())
     return test_history, traceback_info
 
 

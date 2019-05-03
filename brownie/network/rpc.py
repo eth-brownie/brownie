@@ -7,17 +7,19 @@ from threading import Thread
 import time
 
 from .web3 import web3
-import brownie._registry as _registry
+from .account import Accounts
+from .history import TxHistory, _ContractHistory
+from brownie.types.types import _Singleton
 import brownie._config as config
 CONFIG = config.CONFIG
 
 
-class Rpc:
+class Rpc(metaclass=_Singleton):
 
     '''Methods for interacting with ganache-cli when running a local
     RPC environment.'''
 
-    def __init__(self, web3):
+    def __init__(self):
         self._rpc = None
         self._time_offset = 0
         self._snapshot_id = False
@@ -46,7 +48,7 @@ class Rpc:
         self._snapshot_id = False
         for i in range(50):
             if web3.isConnected():
-                _registry.reset()
+                _reset()
                 return
             time.sleep(0.1)
         raise ConnectionError(
@@ -63,7 +65,7 @@ class Rpc:
         self._time_offset = 0
         self._snapshot_id = False
         self._rpc = None
-        _registry.reset()
+        _reset()
 
     def _request(self, *args):
         if not self.is_active():
@@ -111,7 +113,7 @@ class Rpc:
         self._request("evm_revert", [self._snapshot_id])
         self.snapshot()
         self.sleep(0)
-        _registry.revert()
+        _revert()
         return "Block height reverted to {}".format(web3.eth.blockNumber)
 
 
@@ -120,3 +122,15 @@ def _watch_rpc(rpc):
     if not code or code == -15:
         return
     raise ConnectionError("Local RPC terminated with exit code {}".format(rpc.poll()))
+
+
+def _reset():
+    TxHistory()._reset()
+    _ContractHistory()._reset()
+    Accounts()._reset()
+
+
+def _revert():
+    TxHistory()._revert()
+    _ContractHistory()._revert()
+    Accounts()._revert()

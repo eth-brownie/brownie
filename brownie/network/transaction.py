@@ -8,7 +8,7 @@ from hexbytes import HexBytes
 
 from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
-from brownie.network.history import history, _contracts
+from brownie.network.history import TxHistory, _ContractHistory
 from brownie.network.event import decode_logs, decode_trace
 from brownie.network.web3 import web3
 from brownie.types import KwargTuple
@@ -30,6 +30,9 @@ Transaction was Mined{4}
 
 
 gas_profile = {}
+
+history = TxHistory()
+_contracts = _ContractHistory()
 
 
 class TransactionReceipt:
@@ -66,7 +69,7 @@ class TransactionReceipt:
             txid = txid.hex()
         if CONFIG['logging']['tx'] and not silent:
             print("\n{0[key]}Transaction sent{0}: {0[value]}{1}{0}".format(color, txid))
-        history._add_tx(self)
+        history.append(self)
         self.__dict__.update({
             '_trace': None,
             'fn_name': name,

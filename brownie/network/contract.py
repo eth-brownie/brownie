@@ -8,7 +8,7 @@ from eth_hash.auto import keccak
 from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
 from brownie.network.event import get_topics
-from brownie.network.history import _contracts
+from brownie.network.history import _ContractHistory
 from brownie.network.web3 import web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_input, format_output, to_address, wei
@@ -16,6 +16,7 @@ from brownie.types.convert import format_input, format_output, to_address, wei
 import brownie._config as config
 CONFIG = config.CONFIG
 
+_contracts = _ContractHistory()
 
 class _ContractBase:
 

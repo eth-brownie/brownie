@@ -2,88 +2,89 @@
 
 from collections import OrderedDict
 
+from brownie.types.types import _Singleton
 from brownie.types.convert import to_address
 from brownie.network.web3 import web3
-import brownie._registry as _registry
 
 
-class TxHistory:
+class TxHistory(metaclass=_Singleton):
 
     def __init__(self):
-        self._contracts = {}
-        self._tx = []
-        _registry.add(self)
+        self._list = []
 
-    def __contains__(self, other):
-        return other in self._tx
+    def __bool__(self):
+        return bool(self._list)
+
+    def __contains__(self, item):
+        return item in self._list
 
     def __iter__(self):
-        return iter(self._tx)
+        return iter(self._list)
 
-    def __getitem__(self, item):
-        return self._tx[item]
+    def __getitem__(self, key):
+        return self._list[key]
 
     def __len__(self):
-        return len(self._tx)
+        return len(self._list)
+
+    def _reset(self):
+        self._list.clear()
+
+    def _revert(self):
+        height = web3.eth.blockNumber
+        for tx in [i for i in self._list if i.block_number > height]:
+            self._list.remove(tx)
 
     def _console_repr(self):
-        return str(self._tx)
+        return str(self._list)
 
-    def _notify_reset(self):
-        self._tx.clear()
-        self._contracts.clear()
+    def append(self, item):
+        self._list.append(item)
 
-    def _notify_revert(self):
-        height = web3.eth.blockNumber
-        self._tx = [i for i in self._tx if i.block_number <= height]
-        for name, contracts in self._contracts.items():
-            keep = []
-            for contract in contracts.values():
-                if contract.tx:
-                    if contract.tx.block_number <= height:
-                        keep.append(contract)
-                elif len(web3.eth.getCode(contract._contract.address).hex()) > 4:
-                    keep.append(contract)
-            self._contracts[name] = OrderedDict((i._contract.address, i) for i in keep)
+    def to_receiver(self, account):
+        return [i for i in self._list if i.receiver == account]
 
-    def _add_tx(self, tx):
-        self._tx.append(tx)
+    def from_sender(self, account):
+        return [i for i in self._list if i.sender == account]
 
-    def to_address(self, account):
-        return [i for i in self._tx if i.receiver == account]
-
-    def from_address(self, account):
-        return [i for i in self._tx if i.sender == account]
-
-    def of(self, account):
-        return [i for i in self._tx if i.receiver == account or i.sender == account]
+    def of_address(self, account):
+        return [i for i in self._list if i.receiver == account or i.sender == account]
 
     def copy(self):
-        return self._tx.copy()
+        return self._list.copy()
 
 
-class _ContractHistory:
+class _ContractHistory(metaclass=_Singleton):
 
     def __init__(self):
-        self._contracts = {}
+        self._dict = {}
+
+    def _reset(self):
+        self._dict.clear()
+
+    def _revert(self):
+        height = web3.eth.blockNumber
+        for name, contracts in self._dict.items():
+            for contract in list(contracts.values()):
+                if contract.tx and contract.tx.block_number <= height:
+                    continue
+                elif len(web3.eth.getCode(contract.address).hex()) > 4:
+                    continue
+                del self._dict[name][contract.address]
 
     def add(self, contract):
         name = contract._name
-        self._contracts.setdefault(name, OrderedDict())[contract.address] = contract
+        self._dict.setdefault(name, OrderedDict())[contract.address] = contract
 
     def remove(self, contract):
         name = contract._name
-        del self._contracts[name][contract.address]
+        del self._dict[name][contract.address]
 
     def list(self, name):
-        self._contracts.setdefault(name, OrderedDict())
-        return list(self._contracts[name].values())
+        self._dict.setdefault(name, OrderedDict())
+        return list(self._dict[name].values())
 
     def find(self, address):
         address = to_address(address)
-        contracts = [x for v in self._contracts.values() for x in v.values()]
+        contracts = [x for v in self._dict.values() for x in v.values()]
         return next((i for i in contracts if i == address), None)
-
-
-history = TxHistory()
-_contracts = _ContractHistory()

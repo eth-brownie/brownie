@@ -182,6 +182,7 @@ class EventDict:
         '''EventDict.values() -> an object providing a view on EventDict's values'''
         return self._dict.values()
 
+
 class _EventItem:
     '''Dict/list hybrid container, represents one or more events with the same name
     that were fired in a transaction.
@@ -236,3 +237,13 @@ class _EventItem:
     def values(self):
         '''_EventItem.values() -> an object providing a view on _EventItem[0]'s values'''
         return self._ordered[0].values()
+
+
+class _Singleton(type):
+
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(_Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]

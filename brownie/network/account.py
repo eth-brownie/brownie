@@ -14,13 +14,13 @@ from brownie.exceptions import VirtualMachineError
 from brownie.network.transaction import TransactionReceipt
 from brownie.network.web3 import web3
 from brownie.types.convert import to_address, wei
+from brownie.types.types import _Singleton
 
-import brownie._registry as _registry
 import brownie._config
 CONFIG = brownie._config.CONFIG
 
 
-class Accounts:
+class Accounts(metaclass=_Singleton):
 
     '''List-like container that holds all of the available Account instances.'''
 
@@ -28,16 +28,15 @@ class Accounts:
         self._accounts = []
         # prevent private keys from being stored in read history
         self.add.__dict__['_private'] = True
-        _registry.add(self)
 
-    def _notify_reset(self):
+    def _reset(self):
         self._accounts.clear()
         try:
             self._accounts = [Account(i) for i in web3.eth.accounts]
         except Exception:
             pass
 
-    def _notify_revert(self):
+    def _revert(self):
         for i in self._accounts:
             i.nonce = web3.eth.getTransactionCount(str(i))
 

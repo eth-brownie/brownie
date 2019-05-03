@@ -5,8 +5,7 @@ import sys as _sys
 from .web3 import web3
 from .rpc import Rpc as _Rpc
 from .account import Accounts as _Accounts
-from .history import history
-import brownie._registry as _registry
+from .history import TxHistory as _TxHistory
 import brownie._config as _config
 CONFIG = _config.CONFIG
 
@@ -15,7 +14,9 @@ __all__ = ['accounts', 'history', 'network', 'rpc', 'web3']
 
 network = _sys.modules[__name__]
 accounts = _Accounts()
-rpc = _Rpc(web3)
+rpc = _Rpc()
+history = _TxHistory()
+
 
 def connect(network=None, launch_rpc=False):
     if network is None:
@@ -23,16 +24,12 @@ def connect(network=None, launch_rpc=False):
     web3._connect(network)
     if launch_rpc and 'test-rpc' in CONFIG['active_network']:
         rpc.launch()
-    else:
-        _registry.reset()
-
+    
 
 def disconnect(kill_rpc=False):
     web3.providers.clear()
     if kill_rpc and rpc.is_active():
         rpc.kill()
-    else:
-        _registry.reset()
 
 
 def reset(network=None):
