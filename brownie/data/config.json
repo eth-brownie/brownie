@@ -1,7 +1,6 @@
 {
     "network_defaults":{
         "name": "development",
-        "persist": false,
         "gas_limit": false,
         "gas_price": false
     },
@@ -11,8 +10,7 @@
             "host": "http://127.0.0.1:8545"
         },
         "ropsten": {
-            "host": "https://ropsten.infura.io/",
-            "persist": true
+            "host": "https://ropsten.infura.io/"
         }
     },
     "test":{

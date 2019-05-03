@@ -16,7 +16,7 @@ from brownie.exceptions import VirtualMachineError
 import brownie.network as network
 from brownie.network.history import history
 import brownie.network.transaction as transaction
-import brownie.utils.sha_compare as compare
+import brownie.project._sha_compare as compare
 
 import brownie._config as config
 CONFIG = config.CONFIG

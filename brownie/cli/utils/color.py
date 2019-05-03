@@ -144,8 +144,8 @@ class Color:
 
 
 def _check_dict(value):
-    return value is dict or hasattr(value, '_print_as_dict')
+    return type(value) is dict or hasattr(value, '_print_as_dict')
 
 
 def _check_list(value):
-    return value in (list, tuple) or hasattr(value, "_print_as_list")
+    return type(value) in (list, tuple) or hasattr(value, "_print_as_list")

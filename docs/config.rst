@@ -4,7 +4,11 @@
 The Configuration File
 ======================
 
-Every project has a file ``brownie-config.json`` that holds all the configuration settings. You can view the default configuration file `here <https://github.com/HyperLink-Technology/brownie/blob/master/brownie/data/config.json>`__.
+Every project has a file ``brownie-config.json`` that holds all the configuration settings. The defaut configuration is as follows.
+
+.. literalinclude:: ../brownie/data/config.json
+    :linenos:
+    :language: json
 
 When using the Brownie console or writing scripts, you can view and edit configuration settings through the ``config`` dict. Any changes made in this way are temporary and will be reset when you exit Brownie or reset the network.
 
@@ -53,7 +57,7 @@ The following settings are available:
     * ``tx``: Transaction information
     * ``exc``: Exception information
 
-    Valid values range from 0 (nothing) to 2 (detailed). When given as a 2 item list, it corresponds to normal/verbose. When given as a single value, adding the '--verbose' tag will do nothing.
+    Valid values range from 0 (nothing) to 2 (detailed). When given as a 2 item list, it corresponds to normal/verbose. When given as a single value, adding the ``--verbose`` tag will do nothing.
 
 .. py:attribute:: colors
 

@@ -7,7 +7,7 @@ import sys
 
 from brownie.network.contract import ContractContainer
 from brownie.project._build import Build
-from brownie.utils import compiler
+from . import compiler
 import brownie._config
 CONFIG = brownie._config.CONFIG
 

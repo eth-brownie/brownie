@@ -59,6 +59,11 @@ To analyze specific test coverage, type:
 
     $ brownie gui
 
+Or from the console:
+
+.. code-block:: python
+
+    >>> Gui()
 
 This will open the Brownie GUI.  Then press ``C`` to display the coverage results.  Relevant code will be highlighted in different colors:
 

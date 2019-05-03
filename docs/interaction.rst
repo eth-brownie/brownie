@@ -23,7 +23,7 @@ Brownie will compile the contracts, start the local RPC, and then give you a com
 Working with Accounts
 =====================
 
-The ``accounts`` container (or just ``a``) allows you to access all your local accounts.
+The :ref:`api-network-accounts` container (available as ``accounts`` or just ``a``) allows you to access all your local accounts.
 
 .. code-block:: python
 
@@ -32,7 +32,7 @@ The ``accounts`` container (or just ``a``) allows you to access all your local a
     >>> accounts[0]
     <Account object '0xC0BcE0346d4d93e30008A1FE83a2Cf8CfB9Ed301'>
 
-Each individual account is represented by a class that can perform actions such as querying balance or sending ETH.
+Each individual account is represented by an :ref:`api-network-account` object that can perform actions such as querying a balance or sending ETH.
 
 .. code-block:: python
 
@@ -83,7 +83,7 @@ Imported accounts may be saved with an identifier and then loaded again at a lat
 Working with Contracts
 ======================
 
-Each contract in the project has a ``ContractDeployer`` class, which allows you to deploy new contracts and is a container that holds specific instances of that contract. To deploy a contract, include the deploying account as the first argument followed by the constructor arguments.
+Each contract in the project has a :ref:`api-network-contractcontainer` class, which allows you to deploy new contracts and is a container that holds specific instances of that contract. To deploy a contract, include the deploying account as the first argument followed by the constructor arguments.
 
 .. code-block:: python
 
@@ -107,7 +107,7 @@ Each contract in the project has a ``ContractDeployer`` class, which allows you 
     >>> Token[0]
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
-Alternatively, you can deploy from ``account`` with the contract as the first argument.
+Alternatively, you can deploy from ``account`` with the ``ContractContainer`` as the first argument.
 
 .. code-block:: python
 
@@ -134,7 +134,7 @@ You can also use ``ContractDeployer.at`` to access an already existing contract.
     >>> Token.at("0x5419710735c2D6c3e4db8F30EF2d361F70a4b380")
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
-External and public contract methods are callable by class methods of the same name. Arguments given to these objects are converted using the methods outlined in the :ref:`_type-conversions` section of the API documentation.
+External and public contract methods are callable by class methods of the same name. Arguments given to these objects are converted using the methods outlined in the :ref:`type-conversions` section of the API documentation.
 
 .. code-block:: python
 
@@ -143,7 +143,7 @@ External and public contract methods are callable by class methods of the same n
     >>> Token[0].transfer
     <ContractTx object 'transfer(address _to, uint256 _value)'>
 
-If the contract method has a state mutability of ``view`` or ``pure``, the related class method is of type :ref:`api-contract-call`. Calling this object will result in a call to the method. If you wish to call the method as a transaction you can use ``ContractCall.transact``.
+If the contract method has a state mutability of ``view`` or ``pure``, the related class method type is :ref:`api-contract-call`. Calling this object will result in a call to the method. If you wish to call the method as a transaction you can use ``ContractCall.transact``.
 
 .. code-block:: python
 
@@ -176,8 +176,6 @@ Transactions
 
 Each transaction returns a :ref:`api-network-tx` object. This object contains all relevant information about the transaction, as well as various methods to aid in debugging if it reverted.
 
-Transactions are also available from the ``history`` dictionary.
-
 .. code-block:: python
 
     >>> tx = Token[0].transfer(accounts[1], "1 ether", {'from': accounts[0]})
@@ -187,8 +185,6 @@ Transactions are also available from the ``history`` dictionary.
     <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>
     >>> tx
     <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>
-    >>> history
-    [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>, <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>]
 
 
 To get human-readable information on a transaction, use ``TransactionReceipt.info()``.
@@ -271,4 +267,9 @@ If you are working on a chain where blocks are not mined automatically, you can 
 
 If you send another transaction from the same account before the previous one has confirmed, it will still broadcast with the next sequential nonce.
 
-You can view the ``history`` list to quickly view the status of any pending transactions without having to assign them unique names.
+The :ref:`api-network-history` object, available as ``history``, holds all TransactionReceipts. You can use it to access individual transactions if you did not assign them a unique name when making the call.
+
+.. code-block:: python
+
+    >>> history
+    [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>, <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>]

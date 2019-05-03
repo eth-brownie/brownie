@@ -6,16 +6,23 @@ Network API
 
 .. py:attribute:: brownie.network
 
+The ``network`` package holds classes for interacting with the Ethereum blockchain. This is the most extensive package within Brownie and contains the majority of the user-facing functionality.
 
-Accounts
-========
+Account
+=======
 
-Account classes should not be instantiated directly. The ``Accounts`` container is available as ``accounts`` (or just ``a``) and will create each ``Account`` automatically during initialization. Add more accounts using ``Accounts.add``.
+.. py:attribute:: brownie.network.account
+
+The ``account`` module holds classes for interacting with Ethereum accounts for which you control the private key.
+
+Classes in this module are not meant to be instantiated directly. The ``Accounts`` container is available as ``accounts`` (or just ``a``) and will create each ``Account`` automatically during initialization. Add more accounts using ``Accounts.add``.
+
+.. _api-network-accounts:
 
 Accounts
 --------
 
-.. py:class:: brownie.network.accounts.Accounts
+.. py:class:: brownie.network.account.Accounts
 
     Singleton list-like container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects. When printed it will display as a list.
 
@@ -77,10 +84,12 @@ Accounts
         >>> accounts.remove('0xc1826925377b4103cC92DeeCDF6F96A03142F37a')
         >>>
 
+.. _api-network-account:
+
 Account
 -------
 
-.. py:class:: brownie.network.accounts.Account
+.. py:class:: brownie.network.account.Account
 
     An ethereum address that you control the private key for, and so can send transactions from. Generated automatically from ``web3.eth.accounts`` and stored in the ``Accounts`` container.
 
@@ -189,7 +198,7 @@ Account Methods
 LocalAccount
 ------------
 
-.. py:class:: brownie.network.accounts.LocalAccount
+.. py:class:: brownie.network.account.LocalAccount
 
     Functionally identical to ``Account``. The only difference is that a ``LocalAccount`` is one where the private key was directly inputted, and so is not found in ``web3.eth.accounts``.
 
@@ -212,12 +221,124 @@ LocalAccount
     >>> accounts[-1].private_key
     '0xd289bec8d9ad145aead13911b5bbf01936cbcd0efa0e26d5524b5ad54a61aeb8'
 
-Contracts
-=========
+Alert
+=====
 
-Contract classes are not meant to be instantiated directly. When launched, Brownie automatically creates ``ContractContainer`` instances from on the files in the ``contracts/`` folder. New ``Contract`` instances are created via methods in the container.
+.. py:attribute:: brownie.network.alert
 
-Arguments supplied to calls or transaction methods are converted using the methods outlined in :ref:`_type-conversions`.
+The ``alert`` module is used to set up notifications and callbacks based on state changes in the blockchain.
+
+Alert
+-----
+
+Alerts and callbacks are handled by creating instances of the ``Alert`` class.
+
+.. py:class:: brownie.network.alert.Alert(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None)
+
+    An alert object. It is active immediately upon creation of the instance.
+
+    * ``fn``: A callable to check for the state change.
+    * ``args``: Arguments to supply to the callable.
+    * ``kwargs``: Keyword arguments to supply to the callable.
+    * ``delay``: Number of seconds to wait between checking for changes.
+    * ``msg``: String to display upon change. The string will have ``.format(initial_value, new_value)`` applied before displaying.
+    * ``callback``: A callback function to call upon a change in value. It should accept two arguments, the initial value and the new value.
+
+    A basic example of an alert, watching for a changed balance:
+
+    .. code-block:: python
+
+        >>> from brownie.network.alert import Alert
+        >>> Alert(accounts[1].balance, msg="Account 1 balance has changed from {} to {}")
+        <brownie.network.alert.Alert object at 0x7f9fd25d55f8>
+        >>> alert.show()
+        [<brownie.network.alert.Alert object at 0x7f9fd25d55f8>]
+        >>> accounts[2].transfer(accounts[1], "1 ether")
+
+        Transaction sent: 0x912d6ac704e7aaac01be159a4a36bbea0dc0646edb205af95b6a7d20945a2fd2
+        Transaction confirmed - block: 1   gas spent: 21000
+        <Transaction object '0x912d6ac704e7aaac01be159a4a36bbea0dc0646edb205af95b6a7d20945a2fd2'>
+        ALERT: Account 1 balance has changed from 100000000000000000000 to 101000000000000000000
+
+    This example uses the alert's callback function to perform a token transfer, and sets a second alert to watch for the transfer:
+
+    .. code-block:: python
+
+        >>> alert.new(accounts[3].balance, msg="Account 3 balance has changed from {} to {}")
+        <brownie.network.alert.Alert object at 0x7fc743e415f8>
+        >>> def on_receive(old_value, new_value):
+        ...     accounts[2].transfer(accounts[3], new_value-old_value)
+        ...
+        >>> alert.new(accounts[2].balance, callback=on_receive)
+        <brownie.network.alert.Alert object at 0x7fc743e55cf8>
+        >>> accounts[1].transfer(accounts[2],"1 ether")
+
+        Transaction sent: 0xbd1bade3862f181359f32dac02ffd1d145fdfefc99103ca0e3d28ffc7071a9eb
+        Transaction confirmed - block: 1   gas spent: 21000
+        <Transaction object '0xbd1bade3862f181359f32dac02ffd1d145fdfefc99103ca0e3d28ffc7071a9eb'>
+
+        Transaction sent: 0x8fcd15e38eed0a5c9d3d807d593b0ea508ba5abc892428eb2e0bb0b8f7dc3083
+        Transaction confirmed - block: 2   gas spent: 21000
+        ALERT: Account 3 balance has changed from 100000000000000000000 to 101000000000000000000
+
+.. py:classmethod:: Alert.stop()
+
+    Stops the alert.
+
+    .. code-block:: python
+
+        >>> alert_list = alert.show()
+        [<brownie.network.alert.Alert object at 0x7f9fd25d55f8>]
+        >>> alert_list[0].stop()
+        >>> alert.show()
+        []
+
+Module Methods
+--------------
+
+.. py:method:: alert.new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None)
+
+    Alias for creating a new ``Alert`` instance.
+
+    .. code-block:: python
+
+        >>> from brownie import alert
+        >>> alert.new(accounts[3].balance, msg="Account 3 balance has changed from {} to {}")
+        <brownie.network.alert.Alert object at 0x7fc743e415f8>
+
+.. py:method:: alert.show()
+
+    Returns a list of all currently active alerts.
+
+    .. code-block:: python
+
+        >>> alert.show()
+        [<brownie.network.alert.Alert object at 0x7f9fd25d55f8>]
+
+.. py:method:: alert.stop_all()
+
+    Stops all currently active alerts.
+
+    .. code-block:: python
+
+        >>> alert.show()
+        [<brownie.network.alert.Alert object at 0x7f9fd25d55f8>]
+        >>> alert.stop_all()
+        >>> alert.show()
+        []
+
+Contract
+========
+
+.. py:attribute:: brownie.network.contract
+
+The ``contract`` module contains classes for interacting with smart contracts.
+
+Classes in this module are not meant to be instantiated directly. When a project is loaded, Brownie automatically creates ``ContractContainer`` instances from on the files in the ``contracts/`` folder. New ``Contract`` instances are created via methods in the container.
+
+Arguments supplied to calls or transaction methods are converted using the methods outlined in :ref:`type-conversions`.
+
+.. _api-network-contractcontainer:
 
 ContractContainer
 -----------------
@@ -350,18 +471,6 @@ ContractContainer Methods
         ValueError: No contract deployed at 0xefb1336a2E6B5dfD83D4f3a8F3D2f85b7bfb61DC
 
 
-.. py:classmethod:: ContractContainer.remove(address)
-
-    Removes a contract instance from the container.
-
-    .. code-block:: python
-
-        >>> Token
-        [<Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>]
-        >>> Token.remove('0x79447c97b6543F6eFBC91613C655977806CB18b0')
-        >>> Token
-        []
-
 .. py:classmethod:: ContractContainer.get_method(calldata)
 
     Given the call data of a transaction, returns the name of the contract method as a string.
@@ -377,6 +486,18 @@ ContractContainer Methods
         0xa9059cbb00000000000000000000000066ace0365c25329a407002d22908e25adeacb9bb00000000000000000000000000000000000000000000000000000000000003e8
         >>> Token.get_method(tx.input)
         transfer
+
+.. py:classmethod:: ContractContainer.remove(address)
+
+    Removes a contract instance from the container.
+
+    .. code-block:: python
+
+        >>> Token
+        [<Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>]
+        >>> Token.remove('0x79447c97b6543F6eFBC91613C655977806CB18b0')
+        >>> Token
+        []
 
 Contract
 --------
@@ -496,7 +617,7 @@ ContractTx
 
 .. py:class:: brownie.network.contract.ContractTx(*args)
 
-    Sends a transaction to a potentially state-changing contract method. Returns a ``TransactionReceipt``.
+    Broadcasts a transaction to a potentially state-changing contract method. Returns a ``TransactionReceipt``.
 
     You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
@@ -553,7 +674,7 @@ ContractTx Methods
 
 .. py:classmethod:: ContractTx.encode_abi(*args)
 
-    Returns a hexstring of ABI calldata, to call the method with the given arguments.
+    Returns a hexstring of ABI calldata that can be used to call the method with the given arguments.
 
     .. code-block:: python
 
@@ -568,15 +689,83 @@ ContractTx Methods
 Event
 =====
 
+.. py:attribute:: brownie.network.event
+
+The ``event`` module contains methods related to decoding transaction event logs. It is largely a wrapper around `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`__.
+
+Brownie stores encrypted event topics in ``brownie/data/topics.json``. The JSON file is loaded when this module is imported.
+
+.. py:method:: brownie.network.event.get_topics(abi)
+
+    Generates encoded topics from the given ABI, merges them with those already known in ``topics.json``, and returns a dictioary in the form of ``{'Name': "encoded topic hexstring"}``.
+
+    .. code-block:: python
+
+        >>> from brownie.network.event import get_topics
+        >>> abi = [{'name': 'Approval', 'anonymous': False, 'type': 'event', 'inputs': [{'name': 'owner', 'type': 'address', 'indexed': True}, {'name': 'spender', 'type': 'address', 'indexed': True}, {'name': 'value', 'type': 'uint256', 'indexed': False}]}, {'name': 'Transfer', 'anonymous': False, 'type': 'event', 'inputs': [{'name': 'from', 'type': 'address', 'indexed': True}, {'name': 'to', 'type': 'address', 'indexed': True}, {'name': 'value', 'type': 'uint256', 'indexed': False}]}]
+        >>> get_topics(abi)
+        {'Transfer': '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', 'Approval': '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'}
+
+
+.. py:method:: brownie.network.event.decode_logs(logs)
+
+    Given an array of logs as returned by ``eth_getLogs`` or ``eth_getTransactionReceipt`` RPC calls, returns an :ref:`api-types-eventdict`.
+
+    .. code-block:: python
+
+        >>> from brownie.network.event import decode_logs
+        >>> tx = Token[0].transfer(accounts[1], 100)
+
+        Transaction sent: 0xfefc3b7d912ed438b312414fb31d94ff757970f4d2e74dd0950d5c58cc23fdb1
+        Token.transfer confirmed - block: 2   gas used: 50993 (33.77%)
+        <Transaction object '0xfefc3b7d912ed438b312414fb31d94ff757970f4d2e74dd0950d5c58cc23fdb1'>
+        >>> e = decode_logs(tx.logs)
+        >>> repr(e)
+        <brownie.types.types.EventDict object at 0x7feed74aebe0>
+        >>> e
+        {
+            'Transfer': {
+                'from': "0x1ce57af3672a16b1d919aeb095130ab288ca7456",
+                'to': "0x2d72c1598537bcf4a4af97668b3a24e68b7d0cc5",
+                'value': 100
+            }
+        }
+
+.. py:method:: brownie.network.event.decode_trace(trace)
+
+    Given the ``structLog`` from a ``debug_traceTransaction`` RPC call, returns an :ref:`api-types-eventdict`.
+
+    .. code-block:: python
+
+        >>> from brownie.network.event import decode_trace
+        >>> tx = Token[0].transfer(accounts[2], 1000, {'from': accounts[3]})
+
+        Transaction sent: 0xc6365b065492ea69ad3cbe26039a45a68b2e9ab9d29c2ff7d5d9162970b176cd
+        Token.transfer confirmed (Insufficient Balance) - block: 2   gas used: 23602 (19.10%)
+        <Transaction object '0xc6365b065492ea69ad3cbe26039a45a68b2e9ab9d29c2ff7d5d9162970b176cd'>
+        >>> e = decode_trace(tx.trace)
+        >>> repr(e)
+        <brownie.types.types.EventDict object at 0x7feed74aebe0>
+        >>> e
+        {}
+
+.. _api-network-history:
 
 History
 =======
 
+.. py:attribute:: brownie.network.history
+
+The ``history`` module contains the ``TxHistory`` container, which holds ``TransactionReceipt`` objects.
 
 .. _rpc:
 
 RPC
 ===
+
+.. py:attribute:: brownie.network.rpc
+
+The ``rpc`` module contains the ``Rpc`` class, which is used to interact with ``ganache-cli`` when running a local RPC environment.
 
 .. py:class:: brownie.network.rpc.Rpc
 
@@ -661,6 +850,10 @@ RPC
 
 Transactions
 ============
+
+.. py:attribute:: brownie.network.transction
+
+The ``transaction`` module contains the ``TransactionReceipt`` class, and methods related to transactions.
 
 .. _api-network-tx:
 
@@ -1001,3 +1194,5 @@ Web3
 ====
 
 .. py:attribute:: brownie.network.web3
+
+The ``web3`` module contains an instance of `Web3 <https://web3py.readthedocs.io/en/stable/web3.main.html#web3.Web3>`__ that is shared between each module within the ``brownie.network`` package, as well as methods for interacting with it.

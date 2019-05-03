@@ -2,6 +2,7 @@
 
 from brownie.network import (
     accounts,
+    alert,
     history,
     network,
     rpc,
@@ -15,11 +16,11 @@ from brownie.project import (
 from brownie.gui import Gui
 from brownie.test import check
 import brownie._config
-from brownie.utils import alert
 from brownie.types.convert import wei
 
 __all__ = [
     'accounts',
+    'alert'
     'history',
     'network',
     'rpc',
@@ -28,7 +29,6 @@ __all__ = [
     '__project',
     'check',
     'compile_source',
-    'alert',
     'wei',
     'config',
     'Gui'
