@@ -54,8 +54,6 @@ def modify_network_config(network = None):
         for key, value in CONFIG['network_defaults'].items():
             if key not in CONFIG['active_network']:
                 CONFIG['active_network'][key] = value
-        if 'persist' not in CONFIG['active_network']:
-            CONFIG['active_network']['persist'] = False
     except KeyError:
         raise KeyError("Network '{}' is not defined in config.json".format(network))
     finally:
