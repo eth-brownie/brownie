@@ -106,7 +106,7 @@ def to_address(value):
     try:
         return eth_utils.to_checksum_address(value)
     except ValueError:
-        raise ValueError("{} is not a valid ETH address.")
+        raise ValueError("{} is not a valid ETH address.".format(value))
 
 
 def to_bytes(value, type_="bytes32"):

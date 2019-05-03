@@ -213,10 +213,10 @@ class TransactionReceipt:
         if self.events:
             print("   Events In This Transaction\n   --------------------------")
             for event in self.events:
-                print("   "+color('bright yellow')+event['name']+color())
-                for i in event['data']:
-                    print("      {0[key]}{1[name]}{0}: {2}{1[value]}{0}".format(
-                        color, i, color['value' if i['decoded'] else 'dull']
+                print("   "+color('bright yellow')+event.name+color())
+                for k,v in event.items():
+                    print("      {0[key]}{1}{0}: {0[value]}{2}{0}".format(
+                        color, k, v
                     ))
             print()
 
