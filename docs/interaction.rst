@@ -159,7 +159,7 @@ If the contract method has a state mutability of ``view`` or ``pure``, the relat
 
 For state changing methods the type is :ref:`api-contract-tx`. Calls to this object will perform a transaction. If you wish to call the contract method without a transaction, use ``ContractTx.call``.
 
-For transactions you can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
+For transactions you can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``from`` value, the transaction will be sent from the same address that deployed the contract.
 
 .. code-block:: python
 
@@ -176,6 +176,8 @@ Transactions
 
 Each transaction returns a :ref:`api-network-tx` object. This object contains all relevant information about the transaction, as well as various methods to aid in debugging if it reverted.
 
+Transactions are also available from the ``history`` dictionary.
+
 .. code-block:: python
 
     >>> tx = Token[0].transfer(accounts[1], "1 ether", {'from': accounts[0]})
@@ -185,6 +187,8 @@ Each transaction returns a :ref:`api-network-tx` object. This object contains al
     <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>
     >>> tx
     <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>
+    >>> history
+    [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>, <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>]
 
 
 To get human-readable information on a transaction, use ``TransactionReceipt.info()``.

@@ -222,7 +222,7 @@ Arguments supplied to calls or transaction methods are converted using the metho
 ContractContainer
 -----------------
 
-.. py:class:: ContractContainer
+.. py:class:: brownie.network.contract.ContractContainer
 
     A list-like container class that holds all ``Contract`` instances of the same type, and is used to deploy new instances of that contract.
 
@@ -381,7 +381,7 @@ ContractContainer Methods
 Contract
 --------
 
-.. py:class:: Contract
+.. py:class:: brownie.network.contract.Contract
 
     A deployed contract. This class allows you to call or send transactions to the contract.
 
@@ -430,7 +430,7 @@ Contract Methods
 ContractCall
 ------------
 
-.. py:class:: ContractCall(*args)
+.. py:class:: brownie.network.contract.ContractCall(*args)
 
     Calls a non state-changing contract method without broadcasting a transaction, and returns the result. ``args`` must match the required inputs for the method.
 
@@ -494,7 +494,7 @@ ContractCall Methods
 ContractTx
 ----------
 
-.. py:class:: ContractTx(*args)
+.. py:class:: brownie.network.contract.ContractTx(*args)
 
     Sends a transaction to a potentially state-changing contract method. Returns a ``TransactionReceipt``.
 
@@ -571,9 +571,6 @@ Event
 
 History
 =======
-dds
-
-
 
 
 .. _rpc:
@@ -581,7 +578,7 @@ dds
 RPC
 ===
 
-.. py:class:: Rpc
+.. py:class:: brownie.network.rpc.Rpc
 
     Exposes methods for interacting with ``ganache-cli`` when running a local RPC environment. When using the console or writing tests, an instance of this class is available as ``rpc``.
 
@@ -670,9 +667,9 @@ Transactions
 TransactionReceipt
 ------------------
 
-.. py:class:: TransactionReceipt
+.. py:class:: brownie.network.transaction.TransactionReceipt
 
-    An instance of this class is returned whenever a transaction is broadcasted. When printed in the console, they will appear yellow if the transaction is still pending or red if the transaction caused the EVM to revert.
+    An instance of this class is returned whenever a transaction is broadcasted. When printed in the console, they will it yellow if the transaction is still pending or red if the transaction caused the EVM to revert.
 
     Many of the attributes will be set to ``None`` while the transaction is still pending.
 
@@ -1003,13 +1000,4 @@ TransactionReceipt Methods
 Web3
 ====
 
-.. py:class:: web3
-
-    Brownie implementation of ``web3py.web3``. Only some class methods are exposed. See the `Web3.py docs <https://web3py.readthedocs.io/en/stable/index.html>`__ for more information.
-
-    .. code-block:: python
-
-        >>> web3
-        <lib.components.eth.web3 object at 0x7f44d5e2f940>
-        >>> dir(web3)
-        [admin, ens, eth, fromWei, isAddress, isChecksumAddress, isConnected, manager, middleware_stack, miner, net, parity, personal, providers, sha3, soliditySha3, testing, toBytes, toChecksumAddress, toHex, toInt, toText, toWei, txpool, version]
+.. py:attribute:: brownie.network.web3

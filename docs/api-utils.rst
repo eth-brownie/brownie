@@ -12,12 +12,14 @@ Alerts and Callbacks
 
 The ``alert`` module is used to set up notifications and callbacks based on state changes in the blockchain.
 
+.. py:attribute:: brownie.utils.alert
+
 Alert
 -----
 
 Alerts and callbacks are handled by creating instances of the ``Alert`` class.
 
-.. py:class:: Alert(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None)
+.. py:class:: brownie.utils.alert.Alert(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None)
 
     An alert object. It is active immediately upon creation of the instance.
 

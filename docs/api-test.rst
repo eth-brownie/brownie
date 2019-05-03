@@ -6,7 +6,6 @@ Test API
 
 .. _api_check:
 
-
 Check
 =====
 
