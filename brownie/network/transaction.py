@@ -8,7 +8,7 @@ from hexbytes import HexBytes
 
 from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
-from brownie.network.history import history
+from brownie.network.history import history, _contracts
 from brownie.network.event import decode_logs, decode_trace
 from brownie.network.web3 import web3
 from brownie.types import KwargTuple
@@ -122,8 +122,8 @@ class TransactionReceipt:
             'input': tx['input'],
             'nonce': tx['nonce'],
         })
-        if tx['to'] and history.find_contract(tx['to']) is not None:
-            self.receiver = history.find_contract(tx['to'])
+        if tx['to'] and _contracts.find(tx['to']) is not None:
+            self.receiver = _contracts.find(tx['to'])
             if not self.fn_name:
                 self.fn_name = "{}.{}".format(
                     self.receiver._name,
@@ -307,7 +307,7 @@ class TransactionReceipt:
             # if depth has increased, tx has called into a different contract
             if trace[i]['depth'] > trace[i-1]['depth']:
                 address = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
-                c = history.find_contract(address)
+                c = _contracts.find(address)
                 stack_idx = -4 if trace[i-1]['op'] in ('CALL', 'CALLCODE') else -3
                 memory_idx = int(trace[i-1]['stack'][stack_idx], 16) * 2
                 sig = "0x" + "".join(trace[i-1]['memory'])[memory_idx:memory_idx+8]
@@ -322,7 +322,7 @@ class TransactionReceipt:
                 'fn': last[trace[i]['depth']]['fn'][-1],
                 'jumpDepth': len(set(last[trace[i]['depth']]['fn']))
             })
-            c = history.find_contract(trace[i]['address'])
+            c = _contracts.find(trace[i]['address'])
             pc = c._build['pcMap'][trace[i]['pc']]
             trace[i]['source'] = {
                 'filename': pc['contract'],
@@ -372,7 +372,7 @@ class TransactionReceipt:
                 idx -= 1
                 continue
             span = (self.trace[idx]['source']['start'], self.trace[idx]['source']['stop'])
-            c = history.find_contract(self.trace[idx]['address'])
+            c = _contracts.find(self.trace[idx]['address'])
             if c._build['sourcePath'] != self.trace[idx]['source']['filename']:
                 source = open(self.trace[idx]['source']['filename']).read()
             else:

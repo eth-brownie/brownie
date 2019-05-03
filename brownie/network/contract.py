@@ -8,7 +8,7 @@ from eth_hash.auto import keccak
 from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
 from brownie.network.event import get_topics
-from brownie.network.history import history
+from brownie.network.history import _contracts
 from brownie.network.web3 import web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_input, format_output, to_address, wei
@@ -66,29 +66,32 @@ class ContractContainer(_ContractBase):
         self.deploy = ContractConstructor(self, self._name)
 
     def __iter__(self):
-        return iter(history.get_contracts(self._name).values())
+        return iter(_contracts.list(self._name))
 
     def __getitem__(self, i):
-        return list(history.get_contracts(self._name).values())[i]
+        return _contracts.list(self._name)[i]
 
     def __delitem__(self, key):
-        del history.get_contracts(self._name)[self[key].address]
+        item = _contracts.list(self._name)[key]
+        _contracts.remove(item)
 
     def __len__(self):
-        return len(history.get_contracts(self._name))
+        return len(_contracts.list(self._name))
 
     def __repr__(self):
         return "<ContractContainer object '{1[string]}{0._name}{1}'>".format(self, color)
 
     def _console_repr(self):
-        return str(list(history.get_contracts(self._name).values()))
+        return str(_contracts.list(self._name))
 
     def remove(self, contract):
         '''Removes a contract from the container.
 
         Args:
             contract: Contract instance of address string of the contract.'''
-        del history.get_contracts(self._name)[str(contract)]
+        if type(contract) is not Contract or contract._name != self._name:
+            raise TypeError("Object is not in container.")
+        _contracts.remove(contract)
 
     def at(self, address, owner=None, tx=None):
         '''Returns a contract address.
@@ -100,18 +103,18 @@ class ContractContainer(_ContractBase):
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation.'''
         address = to_address(address)
-        if address in history.get_contracts(self._name):
-            return history.get_contracts(self._name)[address]
-        contract = history.find_contract(address)
+        contract = _contracts.find(address)
         if contract:
-            raise ValueError("Contract '{}' already declared at {}".format(
-                contract._name, address
-            ))
+            if contract._name != self._name:
+                raise ValueError("Contract '{}' already declared at {}".format(
+                    contract._name, address
+                ))
+            return contract
         if web3.eth.getCode(address).hex() == "0x":
             raise ValueError("No contract deployed at {}".format(address))
         contract = Contract(address, self._build, owner, tx)
-        history.get_contracts(self._name)[address] = contract
-        return history.get_contracts(self._name)[address]
+        _contracts.add(contract)
+        return contract
 
 
 class ContractConstructor:
@@ -153,23 +156,16 @@ class ContractConstructor:
             * Contract instance if the transaction confirms
             * TransactionReceipt if the transaction is pending or reverts'''
         bytecode = self._parent.bytecode
-        if '_' in bytecode:
-            # find and replace unlinked library pointers in bytecode
-            for marker in re.findall('_{1,}[^_]*_{1,}', bytecode):
-                contract = marker.strip('_')
-                if contract not in history._contracts:
-                    raise NameError(
-                        "Contract requires unknown library '{}'".format(contract)
-                    )
-                elif not history.get_contracts(contract):
-                    raise IndexError(
-                        "Contract requires '{}' library".format(contract) +
-                        " but it has not been deployed yet"
-                    )
-                bytecode = bytecode.replace(
-                    marker,
-                    list(history.get_contracts(contract).values())[-1].address[-40:]
+        # find and replace unlinked library pointers in bytecode
+        for marker in re.findall('_{1,}[^_]*_{1,}', bytecode):
+            library = marker.strip('_')
+            if not _contracts.list(library):
+                raise IndexError(
+                    "Contract requires '{}' library".format(library) +
+                    " but it has not been deployed yet"
                 )
+            address = _contracts.list(library)[-1].address[-40:]
+            bytecode = bytecode.replace(marker, address)
         contract = web3.eth.contract(abi=[self.abi], bytecode=bytecode)
         args, tx = _get_tx(account, args)
         tx = account._contract_tx(
@@ -208,6 +204,7 @@ class Contract(_ContractBase):
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         self._owner = owner
         self._contract = web3.eth.contract(address=address, abi=self.abi)
+        self.address = address
         for i in [i for i in self.abi if i['type'] == "function"]:
             if hasattr(self, i['name']):
                 raise AttributeError(
@@ -224,10 +221,7 @@ class Contract(_ContractBase):
         return "<{0._name} Contract object '{1[string]}{0.address}{1}'>".format(self, color)
 
     def __str__(self):
-        return self._contract.address
-
-    def __getattr__(self, name):
-        return getattr(self._contract, name)
+        return self.address
 
     def __eq__(self, other):
         if type(other) is str:
@@ -240,7 +234,7 @@ class Contract(_ContractBase):
 
     def balance(self):
         '''Returns the current ether balance of the contract, in wei.'''
-        return web3.eth.getBalance(self._contract.address)
+        return web3.eth.getBalance(self.address)
 
 
 class _ContractMethod:

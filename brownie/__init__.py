@@ -20,7 +20,7 @@ from brownie.types.convert import wei
 
 __all__ = [
     'accounts',
-    'alert'
+    'alert',
     'history',
     'network',
     'rpc',
