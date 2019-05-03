@@ -12,6 +12,8 @@ Accounts
 
 Account classes should not be instantiated directly. The ``Accounts`` container is available as ``accounts`` (or just ``a``) and will create each ``Account`` automatically during initialization. Add more accounts using ``Accounts.add``.
 
+.. _api-network-accounts:
+
 Accounts
 --------
 
@@ -76,6 +78,8 @@ Accounts
 
         >>> accounts.remove('0xc1826925377b4103cC92DeeCDF6F96A03142F37a')
         >>>
+
+.. _api-network-account:
 
 Account
 -------
@@ -218,6 +222,8 @@ Contracts
 Contract classes are not meant to be instantiated directly. When launched, Brownie automatically creates ``ContractContainer`` instances from on the files in the ``contracts/`` folder. New ``Contract`` instances are created via methods in the container.
 
 Arguments supplied to calls or transaction methods are converted using the methods outlined in :ref:`_type-conversions`.
+
+.. _api-network-contractcontainer:
 
 ContractContainer
 -----------------
@@ -568,6 +574,7 @@ ContractTx Methods
 Event
 =====
 
+.. _api-network-history:
 
 History
 =======

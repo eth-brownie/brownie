@@ -11,13 +11,17 @@ Test scripts are stored in the ``tests/`` folder. To run every test at once, typ
 
     $ brownie test
 
-You can run a specific test by giving the filename without an extension, for example:
+For larger projects you can also store tests within subfolders and point Brownie to run only a specific folder. Brownie will skip any file or folder that begins with an underscore.
+
+To run a specific test or folder of tests, enter the path without an extension:
 
 ::
 
     $ brownie test transfer
 
-For larger projects you can also store tests within subfolders, and point Brownie to run only a specific folder. Brownie will skip any file or folder that begins with an underscore.
+.. hint:: 
+
+    Each time a test runs, Brownie saves hashes of the bytecode for each contract it interacts with. It also saves a hash from the AST of the test file and any imported scripts. If you include the ``--update`` flag when running tests, Brownie will regenerate these hashes and only run the ones where changes have occured.
 
 Running Tests
 =============
@@ -147,7 +151,7 @@ Below you can see an example of the output from Brownie when the test script exe
 ::
 
     $ brownie test approve_transferFrom
-    Brownie v0.9.0b - Python development framework for Ethereum
+    Brownie v1.0.0 - Python development framework for Ethereum
 
     Using network 'development'
     Running 'ganache-cli'...
@@ -171,7 +175,7 @@ Below you can see an example of the output from Brownie when the test script exe
         "Accounts 2 balance is wrong"
     AssertionError: Accounts 2 balance is wrong: 5000000000000000000 != 1000000000000000000
 
-For available classes and methods when writing a test script, see the :ref:`api` documentation.
+For available classes and methods when writing a test script, see the :ref:`api-test` documentation.
 
 .. _test_settings:
 
