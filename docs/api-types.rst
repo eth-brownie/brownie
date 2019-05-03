@@ -4,12 +4,16 @@
 Types API
 =========
 
-The ``brownie.types`` package contains methods relating to data conversion, as well as data types that are unique to Brownie.
+.. py:attribute:: brownie.types
 
-types.convert
-=============
+The ``types`` package contains methods relating to data conversion, as well as data types that are unique to Brownie.
 
-The ``brownie.types.convert`` module contains methods relating to data conversion.
+Convert
+=======
+
+.. py:attribute:: brownie.types.convert
+
+The ``convert`` module contains methods relating to data conversion.
 
 Formatting Contract Arguments
 -----------------------------
@@ -106,7 +110,9 @@ The following methods are used to convert arguments supplied to ``ContractTx`` a
 types.types
 ===========
 
-The ``brownie.types.types`` module contains data types that are unique to Brownie.
+.. py:attribute:: brownie.types.types
+
+The ``types`` module contains data types that are unique to Brownie.
 
 StrictDict
 ----------

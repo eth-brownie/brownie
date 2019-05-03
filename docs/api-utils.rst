@@ -4,6 +4,9 @@
 Utils API
 =========
 
+.. py:attribute:: brownie.utils
+
+The ``utils`` package... why is this a package.
 
 .. _api_alert:
 
