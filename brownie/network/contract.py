@@ -4,7 +4,6 @@ import re
 
 import eth_abi
 from eth_hash.auto import keccak
-from eth_utils import to_checksum_address
 
 from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
@@ -12,7 +11,7 @@ from brownie.network.event import get_topics
 from brownie.network.history import history
 from brownie.network.web3 import web3
 from brownie.types import KwargTuple
-from brownie.types.convert import format_to_abi, format_output, wei
+from brownie.types.convert import format_input, format_output, to_address, wei
 
 import brownie._config as config
 CONFIG = config.CONFIG
@@ -100,7 +99,7 @@ class ContractContainer(_ContractBase):
             address: Address string of the contract.
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation.'''
-        address = to_checksum_address(str(address))
+        address = to_address(address)
         if address in history.get_contracts(self._name):
             return history.get_contracts(self._name)[address]
         contract = history.find_contract(address)
@@ -175,7 +174,7 @@ class ContractConstructor:
         args, tx = _get_tx(account, args)
         tx = account._contract_tx(
             contract.constructor,
-            format_to_abi(self.abi, args),
+            format_input(self.abi, args),
             tx,
             self._name+".constructor",
             self._callback
@@ -233,7 +232,7 @@ class Contract(_ContractBase):
     def __eq__(self, other):
         if type(other) is str:
             try:
-                address = to_checksum_address(other)
+                address = to_address(other)
                 return address == self.address
             except ValueError:
                 return False
@@ -284,7 +283,7 @@ class _ContractMethod:
         else:
             del tx['from']
         try:
-            result = self._fn(*format_to_abi(self.abi, args)).call(tx)
+            result = self._fn(*format_input(self.abi, args)).call(tx)
         except ValueError as e:
             raise VirtualMachineError(e)
 
@@ -309,7 +308,7 @@ class _ContractMethod:
             )
         return tx['from']._contract_tx(
             self._fn,
-            format_to_abi(self.abi, args),
+            format_input(self.abi, args),
             tx,
             self._name
         )
@@ -322,7 +321,7 @@ class _ContractMethod:
 
         Returns:
             Hexstring of encoded ABI data.'''
-        data = format_to_abi(self.abi, args)
+        data = format_input(self.abi, args)
         types = [i['type'] for i in self.abi['inputs']]
         return self.signature + eth_abi.encode_abi(types, data).hex()
 

@@ -134,32 +134,140 @@ You can also use ``ContractDeployer.at`` to access an already existing contract.
     >>> Token.at("0x5419710735c2D6c3e4db8F30EF2d361F70a4b380")
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
-You can call any available contract method or send a transaction by using the class method of the same name, with the intended arguments.
-
-For transactions you can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
+External and public contract methods are callable by class methods of the same name. Arguments given to these objects are converted using the methods outlined in the :ref:`_type-conversions` section of the API documentation.
 
 .. code-block:: python
 
     >>> Token[0].balanceOf
-    <ContractCall object 'balanceOf(address)'>
-    >>> Token[0].balanceOf(accounts[0])
-    1000000000000000000000
+    <ContractCall object 'balanceOf(address _owner)'>
     >>> Token[0].transfer
     <ContractTx object 'transfer(address _to, uint256 _value)'>
-    >>> Token[0].transfer(accounts[1], "10 ether", {'from':accounts[0]})
 
-    Transaction sent: 0xcd98225a77409b8d81023a3a4be15832e763cd09c74ff431236bfc6d56a74532
-    Transaction confirmed - block: 3   gas spent: 51241
-    <Transaction object '0xcd98225a77409b8d81023a3a4be15832e763cd09c74ff431236bfc6d56a74532'>
-    >>> Token[0].balanceOf(accounts[1])
-    10000000000000000000
+If the contract method has a state mutability of ``view`` or ``pure``, the related class method is of type :ref:`api-contract-call`. Calling this object will result in a call to the method. If you wish to call the method as a transaction you can use ``ContractCall.transact``.
 
-If the gas limit is set to calculate automatically, transactions that revert will raise a ``VirtualMachineError``. If the gas limit is fixed they will return a ``TransactionReceipt`` marked as reverted (printed in red).
+.. code-block:: python
+
+    >>> Token[0].balanceOf(accounts[0])
+    1000000000000000000000
+    >>> tx = Token[0].balanceOf.transact(accounts[0])
+
+    Transaction sent: 0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8
+    Token.balanceOf confirmed - block: 3   gas used: 23222 (18.85%)
+    <Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>
+    >>> tx.return_value
+    1000000000000000000000
+
+For state changing methods the type is :ref:`api-contract-tx`. Calls to this object will perform a transaction. If you wish to call the contract method without a transaction, use ``ContractTx.call``.
+
+For transactions you can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``from`` value, the transaction will be sent from the same address that deployed the contract.
+
+.. code-block:: python
+
+    >>> Token[0].transfer(accounts[1], "1 ether", {'from': accounts[0]})
+
+    Transaction sent: 0x6e557594e657faf1270235bf4b3f27be7f5a3cb8a9c981cfffb12133cbaa165e
+    Token.transfer confirmed - block: 4   gas used: 51019 (33.78%)
+    <Transaction object '0x6e557594e657faf1270235bf4b3f27be7f5a3cb8a9c981cfffb12133cbaa165e'>
+    >>> Token[0].transfer.call(accounts[1], "1 ether", {'from': accounts[0]})
+    True
+
+Transactions
+============
+
+Each transaction returns a :ref:`api-network-tx` object. This object contains all relevant information about the transaction, as well as various methods to aid in debugging if it reverted.
+
+Transactions are also available from the ``history`` dictionary.
+
+.. code-block:: python
+
+    >>> tx = Token[0].transfer(accounts[1], "1 ether", {'from': accounts[0]})
+
+    Transaction sent: 0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b
+    Token.transfer confirmed - block: 2   gas used: 51019 (33.78%)
+    <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>
+    >>> tx
+    <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>
+    >>> history
+    [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>, <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>]
+
+
+To get human-readable information on a transaction, use ``TransactionReceipt.info()``.
+
+.. code-block:: python
+
+    >>> tx.info()
+
+    Transaction was Mined
+    ---------------------
+    Tx Hash: 0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b
+    From: 0x4FE357AdBdB4C6C37164C54640851D6bff9296C8
+    To: 0xDd18d6475A7C71Ee33CEBE730a905DbBd89945a1
+    Value: 0
+    Function: Token.transfer
+    Block: 2
+    Gas Used: 51019 / 151019 (33.8%)
+
+    Events In This Transaction
+    --------------------------
+    Transfer
+        from: 0x4fe357adbdb4c6c37164c54640851d6bff9296c8
+        to: 0xfae9bc8a468ee0d8c84ec00c8345377710e0f0bb
+        value: 1000000000000000000
+
+Events are stored at ``TransactionReceipt.events`` using the :ref:`api-types-eventdict` class.
+
+.. code-block:: python
+
+    >>> history[-2].events
+    {
+        'Transfer': {
+            'from': "0x4fe357adbdb4c6c37164c54640851d6bff9296c8",
+            'to': "0xfae9bc8a468ee0d8c84ec00c8345377710e0f0bb",
+            'value': 1000000000000000000
+        }
+    }
+
+When a transaction reverts you will still receive a ``TransactionReceipt`` but it will show as reverted. If an error string is given, it will be displayed in brackets and highlighted in red.
+
+.. code-block:: python
+
+    >>> tx = Token[0].transfer(accounts[1], "1 ether", {'from': accounts[3]})
+
+    Transaction sent: 0x5ff198f3a52250856f24792889b5251c120a9ecfb8d224549cb97c465c04262a
+    Token.transfer confirmed (Insufficient Balance) - block: 2   gas used: 23858 (19.26%)
+    <Transaction object '0x5ff198f3a52250856f24792889b5251c120a9ecfb8d224549cb97c465c04262a'>
+
+You can use ``TransactionReceipt.error()`` to see the section of the source code that caused the revert.
+
+.. code-block:: python
+
+    >>> tx.error()
+    File "contracts/Token.sol", line 62, in function transfer
+        }
+
+        function transfer(address _to, uint256 _value) public returns (bool) {
+            require(balances[msg.sender] >= _value, "Insufficient Balance");
+            balances[msg.sender] = balances[msg.sender].sub(_value);
+            balances[_to] = balances[_to].add(_value);
+            emit Transfer(msg.sender, _to, _value);
+
+You can also call ``TransactionReceipt.call_trace()`` to see all the contract jumps, internal and external, that occured prior to the revert.
+
+.. code-block:: python
+
+    >>> tx = Token[0].transferFrom(accounts[2], accounts[3], "10000 ether")
+
+    Transaction sent: 0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753
+    Token.transferFrom confirmed (reverted) - block: 4   gas used: 25425 (26.42%)
+
+    >>> tx.call_trace()
+    Token.transferFrom 0 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
+        Token.sub 86 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
 
 Unconfirmed Transactions
-========================
+------------------------
 
-If you are working on a chain where blocks are not mined automatically, you can press ``CTRL-C`` while waiting for a transaction to confirm and return to the console.  You will still be returned a ``TransactionReceipt instance``, however it will be marked as pending (printed in yellow). A notification is displayed when the transaction confirms.
+If you are working on a chain where blocks are not mined automatically, you can press ``CTRL-C`` while waiting for a transaction to confirm and return to the console.  You will still be returned a ``TransactionReceipt``, however it will be marked as pending (printed in yellow). A notification is displayed when the transaction confirms.
 
 If you send another transaction from the same account before the previous one has confirmed, it will still broadcast with the next sequential nonce.
 

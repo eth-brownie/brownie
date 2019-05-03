@@ -122,6 +122,10 @@ class EventDict:
     _print_as_dict = True
 
     def __init__(self, events):
+        '''Instantiates the class.
+
+        Args:
+            events: event data as supplied by eth_event.decode_logs or eth_event.decode_trace'''
         self._ordered = [_EventItem(
             i['name'],
             [dict((x['name'], x['value']) for x in i['data'])],
@@ -164,7 +168,7 @@ class EventDict:
 
     def count(self, name):
         '''EventDict.count(name) -> integer -- return number of occurrences of name'''
-        return len([i.name for i in self._ordered if i.name == value])
+        return len([i.name for i in self._ordered if i.name == name])
 
     def items(self):
         '''EventDict.items() -> a set-like object providing a view on EventDict's items'''
@@ -217,6 +221,9 @@ class _EventItem:
 
     def __iter__(self):
         return iter(self._ordered)
+
+    def __eq__(self, other):
+        return other == self._ordered
 
     def items(self):
         '''_EventItem.items() -> a set-like object providing a view on _EventItem[0]'s items'''
