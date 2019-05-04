@@ -40,7 +40,7 @@ Tne ``compiler`` module contains methods for compiling contracts and formatting 
 
 The ``_build`` module contains classes and methods used internally by Brownie to interact with files in a project's ``build`` folder.
 
-``brownie.project.sha_compare``
-===============================
+``brownie.project._sha_compare``
+================================
 
 The ``_sha_compare`` module contains methods for generating and comparing hashes that are used to determine if contracts should be recompiled or tests should be re-run.
