@@ -19,7 +19,6 @@ BUILD_KEYS = [
     'coverageMap',
     'deployedBytecode',
     'deployedSourceMap',
-    'networks',
     'opcodes',
     'pcMap',
     'sha1',
