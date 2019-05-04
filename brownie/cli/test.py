@@ -206,7 +206,15 @@ def main():
                 continue
 
             if args['--coverage']:
+                stime = time.time()
+                sys.stdout.write("     - Evaluating test coverage...")
+                sys.stdout.flush()
                 coverage_eval = analyze_coverage(test_history)
+                sys.stdout.write(
+                    "\r {0[success]}\u2713{0}   - ".format(color) +
+                    "Evaluating test coverage ({:.4f}s)\n".format(time.time()-stime)
+                )
+                sys.stdout.flush()
             build_folder = Path(CONFIG['folders']['project']).joinpath('build/contracts')
             build_files = set(build_folder.joinpath(i+'.json') for i in coverage_eval)
             coverage_eval = {
