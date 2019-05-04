@@ -40,8 +40,8 @@ class TxHistory(metaclass=_Singleton):
     def _console_repr(self):
         return str(self._list)
 
-    def append(self, item):
-        self._list.append(item)
+    def _add_tx(self, tx):
+        self._list.append(tx)
 
     def to_receiver(self, account):
         return [i for i in self._list if i.receiver == account]

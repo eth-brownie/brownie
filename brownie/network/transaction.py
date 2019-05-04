@@ -69,7 +69,7 @@ class TransactionReceipt:
             txid = txid.hex()
         if CONFIG['logging']['tx'] and not silent:
             print("\n{0[key]}Transaction sent{0}: {0[value]}{1}{0}".format(color, txid))
-        history.append(self)
+        history._add_tx(self)
         self.__dict__.update({
             '_trace': None,
             'fn_name': name,
