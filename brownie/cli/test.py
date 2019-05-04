@@ -186,7 +186,7 @@ def main():
     else:
         idx = slice(0, None)
 
-    network.connect(config.ARGV['network'], True)
+    network.connect(config.ARGV['network'])
     if args['--always-transact']:
         CONFIG['test']['always_transact'] = True
     print("Contract calls will be handled as: {0[value]}{1}{0}".format(

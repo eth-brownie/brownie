@@ -10,7 +10,7 @@ from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
 from brownie.network.history import TxHistory, _ContractHistory
 from brownie.network.event import decode_logs, decode_trace
-from brownie.network.web3 import web3
+from .web3 import Web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_output
 
@@ -33,7 +33,7 @@ gas_profile = {}
 
 history = TxHistory()
 _contracts = _ContractHistory()
-
+web3 = Web3()
 
 class TransactionReceipt:
 

@@ -2,7 +2,7 @@
 
 import sys as _sys
 
-from .web3 import web3
+from .web3 import Web3 as _Web3
 from .rpc import Rpc as _Rpc
 from .account import Accounts as _Accounts
 from .history import TxHistory as _TxHistory
@@ -16,34 +16,29 @@ network = _sys.modules[__name__]
 accounts = _Accounts()
 rpc = _Rpc()
 history = _TxHistory()
+web3 = _Web3()
 
 
-def connect(network=None, launch_rpc=False):
-    if network is None:
-        network = CONFIG['network_defaults']['name']
-    web3._connect(network)
-    if launch_rpc and 'test-rpc' in CONFIG['active_network']:
-        rpc.launch()
-    
+def connect(network=None):
+    if CONFIG['active_network']['name']:
+        raise ConnectionError("Already connected to network '{}'".format(CONFIG['active_network']['name']))
+    try:
+        _config.modify_network_config(network or CONFIG['network_defaults']['name'])
+        if 'host' not in CONFIG['active_network']:
+            raise KeyError("No host given in brownie-config.json for network '{}'".format(CONFIG['active_network']['name']))
+        web3.connect(CONFIG['active_network']['host'])
+        if 'test-rpc' in CONFIG['active_network'] and not rpc.is_active():
+            rpc.launch()
+    except Exception:
+        CONFIG['active_network']['name'] = None
+        raise
+
 
 def disconnect(kill_rpc=False):
-    web3.providers.clear()
-    if kill_rpc and rpc.is_active():
+    web3.disconnect()
+    if rpc.is_active():
         rpc.kill()
-
-
-def reset(network=None):
-    '''Reboots the local RPC client and resets the brownie environment.
-
-    Args:
-        network (string): Name of the new network to switch to.'''
-    if not network:
-        network = CONFIG['active_network']['name']
-    if network not in CONFIG['networks']:
-        raise ValueError("Unknown network - {}".format(network))
-    reset_rpc = rpc.is_active()
-    disconnect(reset_rpc)
-    connect(network, reset_rpc)
+    CONFIG['active_network']['name'] = None
 
 
 def show_active():

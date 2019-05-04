@@ -4,8 +4,10 @@ from collections import OrderedDict
 
 from brownie.types.types import _Singleton
 from brownie.types.convert import to_address
-from brownie.network.web3 import web3
+from .web3 import Web3
 
+
+web3 = Web3()
 
 class TxHistory(metaclass=_Singleton):
 

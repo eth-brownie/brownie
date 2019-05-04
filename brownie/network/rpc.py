@@ -6,13 +6,14 @@ import sys
 from threading import Thread
 import time
 
-from .web3 import web3
+from .web3 import Web3
 from .account import Accounts
 from .history import TxHistory, _ContractHistory
 from brownie.types.types import _Singleton
 import brownie._config as config
 CONFIG = config.CONFIG
 
+web3 = Web3()
 
 class Rpc(metaclass=_Singleton):
 

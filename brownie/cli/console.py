@@ -170,7 +170,7 @@ def main():
     args = docopt(__doc__)
     config.ARGV._update_from_args(args)
 
-    network.connect(config.ARGV['network'], True)
+    network.connect(config.ARGV['network'])
     console = Console()
     print("Brownie environment is ready.")
 

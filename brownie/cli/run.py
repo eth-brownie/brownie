@@ -34,7 +34,7 @@ def main():
     fn = args['<function>'] or "main"
     if not Path(CONFIG['folders']['project']).joinpath('scripts/{}.py'.format(name)):
         sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}scripts/{1}.py{0}".format(color, name))
-    network.connect(config.ARGV['network'], True)
+    network.connect(config.ARGV['network'])
     module = importlib.import_module("scripts."+name)
     if not hasattr(module, fn):
         sys.exit("{0[error]}ERROR{0}: {0[module]}scripts/{1}.py{0} has no '{0[callable]}{2}{0}' function.".format(color, name, fn))
