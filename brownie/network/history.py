@@ -11,6 +11,10 @@ web3 = Web3()
 
 class TxHistory(metaclass=_Singleton):
 
+    '''List-like singleton container that contains TransactionReceipt objects.
+    Whenever a transaction is broadcast, the TransactionReceipt is automatically
+    added to this container.'''
+
     def __init__(self):
         self._list = []
 
@@ -43,20 +47,27 @@ class TxHistory(metaclass=_Singleton):
     def _add_tx(self, tx):
         self._list.append(tx)
 
-    def to_receiver(self, account):
-        return [i for i in self._list if i.receiver == account]
+    def copy(self):
+        '''Returns a shallow copy of the object as a list'''
+        return self._list.copy()
 
     def from_sender(self, account):
+        '''Returns a list of transactions where the sender is account'''
         return [i for i in self._list if i.sender == account]
 
-    def of_address(self, account):
-        return [i for i in self._list if i.receiver == account or i.sender == account]
+    def to_receiver(self, account):
+        '''Returns a list of transactions where the receiver is account'''
+        return [i for i in self._list if i.receiver == account]
 
-    def copy(self):
-        return self._list.copy()
+    def of_address(self, account):
+        '''Returns a list of transactions where account is the sender or receiver'''
+        return [i for i in self._list if i.receiver == account or i.sender == account]
 
 
 class _ContractHistory(metaclass=_Singleton):
+
+    '''Internal singleton dict of OrderedDicts that acts as a single container
+    for ContractContainer lists.'''
 
     def __init__(self):
         self._dict = {}
