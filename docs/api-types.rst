@@ -111,6 +111,8 @@ The following methods are used to convert arguments supplied to ``ContractTx`` a
 
 The ``types`` module contains data types that are unique to Brownie.
 
+.. _api-types-strictdict:
+
 StrictDict
 ----------
 
