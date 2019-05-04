@@ -6,8 +6,7 @@ import importlib.util
 import json
 from pathlib import Path
 
-import brownie._config as config
-CONFIG = config.CONFIG
+from brownie._config import CONFIG
 
 BUILD_KEYS = [
     'abi',

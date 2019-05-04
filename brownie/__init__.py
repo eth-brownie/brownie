@@ -15,7 +15,7 @@ from brownie.project import (
 )
 from brownie.gui import Gui
 from brownie.test import check
-import brownie._config
+from brownie._config import CONFIG as config
 from brownie.types.convert import wei
 
 __all__ = [
@@ -33,5 +33,3 @@ __all__ = [
     'config',
     'Gui'
 ]
-
-config = brownie._config.CONFIG

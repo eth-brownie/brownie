@@ -8,8 +8,7 @@ import sys
 from brownie.network.contract import ContractContainer
 from brownie.project._build import Build
 from . import compiler
-import brownie._config
-CONFIG = brownie._config.CONFIG
+from brownie._config import CONFIG, load_project_config
 
 __all__ = ['project', '__project']
 
@@ -62,7 +61,7 @@ def load(path=None):
     path = Path(path).resolve()
     CONFIG['folders']['project'] = str(path)
     sys.path.insert(0, str(path))
-    brownie._config.load_project_config()
+    load_project_config()
     compiler.set_solc_version()
     build._load()
     result = []

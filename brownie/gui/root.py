@@ -14,8 +14,7 @@ from .select import SelectContract
 from .styles import set_style
 
 from brownie.test.coverage import merge_coverage
-import brownie._config as config
-CONFIG = config.CONFIG
+from brownie._config import CONFIG
 
 
 class Root(tk.Tk):

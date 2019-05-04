@@ -5,8 +5,7 @@ from pathlib import Path
 import shutil
 
 import brownie.project as project
-import brownie._config as config
-
+from brownie._config import ARGV
 
 __doc__ = """Usage: brownie compile [options]
 
@@ -22,7 +21,7 @@ def main():
     args = docopt(__doc__)
     project_path = project.check_for_project('.')
     build_path = project_path.joinpath('build/contracts')
-    if config.ARGV['all']:
+    if ARGV['all']:
         shutil.rmtree(build_path, ignore_errors=True)
     project.load(project_path)
     print("Brownie project has been compiled at {}".format(build_path))

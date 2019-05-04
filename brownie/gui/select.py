@@ -4,8 +4,7 @@ import json
 from pathlib import Path
 from tkinter import ttk
 
-import brownie._config as config
-CONFIG = config.CONFIG
+from brownie._config import CONFIG
 
 class SelectContract(ttk.Combobox):
 

@@ -6,8 +6,7 @@ from .web3 import Web3 as _Web3
 from .rpc import Rpc as _Rpc
 from .account import Accounts as _Accounts
 from .history import TxHistory as _TxHistory
-import brownie._config as _config
-CONFIG = _config.CONFIG
+from brownie._config import CONFIG, modify_network_config
 
 
 __all__ = ['accounts', 'history', 'network', 'rpc', 'web3']
@@ -31,7 +30,7 @@ def connect(network=None):
             CONFIG['active_network']['name']
         ))
     try:
-        _config.modify_network_config(network or CONFIG['network_defaults']['name'])
+        modify_network_config(network or CONFIG['network_defaults']['name'])
         if 'host' not in CONFIG['active_network']:
             raise KeyError(
                 "No host given in brownie-config.json for network"

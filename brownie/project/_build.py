@@ -7,8 +7,7 @@ import re
 
 from . import _sha_compare as compare
 from . import compiler
-import brownie._config as config
-CONFIG = config.CONFIG
+from brownie._config import CONFIG
 
 BUILD_FOLDERS = ["build", "build/contracts", "build/coverage", "build/networks"]
 

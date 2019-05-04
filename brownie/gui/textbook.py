@@ -8,8 +8,7 @@ from tkinter import ttk
 
 from .styles import TEXT_STYLE, TEXT_COLORS
 
-import brownie._config as config
-CONFIG = config.CONFIG
+from brownie._config import CONFIG
 
 class TextBook(ttk.Notebook):
 
