@@ -18,7 +18,10 @@ web3 = Web3()
 class Rpc(metaclass=_Singleton):
 
     '''Methods for interacting with ganache-cli when running a local
-    RPC environment.'''
+    RPC environment.
+
+    Account balances, contract containers and transaction history are
+    automatically modified when the RPC is terminated, reset or reverted.'''
 
     def __init__(self):
         self._rpc = None
@@ -28,6 +31,10 @@ class Rpc(metaclass=_Singleton):
         atexit.register(self.kill, False)
 
     def launch(self, cmd):
+        '''Launches the RPC client.
+
+        Args:
+            cmd: command string to execute as subprocess'''
         if self.is_active():
             raise SystemError("RPC is already active.")
         self._rpc = Popen(
@@ -53,6 +60,10 @@ class Rpc(metaclass=_Singleton):
         )
 
     def kill(self, exc=True):
+        '''Kills the RPC subprocess.
+
+        Args:
+            exc: if True, raises SystemError if subprocess is not active.'''
         if not self.is_active():
             if not exc:
                 return
@@ -126,8 +137,8 @@ class Rpc(metaclass=_Singleton):
         return "Block height reverted to {}".format(web3.eth.blockNumber)
 
     def reset(self):
-        self._request("evm_revert", [self._reset_id])
-        self._snaptshot_id = None
+        '''Reverts the EVM to the genesis state.'''
+        self._snapshot_id = None
         self._reset_id = self._revert(self._reset_id)
         return "Block height reset to 0"
 

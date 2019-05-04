@@ -72,21 +72,21 @@ class TransactionReceipt:
         history._add_tx(self)
         self.__dict__.update({
             '_trace': None,
+            'block_number': None,
+            'contract_address': None,
             'fn_name': name,
-            'txid': txid,
-            'sender': sender,
-            'receiver': None,
-            'value': None,
-            'gas_price': None,
             'gas_limit': None,
+            'gas_price': None,
             'gas_used': None,
             'input': None,
-            'nonce': None,
-            'block_number': None,
-            'txindex': None,
-            'contract_address': None,
             'logs': [],
+            'nonce': None,
+            'receiver': None,
+            'sender': sender,
             'status': -1,
+            'txid': txid,
+            'txindex': None,
+            'value': None
         })
         t = threading.Thread(
             target=self._await_confirm,

@@ -13,10 +13,13 @@ from brownie.types.types import _Singleton
 
 class Web3(_Web3, metaclass=_Singleton):
 
+    '''Singleton version of web3.py's Web3.'''
+
     def __init__(self):
         super().__init__(HTTPProvider('null'))
 
     def connect(self, uri):
+        '''Connects to a provider'''
         if Path(uri).exists():
             self.providers = [IPCProvider(uri)]
         elif uri[:3] == "ws:":
@@ -30,4 +33,5 @@ class Web3(_Web3, metaclass=_Singleton):
             )
 
     def disconnect(self):
+        '''Disconnects from a provider'''
         self.providers.clear()

@@ -20,12 +20,23 @@ web3 = _Web3()
 
 
 def connect(network=None):
+    '''Connects to the network.
+
+    Args:
+        network: string of of the name of the network to connect to
+
+    Network information is retrieved from brownie-config.json'''
     if CONFIG['active_network']['name']:
-        raise ConnectionError("Already connected to network '{}'".format(CONFIG['active_network']['name']))
+        raise ConnectionError("Already connected to network '{}'".format(
+            CONFIG['active_network']['name']
+        ))
     try:
         _config.modify_network_config(network or CONFIG['network_defaults']['name'])
         if 'host' not in CONFIG['active_network']:
-            raise KeyError("No host given in brownie-config.json for network '{}'".format(CONFIG['active_network']['name']))
+            raise KeyError(
+                "No host given in brownie-config.json for network"
+                " '{}'".format(CONFIG['active_network']['name'])
+            )
         web3.connect(CONFIG['active_network']['host'])
         if 'test-rpc' in CONFIG['active_network'] and not rpc.is_active():
             rpc.launch(CONFIG['active_network']['test-rpc'])
@@ -34,7 +45,8 @@ def connect(network=None):
         raise
 
 
-def disconnect(kill_rpc=False):
+def disconnect():
+    '''Disconnects from the network'''
     web3.disconnect()
     if rpc.is_active():
         rpc.kill()
@@ -42,12 +54,14 @@ def disconnect(kill_rpc=False):
 
 
 def show_active():
+    '''Returns the name of the currently active network'''
     if not web3.providers:
         return None
     return CONFIG['active_network']['name']
 
 
 def is_connected():
+    '''Returns a bool indicating if the Web3 object is currently connected'''
     return web3.isConnected()
 
 
