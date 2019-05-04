@@ -23,6 +23,7 @@ class Rpc(metaclass=_Singleton):
         self._rpc = None
         self._time_offset = 0
         self._snapshot_id = False
+        self._reset_id = False
         atexit.register(self.kill, False)
 
     def launch(self, param_str=""):
@@ -46,8 +47,10 @@ class Rpc(metaclass=_Singleton):
             raise FileNotFoundError("Cannot test RPC - check the filename in brownie-config.json")
         self._time_offset = 0
         self._snapshot_id = False
+        self._reset_id = False
         for i in range(50):
             if web3.isConnected():
+                self._reset_id = self._snap()
                 _reset()
                 return
             time.sleep(0.1)
@@ -64,13 +67,26 @@ class Rpc(metaclass=_Singleton):
         self._rpc.terminate()
         self._time_offset = 0
         self._snapshot_id = False
+        self._reset_id = False
         self._rpc = None
         _reset()
 
     def _request(self, *args):
         if not self.is_active():
             raise SystemError("RPC is not active.")
-        return web3.providers[0].make_request(*args)
+        return web3.providers[0].make_request(*args)['result']
+
+    def _snap(self):
+        return self._request("evm_snapshot", [])
+
+    def _revert(self, id_):
+        if web3.eth.blockNumber == 0:
+            return self._snap()
+        self._request("evm_revert", [id_])
+        id_ = self._snap()
+        self.sleep(0)
+        _revert()
+        return id_
 
     def is_active(self):
         return bool(self._rpc and not self._rpc.poll())
@@ -88,7 +104,7 @@ class Rpc(metaclass=_Singleton):
             seconds (int): Number of seconds to increase the time by.'''
         if type(seconds) is not int:
             raise TypeError("seconds must be an integer value")
-        self._time_offset = self._request("evm_increaseTime", [seconds])['result']
+        self._time_offset = self._request("evm_increaseTime", [seconds])
 
     def mine(self, blocks=1):
         '''Increases the block height within the test RPC.
@@ -103,18 +119,21 @@ class Rpc(metaclass=_Singleton):
 
     def snapshot(self):
         '''Takes a snapshot of the current state of the EVM.'''
-        self._snapshot_id = self._request("evm_snapshot", [])['result']
+        self._snapshot_id = self._snap()
         return "Snapshot taken at block height {}".format(web3.eth.blockNumber)
 
     def revert(self):
         '''Reverts the EVM to the most recently taken snapshot.'''
         if not self._snapshot_id:
             raise ValueError("No snapshot set")
-        self._request("evm_revert", [self._snapshot_id])
-        self.snapshot()
-        self.sleep(0)
-        _revert()
+        self._snapshot_id = self._revert(self._snapshot_id)
         return "Block height reverted to {}".format(web3.eth.blockNumber)
+
+    def reset(self):
+        self._request("evm_revert", [self._reset_id])
+        self._snaptshot_id = None
+        self._reset_id = self._revert(self._reset_id)
+        return "Block height reset to 0"
 
 
 def _watch_rpc(rpc):

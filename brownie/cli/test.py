@@ -100,7 +100,7 @@ def _run_test(module, fn_name, count, total):
 
 
 def run_test(filename, network, idx):
-    network.reset()
+    network.rpc.reset()
     if type(CONFIG['test']['gas_limit']) is int:
         network.gas_limit(CONFIG['test']['gas_limit'])
 
