@@ -1,6 +1,7 @@
 1.0.0b4
 -------
 
+ - introduce Singleton metaclass and refactor code to take advantage
  - add EventDict and EventItem classes for transaction event logs
  - cli.color, add _print_as_dict _print_as_list _dir_color attributes
  - add conversion methods in types.convert

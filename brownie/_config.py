@@ -11,7 +11,8 @@ from brownie.types import FalseyDict, StrictDict
 IGNORE_MISSING = ['active_network', 'folders', 'logging']
 
 
-def _load_config():
+def _load_default_config():
+    '''Loads the default configuration settings from brownie/data/config.json'''
     path = Path(__file__).parent.joinpath("data/config.json")
     config = StrictDict(json.load(path.open()))
     config['folders'] = {
@@ -29,7 +30,8 @@ def _load_config():
         config['logging'] = {"tx": 1, "exc": 1}
     return config
 
-def update_config():
+def load_project_config():
+    '''Loads configuration settings from a project's brownie-config.json'''
     CONFIG._unlock()
     if CONFIG['folders']['project']:
         path = Path(CONFIG['folders']['project']).joinpath("brownie-config.json")
@@ -41,10 +43,10 @@ def update_config():
                 str(path)
             )
             print("WARNING: No config file found for this project. A new one has been created.")
-    modify_network_config()
+    CONFIG.setdefault('active_network',{'name': None})
 
 def modify_network_config(network = None):
-    # modify network settings
+    '''Modifies the 'active_network' configuration settings'''
     CONFIG._unlock()
     try:
         if not network:
@@ -87,5 +89,4 @@ if len(sys.argv) > 1:
     ARGV['cli'] = sys.argv[1]
 
 # load config
-CONFIG = _load_config()
-modify_network_config()
+CONFIG = _load_default_config()

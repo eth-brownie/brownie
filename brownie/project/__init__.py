@@ -62,7 +62,7 @@ def load(path=None):
     path = Path(path).resolve()
     CONFIG['folders']['project'] = str(path)
     sys.path.insert(0, str(path))
-    brownie._config.update_config()
+    brownie._config.load_project_config()
     compiler.set_solc_version()
     build._load()
     result = []
