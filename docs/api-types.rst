@@ -4,14 +4,13 @@
 Types API
 =========
 
-.. py:attribute:: brownie.types
+``brownie.types``
+=================
 
 The ``types`` package contains methods relating to data conversion, as well as data types that are unique to Brownie.
 
-Convert
-=======
-
-.. py:attribute:: brownie.types.convert
+``brownie.types.convert``
+=========================
 
 The ``convert`` module contains methods relating to data conversion.
 
@@ -107,10 +106,8 @@ The following methods are used to convert arguments supplied to ``ContractTx`` a
 
     Converts a value to a string encoded to bytes.
 
-types.types
-===========
-
-.. py:attribute:: brownie.types.types
+``brownie.types.types``
+=======================
 
 The ``types`` module contains data types that are unique to Brownie.
 

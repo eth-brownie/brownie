@@ -4,14 +4,13 @@
 Project API
 ===========
 
-.. py:attribute:: brownie.project
+``brownie.project``
+===================
 
 The ``project`` package contains classes and methods for creating, loading, compiling and interacting with Brownie projects.
 
-Compiler
-========
-
-.. py:attribute:: brownie.project.compiler
+``brownie.project.compiler``
+============================
 
 Tne ``compiler`` module contains methods for compiling contracts and formatting the compiled data.
 
@@ -36,16 +35,12 @@ Tne ``compiler`` module contains methods for compiling contracts and formatting 
         >>> container[0]
         []
 
-Build
-=====
-
-.. py:attribute:: brownie.project._build
+``brownie.project._build``
+==========================
 
 The ``_build`` module contains classes and methods used internally by Brownie to interact with files in a project's ``build`` folder.
 
-Sha_Compare
-===========
-
-.. py:attribute:: brownie.project.sha_compare
+``brownie.project.sha_compare``
+===============================
 
 The ``_sha_compare`` module contains methods for generating and comparing hashes that are used to determine if contracts should be recompiled or tests should be re-run.

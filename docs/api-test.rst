@@ -4,16 +4,15 @@
 Test API
 ========
 
-.. py:attribute:: brownie.test
+``brownie.test``
+================
 
 The ``test`` package contains classes and methods for running tests and evaluating test coverage.
 
 .. _api_check:
 
-Check
-=====
-
-.. py:attribute:: brownie.test.check
+``brownie.test.check``
+======================
 
 The ``check`` module exposes the following methods that are used in place of ``assert`` when writing Brownie tests. All check methods raise an ``AssertionError`` when they fail.
 
@@ -189,9 +188,7 @@ Module Methods
             raise AssertionError(fail_msg)
         AssertionError: Expected values to be not equal
 
-Coverage
-========
-
-.. py:attribute:: brownie.test.coverage
+``brownie.test.coverage``
+=========================
 
 The ``coverage`` module contains methods related to test coverage analysis.
