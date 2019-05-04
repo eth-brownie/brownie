@@ -65,7 +65,11 @@ def _run_test(module, fn_name, count, total):
         args = {}
     try:
         stime = time.time()
+        if ARGV['coverage'] and 'always_transact' in args:
+            ARGV['always_transact'] = args['always_transact']
         fn()
+        if ARGV['coverage']:
+            ARGV['always_transact'] = True
         if 'pending' in args and args['pending']:
             raise ExpectedFailing("Test was expected to fail")
         sys.stdout.write("\r {0[success]}\u2713{0} {1} - {2} ({3:.4f}s) \n".format(
@@ -163,6 +167,8 @@ def get_test_files(path):
 def main():
     args = docopt(__doc__)
     ARGV._update_from_args(args)
+    if ARGV['coverage']:
+        ARGV['always_transact'] = True
     traceback_info = []
     test_files = get_test_files(args['<filename>'])
 
