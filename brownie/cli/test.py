@@ -12,7 +12,7 @@ import time
 
 from brownie.cli.utils import color
 from brownie.test.coverage import merge_coverage, analyze_coverage
-from brownie.exceptions import VirtualMachineError
+from brownie.exceptions import ExpectedFailing, VirtualMachineError
 import brownie.network as network
 from brownie.network.history import TxHistory
 import brownie.network.transaction as transaction
@@ -47,8 +47,7 @@ By default brownie runs every script found in the tests folder as well as any
 subfolders. Files and folders beginning with an underscore will be skipped."""
 
 
-class ExpectedFailing(Exception):
-    pass
+
 
 
 def _run_test(module, fn_name, count, total):
