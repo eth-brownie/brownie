@@ -4,16 +4,15 @@
 Test API
 ========
 
-.. py:attribute:: brownie.test
+``brownie.test``
+================
 
 The ``test`` package contains classes and methods for running tests and evaluating test coverage.
 
 .. _api_check:
 
-Check
-=====
-
-.. py:attribute:: brownie.test.check
+``brownie.test.check``
+======================
 
 The ``check`` module exposes the following methods that are used in place of ``assert`` when writing Brownie tests. All check methods raise an ``AssertionError`` when they fail.
 
@@ -30,17 +29,17 @@ Module Methods
         >>> check.true(2 + 2 == 4)
         >>>
         >>> check.true(0 > 1)
-        File "brownie/lib/components/check.py", line 18, in true
+        File "brownie/test/check.py", line 18, in true
             raise AssertionError(fail_msg)
         AssertionError: Expected statement to be True
 
         >>> check.true(False, "What did you expect?")
-        File "brownie/lib/components/check.py", line 18, in true
+        File "brownie/test/check.py", line 18, in true
             raise AssertionError(fail_msg)
         AssertionError: What did you expect?
 
         >>> check.true(1)
-        File "brownie/lib/components/check.py", line 16, in true
+        File "brownie/test/check.py", line 16, in true
             raise AssertionError(fail_msg+" (evaluated truthfully but not True)")
         AssertionError: Expected statement to be True (evaluated truthfully but not True)
 
@@ -52,12 +51,12 @@ Module Methods
 
         >>> check.false(0 > 1)
         >>> check.false(2 + 2 == 4)
-        File "brownie/lib/components/check.py", line 18, in false
+        File "brownie/test/check.py", line 18, in false
             raise AssertionError(fail_msg)
         AssertionError: Expected statement to be False
 
         >>> check.false(0)
-        File "brownie/lib/components/check.py", line 16, in false
+        File "brownie/test/check.py", line 16, in false
             raise AssertionError(fail_msg+" (evaluated falsely but not False)")
         AssertionError: Expected statement to be False (evaluated falsely but not False)
 
@@ -79,7 +78,7 @@ Module Methods
         >>> Token[0].balanceOf(accounts[2])
         0
         >>> check.confirms(Token[0].transfer, (accounts[0], 900, {'from': accounts[2]}))
-        File "brownie/lib/components/check.py", line 61, in confirms
+        File "brownie/test/check.py", line 61, in confirms
             raise AssertionError(fail_msg)
         AssertionError: Expected transaction to confirm
 
@@ -96,7 +95,7 @@ Module Methods
 
         Transaction sent: 0xc9e056550ec579ba6b842d27bb7f029912c865becce19ee077734a04d5198f8c
         Token.transfer confirmed - block: 7   gas used: 20921 (15.39%)
-        File "brownie/lib/components/check.py", line 45, in reverts
+        File "brownie/test/check.py", line 45, in reverts
             raise AssertionError(fail_msg)
         AssertionError: Expected transaction to revert
 
@@ -119,18 +118,18 @@ Module Methods
         >>> check.event_fired(tx, "Transfer")
         >>> check.event_fired(tx, "Transfer", count=1)
         >>> check.event_fired(tx, "Transfer", count=2)
-        File "brownie/lib/components/check.py", line 80, in event_fired
+        File "brownie/test/check.py", line 80, in event_fired
             name, count, len(events)
         AssertionError: Event Transfer - expected 2 events to fire, got 1
         >>>
         >>> check.event_fired(tx, "Transfer", values={'value': 1000})
         >>> check.event_fired(tx, "Transfer", values={'value': 2000})
-        File "brownie/lib/components/check.py", line 105, in event_fired
+        File "brownie/test/check.py", line 105, in event_fired
             name, k, v, data[k]
         AssertionError: Event Transfer - expected value to equal 2000, got 1000
         >>>
         >>> check.event_fired(tx, "Transfer", values=[{'value': 1000}, {'value': 2000}])
-        File "brownie/lib/components/check.py", line 91, in event_fired
+        File "brownie/test/check.py", line 91, in event_fired
             name, len(events), len(values)
         AssertionError: Event Transfer - 1 events fired, 2 values to match given
 
@@ -151,7 +150,7 @@ Module Methods
         <Transaction object '0xaf9f68a8e72764f7475263aeb11ae544d81e45516787b93cc8797b7152195a52'>
         >>> check.event_not_fired(tx, "Approve")
         >>> check.event_not_fired(tx, "Transfer")
-        File "brownie/lib/components/check.py", line 80, in event_not_fired
+        File "brownie/test/check.py", line 80, in event_not_fired
             name, count, len(events)
         AssertionError: Expected event not to fire
 
@@ -168,7 +167,7 @@ Module Methods
         >>> t.balanceOf(accounts[1])
         0
         >>> check.equal(t.balanceOf(accounts[0]), t.balanceOf(accounts[1]))
-        File "brownie/lib/components/check.py", line 74, in equal
+        File "brownie/test/check.py", line 74, in equal
             raise AssertionError(fail_msg)
         AssertionError: Expected values to be equal
 
@@ -185,13 +184,22 @@ Module Methods
         >>> t.balanceOf(accounts[2])
         0
         >>> check.not_equal(t.balanceOf(accounts[1]), t.balanceOf(accounts[2]))
-        File "brownie/lib/components/check.py", line 86, in not_equal
+        File "brownie/test/check.py", line 86, in not_equal
             raise AssertionError(fail_msg)
         AssertionError: Expected values to be not equal
 
-Coverage
-========
+``brownie.test.coverage``
+=========================
 
-.. py:attribute:: brownie.test.coverage
+The ``coverage`` module contains methods related to test coverage analysis. These methods are called via ``cli.test`` and the Brownie GUI, they are not meant to be called directly.
 
-The ``coverage`` module contains methods related to test coverage analysis.
+Module Methods
+--------------
+
+.. py:method:: coverage.analyze_coverage(history)
+
+    Given a list of ``TransactionReceipt`` objects, returns a coverage report.
+
+.. py:method:: coverage.merge_coverage(coverage_files)
+
+    Given a list of coverage file paths, returns a single aggregated coverage report. Used by ``cli.test`` and ``gui.root`` to display coverage information.

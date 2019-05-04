@@ -30,6 +30,23 @@ def false(statement, fail_msg="Expected statement to be False"):
         raise AssertionError(fail_msg)
 
 
+def confirms(fn, args, fail_msg="Expected transaction to confirm"):
+    '''Expects a transaction to confirm.
+
+    Args:
+        fn: ContractTx instance to call.
+        args: List or tuple of contract input args.
+        fail_msg: Message to show if the check fails.
+
+    Returns:
+        TransactionReceipt instance.'''
+    try:
+        tx = fn(*args)
+    except _VMError as e:
+        raise AssertionError("{}\n  {}".format(fail_msg, e.source))
+    return tx
+
+
 def reverts(fn, args, revert_msg=None):
     '''Expects a transaction to revert.
 
@@ -49,23 +66,6 @@ def reverts(fn, args, revert_msg=None):
                 e.revert_msg, revert_msg, e.source
             ))
     raise AssertionError("Expected transaction to revert")
-
-
-def confirms(fn, args, fail_msg="Expected transaction to confirm"):
-    '''Expects a transaction to confirm.
-
-    Args:
-        fn: ContractTx instance to call.
-        args: List or tuple of contract input args.
-        fail_msg: Message to show if the check fails.
-
-    Returns:
-        TransactionReceipt instance.'''
-    try:
-        tx = fn(*args)
-    except _VMError as e:
-        raise AssertionError("{}\n  {}".format(fail_msg, e.source))
-    return tx
 
 
 def event_fired(tx, name, count=None, values=None):

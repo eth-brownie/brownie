@@ -4,13 +4,13 @@
 Network API
 ===========
 
-.. py:attribute:: brownie.network
+``brownie.network``
+===================
 
 The ``network`` package holds classes for interacting with the Ethereum blockchain. This is the most extensive package within Brownie and contains the majority of the user-facing functionality.
 
-
 Package Methods
-===============
+---------------
 
 Methods in the base ``network`` package are used from connect to and disconnect from the network.
 
@@ -56,10 +56,8 @@ Methods in the base ``network`` package are used from connect to and disconnect 
         >>> network.show_active()
         'development'
 
-Account
-=======
-
-.. py:attribute:: brownie.network.account
+``brownie.network.account``
+===========================
 
 The ``account`` module holds classes for interacting with Ethereum accounts for which you control the private key.
 
@@ -269,10 +267,9 @@ LocalAccount
     >>> accounts[-1].private_key
     '0xd289bec8d9ad145aead13911b5bbf01936cbcd0efa0e26d5524b5ad54a61aeb8'
 
-Alert
-=====
 
-.. py:attribute:: brownie.network.alert
+``brownie.network.alert``
+=========================
 
 The ``alert`` module is used to set up notifications and callbacks based on state changes in the blockchain.
 
@@ -375,10 +372,9 @@ Module Methods
         >>> alert.show()
         []
 
-Contract
-========
 
-.. py:attribute:: brownie.network.contract
+``brownie.network.contract``
+============================
 
 The ``contract`` module contains classes for interacting with smart contracts.
 
@@ -734,10 +730,9 @@ ContractTx Methods
         Token.transfer confirmed - block: 2   gas used: 50985 (100.00%)
         <Transaction object '0x8dbf15878104571669f9843c18afc40529305ddb842f94522094454dcde22186'>
 
-Event
-=====
 
-.. py:attribute:: brownie.network.event
+``brownie.network.event``
+=========================
 
 The ``event`` module contains methods related to decoding transaction event logs. It is largely a wrapper around `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`__.
 
@@ -802,10 +797,8 @@ Module Methods
 
 .. _api-network-history:
 
-History
-=======
-
-.. py:attribute:: brownie.network.history
+``brownie.network.history``
+===========================
 
 The ``history`` module contains classes to record transactions and contracts as they occur on the blockchain.
 
@@ -877,10 +870,8 @@ _ContractHistory
 
 .. _rpc:
 
-RPC
-===
-
-.. py:attribute:: brownie.network.rpc
+``brownie.network.rpc``
+=======================
 
 The ``rpc`` module contains the ``Rpc`` class, which is used to interact with ``ganache-cli`` when running a local RPC environment.
 
@@ -1014,10 +1005,8 @@ Rpc
         100000000000000000000
 
 
-Transactions
-============
-
-.. py:attribute:: brownie.network.transction
+``brownie.network.transction``
+==============================
 
 The ``transaction`` module contains the ``TransactionReceipt`` class and related internal methods.
 
@@ -1364,10 +1353,9 @@ TransactionReceipt Methods
             function mul(uint a, uint b) internal pure returns (uint c) {
                 c = a * b;
 
-Web3
-====
 
-.. py:attribute:: brownie.network.web3
+``brownie.network.web3``
+========================
 
 The ``web3`` module contains a slightly modified version of the web3.py `Web3 <https://web3py.readthedocs.io/en/stable/web3.main.html#web3.Web3>`__ class that is used throughout various Brownie modules for RPC communication.
 
@@ -1387,7 +1375,7 @@ The standard ``Web3`` API is available, however it is not documented here.
 
 .. py:classmethod:: Web3.connect(uri)
 
-    Connects to a `provider <https://web3py.readthedocs.io/en/stable/providers.html>`_. ``uri`` can be the path to a local IPC socket, a websocket address beginning in ``ws://` or a URL.
+    Connects to a `provider <https://web3py.readthedocs.io/en/stable/providers.html>`_. ``uri`` can be the path to a local IPC socket, a websocket address beginning in ``ws://`` or a URL.
 
     .. code-block:: python
 

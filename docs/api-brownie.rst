@@ -4,18 +4,43 @@
 Brownie API
 ===========
 
-.. py:attribute:: brownie
+``brownie``
+===========
 
 The ``brownie`` package is the main package containing all of Brownie's functionality.
 
-.. py:attribute:: brownie.exceptions
+.. code-block:: python
+
+    >>> from brownie import *
+    >>> dir()
+    ['Gui', 'accounts', 'alert', 'brownie', 'check', 'compile_source', 'config', 'history', 'network', 'project', 'rpc', 'web3', 'wei']
+
+``brownie.exceptions``
+======================
 
 The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
-.. py:attribute:: brownie._config
+.. py:exception:: CompilerError
 
-The ``_config`` module handles all Brownie configuration settings.
+    Raised by the compiler when there is an error within a contract's source code.
 
-.. py:attribute:: brownie._registry
+.. py:exception:: ExpectedFailing
 
-The ``_registry`` module contains internal functionality for notifying objects whenever the network state is reset or reverted.
+    Raised when a unit test is marked as ``pending=True`` but it still passes.
+
+.. py:exception:: VirtualMachineError
+
+    Raised when a call to the EVM reverts.
+
+``brownie._config``
+===================
+
+The ``_config`` module handles all Brownie configuration settings. It is not designed to be accessed directly. If you wish to view or modify config settings while brownie is running, import ``brownie.config`` which will return a :ref:`api-types-strictdict` that contains all the settings:
+
+.. code-block:: python
+
+    >>> from brownie import config
+    >>> type(config)
+    <class 'brownie.types.types.StrictDict'>
+    >>> config['network_defaults']
+    {'name': 'development', 'gas_limit': False, 'gas_price': False}

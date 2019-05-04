@@ -10,6 +10,10 @@ class CompilerError(Exception):
         super().__init__("Compiler returned the following errors:\n\n"+"\n".join(err))
 
 
+class ExpectedFailing(Exception):
+    pass
+
+
 class VirtualMachineError(Exception):
 
     '''Raised when a call to a contract causes an EVM exception.
