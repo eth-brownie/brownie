@@ -8,7 +8,7 @@ Checking Test Coverage
 
 Test coverage is estimated by generating a map of opcodes associated with each function and line of the smart contract source code, and then analyzing the stack trace of each transaction to see which opcodes were executed.
 
-Because calls to view and pure methods typically are not done with a transaction, you must enable the ``always_transact`` configuration setting or your coverage for these methods will show as 0%. See the test :ref:`test_settings` documentation for more information.
+When analyzing coverage, contract calls are executed as transactions. This allows analysis for non state-changing methods, however it also means that calls will consume gas, increase the block height and increase the nonce of an address. You can prevent this behaviour by adding ``always_transact=False`` as a keyword argument for a test.
 
 To check your unit test coverage, type:
 
@@ -65,7 +65,7 @@ Or from the console:
 
     >>> Gui()
 
-This will open the Brownie GUI.  Then press ``C`` to display the coverage results.  Relevant code will be highlighted in different colors:
+This will open the Brownie GUI. Then press ``C`` to display the coverage results.  Relevant code will be highlighted in different colors:
 
 * Green - code was executed during the tests
 * Yellow - code was executed, but only evaluated truthfully
