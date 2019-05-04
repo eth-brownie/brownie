@@ -19,7 +19,7 @@ To run a specific test or folder of tests, enter the path without an extension:
 
     $ brownie test transfer
 
-.. hint:: 
+.. hint::
 
     Each time a test runs, Brownie saves hashes of the bytecode for each contract it interacts with. It also saves a hash from the AST of the test file and any imported scripts. If you include the ``--update`` flag when running tests, Brownie will regenerate these hashes and only run the ones where changes have occured.
 
@@ -49,8 +49,9 @@ You can optionally include a docstring in each test method to give more verbosit
 
 The following keyword arguments can be used to affect how a test runs:
 
-* ``pending``: If set to ``True``, this test is expected to fail. If the test passes it will raise an ``ExpectedFailing`` exception.
 * ``skip``: If set to ``True``, this test will not be run.
+* ``pending``: If set to ``True``, this test is expected to fail. If the test passes it will raise an ``ExpectedFailing`` exception.
+* ``always_transact``: If set to ``False``, calls to non state-changing methods will still execute as calls when running test coverage analysis. See :ref:`coverage` for more information.
 
 Tests rely heavily on methods in the Brownie ``check`` module as an alternative to normal ``assert`` statements. You can read about them in the API :ref:`api_check` documentation.
 
@@ -188,25 +189,10 @@ The following test configuration settings are available in ``brownie-config.json
 
     {
         "test": {
-            "always_transact": true,
             "gas_limit": 65000000,
             "default_contract_owner": false
         }
     }
-
-.. py:attribute:: always_transact
-
-    If set to ``true``:
-
-    * Methods with a state mutability of ``view`` or ``pure`` are still called as a transaction
-    * Calls will consume gas, increase the block height and the nonce of the caller.
-    * You may supply a transaction dictionary as the last argument as you would with any other transaction.
-    * You will still be returned the return value of the transaction, not a ``TransactionReceipt``.
-
-    If set to ``false``:
-
-    * Methods will be called with the normal behaviour.
-    * Test coverage will report 0% for all ``view`` and ``pure`` methods.
 
 .. py:attribute:: gas_limit
 

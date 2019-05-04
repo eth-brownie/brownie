@@ -37,16 +37,12 @@ Options:
   --coverage -c          Evaluate test coverage and display a report
   --update -u            Only run tests where changes have occurred
   --gas -g               Display gas profile for function calls
-  --always-transact -a   Perform all contract calls as transactions
   --verbose -v           Enable verbose reporting
   --tb -t                Show entire python traceback on exceptions
   --help -h              Display this message
 
 By default brownie runs every script found in the tests folder as well as any
 subfolders. Files and folders beginning with an underscore will be skipped."""
-
-
-
 
 
 def _run_test(module, fn_name, count, total):
@@ -69,7 +65,11 @@ def _run_test(module, fn_name, count, total):
         args = {}
     try:
         stime = time.time()
+        if ARGV['coverage'] and 'always_transact' in args:
+            ARGV['always_transact'] = args['always_transact']
         fn()
+        if ARGV['coverage']:
+            ARGV['always_transact'] = True
         if 'pending' in args and args['pending']:
             raise ExpectedFailing("Test was expected to fail")
         sys.stdout.write("\r {0[success]}\u2713{0} {1} - {2} ({3:.4f}s) \n".format(
@@ -167,6 +167,8 @@ def get_test_files(path):
 def main():
     args = docopt(__doc__)
     ARGV._update_from_args(args)
+    if ARGV['coverage']:
+        ARGV['always_transact'] = True
     traceback_info = []
     test_files = get_test_files(args['<filename>'])
 
@@ -185,13 +187,6 @@ def main():
         idx = slice(0, None)
 
     network.connect(ARGV['network'])
-    if args['--always-transact']:
-        CONFIG['test']['always_transact'] = True
-    print("Contract calls will be handled as: {0[value]}{1}{0}".format(
-        color,
-        "transactions" if CONFIG['test']['always_transact'] else "calls"
-    ))
-
     coverage_files = []
 
     try:
@@ -217,7 +212,15 @@ def main():
                 continue
 
             if args['--coverage']:
+                stime = time.time()
+                sys.stdout.write("     - Evaluating test coverage...")
+                sys.stdout.flush()
                 coverage_eval = analyze_coverage(test_history)
+                sys.stdout.write(
+                    "\r {0[success]}\u2713{0}   - ".format(color) +
+                    "Evaluating test coverage ({:.4f}s)\n".format(time.time()-stime)
+                )
+                sys.stdout.flush()
             build_folder = Path(CONFIG['folders']['project']).joinpath('build/contracts')
             build_files = set(build_folder.joinpath(i+'.json') for i in coverage_eval)
             coverage_eval = {

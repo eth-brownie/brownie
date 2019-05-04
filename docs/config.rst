@@ -44,8 +44,6 @@ The following settings are available:
 
     Properties that affect only affect Brownie's configuration when running scripts and tests. See Test :ref:`test_settings` for detailed information on the effects and implications of these settings.
 
-    * ``always_transact``: If ``true``, calls to ``view`` and ``pure`` functions will still execute as transactions during tests.
-
     * ``gas_limit``: If set to an integer, this value will over-ride the default gas limit setting when running tests.
 
     * ``default_contract_owner``: If ``false``, deployed contracts will not remember the account that they were created by and you will have to supply a ``from`` kwarg for every contract transaction.
