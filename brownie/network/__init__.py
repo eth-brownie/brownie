@@ -28,7 +28,7 @@ def connect(network=None):
             raise KeyError("No host given in brownie-config.json for network '{}'".format(CONFIG['active_network']['name']))
         web3.connect(CONFIG['active_network']['host'])
         if 'test-rpc' in CONFIG['active_network'] and not rpc.is_active():
-            rpc.launch()
+            rpc.launch(CONFIG['active_network']['test-rpc'])
     except Exception:
         CONFIG['active_network']['name'] = None
         raise

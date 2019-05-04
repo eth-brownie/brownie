@@ -27,38 +27,30 @@ class Rpc(metaclass=_Singleton):
         self._reset_id = False
         atexit.register(self.kill, False)
 
-    def launch(self, param_str=""):
+    def launch(self, cmd):
         if self.is_active():
             raise SystemError("RPC is already active.")
-        if 'test-rpc' not in CONFIG['active_network']:
-            raise KeyError("No test RPC defined for this network in brownie-config.json")
-        try:
-            self._rpc = rpc = Popen(
-                (CONFIG['active_network']['test-rpc']+' '+param_str).split(' '),
-                stdout=DEVNULL,
-                stdin=DEVNULL,
-                stderr=DEVNULL
-            )
-        except FileNotFoundError:
-            if sys.platform == "win32" and "c:" not in CONFIG['active_network']['test-rpc'].lower():
-                raise FileNotFoundError(
-                    "Cannot find test RPC - check that brownie-config.json includes"
-                    " the full path, with folders seperated by forward slashes."
-                )
-            raise FileNotFoundError("Cannot test RPC - check the filename in brownie-config.json")
+        self._rpc = Popen(
+            cmd.split(" "),
+            stdout=DEVNULL,
+            stdin=DEVNULL,
+            stderr=DEVNULL
+        )
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
+        if not web3.providers:
+            _reset()
+            return
         for i in range(50):
             if web3.isConnected():
                 self._reset_id = self._snap()
                 _reset()
                 return
-            time.sleep(0.1)
+            time.sleep(0.05)
         raise ConnectionError(
-            "Cannot connect to {}".format(web3.providers[0].endpoint_uri)
+            "Cannot connect to RPC client at {}".format(web3.providers[0].endpoint_uri)
         )
-        Thread(target=_watch_rpc, args=[rpc], daemon=True).start()
 
     def kill(self, exc=True):
         if not self.is_active():
@@ -75,7 +67,10 @@ class Rpc(metaclass=_Singleton):
     def _request(self, *args):
         if not self.is_active():
             raise SystemError("RPC is not active.")
-        return web3.providers[0].make_request(*args)['result']
+        try:
+            return web3.providers[0].make_request(*args)['result']
+        except IndexError:
+            raise ConnectError("Web3 is not connected.")
 
     def _snap(self):
         return self._request("evm_snapshot", [])
@@ -135,13 +130,6 @@ class Rpc(metaclass=_Singleton):
         self._snaptshot_id = None
         self._reset_id = self._revert(self._reset_id)
         return "Block height reset to 0"
-
-
-def _watch_rpc(rpc):
-    code = rpc.wait()
-    if not code or code == -15:
-        return
-    raise ConnectionError("Local RPC terminated with exit code {}".format(rpc.poll()))
 
 
 def _reset():
