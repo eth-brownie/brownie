@@ -8,6 +8,54 @@ Network API
 
 The ``network`` package holds classes for interacting with the Ethereum blockchain. This is the most extensive package within Brownie and contains the majority of the user-facing functionality.
 
+
+Package Methods
+===============
+
+Methods in the base ``network`` package are used from connect to and disconnect from the network.
+
+.. py:method:: brownie.network.connect(network=None)
+
+    Connects to the network.  Network settings are retrieved from ``brownie-config.json``
+
+    * If ``network`` is ``None``, connects to the default network as specified in ``brownie-config.json``.
+    * If ``test-rpc`` is given for the network, the RPC client will be launched.
+
+    Calling this method is favored over calling ``web3.connect`` and ``rpc.launch`` individually.
+
+    .. code-block:: python
+
+        >>> from brownie import network
+        >>> network.connect('development')
+        >>>
+
+.. py:method:: brownie.network.disconnect()
+
+    Disconnects from the network. The ``Web3`` provider is cleared and the local RPC client is terminated if it is running.
+
+    .. code-block:: python
+
+        >>> network.disconnect()
+        >>>
+
+.. py:method:: brownie.network.is_connected()
+
+    Returns ``True`` if the ``Web3`` object is connected to the network.
+
+    .. code-block:: python
+
+        >>> network.is_connected()
+        True
+
+.. py:method:: brownie.network.show_active()
+
+    Returns the name of the network that is currently active, or ``None`` if not connected.
+
+    .. code-block:: python
+
+        >>> network.show_active()
+        'development'
+
 Account
 =======
 
@@ -24,7 +72,7 @@ Accounts
 
 .. py:class:: brownie.network.account.Accounts
 
-    Singleton list-like container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects. When printed it will display as a list.
+    List-like :ref:`api-types-singleton` container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects. When printed it will display as a list.
 
     .. code-block:: python
 
@@ -695,6 +743,9 @@ The ``event`` module contains methods related to decoding transaction event logs
 
 Brownie stores encrypted event topics in ``brownie/data/topics.json``. The JSON file is loaded when this module is imported.
 
+Module Methods
+--------------
+
 .. py:method:: brownie.network.event.get_topics(abi)
 
     Generates encoded topics from the given ABI, merges them with those already known in ``topics.json``, and returns a dictioary in the form of ``{'Name': "encoded topic hexstring"}``.
@@ -756,7 +807,73 @@ History
 
 .. py:attribute:: brownie.network.history
 
-The ``history`` module contains the ``TxHistory`` container, which holds ``TransactionReceipt`` objects.
+The ``history`` module contains classes to record transactions and contracts as they occur on the blockchain.
+
+TxHistory
+---------
+
+.. py:class:: brownie.network.history.TxHistory
+
+    List-like :ref:`api-types-singleton` container that contains :ref:`api-network-tx` objects. Whenever a transaction is broadcast, the ``TransactionReceipt`` is automatically added.
+
+    .. code-block:: python
+
+        >>> from brownie.network.history import TxHistory
+        >>> history = TxHistory()
+        >>> history
+        []
+        >>> dir(history)
+        [copy, from_sender, of_address, to_receiver]
+
+.. py:classmethod:: TxHistory.copy
+
+    Returns a shallow copy of the object as a ``list``.
+
+    .. code-block:: python
+
+        >>> history
+        [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
+        >>> c = history.copy()
+        >>> c
+        [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
+        >>> type(c)
+        <class 'list'>
+
+.. py:classmethod:: TxHistory.from_sender(account)
+
+    Returns a list of transactions where the sender is ``account``.
+
+    .. code-block:: python
+
+        >>> history.from_sender(accounts[1])
+        [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
+
+.. py:classmethod:: TxHistory.to_receiver(account)
+
+    Returns a list of transactions where the receiver is ``account``.
+
+    .. code-block:: python
+
+        >>> history.to_receiver(accounts[2])
+        [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
+
+.. py:classmethod:: TxHistory.of_address(account)
+
+    Returns a list of transactions where ``account`` is the sender or receiver.
+
+    .. code-block:: python
+
+        >>> history.of_address(accounts[1])
+        [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
+
+_ContractHistory
+----------------
+
+.. py:class:: brownie.network.history._ContractHistory
+
+    A :ref:`api-types-singleton` dict of ``OrderedDict`` instances, used internally by Brownie to track deployed contracts.
+
+    Under the hood, calls to get objects from ``ContractContainer`` instances are redirected to this class. The primary use case is to simplify deleting ``Contract`` instances after the local RPC is reset or reverted.
 
 .. _rpc:
 
@@ -767,16 +884,65 @@ RPC
 
 The ``rpc`` module contains the ``Rpc`` class, which is used to interact with ``ganache-cli`` when running a local RPC environment.
 
+.. note:: Account balances, contract containers and transaction history are automatically modified when the local RPC is terminated, reset or reverted.
+
+Rpc
+---
+
 .. py:class:: brownie.network.rpc.Rpc
 
-    Exposes methods for interacting with ``ganache-cli`` when running a local RPC environment. When using the console or writing tests, an instance of this class is available as ``rpc``.
+    :ref:`api-types-singleton` object for interacting with ``ganache-cli`` when running a local RPC environment. When using the console or writing tests, an instance of this class is available as ``rpc``.
 
     .. code-block:: python
 
+        >>> from brownie import rpc
         >>> rpc
         <lib.components.eth.Rpc object at 0x7ffb7cbab048>
         >>> dir(rpc)
-        [mine, revert, sleep, snapshot, time]
+        [is_active, kill, launch, mine, reset, revert, sleep, snapshot, time]
+
+.. py:classmethod:: Rpc.launch(cmd)
+
+    Launches the local RPC client as a `subprocess <https://docs.python.org/3/library/subprocess.html#subprocess.Popen>`_. ``cmd`` is the command string requiried to run it. On Windows systems this must include the full path.
+
+    If a provider has been set in ``Web3``, this method raises a ``ConnectionError`` if it is unable to connect to the process after launching.
+
+    .. code-block:: python
+
+        >>> rpc.launch('ganache-cli')
+        >>>
+
+.. py:classmethod:: Rpc.kill(exc=True)
+
+    Kills the RPC subprocess. Raises ``SystemError`` if ``exc`` is ``True`` and the RPC is not currently active.
+
+    .. code-block:: python
+
+        >>> rpc.kill()
+        >>>
+
+    .. note:: Brownie registers this method with the `atexit <https://docs.python.org/3/library/atexit.html>`_ module. It is not necessary to explicitly kill ``Rpc`` before terminating a script or console session.
+
+.. py:classmethod:: Rpc.reset()
+
+    Resets the RPC to the genesis state by loading a snapshot. This is NOT equivalent to calling ``rpc.kill`` and then ``rpc.launch``.
+
+    .. code-block:: python
+
+        >>> rpc.reset()
+        >>>
+
+.. py:classmethod:: Rpc.is_active()
+
+    Returns a boolean indicating if the RPC process is currently active.
+
+    .. code-block:: python
+
+        >>> rpc.is_active()
+        False
+        >>> rpc.launch()
+        >>> rpc.is_active()
+        True
 
 .. py:classmethod:: Rpc.time()
 
@@ -797,9 +963,9 @@ The ``rpc`` module contains the ``Rpc`` class, which is used to interact with ``
         1550189043
         >>> rpc.sleep(100)
         >>> rpc.time()
-        1550189145
+        1550189143
 
-.. py:classmethod:: Rpc.mine(blocks = 1)
+.. py:classmethod:: Rpc.mine(blocks=1)
 
     Forces new blocks to be mined.
 
@@ -853,7 +1019,7 @@ Transactions
 
 .. py:attribute:: brownie.network.transction
 
-The ``transaction`` module contains the ``TransactionReceipt`` class, and methods related to transactions.
+The ``transaction`` module contains the ``TransactionReceipt`` class and related internal methods.
 
 .. _api-network-tx:
 
@@ -862,7 +1028,7 @@ TransactionReceipt
 
 .. py:class:: brownie.network.transaction.TransactionReceipt
 
-    An instance of this class is returned whenever a transaction is broadcasted. When printed in the console, they will it yellow if the transaction is still pending or red if the transaction caused the EVM to revert.
+    An instance of this class is returned whenever a transaction is broadcasted. When printed in the console, the transaction hash will appear yellow if the transaction is still pending or red if the transaction caused the EVM to revert.
 
     Many of the attributes will be set to ``None`` while the transaction is still pending.
 
@@ -907,14 +1073,22 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.events
 
-    A dictionary of decoded event logs for this transaction. If you are connected to an RPC client that allows for ``debug_traceTransaction``, event data is still available when the transaction reverts.
+    An :ref:`api-types-eventdict` of decoded event logs for this transaction.
+
+    .. note:: If you are connected to an RPC client that allows for ``debug_traceTransaction``, event data is still available when the transaction reverts.
 
     .. code-block:: python
 
         >>> tx
         <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.events
-        [{'name': 'Transfer', 'data': [{'name': 'from', 'type': 'address', 'value': '0x6b5132740b834674c3277aafa2c27898cbe740f6', 'decoded': True}, {'name': 'to', 'type': 'address', 'value': '0x31d504908351d2d87f3d6111f491f0b52757b592', 'decoded': True}, {'name': 'value', 'type': 'uint256', 'value': 1000000, 'decoded': True}]}]
+        {
+            'Transfer': {
+                'from': "0x94dd96c7e6012c927537cd789c48c42a1d1f790d",
+                'to': "0xc45272e89a23d1a15a24041bce7bc295e79f2d13",
+                'value': 100000
+            }
+        }
 
 .. py:attribute:: TransactionReceipt.fn_name
 
@@ -962,7 +1136,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.input
 
-    The complete calldata of the transaction.
+    The complete calldata of the transaction as a hexstring.
 
     .. code-block:: python
 
@@ -1195,4 +1369,36 @@ Web3
 
 .. py:attribute:: brownie.network.web3
 
-The ``web3`` module contains an instance of `Web3 <https://web3py.readthedocs.io/en/stable/web3.main.html#web3.Web3>`__ that is shared between each module within the ``brownie.network`` package, as well as methods for interacting with it.
+The ``web3`` module contains a slightly modified version of the web3.py `Web3 <https://web3py.readthedocs.io/en/stable/web3.main.html#web3.Web3>`__ class that is used throughout various Brownie modules for RPC communication.
+
+Web3
+----
+
+The standard ``Web3`` API is available, however it is not documented here.
+
+.. py:class:: brownie.network.web3.Web3
+
+    :ref:`api-types-singleton` variant of ``Web3``.
+
+    .. code-block:: python
+
+        >>> from brownie import web3
+        >>>
+
+.. py:classmethod:: Web3.connect(uri)
+
+    Connects to a `provider <https://web3py.readthedocs.io/en/stable/providers.html>`_. ``uri`` can be the path to a local IPC socket, a websocket address beginning in ``ws://` or a URL.
+
+    .. code-block:: python
+
+        >>> web3.connect('https://127.0.0.1:8545')
+        >>>
+
+.. py:classmethod:: Web3.disconnect()
+
+    Disconnects from a provider.
+
+    .. code-block:: python
+
+        >>> web3.disconnect()
+        >>>

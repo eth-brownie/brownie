@@ -368,3 +368,12 @@ _EventItem
 .. py:classmethod:: _EventItem.values
 
     Returns an object providing a view on the values in the first event within this object.
+
+.. _api-types-singleton:
+
+_Singleton
+----------
+
+.. py:class:: brownie.types.types._Singleton
+
+Internal metaclass used to create `singleton <https://en.wikipedia.org/wiki/Singleton_pattern>`__ objects. Instantiating a class derived from this metaclass will always return the same instance, regardless of how the child class was imported.
