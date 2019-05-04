@@ -366,7 +366,7 @@ class ContractCall(_ContractMethod):
 
         Returns:
             Contract method return value(s).'''
-        if ARGV['cli'] != "console" and CONFIG['test']['always_transact']:
+        if ARGV['cli'] == "test" and ARGV['coverage']:
             tx = self.transact(*args)
             return tx.return_value
         return self.call(*args)
