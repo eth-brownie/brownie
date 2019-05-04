@@ -3,8 +3,7 @@
 import sys
 import traceback
 
-import brownie._config as config
-CONFIG = config.CONFIG
+from brownie._config import CONFIG
 
 BASE = "\x1b[0;"
 

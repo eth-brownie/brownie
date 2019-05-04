@@ -15,9 +15,7 @@ from brownie.network.transaction import TransactionReceipt
 from .web3 import Web3
 from brownie.types.convert import to_address, wei
 from brownie.types.types import _Singleton
-
-import brownie._config
-CONFIG = brownie._config.CONFIG
+from brownie._config import CONFIG
 
 web3 = Web3()
 

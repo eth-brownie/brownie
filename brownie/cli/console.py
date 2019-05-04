@@ -16,8 +16,7 @@ else:
 import brownie
 import brownie.network as network
 from brownie.cli.utils import color
-import brownie._config as config
-CONFIG = config.CONFIG
+from brownie._config import ARGV, CONFIG
 
 
 __doc__ = """Usage: brownie console [options]
@@ -168,9 +167,9 @@ def _dir_color(obj):
 
 def main():
     args = docopt(__doc__)
-    config.ARGV._update_from_args(args)
+    ARGV._update_from_args(args)
 
-    network.connect(config.ARGV['network'])
+    network.connect(ARGV['network'])
     console = Console()
     print("Brownie environment is ready.")
 

@@ -13,9 +13,7 @@ from brownie.network.event import decode_logs, decode_trace
 from .web3 import Web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_output
-
-import brownie._config as config
-CONFIG = config.CONFIG
+from brownie._config import ARGV, CONFIG
 
 
 TX_INFO = """
@@ -96,9 +94,9 @@ class TransactionReceipt:
         t.start()
         try:
             t.join()
-            if config.ARGV['cli'] == "console":
+            if ARGV['cli'] == "console":
                 return
-            if config.ARGV['coverage']:
+            if ARGV['coverage']:
                 self.trace
             if not self.status:
                 raise VirtualMachineError({
@@ -106,7 +104,7 @@ class TransactionReceipt:
                     "source": self.error(1)
                 })
         except KeyboardInterrupt:
-            if config.ARGV['cli'] != "console":
+            if ARGV['cli'] != "console":
                 raise
 
     def _await_confirm(self, silent, callback):
@@ -144,7 +142,7 @@ class TransactionReceipt:
             'status': receipt['status']
         })
         self.events = decode_logs(receipt['logs'])
-        if self.fn_name and config.ARGV['gas']:
+        if self.fn_name and ARGV['gas']:
             _profile_gas(self.fn_name, receipt['gasUsed'])
         if not silent:
             if CONFIG['logging']['tx'] >= 2:

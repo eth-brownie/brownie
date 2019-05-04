@@ -5,16 +5,18 @@ from pathlib import Path
 import shutil
 import sys
 
-from brownie.types import FalseyDict, StrictDict
-
+from brownie.types.types import (
+    FalseyDict,
+    StrictDict,
+    _Singleton
+)
 
 IGNORE_MISSING = ['active_network', 'folders', 'logging']
-
 
 def _load_default_config():
     '''Loads the default configuration settings from brownie/data/config.json'''
     path = Path(__file__).parent.joinpath("data/config.json")
-    config = StrictDict(json.load(path.open()))
+    config = _Singleton("Config", (StrictDict,), {})(json.load(path.open()))
     config['folders'] = {
         'brownie': str(Path(__file__).parent),
         'project': None
@@ -76,7 +78,7 @@ def _recursive_update(original, new, base):
         )
 
 # move argv flags into FalseyDict
-ARGV = FalseyDict()
+ARGV = _Singleton("Argv", (FalseyDict,), {})()
 for key in [i for i in sys.argv if i[:2] == "--"]:
     idx = sys.argv.index(key)
     if len(sys.argv) >= idx+2 and sys.argv[idx+1][:2] != "--":

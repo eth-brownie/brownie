@@ -18,8 +18,7 @@ from brownie.network.history import TxHistory
 import brownie.network.transaction as transaction
 import brownie.project._sha_compare as compare
 
-import brownie._config as config
-CONFIG = config.CONFIG
+from brownie._config import ARGV, CONFIG
 
 COVERAGE_COLORS = [
     (0.5, "bright red"),
@@ -167,7 +166,7 @@ def get_test_files(path):
 
 def main():
     args = docopt(__doc__)
-    config.ARGV._update_from_args(args)
+    ARGV._update_from_args(args)
     traceback_info = []
     test_files = get_test_files(args['<filename>'])
 
@@ -185,7 +184,7 @@ def main():
     else:
         idx = slice(0, None)
 
-    network.connect(config.ARGV['network'])
+    network.connect(ARGV['network'])
     if args['--always-transact']:
         CONFIG['test']['always_transact'] = True
     print("Contract calls will be handled as: {0[value]}{1}{0}".format(
@@ -202,7 +201,7 @@ def main():
             coverage_files.append(coverage_json)
             if coverage_json.exists():
                 coverage_eval = json.load(coverage_json.open())['coverage']
-                if config.ARGV['update'] and (coverage_eval or not config.ARGV['coverage']):
+                if ARGV['update'] and (coverage_eval or not ARGV['coverage']):
                     continue
             else:
                 coverage_eval = {}

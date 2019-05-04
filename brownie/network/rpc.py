@@ -10,8 +10,7 @@ from .web3 import Web3
 from .account import Accounts
 from .history import TxHistory, _ContractHistory
 from brownie.types.types import _Singleton
-import brownie._config as config
-CONFIG = config.CONFIG
+from brownie._config import CONFIG
 
 web3 = Web3()
 

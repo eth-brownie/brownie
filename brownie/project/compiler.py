@@ -5,8 +5,7 @@ import re
 import solcx
 
 from brownie.exceptions import CompilerError
-import brownie._config
-CONFIG = brownie._config.CONFIG
+from brownie._config import CONFIG
 
 STANDARD_JSON = {
     'language': "Solidity",

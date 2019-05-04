@@ -13,8 +13,7 @@ from .web3 import Web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_input, format_output, to_address, wei
 
-import brownie._config as config
-CONFIG = config.CONFIG
+from brownie._config import ARGV, CONFIG
 
 _contracts = _ContractHistory()
 web3 = Web3()
@@ -332,7 +331,7 @@ class ContractTx(_ContractMethod):
 
     def __init__(self, fn, abi, name, owner):
         if (
-            config.ARGV['cli'] != "console" and not
+            ARGV['cli'] != "console" and not
             CONFIG['test']['default_contract_owner']
         ):
             owner = None
@@ -367,7 +366,7 @@ class ContractCall(_ContractMethod):
 
         Returns:
             Contract method return value(s).'''
-        if config.ARGV['cli'] != "console" and CONFIG['test']['always_transact']:
+        if ARGV['cli'] != "console" and CONFIG['test']['always_transact']:
             tx = self.transact(*args)
             return tx.return_value
         return self.call(*args)

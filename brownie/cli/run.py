@@ -5,10 +5,11 @@ import importlib
 from pathlib import Path
 import sys
 
-import brownie._config as config
+
 import brownie.network as network
 from brownie.cli.utils import color
-CONFIG = config.CONFIG
+from brownie._config import ARGV, CONFIG
+
 
 
 __doc__ = """Usage: brownie run <filename> [<function>] [options]
@@ -29,12 +30,12 @@ Use run to execute scripts that deploy or interact with contracts on the network
 
 def main():
     args = docopt(__doc__)
-    config.ARGV._update_from_args(args)
+    ARGV._update_from_args(args)
     name = args['<filename>'].replace(".py", "")
     fn = args['<function>'] or "main"
     if not Path(CONFIG['folders']['project']).joinpath('scripts/{}.py'.format(name)):
         sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}scripts/{1}.py{0}".format(color, name))
-    network.connect(config.ARGV['network'])
+    network.connect(ARGV['network'])
     module = importlib.import_module("scripts."+name)
     if not hasattr(module, fn):
         sys.exit("{0[error]}ERROR{0}: {0[module]}scripts/{1}.py{0} has no '{0[callable]}{2}{0}' function.".format(color, name, fn))

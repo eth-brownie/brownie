@@ -6,8 +6,7 @@ from pathlib import Path
 import eth_event
 
 from brownie.types import EventDict
-import brownie._config as config
-CONFIG = config.CONFIG
+from brownie._config import CONFIG
 
 
 def _get_path():
