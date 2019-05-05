@@ -27,32 +27,6 @@ BUILD_KEYS = [
     'type'
 ]
 
-_changed_build = {}
-
-
-def compare_build_json(contract):
-    if contract in _changed_build:
-        return _changed_build[contract]
-    build_folder = Path(CONFIG['folders']['project']).joinpath('build/contracts')
-    build = build_folder.joinpath('{}.json'.format(contract))
-    if not build.exists():
-        _changed_build[contract] = True
-        return True
-    try:
-        compiled = json.load(build.open())
-        if (
-            not set(BUILD_KEYS).issubset(compiled) or
-            compiled['compiler'] != CONFIG['solc'] or
-            compiled['sha1'] != sha1(open(compiled['sourcePath'],'rb').read()).hexdigest()
-        ):
-            _changed_build[contract] = True
-            return True
-        _changed_build[contract] = False
-        return False
-    except (json.JSONDecodeError, FileNotFoundError, KeyError):
-        _changed_build[contract] = True
-        return True
-
 
 def get_ast_hash(script_path):
     ast_list = [ast.parse(Path(script_path).open().read())]

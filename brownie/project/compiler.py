@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from hashlib import sha1
+from pathlib import Path
 import re
 import solcx
 
@@ -35,8 +36,18 @@ def set_solc_version():
     CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
 
 
-def get_inheritance_map(contract_files):
+def get_inheritance_map(path):
+    '''Determines contract dependencies.
+
+    Args:
+        path: project folder
+
+    Returns:
+        dict of sets: {'contract name': {'inherited names', ..}}'''
+
     inheritance_map = {}
+    contract_files = [i for i in Path(path).glob('**/*.sol') if "/_" not in str(i)]
+
     for filename in contract_files:
         code = filename.open().read()
         for name in (
