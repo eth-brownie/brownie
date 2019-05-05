@@ -10,7 +10,7 @@ For quick reference, the following three statements will give you an environment
 
     from brownie import *
     project.load('path/to/your/project')
-    rpc.launch()
+    network.conect('development')
 
 Loading a Project
 =================
@@ -43,24 +43,20 @@ Alternatively, use a ``from .. import *`` style command to import ``brownie`` or
 Accessing the Network
 =====================
 
-The ``brownie.network`` module contains methods for network interaction.
+The ``brownie.network`` module contains methods for network interaction. The simplest way to connect is with the ``network.connect`` method:
 
 .. code-block:: python
 
     >>> from brownie import network
+    >>> network.connect('development')
 
-Use ``brownie.network.rpc`` to launch a local RPC client such as ``ganache-cli``. Brownie will automatically connect to it.
-
-.. code-block:: python
-
-    >>> from brownie.network import rpc
-    >>> rpc.launch()
-
-Alternatively, if you are connecting to a remote RPC use ``network.connect``. The address to connect to is set in the configuration file.
+This method queries the network settings from the configuration file, launches the local RPC, and connects to it with a ``Web3`` instance. Alternatively, you can accomplish the same with these commands:
 
 .. code-block:: python
 
-    >>> network.connect('ropsten')
+    >>> from brownie.network import rpc, web3
+    >>> rpc.launch('ganache-cli')
+    >>> web3.connect('http://127.0.0.1:8545')
 
 Once connected, the ``accounts`` container will automatically populate with local accounts.
 
@@ -69,7 +65,6 @@ Once connected, the ``accounts`` container will automatically populate with loca
     >>> from brownie.network import accounts
     >>> len(accounts)
     0
-    >>> rpc.launch()
+    >>> network.connect('development')
     >>> len(accounts)
     10
-

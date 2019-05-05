@@ -30,6 +30,7 @@ Each contract will have it's own ``.json`` file stored in the ``build/contracts`
         'allSourcePaths': [], // absolute paths to every related contract source code file
         'ast': {}, // the AST object
         'bytecode': "0x00", // bytecode object as a hex string, used for deployment
+        'bytecodeSha1': "", // hash of bytecode without final metadata
         'compiler': {}, // information about the compiler
         'contractName': "", // name of the contract
         'coverageMap': {}, // map for evaluating unit test coverage
@@ -44,12 +45,13 @@ Each contract will have it's own ``.json`` file stored in the ``build/contracts`
         'type': "" // contract, library, interface
     }
 
-This raw data is available with the ``Build`` class, which is instantiated when your project is loaded and available importable as ``brownie.project.build``.
+This raw data is available through the :ref:`api-project-build` object:
 
 .. code-block:: python
 
-    >>> from brownie.project import build
-    >>> token_json = build.get_contract("Token")
+    >>> from brownie.project.build import Build
+    >>> build = Build()
+    >>> token_json = build["Token"]
     >>> token_json.keys()
     dict_keys(['abi', 'allSourcePaths', 'ast', 'bytecode', 'compiler', 'contractName', 'coverageMap', 'deployedBytecode', 'deployedSourceMap', 'networks', 'opcodes', 'pcMap', 'sha1', 'source', 'sourceMap', 'sourcePath', 'type'])
 
