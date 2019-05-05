@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 import solcx
 
-from .source import Source
+from .sources import Sources
 from brownie.exceptions import CompilerError
 from brownie._config import CONFIG
 
@@ -29,7 +29,7 @@ STANDARD_JSON = {
     }
 }
 
-source = Source()
+sources = Sources()
 
 
 def set_solc_version():
@@ -49,13 +49,13 @@ def compile_contracts(contract_files):
     input_json = STANDARD_JSON.copy()
     input_json['sources'] = dict((
         str(i),
-        {'content': source[i]}
+        {'content': sources[i]}
     ) for i in contract_files)
     return _compile_and_format(input_json)
 
 
 def compile_source(code):
-    path = source.add_source(code)
+    path = sources.add_source(code)
     input_json = STANDARD_JSON.copy()
     input_json['sources'] = {path: {'content': code}}
     return _compile_and_format(input_json)
@@ -102,11 +102,11 @@ def _compile_and_format(input_json):
             'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
             # 'networks': {},
             'opcodes': evm['deployedBytecode']['opcodes'],
-            'sha1': source.get_hash(name),
+            'sha1': sources.get_hash(name),
             'source': input_json['sources'][filename]['content'],
             'sourceMap': evm['bytecode']['sourceMap'],
             'sourcePath': filename,
-            'type': source.get_type(name),
+            'type': sources.get_type(name),
             'pcMap': evm['pcMap']
         }
         result[name]['coverageMap'] = _generate_coverageMap(result[name])
@@ -348,7 +348,7 @@ def _isolate_lines(compiled):
 
 
 def _get_source(op):
-    return source[op['contract']][op['start']:op['stop']]
+    return sources[op['contract']][op['start']:op['stop']]
 
 
 def _next(coverage_map, op):

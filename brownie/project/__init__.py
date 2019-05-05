@@ -7,7 +7,7 @@ import sys
 
 from brownie.network.contract import ContractContainer
 from .build import Build
-from .source import Source
+from .sources import Sources
 from . import compiler
 from brownie._config import CONFIG, load_project_config
 
@@ -62,7 +62,7 @@ def load(path=None):
     sys.path.insert(0, str(path))
     load_project_config()
     compiler.set_solc_version()
-    Source()._load()
+    Sources()._load()
     Build()._load()
     result = []
     for name, data in Build().items():

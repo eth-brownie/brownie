@@ -8,7 +8,7 @@ from brownie.types.types import _Singleton
 from brownie._config import CONFIG
 
 
-class Source(metaclass=_Singleton):
+class Sources(metaclass=_Singleton):
 
     def __init__(self):
         self._source = {}

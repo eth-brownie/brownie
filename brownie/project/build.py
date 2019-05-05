@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 from . import compiler
-from .source import Source
+from .sources import Sources
 from brownie.types.types import _Singleton
 from brownie._config import CONFIG
 
@@ -39,7 +39,7 @@ BUILD_KEYS = [
     'type'
 ]
 
-source = Source()
+sources = Sources()
 
 
 class Build(metaclass=_Singleton):
@@ -85,7 +85,7 @@ class Build(metaclass=_Singleton):
             path.unlink()
 
     def _get_changed_contracts(self):
-        inheritance_map = source.inheritance_map()
+        inheritance_map = sources.inheritance_map()
         changed = [i for i in inheritance_map if self._compare_build_json(i)]
         final = set(changed)
         for name, inherited in inheritance_map.items():
@@ -94,13 +94,13 @@ class Build(metaclass=_Singleton):
         for name in [i for i in final if i in self._build]:
             self._path.joinpath(name+'.json').unlink()
             del self._build[name]
-        return set(source.get_path(i) for i in final)
+        return set(sources.get_path(i) for i in final)
 
     def _compare_build_json(self, name):
         return (
             name not in self._build or
             self._build[name]['compiler'] != CONFIG['solc'] or
-            self._build[name]['sha1'] != source.get_hash(name)
+            self._build[name]['sha1'] != sources.get_hash(name)
         )
 
     def _check_coverage_hashes(self):
