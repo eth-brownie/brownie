@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import json
 from pathlib import Path
 import re
 import threading
@@ -13,9 +12,11 @@ from .textbook import TextBook
 from .select import SelectContract
 from .styles import set_style
 
+from brownie.project.build import Build
 from brownie.test.coverage import merge_coverage
 from brownie._config import CONFIG
 
+build = Build()
 
 class Root(tk.Tk):
 
@@ -34,7 +35,6 @@ class Root(tk.Tk):
 
         path = Path(CONFIG['folders']['project'])
         self.coverage_folder = path.joinpath('build/coverage')
-        self.build_folder = path.joinpath('build/contracts')
 
         self.note = TextBook(self)
         self.note.pack(side="left")
@@ -66,9 +66,9 @@ class Root(tk.Tk):
             coverage = merge_coverage(coverage_files)[active][frame_path]
         except KeyError:
             return
-        build = json.load(self.build_folder.joinpath(active+'.json').open())
-        source = build['source']
-        coverage_map = build['coverageMap'][frame_path]
+        build_json = build.get_contract(active)
+        source = build_json['source']
+        coverage_map = build_json['coverageMap'][frame_path]
         label = frame_path.split('/')[-1]
         self._show_coverage = True
         for key, fn, lines in [(k,v['fn'],v['line']) for k,v in coverage_map.items()]:
