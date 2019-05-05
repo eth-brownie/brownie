@@ -6,7 +6,7 @@ import shutil
 import sys
 
 from brownie.network.contract import ContractContainer
-from brownie.project._build import Build
+from .build import Build
 from . import compiler
 from brownie._config import CONFIG, load_project_config
 
@@ -14,7 +14,6 @@ __all__ = ['project', '__project']
 
 __project = True
 project = sys.modules[__name__]
-build = Build()
 
 
 FOLDERS = ["contracts", "scripts", "tests"]
@@ -47,7 +46,7 @@ def new(path=".", ignore_subfolder=False):
         )
     CONFIG['folders']['project'] = str(path)
     sys.path.insert(0, str(path))
-    build._load()
+    Build()._load()
     return str(path)
 
 
@@ -63,9 +62,9 @@ def load(path=None):
     sys.path.insert(0, str(path))
     load_project_config()
     compiler.set_solc_version()
-    build._load()
+    Build()._load()
     result = []
-    for name, data in build.contracts():
+    for name, data in Build().contracts():
         if not data['bytecode']:
             continue
         container = ContractContainer(data)

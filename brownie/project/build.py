@@ -7,9 +7,15 @@ import re
 
 from . import _sha_compare as compare
 from . import compiler
+from brownie.types.types import _Singleton
 from brownie._config import CONFIG
 
-BUILD_FOLDERS = ["build", "build/contracts", "build/coverage", "build/networks"]
+BUILD_FOLDERS = [
+    "build",
+    "build/contracts",
+    "build/coverage",
+    "build/networks"
+]
 
 
 def _get_changed_contracts():
@@ -49,7 +55,7 @@ def _check_coverage_hashes():
             break
 
 
-class Build:
+class Build(metaclass=_Singleton):
 
     def __init__(self):
         self._path = None

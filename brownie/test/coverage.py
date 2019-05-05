@@ -3,7 +3,9 @@
 import json
 from pathlib import Path
 
-from brownie.project import build
+from brownie.project.build import Build
+
+build = Build()
 
 
 def analyze_coverage(history):
