@@ -3,7 +3,7 @@
 import sys
 import traceback
 
-from brownie._config import CONFIG
+from brownie._config import ARGV, CONFIG
 
 BASE = "\x1b[0;"
 
@@ -125,7 +125,7 @@ class Color:
 
     def format_tb(self, exc, filename = None, start = None, stop = None):
         tb = [i.replace("./", "") for i in traceback.format_tb(exc[2])]
-        if filename and not config.ARGV['tb']:
+        if filename and not ARGV['tb']:
             try:
                 start = tb.index(next(i for i in tb if filename in i))
                 stop = tb.index(next(i for i in tb[::-1] if filename in i)) + 1
