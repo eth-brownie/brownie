@@ -58,14 +58,22 @@ def _check_coverage_hashes():
 class Build(metaclass=_Singleton):
 
     def __init__(self):
-        self._path = None
         self._build = {}
 
     def _load(self):
-        self._path = Path(CONFIG['folders']['project']).resolve()
+        # check build paths
+        path = Path(CONFIG['folders']['project']).resolve()
         for folder in [i for i in BUILD_FOLDERS]:
-            self._path.joinpath(folder).mkdir(exist_ok=True)
-        build_path = self._path.joinpath('build/contracts')
+            path.joinpath(folder).mkdir(exist_ok=True)
+        # load existing build data
+        build_path = path.joinpath('build/contracts')
+        for path in list(build_path.glob('*.json')):
+            build_json = json.load(path.open())
+            if not Path(build_json['sourcePath']).exists():
+                path.unlink()
+                continue
+            self._build[path.stem] = build_json
+        # check for changed contracts, recompile
         changed = _get_changed_contracts()
         if changed:
             build_json = compiler.compile_contracts(changed)
@@ -77,15 +85,8 @@ class Build(metaclass=_Singleton):
                     indent=4,
                     default=sorted
                 )
-            self._build = build_json
-        for path in list(build_path.glob('*.json')):
-            if path.name in self._build:
-                continue
-            build_json = json.load(path.open())
-            if not Path(build_json['sourcePath']).exists():
-                path.unlink()
-                continue
-            self._build[path.stem] = build_json
+            self._build.update(build_json)
+        # check for changed tests
         _check_coverage_hashes()
 
     def contracts(self):
