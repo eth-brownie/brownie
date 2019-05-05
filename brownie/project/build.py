@@ -118,17 +118,17 @@ class Build(metaclass=_Singleton):
                 coverage_json.unlink()
                 break
 
-    def contracts(self):
-        return deepcopy(self._build).items()
-
-    def get_contract(self, contract_name):
-        return deepcopy(self._build[contract_name])
-
     def get_bytecode_hash(self, contract_name):
         if 'bytecodeSha1' not in self._build[contract_name]:
             self._build[contract_name]['bytecodeSha1'] = sha1(self._build[contract_name]['bytecode'][:-68].encode()).hexdigest()
         # hash of bytecode without final metadata
         return self._build[contract_name]['bytecodeSha1']
+
+    def __getitem__(self, contract_name):
+        return deepcopy(self._build[contract_name.replace('.json','')])
+
+    def items(self):
+        return deepcopy(self._build).items()
 
 
 def get_ast_hash(script_path):

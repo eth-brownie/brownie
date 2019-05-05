@@ -13,7 +13,7 @@ class SelectContract(ttk.Combobox):
         self._parent = root
         super().__init__(parent, state='readonly', font=(None, 16))
         values = []
-        for name, data in build.contracts():
+        for name, data in build.items():
             if data['bytecode']:
                 values.append(name)
         self['values'] = sorted(values)
@@ -22,7 +22,7 @@ class SelectContract(ttk.Combobox):
 
     def _select(self, event):
         self._parent.note.set_visible([])
-        build_json = build.get_contract(self.get())
+        build_json = build[self.get()]
         self.selection_clear()
         for contract in sorted(set(
             i['contract'].split('/')[-1]

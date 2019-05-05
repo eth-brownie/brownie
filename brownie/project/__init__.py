@@ -65,7 +65,7 @@ def load(path=None):
     Source()._load()
     Build()._load()
     result = []
-    for name, data in Build().contracts():
+    for name, data in Build().items():
         if not data['bytecode']:
             continue
         container = ContractContainer(data)

@@ -66,9 +66,8 @@ class Root(tk.Tk):
             coverage = merge_coverage(coverage_files)[active][frame_path]
         except KeyError:
             return
-        build_json = build.get_contract(active)
-        source = build_json['source']
-        coverage_map = build_json['coverageMap'][frame_path]
+        source = build[active]['source']
+        coverage_map = build[active]['coverageMap'][frame_path]
         label = frame_path.split('/')[-1]
         self._show_coverage = True
         for key, fn, lines in [(k,v['fn'],v['line']) for k,v in coverage_map.items()]:

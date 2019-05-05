@@ -63,3 +63,8 @@ class Source(metaclass=_Singleton):
     
     def inheritance_map(self):
         return dict((k, v['inherited'].copy()) for k,v in self._data.items())
+
+    def __getitem__(self, key):
+        if key in self._data:
+            return self._source[self._data[key]['sourcePath']]
+        return self._source[key]
