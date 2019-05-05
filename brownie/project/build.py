@@ -24,6 +24,7 @@ BUILD_KEYS = [
     'allSourcePaths',
     'ast',
     'bytecode',
+    'bytecodeSha1',
     'compiler',
     'contractName',
     'coverageMap',
@@ -113,16 +114,10 @@ class Build(metaclass=_Singleton):
                     if path.suffix != ".json":
                         if get_ast_hash(path) == hash_:
                             continue
-                    elif self.get_bytecode_hash(path.stem) == hash_:
+                    elif self._build[path.stem]['bytecodeSha1'] == hash_:
                         continue
                 coverage_json.unlink()
                 break
-
-    def get_bytecode_hash(self, contract_name):
-        if 'bytecodeSha1' not in self._build[contract_name]:
-            self._build[contract_name]['bytecodeSha1'] = sha1(self._build[contract_name]['bytecode'][:-68].encode()).hexdigest()
-        # hash of bytecode without final metadata
-        return self._build[contract_name]['bytecodeSha1']
 
     def __getitem__(self, contract_name):
         return deepcopy(self._build[contract_name.replace('.json','')])

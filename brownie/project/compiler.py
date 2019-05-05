@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 import solcx
 
+from .source import Source
 from brownie.exceptions import CompilerError
 from brownie._config import CONFIG
 
@@ -28,7 +29,7 @@ STANDARD_JSON = {
     }
 }
 
-_sources = {}
+source = Source()
 
 
 def set_solc_version():
@@ -48,15 +49,15 @@ def compile_contracts(contract_files):
     input_json = STANDARD_JSON.copy()
     input_json['sources'] = dict((
         str(i),
-        {'content': i.open().read()}
+        {'content': source[i]}
     ) for i in contract_files)
     return _compile_and_format(input_json)
 
 
-def compile_source(source):
+def compile_source(code):
+    path = source.add_source(code)
     input_json = STANDARD_JSON.copy()
-    input_json['sources'] = {"<string>": {'content': source}}
-    _sources['<string>'] = source
+    input_json['sources'] = {path: {'content': code}}
     return _compile_and_format(input_json)
 
 
@@ -74,46 +75,41 @@ def _compile_and_format(input_json):
     result = {}
     compiler_info = CONFIG['solc'].copy()
     compiler_info['version'] = solcx.get_solc_version_string().strip('\n')
-    for filename in input_json['sources']:
-        for match in re.findall(
-            "\n(?:contract|library|interface) [^ {]{1,}",
-            input_json['sources'][filename]['content']
-        ):
-            type_, name = match.strip('\n').split(' ')
-            data = compiled['contracts'][filename][name]
-            evm = data['evm']
-            ref = [
-                (k, x) for v in evm['bytecode']['linkReferences'].values()
-                for k, x in v.items()
-            ]
-            # standardize unlinked library tags
-            for n, loc in [(i[0], x['start']*2) for i in ref for x in i[1]]:
-                evm['bytecode']['object'] = "{}__{:_<36}__{}".format(
-                    evm['bytecode']['object'][:loc],
-                    n[:36],
-                    evm['bytecode']['object'][loc+40:]
-                )
-            result[name] = {
-                'abi': data['abi'],
-                'allSourcePaths': sorted(set(
-                    i['contract'] for i in evm['pcMap'] if i['contract']
-                )),
-                'ast': compiled['sources'][filename]['ast'],
-                'bytecode': evm['bytecode']['object'],
-                'compiler': compiler_info,
-                'contractName': name,
-                'deployedBytecode': evm['deployedBytecode']['object'],
-                'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
-                # 'networks': {},
-                'opcodes': evm['deployedBytecode']['opcodes'],
-                'sha1': sha1(input_json['sources'][filename]['content'].encode()).hexdigest(),
-                'source': input_json['sources'][filename]['content'],
-                'sourceMap': evm['bytecode']['sourceMap'],
-                'sourcePath': filename,
-                'type': type_,
-                'pcMap': evm['pcMap']
-            }
-            result[name]['coverageMap'] = _generate_coverageMap(result[name])
+
+    for filename, name in [(k,x) for k,v in compiled['contracts'].items() for x in v]:
+        data = compiled['contracts'][filename][name]
+        evm = data['evm']
+        ref = [
+            (k, x) for v in evm['bytecode']['linkReferences'].values()
+            for k, x in v.items()
+        ]
+        # standardize unlinked library tags
+        for n, loc in [(i[0], x['start']*2) for i in ref for x in i[1]]:
+            evm['bytecode']['object'] = "{}__{:_<36}__{}".format(
+                evm['bytecode']['object'][:loc],
+                n[:36],
+                evm['bytecode']['object'][loc+40:]
+            )
+        result[name] = {
+            'abi': data['abi'],
+            'allSourcePaths': sorted(set(i['contract'] for i in evm['pcMap'] if i['contract'])),
+            'ast': compiled['sources'][filename]['ast'],
+            'bytecode': evm['bytecode']['object'],
+            'bytecodeSha1': sha1(evm['bytecode']['object'][:-68].encode()).hexdigest(),
+            'compiler': compiler_info,
+            'contractName': name,
+            'deployedBytecode': evm['deployedBytecode']['object'],
+            'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
+            # 'networks': {},
+            'opcodes': evm['deployedBytecode']['opcodes'],
+            'sha1': source.get_hash(name),
+            'source': input_json['sources'][filename]['content'],
+            'sourceMap': evm['bytecode']['sourceMap'],
+            'sourcePath': filename,
+            'type': source.get_type(name),
+            'pcMap': evm['pcMap']
+        }
+        result[name]['coverageMap'] = _generate_coverageMap(result[name])
     return result
 
 
@@ -352,9 +348,7 @@ def _isolate_lines(compiled):
 
 
 def _get_source(op):
-    if op['contract'] not in _sources:
-        _sources[op['contract']] = open(op['contract']).read()
-    return _sources[op['contract']][op['start']:op['stop']]
+    return source[op['contract']][op['start']:op['stop']]
 
 
 def _next(coverage_map, op):

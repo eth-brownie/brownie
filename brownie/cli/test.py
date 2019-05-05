@@ -224,7 +224,7 @@ def main():
             build_files = set(build_folder.joinpath(i+'.json') for i in coverage_eval)
             coverage_eval = {
                 'coverage': coverage_eval,
-                'sha1': dict((str(i), Build().get_bytecode_hash(i.stem)) for i in build_files)
+                'sha1': dict((str(i), Build()[i.stem]['bytecodeSha1']) for i in build_files)
             }
             if args['<range>']:
                 continue

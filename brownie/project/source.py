@@ -15,6 +15,7 @@ class Source(metaclass=_Singleton):
         self._path = None
         self._data = {}
         self._inheritance_map = {}
+        self._string_iter = 1
     
     def _load(self):
         self. _path = Path(CONFIG['folders']['project']).joinpath('contracts')
@@ -60,6 +61,9 @@ class Source(metaclass=_Singleton):
 
     def get_path(self, contract_name):
         return self._data[contract_name]['sourcePath']
+
+    def get_type(self, contract_name):
+        return self._data[contract_name]['type']
     
     def inheritance_map(self):
         return dict((k, v['inherited'].copy()) for k,v in self._data.items())
@@ -67,4 +71,11 @@ class Source(metaclass=_Singleton):
     def __getitem__(self, key):
         if key in self._data:
             return self._source[self._data[key]['sourcePath']]
-        return self._source[key]
+        return self._source[str(key)]
+
+    def add_source(self, source):
+        path = "<string-{}>".format(self._string_iter)
+        self._source[path] = source
+        self._get_contract_data(path)
+        self._string_iter += 1
+        return path
