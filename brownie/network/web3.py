@@ -17,6 +17,7 @@ class Web3(_Web3, metaclass=_Singleton):
 
     def __init__(self):
         super().__init__(HTTPProvider('null'))
+        self.providers.clear()
 
     def connect(self, uri):
         '''Connects to a provider'''
