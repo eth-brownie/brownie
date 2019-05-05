@@ -36,36 +36,6 @@ def set_solc_version():
     CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
 
 
-def get_inheritance_map(path):
-    '''Determines contract dependencies.
-
-    Args:
-        path: project folder
-
-    Returns:
-        dict of sets: {'contract name': {'inherited names', ..}}'''
-
-    inheritance_map = {}
-    contract_files = [i for i in Path(path).glob('**/*.sol') if "/_" not in str(i)]
-
-    for filename in contract_files:
-        code = filename.open().read()
-        for name in (
-            re.findall(
-                "\n(?:contract|library|interface) (.*?){", code, re.DOTALL)
-        ):
-            names = [i.strip(',') for i in name.strip().split(' ')]
-            if names[0] in inheritance_map:
-                raise ValueError("Multiple contracts named {}".format(names[0]))
-            inheritance_map[names[0]] = set(names[2:])
-    for i in range(len(inheritance_map)):
-        for base, inherited in [
-            (k, x) for k, v in inheritance_map.copy().items() if v for x in v
-        ]:
-            inheritance_map[base] |= inheritance_map[inherited]
-    return inheritance_map
-
-
 def compile_contracts(contract_files):
     '''Compiles the contract files and returns a dict of compiler outputs.'''
     CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')

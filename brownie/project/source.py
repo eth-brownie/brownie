@@ -23,6 +23,24 @@ class Source(metaclass=_Singleton):
         for name, inherited in [(k, v['inherited'].copy()) for k,v in self._data.items()]:
             self._data[name]['inherited'] = self._recursive_inheritance(inherited)
 
+    def _get_contract_data(self, path):
+        contracts = re.findall(
+            "((?:contract|library|interface)[\s\S]*?})\s*(?=contract|library|interface|$)",
+            self.remove_comments(path)
+        )
+        for source in contracts:
+            type_, name, inherited = re.findall(
+                "\s*(contract|library|interface) (\S*) (?:is (.*?)|)(?: *{)",
+                source
+            )[0]
+            inherited = set(i.strip() for i in inherited.split(', ') if i)
+            self._data[name] = {
+                'sourcePath': path,
+                'type': type_,
+                'inherited': inherited.union(re.findall("(?:;|{)\s*using *(\S*)(?= for)", source)),
+                'sha1': sha1(source.encode()).hexdigest()
+            }
+
     def _recursive_inheritance(self, inherited):
         final = set(inherited)
         for name in inherited:
@@ -35,22 +53,12 @@ class Source(metaclass=_Singleton):
             "",
             self._source[str(path)]
         )
+    
+    def get_hash(self, contract_name):
+        return self._data[contract_name]['sha1']
 
-    def _get_contract_data(self, path):
-        contracts = re.findall(
-            "((?:contract|library|interface)[\s\S]*?})\s*(?=contract|library|interface|$)",
-            self.remove_comments(path)
-        )
-        for source in contracts:
-            type_, name, inherited = re.findall(
-                "\s*(contract|library|interface) (\S*) (?:is (.*?)|)(?: *{)",
-                source
-            )[0]
-            print(inherited)
-            inherited = set(i.strip() for i in inherited.split(', ') if i)
-            print(inherited)
-            self._data[name] = {
-                'sourcePath': path,
-                'type': type_,
-                'inherited': inherited.union(re.findall("(?:;|{)\s*using *(\S*)(?= for)", source))
-            }
+    def get_path(self, contract_name):
+        return self._data[contract_name]['sourcePath']
+    
+    def inheritance_map(self):
+        return dict((k, v['inherited'].copy()) for k,v in self._data.items())

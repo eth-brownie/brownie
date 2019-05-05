@@ -7,6 +7,7 @@ import sys
 
 from brownie.network.contract import ContractContainer
 from .build import Build
+from .source import Source
 from . import compiler
 from brownie._config import CONFIG, load_project_config
 
@@ -46,7 +47,6 @@ def new(path=".", ignore_subfolder=False):
         )
     CONFIG['folders']['project'] = str(path)
     sys.path.insert(0, str(path))
-    Build()._load()
     return str(path)
 
 
@@ -62,6 +62,7 @@ def load(path=None):
     sys.path.insert(0, str(path))
     load_project_config()
     compiler.set_solc_version()
+    Source()._load()
     Build()._load()
     result = []
     for name, data in Build().contracts():

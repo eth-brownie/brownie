@@ -1,12 +1,16 @@
 #!/usr/bin/python3
 
+import ast
 from copy import deepcopy
+from hashlib import sha1
+import importlib.util
 import json
 from pathlib import Path
 import re
 
 from . import _sha_compare as compare
 from . import compiler
+from .source import Source
 from brownie.types.types import _Singleton
 from brownie._config import CONFIG
 
@@ -17,6 +21,27 @@ BUILD_FOLDERS = [
     "build/networks"
 ]
 
+BUILD_KEYS = [
+    'abi',
+    'allSourcePaths',
+    'ast',
+    'bytecode',
+    'compiler',
+    'contractName',
+    'coverageMap',
+    'deployedBytecode',
+    'deployedSourceMap',
+    'opcodes',
+    'pcMap',
+    'sha1',
+    'source',
+    'sourceMap',
+    'sourcePath',
+    'type'
+]
+
+
+source = Source()
 
 def _check_coverage_hashes():
     # remove coverage data where hashes have changed
@@ -53,12 +78,10 @@ class Build(metaclass=_Singleton):
         # load existing build data
         self._load_build_data()
         # check for changed contracts, recompile
-        changed = self._get_changed_contracts()
-        # TODO - you are here
-        # issue - changed is now a list of contract names, not filenames
+        changed_paths = self._get_changed_contracts()
         
-        if changed:
-            build_json = compiler.compile_contracts(changed)
+        if changed_paths:
+            build_json = compiler.compile_contracts(changed_paths)
             for name, data in build_json.items():
                 json.dump(
                     data,
@@ -83,11 +106,10 @@ class Build(metaclass=_Singleton):
                     continue
             except json.JSONDecodeError:
                 pass
-             path.unlink()
+            path.unlink()
 
-    def _get_changed_contracts():
-        path = Path(CONFIG['folders']['project']).joinpath('contracts')
-        inheritance_map = compiler.get_inheritance_map(path)
+    def _get_changed_contracts(self):
+        inheritance_map = source.inheritance_map()
         changed = [i for i in inheritance_map if self._compare_build_json(i)]
         final = set(changed)
         for name, inherited in inheritance_map.items():
@@ -96,16 +118,13 @@ class Build(metaclass=_Singleton):
         for name in [i for i in final if i in self._build]:
             self._path.joinpath(name+'.json').unlink()
             del self._build[name]
-        return final
+        return set(source.get_path(i) for i in final)
 
-    def _compare_build_json(name):
-        if name not in self._build:
-            return True
-        build_json = self._build[name]
-
+    def _compare_build_json(self, name):
         return (
+            name not in self._build or 
             self._build[name]['compiler'] != CONFIG['solc'] or
-            self._build[name]['sha1'] != sha1(open(self._build[name]['sourcePath'],'rb').read()).hexdigest()
+            self._build[name]['sha1'] != source.get_hash(name)
         )
 
     def contracts(self):
