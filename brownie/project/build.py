@@ -6,9 +6,7 @@ from hashlib import sha1
 import importlib.util
 import json
 from pathlib import Path
-import re
 
-from . import _sha_compare as compare
 from . import compiler
 from .source import Source
 from brownie.types.types import _Singleton
@@ -40,29 +38,7 @@ BUILD_KEYS = [
     'type'
 ]
 
-
 source = Source()
-
-def _check_coverage_hashes():
-    # remove coverage data where hashes have changed
-    coverage_path = Path(CONFIG['folders']['project']).joinpath("build/coverage")
-    for coverage_json in list(coverage_path.glob('**/*.json')):
-        dependents = json.load(coverage_json.open())['sha1']
-        for path, hash_ in dependents.items():
-            path = Path(path)
-            if path.suffix != ".json":
-                if compare.compare_ast_hash(path, hash_):
-                    continue
-            elif compare.compare_bytecode_hash(path, hash_):
-                continue
-            coverage_json.unlink()
-            break
-
-
-def _check_build_paths():
-    path = Path(CONFIG['folders']['project']).resolve()
-    for folder in [i for i in BUILD_FOLDERS]:
-        path.joinpath(folder).mkdir(exist_ok=True)
 
 
 class Build(metaclass=_Singleton):
@@ -79,7 +55,6 @@ class Build(metaclass=_Singleton):
         self._load_build_data()
         # check for changed contracts, recompile
         changed_paths = self._get_changed_contracts()
-        
         if changed_paths:
             build_json = compiler.compile_contracts(changed_paths)
             for name, data in build_json.items():
@@ -92,7 +67,7 @@ class Build(metaclass=_Singleton):
                 )
             self._build.update(build_json)
         # check for changed tests
-        _check_coverage_hashes()
+        self._check_coverage_hashes()
 
     def _load_build_data(self):
         for path in list(self._path.glob('*.json')):
@@ -122,13 +97,55 @@ class Build(metaclass=_Singleton):
 
     def _compare_build_json(self, name):
         return (
-            name not in self._build or 
+            name not in self._build or
             self._build[name]['compiler'] != CONFIG['solc'] or
             self._build[name]['sha1'] != source.get_hash(name)
         )
 
+    def _check_coverage_hashes(self):
+        # remove coverage data where hashes have changed
+        coverage_path = self._path.parent.joinpath('coverage')
+        for coverage_json in list(coverage_path.glob('**/*.json')):
+            dependents = json.load(coverage_json.open())['sha1']
+            for path, hash_ in dependents.items():
+                path = Path(path)
+                if path.exists():
+                    if path.suffix != ".json":
+                        if get_ast_hash(path) == hash_:
+                            continue
+                    elif self.get_bytecode_hash(path.stem) == hash_:
+                        continue
+                coverage_json.unlink()
+                break
+
     def contracts(self):
         return deepcopy(self._build).items()
 
-    def get_contract(self, name):
-        return deepcopy(self._build[name])
+    def get_contract(self, contract_name):
+        return deepcopy(self._build[contract_name])
+
+    def get_bytecode_hash(self, contract_name):
+        if 'bytecodeSha1' not in self._build[contract_name]:
+            self._build[contract_name]['bytecodeSha1'] = sha1(self._build[contract_name]['bytecode'][:-68].encode()).hexdigest()
+        # hash of bytecode without final metadata
+        return self._build[contract_name]['bytecodeSha1']
+
+
+def get_ast_hash(script_path):
+    ast_list = [ast.parse(Path(script_path).open().read())]
+    for obj in [i for i in ast_list[0].body if type(i) in (ast.Import, ast.ImportFrom)]:
+        if type(obj) is ast.Import:
+            name = obj.names[0].name
+        else:
+            name = obj.module
+        origin = importlib.util.find_spec(name).origin
+        if CONFIG['folders']['project'] in origin:
+            ast_list.append(ast.parse(open(origin).read()))
+    dump = "\n".join(ast.dump(i) for i in ast_list)
+    return sha1(dump.encode()).hexdigest()
+
+
+def _check_build_paths():
+    path = Path(CONFIG['folders']['project']).resolve()
+    for folder in [i for i in BUILD_FOLDERS]:
+        path.joinpath(folder).mkdir(exist_ok=True)

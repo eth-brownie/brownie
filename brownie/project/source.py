@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import re
+from hashlib import sha1
 
 from brownie.types.types import _Singleton
 from brownie._config import CONFIG
