@@ -3,7 +3,9 @@
 import json
 from pathlib import Path
 
-from brownie.project import build
+from brownie.project.build import Build
+
+build = Build()
 
 
 def analyze_coverage(history):
@@ -20,7 +22,7 @@ def analyze_coverage(history):
             if not name or not source:
                 continue
             if name not in coverage_map:
-                coverage_map[name] = build.get_contract(name)['coverageMap']
+                coverage_map[name] = build[name]['coverageMap']
                 coverage_eval[name] = dict((i, {}) for i in coverage_map[name])
             try:
                 # find the function map item and record the tx

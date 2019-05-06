@@ -6,7 +6,8 @@ import shutil
 import sys
 
 from brownie.network.contract import ContractContainer
-from brownie.project._build import Build
+from .build import Build
+from .sources import Sources
 from . import compiler
 from brownie._config import CONFIG, load_project_config
 
@@ -14,13 +15,13 @@ __all__ = ['project', '__project']
 
 __project = True
 project = sys.modules[__name__]
-build = Build()
 
 
 FOLDERS = ["contracts", "scripts", "tests"]
 
 
 def check_for_project(path):
+    '''Checks for a Brownie project.'''
     path = Path(path).resolve()
     for folder in [path]+list(path.parents):
         if folder.joinpath("brownie-config.json").exists():
@@ -29,6 +30,14 @@ def check_for_project(path):
 
 
 def new(path=".", ignore_subfolder=False):
+    '''Initializes a new project.
+
+    Args:
+        path: Path to initialize the project at. If not exists, it will be created.
+        ignore_subfolders: If True, will not raise if initializing in a project subfolder.
+
+    Returns the path to the project as a string.
+    '''
     if CONFIG['folders']['project']:
         raise SystemError("Project has already been loaded")
     path = Path(path)
@@ -47,11 +56,18 @@ def new(path=".", ignore_subfolder=False):
         )
     CONFIG['folders']['project'] = str(path)
     sys.path.insert(0, str(path))
-    build._load()
     return str(path)
 
 
 def load(path=None):
+    '''Loads a project and instantiates various related objects.
+
+    Args:
+        path: Path of the project to load. If None, will attempt to locate
+              a project using check_for_project()
+
+    Returns a list of ContractContainer objects.
+    '''
     if CONFIG['folders']['project']:
         raise SystemError("Project has already been loaded")
     if path is None:
@@ -63,9 +79,10 @@ def load(path=None):
     sys.path.insert(0, str(path))
     load_project_config()
     compiler.set_solc_version()
-    build._load()
+    Sources()._load()
+    Build()._load()
     result = []
-    for name, data in build.contracts():
+    for name, data in Build().items():
         if not data['bytecode']:
             continue
         container = ContractContainer(data)
@@ -79,6 +96,8 @@ def load(path=None):
 
 
 def compile_source(source):
+    '''Compiles the given source code string and returns a list of
+    ContractContainer instances.'''
     result = []
     for name, build in compiler.compile_source(source).items():
         if build['type'] == "interface":

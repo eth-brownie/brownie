@@ -16,8 +16,7 @@ from brownie.exceptions import ExpectedFailing, VirtualMachineError
 import brownie.network as network
 from brownie.network.history import TxHistory
 import brownie.network.transaction as transaction
-import brownie.project._sha_compare as compare
-
+from brownie.project.build import Build, get_ast_hash
 from brownie._config import ARGV, CONFIG
 
 COVERAGE_COLORS = [
@@ -225,13 +224,13 @@ def main():
             build_files = set(build_folder.joinpath(i+'.json') for i in coverage_eval)
             coverage_eval = {
                 'coverage': coverage_eval,
-                'sha1': dict((str(i), compare.get_bytecode_hash(i)) for i in build_files)
+                'sha1': dict((str(i), Build()[i.stem]['bytecodeSha1']) for i in build_files)
             }
             if args['<range>']:
                 continue
 
             test_path = Path(CONFIG['folders']['project']).joinpath(filename+".py")
-            coverage_eval['sha1'][str(test_path)] = compare.get_ast_hash(test_path)
+            coverage_eval['sha1'][str(test_path)] = get_ast_hash(test_path)
 
             json.dump(
                 coverage_eval,

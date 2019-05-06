@@ -6,11 +6,12 @@ import time
 import eth_abi
 from hexbytes import HexBytes
 
+from .web3 import Web3
 from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
 from brownie.network.history import TxHistory, _ContractHistory
 from brownie.network.event import decode_logs, decode_trace
-from .web3 import Web3
+from brownie.project.sources import Sources
 from brownie.types import KwargTuple
 from brownie.types.convert import format_output
 from brownie._config import ARGV, CONFIG
@@ -32,6 +33,7 @@ gas_profile = {}
 history = TxHistory()
 _contracts = _ContractHistory()
 web3 = Web3()
+sources = Sources()
 
 class TransactionReceipt:
 
@@ -374,13 +376,10 @@ class TransactionReceipt:
                 continue
             span = (self.trace[idx]['source']['start'], self.trace[idx]['source']['stop'])
             c = _contracts.find(self.trace[idx]['address'])
-            if c._build['sourcePath'] != self.trace[idx]['source']['filename']:
-                source = open(self.trace[idx]['source']['filename']).read()
-            else:
-                source = c._build['source']
-            if source[span[0]][:8] in ("contract", "library "):
+            if sources.get_type(self.trace[idx]['contractName']) in ("contract", "library"):
                 idx -= 1
                 continue
+            source = sources[self.trace[idx]['source']['filename']]
             newlines = [i for i in range(len(source)) if source[i] == "\n"]
             try:
                 start = newlines.index(next(i for i in newlines if i >= span[0]))

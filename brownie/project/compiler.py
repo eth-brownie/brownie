@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 
 from hashlib import sha1
+from pathlib import Path
 import re
 import solcx
 
+from .sources import Sources
 from brownie.exceptions import CompilerError
 from brownie._config import CONFIG
 
@@ -27,55 +29,38 @@ STANDARD_JSON = {
     }
 }
 
-_sources = {}
+sources = Sources()
 
 
 def set_solc_version():
+    '''Sets the solc version based on the project config file.'''
     solcx.set_solc_version(CONFIG['solc']['version'])
     CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
 
 
-def get_inheritance_map(contract_files):
-    inheritance_map = {}
-    for filename in contract_files:
-        code = filename.open().read()
-        for name in (
-            re.findall(
-                "\n(?:contract|library|interface) (.*?){", code, re.DOTALL)
-        ):
-            names = [i.strip(',') for i in name.strip().split(' ')]
-            if names[0] in inheritance_map:
-                raise ValueError("Multiple contracts named {}".format(names[0]))
-            inheritance_map[names[0]] = set(names[2:])
-    for i in range(len(inheritance_map)):
-        for base, inherited in [
-            (k, x) for k, v in inheritance_map.copy().items() if v for x in v
-        ]:
-            inheritance_map[base] |= inheritance_map[inherited]
-    return inheritance_map
-
-
-def compile_contracts(contract_files):
-    '''Compiles the contract files and returns a dict of compiler outputs.'''
+def compile_contracts(contract_paths):
+    '''Compiles the contract files and returns a dict of build data.'''
     CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
     print("Compiling contracts...")
     print("Optimizer: {}".format(
         "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
         CONFIG['solc']['optimize'] else "Disabled"
     ))
-    print("\n".join(" - {}...".format(i.name) for i in contract_files))
+
+    print("\n".join(" - {}...".format(Path(i).name) for i in contract_paths))
     input_json = STANDARD_JSON.copy()
     input_json['sources'] = dict((
         str(i),
-        {'content': i.open().read()}
-    ) for i in contract_files)
+        {'content': sources[i]}
+    ) for i in contract_paths)
     return _compile_and_format(input_json)
 
 
-def compile_source(source):
+def compile_source(code):
+    '''Compiles the contract source and returns a dict of build data.'''
+    path = sources.add_source(code)
     input_json = STANDARD_JSON.copy()
-    input_json['sources'] = {"<string>": {'content': source}}
-    _sources['<string>'] = source
+    input_json['sources'] = {path: {'content': code}}
     return _compile_and_format(input_json)
 
 
@@ -93,46 +78,41 @@ def _compile_and_format(input_json):
     result = {}
     compiler_info = CONFIG['solc'].copy()
     compiler_info['version'] = solcx.get_solc_version_string().strip('\n')
-    for filename in input_json['sources']:
-        for match in re.findall(
-            "\n(?:contract|library|interface) [^ {]{1,}",
-            input_json['sources'][filename]['content']
-        ):
-            type_, name = match.strip('\n').split(' ')
-            data = compiled['contracts'][filename][name]
-            evm = data['evm']
-            ref = [
-                (k, x) for v in evm['bytecode']['linkReferences'].values()
-                for k, x in v.items()
-            ]
-            # standardize unlinked library tags
-            for n, loc in [(i[0], x['start']*2) for i in ref for x in i[1]]:
-                evm['bytecode']['object'] = "{}__{:_<36}__{}".format(
-                    evm['bytecode']['object'][:loc],
-                    n[:36],
-                    evm['bytecode']['object'][loc+40:]
-                )
-            result[name] = {
-                'abi': data['abi'],
-                'allSourcePaths': sorted(set(
-                    i['contract'] for i in evm['pcMap'] if i['contract']
-                )),
-                'ast': compiled['sources'][filename]['ast'],
-                'bytecode': evm['bytecode']['object'],
-                'compiler': compiler_info,
-                'contractName': name,
-                'deployedBytecode': evm['deployedBytecode']['object'],
-                'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
-                # 'networks': {},
-                'opcodes': evm['deployedBytecode']['opcodes'],
-                'sha1': sha1(input_json['sources'][filename]['content'].encode()).hexdigest(),
-                'source': input_json['sources'][filename]['content'],
-                'sourceMap': evm['bytecode']['sourceMap'],
-                'sourcePath': filename,
-                'type': type_,
-                'pcMap': evm['pcMap']
-            }
-            result[name]['coverageMap'] = _generate_coverageMap(result[name])
+
+    for filename, name in [(k,x) for k,v in compiled['contracts'].items() for x in v]:
+        data = compiled['contracts'][filename][name]
+        evm = data['evm']
+        ref = [
+            (k, x) for v in evm['bytecode']['linkReferences'].values()
+            for k, x in v.items()
+        ]
+        # standardize unlinked library tags
+        for n, loc in [(i[0], x['start']*2) for i in ref for x in i[1]]:
+            evm['bytecode']['object'] = "{}__{:_<36}__{}".format(
+                evm['bytecode']['object'][:loc],
+                n[:36],
+                evm['bytecode']['object'][loc+40:]
+            )
+        result[name] = {
+            'abi': data['abi'],
+            'allSourcePaths': sorted(set(i['contract'] for i in evm['pcMap'] if i['contract'])),
+            'ast': compiled['sources'][filename]['ast'],
+            'bytecode': evm['bytecode']['object'],
+            'bytecodeSha1': sha1(evm['bytecode']['object'][:-68].encode()).hexdigest(),
+            'compiler': compiler_info,
+            'contractName': name,
+            'deployedBytecode': evm['deployedBytecode']['object'],
+            'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
+            # 'networks': {},
+            'opcodes': evm['deployedBytecode']['opcodes'],
+            'sha1': sources.get_hash(name),
+            'source': input_json['sources'][filename]['content'],
+            'sourceMap': evm['bytecode']['sourceMap'],
+            'sourcePath': filename,
+            'type': sources.get_type(name),
+            'pcMap': evm['pcMap']
+        }
+        result[name]['coverageMap'] = _generate_coverageMap(result[name])
     return result
 
 
@@ -371,9 +351,7 @@ def _isolate_lines(compiled):
 
 
 def _get_source(op):
-    if op['contract'] not in _sources:
-        _sources[op['contract']] = open(op['contract']).read()
-    return _sources[op['contract']][op['start']:op['stop']]
+    return sources[op['contract']][op['start']:op['stop']]
 
 
 def _next(coverage_map, op):
