@@ -89,17 +89,19 @@ class Rpc(metaclass=_Singleton):
         self.kill(False)
         raise RPCConnectionError(cmd, rpc, uri)
 
-    def attach(self, host):
+    def attach(self, laddr):
         '''Attaches to an already running RPC client subprocess.
 
         Args:
-            host: https url that the client is listening at'''
+            laddr: Address that the client is listening at. Can be supplied as a
+                   string "http://127.0.0.1:8545" or tuple ("127.0.0.1", 8545)'''
         if self.is_active():
             raise SystemError("RPC is already active.")
-        ip, port = host.strip('https://').split(':')
-        addr = (ip, int(port))
+        if type(laddr) is str:
+            ip, port = laddr.strip('https://').split(':')
+            laddr = (ip, int(port))
         try:
-            proc = next(i for i in psutil.net_connections() if i.laddr == addr)
+            proc = next(i for i in psutil.net_connections() if i.laddr == laddr)
         except StopIteration:
             raise ProcessLookupError("Could not find RPC process.")
         self._rpc = psutil.Process(proc.pid)
@@ -134,7 +136,7 @@ class Rpc(metaclass=_Singleton):
         try:
             return web3.providers[0].make_request(*args)['result']
         except IndexError:
-            raise ConnectError("Web3 is not connected.")
+            raise RPCConnectionError("Web3 is not connected.")
 
     def _snap(self):
         return self._request("evm_snapshot", [])
