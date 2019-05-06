@@ -20,11 +20,10 @@ The connection settings for the local RPC are outlined in ``brownie-config.json`
 
 Each time Brownie is loaded, it will first attempt to connect to the ``host`` address to determine if the RPC client is already active.
 
-RPC Client is Active
----------------------
+Client is Active
+----------------
 
 If able to connect to the ``host`` address, Brownie:
-If Brownie is able to connect at the ``host`` address, the following actions happen during launch:
 
 * Checks the current block height and raises an Exception if it is greater than zero
 * Locates the process listening at the address and attaches it to the ``Rpc`` object
@@ -34,8 +33,8 @@ When Brownie is terminated:
 
 * The RPC client is reverted based on the initial snapshot.
 
-RPC Client is not Active
-------------------------
+Client is not Active
+--------------------
 
 If unable to connect to the ``host`` address, Brownie:
 
