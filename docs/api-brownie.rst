@@ -28,6 +28,14 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
     Raised when a unit test is marked as ``pending=True`` but it still passes.
 
+.. py:exception:: RPCConnectionError
+
+    Raised when the RPC process is active and ``web3`` is connected, but Brownie is unable to communicate with it.
+
+.. py:exception:: RPCProcessError
+
+    Raised when the RPC process fails to launch successfully.
+
 .. py:exception:: VirtualMachineError
 
     Raised when a call to the EVM reverts.

@@ -38,17 +38,25 @@ def connect(network=None):
             )
         web3.connect(CONFIG['active_network']['host'])
         if 'test-rpc' in CONFIG['active_network'] and not rpc.is_active():
-            rpc.launch(CONFIG['active_network']['test-rpc'])
+            if is_connected():
+                if web3.eth.blockNumber != 0:
+                    raise ValueError("Local RPC Client has a block height > 0")
+                rpc.attach(CONFIG['active_network']['host'])
+            else:
+                rpc.launch(CONFIG['active_network']['test-rpc'])
     except Exception:
         CONFIG['active_network']['name'] = None
         raise
 
 
 def disconnect():
-    '''Disconnects from the network'''
+    '''Disconnects from the network.'''
     web3.disconnect()
     if rpc.is_active():
-        rpc.kill()
+        if rpc.is_child():
+            rpc.kill()
+        else:
+            rpc.reset()
     CONFIG['active_network']['name'] = None
 
 
