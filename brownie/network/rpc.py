@@ -68,11 +68,8 @@ class Rpc(metaclass=_Singleton):
         self._reset_id = False
         uri = web3.providers[0].endpoint_uri if web3.providers else None
         # check if process loads successfully
-        self._rpc.stdout.readline()
-        while not self._rpc.poll():
-            time.sleep(0.05)
-            if self._rpc.stdout.peek().strip():
-                break
+        self._rpc.stdout.peek()
+        time.sleep(0.1)
         if self._rpc.poll():
             raise RPCProcessError(cmd, self._rpc, uri)
         # check that web3 can connect
