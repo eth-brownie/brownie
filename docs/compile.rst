@@ -14,6 +14,8 @@ Each time the compiler runs, Brownie compares hashes of the contract source code
 
 Modifying the compiler version or optomization settings within the project config file will result in a full recompile of the project.
 
+.. _compile-json:
+
 Compiled JSON Format
 ====================
 
@@ -53,7 +55,7 @@ This raw data is available through the :ref:`api-project-build` object:
     >>> build = Build()
     >>> token_json = build["Token"]
     >>> token_json.keys()
-    dict_keys(['abi', 'allSourcePaths', 'ast', 'bytecode', 'compiler', 'contractName', 'coverageMap', 'deployedBytecode', 'deployedSourceMap', 'networks', 'opcodes', 'pcMap', 'sha1', 'source', 'sourceMap', 'sourcePath', 'type'])
+    dict_keys(['abi', 'allSourcePaths', 'ast', 'bytecode', 'bytecodeSha1', 'compiler', 'contractName', 'coverageMap', 'deployedBytecode', 'deployedSourceMap', 'opcodes', 'pcMap', 'sha1', 'source', 'sourceMap', 'sourcePath', 'type'])
 
 Program Counter Map
 -------------------

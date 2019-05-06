@@ -33,28 +33,31 @@ sources = Sources()
 
 
 def set_solc_version():
+    '''Sets the solc version based on the project config file.'''
     solcx.set_solc_version(CONFIG['solc']['version'])
     CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
 
 
-def compile_contracts(contract_files):
-    '''Compiles the contract files and returns a dict of compiler outputs.'''
+def compile_contracts(contract_paths):
+    '''Compiles the contract files and returns a dict of build data.'''
     CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
     print("Compiling contracts...")
     print("Optimizer: {}".format(
         "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
         CONFIG['solc']['optimize'] else "Disabled"
     ))
-    print("\n".join(" - {}...".format(i.name) for i in contract_files))
+
+    print("\n".join(" - {}...".format(Path(i).name) for i in contract_paths))
     input_json = STANDARD_JSON.copy()
     input_json['sources'] = dict((
         str(i),
         {'content': sources[i]}
-    ) for i in contract_files)
+    ) for i in contract_paths)
     return _compile_and_format(input_json)
 
 
 def compile_source(code):
+    '''Compiles the contract source and returns a dict of build data.'''
     path = sources.add_source(code)
     input_json = STANDARD_JSON.copy()
     input_json['sources'] = {path: {'content': code}}
