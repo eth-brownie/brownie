@@ -149,11 +149,18 @@ class Rpc(metaclass=_Singleton):
         return id_
 
     def is_active(self):
+        '''Returns True if Rpc client is currently active.'''
         if not self._rpc:
             return False
         if type(self._rpc) is psutil.Popen:
             self._rpc.poll()
         return self._rpc.is_running()
+
+    def is_child(self):
+        '''Returns True if the Rpc client is active and was launched by Brownie.'''
+        if not is_active():
+            return False
+        return self._rpc.parent() == psutil.Process()
 
     def time(self):
         '''Returns the current epoch time from the test RPC as an int'''
