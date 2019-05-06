@@ -154,9 +154,16 @@ Module Methods
             name, count, len(events)
         AssertionError: Expected event not to fire
 
-.. py:method:: check.equal(a, b, fail_msg = "Expected values to be equal")
+.. py:method:: check.equal(a, b, fail_msg = "Expected values to be equal", strict=False)
 
-    Raises if ``a != b``. Before comparison, both values are converted by wei_ if possible.
+    Raises if ``a != b``.
+
+    Different sequence types will always evaluate equally as long as their content is the same: ``(1,1,1) == [1,1,1]``.
+
+    When the strict kwarg is set to ``False`` the following will evaluate as equal:
+
+    * hexstrings of the same value but differing leading zeros: ``0x00001234 == 0x1234``
+    * integers, floats, and strings as wei that have the same numberic value: ``1 == 1.0 == "1 wei"``
 
     .. code-block:: python
 
@@ -171,9 +178,9 @@ Module Methods
             raise AssertionError(fail_msg)
         AssertionError: Expected values to be equal
 
-.. py:method:: check.not_equal(a, b, fail_msg = "Expected values to be not equal")
+.. py:method:: check.not_equal(a, b, fail_msg = "Expected values to be not equal", strict=False)
 
-    Raises if ``a == b``. Before comparison, both values are converted by wei_ if possible.
+    Raises if ``a == b``. Comparison rules are the same as ``check.equal``.
 
     .. code-block:: python
 

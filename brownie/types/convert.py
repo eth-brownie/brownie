@@ -3,6 +3,7 @@
 import eth_utils
 
 UNITS = {
+    'wei': 1,
     'kwei': 3,
     'babbage': 3,
     'mwei': 6,
