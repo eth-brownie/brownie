@@ -2,6 +2,7 @@
 
 '''Assertion methods for writing brownie unit tests.'''
 
+from brownie.types import KwargTuple
 from brownie.types.convert import wei
 from brownie.network.transaction import VirtualMachineError as _VMError
 
@@ -122,40 +123,41 @@ def event_not_fired(tx, name, fail_msg="Expected event not to fire"):
         raise AssertionError(fail_msg)
 
 
-def equal(a, b, fail_msg="Expected values to be equal"):
+def equal(a, b, fail_msg="Expected values to be equal", strict=False):
     '''Expects two values to be equal.
 
     Args:
         a: First value.
         b: Second value.
         fail_msg: Message to show if check fails.'''
-    a, b = _convert(a, b)
-    if a != b:
+    if not _compare_input(a, b):
         raise AssertionError(fail_msg+": {} != {}".format(a, b))
 
 
-def not_equal(a, b, fail_msg="Expected values to be not equal"):
+def not_equal(a, b, fail_msg="Expected values to be not equal", strict=False):
     '''Expects two values to be not equal.
 
     Args:
         a: First value.
         b: Second value.
         fail_msg: Message to show if check fails.'''
-    a, b = _convert(a, b)
-    if a == b:
+    if _compare_input(a, b):
         raise AssertionError(fail_msg+": {} == {}".format(a, b))
 
 
-# attempt conversion with wei before comparing equality
-def _convert(a, b):
-    if a not in (None, False, True):
-        try:
-            a = wei(a)
-        except (ValueError, TypeError):
-            pass
-    if b not in (None, False, True):
-        try:
-            b = wei(b)
-        except (ValueError, TypeError):
-            pass
-    return a, b
+def _compare_input(a, b, strict=False):
+    if type(a) not in (tuple, list, KwargTuple):
+        if strict and type(a) != type(b):
+            return False
+        if not strict and type(b) is str:
+            if type(a) is int and not b.startswith("0x"):
+                try:
+                    return a == wei(b)
+                except ValueError:
+                    return False
+            if type(a) is str and a.startswith("0x") and b.startswith("0x"):
+                return a.lstrip('0x') == b.lstrip('0x')
+        return a == b
+    if type(b) not in (tuple, list, KwargTuple) or len(b) != len(a):
+        return False
+    return not [i for i in range(len(a)) if not _compare_input(a[i], b[i], strict)]
