@@ -19,9 +19,9 @@ Methods in the base ``network`` package are used from connect to and disconnect 
     Connects to the network.  Network settings are retrieved from ``brownie-config.json``
 
     * If ``network`` is ``None``, connects to the default network as specified in ``brownie-config.json``.
-    * If ``test-rpc`` is given for the network, the RPC client will be launched.
+    * If ``test-rpc`` is given for the network, attempts to attach or launch to a local RPC client. See :ref:`test-rpc` for detailed information on the sequence of events in this process.
 
-    Calling this method is favored over calling ``web3.connect`` and ``rpc.launch`` individually.
+    Calling this method is favored over calling ``web3.connect`` and ``rpc.launch`` or ``rpc.attach`` individually.
 
     .. code-block:: python
 
@@ -31,7 +31,7 @@ Methods in the base ``network`` package are used from connect to and disconnect 
 
 .. py:method:: brownie.network.disconnect()
 
-    Disconnects from the network. The ``Web3`` provider is cleared and the local RPC client is terminated if it is running.
+    Disconnects from the network. The ``Web3`` provider is cleared and the local RPC client is terminated if it is running and a child process.
 
     .. code-block:: python
 
@@ -868,14 +868,14 @@ _ContractHistory
 
     Under the hood, calls to get objects from ``ContractContainer`` instances are redirected to this class. The primary use case is to simplify deleting ``Contract`` instances after the local RPC is reset or reverted.
 
-.. _rpc:
-
 ``brownie.network.rpc``
 =======================
 
 The ``rpc`` module contains the ``Rpc`` class, which is used to interact with ``ganache-cli`` when running a local RPC environment.
 
 .. note:: Account balances, contract containers and transaction history are automatically modified when the local RPC is terminated, reset or reverted.
+
+.. _rpc:
 
 Rpc
 ---
@@ -894,13 +894,28 @@ Rpc
 
 .. py:classmethod:: Rpc.launch(cmd)
 
-    Launches the local RPC client as a `subprocess <https://docs.python.org/3/library/subprocess.html#subprocess.Popen>`_. ``cmd`` is the command string requiried to run it. On Windows systems this must include the full path.
+    Launches the local RPC client as a `subprocess <https://docs.python.org/3/library/subprocess.html#subprocess.Popen>`_. ``cmd`` is the command string requiried to run it.
 
-    If a provider has been set in ``Web3``, this method raises a ``ConnectionError`` if it is unable to connect to the process after launching.
+    If the process cannot load successfully, raises ``brownie.RPCProcessError``.
+
+    If a provider has been set in ``Web3`` but is unable to connect after launching, raises a ``brownie.RPCConnectionError``.
 
     .. code-block:: python
 
         >>> rpc.launch('ganache-cli')
+        >>>
+
+.. py:classmethod:: Rpc.attach(laddr)
+
+    Attaches to an already running RPC client.
+
+    ``laddr``: Address that the client is listening at. Can be supplied as a string ``"http://127.0.0.1:8545"`` or tuple ``("127.0.0.1", 8545)``.
+
+    Raises a ``ProcessLookupError`` if the process cannot be found.
+
+    .. code-block:: python
+
+        >>> rpc.attach('http://127.0.0.1:8545')
         >>>
 
 .. py:classmethod:: Rpc.kill(exc=True)
@@ -933,6 +948,15 @@ Rpc
         False
         >>> rpc.launch()
         >>> rpc.is_active()
+        True
+
+.. py:classmethod:: Rpc.is_child()
+
+    Returns a boolean indicating if the RPC process is a child process of Brownie. If the RPC is not currently active, returns ``False``.
+
+    .. code-block:: python
+
+        >>> rpc.is_child()
         True
 
 .. py:classmethod:: Rpc.time()

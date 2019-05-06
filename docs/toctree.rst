@@ -15,6 +15,7 @@ Brownie
     debug.rst
     tests.rst
     coverage.rst
+    test-rpc.rst
     config.rst
     python-package.rst
     api.rst

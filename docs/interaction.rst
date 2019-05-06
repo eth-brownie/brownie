@@ -12,7 +12,7 @@ The console feels very similar to a regular python interpreter. From inside a pr
 
     $ brownie console
 
-Brownie will compile the contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`.
+Brownie will compile the contracts, launch or attach to :ref:`test-rpc`, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`.
 
 .. hint::
 
