@@ -189,25 +189,10 @@ The following test configuration settings are available in ``brownie-config.json
 
     {
         "test": {
-            "gas_limit": 65000000,
+            "gas_limit": 6721975,
             "default_contract_owner": false
         }
     }
-
-.. py:attribute:: gas_limit
-
-    If set to an integer, this value will over-ride the default gas limit setting for whatever network you are testing on.
-
-    When the gas limit is calculated automatically:
-
-    * Transactions that would cause the EVM to revert will raise a ``VirtualMachineError`` during gas estimation and so will not be broadcasted.
-    * No ``TransactionReceipt`` is generated. You will not have access to any information about why it failed.
-
-    When the gas limit is a fixed value:
-
-    * Transactions that revert will be broadcasted, but still raise a ``VirtualMachineError``.
-    * Unless the call is handled with ``check.reverts`` the exception will cause the test to fail.
-    * If you need to access the ``TransactionReceipt`` you can find it the ``history`` list.
 
 .. py:attribute:: default_contract_owner
 

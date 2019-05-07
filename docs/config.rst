@@ -25,12 +25,13 @@ The following settings are available:
     * ``test-rpc``: Optional. If given, this command will be run in a shell when brownie is started. In this way you can initialize Ganache or another local environment automatically when Brownie starts.
     * ``gas_price``: The default gas price for all transactions. If left as false the gas price will be determined using ``web3.eth.gasPrice``.
     * ``gas_limit``: The default gas limit for all transactions. If left as false the gas limit will be determined using ``web3.eth.estimateGas``.
+    * ``broadcast_reverting_tx``: Optional. If set to ``false``, transactions that would revert will instead raise a ``VirtualMachineError``.
 
 .. py:attribute:: network_defaults
 
     Default networks settings, used when specific properties aren't defined for individual networks.
 
-    You must specify a ``name`` property. This is the default network to use when brownie is loaded.
+    You **must** specify a ``name`` property. This is the default network to use when brownie is loaded.
 
 .. py:attribute:: solc
 
@@ -38,7 +39,7 @@ The following settings are available:
 
     * ``optimize``: Set to true if you wish to use contract optimization.
     * ``runs``: The number of times the optimizer should run.
-    * ``version``: The version of solc to use. Should be written as ``v0.x.x``.
+    * ``version``: The version of solc to use. Should be written as ``v0.x.x``. If the specified version is not present, it will be installed when Brownie loads.
 
 .. py:attribute:: test
 

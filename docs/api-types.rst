@@ -104,7 +104,7 @@ The following methods are used to convert arguments supplied to ``ContractTx`` a
 
 .. py:method:: brownie.types.convert.to_string(value)
 
-    Converts a value to a string encoded to bytes.
+    Converts a value to a string.
 
 ``brownie.types.types``
 =======================
