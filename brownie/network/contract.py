@@ -11,7 +11,7 @@ from .history import _ContractHistory
 from .web3 import Web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_input, format_output, to_address
-
+from brownie.exceptions import VirtualMachineError
 from brownie._config import ARGV, CONFIG
 
 _contracts = _ContractHistory()
@@ -276,7 +276,10 @@ class _ContractMethod:
         if tx['from']:
             tx['from'] = str(tx['from'])
         tx.update({'to': self._address, 'data': self.encode_abi(*args)})
-        data = web3.eth.call(dict((k, v) for k, v in tx.items() if v))
+        try:
+            data = web3.eth.call(dict((k, v) for k, v in tx.items() if v))
+        except ValueError as e:
+            raise VirtualMachineError(e)
         result = eth_abi.decode_abi([i['type'] for i in self.abi['outputs']], data)
         if len(result) == 1:
             return format_output(result[0])
