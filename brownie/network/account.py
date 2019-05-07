@@ -90,7 +90,7 @@ class Accounts(metaclass=_Singleton):
         Returns:
             Account instance.'''
         path = Path(CONFIG['folders']['brownie']).joinpath("data/accounts")
-        if not module:
+        if not filename:
             return [i.stem for i in path.glob('*.json')]
         json_file = path.joinpath("{}.json".format(filename))
         if not json_file.exists():
@@ -210,7 +210,7 @@ class Account(_AccountBase):
     def _console_repr(self):
         return "<Account object '{0[string]}{1}{0}'>".format(color, self.address)
 
-    def transfer(self, to, amount, gas_limit=None, gas_price=None, data=""):
+    def transfer(self, to, amount, gas_limit=None, gas_price=None, data="", callback=None):
         '''Broadcasts a transaction from this account.
 
         Args:
@@ -234,20 +234,7 @@ class Account(_AccountBase):
         except ValueError as e:
             txid = _raise_or_return_tx(e)
         self.nonce += 1
-        return TransactionReceipt(txid, self)
-
-    def _contract_tx(self, fn, args, tx, name, callback=None):
-        tx['from'] = self.address
-        if type(CONFIG['active_network']['gas_price']) is int:
-            tx['gasPrice'] = CONFIG['active_network']['gas_price']
-        if type(CONFIG['active_network']['gas_limit']) is int:
-            tx['gas'] = CONFIG['active_network']['gas_limit']
-        try:
-            txid = fn(*args).transact(tx)
-        except ValueError as e:
-            txid = _raise_or_return_tx(e)
-        self.nonce += 1
-        return TransactionReceipt(txid, self, name=name, callback=callback)
+        return TransactionReceipt(txid, self, callback=callback)
 
 
 class LocalAccount(_AccountBase):
@@ -282,7 +269,7 @@ class LocalAccount(_AccountBase):
         json.dump(encrypted, json_file.open('w'))
         print("Saved to {}".format(json_file))
 
-    def transfer(self, to, amount, gas_limit=None, gas_price=None, data=''):
+    def transfer(self, to, amount, gas_limit=None, gas_price=None, data='', callback=None):
         '''Transfers ether from this account.
 
         Args:
@@ -307,27 +294,7 @@ class LocalAccount(_AccountBase):
         except ValueError as e:
             txid = _raise_or_return_tx(e)
         self.nonce += 1
-        return TransactionReceipt(txid, self)
-
-    def _contract_tx(self, fn, args, tx, name, callback=None):
-        try:
-            tx.update({
-                'from': self.address,
-                'nonce': self.nonce,
-                'gasPrice': self._gas_price(),
-                'gas': (
-                    CONFIG['active_network']['gas_limit'] or
-                    fn(*args).estimateGas({'from': self.address})
-                )
-            })
-            raw = fn(*args).buildTransaction(tx)
-            txid = web3.eth.sendRawTransaction(
-                self._acct.signTransaction(raw).rawTransaction
-            )
-        except ValueError as e:
-            txid = _raise_or_return_tx(e)
-        self.nonce += 1
-        return TransactionReceipt(txid, self, name=name, callback=callback)
+        return TransactionReceipt(txid, self, callback=callback)
 
 
 def _raise_or_return_tx(exc):
