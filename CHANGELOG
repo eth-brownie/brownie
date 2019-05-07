@@ -1,6 +1,7 @@
 1.0.0b4
 -------
 
+ - Add broadcast_reverting_tx flag
  - Use py-solc-x 0.4.0
  - Detect and attach to an already active RPC client, better verbosity on RPC exceptions
  - introduce Singleton metaclass and refactor code to take advantage
