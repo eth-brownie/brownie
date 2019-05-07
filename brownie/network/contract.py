@@ -6,17 +6,17 @@ import eth_abi
 from eth_hash.auto import keccak
 
 from brownie.cli.utils import color
-from brownie.exceptions import VirtualMachineError
 from .event import get_topics
 from .history import _ContractHistory
 from .web3 import Web3
 from brownie.types import KwargTuple
-from brownie.types.convert import format_input, format_output, to_address, wei
+from brownie.types.convert import format_input, format_output, to_address
 
 from brownie._config import ARGV, CONFIG
 
 _contracts = _ContractHistory()
 web3 = Web3()
+
 
 class _ContractBase:
 
@@ -167,17 +167,22 @@ class ContractConstructor:
                 )
             address = _contracts.list(library)[-1].address[-40:]
             bytecode = bytecode.replace(marker, address)
-        contract = web3.eth.contract(abi=[self.abi], bytecode=bytecode)
+
         args, tx = _get_tx(account, args)
-        tx = account._contract_tx(
-            contract.constructor,
-            format_input(self.abi, args),
-            tx,
-            self._name+".constructor",
-            self._callback
+        data = format_input(self.abi, args)
+        types = [i['type'] for i in self.abi['inputs']]
+        data = bytecode + eth_abi.encode_abi(types, data).hex()
+
+        tx = account.transfer(
+            "",
+            tx['value'],
+            gas_limit=tx['gas'],
+            gas_price=tx['gasPrice'],
+            data=data,
+            callback=self._callback
         )
         if tx.status == 1:
-            tx.contract_address = self._parent.at(tx.contract_address)
+            tx.contract_address = self._parent.at(tx.contract_address, account, tx)
             return tx.contract_address
         return tx
 
@@ -204,19 +209,17 @@ class Contract(_ContractBase):
         self.tx = tx
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         self._owner = owner
-        self._contract = web3.eth.contract(address=address, abi=self.abi)
         self.address = address
         for i in [i for i in self.abi if i['type'] == "function"]:
             if hasattr(self, i['name']):
                 raise AttributeError(
                     "Namespace collision: '{}.{}'".format(self._name, i['name'])
                 )
-            fn = getattr(self._contract.functions, i['name'])
             name = "{}.{}".format(self._name, i['name'])
             if i['stateMutability'] in ('view', 'pure'):
-                setattr(self, i['name'], ContractCall(fn, i, name, owner))
+                setattr(self, i['name'], ContractCall(address, i, name, owner))
             else:
-                setattr(self, i['name'], ContractTx(fn, i, name, owner))
+                setattr(self, i['name'], ContractTx(address, i, name, owner))
 
     def __repr__(self):
         return "<{0._name} Contract object '{1[string]}{0.address}{1}'>".format(self, color)
@@ -242,8 +245,8 @@ class _ContractMethod:
 
     _dir_color = "contract_method"
 
-    def __init__(self, fn, abi, name, owner):
-        self._fn = fn
+    def __init__(self, address, abi, name, owner):
+        self._address = address
         self._name = name
         self.abi = abi
         self._owner = owner
@@ -275,13 +278,8 @@ class _ContractMethod:
         args, tx = _get_tx(self._owner, args)
         if tx['from']:
             tx['from'] = str(tx['from'])
-        else:
-            del tx['from']
-        try:
-            result = self._fn(*format_input(self.abi, args)).call(tx)
-        except ValueError as e:
-            raise VirtualMachineError(e)
-
+        tx.update({'to': self._address, 'data': self.encode_abi(*args)})
+        result = web3.eth.call(dict((k, v) for k, v in tx.items() if v))
         if type(result) is not list or len(result) == 1:
             return format_output(result)
         return KwargTuple(result, self.abi)
@@ -301,11 +299,12 @@ class _ContractMethod:
                 "Contract has no owner, you must supply a tx dict"
                 " with a 'from' field as the last argument."
             )
-        return tx['from']._contract_tx(
-            self._fn,
-            format_input(self.abi, args),
-            tx,
-            self._name
+        return tx['from'].transfer(
+            self._address,
+            tx['value'],
+            gas_limit=tx['gas'],
+            gas_price=tx['gasPrice'],
+            data=self.encode_abi(*args)
         )
 
     def encode_abi(self, *args):
@@ -374,12 +373,15 @@ class ContractCall(_ContractMethod):
 
 def _get_tx(owner, args):
     # seperate contract inputs from tx dict
+    tx = {'from': owner, 'value': 0, 'gas': None, 'gasPrice': None}
     if args and type(args[-1]) is dict:
-        args, tx = (args[:-1], args[-1].copy())
-        if 'from' not in tx:
-            tx['from'] = owner
-        for key in [i for i in ('value', 'gas', 'gasPrice') if i in tx]:
-            tx[key] = wei(tx[key])
-    else:
-        tx = {'from': owner}
+        tx.update(args[-1])
+        args = args[:-1]
+        for key, target in [
+            ('amount', 'value'),
+            ('gas_limit', 'gas'),
+            ('gas_price', 'gasPrice')
+        ]:
+            if key in tx:
+                tx[target] = tx[key]
     return args, tx
