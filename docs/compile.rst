@@ -12,7 +12,19 @@ To compile a project:
 
 Each time the compiler runs, Brownie compares hashes of the contract source code against the existing compiled versions.  If a contract has not changed it will not be recompiled.  If you wish to force a recompile of the entire project, use ``brownie compile --all``.
 
-Modifying the compiler version or optomization settings within the project config file will result in a full recompile of the project.
+The compiler version is set in ``brownie-config.json``. If the required version is not present, it will be installed when Brownie loads.
+
+.. code-block:: javascript
+
+    {
+        "solc":{
+            "optimize": true,
+            "runs": 200,
+            "version": "0.5.7"
+        }
+    }
+
+Modifying the compiler version or optimization settings will result in a full recompile of the project.
 
 .. _compile-json:
 
