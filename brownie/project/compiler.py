@@ -34,13 +34,16 @@ sources = Sources()
 
 def set_solc_version():
     '''Sets the solc version based on the project config file.'''
-    solcx.set_solc_version(CONFIG['solc']['version'])
+    try:
+        solcx.set_solc_version(CONFIG['solc']['version'])
+    except solcx.exceptions.SolcNotInstalled:
+        solcx.install_solc(CONFIG['solc']['version'])
+        solcx.set_solc_version(CONFIG['solc']['version'])
     CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
 
 
 def compile_contracts(contract_paths):
     '''Compiles the contract files and returns a dict of build data.'''
-    CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
     print("Compiling contracts...")
     print("Optimizer: {}".format(
         "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
@@ -76,8 +79,6 @@ def _compile_and_format(input_json):
         raise CompilerError(e)
     compiled = _generate_pcMap(compiled)
     result = {}
-    compiler_info = CONFIG['solc'].copy()
-    compiler_info['version'] = solcx.get_solc_version_string().strip('\n')
 
     for filename, name in [(k,x) for k,v in compiled['contracts'].items() for x in v]:
         data = compiled['contracts'][filename][name]
@@ -99,7 +100,7 @@ def _compile_and_format(input_json):
             'ast': compiled['sources'][filename]['ast'],
             'bytecode': evm['bytecode']['object'],
             'bytecodeSha1': sha1(evm['bytecode']['object'][:-68].encode()).hexdigest(),
-            'compiler': compiler_info,
+            'compiler': CONFIG['solc'],
             'contractName': name,
             'deployedBytecode': evm['deployedBytecode']['object'],
             'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
