@@ -7,10 +7,12 @@
     "networks": {
         "development": {
             "test-rpc": "ganache-cli",
-            "host": "http://127.0.0.1:8545"
+            "host": "http://127.0.0.1:8545",
+            "broadcast_reverting_tx": true
         },
         "ropsten": {
-            "host": "https://ropsten.infura.io/"
+            "host": "https://ropsten.infura.io/",
+            "broadcast_reverting_tx": false
         }
     },
     "test":{

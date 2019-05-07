@@ -163,6 +163,17 @@ class _AccountBase:
     def _gas_price(self):
         return CONFIG['active_network']['gas_price'] or web3.eth.gasPrice
 
+    def _check_for_revert(self, tx):
+        if (
+            'broadcast_reverting_tx' not in CONFIG['active_network'] or
+            CONFIG['active_network']['broadcast_reverting_tx']
+        ):
+            return
+        try:
+            web3.eth.call(dict((k, v) for k, v in tx.items() if v))
+        except ValueError as e:
+            raise VirtualMachineError(e)
+
     def balance(self):
         '''Returns the current balance at the address, in wei.'''
         return web3.eth.getBalance(self.address)
@@ -195,8 +206,7 @@ class _AccountBase:
             })
         except ValueError as e:
             txid = _raise_or_return_tx(e)
-        finally:
-            self.nonce += 1
+        self.nonce += 1
         tx = TransactionReceipt(
             txid,
             self,
@@ -252,8 +262,7 @@ class _AccountBase:
             })
         except ValueError as e:
             txid = _raise_or_return_tx(e)
-        finally:
-            self.nonce += 1
+        self.nonce += 1
         return TransactionReceipt(txid, self)
 
 
@@ -269,6 +278,7 @@ class Account(_AccountBase):
         return "<Account object '{0[string]}{1}{0}'>".format(color, self.address)
 
     def _transact(self, tx):
+        self._check_for_revert(tx)
         return web3.eth.sendTransaction(tx)
 
 
@@ -305,6 +315,7 @@ class LocalAccount(_AccountBase):
         print("Saved to {}".format(json_file))
 
     def _transact(self, tx):
+        self._check_for_revert(tx)
         signed_tx = self._acct.signTransaction(tx).rawTransaction
         return web3.eth.sendRawTransaction(signed_tx)
 
