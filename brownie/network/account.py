@@ -155,11 +155,19 @@ class _AccountBase:
                 return False
         return super().__eq__(other)
 
+    def _gas_limit(self, to, amount, data=""):
+        if type(CONFIG['active_network']['gas_limit']) is int:
+            return CONFIG['active_network']['gas_limit']
+        return self.estimate_gas(to, amount, data)
+
+    def _gas_price(self):
+        return CONFIG['active_network']['gas_price'] or web3.eth.gasPrice
+
     def balance(self):
         '''Returns the current balance at the address, in wei.'''
         return web3.eth.getBalance(self.address)
 
-    def deploy(self, contract, *args):
+    def deploy(self, contract, *args, amount=None, gas_limit=None, gas_price=None, callback=None):
         '''Deploys a contract.
 
         Args:
@@ -167,10 +175,38 @@ class _AccountBase:
             *args: Constructor arguments. The last argument may optionally be
                    a dictionary of transaction values.
 
+        Kwargs:
+            amount: Amount of ether to send with transaction, in wei.
+            gas_limit: Gas limit of the transaction.
+            gas_price: Gas price of the transaction.
+            callback: Callback function to attach to TransactionReceipt.
+
         Returns:
             * Contract instance if the transaction confirms
             * TransactionReceipt if the transaction is pending or reverts'''
-        return contract.deploy(self, *args)
+        data = contract.deploy.encode_abi(*args)
+        try:
+            txid = self._transact({
+                'from': self.address,
+                'value': wei(amount),
+                'gasPrice': wei(gas_price) or self._gas_price(),
+                'gas': wei(gas_limit) or self._gas_limit(amount, data),
+                'data': HexBytes(data)
+            })
+        except ValueError as e:
+            txid = _raise_or_return_tx(e)
+        finally:
+            self.nonce += 1
+        tx = TransactionReceipt(
+            txid,
+            self,
+            name=contract._name+".constructor",
+            callback=callback
+        )
+        if tx.status != 1:
+            return tx
+        tx.contract_address = contract.at(tx.contract_address, self, tx)
+        return tx.contract_address
 
     def estimate_gas(self, to, amount, data=""):
         '''Estimates the gas cost for a transaction. Raises VirtualMachineError
@@ -190,13 +226,35 @@ class _AccountBase:
             'value': wei(amount)
         })
 
-    def _gas_limit(self, to, amount, data=""):
-        if type(CONFIG['active_network']['gas_limit']) is int:
-            return CONFIG['active_network']['gas_limit']
-        return self.estimate_gas(to, amount, data)
+    def transfer(self, to, amount, gas_limit=None, gas_price=None, data=""):
+        '''Transfers ether from this account.
 
-    def _gas_price(self):
-        return CONFIG['active_network']['gas_price'] or web3.eth.gasPrice
+        Args:
+            to: Account instance or address string to transfer to.
+            amount: Amount of ether to send, in wei.
+
+        Kwargs:
+            gas_limit: Gas limit of the transaction.
+            gas_price: Gas price of the transaction.
+            data: Hexstring of data to include in transaction.
+
+        Returns:
+            TransactionReceipt object'''
+        try:
+            txid = self._transact({
+                'from': self.address,
+                'nonce': self.nonce,
+                'gasPrice': wei(gas_price) or self._gas_price(),
+                'gas': wei(gas_limit) or self._gas_limit(to, amount, data),
+                'to': str(to),
+                'value': wei(amount),
+                'data': HexBytes(data)
+            })
+        except ValueError as e:
+            txid = _raise_or_return_tx(e)
+        finally:
+            self.nonce += 1
+        return TransactionReceipt(txid, self)
 
 
 class Account(_AccountBase):
@@ -210,31 +268,8 @@ class Account(_AccountBase):
     def _console_repr(self):
         return "<Account object '{0[string]}{1}{0}'>".format(color, self.address)
 
-    def transfer(self, to, amount, gas_limit=None, gas_price=None, data="", callback=None):
-        '''Broadcasts a transaction from this account.
-
-        Args:
-            to: Account instance or address string to transfer to.
-            amount: Amount of ether to send, in wei.
-            gas_limit: Gas limit of the transaction.
-            gas_price: Gas price of the transaction.
-            data: Transaction data hexstring.
-
-        Returns:
-            TransactionReceipt instance'''
-        try:
-            txid = web3.eth.sendTransaction({
-                'from': self.address,
-                'to': str(to),
-                'value': wei(amount),
-                'gasPrice': wei(gas_price) or self._gas_price(),
-                'gas': wei(gas_limit) or self._gas_limit(to, amount, data),
-                'data': HexBytes(data)
-            })
-        except ValueError as e:
-            txid = _raise_or_return_tx(e)
-        self.nonce += 1
-        return TransactionReceipt(txid, self, callback=callback)
+    def _transact(self, tx):
+        return web3.eth.sendTransaction(tx)
 
 
 class LocalAccount(_AccountBase):
@@ -269,32 +304,9 @@ class LocalAccount(_AccountBase):
         json.dump(encrypted, json_file.open('w'))
         print("Saved to {}".format(json_file))
 
-    def transfer(self, to, amount, gas_limit=None, gas_price=None, data='', callback=None):
-        '''Transfers ether from this account.
-
-        Args:
-            to: Account instance or address string to transfer to.
-            amount: Amount of ether to send, in wei.
-            gas_limit: Gas limit of the transaction.
-            gas_price: Gas price of the transaction.
-
-        Returns:
-            TransactionReceipt instance'''
-        try:
-            signed_tx = self._acct.signTransaction({
-                'from': self.address,
-                'nonce': self.nonce,
-                'gasPrice': wei(gas_price) or self._gas_price(),
-                'gas': wei(gas_limit) or self._gas_limit(to, amount, data),
-                'to': str(to),
-                'value': wei(amount),
-                'data': HexBytes(data)
-            }).rawTransaction
-            txid = web3.eth.sendRawTransaction(signed_tx)
-        except ValueError as e:
-            txid = _raise_or_return_tx(e)
-        self.nonce += 1
-        return TransactionReceipt(txid, self, callback=callback)
+    def _transact(self, tx):
+        signed_tx = self._acct.signTransaction(tx).rawTransaction
+        return web3.eth.sendRawTransaction(signed_tx)
 
 
 def _raise_or_return_tx(exc):

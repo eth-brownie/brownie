@@ -156,6 +156,23 @@ class ContractConstructor:
         Returns:
             * Contract instance if the transaction confirms
             * TransactionReceipt if the transaction is pending or reverts'''
+        args, tx = _get_tx(account, args)
+        return account.deploy(
+            self._parent,
+            *args,
+            amount=tx['value'],
+            gas_limit=tx['gas'],
+            gas_price=tx['gasPrice'],
+            callback=self._callback
+        )
+
+    def _callback(self, tx):
+        # ensures the Contract instance is added to the container if the user
+        # presses CTRL-C while deployment is still pending
+        if tx.status == 1:
+            tx.contract_address = self._parent.at(tx.contract_address, tx.sender, tx)
+
+    def encode_abi(self, *args):
         bytecode = self._parent.bytecode
         # find and replace unlinked library pointers in bytecode
         for marker in re.findall('_{1,}[^_]*_{1,}', bytecode):
@@ -168,29 +185,9 @@ class ContractConstructor:
             address = _contracts.list(library)[-1].address[-40:]
             bytecode = bytecode.replace(marker, address)
 
-        args, tx = _get_tx(account, args)
         data = format_input(self.abi, args)
         types = [i['type'] for i in self.abi['inputs']]
-        data = bytecode + eth_abi.encode_abi(types, data).hex()
-
-        tx = account.transfer(
-            "",
-            tx['value'],
-            gas_limit=tx['gas'],
-            gas_price=tx['gasPrice'],
-            data=data,
-            callback=self._callback
-        )
-        if tx.status == 1:
-            tx.contract_address = self._parent.at(tx.contract_address, account, tx)
-            return tx.contract_address
-        return tx
-
-    def _callback(self, tx):
-        # ensures the Contract instance is added to the container if the user
-        # presses CTRL-C while deployment is still pending
-        if tx.status == 1:
-            tx.contract_address = self._parent.at(tx.contract_address, tx.sender, tx)
+        return bytecode + eth_abi.encode_abi(types, data).hex()
 
 
 class Contract(_ContractBase):
@@ -279,9 +276,10 @@ class _ContractMethod:
         if tx['from']:
             tx['from'] = str(tx['from'])
         tx.update({'to': self._address, 'data': self.encode_abi(*args)})
-        result = web3.eth.call(dict((k, v) for k, v in tx.items() if v))
-        if type(result) is not list or len(result) == 1:
-            return format_output(result)
+        data = web3.eth.call(dict((k, v) for k, v in tx.items() if v))
+        result = eth_abi.decode_abi([i['type'] for i in self.abi['outputs']], data)
+        if len(result) == 1:
+            return format_output(result[0])
         return KwargTuple(result, self.abi)
 
     def transact(self, *args):
@@ -372,7 +370,7 @@ class ContractCall(_ContractMethod):
 
 
 def _get_tx(owner, args):
-    # seperate contract inputs from tx dict
+    # seperate contract inputs from tx dict and set default tx values
     tx = {'from': owner, 'value': 0, 'gas': None, 'gasPrice': None}
     if args and type(args[-1]) is dict:
         tx.update(args[-1])
