@@ -34,7 +34,11 @@ sources = Sources()
 
 def set_solc_version():
     '''Sets the solc version based on the project config file.'''
-    solcx.set_solc_version(CONFIG['solc']['version'])
+    try:
+        solcx.set_solc_version(CONFIG['solc']['version'])
+    except solcx.exceptions.SolcNotInstalled:
+        solcx.install_solc(CONFIG['solc']['version'])
+        solcx.set_solc_version(CONFIG['solc']['version'])
     CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
 
 
