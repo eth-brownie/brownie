@@ -1,21 +1,15 @@
 # Development
 
-To start development for py-solc-x you should begin by cloning the repo.
+To start development for Brownie you should begin by cloning the repo.
 
 ```bash
-$ git clone https://github.com/iamdefinitelyahuman/py-solc-x.git
+$ git clone https://github.com/HyperLink-Technology/brownie.git
 ```
-
-## Cute Animal Pictures
-
-All pull requests need to have a cute animal picture. This is a very important
-part of the development process.
 
 ## Pull Requests
 
 Pull requests are welcomed! Please try to adhere to the following.
 
-- code should conform to PEP8 and as well as the linting done by flake8
 - include any relevant documentation updates
 
 It's a good idea to make pull requests early on. A pull request represents the

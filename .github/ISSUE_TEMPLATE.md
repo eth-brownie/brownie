@@ -1,4 +1,5 @@
 * `brownie` Version: x.x.x
+* `py-solc-x` Verision: x.x.x
 * `solc` Version: x.x.x
 * Python Version: x.x.x
 * OS: osx/linux/win
