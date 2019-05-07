@@ -11,7 +11,9 @@ from brownie.types.types import (
     _Singleton
 )
 
-IGNORE_MISSING = ['active_network', 'folders', 'logging']
+REPLACE_IN_UPDATE = ['active_network', 'networks']
+IGNORE_IF_MISSING = ['folders', 'logging']
+
 
 def _load_default_config():
     '''Loads the default configuration settings from brownie/data/config.json'''
@@ -32,6 +34,7 @@ def _load_default_config():
         config['logging'] = {"tx": 1, "exc": 1}
     return config
 
+
 def load_project_config():
     '''Loads configuration settings from a project's brownie-config.json'''
     CONFIG._unlock()
@@ -45,9 +48,10 @@ def load_project_config():
                 str(path)
             )
             print("WARNING: No config file found for this project. A new one has been created.")
-    CONFIG.setdefault('active_network',{'name': None})
+    CONFIG.setdefault('active_network', {'name': None})
 
-def modify_network_config(network = None):
+
+def modify_network_config(network=None):
     '''Modifies the 'active_network' configuration settings'''
     CONFIG._unlock()
     try:
@@ -67,11 +71,13 @@ def modify_network_config(network = None):
 # merges project .json with brownie .json
 def _recursive_update(original, new, base):
     for k in new:
-        if type(new[k]) is dict and k in original:
+        if type(new[k]) is dict and k in REPLACE_IN_UPDATE:
+            original[k] = new[k]
+        elif type(new[k]) is dict and k in original:
             _recursive_update(original[k], new[k], base+[k])
         else:
             original[k] = new[k]
-    for k in [i for i in original if i not in new and not set(base+[i]).intersection(IGNORE_MISSING)]:
+    for k in [i for i in original if i not in new and not set(base+[i]).intersection(IGNORE_IF_MISSING)]:
         print(
             "WARNING: Value '{}' not found in the config file for this project."
             " The default setting has been used.".format(".".join(base+[k]))
