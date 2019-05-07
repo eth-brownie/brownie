@@ -179,14 +179,15 @@ Account Methods
         >>> accounts[0].balance()
         100000000000000000000
 
-.. py:classmethod:: Account.deploy(contract, *args)
+.. py:classmethod:: Account.deploy(contract, *args, amount=None, gas_limit=None, gas_price=None, callback=None)
 
     Deploys a contract.
 
     * ``contract``: A ``ContractContainer`` instance of the contract to be deployed.
     * ``*args``: Contract constructor arguments.
-
-    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument.
+    * ``amount``: Amount to send, in wei_.
+    * ``gas_limit``: Gas limit, in wei_. If none is given, the price is set using ``eth_estimateGas``.
+    * ``gas_price``: Gas price, in wei_. If none is given, the price is set using ``eth_gasPrice``.
 
     Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
 
