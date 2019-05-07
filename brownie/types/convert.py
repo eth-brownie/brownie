@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import eth_utils
+from hexbytes import HexBytes
 
 UNITS = {
     'wei': 1,
@@ -144,7 +145,7 @@ def to_string(value):
     value = str(value)
     if eth_utils.is_hex(value):
         value = eth_utils.to_text(value)
-    return value.encode()
+    return value
 
 
 def format_output(value):
@@ -153,6 +154,8 @@ def format_output(value):
         return tuple(format_output(i) for i in value)
     elif type(value) is bytes:
         return "0x"+value.hex()
+    elif type(value) is HexBytes:
+        return value.hex()
     return value
 
 
