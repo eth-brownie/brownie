@@ -27,6 +27,7 @@ class Rpc(metaclass=_Singleton):
         self._rpc = None
         self._time_offset = 0
         self._snapshot_id = False
+        self._internal_id = False
         self._reset_id = False
         self._objects = []
         atexit.register(self._at_exit)
@@ -208,3 +209,17 @@ class Rpc(metaclass=_Singleton):
         self._snapshot_id = None
         self._reset_id = self._revert(self._reset_id)
         return "Block height reset to 0"
+
+    def _internal_snap(self):
+        if not self._internal_id:
+            self._internal_id = self._snap()
+
+    def _internal_clear(self):
+        self._internal_id = None
+
+    def _internal_revert(self):
+        self._request("evm_revert", [self._internal_id])
+        self._internal_id = None
+        self.sleep(0)
+        for i in self._objects:
+            i._revert()

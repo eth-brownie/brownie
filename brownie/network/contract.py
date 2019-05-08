@@ -302,6 +302,7 @@ class _ContractMethod:
                 "Contract has no owner, you must supply a tx dict"
                 " with a 'from' field as the last argument."
             )
+        rpc._internal_clear()
         return tx['from'].transfer(
             self._address,
             tx['value'],
@@ -369,9 +370,10 @@ class ContractCall(_ContractMethod):
         Returns:
             Contract method return value(s).'''
         if ARGV['always_transact']:
-            id_ = rpc._snap()
-            tx = self.transact(*args)
-            rpc._revert(id_)
+            rpc._internal_snap()
+            tx = self.transact(*args, {'gas_price': 0})
+            if tx.modified_state:
+                rpc._internal_revert()
             return tx.return_value
         return self.call(*args)
 
