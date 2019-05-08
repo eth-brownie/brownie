@@ -2,6 +2,7 @@
 -------
 
  - Use relative paths in build json files
+ - Revert calls-as-transactions when evaluating coverage
 
 1.0.0b4
 -------

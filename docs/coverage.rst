@@ -8,7 +8,7 @@ Checking Test Coverage
 
 Test coverage is estimated by generating a map of opcodes associated with each function and line of the smart contract source code, and then analyzing the stack trace of each transaction to see which opcodes were executed.
 
-When analyzing coverage, contract calls are executed as transactions. This allows analysis for non state-changing methods, however it also means that calls will consume gas, increase the block height and increase the nonce of an address. You can prevent this behaviour by adding ``always_transact=False`` as a keyword argument for a test.
+When analyzing coverage, contract calls are executed as transactions to allow analysis for non state-changing methods. After each call, the state of the local chain is reverted to immediately before the call. For tests that involve many calls this can result in significantly slower execution time. You can prevent this behaviour by adding ``always_transact=False`` as a keyword argument for a test.
 
 To check your unit test coverage, type:
 
