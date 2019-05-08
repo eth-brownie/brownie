@@ -288,17 +288,17 @@ class TransactionReceipt:
         self.trace = trace = self._trace
         if not trace:
             return
-        c = self.contract_address or self.receiver
-        last = {0: {
-            'address': c.address,
-            'contract': c._name,
+        contract = self.contract_address or self.receiver
+        last_map = {0: {
+            'address': contract.address,
+            'contract': contract,
             'fn': [self.fn_name.split('.')[-1]],
         }}
-        pc = c._build['pcMap'][0]
+        pc = contract._build['pcMap'][0]
         trace[0].update({
-            'address': last[0]['address'],
-            'contractName': last[0]['contract'],
-            'fn': last[0]['fn'][-1],
+            'address': last_map[0]['address'],
+            'contractName': last_map[0]['contract']._name,
+            'fn': last_map[0]['fn'][-1],
             'jumpDepth': 1,
             'source': {
                 'filename': pc['contract'],
@@ -310,23 +310,24 @@ class TransactionReceipt:
             # if depth has increased, tx has called into a different contract
             if trace[i]['depth'] > trace[i-1]['depth']:
                 address = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
-                c = _contracts.find(address)
+                contract = _contracts.find(address)
                 stack_idx = -4 if trace[i-1]['op'] in ('CALL', 'CALLCODE') else -3
                 memory_idx = int(trace[i-1]['stack'][stack_idx], 16) * 2
                 sig = "0x" + "".join(trace[i-1]['memory'])[memory_idx:memory_idx+8]
-                last[trace[i]['depth']] = {
+                last_map[trace[i]['depth']] = {
                     'address': address,
-                    'contract': c._name,
-                    'fn': [next((k for k, v in c.signatures.items() if v == sig), "")],
+                    'contract': contract,
+                    'fn': [contract.get_method(sig) or ""],
                     }
+            last = last_map[trace[i]['depth']]
+            contract = last['contract']
             trace[i].update({
-                'address': last[trace[i]['depth']]['address'],
-                'contractName': last[trace[i]['depth']]['contract'],
-                'fn': last[trace[i]['depth']]['fn'][-1],
-                'jumpDepth': len(set(last[trace[i]['depth']]['fn']))
+                'address': last['address'],
+                'contractName': contract._name,
+                'fn': last['fn'][-1],
+                'jumpDepth': len(set(last['fn']))
             })
-            c = _contracts.find(trace[i]['address'])
-            pc = c._build['pcMap'][trace[i]['pc']]
+            pc = contract._build['pcMap'][trace[i]['pc']]
             trace[i]['source'] = {
                 'filename': pc['contract'],
                 'start': pc['start'],
@@ -334,15 +335,15 @@ class TransactionReceipt:
             }
             # jump 'i' is moving into an internal function
             if pc['jump'] == 'i':
-                source = c._build['source'][pc['start']:pc['stop']]
+                source = contract._build['source'][pc['start']:pc['stop']]
                 if source[:7] not in ("library", "contrac") and "(" in source:
                     fn = source[:source.index('(')].split('.')[-1]
                 else:
-                    fn = last[trace[i]['depth']]['fn'][-1]
-                last[trace[i]['depth']]['fn'].append(fn)
+                    fn = last['fn'][-1]
+                last['fn'].append(fn)
             # jump 'o' is coming out of an internal function
-            elif pc['jump'] == "o" and len(last[trace[i]['depth']]['fn']) > 1:
-                last[trace[i]['depth']]['fn'].pop()
+            elif pc['jump'] == "o" and len(['fn']) > 1:
+                del last['fn'][-1]
 
     def call_trace(self):
         '''Displays the sequence of contracts and functions called while
@@ -375,7 +376,6 @@ class TransactionReceipt:
                 idx -= 1
                 continue
             span = (self.trace[idx]['source']['start'], self.trace[idx]['source']['stop'])
-            c = _contracts.find(self.trace[idx]['address'])
             if sources.get_type(self.trace[idx]['contractName']) in ("contract", "library"):
                 idx -= 1
                 continue
