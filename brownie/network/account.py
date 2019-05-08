@@ -256,7 +256,7 @@ class _AccountBase:
             txid = self._transact({
                 'from': self.address,
                 'nonce': self.nonce,
-                'gasPrice': wei(gas_price) or self._gas_price(),
+                'gasPrice': wei(gas_price) if gas_price is not None else self._gas_price(),
                 'gas': wei(gas_limit) or self._gas_limit(to, amount, data),
                 'to': str(to),
                 'value': wei(amount),
