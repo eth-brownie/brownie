@@ -8,6 +8,7 @@ from eth_hash.auto import keccak
 from brownie.cli.utils import color
 from .event import get_topics
 from .history import _ContractHistory
+from .rpc import Rpc
 from .web3 import Web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_input, format_output, to_address
@@ -15,6 +16,7 @@ from brownie.exceptions import VirtualMachineError
 from brownie._config import ARGV, CONFIG
 
 _contracts = _ContractHistory()
+rpc = Rpc()
 web3 = Web3()
 
 
@@ -367,7 +369,9 @@ class ContractCall(_ContractMethod):
         Returns:
             Contract method return value(s).'''
         if ARGV['always_transact']:
+            id_ = rpc._snap()
             tx = self.transact(*args)
+            rpc._revert(id_)
             return tx.return_value
         return self.call(*args)
 
