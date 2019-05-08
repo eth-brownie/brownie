@@ -54,7 +54,7 @@ def _run_test(module, fn_name, count, total):
             fn.__code__.co_varnames[:len(fn.__defaults__)],
             fn.__defaults__
         ))
-        if 'skip' in args and args['skip']:
+        if 'skip' in args and (args['skip']==True or (args['skip']=="coverage" and ARGV['coverage'])):
             sys.stdout.write(
                 "\r {0[pending]}\u229d{0[dull]} {1} - ".format(color, count) +
                 "{1} ({0[pending]}skipped{0[dull]}){0}\n".format(color, desc)

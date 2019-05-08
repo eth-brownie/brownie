@@ -49,7 +49,7 @@ You can optionally include a docstring in each test method to give more verbosit
 
 The following keyword arguments can be used to affect how a test runs:
 
-* ``skip``: If set to ``True``, this test will not be run.
+* ``skip``: If set to ``True``, this test will not be run. If set to ``coverage``, the test will only be skipped during coverage evaluation.
 * ``pending``: If set to ``True``, this test is expected to fail. If the test passes it will raise an ``ExpectedFailing`` exception.
 * ``always_transact``: If set to ``False``, calls to non state-changing methods will still execute as calls when running test coverage analysis. See :ref:`coverage` for more information.
 
