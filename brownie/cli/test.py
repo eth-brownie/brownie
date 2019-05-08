@@ -140,7 +140,7 @@ def run_test(filename, network, idx):
         if traceback_info and traceback_info[-1][2] == ReadTimeout:
             print(" {0[error]}WARNING{0}: RPC crashed, terminating test".format(color))
             network.rpc.kill(False)
-            network.rpc.launch()
+            network.rpc.launch(CONFIG['active_network']['test-rpc'])
             break
         test_history.update(TxHistory().copy())
     return test_history, traceback_info
