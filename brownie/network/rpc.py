@@ -4,15 +4,13 @@ import atexit
 import psutil
 from subprocess import DEVNULL, PIPE
 import sys
-from threading import Thread
 import time
 
 from .web3 import Web3
-from .account import Accounts
-from .history import TxHistory, _ContractHistory
+
 from brownie.types.types import _Singleton
 from brownie.exceptions import RPCProcessError, RPCConnectionError
-from brownie._config import CONFIG
+
 
 web3 = Web3()
 
@@ -30,6 +28,7 @@ class Rpc(metaclass=_Singleton):
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
+        self._objects = []
         atexit.register(self._at_exit)
 
     def _at_exit(self):
@@ -74,13 +73,13 @@ class Rpc(metaclass=_Singleton):
             raise RPCProcessError(cmd, self._rpc, uri)
         # check that web3 can connect
         if not web3.providers:
-            _reset()
+            self._reset()
             return
         for i in range(50):
             time.sleep(0.05)
             if web3.isConnected():
                 self._reset_id = self._snap()
-                _reset()
+                self._reset()
                 return
         rpc = self._rpc
         self.kill(False)
@@ -104,7 +103,7 @@ class Rpc(metaclass=_Singleton):
         self._rpc = psutil.Process(proc.pid)
         if web3.providers:
             self._reset_id = self._snap()
-        _reset()
+        self._reset()
 
     def kill(self, exc=True):
         '''Terminates the RPC process and all children with SIGKILL.
@@ -125,7 +124,7 @@ class Rpc(metaclass=_Singleton):
         self._snapshot_id = False
         self._reset_id = False
         self._rpc = None
-        _reset()
+        self._reset()
 
     def _request(self, *args):
         if not self.is_active():
@@ -144,8 +143,13 @@ class Rpc(metaclass=_Singleton):
         self._request("evm_revert", [id_])
         id_ = self._snap()
         self.sleep(0)
-        _revert()
+        for i in self._objects:
+            i._revert()
         return id_
+
+    def _reset(self):
+        for i in self._objects:
+            i._reset()
 
     def is_active(self):
         '''Returns True if Rpc client is currently active.'''
@@ -204,15 +208,3 @@ class Rpc(metaclass=_Singleton):
         self._snapshot_id = None
         self._reset_id = self._revert(self._reset_id)
         return "Block height reset to 0"
-
-
-def _reset():
-    TxHistory()._reset()
-    _ContractHistory()._reset()
-    Accounts()._reset()
-
-
-def _revert():
-    TxHistory()._revert()
-    _ContractHistory()._revert()
-    Accounts()._revert()
