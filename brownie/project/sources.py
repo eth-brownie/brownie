@@ -18,8 +18,11 @@ class Sources(metaclass=_Singleton):
         self._string_iter = 1
     
     def _load(self):
-        self. _path = Path(CONFIG['folders']['project']).joinpath('contracts')
-        for path in [i for i in self._path.glob('**/*.sol') if "/_" not in str(i)]:
+        base_path = Path(CONFIG['folders']['project'])
+        self. _path = base_path.joinpath('contracts')
+        for path in [i.relative_to(base_path) for i in self._path.glob('**/*.sol')]:
+            if "/_" in str(path):
+                continue
             self._source[str(path)] = path.open().read()
             self._get_contract_data(path)
         for name, inherited in [(k, v['inherited'].copy()) for k,v in self._data.items()]:

@@ -220,8 +220,7 @@ def main():
                     "Evaluating test coverage ({:.4f}s)\n".format(time.time()-stime)
                 )
                 sys.stdout.flush()
-            build_folder = Path(CONFIG['folders']['project']).joinpath('build/contracts')
-            build_files = set(build_folder.joinpath(i+'.json') for i in coverage_eval)
+            build_files = set(Path('build/contracts/{}.json'.format(i)) for i in coverage_eval)
             coverage_eval = {
                 'coverage': coverage_eval,
                 'sha1': dict((str(i), Build()[i.stem]['bytecodeSha1']) for i in build_files)
@@ -229,7 +228,7 @@ def main():
             if args['<range>']:
                 continue
 
-            test_path = Path(CONFIG['folders']['project']).joinpath(filename+".py")
+            test_path = Path(filename+".py")
             coverage_eval['sha1'][str(test_path)] = get_ast_hash(test_path)
 
             json.dump(
