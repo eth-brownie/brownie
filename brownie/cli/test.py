@@ -17,6 +17,7 @@ import brownie.network as network
 from brownie.network.history import TxHistory
 import brownie.network.transaction as transaction
 from brownie.project.build import Build, get_ast_hash
+from brownie.types import FalseyDict
 from brownie._config import ARGV, CONFIG
 
 COVERAGE_COLORS = [
@@ -44,24 +45,27 @@ By default brownie runs every script found in the tests folder as well as any
 subfolders. Files and folders beginning with an underscore will be skipped."""
 
 
+def _get_args(fn):
+    if not fn.__defaults__:
+        return FalseyDict()
+    return FalseyDict(zip(
+        fn.__code__.co_varnames[:len(fn.__defaults__)],
+        fn.__defaults__
+    ))
+
+
 def _run_test(module, fn_name, count, total):
     fn = getattr(module, fn_name)
     desc = fn.__doc__ or fn_name
     sys.stdout.write("   {0} - {1} ({0}/{2})...".format(count, desc, total))
     sys.stdout.flush()
-    if fn.__defaults__:
-        args = dict(zip(
-            fn.__code__.co_varnames[:len(fn.__defaults__)],
-            fn.__defaults__
-        ))
-        if 'skip' in args and (args['skip']==True or (args['skip']=="coverage" and ARGV['coverage'])):
-            sys.stdout.write(
-                "\r {0[pending]}\u229d{0[dull]} {1} - ".format(color, count) +
-                "{1} ({0[pending]}skipped{0[dull]}){0}\n".format(color, desc)
-            )
-            return []
-    else:
-        args = {}
+    args = _get_args(fn)
+    if args['skip'] == True or (args['skip']=="coverage" and ARGV['coverage']):
+        sys.stdout.write(
+            "\r {0[pending]}\u229d{0[dull]} {1} - ".format(color, count) +
+            "{1} ({0[pending]}skipped{0[dull]}){0}\n".format(color, desc)
+        )
+        return []
     try:
         stime = time.time()
         if ARGV['coverage'] and 'always_transact' in args:
@@ -69,7 +73,7 @@ def _run_test(module, fn_name, count, total):
         fn()
         if ARGV['coverage']:
             ARGV['always_transact'] = True
-        if 'pending' in args and args['pending']:
+        if args['pending']:
             raise ExpectedFailing("Test was expected to fail")
         sys.stdout.write("\r {0[success]}\u2713{0} {1} - {2} ({3:.4f}s) \n".format(
             color, count, desc, time.time()-stime
@@ -77,7 +81,7 @@ def _run_test(module, fn_name, count, total):
         sys.stdout.flush()
         return []
     except Exception as e:
-        if type(e) != ExpectedFailing and 'pending' in args and args['pending']:
+        if type(e) != ExpectedFailing and args['pending']:
             c = [color('success'), color('dull'), color()]
         else:
             c = [color('error'), color('dull'), color()]
@@ -89,7 +93,7 @@ def _run_test(module, fn_name, count, total):
             count
         ))
         sys.stdout.flush()
-        if type(e) != ExpectedFailing and 'pending' in args and args['pending']:
+        if type(e) != ExpectedFailing and args['pending']:
             return []
         filename = str(Path(module.__file__).relative_to(CONFIG['folders']['project']))
         fn_name = filename[:-2]+fn_name
@@ -117,7 +121,6 @@ def run_test(filename, network, idx):
             )
         )
     traceback_info = []
-    test_history = set()
     if not test_names:
         print("\n{0[error]}WARNING{0}: No test functions in {0[module]}{1}.py{0}".format(color, filename))
         return [], []
@@ -132,7 +135,7 @@ def run_test(filename, network, idx):
         test_names.remove('setup')
         traceback_info += _run_test(module, 'setup', 0, len(test_names))
         if traceback_info:
-            return TxHistory().copy(), traceback_info
+            return traceback_info
     network.rpc.snapshot()
     for c, t in enumerate(test_names[idx], start=idx.start + 1):
         network.rpc.revert()
@@ -142,8 +145,7 @@ def run_test(filename, network, idx):
             network.rpc.kill(False)
             network.rpc.launch(CONFIG['active_network']['test-rpc'])
             break
-        test_history.update(TxHistory().copy())
-    return test_history, traceback_info
+    return traceback_info
 
 
 def get_test_files(path):
@@ -168,6 +170,8 @@ def main():
     ARGV._update_from_args(args)
     if ARGV['coverage']:
         ARGV['always_transact'] = True
+        history = TxHistory()
+        history._revert_lock = True
     traceback_info = []
     test_files = get_test_files(args['<filename>'])
 
@@ -203,7 +207,8 @@ def main():
                     if not p.exists():
                         p.mkdir()
 
-            test_history, tb = run_test(filename, network, idx)
+
+            tb = run_test(filename, network, idx)
             if tb:
                 traceback_info += tb
                 if coverage_json.exists():
@@ -214,7 +219,7 @@ def main():
                 stime = time.time()
                 sys.stdout.write("     - Evaluating test coverage...")
                 sys.stdout.flush()
-                coverage_eval = analyze_coverage(test_history)
+                coverage_eval = analyze_coverage(history.copy())
                 sys.stdout.write(
                     "\r {0[success]}\u2713{0}   - ".format(color) +
                     "Evaluating test coverage ({:.4f}s)\n".format(time.time()-stime)

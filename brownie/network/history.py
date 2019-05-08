@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 
+from .rpc import Rpc
 from brownie.types.types import _Singleton
 from brownie.types.convert import to_address
 from .web3 import Web3
@@ -17,6 +18,8 @@ class TxHistory(metaclass=_Singleton):
 
     def __init__(self):
         self._list = []
+        self._revert_lock = False
+        Rpc()._objects.append(self)
 
     def __bool__(self):
         return bool(self._list)
@@ -37,9 +40,10 @@ class TxHistory(metaclass=_Singleton):
         self._list.clear()
 
     def _revert(self):
+        if self._revert_lock:
+            return
         height = web3.eth.blockNumber
-        for tx in [i for i in self._list if i.block_number > height]:
-            self._list.remove(tx)
+        self._list = [i for i in self._list if i.block_number <= height]
 
     def _console_repr(self):
         return str(self._list)
@@ -71,6 +75,7 @@ class _ContractHistory(metaclass=_Singleton):
 
     def __init__(self):
         self._dict = {}
+        Rpc()._objects.append(self)
 
     def _reset(self):
         self._dict.clear()
