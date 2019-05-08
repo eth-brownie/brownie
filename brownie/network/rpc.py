@@ -161,7 +161,7 @@ class Rpc(metaclass=_Singleton):
 
     def is_child(self):
         '''Returns True if the Rpc client is active and was launched by Brownie.'''
-        if not is_active():
+        if not self.is_active():
             return False
         return self._rpc.parent() == psutil.Process()
 
