@@ -182,7 +182,7 @@ class TransactionReceipt:
         return hash(self.txid)
 
     def __getattr__(self, attr):
-        if attr not in ('events', 'return_value', 'revert_msg', 'trace', '_trace'):
+        if attr not in ('events', 'modified_state', 'return_value', 'revert_msg', 'trace', '_trace'):
             raise AttributeError(
                 "'TransactionReceipt' object has no attribute '{}'".format(attr)
             )
@@ -230,6 +230,7 @@ class TransactionReceipt:
         self.revert_msg = None
         self._trace = []
         if (self.input == "0x" and self.gas_used == 21000) or self.contract_address:
+            self.modified_state = False
             self.trace = []
             return
         trace = web3.providers[0].make_request(
@@ -237,19 +238,21 @@ class TransactionReceipt:
             [self.txid, {}]
         )
         if 'error' in trace:
+            self.modified_state = None
             raise ValueError(trace['error']['message'])
         self._trace = trace = trace['result']['structLogs']
         if self.status:
             # get return value
+            self.modified_state = bool(next((i for i in trace if i['op'] == "SSTORE"), False))
             log = trace[-1]
             if log['op'] != "RETURN":
                 return
-            c = self.contract_address or self.receiver
-            if type(c) is str:
+            contract = self.contract_address or self.receiver
+            if type(contract) is str:
                 return
             abi = [
                 i['type'] for i in
-                getattr(c, self.fn_name.split('.')[-1]).abi['outputs']
+                getattr(contract, self.fn_name.split('.')[-1]).abi['outputs']
             ]
             offset = int(log['stack'][-1], 16) * 2
             length = int(log['stack'][-2], 16) * 2
@@ -262,10 +265,11 @@ class TransactionReceipt:
             else:
                 self.return_value = KwargTuple(
                     self.return_value,
-                    getattr(c, self.fn_name.split('.')[-1]).abi
+                    getattr(contract, self.fn_name.split('.')[-1]).abi
                 )
         else:
             # get revert message
+            self.modified_state = False
             self.revert_msg = ""
             if trace[-1]['op'] == "REVERT":
                 offset = int(trace[-1]['stack'][-1], 16) * 2
