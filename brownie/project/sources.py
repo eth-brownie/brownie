@@ -8,10 +8,14 @@ from brownie.types.types import _Singleton
 from brownie._config import CONFIG
 
 
+COMMENTS_REGEX = "((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))"
+
 class Sources(metaclass=_Singleton):
 
     def __init__(self):
         self._source = {}
+        self._uncommented = {}
+        self._comment_offsets = {}
         self._path = None
         self._data = {}
         self._inheritance_map = {}
@@ -23,15 +27,28 @@ class Sources(metaclass=_Singleton):
         for path in [i.relative_to(base_path) for i in self._path.glob('**/*.sol')]:
             if "/_" in str(path):
                 continue
-            self._source[str(path)] = path.open().read()
+            source = path.open().read()
+            self._source[str(path)] = source
+            self._remove_comments(path)
             self._get_contract_data(path)
         for name, inherited in [(k, v['inherited'].copy()) for k,v in self._data.items()]:
             self._data[name]['inherited'] = self._recursive_inheritance(inherited)
 
+    def _remove_comments(self, path):
+        source = self._source[str(path)]
+        offsets = [(0, 0)]
+        for match in re.finditer(COMMENTS_REGEX, source):
+            offsets.append((
+                match.start() - offsets[-1][1],
+                match.end() - match.start() + offsets[-1][1]
+            ))
+        self._uncommented[str(path)] = re.sub(COMMENTS_REGEX, "", source)
+        self._comment_offsets[str(path)] = offsets[::-1]
+
     def _get_contract_data(self, path):
         contracts = re.findall(
             "((?:contract|library|interface)[\s\S]*?})\s*(?=contract|library|interface|$)",
-            self.remove_comments(path)
+            self._uncommented[str(path)]
         )
         for source in contracts:
             type_, name, inherited = re.findall(
@@ -39,11 +56,14 @@ class Sources(metaclass=_Singleton):
                 source
             )[0]
             inherited = set(i.strip() for i in inherited.split(', ') if i)
+
             self._data[name] = {
                 'sourcePath': path,
                 'type': type_,
                 'inherited': inherited.union(re.findall("(?:;|{)\s*using *(\S*)(?= for)", source)),
-                'sha1': sha1(source.encode()).hexdigest()
+                'sha1': sha1(source.encode()).hexdigest(),
+                'start': self.original_offset(path, self._uncommented[str(path)].index(source)),
+                'stop': self.original_offset(path, self._uncommented[str(path)].index(source)+len(source))
             }
 
     def _recursive_inheritance(self, inherited):
@@ -51,13 +71,6 @@ class Sources(metaclass=_Singleton):
         for name in inherited:
             final |= self._recursive_inheritance(self._data[name]['inherited'])
         return final
-
-    def remove_comments(self, path):
-        return re.sub(
-            "((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))",
-            "",
-            self._source[str(path)]
-        )
     
     def get_hash(self, contract_name):
         return self._data[contract_name]['sha1']
@@ -82,3 +95,6 @@ class Sources(metaclass=_Singleton):
         self._get_contract_data(path)
         self._string_iter += 1
         return path
+
+    def original_offset(self, path, offset):
+        return offset + next(i[1] for i in self._comment_offsets[str(path)] if i[0]<=offset)
