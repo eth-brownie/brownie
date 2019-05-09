@@ -214,10 +214,7 @@ def _generate_coverageMap(build):
     }
     """
 
-    fn_map = dict((x, {}) for x in build['allSourcePaths'])
-
-    for i in _isolate_functions(build):
-        fn_map[i.pop('contract')][i.pop('method')] = {'fn': i, 'line': []}
+    fn_map = _isolate_functions(build)
     line_map = _isolate_lines(build)
     if not line_map:
         return {}
@@ -241,30 +238,29 @@ def _generate_coverageMap(build):
     return fn_map
 
 
-def _isolate_functions(compiled):
+def _isolate_functions(build_json):
     '''Identify function level coverage map items.'''
-    pcMap = compiled['pcMap']
-    fn_map = {}
-    for op in _oplist(pcMap, "JUMPDEST"):
-        fn = sources.get_fn(op['contract'], op['start'], op['stop'])
+    pcMap = build_json['pcMap']
+    fn_map = dict((i, {}) for i in build_json['allSourcePaths'])
+    for op in pcMap:
+        if not op['contract']:
+            continue
+        fn, start, stop = sources.get_fn(op['contract'], op['start'], op['stop'])
         if not fn:
             continue
-        if fn not in fn_map:
-            fn_map[fn] = _base(op)
-            fn_map[fn]['method'] = fn
-        fn_map[fn]['pc'].add(op['pc'])
+        if fn not in fn_map[op['contract']]:
+            fn_map[op['contract']][fn] = {
+                'fn': {
+                    'contract': op['contract'],
+                    'start': start,
+                    'stop': stop,
+                    'pc': set([op['pc']]),
+                    'jump': False
+                },
+                'line': []
+            }
+        fn_map[op['contract']][fn]['fn']['pc'].add(op['pc'])
 
-    fn_map = _sort(fn_map.values())
-    if not fn_map:
-        return []
-    for op in _oplist(pcMap):
-        try:
-            f = _next(fn_map, op)
-        except StopIteration:
-            continue
-        if op['stop'] > f['stop']:
-            continue
-        f['pc'].add(op['pc'])
     return fn_map
 
 

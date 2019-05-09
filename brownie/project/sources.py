@@ -79,11 +79,11 @@ class Sources(metaclass=_Singleton):
             )):
                 for match in re.finditer(pattern, source):
                     fn_offsets.append((
+                        match.groups()[idx],
                         self._commented_offset(path, match.start(idx) + offset),
-                        self._commented_offset(path, match.end(idx) + offset),
-                        match.groups()[idx]
+                        self._commented_offset(path, match.end(idx) + offset)
                     ))
-            self._data[name]['fn_offsets'] = sorted(fn_offsets, key=lambda k: k[0], reverse=True)
+            self._data[name]['fn_offsets'] = sorted(fn_offsets, key=lambda k: k[1], reverse=True)
 
     def _commented_offset(self, path, offset):
         return offset + next(i[1] for i in self._comment_offsets[str(path)] if i[0] <= offset)
@@ -110,12 +110,12 @@ class Sources(metaclass=_Singleton):
                 v['offset'][0] <= start <= stop <= v['offset'][1]
             ), False)
             if not name:
-                return False
+                return (False, -1, -1)
         offsets = self._data[name]['fn_offsets']
-        if start < offsets[-1][0]:
-            return False
-        offset = next(i for i in offsets if start >= i[0])
-        return False if stop >= offset[1] else offset[2]
+        if start < offsets[-1][1]:
+            return (False, -1, -1)
+        offset = next(i for i in offsets if start >= i[1])
+        return (False, -1, -1) if stop >= offset[2] else offset
 
     def inheritance_map(self):
         return dict((k, v['inherited'].copy()) for k, v in self._data.items())
