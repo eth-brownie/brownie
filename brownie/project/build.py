@@ -63,7 +63,7 @@ class Build(metaclass=_Singleton):
                     data,
                     self._path.joinpath("{}.json".format(name)).open('w'),
                     sort_keys=True,
-                    indent=4,
+                    indent=2,
                     default=sorted
                 )
             self._build.update(build_json)
@@ -78,6 +78,7 @@ class Build(metaclass=_Singleton):
                     set(BUILD_KEYS).issubset(build_json) and
                     Path(build_json['sourcePath']).exists()
                 ):
+                    build_json['pcMap'] = dict((int(k), v) for k, v in build_json['pcMap'].items())
                     self._build[path.stem] = build_json
                     continue
             except json.JSONDecodeError:

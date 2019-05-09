@@ -115,6 +115,10 @@ def _compile_and_format(input_json):
             'pcMap': evm['pcMap']
         }
         result[name]['coverageMap'] = _generate_coverageMap(result[name])
+
+         # TODO - pcMap should not be transformed into a dict midway through
+         # compiling, choose one or the other!
+        result[name]['pcMap'] = dict((i.pop('pc'), i) for i in evm['pcMap'])
     return result
 
 
@@ -138,7 +142,6 @@ def _generate_pcMap(compiled):
         if not bytecode['object']:
             compiled['contracts'][filename][name]['evm']['pcMap'] = []
             continue
-        pcMap = []
         opcodes = bytecode['opcodes']
         source_map = bytecode['sourceMap']
         while True:
@@ -154,14 +157,15 @@ def _generate_pcMap(compiled):
         last = source_map.split(';')[0].split(':')
         for i in range(3):
             last[i] = int(last[i])
-        pcMap.append({
+        pcMap = [{
             'start': last[0],
             'stop': last[0]+last[1],
             'op': opcodes.pop(),
             'contract': id_map[last[2]],
             'jump': last[3],
-            'pc': 0
-        })
+            'pc': 0,
+            'fn': False,
+        }]
         pcMap[0]['value'] = opcodes.pop()
         for value in source_map.split(';')[1:]:
             pc += 1
@@ -173,13 +177,15 @@ def _generate_pcMap(compiled):
                     value[i] = int(value[i] or last[i])
                 value[3] = value[3] or last[3]
                 last = value
+            contract = id_map[last[2]] if last[2] != -1 else False
             pcMap.append({
                 'start': last[0],
                 'stop': last[0]+last[1],
                 'op': opcodes.pop(),
-                'contract': id_map[last[2]] if last[2] != -1 else False,
+                'contract': contract,
                 'jump': last[3],
-                'pc': pc
+                'pc': pc,
+                'fn': sources.get_fn(contract, last[0], last[0]+last[1])[0],
             })
             if opcodes[-1][:2] == "0x":
                 pcMap[-1]['value'] = opcodes.pop()
@@ -214,54 +220,24 @@ def _generate_coverageMap(build):
     }
     """
 
-    fn_map = _isolate_functions(build)
     line_map = _isolate_lines(build)
     if not line_map:
         return {}
 
-    # future me - i'm sorry for this line
-    for source, fn_name, fn in [(k, x, v[x]['fn']) for k, v in fn_map.items() for x in v]:
-        for ln in [
-            i for i in line_map if i['contract'] == source and
-            i['start'] == fn['start'] and i['stop'] == fn['stop']
-        ]:
-            # remove duplicate mappings
-            line_map.remove(ln)
-        for ln in [
-            i for i in line_map if i['contract'] == source and
-            i['start'] >= fn['start'] and i['stop'] <= fn['stop']
-        ]:
-            # apply method names to line mappings
-            line_map.remove(ln)
-            fn_map[ln.pop('contract')][fn_name]['line'].append(ln)
-        fn_map[source][fn_name]['total'] = sum([1 if not i['jump'] else 2 for i in fn_map[source][fn_name]['line']])
-    return fn_map
-
-
-def _isolate_functions(build_json):
-    '''Identify function level coverage map items.'''
-    pcMap = build_json['pcMap']
-    fn_map = dict((i, {}) for i in build_json['allSourcePaths'])
-    for op in pcMap:
-        if not op['contract']:
-            continue
-        fn, start, stop = sources.get_fn(op['contract'], op['start'], op['stop'])
+    final = dict((i, {}) for i in set(i['contract'] for i in line_map))
+    pcMap = dict((i['pc'], i) for i in build['pcMap'])
+    for i in line_map:
+        fn = sources.get_fn(i['contract'], i['start'], i['stop'])[0]
         if not fn:
             continue
-        if fn not in fn_map[op['contract']]:
-            fn_map[op['contract']][fn] = {
-                'fn': {
-                    'contract': op['contract'],
-                    'start': start,
-                    'stop': stop,
-                    'pc': set([op['pc']]),
-                    'jump': False
-                },
-                'line': []
-            }
-        fn_map[op['contract']][fn]['fn']['pc'].add(op['pc'])
-
-    return fn_map
+        final[i['contract']].setdefault(fn, []).append({
+            'jump': i['jump'],
+            'start': i['start'],
+            'stop': i['stop']
+        })
+        for pc in i['pc']:
+            pcMap[pc]['coverageIndex'] = len(final[i['contract']][fn]) - 1
+    return final
 
 
 def _isolate_lines(compiled):
