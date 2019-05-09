@@ -2,11 +2,12 @@
 
 import json
 from pathlib import Path
+import re
 
-from brownie.project.build import Build
+from brownie.project import Build, Sources
 
 build = Build()
-
+sources = Sources()
 
 def analyze_coverage(history):
     coverage_map = {}
@@ -93,23 +94,23 @@ def analyze_coverage(history):
 
 
 def merge_coverage(coverage_files):
-    final = {}
+    coverage_eval = {}
     for filename in coverage_files:
         path = Path(filename)
         if not path.exists():
             continue
         coverage = json.load(path.open())['coverage']
         for key in list(coverage):
-            if key not in final:
-                final[key] = coverage.pop(key)
+            if key not in coverage_eval:
+                coverage_eval[key] = coverage.pop(key)
                 continue
             for source, fn_name in [(k, x) for k, v in coverage[key].items() for x in v]:
-                f = final[key][source][fn_name]
+                f = coverage_eval[key][source][fn_name]
                 c = coverage[key][source][fn_name]
                 if not c['pct']:
                     continue
                 if f['pct'] == 1 or c['pct'] == 1:
-                    final[key][source][fn_name] = {'pct': 1}
+                    coverage_eval[key][source][fn_name] = {'pct': 1}
                     continue
                 _list_to_set(f,'line').update(c['line'])
                 if 'true' in c:
@@ -119,7 +120,7 @@ def merge_coverage(coverage_files):
                     f['line'].add(i)
                     f['true'].discard(i)
                     f['false'].discard(i)
-    return final
+    return coverage_eval
 
 
 def _list_to_set(obj, key):
@@ -128,3 +129,68 @@ def _list_to_set(obj, key):
     else:
         obj[key] = set()
     return obj[key]
+
+
+def generate_report(coverage_eval):
+    report = {
+        'highlights':{},
+        'sha1':{}
+    }
+    for name, coverage in coverage_eval.items():
+        report['highlights'][name] = {}
+        for path in coverage:
+            coverage_map = build[name]['coverageMap'][path]
+            report['highlights'][name][path] = []
+            for key, fn, lines in [(k,v['fn'],v['line']) for k,v in coverage_map.items()]:
+                if coverage[path][key]['pct'] in (0, 1):
+                    color = "green" if coverage[path][key]['pct'] else "red"
+                    report['highlights'][name][path].append(
+                        (fn['start'], fn['stop'], color, "")
+                    )
+                    continue
+                for i, ln in enumerate(lines):
+                    if i in coverage[path][key]['line']:
+                        color = "green"
+                    elif i in coverage[path][key]['true']:
+                        color = "yellow" if _evaluate_branch(path, ln) else "orange"
+                    elif i in coverage[path][key]['false']:
+                        color = "orange" if _evaluate_branch(path, ln) else "yellow"
+                    else:
+                        color = "red"
+                    report['highlights'][name][path].append(
+                        (ln['start'], ln['stop'], color, "")
+                    )
+    return report
+
+
+def _evaluate_branch(path, ln):
+    source = sources[path]
+    start, stop = ln['start'], ln['stop']
+    try:
+        idx = _maxindex(source[:start])
+    except:
+        return False
+
+    # remove comments, strip whitespace
+    before = source[idx:start]
+    for pattern in ('\/\*[\s\S]*?\*\/', '\/\/[^\n]*'):
+        for i in re.findall(pattern, before):
+            before = before.replace(i, "")
+    before = before.strip("\n\t (")
+
+    idx = source[stop:].index(';')+len(source[:stop])
+    if idx <= stop:
+        return False
+    after = source[stop:idx].split()
+    after = next((i for i in after if i!=")"),after[0])[0]
+    if (
+        (before[-2:] == "if" and after=="|") or
+        (before[:7] == "require" and after in (")","|"))
+    ):
+        return True
+    return False
+
+
+def _maxindex(source):
+    comp = [i for i in [";", "}", "{"] if i in source]
+    return max([source.rindex(i) for i in comp])+1
