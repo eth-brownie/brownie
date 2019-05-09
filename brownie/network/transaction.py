@@ -339,10 +339,8 @@ class TransactionReceipt:
             }
             # jump 'i' is moving into an internal function
             if pc['jump'] == 'i':
-                source = contract._build['source'][pc['start']:pc['stop']]
-                if source[:7] not in ("library", "contrac") and "(" in source:
-                    fn = source[:source.index('(')].split('.')[-1]
-                else:
+                fn = sources.get_fn(pc['contract'], pc['start'], pc['stop'])
+                if not fn:
                     fn = last['fn'][-1]
                 last['fn'].append(fn)
             # jump 'o' is coming out of an internal function
