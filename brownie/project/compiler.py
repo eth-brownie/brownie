@@ -2,7 +2,6 @@
 
 from hashlib import sha1
 from pathlib import Path
-import re
 import solcx
 
 from .sources import Sources
@@ -82,7 +81,7 @@ def _compile_and_format(input_json):
     compiled = _generate_pcMap(compiled)
     result = {}
 
-    for filename, name in [(k,x) for k,v in compiled['contracts'].items() for x in v]:
+    for filename, name in [(k, x) for k, v in compiled['contracts'].items() for x in v]:
         data = compiled['contracts'][filename][name]
         evm = data['evm']
         ref = [
@@ -247,14 +246,8 @@ def _isolate_functions(compiled):
     pcMap = compiled['pcMap']
     fn_map = {}
     for op in _oplist(pcMap, "JUMPDEST"):
-        s = _get_source(op)
-        if s[:8] in ("contract", "library ", "interfac"):
-            continue
-        if s[:8] == "function":
-            fn = s[9:s.index('(')]
-        elif " public " in s:
-            fn = s[s.index(" public ")+8:].split(' =')[0].strip()
-        else:
+        fn = sources.get_fn(op['contract'], op['start'], op['stop'])
+        if not fn:
             continue
         if fn not in fn_map:
             fn_map[fn] = _base(op)
