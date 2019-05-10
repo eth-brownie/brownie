@@ -10,6 +10,9 @@ build = Build()
 sources = Sources()
 
 def analyze_coverage(history):
+    '''Given a list of TransactionReceipt objects, analyzes test coverage and
+    returns a coverage evaluation dict.
+    '''
     build_json = {}
     coverage_eval = {}
     coverage_map = {}
@@ -64,10 +67,41 @@ def analyze_coverage(history):
                 continue
             coverage_eval[name][path][fn][key[1]].discard(idx)
             coverage_eval[name][path][fn]['tx'].add(idx)
-    return calculate_pct(coverage_eval)
+    return _calculate_pct(coverage_eval)
 
 
-def calculate_pct(coverage_eval):
+def merge_coverage(coverage_files):
+    '''Given a list of coverage evaluation json file paths, returns an aggregated
+    coverage evaluation dict.
+    ''''
+    merged_eval = {}
+    for filename in coverage_files:
+        path = Path(filename)
+        if not path.exists():
+            continue
+        coverage = json.load(path.open())['coverage']
+        for contract_name in list(coverage):
+            if contract_name not in merged_eval:
+                merged_eval[contract_name] = coverage.pop(contract_name)
+                continue
+            for source, fn_name in [(k, x) for k, v in coverage[contract_name].items() for x in v]:
+                f = merged_eval[contract_name][source][fn_name]
+                c = coverage[contract_name][source][fn_name]
+                if not c['pct'] or f == c:
+                    continue
+                if f['pct'] == 1 or c['pct'] == 1:
+                    merged_eval[contract_name][source][fn_name] = {'pct': 1}
+                    continue
+                f['true'] += c['true']
+                f['false'] += c['false']
+                f['tx'] = list(set(f['tx']+c['tx']+[i for i in f['true'] if i in f['false']]))
+                f['true'] = list(set([i for i in f['true'] if i not in f['tx']]))
+                f['false'] = list(set([i for i in f['false'] if i not in f['tx']]))
+    return _calculate_pct(merged_eval)
+
+
+def _calculate_pct(coverage_eval):
+    '''Internal method to calculate coverage percentages'''
     for name in coverage_eval:
         coverage_map = build[name]['coverageMap']
         for path, fn_name in [(k,x) for k,v in coverage_map.items() for x in v]:
@@ -96,38 +130,12 @@ def calculate_pct(coverage_eval):
     return coverage_eval
 
 
-def merge_coverage(coverage_files):
-    merged_eval = {}
-    for filename in coverage_files:
-        path = Path(filename)
-        if not path.exists():
-            continue
-        coverage = json.load(path.open())['coverage']
-        for contract_name in list(coverage):
-            if contract_name not in merged_eval:
-                merged_eval[contract_name] = coverage.pop(contract_name)
-                continue
-            for source, fn_name in [(k, x) for k, v in coverage[contract_name].items() for x in v]:
-                f = merged_eval[contract_name][source][fn_name]
-                c = coverage[contract_name][source][fn_name]
-                if not c['pct'] or f == c:
-                    continue
-                if f['pct'] == 1 or c['pct'] == 1:
-                    merged_eval[contract_name][source][fn_name] = {'pct': 1}
-                    continue
-                f['true'] += c['true']
-                f['false'] += c['false']
-                f['tx'] = list(set(f['tx']+c['tx']+[i for i in f['true'] if i in f['false']]))
-                f['true'] = list(set([i for i in f['true'] if i not in f['tx']]))
-                f['false'] = list(set([i for i in f['false'] if i not in f['tx']]))
-    return calculate_pct(merged_eval)
-
-
 def generate_report(coverage_eval):
+    '''Converts coverage evaluation into highlight data suitable for the GUI'''
     report = {
-        'highlights':{},
+        'highlights': {},
         'coverage': {},
-        'sha1':{}
+        'sha1': {}
     }
     for name, coverage in coverage_eval.items():
         report['highlights'][name] = {}
