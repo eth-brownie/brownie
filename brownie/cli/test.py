@@ -240,7 +240,7 @@ def main():
                 coverage_eval,
                 coverage_json.open('w'),
                 sort_keys=True,
-                indent=4,
+                indent=2,
                 default=sorted
             )
     except KeyboardInterrupt:

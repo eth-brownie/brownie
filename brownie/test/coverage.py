@@ -10,86 +10,76 @@ build = Build()
 sources = Sources()
 
 def analyze_coverage(history):
-    coverage_map = {}
+    build_json = {}
     coverage_eval = {}
+    coverage_map = {}
+    pcMap = {}
     for tx in history:
         if not tx.receiver:
             continue
+        tx_eval = {}
         for i in range(len(tx.trace)):
             t = tx.trace[i]
             pc = t['pc']
             name = t['contractName']
-            source = t['source']['filename']
-            if not name or not source:
+            path = t['source']['filename']
+            if not name or not path:
                 continue
-            if name not in coverage_map:
+            
+            # prevent repeated requests to build object
+            if name not in pcMap:
+                pcMap[name] = build[name]['pcMap']
                 coverage_map[name] = build[name]['coverageMap']
                 coverage_eval[name] = dict((i, {}) for i in coverage_map[name])
-            try:
-                # find the function map item and record the tx
-                fn = next(v for k, v in coverage_map[name][source].items() if pc in v['fn']['pc'])
-                fn['fn'].setdefault('tx',set()).add(tx)
-                if t['op'] != "JUMPI":
-                    # if not a JUMPI, find the line map item and record
-                    ln = next(i for i in fn['line'] if pc in i['pc'])
-                    for key in ('tx', 'true', 'false'):
-                        ln.setdefault(key, set())
-                    ln['tx'].add(tx)
-                    continue
-                # if a JUMPI, we need to have hit the jump pc AND a related opcode
-                ln = next(i for i in fn['line'] if pc == i['jump'])
-                for key in ('tx', 'true', 'false'):
-                    ln.setdefault(key, set())
-                if tx not in ln['tx']:
-                    continue
-                # if the next opcode is not pc+1, the JUMPI was executed truthy
-                key = 'false' if tx.trace[i+1]['pc'] == pc+1 else 'true'
-                ln[key].add(tx)
-            # pc didn't exist in map
-            except StopIteration:
+            if name not in tx_eval:
+                tx_eval[name] = dict((i, {}) for i in coverage_map[name])
+            
+            fn = pcMap[name][pc]['fn']
+            if not fn:
                 continue
+            
+            coverage_eval[name][path].setdefault(fn, {'tx': set(), 'true': set(), 'false': set()})
+            tx_eval[name][path].setdefault(fn, set())
+            if t['op'] != "JUMPI":
+                if 'coverageIndex' not in pcMap[name][pc]:
+                    continue
+                # if not a JUMPI, record at the coverage map index
+                idx = pcMap[name][pc]['coverageIndex']
+                if coverage_map[name][path][fn][idx]['jump']:
+                    tx_eval[name][path][fn].add(pcMap[name][pc]['coverageIndex'])
+                else:
+                    coverage_eval[name][path][fn]['tx'].add(pcMap[name][pc]['coverageIndex'])
+                continue
+            # if a JUMPI, check that we hit the jump AND the related coverage map
+            idx = coverage_map[name][path][fn].index(next(i for i in coverage_map[name][path][fn] if i['jump']==pc))
+            if idx not in tx_eval[name][path][fn] or idx in coverage_eval[name][path][fn]['tx']:
+                continue
+            key = ('false', 'true') if tx.trace[i+1]['pc'] == pc+1 else ('true', 'false')
+            # if the conditional evaluated both ways, record on the main eval dict
+            if idx not in coverage_eval[name][path][fn][key[1]]:
+                coverage_eval[name][path][fn][key[0]].add(idx)
+                continue
+            coverage_eval[name][path][fn][key[1]].discard(idx)
+            coverage_eval[name][path][fn]['tx'].add(idx)
 
+    # evaluate coverage %'s
     for contract, source, fn_name, maps in [(k,w,y,z) for k,v in coverage_map.items() for w,x in v.items() for y,z in x.items()]:
-        fn = maps['fn']
-        if 'tx' not in fn or not fn['tx']:
-            coverage_eval[contract][source][fn_name] = {'pct':0}
+        if fn_name not in coverage_eval[contract][source]:
+            coverage_eval[contract][source][fn_name] = {'pct': 0}
             continue
-        for ln in maps['line']:
-            if 'tx' not in ln:
-                ln['count'] = 0
-                continue
-            if ln['jump']:
-                ln['jump'] = [len(ln['true']), len(ln['false'])]
-            ln['count'] = len(ln['tx'])
-        if not [i for i in maps['line'] if i['count']]:
-            coverage_eval[contract][source][fn_name] = {'pct':0}
-            continue
+        total = len([i for i in maps if i['jump']])*2 + len([i for i in maps if not i['jump']])
 
+        result = coverage_eval[contract][source][fn_name]
         count = 0
-        coverage = {
-            'line': set(),
-            'true': set(),
-            'false': set()
-        }
-        for c,i in enumerate(maps['line']):
-            if not i['count']:
+        for idx, item in enumerate(maps):
+            if idx in result['tx']:
+                count += 2 if item['jump'] else 1
                 continue
-            if not i['jump'] or False not in i['jump']:
-                coverage['line'].add(c)
-                count += 2 if i['jump'] else 1
+            if not item['jump']:
                 continue
-            if i['jump'][0]:
-                coverage['true'].add(c)
+            if idx in result['true'] or idx in result['false']:
                 count += 1
-            if i['jump'][1]:
-                coverage['false'].add(c)
-                count += 1
-        if count == maps['total']:
-            coverage_eval[contract][source][fn_name] = {'pct': 1}
-        else:
-            coverage['pct'] = round(count/maps['total'], 4)
-            coverage_eval[contract][source][fn_name] = coverage
-
+        result['pct'] = round(count / total, 4)
     return coverage_eval
 
 
