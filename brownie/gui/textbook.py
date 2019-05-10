@@ -25,6 +25,7 @@ class TextBook(ttk.Notebook):
             self.add(path)
 
     def add(self, path):
+        path = Path(path)
         label = path.name
         if label in [i._label for i in self._frames]:
             return
@@ -37,6 +38,7 @@ class TextBook(ttk.Notebook):
         self._frames.append(frame)
 
     def get_frame(self, label):
+        label = Path(label).name
         return next(i for i in self._frames if i._label == label)
     
     def hide(self, label):
@@ -46,6 +48,7 @@ class TextBook(ttk.Notebook):
             frame._visible = False
     
     def show(self, label):
+        label = Path(label).name
         frame = next(i for i in self._frames if i._label == label)
         if frame._visible:
             return
@@ -53,6 +56,7 @@ class TextBook(ttk.Notebook):
         super().add(frame, text="   {}   ".format(label))
 
     def set_visible(self, labels):
+        labels = [Path(i).name for i in labels]
         for label in [i._label for i in self._frames]:
             if label in labels:
                 self.show(label)
@@ -166,10 +170,9 @@ class TextBox(tk.Frame):
         for k,v in TEXT_COLORS.items():
             self._text.tag_config(k, **v)
 
-        for pattern in ('\/\*[\s\S]*?\*\/', '\/\/[^\n]*'):
-            for i in re.findall(pattern, text):
-                idx = text.index(i)
-                self.tag_add('comment',idx,idx+len(i))
+        pattern = "((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))"
+        for match in re.finditer(pattern, text):
+            self.tag_add('comment', match.start(), match.end())
 
         self._line_no.insert(1.0, '\n'.join(str(i) for i in range(1, text.count('\n')+2)))
         self._line_no.tag_configure("justify", justify="right")

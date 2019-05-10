@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
+import json
 from pathlib import Path
-import re
 import threading
 
 import tkinter as tk
@@ -13,18 +13,22 @@ from .select import SelectContract
 from .styles import set_style
 
 from brownie.project.build import Build
-from brownie.test.coverage import merge_coverage
+from brownie.test.coverage import merge_coverage, generate_report
 from brownie._config import CONFIG
 
 build = Build()
+
 
 class Root(tk.Tk):
 
     _active = threading.Event()
 
-    def __init__(self):
+    def __init__(self, report_file=None):
         if not CONFIG['folders']['project']:
             raise SystemError("No project loaded")
+
+        if report_file and not report_file.endswith('.json'):
+            report_file += ".json"
 
         if self._active.is_set():
             raise SystemError("GUI is already active")
@@ -33,96 +37,45 @@ class Root(tk.Tk):
         super().__init__(className="Opcode Viewer")
         self.bind("<Escape>", lambda k: self.destroy())
 
-        path = Path(CONFIG['folders']['project'])
-        self.coverage_folder = path.joinpath('build/coverage')
-
         self.note = TextBook(self)
         self.note.pack(side="left")
 
         frame = ttk.Frame(self)
         frame.pack(side="right", expand="true", fill="y")
-        
+
         self.tree = ListView(self, frame, (("pc", 80), ("opcode", 200)), height=30)
         self.tree.pack(side="bottom")
 
         self.combo = SelectContract(self, frame)
         self.combo.pack(side="top", expand="true", fill="x")
 
+        if report_file:
+            report_file = Path(report_file).resolve()
+            report = json.load(Path(report_file).open())
+            print("Report loaded from {}".format(report_file))
+        else:
+            path = Path(CONFIG['folders']['project']).joinpath('build/coverage')
+            coverage_eval = merge_coverage(path.glob('**/*.json'))
+            report = generate_report(coverage_eval)
+        self._coverage_report = report['highlights']
         self._show_coverage = False
         self.bind("c", self._toggle_coverage)
         set_style(self)
 
     def _toggle_coverage(self, event):
         active = self.combo.get()
-        if not active:
+        if not active or active not in self._coverage_report:
             return
         if self._show_coverage:
             self.note.unmark_all('green', 'red', 'yellow', 'orange')
             self._show_coverage = False
             return
-        frame_path = self.note.active_frame()._path
-        coverage_files = self.coverage_folder.glob('**/*.json')
-        try:
-            coverage = merge_coverage(coverage_files)[active][frame_path]
-        except KeyError:
-            return
-        source = build[active]['source']
-        coverage_map = build[active]['coverageMap'][frame_path]
-        label = frame_path.split('/')[-1]
+        for path, item in [(k, x) for k, v in self._coverage_report[active].items() for x in v]:
+            label = Path(path).name
+            self.note.mark(label, item[2], item[0], item[1])
         self._show_coverage = True
-        for key, fn, lines in [(k,v['fn'],v['line']) for k,v in coverage_map.items()]:
-            if coverage[key]['pct'] in (0, 1):
-                self.note.mark(
-                    label,
-                    "green" if coverage[key]['pct'] else "red",
-                    fn['start'],
-                    fn['stop']
-                )
-                continue
-            for i, ln in enumerate(lines):
-                if i in coverage[key]['line']:
-                    tag = "green"
-                elif i in coverage[key]['true']:
-                    tag = "yellow" if _evaluate_branch(source, ln) else "orange"
-                elif i in coverage[key]['false']:
-                    tag = "orange" if _evaluate_branch(source, ln) else "yellow"
-                else:
-                    tag = "red"
-                self.note.mark(label, tag, ln['start'], ln['stop'])
 
     def destroy(self):
         super().destroy()
         self.quit()
         self._active.clear()
-
-
-def _evaluate_branch(source, ln):
-    start, stop = ln['start'], ln['stop']
-    try:
-        idx = _maxindex(source[:start])
-    except:
-        return False
-
-    # remove comments, strip whitespace
-    before = source[idx:start]
-    for pattern in ('\/\*[\s\S]*?\*\/', '\/\/[^\n]*'):
-        for i in re.findall(pattern, before):
-            before = before.replace(i, "")
-    before = before.strip("\n\t (")
-
-    idx = source[stop:].index(';')+len(source[:stop])
-    if idx <= stop:
-        return False
-    after = source[stop:idx].split()
-    after = next((i for i in after if i!=")"),after[0])[0]
-    if (
-        (before[-2:] == "if" and after=="|") or
-        (before[:7] == "require" and after in (")","|"))
-    ):
-        return True
-    return False
-
-
-def _maxindex(source):
-    comp = [i for i in [";", "}", "{"] if i in source]
-    return max([source.rindex(i) for i in comp])+1

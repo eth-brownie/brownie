@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from copy import deepcopy
 from tkinter import ttk
 
 from brownie.project.build import Build
@@ -24,24 +25,21 @@ class SelectContract(ttk.Combobox):
         self._parent.note.set_visible([])
         build_json = build[self.get()]
         self.selection_clear()
-        for contract in sorted(set(
-            i['contract'].split('/')[-1]
-            for i in build_json['pcMap'] if i['contract']
-        )):
+        for contract in build_json['allSourcePaths']:
             self._parent.note.show(contract)
-        first = build_json['pcMap'][0].copy()
-        self._parent.note.set_active(first['contract'].split('/')[-1])
+        pcMap = deepcopy(build_json['pcMap'])
+        self._parent.note.set_active(build_json['sourcePath'])
         self._parent.tree.delete_all()
-        for op in build_json['pcMap']:
+        for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)[1:]]:
             if (
-                op['contract'] == first['contract'] and
-                op['start'] == first['start'] and
-                op['stop'] == first['stop']
+                op['contract'] == pcMap[0]['contract'] and
+                op['start'] == pcMap[0]['start'] and
+                op['stop'] == pcMap[0]['stop']
             ):
                 op['contract'] = None
             if op['contract']:
                 tag = "{0[start]}:{0[stop]}:{0[contract]}".format(op)
             else:
                 tag = "NoSource"
-            self._parent.tree.insert([str(op['pc']), op['op']], [tag, op['op']])
-        self._parent.pcMap = dict((str(i.pop('pc')), i) for i in build_json['pcMap'])
+            self._parent.tree.insert([str(pc), op['op']], [tag, op['op']])
+        self._parent.pcMap = dict((str(k),v) for k,v in pcMap.items())

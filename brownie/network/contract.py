@@ -62,9 +62,6 @@ class ContractContainer(_ContractBase):
     def __init__(self, build):
         self.tx = None
         self.bytecode = build['bytecode']
-        # convert pcMap to dict to speed transaction stack traces
-        if type(build['pcMap']) is list:
-            build['pcMap'] = dict((i.pop('pc'), i) for i in build['pcMap'])
         super().__init__(build)
         self.deploy = ContractConstructor(self, self._name)
 

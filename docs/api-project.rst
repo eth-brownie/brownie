@@ -150,10 +150,6 @@ Sources
         >>> from brownie.project.sources import Sources
         >>> s = Sources()
 
-.. py:classmethod:: Sources.remove_comments(path)
-
-    Given the path to a contract source file, removes comments from the source code and returns it as a string.
-
 .. py:classmethod:: Sources.get_hash(contract_name)
 
     Returns a hash of the contract source code. This hash is generated specifically from the given contract name (not the entire containing file), after comments have been removed.
@@ -165,6 +161,14 @@ Sources
 .. py:classmethod:: Sources.get_type(contract_name)
 
     Returns the type of contract (contract, interface, library).
+
+.. py:classmethod:: Sources.get_fn(name, start, stop)
+
+    Given a contract name, start and stop offset, returns the name of the associated function. Returns ``False`` if the offset spans multiple functions.
+
+.. py:classmethod:: Sources.get_fn_offset(name, fn_name)
+
+    Given a contract and function name, returns the source offsets of the function.
 
 .. py:classmethod:: Sources.inheritance_map()
 

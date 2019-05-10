@@ -3,6 +3,8 @@
 
  - Use relative paths in build json files
  - Revert calls-as-transactions when evaluating coverage
+ - Significant refactor of coverage analysis, changes to coverageMap format
+ - GUI highlight reports
 
 1.0.0b4
 -------

@@ -83,7 +83,7 @@ class ListView(ttk.Treeview):
         if not pcMap[pc]['contract']:
             note.active_frame().clear_highlight()
             return
-        note.set_active(pcMap[pc]['contract'].split('/')[-1])
+        note.set_active(pcMap[pc]['contract'])
         note.active_frame().highlight(pcMap[pc]['start'], pcMap[pc]['stop'])
 
     def _seek(self, event):
@@ -110,7 +110,7 @@ class ListView(ttk.Treeview):
             return
         for key, value in sorted(self._parent.pcMap.items(), key= lambda k: int(k[0])):
             if (
-                not value['contract'] or value['contract']!=pc['contract'] or
+                not value['contract'] or value['contract'] != pc['contract'] or
                 value['start'] < pc['start'] or value['stop']>pc['stop']
             ):
                 self.detach(key)

@@ -35,6 +35,7 @@ _contracts = _ContractHistory()
 web3 = Web3()
 sources = Sources()
 
+
 class TransactionReceipt:
 
     '''Attributes and methods relating to a broadcasted transaction.
@@ -217,7 +218,7 @@ class TransactionReceipt:
             print("   Events In This Transaction\n   --------------------------")
             for event in self.events:
                 print("   "+color('bright yellow')+event.name+color())
-                for k,v in event.items():
+                for k, v in event.items():
                     print("      {0[key]}{1}{0}: {0[value]}{2}{0}".format(
                         color, k, v
                     ))
@@ -339,10 +340,7 @@ class TransactionReceipt:
             }
             # jump 'i' is moving into an internal function
             if pc['jump'] == 'i':
-                fn = sources.get_fn(pc['contract'], pc['start'], pc['stop'])
-                if not fn:
-                    fn = last['fn'][-1]
-                last['fn'].append(fn)
+                last['fn'].append(pc['fn'] or last['fn'][-1])
             # jump 'o' is coming out of an internal function
             elif pc['jump'] == "o" and len(['fn']) > 1:
                 del last['fn'][-1]

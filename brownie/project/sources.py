@@ -14,11 +14,14 @@ class Sources(metaclass=_Singleton):
         self._source = {}
         self._uncommented_source = {}
         self._comment_offsets = {}
-        self._fn_map = {}
         self._path = None
         self._data = {}
-        self._inheritance_map = {}
         self._string_iter = 1
+
+    def __getitem__(self, key):
+        if key in self._data:
+            return self._source[self._data[key]['sourcePath']]
+        return self._source[str(key)]
 
     def _load(self):
         base_path = Path(CONFIG['folders']['project'])
@@ -79,11 +82,11 @@ class Sources(metaclass=_Singleton):
             )):
                 for match in re.finditer(pattern, source):
                     fn_offsets.append((
+                        match.groups()[idx],
                         self._commented_offset(path, match.start(idx) + offset),
-                        self._commented_offset(path, match.end(idx) + offset),
-                        match.groups()[idx]
+                        self._commented_offset(path, match.end(idx) + offset)
                     ))
-            self._data[name]['fn_offsets'] = sorted(fn_offsets, key=lambda k: k[0], reverse=True)
+            self._data[name]['fn_offsets'] = sorted(fn_offsets, key=lambda k: k[1], reverse=True)
 
     def _commented_offset(self, path, offset):
         return offset + next(i[1] for i in self._comment_offsets[str(path)] if i[0] <= offset)
@@ -112,18 +115,21 @@ class Sources(metaclass=_Singleton):
             if not name:
                 return False
         offsets = self._data[name]['fn_offsets']
-        if start < offsets[-1][0]:
+        if start < offsets[-1][1]:
             return False
-        offset = next(i for i in offsets if start >= i[0])
-        return False if stop >= offset[1] else offset[2]
+        offset = next(i for i in offsets if start >= i[1])
+        return False if stop > offset[2] else offset[0]
+
+    def get_fn_offset(self, name, fn_name):
+        if name not in self._data:
+            name = next(
+                k for k, v in self._data.items() if v['sourcePath'] == str(name) and
+                fn_name in [i[0] for i in v['fn_offsets']]
+            )
+        return next(i for i in self._data[name]['fn_offsets'] if i[0] == fn_name)[1:3]
 
     def inheritance_map(self):
         return dict((k, v['inherited'].copy()) for k, v in self._data.items())
-
-    def __getitem__(self, key):
-        if key in self._data:
-            return self._source[self._data[key]['sourcePath']]
-        return self._source[str(key)]
 
     def add_source(self, source):
         path = "<string-{}>".format(self._string_iter)
