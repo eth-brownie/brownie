@@ -4,10 +4,11 @@ from docopt import docopt
 
 from brownie.gui import Gui
 
-__doc__ = """Usage: brownie gui
+__doc__ = """Usage: brownie gui [options]
 
 Options:
-  --help -h               Display this message
+  --report -r [filename]     Load and display a report
+  --help -h                  Display this message
 
 Opens the brownie GUI. Basic functionality is as follows:
 
@@ -30,5 +31,5 @@ Opens the brownie GUI. Basic functionality is as follows:
 def main():
     args = docopt(__doc__)
     print("Loading Brownie GUI...")
-    Gui().mainloop()
+    Gui(args['--report']).mainloop()
     print("GUI was terminated.")

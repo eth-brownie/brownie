@@ -11,7 +11,11 @@ import sys
 import time
 
 from brownie.cli.utils import color
-from brownie.test.coverage import merge_coverage, analyze_coverage
+from brownie.test.coverage import (
+    analyze_coverage,
+    merge_coverage,
+    generate_report
+)
 from brownie.exceptions import ExpectedFailing, VirtualMachineError
 import brownie.network as network
 from brownie.network.history import TxHistory
@@ -33,13 +37,14 @@ Arguments:
   <range>                 Number or range of tests to run from file
 
 Options:
-  
-  --coverage -c          Evaluate test coverage and display a report
-  --update -u            Only run tests where changes have occurred
-  --gas -g               Display gas profile for function calls
-  --verbose -v           Enable verbose reporting
-  --tb -t                Show entire python traceback on exceptions
-  --help -h              Display this message
+
+  --update -u             Only run tests where changes have occurred
+  --coverage -c           Evaluate test coverage and display a report
+  --save -s [filename]    Save coverage report
+  --gas -g                Display gas profile for function calls
+  --verbose -v            Enable verbose reporting
+  --tb -t                 Show entire python traceback on exceptions
+  --help -h               Display this message
 
 By default brownie runs every script found in the tests folder as well as any
 subfolders. Files and folders beginning with an underscore will be skipped."""
@@ -60,7 +65,7 @@ def _run_test(module, fn_name, count, total):
     sys.stdout.write("   {0} - {1} ({0}/{2})...".format(count, desc, total))
     sys.stdout.flush()
     args = _get_args(fn)
-    if args['skip'] == True or (args['skip']=="coverage" and ARGV['coverage']):
+    if args['skip'] is True or (args['skip'] == "coverage" and ARGV['coverage']):
         sys.stdout.write(
             "\r {0[pending]}\u229d{0[dull]} {1} - ".format(color, count) +
             "{1} ({0[pending]}skipped{0[dull]}){0}\n".format(color, desc)
@@ -172,6 +177,11 @@ def main():
         ARGV['always_transact'] = True
         history = TxHistory()
         history._revert_lock = True
+        if ARGV['save']:
+            if not ARGV['save'].endswith('.json'):
+                ARGV['save'] += ".json"
+            if Path(ARGV['save']).exists():
+                sys.exit("{0[error]}ERROR{0}: Cannot save report to {0[module]}{1}{0} - file already exists".format(color, ARGV['save']))
     traceback_info = []
     test_files = get_test_files(args['<filename>'])
 
@@ -206,7 +216,6 @@ def main():
                 for p in list(coverage_json.parents)[::-1]:
                     if not p.exists():
                         p.mkdir()
-
 
             tb = run_test(filename, network, idx)
             if tb:
@@ -258,19 +267,32 @@ def main():
     print("\n{0[success]}SUCCESS{0}: All tests passed.".format(color))
 
     if args['--coverage']:
-        print("\nCoverage analysis:\n")
         coverage_eval = merge_coverage(coverage_files)
-
-        for contract in coverage_eval:
-            print("  contract: {0[contract]}{1}{0}".format(color, contract))
-            for fn_name, pct in [(x,v[x]['pct']) for v in coverage_eval[contract].values() for x in v]:
-                c = next(i[1] for i in COVERAGE_COLORS if pct<=i[0])
-                print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
-                    color, fn_name, color(c), pct
-                ))
-            print()
+        display_report(coverage_eval)
+        if ARGV['save']:
+            path = Path(ARGV['save']).resolve()
+            json.dump(
+                generate_report(coverage_eval),
+                path.open('w'),
+                sort_keys=True,
+                indent=2,
+                default=sorted
+            )
+            print("Coverage report saved at {}".format(path))
 
     if args['--gas']:
         print('\nGas Profile:')
         for i in sorted(transaction.gas_profile):
             print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, transaction.gas_profile[i]))
+
+
+def display_report(coverage_eval):
+    print("\nCoverage analysis:\n")
+    for contract in coverage_eval:
+        print("  contract: {0[contract]}{1}{0}".format(color, contract))
+        for fn_name, pct in [(x,v[x]['pct']) for v in coverage_eval[contract].values() for x in v]:
+            c = next(i[1] for i in COVERAGE_COLORS if pct<=i[0])
+            print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
+                color, fn_name, color(c), pct
+            ))
+        print()

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json
 from pathlib import Path
 import threading
 
@@ -22,9 +23,12 @@ class Root(tk.Tk):
 
     _active = threading.Event()
 
-    def __init__(self):
+    def __init__(self, report_file=None):
         if not CONFIG['folders']['project']:
             raise SystemError("No project loaded")
+
+        if report_file and not report_file.endswith('.json'):
+            report_file += ".json"
 
         if self._active.is_set():
             raise SystemError("GUI is already active")
@@ -45,9 +49,15 @@ class Root(tk.Tk):
         self.combo = SelectContract(self, frame)
         self.combo.pack(side="top", expand="true", fill="x")
 
-        path = Path(CONFIG['folders']['project']).joinpath('build/coverage')
-        coverage_eval = merge_coverage(path.glob('**/*.json'))
-        self._coverage_report = generate_report(coverage_eval)['highlights']
+        if report_file:
+            report_file = Path(report_file).resolve()
+            report = json.load(Path(report_file).open())
+            print("Report loaded from {}".format(report_file))
+        else:
+            path = Path(CONFIG['folders']['project']).joinpath('build/coverage')
+            coverage_eval = merge_coverage(path.glob('**/*.json'))
+            report = generate_report(coverage_eval)
+        self._coverage_report = report['highlights']
         self._show_coverage = False
         self.bind("c", self._toggle_coverage)
         set_style(self)

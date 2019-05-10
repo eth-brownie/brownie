@@ -126,15 +126,18 @@ def merge_coverage(coverage_files):
 def generate_report(coverage_eval):
     report = {
         'highlights':{},
+        'coverage': {},
         'sha1':{}
     }
     for name, coverage in coverage_eval.items():
         report['highlights'][name] = {}
+        report['coverage'][name] = {}
         for path in coverage:
             coverage_map = build[name]['coverageMap'][path]
             report['highlights'][name][path] = []
             for fn_name, lines in coverage_map.items():
                 # if function has 0% or 100% coverage, highlight entire function
+                report['coverage'][name][fn_name] = coverage[path][fn_name]['pct']
                 if coverage[path][fn_name]['pct'] in (0, 1):
                     color = "green" if coverage[path][fn_name]['pct'] else "red"
                     start, stop = sources.get_fn_offset(path, fn_name)
