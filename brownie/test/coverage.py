@@ -61,27 +61,35 @@ def analyze_coverage(history):
                 continue
             coverage_eval[name][path][fn][key[1]].discard(idx)
             coverage_eval[name][path][fn]['tx'].add(idx)
+    return calculate_pct(coverage_eval)
 
-    # evaluate coverage %'s
-    for contract, source, fn_name, maps in [(k,w,y,z) for k,v in coverage_map.items() for w,x in v.items() for y,z in x.items()]:
-        if fn_name not in coverage_eval[contract][source]:
-            coverage_eval[contract][source][fn_name] = {'pct': 0}
-            continue
-        total = len([i for i in maps if i['jump']])*2 + len([i for i in maps if not i['jump']])
 
-        result = coverage_eval[contract][source][fn_name]
-        count = 0
-        for idx, item in enumerate(maps):
-            if idx in result['tx']:
-                count += 2 if item['jump'] else 1
+def calculate_pct(coverage_eval):
+    for name in coverage_eval:
+        coverage_map = build[name]['coverageMap']
+        for path, fn_name in [(k,x) for k,v in coverage_map.items() for x in v]:
+            result = coverage_eval[name][path]
+            if fn_name not in result:
+                result[fn_name] = {'pct': 0}
                 continue
-            if not item['jump']:
+            if 'pct' in result[fn_name] and result[fn_name]['pct'] in (0, 1):
+                result[fn_name] = {'pct': result[fn_name]['pct']}
                 continue
-            if idx in result['true'] or idx in result['false']:
-                count += 1
-        result['pct'] = round(count / total, 4)
-        if result['pct'] == 1:
-            coverage_eval[contract][source][fn_name] = {'pct': 1}
+            result = result[fn_name]
+            count = 0
+            maps = coverage_map[path][fn_name]
+            total = len([i for i in maps if i['jump']])*2 + len([i for i in maps if not i['jump']])
+            for idx, item in enumerate(maps):
+                if idx in result['tx']:
+                    count += 2 if item['jump'] else 1
+                    continue
+                if not item['jump']:
+                    continue
+                if idx in result['true'] or idx in result['false']:
+                    count += 1
+            result['pct'] = round(count / total, 4)
+            if result['pct'] == 1:
+                coverage_eval[name][path][fn_name] = {'pct': 1}
     return coverage_eval
 
 
@@ -109,15 +117,7 @@ def merge_coverage(coverage_files):
                 f['tx'] = list(set(f['tx']+c['tx']+[i for i in f['true'] if i in f['false']]))
                 f['true'] = list(set([i for i in f['true'] if i not in f['tx']]))
                 f['false'] = list(set([i for i in f['false'] if i not in f['tx']]))
-    return merged_eval
-
-
-def _list_to_set(obj, key):
-    if key in obj:
-        obj[key] = set(obj[key])
-    else:
-        obj[key] = set()
-    return obj[key]
+    return calculate_pct(merged_eval)
 
 
 def generate_report(coverage_eval):
