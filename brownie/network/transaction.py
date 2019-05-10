@@ -340,10 +340,7 @@ class TransactionReceipt:
             }
             # jump 'i' is moving into an internal function
             if pc['jump'] == 'i':
-                fn = sources.get_fn(pc['contract'], pc['start'], pc['stop'])[0]
-                if not fn:
-                    fn = last['fn'][-1]
-                last['fn'].append(fn)
+                last['fn'].append(pc['fn'] or last['fn'][-1])
             # jump 'o' is coming out of an internal function
             elif pc['jump'] == "o" and len(['fn']) > 1:
                 del last['fn'][-1]
