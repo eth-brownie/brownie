@@ -59,115 +59,10 @@ def _get_args(fn):
     ))
 
 
-def _run_test(module, fn_name, count, total):
-    fn = getattr(module, fn_name)
-    desc = fn.__doc__ or fn_name
-    sys.stdout.write("   {0} - {1} ({0}/{2})...".format(count, desc, total))
+def _print(value, *args):
+    value = value.format(color, *args)
+    sys.stdout.write(value)
     sys.stdout.flush()
-    args = _get_args(fn)
-    if args['skip'] is True or (args['skip'] == "coverage" and ARGV['coverage']):
-        sys.stdout.write(
-            "\r {0[pending]}\u229d{0[dull]} {1} - ".format(color, count) +
-            "{1} ({0[pending]}skipped{0[dull]}){0}\n".format(color, desc)
-        )
-        return []
-    try:
-        stime = time.time()
-        if ARGV['coverage'] and 'always_transact' in args:
-            ARGV['always_transact'] = args['always_transact']
-        fn()
-        if ARGV['coverage']:
-            ARGV['always_transact'] = True
-        if args['pending']:
-            raise ExpectedFailing("Test was expected to fail")
-        sys.stdout.write("\r {0[success]}\u2713{0} {1} - {2} ({3:.4f}s) \n".format(
-            color, count, desc, time.time()-stime
-        ))
-        sys.stdout.flush()
-        return []
-    except Exception as e:
-        if type(e) != ExpectedFailing and args['pending']:
-            c = [color('success'), color('dull'), color()]
-        else:
-            c = [color('error'), color('dull'), color()]
-        sys.stdout.write("\r {0[0]}{1}{0[1]} {4} - {2} ({0[0]}{3}{0[1]}){0[2]}\n".format(
-            c,
-            '\u2717' if type(e) in (AssertionError, VirtualMachineError) else '\u203C',
-            desc,
-            type(e).__name__,
-            count
-        ))
-        sys.stdout.flush()
-        if type(e) != ExpectedFailing and args['pending']:
-            return []
-        filename = str(Path(module.__file__).relative_to(CONFIG['folders']['project']))
-        fn_name = filename[:-2]+fn_name
-        return [(fn_name, color.format_tb(sys.exc_info(), filename), type(e))]
-
-
-def run_test(filename, network, idx):
-    network.rpc.reset()
-    if type(CONFIG['test']['gas_limit']) is int:
-        network.gas_limit(CONFIG['test']['gas_limit'])
-
-    module = importlib.import_module(filename.replace(os.sep, '.'))
-    test_names = [
-        i for i in dir(module) if i not in dir(sys.modules['brownie']) and
-        i[0] != "_" and callable(getattr(module, i))
-    ]
-    code = Path(CONFIG['folders']['project']).joinpath("{}.py".format(filename)).open().read()
-    test_names = re.findall('(?<=\ndef)[\s]{1,}[^(]*(?=\([^)]*\)[\s]*:)', code)
-    test_names = [i.strip() for i in test_names if i.strip()[0] != "_"]
-    duplicates = set([i for i in test_names if test_names.count(i) > 1])
-    if duplicates:
-        raise ValueError(
-            "tests/{}.py contains multiple tests of the same name: {}".format(
-                filename, ", ".join(duplicates)
-            )
-        )
-    traceback_info = []
-    if not test_names:
-        print("\n{0[error]}WARNING{0}: No test functions in {0[module]}{1}.py{0}".format(color, filename))
-        return [], []
-
-    print("\nRunning {0[module]}{1}.py{0} - {2} test{3}".format(
-            color,
-            filename,
-            len(test_names)-1,
-            "s" if len(test_names) != 2 else ""
-    ))
-    if 'setup' in test_names:
-        test_names.remove('setup')
-        traceback_info += _run_test(module, 'setup', 0, len(test_names))
-        if traceback_info:
-            return traceback_info
-    network.rpc.snapshot()
-    for c, t in enumerate(test_names[idx], start=idx.start + 1):
-        network.rpc.revert()
-        traceback_info += _run_test(module, t, c, len(test_names))
-        if traceback_info and traceback_info[-1][2] == ReadTimeout:
-            print(" {0[error]}WARNING{0}: RPC crashed, terminating test".format(color))
-            network.rpc.kill(False)
-            network.rpc.launch(CONFIG['active_network']['test-rpc'])
-            break
-    return traceback_info
-
-
-def get_test_files(path):
-    if not path:
-        path = ""
-    if path[:6] != "tests/":
-        path = "tests/"+path
-    path = Path(CONFIG['folders']['project']).joinpath(path)
-    if not path.is_dir():
-        if not path.suffix:
-            path = Path(str(path)+".py")
-        if not path.exists():
-            sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}tests/{1}{0}".format(color, path.name))
-        result = [path]
-    else:
-        result = [i for i in path.glob('**/*.py') if i.name[0]!="_" and "/_" not in str(i)]
-    return [str(i.relative_to(CONFIG['folders']['project']))[:-3] for i in result]
 
 
 def main():
@@ -182,9 +77,8 @@ def main():
                 ARGV['save'] += ".json"
             if Path(ARGV['save']).exists():
                 sys.exit("{0[error]}ERROR{0}: Cannot save report to {0[module]}{1}{0} - file already exists".format(color, ARGV['save']))
-    traceback_info = []
-    test_files = get_test_files(args['<filename>'])
 
+    test_files = get_test_files(args['<filename>'])
     if len(test_files) == 1 and args['<range>']:
         try:
             idx = args['<range>']
@@ -201,6 +95,7 @@ def main():
 
     network.connect(ARGV['network'])
     coverage_files = []
+    traceback_info = []
 
     try:
         for filename in test_files:
@@ -226,14 +121,12 @@ def main():
 
             if args['--coverage']:
                 stime = time.time()
-                sys.stdout.write("     - Evaluating test coverage...")
-                sys.stdout.flush()
+                _print("     - Evaluating test coverage...")
                 coverage_eval = analyze_coverage(history.copy())
-                sys.stdout.write(
-                    "\r {0[success]}\u2713{0}   - ".format(color) +
-                    "Evaluating test coverage ({:.4f}s)\n".format(time.time()-stime)
+                _print(
+                    "\r {0[success]}\u2713{0}   - Evaluating test coverage ({1:.4f}s)\n",
+                    time.time()-stime
                 )
-                sys.stdout.flush()
             build_files = set(Path('build/contracts/{}.json'.format(i)) for i in coverage_eval)
             coverage_eval = {
                 'coverage': coverage_eval,
@@ -244,7 +137,6 @@ def main():
 
             test_path = Path(filename+".py")
             coverage_eval['sha1'][str(test_path)] = get_ast_hash(test_path)
-
             json.dump(
                 coverage_eval,
                 coverage_json.open('w'),
@@ -286,12 +178,124 @@ def main():
             print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, transaction.gas_profile[i]))
 
 
+def get_test_files(path):
+    if not path:
+        path = ""
+    if path[:6] != "tests/":
+        path = "tests/"+path
+    path = Path(CONFIG['folders']['project']).joinpath(path)
+    if not path.is_dir():
+        if not path.suffix:
+            path = Path(str(path)+".py")
+        if not path.exists():
+            sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}tests/{1}{0}".format(color, path.name))
+        result = [path]
+    else:
+        result = [i for i in path.glob('**/*.py') if i.name[0]!="_" and "/_" not in str(i)]
+    return [str(i.relative_to(CONFIG['folders']['project']))[:-3] for i in result]
+
+
+def run_test(filename, network, idx):
+    network.rpc.reset()
+    if type(CONFIG['test']['gas_limit']) is int:
+        network.gas_limit(CONFIG['test']['gas_limit'])
+
+    module = importlib.import_module(filename.replace(os.sep, '.'))
+    test_names = [
+        i for i in dir(module) if i not in dir(sys.modules['brownie']) and
+        i[0] != "_" and callable(getattr(module, i))
+    ]
+    code = Path(CONFIG['folders']['project']).joinpath("{}.py".format(filename)).open().read()
+    test_names = re.findall(r'(?<=\ndef)[\s]{1,}[^(]*(?=\([^)]*\)[\s]*:)', code)
+    test_names = [i.strip() for i in test_names if i.strip()[0] != "_"]
+    duplicates = set([i for i in test_names if test_names.count(i) > 1])
+    if duplicates:
+        raise ValueError(
+            "tests/{}.py contains multiple tests of the same name: {}".format(
+                filename, ", ".join(duplicates)
+            )
+        )
+    traceback_info = []
+    if not test_names:
+        print("\n{0[error]}WARNING{0}: No test functions in {0[module]}{1}.py{0}".format(color, filename))
+        return [], []
+
+    print("\nRunning {0[module]}{1}.py{0} - {2} test{3}".format(
+            color,
+            filename,
+            len(test_names)-1,
+            "s" if len(test_names) != 2 else ""
+    ))
+    if 'setup' in test_names:
+        test_names.remove('setup')
+        traceback_info += run_test_method(module, 'setup', 0, len(test_names))
+        if traceback_info:
+            return traceback_info
+    network.rpc.snapshot()
+    for c, t in enumerate(test_names[idx], start=idx.start + 1):
+        network.rpc.revert()
+        traceback_info += run_test_method(module, t, c, len(test_names))
+        if traceback_info and traceback_info[-1][2] == ReadTimeout:
+            print(" {0[error]}WARNING{0}: RPC crashed, terminating test".format(color))
+            network.rpc.kill(False)
+            network.rpc.launch(CONFIG['active_network']['test-rpc'])
+            break
+    return traceback_info
+
+
+def run_test_method(module, fn_name, count, total):
+    fn = getattr(module, fn_name)
+    desc = fn.__doc__ or fn_name
+    _print("   {0} - {1} ({0}/{2})...".format(count, desc, total))
+    args = _get_args(fn)
+    if args['skip'] is True or (args['skip'] == "coverage" and ARGV['coverage']):
+        _print(
+            "\r {0[pending]}\u229d{0[dull]} {1} - {2} ({0[pending]}skipped{0[dull]}){0}\n",
+            count,
+            desc
+        )
+        return []
+    try:
+        stime = time.time()
+        if ARGV['coverage'] and 'always_transact' in args:
+            ARGV['always_transact'] = args['always_transact']
+        fn()
+        if ARGV['coverage']:
+            ARGV['always_transact'] = True
+        if args['pending']:
+            raise ExpectedFailing("Test was expected to fail")
+        _print(
+            "\r {0[success]}\u2713{0} {1} - {2} ({3:.4f}s) \n",
+            count,
+            desc,
+            time.time()-stime
+        )
+        return []
+    except Exception as e:
+        if type(e) != ExpectedFailing and args['pending']:
+            c = [color('success'), color('dull'), color()]
+        else:
+            c = [color('error'), color('dull'), color()]
+        _print("\r {0[0]}{1}{0[1]} {4} - {2} ({0[0]}{3}{0[1]}){0[2]}\n".format(
+            c,
+            '\u2717' if type(e) in (AssertionError, VirtualMachineError) else '\u203C',
+            desc,
+            type(e).__name__,
+            count
+        ))
+        if type(e) != ExpectedFailing and args['pending']:
+            return []
+        filename = str(Path(module.__file__).relative_to(CONFIG['folders']['project']))
+        fn_name = filename[:-2]+fn_name
+        return [(fn_name, color.format_tb(sys.exc_info(), filename), type(e))]
+
+
 def display_report(coverage_eval):
     print("\nCoverage analysis:\n")
     for contract in coverage_eval:
         print("  contract: {0[contract]}{1}{0}".format(color, contract))
-        for fn_name, pct in [(x,v[x]['pct']) for v in coverage_eval[contract].values() for x in v]:
-            c = next(i[1] for i in COVERAGE_COLORS if pct<=i[0])
+        for fn_name, pct in [(x, v[x]['pct']) for v in coverage_eval[contract].values() for x in v]:
+            c = next(i[1] for i in COVERAGE_COLORS if pct <= i[0])
             print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
                 color, fn_name, color(c), pct
             ))
