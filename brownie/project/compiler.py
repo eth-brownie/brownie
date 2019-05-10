@@ -179,7 +179,7 @@ def _generate_pcMap(compiled):
                 'op': opcodes.pop(),
                 'contract': contract,
                 'jump': last[3],
-                'fn': sources.get_fn(contract, last[0], last[0]+last[1])[0]
+                'fn': sources.get_fn(contract, last[0], last[0]+last[1])
             }
             if opcodes[-1][:2] == "0x":
                 pcMap[pc]['value'] = opcodes.pop()
@@ -188,39 +188,29 @@ def _generate_pcMap(compiled):
 
 
 def _generate_coverageMap(build):
-    """Given the compiled project as supplied by compiler.compile_contracts(),
-    returns the function and line based coverage maps for unit test coverage
-    evaluation.
+    """Adds coverage data to a build json.
 
-    A coverage map item is structured as follows:
+    A new key 'coverageMap' is created, structured as follows:
 
     {
-        "/path/to/contract/file.sol":{
-            "functionName":{
-                "fn": {},
-                "line": [{}, {}, {}],
-                "total": int
-            }
+        "/path/to/contract/file.sol": {
+            "functionName": [{
+                'jump': pc of the JUMPI instruction, if it is a jump
+                'start': source code start offest
+                'stop': source code stop offset
+            }],
         }
     }
 
-    Each dict in fn/line is as follows:
-
-    {
-        'jump': pc of the JUMPI instruction, if it is a jump
-        'pc': list of opcode program counters tied to the map item
-        'start': source code start offset
-        'stop': source code stop offset
-    }
-    """
-
+    Relevent items in the pcMap also have a 'coverageIndex' added that corresponds
+    to an entry in the coverageMap."""
     line_map = _isolate_lines(build)
     if not line_map:
         return {}
 
     final = dict((i, {}) for i in set(i['contract'] for i in line_map))
     for i in line_map:
-        fn = sources.get_fn(i['contract'], i['start'], i['stop'])[0]
+        fn = sources.get_fn(i['contract'], i['start'], i['stop'])
         if not fn:
             continue
         final[i['contract']].setdefault(fn, []).append({

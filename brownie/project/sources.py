@@ -18,6 +18,11 @@ class Sources(metaclass=_Singleton):
         self._data = {}
         self._string_iter = 1
 
+    def __getitem__(self, key):
+        if key in self._data:
+            return self._source[self._data[key]['sourcePath']]
+        return self._source[str(key)]
+
     def _load(self):
         base_path = Path(CONFIG['folders']['project'])
         self. _path = base_path.joinpath('contracts')
@@ -108,12 +113,12 @@ class Sources(metaclass=_Singleton):
                 v['offset'][0] <= start <= stop <= v['offset'][1]
             ), False)
             if not name:
-                return (False, -1, -1)
+                return False
         offsets = self._data[name]['fn_offsets']
         if start < offsets[-1][1]:
-            return (False, -1, -1)
+            return False
         offset = next(i for i in offsets if start >= i[1])
-        return (False, -1, -1) if stop > offset[2] else offset
+        return False if stop > offset[2] else offset[0]
 
     def get_fn_offset(self, name, fn_name):
         if name not in self._data:
@@ -125,11 +130,6 @@ class Sources(metaclass=_Singleton):
 
     def inheritance_map(self):
         return dict((k, v['inherited'].copy()) for k, v in self._data.items())
-
-    def __getitem__(self, key):
-        if key in self._data:
-            return self._source[self._data[key]['sourcePath']]
-        return self._source[str(key)]
 
     def add_source(self, source):
         path = "<string-{}>".format(self._string_iter)
