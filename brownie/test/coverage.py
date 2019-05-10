@@ -130,19 +130,20 @@ def generate_report(coverage_eval):
         for path in coverage:
             coverage_map = build[name]['coverageMap'][path]
             report['highlights'][name][path] = []
-            for key, fn, lines in [(k,v['fn'],v['line']) for k,v in coverage_map.items()]:
-                if coverage[path][key]['pct'] in (0, 1):
-                    color = "green" if coverage[path][key]['pct'] else "red"
+            for fn_name, lines in coverage_map.items():
+                if coverage[path][fn_name]['pct'] in (0, 1):
+                    color = "green" if coverage[path][fn_name]['pct'] else "red"
+                    start, stop = sources.get_fn_offset(path, fn_name)
                     report['highlights'][name][path].append(
-                        (fn['start'], fn['stop'], color, "")
+                        (start, stop, color, "")
                     )
                     continue
                 for i, ln in enumerate(lines):
-                    if i in coverage[path][key]['line']:
+                    if i in coverage[path][fn_name]['tx']:
                         color = "green"
-                    elif i in coverage[path][key]['true']:
+                    elif i in coverage[path][fn_name]['true']:
                         color = "yellow" if _evaluate_branch(path, ln) else "orange"
-                    elif i in coverage[path][key]['false']:
+                    elif i in coverage[path][fn_name]['false']:
                         color = "orange" if _evaluate_branch(path, ln) else "yellow"
                     else:
                         color = "red"
