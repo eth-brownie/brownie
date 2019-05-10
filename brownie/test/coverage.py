@@ -9,11 +9,11 @@ from brownie.project import Build, Sources
 build = Build()
 sources = Sources()
 
+
 def analyze_coverage(history):
     '''Given a list of TransactionReceipt objects, analyzes test coverage and
     returns a coverage evaluation dict.
     '''
-    build_json = {}
     coverage_eval = {}
     coverage_map = {}
     pcMap = {}
@@ -28,7 +28,7 @@ def analyze_coverage(history):
             path = t['source']['filename']
             if not name or not path:
                 continue
-            
+
             # prevent repeated requests to build object
             if name not in pcMap:
                 pcMap[name] = build[name]['pcMap']
@@ -36,11 +36,11 @@ def analyze_coverage(history):
                 coverage_eval[name] = dict((i, {}) for i in coverage_map[name])
             if name not in tx_eval:
                 tx_eval[name] = dict((i, {}) for i in coverage_map[name])
-            
+
             fn = pcMap[name][pc]['fn']
             if not fn:
                 continue
-            
+
             coverage_eval[name][path].setdefault(fn, {'tx': set(), 'true': set(), 'false': set()})
             tx_eval[name][path].setdefault(fn, set())
             if t['op'] != "JUMPI":
@@ -55,7 +55,9 @@ def analyze_coverage(history):
                 continue
             # if a JUMPI, check that we hit the jump AND the related coverage map
             try:
-                idx = coverage_map[name][path][fn].index(next(i for i in coverage_map[name][path][fn] if i['jump']==pc))
+                idx = coverage_map[name][path][fn].index(
+                    next(i for i in coverage_map[name][path][fn] if i['jump'] == pc)
+                )
             except StopIteration:
                 continue
             if idx not in tx_eval[name][path][fn] or idx in coverage_eval[name][path][fn]['tx']:
@@ -104,7 +106,7 @@ def _calculate_pct(coverage_eval):
     '''Internal method to calculate coverage percentages'''
     for name in coverage_eval:
         coverage_map = build[name]['coverageMap']
-        for path, fn_name in [(k,x) for k,v in coverage_map.items() for x in v]:
+        for path, fn_name in [(k, x) for k, v in coverage_map.items() for x in v]:
             result = coverage_eval[name][path]
             if fn_name not in result:
                 result[fn_name] = {'pct': 0}
@@ -179,7 +181,7 @@ def _evaluate_branch(path, ln):
 
     # remove comments, strip whitespace
     before = source[idx:start]
-    for pattern in ('\/\*[\s\S]*?\*\/', '\/\/[^\n]*'):
+    for pattern in (r'\/\*[\s\S]*?\*\/', r'\/\/[^\n]*'):
         for i in re.findall(pattern, before):
             before = before.replace(i, "")
     before = before.strip("\n\t (")
@@ -188,10 +190,10 @@ def _evaluate_branch(path, ln):
     if idx <= stop:
         return False
     after = source[stop:idx].split()
-    after = next((i for i in after if i!=")"),after[0])[0]
+    after = next((i for i in after if i != ")"), after[0])[0]
     if (
-        (before[-2:] == "if" and after=="|") or
-        (before[:7] == "require" and after in (")","|"))
+        (before[-2:] == "if" and after == "|") or
+        (before[:7] == "require" and after in (")", "|"))
     ):
         return True
     return False
