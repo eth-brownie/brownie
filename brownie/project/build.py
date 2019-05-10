@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import ast
-from copy import deepcopy
 from hashlib import sha1
 import importlib.util
 import json
@@ -121,10 +120,10 @@ class Build(metaclass=_Singleton):
                 break
 
     def __getitem__(self, contract_name):
-        return deepcopy(self._build[contract_name.replace('.json','')])
+        return self._build[contract_name.replace('.json','')]
 
     def items(self):
-        return deepcopy(self._build).items()
+        return self._build.items()
 
 
 def get_ast_hash(script_path):
