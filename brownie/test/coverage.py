@@ -51,7 +51,10 @@ def analyze_coverage(history):
                     coverage_eval[name][path][fn]['tx'].add(pcMap[name][pc]['coverageIndex'])
                 continue
             # if a JUMPI, check that we hit the jump AND the related coverage map
-            idx = coverage_map[name][path][fn].index(next(i for i in coverage_map[name][path][fn] if i['jump']==pc))
+            try:
+                idx = coverage_map[name][path][fn].index(next(i for i in coverage_map[name][path][fn] if i['jump']==pc))
+            except StopIteration:
+                continue
             if idx not in tx_eval[name][path][fn] or idx in coverage_eval[name][path][fn]['tx']:
                 continue
             key = ('false', 'true') if tx.trace[i+1]['pc'] == pc+1 else ('true', 'false')
@@ -131,6 +134,7 @@ def generate_report(coverage_eval):
             coverage_map = build[name]['coverageMap'][path]
             report['highlights'][name][path] = []
             for fn_name, lines in coverage_map.items():
+                # if function has 0% or 100% coverage, highlight entire function
                 if coverage[path][fn_name]['pct'] in (0, 1):
                     color = "green" if coverage[path][fn_name]['pct'] else "red"
                     start, stop = sources.get_fn_offset(path, fn_name)
@@ -138,6 +142,7 @@ def generate_report(coverage_eval):
                         (start, stop, color, "")
                     )
                     continue
+                # otherwise, highlight individual statements
                 for i, ln in enumerate(lines):
                     if i in coverage[path][fn_name]['tx']:
                         color = "green"

@@ -81,7 +81,7 @@ def _compile_and_format(input_json):
     compiled = _generate_pcMap(compiled)
     result = {}
 
-    for filename, name in [(k, x) for k, v in compiled['contracts'].items() for x in v]:
+    for filename, name in [(k, v) for k in input_json['sources'] for v in compiled['contracts'][k]]:
         data = compiled['contracts'][filename][name]
         evm = data['evm']
         ref = [
@@ -107,12 +107,12 @@ def _compile_and_format(input_json):
             'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
             # 'networks': {},
             'opcodes': evm['deployedBytecode']['opcodes'],
+            'pcMap': evm['pcMap'],
             'sha1': sources.get_hash(name),
             'source': input_json['sources'][filename]['content'],
             'sourceMap': evm['bytecode']['sourceMap'],
             'sourcePath': filename,
-            'type': sources.get_type(name),
-            'pcMap': evm['pcMap']
+            'type': sources.get_type(name)
         }
         result[name]['coverageMap'] = _generate_coverageMap(result[name])
     return result

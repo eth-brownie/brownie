@@ -14,10 +14,8 @@ class Sources(metaclass=_Singleton):
         self._source = {}
         self._uncommented_source = {}
         self._comment_offsets = {}
-        self._fn_map = {}
         self._path = None
         self._data = {}
-        self._inheritance_map = {}
         self._string_iter = 1
 
     def _load(self):
@@ -115,7 +113,7 @@ class Sources(metaclass=_Singleton):
         if start < offsets[-1][1]:
             return (False, -1, -1)
         offset = next(i for i in offsets if start >= i[1])
-        return (False, -1, -1) if stop >= offset[2] else offset
+        return (False, -1, -1) if stop > offset[2] else offset
 
     def get_fn_offset(self, name, fn_name):
         if name not in self._data:
