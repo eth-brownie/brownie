@@ -30,9 +30,10 @@ class SelectContract(ttk.Combobox):
         pcMap = deepcopy(build_json['pcMap'])
         self._parent.note.set_active(build_json['sourcePath'])
         self._parent.tree.delete_all()
-        for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)[1:]]:
+        contract = pcMap[0]['contract']
+        for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)]:
             if (
-                op['contract'] == pcMap[0]['contract'] and
+                op['contract'] == contract and
                 op['start'] == pcMap[0]['start'] and
                 op['stop'] == pcMap[0]['stop']
             ):
