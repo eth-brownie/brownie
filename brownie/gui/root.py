@@ -10,7 +10,7 @@ from tkinter import ttk
 from .listview import ListView
 from .textbook import TextBook
 from .select import SelectContract
-from .styles import set_style
+from .styles import set_style, TEXT_STYLE
 
 from brownie.project.build import Build
 from brownie.test.coverage import merge_coverage, generate_report
@@ -39,17 +39,26 @@ class Root(tk.Tk):
 
         # main widgets
         frame = ttk.Frame(self)
-        frame.pack(side="bottom", expand="true", fill="x")
+        frame.pack(side="bottom", expand=True, fill="both")
+        self.tree = ListView(self, frame, (("pc", 80), ("opcode", 200)))
+        self.tree.configure(height=30)
+        self.tree.pack(side="right", fill="y", expand=True)
+
+        frame = ttk.Frame(frame)
+        frame.pack(side="left", fill="y", expand=True)
         self.note = TextBook(self, frame)
-        self.note.pack(side="left")
-        self.tree = ListView(self, frame, (("pc", 80), ("opcode", 200)), height=30)
-        self.tree.pack(side="right")
+        self.note.pack(side="top", fill="both", expand=True)
+        self.note.configure(width=920, height=100)
+        self.console = tk.Text(frame, height=1)
+        self.console.pack(side="bottom", fill="both")
+        self.console.configure(**TEXT_STYLE)
 
         # toolbar widgets
         frame = ttk.Frame(self)
         frame.pack(side="top", expand="true", fill="both")
         self.combo = SelectContract(self, frame)
         self.combo.pack(side="right", anchor="e")
+        self.combo.configure(width=23)
 
         if report_file:
             report_file = Path(report_file).resolve()

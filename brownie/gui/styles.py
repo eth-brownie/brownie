@@ -11,6 +11,7 @@ TEXT_STYLE = {
     'inactiveselectbackground': "#4a6984",
     'borderwidth': 1,
     'highlightthickness': 0,
+    'state': "disabled"
 }
 
 TEXT_COLORS = {

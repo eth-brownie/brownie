@@ -149,21 +149,11 @@ class TextBox(tk.Frame):
 
     def __init__(self, root, text):
         super().__init__(root)
-        self._text = tk.Text(
-            self,
-            height=33,
-            width=90,
-            yscrollcommand=self._text_scroll
-        )
+        self._text = tk.Text(self, width=90, yscrollcommand=self._text_scroll)
         self._scroll = ttk.Scrollbar(self)
         self._scroll.pack(side="left", fill="y")
         self._scroll.config(command=self._scrollbar_scroll)
-        self._line_no = tk.Text(
-            self,
-            height=33,
-            width=4,
-            yscrollcommand=self._text_scroll
-        )
+        self._line_no = tk.Text(self, width=4, yscrollcommand=self._text_scroll)
         self._line_no.pack(side="left", fill="y")
 
         self._text.pack(side="right", fill="y")
@@ -181,7 +171,6 @@ class TextBox(tk.Frame):
         self._line_no.tag_add("justify", 1.0, "end")
 
         for text in (self._line_no, self._text):
-            text['state'] = "disabled"
             text.config(**TEXT_STYLE)
             text.config(
                 tabs=tkFont.Font(font=text['font']).measure('    '),
