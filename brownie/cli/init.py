@@ -24,6 +24,7 @@ build/                  Compiled contracts and test data
 contracts/              Contract source code
 scripts/                Scripts for deployment and interaction
 tests/                  Scripts for project testing
+reports/                Report files for contract analysis
 brownie-config.json     Project configuration file"""
 
 

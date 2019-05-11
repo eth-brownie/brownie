@@ -39,8 +39,7 @@ Arguments:
 Options:
 
   --update -u             Only run tests where changes have occurred
-  --coverage -c           Evaluate test coverage and display a report
-  --save -s [filename]    Save coverage report
+  --coverage -c           Evaluate test coverage
   --gas -g                Display gas profile for function calls
   --verbose -v            Enable verbose reporting
   --tb -t                 Show entire python traceback on exceptions
@@ -57,11 +56,6 @@ def main():
         ARGV['always_transact'] = True
         history = TxHistory()
         history._revert_lock = True
-        if ARGV['save']:
-            if not ARGV['save'].endswith('.json'):
-                ARGV['save'] += ".json"
-            if Path(ARGV['save']).exists():
-                sys.exit("{0[error]}ERROR{0}: Cannot save report to {0[module]}{1}{0} - file already exists".format(color, ARGV['save']))
 
     test_files = get_test_files(args['<filename>'])
     if len(test_files) == 1 and args['<range>']:
@@ -71,7 +65,7 @@ def main():
                 idx = slice(*[int(i)-1 for i in idx.split(':')])
             else:
                 idx = slice(int(idx)-1, int(idx))
-        except:
+        except Exception:
             sys.exit("{0[error]}ERROR{0}: Invalid range. Must be an integer or slice (eg. 1:4)".format(color))
     elif args['<range>']:
         sys.exit("{0[error]}ERROR:{0} Cannot specify a range when running multiple tests files.".format(color))
@@ -141,16 +135,16 @@ def main():
     if args['--coverage']:
         coverage_eval = merge_coverage(coverage_files)
         display_report(coverage_eval)
-        if ARGV['save']:
-            path = Path(ARGV['save']).resolve()
-            json.dump(
-                generate_report(coverage_eval),
-                path.open('w'),
-                sort_keys=True,
-                indent=2,
-                default=sorted
-            )
-            print("Coverage report saved at {}".format(path))
+        filename = "reports/coverage-{}.json".format(time.strftime('%d%m%y'))
+        path = Path(CONFIG['folders']['project']).joinpath(filename)
+        json.dump(
+            generate_report(coverage_eval),
+            path.open('w'),
+            sort_keys=True,
+            indent=2,
+            default=sorted
+        )
+        print("Coverage report saved at {}".format(path.relative_to(CONFIG['folders']['project'])))
 
     if args['--gas']:
         print('\nGas Profile:')

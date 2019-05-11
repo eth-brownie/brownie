@@ -17,7 +17,7 @@ __project = True
 project = sys.modules[__name__]
 
 
-FOLDERS = ["contracts", "scripts", "tests"]
+FOLDERS = ["contracts", "scripts", "reports", "tests"]
 
 
 def check_for_project(path):
@@ -76,6 +76,8 @@ def load(path=None):
         raise SystemError("Could not find brownie project")
     path = Path(path).resolve()
     CONFIG['folders']['project'] = str(path)
+    for folder in [i for i in FOLDERS]:
+        path.joinpath(folder).mkdir(exist_ok=True)
     sys.path.insert(0, str(path))
     load_project_config()
     compiler.set_solc_version()
