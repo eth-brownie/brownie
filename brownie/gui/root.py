@@ -7,6 +7,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 
+from .buttons import ScopingToggle, ConsoleToggle
 from .listview import ListView
 from .textbook import TextBook
 from .select import SelectContract
@@ -106,8 +107,15 @@ class ToolbarFrame(ttk.Frame):
 
     def __init__(self, root):
         super().__init__(root)
+        self.root = root
 
         # contract selection
         self.combo = SelectContract(self, [k for k, v in build.items() if v['bytecode']])
         self.combo.pack(side="right", anchor="e")
         self.combo.configure(width=23)
+
+        button = ScopingToggle(self)
+        button.pack(side="left")
+
+        button = ConsoleToggle(self)
+        button.pack(side="left")

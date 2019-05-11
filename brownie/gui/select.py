@@ -9,6 +9,7 @@ class SelectContract(ttk.Combobox):
         super().__init__(parent, state='readonly', font=(None, 16))
         self.root = self._root()
         self['values'] = sorted(values)
+        self.set("Select a Contract")
         self.bind("<<ComboboxSelected>>", self._select)
 
     def _select(self, event):

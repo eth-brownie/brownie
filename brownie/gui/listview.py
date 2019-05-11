@@ -32,8 +32,6 @@ class ListView(ttk.Treeview):
         self.tag_configure("NoSource", background="#272727")
         self.bind("<<TreeviewSelect>>", self._select_bind)
         root = self.root = self._root()
-        root.bind("a", self._show_all)
-        root.bind("s", self._show_scope)
         root.bind("j", self._highlight_jumps)
         root.bind("r", self._highlight_revert)
         self.bind("<3>", self._highlight_opcode)
@@ -107,30 +105,6 @@ class ListView(ttk.Treeview):
         pc = sorted([int(i) for i in self.root.pcMap])[::-1]
         id_ = next(str(i) for i in pc if i <= int(self._seek_buffer))
         self.selection_set(id_)
-
-    def _show_all(self, event):
-        self.root.main.note.clear_scope()
-        for i in sorted(self.root.pcMap, key=lambda k: int(k)):
-            self.move(i, '', i)
-        if self.selection():
-            self.see(self.selection()[0])
-
-    def _show_scope(self, event):
-        if not self.selection():
-            return
-        pc = self.root.pcMap[self.selection()[0]]
-        if not pc['contract']:
-            return
-        for key, value in sorted(self.root.pcMap.items(), key=lambda k: int(k[0])):
-            if (
-                not value['contract'] or value['contract'] != pc['contract'] or
-                value['start'] < pc['start'] or value['stop'] > pc['stop']
-            ):
-                self.detach(key)
-            else:
-                self.move(key, '', key)
-        self.see(self.selection()[0])
-        self.root.main.note.apply_scope(pc['start'], pc['stop'])
 
     def _highlight_opcode(self, event):
         pc = self.identify_row(event.y)
