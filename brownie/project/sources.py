@@ -82,7 +82,7 @@ class Sources(metaclass=_Singleton):
             )):
                 for match in re.finditer(pattern, source):
                     fn_offsets.append((
-                        match.groups()[idx],
+                        name+"."+(match.groups()[idx] or "<fallback>"),
                         self._commented_offset(path, match.start(idx) + offset),
                         self._commented_offset(path, match.end(idx) + offset)
                     ))

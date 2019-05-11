@@ -176,7 +176,7 @@ def _evaluate_branch(path, ln):
     start, stop = ln['start'], ln['stop']
     try:
         idx = _maxindex(source[:start])
-    except:
+    except Exception:
         return False
 
     # remove comments, strip whitespace
