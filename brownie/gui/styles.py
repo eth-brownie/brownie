@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 from tkinter import ttk
-import tkinter as tk
 
 TEXT_STYLE = {
     'font': ("Courier", 14),
@@ -81,7 +80,7 @@ def set_style(root):
         background=[('active', "#272727")]
     )
     style.layout(
-        'Vertical.TScrollbar', 
+        'Vertical.TScrollbar',
         [(
             'Vertical.Scrollbar.trough',
             {
@@ -106,7 +105,7 @@ def set_style(root):
     style.map(
         "TCombobox",
         background=[("active", "#666666"), ("selected", "#383838")],
-        fieldbackground=[("readonly","#A9A9A9")]
+        fieldbackground=[("readonly", "#A9A9A9")]
     )
     root.option_add("*TCombobox*Listbox*Font", (None, 18))
     root.option_add("*TCombobox*Listbox.foreground", "#000000")

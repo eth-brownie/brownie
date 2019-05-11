@@ -4,9 +4,9 @@ from copy import deepcopy
 from tkinter import ttk
 
 from brownie.project.build import Build
-from brownie._config import CONFIG
 
 build = Build()
+
 
 class SelectContract(ttk.Combobox):
 
@@ -42,4 +42,4 @@ class SelectContract(ttk.Combobox):
             else:
                 tag = "NoSource"
             self._parent.tree.insert([str(pc), op['op']], [tag, op['op']])
-        self._parent.pcMap = dict((str(k),v) for k,v in pcMap.items())
+        self._parent.pcMap = dict((str(k), v) for k, v in pcMap.items())

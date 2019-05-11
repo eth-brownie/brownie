@@ -26,7 +26,7 @@ class ListView(ttk.Treeview):
         for tag, width in columns[1:]:
             self.heading(tag, text=tag)
             self.column(tag, width=width)
-        scroll=ttk.Scrollbar(self._frame)
+        scroll = ttk.Scrollbar(self._frame)
         scroll.pack(side="right", fill="y")
         self.configure(yscrollcommand=scroll.set)
         scroll.configure(command=self.yview)
@@ -92,12 +92,12 @@ class ListView(ttk.Treeview):
         self._seek_last = time.time()
         self._seek_buffer += event.char
         pc = sorted([int(i) for i in self._parent.pcMap])[::-1]
-        id_ = next(str(i) for i in pc if i<=int(self._seek_buffer))
+        id_ = next(str(i) for i in pc if i <= int(self._seek_buffer))
         self.selection_set(id_)
 
     def _show_all(self, event):
         self._parent.note.clear_scope()
-        for i in sorted(self._parent.pcMap, key= lambda k: int(k)):
+        for i in sorted(self._parent.pcMap, key=lambda k: int(k)):
             self.move(i, '', i)
         if self.selection():
             self.see(self.selection()[0])
@@ -108,10 +108,10 @@ class ListView(ttk.Treeview):
         pc = self._parent.pcMap[self.selection()[0]]
         if not pc['contract']:
             return
-        for key, value in sorted(self._parent.pcMap.items(), key= lambda k: int(k[0])):
+        for key, value in sorted(self._parent.pcMap.items(), key=lambda k: int(k[0])):
             if (
                 not value['contract'] or value['contract'] != pc['contract'] or
-                value['start'] < pc['start'] or value['stop']>pc['stop']
+                value['start'] < pc['start'] or value['stop'] > pc['stop']
             ):
                 self.detach(key)
             else:
@@ -128,7 +128,7 @@ class ListView(ttk.Treeview):
         else:
             self.tag_configure(
                 op,
-                foreground="#dddd33" if op!="REVERT" else "#dd3333"
+                foreground="#dddd33" if op != "REVERT" else "#dd3333"
             )
             self._highlighted.add(op)
 
