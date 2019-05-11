@@ -38,27 +38,12 @@ class Root(tk.Tk):
         self.bind("<Escape>", lambda k: self.destroy())
 
         # main widgets
-        frame = ttk.Frame(self)
-        frame.pack(side="bottom", expand=True, fill="both")
-        self.tree = ListView(self, frame, (("pc", 80), ("opcode", 200)))
-        self.tree.configure(height=30)
-        self.tree.pack(side="right", fill="y", expand=True)
-
-        frame = ttk.Frame(frame)
-        frame.pack(side="left", fill="y", expand=True)
-        self.note = TextBook(self, frame)
-        self.note.pack(side="top", fill="both", expand=True)
-        self.note.configure(width=920, height=100)
-        self.console = tk.Text(frame, height=1)
-        self.console.pack(side="bottom", fill="both")
-        self.console.configure(**TEXT_STYLE)
+        self.main = MainFrame(self)
+        self.main.pack(side="bottom", expand=True, fill="both")
 
         # toolbar widgets
-        frame = ttk.Frame(self)
-        frame.pack(side="top", expand="true", fill="both")
-        self.combo = SelectContract(self, frame)
-        self.combo.pack(side="right", anchor="e")
-        self.combo.configure(width=23)
+        self.toolbar = ToolbarFrame(self)
+        self.toolbar.pack(side="top", expand="true", fill="both")
 
         if report_file:
             report_file = Path(report_file).resolve()
@@ -74,19 +59,55 @@ class Root(tk.Tk):
         set_style(self)
 
     def _toggle_coverage(self, event):
-        active = self.combo.get()
+        active = self.toolbar.combo.get()
         if not active or active not in self._coverage_report:
             return
         if self._show_coverage:
-            self.note.unmark_all('green', 'red', 'yellow', 'orange')
+            self.main.note.unmark_all('green', 'red', 'yellow', 'orange')
             self._show_coverage = False
             return
         for path, item in [(k, x) for k, v in self._coverage_report[active].items() for x in v]:
             label = Path(path).name
-            self.note.mark(label, item[2], item[0], item[1])
+            self.main.note.mark(label, item[2], item[0], item[1])
         self._show_coverage = True
 
     def destroy(self):
         super().destroy()
         self.quit()
         self._active.clear()
+
+    def set_active(self, contract_name):
+        build_json = build[contract_name]
+        self.main.note.set_visible(build_json['allSourcePaths'])
+        self.main.note.set_active(build_json['sourcePath'])
+        self.main.oplist.set_opcodes(build_json['pcMap'])
+        self.pcMap = dict((str(k), v) for k, v in build_json['pcMap'].items())
+
+
+class MainFrame(ttk.Frame):
+
+    def __init__(self, root):
+        super().__init__(root)
+        self.oplist = ListView(self, (("pc", 80), ("opcode", 200)))
+        self.oplist.configure(height=30)
+        self.oplist.pack(side="right", fill="y", expand=True)
+
+        frame = ttk.Frame(self)
+        frame.pack(side="left", fill="y", expand=True)
+        self.note = TextBook(frame)
+        self.note.pack(side="top", fill="both", expand=True)
+        self.note.configure(width=920, height=100)
+        self.console = tk.Text(frame, height=1)
+        self.console.pack(side="bottom", fill="both")
+        self.console.configure(**TEXT_STYLE)
+
+
+class ToolbarFrame(ttk.Frame):
+
+    def __init__(self, root):
+        super().__init__(root)
+
+        # contract selection
+        self.combo = SelectContract(self, [k for k, v in build.items() if v['bytecode']])
+        self.combo.pack(side="right", anchor="e")
+        self.combo.configure(width=23)

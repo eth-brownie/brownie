@@ -13,17 +13,18 @@ from brownie._config import CONFIG
 
 class TextBook(ttk.Notebook):
 
-    def __init__(self, root, frame):
-        super().__init__(frame)
-        self._parent = root
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.root = self._root()
         self._scope = None
         self.configure(padding=0)
         self._frames = []
-        root.bind("<Left>", self.key_left)
-        root.bind("<Right>", self.key_right)
+        self.root.bind("<Left>", self.key_left)
+        self.root.bind("<Right>", self.key_right)
         base_path = Path(CONFIG['folders']['project']).joinpath('contracts')
         for path in base_path.glob('**/*.sol'):
             self.add(path)
+        self.set_visible([])
 
     def add(self, path):
         path = Path(path)
@@ -114,7 +115,7 @@ class TextBook(ttk.Notebook):
 
     def _search(self, event):
         frame = self.active_frame()
-        tree = self._parent.tree
+        tree = self.root.main.oplist
         if not frame.tag_ranges('sel'):
             tree.clear_selection()
             return
@@ -127,7 +128,7 @@ class TextBook(ttk.Notebook):
             pc = False
         else:
             pc = [
-                k for k, v in self._parent.pcMap.items() if
+                k for k, v in self.root.pcMap.items() if
                 v['contract'] and frame._label in v['contract'] and
                 start >= v['start'] and stop <= v['stop']
             ]
@@ -138,8 +139,8 @@ class TextBook(ttk.Notebook):
 
         def key(k):
             return (
-                (start - self._parent.pcMap[k]['start']) +
-                (self._parent.pcMap[k]['stop'] - stop)
+                (start - self.root.pcMap[k]['start']) +
+                (self.root.pcMap[k]['stop'] - stop)
             )
         id_ = sorted(pc, key=key)[0]
         tree.selection_set(id_)
