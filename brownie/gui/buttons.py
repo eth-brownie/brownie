@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from pathlib import Path
 import tkinter as tk
 
 
@@ -75,3 +76,27 @@ class ConsoleToggle(_Toggle):
 
     def toggle_off(self):
         self.console.config(height=1)
+
+
+class HighlightsToggle(_Toggle):
+
+    def __init__(self, parent):
+        super().__init__(parent, "Report", "r")
+        self.note = self.root.main.note
+
+    def toggle_on(self):
+        if not self.root.active_report:
+            return False
+        report = self.root.active_report['highlights'][self.root.get_active()]
+        for path, item in [(k, x) for k, v in report.items() for x in v]:
+            label = Path(path).name
+            self.note.mark(label, item[2], item[0], item[1])
+        return True
+
+    def toggle_off(self):
+        self.note.unmark_all('green', 'red', 'yellow', 'orange')
+
+    def reset(self):
+        self.toggle_off()
+        self._active = False
+        self.toggle()
