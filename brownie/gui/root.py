@@ -50,6 +50,8 @@ class Root(tk.Tk):
         self.main.note.set_active(build_json['sourcePath'])
         self.main.oplist.set_opcodes(build_json['pcMap'])
         self.pcMap = dict((str(k), v) for k, v in build_json['pcMap'].items())
+        if self.toolbar.highlight.active:
+            self.toolbar.highlight.reset()
 
     def get_active(self):
         return self.toolbar.combo.get()

@@ -7,21 +7,21 @@ import tkinter as tk
 class _Toggle(tk.Button):
 
     def __init__(self, parent, text, keybind=None):
-        self._active = False
+        self.active = False
         super().__init__(parent, text=text, command=self.toggle)
         self.root = self._root()
         if keybind:
             self.root.bind(keybind, self.toggle)
 
     def toggle(self, event=None):
-        if self._active:
+        if self.active:
             self.toggle_off()
             self.configure(relief="raised")
         else:
             if not self.toggle_on():
                 return
             self.configure(relief="sunken")
-        self._active = not self._active
+        self.active = not self.active
 
     def toggle_on(self):
         pass
@@ -101,5 +101,6 @@ class HighlightsToggle(_Toggle):
 
     def reset(self):
         self.toggle_off()
-        self._active = False
+        self.configure(relief="raised")
+        self.active = False
         self.toggle()
