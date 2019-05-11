@@ -8,9 +8,10 @@ from tkinter import ttk
 
 from .buttons import ScopingToggle, ConsoleToggle, HighlightsToggle
 from .listview import ListView
-from .textbook import TextBook
 from .select import ContractSelect, ReportSelect
 from .styles import set_style, TEXT_STYLE
+from .textbook import TextBook
+from .tooltip import ToolTip
 
 from brownie.project.build import Build
 from brownie._config import CONFIG
@@ -91,18 +92,22 @@ class ToolbarFrame(ttk.Frame):
         self.combo = ContractSelect(self, [k for k, v in build.items() if v['bytecode']])
         self.combo.pack(side="right", anchor="e")
         self.combo.configure(width=23)
+        ToolTip(self.combo, "Select the contract source to view")
 
         path = Path(CONFIG['folders']['project']).joinpath('reports')
 
         self.report = ReportSelect(self, list(path.glob('**/*.json')))
         self.report.pack(side="right", anchor="e", padx=10)
         self.report.configure(width=23)
+        ToolTip(self.report, "Select a report to overlay onto source code")
 
         self.scope = ScopingToggle(self)
         self.scope.pack(side="left")
+        ToolTip(self.scope, "Filter opcodes to only show those\nrelated to the highlighted source")
 
         self.console = ConsoleToggle(self)
         self.console.pack(side="left")
 
         self.highlight = HighlightsToggle(self)
         self.highlight.pack(side="left")
+        ToolTip(self.highlight, "Toggle report highlighting")
