@@ -33,13 +33,18 @@ class ReportSelect(_Select):
 
     def __init__(self, parent, report_paths):
         self._reports = {}
-
         for path in report_paths:
             try:
                 self._reports[path.stem] = json.load(path.open())
             except Exception:
                 continue
-        super().__init__(parent, "Reports", sorted(self._reports))
+        super().__init__(
+            parent,
+            "Select a Report" if self._reports else "No Available Reports",
+            sorted(self._reports)
+        )
+        if not self._reports:
+            self.config(state="disabled")
 
     def _select(self, event):
         value = super()._select()

@@ -81,13 +81,16 @@ class ConsoleToggle(_Toggle):
 class HighlightsToggle(_Toggle):
 
     def __init__(self, parent):
-        super().__init__(parent, "Report", "r")
+        super().__init__(parent, "Highlights", "h")
         self.note = self.root.main.note
 
     def toggle_on(self):
         if not self.root.active_report:
             return False
-        report = self.root.active_report['highlights'][self.root.get_active()]
+        contract = self.root.get_active()
+        if contract not in self.root.active_report['highlights']:
+            return False
+        report = self.root.active_report['highlights'][contract]
         for path, item in [(k, x) for k, v in report.items() for x in v]:
             label = Path(path).name
             self.note.mark(label, item[2], item[0], item[1])
