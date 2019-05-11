@@ -39,7 +39,7 @@ class Sources(metaclass=_Singleton):
     def _remove_comments(self, path):
         source = self._source[str(path)]
         offsets = [(0, 0)]
-        pattern = "((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))"
+        pattern = r"((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))"
         for match in re.finditer(pattern, source):
             offsets.append((
                 match.start() - offsets[-1][1],
@@ -50,12 +50,12 @@ class Sources(metaclass=_Singleton):
 
     def _get_contract_data(self, path):
         contracts = re.findall(
-            "((?:contract|library|interface)[^;{]*{[\s\S]*?})\s*(?=contract|library|interface|$)",
+            r"((?:contract|library|interface)[^;{]*{[\s\S]*?})\s*(?=contract|library|interface|$)",
             self._uncommented_source[str(path)]
         )
         for source in contracts:
             type_, name, inherited = re.findall(
-                "\s*(contract|library|interface) (\S*) (?:is (.*?)|)(?: *{)",
+                r"\s*(contract|library|interface) (\S*) (?:is (.*?)|)(?: *{)",
                 source
             )[0]
             inherited = set(i.strip() for i in inherited.split(', ') if i)
@@ -63,7 +63,7 @@ class Sources(metaclass=_Singleton):
             self._data[name] = {
                 'sourcePath': str(path),
                 'type': type_,
-                'inherited': inherited.union(re.findall("(?:;|{)\s*using *(\S*)(?= for)", source)),
+                'inherited': inherited.union(re.findall(r"(?:;|{)\s*using *(\S*)(?= for)", source)),
                 'sha1': sha1(source.encode()).hexdigest(),
                 'fn_offsets': [],
                 'offset': (
@@ -76,9 +76,9 @@ class Sources(metaclass=_Singleton):
             fn_offsets = []
             for idx, pattern in enumerate((
                 # matches functions
-                "function\s*(\w*)[^{;]*{[\s\S]*?}(?=\s*function|\s*})",
+                r"function\s*(\w*)[^{;]*{[\s\S]*?}(?=\s*function|\s*})",
                 # matches public variables
-                "(?:{|;)\s*(?!function)(\w[^;]*(?:public\s*constant|public)\s*(\w*)[^{;]*)(?=;)"
+                r"(?:{|;)\s*(?!function)(\w[^;]*(?:public\s*constant|public)\s*(\w*)[^{;]*)(?=;)"
             )):
                 for match in re.finditer(pattern, source):
                     fn_offsets.append((

@@ -53,6 +53,8 @@ The following keyword arguments can be used to affect how a test runs:
 * ``pending``: If set to ``True``, this test is expected to fail. If the test passes it will raise an ``ExpectedFailing`` exception.
 * ``always_transact``: If set to ``False``, calls to non state-changing methods will still execute as calls when running test coverage analysis. See :ref:`coverage` for more information.
 
+Any arguments applied to a test module's ``setup`` method will be used as the default arguments for all that module's methods. Including ``skip=True`` on the setup method will skip the entire module.
+
 Tests rely heavily on methods in the Brownie ``check`` module as an alternative to normal ``assert`` statements. You can read about them in the API :ref:`api_check` documentation.
 
 Example Test Script
