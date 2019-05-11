@@ -22,12 +22,9 @@ class Root(tk.Tk):
 
     _active = threading.Event()
 
-    def __init__(self, report_file=None):
+    def __init__(self):
         if not CONFIG['folders']['project']:
             raise SystemError("No project loaded")
-
-        if report_file and not report_file.endswith('.json'):
-            report_file += ".json"
 
         if self._active.is_set():
             raise SystemError("GUI is already active")
