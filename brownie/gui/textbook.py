@@ -12,8 +12,8 @@ from brownie._config import CONFIG
 
 class TextBook(ttk.Notebook):
 
-    def __init__(self, root):
-        super().__init__(root)
+    def __init__(self, root, frame):
+        super().__init__(frame)
         self._parent = root
         self._scope = None
         self.configure(padding=0)
@@ -149,7 +149,7 @@ class TextBox(tk.Frame):
         super().__init__(root)
         self._text = tk.Text(
             self,
-            height = 35,
+            height = 33,
             width = 90,
             yscrollcommand = self._text_scroll
         )
@@ -158,7 +158,7 @@ class TextBox(tk.Frame):
         self._scroll.config(command=self._scrollbar_scroll)
         self._line_no = tk.Text(
             self,
-            height = 35,
+            height = 33,
             width = 4,
             yscrollcommand = self._text_scroll
         )

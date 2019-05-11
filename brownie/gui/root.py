@@ -37,17 +37,19 @@ class Root(tk.Tk):
         super().__init__(className="Opcode Viewer")
         self.bind("<Escape>", lambda k: self.destroy())
 
-        self.note = TextBook(self)
-        self.note.pack(side="left")
-
+        # main widgets
         frame = ttk.Frame(self)
-        frame.pack(side="right", expand="true", fill="y")
-
+        frame.pack(side="bottom", expand="true", fill="x")
+        self.note = TextBook(self, frame)
+        self.note.pack(side="left")
         self.tree = ListView(self, frame, (("pc", 80), ("opcode", 200)), height=30)
-        self.tree.pack(side="bottom")
+        self.tree.pack(side="right")
 
+        # toolbar widgets
+        frame = ttk.Frame(self)
+        frame.pack(side="top", expand="true", fill="both")
         self.combo = SelectContract(self, frame)
-        self.combo.pack(side="top", expand="true", fill="x")
+        self.combo.pack(side="right", anchor="e")
 
         if report_file:
             report_file = Path(report_file).resolve()
