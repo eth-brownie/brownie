@@ -177,6 +177,7 @@ class TextBox(tk.Frame):
                 tabs=tkFont.Font(font=text['font']).measure('    '),
                 wrap="none"
             )
+        self._line_no.config(background="#272727")
         self._text.bind('<ButtonRelease-1>', root._search)
 
     def __getattr__(self, attr):

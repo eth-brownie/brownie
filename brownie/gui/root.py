@@ -30,7 +30,8 @@ class Root(tk.Tk):
             raise SystemError("GUI is already active")
         self._active.set()
 
-        super().__init__(className="Opcode Viewer")
+        name = Path(CONFIG['folders']['project']).name
+        super().__init__(className=" Brownie GUI - "+name)
         self.bind("<Escape>", lambda k: self.destroy())
 
         # main widgets
@@ -94,7 +95,7 @@ class ToolbarFrame(ttk.Frame):
         path = Path(CONFIG['folders']['project']).joinpath('reports')
 
         self.report = ReportSelect(self, list(path.glob('**/*.json')))
-        self.report.pack(side="right", anchor="e")
+        self.report.pack(side="right", anchor="e", padx=10)
         self.report.configure(width=23)
 
         self.scope = ScopingToggle(self)

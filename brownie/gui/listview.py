@@ -29,7 +29,7 @@ class ListView(ttk.Treeview):
         scroll.pack(side="right", fill="y")
         self.configure(yscrollcommand=scroll.set)
         scroll.configure(command=self.yview)
-        self.tag_configure("NoSource", background="#272727")
+        self.tag_configure("NoSource", background="#161616")
         self.bind("<<TreeviewSelect>>", self._select_bind)
         root = self.root = self._root()
         root.bind("j", self._highlight_jumps)

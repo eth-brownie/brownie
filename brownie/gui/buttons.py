@@ -3,6 +3,8 @@
 from pathlib import Path
 import tkinter as tk
 
+from .styles import BUTTON_STYLE
+
 
 class _Toggle(tk.Button):
 
@@ -10,17 +12,18 @@ class _Toggle(tk.Button):
         self.active = False
         super().__init__(parent, text=text, command=self.toggle)
         self.root = self._root()
+        self.configure(**BUTTON_STYLE)
         if keybind:
             self.root.bind(keybind, self.toggle)
 
     def toggle(self, event=None):
         if self.active:
             self.toggle_off()
-            self.configure(relief="raised")
+            self.configure(relief="raised", background="#272727")
         else:
             if not self.toggle_on():
                 return
-            self.configure(relief="sunken")
+            self.configure(relief="sunken", background="#383838")
         self.active = not self.active
 
     def toggle_on(self):
@@ -101,6 +104,6 @@ class HighlightsToggle(_Toggle):
 
     def reset(self):
         self.toggle_off()
-        self.configure(relief="raised")
+        self.configure(relief="raised", background="#272727")
         self.active = False
         self.toggle()
