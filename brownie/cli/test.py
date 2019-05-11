@@ -16,7 +16,7 @@ from brownie.test.coverage import (
     merge_coverage,
     generate_report
 )
-from brownie.exceptions import ExpectedFailing, VirtualMachineError
+from brownie.exceptions import ExpectedFailing
 import brownie.network as network
 from brownie.network.history import TxHistory
 import brownie.network.transaction as transaction
@@ -48,21 +48,6 @@ Options:
 
 By default brownie runs every script found in the tests folder as well as any
 subfolders. Files and folders beginning with an underscore will be skipped."""
-
-
-def _get_args(fn):
-    if not fn.__defaults__:
-        return FalseyDict()
-    return FalseyDict(zip(
-        fn.__code__.co_varnames[:len(fn.__defaults__)],
-        fn.__defaults__
-    ))
-
-
-def _print(value, *args):
-    value = value.format(color, *args)
-    sys.stdout.write(value)
-    sys.stdout.flush()
 
 
 def main():
@@ -112,21 +97,16 @@ def main():
                     if not p.exists():
                         p.mkdir()
 
-            tb = run_test(filename, network, idx)
+            tb, cov = run_test(filename, network, idx)
             if tb:
                 traceback_info += tb
                 if coverage_json.exists():
                     coverage_json.unlink()
                 continue
 
-            if args['--coverage']:
-                stime = time.time()
-                _print("     - Evaluating test coverage...")
-                coverage_eval = analyze_coverage(history.copy())
-                _print(
-                    "\r {0[success]}\u2713{0}   - Evaluating test coverage ({1:.4f}s)\n",
-                    time.time()-stime
-                )
+            if ARGV['coverage']:
+                coverage_eval = cov
+
             build_files = set(Path('build/contracts/{}.json'.format(i)) for i in coverage_eval)
             coverage_eval = {
                 'coverage': coverage_eval,
@@ -182,7 +162,7 @@ def get_test_files(path):
     if not path:
         path = ""
     if path[:6] != "tests/":
-        path = "tests/"+path
+        path = "tests/" + path
     path = Path(CONFIG['folders']['project']).joinpath(path)
     if not path.is_dir():
         if not path.suffix:
@@ -191,7 +171,7 @@ def get_test_files(path):
             sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}tests/{1}{0}".format(color, path.name))
         result = [path]
     else:
-        result = [i for i in path.glob('**/*.py') if i.name[0]!="_" and "/_" not in str(i)]
+        result = [i for i in path.glob('**/*.py') if i.name[0] != "_" and "/_" not in str(i)]
     return [str(i.relative_to(CONFIG['folders']['project']))[:-3] for i in result]
 
 
@@ -201,62 +181,76 @@ def run_test(filename, network, idx):
         network.gas_limit(CONFIG['test']['gas_limit'])
 
     module = importlib.import_module(filename.replace(os.sep, '.'))
-    test_names = [
-        i for i in dir(module) if i not in dir(sys.modules['brownie']) and
-        i[0] != "_" and callable(getattr(module, i))
-    ]
-    code = Path(CONFIG['folders']['project']).joinpath("{}.py".format(filename)).open().read()
-    test_names = re.findall(r'(?<=\ndef)[\s]{1,}[^(]*(?=\([^)]*\)[\s]*:)', code)
-    test_names = [i.strip() for i in test_names if i.strip()[0] != "_"]
+    code = Path(filename+".py").open().read()
+    test_names = re.findall(r'\ndef[\s ]{1,}([^_]\w*)[\s ]*\([^)]*\)', code)
     duplicates = set([i for i in test_names if test_names.count(i) > 1])
     if duplicates:
-        raise ValueError(
-            "tests/{}.py contains multiple tests of the same name: {}".format(
-                filename, ", ".join(duplicates)
-            )
-        )
-    traceback_info = []
+        raise ValueError("tests/{}.py contains multiple tests of the same name: {}".format(
+            filename,
+            ", ".join(duplicates)
+        ))
+
     if not test_names:
         print("\n{0[error]}WARNING{0}: No test functions in {0[module]}{1}.py{0}".format(color, filename))
-        return [], []
+        return [], {}
 
-    print("\nRunning {0[module]}{1}.py{0} - {2} test{3}".format(
-            color,
-            filename,
-            len(test_names)-1,
-            "s" if len(test_names) != 2 else ""
-    ))
+    if ARGV['coverage']:
+        ARGV['always_transact'] = True
+        always_transact = True
+
+    traceback_info = []
     if 'setup' in test_names:
         test_names.remove('setup')
-        traceback_info += run_test_method(module, 'setup', 0, len(test_names))
+        fn, default_args = _get_fn(module, 'setup')
+
+        if default_args['skip'] is True or (default_args['skip'] == "coverage" and ARGV['coverage']):
+            return [], {}
+        p = TestPrinter(filename, 0, len(test_names))
+        traceback_info += run_test_method(fn, default_args, p)
         if traceback_info:
-            return traceback_info
+            return traceback_info, {}
+    else:
+        p = TestPrinter(filename, 1, len(test_names))
+        default_args = FalseyDict()
     network.rpc.snapshot()
-    for c, t in enumerate(test_names[idx], start=idx.start + 1):
+    for t in test_names[idx]:
         network.rpc.revert()
-        traceback_info += run_test_method(module, t, c, len(test_names))
+        fn, fn_args = _get_fn(module, t)
+        args = default_args.copy()
+        args.update(fn_args)
+        traceback_info += run_test_method(fn, args, p)
+        if ARGV['coverage']:
+            ARGV['always_transact'] = always_transact
         if traceback_info and traceback_info[-1][2] == ReadTimeout:
-            print(" {0[error]}WARNING{0}: RPC crashed, terminating test".format(color))
+            print("{0[error]}WARNING{0}: RPC crashed, terminating test".format(color))
             network.rpc.kill(False)
             network.rpc.launch(CONFIG['active_network']['test-rpc'])
             break
-    return traceback_info
+    if not traceback_info and ARGV['coverage']:
+        p.start("Evaluating test coverage")
+        coverage_eval = analyze_coverage(TxHistory().copy())
+        p.stop()
+        return traceback_info, coverage_eval
+    return traceback_info, {}
 
 
-def run_test_method(module, fn_name, count, total):
-    fn = getattr(module, fn_name)
-    desc = fn.__doc__ or fn_name
-    _print("   {0} - {1} ({0}/{2})...".format(count, desc, total))
-    args = _get_args(fn)
+def _get_fn(module, name):
+    fn = getattr(module, name)
+    if not fn.__defaults__:
+        return fn, FalseyDict()
+    return fn, FalseyDict(zip(
+        fn.__code__.co_varnames[:len(fn.__defaults__)],
+        fn.__defaults__
+    ))
+
+
+def run_test_method(fn, args, p):
+    desc = fn.__doc__ or fn.__name__
     if args['skip'] is True or (args['skip'] == "coverage" and ARGV['coverage']):
-        _print(
-            "\r {0[pending]}\u229d{0[dull]} {1} - {2} ({0[pending]}skipped{0[dull]}){0}\n",
-            count,
-            desc
-        )
+        p.skip(desc)
         return []
+    p.start(desc)
     try:
-        stime = time.time()
         if ARGV['coverage'] and 'always_transact' in args:
             ARGV['always_transact'] = args['always_transact']
         fn()
@@ -264,30 +258,20 @@ def run_test_method(module, fn_name, count, total):
             ARGV['always_transact'] = True
         if args['pending']:
             raise ExpectedFailing("Test was expected to fail")
-        _print(
-            "\r {0[success]}\u2713{0} {1} - {2} ({3:.4f}s) \n",
-            count,
-            desc,
-            time.time()-stime
-        )
+        p.stop()
         return []
     except Exception as e:
-        if type(e) != ExpectedFailing and args['pending']:
-            c = [color('success'), color('dull'), color()]
-        else:
-            c = [color('error'), color('dull'), color()]
-        _print("\r {0[0]}{1}{0[1]} {4} - {2} ({0[0]}{3}{0[1]}){0[2]}\n".format(
-            c,
-            '\u2717' if type(e) in (AssertionError, VirtualMachineError) else '\u203C',
-            desc,
-            type(e).__name__,
-            count
-        ))
+        p.stop(e, args['pending'])
         if type(e) != ExpectedFailing and args['pending']:
             return []
-        filename = str(Path(module.__file__).relative_to(CONFIG['folders']['project']))
-        fn_name = filename[:-2]+fn_name
-        return [(fn_name, color.format_tb(sys.exc_info(), filename), type(e))]
+        return [(
+            fn.__name__,
+            color.format_tb(
+                sys.exc_info(),
+                Path(sys.modules[fn.__module__].__file__).relative_to(CONFIG['folders']['project'])
+            ),
+            type(e)
+        )]
 
 
 def display_report(coverage_eval):
@@ -300,3 +284,57 @@ def display_report(coverage_eval):
                 color, fn_name, color(c), pct
             ))
         print()
+
+
+class TestPrinter:
+
+    def __init__(self, path, count, total):
+        self.path = path
+        self.count = count
+        self.total = total
+        print("\nRunning {0[module]}{1}.py{0} - {2} test{3}".format(
+            color,
+            path,
+            total,
+            "s" if total != 1 else ""
+        ))
+
+    def skip(self, description):
+        self._print(
+            "{0} ({1[pending]}skipped{1[dull]})\n".format(description, color),
+            "\u229d",
+            "pending",
+            "dull"
+        )
+        self.count += 1
+
+    def start(self, description):
+        self.desc = description
+        self._print("{} ({}/{})...".format(description, self.count, self.total))
+        self.time = time.time()
+
+    def stop(self, err=None, expect=False):
+        if not err:
+            self._print("{} ({:.4f}s)  \n".format(self.desc, time.time() - self.time), "\u2713")
+        else:
+            err = type(err).__name__
+            color_str = 'success' if expect and err != "ExpectedFailing" else 'error'
+            symbol = '\u2717' if err in ("AssertionError", "VirtualMachineError") else '\u203C'
+            msg = "{} ({}{}{})\n".format(
+                self.desc,
+                color(color_str),
+                err,
+                color('dull')
+            )
+            self._print(msg, symbol, color_str, "dull")
+        self.count += 1
+
+    def _print(self, msg, symbol=" ", symbol_color="success", main_color=None):
+        sys.stdout.write("\r {}{}{} {} - {}".format(
+            color(symbol_color),
+            symbol,
+            color(main_color),
+            self.count,
+            msg
+        ))
+        sys.stdout.flush()

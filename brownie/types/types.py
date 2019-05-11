@@ -113,7 +113,10 @@ class FalseyDict(dict):
 
     def _update_from_args(self, values):
         '''Updates the dict from docopts.args'''
-        self.update(dict((k.lstrip("-"), v) for k,v in values.items()))
+        self.update(dict((k.lstrip("-"), v) for k, v in values.items()))
+
+    def copy(self):
+        return FalseyDict(self)
 
 
 class EventDict:
@@ -202,7 +205,8 @@ class _EventItem:
 
     def __getitem__(self, key):
         '''if key is int: returns the n'th event that was fired with this name
-        if key is str: returns the value of data field 'key' from the 1st event within the container '''
+        if key is str: returns the value of data field 'key' from the 1st event
+        within the container '''
         if type(key) is int:
             return self._ordered[key]
         return self._ordered[0][key]
