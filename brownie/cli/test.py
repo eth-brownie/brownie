@@ -79,6 +79,7 @@ def main():
     coverage_files = []
     traceback_info = []
 
+    start_time = time.time()
     try:
         for filename in test_files:
             coverage_json = Path(CONFIG['folders']['project'])
@@ -125,8 +126,9 @@ def main():
         print("\n\nTest execution has been terminated by KeyboardInterrupt.")
         sys.exit()
     finally:
+        print("\nTotal runtime: {:.4}s".format(time.time() - start_time))
         if traceback_info:
-            print("\n{0}{1} test{2} failed.".format(
+            print("{0}{1} test{2} failed.".format(
                 WARN,
                 len(traceback_info),
                 "s" if len(traceback_info) > 1 else ""
@@ -135,7 +137,7 @@ def main():
                 print("\nTraceback for {0[0]}:\n{0[1]}".format(err))
             sys.exit()
 
-    print("\n{0[success]}SUCCESS{0}: All tests passed.".format(color))
+    print("{0[success]}SUCCESS{0}: All tests passed.".format(color))
 
     if args['--coverage']:
         coverage_eval = merge_coverage(coverage_files)
