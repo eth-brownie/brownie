@@ -231,12 +231,13 @@ def run_test(filename, network, idx):
             network.rpc.kill(False)
             network.rpc.launch(CONFIG['active_network']['test-rpc'])
             break
+    coverage_eval = {}
     if not traceback_info and ARGV['coverage']:
         p.start("Evaluating test coverage")
         coverage_eval = analyze_coverage(TxHistory().copy())
         p.stop()
-        return traceback_info, coverage_eval
-    return traceback_info, {}
+    p.finish()
+    return traceback_info, coverage_eval
 
 
 def _get_fn(module, name):
@@ -299,6 +300,7 @@ class TestPrinter:
         self.path = path
         self.count = count
         self.total = total
+        self.total_time = time.time()
         print("\nRunning {0[module]}{1}.py{0} - {2} test{3}".format(
             color,
             path,
@@ -336,12 +338,20 @@ class TestPrinter:
             self._print(msg, symbol, color_str, "dull")
         self.count += 1
 
+    def finish(self):
+        print("Completed {0[module]}{1}.py{0} ({2:.4f}s)".format(
+            color,
+            self.path,
+            time.time() - self.total_time
+        ))
+
     def _print(self, msg, symbol=" ", symbol_color="success", main_color=None):
-        sys.stdout.write("\r {}{}{} {} - {}".format(
+        sys.stdout.write("\r {}{}{} {} - {}{}".format(
             color(symbol_color),
             symbol,
             color(main_color),
             self.count,
-            msg
+            msg,
+            color
         ))
         sys.stdout.flush()
