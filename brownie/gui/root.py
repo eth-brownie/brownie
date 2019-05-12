@@ -6,10 +6,17 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 
-from .buttons import ScopingToggle, ConsoleToggle, HighlightsToggle
+from .buttons import (
+    ScopingToggle,
+    # ConsoleToggle,
+    HighlightsToggle
+)
 from .listview import ListView
 from .select import ContractSelect, ReportSelect
-from .styles import set_style, TEXT_STYLE
+from .styles import (
+    set_style,
+    # TEXT_STYLE
+)
 from .textbook import TextBook
 from .tooltip import ToolTip
 
@@ -68,6 +75,7 @@ class MainFrame(ttk.Frame):
 
     def __init__(self, root):
         super().__init__(root)
+
         self.oplist = ListView(self, (("pc", 80), ("opcode", 200)))
         self.oplist.configure(height=30)
         self.oplist.pack(side="right", fill="y", expand=True)
@@ -77,9 +85,11 @@ class MainFrame(ttk.Frame):
         self.note = TextBook(frame)
         self.note.pack(side="top", fill="both", expand=True)
         self.note.configure(width=920, height=100)
-        self.console = tk.Text(frame, height=1)
-        self.console.pack(side="bottom", fill="both")
-        self.console.configure(**TEXT_STYLE)
+
+        # GUI console - will be implemented later!
+        # self.console = tk.Text(frame, height=1)
+        # self.console.pack(side="bottom", fill="both")
+        # self.console.configure(**TEXT_STYLE)
 
 
 class ToolbarFrame(ttk.Frame):
@@ -105,8 +115,8 @@ class ToolbarFrame(ttk.Frame):
         self.scope.pack(side="left")
         ToolTip(self.scope, "Filter opcodes to only show those\nrelated to the highlighted source")
 
-        self.console = ConsoleToggle(self)
-        self.console.pack(side="left")
+        # self.console = ConsoleToggle(self)
+        # self.console.pack(side="left")
 
         self.highlight = HighlightsToggle(self)
         self.highlight.pack(side="left")
