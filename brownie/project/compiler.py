@@ -95,9 +95,10 @@ def _compile_and_format(input_json):
                 n[:36],
                 evm['bytecode']['object'][loc+40:]
             )
+        all_paths = sorted(set(v['contract'] for v in evm['pcMap'].values() if v['contract']))
         result[name] = {
             'abi': data['abi'],
-            'allSourcePaths': sorted(set(v['contract'] for v in evm['pcMap'].values() if v['contract'])),
+            'allSourcePaths': all_paths,
             'ast': compiled['sources'][filename]['ast'],
             'bytecode': evm['bytecode']['object'],
             'bytecodeSha1': sha1(evm['bytecode']['object'][:-68].encode()).hexdigest(),
@@ -115,6 +116,7 @@ def _compile_and_format(input_json):
             'type': sources.get_type(name)
         }
         result[name]['coverageMap'] = _generate_coverageMap(result[name])
+        result[name]['coverageMapTotals'] = _generate_coverageMapTotals(result[name]['coverageMap'])
     return result
 
 
@@ -223,6 +225,16 @@ def _generate_coverageMap(build):
     return final
 
 
+def _generate_coverageMapTotals(coverage_map):
+    totals = {'total': 0}
+    for path, fn_name in [(k, x) for k, v in coverage_map.items() for x in v]:
+        maps = coverage_map[path][fn_name]
+        count = len([i for i in maps if not i['jump']]) + len([i for i in maps if i['jump']])*2
+        totals[fn_name] = count
+        totals['total'] += count
+    return totals
+
+
 def _isolate_lines(compiled):
     '''Identify line based coverage map items.
 
@@ -234,7 +246,7 @@ def _isolate_lines(compiled):
     line_map = {}
 
     # find all the JUMPI opcodes
-    for i in [k for k,v in pcMap.items() if v['contract'] and v['op']=="JUMPI"]:
+    for i in [k for k, v in pcMap.items() if v['contract'] and v['op'] == "JUMPI"]:
         op = pcMap[i]
         if op['contract'] not in line_map:
             line_map[op['contract']] = []

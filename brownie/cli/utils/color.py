@@ -123,7 +123,7 @@ class Color:
         else:
             sys.stdout.write('{0[value]}{1}{0[dull]}'.format(self, value))
 
-    def format_tb(self, exc, filename = None, start = None, stop = None):
+    def format_tb(self, exc, filename=None, start=None, stop=None):
         tb = [i.replace("./", "") for i in traceback.format_tb(exc[2])]
         if filename and not ARGV['tb']:
             try:
@@ -134,6 +134,7 @@ class Color:
                 pass
         for i in range(len(tb)):
             info, code = tb[i].split('\n')[:2]
+            info = info.replace(CONFIG['folders']['project'], ".")
             info = [x.strip(',') for x in info.strip().split(' ')]
             if 'site-packages/' in info[1]:
                 info[1] = '"'+info[1].split('site-packages/')[1]

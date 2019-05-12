@@ -83,6 +83,7 @@ def merge_coverage(coverage_files):
             continue
         coverage = json.load(path.open())['coverage']
         for contract_name in list(coverage):
+            del coverage[contract_name]['pct']
             if contract_name not in merged_eval:
                 merged_eval[contract_name] = coverage.pop(contract_name)
                 continue
@@ -108,6 +109,7 @@ def merge_coverage(coverage_files):
 def _calculate_pct(coverage_eval):
     '''Internal method to calculate coverage percentages'''
     for name in coverage_eval:
+        contract_count = 0
         coverage_map = build[name]['coverageMap']
         for path, fn_name in [(k, x) for k, v in coverage_map.items() for x in v]:
             result = coverage_eval[name][path]
@@ -115,12 +117,13 @@ def _calculate_pct(coverage_eval):
                 result[fn_name] = {'pct': 0}
                 continue
             if 'pct' in result[fn_name] and result[fn_name]['pct'] in (0, 1):
+                if result[fn_name]['pct']:
+                    contract_count += build[name]['coverageMapTotals'][fn_name]
                 result[fn_name] = {'pct': result[fn_name]['pct']}
                 continue
             result = result[fn_name]
             count = 0
             maps = coverage_map[path][fn_name]
-            total = len([i for i in maps if i['jump']])*2 + len([i for i in maps if not i['jump']])
             for idx, item in enumerate(maps):
                 if idx in result['tx']:
                     count += 2 if item['jump'] else 1
@@ -129,9 +132,12 @@ def _calculate_pct(coverage_eval):
                     continue
                 if idx in result['true'] or idx in result['false']:
                     count += 1
-            result['pct'] = round(count / total, 4)
+            contract_count += count
+            result['pct'] = round(count / build[name]['coverageMapTotals'][fn_name], 4)
             if result['pct'] == 1:
                 coverage_eval[name][path][fn_name] = {'pct': 1}
+        pct = round(contract_count / build[name]['coverageMapTotals']['total'], 4)
+        coverage_eval[name]['pct'] = pct
     return coverage_eval
 
 
@@ -144,8 +150,8 @@ def generate_report(coverage_eval):
     }
     for name, coverage in coverage_eval.items():
         report['highlights'][name] = {}
-        report['coverage'][name] = {}
-        for path in coverage:
+        report['coverage'][name] = {'pct': coverage['pct']}
+        for path in [i for i in coverage if i != "pct"]:
             coverage_map = build[name]['coverageMap'][path]
             report['highlights'][name][path] = []
             for fn_name, lines in coverage_map.items():
