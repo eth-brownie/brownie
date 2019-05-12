@@ -60,8 +60,9 @@ def main():
         history = TxHistory()
         history._revert_lock = True
 
-    test_files = get_test_files(args['<filename>'])
-    if len(test_files) == 1 and args['<range>']:
+    test_paths = get_test_files(args['<filename>'])
+
+    if len(test_paths) == 1 and args['<range>']:
         try:
             idx = args['<range>']
             if ':' in idx:
@@ -75,16 +76,23 @@ def main():
     else:
         idx = slice(0, None)
 
+    coverage_files, test_data = get_test_data(test_paths)
+
+    # TODO from here
+    # if test_data:
+    # test_data = [(path, coverage_json, [method names], default_args),...]
+    # only run tests if test_data exists
+    # need to refactor run_test since all the data is already there now
+
     network.connect(ARGV['network'])
-    coverage_files = []
+
     traceback_info = []
 
     start_time = time.time()
     try:
-        for filename in test_files:
+        for filename in test_paths:
             coverage_json = Path(CONFIG['folders']['project'])
             coverage_json = coverage_json.joinpath("build/coverage"+filename[5:]+".json")
-            coverage_files.append(coverage_json)
             if coverage_json.exists():
                 coverage_eval = json.load(coverage_json.open())['coverage']
                 if ARGV['update'] and (coverage_eval or not ARGV['coverage']):
@@ -169,15 +177,49 @@ def get_test_files(path):
     if path[:6] != "tests/":
         path = "tests/" + path
     path = Path(CONFIG['folders']['project']).joinpath(path)
-    if not path.is_dir():
-        if not path.suffix:
-            path = Path(str(path)+".py")
-        if not path.exists():
-            sys.exit(ERROR+"Cannot find {0[module]}tests/{1}{0}".format(color, path.name))
-        result = [path]
-    else:
-        result = [i for i in path.glob('**/*.py') if i.name[0] != "_" and "/_" not in str(i)]
-    return [str(i.relative_to(CONFIG['folders']['project']))[:-3] for i in result]
+    if path.is_dir():
+        return [i for i in path.glob('**/*.py') if i.name[0] != "_" and "/_" not in str(i)]
+    if not path.suffix:
+        path = Path(str(path)+".py")
+    if not path.exists():
+        sys.exit(ERROR+"Cannot find {0[module]}tests/{1}{0}".format(color, path.name))
+    return [path]
+
+
+def get_test_data(test_paths):
+    coverage_files = []
+    test_data = []
+    project = Path(CONFIG['folders']['project'])
+    for path in test_paths:
+        coverage_json = project.joinpath("build/coverage/"+path.stem+".json")
+        coverage_files.append(coverage_json)
+        if coverage_json.exists():
+            coverage_eval = json.load(coverage_json.open())['coverage']
+            if ARGV['update'] and (coverage_eval or not ARGV['coverage']):
+                continue
+        else:
+            coverage_eval = {}
+            for p in list(coverage_json.parents)[::-1]:
+                p.mkdir(exist_ok=True)
+        module_name = str(path.relative_to(project))[:-3].replace(os.sep, '.')
+        module = importlib.import_module(module_name)
+        test_names = re.findall(r'\ndef[\s ]{1,}([^_]\w*)[\s ]*\([^)]*\)', path.open().read())
+        duplicates = set([i for i in test_names if test_names.count(i) > 1])
+        if duplicates:
+            raise ValueError("{} contains multiple test methods of the same name: {}".format(
+                path.relative_to(project),
+                ", ".join(duplicates)
+            ))
+        if 'setup' in test_names:
+            fn, default_args = _get_fn(module, 'setup')
+            if default_args['skip'] is True or (
+                default_args['skip'] == "coverage" and ARGV['coverage']
+            ):
+                continue
+        else:
+            default_args = FalseyDict()
+        test_data.append((path, coverage_eval, test_names, default_args))
+    return coverage_files, test_data
 
 
 def run_test(filename, network, idx):
