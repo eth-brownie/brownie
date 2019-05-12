@@ -24,13 +24,14 @@ This will run all the test scripts in the ``tests/`` folder and give an estimate
     Brownie v1.0.0 - Python development framework for Ethereum
 
     Using solc version v0.5.7
+    Running 4 tests across 2 modules.
 
-    Running transfer.py - 1 test
+    Running transfer.py - 1 test (1/2)
     ✓ 0 - setup (0.1882s)
     ✓ 1 - Transfer tokens (0.1615s)
     ✓ 2 - Evaluating test coverage (0.0009s)
 
-    Running approve_transferFrom.py - 3 tests
+    Running approve_transferFrom.py - 3 tests (2/2)
     ✓ 0 - setup (0.1263s)
     ✓ 1 - Set approval (0.2016s)
     ✓ 2 - Transfer tokens with transferFrom (0.1375s)
@@ -39,9 +40,9 @@ This will run all the test scripts in the ``tests/`` folder and give an estimate
 
     SUCCESS: All tests passed.
 
-    Coverage analysis complete!
+    Coverage analysis:
 
-      contract: Token
+      contract: Token - 82.3%
         SafeMath.add - 66.7%
         SafeMath.sub - 100.0%
         Token.<fallback> - 0.0%
