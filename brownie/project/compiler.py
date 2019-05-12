@@ -136,7 +136,7 @@ def _generate_pcMap(compiled):
         bytecode = compiled['contracts'][filename][name]['evm']['deployedBytecode']
 
         if not bytecode['object']:
-            compiled['contracts'][filename][name]['evm']['pcMap'] = []
+            compiled['contracts'][filename][name]['evm']['pcMap'] = {}
             continue
         opcodes = bytecode['opcodes']
         source_map = bytecode['sourceMap']
