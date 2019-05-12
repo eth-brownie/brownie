@@ -145,7 +145,10 @@ class Rpc(metaclass=_Singleton):
         id_ = self._snap()
         self.sleep(0)
         for i in self._objects:
-            i._revert()
+            if web3.eth.blockNumber == 0:
+                i._reset()
+            else:
+                i._revert()
         return id_
 
     def _reset(self):
