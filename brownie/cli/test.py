@@ -30,6 +30,9 @@ COVERAGE_COLORS = [
     (1, "bright green")
 ]
 
+WARN = "{0[error]}WARNING{0}: ".format(color)
+ERROR = "{0[error]}ERROR{0}: ".format(color)
+
 __doc__ = """Usage: brownie test [<filename>] [<range>] [options]
 
 Arguments:
@@ -66,9 +69,9 @@ def main():
             else:
                 idx = slice(int(idx)-1, int(idx))
         except Exception:
-            sys.exit("{0[error]}ERROR{0}: Invalid range. Must be an integer or slice (eg. 1:4)".format(color))
+            sys.exit(ERROR+"Invalid range. Must be an integer or slice (eg. 1:4)")
     elif args['<range>']:
-        sys.exit("{0[error]}ERROR:{0} Cannot specify a range when running multiple tests files.".format(color))
+        sys.exit(ERROR+"Cannot specify a range when running multiple tests files.")
     else:
         idx = slice(0, None)
 
@@ -123,8 +126,10 @@ def main():
         sys.exit()
     finally:
         if traceback_info:
-            print("\n{0[error]}WARNING{0}: {1} test{2} failed.{0}".format(
-                color, len(traceback_info), "s" if len(traceback_info) > 1 else ""
+            print("\n{0}{1} test{2} failed.".format(
+                WARN,
+                len(traceback_info),
+                "s" if len(traceback_info) > 1 else ""
             ))
             for err in traceback_info:
                 print("\nException info for {0[0]}:\n{0[1]}".format(err))
@@ -134,13 +139,14 @@ def main():
 
     if args['--coverage']:
         coverage_eval = merge_coverage(coverage_files)
+        report = generate_report(coverage_eval)
         display_report(coverage_eval)
         filename = "coverage-"+time.strftime('%d%m%y')+"{}.json"
         path = Path(CONFIG['folders']['project']).joinpath('reports')
         count = len(list(path.glob(filename.format('*'))))
         path = path.joinpath(filename.format("-"+str(count) if count else ""))
         json.dump(
-            generate_report(coverage_eval),
+            report,
             path.open('w'),
             sort_keys=True,
             indent=2,
@@ -150,8 +156,9 @@ def main():
 
     if args['--gas']:
         print('\nGas Profile:')
-        for i in sorted(transaction.gas_profile):
-            print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, transaction.gas_profile[i]))
+        gas = transaction.gas_profile
+        for i in sorted(gas):
+            print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, gas[i]))
 
 
 def get_test_files(path):
@@ -164,7 +171,7 @@ def get_test_files(path):
         if not path.suffix:
             path = Path(str(path)+".py")
         if not path.exists():
-            sys.exit("{0[error]}ERROR{0}: Cannot find {0[module]}tests/{1}{0}".format(color, path.name))
+            sys.exit(ERROR+"Cannot find {0[module]}tests/{1}{0}".format(color, path.name))
         result = [path]
     else:
         result = [i for i in path.glob('**/*.py') if i.name[0] != "_" and "/_" not in str(i)]
@@ -187,7 +194,7 @@ def run_test(filename, network, idx):
         ))
 
     if not test_names:
-        print("\n{0[error]}WARNING{0}: No test functions in {0[module]}{1}.py{0}".format(color, filename))
+        print("\n{0}No test functions in {1[module]}{2}.py{1}".format(WARN, color, filename))
         return [], {}
 
     if ARGV['coverage']:
@@ -199,7 +206,9 @@ def run_test(filename, network, idx):
         test_names.remove('setup')
         fn, default_args = _get_fn(module, 'setup')
 
-        if default_args['skip'] is True or (default_args['skip'] == "coverage" and ARGV['coverage']):
+        if default_args['skip'] is True or (
+            default_args['skip'] == "coverage" and ARGV['coverage']
+        ):
             return [], {}
         p = TestPrinter(filename, 0, len(test_names))
         traceback_info += run_test_method(fn, default_args, p)
@@ -218,7 +227,7 @@ def run_test(filename, network, idx):
         if ARGV['coverage']:
             ARGV['always_transact'] = always_transact
         if traceback_info and traceback_info[-1][2] == ReadTimeout:
-            print("{0[error]}WARNING{0}: RPC crashed, terminating test".format(color))
+            print(WARN+"RPC crashed, terminating test")
             network.rpc.kill(False)
             network.rpc.launch(CONFIG['active_network']['test-rpc'])
             break
@@ -272,9 +281,11 @@ def run_test_method(fn, args, p):
 
 def display_report(coverage_eval):
     print("\nCoverage analysis:\n")
-    for contract in coverage_eval:
-        print("  contract: {0[contract]}{1}{0}".format(color, contract))
-        for fn_name, pct in [(x, v[x]['pct']) for v in coverage_eval[contract].values() for x in v]:
+    for name in coverage_eval:
+        pct = coverage_eval[name].pop('pct')
+        c = next(i[1] for i in COVERAGE_COLORS if pct <= i[0])
+        print("  contract: {0[contract]}{1}{0} - {2}{3:.1%}{0}".format(color, name, color(c), pct))
+        for fn_name, pct in [(x, v[x]['pct']) for v in coverage_eval[name].values() for x in v]:
             c = next(i[1] for i in COVERAGE_COLORS if pct <= i[0])
             print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
                 color, fn_name, color(c), pct
