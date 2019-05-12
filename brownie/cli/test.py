@@ -13,7 +13,8 @@ import time
 from brownie.cli.utils import color
 from brownie.test.coverage import (
     analyze_coverage,
-    merge_coverage,
+    merge_coverage_eval,
+    merge_coverage_files,
     generate_report
 )
 from brownie.exceptions import ExpectedFailing
@@ -32,6 +33,8 @@ COVERAGE_COLORS = [
 
 WARN = "{0[error]}WARNING{0}: ".format(color)
 ERROR = "{0[error]}ERROR{0}: ".format(color)
+
+history = TxHistory()
 
 __doc__ = """Usage: brownie test [<filename>] [<range>] [options]
 
@@ -57,7 +60,6 @@ def main():
     ARGV._update_from_args(args)
     if ARGV['coverage']:
         ARGV['always_transact'] = True
-        history = TxHistory()
         history._revert_lock = True
 
     test_paths = get_test_paths(args['<filename>'])
@@ -178,7 +180,7 @@ def run_test_modules(test_data, save):
         print("\n\nTest execution has been terminated by KeyboardInterrupt.")
         sys.exit()
     finally:
-        print("\nTotal runtime: {:.4}s".format(time.time() - start_time))
+        print("\nTotal runtime: {:.4f}s".format(time.time() - start_time))
         if traceback_info:
             print("{0}{1} test{2} failed.".format(
                 WARN,
@@ -196,7 +198,6 @@ def run_test(module, network, test_names):
     if type(CONFIG['test']['gas_limit']) is int:
         network.gas_limit(CONFIG['test']['gas_limit'])
 
-    traceback_info = []
     if 'setup' in test_names:
         test_names.remove('setup')
         fn, default_args = _get_fn(module, 'setup')
@@ -206,38 +207,38 @@ def run_test(module, network, test_names):
         ):
             return [], {}
         p = TestPrinter(module.__file__, 0, len(test_names))
-        traceback_info += run_test_method(fn, default_args, p)
-        if traceback_info:
-            return traceback_info, {}
+        tb, coverage_eval = run_test_method(fn, default_args, {}, p)
+        if tb:
+            return tb, {}
     else:
         p = TestPrinter(module.__file__, 1, len(test_names))
         default_args = FalseyDict()
+        coverage_eval = {}
     network.rpc.snapshot()
+    traceback_info = []
     for t in test_names:
         network.rpc.revert()
         fn, fn_args = _get_fn(module, t)
         args = default_args.copy()
         args.update(fn_args)
-        traceback_info += run_test_method(fn, args, p)
-        if traceback_info and traceback_info[-1][2] == ReadTimeout:
+        tb, coverage_eval = run_test_method(fn, args, coverage_eval, p)
+        traceback_info += tb
+        if tb and tb[0][2] == ReadTimeout:
             print(WARN+"RPC crashed, terminating test")
             network.rpc.kill(False)
             network.rpc.launch(CONFIG['active_network']['test-rpc'])
             break
-    coverage_eval = {}
-    if not traceback_info and ARGV['coverage']:
-        p.start("Evaluating test coverage")
-        coverage_eval = analyze_coverage(TxHistory().copy())
-        p.stop()
+    if traceback_info and ARGV['coverage']:
+        coverage_eval = {}
     p.finish()
     return traceback_info, coverage_eval
 
 
-def run_test_method(fn, args, p):
+def run_test_method(fn, args, coverage_eval, p):
     desc = fn.__doc__ or fn.__name__
     if args['skip'] is True or (args['skip'] == "coverage" and ARGV['coverage']):
         p.skip(desc)
-        return []
+        return [], coverage_eval
     p.start(desc)
     try:
         if ARGV['coverage'] and 'always_transact' in args:
@@ -245,28 +246,27 @@ def run_test_method(fn, args, p):
         fn()
         if ARGV['coverage']:
             ARGV['always_transact'] = True
+            coverage_eval = merge_coverage_eval(
+                coverage_eval,
+                analyze_coverage(history.copy())
+            )
+            history.clear()
         if args['pending']:
             raise ExpectedFailing("Test was expected to fail")
         p.stop()
-        return []
+        return [], coverage_eval
     except Exception as e:
         p.stop(e, args['pending'])
         if type(e) != ExpectedFailing and args['pending']:
-            return []
+            return [], coverage_eval
         path = Path(sys.modules[fn.__module__].__file__).relative_to(CONFIG['folders']['project'])
         path = "{0[module]}{1}.{0[callable]}{2}{0}".format(color, str(path)[:-3], fn.__name__)
-        return [(
-            path,
-            color.format_tb(
-                sys.exc_info(),
-                sys.modules[fn.__module__].__file__,
-            ),
-            type(e)
-        )]
+        tb = color.format_tb(sys.exc_info(), sys.modules[fn.__module__].__file__)
+        return [(path, tb, type(e))], coverage_eval
 
 
 def display_report(coverage_files, save):
-    coverage_eval = merge_coverage(coverage_files)
+    coverage_eval = merge_coverage_files(coverage_files)
     report = generate_report(coverage_eval)
     print("\nCoverage analysis:")
     for name in coverage_eval:

@@ -26,7 +26,7 @@ def analyze_coverage(history):
             pc = t['pc']
             name = t['contractName']
             path = t['source']['filename']
-            if not name or not path:
+            if not name or not path or name not in build:
                 continue
 
             # prevent repeated requests to build object
@@ -72,16 +72,10 @@ def analyze_coverage(history):
     return _calculate_pct(coverage_eval)
 
 
-def merge_coverage(coverage_files):
-    '''Given a list of coverage evaluation json file paths, returns an aggregated
-    coverage evaluation dict.
-    '''
-    merged_eval = {}
-    for filename in coverage_files:
-        path = Path(filename)
-        if not path.exists():
-            continue
-        coverage = json.load(path.open())['coverage']
+def merge_coverage_eval(*coverage_eval):
+    '''Given a list of coverage evaluation dicts, returns an aggregated evaluation dict.'''
+    merged_eval = coverage_eval[0]
+    for coverage in coverage_eval[1:]:
         for contract_name in list(coverage):
             del coverage[contract_name]['pct']
             if contract_name not in merged_eval:
@@ -106,6 +100,17 @@ def merge_coverage(coverage_files):
     return _calculate_pct(merged_eval)
 
 
+def merge_coverage_files(coverage_files):
+    '''Given a list of coverage evaluation file paths, returns an aggregated evaluation dict.'''
+    coverage_eval = []
+    for filename in coverage_files:
+        path = Path(filename)
+        if not path.exists():
+            continue
+        coverage_eval.append(json.load(path.open())['coverage'])
+    return merge_coverage_eval(*coverage_eval)
+
+
 def _calculate_pct(coverage_eval):
     '''Internal method to calculate coverage percentages'''
     for name in coverage_eval:
@@ -121,7 +126,8 @@ def _calculate_pct(coverage_eval):
                     contract_count += build[name]['coverageMapTotals'][fn_name]
                 result[fn_name] = {'pct': result[fn_name]['pct']}
                 continue
-            result = result[fn_name]
+            result = dict((k, list(v) if type(v) is set else v) for k, v in result[fn_name].items())
+            coverage_eval[name][path][fn_name] = result
             count = 0
             maps = coverage_map[path][fn_name]
             for idx, item in enumerate(maps):
