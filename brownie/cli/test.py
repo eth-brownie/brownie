@@ -132,7 +132,7 @@ def main():
                 "s" if len(traceback_info) > 1 else ""
             ))
             for err in traceback_info:
-                print("\nException info for {0[0]}:\n{0[1]}".format(err))
+                print("\nTraceback for {0[0]}:\n{0[1]}".format(err))
             sys.exit()
 
     print("\n{0[success]}SUCCESS{0}: All tests passed.".format(color))
@@ -270,11 +270,13 @@ def run_test_method(fn, args, p):
         p.stop(e, args['pending'])
         if type(e) != ExpectedFailing and args['pending']:
             return []
+        path = Path(sys.modules[fn.__module__].__file__).relative_to(CONFIG['folders']['project'])
+        path = "{0[module]}{1}.{0[callable]}{2}{0}".format(color, str(path)[:-3], fn.__name__)
         return [(
-            fn.__name__,
+            path,
             color.format_tb(
                 sys.exc_info(),
-                Path(sys.modules[fn.__module__].__file__).relative_to(CONFIG['folders']['project'])
+                sys.modules[fn.__module__].__file__,
             ),
             type(e)
         )]
