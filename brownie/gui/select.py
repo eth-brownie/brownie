@@ -1,45 +1,54 @@
 #!/usr/bin/python3
 
-from copy import deepcopy
+import json
 from tkinter import ttk
 
-from brownie.project.build import Build
-from brownie._config import CONFIG
 
-build = Build()
+class _Select(ttk.Combobox):
 
-class SelectContract(ttk.Combobox):
-
-    def __init__(self, root, parent):
-        self._parent = root
+    def __init__(self, parent, initial, values):
         super().__init__(parent, state='readonly', font=(None, 16))
-        values = []
-        for name, data in build.items():
-            if data['bytecode']:
-                values.append(name)
+        self.root = self._root()
         self['values'] = sorted(values)
-        root.note.set_visible([])
+        self.set(initial)
         self.bind("<<ComboboxSelected>>", self._select)
 
-    def _select(self, event):
-        self._parent.note.set_visible([])
-        build_json = build[self.get()]
+    def _select(self):
+        value = self.get()
         self.selection_clear()
-        for contract in build_json['allSourcePaths']:
-            self._parent.note.show(contract)
-        pcMap = deepcopy(build_json['pcMap'])
-        self._parent.note.set_active(build_json['sourcePath'])
-        self._parent.tree.delete_all()
-        for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)[1:]]:
-            if (
-                op['contract'] == pcMap[0]['contract'] and
-                op['start'] == pcMap[0]['start'] and
-                op['stop'] == pcMap[0]['stop']
-            ):
-                op['contract'] = None
-            if op['contract']:
-                tag = "{0[start]}:{0[stop]}:{0[contract]}".format(op)
-            else:
-                tag = "NoSource"
-            self._parent.tree.insert([str(pc), op['op']], [tag, op['op']])
-        self._parent.pcMap = dict((str(k),v) for k,v in pcMap.items())
+        return value
+
+
+class ContractSelect(_Select):
+
+    def __init__(self, parent, values):
+        super().__init__(parent, "Select a Contract", values)
+
+    def _select(self, event):
+        value = super()._select()
+        self.root.set_active(value)
+
+
+class ReportSelect(_Select):
+
+    def __init__(self, parent, report_paths):
+        self._reports = {}
+        for path in report_paths:
+            try:
+                self._reports[path.stem] = json.load(path.open())
+            except Exception:
+                continue
+        super().__init__(
+            parent,
+            "Select a Report" if self._reports else "No Available Reports",
+            sorted(self._reports)
+        )
+        if not self._reports:
+            self.config(state="disabled")
+
+    def _select(self, event):
+        value = super()._select()
+        if self.root.active_report == self._reports[value]:
+            return
+        self.root.active_report = self._reports[value]
+        self.root.toolbar.highlight.reset()

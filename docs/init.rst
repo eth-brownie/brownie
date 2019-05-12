@@ -12,6 +12,7 @@ This will create the following project structure within the folder:
 
 * ``build/``: Compiled contracts and test data
 * ``contracts/``: Contract source code
+* ``reports/``: JSON report files for use in the :ref:`coverage-gui`
 * ``scripts/``: Scripts for deployment and interaction
 * ``tests/``: Scripts for testing your project
 * ``brownie-config.json``: Configuration file for the project

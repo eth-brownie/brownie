@@ -1,17 +1,17 @@
 #!/usr/bin/python3
 
 from tkinter import ttk
-import tkinter as tk
 
 TEXT_STYLE = {
     'font': ("Courier", 14),
     'background': "#383838",
-    'foreground': "#ECECEC",
+    'foreground': "#FFFFFF",
     'selectforeground': "white",
     'selectbackground': "#4a6984",
     'inactiveselectbackground': "#4a6984",
-    'borderwidth': 1,
+    'borderwidth': 0,
     'highlightthickness': 0,
+    'state': "disabled"
 }
 
 TEXT_COLORS = {
@@ -24,42 +24,56 @@ TEXT_COLORS = {
 }
 
 
+BUTTON_STYLE = {
+    'borderwidth': 1,
+    'background': "#272727",
+    'foreground': "#ECECEC",
+    'highlightthickness': 0,
+    'activebackground': "#383838",
+    'activeforeground': "white"
+}
+
+
 def set_style(root):
 
     style = ttk.Style()
     style.theme_use('default')
     style.configure(
         "Treeview",
-        background="#383838",
+        background="#272727",
         fieldbackground="#383838",
         foreground="#ECECEC",
         font=(None, 16),
         rowheight=21,
-        borderwidth=1
+        borderwidth=0,
+        relief="flat",
     )
     style.configure(
         "Treeview.Heading",
         background="#161616",
         foreground="#ECECEC",
-        borderwidth=0,
-        font=(None, 16)
+        borderwidth=2,
+        font=(None, 16),
+        relief="flat",
     )
     style.map(
         "Treeview.Heading",
         background=[("active", "#383838"), ("selected", "#383838")],
         foreground=[("active", "#ECECEC"), ("selected", "#ECECEC")]
     )
-    style.configure("TNotebook", background="#272727")
+    style.configure("TNotebook", background="#161616", borderwidth=0)
     style.configure(
         "TNotebook.Tab",
         background="#272727",
         foreground="#a9a9a9",
-        font=(None, 14)
+        font=(None, 14),
+        borderwidth=1,
+        relief="flat",
     )
     style.map(
         "TNotebook.Tab",
         background=[("active", "#383838"), ("selected", "#383838")],
-        foreground=[("active", "#ECECEC"), ("selected", "#ECECEC")]
+        foreground=[("active", "#ECECEC"), ("selected", "#ECECEC")],
     )
     style.configure(
         "TFrame",
@@ -74,14 +88,14 @@ def set_style(root):
         arrowsize=16,
         relief="flat",
         borderwidth=0,
-        arrowcolor="#a9a9a9"
+        arrowcolor="#a9a9a9",
     )
     style.map(
         "TScrollbar",
-        background=[('active', "#272727")]
+        background=[('active', "#272727")],
     )
     style.layout(
-        'Vertical.TScrollbar', 
+        'Vertical.TScrollbar',
         [(
             'Vertical.Scrollbar.trough',
             {
@@ -100,13 +114,14 @@ def set_style(root):
         "TCombobox",
         foreground="#000000",
         background="#555555",
-        borderwitdh=0,
+        borderwidth=0,
         arrowsize=24
     )
     style.map(
         "TCombobox",
         background=[("active", "#666666"), ("selected", "#383838")],
-        fieldbackground=[("readonly","#A9A9A9")]
+        fieldbackground=[("readonly", "#A9A9A9")],
+        borderwidth=[("active", 0)],
     )
     root.option_add("*TCombobox*Listbox*Font", (None, 18))
     root.option_add("*TCombobox*Listbox.foreground", "#000000")

@@ -10,19 +10,21 @@ from .styles import TEXT_STYLE, TEXT_COLORS
 
 from brownie._config import CONFIG
 
+
 class TextBook(ttk.Notebook):
 
-    def __init__(self, root):
-        super().__init__(root)
-        self._parent = root
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.root = self._root()
         self._scope = None
         self.configure(padding=0)
         self._frames = []
-        root.bind("<Left>", self.key_left)
-        root.bind("<Right>", self.key_right)
+        self.root.bind("<Left>", self.key_left)
+        self.root.bind("<Right>", self.key_right)
         base_path = Path(CONFIG['folders']['project']).joinpath('contracts')
         for path in base_path.glob('**/*.sol'):
             self.add(path)
+        self.set_visible([])
 
     def add(self, path):
         path = Path(path)
@@ -40,13 +42,13 @@ class TextBook(ttk.Notebook):
     def get_frame(self, label):
         label = Path(label).name
         return next(i for i in self._frames if i._label == label)
-    
+
     def hide(self, label):
         frame = self.get_frame(label)
         if frame._visible:
             super().hide(frame)
             frame._visible = False
-    
+
     def show(self, label):
         label = Path(label).name
         frame = next(i for i in self._frames if i._label == label)
@@ -80,7 +82,7 @@ class TextBook(ttk.Notebook):
         if not visible:
             return
         f = self.active_frame()
-        if visible[-1]  == f:
+        if visible[-1] == f:
             self.select(visible[0])
         else:
             self.select(visible[visible.index(f)+1])
@@ -91,7 +93,7 @@ class TextBook(ttk.Notebook):
         self._scope = [frame, start, stop]
         frame.tag_add('dark', 0, start)
         frame.tag_add('dark', stop, 'end')
-        for f in [v for v in self._frames if v!=frame]:
+        for f in [v for v in self._frames if v != frame]:
             f.tag_add('dark', 0, 'end')
 
     def clear_scope(self):
@@ -110,23 +112,23 @@ class TextBook(ttk.Notebook):
         for f in self._frames:
             for tag in tags:
                 f.tag_remove(tag)
-    
+
     def _search(self, event):
         frame = self.active_frame()
-        tree = self._parent.tree
+        tree = self.root.main.oplist
         if not frame.tag_ranges('sel'):
             tree.clear_selection()
             return
         start, stop = frame.tag_ranges('sel')
         if self._scope and (
             frame != self._scope[0] or
-            start<self._scope[1] or
-            stop>self._scope[2]
+            start < self._scope[1] or
+            stop > self._scope[2]
         ):
             pc = False
         else:
             pc = [
-                k for k,v in self._parent.pcMap.items() if 
+                k for k, v in self.root.pcMap.items() if
                 v['contract'] and frame._label in v['contract'] and
                 start >= v['start'] and stop <= v['stop']
             ]
@@ -134,10 +136,11 @@ class TextBook(ttk.Notebook):
             frame.clear_highlight()
             tree.clear_selection()
             return
+
         def key(k):
             return (
-                (start - self._parent.pcMap[k]['start']) + 
-                (self._parent.pcMap[k]['stop'] - stop)
+                (start - self.root.pcMap[k]['start']) +
+                (self.root.pcMap[k]['stop'] - stop)
             )
         id_ = sorted(pc, key=key)[0]
         tree.selection_set(id_)
@@ -147,30 +150,20 @@ class TextBox(tk.Frame):
 
     def __init__(self, root, text):
         super().__init__(root)
-        self._text = tk.Text(
-            self,
-            height = 35,
-            width = 90,
-            yscrollcommand = self._text_scroll
-        )
+        self._text = tk.Text(self, width=90, yscrollcommand=self._text_scroll)
         self._scroll = ttk.Scrollbar(self)
         self._scroll.pack(side="left", fill="y")
         self._scroll.config(command=self._scrollbar_scroll)
-        self._line_no = tk.Text(
-            self,
-            height = 35,
-            width = 4,
-            yscrollcommand = self._text_scroll
-        )
+        self._line_no = tk.Text(self, width=4, yscrollcommand=self._text_scroll)
         self._line_no.pack(side="left", fill="y")
 
-        self._text.pack(side="right",fill="y")
+        self._text.pack(side="right", fill="y")
         self._text.insert(1.0, text)
 
-        for k,v in TEXT_COLORS.items():
+        for k, v in TEXT_COLORS.items():
             self._text.tag_config(k, **v)
 
-        pattern = "((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))"
+        pattern = r"((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))"
         for match in re.finditer(pattern, text):
             self.tag_add('comment', match.start(), match.end())
 
@@ -179,12 +172,12 @@ class TextBox(tk.Frame):
         self._line_no.tag_add("justify", 1.0, "end")
 
         for text in (self._line_no, self._text):
-            text['state'] = "disabled"
             text.config(**TEXT_STYLE)
             text.config(
-                tabs = tkFont.Font(font=text['font']).measure('    '),
-                wrap = "none"
+                tabs=tkFont.Font(font=text['font']).measure('    '),
+                wrap="none"
             )
+        self._line_no.config(background="#272727")
         self._text.bind('<ButtonRelease-1>', root._search)
 
     def __getattr__(self, attr):
@@ -212,10 +205,10 @@ class TextBox(tk.Frame):
 
     def tag_ranges(self, tag):
         return [self._coord_to_offset(i.string) for i in self._text.tag_ranges(tag)]
-    
+
     def tag_remove(self, tag):
         self._text.tag_remove(tag, 1.0, "end")
-    
+
     def _offset_to_coord(self, value):
         text = self._text.get(1.0, "end")
         line = text[:value].count('\n') + 1

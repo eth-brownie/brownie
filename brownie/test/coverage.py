@@ -89,6 +89,9 @@ def merge_coverage(coverage_files):
             for source, fn_name in [(k, x) for k, v in coverage[contract_name].items() for x in v]:
                 f = merged_eval[contract_name][source][fn_name]
                 c = coverage[contract_name][source][fn_name]
+                if not f['pct']:
+                    f.update(c)
+                    continue
                 if not c['pct'] or f == c:
                     continue
                 if f['pct'] == 1 or c['pct'] == 1:
@@ -176,7 +179,7 @@ def _evaluate_branch(path, ln):
     start, stop = ln['start'], ln['stop']
     try:
         idx = _maxindex(source[:start])
-    except:
+    except Exception:
         return False
 
     # remove comments, strip whitespace
