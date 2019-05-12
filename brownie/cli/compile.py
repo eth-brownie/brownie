@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 from docopt import docopt
-from pathlib import Path
 import shutil
 
 import brownie.project as project
@@ -18,7 +17,7 @@ in the build/contracts folder."""
 
 
 def main():
-    args = docopt(__doc__)
+    docopt(__doc__)
     project_path = project.check_for_project('.')
     build_path = project_path.joinpath('build/contracts')
     if ARGV['all']:

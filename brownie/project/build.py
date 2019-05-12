@@ -120,7 +120,7 @@ class Build(metaclass=_Singleton):
                 break
 
     def __getitem__(self, contract_name):
-        return self._build[contract_name.replace('.json','')]
+        return self._build[contract_name.replace('.json', '')]
 
     def items(self):
         return self._build.items()

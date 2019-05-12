@@ -46,7 +46,9 @@ def new(path=".", ignore_subfolder=False):
     if not ignore_subfolder:
         check = check_for_project(path)
         if check and check != path:
-            raise SystemError("Cannot make a new project inside the subfolder of an existing project.")
+            raise SystemError(
+                "Cannot make a new project inside the subfolder of an existing project."
+            )
     for folder in [i for i in FOLDERS]:
         path.joinpath(folder).mkdir(exist_ok=True)
     if not path.joinpath('brownie-config.json').exists():

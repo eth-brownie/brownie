@@ -92,10 +92,10 @@ def event_fired(tx, name, count=None, values=None):
         return
     if type(values) is dict:
         values = [values]
-    if len(values) != len(events):
+    if len(values) != len(tx.events):
         raise AssertionError(
             "Event {} - {} events fired, {} values to match given".format(
-                name, len(events), len(values)
+                name, len(tx.events), len(values)
             )
         )
     for i in range(len(values)):

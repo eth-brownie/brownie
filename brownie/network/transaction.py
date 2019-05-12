@@ -153,17 +153,18 @@ class TransactionReceipt:
             elif CONFIG['logging']['tx']:
                 print(
                     ("{1} confirmed {2}- {0[key]}block{0}: {0[value]}{3}{0}   "
-                    "{0[key]}gas used{0}: {0[value]}{4}{0} ({0[value]}{5:.2%}{0})").format(
-                    color,
-                    self.fn_name or "Transaction",
-                    "" if self.status else "({0[error]}{1}{0}) ".format(
+                     "{0[key]}gas used{0}: {0[value]}{4}{0} ({0[value]}{5:.2%}{0})").format(
                         color,
-                        self.revert_msg or "reverted"
-                    ),
-                    self.block_number,
-                    self.gas_used,
-                    self.gas_used / self.gas_limit
-                ))
+                        self.fn_name or "Transaction",
+                        "" if self.status else "({0[error]}{1}{0}) ".format(
+                            color,
+                            self.revert_msg or "reverted"
+                        ),
+                        self.block_number,
+                        self.gas_used,
+                        self.gas_used / self.gas_limit
+                    )
+                )
                 if receipt['contractAddress']:
                     print("{1} deployed at: {0[value]}{2}{0}".format(
                         color,
@@ -183,10 +184,15 @@ class TransactionReceipt:
         return hash(self.txid)
 
     def __getattr__(self, attr):
-        if attr not in ('events', 'modified_state', 'return_value', 'revert_msg', 'trace', '_trace'):
-            raise AttributeError(
-                "'TransactionReceipt' object has no attribute '{}'".format(attr)
-            )
+        if attr not in (
+            'events',
+            'modified_state',
+            'return_value',
+            'revert_msg',
+            'trace',
+            '_trace'
+        ):
+            raise AttributeError("'TransactionReceipt' object has no attribute '{}'".format(attr))
         if self.status == -1:
             return None
         if self._trace is None:
@@ -201,7 +207,9 @@ class TransactionReceipt:
         if self.contract_address:
             line = "New Contract Address{0}: {0[value]}{1}".format(color, self.contract_address)
         else:
-            line = "To{0}: {0[value]}{1.receiver}{0}\n{0[key]}Value{0}: {0[value]}{1.value}".format(color, self)
+            line = "To{0}: {0[value]}{1.receiver}{0}\n{0[key]}Value{0}: {0[value]}{1.value}".format(
+                color, self
+            )
             if self.input != "0x00":
                 line += "\n{0[key]}Function{0}: {0[value]}{1}".format(color, self.fn_name)
         print(TX_INFO.format(

@@ -46,7 +46,7 @@ def format_input(abi, inputs):
                     "length of {}, should be {}".format(len(inputs[i]), type_)
                     )
             inputs[i] = format_input(
-                {'name': name, 'inputs':[{'type': base_type}] * len(inputs[i])},
+                {'name': name, 'inputs': [{'type': base_type}] * len(inputs[i])},
                 inputs[i]
             )
             continue
@@ -114,7 +114,7 @@ def to_address(value):
 def to_bytes(value, type_="bytes32"):
     '''Convert a value to bytes'''
     if type(value) not in (bytes, str, int):
-        raise TypeError("'{}', type {}, cannot be converted to {}".format(value, type(value), type_))
+        raise TypeError("'{}', type {}, cannot convert to {}".format(value, type(value), type_))
     if type_ == "byte":
         type_ = "bytes1"
     if type_ != "bytes":

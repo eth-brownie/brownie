@@ -26,6 +26,7 @@ class _RPCBaseException(Exception):
             )
         )
 
+
 class RPCProcessError(_RPCBaseException):
 
     def __init__(self, cmd, proc, uri):
@@ -36,7 +37,6 @@ class RPCConnectionError(_RPCBaseException):
 
     def __init__(self, cmd, proc, uri):
         super().__init__("Able to launch RPC client, but unable to connect.", cmd, proc, uri)
-
 
 
 class VirtualMachineError(Exception):
@@ -63,4 +63,3 @@ class VirtualMachineError(Exception):
             super().__init__(exc['message']+"\n"+exc['source'])
         else:
             super().__init__(exc['message'])
-
