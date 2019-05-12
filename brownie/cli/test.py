@@ -135,8 +135,10 @@ def main():
     if args['--coverage']:
         coverage_eval = merge_coverage(coverage_files)
         display_report(coverage_eval)
-        filename = "reports/coverage-{}.json".format(time.strftime('%d%m%y'))
-        path = Path(CONFIG['folders']['project']).joinpath(filename)
+        filename = "coverage-"+time.strftime('%d%m%y')+"{}.json"
+        path = Path(CONFIG['folders']['project']).joinpath('reports')
+        count = len(list(path.glob(filename.format('*'))))
+        path = path.joinpath(filename.format("-"+str(count) if count else ""))
         json.dump(
             generate_report(coverage_eval),
             path.open('w'),
