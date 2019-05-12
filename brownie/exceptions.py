@@ -39,6 +39,10 @@ class RPCConnectionError(_RPCBaseException):
         super().__init__("Able to launch RPC client, but unable to connect.", cmd, proc, uri)
 
 
+class RPCRequestError(Exception):
+    pass
+
+
 class VirtualMachineError(Exception):
 
     '''Raised when a call to a contract causes an EVM exception.

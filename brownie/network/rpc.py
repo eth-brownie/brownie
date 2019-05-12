@@ -9,7 +9,7 @@ import time
 from .web3 import Web3
 
 from brownie.types.types import _Singleton
-from brownie.exceptions import RPCProcessError, RPCConnectionError
+from brownie.exceptions import RPCProcessError, RPCConnectionError, RPCRequestError
 
 
 web3 = Web3()
@@ -131,9 +131,12 @@ class Rpc(metaclass=_Singleton):
         if not self.is_active():
             raise SystemError("RPC is not active.")
         try:
-            return web3.providers[0].make_request(*args)['result']
+            response = web3.providers[0].make_request(*args)
+            if 'result' in response:
+                return response['result']
         except IndexError:
             raise RPCConnectionError("Web3 is not connected.")
+        raise RPCRequestError(response['error']['message'])
 
     def _snap(self):
         return self._request("evm_snapshot", [])
@@ -204,12 +207,14 @@ class Rpc(metaclass=_Singleton):
         '''Reverts the EVM to the most recently taken snapshot.'''
         if not self._snapshot_id:
             raise ValueError("No snapshot set")
+        self._internal_id = None
         self._snapshot_id = self._revert(self._snapshot_id)
         return "Block height reverted to {}".format(web3.eth.blockNumber)
 
     def reset(self):
         '''Reverts the EVM to the genesis state.'''
         self._snapshot_id = None
+        self._internal_id = None
         self._reset_id = self._revert(self._reset_id)
         return "Block height reset to 0"
 
