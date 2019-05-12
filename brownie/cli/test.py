@@ -111,8 +111,11 @@ def get_test_data(test_paths):
     coverage_files = []
     test_data = []
     project = Path(CONFIG['folders']['project'])
+    build_path = project.joinpath('build/coverage')
     for path in test_paths:
-        coverage_json = project.joinpath("build/coverage/"+path.stem+".json")
+        path = path.relative_to(project)
+        coverage_json = build_path.joinpath(path.parent.relative_to('tests'))
+        coverage_json = coverage_json.joinpath(path.stem+".json")
         coverage_files.append(coverage_json)
         if coverage_json.exists():
             coverage_eval = json.load(coverage_json.open())['coverage']
@@ -122,7 +125,7 @@ def get_test_data(test_paths):
             coverage_eval = {}
             for p in list(coverage_json.parents)[::-1]:
                 p.mkdir(exist_ok=True)
-        module_name = str(path.relative_to(project))[:-3].replace(os.sep, '.')
+        module_name = str(path)[:-3].replace(os.sep, '.')
         module = importlib.import_module(module_name)
         test_names = re.findall(r'\ndef[\s ]{1,}([^_]\w*)[\s ]*\([^)]*\)', path.open().read())
         if not test_names:
@@ -131,7 +134,7 @@ def get_test_data(test_paths):
         duplicates = set([i for i in test_names if test_names.count(i) > 1])
         if duplicates:
             raise ValueError("{} contains multiple test methods of the same name: {}".format(
-                path.relative_to(project),
+                path,
                 ", ".join(duplicates)
             ))
         if 'setup' in test_names:

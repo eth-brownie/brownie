@@ -208,7 +208,7 @@ def _evaluate_branch(path, ln):
     after = next((i for i in after if i != ")"), after[0])[0]
     if (
         (before[-2:] == "if" and after == "|") or
-        (before[:7] == "require" and after in (")", "|"))
+        (before[:7] == "require" and after in (")", "|", ","))
     ):
         return True
     return False

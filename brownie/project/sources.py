@@ -134,6 +134,7 @@ class Sources(metaclass=_Singleton):
     def add_source(self, source):
         path = "<string-{}>".format(self._string_iter)
         self._source[path] = source
+        self._remove_comments(path)
         self._get_contract_data(path)
         self._string_iter += 1
         return path

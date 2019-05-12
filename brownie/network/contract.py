@@ -284,7 +284,7 @@ class _ContractMethod:
             return format_output(result[0])
         return KwargTuple(result, self.abi)
 
-    def transact(self, *args):
+    def transact(self, *args, _rpc_clear=True):
         '''Broadcasts a transaction that calls this contract method.
 
         Args:
@@ -299,7 +299,8 @@ class _ContractMethod:
                 "Contract has no owner, you must supply a tx dict"
                 " with a 'from' field as the last argument."
             )
-        rpc._internal_clear()
+        if _rpc_clear:
+            rpc._internal_clear()
         return tx['from'].transfer(
             self._address,
             tx['value'],
@@ -368,7 +369,9 @@ class ContractCall(_ContractMethod):
             Contract method return value(s).'''
         if ARGV['always_transact']:
             rpc._internal_snap()
-            tx = self.transact(*args, {'gas_price': 0})
+            args, tx = _get_tx(self._owner, args)
+            tx['gas_price'] = 0
+            tx = self.transact(*args, tx, _rpc_clear=False)
             if tx.modified_state:
                 rpc._internal_revert()
             return tx.return_value
