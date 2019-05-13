@@ -1364,20 +1364,22 @@ TransactionReceipt Methods
 
         >>> tx.call_trace()
         Token.transferFrom 0 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
-          Token.sub 86 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
+          SafeMath.sub 86 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
 
 .. py:classmethod:: TransactionReceipt.error(pad=3)
 
     Displays the source code that caused the first revert in the transaction, if any.
 
-    * ``pad``: Number of unrelated lines to show around the relevent source code.
+    * ``pad``: Number of unrelated liness of code to include before and after the relevant source
+
 
     .. code-block:: python
 
         >>> tx
         <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.error()
-        File "contracts/SafeMath.sol", line 9:
+        Source code for trace step 86:
+          File "contracts/SafeMath.sol", line 9, in SafeMath.sub:
 
                 c = a + b;
                 require(c >= a);
@@ -1389,6 +1391,30 @@ TransactionReceipt Methods
             function mul(uint a, uint b) internal pure returns (uint c) {
                 c = a * b;
 
+.. py:classmethod:: TransactionReceipt.source(idx, pad=3)
+
+    Displays the associated source code for a given stack trace step.
+
+    * ``idx``: Stack trace step index
+    * ``pad``: Number of unrelated liness of code to include before and after the relevant source
+
+    .. code-block:: python
+
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
+        >>> tx.source(86)
+        Source code for trace step 86:
+          File "contracts/SafeMath.sol", line 9, in SafeMath.sub:
+
+                c = a + b;
+                require(c >= a);
+            }
+            function sub(uint a, uint b) internal pure returns (uint c) {
+                require(b <= a);
+                c = a - b;
+            }
+            function mul(uint a, uint b) internal pure returns (uint c) {
+                c = a * b;
 
 ``brownie.network.web3``
 ========================

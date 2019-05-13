@@ -144,19 +144,24 @@ class ContractConstructor:
             ) for i in self.abi['inputs'])
         )
 
-    def __call__(self, account, *args):
+    def __call__(self, *args):
         '''Deploys a contract.
 
         Args:
-            account: Account instance to deploy the contract from.
-            *args: Constructor arguments. The last argument may optionally be
-                   a dictionary of transaction values.
+            *args: Constructor arguments. The last argument MUST be a dictionary
+                   of transaction values containing at minimum a 'from' key to
+                   specify which account to deploy this contract from.
 
         Returns:
             * Contract instance if the transaction confirms
             * TransactionReceipt if the transaction is pending or reverts'''
-        args, tx = _get_tx(account, args)
-        return account.deploy(
+        args, tx = _get_tx(None, args)
+        if not tx['from']:
+            raise AttributeError(
+                "Contract has no owner, you must supply a tx dict"
+                " with a 'from' field as the last argument."
+            )
+        return tx['from'].deploy(
             self._parent,
             *args,
             amount=tx['value'],
@@ -296,7 +301,7 @@ class _ContractMethod:
         args, tx = _get_tx(self._owner, args)
         if not tx['from']:
             raise AttributeError(
-                "Contract has no owner, you must supply a tx dict"
+                "No deployer address given. You must supply a tx dict"
                 " with a 'from' field as the last argument."
             )
         if _rpc_clear:
@@ -331,10 +336,7 @@ class ContractTx(_ContractMethod):
         signature: Bytes4 method signature.'''
 
     def __init__(self, fn, abi, name, owner):
-        if (
-            ARGV['cli'] == "test" and not
-            CONFIG['test']['default_contract_owner']
-        ):
+        if ARGV['cli'] == "test" and not CONFIG['test']['default_contract_owner']:
             owner = None
         super().__init__(fn, abi, name, owner)
 

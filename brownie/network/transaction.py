@@ -302,12 +302,14 @@ class TransactionReceipt:
         if not trace:
             return
         contract = self.contract_address or self.receiver
+        pc = contract._build['pcMap'][0]
+        fn = sources.get_contract_name(pc['contract'], pc['start'], pc['stop'])
+        fn += "."+self.fn_name.split('.')[-1]
         last_map = {0: {
             'address': contract.address,
             'contract': contract,
-            'fn': [self.fn_name.split('.')[-1]],
+            'fn': [fn],
         }}
-        pc = contract._build['pcMap'][0]
         trace[0].update({
             'address': last_map[0]['address'],
             'contractName': last_map[0]['contract']._name,
@@ -327,10 +329,13 @@ class TransactionReceipt:
                 stack_idx = -4 if trace[i-1]['op'] in ('CALL', 'CALLCODE') else -3
                 memory_idx = int(trace[i-1]['stack'][stack_idx], 16) * 2
                 sig = "0x" + "".join(trace[i-1]['memory'])[memory_idx:memory_idx+8]
+                pc = contract._build['pcMap'][trace[i]['pc']]
+                fn = sources.get_contract_name(pc['contract'], pc['start'], pc['stop'])
+                fn += "."+(contract.get_method(sig) or "")
                 last_map[trace[i]['depth']] = {
                     'address': address,
                     'contract': contract,
-                    'fn': [contract.get_method(sig) or ""],
+                    'fn': [fn],
                     }
             last = last_map[trace[i]['depth']]
             contract = last['contract']
@@ -372,7 +377,11 @@ class TransactionReceipt:
         _print_path(trace[-1], idx, sep)
 
     def error(self, pad=3):
-        '''Displays the source code that caused the transaction to revert.'''
+        '''Displays the source code that caused the transaction to revert.
+
+        Args:
+            pad: Number of unrelated lines of code to include before and after
+        '''
         try:
             idx = self.trace.index(next(i for i in self.trace if i['op'] in ("REVERT", "INVALID")))
         except StopIteration:
@@ -380,28 +389,41 @@ class TransactionReceipt:
         while True:
             if idx == -1:
                 return ""
-            if not self.trace[idx]['source']['filename']:
+            trace = self.trace[idx]
+            if not trace['source']['filename']:
                 idx -= 1
                 continue
-            span = (self.trace[idx]['source']['start'], self.trace[idx]['source']['stop'])
-            if sources.get_type(self.trace[idx]['contractName']) in ("contract", "library"):
+            span = (trace['source']['start'], trace['source']['stop'])
+            if sources.get_fn(trace['source']['filename'], span[0], span[1]) != trace['fn']:
                 idx -= 1
                 continue
-            source = sources[self.trace[idx]['source']['filename']]
-            newlines = [i for i in range(len(source)) if source[i] == "\n"]
-            try:
-                start = newlines.index(next(i for i in newlines if i >= span[0]))
-                stop = newlines.index(next(i for i in newlines if i >= span[1]))
-                break
-            except StopIteration:
-                idx -= 1
+            return self.source(idx)
+
+    def source(self, idx, pad=3):
+        '''Displays the associated source code for a given stack trace step.
+
+        Args:
+            idx: Stack trace step index
+            pad: Number of unrelated lines of code to include before and after
+        '''
+        trace = self.trace[idx]
+        if not trace['source']['filename']:
+            return ""
+        source = sources[trace['source']['filename']]
+        span = (trace['source']['start'], trace['source']['stop'])
+        newlines = [i for i in range(len(source)) if source[i] == "\n"]
+        try:
+            start = newlines.index(next(i for i in newlines if i >= span[0]))
+            stop = newlines.index(next(i for i in newlines if i >= span[1]))
+        except StopIteration:
+            return ""
         ln = start + 1
         start = newlines[max(start-(pad+1), 0)]
         stop = newlines[min(stop+pad, len(newlines)-1)]
         result = ((
-            '{0[dull]}File {0[string]}"{1}"{0[dull]}, ' +
-            'line {0[value]}{2}{0[dull]}, in {0[callable]}{3}'
-        ).format(color, self.trace[idx]['source']['filename'], ln, self.trace[idx]['fn']))
+            'Source code for trace step {0[value]}{4}{0}:\n  File {0[string]}' +
+            '"{1}"{0}, line {0[value]}{2}{0}, in {0[callable]}{3}{0}:'
+        ).format(color, trace['source']['filename'], ln, trace['fn'], idx))
         result += ("{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
             color,
             source[start:span[0]],
@@ -413,7 +435,7 @@ class TransactionReceipt:
 
 def _print_path(trace, idx, sep):
     col = "error" if trace['op'] in ("REVERT", "INVALID") else "pending"
-    name = "{0[contractName]}.{1}{0[fn]}".format(trace, color(col))
+    name = "{}{}".format(trace['fn'], color(col))
     print(
         ("  "*sep*trace['depth']) + ("  "*(trace['jumpDepth']-1)) +
         "{}{} {}{} ({})".format(color(col), name, color('dull'), idx, trace['address']) +

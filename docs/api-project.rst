@@ -156,7 +156,7 @@ Sources
 
 .. py:classmethod:: Sources.get_path(contract_name)
 
-    Returns the absolute path to the file where a contract is located.
+    Returns the path to the file where a contract is located.
 
 .. py:classmethod:: Sources.get_type(contract_name)
 
@@ -170,9 +170,21 @@ Sources
 
     Given a contract and function name, returns the source offsets of the function.
 
+.. py:classmethod:: Sources.get_contract_name(path, start, stop)
+
+    Given a path and source offsets, returns the name of the contract. Returns ``False`` if the offset spans multiple contracts.
+
 .. py:classmethod:: Sources.inheritance_map()
 
-    Returns a set of all contracts that the given contract inherits from.
+    Returns a dictionary of sets, where each key is a contract name and each value is the name of each contract that the main contact inherits from.
+
+    .. code-block:: python
+
+        >>> sources.inheritance_map()
+        {
+            'SafeMath': set(),
+            'Token': {'SafeMath'}
+        }
 
 .. py:classmethod: Sources.add_source(source)
 

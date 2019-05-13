@@ -55,7 +55,7 @@ class Sources(metaclass=_Singleton):
         )
         for source in contracts:
             type_, name, inherited = re.findall(
-                r"\s*(contract|library|interface) (\S*) (?:is (.*?)|)(?: *{)",
+                r"\s*(contract|library|interface)\s{1,}(\S*)\s*(?:is\s{1,}(.*?)|)(?:{)",
                 source
             )[0]
             inherited = set(i.strip() for i in inherited.split(', ') if i)
@@ -98,20 +98,22 @@ class Sources(metaclass=_Singleton):
         return final
 
     def get_hash(self, contract_name):
+        '''Returns a hash of the contract source code after comments have been removed.'''
         return self._data[contract_name]['sha1']
 
     def get_path(self, contract_name):
+        '''Returns the path to the source file where a contract is located.'''
         return self._data[contract_name]['sourcePath']
 
     def get_type(self, contract_name):
+        '''Returns the type of contract (contract, interface, library).'''
         return self._data[contract_name]['type']
 
     def get_fn(self, name, start, stop):
+        '''Given a contract name, start and stop offset, returns the name of the
+        associated function. Returns False if the offset spans multiple functions.'''
         if name not in self._data:
-            name = next((
-                k for k, v in self._data.items() if v['sourcePath'] == str(name) and
-                v['offset'][0] <= start <= stop <= v['offset'][1]
-            ), False)
+            name = self.get_contract_name(name, start, stop)
             if not name:
                 return False
         offsets = self._data[name]['fn_offsets']
@@ -121,6 +123,7 @@ class Sources(metaclass=_Singleton):
         return False if stop > offset[2] else offset[0]
 
     def get_fn_offset(self, name, fn_name):
+        '''Given a contract and function name, returns the source offsets of the function.'''
         try:
             if name not in self._data:
                 name = next(
@@ -131,10 +134,25 @@ class Sources(metaclass=_Singleton):
         except StopIteration:
             raise ValueError("Unknown function '{}' in contract {}".format(fn_name, name))
 
+    def get_contract_name(self, path, start, stop):
+        '''Given a path and source offsets, returns the name of the contract.
+        Returns False if the offset spans multiple contracts.'''
+        return next((
+            k for k, v in self._data.items() if v['sourcePath'] == str(path) and
+            v['offset'][0] <= start <= stop <= v['offset'][1]
+        ), False)
+
     def inheritance_map(self):
+        '''Returns a dict of sets in the format:
+
+        {'contract name': {'inheritedcontract', 'inherited contract'..} }
+        '''
         return dict((k, v['inherited'].copy()) for k, v in self._data.items())
 
     def add_source(self, source):
+        '''Given source code as a string, adds it to the object and returns a path
+        string formatted as "<string-X>" where X is a number that is incremented.
+        '''
         path = "<string-{}>".format(self._string_iter)
         self._source[path] = source
         self._remove_comments(path)
