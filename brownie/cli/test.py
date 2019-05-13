@@ -150,8 +150,9 @@ def run_test_modules(test_data, save):
     count = sum([len([x for x in i[3] if x != "setup"]) for i in test_data])
     print("Running {} tests across {} modules.".format(count, len(test_data)))
     network.connect(ARGV['network'])
-    for key in ('broadcast_reverting_tx', 'gas_limit'):
-        CONFIG['active_network'][key] = CONFIG['test'][key]
+    CONFIG._unlock()
+    CONFIG['active_network'].update(CONFIG['test'])
+    CONFIG._lock()
     if not CONFIG['active_network']['broadcast_reverting_tx']:
         print("{0[error]}WARNING{0}: Reverting transactions will NOT be broadcasted.".format(color))
     traceback_info = []
