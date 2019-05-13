@@ -108,10 +108,7 @@ class Sources(metaclass=_Singleton):
 
     def get_fn(self, name, start, stop):
         if name not in self._data:
-            name = next((
-                k for k, v in self._data.items() if v['sourcePath'] == str(name) and
-                v['offset'][0] <= start <= stop <= v['offset'][1]
-            ), False)
+            name = self.get_contract_name(name, start, stop)
             if not name:
                 return False
         offsets = self._data[name]['fn_offsets']
@@ -130,6 +127,12 @@ class Sources(metaclass=_Singleton):
             return next(i for i in self._data[name]['fn_offsets'] if i[0] == fn_name)[1:3]
         except StopIteration:
             raise ValueError("Unknown function '{}' in contract {}".format(fn_name, name))
+
+    def get_contract_name(self, path, start, stop):
+        return next((
+            k for k, v in self._data.items() if v['sourcePath'] == str(path) and
+            v['offset'][0] <= start <= stop <= v['offset'][1]
+        ), False)
 
     def inheritance_map(self):
         return dict((k, v['inherited'].copy()) for k, v in self._data.items())
