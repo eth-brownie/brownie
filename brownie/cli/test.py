@@ -276,7 +276,7 @@ def display_report(coverage_files, save):
     coverage_eval = merge_coverage_files(coverage_files)
     report = generate_report(coverage_eval)
     print("\nCoverage analysis:")
-    for name in coverage_eval:
+    for name in sorted(coverage_eval):
         pct = coverage_eval[name].pop('pct')
         c = color(next(i[1] for i in COVERAGE_COLORS if pct <= i[0]))
         print("\n  contract: {0[contract]}{1}{0} - {2}{3:.1%}{0}".format(color, name, c, pct))
