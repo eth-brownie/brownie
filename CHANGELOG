@@ -1,15 +1,25 @@
+1.0.0b5
+-------
+
+ - Use relative paths in build json files
+ - Revert calls-as-transactions when evaluating coverage
+ - Significant refactor and optimizations to coverage analysis
+ - changes to coverageMap format, add coverageMapTotals
+ - Save coverage data to reports/ subfolder
+ - Improvements to GUI
+
 1.0.0b4
 -------
 
  - Add broadcast_reverting_tx flag
  - Use py-solc-x 0.4.0
  - Detect and attach to an already active RPC client, better verbosity on RPC exceptions
- - introduce Singleton metaclass and refactor code to take advantage
- - add EventDict and EventItem classes for transaction event logs
+ - Introduce Singleton metaclass and refactor code to take advantage
+ - Add EventDict and EventItem classes for transaction event logs
  - cli.color, add _print_as_dict _print_as_list _dir_color attributes
- - add conversion methods in types.convert
- - remove brownie.utils package, move modules to network and project packages
- - bugfixes and minor changes
+ - Add conversion methods in types.convert
+ - Remove brownie.utils package, move modules to network and project packages
+ - Bugfixes and minor changes
 
 1.0.0b3
 -------

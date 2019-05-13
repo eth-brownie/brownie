@@ -26,7 +26,7 @@ author = 'Benjamin Hauser'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = 'v1.0.0b4'
+release = 'v1.0.0b5'
 
 
 # -- General configuration ---------------------------------------------------

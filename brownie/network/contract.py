@@ -8,6 +8,7 @@ from eth_hash.auto import keccak
 from brownie.cli.utils import color
 from .event import get_topics
 from .history import _ContractHistory
+from .rpc import Rpc
 from .web3 import Web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_input, format_output, to_address
@@ -15,6 +16,7 @@ from brownie.exceptions import VirtualMachineError
 from brownie._config import ARGV, CONFIG
 
 _contracts = _ContractHistory()
+rpc = Rpc()
 web3 = Web3()
 
 
@@ -60,9 +62,6 @@ class ContractContainer(_ContractBase):
     def __init__(self, build):
         self.tx = None
         self.bytecode = build['bytecode']
-        # convert pcMap to dict to speed transaction stack traces
-        if type(build['pcMap']) is list:
-            build['pcMap'] = dict((i.pop('pc'), i) for i in build['pcMap'])
         super().__init__(build)
         self.deploy = ContractConstructor(self, self._name)
 
@@ -285,7 +284,7 @@ class _ContractMethod:
             return format_output(result[0])
         return KwargTuple(result, self.abi)
 
-    def transact(self, *args):
+    def transact(self, *args, _rpc_clear=True):
         '''Broadcasts a transaction that calls this contract method.
 
         Args:
@@ -300,6 +299,8 @@ class _ContractMethod:
                 "Contract has no owner, you must supply a tx dict"
                 " with a 'from' field as the last argument."
             )
+        if _rpc_clear:
+            rpc._internal_clear()
         return tx['from'].transfer(
             self._address,
             tx['value'],
@@ -331,7 +332,7 @@ class ContractTx(_ContractMethod):
 
     def __init__(self, fn, abi, name, owner):
         if (
-            ARGV['cli'] != "console" and not
+            ARGV['cli'] == "test" and not
             CONFIG['test']['default_contract_owner']
         ):
             owner = None
@@ -367,7 +368,12 @@ class ContractCall(_ContractMethod):
         Returns:
             Contract method return value(s).'''
         if ARGV['always_transact']:
-            tx = self.transact(*args)
+            rpc._internal_snap()
+            args, tx = _get_tx(self._owner, args)
+            tx['gas_price'] = 0
+            tx = self.transact(*args, tx, _rpc_clear=False)
+            if tx.modified_state:
+                rpc._internal_revert()
             return tx.return_value
         return self.call(*args)
 

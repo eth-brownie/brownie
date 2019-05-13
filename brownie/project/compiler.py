@@ -2,7 +2,6 @@
 
 from hashlib import sha1
 from pathlib import Path
-import re
 import solcx
 
 from .sources import Sources
@@ -50,7 +49,9 @@ def compile_contracts(contract_paths):
         CONFIG['solc']['optimize'] else "Disabled"
     ))
 
-    print("\n".join(" - {}...".format(Path(i).name) for i in contract_paths))
+    base = Path(CONFIG['folders']['project'])
+    contract_paths = [Path(i).resolve().relative_to(base) for i in contract_paths]
+    print("\n".join(" - {}...".format(i.name) for i in contract_paths))
     input_json = STANDARD_JSON.copy()
     input_json['sources'] = dict((
         str(i),
@@ -80,7 +81,7 @@ def _compile_and_format(input_json):
     compiled = _generate_pcMap(compiled)
     result = {}
 
-    for filename, name in [(k,x) for k,v in compiled['contracts'].items() for x in v]:
+    for filename, name in [(k, v) for k in input_json['sources'] for v in compiled['contracts'][k]]:
         data = compiled['contracts'][filename][name]
         evm = data['evm']
         ref = [
@@ -94,9 +95,10 @@ def _compile_and_format(input_json):
                 n[:36],
                 evm['bytecode']['object'][loc+40:]
             )
+        all_paths = sorted(set(v['contract'] for v in evm['pcMap'].values() if v['contract']))
         result[name] = {
             'abi': data['abi'],
-            'allSourcePaths': sorted(set(i['contract'] for i in evm['pcMap'] if i['contract'])),
+            'allSourcePaths': all_paths,
             'ast': compiled['sources'][filename]['ast'],
             'bytecode': evm['bytecode']['object'],
             'bytecodeSha1': sha1(evm['bytecode']['object'][:-68].encode()).hexdigest(),
@@ -106,14 +108,15 @@ def _compile_and_format(input_json):
             'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
             # 'networks': {},
             'opcodes': evm['deployedBytecode']['opcodes'],
+            'pcMap': evm['pcMap'],
             'sha1': sources.get_hash(name),
             'source': input_json['sources'][filename]['content'],
             'sourceMap': evm['bytecode']['sourceMap'],
             'sourcePath': filename,
-            'type': sources.get_type(name),
-            'pcMap': evm['pcMap']
+            'type': sources.get_type(name)
         }
         result[name]['coverageMap'] = _generate_coverageMap(result[name])
+        result[name]['coverageMapTotals'] = _generate_coverageMapTotals(result[name]['coverageMap'])
     return result
 
 
@@ -135,9 +138,8 @@ def _generate_pcMap(compiled):
         bytecode = compiled['contracts'][filename][name]['evm']['deployedBytecode']
 
         if not bytecode['object']:
-            compiled['contracts'][filename][name]['evm']['pcMap'] = []
+            compiled['contracts'][filename][name]['evm']['pcMap'] = {}
             continue
-        pcMap = []
         opcodes = bytecode['opcodes']
         source_map = bytecode['sourceMap']
         while True:
@@ -153,124 +155,84 @@ def _generate_pcMap(compiled):
         last = source_map.split(';')[0].split(':')
         for i in range(3):
             last[i] = int(last[i])
-        pcMap.append({
+        pcMap = {0: {
             'start': last[0],
             'stop': last[0]+last[1],
             'op': opcodes.pop(),
             'contract': id_map[last[2]],
             'jump': last[3],
-            'pc': 0
-        })
+            'fn': False
+        }}
         pcMap[0]['value'] = opcodes.pop()
         for value in source_map.split(';')[1:]:
+            if pcMap[pc]['op'][:4] == "PUSH":
+                pc += int(pcMap[pc]['op'][4:])
             pc += 1
-            if pcMap[-1]['op'][:4] == "PUSH":
-                pc += int(pcMap[-1]['op'][4:])
             if value:
                 value = (value+":::").split(':')[:4]
                 for i in range(3):
                     value[i] = int(value[i] or last[i])
                 value[3] = value[3] or last[3]
                 last = value
-            pcMap.append({
+            contract = id_map[last[2]] if last[2] != -1 else False
+            pcMap[pc] = {
                 'start': last[0],
                 'stop': last[0]+last[1],
                 'op': opcodes.pop(),
-                'contract': id_map[last[2]] if last[2] != -1 else False,
+                'contract': contract,
                 'jump': last[3],
-                'pc': pc
-            })
+                'fn': sources.get_fn(contract, last[0], last[0]+last[1])
+            }
             if opcodes[-1][:2] == "0x":
-                pcMap[-1]['value'] = opcodes.pop()
+                pcMap[pc]['value'] = opcodes.pop()
         compiled['contracts'][filename][name]['evm']['pcMap'] = pcMap
     return compiled
 
 
 def _generate_coverageMap(build):
-    """Given the compiled project as supplied by compiler.compile_contracts(),
-    returns the function and line based coverage maps for unit test coverage
-    evaluation.
+    """Adds coverage data to a build json.
 
-    A coverage map item is structured as follows:
+    A new key 'coverageMap' is created, structured as follows:
 
     {
-        "/path/to/contract/file.sol":{
-            "functionName":{
-                "fn": {},
-                "line": [{}, {}, {}],
-                "total": int
-            }
+        "/path/to/contract/file.sol": {
+            "functionName": [{
+                'jump': pc of the JUMPI instruction, if it is a jump
+                'start': source code start offest
+                'stop': source code stop offset
+            }],
         }
     }
 
-    Each dict in fn/line is as follows:
-
-    {
-        'jump': pc of the JUMPI instruction, if it is a jump
-        'pc': list of opcode program counters tied to the map item
-        'start': source code start offset
-        'stop': source code stop offset
-    }
-    """
-
-    fn_map = dict((x, {}) for x in build['allSourcePaths'])
-
-    for i in _isolate_functions(build):
-        fn_map[i.pop('contract')][i.pop('method')] = {'fn': i, 'line': []}
+    Relevent items in the pcMap also have a 'coverageIndex' added that corresponds
+    to an entry in the coverageMap."""
     line_map = _isolate_lines(build)
     if not line_map:
         return {}
 
-    # future me - i'm sorry for this line
-    for source, fn_name, fn in [(k, x, v[x]['fn']) for k, v in fn_map.items() for x in v]:
-        for ln in [
-            i for i in line_map if i['contract'] == source and
-            i['start'] == fn['start'] and i['stop'] == fn['stop']
-        ]:
-            # remove duplicate mappings
-            line_map.remove(ln)
-        for ln in [
-            i for i in line_map if i['contract'] == source and
-            i['start'] >= fn['start'] and i['stop'] <= fn['stop']
-        ]:
-            # apply method names to line mappings
-            line_map.remove(ln)
-            fn_map[ln.pop('contract')][fn_name]['line'].append(ln)
-        fn_map[source][fn_name]['total'] = sum([1 if not i['jump'] else 2 for i in fn_map[source][fn_name]['line']])
-    return fn_map
+    final = dict((i, {}) for i in set(i['contract'] for i in line_map))
+    for i in line_map:
+        fn = sources.get_fn(i['contract'], i['start'], i['stop'])
+        if not fn:
+            continue
+        final[i['contract']].setdefault(fn, []).append({
+            'jump': i['jump'],
+            'start': i['start'],
+            'stop': i['stop']
+        })
+        for pc in i['pc']:
+            build['pcMap'][pc]['coverageIndex'] = len(final[i['contract']][fn]) - 1
+    return final
 
 
-def _isolate_functions(compiled):
-    '''Identify function level coverage map items.'''
-    pcMap = compiled['pcMap']
-    fn_map = {}
-    for op in _oplist(pcMap, "JUMPDEST"):
-        s = _get_source(op)
-        if s[:8] in ("contract", "library ", "interfac"):
-            continue
-        if s[:8] == "function":
-            fn = s[9:s.index('(')]
-        elif " public " in s:
-            fn = s[s.index(" public ")+8:].split(' =')[0].strip()
-        else:
-            continue
-        if fn not in fn_map:
-            fn_map[fn] = _base(op)
-            fn_map[fn]['method'] = fn
-        fn_map[fn]['pc'].add(op['pc'])
-
-    fn_map = _sort(fn_map.values())
-    if not fn_map:
-        return []
-    for op in _oplist(pcMap):
-        try:
-            f = _next(fn_map, op)
-        except StopIteration:
-            continue
-        if op['stop'] > f['stop']:
-            continue
-        f['pc'].add(op['pc'])
-    return fn_map
+def _generate_coverageMapTotals(coverage_map):
+    totals = {'total': 0}
+    for path, fn_name in [(k, x) for k, v in coverage_map.items() for x in v]:
+        maps = coverage_map[path][fn_name]
+        count = len([i for i in maps if not i['jump']]) + len([i for i in maps if i['jump']])*2
+        totals[fn_name] = count
+        totals['total'] += count
+    return totals
 
 
 def _isolate_lines(compiled):
@@ -284,7 +246,7 @@ def _isolate_lines(compiled):
     line_map = {}
 
     # find all the JUMPI opcodes
-    for i in [pcMap.index(i) for i in _oplist(pcMap, "JUMPI")]:
+    for i in [k for k, v in pcMap.items() if v['contract'] and v['op'] == "JUMPI"]:
         op = pcMap[i]
         if op['contract'] not in line_map:
             line_map[op['contract']] = []
@@ -294,39 +256,46 @@ def _isolate_lines(compiled):
         try:
             # JUMPI is to the closest previous opcode that has
             # a different source offset and is not a JUMPDEST
-            req = next(
-                x for x in pcMap[i-2::-1] if x['contract'] and
-                x['op'] != "JUMPDEST" and
-                x['start'] + x['stop'] != op['start'] + op['stop']
+            pc = next(
+                x for x in range(i - 4, 0, -1) if x in pcMap and
+                pcMap[x]['contract'] and pcMap[x]['op'] != "JUMPDEST" and
+                (pcMap[x]['start'], pcMap[x]['stop']) != (op['start'], op['stop'])
             )
         except StopIteration:
             continue
-        line_map[op['contract']].append(_base(req))
-        line_map[op['contract']][-1].update({'jump': op['pc']})
+        line_map[op['contract']].append(_base(pc, pcMap[pc]))
+        line_map[op['contract']][-1].update({'jump': i})
 
     # analyze all the opcodes
-    for op in _oplist(pcMap):
+    for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)]:
         # ignore code that spans multiple lines
-        if ';' in _get_source(op):
+        if not op['contract'] or ';' in _get_source(op):
             continue
         if op['contract'] not in line_map:
             line_map[op['contract']] = []
         # find existing related coverage map item, make a new one if none exists
         try:
-            ln = _next(line_map[op['contract']], op)
+            ln = next(
+                i for i in line_map[op['contract']] if
+                i['contract'] == op['contract'] and
+                i['start'] <= op['start'] < i['stop']
+            )
         except StopIteration:
-            line_map[op['contract']].append(_base(op))
+            line_map[op['contract']].append(_base(pc, op))
             continue
         if op['stop'] > ln['stop']:
             # if coverage map item is a jump, do not modify the source offsets
             if ln['jump']:
                 continue
             ln['stop'] = op['stop']
-        ln['pc'].add(op['pc'])
+        ln['pc'].add(pc)
 
     # sort the coverage map and merge overlaps where possible
     for contract in line_map:
-        line_map[contract] = _sort(line_map[contract])
+        line_map[contract] = sorted(
+            line_map[contract],
+            key=lambda k: (k['contract'], k['start'], k['stop'])
+        )
         ln_map = line_map[contract]
         i = 0
         while True:
@@ -355,28 +324,11 @@ def _get_source(op):
     return sources[op['contract']][op['start']:op['stop']]
 
 
-def _next(coverage_map, op):
-    '''Given a coverage map and an item from pcMap, returns the related
-    coverage map item (based on source offset overlap).'''
-    return next(
-        i for i in coverage_map if i['contract'] == op['contract'] and
-        i['start'] <= op['start'] < i['stop']
-    )
-
-
-def _sort(list_):
-    return sorted(list_, key=lambda k: (k['contract'], k['start'], k['stop']))
-
-
-def _oplist(pcMap, op=None):
-    return [i for i in pcMap if i['contract'] and (not op or op == i['op'])]
-
-
-def _base(op):
+def _base(pc, op):
     return {
         'contract': op['contract'],
         'start': op['start'],
         'stop': op['stop'],
-        'pc': set([op['pc']]),
+        'pc': set([pc]),
         'jump': False
     }

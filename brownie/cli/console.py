@@ -7,16 +7,16 @@ from pathlib import Path
 import sys
 import threading
 
+import brownie
+import brownie.network as network
+from brownie.cli.utils import color
+from brownie._config import ARGV, CONFIG
+
 if sys.platform == "win32":
     from pyreadline import Readline
     readline = Readline()
 else:
     import readline
-
-import brownie
-import brownie.network as network
-from brownie.cli.utils import color
-from brownie._config import ARGV, CONFIG
 
 
 __doc__ = """Usage: brownie console [options]

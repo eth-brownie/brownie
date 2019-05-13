@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import ast
-from copy import deepcopy
 from hashlib import sha1
 import importlib.util
 import json
@@ -48,6 +47,12 @@ class Build(metaclass=_Singleton):
         self._build = {}
         self._path = None
 
+    def __getitem__(self, contract_name):
+        return self._build[contract_name.replace('.json', '')]
+
+    def __contains__(self, contract_name):
+        return contract_name.replace('.json', '') in self._build
+
     def _load(self):
         self. _path = Path(CONFIG['folders']['project']).joinpath('build/contracts')
         # check build paths
@@ -63,7 +68,7 @@ class Build(metaclass=_Singleton):
                     data,
                     self._path.joinpath("{}.json".format(name)).open('w'),
                     sort_keys=True,
-                    indent=4,
+                    indent=2,
                     default=sorted
                 )
             self._build.update(build_json)
@@ -78,6 +83,7 @@ class Build(metaclass=_Singleton):
                     set(BUILD_KEYS).issubset(build_json) and
                     Path(build_json['sourcePath']).exists()
                 ):
+                    build_json['pcMap'] = dict((int(k), v) for k, v in build_json['pcMap'].items())
                     self._build[path.stem] = build_json
                     continue
             except json.JSONDecodeError:
@@ -119,11 +125,8 @@ class Build(metaclass=_Singleton):
                 coverage_json.unlink()
                 break
 
-    def __getitem__(self, contract_name):
-        return deepcopy(self._build[contract_name.replace('.json','')])
-
     def items(self):
-        return deepcopy(self._build).items()
+        return self._build.items()
 
 
 def get_ast_hash(script_path):

@@ -9,7 +9,7 @@ import brownie
 from brownie.cli.utils import color
 import brownie.project as project
 
-__version__ = "1.0.0b4"  # did you change this in docs/conf.py as well?
+__version__ = "1.0.0b5"  # did you change this in docs/conf.py as well?
 
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
@@ -43,7 +43,6 @@ def main():
 
     args = docopt(__doc__)
     sys.argv += opts
-
 
     cmd_list = [i.stem for i in Path(__file__).parent.glob('[!_]*.py')]
     if args['<command>'] not in cmd_list:

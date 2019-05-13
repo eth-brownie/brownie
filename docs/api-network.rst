@@ -1171,6 +1171,17 @@ TransactionReceipt Attributes
         >>> tx.logs
         [AttributeDict({'logIndex': 0, 'transactionIndex': 0, 'transactionHash': HexBytes('0xa8afb59a850adff32548c65041ec253eb64e1154042b2e01e2cd8cddb02eb94f'), 'blockHash': HexBytes('0x0b93b4cf230c9ef92b990de9cd62611447d83d396f1b13204d26d28bd949543a'), 'blockNumber': 6, 'address': '0x79447c97b6543F6eFBC91613C655977806CB18b0', 'data': '0x0000000000000000000000006b5132740b834674c3277aafa2c27898cbe740f600000000000000000000000031d504908351d2d87f3d6111f491f0b52757b592000000000000000000000000000000000000000000000000000000000000000a', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef')], 'type': 'mined'})]
 
+.. py:attribute:: TransactionReceipt.modified_state
+
+    Boolean indicating if this transaction resuled in any state changes on the blockchain.
+
+    .. code-block:: python
+
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
+        >>> tx.modified_state
+        True
+
 .. py:attribute:: TransactionReceipt.nonce
 
     The nonce of the transaction.

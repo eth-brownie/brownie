@@ -8,8 +8,8 @@ from brownie._config import ARGV, CONFIG
 BASE = "\x1b[0;"
 
 MODIFIERS = {
-    'bright':"1;",
-    'dark':"2;"
+    'bright': "1;",
+    'dark': "2;"
 }
 
 COLORS = {
@@ -31,7 +31,7 @@ TB_BASE = (
 
 class Color:
 
-    def __call__(self, color = None):
+    def __call__(self, color=None):
         if sys.platform == "win32":
             return ""
         if color in CONFIG['colors']:
@@ -55,11 +55,11 @@ class Color:
         return self(color)
 
     # format dicts for console printing
-    def pretty_dict(self, value, indent = 0, start=True):
+    def pretty_dict(self, value, indent=0, start=True):
         if start:
             sys.stdout.write(' '*indent+'{}{{'.format(self['dull']))
-        indent+=4
-        for c,k in enumerate(sorted(value.keys(), key= lambda k: str(k))):
+        indent += 4
+        for c, k in enumerate(sorted(value.keys(), key=lambda k: str(k))):
             if c:
                 sys.stdout.write(',')
             sys.stdout.write('\n'+' '*indent)
@@ -69,38 +69,38 @@ class Color:
                 sys.stdout.write("{0[key]}{1}{0[dull]}: ".format(self, k))
             if _check_dict(value[k]):
                 sys.stdout.write('{')
-                self.pretty_dict(value[k], indent,False)
+                self.pretty_dict(value[k], indent, False)
                 continue
             if _check_list(value[k]):
                 sys.stdout.write(str(value[k])[0])
                 self.pretty_list(value[k], indent, False)
                 continue
             self._write(value[k])
-        indent-=4
+        indent -= 4
         sys.stdout.write('\n'+' '*indent+'}')
         if start:
             sys.stdout.write('\n{}'.format(self))
         sys.stdout.flush()
 
     # format lists for console printing
-    def pretty_list(self, value, indent = 0, start=True):
-        brackets = str(value)[0],str(value)[-1]
+    def pretty_list(self, value, indent=0, start=True):
+        brackets = str(value)[0], str(value)[-1]
         if start:
-            sys.stdout.write(' '*indent+'{}{}'.format(self['dull'],brackets[0]))
+            sys.stdout.write(' '*indent+'{}{}'.format(self['dull'], brackets[0]))
         if value and len(value) == len([i for i in value if _check_dict(i)]):
             # list of dicts
             sys.stdout.write('\n'+' '*(indent+4)+'{')
-            for c,i in enumerate(value):
+            for c, i in enumerate(value):
                 if c:
                     sys.stdout.write(',')
                 self.pretty_dict(i, indent+4, False)
-            sys.stdout.write('\n'+  ' '*indent+brackets[1])
+            sys.stdout.write('\n'+' '*indent+brackets[1])
         elif (
-            value and len(value)==len([i for i in value if type(i) is str]) and
+            value and len(value) == len([i for i in value if type(i) is str]) and
             set(len(i) for i in value) == {64}
         ):
             # list of bytes32 hexstrings (stack trace)
-            for c,i in enumerate(value):
+            for c, i in enumerate(value):
                 if c:
                     sys.stdout.write(',')
                 sys.stdout.write('\n'+' '*(indent+4))
@@ -123,7 +123,7 @@ class Color:
         else:
             sys.stdout.write('{0[value]}{1}{0[dull]}'.format(self, value))
 
-    def format_tb(self, exc, filename = None, start = None, stop = None):
+    def format_tb(self, exc, filename=None, start=None, stop=None):
         tb = [i.replace("./", "") for i in traceback.format_tb(exc[2])]
         if filename and not ARGV['tb']:
             try:
@@ -134,6 +134,7 @@ class Color:
                 pass
         for i in range(len(tb)):
             info, code = tb[i].split('\n')[:2]
+            info = info.replace(CONFIG['folders']['project'], ".")
             info = [x.strip(',') for x in info.strip().split(' ')]
             if 'site-packages/' in info[1]:
                 info[1] = '"'+info[1].split('site-packages/')[1]

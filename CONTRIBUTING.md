@@ -10,6 +10,7 @@ $ git clone https://github.com/HyperLink-Technology/brownie.git
 
 Pull requests are welcomed! Please try to adhere to the following.
 
+- Follow PEP8 code standards (max line length 100)
 - include any relevant documentation updates
 
 It's a good idea to make pull requests early on. A pull request represents the

@@ -11,8 +11,8 @@ from brownie.types.types import (
     _Singleton
 )
 
-REPLACE_IN_UPDATE = ['active_network', 'networks']
-IGNORE_IF_MISSING = ['folders', 'logging']
+REPLACE = ['active_network', 'networks']
+IGNORE = ['folders', 'logging']
 
 
 def _load_default_config():
@@ -30,7 +30,7 @@ def _load_default_config():
         config['logging'].setdefault('exc', 0)
         for k, v in [(k, v) for k, v in config['logging'].items() if type(v) is list]:
             config['logging'][k] = v[1 if '--verbose' in sys.argv else 0]
-    except:
+    except Exception:
         config['logging'] = {"tx": 1, "exc": 1}
     return config
 
@@ -71,17 +71,18 @@ def modify_network_config(network=None):
 # merges project .json with brownie .json
 def _recursive_update(original, new, base):
     for k in new:
-        if type(new[k]) is dict and k in REPLACE_IN_UPDATE:
+        if type(new[k]) is dict and k in REPLACE:
             original[k] = new[k]
         elif type(new[k]) is dict and k in original:
             _recursive_update(original[k], new[k], base+[k])
         else:
             original[k] = new[k]
-    for k in [i for i in original if i not in new and not set(base+[i]).intersection(IGNORE_IF_MISSING)]:
+    for k in [i for i in original if i not in new and not set(base+[i]).intersection(IGNORE)]:
         print(
             "WARNING: Value '{}' not found in the config file for this project."
             " The default setting has been used.".format(".".join(base+[k]))
         )
+
 
 # move argv flags into FalseyDict
 ARGV = _Singleton("Argv", (FalseyDict,), {})()

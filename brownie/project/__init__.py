@@ -17,7 +17,7 @@ __project = True
 project = sys.modules[__name__]
 
 
-FOLDERS = ["contracts", "scripts", "tests"]
+FOLDERS = ["contracts", "scripts", "reports", "tests"]
 
 
 def check_for_project(path):
@@ -46,7 +46,9 @@ def new(path=".", ignore_subfolder=False):
     if not ignore_subfolder:
         check = check_for_project(path)
         if check and check != path:
-            raise SystemError("Cannot make a new project inside the subfolder of an existing project.")
+            raise SystemError(
+                "Cannot make a new project inside the subfolder of an existing project."
+            )
     for folder in [i for i in FOLDERS]:
         path.joinpath(folder).mkdir(exist_ok=True)
     if not path.joinpath('brownie-config.json').exists():
@@ -76,6 +78,8 @@ def load(path=None):
         raise SystemError("Could not find brownie project")
     path = Path(path).resolve()
     CONFIG['folders']['project'] = str(path)
+    for folder in [i for i in FOLDERS]:
+        path.joinpath(folder).mkdir(exist_ok=True)
     sys.path.insert(0, str(path))
     load_project_config()
     compiler.set_solc_version()

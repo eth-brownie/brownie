@@ -10,7 +10,6 @@ Brownie is a python framework for deploying, testing and interacting with Ethere
 
 As Brownie relies on [py-solc-x](https://github.com/iamdefinitelyahuman/py-solc-x), you do not need solc installed locally but you must install all required [solc dependencies](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages).
 
-
 ## Installation
 
 You can install the latest release via pip:
@@ -44,9 +43,8 @@ Brownie documentation is hosted at [Read the Docs](https://eth-brownie.readthedo
 Help is always appreciated! In particular, Brownie needs work in the following areas before we can comfortably take it out of beta:
 
 * Tests
-* Improving the documentation
-* More tests
 * Travis or other CI
+* More tests
 
 Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
 

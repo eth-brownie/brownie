@@ -7,11 +7,12 @@ from brownie.cli.utils import color as _color
 
 _instances = set()
 
+
 class Alert:
 
     '''Setup notifications and callbacks based on state changes to the blockchain.
     The alert is immediatly active as soon as the class is insantiated.'''
-    
+
     def __init__(self, fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None):
         '''Creates a new Alert.
 
@@ -32,7 +33,7 @@ class Alert:
             args=(fn, args, kwargs, delay, msg, callback))
         self._thread.start()
         _instances.add(self)
-        
+
     def _loop(self, fn, args, kwargs, delay, msg, callback):
         start_value = fn(*args, **kwargs)
         while not self._kill:
@@ -54,13 +55,16 @@ class Alert:
         self._thread.join()
         _instances.discard(self)
 
+
 def new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None):
     '''Alias for creating a new Alert instance.'''
     return Alert(fn, args, kwargs, delay, msg, callback)
 
+
 def show():
     '''Returns a list of all currently active Alert instances.'''
     return list(_instances)
+
 
 def stop_all():
     '''Stops all currently active Alert instances.'''

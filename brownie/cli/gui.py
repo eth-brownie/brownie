@@ -7,7 +7,7 @@ from brownie.gui import Gui
 __doc__ = """Usage: brownie gui
 
 Options:
-  --help -h               Display this message
+  --help -h                  Display this message
 
 Opens the brownie GUI. Basic functionality is as follows:
 
@@ -28,7 +28,7 @@ Opens the brownie GUI. Basic functionality is as follows:
 
 
 def main():
-    args = docopt(__doc__)
+    docopt(__doc__)
     print("Loading Brownie GUI...")
     Gui().mainloop()
     print("GUI was terminated.")

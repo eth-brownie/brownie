@@ -12,6 +12,7 @@ import eth_keys
 from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError
 from brownie.network.transaction import TransactionReceipt
+from .rpc import Rpc
 from .web3 import Web3
 from brownie.types.convert import to_address, wei
 from brownie.types.types import _Singleton
@@ -28,6 +29,7 @@ class Accounts(metaclass=_Singleton):
         self._accounts = []
         # prevent private keys from being stored in read history
         self.add.__dict__['_private'] = True
+        Rpc()._objects.append(self)
 
     def _reset(self):
         self._accounts.clear()
@@ -254,7 +256,7 @@ class _AccountBase:
             txid = self._transact({
                 'from': self.address,
                 'nonce': self.nonce,
-                'gasPrice': wei(gas_price) or self._gas_price(),
+                'gasPrice': wei(gas_price) if gas_price is not None else self._gas_price(),
                 'gas': wei(gas_limit) or self._gas_limit(to, amount, data),
                 'to': str(to),
                 'value': wei(amount),

@@ -35,6 +35,7 @@ _contracts = _ContractHistory()
 web3 = Web3()
 sources = Sources()
 
+
 class TransactionReceipt:
 
     '''Attributes and methods relating to a broadcasted transaction.
@@ -152,17 +153,18 @@ class TransactionReceipt:
             elif CONFIG['logging']['tx']:
                 print(
                     ("{1} confirmed {2}- {0[key]}block{0}: {0[value]}{3}{0}   "
-                    "{0[key]}gas used{0}: {0[value]}{4}{0} ({0[value]}{5:.2%}{0})").format(
-                    color,
-                    self.fn_name or "Transaction",
-                    "" if self.status else "({0[error]}{1}{0}) ".format(
+                     "{0[key]}gas used{0}: {0[value]}{4}{0} ({0[value]}{5:.2%}{0})").format(
                         color,
-                        self.revert_msg or "reverted"
-                    ),
-                    self.block_number,
-                    self.gas_used,
-                    self.gas_used / self.gas_limit
-                ))
+                        self.fn_name or "Transaction",
+                        "" if self.status else "({0[error]}{1}{0}) ".format(
+                            color,
+                            self.revert_msg or "reverted"
+                        ),
+                        self.block_number,
+                        self.gas_used,
+                        self.gas_used / self.gas_limit
+                    )
+                )
                 if receipt['contractAddress']:
                     print("{1} deployed at: {0[value]}{2}{0}".format(
                         color,
@@ -182,10 +184,15 @@ class TransactionReceipt:
         return hash(self.txid)
 
     def __getattr__(self, attr):
-        if attr not in ('events', 'return_value', 'revert_msg', 'trace', '_trace'):
-            raise AttributeError(
-                "'TransactionReceipt' object has no attribute '{}'".format(attr)
-            )
+        if attr not in (
+            'events',
+            'modified_state',
+            'return_value',
+            'revert_msg',
+            'trace',
+            '_trace'
+        ):
+            raise AttributeError("'TransactionReceipt' object has no attribute '{}'".format(attr))
         if self.status == -1:
             return None
         if self._trace is None:
@@ -200,7 +207,9 @@ class TransactionReceipt:
         if self.contract_address:
             line = "New Contract Address{0}: {0[value]}{1}".format(color, self.contract_address)
         else:
-            line = "To{0}: {0[value]}{1.receiver}{0}\n{0[key]}Value{0}: {0[value]}{1.value}".format(color, self)
+            line = "To{0}: {0[value]}{1.receiver}{0}\n{0[key]}Value{0}: {0[value]}{1.value}".format(
+                color, self
+            )
             if self.input != "0x00":
                 line += "\n{0[key]}Function{0}: {0[value]}{1}".format(color, self.fn_name)
         print(TX_INFO.format(
@@ -217,7 +226,7 @@ class TransactionReceipt:
             print("   Events In This Transaction\n   --------------------------")
             for event in self.events:
                 print("   "+color('bright yellow')+event.name+color())
-                for k,v in event.items():
+                for k, v in event.items():
                     print("      {0[key]}{1}{0}: {0[value]}{2}{0}".format(
                         color, k, v
                     ))
@@ -230,6 +239,7 @@ class TransactionReceipt:
         self.revert_msg = None
         self._trace = []
         if (self.input == "0x" and self.gas_used == 21000) or self.contract_address:
+            self.modified_state = False
             self.trace = []
             return
         trace = web3.providers[0].make_request(
@@ -237,19 +247,21 @@ class TransactionReceipt:
             [self.txid, {}]
         )
         if 'error' in trace:
+            self.modified_state = None
             raise ValueError(trace['error']['message'])
         self._trace = trace = trace['result']['structLogs']
         if self.status:
             # get return value
+            self.modified_state = bool(next((i for i in trace if i['op'] == "SSTORE"), False))
             log = trace[-1]
             if log['op'] != "RETURN":
                 return
-            c = self.contract_address or self.receiver
-            if type(c) is str:
+            contract = self.contract_address or self.receiver
+            if type(contract) is str:
                 return
             abi = [
                 i['type'] for i in
-                getattr(c, self.fn_name.split('.')[-1]).abi['outputs']
+                getattr(contract, self.fn_name.split('.')[-1]).abi['outputs']
             ]
             offset = int(log['stack'][-1], 16) * 2
             length = int(log['stack'][-2], 16) * 2
@@ -262,10 +274,11 @@ class TransactionReceipt:
             else:
                 self.return_value = KwargTuple(
                     self.return_value,
-                    getattr(c, self.fn_name.split('.')[-1]).abi
+                    getattr(contract, self.fn_name.split('.')[-1]).abi
                 )
         else:
             # get revert message
+            self.modified_state = False
             self.revert_msg = ""
             if trace[-1]['op'] == "REVERT":
                 offset = int(trace[-1]['stack'][-1], 16) * 2
@@ -288,17 +301,17 @@ class TransactionReceipt:
         self.trace = trace = self._trace
         if not trace:
             return
-        c = self.contract_address or self.receiver
-        last = {0: {
-            'address': c.address,
-            'contract': c._name,
+        contract = self.contract_address or self.receiver
+        last_map = {0: {
+            'address': contract.address,
+            'contract': contract,
             'fn': [self.fn_name.split('.')[-1]],
         }}
-        pc = c._build['pcMap'][0]
+        pc = contract._build['pcMap'][0]
         trace[0].update({
-            'address': last[0]['address'],
-            'contractName': last[0]['contract'],
-            'fn': last[0]['fn'][-1],
+            'address': last_map[0]['address'],
+            'contractName': last_map[0]['contract']._name,
+            'fn': last_map[0]['fn'][-1],
             'jumpDepth': 1,
             'source': {
                 'filename': pc['contract'],
@@ -310,23 +323,24 @@ class TransactionReceipt:
             # if depth has increased, tx has called into a different contract
             if trace[i]['depth'] > trace[i-1]['depth']:
                 address = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
-                c = _contracts.find(address)
+                contract = _contracts.find(address)
                 stack_idx = -4 if trace[i-1]['op'] in ('CALL', 'CALLCODE') else -3
                 memory_idx = int(trace[i-1]['stack'][stack_idx], 16) * 2
                 sig = "0x" + "".join(trace[i-1]['memory'])[memory_idx:memory_idx+8]
-                last[trace[i]['depth']] = {
+                last_map[trace[i]['depth']] = {
                     'address': address,
-                    'contract': c._name,
-                    'fn': [next((k for k, v in c.signatures.items() if v == sig), "")],
+                    'contract': contract,
+                    'fn': [contract.get_method(sig) or ""],
                     }
+            last = last_map[trace[i]['depth']]
+            contract = last['contract']
             trace[i].update({
-                'address': last[trace[i]['depth']]['address'],
-                'contractName': last[trace[i]['depth']]['contract'],
-                'fn': last[trace[i]['depth']]['fn'][-1],
-                'jumpDepth': len(set(last[trace[i]['depth']]['fn']))
+                'address': last['address'],
+                'contractName': contract._name,
+                'fn': last['fn'][-1],
+                'jumpDepth': len(set(last['fn']))
             })
-            c = _contracts.find(trace[i]['address'])
-            pc = c._build['pcMap'][trace[i]['pc']]
+            pc = contract._build['pcMap'][trace[i]['pc']]
             trace[i]['source'] = {
                 'filename': pc['contract'],
                 'start': pc['start'],
@@ -334,15 +348,10 @@ class TransactionReceipt:
             }
             # jump 'i' is moving into an internal function
             if pc['jump'] == 'i':
-                source = c._build['source'][pc['start']:pc['stop']]
-                if source[:7] not in ("library", "contrac") and "(" in source:
-                    fn = source[:source.index('(')].split('.')[-1]
-                else:
-                    fn = last[trace[i]['depth']]['fn'][-1]
-                last[trace[i]['depth']]['fn'].append(fn)
+                last['fn'].append(pc['fn'] or last['fn'][-1])
             # jump 'o' is coming out of an internal function
-            elif pc['jump'] == "o" and len(last[trace[i]['depth']]['fn']) > 1:
-                last[trace[i]['depth']]['fn'].pop()
+            elif pc['jump'] == "o" and len(['fn']) > 1:
+                del last['fn'][-1]
 
     def call_trace(self):
         '''Displays the sequence of contracts and functions called while
@@ -375,7 +384,6 @@ class TransactionReceipt:
                 idx -= 1
                 continue
             span = (self.trace[idx]['source']['start'], self.trace[idx]['source']['stop'])
-            c = _contracts.find(self.trace[idx]['address'])
             if sources.get_type(self.trace[idx]['contractName']) in ("contract", "library"):
                 idx -= 1
                 continue

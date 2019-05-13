@@ -29,7 +29,6 @@ For a complete list of Brownie mixes visit https://www.github.com/brownie-mixes
 """
 
 
-
 def main():
     args = docopt(__doc__)
     path = Path(args['<path>'] or '.').resolve()

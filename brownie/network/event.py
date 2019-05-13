@@ -12,16 +12,17 @@ from brownie._config import CONFIG
 def _get_path():
     return Path(CONFIG['folders']['brownie']).joinpath('data/topics.json')
 
+
 def get_topics(abi):
     new_topics = _topics.copy()
     new_topics.update(eth_event.get_event_abi(abi))
     if new_topics != _topics:
         _topics.update(new_topics)
-        json.dump(  
+        json.dump(
             new_topics,
             _get_path().open('w'),
             sort_keys=True,
-            indent=4
+            indent=2
         )
     return eth_event.get_topics(abi)
 
