@@ -55,7 +55,7 @@ class Sources(metaclass=_Singleton):
         )
         for source in contracts:
             type_, name, inherited = re.findall(
-                r"\s*(contract|library|interface) (\S*) (?:is (.*?)|)(?: *{)",
+                r"\s*(contract|library|interface)\s{1,}(\S*)\s*(?:is\s{1,}(.*?)|)(?:{)",
                 source
             )[0]
             inherited = set(i.strip() for i in inherited.split(', ') if i)
