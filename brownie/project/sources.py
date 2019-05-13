@@ -121,12 +121,15 @@ class Sources(metaclass=_Singleton):
         return False if stop > offset[2] else offset[0]
 
     def get_fn_offset(self, name, fn_name):
-        if name not in self._data:
-            name = next(
-                k for k, v in self._data.items() if v['sourcePath'] == str(name) and
-                fn_name in [i[0] for i in v['fn_offsets']]
-            )
-        return next(i for i in self._data[name]['fn_offsets'] if i[0] == fn_name)[1:3]
+        try:
+            if name not in self._data:
+                name = next(
+                    k for k, v in self._data.items() if v['sourcePath'] == str(name) and
+                    fn_name in [i[0] for i in v['fn_offsets']]
+                )
+            return next(i for i in self._data[name]['fn_offsets'] if i[0] == fn_name)[1:3]
+        except StopIteration:
+            raise ValueError("Unknown function '{}' in contract {}".format(fn_name, name))
 
     def inheritance_map(self):
         return dict((k, v['inherited'].copy()) for k, v in self._data.items())
