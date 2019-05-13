@@ -377,7 +377,10 @@ class TransactionReceipt:
         _print_path(trace[-1], idx, sep)
 
     def error(self, pad=3):
-        '''Displays the source code that caused the transaction to revert.'''
+        '''Displays the source code that caused the transaction to revert.
+
+        Args:
+            pad: Number of unrelated liness of code to include before and after'''
         try:
             idx = self.trace.index(next(i for i in self.trace if i['op'] in ("REVERT", "INVALID")))
         except StopIteration:
@@ -393,21 +396,32 @@ class TransactionReceipt:
             if sources.get_fn(trace['source']['filename'], span[0], span[1]) != trace['fn']:
                 idx -= 1
                 continue
-            source = sources[trace['source']['filename']]
-            newlines = [i for i in range(len(source)) if source[i] == "\n"]
-            try:
-                start = newlines.index(next(i for i in newlines if i >= span[0]))
-                stop = newlines.index(next(i for i in newlines if i >= span[1]))
-                break
-            except StopIteration:
-                idx -= 1
+            return self.source(idx)
+
+    def source(self, idx, pad=3):
+        '''Displays the associated source code for a given stack trace step.
+
+        Args:
+            idx: Stack trace step index
+            pad: Number of unrelated liness of code to include before and after'''
+        trace = self.trace[idx]
+        if not trace['source']['filename']:
+            return ""
+        source = sources[trace['source']['filename']]
+        span = (trace['source']['start'], trace['source']['stop'])
+        newlines = [i for i in range(len(source)) if source[i] == "\n"]
+        try:
+            start = newlines.index(next(i for i in newlines if i >= span[0]))
+            stop = newlines.index(next(i for i in newlines if i >= span[1]))
+        except StopIteration:
+            return ""
         ln = start + 1
         start = newlines[max(start-(pad+1), 0)]
         stop = newlines[min(stop+pad, len(newlines)-1)]
         result = ((
-            '{0[dull]}File {0[string]}"{1}"{0[dull]}, ' +
-            'line {0[value]}{2}{0[dull]}, in {0[callable]}{3}'
-        ).format(color, trace['source']['filename'], ln, trace['fn']))
+            'Source code for trace step {0[value]}{4}{0}:\nFile {0[string]}' +
+            '"{1}"{0}, line {0[value]}{2}{0}, in {0[callable]}{3}{0}:'
+        ).format(color, trace['source']['filename'], ln, trace['fn'], idx))
         result += ("{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
             color,
             source[start:span[0]],
