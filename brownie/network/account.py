@@ -203,7 +203,7 @@ class _AccountBase:
                 'from': self.address,
                 'value': wei(amount),
                 'gasPrice': wei(gas_price) or self._gas_price(),
-                'gas': wei(gas_limit) or self._gas_limit(amount, data),
+                'gas': wei(gas_limit) or self._gas_limit("", amount, data),
                 'data': HexBytes(data)
             })
         except ValueError as e:
@@ -323,8 +323,10 @@ class LocalAccount(_AccountBase):
 
 
 def _raise_or_return_tx(exc):
-    data = eval(str(exc))
     try:
+        data = eval(str(exc))
         return next(i for i in data['data'].keys() if i[:2] == "0x")
+    except SyntaxError:
+        raise exc
     except Exception:
         raise VirtualMachineError(exc)
