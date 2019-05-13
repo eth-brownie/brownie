@@ -47,6 +47,12 @@ class Build(metaclass=_Singleton):
         self._build = {}
         self._path = None
 
+    def __getitem__(self, contract_name):
+        return self._build[contract_name.replace('.json', '')]
+
+    def __contains__(self, contract_name):
+        return contract_name.replace('.json', '') in self._build
+
     def _load(self):
         self. _path = Path(CONFIG['folders']['project']).joinpath('build/contracts')
         # check build paths
@@ -118,9 +124,6 @@ class Build(metaclass=_Singleton):
                         continue
                 coverage_json.unlink()
                 break
-
-    def __getitem__(self, contract_name):
-        return self._build[contract_name.replace('.json', '')]
 
     def items(self):
         return self._build.items()
