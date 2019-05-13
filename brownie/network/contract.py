@@ -332,7 +332,7 @@ class ContractTx(_ContractMethod):
 
     def __init__(self, fn, abi, name, owner):
         if (
-            ARGV['cli'] != "console" and not
+            ARGV['cli'] == "test" and not
             CONFIG['test']['default_contract_owner']
         ):
             owner = None

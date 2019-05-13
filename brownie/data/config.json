@@ -17,7 +17,8 @@
     },
     "test":{
         "gas_limit": 6721975,
-        "default_contract_owner": false
+        "default_contract_owner": false,
+        "broadcast_reverting_tx": true
     },
     "solc":{
         "optimize": true,

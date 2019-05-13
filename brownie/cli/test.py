@@ -58,6 +58,8 @@ subfolders. Files and folders beginning with an underscore will be skipped."""
 def main():
     args = docopt(__doc__)
     ARGV._update_from_args(args)
+#    if type(CONFIG['test']['gas_limit']) is int:
+#        network.gas_limit(CONFIG['test']['gas_limit'])
     if ARGV['coverage']:
         ARGV['always_transact'] = True
         history._revert_lock = True
@@ -150,6 +152,10 @@ def run_test_modules(test_data, save):
     count = sum([len([x for x in i[3] if x != "setup"]) for i in test_data])
     print("Running {} tests across {} modules.".format(count, len(test_data)))
     network.connect(ARGV['network'])
+    for key in ('broadcast_reverting_tx', 'gas_limit'):
+        CONFIG['active_network'][key] = CONFIG['test'][key]
+    if not CONFIG['active_network']['broadcast_reverting_tx']:
+        print("{0[error]}WARNING{0}: Reverting transactions will NOT be broadcasted.".format(color))
     traceback_info = []
     start_time = time.time()
     try:
@@ -198,8 +204,6 @@ def run_test_modules(test_data, save):
 
 def run_test(module, network, test_names):
     network.rpc.reset()
-    if type(CONFIG['test']['gas_limit']) is int:
-        network.gas_limit(CONFIG['test']['gas_limit'])
 
     if 'setup' in test_names:
         test_names.remove('setup')
