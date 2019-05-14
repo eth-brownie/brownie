@@ -49,8 +49,7 @@ def compile_contracts(contract_paths):
         CONFIG['solc']['optimize'] else "Disabled"
     ))
 
-    base = Path(CONFIG['folders']['project'])
-    contract_paths = [Path(i).resolve().relative_to(base) for i in contract_paths]
+    contract_paths = [Path(i) for i in contract_paths]
     print("\n".join(" - {}...".format(i.name) for i in contract_paths))
     input_json = STANDARD_JSON.copy()
     input_json['sources'] = dict((
