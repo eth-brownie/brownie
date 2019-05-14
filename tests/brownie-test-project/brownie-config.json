@@ -1,0 +1,60 @@
+{
+    "network_defaults":{
+        "name": "development",
+        "gas_limit": false,
+        "gas_price": false
+    },
+    "networks": {
+        "development": {
+            "test-rpc": "ganache-cli",
+            "host": "http://127.0.0.1:8545",
+            "broadcast_reverting_tx": true
+        },
+        "ropsten": {
+            "host": "https://ropsten.infura.io/",
+            "broadcast_reverting_tx": false
+        }
+    },
+    "test":{
+        "gas_limit": 6721975,
+        "default_contract_owner": false,
+        "broadcast_reverting_tx": true
+    },
+    "solc":{
+        "optimize": true,
+        "runs": 200,
+        "version": "0.5.7"
+    },
+    "logging": {
+        "test": {
+            "tx": 0,
+            "exc": [1, 2]
+
+        },
+        "run": {
+            "tx": [1, 2],
+            "exc": 2
+        },
+        "console": {
+            "tx": 1,
+            "exc": 2
+        },
+        "coverage": {
+            "tx": 0,
+            "exc": [1, 2]
+        }
+    },
+    "colors":{
+        "key": "",
+        "value": "bright blue",
+        "callable": "bright cyan",
+        "module": "bright blue",
+        "contract": "bright magenta",
+        "contract_method": "bright magenta",
+        "string": "bright magenta",
+        "dull": "dark white",
+        "error": "bright red",
+        "success": "bright green",
+        "pending": "bright yellow"
+    }
+}
