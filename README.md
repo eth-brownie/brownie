@@ -1,6 +1,6 @@
 # Brownie
 
-![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg) ![Build Status](https://img.shields.io/travis/HyperLink-Technology/brownie.svg) ![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)
+![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg) ![Build Status](https://img.shields.io/travis/com/HyperLink-Technology/brownie.svg) ![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)
 
 Brownie is a Python framework for deploying, testing and interacting with Ethereum smart contracts.
 
