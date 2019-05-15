@@ -27,6 +27,14 @@ class _RPCBaseException(Exception):
         )
 
 
+class ProjectAlreadyLoaded(Exception):
+    pass
+
+
+class ProjectNotFound(Exception):
+    pass
+
+
 class RPCProcessError(_RPCBaseException):
 
     def __init__(self, cmd, proc, uri):

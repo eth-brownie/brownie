@@ -6,9 +6,11 @@ import shutil
 import sys
 
 from brownie.network.contract import ContractContainer
+from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from .build import Build
 from .sources import Sources
 from . import compiler
+
 from brownie._config import CONFIG, load_project_config
 
 __all__ = ['project', '__project']
@@ -39,7 +41,7 @@ def new(path=".", ignore_subfolder=False):
     Returns the path to the project as a string.
     '''
     if CONFIG['folders']['project']:
-        raise SystemError("Project has already been loaded")
+        raise ProjectAlreadyLoaded("Project has already been loaded")
     path = Path(path)
     path.mkdir(exist_ok=True)
     path = path.resolve()
@@ -71,11 +73,13 @@ def load(path=None):
     Returns a list of ContractContainer objects.
     '''
     if CONFIG['folders']['project']:
-        raise SystemError("Project has already been loaded")
+        raise ProjectAlreadyLoaded(
+            "Project has already been loaded at {}".format(CONFIG['folders']['project'])
+        )
     if path is None:
         path = check_for_project('.')
     if not path or not Path(path).joinpath("brownie-config.json").exists():
-        raise SystemError("Could not find brownie project")
+        raise ProjectNotFound("Could not find brownie project")
     path = Path(path).resolve()
     CONFIG['folders']['project'] = str(path)
     for folder in [i for i in FOLDERS]:

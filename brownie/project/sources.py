@@ -25,12 +25,13 @@ class Sources(metaclass=_Singleton):
 
     def _load(self):
         base_path = Path(CONFIG['folders']['project'])
-        self. _path = base_path.joinpath('contracts')
-        for path in [i.relative_to(base_path) for i in self._path.glob('**/*.sol')]:
+        self._path = base_path.joinpath('contracts')
+        for path in self._path.glob('**/*.sol'):
             if "/_" in str(path):
                 continue
             source = path.open().read()
-            self._source[str(path)] = source
+            path = str(path.relative_to(base_path))
+            self._source[path] = source
             self._remove_comments(path)
             self._get_contract_data(path)
         for name, inherited in [(k, v['inherited'].copy()) for k, v in self._data.items()]:

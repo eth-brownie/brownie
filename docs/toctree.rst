@@ -3,8 +3,8 @@ Brownie
 =======
 
 .. toctree::
-
     :maxdepth: 2
+
     Overview <index.rst>
     quickstart.rst
     install.rst

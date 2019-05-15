@@ -9,3 +9,4 @@ docs/_static
 docs/_templates
 venv
 *egg-info/
+.tox/

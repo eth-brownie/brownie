@@ -23,6 +23,7 @@ def _load_default_config():
         'brownie': str(Path(__file__).parent),
         'project': None
     }
+    config['active_network'] = {'name': None}
     # set logging
     try:
         config['logging'] = config['logging'][sys.argv[1]]

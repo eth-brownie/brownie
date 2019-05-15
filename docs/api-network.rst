@@ -185,9 +185,9 @@ Account Methods
 
     * ``contract``: A ``ContractContainer`` instance of the contract to be deployed.
     * ``*args``: Contract constructor arguments.
-    * ``amount``: Amount to send, in wei_.
-    * ``gas_limit``: Gas limit, in wei_. If none is given, the price is set using ``eth_estimateGas``.
-    * ``gas_price``: Gas price, in wei_. If none is given, the price is set using ``eth_gasPrice``.
+    * ``amount``: Amount to send, in :ref:`wei <wei>`.
+    * ``gas_limit``: Gas limit, in :ref:`wei <wei>`. If none is given, the price is set using ``eth_estimateGas``.
+    * ``gas_price``: Gas price, in :ref:`wei <wei>`. If none is given, the price is set using ``eth_gasPrice``.
 
     Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
 
@@ -214,7 +214,7 @@ Account Methods
     Estimates the gas required to perform a transaction. Raises a ``VirtualMachineError`` if the transaction would revert.
 
     * ``to``: Recipient address. Can be an ``Account`` instance or string.
-    * ``amount``: Amount to send, in wei_.
+    * ``amount``: Amount to send, in :ref:`wei <wei>`.
     * ``data``: Transaction data hexstring.
 
     .. code-block:: python
@@ -227,9 +227,9 @@ Account Methods
     Broadcasts a transaction from this account.
 
     * ``to``: Recipient address. Can be an ``Account`` instance or string.
-    * ``amount``: Amount to send, in wei_.
-    * ``gas_limit``: Gas limit, in wei_. If none is given, the price is set using ``eth_estimateGas``.
-    * ``gas_price``: Gas price, in wei_. If none is given, the price is set using ``eth_gasPrice``.
+    * ``amount``: Amount to send, in :ref:`wei <wei>`.
+    * ``gas_limit``: Gas limit, in :ref:`wei <wei>`. If none is given, the price is set using ``eth_estimateGas``.
+    * ``gas_price``: Gas price, in :ref:`wei <wei>`. If none is given, the price is set using ``eth_gasPrice``.
     * ``data``: Transaction data hexstring.
 
     Returns a ``TransactionReceipt`` instance.
@@ -393,6 +393,7 @@ ContractContainer
     A list-like container class that holds all ``Contract`` instances of the same type, and is used to deploy new instances of that contract.
 
     .. code-block:: python
+
         >>> Token
         []
         >>> dir(Token)
@@ -1250,7 +1251,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.trace
 
-    The structLog from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#debug_tracetransaction>`__ RPC method. If you are using Infura this attribute is not available.
+    The structLog from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC method. If you are using Infura this attribute is not available.
 
     Along with the standard data, the structLog also contains the following additional information:
 

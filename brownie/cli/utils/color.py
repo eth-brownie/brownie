@@ -134,7 +134,8 @@ class Color:
                 pass
         for i in range(len(tb)):
             info, code = tb[i].split('\n')[:2]
-            info = info.replace(CONFIG['folders']['project'], ".")
+            if CONFIG['folders']['project']:
+                info = info.replace(CONFIG['folders']['project'], ".")
             info = [x.strip(',') for x in info.strip().split(' ')]
             if 'site-packages/' in info[1]:
                 info[1] = '"'+info[1].split('site-packages/')[1]

@@ -1,0 +1,6 @@
+flake8==3.7.7
+pytest==4.5.0
+Sphinx==2.0.1
+tox==3.10.0
+twine==1.13.0
+wheel==0.33.4
