@@ -29,21 +29,40 @@ $ python3 setup.py install
 To set up the default folder and file structure for brownie use:
 
 ```bash
-brownie init
+$ brownie init
 ```
 
-From there, type `brownie` for basic usage information.
+Next, type ``brownie --help`` for basic usage information.
 
 ## Documentation
 
 Brownie documentation is hosted at [Read the Docs](https://eth-brownie.readthedocs.io/en/latest/).
+
+## Testing
+
+To run the tests, first install the developer dependencies:
+
+```bash
+$ pip install -r requirements-dev.txt
+```
+
+Then use ``tox`` to run the complete suite against the full test of build targets:
+
+```bash
+$ tox
+```
+
+Or ``py.test`` to run specific tests against a specific version of Python:
+
+```bash
+$ pytest tests
+```
 
 ## Contributing
 
 Help is always appreciated! In particular, Brownie needs work in the following areas before we can comfortably take it out of beta:
 
 * Tests
-* Travis or other CI
 * More tests
 
 Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
