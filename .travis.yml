@@ -1,0 +1,18 @@
+language: python
+dist: xenial
+sudo: true
+install:
+  - sudo add-apt-repository -y ppa:ethereum/ethereum
+  - sudo add-apt-repository -y ppa:deadsnakes/ppa
+  - sudo apt-get update
+  - sudo apt-get install -y python$TRAVIS_PYTHON_VERSION-dev python$TRAVIS_PYTHON_VERSION-tk npm solc
+  - npm -g install ganache-cli
+  - pip install -r requirements-dev.txt
+  - pip install tox-travis
+matrix:
+  include:
+  - name: '3.6'
+    python: 3.6
+  - name: '3.7'
+    python: 3.7
+script: tox
