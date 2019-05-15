@@ -1,6 +1,8 @@
 # Brownie
 
-Brownie is a python framework for deploying, testing and interacting with Ethereum smart contracts.
+![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg) ![Build Status](https://img.shields.io/travis/HyperLink-Technology/brownie.svg) ![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)
+
+Brownie is a Python framework for deploying, testing and interacting with Ethereum smart contracts.
 
 ## Dependencies
 
@@ -12,13 +14,13 @@ As Brownie relies on [py-solc-x](https://github.com/iamdefinitelyahuman/py-solc-
 
 ## Installation
 
-You can install the latest release via pip:
+You can install the latest release via ``pip``:
 
 ```bash
 $ pip install eth-brownie
 ```
 
-Or clone the repository and use setuptools for the most up-to-date version:
+Or clone the repository and use ``setuptools`` for the most up-to-date version:
 
 ```bash
 $ python3 setup.py install
@@ -26,7 +28,7 @@ $ python3 setup.py install
 
 ## Quick Usage
 
-To set up the default folder and file structure for brownie use:
+To set up the default folder and file structure for Brownie use:
 
 ```bash
 $ brownie init
@@ -40,23 +42,15 @@ Brownie documentation is hosted at [Read the Docs](https://eth-brownie.readthedo
 
 ## Testing
 
+Tests are still under development.
+
 To run the tests, first install the developer dependencies:
 
 ```bash
 $ pip install -r requirements-dev.txt
 ```
 
-Then use ``tox`` to run the complete suite against the full test of build targets:
-
-```bash
-$ tox
-```
-
-Or ``py.test`` to run specific tests against a specific version of Python:
-
-```bash
-$ pytest tests
-```
+Then use ``tox`` to run the complete suite against the full set of build targets, or ``py.test`` to run specific tests against a specific version of Python.
 
 ## Contributing
 
