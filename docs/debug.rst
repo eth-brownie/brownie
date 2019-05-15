@@ -1,8 +1,10 @@
+.. _debug:
+
 ===============
 Debugging Tools
 ===============
 
-.. note:: Debugging functionality relies on the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#debug_tracetransaction>`__ RPC method. If you are using Infura this attribute is not available.
+.. note:: Debugging functionality relies on the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction`__ RPC method. If you are using Infura this attribute is not available.
 
 When a transaction reverts and the gas limit is not set to automatic, you are still returned a ``TransactionReceipt``. From this instance you can call the following attributes and methods to help determine why it reverted:
 
@@ -13,5 +15,5 @@ When a transaction reverts and the gas limit is not set to automatic, you are st
 * ``TransactionReceipt.error()``: Displays the filename, line number, and line of code that caused the revert.
 * ``TransactionReceipt.call_trace()``: Displays the sequence of contracts and functions called while executing this transaction, and the structLog list index where each call or jump occured. Any functions that terminated with a ``REVERT`` opcode are highlighted in red.
 
-See the :ref:`api_tx` section of the API documentation for more detailed information.
+See the :ref:`api-network-tx` section of the API documentation for more detailed information.
 
