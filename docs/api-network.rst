@@ -111,7 +111,11 @@ Accounts
 
 .. py:classmethod:: Accounts.load(filename=None)
 
-    Loads a local account from a keystore file. If filename is ``None``, returns a list of available keystores.
+    Decrypts a `keystore <https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition>`__ file and returns a ``LocalAccount`` object.
+
+    Brownie will first attempt to find the keystore file as a path relative to the loaded project. If not found, it will look in the ``brownie/data/accounts`` folder within the Brownie package.
+
+    If filename is ``None``, returns a list of available keystores in ``brownie/data/accounts``.
 
     .. code-block:: python
 
@@ -249,25 +253,56 @@ LocalAccount
 
     Functionally identical to ``Account``. The only difference is that a ``LocalAccount`` is one where the private key was directly inputted, and so is not found in ``web3.eth.accounts``.
 
-    >>> accounts.add()
-    <LocalAccount object '0x716E8419F2926d6AcE07442675F476ace972C580'>
-    >>> accounts[-1]
-    <LocalAccount object '0x716E8419F2926d6AcE07442675F476ace972C580'>
+    .. note:: Resetting the RPC client will delete all ``LocalAccount`` objects from the ``Accounts`` container.
+
+    .. code-block:: python
+
+        >>> accounts.add()
+        <LocalAccount object '0x716E8419F2926d6AcE07442675F476ace972C580'>
+        >>> accounts[-1]
+        <LocalAccount object '0x716E8419F2926d6AcE07442675F476ace972C580'>
+
+LocalAccount Attributes
+***********************
 
 .. py:attribute:: LocalAccount.public_key
 
     The local account's public key as a string.
 
-    >>> accounts[-1].public_key
-    '0x34b51e2913f5771acdddea7d353404f844b02a39ad4003c08afaa729993c43e890181327beaf352d81424cd277f4badc55be789a2817ea097bc82ea4801fee5b'
+    .. code-block:: python
+
+        >>> accounts[-1].public_key
+        '0x34b51e2913f5771acdddea7d353404f844b02a39ad4003c08afaa729993c43e890181327beaf352d81424cd277f4badc55be789a2817ea097bc82ea4801fee5b'
 
 .. py:attribute:: LocalAccount.private_key
 
     The local account's private key as a string.
 
-    >>> accounts[-1].private_key
-    '0xd289bec8d9ad145aead13911b5bbf01936cbcd0efa0e26d5524b5ad54a61aeb8'
+    .. code-block:: python
 
+        >>> accounts[-1].private_key
+        '0xd289bec8d9ad145aead13911b5bbf01936cbcd0efa0e26d5524b5ad54a61aeb8'
+
+LocalAccount Methods
+********************
+
+.. py:classmethod:: LocalAccount.save(filename, overwrite=False)
+
+    Saves the account's private key in an encrypto `keystore <https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition>`__ file.
+
+    If the filename does not include a folder, the keystore is saved in the ``brownie/data/accounts`` folder within the Brownie package.
+
+    Returns the absolute path to the keystore file, as a string.
+
+    .. code-block:: python
+
+        >>> accounts[-1].save('my_account')
+        Enter the password to encrypt this account with:
+        /python3.6/site-packages/brownie/data/accounts/my_account.json
+        >>>
+        >>> accounts[-1].save('~/my_account.json')
+        Enter the password to encrypt this account with:
+        /home/computer/my_account.json
 
 ``brownie.network.alert``
 =========================

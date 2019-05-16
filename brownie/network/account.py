@@ -91,12 +91,17 @@ class Accounts(metaclass=_Singleton):
 
         Returns:
             Account instance.'''
-        path = Path(CONFIG['folders']['brownie']).joinpath("data/accounts")
+        project_path = Path(CONFIG['folders']['brownie']).joinpath("data/accounts")
         if not filename:
-            return [i.stem for i in path.glob('*.json')]
-        json_file = path.joinpath("{}.json".format(filename))
+            return [i.stem for i in project_path.glob('*.json')]
+        filename = str(filename)
+        if not filename.endswith(".json"):
+            filename += ".json"
+        json_file = Path(filename).expanduser()
         if not json_file.exists():
-            raise FileNotFoundError("Cannot find {}".format(json_file))
+            json_file = project_path.joinpath(filename)
+            if not json_file.exists():
+                raise FileNotFoundError("Cannot find {}".format(json_file))
         priv_key = web3.eth.account.decrypt(
             json.load(json_file.open()),
             getpass("Enter the password for this account: ")
@@ -307,10 +312,25 @@ class LocalAccount(_AccountBase):
     def _console_repr(self):
         return "<LocalAccount object '{0[string]}{1}{0}'>".format(color, self.address)
 
-    def save(self, identifier, overwrite=False):
+    def save(self, filename, overwrite=False):
+        '''Encrypts the private key and saves it in a keystore json.
+
+        Attributes:
+            filename: path to keystore file. If no folder is given, saved in
+                      brownie/data/accounts
+            overwrite: if True, will overwrite an existing file.
+
+        Returns the absolute path to the keystore file as a string.
+        '''
         path = Path(CONFIG['folders']['brownie']).joinpath('data/accounts')
         path.mkdir(exist_ok=True)
-        json_file = path.joinpath("{}.json".format(identifier))
+        filename = str(filename)
+        if not filename.endswith(".json"):
+            filename += ".json"
+        if not any(i in r"\/" for i in filename):
+            json_file = path.joinpath(filename).resolve()
+        else:
+            json_file = Path(filename).expanduser().resolve()
         if not overwrite and json_file.exists():
             raise FileExistsError("Account with this identifier already exists")
         encrypted = web3.eth.account.encrypt(
@@ -318,7 +338,7 @@ class LocalAccount(_AccountBase):
             getpass("Enter the password to encrypt this account with: ")
         )
         json.dump(encrypted, json_file.open('w'))
-        print("Saved to {}".format(json_file))
+        return str(json_file)
 
     def _transact(self, tx):
         self._check_for_revert(tx)
