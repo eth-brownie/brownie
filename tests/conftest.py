@@ -5,16 +5,13 @@ import atexit
 import pytest
 from pathlib import Path
 
-from brownie import project
+from brownie import network, project
 
 
 @pytest.fixture(autouse=True, scope="session")
 def session_setup():
     project.load('tests/brownie-test-project')
-    assert hasattr(project, 'Token'), "did not initialize Token ContractContainer"
-    assert hasattr(project, 'SafeMath'), "did not initialize SafeMath ContractContainer"
-    assert not hasattr(project, "TokenABC"), "initialized TokenABC ContractContainer"
-    assert not hasattr(project, "TokenInterface"), "initialized TokenInterface ContractContainer"
+    network.connect('development')
     atexit.register(_cleanup)
 
 
