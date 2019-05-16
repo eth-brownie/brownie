@@ -10,7 +10,7 @@ from eth_hash.auto import keccak
 import eth_keys
 
 from brownie.cli.utils import color
-from brownie.exceptions import VirtualMachineError
+from brownie.exceptions import VirtualMachineError, UnknownAccount
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
@@ -117,14 +117,18 @@ class Accounts(metaclass=_Singleton):
         try:
             return next(i for i in self._accounts if i == address)
         except StopIteration:
-            raise ValueError("No account exists for {}".format(address))
+            raise UnknownAccount("No account exists for {}".format(address))
 
     def remove(self, address):
         '''Removes an account instance from the container.
 
         Args:
             address: Account instance or address string of account to remove.'''
-        self._accounts.remove(address)
+        address = to_address(address)
+        try:
+            self._accounts.remove(address)
+        except ValueError:
+            raise UnknownAccount("No account exists for {}".format(address))
 
     def clear(self):
         '''Empties the container.'''

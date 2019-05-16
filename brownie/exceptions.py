@@ -5,6 +5,9 @@ import json
 
 # network
 
+class UnknownAccount(Exception):
+    pass
+
 
 class _RPCBaseException(Exception):
 
@@ -77,8 +80,8 @@ class CompilerError(Exception):
         err = [i['formattedMessage'] for i in json.loads(e.stdout_data)['errors']]
         super().__init__("Compiler returned the following errors:\n\n"+"\n".join(err))
 
-# test/
 
+# test/
 
 class ExpectedFailing(Exception):
     pass
