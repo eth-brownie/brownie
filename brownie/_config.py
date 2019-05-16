@@ -12,7 +12,7 @@ from brownie.types.types import (
 )
 
 REPLACE = ['active_network', 'networks']
-IGNORE = ['folders', 'logging']
+IGNORE = ['active_network', 'folders', 'logging']
 
 
 def _load_default_config():
