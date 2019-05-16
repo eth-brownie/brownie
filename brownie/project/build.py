@@ -76,12 +76,13 @@ class Build(metaclass=_Singleton):
         self._check_coverage_hashes()
 
     def _load_build_data(self):
+        project_path = Path(CONFIG['folders']['project'])
         for path in list(self._path.glob('*.json')):
             try:
                 build_json = json.load(path.open())
                 if (
                     set(BUILD_KEYS).issubset(build_json) and
-                    Path(build_json['sourcePath']).exists()
+                    project_path.joinpath(build_json['sourcePath']).exists()
                 ):
                     build_json['pcMap'] = dict((int(k), v) for k, v in build_json['pcMap'].items())
                     self._build[path.stem] = build_json
