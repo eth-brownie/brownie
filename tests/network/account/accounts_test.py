@@ -13,6 +13,7 @@ addr = "0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E"
 
 
 def test_repopulate():
+    network.rpc.reset()
     assert len(accounts) == 10
     a = list(accounts)
     network.rpc.reset()
