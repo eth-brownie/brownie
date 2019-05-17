@@ -143,11 +143,13 @@ class Sources(metaclass=_Singleton):
             v['offset'][0] <= start <= stop <= v['offset'][1]
         ), False)
 
-    def inheritance_map(self):
+    def inheritance_map(self, contract_name=None):
         '''Returns a dict of sets in the format:
 
         {'contract name': {'inheritedcontract', 'inherited contract'..} }
         '''
+        if contract_name:
+            return self._data[contract_name]['inherited'].copy()
         return dict((k, v['inherited'].copy()) for k, v in self._data.items())
 
     def add_source(self, source):
