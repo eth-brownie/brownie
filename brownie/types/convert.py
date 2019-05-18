@@ -64,7 +64,7 @@ def format_input(abi, inputs):
             elif "string" in type_:
                 inputs[i] = to_string(inputs[i])
         except Exception as e:
-            raise type(e)('{}: Argument {}, {}'.format(name, i, e))
+            raise type(e)("{} argument #{}: '{}' - {}".format(name, i, inputs[i], e))
     return inputs
 
 
@@ -143,8 +143,11 @@ def to_bytes(value, type_="bytes32"):
 def to_string(value):
     '''Convert a value to a string'''
     value = str(value)
-    if eth_utils.is_hex(value):
-        value = eth_utils.to_text(value)
+    if value.startswith('0x') and eth_utils.is_hex(value):
+        try:
+            return eth_utils.to_text(hexstr=value)
+        except UnicodeDecodeError as e:
+            raise ValueError(e)
     return value
 
 
