@@ -28,6 +28,7 @@ class _ContractBase:
         self._build = build
         self.abi = build['abi']
         self._name = build['contractName']
+        self._source_path = build['sourcePath']
         names = [i['name'] for i in self.abi if i['type'] == "function"]
         duplicates = set(i for i in names if names.count(i) > 1)
         if duplicates:

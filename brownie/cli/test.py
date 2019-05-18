@@ -226,7 +226,10 @@ def run_test(module, network, test_names):
         coverage_eval = {}
     network.rpc.snapshot()
     traceback_info = []
-    contracts = set(i.contract_address._name for i in history if i.contract_address)
+    contracts = set(
+        i.contract_address._name for i in history if i.contract_address
+        and not i.contract_address._source_path.startswith('<string')
+    )
     for t in test_names:
         history.clear()
         network.rpc.revert()
@@ -234,7 +237,10 @@ def run_test(module, network, test_names):
         args = default_args.copy()
         args.update(fn_args)
         tb, coverage_eval = run_test_method(fn, args, coverage_eval, p)
-        contracts |= set(i.contract_address._name for i in history if i.contract_address)
+        contracts |= set(
+            i.contract_address._name for i in history if i.contract_address
+            and not i.contract_address._source_path.startswith('<string')
+        )
         traceback_info += tb
         if tb and tb[0][2] == ReadTimeout:
             print(WARN+"RPC crashed, terminating test")
