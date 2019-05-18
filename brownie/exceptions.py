@@ -85,3 +85,9 @@ class CompilerError(Exception):
 
 class ExpectedFailing(Exception):
     pass
+
+
+# types/
+
+class InvalidABI(Exception):
+    pass

@@ -3,6 +3,8 @@
 import eth_utils
 from hexbytes import HexBytes
 
+from brownie.exceptions import InvalidABI
+
 UNITS = {
     'wei': 1,
     'kwei': 3,
@@ -27,22 +29,30 @@ def format_input(abi, inputs):
         inputs: list of arguments to format
 
     Returns a list of arguments formatted for use in a Contract tx or call.'''
-    name = abi['name']
-    types = [i['type'] for i in abi['inputs']]
+    try:
+        name = abi['name']
+        types = [i['type'] for i in abi['inputs']]
+    except Exception:
+        raise InvalidABI("ABI must be a dictionary with name and input values.")
     inputs = list(inputs)
     if len(inputs) and not len(types):
-        raise AttributeError("{} requires no arguments".format(name))
+        raise TypeError("{} requires no arguments".format(name))
     if len(inputs) != len(types):
-        raise AttributeError("{} requires the following arguments: {}".format(
-            name, ",".join(types)
+        raise TypeError("{} requires {} arguments ({} given): {}".format(
+            name, len(types), len(inputs), ",".join(types)
         ))
     for i, type_ in enumerate(types):
         if ']' in type_:
             # input value is an array, have to check every item
             base_type, length = type_[:-1].rsplit('[', maxsplit=1)
+            if type(inputs[i]) not in (list, tuple):
+                raise TypeError(
+                    "{} argument #{} is type '{}' - given value "
+                    "must be a list or tuple".format(name, i, type_)
+                )
             if length != "" and len(inputs[i]) != int(length):
                 raise ValueError(
-                    "'{}': Argument {}, sequence has a ".format(name, i) +
+                    "{} argument #{}, sequence has a ".format(name, i) +
                     "length of {}, should be {}".format(len(inputs[i]), type_)
                     )
             inputs[i] = format_input(
@@ -130,7 +140,7 @@ def to_bytes(value, type_="bytes32"):
     if type(value) is int:
         value = hex(value)
     if not eth_utils.is_hex(value):
-        raise ValueError("{} is not a valid hex string, cannot convert to {}".format(value, type_))
+        raise TypeError("{} is not a valid hex string, cannot convert to {}".format(value, type_))
     value = eth_utils.add_0x_prefix(value)
     if type_ == "bytes":
         return eth_utils.to_bytes(hexstr=value)
