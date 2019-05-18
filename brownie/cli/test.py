@@ -19,6 +19,7 @@ from brownie.test.coverage import (
 )
 from brownie.exceptions import ExpectedFailing
 import brownie.network as network
+from brownie.network.contract import Contract
 from brownie.network.history import TxHistory
 import brownie.network.transaction as transaction
 from brownie.project.build import Build, get_ast_hash
@@ -226,10 +227,7 @@ def run_test(module, network, test_names):
         coverage_eval = {}
     network.rpc.snapshot()
     traceback_info = []
-    contracts = set(
-        i.contract_address._name for i in history if i.contract_address
-        and not i.contract_address._source_path.startswith('<string')
-    )
+    contracts = _get_contract_names()
     for t in test_names:
         history.clear()
         network.rpc.revert()
@@ -237,10 +235,7 @@ def run_test(module, network, test_names):
         args = default_args.copy()
         args.update(fn_args)
         tb, coverage_eval = run_test_method(fn, args, coverage_eval, p)
-        contracts |= set(
-            i.contract_address._name for i in history if i.contract_address
-            and not i.contract_address._source_path.startswith('<string')
-        )
+        contracts |= _get_contract_names()
         traceback_info += tb
         if tb and tb[0][2] == ReadTimeout:
             print(WARN+"RPC crashed, terminating test")
@@ -392,3 +387,11 @@ class TestPrinter:
             color
         ))
         sys.stdout.flush()
+
+
+def _get_contract_names():
+    return set(
+        i.contract_address._name for i in history if
+        type(i.contract_address) is Contract and
+        not i.contract_address._source_path.startswith('<string')
+    )
