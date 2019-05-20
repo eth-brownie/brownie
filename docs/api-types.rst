@@ -31,18 +31,27 @@ Formatting Contract Arguments
     .. code-block:: python
 
         >>> from brownie.types.convert import format_input
-        >>> format_input({"constant":False,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[],"payable":False,"type":"function"},["0xB8c77482e45F1F44dE1745F52C74426C631bDD52","1 ether"])
+        >>> abi = {'constant': False, 'inputs': [{'name': '_to', 'type': 'address'}, {'name': '_value', 'type': 'uint256'}], 'name': 'transfer', 'outputs': [{'name': '', 'type': 'bool'}], 'payable': False, 'stateMutability': 'nonpayable', 'type': 'function'}
+        >>> format_input(abi, ["0xB8c77482e45F1F44dE1745F52C74426C631bDD52","1 ether"])
         ['0xB8c77482e45F1F44dE1745F52C74426C631bDD52', 1000000000000000000]
 
-.. py:method:: brownie.types.convert.format_output(value)
+.. py:method:: brownie.types.convert.format_output(abi, outputs)
 
-    Converts output from a contract call into a more human-readable format.
+    Standardizes outputs from a contract call based on the contract's ABI.
+
+    * ``abi``: A contract method ABI as a dict.
+    * ``outputs``: List or tuple of values to format.
+
+    Each value in ``outputs`` is converted using the one of the methods outlined in :ref:`type-conversions`.
+
+    This method is called internally by ``ContractCall`` to ensure that contract output formats remain consistent, regardless of the RPC client being used.
 
     .. code-block:: python
 
         >>> from brownie.types.convert import format_output
-        >>> format_output([b'\xaa\x00\x13'])
-        ('0xaa0013',)
+        >>> abi = {'constant': True, 'inputs': [], 'name': 'name', 'outputs': [{'name': '', 'type': 'string'}], 'payable': False, 'stateMutability': 'view', 'type': 'function'}
+        >>> format_output(abi, ["0x5465737420546f6b656e"])
+        ["Test Token"]
 
 .. _type-conversions:
 
@@ -81,7 +90,7 @@ The following methods are used to convert arguments supplied to ``ContractTx`` a
 
 .. py:method:: brownie.types.convert.to_bool(value)
 
-    Converts a value to a boolean. Possible ``TypeError`` if value is not a boolean, integer, float, or hex string. Raises ``ValueError`` if the value is not in ``(True, False, 0, 1)``.
+    Converts a value to a boolean. Raises ``ValueError`` if the given value does not match a value in ``(True, False, 0, 1)``.
 
 .. py:method:: brownie.types.convert.to_address(value)
 
@@ -105,6 +114,22 @@ The following methods are used to convert arguments supplied to ``ContractTx`` a
 .. py:method:: brownie.types.convert.to_string(value)
 
     Converts a value to a string.
+
+.. py:method:: brownie.types.convert.bytes_to_hex(value)
+
+    Converts a bytes value to a hex string.
+
+    .. code-block:: python
+
+        >>> from brownie.types.convert import bytes_to_hex
+        >>> bytes_to_hex(b'\xff\x3a')
+        0xff3a
+        >>> bytes_to_hex('FF')
+        0xFF
+        >>> bytes_to_hex("Hello")
+          File "brownie/types/convert.py", line 149, in bytes_to_hex
+            raise ValueError("'{}' is not a valid hex string".format(value))
+        ValueError: 'Hello' is not a valid hex string
 
 ``brownie.types.types``
 =======================
