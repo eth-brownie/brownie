@@ -211,6 +211,7 @@ class _AccountBase:
             txid = self._transact({
                 'from': self.address,
                 'value': wei(amount),
+                'nonce': self.nonce,
                 'gasPrice': wei(gas_price) or self._gas_price(),
                 'gas': wei(gas_limit) or self._gas_limit("", amount, data),
                 'data': HexBytes(data)
@@ -243,8 +244,8 @@ class _AccountBase:
         return web3.eth.estimateGas({
             'from': self.address,
             'to': str(to),
-            'data': HexBytes(data),
-            'value': wei(amount)
+            'value': wei(amount),
+            'data': HexBytes(data)
         })
 
     def transfer(self, to, amount, gas_limit=None, gas_price=None, data=""):
@@ -264,11 +265,11 @@ class _AccountBase:
         try:
             txid = self._transact({
                 'from': self.address,
+                'to': str(to),
+                'value': wei(amount),
                 'nonce': self.nonce,
                 'gasPrice': wei(gas_price) if gas_price is not None else self._gas_price(),
                 'gas': wei(gas_limit) or self._gas_limit(to, amount, data),
-                'to': str(to),
-                'value': wei(amount),
                 'data': HexBytes(data)
             })
         except ValueError as e:
