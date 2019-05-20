@@ -48,14 +48,14 @@ def test_fail_hexstr():
         to_bool("0x02")
 
 
+def test_fail_str():
+    with pytest.raises(ValueError):
+        to_bool("1")
+
+
 def test_fail_nonetype():
     with pytest.raises(TypeError):
         to_bool(None)
-
-
-def test_fail_str():
-    with pytest.raises(TypeError):
-        to_bool("1")
 
 
 def test_fail_list():

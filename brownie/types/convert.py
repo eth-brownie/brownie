@@ -48,10 +48,12 @@ def to_int(value, type_="int256"):
 
 def to_bool(value):
     '''Convert a value to a boolean'''
+    if type(value) not in (int, float, bool, bytes, HexBytes, str):
+        raise TypeError("Cannot convert {} '{}' to bool".format(type(value), value))
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
     if type(value) is str and value[:2] == "0x":
         value = int(value, 16)
-    if type(value) not in (int, float, bool):
-        raise TypeError("Cannot convert {} '{}' to bool".format(type(value), value))
     if value not in (0, 1, True, False):
         raise ValueError("Cannot convert {} '{}' to bool".format(type(value), value))
     return bool(value)
@@ -59,8 +61,8 @@ def to_bool(value):
 
 def to_address(value):
     '''Convert a value to an address'''
-    if type(value) is bytes:
-        value = value.hex()
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
     value = eth_utils.add_0x_prefix(str(value))
     try:
         return eth_utils.to_checksum_address(value)
@@ -70,7 +72,7 @@ def to_address(value):
 
 def to_bytes(value, type_="bytes32"):
     '''Convert a value to bytes'''
-    if type(value) not in (bytes, str, int):
+    if type(value) not in (HexBytes, bytes, str, int):
         raise TypeError("'{}', type {}, cannot convert to {}".format(value, type(value), type_))
     if type_ == "byte":
         type_ = "bytes1"
@@ -80,10 +82,8 @@ def to_bytes(value, type_="bytes32"):
             raise ValueError("Invalid type: {}".format(type_))
     else:
         size = float('inf')
-    if type(value) is bytes:
-        if len(eth_utils.to_hex(value)) - 2 > size:
-            raise OverflowError("{} exceeds maximum length for {}".format(value, type_))
-        return value
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
     if type(value) is int:
         value = hex(value)
     if not eth_utils.is_hex(value):
@@ -99,6 +99,8 @@ def to_bytes(value, type_="bytes32"):
 
 def to_string(value):
     '''Convert a value to a string'''
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
     value = str(value)
     if value.startswith('0x') and eth_utils.is_hex(value):
         try:
@@ -117,10 +119,11 @@ def wei(value):
           would cause inaccuracy: 8.3e32
         * bytes: b'\xff\xff'
         * hex strings: "0x330124"'''
+    original = value
     if value is None:
         return 0
-    if type(value) is bytes:
-        value = "0x"+value.hex()
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
     if type(value) is float and "e+" in str(value):
         num, dec = str(value).split("e+")
         num = num.split(".") if "." in num else [num, ""]
@@ -138,7 +141,7 @@ def wei(value):
     try:
         return int(value)
     except ValueError:
-        raise ValueError("Unknown denomination: {}".format(value))
+        raise TypeError("Could not convert {} '{}' to wei.".format(type(original), original))
 
 
 def format_input(abi, inputs):
@@ -189,7 +192,7 @@ def format_input(abi, inputs):
                 inputs[i] = to_bool(inputs[i])
             elif "address" in type_:
                 inputs[i] = to_address(inputs[i])
-            elif "bytes" in type_:
+            elif "byte" in type_:
                 inputs[i] = to_bytes(inputs[i], type_)
             elif "string" in type_:
                 inputs[i] = to_string(inputs[i])
@@ -202,8 +205,6 @@ def format_output(value):
     '''Converts output from a contract call into a more human-readable format.'''
     if type(value) in (tuple, list):
         return tuple(format_output(i) for i in value)
-    elif type(value) is bytes:
-        return "0x"+value.hex()
-    elif type(value) is HexBytes:
-        return value.hex()
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
     return value
