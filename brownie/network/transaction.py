@@ -259,23 +259,18 @@ class TransactionReceipt:
             contract = self.contract_address or self.receiver
             if type(contract) is str:
                 return
-            abi = [
-                i['type'] for i in
-                getattr(contract, self.fn_name.split('.')[-1]).abi['outputs']
-            ]
+            abi = getattr(contract, self.fn_name.split('.')[-1]).abi
             offset = int(log['stack'][-1], 16) * 2
             length = int(log['stack'][-2], 16) * 2
             data = HexBytes("".join(log['memory'])[offset:offset+length])
-            self.return_value = eth_abi.decode_abi(abi, data)
-            if not self.return_value:
+            return_value = eth_abi.decode_abi([i['type'] for i in abi['outputs']], data)
+            if not return_value:
                 return
-            if len(self.return_value) == 1:
-                self.return_value = format_output(self.return_value[0])
+            return_value = format_output(abi, return_value)
+            if len(return_value) == 1:
+                self.return_value = return_value[0]
             else:
-                self.return_value = KwargTuple(
-                    self.return_value,
-                    getattr(contract, self.fn_name.split('.')[-1]).abi
-                )
+                self.return_value = KwargTuple(return_value, abi)
         else:
             # get revert message
             self.modified_state = False

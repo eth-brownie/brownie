@@ -21,7 +21,7 @@ def test_length_bounds():
 
 
 def test_string_raises():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         to_bytes("abcdefg")
 
 
@@ -29,6 +29,7 @@ def test_hexstring():
     assert to_bytes("0xffff", "bytes") == b'\xff\xff'
     assert to_bytes("0xffff", "bytes2") == b'\xff\xff'
     assert to_bytes("0xffff", "bytes4") == b'\x00\x00\xff\xff'
+    assert to_bytes("abcdef")
 
 
 def test_left_pad():

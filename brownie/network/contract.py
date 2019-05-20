@@ -286,8 +286,9 @@ class _ContractMethod:
         except ValueError as e:
             raise VirtualMachineError(e)
         result = eth_abi.decode_abi([i['type'] for i in self.abi['outputs']], data)
+        result = format_output(self.abi, result)
         if len(result) == 1:
-            return format_output(result[0])
+            return result[0]
         return KwargTuple(result, self.abi)
 
     def transact(self, *args, _rpc_clear=True):

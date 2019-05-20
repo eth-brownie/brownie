@@ -67,7 +67,7 @@ def to_address(value):
     try:
         return eth_utils.to_checksum_address(value)
     except ValueError:
-        raise ValueError("{} is not a valid ETH address.".format(value))
+        raise ValueError("'{}' is not a valid ETH address.".format(value))
 
 
 def to_bytes(value, type_="bytes32"):
@@ -82,19 +82,13 @@ def to_bytes(value, type_="bytes32"):
             raise ValueError("Invalid type: {}".format(type_))
     else:
         size = float('inf')
-    if type(value) in (bytes, HexBytes):
-        value = HexBytes(value).hex()
-    if type(value) is int:
-        value = hex(value)
-    if not eth_utils.is_hex(value):
-        raise TypeError("{} is not a valid hex string, cannot convert to {}".format(value, type_))
-    value = eth_utils.add_0x_prefix(value)
+    value = bytes_to_hex(value)
     if type_ == "bytes":
         return eth_utils.to_bytes(hexstr=value)
     try:
         return int(value, 16).to_bytes(size, "big")
     except OverflowError:
-        raise OverflowError("{} exceeds maximum length for {}".format(value, type_))
+        raise OverflowError("'{}' exceeds maximum length for {}".format(value, type_))
 
 
 def to_string(value):
@@ -144,6 +138,19 @@ def wei(value):
         raise TypeError("Could not convert {} '{}' to wei.".format(type(original), original))
 
 
+def bytes_to_hex(value):
+    '''Convert a bytes value to a hexstring'''
+    if type(value) not in (bytes, HexBytes, str, int):
+        raise TypeError("Cannot convert {} '{}' from bytes to hex.".format(type(value), value))
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
+    if type(value) is int:
+        value = hex(value)
+    if not eth_utils.is_hex(value):
+        raise ValueError("'{}' is not a valid hex string".format(value))
+    return eth_utils.add_0x_prefix(value)
+
+
 def format_input(abi, inputs):
     '''Format contract inputs based on ABI types.
 
@@ -152,59 +159,68 @@ def format_input(abi, inputs):
         inputs: list of arguments to format
 
     Returns a list of arguments formatted for use in a Contract tx or call.'''
+    return _format(abi, "inputs", inputs)
+
+
+def format_output(abi, outputs):
+    '''Format contract outputs based on ABI types.
+
+    Args:
+        abi: contract method ABI
+        outputs: list of arguments to format
+
+    Returns a list of arguments with standard formatting applied.'''
+    return _format(abi, "outputs", outputs)
+
+
+def _format(abi, key, values):
     try:
         name = abi['name']
-        types = [i['type'] for i in abi['inputs']]
+        types = [i['type'] for i in abi[key]]
     except Exception:
-        raise InvalidABI("ABI must be a dictionary with name and input values.")
-    inputs = list(inputs)
-    if len(inputs) and not len(types):
+        raise InvalidABI("ABI must be a dictionary with name and {} values.".format(key))
+    values = list(values)
+    if len(values) and not len(types):
         raise TypeError("{} requires no arguments".format(name))
-    if len(inputs) != len(types):
+    if len(values) != len(types):
         raise TypeError("{} requires {} arguments ({} given): {}".format(
-            name, len(types), len(inputs), ",".join(types)
+            name, len(types), len(values), ",".join(types)
         ))
     for i, type_ in enumerate(types):
         if ']' in type_:
             # input value is an array, have to check every item
             base_type, length = type_[:-1].rsplit('[', maxsplit=1)
-            if type(inputs[i]) not in (list, tuple):
+            if type(values[i]) not in (list, tuple):
                 raise TypeError(
                     "{} argument #{} is type '{}' - given value "
                     "must be a list or tuple".format(name, i, type_)
                 )
-            if length != "" and len(inputs[i]) != int(length):
+            if length != "" and len(values[i]) != int(length):
                 raise ValueError(
                     "{} argument #{}, sequence has a ".format(name, i) +
-                    "length of {}, should be {}".format(len(inputs[i]), type_)
+                    "length of {}, should be {}".format(len(values[i]), type_)
                     )
-            inputs[i] = format_input(
-                {'name': name, 'inputs': [{'type': base_type}] * len(inputs[i])},
-                inputs[i]
+            values[i] = format_input(
+                {'name': name, key: [{'type': base_type}] * len(values[i])},
+                values[i]
             )
             continue
         try:
             if "uint" in type_:
-                inputs[i] = to_uint(inputs[i], type_)
+                values[i] = to_uint(values[i], type_)
             elif "int" in type_:
-                inputs[i] = to_int(inputs[i], type_)
+                values[i] = to_int(values[i], type_)
             elif "bool" in type_:
-                inputs[i] = to_bool(inputs[i])
+                values[i] = to_bool(values[i])
             elif "address" in type_:
-                inputs[i] = to_address(inputs[i])
+                values[i] = to_address(values[i])
             elif "byte" in type_:
-                inputs[i] = to_bytes(inputs[i], type_)
+                if key == "inputs":
+                    values[i] = to_bytes(values[i], type_)
+                else:
+                    values[i] = bytes_to_hex(values[i])
             elif "string" in type_:
-                inputs[i] = to_string(inputs[i])
+                values[i] = to_string(values[i])
         except Exception as e:
-            raise type(e)("{} argument #{}: '{}' - {}".format(name, i, inputs[i], e))
-    return inputs
-
-
-def format_output(value):
-    '''Converts output from a contract call into a more human-readable format.'''
-    if type(value) in (tuple, list):
-        return tuple(format_output(i) for i in value)
-    if type(value) in (bytes, HexBytes):
-        value = HexBytes(value).hex()
-    return value
+            raise type(e)("{} argument #{}: '{}' - {}".format(name, i, values[i], e))
+    return values
