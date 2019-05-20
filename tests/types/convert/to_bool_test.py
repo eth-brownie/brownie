@@ -16,11 +16,11 @@ def test_success_float():
 
 
 def test_fail_float():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         to_bool(1.23)
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         to_bool(0.9)
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         to_bool(-1.0)
 
 
@@ -30,10 +30,22 @@ def test_success_int():
 
 
 def test_fail_int():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         to_bool(2)
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         to_bool(-1)
+
+
+def test_success_hexstr():
+    assert to_bool("0x1") is True
+    assert to_bool("0x0") is False
+    assert to_bool("0x0001") is True
+    assert to_bool("0x0000") is False
+
+
+def test_fail_hexstr():
+    with pytest.raises(ValueError):
+        to_bool("0x02")
 
 
 def test_fail_nonetype():

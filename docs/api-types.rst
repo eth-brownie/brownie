@@ -81,7 +81,7 @@ The following methods are used to convert arguments supplied to ``ContractTx`` a
 
 .. py:method:: brownie.types.convert.to_bool(value)
 
-    Converts a value to a boolean. Raises ``TypeError`` if the value is not in ``(True, False, 0, 1)``.
+    Converts a value to a boolean. Possible ``TypeError`` if value is not a boolean, integer, float, or hex string. Raises ``ValueError`` if the value is not in ``(True, False, 0, 1)``.
 
 .. py:method:: brownie.types.convert.to_address(value)
 
