@@ -8,7 +8,7 @@ from hexbytes import HexBytes
 
 from .web3 import Web3
 from brownie.cli.utils import color
-from brownie.exceptions import VirtualMachineError
+from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.network.history import TxHistory, _ContractHistory
 from brownie.network.event import decode_logs, decode_trace
 from brownie.project.sources import Sources
@@ -248,7 +248,7 @@ class TransactionReceipt:
         )
         if 'error' in trace:
             self.modified_state = None
-            raise ValueError(trace['error']['message'])
+            raise RPCRequestError(trace['error']['message'])
         self._trace = trace = trace['result']['structLogs']
         if self.status:
             # get return value
@@ -364,6 +364,8 @@ class TransactionReceipt:
         or jump occured. Any functions that terminated with REVERT or INVALID
         opcodes are highlighted in red.'''
         trace = self.trace
+        if not trace:
+            return
         sep = max(i['jumpDepth'] for i in trace)
         idx = 0
         for i in range(1, len(trace)):
