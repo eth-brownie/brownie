@@ -57,6 +57,28 @@ Any arguments applied to a test module's ``setup`` method will be used as the de
 
 Tests rely heavily on methods in the Brownie ``check`` module as an alternative to normal ``assert`` statements. You can read about them in the API :ref:`api_check` documentation.
 
+Developer Revert Strings
+========================
+
+You can include custom revert strings as source code comments that Brownie will insert into ``TransactionReceipt.revert_msg``. This allows you to write tests that target a specific revert or require statement without increasing your contract deployment gas costs.
+
+As an example:
+
+.. code-block:: solidity
+    :linenos:
+
+    function revertExamples(uint a) external {
+        require(a != 2, "is two");
+        require(a != 3); // dev: is three
+        require(a != 4, "cannot be four"); // dev: is four
+        require(a != 5); // is five
+    }
+
+* Line 2 will use the given revert string ``"is two"``
+* Line 3 will substitute in the string supplied on the comments: ``"dev: is three"``
+* Line 4 will use the given string ``"cannot be four"`` and ignore the subsitution string.
+* Line 5 will have no revert string. The comment must begin with ``"dev:"`` in order to be used.
+
 Example Test Script
 ===================
 
