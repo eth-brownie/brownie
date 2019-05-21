@@ -409,16 +409,16 @@ class TransactionReceipt:
         trace = self.trace[idx]
         if not trace['source']['filename']:
             return ""
-        source, ln = sources.get_source(
+        source = sources.get_source(
             trace['source']['filename'],
             trace['source']['start'],
             trace['source']['stop'],
             pad
         )
         return (
-            'Source code for trace step {0[value]}{4}{0} (pc {0[value]}{3[pc]}{0}):\n  ' +
-            'File {0[string]}"{1}"{0}, line {0[value]}{2}{0}, in {0[callable]}{3[fn]}{0}:{5}'
-        ).format(color, trace['source']['filename'], ln, trace, idx, source)
+            'Source code for trace step {0[value]}{1}{0} (pc {0[value]}{2}{0}):\n  File ' +
+            '{0[string]}"{3[1]}"{0}, line {0[value]}{3[2]}{0}, in {0[callable]}{3[3]}{0}:{3[0]}'
+        ).format(color, idx, trace['pc'], source)
 
 
 def _print_path(trace, idx, sep):
