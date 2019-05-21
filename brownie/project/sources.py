@@ -164,7 +164,7 @@ class Sources(metaclass=_Singleton):
         self._string_iter += 1
         return path
 
-    def get_source(self, path, start, stop, pad=3):
+    def get_highlighted_source(self, path, start, stop, pad=3):
         '''Returns a highlighted section of source code.
 
         Args:

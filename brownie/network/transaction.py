@@ -95,6 +95,12 @@ class TransactionReceipt:
         if revert:
             self.revert_msg = revert[0]
             self._revert_pc = revert[1]
+            if revert[0]:
+                self.revert_msg = revert[0]
+            else:
+                revert_msg = build.get_dev_revert(revert[1])
+                if revert_msg:
+                    self.revert_msg = revert_msg
         t = threading.Thread(
             target=self._await_confirm,
             args=[silent, callback],
@@ -242,10 +248,11 @@ class TransactionReceipt:
         '''Retrieves the stack trace via debug_traceTransaction, and finds the
         return value, revert message and event logs in the trace.'''
         self.return_value = None
-        self.revert_msg = None
+        if 'revert_msg' not in self.__dict__:
+            self.revert_msg = None
         self._trace = []
         if (self.input == "0x" and self.gas_used == 21000) or self.contract_address:
-            self.modified_state = False
+            self.modified_state = bool(self.contract_address)
             self.trace = []
             return
         trace = web3.providers[0].make_request(
@@ -277,18 +284,25 @@ class TransactionReceipt:
                 self.return_value = return_value[0]
             else:
                 self.return_value = KwargTuple(return_value, abi)
-        else:
-            # get revert message
-            self.modified_state = False
-            self.revert_msg = ""
-            if trace[-1]['op'] == "REVERT":
-                offset = int(trace[-1]['stack'][-1], 16) * 2
-                length = int(trace[-1]['stack'][-2], 16) * 2
-                if length:
-                    data = HexBytes("".join(trace[-1]['memory'])[offset+8:offset+length])
-                    self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
-            # get events from trace
-            self.events = decode_trace(trace)
+            return
+        # get revert message
+        self.modified_state = False
+        # get events from trace
+        self.events = decode_trace(trace)
+        if self.revert_msg is not None:
+            return
+        if trace[-1]['op'] == "REVERT" and int(trace[-1]['stack'][-2], 16):
+            offset = int(trace[-1]['stack'][-1], 16) * 2
+            length = int(trace[-1]['stack'][-2], 16) * 2
+            data = HexBytes("".join(trace[-1]['memory'])[offset+8:offset+length])
+            self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
+            return
+        self.revert_msg = build.get_dev_revert(trace[-1]['pc'])
+        if self.revert_msg is None:
+            self._evaluate_trace()
+            trace = self.trace[-1]
+            pcMap = build[trace['contractName']]['pcMap'][trace['pc']]
+            self.revert_msg = pcMap['dev'] if 'dev' in pcMap else ""
 
     def _evaluate_trace(self):
         '''Adds the following attributes to each step of the stack trace:
@@ -420,7 +434,7 @@ class TransactionReceipt:
         trace = self.trace[idx]
         if not trace['source']['filename']:
             return ""
-        source = sources.get_source(
+        source = sources.get_highlighted_source(
             trace['source']['filename'],
             trace['source']['start'],
             trace['source']['stop'],
