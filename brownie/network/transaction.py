@@ -11,6 +11,7 @@ from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.network.history import TxHistory, _ContractHistory
 from brownie.network.event import decode_logs, decode_trace
+from brownie.project.build import Build
 from brownie.project.sources import Sources
 from brownie.types import KwargTuple
 from brownie.types.convert import format_output
@@ -34,6 +35,7 @@ history = TxHistory()
 _contracts = _ContractHistory()
 web3 = Web3()
 sources = Sources()
+build = Build()
 
 
 class TransactionReceipt:
@@ -73,6 +75,7 @@ class TransactionReceipt:
         history._add_tx(self)
         self.__dict__.update({
             '_trace': None,
+            '_revert_pc': None,
             'block_number': None,
             'contract_address': None,
             'fn_name': name,
@@ -382,8 +385,16 @@ class TransactionReceipt:
         Args:
             pad: Number of unrelated lines of code to include before and after
         '''
+        if self.status == 1:
+            return ""
+        if self._revert_pc:
+            error = build.get_source_from_pc(self._revert_pc)
+            if error:
+                return _format_source(error, self._revert_pc, -1)
+            self._revert_pc = None
         try:
-            idx = self.trace.index(next(i for i in self.trace if i['op'] in ("REVERT", "INVALID")))
+            trace = next(i for i in self.trace[::-1] if i['op'] in ("REVERT", "INVALID"))
+            idx = self.trace.index(trace)
         except StopIteration:
             return ""
         while True:
@@ -415,10 +426,14 @@ class TransactionReceipt:
             trace['source']['stop'],
             pad
         )
-        return (
-            'Source code for trace step {0[value]}{1}{0} (pc {0[value]}{2}{0}):\n  File ' +
-            '{0[string]}"{3[1]}"{0}, line {0[value]}{3[2]}{0}, in {0[callable]}{3[3]}{0}:{3[0]}'
-        ).format(color, idx, trace['pc'], source)
+        return _format_source(source, trace['pc'], idx)
+
+
+def _format_source(source, pc, idx):
+    return (
+        'Source code for trace step {0[value]}{1}{0} (pc {0[value]}{2}{0}):\n  File ' +
+        '{0[string]}"{3[1]}"{0}, line {0[value]}{3[2]}{0}, in {0[callable]}{3[3]}{0}:{3[0]}'
+    ).format(color, idx, pc, source)
 
 
 def _print_path(trace, idx, sep):
