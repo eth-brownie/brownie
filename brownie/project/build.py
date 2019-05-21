@@ -143,7 +143,7 @@ class Build(metaclass=_Singleton):
     def items(self):
         return self._build.items()
 
-    def get_source_from_pc(self, pc, pad=3):
+    def get_error_source_from_pc(self, pc, pad=3):
         if pc not in self._revert_map or len(self._revert_map[pc]) > 1:
             return
         if len(self._revert_map[pc]) == len([i for i in self._revert_map[pc] if i[0] is False]):

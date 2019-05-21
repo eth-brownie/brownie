@@ -174,9 +174,11 @@ Sources
 
     Given a path and source offsets, returns the name of the contract. Returns ``False`` if the offset spans multiple contracts.
 
-.. py:classmethod:: Sources.inheritance_map()
+.. py:classmethod:: Sources.inheritance_map(contract_name=None)
 
     Returns a dictionary of sets, where each key is a contract name and each value is the name of each contract that the main contact inherits from.
+
+    If ``contract_name`` is not ``None``, returns the set for the given contract name.
 
     .. code-block:: python
 
@@ -185,7 +187,13 @@ Sources
             'SafeMath': set(),
             'Token': {'SafeMath'}
         }
+        >>> sources.inheritance_map('Token')
+        {'SafeMath'}
 
 .. py:classmethod: Sources.add_source(source)
 
     Given source code as a string, adds it to the object and returns a path string formatted as ``<string-X>`` where X is a number that is incremented.
+
+.. py:classmethod: Sources.get_source(path, start, stop, pad=3)
+
+    Given a path, start and stop offset, returns highlighted source code. Called internally by ``TransactionReceipt.source``.

@@ -388,7 +388,7 @@ class TransactionReceipt:
         if self.status == 1:
             return ""
         if self._revert_pc:
-            error = build.get_source_from_pc(self._revert_pc)
+            error = build.get_error_source_from_pc(self._revert_pc)
             if error:
                 return _format_source(error, self._revert_pc, -1)
             self._revert_pc = None
