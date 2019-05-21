@@ -216,14 +216,16 @@ class _AccountBase:
                 'gas': wei(gas_limit) or self._gas_limit("", amount, data),
                 'data': HexBytes(data)
             })
+            revert = None
         except ValueError as e:
-            txid = _raise_or_return_tx(e)
+            txid, revert = _raise_or_return_tx(e)
         self.nonce += 1
         tx = TransactionReceipt(
             txid,
             self,
             name=contract._name+".constructor",
-            callback=callback
+            callback=callback,
+            revert=revert
         )
         if tx.status != 1:
             return tx
@@ -272,10 +274,11 @@ class _AccountBase:
                 'gas': wei(gas_limit) or self._gas_limit(to, amount, data),
                 'data': HexBytes(data)
             })
+            revert = None
         except ValueError as e:
-            txid = _raise_or_return_tx(e)
+            txid, revert = _raise_or_return_tx(e)
         self.nonce += 1
-        return TransactionReceipt(txid, self)
+        return TransactionReceipt(txid, self, revert=revert)
 
 
 class Account(_AccountBase):
@@ -349,8 +352,11 @@ class LocalAccount(_AccountBase):
 
 def _raise_or_return_tx(exc):
     try:
-        data = eval(str(exc))
-        return next(i for i in data['data'].keys() if i[:2] == "0x")
+        data = eval(str(exc))['data']
+        txid = next(i for i in data.keys() if i[:2] == "0x")
+        reason = data[txid]['reason'] if 'reason' in data[txid] else ""
+        pc = data[txid]['program_counter']
+        return txid, (reason, pc)
     except SyntaxError:
         raise exc
     except Exception:

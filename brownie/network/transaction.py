@@ -65,7 +65,7 @@ class TransactionReceipt:
         return_value: Returned value from contract call
         revert_msg: Error string from reverted contract all'''
 
-    def __init__(self, txid, sender=None, silent=False, name='', callback=None):
+    def __init__(self, txid, sender=None, silent=False, name='', callback=None, revert=None):
         if type(txid) is not str:
             txid = txid.hex()
         if CONFIG['logging']['tx'] and not silent:
@@ -89,6 +89,9 @@ class TransactionReceipt:
             'txindex': None,
             'value': None
         })
+        if revert:
+            self.revert_msg = revert[0]
+            self._revert_pc = revert[1]
         t = threading.Thread(
             target=self._await_confirm,
             args=[silent, callback],
@@ -406,28 +409,16 @@ class TransactionReceipt:
         trace = self.trace[idx]
         if not trace['source']['filename']:
             return ""
-        source = sources[trace['source']['filename']]
-        span = (trace['source']['start'], trace['source']['stop'])
-        newlines = [i for i in range(len(source)) if source[i] == "\n"]
-        try:
-            start = newlines.index(next(i for i in newlines if i >= span[0]))
-            stop = newlines.index(next(i for i in newlines if i >= span[1]))
-        except StopIteration:
-            return ""
-        ln = start + 1
-        start = newlines[max(start-(pad+1), 0)]
-        stop = newlines[min(stop+pad, len(newlines)-1)]
-        result = ((
-            'Source code for trace step {0[value]}{4}{0}:\n  File {0[string]}' +
-            '"{1}"{0}, line {0[value]}{2}{0}, in {0[callable]}{3}{0}:'
-        ).format(color, trace['source']['filename'], ln, trace['fn'], idx))
-        result += ("{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
-            color,
-            source[start:span[0]],
-            source[span[0]:span[1]],
-            source[span[1]:stop]
-        ))
-        return result
+        source, ln = sources.get_source(
+            trace['source']['filename'],
+            trace['source']['start'],
+            trace['source']['stop'],
+            pad
+        )
+        return (
+            'Source code for trace step {0[value]}{4}{0} (pc {0[value]}{3[pc]}{0}):\n  ' +
+            'File {0[string]}"{1}"{0}, line {0[value]}{2}{0}, in {0[callable]}{3[fn]}{0}:{5}'
+        ).format(color, trace['source']['filename'], ln, trace, idx, source)
 
 
 def _print_path(trace, idx, sep):
