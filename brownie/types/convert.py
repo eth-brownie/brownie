@@ -200,8 +200,9 @@ def _format(abi, key, values):
                     "{} argument #{}, sequence has a ".format(name, i) +
                     "length of {}, should be {}".format(len(values[i]), type_)
                     )
-            values[i] = format_input(
+            values[i] = _format(
                 {'name': name, key: [{'type': base_type}] * len(values[i])},
+                key,
                 values[i]
             )
             continue
@@ -223,4 +224,4 @@ def _format(abi, key, values):
                 values[i] = to_string(values[i])
         except Exception as e:
             raise type(e)("{} argument #{}: '{}' - {}".format(name, i, values[i], e))
-    return values
+    return tuple(values)
