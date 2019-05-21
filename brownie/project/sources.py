@@ -165,29 +165,33 @@ class Sources(metaclass=_Singleton):
         return path
 
     def get_source(self, path, start, stop, pad=3):
-        '''Returns a highlighted section of source code, and line number where it begins.
+        '''Returns a highlighted section of source code.
 
         Args:
             path: Path to the source
             start: Start offset
             stop: Stop offset
             pad: Number of unrelated lines of code to include before and after
-        '''
+
+        Returns:
+            str - Highlighted source code
+            str - Source code path
+            int - Line number that highlight begins on
+            str - Function name (or None)'''
         source = self._source[path]
-        span = (start, stop)
         newlines = [i for i in range(len(source)) if source[i] == "\n"]
         try:
-            start = newlines.index(next(i for i in newlines if i >= span[0]))
-            stop = newlines.index(next(i for i in newlines if i >= span[1]))
+            pad_start = newlines.index(next(i for i in newlines if i >= start))
+            pad_stop = newlines.index(next(i for i in newlines if i >= stop))
         except StopIteration:
             return ""
-        ln = start + 1
-        start = newlines[max(start-(pad+1), 0)]
-        stop = newlines[min(stop+pad, len(newlines)-1)]
+        ln = pad_start + 1
+        pad_start = newlines[max(pad_start-(pad+1), 0)]
+        pad_stop = newlines[min(pad_stop+pad, len(newlines)-1)]
 
         return "{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
             color,
-            source[start:span[0]],
-            source[span[0]:span[1]],
-            source[span[1]:stop]
-        ), ln
+            source[pad_start:start],
+            source[start:stop],
+            source[stop:pad_stop]
+        ), path, ln, self.get_fn(path, start, stop)
