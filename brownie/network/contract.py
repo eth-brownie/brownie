@@ -28,6 +28,7 @@ class _ContractBase:
         self._build = build
         self.abi = build['abi']
         self._name = build['contractName']
+        self._source_path = build['sourcePath']
         names = [i['name'] for i in self.abi if i['type'] == "function"]
         duplicates = set(i for i in names if names.count(i) > 1)
         if duplicates:
@@ -285,8 +286,9 @@ class _ContractMethod:
         except ValueError as e:
             raise VirtualMachineError(e)
         result = eth_abi.decode_abi([i['type'] for i in self.abi['outputs']], data)
+        result = format_output(self.abi, result)
         if len(result) == 1:
-            return format_output(result[0])
+            return result[0]
         return KwargTuple(result, self.abi)
 
     def transact(self, *args, _rpc_clear=True):

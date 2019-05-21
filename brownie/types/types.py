@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-from .convert import format_output
-
 
 class StrictDict(dict):
     '''Dict subclass that prevents adding new keys when locked'''
@@ -43,7 +41,6 @@ class KwargTuple:
     _print_as_list = True
 
     def __init__(self, values, abi):
-        values = format_output(values)
         self._tuple = tuple(values)
         self._abi = abi
         self._dict = {}

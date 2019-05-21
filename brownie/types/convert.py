@@ -3,6 +3,8 @@
 import eth_utils
 from hexbytes import HexBytes
 
+from brownie.exceptions import InvalidABI
+
 UNITS = {
     'wei': 1,
     'kwei': 3,
@@ -17,55 +19,6 @@ UNITS = {
     'finney': 15,
     'ether': 18
 }
-
-
-def format_input(abi, inputs):
-    '''Format contract inputs based on ABI types.
-
-    Args:
-        abi: contract method ABI
-        inputs: list of arguments to format
-
-    Returns a list of arguments formatted for use in a Contract tx or call.'''
-    name = abi['name']
-    types = [i['type'] for i in abi['inputs']]
-    inputs = list(inputs)
-    if len(inputs) and not len(types):
-        raise AttributeError("{} requires no arguments".format(name))
-    if len(inputs) != len(types):
-        raise AttributeError("{} requires the following arguments: {}".format(
-            name, ",".join(types)
-        ))
-    for i, type_ in enumerate(types):
-        if ']' in type_:
-            # input value is an array, have to check every item
-            base_type, length = type_[:-1].rsplit('[', maxsplit=1)
-            if length != "" and len(inputs[i]) != int(length):
-                raise ValueError(
-                    "'{}': Argument {}, sequence has a ".format(name, i) +
-                    "length of {}, should be {}".format(len(inputs[i]), type_)
-                    )
-            inputs[i] = format_input(
-                {'name': name, 'inputs': [{'type': base_type}] * len(inputs[i])},
-                inputs[i]
-            )
-            continue
-        try:
-            if "uint" in type_:
-                inputs[i] = to_uint(inputs[i], type_)
-            elif "int" in type_:
-                inputs[i] = to_int(inputs[i], type_)
-            elif "bool" in type_:
-                inputs[i] = to_bool(inputs[i])
-            elif "address" in type_:
-                inputs[i] = to_address(inputs[i])
-            elif "bytes" in type_:
-                inputs[i] = to_bytes(inputs[i], type_)
-            elif "string" in type_:
-                inputs[i] = to_string(inputs[i])
-        except Exception as e:
-            raise type(e)('{}: Argument {}, {}'.format(name, i, e))
-    return inputs
 
 
 def _check_int_size(type_):
@@ -95,25 +48,31 @@ def to_int(value, type_="int256"):
 
 def to_bool(value):
     '''Convert a value to a boolean'''
-    if value not in (0, 1, True, False):
+    if type(value) not in (int, float, bool, bytes, HexBytes, str):
         raise TypeError("Cannot convert {} '{}' to bool".format(type(value), value))
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
+    if type(value) is str and value[:2] == "0x":
+        value = int(value, 16)
+    if value not in (0, 1, True, False):
+        raise ValueError("Cannot convert {} '{}' to bool".format(type(value), value))
     return bool(value)
 
 
 def to_address(value):
     '''Convert a value to an address'''
-    if type(value) is bytes:
-        value = value.hex()
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
     value = eth_utils.add_0x_prefix(str(value))
     try:
         return eth_utils.to_checksum_address(value)
     except ValueError:
-        raise ValueError("{} is not a valid ETH address.".format(value))
+        raise ValueError("'{}' is not a valid ETH address.".format(value))
 
 
 def to_bytes(value, type_="bytes32"):
     '''Convert a value to bytes'''
-    if type(value) not in (bytes, str, int):
+    if type(value) not in (HexBytes, bytes, str, int):
         raise TypeError("'{}', type {}, cannot convert to {}".format(value, type(value), type_))
     if type_ == "byte":
         type_ = "bytes1"
@@ -123,39 +82,25 @@ def to_bytes(value, type_="bytes32"):
             raise ValueError("Invalid type: {}".format(type_))
     else:
         size = float('inf')
-    if type(value) is bytes:
-        if len(eth_utils.to_hex(value)) - 2 > size:
-            raise OverflowError("{} exceeds maximum length for {}".format(value, type_))
-        return value
-    if type(value) is int:
-        value = hex(value)
-    if not eth_utils.is_hex(value):
-        raise ValueError("{} is not a valid hex string, cannot convert to {}".format(value, type_))
-    value = eth_utils.add_0x_prefix(value)
+    value = bytes_to_hex(value)
     if type_ == "bytes":
         return eth_utils.to_bytes(hexstr=value)
     try:
         return int(value, 16).to_bytes(size, "big")
     except OverflowError:
-        raise OverflowError("{} exceeds maximum length for {}".format(value, type_))
+        raise OverflowError("'{}' exceeds maximum length for {}".format(value, type_))
 
 
 def to_string(value):
     '''Convert a value to a string'''
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
     value = str(value)
-    if eth_utils.is_hex(value):
-        value = eth_utils.to_text(value)
-    return value
-
-
-def format_output(value):
-    '''Converts output from a contract call into a more human-readable format.'''
-    if type(value) in (tuple, list):
-        return tuple(format_output(i) for i in value)
-    elif type(value) is bytes:
-        return "0x"+value.hex()
-    elif type(value) is HexBytes:
-        return value.hex()
+    if value.startswith('0x') and eth_utils.is_hex(value):
+        try:
+            return eth_utils.to_text(hexstr=value)
+        except UnicodeDecodeError as e:
+            raise ValueError(e)
     return value
 
 
@@ -168,10 +113,11 @@ def wei(value):
           would cause inaccuracy: 8.3e32
         * bytes: b'\xff\xff'
         * hex strings: "0x330124"'''
+    original = value
     if value is None:
         return 0
-    if type(value) is bytes:
-        value = "0x"+value.hex()
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
     if type(value) is float and "e+" in str(value):
         num, dec = str(value).split("e+")
         num = num.split(".") if "." in num else [num, ""]
@@ -189,4 +135,92 @@ def wei(value):
     try:
         return int(value)
     except ValueError:
-        raise ValueError("Unknown denomination: {}".format(value))
+        raise TypeError("Could not convert {} '{}' to wei.".format(type(original), original))
+
+
+def bytes_to_hex(value):
+    '''Convert a bytes value to a hexstring'''
+    if type(value) not in (bytes, HexBytes, str, int):
+        raise TypeError("Cannot convert {} '{}' from bytes to hex.".format(type(value), value))
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
+    if type(value) is int:
+        value = hex(value)
+    if not eth_utils.is_hex(value):
+        raise ValueError("'{}' is not a valid hex string".format(value))
+    return eth_utils.add_0x_prefix(value)
+
+
+def format_input(abi, inputs):
+    '''Format contract inputs based on ABI types.
+
+    Args:
+        abi: contract method ABI
+        inputs: list of arguments to format
+
+    Returns a list of arguments formatted for use in a Contract tx or call.'''
+    return _format(abi, "inputs", inputs)
+
+
+def format_output(abi, outputs):
+    '''Format contract outputs based on ABI types.
+
+    Args:
+        abi: contract method ABI
+        outputs: list of arguments to format
+
+    Returns a list of arguments with standard formatting applied.'''
+    return _format(abi, "outputs", outputs)
+
+
+def _format(abi, key, values):
+    try:
+        name = abi['name']
+        types = [i['type'] for i in abi[key]]
+    except Exception:
+        raise InvalidABI("ABI must be a dictionary with name and {} values.".format(key))
+    values = list(values)
+    if len(values) and not len(types):
+        raise TypeError("{} requires no arguments".format(name))
+    if len(values) != len(types):
+        raise TypeError("{} requires {} arguments ({} given): {}".format(
+            name, len(types), len(values), ",".join(types)
+        ))
+    for i, type_ in enumerate(types):
+        if ']' in type_:
+            # input value is an array, have to check every item
+            base_type, length = type_[:-1].rsplit('[', maxsplit=1)
+            if type(values[i]) not in (list, tuple):
+                raise TypeError(
+                    "{} argument #{} is type '{}' - given value "
+                    "must be a list or tuple".format(name, i, type_)
+                )
+            if length != "" and len(values[i]) != int(length):
+                raise ValueError(
+                    "{} argument #{}, sequence has a ".format(name, i) +
+                    "length of {}, should be {}".format(len(values[i]), type_)
+                    )
+            values[i] = format_input(
+                {'name': name, key: [{'type': base_type}] * len(values[i])},
+                values[i]
+            )
+            continue
+        try:
+            if "uint" in type_:
+                values[i] = to_uint(values[i], type_)
+            elif "int" in type_:
+                values[i] = to_int(values[i], type_)
+            elif "bool" in type_:
+                values[i] = to_bool(values[i])
+            elif "address" in type_:
+                values[i] = to_address(values[i])
+            elif "byte" in type_:
+                if key == "inputs":
+                    values[i] = to_bytes(values[i], type_)
+                else:
+                    values[i] = bytes_to_hex(values[i])
+            elif "string" in type_:
+                values[i] = to_string(values[i])
+        except Exception as e:
+            raise type(e)("{} argument #{}: '{}' - {}".format(name, i, values[i], e))
+    return values

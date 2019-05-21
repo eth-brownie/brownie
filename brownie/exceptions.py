@@ -3,14 +3,9 @@
 import json
 
 
-class CompilerError(Exception):
+# network
 
-    def __init__(self, e):
-        err = [i['formattedMessage'] for i in json.loads(e.stdout_data)['errors']]
-        super().__init__("Compiler returned the following errors:\n\n"+"\n".join(err))
-
-
-class ExpectedFailing(Exception):
+class UnknownAccount(Exception):
     pass
 
 
@@ -25,14 +20,6 @@ class _RPCBaseException(Exception):
                 msg, cmd, uri, code, out, err
             )
         )
-
-
-class ProjectAlreadyLoaded(Exception):
-    pass
-
-
-class ProjectNotFound(Exception):
-    pass
 
 
 class RPCProcessError(_RPCBaseException):
@@ -75,3 +62,32 @@ class VirtualMachineError(Exception):
             super().__init__(exc['message']+"\n"+exc['source'])
         else:
             super().__init__(exc['message'])
+
+
+# project/
+
+class ProjectAlreadyLoaded(Exception):
+    pass
+
+
+class ProjectNotFound(Exception):
+    pass
+
+
+class CompilerError(Exception):
+
+    def __init__(self, e):
+        err = [i['formattedMessage'] for i in json.loads(e.stdout_data)['errors']]
+        super().__init__("Compiler returned the following errors:\n\n"+"\n".join(err))
+
+
+# test/
+
+class ExpectedFailing(Exception):
+    pass
+
+
+# types/
+
+class InvalidABI(Exception):
+    pass

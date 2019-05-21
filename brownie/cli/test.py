@@ -19,9 +19,11 @@ from brownie.test.coverage import (
 )
 from brownie.exceptions import ExpectedFailing
 import brownie.network as network
+from brownie.network.contract import Contract
 from brownie.network.history import TxHistory
 import brownie.network.transaction as transaction
 from brownie.project.build import Build, get_ast_hash
+from brownie.project.sources import Sources
 from brownie.types import FalseyDict
 from brownie._config import ARGV, CONFIG
 
@@ -35,6 +37,7 @@ WARN = "{0[error]}WARNING{0}: ".format(color)
 ERROR = "{0[error]}ERROR{0}: ".format(color)
 
 history = TxHistory()
+sources = Sources()
 
 __doc__ = """Usage: brownie test [<filename>] [<range>] [options]
 
@@ -159,7 +162,7 @@ def run_test_modules(test_data, save):
     start_time = time.time()
     try:
         for (module, coverage_json, coverage_eval, test_names) in test_data:
-            tb, cov = run_test(module, network, test_names)
+            tb, cov, contracts = run_test(module, network, test_names)
             if tb:
                 traceback_info += tb
                 if coverage_json.exists():
@@ -170,13 +173,15 @@ def run_test_modules(test_data, save):
                 continue
             if ARGV['coverage']:
                 coverage_eval = cov
+            contracts |= set([x for i in contracts for x in sources.inheritance_map(i)])
+            build_files = [Path('build/contracts/{}.json'.format(i)) for i in contracts]
 
-            build_files = set(Path('build/contracts/{}.json'.format(i)) for i in coverage_eval)
             coverage_eval = {
                 'coverage': coverage_eval,
                 'sha1': dict((str(i), Build()[i.stem]['bytecodeSha1']) for i in build_files)
             }
-            coverage_eval['sha1'][module.__file__] = get_ast_hash(module.__file__)
+            path = str(Path(module.__file__).relative_to(CONFIG['folders']['project']))
+            coverage_eval['sha1'][path] = get_ast_hash(module.__file__)
             json.dump(
                 coverage_eval,
                 coverage_json.open('w'),
@@ -211,23 +216,26 @@ def run_test(module, network, test_names):
         if default_args['skip'] is True or (
             default_args['skip'] == "coverage" and ARGV['coverage']
         ):
-            return [], {}
+            return [], {}, set()
         p = TestPrinter(module.__file__, 0, len(test_names))
         tb, coverage_eval = run_test_method(fn, default_args, {}, p)
         if tb:
-            return tb, {}
+            return tb, {}, set()
     else:
         p = TestPrinter(module.__file__, 1, len(test_names))
         default_args = FalseyDict()
         coverage_eval = {}
     network.rpc.snapshot()
     traceback_info = []
+    contracts = _get_contract_names()
     for t in test_names:
+        history.clear()
         network.rpc.revert()
         fn, fn_args = _get_fn(module, t)
         args = default_args.copy()
         args.update(fn_args)
         tb, coverage_eval = run_test_method(fn, args, coverage_eval, p)
+        contracts |= _get_contract_names()
         traceback_info += tb
         if tb and tb[0][2] == ReadTimeout:
             print(WARN+"RPC crashed, terminating test")
@@ -237,7 +245,7 @@ def run_test(module, network, test_names):
     if traceback_info and ARGV['coverage']:
         coverage_eval = {}
     p.finish()
-    return traceback_info, coverage_eval
+    return traceback_info, coverage_eval, contracts
 
 
 def run_test_method(fn, args, coverage_eval, p):
@@ -256,7 +264,6 @@ def run_test_method(fn, args, coverage_eval, p):
                 coverage_eval,
                 analyze_coverage(history.copy())
             )
-            history.clear()
         if args['pending']:
             raise ExpectedFailing("Test was expected to fail")
         p.stop()
@@ -380,3 +387,11 @@ class TestPrinter:
             color
         ))
         sys.stdout.flush()
+
+
+def _get_contract_names():
+    return set(
+        i.contract_address._name for i in history if
+        type(i.contract_address) is Contract and
+        not i.contract_address._source_path.startswith('<string')
+    )
