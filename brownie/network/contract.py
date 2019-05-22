@@ -12,7 +12,7 @@ from .rpc import Rpc
 from .web3 import Web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_input, format_output, to_address
-from brownie.exceptions import VirtualMachineError
+from brownie.exceptions import AmbiguousMethods, UndeployedLibrary, VirtualMachineError
 from brownie._config import ARGV, CONFIG
 
 _contracts = _ContractHistory()
@@ -32,7 +32,7 @@ class _ContractBase:
         names = [i['name'] for i in self.abi if i['type'] == "function"]
         duplicates = set(i for i in names if names.count(i) > 1)
         if duplicates:
-            raise AttributeError("Ambiguous contract functions in {}: {}".format(
+            raise AmbiguousMethods("Ambiguous contract methods in {}: {}".format(
                 self._name, ",".join(duplicates)))
         self.topics = get_topics(self.abi)
         self.signatures = dict((
@@ -183,7 +183,7 @@ class ContractConstructor:
         for marker in re.findall('_{1,}[^_]*_{1,}', bytecode):
             library = marker.strip('_')
             if not _contracts.list(library):
-                raise IndexError(
+                raise UndeployedLibrary(
                     "Contract requires '{}' library".format(library) +
                     " but it has not been deployed yet"
                 )
@@ -230,6 +230,8 @@ class Contract(_ContractBase):
         return self.address
 
     def __eq__(self, other):
+        if type(other) is Contract:
+            return self.address == other.address and self.bytecode == other.bytecode
         if type(other) is str:
             try:
                 address = to_address(other)
