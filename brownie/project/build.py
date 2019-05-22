@@ -73,6 +73,7 @@ class Build(metaclass=_Singleton):
                     default=sorted
                 )
             self._build.update(build_json)
+        self._generate_revert_map()
         # check for changed tests
         self._check_coverage_hashes()
         _recursive_unlink(str(self._path.parent.joinpath('coverage')))
@@ -112,6 +113,22 @@ class Build(metaclass=_Singleton):
             self._build[name]['sha1'] != sources.get_hash(name)
         )
 
+    def _generate_revert_map(self):
+        self._revert_map = {}
+        for pcMap in [v['pcMap'] for v in self._build.values()]:
+            for pc, data in [(k, v) for k, v in pcMap.items() if v['op'] in ("REVERT", "INVALID")]:
+                revert = [data['contract'], data['start'], data['stop'], ""]
+                try:
+                    s = sources[data['contract']][data['stop']:]
+                    err = s[:s.index('\n')]
+                    err = err[err.index('//')+2:].strip()
+                    if err.startswith('dev:'):
+                        revert[-1] = err
+                        data['dev'] = err
+                except (KeyError, ValueError):
+                    pass
+                self._revert_map.setdefault(pc, set()).add(tuple(revert))
+
     def _check_coverage_hashes(self):
         # remove coverage data where hashes have changed
         coverage_path = self._path.parent.joinpath('coverage')
@@ -134,6 +151,21 @@ class Build(metaclass=_Singleton):
 
     def items(self):
         return self._build.items()
+
+    def get_error_source_from_pc(self, pc, pad=3):
+        if pc not in self._revert_map or len(self._revert_map[pc]) > 1:
+            return
+        if len(self._revert_map[pc]) == len([i for i in self._revert_map[pc] if i[0] is False]):
+            return ""
+        revert = next(iter(self._revert_map[pc]))
+        return sources.get_highlighted_source(*revert[:3], pad=pad)
+
+    def get_dev_revert(self, pc):
+        if pc not in self._revert_map or len(self._revert_map[pc]) > 1:
+            return None
+        if len(self._revert_map[pc]) == len([i for i in self._revert_map[pc] if i[0] is False]):
+            return ""
+        return next(iter(self._revert_map[pc]))[3]
 
 
 def get_ast_hash(script_path):

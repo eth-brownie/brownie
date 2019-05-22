@@ -17,7 +17,12 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 
+def setup(sphinx):
+    from pygments_lexer_solidity import SolidityLexer
+    sphinx.add_lexer('Solidity', SolidityLexer())
+
 # -- Project information -----------------------------------------------------
+
 
 project = 'Brownie'
 copyright = '2019, HyperLink Technology'
