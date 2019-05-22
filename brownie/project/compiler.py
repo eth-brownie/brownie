@@ -101,7 +101,7 @@ def _compile_and_format(input_json):
             'ast': compiled['sources'][filename]['ast'],
             'bytecode': evm['bytecode']['object'],
             'bytecodeSha1': sha1(evm['bytecode']['object'][:-68].encode()).hexdigest(),
-            'compiler': CONFIG['solc'],
+            'compiler': dict(CONFIG['solc']),
             'contractName': name,
             'deployedBytecode': evm['deployedBytecode']['object'],
             'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
