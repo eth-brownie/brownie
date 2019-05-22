@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from brownie import network, project, history
+from brownie import network, history
 from brownie._config import ARGV
 
 accounts = network.accounts
@@ -17,8 +17,7 @@ abi = {
 }
 
 
-def test_attributes():
-    token = project.Token.deploy("", "", 18, 1000000, {'from': accounts[0]})
+def test_attributes(token):
     assert token.totalSupply._address == token.address
     assert token.totalSupply._name == "Token.totalSupply"
     assert token.totalSupply._owner == accounts[0]
@@ -26,24 +25,24 @@ def test_attributes():
     assert token.totalSupply.signature == "0x18160ddd"
 
 
-def test_encode_abi():
-    data = project.Token[0].balanceOf.encode_abi("0x2f084926Fd8A120089cA5F622975Fe7F1306AFF9")
+def test_encode_abi(token):
+    data = token.balanceOf.encode_abi("0x2f084926Fd8A120089cA5F622975Fe7F1306AFF9")
     assert data == "0x70a082310000000000000000000000002f084926fd8a120089ca5f622975fe7f1306aff9"
 
 
-def test_transact():
+def test_transact(token):
     nonce = accounts[0].nonce
-    tx = project.Token[0].balanceOf.transact(accounts[0], {'from': accounts[0]})
-    assert tx.return_value == project.Token[0].balanceOf(accounts[0])
+    tx = token.balanceOf.transact(accounts[0], {'from': accounts[0]})
+    assert tx.return_value == token.balanceOf(accounts[0])
     assert accounts[0].nonce == nonce + 1
 
 
-def test_always_transact():
-    balance = project.Token[0].balanceOf(accounts[0])
+def test_always_transact(token):
+    balance = token.balanceOf(accounts[0])
     ARGV['always_transact'] = True
     try:
         height = web3.eth.blockNumber
-        result = project.Token[0].balanceOf(accounts[0])
+        result = token.balanceOf(accounts[0])
         tx = history[-1]
         assert balance == result
         assert web3.eth.blockNumber == height + 1

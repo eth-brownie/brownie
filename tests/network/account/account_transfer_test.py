@@ -4,7 +4,6 @@ import pytest
 
 from brownie import network, project, config
 from brownie.exceptions import VirtualMachineError
-from brownie._config import ARGV
 from brownie.network.transaction import TransactionReceipt
 
 accounts = network.accounts
@@ -43,27 +42,20 @@ def test_raises_on_revert():
         accounts[0].transfer(c, 10000)
 
 
-def test_returns_tx_on_revert_in_console():
+def test_returns_tx_on_revert_in_console(console_mode):
     '''returns a tx on revert in console'''
-    ARGV['cli'] = "console"
     c = accounts[0].deploy(project.Token, "TST", "Test Token", 18, 1000000)
-    try:
-        tx = accounts[0].transfer(c, 10000)
-        assert type(tx) == TransactionReceipt
-        assert tx.status == 0
-    finally:
-        ARGV['cli'] = False
+    tx = accounts[0].transfer(c, 10000)
+    assert type(tx) == TransactionReceipt
+    assert tx.status == 0
 
 
-def test_nonce():
+def test_nonce(clean_network):
     '''nonces increment properly'''
-    network.rpc.reset()
     assert accounts[1].nonce == 0
     accounts[1].transfer(accounts[2], 1000)
     assert accounts[2].nonce == 0
     assert accounts[1].nonce == 1
-    network.rpc.reset()
-    assert accounts[1].nonce == 0
 
 
 def test_balance_int():

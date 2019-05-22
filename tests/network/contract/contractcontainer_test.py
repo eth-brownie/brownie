@@ -39,7 +39,7 @@ def test_get_method():
     ) == "transfer"
 
 
-def test_container():
+def test_container(clean_network):
     Token = project.Token
     assert len(Token) == 0
     t = Token.deploy("", "", 0, 0, {'from': accounts[0]})
@@ -56,11 +56,10 @@ def test_container():
     assert len(Token) == 0
 
 
-def test_remove_at():
+def test_remove_at(clean_network):
     Token = project.Token
     t = Token.deploy("", "", 0, 0, {'from': accounts[0]})
     Token.remove(t)
     assert len(Token) == 0
     assert Token.at(t.address) == t
     assert len(Token) == 1
-    network.rpc.reset()

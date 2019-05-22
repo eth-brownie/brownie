@@ -4,7 +4,6 @@ import pytest
 
 from brownie import network, project, config
 from brownie.exceptions import UndeployedLibrary, VirtualMachineError
-from brownie._config import ARGV
 from brownie.network.contract import Contract
 from brownie.network.transaction import TransactionReceipt
 
@@ -25,15 +24,11 @@ def test_raises_on_revert():
         accounts[0].deploy(project.Token, "TST", "Test Token", 18, 1000000, amount=10)
 
 
-def test_returns_tx_on_revert_in_console():
+def test_returns_tx_on_revert_in_console(console_mode):
     '''returns a TransactionReceipt instance on revert in the console'''
-    ARGV['cli'] = "console"
-    try:
-        tx = accounts[0].deploy(project.Token, "TST", "Test Token", 18, 1000000, amount=10)
-        assert type(tx) == TransactionReceipt
-        assert tx.status == 0
-    finally:
-        ARGV['cli'] = False
+    tx = accounts[0].deploy(project.Token, "TST", "Test Token", 18, 1000000, amount=10)
+    assert type(tx) == TransactionReceipt
+    assert tx.status == 0
 
 
 def test_nonce():
@@ -92,11 +87,9 @@ def test_gas_limit_config():
     config['active_network']['gas_limit'] = False
 
 
-def test_unlinked_library():
-    network.rpc.reset()
+def test_unlinked_library(clean_network):
     with pytest.raises(UndeployedLibrary):
         accounts[0].deploy(project.BrownieTester)
     lib = accounts[0].deploy(project.UnlinkedLib)
     meta = accounts[0].deploy(project.BrownieTester)
     assert lib.address[2:].lower() in meta.bytecode
-    network.rpc.reset()

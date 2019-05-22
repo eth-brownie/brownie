@@ -2,7 +2,6 @@
 
 import pytest
 
-from brownie._config import ARGV
 from brownie import network, project, config
 from brownie.network.contract import Contract
 from brownie.network.transaction import TransactionReceipt
@@ -26,15 +25,11 @@ def test_raises_on_revert():
         project.Token.deploy(*deploy_args, {'from': accounts[0], 'amount': 10})
 
 
-def test_returns_tx_on_revert_in_console():
+def test_returns_tx_on_revert_in_console(console_mode):
     '''returns a TransactionReceipt instance on revert in the console'''
-    ARGV['cli'] = "console"
-    try:
-        tx = project.Token.deploy(*deploy_args, {'from': accounts[0], 'amount': 10})
-        assert type(tx) == TransactionReceipt
-        assert tx.status == 0
-    finally:
-        ARGV['cli'] = False
+    tx = project.Token.deploy(*deploy_args, {'from': accounts[0], 'amount': 10})
+    assert type(tx) == TransactionReceipt
+    assert tx.status == 0
 
 
 def test_nonce():
@@ -93,11 +88,9 @@ def test_gas_limit_config():
     config['active_network']['gas_limit'] = False
 
 
-def test_unlinked_library():
-    network.rpc.reset()
+def test_unlinked_library(clean_network):
     with pytest.raises(UndeployedLibrary):
         project.BrownieTester.deploy({'from': accounts[0]})
     lib = project.UnlinkedLib.deploy({'from': accounts[0]})
     meta = project.BrownieTester.deploy({'from': accounts[0]})
     assert lib.address[2:].lower() in meta.bytecode
-    network.rpc.reset()
