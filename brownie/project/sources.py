@@ -66,7 +66,7 @@ class Sources(metaclass=_Singleton):
                 'sourcePath': str(path),
                 'type': type_,
                 'inherited': inherited.union(re.findall(r"(?:;|{)\s*using *(\S*)(?= for)", source)),
-                'sha1': sha1(source.encode()).hexdigest(),
+                'sha1': sha1(self._source[str(path)].encode()).hexdigest(),
                 'fn_offsets': [],
                 'offset': (
                     self._commented_offset(path, offset),
@@ -100,7 +100,7 @@ class Sources(metaclass=_Singleton):
         return final
 
     def get_hash(self, contract_name):
-        '''Returns a hash of the contract source code after comments have been removed.'''
+        '''Returns a hash of the contract source code.'''
         return self._data[contract_name]['sha1']
 
     def get_path(self, contract_name):

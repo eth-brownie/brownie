@@ -152,7 +152,7 @@ Sources
 
 .. py:classmethod:: Sources.get_hash(contract_name)
 
-    Returns a hash of the contract source code. This hash is generated specifically from the given contract name (not the entire containing file), after comments have been removed.
+    Returns a hash of the contract source code.
 
 .. py:classmethod:: Sources.get_path(contract_name)
 
