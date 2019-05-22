@@ -96,11 +96,13 @@ class TransactionReceipt:
             self.revert_msg = revert[0]
             self._revert_pc = revert[1]
             if revert[0]:
+                # revert message was returned
                 self.revert_msg = revert[0]
             else:
-                revert_msg = build.get_dev_revert(revert[1])
-                if revert_msg:
-                    self.revert_msg = revert_msg
+                # check for revert message as comment
+                revert = build.get_dev_revert(revert[1])
+                if type(revert) is str:
+                    self.revert_msg = revert
         t = threading.Thread(
             target=self._await_confirm,
             args=[silent, callback],
@@ -114,6 +116,9 @@ class TransactionReceipt:
             if ARGV['coverage']:
                 self.trace
             if not self.status:
+                if revert is None:
+                    # no revert message and unable to check dev string - have to get trace
+                    self.trace
                 raise VirtualMachineError({
                     "message": "revert "+(self.revert_msg or ""),
                     "source": self.error(1)
@@ -301,8 +306,10 @@ class TransactionReceipt:
         if self.revert_msg is None:
             self._evaluate_trace()
             trace = self.trace[-1]
-            pcMap = build[trace['contractName']]['pcMap'][trace['pc']]
-            self.revert_msg = pcMap['dev'] if 'dev' in pcMap else ""
+            try:
+                self.revert_msg = build[trace['contractName']]['pcMap'][trace['pc']]['dev']
+            except KeyError:
+                self.revert_msg = ""
 
     def _evaluate_trace(self):
         '''Adds the following attributes to each step of the stack trace:
@@ -314,7 +321,7 @@ class TransactionReceipt:
         jumpDepth: Number of jumps made since entering this contract. The
                    initial value is 1.'''
         self.trace = trace = self._trace
-        if not trace:
+        if not trace or 'fn' in trace[0]:
             return
         contract = self.contract_address or self.receiver
         pc = contract._build['pcMap'][0]

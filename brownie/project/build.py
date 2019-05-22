@@ -117,7 +117,7 @@ class Build(metaclass=_Singleton):
         self._revert_map = {}
         for pcMap in [v['pcMap'] for v in self._build.values()]:
             for pc, data in [(k, v) for k, v in pcMap.items() if v['op'] in ("REVERT", "INVALID")]:
-                revert = [data['contract'], data['start'], data['stop'], None]
+                revert = [data['contract'], data['start'], data['stop'], ""]
                 try:
                     s = sources[data['contract']][data['stop']:]
                     err = s[:s.index('\n')]
@@ -162,7 +162,7 @@ class Build(metaclass=_Singleton):
 
     def get_dev_revert(self, pc):
         if pc not in self._revert_map or len(self._revert_map[pc]) > 1:
-            return
+            return None
         if len(self._revert_map[pc]) == len([i for i in self._revert_map[pc] if i[0] is False]):
             return ""
         return next(iter(self._revert_map[pc]))[3]

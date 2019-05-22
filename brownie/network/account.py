@@ -354,7 +354,7 @@ def _raise_or_return_tx(exc):
     try:
         data = eval(str(exc))['data']
         txid = next(i for i in data.keys() if i[:2] == "0x")
-        reason = data[txid]['reason'] if 'reason' in data[txid] else ""
+        reason = data[txid]['reason'] if 'reason' in data[txid] else None
         pc = data[txid]['program_counter'] - 1
         return txid, (reason, pc)
     except SyntaxError:
