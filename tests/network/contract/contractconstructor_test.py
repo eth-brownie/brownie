@@ -96,8 +96,8 @@ def test_gas_limit_config():
 def test_unlinked_library():
     network.rpc.reset()
     with pytest.raises(UndeployedLibrary):
-        project.MetaCoin.deploy({'from': accounts[0]})
-    lib = project.ConvertLib.deploy({'from': accounts[0]})
-    meta = project.MetaCoin.deploy({'from': accounts[0]})
+        project.BrownieTester.deploy({'from': accounts[0]})
+    lib = project.UnlinkedLib.deploy({'from': accounts[0]})
+    meta = project.BrownieTester.deploy({'from': accounts[0]})
     assert lib.address[2:].lower() in meta.bytecode
     network.rpc.reset()

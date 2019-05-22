@@ -36,7 +36,7 @@ def test_get_method():
     assert project.Token.get_method(
         "0xa9059cbb0000000000000000000000000a4a71b2518f7a3273595cba15c3308182b32cd1"
         "0000000000000000000000000000000000000000000000020f5b1eaad8d80000"
-        ) == "transfer"
+    ) == "transfer"
 
 
 def test_container():
