@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+'''debug_traceTransaction is a very expensive call and should be avoided where
+possible. These tests check that it is only being called when absolutely necessary.'''
+
 from brownie import accounts
 from brownie.project.build import Build
 
@@ -9,16 +12,16 @@ build = Build()
 def test_revert_msg(console_mode, tester):
     '''dev revert string comments should be correct and not query the trace'''
     tx = tester.testRevertStrings(0)
-    assert tx.revert_msg == "zero"
+    tx.revert_msg
     assert not tx._trace
     tx = tester.testRevertStrings(1)
-    assert tx.revert_msg == "dev: one"
+    tx.revert_msg
     assert not tx._trace
     tx = tester.testRevertStrings(2)
-    assert tx.revert_msg == "two"
+    tx.revert_msg
     assert not tx._trace
     tx = tester.testRevertStrings(3)
-    assert tx.revert_msg == ""
+    tx.revert_msg
     assert not tx._trace
 
 
@@ -53,8 +56,16 @@ def test_revert_events(console_mode, tester):
     assert 'trace' not in tx.__dict__
 
 
+def test_modified_state(console_mode, tester):
+    '''modified_state queries the trace but does not evaluate'''
+    tx = tester.doNothing()
+    tx.modified_state
+    assert tx._trace
+    assert 'trace' not in tx.__dict__
+
+
 def test_trace(tester):
-    '''getting the trace evaluates the trace'''
+    '''getting the trace also evaluates the trace'''
     tx = tester.doNothing()
     tx.trace
     assert 'trace' in tx.__dict__
