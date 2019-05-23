@@ -24,7 +24,8 @@ def test_attach(no_rpc):
     assert rpc.is_active()
 
 
-def test_kill(no_rpc):
+# coverage doesn't like killing the attached process
+def test_kill(no_rpc, no_cover):
     rpc.kill()
     with pytest.raises(SystemError):
         rpc.kill()
