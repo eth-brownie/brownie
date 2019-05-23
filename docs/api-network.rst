@@ -1067,7 +1067,7 @@ Rpc
 
 
 ``brownie.network.transaction``
-==============================
+===============================
 
 The ``transaction`` module contains the ``TransactionReceipt`` class and related internal methods.
 

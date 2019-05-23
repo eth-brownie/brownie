@@ -56,7 +56,9 @@ Package Methods
 
 .. py:method:: project.compile_source(source)
 
-    Compiles the given Solidity source code string and returns a list of ContractContainer instances.
+    Compiles the given Solidity source code string and returns a list of ``ContractContainer`` objects. The containers are **not** added to the global or project namespaces.
+
+    Raises ``brownie.exceptions.ContractExists`` if any contracts in the source code use the same name as a contract in the active project.
 
     .. code-block:: python
 
@@ -189,10 +191,6 @@ Sources
         }
         >>> sources.inheritance_map('Token')
         {'SafeMath'}
-
-.. py:classmethod: Sources.add_source(source)
-
-    Given source code as a string, adds it to the object and returns a path string formatted as ``<string-X>`` where X is a number that is incremented.
 
 .. py:classmethod: Sources.get_source(path, start, stop, pad=3)
 

@@ -32,7 +32,7 @@ class _ContractBase:
         names = [i['name'] for i in self.abi if i['type'] == "function"]
         duplicates = set(i for i in names if names.count(i) > 1)
         if duplicates:
-            raise AmbiguousMethods("Ambiguous contract methods in {}: {}".format(
+            raise AmbiguousMethods("Multiple methods with same name in {}: {}".format(
                 self._name, ",".join(duplicates)))
         self.topics = get_topics(self.abi)
         self.signatures = dict((
