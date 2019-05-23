@@ -105,8 +105,8 @@ Module Methods
 
     * ``tx``: A ``TransactionReceipt`` instance.
     * ``name``: Name of the event that must fire.
-    * ``count``: Number of times the event must fire. If left as ``None``, the event must fire 1 or more times.
-    * ``values``: A dict, or list of dicts, speficying key:value pairs that must be found within the events. The length of the ``values`` implies the number of events that must fire.
+    * ``count``: Number of times the event must fire. If left as ``None``, the event must fire one or more times.
+    * ``values``: A dict, or list of dicts, speficying key:value pairs that must be found within the events of the given name. The length of the ``values`` implies the number of events that must fire with that name.
 
     .. code-block:: python
 
@@ -158,12 +158,12 @@ Module Methods
 
     Raises if ``a != b``.
 
-    Different sequence types will always evaluate equally as long as their content is the same: ``(1,1,1) == [1,1,1]``.
+    Different types of sequence objects will still evaluate equally as long as their content is the same: ``(1,1,1) == [1,1,1]``.
 
-    When the strict kwarg is set to ``False`` the following will evaluate as equal:
+    When ``strict`` is set to ``False`` the following will evaluate as equal:
 
     * hexstrings of the same value but differing leading zeros: ``0x00001234 == 0x1234``
-    * integers, floats, and strings as wei that have the same numberic value: ``1 == 1.0 == "1 wei"``
+    * integers, floats, and strings as :ref:`wei <wei>` that have the same numberic value: ``1 == 1.0 == "1 wei"``
 
     .. code-block:: python
 
