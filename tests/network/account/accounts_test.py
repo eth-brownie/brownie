@@ -12,6 +12,12 @@ priv_key = "0x416b8a7d9290502f5661da81f0cf43893e3d19cb9aea3c426cfb36e8186e9c09"
 addr = "0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E"
 
 
+@pytest.fixture
+def no_pass(monkeypatch):
+    monkeypatch.setattr('brownie.network.account.getpass', lambda x: "")
+    yield
+
+
 def test_repopulate():
     network.rpc.reset()
     assert len(accounts) == 10
@@ -67,17 +73,15 @@ def test_clear():
     accounts._reset()
 
 
-def test_save(tmpdir, monkeypatch):
+def test_save(tmpdir, no_pass):
     a = accounts.add(priv_key)
-    monkeypatch.setattr('brownie.network.account.getpass', lambda x: "")
     a.save(tmpdir+"/temp.json")
     assert Path(tmpdir+"/temp.json").exists()
     accounts._reset()
 
 
-def test_save_nopath(monkeypatch):
+def test_save_nopath(no_pass):
     a = accounts.add(priv_key)
-    monkeypatch.setattr('brownie.network.account.getpass', lambda x: "")
     path = Path(a.save("temp", True))
     assert path.exists()
     path.unlink()
@@ -87,9 +91,8 @@ def test_save_nopath(monkeypatch):
     accounts._reset()
 
 
-def test_save_overwrite(tmpdir, monkeypatch):
+def test_save_overwrite(tmpdir, no_pass):
     a = accounts.add(priv_key)
-    monkeypatch.setattr('brownie.network.account.getpass', lambda x: "")
     a.save(tmpdir+"/temp.json")
     with pytest.raises(FileExistsError):
         a.save(tmpdir+"/temp.json")
@@ -97,9 +100,8 @@ def test_save_overwrite(tmpdir, monkeypatch):
     accounts._reset()
 
 
-def test_load(tmpdir, monkeypatch):
+def test_load(tmpdir, no_pass):
     a = accounts.add(priv_key)
-    monkeypatch.setattr('brownie.network.account.getpass', lambda x: "")
     a.save(tmpdir+"/temp.json")
     accounts._reset()
     assert a not in accounts
@@ -107,9 +109,8 @@ def test_load(tmpdir, monkeypatch):
     assert a.address == addr
 
 
-def test_load_nopath(monkeypatch):
+def test_load_nopath(no_pass):
     a = accounts.add(priv_key)
-    monkeypatch.setattr('brownie.network.account.getpass', lambda x: "")
     path = a.save("temp")
     accounts._reset()
     a = accounts.load("temp")
@@ -117,8 +118,7 @@ def test_load_nopath(monkeypatch):
     Path(path).unlink()
 
 
-def test_load_not_exists(tmpdir, monkeypatch):
-    monkeypatch.setattr('brownie.network.account.getpass', lambda x: "")
+def test_load_not_exists(tmpdir, no_pass):
     with pytest.raises(FileNotFoundError):
         accounts.load(tmpdir+"/temp.json")
     with pytest.raises(FileNotFoundError):
