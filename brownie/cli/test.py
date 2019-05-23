@@ -118,7 +118,10 @@ def get_test_data(test_paths):
                 p.mkdir(exist_ok=True)
         module_name = str(path)[:-3].replace(os.sep, '.')
         module = importlib.import_module(module_name)
-        test_names = re.findall(r'\ndef[\s ]{1,}([^_]\w*)[\s ]*\([^)]*\)', path.open().read())
+        test_names = re.findall(
+            r'\ndef[\s ]{1,}([^_]\w*)[\s ]*\([^)]*\)',
+            project.joinpath(path).open().read()
+        )
         if not test_names:
             print("\n{0}No test functions in {1[module]}{2}.py{1}".format(WARN, color, path))
             continue
