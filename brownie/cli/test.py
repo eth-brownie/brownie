@@ -68,22 +68,10 @@ def main():
     test_paths = get_test_paths(args['<filename>'])
     coverage_files, test_data = get_test_data(test_paths)
 
-    if len(test_paths) == 1 and args['<range>']:
-        try:
-            idx = args['<range>']
-            if ':' in idx:
-                idx = slice(*[int(i)-1 for i in idx.split(':')])
-            else:
-                idx = slice(int(idx)-1, int(idx))
-            if 'setup' in test_data[0][4]:
-                test_data[0][4].remove('setup')
-                test_data[0][4] = ['setup'] + test_data[0][4][idx]
-            else:
-                test_data[0][4] = ['setup'] + test_data[0][4][idx]
-        except Exception:
-            sys.exit(ERROR+"Invalid range. Must be an integer or slice (eg. 1:4)")
-    elif args['<range>']:
-        sys.exit(ERROR+"Cannot specify a range when running multiple tests files.")
+    if args['<range>']:
+        if len(test_paths) > 1:
+            sys.exit(ERROR+"Cannot specify a range when running multiple tests files.")
+        test_data = apply_range(test_data, args['<range>'])
 
     if not test_data:
         print("No tests to run.")
@@ -146,6 +134,22 @@ def get_test_data(test_paths):
                 continue
         test_data.append((module, coverage_json, coverage_eval, test_names))
     return coverage_files, test_data
+
+
+def apply_range(test_data, idx):
+    try:
+        if ':' in idx:
+            idx = slice(*[int(i)-1 for i in idx.split(':')])
+        else:
+            idx = slice(int(idx)-1, int(idx))
+        if 'setup' in test_data[0][4]:
+            test_data[0][4].remove('setup')
+            test_data[0][4] = ['setup'] + test_data[0][4][idx]
+        else:
+            test_data[0][4] = ['setup'] + test_data[0][4][idx]
+        return test_data
+    except Exception:
+        sys.exit(ERROR+"Invalid range. Must be an integer or slice (eg. 1:4)")
 
 
 def run_test_modules(test_data, save):
