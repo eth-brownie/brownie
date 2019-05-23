@@ -140,18 +140,22 @@ def get_test_data(test_paths):
 
 
 def apply_range(test_data, idx):
+    test_names = list(test_data[0][-1])
+    if "0" in idx:
+        sys.exit(ERROR+"Range cannot include 0. First test is 1.")
+    idx = [i-1 if i > 0 else i for i in (int(x) for x in idx.split(':'))]
+    if len(idx) > 1:
+        if (min(idx+[0]), max(idx+[0])).count(0) != 1:
+            sys.exit(ERROR+"Range must be entirely positive or negative.")
+    idx = slice(*idx) if len(idx) > 1 else idx[0]
     try:
-        if ':' in idx:
-            idx = slice(*[int(i)-1 for i in idx.split(':')])
+        if 'setup' in test_names:
+            test_names.remove('setup')
+            test_names = ['setup'] + ([test_names[idx]] if type(idx) is int else test_names[idx])
         else:
-            idx = slice(int(idx)-1, int(idx))
-        if 'setup' in test_data[0][4]:
-            test_data[0][4].remove('setup')
-            test_data[0][4] = ['setup'] + test_data[0][4][idx]
-        else:
-            test_data[0][4] = ['setup'] + test_data[0][4][idx]
-        return test_data
-    except Exception:
+            test_names = [test_names[idx]] if type(idx) is int else test_names[idx]
+        return [list(test_data[0][:-1])+[test_names]]
+    except IndexError:
         sys.exit(ERROR+"Invalid range. Must be an integer or slice (eg. 1:4)")
 
 
