@@ -93,7 +93,6 @@ class TransactionReceipt:
             'value': None
         })
         if revert:
-            self.revert_msg = revert[0]
             self._revert_pc = revert[1]
             if revert[0]:
                 # revert message was returned
@@ -161,7 +160,8 @@ class TransactionReceipt:
             'logs': receipt['logs'],
             'status': receipt['status']
         })
-        self.events = decode_logs(receipt['logs'])
+        if self.status:
+            self.events = decode_logs(receipt['logs'])
         if self.fn_name and ARGV['gas']:
             _profile_gas(self.fn_name, receipt['gasUsed'])
         if not silent:
@@ -206,8 +206,7 @@ class TransactionReceipt:
             'modified_state',
             'return_value',
             'revert_msg',
-            'trace',
-            '_trace'
+            'trace'
         ):
             raise AttributeError("'TransactionReceipt' object has no attribute '{}'".format(attr))
         if self.status == -1:
