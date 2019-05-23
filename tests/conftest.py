@@ -49,6 +49,15 @@ def test_mode():
 
 
 @pytest.fixture(scope="function")
+def coverage_mode():
+    ARGV['cli'] = "test"
+    ARGV['coverage'] = True
+    yield
+    ARGV['cli'] = False
+    ARGV['coverage'] = False
+
+
+@pytest.fixture(scope="function")
 def clean_network():
     network.rpc.reset()
     yield

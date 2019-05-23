@@ -18,6 +18,8 @@ contract BrownieTester {
 
     address payable owner;
 
+    event Debug(uint a);
+
     constructor () public {
         owner = msg.sender;
     }
@@ -36,6 +38,7 @@ contract BrownieTester {
     }
 
     function testRevertStrings(uint a) external returns (bool) {
+        emit Debug(a);
         require (a != 0, "zero");
         require (a != 1); // dev: one
         require (a != 2, "two"); // dev: error
