@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 
 import brownie.project as project
-from brownie._config import ARGV, CONFIG
+from brownie._config import CONFIG
 
 
 __doc__ = """Usage: brownie init [<path>] [options]
@@ -38,6 +38,5 @@ def main():
             "Create a new folder for your project and run brownie init there."
         )
 
-    project.new(path, ARGV['force'])
+    project.new(path, args['--force'])
     print("Brownie environment has been initiated at {}".format(path))
-    sys.exit()

@@ -51,6 +51,4 @@ def main():
         str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
         str(final_path.joinpath('brownie-config.json'))
     )
-
     print("Brownie mix '{}' has been initiated at {}".format(args['<mix>'], final_path))
-    sys.exit()
