@@ -6,6 +6,7 @@ import re
 
 from brownie.cli.utils import color
 from brownie.types.types import _Singleton
+from brownie.exceptions import ContractExists
 from brownie._config import CONFIG
 
 
@@ -38,6 +39,14 @@ class Sources(metaclass=_Singleton):
         for name, inherited in [(k, v['inherited'].copy()) for k, v in self._data.items()]:
             self._data[name]['inherited'] = self._recursive_inheritance(inherited)
 
+    def _add_source(self, source):
+        path = "<string-{}>".format(self._string_iter)
+        self._source[path] = source
+        self._remove_comments(path)
+        self._get_contract_data(path)
+        self._string_iter += 1
+        return path
+
     def _remove_comments(self, path):
         source = self._source[str(path)]
         offsets = [(0, 0)]
@@ -62,6 +71,10 @@ class Sources(metaclass=_Singleton):
             )[0]
             inherited = set(i.strip() for i in inherited.split(', ') if i)
             offset = self._uncommented_source[str(path)].index(source)
+            if name in self._data and not self._data[name]['sourcePath'].startswith('<string-'):
+                raise ContractExists(
+                    "Contract '{}' already exists in the active project.".format(name)
+                )
             self._data[name] = {
                 'sourcePath': str(path),
                 'type': type_,
@@ -152,17 +165,6 @@ class Sources(metaclass=_Singleton):
         if contract_name:
             return self._data[contract_name]['inherited'].copy()
         return dict((k, v['inherited'].copy()) for k, v in self._data.items())
-
-    def add_source(self, source):
-        '''Given source code as a string, adds it to the object and returns a path
-        string formatted as "<string-X>" where X is a number that is incremented.
-        '''
-        path = "<string-{}>".format(self._string_iter)
-        self._source[path] = source
-        self._remove_comments(path)
-        self._get_contract_data(path)
-        self._string_iter += 1
-        return path
 
     def get_highlighted_source(self, path, start, stop, pad=3):
         '''Returns a highlighted section of source code.

@@ -61,7 +61,7 @@ def compile_contracts(contract_paths):
 
 def compile_source(code):
     '''Compiles the contract source and returns a dict of build data.'''
-    path = sources.add_source(code)
+    path = sources._add_source(code)
     input_json = STANDARD_JSON.copy()
     input_json['sources'] = {path: {'content': code}}
     return _compile_and_format(input_json)

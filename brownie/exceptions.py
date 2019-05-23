@@ -74,6 +74,10 @@ class VirtualMachineError(Exception):
 
 # project/
 
+class ContractExists(Exception):
+    pass
+
+
 class ProjectAlreadyLoaded(Exception):
     pass
 
