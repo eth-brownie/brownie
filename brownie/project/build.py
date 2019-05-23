@@ -28,6 +28,7 @@ BUILD_KEYS = [
     'compiler',
     'contractName',
     'coverageMap',
+    'coverageMapTotals',
     'deployedBytecode',
     'deployedSourceMap',
     'opcodes',
