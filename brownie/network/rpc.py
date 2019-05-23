@@ -142,7 +142,7 @@ class Rpc(metaclass=_Singleton):
         return self._request("evm_snapshot", [])
 
     def _revert(self, id_):
-        if web3.isConnected() and web3.eth.blockNumber == 0:
+        if web3.isConnected() and not web3.eth.blockNumber and not self._time_offset:
             return self._snap()
         self._request("evm_revert", [id_])
         id_ = self._snap()
