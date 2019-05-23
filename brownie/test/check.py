@@ -130,7 +130,7 @@ def equal(a, b, fail_msg="Expected values to be equal", strict=False):
         a: First value.
         b: Second value.
         fail_msg: Message to show if check fails.'''
-    if not _compare_input(a, b):
+    if not _compare_input(a, b, strict):
         raise AssertionError(fail_msg+": {} != {}".format(a, b))
 
 
@@ -141,23 +141,31 @@ def not_equal(a, b, fail_msg="Expected values to be not equal", strict=False):
         a: First value.
         b: Second value.
         fail_msg: Message to show if check fails.'''
-    if _compare_input(a, b):
+    if _compare_input(a, b, strict):
         raise AssertionError(fail_msg+": {} == {}".format(a, b))
 
 
 def _compare_input(a, b, strict=False):
     if type(a) not in (tuple, list, KwargTuple):
-        if strict and type(a) != type(b):
-            return False
-        if not strict and type(b) is str:
-            if type(a) is int and not b.startswith("0x"):
-                try:
-                    return a == wei(b)
-                except ValueError:
-                    return False
-            if type(a) is str and a.startswith("0x") and b.startswith("0x"):
-                return a.lstrip('0x') == b.lstrip('0x')
-        return a == b
+        types_ = set([type(a), type(b)])
+        if dict in types_:
+            return a == b
+        if strict or types_.intersection([bool, type(None)]):
+            return a is b
+        return _convert_str(a) == _convert_str(b)
     if type(b) not in (tuple, list, KwargTuple) or len(b) != len(a):
         return False
     return not [i for i in range(len(a)) if not _compare_input(a[i], b[i], strict)]
+
+
+def _convert_str(value):
+    if type(value) is not str:
+        return value
+    if value.startswith('0x'):
+        return "0x" + value.lstrip('0x').lower()
+    if value.count(" ") != 1:
+        return value
+    try:
+        return wei(value)
+    except ValueError:
+        return value

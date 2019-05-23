@@ -6,7 +6,7 @@ from hexbytes import HexBytes
 from brownie.exceptions import InvalidABI
 
 UNITS = {
-    'wei': 1,
+    'wei': 0,
     'kwei': 3,
     'babbage': 3,
     'mwei': 6,
