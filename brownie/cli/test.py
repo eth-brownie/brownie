@@ -132,7 +132,7 @@ def get_test_data(test_paths):
                 ", ".join(duplicates)
             ))
         if 'setup' in test_names:
-            fn, args = _get_fn(module, 'setup')
+            args = _get_fn(module, 'setup')[-1]
             if args['skip'] is True or (args['skip'] == "coverage" and ARGV['coverage']):
                 continue
         test_data.append((module, coverage_json, coverage_eval, test_names))
@@ -173,7 +173,7 @@ def run_test_modules(test_data, save):
     start_time = time.time()
     try:
         for (module, coverage_json, coverage_eval, test_names) in test_data:
-            tb, cov, contracts = run_test(module, network, test_names)
+            tb, cov, contracts = run_test(module, test_names)
             if tb:
                 traceback_info += tb
                 if coverage_json.exists():
@@ -217,17 +217,12 @@ def run_test_modules(test_data, save):
     print("{0[success]}SUCCESS{0}: All tests passed.".format(color))
 
 
-def run_test(module, network, test_names):
+def run_test(module, test_names):
     network.rpc.reset()
 
     if 'setup' in test_names:
         test_names.remove('setup')
         fn, default_args = _get_fn(module, 'setup')
-
-        if default_args['skip'] is True or (
-            default_args['skip'] == "coverage" and ARGV['coverage']
-        ):
-            return [], {}, set()
         p = TestPrinter(module.__file__, 0, len(test_names))
         tb, coverage_eval = run_test_method(fn, default_args, {}, p)
         if tb:
@@ -286,7 +281,7 @@ def run_test_method(fn, args, coverage_eval, p):
         path = Path(sys.modules[fn.__module__].__file__).relative_to(CONFIG['folders']['project'])
         path = "{0[module]}{1}.{0[callable]}{2}{0}".format(color, str(path)[:-3], fn.__name__)
         tb = color.format_tb(sys.exc_info(), sys.modules[fn.__module__].__file__)
-        return [(path, tb, type(e))], coverage_eval
+        return [(path, tb, type(e))], {}
 
 
 def display_report(coverage_files, save):
