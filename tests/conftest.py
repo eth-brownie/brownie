@@ -52,9 +52,11 @@ def test_mode():
 def coverage_mode():
     ARGV['cli'] = "test"
     ARGV['coverage'] = True
+    ARGV['always_transact'] = True
     yield
     ARGV['cli'] = False
     ARGV['coverage'] = False
+    ARGV['always_transact'] = False
 
 
 @pytest.fixture(scope="function")
