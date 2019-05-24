@@ -8,7 +8,7 @@ install:
   - sudo apt-get install -y python$TRAVIS_PYTHON_VERSION-dev python$TRAVIS_PYTHON_VERSION-tk npm solc
   - npm -g install ganache-cli
   - pip install -r requirements-dev.txt
-  - pip install tox-travis
+  - pip install tox-travis coveralls
 matrix:
   include:
   - name: '3.6'
@@ -16,3 +16,4 @@ matrix:
   - name: '3.7'
     python: 3.7
 script: tox
+after_success: if [ "${TRAVIS_PYTHON_VERSION}" == "3.7" ]; then coveralls; fi;
