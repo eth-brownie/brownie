@@ -17,3 +17,8 @@ def setup():
 @pytest.fixture(scope="module")
 def test_paths():
     yield test.get_test_paths(None)
+
+# cli.test TODO (after module is refactored)
+# test.run_test_modules
+# test.run_test
+# test.display_report
