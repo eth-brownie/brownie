@@ -13,12 +13,7 @@ from brownie._config import CONFIG
 class Sources(metaclass=_Singleton):
 
     def __init__(self):
-        self._source = {}
-        self._uncommented_source = {}
-        self._comment_offsets = {}
-        self._path = None
-        self._data = {}
-        self._string_iter = 1
+        self._clear()
 
     def __getitem__(self, key):
         if key in self._data:
@@ -111,6 +106,14 @@ class Sources(metaclass=_Singleton):
         for name in inherited:
             final |= self._recursive_inheritance(self._data[name]['inherited'])
         return final
+
+    def _clear(self):
+        self._source = {}
+        self._uncommented_source = {}
+        self._comment_offsets = {}
+        self._path = None
+        self._data = {}
+        self._string_iter = 1
 
     def get_hash(self, contract_name):
         '''Returns a hash of the contract source code.'''

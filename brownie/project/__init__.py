@@ -4,9 +4,10 @@ from .loader import (  # NOQA 401
     check_for_project,
     new,
     load,
+    close,
     compile_source
 )
 
-__all__ = ['__project']
+__all__ = ['__brownie_import_all__']
 
-__project = None
+__brownie_import_all__ = None

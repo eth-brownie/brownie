@@ -10,7 +10,7 @@ from brownie.network import (
 )
 from brownie.project import (
     compile_source,
-    __project
+    __brownie_import_all__
 )
 from brownie.gui import Gui
 from brownie.test import check
@@ -25,7 +25,7 @@ __all__ = [
     'rpc',
     'web3',
     'project',
-    '__project',
+    '__brownie_import_all__',
     'check',
     'compile_source',
     'wei',

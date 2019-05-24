@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-
 from pathlib import Path
 import shutil
 import sys
@@ -73,7 +72,7 @@ def load(path=None):
     if path is None:
         path = check_for_project('.')
     if not path or not Path(path).joinpath("brownie-config.json").exists():
-        raise ProjectNotFound("Could not find brownie project")
+        raise ProjectNotFound("Could not find Brownie project")
     path = Path(path).resolve()
     CONFIG['folders']['project'] = str(path)
     for folder in [i for i in FOLDERS]:
@@ -92,9 +91,26 @@ def load(path=None):
         sys.modules['brownie.project'].__all__.append(name)
         result.append(container)
         # if running via interpreter, add to main namespace if package was imported via from
-        if '__project' in sys.modules['__main__'].__dict__:
+        if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].__dict__[name] = container
     return result
+
+
+def close(exc=True):
+    if not CONFIG['folders']['project']:
+        if not exc:
+            return
+        raise ProjectNotFound("No Brownie project currently open")
+    Sources()._clear()
+    Build()._clear()
+    for name in sys.modules['brownie.project'].__all__.copy():
+        if name == "__brownie_import_all__":
+            continue
+        del sys.modules['brownie.project'].__dict__[name]
+        if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
+            del sys.modules['__main__'].__dict__[name]
+    sys.modules['brownie.project'].__all__ = ['__brownie_import_all__']
+    CONFIG['folders']['project'] = None
 
 
 def compile_source(source):

@@ -46,8 +46,7 @@ sources = Sources()
 class Build(metaclass=_Singleton):
 
     def __init__(self):
-        self._build = {}
-        self._path = None
+        self._clear()
 
     def __getitem__(self, contract_name):
         return self._build[contract_name.replace('.json', '')]
@@ -115,7 +114,6 @@ class Build(metaclass=_Singleton):
         )
 
     def _generate_revert_map(self):
-        self._revert_map = {}
         for pcMap in [v['pcMap'] for v in self._build.values()]:
             for pc, data in [(k, v) for k, v in pcMap.items() if v['op'] in ("REVERT", "INVALID")]:
                 revert = [data['path'], data['start'], data['stop'], ""]
@@ -149,6 +147,11 @@ class Build(metaclass=_Singleton):
                         continue
                 coverage_json.unlink()
                 break
+
+    def _clear(self):
+        self._build = {}
+        self._path = None
+        self._revert_map = {}
 
     def items(self):
         return self._build.items()
