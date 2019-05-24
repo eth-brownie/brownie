@@ -10,7 +10,6 @@ from brownie.network import (
 )
 from brownie.project import (
     compile_source,
-    project,
     __project
 )
 from brownie.gui import Gui

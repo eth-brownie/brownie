@@ -4,7 +4,8 @@ import json
 from pathlib import Path
 import re
 
-from brownie.project import Build, Sources
+from brownie.project.build import Build
+from brownie.project.sources import Sources
 
 build = Build()
 sources = Sources()
