@@ -56,7 +56,6 @@ Then use ``tox`` to run the complete suite against the full set of build targets
 
 Help is always appreciated! In particular, Brownie needs work in the following areas before we can comfortably take it out of beta:
 
-* Tests
 * More tests
 
 Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
