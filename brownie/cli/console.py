@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import ast
 import builtins
 from docopt import docopt
 import importlib
@@ -70,11 +71,12 @@ class Console:
                     cmd = self._input(self._prompt)
                     if not cmd.strip():
                         return
-                    compile(cmd, '<stdin>', 'exec')
+                    ast.parse(cmd)
                     return cmd
                 new_cmd = self._input("... ")
                 cmd += "\n" + new_cmd
-                if len(compile(cmd, '<stdin>', 'exec').co_consts) <= 2 or not new_cmd:
+                ast_type = type(ast.parse(cmd).body[0])
+                if ast_type not in (ast.ClassDef, ast.For, ast.FunctionDef) or not new_cmd:
                     return cmd
             except SyntaxError as e:
                 if e.msg != "unexpected EOF while parsing":
@@ -86,7 +88,7 @@ class Console:
                     self._prompt = "... "
                     continue
                 try:
-                    compile(cmd+".", '<stdin>', 'exec')
+                    ast.parse(cmd+".")
                 except IndentationError:
                     return cmd
                 except SyntaxError:
