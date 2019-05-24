@@ -118,9 +118,9 @@ class Build(metaclass=_Singleton):
         self._revert_map = {}
         for pcMap in [v['pcMap'] for v in self._build.values()]:
             for pc, data in [(k, v) for k, v in pcMap.items() if v['op'] in ("REVERT", "INVALID")]:
-                revert = [data['contract'], data['start'], data['stop'], ""]
+                revert = [data['path'], data['start'], data['stop'], ""]
                 try:
-                    s = sources[data['contract']][data['stop']:]
+                    s = sources[data['path']][data['stop']:]
                     err = s[:s.index('\n')]
                     err = err[err.index('//')+2:].strip()
                     if err.startswith('dev:'):

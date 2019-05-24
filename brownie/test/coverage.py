@@ -36,11 +36,10 @@ def analyze_coverage(history):
                 coverage_eval[name] = dict((i, {}) for i in coverage_map[name])
             if name not in tx_eval:
                 tx_eval[name] = dict((i, {}) for i in coverage_map[name])
-
-            fn = pcMap[name][pc]['fn']
-            if not fn:
+            if 'fn' not in pcMap[name][pc]:
                 continue
 
+            fn = pcMap[name][pc]['fn']
             coverage_eval[name][path].setdefault(fn, {'tx': set(), 'true': set(), 'false': set()})
             tx_eval[name][path].setdefault(fn, set())
             if t['op'] != "JUMPI":

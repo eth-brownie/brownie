@@ -49,7 +49,7 @@ class ScopingToggle(_Toggle):
         pc = self.root.pcMap[op]
         for key, value in sorted(self.root.pcMap.items(), key=lambda k: int(k[0])):
             if (
-                not value['contract'] or value['contract'] != pc['contract'] or
+                not value['path'] or value['path'] != pc['path'] or
                 value['start'] < pc['start'] or value['stop'] > pc['stop']
             ):
                 self.oplist.detach(key)

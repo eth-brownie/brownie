@@ -67,14 +67,14 @@ class ListView(ttk.Treeview):
     def set_opcodes(self, pcMap):
         self.delete_all()
         for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)]:
-            if not op['contract'] or (
-                op['contract'] == pcMap[0]['contract'] and
+            if not op['path'] or (
+                op['path'] == pcMap[0]['path'] and
                 op['start'] == pcMap[0]['start'] and
                 op['stop'] == pcMap[0]['stop']
             ):
                 tag = "NoSource"
             else:
-                tag = "{0[start]}:{0[stop]}:{0[contract]}".format(op)
+                tag = "{0[start]}:{0[stop]}:{0[path]}".format(op)
             self.insert([str(pc), op['op']], [tag, op['op']])
 
     def _select_bind(self, event):
@@ -91,10 +91,10 @@ class ListView(ttk.Treeview):
             return
         self.tag_configure(tag, background="#2a4864")
         self._last = tag
-        if not pcMap[pc]['contract']:
+        if not pcMap[pc]['path']:
             note.active_frame().clear_highlight()
             return
-        note.set_active(pcMap[pc]['contract'])
+        note.set_active(pcMap[pc]['path'])
         note.active_frame().highlight(pcMap[pc]['start'], pcMap[pc]['stop'])
 
     def _seek(self, event):

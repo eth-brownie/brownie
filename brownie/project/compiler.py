@@ -94,7 +94,7 @@ def _compile_and_format(input_json):
                 n[:36],
                 evm['bytecode']['object'][loc+40:]
             )
-        all_paths = sorted(set(v['contract'] for v in evm['pcMap'].values() if v['contract']))
+        all_paths = sorted(set(v['path'] for v in evm['pcMap'].values() if v['path']))
         result[name] = {
             'abi': data['abi'],
             'allSourcePaths': all_paths,
@@ -123,7 +123,7 @@ def _generate_pcMap(compiled):
     '''
     Generates an expanded sourceMap useful for debugging.
     [{
-        'contract': relative path of the contract source code
+        'path': relative path of the contract source code
         'jump': jump instruction as supplied in the sourceMap (-,i,o)
         'op': opcode string
         'pc': program counter as given by debug_traceTransaction
@@ -158,9 +158,7 @@ def _generate_pcMap(compiled):
             'start': last[0],
             'stop': last[0]+last[1],
             'op': opcodes.pop(),
-            'contract': id_map[last[2]],
-            'jump': last[3],
-            'fn': False
+            'path': id_map[last[2]],
         }}
         pcMap[0]['value'] = opcodes.pop()
         for value in source_map.split(';')[1:]:
@@ -178,10 +176,14 @@ def _generate_pcMap(compiled):
                 'start': last[0],
                 'stop': last[0]+last[1],
                 'op': opcodes.pop(),
-                'contract': contract,
-                'jump': last[3],
-                'fn': sources.get_fn(contract, last[0], last[0]+last[1])
+                'path': contract,
             }
+            if last[3] != "-":
+                pcMap[pc]['jump'] = last[3]
+            if contract:
+                fn = sources.get_fn(contract, last[0], last[0]+last[1])
+                if fn:
+                    pcMap[pc]['fn'] = fn
             if opcodes[-1][:2] == "0x":
                 pcMap[pc]['value'] = opcodes.pop()
         compiled['contracts'][filename][name]['evm']['pcMap'] = pcMap
@@ -209,18 +211,18 @@ def _generate_coverageMap(build):
     if not line_map:
         return {}
 
-    final = dict((i, {}) for i in set(i['contract'] for i in line_map))
+    final = dict((i, {}) for i in set(i['path'] for i in line_map))
     for i in line_map:
-        fn = sources.get_fn(i['contract'], i['start'], i['stop'])
+        fn = sources.get_fn(i['path'], i['start'], i['stop'])
         if not fn:
             continue
-        final[i['contract']].setdefault(fn, []).append({
+        final[i['path']].setdefault(fn, []).append({
             'jump': i['jump'],
             'start': i['start'],
             'stop': i['stop']
         })
         for pc in i['pc']:
-            build['pcMap'][pc]['coverageIndex'] = len(final[i['contract']][fn]) - 1
+            build['pcMap'][pc]['coverageIndex'] = len(final[i['path']][fn]) - 1
     return final
 
 
@@ -245,10 +247,10 @@ def _isolate_lines(compiled):
     line_map = {}
 
     # find all the JUMPI opcodes
-    for i in [k for k, v in pcMap.items() if v['contract'] and v['op'] == "JUMPI"]:
+    for i in [k for k, v in pcMap.items() if v['path'] and v['op'] == "JUMPI"]:
         op = pcMap[i]
-        if op['contract'] not in line_map:
-            line_map[op['contract']] = []
+        if op['path'] not in line_map:
+            line_map[op['path']] = []
         # if followed by INVALID or the source contains public, ignore it
         if pcMap[i+1]['op'] == "INVALID" or " public " in _get_source(op):
             continue
@@ -257,30 +259,30 @@ def _isolate_lines(compiled):
             # a different source offset and is not a JUMPDEST
             pc = next(
                 x for x in range(i - 4, 0, -1) if x in pcMap and
-                pcMap[x]['contract'] and pcMap[x]['op'] != "JUMPDEST" and
+                pcMap[x]['path'] and pcMap[x]['op'] != "JUMPDEST" and
                 (pcMap[x]['start'], pcMap[x]['stop']) != (op['start'], op['stop'])
             )
         except StopIteration:
             continue
-        line_map[op['contract']].append(_base(pc, pcMap[pc]))
-        line_map[op['contract']][-1].update({'jump': i})
+        line_map[op['path']].append(_base(pc, pcMap[pc]))
+        line_map[op['path']][-1].update({'jump': i})
 
     # analyze all the opcodes
     for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)]:
         # ignore code that spans multiple lines
-        if not op['contract'] or ';' in _get_source(op):
+        if not op['path'] or ';' in _get_source(op):
             continue
-        if op['contract'] not in line_map:
-            line_map[op['contract']] = []
+        if op['path'] not in line_map:
+            line_map[op['path']] = []
         # find existing related coverage map item, make a new one if none exists
         try:
             ln = next(
-                i for i in line_map[op['contract']] if
-                i['contract'] == op['contract'] and
+                i for i in line_map[op['path']] if
+                i['path'] == op['path'] and
                 i['start'] <= op['start'] < i['stop']
             )
         except StopIteration:
-            line_map[op['contract']].append(_base(pc, op))
+            line_map[op['path']].append(_base(pc, op))
             continue
         if op['stop'] > ln['stop']:
             # if coverage map item is a jump, do not modify the source offsets
@@ -293,7 +295,7 @@ def _isolate_lines(compiled):
     for contract in line_map:
         line_map[contract] = sorted(
             line_map[contract],
-            key=lambda k: (k['contract'], k['start'], k['stop'])
+            key=lambda k: (k['path'], k['start'], k['stop'])
         )
         ln_map = line_map[contract]
         i = 0
@@ -320,12 +322,12 @@ def _isolate_lines(compiled):
 
 
 def _get_source(op):
-    return sources[op['contract']][op['start']:op['stop']]
+    return sources[op['path']][op['start']:op['stop']]
 
 
 def _base(pc, op):
     return {
-        'contract': op['contract'],
+        'path': op['path'],
         'start': op['start'],
         'stop': op['stop'],
         'pc': set([pc]),

@@ -324,12 +324,12 @@ class TransactionReceipt:
             return
         contract = self.contract_address or self.receiver
         pc = contract._build['pcMap'][0]
-        fn = sources.get_contract_name(pc['contract'], pc['start'], pc['stop'])
-        fn += "."+self.fn_name.split('.')[-1]
+        fn = self.fn_name
         last_map = {0: {
             'address': contract.address,
             'contract': contract,
             'fn': [fn],
+            'jumpDepth': 1
         }}
         trace[0].update({
             'address': last_map[0]['address'],
@@ -337,7 +337,7 @@ class TransactionReceipt:
             'fn': last_map[0]['fn'][-1],
             'jumpDepth': 1,
             'source': {
-                'filename': pc['contract'],
+                'filename': pc['path'],
                 'start': pc['start'],
                 'stop': pc['stop']
             }
@@ -351,12 +351,13 @@ class TransactionReceipt:
                 memory_idx = int(trace[i-1]['stack'][stack_idx], 16) * 2
                 sig = "0x" + "".join(trace[i-1]['memory'])[memory_idx:memory_idx+8]
                 pc = contract._build['pcMap'][trace[i]['pc']]
-                fn = sources.get_contract_name(pc['contract'], pc['start'], pc['stop'])
+                fn = sources.get_contract_name(pc['path'], pc['start'], pc['stop'])
                 fn += "."+(contract.get_method(sig) or "")
                 last_map[trace[i]['depth']] = {
                     'address': address,
                     'contract': contract,
                     'fn': [fn],
+                    'jumpDepth': 1
                     }
             last = last_map[trace[i]['depth']]
             contract = last['contract']
@@ -364,20 +365,24 @@ class TransactionReceipt:
                 'address': last['address'],
                 'contractName': contract._name,
                 'fn': last['fn'][-1],
-                'jumpDepth': len(set(last['fn']))
+                'jumpDepth': last['jumpDepth']
             })
             pc = contract._build['pcMap'][trace[i]['pc']]
             trace[i]['source'] = {
-                'filename': pc['contract'],
+                'filename': pc['path'],
                 'start': pc['start'],
                 'stop': pc['stop']
             }
             # jump 'i' is moving into an internal function
+            if 'jump' not in pc or 'fn' not in pc or pc['fn'] == last['fn'][-1]:
+                continue
             if pc['jump'] == 'i':
-                last['fn'].append(pc['fn'] or last['fn'][-1])
+                last['fn'].append(pc['fn'])
+                last['jumpDepth'] += 1
             # jump 'o' is coming out of an internal function
-            elif pc['jump'] == "o" and len(['fn']) > 1:
+            elif pc['jump'] == "o" and last['jumpDepth'] > 1:
                 del last['fn'][-1]
+                last['jumpDepth'] -= 1
 
     def call_trace(self):
         '''Displays the sequence of contracts and functions called while

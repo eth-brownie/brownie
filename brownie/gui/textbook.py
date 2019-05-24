@@ -129,7 +129,7 @@ class TextBook(ttk.Notebook):
         else:
             pc = [
                 k for k, v in self.root.pcMap.items() if
-                v['contract'] and frame._label in v['contract'] and
+                v['path'] and frame._label in v['path'] and
                 start >= v['start'] and stop <= v['stop']
             ]
         if not pc:
