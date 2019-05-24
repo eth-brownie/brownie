@@ -1066,8 +1066,8 @@ Rpc
         100000000000000000000
 
 
-``brownie.network.transction``
-==============================
+``brownie.network.transaction``
+===============================
 
 The ``transaction`` module contains the ``TransactionReceipt`` class and related internal methods.
 

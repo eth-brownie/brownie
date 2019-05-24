@@ -4,7 +4,6 @@ from docopt import docopt
 import shutil
 
 import brownie.project as project
-from brownie._config import ARGV
 
 __doc__ = """Usage: brownie compile [options]
 
@@ -17,10 +16,10 @@ in the build/contracts folder."""
 
 
 def main():
-    docopt(__doc__)
+    args = docopt(__doc__)
     project_path = project.check_for_project('.')
     build_path = project_path.joinpath('build/contracts')
-    if ARGV['all']:
+    if args['--all']:
         shutil.rmtree(build_path, ignore_errors=True)
     project.load(project_path)
     print("Brownie project has been compiled at {}".format(build_path))

@@ -68,22 +68,10 @@ def main():
     test_paths = get_test_paths(args['<filename>'])
     coverage_files, test_data = get_test_data(test_paths)
 
-    if len(test_paths) == 1 and args['<range>']:
-        try:
-            idx = args['<range>']
-            if ':' in idx:
-                idx = slice(*[int(i)-1 for i in idx.split(':')])
-            else:
-                idx = slice(int(idx)-1, int(idx))
-            if 'setup' in test_data[0][4]:
-                test_data[0][4].remove('setup')
-                test_data[0][4] = ['setup'] + test_data[0][4][idx]
-            else:
-                test_data[0][4] = ['setup'] + test_data[0][4][idx]
-        except Exception:
-            sys.exit(ERROR+"Invalid range. Must be an integer or slice (eg. 1:4)")
-    elif args['<range>']:
-        sys.exit(ERROR+"Cannot specify a range when running multiple tests files.")
+    if args['<range>']:
+        if len(test_paths) > 1:
+            sys.exit(ERROR+"Cannot specify a range when running multiple tests files.")
+        test_data = apply_range(test_data, args['<range>'])
 
     if not test_data:
         print("No tests to run.")
@@ -130,7 +118,10 @@ def get_test_data(test_paths):
                 p.mkdir(exist_ok=True)
         module_name = str(path)[:-3].replace(os.sep, '.')
         module = importlib.import_module(module_name)
-        test_names = re.findall(r'\ndef[\s ]{1,}([^_]\w*)[\s ]*\([^)]*\)', path.open().read())
+        test_names = re.findall(
+            r'\ndef[\s ]{1,}([^_]\w*)[\s ]*\([^)]*\)',
+            project.joinpath(path).open().read()
+        )
         if not test_names:
             print("\n{0}No test functions in {1[module]}{2}.py{1}".format(WARN, color, path))
             continue
@@ -141,11 +132,31 @@ def get_test_data(test_paths):
                 ", ".join(duplicates)
             ))
         if 'setup' in test_names:
-            fn, args = _get_fn(module, 'setup')
+            args = _get_fn(module, 'setup')[-1]
             if args['skip'] is True or (args['skip'] == "coverage" and ARGV['coverage']):
                 continue
         test_data.append((module, coverage_json, coverage_eval, test_names))
     return coverage_files, test_data
+
+
+def apply_range(test_data, idx):
+    test_names = list(test_data[0][-1])
+    if "0" in idx:
+        sys.exit(ERROR+"Range cannot include 0. First test is 1.")
+    idx = [i-1 if i > 0 else i for i in (int(x) for x in idx.split(':'))]
+    if len(idx) > 1:
+        if (min(idx+[0]), max(idx+[0])).count(0) != 1:
+            sys.exit(ERROR+"Range must be entirely positive or negative.")
+    idx = slice(*idx) if len(idx) > 1 else idx[0]
+    try:
+        if 'setup' in test_names:
+            test_names.remove('setup')
+            test_names = ['setup'] + ([test_names[idx]] if type(idx) is int else test_names[idx])
+        else:
+            test_names = [test_names[idx]] if type(idx) is int else test_names[idx]
+        return [list(test_data[0][:-1])+[test_names]]
+    except IndexError:
+        sys.exit(ERROR+"Invalid range. Must be an integer or slice (eg. 1:4)")
 
 
 def run_test_modules(test_data, save):
@@ -162,7 +173,7 @@ def run_test_modules(test_data, save):
     start_time = time.time()
     try:
         for (module, coverage_json, coverage_eval, test_names) in test_data:
-            tb, cov, contracts = run_test(module, network, test_names)
+            tb, cov, contracts = run_test(module, test_names)
             if tb:
                 traceback_info += tb
                 if coverage_json.exists():
@@ -206,17 +217,12 @@ def run_test_modules(test_data, save):
     print("{0[success]}SUCCESS{0}: All tests passed.".format(color))
 
 
-def run_test(module, network, test_names):
+def run_test(module, test_names):
     network.rpc.reset()
 
     if 'setup' in test_names:
         test_names.remove('setup')
         fn, default_args = _get_fn(module, 'setup')
-
-        if default_args['skip'] is True or (
-            default_args['skip'] == "coverage" and ARGV['coverage']
-        ):
-            return [], {}, set()
         p = TestPrinter(module.__file__, 0, len(test_names))
         tb, coverage_eval = run_test_method(fn, default_args, {}, p)
         if tb:
@@ -275,7 +281,7 @@ def run_test_method(fn, args, coverage_eval, p):
         path = Path(sys.modules[fn.__module__].__file__).relative_to(CONFIG['folders']['project'])
         path = "{0[module]}{1}.{0[callable]}{2}{0}".format(color, str(path)[:-3], fn.__name__)
         tb = color.format_tb(sys.exc_info(), sys.modules[fn.__module__].__file__)
-        return [(path, tb, type(e))], coverage_eval
+        return [(path, tb, type(e))], {}
 
 
 def display_report(coverage_files, save):

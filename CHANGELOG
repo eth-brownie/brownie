@@ -1,3 +1,12 @@
+1.0.0b7
+-------
+
+ - Commented dev revert strings
+ - Custom exception classes
+ - Standardize contract outputs
+ - Add Travis and Tox, test coverage at 67%
+ - Many bugfixes
+
 1.0.0b6
 -------
 

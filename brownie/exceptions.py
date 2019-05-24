@@ -9,6 +9,14 @@ class UnknownAccount(Exception):
     pass
 
 
+class AmbiguousMethods(Exception):
+    pass
+
+
+class UndeployedLibrary(Exception):
+    pass
+
+
 class _RPCBaseException(Exception):
 
     def __init__(self, msg, cmd, proc, uri):
@@ -65,6 +73,10 @@ class VirtualMachineError(Exception):
 
 
 # project/
+
+class ContractExists(Exception):
+    pass
+
 
 class ProjectAlreadyLoaded(Exception):
     pass

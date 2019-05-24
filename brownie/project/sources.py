@@ -4,7 +4,9 @@ from hashlib import sha1
 from pathlib import Path
 import re
 
+from brownie.cli.utils import color
 from brownie.types.types import _Singleton
+from brownie.exceptions import ContractExists
 from brownie._config import CONFIG
 
 
@@ -37,6 +39,14 @@ class Sources(metaclass=_Singleton):
         for name, inherited in [(k, v['inherited'].copy()) for k, v in self._data.items()]:
             self._data[name]['inherited'] = self._recursive_inheritance(inherited)
 
+    def _add_source(self, source):
+        path = "<string-{}>".format(self._string_iter)
+        self._source[path] = source
+        self._remove_comments(path)
+        self._get_contract_data(path)
+        self._string_iter += 1
+        return path
+
     def _remove_comments(self, path):
         source = self._source[str(path)]
         offsets = [(0, 0)]
@@ -61,11 +71,15 @@ class Sources(metaclass=_Singleton):
             )[0]
             inherited = set(i.strip() for i in inherited.split(', ') if i)
             offset = self._uncommented_source[str(path)].index(source)
+            if name in self._data and not self._data[name]['sourcePath'].startswith('<string-'):
+                raise ContractExists(
+                    "Contract '{}' already exists in the active project.".format(name)
+                )
             self._data[name] = {
                 'sourcePath': str(path),
                 'type': type_,
                 'inherited': inherited.union(re.findall(r"(?:;|{)\s*using *(\S*)(?= for)", source)),
-                'sha1': sha1(source.encode()).hexdigest(),
+                'sha1': sha1(self._source[str(path)].encode()).hexdigest(),
                 'fn_offsets': [],
                 'offset': (
                     self._commented_offset(path, offset),
@@ -99,7 +113,7 @@ class Sources(metaclass=_Singleton):
         return final
 
     def get_hash(self, contract_name):
-        '''Returns a hash of the contract source code after comments have been removed.'''
+        '''Returns a hash of the contract source code.'''
         return self._data[contract_name]['sha1']
 
     def get_path(self, contract_name):
@@ -152,13 +166,34 @@ class Sources(metaclass=_Singleton):
             return self._data[contract_name]['inherited'].copy()
         return dict((k, v['inherited'].copy()) for k, v in self._data.items())
 
-    def add_source(self, source):
-        '''Given source code as a string, adds it to the object and returns a path
-        string formatted as "<string-X>" where X is a number that is incremented.
-        '''
-        path = "<string-{}>".format(self._string_iter)
-        self._source[path] = source
-        self._remove_comments(path)
-        self._get_contract_data(path)
-        self._string_iter += 1
-        return path
+    def get_highlighted_source(self, path, start, stop, pad=3):
+        '''Returns a highlighted section of source code.
+
+        Args:
+            path: Path to the source
+            start: Start offset
+            stop: Stop offset
+            pad: Number of unrelated lines of code to include before and after
+
+        Returns:
+            str - Highlighted source code
+            str - Source code path
+            int - Line number that highlight begins on
+            str - Function name (or None)'''
+        source = self._source[path]
+        newlines = [i for i in range(len(source)) if source[i] == "\n"]
+        try:
+            pad_start = newlines.index(next(i for i in newlines if i >= start))
+            pad_stop = newlines.index(next(i for i in newlines if i >= stop))
+        except StopIteration:
+            return ""
+        ln = pad_start + 1
+        pad_start = newlines[max(pad_start-(pad+1), 0)]
+        pad_stop = newlines[min(pad_stop+pad, len(newlines)-1)]
+
+        return "{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
+            color,
+            source[pad_start:start],
+            source[start:stop],
+            source[stop:pad_stop]
+        ), path, ln, self.get_fn(path, start, stop)

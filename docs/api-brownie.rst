@@ -20,25 +20,71 @@ The ``brownie`` package is the main package containing all of Brownie's function
 
 The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
-.. py:exception:: CompilerError
+network
+*******
 
-    Raised by the compiler when there is an error within a contract's source code.
+.. py:exception:: brownie.exceptions.UnknownAccount
 
-.. py:exception:: ExpectedFailing
+    Raised when the ``Accounts`` container cannot locate a specified ``Account`` object.
 
-    Raised when a unit test is marked as ``pending=True`` but it still passes.
+.. py:exception:: brownie.exceptions.AmbiguousMethods
 
-.. py:exception:: RPCConnectionError
+    Raised by ``ContractContainer`` when a contract has multiple methods that share the same name.
+
+.. py:exception:: brownie.exceptions.UndeployedLibrary
+
+    Raised when attempting to deploy a contract that requires an unlinked library, but the library has not yet been deployed.
+
+.. py:exception:: brownie.exceptions.RPCConnectionError
 
     Raised when the RPC process is active and ``web3`` is connected, but Brownie is unable to communicate with it.
 
-.. py:exception:: RPCProcessError
+.. py:exception:: brownie.exceptions.RPCProcessError
 
     Raised when the RPC process fails to launch successfully.
 
-.. py:exception:: VirtualMachineError
+.. py:exception:: brownie.exceptions.RPCRequestError
 
-    Raised when a call to the EVM reverts.
+    Raised when a direct request to the RPC client has failed, such as a snapshot or advancing the time.
+
+.. py:exception:: brownie.exceptions.VirtualMachineError
+
+    Raised when a contract call causes the EVM to revert.
+
+project
+*******
+
+.. py:exception:: brownie.exceptions.ContractExists
+
+    Raised by ``project.compile_source`` when the source code contains a contract with a name that is the same as a contract in the active project.
+
+.. py:exception:: brownie.exceptions.ProjectAlreadyLoaded
+
+    Raised by ``project.load_project`` if a project has already been loaded.
+
+.. py:exception:: brownie.exceptions.ProjectNotFound
+
+    Raised by ``project.load_project`` when a project cannot be found at the given path.
+
+.. py:exception:: brownie.exceptions.CompilerError
+
+    Raised by the compiler when there is an error within a contract's source code.
+
+test
+****
+
+.. py:exception:: brownie.exceptions.ExpectedFailing
+
+    Raised when a unit test is marked as ``pending=True`` but it still passes.
+
+types
+*****
+
+.. py:exception:: brownie.exceptions.InvalidABI
+
+    Raised when an invalid ABI is given while converting contract inputs or outputs.
+
+
 
 ``brownie._config``
 ===================

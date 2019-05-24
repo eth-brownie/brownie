@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import ast
 import builtins
 from docopt import docopt
 import importlib
@@ -35,7 +36,6 @@ class Console:
 
     def __init__(self):
         self._print_lock = threading.Lock()
-        self._prompt = ">>> "
         self.__dict__.update({
             'dir': self._dir,
             'run': _run_script
@@ -51,70 +51,75 @@ class Console:
     def _run(self):
         local_ = {}
         builtins.print = self._print
+        while True:
+            cmd = self._get_cmd()
+            if not cmd:
+                continue
+            try:
+                self._run_cmd(cmd, local_)
+            except SystemExit:
+                return
+            except Exception:
+                print(color.format_tb(sys.exc_info(), start=1))
+
+    def _get_cmd(self):
         multiline = False
+        self._prompt = ">>> "
         while True:
             try:
                 if not multiline:
                     cmd = self._input(self._prompt)
                     if not cmd.strip():
-                        continue
-                    compile(cmd, '<stdin>', 'exec')
-                else:
-                    new_cmd = self._input("... ")
-                    cmd += "\n" + new_cmd
-                    if len(compile(cmd, '<stdin>', 'exec').co_consts) > 2 and new_cmd:
-                        continue
+                        return
+                    ast.parse(cmd)
+                    return cmd
+                new_cmd = self._input("... ")
+                cmd += "\n" + new_cmd
+                ast_type = type(ast.parse(cmd).body[0])
+                if ast_type not in (ast.ClassDef, ast.For, ast.FunctionDef) or not new_cmd:
+                    return cmd
             except SyntaxError as e:
                 if e.msg != "unexpected EOF while parsing":
                     self._prompt = ""
                     print(color.format_tb(sys.exc_info(), start=1))
-                    multiline = False
-                    self._prompt = ">>> "
-                    continue
+                    return
                 if not multiline:
                     multiline = True
                     self._prompt = "... "
                     continue
                 try:
-                    compile(cmd+".", '<stdin>', 'exec')
+                    ast.parse(cmd+".")
                 except IndentationError:
-                    pass
+                    return cmd
                 except SyntaxError:
-                    continue
+                    pass
             except KeyboardInterrupt:
                 sys.stdout.write("\nKeyboardInterrupt\n")
                 sys.stdout.flush()
-                multiline = False
-                self._prompt = ">>> "
-                continue
-            multiline = False
-            self._prompt = ""
+                return
+
+    def _run_cmd(self, cmd, local_):
+        self._prompt = ""
+        local_['__result'] = None
+        try:
+            exec('__result = ' + cmd, self.__dict__, local_)
+        except SyntaxError:
+            exec(cmd, self.__dict__, local_)
+            return
+        result = local_['__result']
+        if result is None:
+            return
+        if result and (type(result) is dict or hasattr(result, '_print_as_dict')):
+            color.pretty_dict(result)
+        elif type(result) is list or hasattr(result, '_print_as_list'):
+            color.pretty_list(result)
+        elif type(result) is str:
+            print(result)
+        else:
             try:
-                try:
-                    local_['_result'] = None
-                    exec('_result = ' + cmd, self.__dict__, local_)
-                    r = local_['_result']
-                    if r is not None:
-                        if r and (type(r) is dict or hasattr(r, '_print_as_dict')):
-                            color.pretty_dict(r)
-                        elif type(r) is list or hasattr(r, '_print_as_list'):
-                            color.pretty_list(r)
-                        elif type(r) is str:
-                            print(r)
-                        elif hasattr(r, '_console_repr'):
-                            try:
-                                print(r._console_repr())
-                            except TypeError:
-                                print(repr(r))
-                        else:
-                            print(repr(r))
-                except SyntaxError:
-                    exec(cmd, self.__dict__, local_)
-                except SystemExit:
-                    return
-            except Exception:
-                print(color.format_tb(sys.exc_info(), start=1))
-            self._prompt = ">>> "
+                print(result._console_repr())
+            except (AttributeError, TypeError):
+                print(repr(result))
 
     # replaces builtin print method, for threadsafe printing
     def _print(self, *args, sep=' ', end='\n', file=sys.stdout, flush=False):

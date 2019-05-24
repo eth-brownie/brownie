@@ -1,22 +1,36 @@
 #!/usr/bin/python3
 
+import os
 from pathlib import Path
-from subprocess import run, DEVNULL
+import pytest
+import sys
+
+from brownie import config
+from brownie.cli.init import main as init_main
 
 
-def test_init_project(tmpdir):
-    _run(tmpdir)
-    project_path = Path(tmpdir)
+@pytest.fixture(autouse=True, scope="function")
+def setup():
+    argv = sys.argv
+    sys.argv = ['brownie', 'init']
+    path = config['folders']['project']
+    config['folders']['project'] = None
+    yield
+    sys.argv = argv
+    config['folders']['project'] = path
+
+
+def test_init_project(testpath):
+    init_main()
+    project_path = Path(testpath)
     for path in ("contracts", "scripts", "reports", "tests", "brownie-config.json"):
         assert project_path.joinpath(path).exists()
 
 
-def test_init_inside(tmpdir):
-    _run(tmpdir)
-    _run(tmpdir+"/contracts")
-    project_path = Path(tmpdir)
-    assert not project_path.joinpath(tmpdir+"/contracts/brownie-config.json").exists()
-
-
-def _run(cwd):
-    run(['brownie', 'init'], cwd=cwd, stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL, check=True)
+def test_init_inside(testpath):
+    init_main()
+    os.chdir(testpath+"/contracts")
+    config['folders']['project'] = False
+    with pytest.raises(SystemError):
+        init_main()
+    assert not Path(testpath).joinpath("contracts/brownie-config.json").exists()

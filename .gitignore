@@ -1,6 +1,7 @@
 __pycache__
 .vscode
 .history
+.coverage
 build/
 brownie/data/accounts
 brownie/data/topics.json

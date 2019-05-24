@@ -11,6 +11,7 @@ from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.network.history import TxHistory, _ContractHistory
 from brownie.network.event import decode_logs, decode_trace
+from brownie.project.build import Build
 from brownie.project.sources import Sources
 from brownie.types import KwargTuple
 from brownie.types.convert import format_output
@@ -34,6 +35,7 @@ history = TxHistory()
 _contracts = _ContractHistory()
 web3 = Web3()
 sources = Sources()
+build = Build()
 
 
 class TransactionReceipt:
@@ -65,7 +67,7 @@ class TransactionReceipt:
         return_value: Returned value from contract call
         revert_msg: Error string from reverted contract all'''
 
-    def __init__(self, txid, sender=None, silent=False, name='', callback=None):
+    def __init__(self, txid, sender=None, silent=False, name='', callback=None, revert=None):
         if type(txid) is not str:
             txid = txid.hex()
         if CONFIG['logging']['tx'] and not silent:
@@ -73,6 +75,7 @@ class TransactionReceipt:
         history._add_tx(self)
         self.__dict__.update({
             '_trace': None,
+            '_revert_pc': None,
             'block_number': None,
             'contract_address': None,
             'fn_name': name,
@@ -89,6 +92,16 @@ class TransactionReceipt:
             'txindex': None,
             'value': None
         })
+        if revert:
+            self._revert_pc = revert[1]
+            if revert[0]:
+                # revert message was returned
+                self.revert_msg = revert[0]
+            else:
+                # check for revert message as comment
+                revert = build.get_dev_revert(revert[1])
+                if type(revert) is str:
+                    self.revert_msg = revert
         t = threading.Thread(
             target=self._await_confirm,
             args=[silent, callback],
@@ -102,6 +115,9 @@ class TransactionReceipt:
             if ARGV['coverage']:
                 self.trace
             if not self.status:
+                if revert is None:
+                    # no revert message and unable to check dev string - have to get trace
+                    self.trace
                 raise VirtualMachineError({
                     "message": "revert "+(self.revert_msg or ""),
                     "source": self.error(1)
@@ -144,7 +160,8 @@ class TransactionReceipt:
             'logs': receipt['logs'],
             'status': receipt['status']
         })
-        self.events = decode_logs(receipt['logs'])
+        if self.status:
+            self.events = decode_logs(receipt['logs'])
         if self.fn_name and ARGV['gas']:
             _profile_gas(self.fn_name, receipt['gasUsed'])
         if not silent:
@@ -189,8 +206,7 @@ class TransactionReceipt:
             'modified_state',
             'return_value',
             'revert_msg',
-            'trace',
-            '_trace'
+            'trace'
         ):
             raise AttributeError("'TransactionReceipt' object has no attribute '{}'".format(attr))
         if self.status == -1:
@@ -236,10 +252,11 @@ class TransactionReceipt:
         '''Retrieves the stack trace via debug_traceTransaction, and finds the
         return value, revert message and event logs in the trace.'''
         self.return_value = None
-        self.revert_msg = None
+        if 'revert_msg' not in self.__dict__:
+            self.revert_msg = None
         self._trace = []
         if (self.input == "0x" and self.gas_used == 21000) or self.contract_address:
-            self.modified_state = False
+            self.modified_state = bool(self.contract_address)
             self.trace = []
             return
         trace = web3.providers[0].make_request(
@@ -271,18 +288,27 @@ class TransactionReceipt:
                 self.return_value = return_value[0]
             else:
                 self.return_value = KwargTuple(return_value, abi)
-        else:
-            # get revert message
-            self.modified_state = False
-            self.revert_msg = ""
-            if trace[-1]['op'] == "REVERT":
-                offset = int(trace[-1]['stack'][-1], 16) * 2
-                length = int(trace[-1]['stack'][-2], 16) * 2
-                if length:
-                    data = HexBytes("".join(trace[-1]['memory'])[offset+8:offset+length])
-                    self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
-            # get events from trace
-            self.events = decode_trace(trace)
+            return
+        # get revert message
+        self.modified_state = False
+        # get events from trace
+        self.events = decode_trace(trace)
+        if self.revert_msg is not None:
+            return
+        if trace[-1]['op'] == "REVERT" and int(trace[-1]['stack'][-2], 16):
+            offset = int(trace[-1]['stack'][-1], 16) * 2
+            length = int(trace[-1]['stack'][-2], 16) * 2
+            data = HexBytes("".join(trace[-1]['memory'])[offset+8:offset+length])
+            self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
+            return
+        self.revert_msg = build.get_dev_revert(trace[-1]['pc'])
+        if self.revert_msg is None:
+            self._evaluate_trace()
+            trace = self.trace[-1]
+            try:
+                self.revert_msg = build[trace['contractName']]['pcMap'][trace['pc']]['dev']
+            except KeyError:
+                self.revert_msg = ""
 
     def _evaluate_trace(self):
         '''Adds the following attributes to each step of the stack trace:
@@ -294,7 +320,7 @@ class TransactionReceipt:
         jumpDepth: Number of jumps made since entering this contract. The
                    initial value is 1.'''
         self.trace = trace = self._trace
-        if not trace:
+        if not trace or 'fn' in trace[0]:
             return
         contract = self.contract_address or self.receiver
         pc = contract._build['pcMap'][0]
@@ -379,8 +405,16 @@ class TransactionReceipt:
         Args:
             pad: Number of unrelated lines of code to include before and after
         '''
+        if self.status == 1:
+            return ""
+        if self._revert_pc:
+            error = build.get_error_source_from_pc(self._revert_pc)
+            if error:
+                return _format_source(error, self._revert_pc, -1)
+            self._revert_pc = None
         try:
-            idx = self.trace.index(next(i for i in self.trace if i['op'] in ("REVERT", "INVALID")))
+            trace = next(i for i in self.trace[::-1] if i['op'] in ("REVERT", "INVALID"))
+            idx = self.trace.index(trace)
         except StopIteration:
             return ""
         while True:
@@ -406,28 +440,20 @@ class TransactionReceipt:
         trace = self.trace[idx]
         if not trace['source']['filename']:
             return ""
-        source = sources[trace['source']['filename']]
-        span = (trace['source']['start'], trace['source']['stop'])
-        newlines = [i for i in range(len(source)) if source[i] == "\n"]
-        try:
-            start = newlines.index(next(i for i in newlines if i >= span[0]))
-            stop = newlines.index(next(i for i in newlines if i >= span[1]))
-        except StopIteration:
-            return ""
-        ln = start + 1
-        start = newlines[max(start-(pad+1), 0)]
-        stop = newlines[min(stop+pad, len(newlines)-1)]
-        result = ((
-            'Source code for trace step {0[value]}{4}{0}:\n  File {0[string]}' +
-            '"{1}"{0}, line {0[value]}{2}{0}, in {0[callable]}{3}{0}:'
-        ).format(color, trace['source']['filename'], ln, trace['fn'], idx))
-        result += ("{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
-            color,
-            source[start:span[0]],
-            source[span[0]:span[1]],
-            source[span[1]:stop]
-        ))
-        return result
+        source = sources.get_highlighted_source(
+            trace['source']['filename'],
+            trace['source']['start'],
+            trace['source']['stop'],
+            pad
+        )
+        return _format_source(source, trace['pc'], idx)
+
+
+def _format_source(source, pc, idx):
+    return (
+        'Source code for trace step {0[value]}{1}{0} (pc {0[value]}{2}{0}):\n  File ' +
+        '{0[string]}"{3[1]}"{0}, line {0[value]}{3[2]}{0}, in {0[callable]}{3[3]}{0}:{3[0]}'
+    ).format(color, idx, pc, source)
 
 
 def _print_path(trace, idx, sep):
