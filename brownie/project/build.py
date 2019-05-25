@@ -43,16 +43,20 @@ BUILD_KEYS = [
 sources = Sources()
 
 
+def _stem(contract_name):
+    return contract_name.replace('.json', '')
+
+
 class Build(metaclass=_Singleton):
 
     def __init__(self):
         self._clear()
 
     def __getitem__(self, contract_name):
-        return self._build[contract_name.replace('.json', '')]
+        return self._build[_stem(contract_name)]
 
     def __contains__(self, contract_name):
-        return contract_name.replace('.json', '') in self._build
+        return _stem(contract_name) in self._build
 
     def _load(self):
         self. _path = Path(CONFIG['folders']['project']).joinpath('build/contracts')

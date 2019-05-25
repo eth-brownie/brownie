@@ -81,7 +81,7 @@ def load(path=None):
     load_project_config()
     compiler.set_solc_version()
     Sources()._load()
-    Build()._load()
+    Build()._load()  # compile happens here, updating tests / coverage happens here
     result = []
     for name, data in Build().items():
         if not data['bytecode']:
@@ -109,6 +109,7 @@ def close(exc=True):
         del sys.modules['brownie.project'].__dict__[name]
         if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
             del sys.modules['__main__'].__dict__[name]
+    sys.path.remove(CONFIG['folders']['project'])
     sys.modules['brownie.project'].__all__ = ['__brownie_import_all__']
     CONFIG['folders']['project'] = None
 
