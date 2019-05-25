@@ -134,7 +134,10 @@ class Console:
     def _dir(self, obj=None):
         if obj is None:
             obj = self
-        results = [(i, getattr(obj, i)) for i in builtins.dir(obj) if i[0] != "_"]
+        if hasattr(obj, '__console_dir__'):
+            results = [(i, getattr(obj, i)) for i in obj.__console_dir__]
+        else:
+            results = [(i, getattr(obj, i)) for i in builtins.dir(obj) if i[0] != "_"]
         print("["+"{}, ".format(color()).join(
             _dir_color(i[1])+i[0] for i in results
         )+color()+"]")

@@ -6,6 +6,17 @@ from brownie.types import KwargTuple
 from brownie.types.convert import wei
 from brownie.network.transaction import VirtualMachineError
 
+__console_dir__ = [
+    'true',
+    'false',
+    'confirms',
+    'reverts',
+    'event_fired',
+    'event_not_fired',
+    'equal',
+    'not_equal'
+]
+
 
 def true(statement, fail_msg="Expected statement to be True"):
     '''Expects an object or statement to evaluate True.

@@ -1,9 +1,16 @@
 #!/usr/bin/python3
 
-import time as _time
-from threading import Thread as _Thread
+import time as time
+from threading import Thread
 
-from brownie.cli.utils import color as _color
+from brownie.cli.utils import color
+
+__console_dir__ = [
+    'Alert',
+    'new',
+    'show',
+    'stop_all'
+]
 
 _instances = set()
 
@@ -28,7 +35,7 @@ class Alert:
         if not callable(fn):
             raise TypeError("You can only set an alert on a callable object")
         self._kill = False
-        self._thread = _Thread(
+        self._thread = Thread(
             target=self._loop, daemon=True,
             args=(fn, args, kwargs, delay, msg, callback))
         self._thread.start()
@@ -37,13 +44,13 @@ class Alert:
     def _loop(self, fn, args, kwargs, delay, msg, callback):
         start_value = fn(*args, **kwargs)
         while not self._kill:
-            _time.sleep(delay)
+            time.sleep(delay)
             value = fn(*args, **kwargs)
             if value == start_value:
                 continue
             if msg:
                 msg = msg.format(start_value, value)
-                print("{0[bright red]}ALERT{0}: {1}".format(_color, msg))
+                print("{0[bright red]}ALERT{0}: {1}".format(color, msg))
             if callback:
                 callback(start_value, value)
             _instances.discard(self)

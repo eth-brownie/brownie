@@ -1,14 +1,13 @@
 #!/usr/bin/python3
 
-from brownie.network import (
+from .network import (
     accounts,
     alert,
     history,
-    network,
     rpc,
     web3
 )
-from brownie.project import (
+from .project import (
     compile_source,
     __brownie_import_all__
 )
