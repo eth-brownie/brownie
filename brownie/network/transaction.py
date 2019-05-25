@@ -29,8 +29,6 @@ Transaction was Mined{4}
 """
 
 
-gas_profile = {}
-
 history = TxHistory()
 _contracts = _ContractHistory()
 web3 = Web3()
@@ -162,8 +160,8 @@ class TransactionReceipt:
         })
         if self.status:
             self.events = decode_logs(receipt['logs'])
-        if self.fn_name and ARGV['gas']:
-            _profile_gas(self.fn_name, receipt['gasUsed'])
+        if self.fn_name:
+            history._gas(self.fn_name, receipt['gasUsed'])
         if not silent:
             if CONFIG['logging']['tx'] >= 2:
                 self.info()
@@ -469,22 +467,3 @@ def _print_path(trace, idx, sep):
         "{}{} {}{} ({})".format(color(col), name, color('dull'), idx, trace['address']) +
         color()
     )
-
-
-def _profile_gas(fn_name, gas_used):
-    gas_profile.setdefault(
-        fn_name,
-        {
-            'avg': 0,
-            'high': 0,
-            'low': float('inf'),
-            'count': 0
-        }
-    )
-    gas = gas_profile[fn_name]
-    gas.update({
-        'avg': (gas['avg']*gas['count'] + gas_used) / (gas['count']+1),
-        'high': max(gas['high'], gas_used),
-        'low': min(gas['low'], gas_used)
-    })
-    gas['count'] += 1

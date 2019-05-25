@@ -21,7 +21,6 @@ from brownie.exceptions import ExpectedFailing
 import brownie.network as network
 from brownie.network.contract import Contract
 from brownie.network.history import TxHistory
-import brownie.network.transaction as transaction
 from brownie.project.build import Build, get_ast_hash
 from brownie.project.sources import Sources
 from brownie.types import FalseyDict
@@ -311,7 +310,7 @@ def display_report(coverage_files, save):
 
 def display_gas_profile():
     print('\nGas Profile:')
-    gas = transaction.gas_profile
+    gas = history.gas_profile
     for i in sorted(gas):
         print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, gas[i]))
 
