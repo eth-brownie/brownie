@@ -10,13 +10,21 @@ from brownie._config import ARGV
 
 @pytest.fixture(autouse=True, scope="session")
 def session_setup():
-    project.load('tests/brownie-test-project')
     network.connect('development')
+    project.load('tests/brownie-test-project')
     yield
     for path in ("build", "reports"):
         path = Path('tests/brownie-test-project').joinpath(path)
         if path.exists():
             shutil.rmtree(str(path))
+
+
+@pytest.fixture(scope="function")
+def noload():
+    project.close(False)
+    yield
+    project.close(False)
+    project.load(Path(__file__).parent.joinpath('brownie-test-project'))
 
 
 @pytest.fixture(scope="module")

@@ -5,7 +5,7 @@ import sys
 import os
 from pathlib import Path
 
-from brownie import config, project
+from brownie import project
 from brownie.cli.compile import main as compile_main
 
 
@@ -18,23 +18,14 @@ build = project.build.Build()
 def setup():
     argv = sys.argv
     sys.argv = ['brownie', 'compile']
-    path = config['folders']['project']
-    config['folders']['project'] = None
     original_path = os.getcwd()
     os.chdir(original_path+"/tests/brownie-test-project")
-    source_data = sources._data
-    sources._data = {}
-    build_json = build._build
-    build._build = {}
     yield
     sys.argv = argv
-    sources._data = source_data
-    build._build = build_json
-    config['folders']['project'] = path
     os.chdir(original_path)
 
 
-def test_compile_project():
+def test_compile_project(noload):
     mtime = {}
     for i in ["SafeMath.json", "TokenABC.json", "TokenInterface.json", "Token.json"]:
         path = Path('build/contracts/'+i)
@@ -45,7 +36,7 @@ def test_compile_project():
         assert k.stat().st_mtime == v, "recompiled unchanged contracts"
 
 
-def test_compile_all():
+def test_compile_all(noload):
     mtime = {}
     for i in ["SafeMath.json", "TokenABC.json", "TokenInterface.json", "Token.json"]:
         path = Path('build/contracts/'+i)
@@ -57,7 +48,7 @@ def test_compile_all():
         assert k.stat().st_mtime != v, "--all flag did not recompile entire project"
 
 
-def test_compile_subdir():
+def test_compile_subdir(noload):
     mtime = {}
     for i in ["SafeMath.json", "TokenABC.json", "TokenInterface.json", "Token.json"]:
         path = Path('build/contracts/'+i)

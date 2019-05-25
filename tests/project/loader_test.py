@@ -3,18 +3,27 @@
 import pytest
 
 from brownie import project
-from brownie.exceptions import ProjectAlreadyLoaded
+from brownie.project import loader
+from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 
 
 def test_check_for_project():
-    path = project.check_for_project('tests/brownie-test-project')
-    assert path == project.check_for_project('tests/brownie-test-project/contracts')
-    assert not project.check_for_project('/')
+    path = loader.check_for_project('tests/brownie-test-project')
+    assert path == loader.check_for_project('tests/brownie-test-project/contracts')
+    assert not loader.check_for_project('/')
 
 
 def test_load_already_loaded():
     with pytest.raises(ProjectAlreadyLoaded):
-        project.load('tests/brownie-test-project')
+        loader.load('tests/brownie-test-project')
+
+
+def test_close():
+    loader.close()
+    loader.close(False)
+    with pytest.raises(ProjectNotFound):
+        loader.close()
+    loader.load('tests/brownie-test-project')
 
 
 def test_contract_containers():
