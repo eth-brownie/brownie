@@ -29,16 +29,6 @@ BUILD_KEYS = [
     'type'
 ]
 
-
-def _stem(contract_name):
-    return contract_name.replace('.json', '')
-
-
-def _absolute(contract_name):
-    contract_name = _stem(contract_name)
-    return _project_path.joinpath('build/contracts/{}.json'.format(contract_name))
-
-
 _build = {}
 _paths = {}
 _revert_map = {}
@@ -46,32 +36,55 @@ _project_path = None
 
 
 def get(contract_name):
+    '''Returns build data for the given contract name.'''
     return _build[_stem(contract_name)]
 
 
 def items(path=None):
+    '''Provides an list of tuples as (key,value), similar to calling dict.items.
+    If a path is given, only contracts derived from that source file are returned.'''
     if path is None:
         return _build.items()
     return [(k, v) for k, v in _build.items() if v['sourcePath'] == path]
 
 
 def contains(contract_name):
+    '''Checks if the contract name exists in the currently loaded build data.'''
     return _stem(contract_name) in _build
 
 
-def delete(contract_name):
-    del _build[_stem(contract_name)]
-    _absolute(contract_name).unlink()
+def get_dependents(contract_name):
+    '''Returns a list of contract names that the given contract inherits from
+    or links to. Used by the compiler when determining which contracts to
+    recompile based on a changed source file.'''
+    return [k for k, v in _build.items() if contract_name in v['dependencies']]
 
 
-def clear():
-    global _project_path
-    _project_path = None
-    _build.clear()
-    _revert_map.clear()
+def get_dev_revert(pc):
+    '''Given the program counter from a stack trace that caused a transaction
+    to revert, returns the commented dev string (if any).'''
+    if pc not in _revert_map or len(_revert_map[pc]) > 1:
+        return None
+    return next(iter(_revert_map[pc]))[2]
+
+
+def get_error_source_from_pc(pc, pad=3):
+    '''Given the program counter from a stack trace that caused a transaction
+    to revert, returns the highlighted relevent source code.'''
+    if pc not in _revert_map or len(_revert_map[pc]) > 1:
+        return None
+    revert = next(iter(_revert_map[pc]))
+    if revert[0] is False:
+        return ""
+    return sources.get_highlighted_source(*revert[:2], pad=pad)
 
 
 def load(project_path):
+    '''Loads all build files for the given project path.
+    Files that are corrupted or missing required keys will be deleted.
+
+    Args:
+        project_path: root path of the project to load.'''
     clear()
     global _project_path
     _project_path = Path(project_path)
@@ -90,6 +103,11 @@ def load(project_path):
 
 
 def add(build_json):
+    '''Adds a build json to the active project. The data is saved in the
+    project's build/contracts folder.
+
+    Args:
+        build_json - dictionary of build data to add.'''
     path = _absolute(build_json['contractName'])
     json.dump(
         build_json,
@@ -99,6 +117,24 @@ def add(build_json):
         default=sorted
     )
     _add(build_json)
+
+
+def delete(contract_name):
+    '''Removes a contract's build data from the active project.
+    The json file in ``build/contracts`` is deleted.
+
+    Args:
+        contract_name: name of the contract to delete.'''
+    del _build[_stem(contract_name)]
+    _absolute(contract_name).unlink()
+
+
+def clear():
+    '''Clears all currently loaded build data.  No files are deleted.'''
+    global _project_path
+    _project_path = None
+    _build.clear()
+    _revert_map.clear()
 
 
 def _add(build_json):
@@ -124,20 +160,10 @@ def _generate_revert_map(pcMap):
         _revert_map.setdefault(pc, set()).add(tuple(revert))
 
 
-def get_error_source_from_pc(pc, pad=3):
-    if pc not in _revert_map or len(_revert_map[pc]) > 1:
-        return None
-    revert = next(iter(_revert_map[pc]))
-    if revert[0] is False:
-        return ""
-    return sources.get_highlighted_source(*revert[:2], pad=pad)
+def _stem(contract_name):
+    return contract_name.replace('.json', '')
 
 
-def get_dev_revert(pc):
-    if pc not in _revert_map or len(_revert_map[pc]) > 1:
-        return None
-    return next(iter(_revert_map[pc]))[2]
-
-
-def get_dependents(contract_name):
-    return [k for k, v in _build.items() if contract_name in v['dependencies']]
+def _absolute(contract_name):
+    contract_name = _stem(contract_name)
+    return _project_path.joinpath('build/contracts/{}.json'.format(contract_name))

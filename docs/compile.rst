@@ -48,8 +48,12 @@ Each contract will have it's own ``.json`` file stored in the ``build/contracts`
         'compiler': {}, // information about the compiler
         'contractName': "", // name of the contract
         'coverageMap': {}, // map for evaluating unit test coverage
+        'coverageMapTotals': {}, // total per-function counts for coverage map items
         'deployedBytecode': "0x00", // bytecode as hex string after deployment
         'deployedSourceMap': "", // source mapping of the deployed bytecode
+        'dependencies': [], // contracts and libraries that this contract inherits is linked to
+        'fn_offsets': {}, // source code offsets for contract functions
+        'offset': [], // source code offsets for this contract
         'opcodes': "", // deployed contract opcodes list
         'pcMap': [], // program counter map
         'sha1': "", // hash of the contract source, used to check if a recompile is necessary
@@ -59,31 +63,30 @@ Each contract will have it's own ``.json`` file stored in the ``build/contracts`
         'type': "" // contract, library, interface
     }
 
-This raw data is available through the :ref:`api-project-build` object:
+This raw data is available through the :ref:`api-project-build` module:
 
 .. code-block:: python
 
-    >>> from brownie.project.build import Build
-    >>> build = Build()
-    >>> token_json = build["Token"]
-    >>> token_json.keys()
-    dict_keys(['abi', 'allSourcePaths', 'ast', 'bytecode', 'bytecodeSha1', 'compiler', 'contractName', 'coverageMap', 'deployedBytecode', 'deployedSourceMap', 'opcodes', 'pcMap', 'sha1', 'source', 'sourceMap', 'sourcePath', 'type'])
+    >>> from brownie.project import build
+    >>> token_json = build.get("Token")
+    >>> token_json['contractName']
+    "Token"
 
 Program Counter Map
 -------------------
 
-Brownie generates an expanded version of the deployed source mapping that it uses for debugging and test coverage evaluation. It is structured as a list of dictionaries in the following format:
+Brownie generates an expanded version of the deployed source mapping that it uses for debugging and test coverage evaluation. It is structured as a dictionary of dictionaries, where each key is a program counter as given by ``debug_traceTransaction``.
 
 .. code-block:: javascript
-
     {
-        'contract': "", // relative path to the contract source code
-        'jump': "", // jump instruction as supplied in the sourceMap (-,i,o)
-        'op': "", // opcode string
-        'pc': 0, // program counter as given by debug_traceTransaction
-        'start': 0, // source code start offset
-        'stop': 0, // source code stop offset
-        'value': "0x00" // hex string value of the instruction, if any
+        'pc': {
+            'path': "", // relative path to the contract source code
+            'op': "", // opcode string
+            'offset': [0, 0], // source code start and stop offsets
+            'fn': str, // name of the related method, if any
+            'jump': "", // jump instruction as supplied in the sourceMap, if any (i,o)
+            'value': "0x00" // hex string value of the instruction, if any
+        }
     }
 
 Coverage Map

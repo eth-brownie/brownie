@@ -4,57 +4,9 @@
 Network API
 ===========
 
-``brownie.network``
-===================
+
 
 The ``network`` package holds classes for interacting with the Ethereum blockchain. This is the most extensive package within Brownie and contains the majority of the user-facing functionality.
-
-Package Methods
----------------
-
-Methods in the base ``network`` package are used from connect to and disconnect from the network.
-
-.. py:method:: brownie.network.connect(network=None)
-
-    Connects to the network.  Network settings are retrieved from ``brownie-config.json``
-
-    * If ``network`` is ``None``, connects to the default network as specified in ``brownie-config.json``.
-    * If ``test-rpc`` is given for the network, attempts to attach or launch to a local RPC client. See :ref:`test-rpc` for detailed information on the sequence of events in this process.
-
-    Calling this method is favored over calling ``web3.connect`` and ``rpc.launch`` or ``rpc.attach`` individually.
-
-    .. code-block:: python
-
-        >>> from brownie import network
-        >>> network.connect('development')
-        >>>
-
-.. py:method:: brownie.network.disconnect()
-
-    Disconnects from the network. The ``Web3`` provider is cleared and the local RPC client is terminated if it is running and a child process.
-
-    .. code-block:: python
-
-        >>> network.disconnect()
-        >>>
-
-.. py:method:: brownie.network.is_connected()
-
-    Returns ``True`` if the ``Web3`` object is connected to the network.
-
-    .. code-block:: python
-
-        >>> network.is_connected()
-        True
-
-.. py:method:: brownie.network.show_active()
-
-    Returns the name of the network that is currently active, or ``None`` if not connected.
-
-    .. code-block:: python
-
-        >>> network.show_active()
-        'development'
 
 ``brownie.network.account``
 ===========================
@@ -408,6 +360,71 @@ Module Methods
         >>> alert.show()
         []
 
+``brownie.network.connector``
+=============================
+
+The ``connector`` module contains methods for conncting to or disconnecting from the network. All of these methods are available directly from ``brownie.network``.
+
+.. py:method:: brownie.network.connector.connect(network=None)
+
+    Connects to the network.  Network settings are retrieved from ``brownie-config.json``
+
+    * If ``network`` is ``None``, connects to the default network as specified in ``brownie-config.json``.
+    * If ``test-rpc`` is given for the network, attempts to attach or launch to a local RPC client. See :ref:`test-rpc` for detailed information on the sequence of events in this process.
+
+    Calling this method is favored over calling ``web3.connect`` and ``rpc.launch`` or ``rpc.attach`` individually.
+
+    .. code-block:: python
+
+        >>> from brownie import network
+        >>> network.connect('development')
+
+.. py:method:: brownie.network.connector.disconnect()
+
+    Disconnects from the network. The ``Web3`` provider is cleared and the local RPC client is terminated if it is running and a child process.
+
+    .. code-block:: python
+
+        >>> from brownie import network
+        >>> network.disconnect()
+
+.. py:method:: brownie.network.connector.is_connected()
+
+    Returns ``True`` if the ``Web3`` object is connected to the network.
+
+    .. code-block:: python
+
+        >>> from brownie import network
+        >>> network.is_connected()
+        True
+
+.. py:method:: brownie.network.connector.show_active()
+
+    Returns the name of the network that is currently active, or ``None`` if not connected.
+
+    .. code-block:: python
+
+        >>> from brownie import network
+        >>> network.show_active()
+        'development'
+
+.. py:method:: brownie.network.connector.gas_limit()
+
+    Displays or modifies the default gas limit.
+
+    * If no argument is given, the current default is displayed.
+    * If an integer value is given, this will be the default gas limit.
+    * If set to "auto", None, True or False, the gas limit is determined automatically.
+
+    .. code-block:: python
+
+        >>> from brownie import network
+        >>> network.gas_limit()
+        'Gas limit is set to automatic'
+        >>> network.gas_limit(6700000)
+        'Gas limit is set to 6700000'
+        >>> network.gas_limit('auto')
+        'Gas limit is set to automatic'
 
 ``brownie.network.contract``
 ============================
@@ -854,6 +871,35 @@ TxHistory
         []
         >>> dir(history)
         [copy, from_sender, of_address, to_receiver]
+
+
+TxHistory Attributes
+--------------------
+
+.. py:attribute:: TxHistory.gas_profile
+
+    A dict that tracks gas cost statistics for contract function calls over time.
+
+    .. code-block:: python
+
+        >>> history.gas_profile
+        {
+            'Token.constructor': {
+                'avg': 742912,
+                'count': 1,
+                'high': 742912,
+                'low': 742912
+            },
+            'Token.transfer': {
+                'avg': 43535,
+                'count': 2,
+                'high': 51035,
+                'low': 36035
+            }
+        }
+
+TxHistory Methods
+-----------------
 
 .. py:classmethod:: TxHistory.copy
 

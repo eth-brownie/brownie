@@ -13,25 +13,35 @@ _contracts = {}
 
 
 def get(name):
+    '''Returns the source code file for the given name.
+
+    Args:
+        name: contract name or source code path
+
+    Returns: source code as a string.'''
     if name in _contracts:
         return _source[_contracts[name]['path']]
     return _source[str(name)]
 
 
 def get_path_list():
+    '''Returns a list of source code file paths for the active project.'''
     return list(_source.keys())
 
 
 def get_contract_list():
+    '''Returns a list of contract names for the active project.'''
     return list(_contracts.keys())
 
 
 def clear():
+    '''Clears all currently loaded source files.'''
     _source.clear()
     _contracts.clear()
 
 
 def load(project_path):
+    '''Loads all source files for the given project path.'''
     clear()
     project_path = Path(project_path)
     for path in project_path.glob('contracts/**/*.sol'):
@@ -44,6 +54,8 @@ def load(project_path):
 
 
 def remove_comments(source):
+    '''Given contract source as a string, returns the same contract with
+    all the comments removed.'''
     offsets = [(0, 0)]
     pattern = r"((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))"
     for match in re.finditer(pattern, source):
@@ -85,15 +97,28 @@ def _get_contract_data(full_source, path):
 
 
 def _commented_offset(offset_map, offset):
+    '''Converts an offset from source with comments removed, to one from the original source.'''
     return offset + next(i[1] for i in offset_map if i[0] <= offset)
 
 
 def compile_paths(paths):
+    '''Compiles a list of contracts. The source code must have already been
+    loaded via sources.load
+
+    Args:
+        paths: list of contract paths
+
+    Returns: build json data
+    '''
     to_compile = dict((k, _source[k]) for k in paths)
     return compiler.compile_contracts(to_compile)
 
 
 def compile_source(source):
+    '''Compiles the given source and saves it with a path <string-X>, where
+    X is a an integer increased with each successive call.
+
+    Returns the build json data.'''
     key = 1
     while "<string-{}".format(key) in _source:
         key += 1
@@ -114,7 +139,7 @@ def get_source_path(contract_name):
 
 
 def get_fn(contract, offset):
-    '''Given a contract name or path, start and stop offset, returns the name of the
+    '''Given a contract name or path, and source offset tuple, returns the name of the
     associated function. Returns False if the offset spans multiple functions.'''
     if contract not in _contracts:
         contract = get_contract_name(contract, offset)
@@ -138,7 +163,7 @@ def get_fn_offset(contract, fn_name):
 
 
 def get_contract_name(path, offset):
-    '''Given a path and source offsets, returns the name of the contract.
+    '''Given a path and source offset tuple, returns the name of the contract.
     Returns False if the offset spans multiple contracts.'''
     return next((
         k for k, v in _contracts.items() if v['path'] == path and
@@ -151,8 +176,7 @@ def get_highlighted_source(path, offset, pad=3):
 
     Args:
         path: Path to the source
-        start: Start offset
-        stop: Stop offset
+        offset: Tuple of (start offset, stop offset)
         pad: Number of unrelated lines of code to include before and after
 
     Returns:
@@ -180,5 +204,11 @@ def get_highlighted_source(path, offset, pad=3):
 
 
 def is_inside_offset(inner, outer):
-    '''Checks if the first offset is contained in the second offset'''
+    '''Checks if the first offset is contained in the second offset
+
+    Args:
+        inner: inner offset tuple
+        outer: outer offset tuple
+
+    Returns: bool'''
     return outer[0] <= inner[0] <= inner[1] <= outer[1]
