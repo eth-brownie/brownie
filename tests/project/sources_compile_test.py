@@ -8,8 +8,6 @@ from brownie import config
 from brownie.project import build, compiler, sources
 from brownie.exceptions import CompilerError, ContractExists
 
-sources = sources.Sources()
-
 
 @pytest.fixture(scope="function")
 def version():
@@ -19,7 +17,7 @@ def version():
 
 
 def _solc_5_source():
-    source = sources['BrownieTester']
+    source = sources.get('BrownieTester')
     source = source.replace('BrownieTester', 'TempTester')
     source = source.replace('UnlinkedLib', 'TestLib')
     return source
@@ -33,14 +31,14 @@ def _solc_4_source():
 
 
 def test_build_keys():
-    build_json = compiler.compile_contracts(["contracts/BrownieTester.sol"])
+    build_json = sources.compile_paths(["contracts/BrownieTester.sol"])
     assert set(build.BUILD_KEYS) == set(build_json['BrownieTester'])
 
 
 def test_contract_exists():
     with pytest.raises(ContractExists):
-        compiler.compile_source(sources['BrownieTester'])
-    compiler.compile_contracts(["contracts/BrownieTester.sol"])
+        sources.compile_source(sources.get('BrownieTester'))
+    sources.compile_paths(["contracts/BrownieTester.sol"])
 
 
 def test_set_solc_version(version):
@@ -51,22 +49,22 @@ def test_set_solc_version(version):
 
 def test_unlinked_libraries(version):
     source = _solc_5_source()
-    build_json = compiler.compile_source(source)
+    build_json = sources.compile_source(source)
     assert '__TestLib__' in build_json['TempTester']['bytecode']
     config['solc']['version'] = "v0.4.25"
     compiler.set_solc_version()
     source = _solc_4_source()
-    build_json = compiler.compile_source(source)
+    build_json = sources.compile_source(source)
     assert '__TestLib__' in build_json['TempTester']['bytecode']
 
 
 def test_compiler_errors(version):
     with pytest.raises(CompilerError):
-        compiler.compile_contracts(["contracts/Token.sol"])
-    compiler.compile_contracts(["contracts/Token.sol", "contracts/SafeMath.sol"])
+        sources.compile_paths(["contracts/Token.sol"])
+    sources.compile_paths(["contracts/Token.sol", "contracts/SafeMath.sol"])
     source = _solc_4_source()
     with pytest.raises(CompilerError):
-        compiler.compile_source(source)
+        sources.compile_source(source)
     config['solc']['version'] = "v0.4.25"
     compiler.set_solc_version()
-    compiler.compile_source(source)
+    sources.compile_source(source)

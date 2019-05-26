@@ -4,9 +4,7 @@
 possible. These tests check that it is only being called when absolutely necessary.'''
 
 from brownie import accounts
-from brownie.project.build import Build
-
-build = Build()
+from brownie.project import build
 
 
 def test_revert_msg(console_mode, tester):

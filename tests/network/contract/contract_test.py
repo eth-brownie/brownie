@@ -4,15 +4,14 @@ from copy import deepcopy
 import pytest
 
 from brownie import network
-from brownie.project.build import Build
+from brownie.project import build
 from brownie.network.contract import Contract, ContractCall, ContractTx
 
 accounts = network.accounts
-build = Build()
 
 
 def test_namespace_collision():
-    b = deepcopy(build['Token'])
+    b = deepcopy(build.get('Token'))
     b['abi'].append({
         'constant': False,
         'inputs': [
@@ -31,8 +30,8 @@ def test_namespace_collision():
 
 
 def test_set_methods():
-    c = Contract(str(accounts[1]), build['Token'], None)
-    for item in build['Token']['abi']:
+    c = Contract(str(accounts[1]), build.get('Token'), None)
+    for item in build.get('Token')['abi']:
         if item['type'] != "function":
             if 'name' not in item:
                 continue
@@ -44,5 +43,5 @@ def test_set_methods():
 
 
 def test_balance():
-    c = Contract(str(accounts[1]), build['Token'], None)
+    c = Contract(str(accounts[1]), build.get('Token'), None)
     assert c.balance() == 100000000000000000000
