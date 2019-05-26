@@ -341,7 +341,7 @@ def get_contract_offset(ast_node):
 
 def get_fn_offsets(ast_node):
     return [(
-        i['name'],
+        ast_node['name']+'.'+i['name'],
         _src_to_offsets(i['src'])
     ) for i in ast_node['nodes'] if i['nodeType'] == "FunctionDefinition" and i['name']][::-1]
 
