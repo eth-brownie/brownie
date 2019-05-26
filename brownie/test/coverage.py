@@ -4,11 +4,7 @@ import json
 from pathlib import Path
 import re
 
-from brownie.project.build import Build
-from brownie.project.sources import Sources
-
-build = Build()
-sources = Sources()
+from brownie.project import build, sources
 
 
 def analyze_coverage(history):
@@ -27,13 +23,13 @@ def analyze_coverage(history):
             pc = t['pc']
             name = t['contractName']
             path = t['source']['filename']
-            if not name or not path or name not in build:
+            if not name or not path or not build.contains(name):
                 continue
 
             # prevent repeated requests to build object
             if name not in pcMap:
-                pcMap[name] = build[name]['pcMap']
-                coverage_map[name] = build[name]['coverageMap']
+                pcMap[name] = build.get(name)['pcMap']
+                coverage_map[name] = build.get(name)['coverageMap']
                 coverage_eval[name] = dict((i, {}) for i in coverage_map[name])
             if name not in tx_eval:
                 tx_eval[name] = dict((i, {}) for i in coverage_map[name])
@@ -115,7 +111,7 @@ def _calculate_pct(coverage_eval):
     '''Internal method to calculate coverage percentages'''
     for name in coverage_eval:
         contract_count = 0
-        coverage_map = build[name]['coverageMap']
+        coverage_map = build.get(name)['coverageMap']
         for path, fn_name in [(k, x) for k, v in coverage_map.items() for x in v]:
             result = coverage_eval[name][path]
             if fn_name not in result:
@@ -123,7 +119,7 @@ def _calculate_pct(coverage_eval):
                 continue
             if 'pct' in result[fn_name] and result[fn_name]['pct'] in (0, 1):
                 if result[fn_name]['pct']:
-                    contract_count += build[name]['coverageMapTotals'][fn_name]
+                    contract_count += build.get(name)['coverageMapTotals'][fn_name]
                 result[fn_name] = {'pct': result[fn_name]['pct']}
                 continue
             result = dict((k, list(v) if type(v) is set else v) for k, v in result[fn_name].items())
@@ -139,10 +135,10 @@ def _calculate_pct(coverage_eval):
                 if idx in result['true'] or idx in result['false']:
                     count += 1
             contract_count += count
-            result['pct'] = round(count / build[name]['coverageMapTotals'][fn_name], 4)
+            result['pct'] = round(count / build.get(name)['coverageMapTotals'][fn_name], 4)
             if result['pct'] == 1:
                 coverage_eval[name][path][fn_name] = {'pct': 1}
-        pct = round(contract_count / build[name]['coverageMapTotals']['total'], 4)
+        pct = round(contract_count / build.get(name)['coverageMapTotals']['total'], 4)
         coverage_eval[name]['pct'] = pct
     return coverage_eval
 
@@ -158,7 +154,7 @@ def generate_report(coverage_eval):
         report['highlights'][name] = {}
         report['coverage'][name] = {'pct': coverage['pct']}
         for path in [i for i in coverage if i != "pct"]:
-            coverage_map = build[name]['coverageMap'][path]
+            coverage_map = build.get(name)['coverageMap'][path]
             report['highlights'][name][path] = []
             for fn_name, lines in coverage_map.items():
                 # if function has 0% or 100% coverage, highlight entire function

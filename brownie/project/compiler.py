@@ -4,7 +4,7 @@ from hashlib import sha1
 from pathlib import Path
 import solcx
 
-from .sources import Sources
+from . import sources
 from brownie.exceptions import CompilerError
 from brownie._config import CONFIG
 
@@ -28,8 +28,6 @@ STANDARD_JSON = {
     }
 }
 
-sources = Sources()
-
 
 def set_solc_version():
     '''Sets the solc version based on the project config file.'''
@@ -41,29 +39,24 @@ def set_solc_version():
     CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
 
 
-def compile_contracts(contract_paths):
-    '''Compiles the contract files and returns a dict of build data.'''
-    print("Compiling contracts...")
-    print("Optimizer: {}".format(
-        "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
-        CONFIG['solc']['optimize'] else "Disabled"
-    ))
+def compile_contracts(contracts, silent=False):
+    '''Compiles contracts and returns a dict of build data.
 
-    contract_paths = [Path(i) for i in contract_paths]
-    print("\n".join(" - {}...".format(i.name) for i in contract_paths))
+    Args:
+        contracts: a dictionary in the form of {path: 'source code'}
+    '''
+    if not contracts:
+        return {}
+    if not silent:
+        print("Compiling contracts...")
+        print("Optimizer: {}".format(
+            "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
+            CONFIG['solc']['optimize'] else "Disabled"
+        ))
+        names = [Path(i).name for i in contracts]
+        print("\n".join(" - {}...".format(i) for i in names))
     input_json = STANDARD_JSON.copy()
-    input_json['sources'] = dict((
-        str(i),
-        {'content': sources[i]}
-    ) for i in contract_paths)
-    return _compile_and_format(input_json)
-
-
-def compile_source(code):
-    '''Compiles the contract source and returns a dict of build data.'''
-    path = sources._add_source(code)
-    input_json = STANDARD_JSON.copy()
-    input_json['sources'] = {path: {'content': code}}
+    input_json['sources'] = dict((k, {'content': v}) for k, v in contracts.items())
     return _compile_and_format(input_json)
 
 
@@ -322,7 +315,7 @@ def _isolate_lines(compiled):
 
 
 def _get_source(op):
-    return sources[op['path']][op['start']:op['stop']]
+    return sources.get(op['path'])[op['start']:op['stop']]
 
 
 def _base(pc, op):

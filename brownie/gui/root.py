@@ -20,10 +20,8 @@ from .styles import (
 from .textbook import TextBook
 from .tooltip import ToolTip
 
-from brownie.project.build import Build
+from brownie.project import build
 from brownie._config import CONFIG
-
-build = Build()
 
 
 class Root(tk.Tk):

@@ -11,8 +11,7 @@ from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.network.history import TxHistory, _ContractHistory
 from brownie.network.event import decode_logs, decode_trace
-from brownie.project.build import Build
-from brownie.project.sources import Sources
+from brownie.project import build, sources
 from brownie.types import KwargTuple
 from brownie.types.convert import format_output
 from brownie._config import ARGV, CONFIG
@@ -32,8 +31,6 @@ Transaction was Mined{4}
 history = TxHistory()
 _contracts = _ContractHistory()
 web3 = Web3()
-sources = Sources()
-build = Build()
 
 
 class TransactionReceipt:

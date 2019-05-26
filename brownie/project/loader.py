@@ -6,13 +6,18 @@ import sys
 
 from brownie.network.contract import ContractContainer
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
-from .build import Build
-from .sources import Sources
-from . import compiler
-
+from brownie.project import build, sources, compiler
 from brownie._config import CONFIG, load_project_config
 
-FOLDERS = ["contracts", "scripts", "reports", "tests"]
+FOLDERS = [
+    "contracts",
+    "scripts",
+    "reports",
+    "tests",
+    "build",
+    "build/contracts",
+    "build/coverage"
+]
 
 
 def check_for_project(path):
@@ -56,34 +61,116 @@ def new(path=".", ignore_subfolder=False):
     return str(path)
 
 
-def load(path=None):
+def close(raises=True):
+    '''Closes the active project.'''
+    if not CONFIG['folders']['project']:
+        if not raises:
+            return
+        raise ProjectNotFound("No Brownie project currently open.")
+
+    # clear sources and build
+    sources.clear()
+    build.clear()
+
+    # remove objects from namespace
+    for name in sys.modules['brownie.project'].__all__.copy():
+        if name == "__brownie_import_all__":
+            continue
+        del sys.modules['brownie.project'].__dict__[name]
+        if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
+            del sys.modules['__main__'].__dict__[name]
+    sys.modules['brownie.project'].__all__ = ['__brownie_import_all__']
+
+    # clear paths
+    sys.path.remove(CONFIG['folders']['project'])
+    CONFIG['folders']['project'] = None
+
+
+def compile_source(source):
+    '''Compiles the given source code string and returns a list of
+    ContractContainer instances.'''
+    result = []
+    for name, build_json in sources.compile_source(source).items():
+        if build_json['type'] == "interface":
+            continue
+        result.append(ContractContainer(build_json))
+    return result
+
+
+def load(project_path=None):
     '''Loads a project and instantiates various related objects.
 
     Args:
-        path: Path of the project to load. If None, will attempt to locate
-              a project using check_for_project()
+        project_path: Path of the project to load. If None, will attempt to
+                      locate a project using check_for_project()
 
     Returns a list of ContractContainer objects.
     '''
+    # checks
     if CONFIG['folders']['project']:
         raise ProjectAlreadyLoaded(
             "Project has already been loaded at {}".format(CONFIG['folders']['project'])
         )
-    if path is None:
-        path = check_for_project('.')
-    if not path or not Path(path).joinpath("brownie-config.json").exists():
+    if project_path is None:
+        project_path = check_for_project('.')
+    if not project_path or not Path(project_path).joinpath("brownie-config.json").exists():
         raise ProjectNotFound("Could not find Brownie project")
-    path = Path(path).resolve()
-    CONFIG['folders']['project'] = str(path)
-    for folder in [i for i in FOLDERS]:
-        path.joinpath(folder).mkdir(exist_ok=True)
-    sys.path.insert(0, str(path))
-    load_project_config()
+
+    # paths
+    project_path = Path(project_path).resolve()
+    _create_folders(project_path)
+    sys.path.insert(0, str(project_path))
+
+    # load config
+    load_project_config(project_path)
     compiler.set_solc_version()
-    Sources()._load()
-    Build()._load()  # compile happens here, updating tests / coverage happens here
+
+    # load sources and build
+    sources.load(project_path)
+    build.load(project_path)
+
+    # compare build, erase as needed
+    changed_paths = _get_changed_contracts()
+
+    # compile sources, update build
+    for build_json in sources.compile_paths(changed_paths).values():
+        build.add(build_json)
+
+    # create objects, add to namespace
+    return _create_objects()
+
+
+def _create_folders(project_path):
+    for path in [i for i in FOLDERS]:
+        project_path.joinpath(path).mkdir(exist_ok=True)
+
+
+def _get_changed_contracts():
+    inheritance_map = sources.get_inheritance_map()
+    changed = [i for i in inheritance_map if _compare_build_json(i)]
+    final = set(changed)
+    for name, inherited in inheritance_map.items():
+        if inherited.intersection(changed):
+            final.add(name)
+    for name in [i for i in final if build.contains(i)]:
+        build.delete(name)
+    return set(sources.get_path(i) for i in final)
+
+
+def _compare_build_json(contract_name):
+    try:
+        build_json = build.get(contract_name)
+    except KeyError:
+        return True
+    return (
+        build_json['compiler'] != CONFIG['solc'] or
+        build_json['sha1'] != sources.get_hash(contract_name)
+    )
+
+
+def _create_objects():
     result = []
-    for name, data in Build().items():
+    for name, data in build.items():
         if not data['bytecode']:
             continue
         container = ContractContainer(data)
@@ -93,33 +180,4 @@ def load(path=None):
         # if running via interpreter, add to main namespace if package was imported via from
         if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].__dict__[name] = container
-    return result
-
-
-def close(exc=True):
-    if not CONFIG['folders']['project']:
-        if not exc:
-            return
-        raise ProjectNotFound("No Brownie project currently open")
-    Sources()._clear()
-    Build()._clear()
-    for name in sys.modules['brownie.project'].__all__.copy():
-        if name == "__brownie_import_all__":
-            continue
-        del sys.modules['brownie.project'].__dict__[name]
-        if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
-            del sys.modules['__main__'].__dict__[name]
-    sys.path.remove(CONFIG['folders']['project'])
-    sys.modules['brownie.project'].__all__ = ['__brownie_import_all__']
-    CONFIG['folders']['project'] = None
-
-
-def compile_source(source):
-    '''Compiles the given source code string and returns a list of
-    ContractContainer instances.'''
-    result = []
-    for name, build in compiler.compile_source(source).items():
-        if build['type'] == "interface":
-            continue
-        result.append(ContractContainer(build))
     return result

@@ -21,8 +21,7 @@ from brownie.exceptions import ExpectedFailing
 import brownie.network as network
 from brownie.network.contract import Contract
 from brownie.network.history import TxHistory
-from brownie.project.build import Build, get_ast_hash
-from brownie.project.sources import Sources
+from brownie.project import build, sources
 from brownie.types import FalseyDict
 from brownie._config import ARGV, CONFIG
 
@@ -36,7 +35,6 @@ WARN = "{0[error]}WARNING{0}: ".format(color)
 ERROR = "{0[error]}ERROR{0}: ".format(color)
 
 history = TxHistory()
-sources = Sources()
 
 __doc__ = """Usage: brownie test [<filename>] [<range>] [options]
 
@@ -183,15 +181,15 @@ def run_test_modules(test_data, save):
                 continue
             if ARGV['coverage']:
                 coverage_eval = cov
-            contracts |= set([x for i in contracts for x in sources.inheritance_map(i)])
+            contracts |= set([x for i in contracts for x in sources.get_inheritance_map(i)])
             build_files = [Path('build/contracts/{}.json'.format(i)) for i in contracts]
 
             coverage_eval = {
                 'coverage': coverage_eval,
-                'sha1': dict((str(i), Build()[i.stem]['bytecodeSha1']) for i in build_files)
+                'sha1': dict((str(i), build.get(i.stem)['bytecodeSha1']) for i in build_files)
             }
             path = str(Path(module.__file__).relative_to(CONFIG['folders']['project']))
-            coverage_eval['sha1'][path] = get_ast_hash(module.__file__)
+            coverage_eval['sha1'][path] = build.get_ast_hash(module.__file__)
             json.dump(
                 coverage_eval,
                 coverage_json.open('w'),
