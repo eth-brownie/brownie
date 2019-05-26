@@ -70,42 +70,39 @@ def _compile_and_format(input_json):
         )
     except solcx.exceptions.SolcError as e:
         raise CompilerError(e)
-    compiled = _generate_pcMap(compiled)
+
     result = {}
 
+    compiled = _generate_pcMap(compiled)
+    symbols = get_symbol_map(compiled)
+
     for filename, name in [(k, v) for k in input_json['sources'] for v in compiled['contracts'][k]]:
-        data = compiled['contracts'][filename][name]
-        evm = data['evm']
-        ref = [
-            (k, x) for v in evm['bytecode']['linkReferences'].values()
-            for k, x in v.items()
-        ]
-        # standardize unlinked library tags
-        for n, loc in [(i[0], x['start']*2) for i in ref for x in i[1]]:
-            evm['bytecode']['object'] = "{}__{:_<36}__{}".format(
-                evm['bytecode']['object'][:loc],
-                n[:36],
-                evm['bytecode']['object'][loc+40:]
-            )
+        evm = compiled['contracts'][filename][name]['evm']
+        node = get_contract_node(compiled['sources'][filename]['ast'], name)
+        bytecode = format_link_references(evm)
         all_paths = sorted(set(v['path'] for v in evm['pcMap'].values() if v['path']))
+
         result[name] = {
-            'abi': data['abi'],
+            'abi': compiled['contracts'][filename][name]['abi'],
             'allSourcePaths': all_paths,
             'ast': compiled['sources'][filename]['ast'],
-            'bytecode': evm['bytecode']['object'],
-            'bytecodeSha1': sha1(evm['bytecode']['object'][:-68].encode()).hexdigest(),
+            'bytecode': bytecode,
+            'bytecodeSha1': sha1(bytecode[:-68].encode()).hexdigest(),
             'compiler': dict(CONFIG['solc']),
             'contractName': name,
             'deployedBytecode': evm['deployedBytecode']['object'],
             'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
+            'dependencies': get_dependencies(node, symbols, evm['bytecode']['linkReferences']),
             # 'networks': {},
+            'fn_offsets': get_fn_offsets(node),
+            'offset': get_contract_offset(node),
             'opcodes': evm['deployedBytecode']['opcodes'],
             'pcMap': evm['pcMap'],
             'sha1': sources.get_hash(name),
             'source': input_json['sources'][filename]['content'],
             'sourceMap': evm['bytecode']['sourceMap'],
             'sourcePath': filename,
-            'type': sources.get_type(name)
+            'type': node['contractKind']
         }
         result[name]['coverageMap'] = _generate_coverageMap(result[name])
         result[name]['coverageMapTotals'] = _generate_coverageMapTotals(result[name]['coverageMap'])
@@ -326,3 +323,54 @@ def _base(pc, op):
         'pc': set([pc]),
         'jump': False
     }
+
+
+def _src_to_offsets(src):
+    src = [int(i) for i in src.split(':')[:2]]
+    return src[0], src[0]+src[1]
+
+
+def get_contract_node(build_ast, contract_name):
+    return next(
+        i for i in build_ast['nodes'] if
+        i['nodeType'] == "ContractDefinition"
+        and i['name'] == contract_name
+    )
+
+
+def get_contract_offset(ast_node):
+    return _src_to_offsets(ast_node['src'])
+
+
+def get_fn_offsets(ast_node):
+    return [(
+        i['name'],
+        _src_to_offsets(i['src'])
+    ) for i in ast_node['nodes'] if i['nodeType'] == "FunctionDefinition" and i['name']][::-1]
+
+
+def get_symbol_map(output_json):
+    symbols = {}
+    for ast in [v['ast'] for v in output_json['sources'].values()]:
+        symbols.update((v[0], k) for k, v in ast['exportedSymbols'].items())
+    return symbols
+
+
+def get_dependencies(ast_node, symbol_map, link_references):
+    return True
+    dependencies = [k for v in link_references.values() for k in v.keys()]
+    dependencies += [symbol_map[i] for i in ast_node['contractDependencies']]
+    dependencies += [i['libraryName']['name'] for i in ast_node['nodes'] if 'libraryName' in i]
+    return sorted(dependencies)
+
+
+def format_link_references(evm):
+    bytecode = evm['bytecode']['object']
+    references = [(k, x) for v in evm['bytecode']['linkReferences'].values() for k, x in v.items()]
+    for n, loc in [(i[0], x['start']*2) for i in references for x in i[1]]:
+        bytecode = "{}__{:_<36}__{}".format(
+            bytecode[:loc],
+            n[:36],
+            bytecode[loc+40:]
+        )
+    return bytecode
