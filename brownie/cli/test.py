@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
+import ast
 from docopt import docopt
+from hashlib import sha1
 import importlib
 import json
 import os
@@ -62,6 +64,11 @@ def main():
         ARGV['always_transact'] = True
         history._revert_lock = True
 
+    # cleanup
+    project_path = Path(CONFIG['folders']['project'])
+    check_coverage_hashes(project_path)
+    recursive_unlink(project_path.joinpath('build/coverage'))
+
     test_paths = get_test_paths(args['<filename>'])
     coverage_files, test_data = get_test_data(test_paths)
 
@@ -93,6 +100,33 @@ def get_test_paths(path):
     if not path.exists():
         sys.exit(ERROR+"Cannot find {0[module]}tests/{1}{0}".format(color, path.name))
     return [path]
+
+
+def check_coverage_hashes(base_path):
+    # remove coverage data where hashes have changed
+    coverage_path = Path(base_path).joinpath('build/coverage')
+    for coverage_json in list(coverage_path.glob('**/*.json')):
+        try:
+            dependents = json.load(coverage_json.open())['sha1']
+        except json.JSONDecodeError:
+            coverage_json.unlink()
+            continue
+        for path, hash_ in dependents.items():
+            path = Path(path)
+            if path.exists():
+                if path.suffix != ".json":
+                    if get_ast_hash(path) == hash_:
+                        continue
+                elif build.get(path.stem)['bytecodeSha1'] == hash_:
+                    continue
+            coverage_json.unlink()
+            break
+
+
+def recursive_unlink(base_path):
+    for path in [Path(i[0]) for i in list(os.walk(base_path))[:0:-1]]:
+        if not list(path.glob('*')):
+            path.rmdir()
 
 
 def get_test_data(test_paths):
@@ -189,7 +223,7 @@ def run_test_modules(test_data, save):
                 'sha1': dict((str(i), build.get(i.stem)['bytecodeSha1']) for i in build_files)
             }
             path = str(Path(module.__file__).relative_to(CONFIG['folders']['project']))
-            coverage_eval['sha1'][path] = build.get_ast_hash(module.__file__)
+            coverage_eval['sha1'][path] = get_ast_hash(module.__file__)
             json.dump(
                 coverage_eval,
                 coverage_json.open('w'),
@@ -398,3 +432,17 @@ def _get_contract_names():
         type(i.contract_address) is Contract and
         not i.contract_address._source_path.startswith('<string')
     )
+
+
+def get_ast_hash(script_path):
+    ast_list = [ast.parse(Path(script_path).open().read())]
+    for obj in [i for i in ast_list[0].body if type(i) in (ast.Import, ast.ImportFrom)]:
+        if type(obj) is ast.Import:
+            name = obj.names[0].name
+        else:
+            name = obj.module
+        origin = importlib.util.find_spec(name).origin
+        if CONFIG['folders']['project'] in origin:
+            ast_list.append(ast.parse(open(origin).read()))
+    dump = "\n".join(ast.dump(i) for i in ast_list)
+    return sha1(dump.encode()).hexdigest()

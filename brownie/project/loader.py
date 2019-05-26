@@ -29,7 +29,7 @@ def check_for_project(path):
     return None
 
 
-def new(path=".", ignore_subfolder=False):
+def new(project_path=".", ignore_subfolder=False):
     '''Initializes a new project.
 
     Args:
@@ -40,25 +40,23 @@ def new(path=".", ignore_subfolder=False):
     '''
     if CONFIG['folders']['project']:
         raise ProjectAlreadyLoaded("Project has already been loaded")
-    path = Path(path)
-    path.mkdir(exist_ok=True)
-    path = path.resolve()
+    project_path = Path(project_path).resolve()
     if not ignore_subfolder:
-        check = check_for_project(path)
-        if check and check != path:
+        check = check_for_project(project_path)
+        if check and check != project_path:
             raise SystemError(
                 "Cannot make a new project inside the subfolder of an existing project."
             )
-    for folder in [i for i in FOLDERS]:
-        path.joinpath(folder).mkdir(exist_ok=True)
-    if not path.joinpath('brownie-config.json').exists():
+    project_path.mkdir(exist_ok=True)
+    _create_folders(project_path)
+    if not project_path.joinpath('brownie-config.json').exists():
         shutil.copy(
             str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
-            str(path.joinpath('brownie-config.json'))
+            str(project_path.joinpath('brownie-config.json'))
         )
-    CONFIG['folders']['project'] = str(path)
-    sys.path.insert(0, str(path))
-    return str(path)
+    CONFIG['folders']['project'] = str(project_path)
+    sys.path.insert(0, str(project_path))
+    return str(project_path)
 
 
 def close(raises=True):
