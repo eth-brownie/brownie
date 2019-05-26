@@ -40,6 +40,7 @@ def _absolute(contract_name):
 
 
 _build = {}
+_paths = {}
 _revert_map = {}
 _project_path = None
 
@@ -48,8 +49,10 @@ def get(contract_name):
     return _build[_stem(contract_name)]
 
 
-def items():
-    return _build.items()
+def items(path=None):
+    if path is None:
+        return _build.items()
+    return [(k, v) for k, v in _build.items() if v['sourcePath'] == path]
 
 
 def contains(contract_name):
@@ -83,9 +86,7 @@ def load(project_path):
         ):
             path.unlink()
             continue
-        build_json['pcMap'] = dict((int(k), v) for k, v in build_json['pcMap'].items())
-        _build[path.stem] = build_json
-        _generate_revert_map(build_json['pcMap'])
+        _add(build_json)
 
 
 def add(build_json):
@@ -97,12 +98,20 @@ def add(build_json):
         indent=2,
         default=sorted
     )
+    _add(build_json)
+
+
+def _add(build_json):
+    contract_name = build_json['contractName']
+    if "0" in build_json['pcMap']:
+        build_json['pcMap'] = dict((int(k), v) for k, v in build_json['pcMap'].items())
+    _build[contract_name] = build_json
     _generate_revert_map(build_json['pcMap'])
 
 
 def _generate_revert_map(pcMap):
     for pc, data in [(k, v) for k, v in pcMap.items() if v['op'] in ("REVERT", "INVALID")]:
-        revert = [data['path'], data['start'], data['stop'], ""]
+        revert = [data['path'], (data['start'], data['stop']), ""]
         try:
             s = sources.get(data['path'])[data['stop']:]
             err = s[:s.index('\n')]
@@ -121,10 +130,14 @@ def get_error_source_from_pc(pc, pad=3):
     revert = next(iter(_revert_map[pc]))
     if revert[0] is False:
         return ""
-    return sources.get_highlighted_source(*revert[:3], pad=pad)
+    return sources.get_highlighted_source(*revert[:2], pad=pad)
 
 
 def get_dev_revert(pc):
     if pc not in _revert_map or len(_revert_map[pc]) > 1:
         return None
-    return next(iter(_revert_map[pc]))[3]
+    return next(iter(_revert_map[pc]))[2]
+
+
+def get_dependents(contract_name):
+    return [k for k, v in _build.items() if contract_name in v['dependencies']]

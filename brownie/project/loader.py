@@ -144,15 +144,13 @@ def _create_folders(project_path):
 
 
 def _get_changed_contracts():
-    inheritance_map = sources.get_inheritance_map()
-    changed = [i for i in inheritance_map if _compare_build_json(i)]
+    changed = [i for i in sources.get_contract_list() if _compare_build_json(i)]
     final = set(changed)
-    for name, inherited in inheritance_map.items():
-        if inherited.intersection(changed):
-            final.add(name)
+    for contract_name in changed:
+        final.update(build.get_dependents(contract_name))
     for name in [i for i in final if build.contains(i)]:
         build.delete(name)
-    return set(sources.get_path(i) for i in final)
+    return set(sources.get_source_path(i) for i in final)
 
 
 def _compare_build_json(contract_name):

@@ -6,21 +6,29 @@ import re
 
 from brownie.cli.utils import color
 from brownie.exceptions import ContractExists
-from . import compiler
+from . import build, compiler
 
 _source = {}
-_data = {}
+_contracts = {}
 
 
 def get(name):
-    if name in _data:
-        return _source[_data[name]['sourcePath']]
+    if name in _contracts:
+        return _source[_contracts[name]['path']]
     return _source[str(name)]
+
+
+def get_path_list():
+    return list(_source.keys())
+
+
+def get_contract_list():
+    return list(_contracts.keys())
 
 
 def clear():
     _source.clear()
-    _data.clear()
+    _contracts.clear()
 
 
 def load(project_path):
@@ -32,9 +40,7 @@ def load(project_path):
         source = path.open().read()
         path = str(path.relative_to(project_path))
         _source[path] = source
-        _data.update(_get_contract_data(source, path))
-    for name, inherited in [(k, v['inherited'].copy()) for k, v in _data.items()]:
-        _data[name]['inherited'] = _recursive_inheritance(inherited)
+        _contracts.update(_get_contract_data(source, path))
 
 
 def remove_comments(source):
@@ -60,55 +66,26 @@ def _get_contract_data(full_source, path):
             r"\s*(contract|library|interface)\s{1,}(\S*)\s*(?:is\s{1,}(.*?)|)(?:{)",
             source
         )[0]
-        inherited = set(i.strip() for i in inherited.split(', ') if i)
         offset = uncommented.index(source)
-        if name in _data and not _data[name]['sourcePath'].startswith('<string-'):
+        if name in _contracts and not _contracts[name]['path'].startswith('<string-'):
             raise ContractExists(
                 "Contract '{}' already exists in the active project.".format(name)
             )
         data[name] = {
-            'sourcePath': str(path),
-            'type': type_,
-            'inherited': inherited.union(re.findall(r"(?:;|{)\s*using *(\S*)(?= for)", source)),
+            'path': str(path),
+            'offset_map': offset_map,
+            'uncommented': uncommented,
             'sha1': sha1(full_source.encode()).hexdigest(),
-            'fn_offsets': [],
             'offset': (
                 _commented_offset(offset_map, offset),
                 _commented_offset(offset_map, offset + len(source))
             )
         }
-        if type_ == "interface":
-            continue
-        data[name]['fn_offsets'] = _get_fn_offsets(source, name, offset, offset_map)
     return data
-
-
-def _get_fn_offsets(source, contract_name, base_offset, offset_map):
-    fn_offsets = []
-    for idx, pattern in enumerate((
-        # matches functions
-        r"function\s*(\w*)[^{;]*{[\s\S]*?}(?=\s*function|\s*})",
-        # matches public variables
-        r"(?:{|;)\s*(?!function)(\w[^;]*(?:public\s*constant|public)\s*(\w*)[^{;]*)(?=;)"
-    )):
-        for match in re.finditer(pattern, source):
-            fn_offsets.append((
-                contract_name+"."+(match.groups()[idx] or "<fallback>"),
-                _commented_offset(offset_map, match.start(idx) + base_offset),
-                _commented_offset(offset_map, match.end(idx) + base_offset)
-            ))
-    return sorted(fn_offsets, key=lambda k: k[1], reverse=True)
 
 
 def _commented_offset(offset_map, offset):
     return offset + next(i[1] for i in offset_map if i[0] <= offset)
-
-
-def _recursive_inheritance(inherited):
-    final = set(inherited)
-    for name in inherited:
-        final |= _recursive_inheritance(_data[name]['inherited'])
-    return final
 
 
 def compile_paths(paths):
@@ -122,72 +99,54 @@ def compile_source(source):
         key += 1
     path = "<string-{}>".format(key)
     _source[path] = source
-    _data.update(_get_contract_data(source, path))
+    _contracts.update(_get_contract_data(source, path))
     return compiler.compile_contracts({path: source}, True)
 
 
 def get_hash(contract_name):
     '''Returns a hash of the contract source code.'''
-    return _data[contract_name]['sha1']
+    return _contracts[contract_name]['sha1']
 
 
-def get_path(contract_name):
+def get_source_path(contract_name):
     '''Returns the path to the source file where a contract is located.'''
-    return _data[contract_name]['sourcePath']
+    return _contracts[contract_name]['path']
 
 
-def get_type(contract_name):
-    '''Returns the type of contract (contract, interface, library).'''
-    return _data[contract_name]['type']
-
-
-def get_fn(contract, start, stop):
+def get_fn(contract, offset):
     '''Given a contract name or path, start and stop offset, returns the name of the
     associated function. Returns False if the offset spans multiple functions.'''
-    if contract not in _data:
-        contract = get_contract_name(contract, start, stop)
+    if contract not in _contracts:
+        contract = get_contract_name(contract, offset)
         if not contract:
             return False
-    offsets = _data[contract]['fn_offsets']
-    if start < offsets[-1][1]:
-        return False
-    offset = next(i for i in offsets if start >= i[1])
-    return False if stop > offset[2] else offset[0]
+    fn_offsets = build.get(contract)['fn_offsets']
+    return next((i[0] for i in fn_offsets if inside_offset(offset, i[1])), False)
 
 
-def get_fn_offset(self, contract, fn_name):
+def get_fn_offset(contract, fn_name):
     '''Given a contract and function name, returns the source offsets of the function.'''
     try:
-        if contract not in _data:
+        if not contract not in _contracts:
             contract = next(
-                k for k, v in _data.items() if v['sourcePath'] == str(contract) and
+                k for k, v in build.items(contract) if
                 fn_name in [i[0] for i in v['fn_offsets']]
             )
-        return next(i for i in _data[contract]['fn_offsets'] if i[0] == fn_name)[1:3]
+        return next(i for i in build.get(contract)['fn_offsets'] if i[0] == fn_name)[1]
     except StopIteration:
         raise ValueError("Unknown function '{}' in contract {}".format(fn_name, contract))
 
 
-def get_contract_name(path, start, stop):
+def get_contract_name(path, offset):
     '''Given a path and source offsets, returns the name of the contract.
     Returns False if the offset spans multiple contracts.'''
     return next((
-        k for k, v in _data.items() if v['sourcePath'] == str(path) and
-        v['offset'][0] <= start <= stop <= v['offset'][1]
+        k for k, v in _contracts.items() if v['path'] == path and
+        inside_offset(offset, v['offset'])
     ), False)
 
 
-def get_inheritance_map(contract_name=None):
-    '''Returns a dict of sets in the format:
-
-    {'contract name': {'inheritedcontract', 'inherited contract'..} }
-    '''
-    if contract_name:
-        return _data[contract_name]['inherited'].copy()
-    return dict((k, v['inherited'].copy()) for k, v in _data.items())
-
-
-def get_highlighted_source(path, start, stop, pad=3):
+def get_highlighted_source(path, offset, pad=3):
     '''Returns a highlighted section of source code.
 
     Args:
@@ -204,8 +163,8 @@ def get_highlighted_source(path, start, stop, pad=3):
     source = _source[path]
     newlines = [i for i in range(len(source)) if source[i] == "\n"]
     try:
-        pad_start = newlines.index(next(i for i in newlines if i >= start))
-        pad_stop = newlines.index(next(i for i in newlines if i >= stop))
+        pad_start = newlines.index(next(i for i in newlines if i >= offset[0]))
+        pad_stop = newlines.index(next(i for i in newlines if i >= offset[1]))
     except StopIteration:
         return ""
     ln = pad_start + 1
@@ -214,7 +173,11 @@ def get_highlighted_source(path, start, stop, pad=3):
 
     return "{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
         color,
-        source[pad_start:start],
-        source[start:stop],
-        source[stop:pad_stop]
-    ), path, ln, get_fn(path, start, stop)
+        source[pad_start:offset[0]],
+        source[offset[0]:offset[1]],
+        source[offset[1]:pad_stop]
+    ), path, ln, get_fn(path, offset)
+
+
+def inside_offset(inner, outer):
+    return outer[0] <= inner[0] <= inner[1] <= outer[1]

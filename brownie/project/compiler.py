@@ -73,18 +73,16 @@ def _compile_and_format(input_json):
 
     result = {}
 
-    compiled = _generate_pcMap(compiled)
+    # compiled = _generate_pcMap(compiled)
     symbols = get_symbol_map(compiled)
 
     for filename, name in [(k, v) for k in input_json['sources'] for v in compiled['contracts'][k]]:
         evm = compiled['contracts'][filename][name]['evm']
         node = get_contract_node(compiled['sources'][filename]['ast'], name)
         bytecode = format_link_references(evm)
-        all_paths = sorted(set(v['path'] for v in evm['pcMap'].values() if v['path']))
 
         result[name] = {
             'abi': compiled['contracts'][filename][name]['abi'],
-            'allSourcePaths': all_paths,
             'ast': compiled['sources'][filename]['ast'],
             'bytecode': bytecode,
             'bytecodeSha1': sha1(bytecode[:-68].encode()).hexdigest(),
@@ -97,19 +95,21 @@ def _compile_and_format(input_json):
             'fn_offsets': get_fn_offsets(node),
             'offset': get_contract_offset(node),
             'opcodes': evm['deployedBytecode']['opcodes'],
-            'pcMap': evm['pcMap'],
             'sha1': sources.get_hash(name),
             'source': input_json['sources'][filename]['content'],
             'sourceMap': evm['bytecode']['sourceMap'],
             'sourcePath': filename,
             'type': node['contractKind']
         }
-        result[name]['coverageMap'] = _generate_coverageMap(result[name])
-        result[name]['coverageMapTotals'] = _generate_coverageMapTotals(result[name]['coverageMap'])
+    result = _generate_pcMap(compiled, result)
+    result = _generate_coverageMap(result)
+    for data in result.values():
+        data['allSourcePaths'] = sorted(set(v['path'] for v in data['pcMap'].values() if v['path']))
+        data['coverageMapTotals'] = _generate_coverageMapTotals(data['coverageMap'])
     return result
 
 
-def _generate_pcMap(compiled):
+def _generate_pcMap(output_json, build_json):
     '''
     Generates an expanded sourceMap useful for debugging.
     [{
@@ -122,15 +122,13 @@ def _generate_pcMap(compiled):
         'value': value of the instruction, if any
     }, ... ]
     '''
-    id_map = dict((v['id'], k) for k, v in compiled['sources'].items())
-    for filename, name in [(k, x) for k, v in compiled['contracts'].items() for x in v]:
-        bytecode = compiled['contracts'][filename][name]['evm']['deployedBytecode']
-
-        if not bytecode['object']:
-            compiled['contracts'][filename][name]['evm']['pcMap'] = {}
+    id_map = dict((v['id'], k) for k, v in output_json['sources'].items())
+    for name, data in build_json.items():
+        if not data['deployedBytecode']:
+            data['pcMap'] = {}
             continue
-        opcodes = bytecode['opcodes']
-        source_map = bytecode['sourceMap']
+        opcodes = data['opcodes']
+        source_map = data['deployedSourceMap']
         while True:
             try:
                 i = opcodes[:-1].rindex(' STOP')
@@ -161,26 +159,26 @@ def _generate_pcMap(compiled):
                     value[i] = int(value[i] or last[i])
                 value[3] = value[3] or last[3]
                 last = value
-            contract = id_map[last[2]] if last[2] != -1 else False
+            path = id_map[last[2]] if last[2] != -1 else False
+            offset = (last[0], last[0]+last[1])
             pcMap[pc] = {
-                'start': last[0],
-                'stop': last[0]+last[1],
+                'start': offset[0],
+                'stop': offset[1],
                 'op': opcodes.pop(),
-                'path': contract,
+                'path': path,
             }
             if last[3] != "-":
                 pcMap[pc]['jump'] = last[3]
-            if contract:
-                fn = sources.get_fn(contract, last[0], last[0]+last[1])
-                if fn:
-                    pcMap[pc]['fn'] = fn
+            fn = get_fn(build_json, path, offset)
+            if fn:
+                pcMap[pc]['fn'] = fn
             if opcodes[-1][:2] == "0x":
                 pcMap[pc]['value'] = opcodes.pop()
-        compiled['contracts'][filename][name]['evm']['pcMap'] = pcMap
-    return compiled
+        data['pcMap'] = pcMap
+    return build_json
 
 
-def _generate_coverageMap(build):
+def _generate_coverageMap(build_json):
     """Adds coverage data to a build json.
 
     A new key 'coverageMap' is created, structured as follows:
@@ -197,23 +195,26 @@ def _generate_coverageMap(build):
 
     Relevent items in the pcMap also have a 'coverageIndex' added that corresponds
     to an entry in the coverageMap."""
-    line_map = _isolate_lines(build)
-    if not line_map:
-        return {}
-
-    final = dict((i, {}) for i in set(i['path'] for i in line_map))
-    for i in line_map:
-        fn = sources.get_fn(i['path'], i['start'], i['stop'])
-        if not fn:
+    for build in build_json.values():
+        line_map = _isolate_lines(build)
+        if not line_map:
+            build['coverageMap'] = {}
             continue
-        final[i['path']].setdefault(fn, []).append({
-            'jump': i['jump'],
-            'start': i['start'],
-            'stop': i['stop']
-        })
-        for pc in i['pc']:
-            build['pcMap'][pc]['coverageIndex'] = len(final[i['path']][fn]) - 1
-    return final
+
+        final = dict((i, {}) for i in set(i['path'] for i in line_map))
+        for i in line_map:
+            fn = get_fn(build_json, i['path'], (i['start'], i['stop']))
+            if not fn:
+                continue
+            final[i['path']].setdefault(fn, []).append({
+                'jump': i['jump'],
+                'start': i['start'],
+                'stop': i['stop']
+            })
+            for pc in i['pc']:
+                build['pcMap'][pc]['coverageIndex'] = len(final[i['path']][fn]) - 1
+        build['coverageMap'] = final
+    return build_json
 
 
 def _generate_coverageMapTotals(coverage_map):
@@ -374,3 +375,20 @@ def format_link_references(evm):
             bytecode[loc+40:]
         )
     return bytecode
+
+
+def inside_offset(inner, outer):
+    return outer[0] <= inner[0] <= inner[1] <= outer[1]
+
+
+def get_fn(build_json, path, offset):
+    try:
+        contract = next(
+            k for k, v in build_json.items() if
+            v['sourcePath'] == path and inside_offset(offset, v['offset'])
+        )
+        return next(
+            i[0] for i in build_json[contract]['fn_offsets'] if inside_offset(offset, i[1])
+        )
+    except StopIteration:
+        return False

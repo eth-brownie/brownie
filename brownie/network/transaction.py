@@ -442,8 +442,8 @@ class TransactionReceipt:
             return ""
         source = sources.get_highlighted_source(
             trace['source']['filename'],
-            trace['source']['start'],
-            trace['source']['stop'],
+            (trace['source']['start'],
+             trace['source']['stop']),
             pad
         )
         return _format_source(source, trace['pc'], idx)
