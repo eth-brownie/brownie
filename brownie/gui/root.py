@@ -52,7 +52,7 @@ class Root(tk.Tk):
         set_style(self)
 
     def set_active(self, contract_name):
-        build_json = build[contract_name]
+        build_json = build.get(contract_name)
         self.main.note.set_visible(build_json['allSourcePaths'])
         self.main.note.set_active(build_json['sourcePath'])
         self.main.oplist.set_opcodes(build_json['pcMap'])

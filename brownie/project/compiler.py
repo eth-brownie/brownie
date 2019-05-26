@@ -73,7 +73,6 @@ def _compile_and_format(input_json):
 
     result = {}
 
-    # compiled = _generate_pcMap(compiled)
     symbols = get_symbol_map(compiled)
 
     for filename, name in [(k, v) for k in input_json['sources'] for v in compiled['contracts'][k]]:
@@ -143,8 +142,7 @@ def _generate_pcMap(output_json, build_json):
         for i in range(3):
             last[i] = int(last[i])
         pcMap = {0: {
-            'start': last[0],
-            'stop': last[0]+last[1],
+            'offset': (last[0], last[0]+last[1]),
             'op': opcodes.pop(),
             'path': id_map[last[2]],
         }}
@@ -162,8 +160,7 @@ def _generate_pcMap(output_json, build_json):
             path = id_map[last[2]] if last[2] != -1 else False
             offset = (last[0], last[0]+last[1])
             pcMap[pc] = {
-                'start': offset[0],
-                'stop': offset[1],
+                'offset': offset,
                 'op': opcodes.pop(),
                 'path': path,
             }
@@ -208,8 +205,7 @@ def _generate_coverageMap(build_json):
                 continue
             final[i['path']].setdefault(fn, []).append({
                 'jump': i['jump'],
-                'start': i['start'],
-                'stop': i['stop']
+                'offset': (i['start'], i['stop'])
             })
             for pc in i['pc']:
                 build['pcMap'][pc]['coverageIndex'] = len(final[i['path']][fn]) - 1
@@ -251,7 +247,7 @@ def _isolate_lines(compiled):
             pc = next(
                 x for x in range(i - 4, 0, -1) if x in pcMap and
                 pcMap[x]['path'] and pcMap[x]['op'] != "JUMPDEST" and
-                (pcMap[x]['start'], pcMap[x]['stop']) != (op['start'], op['stop'])
+                pcMap[x]['offset'] != op['offset']
             )
         except StopIteration:
             continue
@@ -270,16 +266,16 @@ def _isolate_lines(compiled):
             ln = next(
                 i for i in line_map[op['path']] if
                 i['path'] == op['path'] and
-                i['start'] <= op['start'] < i['stop']
+                i['start'] <= op['offset'][0] < i['stop']
             )
         except StopIteration:
             line_map[op['path']].append(_base(pc, op))
             continue
-        if op['stop'] > ln['stop']:
+        if op['offset'][1] > ln['stop']:
             # if coverage map item is a jump, do not modify the source offsets
             if ln['jump']:
                 continue
-            ln['stop'] = op['stop']
+            ln['stop'] = op['offset'][1]
         ln['pc'].add(pc)
 
     # sort the coverage map and merge overlaps where possible
@@ -313,14 +309,14 @@ def _isolate_lines(compiled):
 
 
 def _get_source(op):
-    return sources.get(op['path'])[op['start']:op['stop']]
+    return sources.get(op['path'])[op['offset'][0]:op['offset'][1]]
 
 
 def _base(pc, op):
     return {
         'path': op['path'],
-        'start': op['start'],
-        'stop': op['stop'],
+        'start': op['offset'][0],
+        'stop': op['offset'][1],
         'pc': set([pc]),
         'jump': False
     }
@@ -358,7 +354,6 @@ def get_symbol_map(output_json):
 
 
 def get_dependencies(ast_node, symbol_map, link_references):
-    return True
     dependencies = [k for v in link_references.values() for k in v.keys()]
     dependencies += [symbol_map[i] for i in ast_node['contractDependencies']]
     dependencies += [i['libraryName']['name'] for i in ast_node['nodes'] if 'libraryName' in i]
@@ -377,18 +372,15 @@ def format_link_references(evm):
     return bytecode
 
 
-def inside_offset(inner, outer):
-    return outer[0] <= inner[0] <= inner[1] <= outer[1]
-
-
 def get_fn(build_json, path, offset):
     try:
         contract = next(
             k for k, v in build_json.items() if
-            v['sourcePath'] == path and inside_offset(offset, v['offset'])
+            v['sourcePath'] == path and sources.is_inside_offset(offset, v['offset'])
         )
         return next(
-            i[0] for i in build_json[contract]['fn_offsets'] if inside_offset(offset, i[1])
+            i[0] for i in build_json[contract]['fn_offsets'] if
+            sources.is_inside_offset(offset, i[1])
         )
     except StopIteration:
         return False

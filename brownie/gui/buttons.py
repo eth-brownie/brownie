@@ -4,6 +4,7 @@ from pathlib import Path
 import tkinter as tk
 
 from .styles import BUTTON_STYLE
+from brownie.project.sources import is_inside_offset
 
 
 class _Toggle(tk.Button):
@@ -50,13 +51,13 @@ class ScopingToggle(_Toggle):
         for key, value in sorted(self.root.pcMap.items(), key=lambda k: int(k[0])):
             if (
                 not value['path'] or value['path'] != pc['path'] or
-                value['start'] < pc['start'] or value['stop'] > pc['stop']
+                not is_inside_offset(value['offset'], pc['offset'])
             ):
                 self.oplist.detach(key)
             else:
                 self.oplist.move(key, '', key)
         self.oplist.see(op)
-        self.root.main.note.apply_scope(pc['start'], pc['stop'])
+        self.root.main.note.apply_scope(*pc['offset'])
         return True
 
     def toggle_off(self):

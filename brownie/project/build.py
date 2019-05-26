@@ -111,9 +111,9 @@ def _add(build_json):
 
 def _generate_revert_map(pcMap):
     for pc, data in [(k, v) for k, v in pcMap.items() if v['op'] in ("REVERT", "INVALID")]:
-        revert = [data['path'], (data['start'], data['stop']), ""]
+        revert = [data['path'], tuple(data['offset']), ""]
         try:
-            s = sources.get(data['path'])[data['stop']:]
+            s = sources.get(data['path'])[data['offset'][1]:]
             err = s[:s.index('\n')]
             err = err[err.index('//')+2:].strip()
             if err.startswith('dev:'):

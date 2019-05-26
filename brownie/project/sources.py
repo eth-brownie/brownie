@@ -121,7 +121,7 @@ def get_fn(contract, offset):
         if not contract:
             return False
     fn_offsets = build.get(contract)['fn_offsets']
-    return next((i[0] for i in fn_offsets if inside_offset(offset, i[1])), False)
+    return next((i[0] for i in fn_offsets if is_inside_offset(offset, i[1])), False)
 
 
 def get_fn_offset(contract, fn_name):
@@ -142,7 +142,7 @@ def get_contract_name(path, offset):
     Returns False if the offset spans multiple contracts.'''
     return next((
         k for k, v in _contracts.items() if v['path'] == path and
-        inside_offset(offset, v['offset'])
+        is_inside_offset(offset, v['offset'])
     ), False)
 
 
@@ -179,5 +179,6 @@ def get_highlighted_source(path, offset, pad=3):
     ), path, ln, get_fn(path, offset)
 
 
-def inside_offset(inner, outer):
+def is_inside_offset(inner, outer):
+    '''Checks if the first offset is contained in the second offset'''
     return outer[0] <= inner[0] <= inner[1] <= outer[1]

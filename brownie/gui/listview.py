@@ -69,12 +69,11 @@ class ListView(ttk.Treeview):
         for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)]:
             if not op['path'] or (
                 op['path'] == pcMap[0]['path'] and
-                op['start'] == pcMap[0]['start'] and
-                op['stop'] == pcMap[0]['stop']
+                op['offset'] == pcMap[0]['offset']
             ):
                 tag = "NoSource"
             else:
-                tag = "{0[start]}:{0[stop]}:{0[path]}".format(op)
+                tag = "{0[path]}:{0[offset][0]}:{0[offset][1]}".format(op)
             self.insert([str(pc), op['op']], [tag, op['op']])
 
     def _select_bind(self, event):
@@ -95,7 +94,7 @@ class ListView(ttk.Treeview):
             note.active_frame().clear_highlight()
             return
         note.set_active(pcMap[pc]['path'])
-        note.active_frame().highlight(pcMap[pc]['start'], pcMap[pc]['stop'])
+        note.active_frame().highlight(*pcMap[pc]['offset'])
 
     def _seek(self, event):
         if self._seek_last < time.time() - 1:
