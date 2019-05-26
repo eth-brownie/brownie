@@ -78,6 +78,7 @@ Program Counter Map
 Brownie generates an expanded version of the deployed source mapping that it uses for debugging and test coverage evaluation. It is structured as a dictionary of dictionaries, where each key is a program counter as given by ``debug_traceTransaction``.
 
 .. code-block:: javascript
+
     {
         'pc': {
             'path': "", // relative path to the contract source code
