@@ -419,7 +419,7 @@ class TransactionReceipt:
             if idx == -1:
                 return ""
             source = self.trace[idx]['source']
-            if not trace['filename']:
+            if not source['filename']:
                 idx -= 1
                 continue
             if sources.get_fn(source['filename'], source['offset']) != self.trace[idx]['fn']:

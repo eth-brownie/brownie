@@ -152,7 +152,7 @@ def get_fn(contract, offset):
 def get_fn_offset(contract, fn_name):
     '''Given a contract and function name, returns the source offsets of the function.'''
     try:
-        if not contract not in _contracts:
+        if contract not in _contracts:
             contract = next(
                 k for k, v in build.items(contract) if
                 fn_name in [i[0] for i in v['fn_offsets']]

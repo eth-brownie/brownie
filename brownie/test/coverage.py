@@ -177,14 +177,14 @@ def generate_report(coverage_eval):
                     else:
                         color = "red"
                     report['highlights'][name][path].append(
-                        (ln['start'], ln['stop'], color, "")
+                        (ln['offset'][0], ln['offset'][1], color, "")
                     )
     return report
 
 
 def _evaluate_branch(path, ln):
-    source = sources[path]
-    start, stop = ln['start'], ln['stop']
+    source = sources.get(path)
+    start, stop = ln['offset']
     try:
         idx = _maxindex(source[:start])
     except Exception:
