@@ -23,7 +23,7 @@ from brownie.exceptions import ExpectedFailing
 import brownie.network as network
 from brownie.network.contract import Contract
 from brownie.network.history import TxHistory
-from brownie.project import build, sources
+from brownie.project import build
 from brownie.types import FalseyDict
 from brownie._config import ARGV, CONFIG
 
@@ -215,8 +215,11 @@ def run_test_modules(test_data, save):
                 continue
             if ARGV['coverage']:
                 coverage_eval = cov
-            contracts |= set([x for i in contracts for x in sources.get_inheritance_map(i)])
-            build_files = [Path('build/contracts/{}.json'.format(i)) for i in contracts]
+
+            contract_names = set(i._name for i in contracts)
+            contract_names |= set(x for i in contracts for x in i._build['dependencies'])
+
+            build_files = [Path('build/contracts/{}.json'.format(i)) for i in contract_names]
 
             coverage_eval = {
                 'coverage': coverage_eval,
@@ -428,9 +431,8 @@ class TestPrinter:
 
 def _get_contract_names():
     return set(
-        i.contract_address._name for i in history if
-        type(i.contract_address) is Contract and
-        not i.contract_address._source_path.startswith('<string')
+        i.contract_address for i in history if type(i.contract_address) is Contract and
+        not i.contract_address._build['sourcePath'].startswith('<string')
     )
 
 
