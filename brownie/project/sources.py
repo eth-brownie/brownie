@@ -59,9 +59,9 @@ def load(project_path):
         _contracts.update(_get_contract_data(source, path))
 
 
-def remove_comments(source):
-    '''Given contract source as a string, returns the same contract with
-    all the comments removed.'''
+def minify(source):
+    '''Given contract source as a string, returns a minified version and an
+    offset map.'''
     offsets = [(0, 0)]
     pattern = "({})".format("|".join(MINIFY_REGEX_PATTERNS))
     for match in re.finditer(pattern, source):
@@ -73,7 +73,7 @@ def remove_comments(source):
 
 
 def _get_contract_data(full_source, path):
-    uncommented, offset_map = remove_comments(full_source)
+    uncommented, offset_map = minify(full_source)
     contracts = re.findall(
         r"((?:contract|library|interface)[^;{]*{[\s\S]*?})\s*(?=contract|library|interface|$)",
         uncommented
