@@ -438,7 +438,7 @@ class TransactionReceipt:
             pad: Number of unrelated lines of code to include before and after
         '''
         source = self.trace[idx]['source']
-        if not source['filename']:
+        if not source:
             return ""
         source = sources.get_highlighted_source(source['filename'], source['offset'], pad)
         return _format_source(source, self.trace[idx]['pc'], idx)

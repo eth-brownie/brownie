@@ -95,6 +95,7 @@ def _get_contract_data(full_source, path):
         }
     return data
 
+
 def compile_paths(paths):
     '''Compiles a list of contracts. The source code must have already been
     loaded via sources.load
@@ -211,6 +212,7 @@ def is_inside_offset(inner, outer):
 def _expand_offset(offset_map, offset):
     '''Converts an offset from source with comments removed, to one from the original source.'''
     return offset + next(i[1] for i in offset_map if i[0] <= offset)
+
 
 def get_expanded_offset(contract_name, offset):
     offset_map = _contracts[contract_name]['offset_map']

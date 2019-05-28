@@ -124,6 +124,7 @@ def _generate_pcMap(output_json, build_json):
     for name, data in build_json.items():
         if not data['deployedBytecode']:
             data['pcMap'] = {}
+            data['allSourcePaths'] = [data['sourcePath']]
             continue
         opcodes = data['opcodes']
         source_map = data['deployedSourceMap']
