@@ -182,6 +182,7 @@ def _get_offset(offset_map, name, value):
 
 
 def expand_offsets(build_json):
+    '''Expands minified source offsets in a build json dict.'''
     name = build_json['contractName']
     offset_map = {}
     for value in [v for v in build_json['pcMap'].values() if 'offset' in v]:

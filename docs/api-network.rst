@@ -1338,7 +1338,7 @@ TransactionReceipt Attributes
     * ``contractName``: The name of the contract
     * ``fn``: The name of the function
     * ``jumpDepth``: The number of jumps made since entering this contract. The initial function has a value of 1.
-    * ``source``: The start and end offset of the source code associated with this opcode.
+    * ``source``: The path and offset of the source code associated with this opcode.
 
     .. code-block:: python
 
@@ -1352,7 +1352,7 @@ TransactionReceipt Attributes
             'contractName': "Token",
             'depth': 0,
             'error': "",
-            'fn': "transfer",
+            'fn': "Token.transfer",
             'gas': 128049,
             'gasCost': 22872,
             'jumpDepth': 1,
@@ -1361,8 +1361,7 @@ TransactionReceipt Attributes
             'pc': 0,
             'source': {
                 'filename': "contracts/Token.sol",
-                'start': 53,
-                'stop': 2053
+                'offset': [53, 2053]
             },
             'stack': [],
             'storage': {

@@ -191,6 +191,10 @@ Module Methods
 
     Given the program counter from a stack trace that caused a transaction to revert, returns the highlighted relevent source code.  Used by ``TransactionReceipt`` when generating a ``VirtualMachineError``.
 
+.. py:method:: build.expand_offsets(build_json)
+
+    Given a build json as a dict, expands the minified offsets to match the original source code.
+
 ``brownie.project.compiler``
 ============================
 
@@ -223,7 +227,7 @@ The ``sources`` module contains methods to access project source code files and 
 Module Methods
 --------------
 
-.. py:classmethod:: sources.get(name)
+.. py:method:: sources.get(name)
 
     Returns the source code file for the given name. ``name`` can be a path or a contract name.
 
@@ -233,7 +237,7 @@ Module Methods
         >>> sources.get('SafeMath')
         "pragma solidity ^0.5.0; ..."
 
-.. py:classmethod:: sources.get_path_list()
+.. py:method:: sources.get_path_list()
 
     Returns a list of contract source paths for the active project.
 
@@ -243,7 +247,7 @@ Module Methods
         >>> sources.get_path_list()
         ['contracts/Token.sol', 'contracts/SafeMath.sol']
 
-.. py:classmethod:: sources.get_contract_list()
+.. py:method:: sources.get_contract_list()
 
     Returns a list of contract names for the active project.
 
@@ -253,7 +257,7 @@ Module Methods
         >>> sources.get_contract_list()
         ['Token', 'SafeMath']
 
-.. py:classmethod:: sources.load(project_path)
+.. py:method:: sources.load(project_path)
 
     Loads all source files for the given project path. Raises ``ContractExists`` if two source files contain contracts with the same name.
 
@@ -262,7 +266,7 @@ Module Methods
         >>> from brownie.project import sources
         >>> sources.load('my_projects/token')
 
-.. py:classmethod:: sources.clear()
+.. py:method:: sources.clear()
 
     Clears all currently loaded source files.
 
@@ -271,18 +275,7 @@ Module Methods
         >>> from brownie.project import sources
         >>> sources.clear()
 
-.. py:classmethod:: sources.remove_comments(source)
-
-    Given contract source as a string, returns the same contract with all the comments removed.
-
-    .. code-block:: python
-
-        >>> from brownie.project import sources
-        >>> token_source = sources.get('Token')
-        >>> source.remove_comments(token_source)
-        "pragma solidity ^0.5.0; ..."
-
-.. py:classmethod:: sources.compile_paths(paths)
+.. py:method:: sources.compile_paths(paths)
 
     Compiles a list of contracts given in ``paths``. The contract sources must have already been loaded via ``sources.load``.
 
@@ -291,7 +284,7 @@ Module Methods
         >>> from brownie.project import sources
         >>> sources.compile_paths(['contracts/Token.sol'])
 
-.. py:classmethod:: sources.compile_source(source)
+.. py:method:: sources.compile_source(source)
 
     Compiles source code given as a string and adds it to the available sources. The path will be set to ``<string-X>`` where X is an integer staring at one.
 
@@ -300,7 +293,7 @@ Module Methods
         >>> from brownie.project import sources
         >>> source.compile_source('...')
 
-.. py:classmethod:: sources.get_hash(contract_name)
+.. py:method:: sources.get_hash(contract_name)
 
     Returns a hash of the contract source code.
 
@@ -310,7 +303,7 @@ Module Methods
         >>> sources.get_hash('Token')
         'da39a3ee5e6b4b0d3255bfef95601890afd80709'
 
-.. py:classmethod:: sources.get_source_path(contract_name)
+.. py:method:: sources.get_source_path(contract_name)
 
     Returns the path to the file where a contract is located.
 
@@ -320,7 +313,7 @@ Module Methods
         >>> sources.get_source_path('Token')
         'contracts/Token.sol'
 
-.. py:classmethod:: sources.get_fn(contract, offset)
+.. py:method:: sources.get_fn(contract, offset)
 
     Given a contract name, start and stop offset, returns the name of the associated function. Returns ``False`` if the offset spans multiple functions.
 
@@ -330,7 +323,7 @@ Module Methods
         >>> sources.get_fn("Token", (2000, 2020))
         'Token.balanceOf'
 
-.. py:classmethod:: sources.get_fn_offset(contract, fn_name)
+.. py:method:: sources.get_fn_offset(contract, fn_name)
 
     Given a contract and function name, returns the source offsets of the function.
 
@@ -340,7 +333,7 @@ Module Methods
         >>> sources.get_fn_offset("Token", "balanceOf")
         (1992, 2050)
 
-.. py:classmethod:: sources.get_contract_name(path, offset)
+.. py:method:: sources.get_contract_name(path, offset)
 
     Given a path and source offsets, returns the name of the contract. Returns ``False`` if the offset spans multiple contracts.
 
@@ -350,10 +343,27 @@ Module Methods
         >>> sources.get_contract_name("contracts/Token.sol", (1000, 1200))
         "Token"
 
-.. py:classmethod: sources.get_highlighted_source(path, offset, pad=3)
+.. py:method: sources.get_highlighted_source(path, offset, pad=3)
 
     Given a path, start and stop offset, returns highlighted source code. Called internally by ``TransactionReceipt.source``.
 
-.. py:classmethod:: sources.is_inside_offset(inner, outer)
+
+.. py:method:: sources.minify(source)
+
+    Given contract source as a string, returns a minified version and an offset map used internally to translate minified offsets to the original ones.
+
+    .. code-block:: python
+
+        >>> from brownie.project import sources
+        >>> token_source = sources.get('Token')
+        >>> source.minify(token_source)
+        "pragma solidity^0.5.0;\nimport"./SafeMath.sol";\ncontract Token{\nusing SafeMath for uint256; ..."
+
+
+.. py:method:: sources.is_inside_offset(inner, outer)
 
     Returns a boolean indicating if the first offset is contained completely within the second offset.
+
+.. py:method:: sources.expand_offset(contract_name, offset)
+
+    Converts a minified offset to one from the original source.

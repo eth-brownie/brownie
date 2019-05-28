@@ -20,11 +20,14 @@ The compiler version is set in ``brownie-config.json``. If the required version 
         "solc":{
             "optimize": true,
             "runs": 200,
-            "version": "0.5.7"
+            "version": "0.5.7",
+            "minify_source": false
         }
     }
 
 Modifying the compiler version or optimization settings will result in a full recompile of the project.
+
+If ``minify_source`` is ``true``, the contract source is minified before compiling. Brownie will then minify the source code before checking the hashes to determine if a recompile is necessary. This allows you to modify formatting and comments without triggering a recompile.
 
 .. _compile-json:
 
@@ -57,13 +60,13 @@ Each contract will have it's own ``.json`` file stored in the ``build/contracts`
         'opcodes': "", // deployed contract opcodes list
         'pcMap': [], // program counter map
         'sha1': "", // hash of the contract source, used to check if a recompile is necessary
-        'source': "", // source code as a string
+        'source': "", // compiled source code as a string
         'sourceMap': "", // source mapping of undeployed bytecode
         'sourcePath': "", // absolute path to the contract source code file
         'type': "" // contract, library, interface
     }
 
-This raw data is available through the :ref:`api-project-build` module:
+This raw data is available through the :ref:`api-project-build` module. If the contract was minified before compiling, Brownie will automatically adjust the source map offsets in `pcMap` and `fn_offsets` to fit the current source.
 
 .. code-block:: python
 
@@ -77,16 +80,18 @@ Program Counter Map
 
 Brownie generates an expanded version of the deployed source mapping that it uses for debugging and test coverage evaluation. It is structured as a dictionary of dictionaries, where each key is a program counter as given by ``debug_traceTransaction``.
 
+If a value is ``false`` or the type equivalent, the key is not included.
+
 .. code-block:: javascript
 
     {
         'pc': {
-            'path': "", // relative path to the contract source code
             'op': "", // opcode string
+            'path': "", // relative path to the contract source code
             'offset': [0, 0], // source code start and stop offsets
-            'fn': str, // name of the related method, if any
+            'fn': str, // name of the related method
             'jump': "", // jump instruction as supplied in the sourceMap, if any (i,o)
-            'value': "0x00" // hex string value of the instruction, if any
+            'value': "0x00" // hex string value of the instruction
         }
     }
 
