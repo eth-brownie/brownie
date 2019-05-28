@@ -103,7 +103,7 @@ def _compile_and_format(input_json):
     result = _generate_pcMap(compiled, result)
     result = _generate_coverageMap(result)
     for data in result.values():
-        data['allSourcePaths'] = sorted(set(v['path'] for v in data['pcMap'].values() if v['path']))
+        data['allSourcePaths'] = sorted(set(v['path'] for v in data['pcMap'].values() if 'path' in v))
         data['coverageMapTotals'] = _generate_coverageMapTotals(data['coverageMap'])
     return result
 
@@ -157,20 +157,21 @@ def _generate_pcMap(output_json, build_json):
                     value[i] = int(value[i] or last[i])
                 value[3] = value[3] or last[3]
                 last = value
-            path = id_map[last[2]] if last[2] != -1 else False
-            offset = (last[0], last[0]+last[1])
-            pcMap[pc] = {
-                'offset': offset,
-                'op': opcodes.pop(),
-                'path': path,
-            }
+            pcMap[pc] = {'op': opcodes.pop()}
             if last[3] != "-":
                 pcMap[pc]['jump'] = last[3]
-            fn = get_fn(build_json, path, offset)
-            if fn:
-                pcMap[pc]['fn'] = fn
             if opcodes[-1][:2] == "0x":
                 pcMap[pc]['value'] = opcodes.pop()
+            if last[2] == -1:
+                continue
+            pcMap[pc]['path'] = id_map[last[2]]
+            if last[0] == -1:
+                continue
+            offset = (last[0], last[0]+last[1])
+            pcMap[pc]['offset'] = offset
+            fn = get_fn(build_json, id_map[last[2]], offset)
+            if fn:
+                pcMap[pc]['fn'] = fn
         data['pcMap'] = pcMap
     return build_json
 
@@ -234,7 +235,7 @@ def _isolate_lines(compiled):
     line_map = {}
 
     # find all the JUMPI opcodes
-    for i in [k for k, v in pcMap.items() if v['path'] and v['op'] == "JUMPI"]:
+    for i in [k for k, v in pcMap.items() if 'path' in v and v['op'] == "JUMPI"]:
         op = pcMap[i]
         if op['path'] not in line_map:
             line_map[op['path']] = []
@@ -246,7 +247,7 @@ def _isolate_lines(compiled):
             # a different source offset and is not a JUMPDEST
             pc = next(
                 x for x in range(i - 4, 0, -1) if x in pcMap and
-                pcMap[x]['path'] and pcMap[x]['op'] != "JUMPDEST" and
+                'path' in pcMap[x] and pcMap[x]['op'] != "JUMPDEST" and
                 pcMap[x]['offset'] != op['offset']
             )
         except StopIteration:
@@ -255,9 +256,9 @@ def _isolate_lines(compiled):
         line_map[op['path']][-1].update({'jump': i})
 
     # analyze all the opcodes
-    for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)]:
+    for pc, op in [(i, pcMap[i]) for i in sorted(pcMap) if 'path' in pcMap[i]]:
         # ignore code that spans multiple lines
-        if not op['path'] or ';' in _get_source(op):
+        if ';' in _get_source(op):
             continue
         if op['path'] not in line_map:
             line_map[op['path']] = []
@@ -343,7 +344,7 @@ def get_fn_offsets(ast_node):
     return [[
         ast_node['name']+'.'+i['name'],
         _src_to_offsets(i['src'])
-    ] for i in ast_node['nodes'] if i['nodeType'] == "FunctionDefinition" and i['name']][::-1]
+     ] for i in ast_node['nodes'] if i['nodeType'] == "FunctionDefinition" and i['name']][::-1]
 
 
 def get_symbol_map(output_json):

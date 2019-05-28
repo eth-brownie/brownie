@@ -147,6 +147,10 @@ def _add(build_json):
 
 def _generate_revert_map(pcMap):
     for pc, data in [(k, v) for k, v in pcMap.items() if v['op'] in ("REVERT", "INVALID")]:
+        _revert_map.setdefault(pc, set())
+        if 'path' not in data:
+            _revert_map[pc].add((False, (-1, -1), ""))
+            continue
         revert = [data['path'], tuple(data['offset']), ""]
         try:
             s = sources.get(data['path'])[data['offset'][1]:]
@@ -157,7 +161,7 @@ def _generate_revert_map(pcMap):
                 data['dev'] = err
         except (KeyError, ValueError):
             pass
-        _revert_map.setdefault(pc, set()).add(tuple(revert))
+        _revert_map[pc].add(tuple(revert))
 
 
 def _stem(contract_name):
@@ -172,7 +176,7 @@ def _absolute(contract_name):
 def expand_offsets():
     for name, build_json in _build.items():
         for value in build_json['pcMap'].values():
-            if 'offset' in value and value['offset'][0] > 0:
+            if 'offset' in value:
                 value['offset'] = sources.get_expanded_offset(name, value['offset'])
         for value in build_json['fn_offsets']:
             value[1] = sources.get_expanded_offset(name, value[1])
