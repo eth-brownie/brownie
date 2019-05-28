@@ -103,7 +103,6 @@ def _compile_and_format(input_json):
     result = _generate_pcMap(compiled, result)
     result = _generate_coverageMap(result)
     for data in result.values():
-        data['allSourcePaths'] = sorted(set(v['path'] for v in data['pcMap'].values() if 'path' in v))
         data['coverageMapTotals'] = _generate_coverageMapTotals(data['coverageMap'])
     return result
 
@@ -128,6 +127,7 @@ def _generate_pcMap(output_json, build_json):
             continue
         opcodes = data['opcodes']
         source_map = data['deployedSourceMap']
+        paths = set()
         while True:
             try:
                 i = opcodes[:-1].rindex(' STOP')
@@ -165,6 +165,7 @@ def _generate_pcMap(output_json, build_json):
             if last[2] == -1:
                 continue
             pcMap[pc]['path'] = id_map[last[2]]
+            paths.add(id_map[last[2]])
             if last[0] == -1:
                 continue
             offset = (last[0], last[0]+last[1])
@@ -173,6 +174,7 @@ def _generate_pcMap(output_json, build_json):
             if fn:
                 pcMap[pc]['fn'] = fn
         data['pcMap'] = pcMap
+        data['allSourcePaths'] = sorted(paths)
     return build_json
 
 
