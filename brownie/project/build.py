@@ -141,6 +141,7 @@ def _add(build_json):
     contract_name = build_json['contractName']
     if "0" in build_json['pcMap']:
         build_json['pcMap'] = dict((int(k), v) for k, v in build_json['pcMap'].items())
+    build_json = expand_offsets(build_json)
     _build[contract_name] = build_json
     _generate_revert_map(build_json['pcMap'])
 
@@ -173,10 +174,17 @@ def _absolute(contract_name):
     return _project_path.joinpath('build/contracts/{}.json'.format(contract_name))
 
 
-def expand_offsets():
-    for name, build_json in _build.items():
-        for value in build_json['pcMap'].values():
-            if 'offset' in value:
-                value['offset'] = sources.get_expanded_offset(name, value['offset'])
-        for value in build_json['fn_offsets']:
-            value[1] = sources.get_expanded_offset(name, value[1])
+def _get_offset(offset_map, name, value):
+    if value not in offset_map:
+        offset_map[value] = sources.expand_offset(name, value)
+    return offset_map[value]
+
+
+def expand_offsets(build_json):
+    name = build_json['contractName']
+    offset_map = {}
+    for value in [v for v in build_json['pcMap'].values() if 'offset' in v]:
+        value['offset'] = [_get_offset(offset_map, name, i) for i in value['offset']]
+    for value in build_json['fn_offsets']:
+        value[1] = [_get_offset(offset_map, name, i) for i in value[1]]
+    return build_json

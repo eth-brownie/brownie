@@ -89,8 +89,8 @@ def _get_contract_data(full_source, path):
             'uncommented': uncommented,
             'sha1': sha1(source.encode()).hexdigest(),
             'offset': (
-                _expand_offset(offset_map, offset),
-                _expand_offset(offset_map, offset + len(source))
+                offset + next(i[1] for i in offset_map if i[0] <= offset),
+                offset+len(source) + next(i[1] for i in offset_map if i[0] <= offset+len(source))
             )
         }
     return data
@@ -209,11 +209,7 @@ def is_inside_offset(inner, outer):
     return outer[0] <= inner[0] <= inner[1] <= outer[1]
 
 
-def _expand_offset(offset_map, offset):
+def expand_offset(contract_name, offset):
     '''Converts an offset from source with comments removed, to one from the original source.'''
-    return offset + next(i[1] for i in offset_map if i[0] <= offset)
-
-
-def get_expanded_offset(contract_name, offset):
     offset_map = _contracts[contract_name]['offset_map']
-    return _expand_offset(offset_map, offset[0]), _expand_offset(offset_map, offset[1])
+    return offset + next(i[1] for i in offset_map if i[0] <= offset)
