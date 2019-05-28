@@ -134,6 +134,9 @@ def load(project_path=None):
     for build_json in sources.compile_paths(changed_paths).values():
         build.add(build_json)
 
+    # unminify offsets
+    build.expand_offsets()
+
     # create objects, add to namespace
     return _create_objects()
 

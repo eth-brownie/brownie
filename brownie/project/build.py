@@ -167,3 +167,12 @@ def _stem(contract_name):
 def _absolute(contract_name):
     contract_name = _stem(contract_name)
     return _project_path.joinpath('build/contracts/{}.json'.format(contract_name))
+
+
+def expand_offsets():
+    for name, build_json in _build.items():
+        for value in build_json['pcMap'].values():
+            if 'offset' in value and value['offset'][0] > 0:
+                value['offset'] = sources.get_expanded_offset(name, value['offset'])
+        for value in build_json['fn_offsets']:
+            value[1] = sources.get_expanded_offset(name, value[1])

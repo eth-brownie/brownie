@@ -87,19 +87,13 @@ def _get_contract_data(full_source, path):
             'path': str(path),
             'offset_map': offset_map,
             'uncommented': uncommented,
-            'sha1': sha1(full_source.encode()).hexdigest(),
+            'sha1': sha1(source.encode()).hexdigest(),
             'offset': (
-                _commented_offset(offset_map, offset),
-                _commented_offset(offset_map, offset + len(source))
+                _expand_offset(offset_map, offset),
+                _expand_offset(offset_map, offset + len(source))
             )
         }
     return data
-
-
-def _commented_offset(offset_map, offset):
-    '''Converts an offset from source with comments removed, to one from the original source.'''
-    return offset + next(i[1] for i in offset_map if i[0] <= offset)
-
 
 def compile_paths(paths):
     '''Compiles a list of contracts. The source code must have already been
@@ -110,7 +104,7 @@ def compile_paths(paths):
 
     Returns: build json data
     '''
-    to_compile = dict((k, _source[k]) for k in paths)
+    to_compile = dict((k, remove_comments(_source[k])[0]) for k in paths)
     return compiler.compile_contracts(to_compile)
 
 
@@ -212,3 +206,12 @@ def is_inside_offset(inner, outer):
 
     Returns: bool'''
     return outer[0] <= inner[0] <= inner[1] <= outer[1]
+
+
+def _expand_offset(offset_map, offset):
+    '''Converts an offset from source with comments removed, to one from the original source.'''
+    return offset + next(i[1] for i in offset_map if i[0] <= offset)
+
+def get_expanded_offset(contract_name, offset):
+    offset_map = _contracts[contract_name]['offset_map']
+    return _expand_offset(offset_map, offset[0]), _expand_offset(offset_map, offset[1])
