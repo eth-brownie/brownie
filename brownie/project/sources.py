@@ -8,6 +8,14 @@ from brownie.cli.utils import color
 from brownie.exceptions import ContractExists
 from . import build, compiler
 
+MINIFY_REGEX_PATTERNS = [
+    r"(?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)",                   # comments
+    r"(?<=\n)\s{1,}|[ \t]{1,}(?=\n)",                            # leading / trailing whitespace
+    r"(?<=[^\w\s])[ \t]{1,}(?=\w)|(?<=\w)[ \t]{1,}(?=[^\w\s])"  # whitespace between expressions
+]
+
+
+
 _source = {}
 _contracts = {}
 
@@ -57,7 +65,7 @@ def remove_comments(source):
     '''Given contract source as a string, returns the same contract with
     all the comments removed.'''
     offsets = [(0, 0)]
-    pattern = r"((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))"
+    pattern = "({})".format("|".join(MINIFY_REGEX_PATTERNS))
     for match in re.finditer(pattern, source):
         offsets.append((
             match.start() - offsets[-1][1],
@@ -105,7 +113,7 @@ def compile_paths(paths):
 
     Returns: build json data
     '''
-    to_compile = dict((k, remove_comments(_source[k])[0]) for k in paths)
+    to_compile = dict((k, _source[k]) for k in paths)
     return compiler.compile_contracts(to_compile)
 
 
