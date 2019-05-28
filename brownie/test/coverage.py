@@ -19,11 +19,13 @@ def analyze_coverage(history):
             continue
         tx_eval = {}
         for i in range(len(tx.trace)):
+            if not tx.trace[i]['source']:
+                continue
             t = tx.trace[i]
             pc = t['pc']
             name = t['contractName']
             path = t['source']['filename']
-            if not name or not path or not build.contains(name):
+            if not build.contains(name):
                 continue
 
             # prevent repeated requests to build object

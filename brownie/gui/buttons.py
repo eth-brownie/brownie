@@ -50,7 +50,7 @@ class ScopingToggle(_Toggle):
         pc = self.root.pcMap[op]
         for key, value in sorted(self.root.pcMap.items(), key=lambda k: int(k[0])):
             if (
-                not value['path'] or value['path'] != pc['path'] or
+                'path' not in value or value['path'] != pc['path'] or
                 not is_inside_offset(value['offset'], pc['offset'])
             ):
                 self.oplist.detach(key)

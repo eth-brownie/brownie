@@ -362,10 +362,13 @@ class TransactionReceipt:
                 'jumpDepth': last['jumpDepth']
             })
             pc = contract._build['pcMap'][trace[i]['pc']]
-            trace[i]['source'] = {
-                'filename': pc['path'],
-                'offset': pc['offset']
-            }
+            if 'path' in pc:
+                trace[i]['source'] = {
+                    'filename': pc['path'],
+                    'offset': pc['offset']
+                }
+            else:
+                trace[i]['source'] = False
             # jump 'i' is moving into an internal function
             if 'jump' not in pc or 'fn' not in pc or pc['fn'] == last['fn'][-1]:
                 continue
@@ -416,10 +419,10 @@ class TransactionReceipt:
         except StopIteration:
             return ""
         while True:
-            if idx == -1:
+            if idx < 0:
                 return ""
             source = self.trace[idx]['source']
-            if not source['filename']:
+            if not source:
                 idx -= 1
                 continue
             if sources.get_fn(source['filename'], source['offset']) != self.trace[idx]['fn']:

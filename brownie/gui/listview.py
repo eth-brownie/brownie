@@ -67,7 +67,7 @@ class ListView(ttk.Treeview):
     def set_opcodes(self, pcMap):
         self.delete_all()
         for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)]:
-            if not op['path'] or (
+            if 'path' not in op or (
                 op['path'] == pcMap[0]['path'] and
                 op['offset'] == pcMap[0]['offset']
             ):
@@ -90,7 +90,7 @@ class ListView(ttk.Treeview):
             return
         self.tag_configure(tag, background="#2a4864")
         self._last = tag
-        if not pcMap[pc]['path']:
+        if 'path' not in pcMap[pc]:
             note.active_frame().clear_highlight()
             return
         note.set_active(pcMap[pc]['path'])

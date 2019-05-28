@@ -130,7 +130,7 @@ class TextBook(ttk.Notebook):
         else:
             pc = [
                 k for k, v in self.root.pcMap.items() if
-                v['path'] and frame._label in v['path'] and
+                'path' in v and frame._label in v['path'] and
                 is_inside_offset((start, stop), v['offset'])
             ]
         if not pc:
