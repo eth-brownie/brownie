@@ -56,7 +56,10 @@ def compile_contracts(contracts, silent=False):
         names = [Path(i).name for i in contracts]
         print("\n".join(" - {}...".format(i) for i in names))
     input_json = STANDARD_JSON.copy()
-    input_json['sources'] = dict((k, {'content': v}) for k, v in contracts.items())
+    input_json['sources'] = dict((
+        k,
+        {'content': sources.remove_comments(v)[0] if CONFIG['solc']['minify_source'] else v}
+    ) for k, v in contracts.items())
     return _compile_and_format(input_json)
 
 

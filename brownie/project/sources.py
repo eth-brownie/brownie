@@ -14,8 +14,6 @@ MINIFY_REGEX_PATTERNS = [
     r"(?<=[^\w\s])[ \t]{1,}(?=\w)|(?<=\w)[ \t]{1,}(?=[^\w\s])"  # whitespace between expressions
 ]
 
-
-
 _source = {}
 _contracts = {}
 

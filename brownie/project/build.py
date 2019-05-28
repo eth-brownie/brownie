@@ -141,7 +141,8 @@ def _add(build_json):
     contract_name = build_json['contractName']
     if "0" in build_json['pcMap']:
         build_json['pcMap'] = dict((int(k), v) for k, v in build_json['pcMap'].items())
-    build_json = expand_offsets(build_json)
+    if build_json['compiler']['minify_source']:
+        build_json = expand_offsets(build_json)
     _build[contract_name] = build_json
     _generate_revert_map(build_json['pcMap'])
 
