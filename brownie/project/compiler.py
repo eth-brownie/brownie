@@ -104,14 +104,14 @@ def _compile_and_format(input_json):
             'sourcePath': path,
             'type': node.type
         }
-    build_json = _generate_pcMap(output_json, build_json)
+    build_json = _generate_pcMap(source_nodes, build_json)
     build_json = _generate_coverageMap(build_json)
     for data in build_json.values():
         data['coverageMapTotals'] = _generate_coverageMapTotals(data['coverageMap'])
     return build_json
 
 
-def _generate_pcMap(output_json, build_json):
+def _generate_pcMap(source_nodes, build_json):
     '''
     Generates an expanded sourceMap useful for debugging.
     [{
@@ -124,7 +124,8 @@ def _generate_pcMap(output_json, build_json):
         'value': value of the instruction, if any
     }, ... ]
     '''
-    id_map = dict((v['id'], k) for k, v in output_json['sources'].items())
+
+    id_map = dict((x.contract_id, x) for i in source_nodes for x in i)
     for name, data in build_json.items():
         if not data['deployedBytecode']:
             data['pcMap'] = {}
@@ -149,7 +150,7 @@ def _generate_pcMap(output_json, build_json):
         pcMap = {0: {
             'offset': (last[0], last[0]+last[1]),
             'op': opcodes.pop(),
-            'path': id_map[last[2]],
+            'path': id_map[last[2]].parent.path,
         }}
         pcMap[0]['value'] = opcodes.pop()
         for value in source_map.split(';')[1:]:
@@ -169,15 +170,17 @@ def _generate_pcMap(output_json, build_json):
                 pcMap[pc]['value'] = opcodes.pop()
             if last[2] == -1:
                 continue
-            pcMap[pc]['path'] = id_map[last[2]]
-            paths.add(id_map[last[2]])
+            node = id_map[last[2]]
+            pcMap[pc]['path'] = node.parent.path
+            paths.add(node.parent.path)
             if last[0] == -1:
                 continue
             offset = (last[0], last[0]+last[1])
             pcMap[pc]['offset'] = offset
-            fn = get_fn(build_json, id_map[last[2]], offset)
-            if fn:
-                pcMap[pc]['fn'] = fn
+            try:
+                pcMap[pc]['fn'] = node.child_by_offset(offset).full_name
+            except KeyError:
+                pass
         data['pcMap'] = pcMap
         data['allSourcePaths'] = sorted(paths)
     return build_json
@@ -328,7 +331,6 @@ def _base(pc, op):
         'pc': set([pc]),
         'jump': False
     }
-
 
 
 def format_link_references(evm):
