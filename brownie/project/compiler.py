@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+from copy import deepcopy
+from collections import deque
 from hashlib import sha1
 from pathlib import Path
 import solcast
@@ -77,7 +79,7 @@ def _compile_and_format(input_json):
 
     build_json = {}
     path_list = list(input_json['sources'])
-    source_nodes = solcast.from_standard_output(output_json)
+    source_nodes = solcast.from_standard_output(deepcopy(output_json))
 
     for path, contract_name in [(k, v) for k in path_list for v in output_json['contracts'][k]]:
         evm = output_json['contracts'][path][contract_name]['evm']
@@ -104,14 +106,18 @@ def _compile_and_format(input_json):
             'sourcePath': path,
             'type': node.type
         }
-    build_json = _generate_pcMap(source_nodes, build_json)
+
+    pc_list = generate_pc_list(source_nodes, build_json)
+    for name, value in pc_list.items():
+        build_json[name]['pcMap'] = pc_list_to_map(value)
+
     build_json = _generate_coverageMap(build_json)
     for data in build_json.values():
         data['coverageMapTotals'] = _generate_coverageMapTotals(data['coverageMap'])
     return build_json
 
 
-def _generate_pcMap(source_nodes, build_json):
+def generate_pc_list(source_nodes, build_json):
     '''
     Generates an expanded sourceMap useful for debugging.
     [{
@@ -124,66 +130,65 @@ def _generate_pcMap(source_nodes, build_json):
         'value': value of the instruction, if any
     }, ... ]
     '''
-
     id_map = dict((x.contract_id, x) for i in source_nodes for x in i)
+    pc_list = {}
     for name, data in build_json.items():
         if not data['deployedBytecode']:
-            data['pcMap'] = {}
-            data['allSourcePaths'] = [data['sourcePath']]
+            pc_list[name] = {}
             continue
-        opcodes = data['opcodes']
-        source_map = data['deployedSourceMap']
-        paths = set()
-        while True:
-            try:
-                i = opcodes[:-1].rindex(' STOP')
-            except ValueError:
-                break
-            if 'JUMPDEST' in opcodes[i:]:
-                break
-            opcodes = opcodes[:i+5]
-        opcodes = opcodes.split(" ")[::-1]
+
+        opcodes = deque(data['opcodes'].split(" "))
+        source_map = deque(expand_source_map(data['deployedSourceMap']))
         pc = 0
-        last = source_map.split(';')[0].split(':')
-        for i in range(3):
-            last[i] = int(last[i])
-        pcMap = {0: {
-            'offset': (last[0], last[0]+last[1]),
-            'op': opcodes.pop(),
-            'path': id_map[last[2]].parent.path,
-        }}
-        pcMap[0]['value'] = opcodes.pop()
-        for value in source_map.split(';')[1:]:
-            if pcMap[pc]['op'][:4] == "PUSH":
-                pc += int(pcMap[pc]['op'][4:])
+        pcMap = []
+
+        while source_map:
+            source = source_map.popleft()
+            pcMap.append({'op': opcodes.popleft(), 'pc': pc})
             pc += 1
-            if value:
-                value = (value+":::").split(':')[:4]
-                for i in range(3):
-                    value[i] = int(value[i] or last[i])
-                value[3] = value[3] or last[3]
-                last = value
-            pcMap[pc] = {'op': opcodes.pop()}
-            if last[3] != "-":
-                pcMap[pc]['jump'] = last[3]
+            if source[3] != "-":
+                pcMap[-1]['jump'] = source[3]
             if opcodes[-1][:2] == "0x":
-                pcMap[pc]['value'] = opcodes.pop()
-            if last[2] == -1:
+                pcMap[-1]['value'] = opcodes.popleft()
+                pc += int(pcMap[-1]['op'][4:])
+            if source[2] == -1:
                 continue
-            node = id_map[last[2]]
-            pcMap[pc]['path'] = node.parent.path
-            paths.add(node.parent.path)
-            if last[0] == -1:
+            node = id_map[source[2]]
+            pcMap[-1]['path'] = node.parent.path
+            if source[0] == -1:
                 continue
-            offset = (last[0], last[0]+last[1])
-            pcMap[pc]['offset'] = offset
+            offset = [source[0], source[0]+source[1]]
+            pcMap[-1]['offset'] = offset
             try:
-                pcMap[pc]['fn'] = node.child_by_offset(offset).full_name
+                pcMap[-1]['fn'] = node.child_by_offset(offset).full_name
             except KeyError:
                 pass
-        data['pcMap'] = pcMap
-        data['allSourcePaths'] = sorted(paths)
-    return build_json
+
+        pc_list[name] = pcMap
+    return pc_list
+
+
+def pc_list_to_map(pc_list):
+    '''Convert a pc list to a pc map'''
+    return dict((i.pop('pc'), i) for i in pc_list)
+
+
+def expand_source_map(source_map):
+    '''Expands the compressed sourceMap supplied by solc into a list of lists.''' 
+    source_map = [_expand_row(i) if i else None for i in source_map.split(';')]
+    for i in range(1, len(source_map)):
+        if not source_map[i]:
+            source_map[i] = source_map[i-1]
+            continue
+        for x in range(4):
+            if source_map[i][x] is None:
+                source_map[i][x] = source_map[i-1][x]
+    return source_map
+
+
+def _expand_row(row):
+    row = row.split(':')
+    return [int(i) if i else None for i in row[:3]] + row[3:] + [None]*(4-len(row))
 
 
 def _generate_coverageMap(build_json):
