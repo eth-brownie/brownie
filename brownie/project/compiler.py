@@ -65,7 +65,7 @@ def compile_contracts(contracts, silent=False):
 
 def _compile_and_format(input_json):
     try:
-        compiled = solcx.compile_standard(
+        output_json = solcx.compile_standard(
             input_json,
             optimize=CONFIG['solc']['optimize'],
             optimize_runs=CONFIG['solc']['runs'],
@@ -74,22 +74,22 @@ def _compile_and_format(input_json):
     except solcx.exceptions.SolcError as e:
         raise CompilerError(e)
 
-    result = {}
+    build_json = {}
+    path_list = list(input_json['sources'])
+    symbols = get_symbol_map(output_json)
 
-    symbols = get_symbol_map(compiled)
-
-    for filename, name in [(k, v) for k in input_json['sources'] for v in compiled['contracts'][k]]:
-        evm = compiled['contracts'][filename][name]['evm']
-        node = get_contract_node(compiled['sources'][filename]['ast'], name)
+    for path, contract_name in [(k, v) for k in path_list for v in output_json['contracts'][k]]:
+        evm = output_json['contracts'][path][contract_name]['evm']
+        node = get_contract_node(output_json['sources'][path]['ast'], contract_name)
         bytecode = format_link_references(evm)
 
-        result[name] = {
-            'abi': compiled['contracts'][filename][name]['abi'],
-            'ast': compiled['sources'][filename]['ast'],
+        build_json[contract_name] = {
+            'abi': output_json['contracts'][path][contract_name]['abi'],
+            'ast': output_json['sources'][path]['ast'],
             'bytecode': bytecode,
             'bytecodeSha1': sha1(bytecode[:-68].encode()).hexdigest(),
             'compiler': dict(CONFIG['solc']),
-            'contractName': name,
+            'contractName': contract_name,
             'deployedBytecode': evm['deployedBytecode']['object'],
             'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
             'dependencies': get_dependencies(node, symbols, evm['bytecode']['linkReferences']),
@@ -97,17 +97,17 @@ def _compile_and_format(input_json):
             'fn_offsets': get_fn_offsets(node),
             'offset': get_contract_offset(node),
             'opcodes': evm['deployedBytecode']['opcodes'],
-            'sha1': sources.get_hash(name),
-            'source': input_json['sources'][filename]['content'],
+            'sha1': sources.get_hash(contract_name),
+            'source': input_json['sources'][path]['content'],
             'sourceMap': evm['bytecode']['sourceMap'],
-            'sourcePath': filename,
+            'sourcePath': path,
             'type': node['contractKind']
         }
-    result = _generate_pcMap(compiled, result)
-    result = _generate_coverageMap(result)
-    for data in result.values():
+    build_json = _generate_pcMap(output_json, build_json)
+    build_json = _generate_coverageMap(build_json)
+    for data in build_json.values():
         data['coverageMapTotals'] = _generate_coverageMapTotals(data['coverageMap'])
-    return result
+    return build_json
 
 
 def _generate_pcMap(output_json, build_json):
