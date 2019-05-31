@@ -2,6 +2,7 @@
 
 from hashlib import sha1
 from pathlib import Path
+import solcast
 import solcx
 
 from . import sources
@@ -76,11 +77,11 @@ def _compile_and_format(input_json):
 
     build_json = {}
     path_list = list(input_json['sources'])
-    symbols = get_symbol_map(output_json)
+    source_nodes = solcast.from_standard_output(output_json)
 
     for path, contract_name in [(k, v) for k in path_list for v in output_json['contracts'][k]]:
         evm = output_json['contracts'][path][contract_name]['evm']
-        node = get_contract_node(output_json['sources'][path]['ast'], contract_name)
+        node = next(i[contract_name] for i in source_nodes if i.name == path)
         bytecode = format_link_references(evm)
 
         build_json[contract_name] = {
@@ -92,16 +93,16 @@ def _compile_and_format(input_json):
             'contractName': contract_name,
             'deployedBytecode': evm['deployedBytecode']['object'],
             'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
-            'dependencies': get_dependencies(node, symbols, evm['bytecode']['linkReferences']),
+            'dependencies': [i.name for i in node.dependencies],
             # 'networks': {},
-            'fn_offsets': get_fn_offsets(node),
-            'offset': get_contract_offset(node),
+            'fn_offsets': [[node.name+'.'+i.name, i.offset] for i in node.functions],
+            'offset': node.offset,
             'opcodes': evm['deployedBytecode']['opcodes'],
             'sha1': sources.get_hash(contract_name),
             'source': input_json['sources'][path]['content'],
             'sourceMap': evm['bytecode']['sourceMap'],
             'sourcePath': path,
-            'type': node['contractKind']
+            'type': node.type
         }
     build_json = _generate_pcMap(output_json, build_json)
     build_json = _generate_coverageMap(build_json)
@@ -328,43 +329,6 @@ def _base(pc, op):
         'jump': False
     }
 
-
-def _src_to_offsets(src):
-    src = [int(i) for i in src.split(':')[:2]]
-    return src[0], src[0]+src[1]
-
-
-def get_contract_node(build_ast, contract_name):
-    return next(
-        i for i in build_ast['nodes'] if
-        i['nodeType'] == "ContractDefinition"
-        and i['name'] == contract_name
-    )
-
-
-def get_contract_offset(ast_node):
-    return _src_to_offsets(ast_node['src'])
-
-
-def get_fn_offsets(ast_node):
-    return [[
-        ast_node['name']+'.'+i['name'],
-        _src_to_offsets(i['src'])
-     ] for i in ast_node['nodes'] if i['nodeType'] == "FunctionDefinition" and i['name']][::-1]
-
-
-def get_symbol_map(output_json):
-    symbols = {}
-    for ast in [v['ast'] for v in output_json['sources'].values()]:
-        symbols.update((v[0], k) for k, v in ast['exportedSymbols'].items())
-    return symbols
-
-
-def get_dependencies(ast_node, symbol_map, link_references):
-    dependencies = [k for v in link_references.values() for k in v.keys()]
-    dependencies += [symbol_map[i] for i in ast_node['contractDependencies']]
-    dependencies += [i['libraryName']['name'] for i in ast_node['nodes'] if 'libraryName' in i]
-    return sorted(dependencies)
 
 
 def format_link_references(evm):
