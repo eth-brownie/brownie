@@ -226,7 +226,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
     statement_map = dict((i, {}) for i in paths)
 
     # possible branch offsets
-    branch_nodes = dict((i, set(tuple(i.offset) for i in branch_nodes[i])) for i in paths)
+    branch_nodes = dict((i, branch_nodes[i].copy()) for i in paths)
     # currently active, awaiting a jump
     branch_active = dict((i, set()) for i in paths)
     # found a jump
@@ -271,10 +271,10 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
                 pc_list[-1]['fn'] = node.child_by_offset(offset).full_name
                 statement = next(
                     i for i in statement_nodes[path] if
-                    is_inside_offset(offset, i.offset)
+                    is_inside_offset(offset, i)
                 )
                 statement_nodes[path].discard(statement)
-                statement_map[path][count] = statement.offset
+                statement_map[path][count] = statement
                 pc_list[-1]['statement'] = count
                 count += 1
         except (KeyError, IndexError, StopIteration):
@@ -314,7 +314,7 @@ def get_statement_nodes(source_nodes):
     '''Given a list of source nodes, returns a dict of lists of statement nodes.'''
     statements = {}
     for node in source_nodes:
-        statements[node.path] = set(node.children(
+        statements[node.path] = set(i.offset for i in node.children(
             include_parents=False,
             filters={'node_class': "Statement"},
             exclude={'name': "<constructor>"}
@@ -348,20 +348,20 @@ def _get_recursive_branches(base_node):
     if not all_binaries:
         # if node is FunctionaCall, look at the first argument
         if not hasattr(base_node, 'condition'):
-            return set([node.arguments[0]])
-        return set([node])
+            return set([node.arguments[0].offset])
+        return set([node.offset])
 
     # look at BinaryOperation nodes to find all possible branches
     binary_branches = set()
     for node in all_binaries:
         # if node has no BinaryOperation children, include it
         if not node.children(include_self=False, filters=filters):
-            binary_branches.add(node)
+            binary_branches.add(node.offset)
             continue
         # otherwise, include the immediate children if they are not BinaryOperations
         for node in (node.left, node.right):
             if node.children(include_self=True, filters=filters):
                 continue
-            binary_branches.add(node)
+            binary_branches.add(node.offset)
 
     return binary_branches
