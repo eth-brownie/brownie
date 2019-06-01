@@ -121,7 +121,7 @@ def load(project_path=None):
 
     # load config
     load_project_config(project_path)
-    compiler.set_solc_version()
+    CONFIG['solc']['version'] = compiler.set_solc_version(CONFIG['solc']['version'])
 
     # load sources and build
     sources.load(project_path)
@@ -131,8 +131,14 @@ def load(project_path=None):
     changed_paths = _get_changed_contracts()
 
     # compile sources, update build
-    for build_json in sources.compile_paths(changed_paths).values():
-        build.add(build_json)
+    build_json = sources.compile_paths(
+        changed_paths,
+        optimize=CONFIG['solc']['optimize'],
+        runs=CONFIG['solc']['runs'],
+        minify=CONFIG['solc']['minify_source']
+    )
+    for data in build_json.values():
+        build.add(data)
 
     # create objects, add to namespace
     return _create_objects()

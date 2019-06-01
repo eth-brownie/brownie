@@ -9,7 +9,6 @@ import solcx
 
 from . import sources
 from brownie.exceptions import CompilerError
-from brownie._config import CONFIG
 
 STANDARD_JSON = {
     'language': "Solidity",
@@ -25,48 +24,62 @@ STANDARD_JSON = {
             '': ["ast"]
         }},
         "optimizer": {
-            "enabled": CONFIG['solc']['optimize'],
-            "runs": CONFIG['solc']['runs']
+            "enabled": True,
+            "runs": 200
         }
     }
 }
 
 
-def set_solc_version():
-    '''Sets the solc version based on the project config file.'''
+def set_solc_version(version):
+    '''Sets the solc version. If not available it will be installed.'''
     try:
-        solcx.set_solc_version(CONFIG['solc']['version'])
+        solcx.set_solc_version(version)
     except solcx.exceptions.SolcNotInstalled:
-        solcx.install_solc(CONFIG['solc']['version'])
-        solcx.set_solc_version(CONFIG['solc']['version'])
-    CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
+        solcx.install_solc(version)
+        solcx.set_solc_version(version)
+    return solcx.get_solc_version_string().strip('\n')
 
 
-def compile_and_format(contracts, silent=True):
+def compile_and_format(contracts, optimize=True, runs=200, minify=False, silent=True):
     '''Compiles contracts and returns build data.
 
     Args:
         contracts: a dictionary in the form of {path: 'source code'}
-    '''
+        optimize: enable solc optimizer
+        runs: optimizer runs
+        minify: minify source files
+        silent: verbose reporting
+
+    Returns: build data dict'''
     if not contracts:
         return {}
 
-    input_json = generate_input_json(contracts, CONFIG['solc']['minify_source'])
+    compiler_data = {
+        'minify_source': minify,
+        'version': solcx.get_solc_version_string().strip('\n')
+    }
+
+    input_json = generate_input_json(contracts, optimize, runs, minify)
     output_json = compile_contracts(input_json, silent)
-    build_json = generate_build_json(input_json, output_json, silent)
+    build_json = generate_build_json(input_json, output_json, compiler_data, silent)
     return build_json
 
 
-def generate_input_json(contracts, minify=False):
+def generate_input_json(contracts, optimize=True, runs=200, minify=False):
     '''Formats contracts to the standard solc input json.
 
     Args:
         contracts: a dictionary in the form of {path: 'source code'}
+        optimize: enable solc optimizer
+        runs: optimizer runs
         minify: should source code be minified?
 
     Returns: dict
     '''
-    input_json = STANDARD_JSON.copy()
+    input_json = deepcopy(STANDARD_JSON)
+    input_json['settings']['optimizer']['enabled'] = optimize
+    input_json['settings']['optimizer']['runs'] = runs if optimize else False
     input_json['sources'] = dict((
         k,
         {'content': sources.minify(v)[0] if minify else v}
@@ -79,6 +92,7 @@ def compile_contracts(input_json, silent=True):
 
     Args:
         input_json: solc input json
+        silent: verbose reporting
 
     Returns: standard compiler output json'''
     optimizer = input_json['settings']['optimizer']
@@ -99,18 +113,23 @@ def compile_contracts(input_json, silent=True):
         raise CompilerError(e)
 
 
-def generate_build_json(input_json, output_json, silent=True):
+def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
     '''Formats standard compiler output to the brownie build json.
 
     Args:
         input_json: solc input json used to compile
         output_json: output json returned by compiler
+        compiler_data: additonal data to include under 'compiler' in build json
+        silent: verbose reporting
 
     Returns: build json dict'''
-
     if not silent:
         print("Generating build data...")
 
+    compiler_data.update({
+        "optimize": input_json['settings']['optimizer']['enabled'],
+        "runs": input_json['settings']['optimizer']['runs']
+    })
     build_json = {}
     path_list = list(input_json['sources'])
 
@@ -142,7 +161,7 @@ def generate_build_json(input_json, output_json, silent=True):
             'ast': output_json['sources'][path]['ast'],
             'bytecode': bytecode,
             'bytecodeSha1': get_bytecode_hash(bytecode),
-            'compiler': dict(CONFIG['solc']),
+            'compiler': compiler_data,
             'contractName': contract_name,
             'coverageMap': {'statements': statement_map, 'branches': branch_map},
             'coverageMapTotals': {},

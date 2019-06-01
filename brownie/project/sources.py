@@ -102,7 +102,7 @@ def _get_contract_data(full_source, path):
     return data
 
 
-def compile_paths(paths):
+def compile_paths(paths, optimize=True, runs=200, minify=False, silent=False):
     '''Compiles a list of contracts. The source code must have already been
     loaded via sources.load
 
@@ -112,10 +112,16 @@ def compile_paths(paths):
     Returns: build json data
     '''
     to_compile = dict((k, _source[k]) for k in paths)
-    return compiler.compile_and_format(to_compile, False)
+    return compiler.compile_and_format(
+        to_compile,
+        optimize=optimize,
+        runs=runs,
+        minify=minify,
+        silent=silent
+    )
 
 
-def compile_source(source):
+def compile_source(source, optimize=True, runs=200):
     '''Compiles the given source and saves it with a path <string-X>, where
     X is a an integer increased with each successive call.
 
@@ -126,7 +132,7 @@ def compile_source(source):
     path = "<string-{}>".format(key)
     _source[path] = source
     _contracts.update(_get_contract_data(source, path))
-    return compiler.compile_and_format({path: source}, True)
+    return compiler.compile_and_format({path: source}, optimize=optimize, runs=runs, silent=True)
 
 
 def get_hash(contract_name):
