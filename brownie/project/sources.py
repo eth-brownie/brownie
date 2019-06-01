@@ -112,7 +112,7 @@ def compile_paths(paths):
     Returns: build json data
     '''
     to_compile = dict((k, _source[k]) for k in paths)
-    return compiler.compile_contracts(to_compile)
+    return compiler.compile_and_format(to_compile, False)
 
 
 def compile_source(source):
@@ -126,7 +126,7 @@ def compile_source(source):
     path = "<string-{}>".format(key)
     _source[path] = source
     _contracts.update(_get_contract_data(source, path))
-    return compiler.compile_contracts({path: source}, True)
+    return compiler.compile_and_format({path: source}, True)
 
 
 def get_hash(contract_name):

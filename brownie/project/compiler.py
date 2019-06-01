@@ -3,7 +3,6 @@
 from copy import deepcopy
 from collections import deque
 from hashlib import sha1
-from pathlib import Path
 import solcast
 from solcast.utils import is_inside_offset
 import solcx
@@ -43,47 +42,80 @@ def set_solc_version():
     CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
 
 
-def compile_contracts(contracts, silent=False):
-    '''Compiles contracts and returns a dict of build data.
+def compile_and_format(contracts, silent=True):
+    '''Compiles contracts and returns build data.
 
     Args:
         contracts: a dictionary in the form of {path: 'source code'}
     '''
     if not contracts:
         return {}
-    if not silent:
-        print("Compiling contracts...")
-        print("Optimizer: {}".format(
-            "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
-            CONFIG['solc']['optimize'] else "Disabled"
-        ))
-        names = [Path(i).name for i in contracts]
-        print("\n".join(" - {}...".format(i) for i in names))
+
+    input_json = generate_input_json(contracts, CONFIG['solc']['minify_source'])
+    output_json = compile_contracts(input_json, silent)
+    build_json = generate_build_json(input_json, output_json, silent)
+    return build_json
+
+
+def generate_input_json(contracts, minify=False):
+    '''Formats contracts to the standard solc input json.
+
+    Args:
+        contracts: a dictionary in the form of {path: 'source code'}
+        minify: should source code be minified?
+
+    Returns: dict
+    '''
     input_json = STANDARD_JSON.copy()
     input_json['sources'] = dict((
         k,
-        {'content': sources.minify(v)[0] if CONFIG['solc']['minify_source'] else v}
+        {'content': sources.minify(v)[0] if minify else v}
     ) for k, v in contracts.items())
-    return _compile_and_format(input_json)
+    return input_json
 
 
-def _compile_and_format(input_json):
+def compile_contracts(input_json, silent=True):
+    '''Compiles contracts from a standard input json.
+
+    Args:
+        input_json: solc input json
+
+    Returns: standard compiler output json'''
+    print(input_json.keys())
+    optimizer = input_json['settings']['optimizer']
+    if not silent:
+        print("Compiling contracts...")
+        print("Optimizer: {}".format(
+            "Enabled  Runs: "+str(optimizer['runs']) if
+            optimizer['enabled'] else "Disabled"
+        ))
     try:
-        output_json = solcx.compile_standard(
+        return solcx.compile_standard(
             input_json,
-            optimize=CONFIG['solc']['optimize'],
-            optimize_runs=CONFIG['solc']['runs'],
+            optimize=optimizer['enabled'],
+            optimize_runs=optimizer['runs'],
             allow_paths="."
         )
     except solcx.exceptions.SolcError as e:
         raise CompilerError(e)
 
+
+def generate_build_json(input_json, output_json, silent=True):
+    '''Formats standard compiler output to the brownie build json.
+
+    Args:
+        input_json: solc input json used to compile
+        output_json: output json returned by compiler
+
+    Returns: build json dict'''
     build_json = {}
     path_list = list(input_json['sources'])
     source_nodes = solcast.from_standard_output(deepcopy(output_json))
 
     for path, contract_name in [(k, v) for k in path_list for v in output_json['contracts'][k]]:
 
+        if not silent:
+            print(" - {}...".format(contract_name))
         evm = output_json['contracts'][path][contract_name]['evm']
         node = next(i[contract_name] for i in source_nodes if i.name == path)
         bytecode = format_link_references(evm)
@@ -94,7 +126,7 @@ def _compile_and_format(input_json):
             node
         )
 
-        paths = sorted([node.parent.path]+[i.parent.path for i in node.dependencies])
+        paths = sorted(set([node.parent.path]+[i.parent.path for i in node.dependencies]))
 
         build_json[contract_name] = {
             'abi': output_json['contracts'][path][contract_name]['abi'],
@@ -104,6 +136,8 @@ def _compile_and_format(input_json):
             'bytecodeSha1': sha1(bytecode[:-68].encode()).hexdigest(),
             'compiler': dict(CONFIG['solc']),
             'contractName': contract_name,
+            'coverageMap': {},  # TODO reimplement
+            'coverageMapTotals': {},
             'deployedBytecode': evm['deployedBytecode']['object'],
             'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
             'dependencies': [i.name for i in node.dependencies],
@@ -291,17 +325,3 @@ def format_link_references(evm):
             bytecode[loc+40:]
         )
     return bytecode
-
-
-def get_fn(build_json, path, offset):
-    try:
-        contract = next(
-            k for k, v in build_json.items() if
-            v['sourcePath'] == path and sources.is_inside_offset(offset, v['offset'])
-        )
-        return next(
-            i[0] for i in build_json[contract]['fn_offsets'] if
-            sources.is_inside_offset(offset, i[1])
-        )
-    except StopIteration:
-        return False
