@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import time
+
 from copy import deepcopy
 from collections import deque
 from hashlib import sha1
@@ -109,7 +111,17 @@ def generate_build_json(input_json, output_json, silent=True):
     Returns: build json dict'''
     build_json = {}
     path_list = list(input_json['sources'])
+    x = time.time()
     source_nodes = solcast.from_standard_output(deepcopy(output_json))
+    print(time.time()-x)
+
+    x = time.time()
+    statements = get_statements(source_nodes)
+    print(time.time()-x)
+
+    x = time.time()
+    branches = get_branches(source_nodes)
+    print(time.time()-x)
 
     for path, contract_name in [(k, v) for k in path_list for v in output_json['contracts'][k]]:
 
@@ -119,11 +131,13 @@ def generate_build_json(input_json, output_json, silent=True):
         node = next(i[contract_name] for i in source_nodes if i.name == path)
         bytecode = format_link_references(evm)
 
+        x = time.time()
         pc_list = generate_pc_list(
             evm['deployedBytecode']['sourceMap'],
             evm['deployedBytecode']['opcodes'],
             node
         )
+        print(time.time()-x)
 
         paths = sorted(set([node.parent.path]+[i.parent.path for i in node.dependencies]))
 
@@ -213,8 +227,11 @@ def generate_pc_list(source_map, opcodes, contract_node):
         offset = [source[0], source[0]+source[1]]
         pc_list[-1]['offset'] = offset
         try:
+            if 'offset' in pc_list[-2] and offset == pc_list[-2]['offset']:
+                pc_list[-1]['fn'] = pc_list[-2]['fn']
+                continue
             pc_list[-1]['fn'] = node.child_by_offset(offset).full_name
-        except KeyError:
+        except (KeyError, IndexError):
             pass
 
     return pc_list
@@ -243,16 +260,67 @@ def _expand_row(row):
     return [int(i) if i else None for i in row[:3]] + row[3:] + [None]*(4-len(row))
 
 
+def get_statements(source_nodes):
+    statements = {}
+    for node in source_nodes:
+        statements[node.path] = node.children(
+            include_parents=False,
+            filters={'node_class': "Statement"},
+            exclude={'name': "<constructor>"}
+        )
+
+
+def get_branches(source_nodes):
+    branches = {}
+    for node in source_nodes:
+        branches[node.path] = set()
+        for child_node in node.children(filters=(
+            {'node_type': "FunctionCall", 'name': "require"},
+            {'node_type': "IfStatement"},
+            {'node_type': "Conditional"}
+        )):
+            branches[node.path] |= _get_branches(child_node)
+    return branches
+
+
+def _get_branches(base_node):
+    # get all child binaries, including self and binaries that are parents
+    filters = {'node_type': "BinaryOperation",'type': "bool"}
+    all_binaries = base_node.children(
+        include_parents=True,
+        include_self=True,
+        filters=filters
+    )
+    binary_branches = set()
+    for node in all_binaries:
+        # if node has no child binaries, include it
+        if not node.children(include_self=False, filters=filters):
+            binary_branches.add(node)
+            continue
+        # otherwise, include immediate children
+        binary_branches.add(node.left)
+        binary_branches.add(node.right)
+    return binary_branches
+
+
+
+
+
+
+
+
+
 def get_statement_map(contract_node, pc_list):
     if not pc_list:
         return []
+
     pc_list = [i for i in pc_list if 'offset' in i and i['path'] == contract_node.parent.path]
     statement_map = []
     for node in contract_node.children(include_parents=False, node_class="Statement"):
         if node.root(2).name == "<constructor>":
             continue
         try:
-            pc = next(i['pc'] for i in pc_list if is_inside_offset(i['offset'], node.offset))
+            pc = next(i for i in pc_list if is_inside_offset(i['offset'], node.offset))
         except StopIteration:
             continue
         statement_map.append([pc, node.offset])
