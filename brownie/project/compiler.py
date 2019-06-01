@@ -81,7 +81,6 @@ def compile_contracts(input_json, silent=True):
         input_json: solc input json
 
     Returns: standard compiler output json'''
-    print(input_json.keys())
     optimizer = input_json['settings']['optimizer']
     if not silent:
         print("Compiling contracts...")
@@ -153,6 +152,19 @@ def generate_build_json(input_json, output_json, silent=True):
             'type': node.type
         }
     return build_json
+
+
+def format_link_references(evm):
+    '''Standardizes formatting for unlinked libraries within bytecode.'''
+    bytecode = evm['bytecode']['object']
+    references = [(k, x) for v in evm['bytecode']['linkReferences'].values() for k, x in v.items()]
+    for n, loc in [(i[0], x['start']*2) for i in references for x in i[1]]:
+        bytecode = "{}__{:_<36}__{}".format(
+            bytecode[:loc],
+            n[:36],
+            bytecode[loc+40:]
+        )
+    return bytecode
 
 
 def generate_pc_list(source_map, opcodes, contract_node):
@@ -247,6 +259,69 @@ def get_statement_map(contract_node, pc_list):
     return statement_map
 
 
+def get_branch_map(contract_node, pc_list):
+    if not pc_list:
+        return []
+    pc_list = [i for i in pc_list if 'offset' in i and i['path'] == contract_node.parent.path]
+    branch_map = []
+
+    # require branches
+    for node in contract_node.children(node_type="FunctionCall", name="require"):
+        if not _get_binary_branches(node, pc_list, branch_map):
+            pc = _get_jump(pc_list, node.offset)
+            if pc:
+                branch_map.append([pc, node.arguments[0].offset])
+
+    # if statement branches
+    for node in contract_node.children(node_type="IfStatement"):
+        if not _get_binary_branches(node.condition, pc_list, branch_map):
+            pc = _get_jump(pc_list, node.offset)
+            if pc:
+                branch_map.append([pc, node.condition.offset])
+
+    # ternery operator branches
+    for node in contract_node.children(node_type="Conditional"):
+        if not _get_binary_branches(node.condition, pc_list, branch_map):
+            pc = _get_jump(pc_list, node.condition.offset, True)
+            if pc:
+                branch_map.append([pc, node.condition.offset])
+
+    return branch_map
+
+
+def _get_binary_branches(base_node, pc_list, branch_map):
+
+    # get all child binaries, including self and binaries that are parents
+    all_binaries = base_node.children(
+        include_parents=True,
+        include_self=True,
+        node_type="BinaryOperation",
+        type="bool"
+    )
+
+    # if base node contains no binaries, return False to allow use of different node offset
+    if not all_binaries:
+        return False
+
+    for node in all_binaries:
+        # if node has no child binaries, include it
+        if not node.children(include_self=False, node_type="BinaryOperation", type="bool"):
+            pc = _get_jump(pc_list, node.offset)
+            if pc:
+                branch_map.append([pc, node.offset])
+            continue
+        # otherwise, check immediate children
+        for node in (node.left, node.right):
+            # if node has a child binary or is a binary, ignore it
+            if node.children(include_self=True, node_type="BinaryOperation", type="bool"):
+                continue
+            # otherwise, include it
+            pc = _get_jump(pc_list, node.offset)
+            if pc:
+                branch_map.append([pc, node.offset])
+    return True
+
+
 def _get_jump(pc_list, offset, reverse=False):
     iterable = reversed(pc_list) if reverse else pc_list
     pc = next((i['pc'] for i in iterable if i['offset'] == offset), None)
@@ -256,72 +331,3 @@ def _get_jump(pc_list, offset, reverse=False):
     if pc is None:
         return None
     return next(i['pc'] for i in pc_list if i['pc'] > pc and i['op'] == "JUMPI")
-
-
-def get_branch_map(contract_node, pc_list):
-    if not pc_list:
-        return []
-    pc_list = [i for i in pc_list if 'offset' in i and i['path'] == contract_node.parent.path]
-    branch_map = []
-
-    # require branches
-    for node in contract_node.children(node_type="FunctionCall", name="require"):
-        binary = node.children(include_parents=False, node_type="BinaryOperation", type="bool")
-        if not binary:
-            pc = _get_jump(pc_list, node.offset)
-            if pc:
-                branch_map.append([pc, node.arguments[0].offset])
-            continue
-        for i in binary:
-            pc = _get_jump(pc_list, i.offset, True)
-            if pc:
-                branch_map.append([pc, i.offset])
-
-    # if statement branches
-    for node in contract_node.children(node_type="IfStatement"):
-
-        all_binaries = node.condition.children(
-            include_parents=True,
-            include_self=True,
-            node_type="BinaryOperation",
-            type="bool"
-        )
-
-        if not all_binaries:
-            pc = _get_jump(pc_list, node.offset)
-            if pc:
-                branch_map.append([pc, node.condition.offset])
-            continue
-
-        for i in all_binaries:
-            if not i.children(include_self=False, node_type="BinaryOperation", type="bool"):
-                pc = _get_jump(pc_list, i.offset)
-                if pc:
-                    branch_map.append([pc, i.offset])
-                continue
-            for x in i:
-                if x.children(include_self=True, node_type="BinaryOperation", type="bool"):
-                    continue
-                pc = _get_jump(pc_list, x.offset)
-                if pc:
-                    branch_map.append([pc, x.offset])
-
-    # ternery operator branches
-    for node in contract_node.children(node_type="Conditional"):
-        pc = _get_jump(pc_list, node.condition.offset, True)
-        if pc:
-            branch_map.append([pc, node.condition.offset])
-
-    return branch_map
-
-
-def format_link_references(evm):
-    bytecode = evm['bytecode']['object']
-    references = [(k, x) for v in evm['bytecode']['linkReferences'].values() for k, x in v.items()]
-    for n, loc in [(i[0], x['start']*2) for i in references for x in i[1]]:
-        bytecode = "{}__{:_<36}__{}".format(
-            bytecode[:loc],
-            n[:36],
-            bytecode[loc+40:]
-        )
-    return bytecode
