@@ -12,7 +12,7 @@ from .buttons import (
     HighlightsToggle
 )
 from .listview import ListView
-from .select import ContractSelect, ReportSelect
+from .select import ContractSelect, ReportSelect, HighlightSelect
 from .styles import (
     set_style,
     # TEXT_STYLE
@@ -119,3 +119,7 @@ class ToolbarFrame(ttk.Frame):
         self.highlight = HighlightsToggle(self)
         self.highlight.pack(side="left")
         ToolTip(self.highlight, "Toggle report highlighting")
+
+        self.highlight_select = HighlightSelect(self)
+        self.highlight_select.pack(side="left", padx=10)
+        ToolTip(self.highlight_select, "Toggle report highlighting")

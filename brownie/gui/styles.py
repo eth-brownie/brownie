@@ -120,7 +120,7 @@ def set_style(root):
     style.map(
         "TCombobox",
         background=[("active", "#666666"), ("selected", "#383838")],
-        fieldbackground=[("readonly", "#A9A9A9")],
+        fieldbackground=[("readonly", "#A9A9A9"), ("disabled", "#999999")],
         borderwidth=[("active", 0)],
     )
     root.option_add("*TCombobox*Listbox*Font", (None, 18))

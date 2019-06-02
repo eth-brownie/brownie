@@ -203,18 +203,25 @@ def get_highlights(coverage_eval):
         coverage_eval: coverage evaluation dict
 
     Returns:
-        {"ContractName":
-            "statements": {"path/to/file": [start, stop, color, msg .. ], .. },
-            "branches": {"path/to/file": [start, stop, color, msg .. ], .. }
+        {
+            "statements": {
+                "ContractName": {"path/to/file": [start, stop, color, msg .. ], .. },
+            },
+            "branches": {
+                "ContractName": {"path/to/file": [start, stop, color, msg .. ], .. },
+            }
         }'''
-    results = dict((i, {'statements': {}, 'branches': {}}) for i in coverage_eval)
+    results = {
+        'statements': {},
+        'branches': {}
+    }
     for name in coverage_eval:
         coverage_map = build.get(name)['coverageMap']
-        results[name]['statements'] = _statement_highlights(
+        results['statements'][name] = _statement_highlights(
             coverage_eval[name]['statements'],
             coverage_map['statements']
         )
-        results[name]['branches'] = _branch_highlights(
+        results['branches'][name] = _branch_highlights(
             coverage_eval[name]['branches'],
             coverage_map['branches']
         )
@@ -246,41 +253,6 @@ def _branch_color(i, coverage_eval, path):
         if i in coverage_eval['false'][path]:
             return "green"
         return "yellow"
-    if coverage_eval['false'][path]:
+    if i in coverage_eval['false'][path]:
         return "orange"
     return "red"
-
-
-# TODO - make sure GUI works with new coverage map format
-
-# def _evaluate_branch(path, ln):
-#     source = sources.get(path)
-#     start, stop = ln['offset']
-#     try:
-#         idx = _maxindex(source[:start])
-#     except Exception:
-#         return False
-
-#     # remove comments, strip whitespace
-#     before = source[idx:start]
-#     for pattern in (r'\/\*[\s\S]*?\*\/', r'\/\/[^\n]*'):
-#         for i in re.findall(pattern, before):
-#             before = before.replace(i, "")
-#     before = before.strip("\n\t (")
-
-#     idx = source[stop:].index(';')+len(source[:stop])
-#     if idx <= stop:
-#         return False
-#     after = source[stop:idx].split()
-#     after = next((i for i in after if i != ")"), after[0])[0]
-#     if (
-#         (before[-2:] == "if" and after == "|") or
-#         (before[:7] == "require" and after in (")", "|", ","))
-#     ):
-#         return True
-#     return False
-
-
-# def _maxindex(source):
-#     comp = [i for i in [";", "}", "{"] if i in source]
-#     return max([source.rindex(i) for i in comp])+1
