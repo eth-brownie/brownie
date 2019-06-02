@@ -248,7 +248,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
     branch_original = dict((i, branch_nodes[i].copy()) for i in paths)
     branch_nodes = dict((i, set(i.offset for i in branch_nodes[i])) for i in paths)
     # currently active branches, awaiting a jumpi
-    branch_active = dict((i, set()) for i in paths)
+    branch_active = dict((i, {}) for i in paths)
     # branches that have been set
     branch_set = dict((i, {}) for i in paths)
 
@@ -285,14 +285,15 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
         # if op is jumpi, set active branch markers
         if branch_active[path] and pc_list[-1]['op'] == "JUMPI":
             for offset in branch_active[path]:
-                branch_set[path][offset] = len(pc_list) - 1
+                # ( program counter index, JUMPI index)
+                branch_set[path][offset] = (branch_active[path][offset], len(pc_list)-1)
             branch_active[path].clear()
 
         # if op relates to previously set branch marker, clear it
         elif offset in branch_nodes[path]:
             if offset in branch_set[path]:
                 del branch_set[path][offset]
-            branch_active[path].add(offset)
+            branch_active[path][offset] = len(pc_list)-1
 
         try:
             # set fn name and statement coverage marker
@@ -315,9 +316,12 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
     source_nodes = dict((i.parent().path, i.parent()) for i in id_map.values())
     branch_map = dict((i, {}) for i in paths)
     for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
-        pc_list[idx]['branch'] = count
-        if 'fn' in pc_list[idx]:
-            fn = pc_list[idx]['fn']
+        # for branch to be hit, need an op relating to the source and the next JUMPI
+        # this is because of how the compiler optimizes nested BinaryOperations
+        pc_list[idx[0]]['branch'] = count
+        pc_list[idx[1]]['branch'] = count
+        if 'fn' in pc_list[idx[0]]:
+            fn = pc_list[idx[0]]['fn']
         else:
             fn = source_nodes[path].child_by_offset(offset, 2).full_name
         node = next(i for i in branch_original[path] if i.offset == offset)
@@ -381,6 +385,7 @@ def _get_recursive_branches(base_node):
     # if node is IfStatement or Conditional, look only at the condition
     jump = True if base_node.node_type == "FunctionCall" else False
     node = base_node.condition if hasattr(base_node, 'condition') else base_node
+    depth = base_node.depth
 
     filters = {'node_type': "BinaryOperation", 'type': "bool"}
     all_binaries = node.children(include_parents=True, include_self=True, filters=filters)
@@ -397,28 +402,35 @@ def _get_recursive_branches(base_node):
     # look at BinaryOperation nodes to find all possible branches
     binary_branches = set()
     for node in all_binaries:
-        parents = node.parents(base_node.depth, {'node_type': "BinaryOperation"})
         # if node has no BinaryOperation children, include it
         if not node.children(include_self=False, filters=filters):
-            if _is_right(node, parents):
+            if _is_rightmost_operation(node, depth):
                 node.jump = jump
             else:
-                print(node, jump)
-                node.jump = not jump
+                node.jump = _check_left_operator(node, depth)
             binary_branches.add(node)
             continue
         # otherwise, include the immediate children if they are not BinaryOperations
         for node in (node.left, node.right):
             if node.children(include_self=True, filters=filters):
                 continue
-            if _is_right(node, parents):
+            if _is_rightmost_operation(node, depth):
                 node.jump = jump
             else:
-                node.jump = not jump
+                node.jump = _check_left_operator(node, depth)
             binary_branches.add(node)
 
     return binary_branches
 
 
-def _is_right(node, parents):
-    return not parents or node == parents[-1].right or node.is_child_of(parents[-1].right)
+def _is_rightmost_operation(node, depth):
+    '''Check if the node is the final operation within the expression.'''
+    parents = node.parents(depth, {'node_type': "BinaryOperation", 'type': "bool"})
+    return not next((i for i in parents if i.left == node or node.is_child_of(i.left)), False)
+
+
+def _check_left_operator(node, depth):
+    '''Find the nearest parent boolean where this node sits on the left side of
+    the comparison, and return True if that node's operator is ||'''
+    parents = node.parents(depth, {'node_type': "BinaryOperation", 'type': "bool"})
+    return next(i for i in parents if i.left == node or node.is_child_of(i.left)).operator == "||"

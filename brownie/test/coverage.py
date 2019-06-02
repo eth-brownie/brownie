@@ -24,6 +24,7 @@ def analyze(history, coverage_eval={}):
     for tx in filter(lambda k: k.trace, history):
         build_json = {'contractName': None}
         tx_trace = tx.trace
+        active_branches = set()
         for i in filter(lambda k: tx_trace[k]['source'], range(len(tx_trace))):
             trace = tx.trace[i]
             name = trace['contractName']
@@ -36,8 +37,12 @@ def analyze(history, coverage_eval={}):
             if 'statement' in pc:
                 coverage_eval[name]['statements'][pc['path']].add(pc['statement'])
             if 'branch' in pc:
-                key = "false" if tx.trace[i+1]['pc'] == trace['pc']+1 else "true"
-                coverage_eval[name]['branches'][key][pc['path']].add(pc['branch'])
+                if pc['op'] != "JUMPI":
+                    active_branches.add(pc['branch'])
+                elif pc['branch'] in active_branches:
+                    key = "false" if tx.trace[i+1]['pc'] == trace['pc']+1 else "true"
+                    coverage_eval[name]['branches'][key][pc['path']].add(pc['branch'])
+                    active_branches.remove(pc['branch'])
     return coverage_eval
 
 
@@ -231,8 +236,8 @@ def _statement_highlights(coverage_eval, coverage_map):
     results = dict((i, []) for i in coverage_map)
     for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
         results[path].extend([
-            list(coverage_map[path][fn][i])+["green" if int(i) in coverage_eval[path] else "red", ""]
-            for i in coverage_map[path][fn]
+            list(offset) + ["green" if int(i) in coverage_eval[path] else "red", ""]
+            for i, offset in coverage_map[path][fn].items()
         ])
     return results
 
@@ -241,8 +246,9 @@ def _branch_highlights(coverage_eval, coverage_map):
     results = dict((i, []) for i in coverage_map)
     for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
         results[path].extend([
-            coverage_map[path][fn][i][:-1]+[_branch_color(int(i), coverage_eval, path, coverage_map[path][fn][i][2]), ""]
-            for i in coverage_map[path][fn]
+            list(offset[:2]) +
+            [_branch_color(int(i), coverage_eval, path, offset[2]), ""]
+            for i, offset in coverage_map[path][fn].items()
         ])
     return results
 
