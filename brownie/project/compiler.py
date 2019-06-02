@@ -145,7 +145,7 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
         evm = output_json['contracts'][path][contract_name]['evm']
         node = next(i[contract_name] for i in source_nodes if i.name == path)
         bytecode = format_link_references(evm)
-        paths = sorted(set([node.parent.path]+[i.parent.path for i in node.dependencies]))
+        paths = sorted(set([node.parent().path]+[i.parent().path for i in node.dependencies]))
 
         pc_list, statement_map, branch_map = generate_coverage_data(
             evm['deployedBytecode']['sourceMap'],
@@ -239,13 +239,14 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
     source_map = deque(expand_source_map(source_map))
     opcodes = deque(opcodes.split(" "))
     id_map = dict((i.contract_id, i) for i in [contract_node]+contract_node.dependencies)
-    paths = set(v.parent.path for v in id_map.values())
+    paths = set(v.parent().path for v in id_map.values())
 
     statement_nodes = dict((i, statement_nodes[i].copy()) for i in paths)
     statement_map = dict((i, {}) for i in paths)
 
     # possible branch offsets
-    branch_nodes = dict((i, branch_nodes[i].copy()) for i in paths)
+    branch_original = dict((i, branch_nodes[i].copy()) for i in paths)
+    branch_nodes = dict((i, set(i.offset for i in branch_nodes[i])) for i in paths)
     # currently active branches, awaiting a jumpi
     branch_active = dict((i, set()) for i in paths)
     # branches that have been set
@@ -272,7 +273,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
         if source[2] == -1:
             continue
         node = id_map[source[2]]
-        path = node.parent.path
+        path = node.parent().path
         pc_list[-1]['path'] = path
 
         # set source offset (-1 means none)
@@ -311,7 +312,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
             continue
 
     # set branch index markers and build final branch map
-    source_nodes = dict((i.parent.path, i.parent) for i in id_map.values())
+    source_nodes = dict((i.parent().path, i.parent()) for i in id_map.values())
     branch_map = dict((i, {}) for i in paths)
     for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
         pc_list[idx]['branch'] = count
@@ -319,7 +320,8 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
             fn = pc_list[idx]['fn']
         else:
             fn = source_nodes[path].child_by_offset(offset, 2).full_name
-        branch_map[path].setdefault(fn, {})[count] = offset
+        node = next(i for i in branch_original[path] if i.offset == offset)
+        branch_map[path].setdefault(fn, {})[count] = offset+(node.jump,)
         count += 1
 
     return pc_list, statement_map, branch_map
@@ -377,6 +379,7 @@ def get_branch_nodes(source_nodes):
 
 def _get_recursive_branches(base_node):
     # if node is IfStatement or Conditional, look only at the condition
+    jump = True if base_node.node_type == "FunctionCall" else False
     node = base_node.condition if hasattr(base_node, 'condition') else base_node
 
     filters = {'node_type': "BinaryOperation", 'type': "bool"}
@@ -386,20 +389,36 @@ def _get_recursive_branches(base_node):
     if not all_binaries:
         # if node is FunctionaCall, look at the first argument
         if not hasattr(base_node, 'condition'):
-            return set([node.arguments[0].offset])
-        return set([node.offset])
+            node.arguments[0].jump = jump
+            return set([node.arguments[0]])
+        node.jump = jump
+        return set([node])
 
     # look at BinaryOperation nodes to find all possible branches
     binary_branches = set()
     for node in all_binaries:
+        parents = node.parents(base_node.depth, {'node_type': "BinaryOperation"})
         # if node has no BinaryOperation children, include it
         if not node.children(include_self=False, filters=filters):
-            binary_branches.add(node.offset)
+            if _is_right(node, parents):
+                node.jump = jump
+            else:
+                print(node, jump)
+                node.jump = not jump
+            binary_branches.add(node)
             continue
         # otherwise, include the immediate children if they are not BinaryOperations
         for node in (node.left, node.right):
             if node.children(include_self=True, filters=filters):
                 continue
-            binary_branches.add(node.offset)
+            if _is_right(node, parents):
+                node.jump = jump
+            else:
+                node.jump = not jump
+            binary_branches.add(node)
 
     return binary_branches
+
+
+def _is_right(node, parents):
+    return not parents or node == parents[-1].right or node.is_child_of(parents[-1].right)

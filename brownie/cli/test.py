@@ -321,7 +321,6 @@ def display_report(coverage_files, save):
     for name in sorted(report['coverage']):
         totals = report['coverage'][name]['totals']
         pct = _pct(totals['statements'], totals['branches'])
-        print(pct)
         c = color(next(i[1] for i in COVERAGE_COLORS if pct <= i[0]))
         print("\n  contract: {0[contract]}{1}{0} - {2}{3:.1%}{0}".format(color, name, c, pct))
         cov = report['coverage'][name]

@@ -231,7 +231,7 @@ def _statement_highlights(coverage_eval, coverage_map):
     results = dict((i, []) for i in coverage_map)
     for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
         results[path].extend([
-            coverage_map[path][fn][i]+["green" if int(i) in coverage_eval[path] else "red", ""]
+            list(coverage_map[path][fn][i])+["green" if int(i) in coverage_eval[path] else "red", ""]
             for i in coverage_map[path][fn]
         ])
     return results
@@ -241,17 +241,17 @@ def _branch_highlights(coverage_eval, coverage_map):
     results = dict((i, []) for i in coverage_map)
     for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
         results[path].extend([
-            coverage_map[path][fn][i]+[_branch_color(int(i), coverage_eval, path), ""]
+            coverage_map[path][fn][i][:-1]+[_branch_color(int(i), coverage_eval, path, coverage_map[path][fn][i][2]), ""]
             for i in coverage_map[path][fn]
         ])
     return results
 
 
-def _branch_color(i, coverage_eval, path):
+def _branch_color(i, coverage_eval, path, jump):
     if i in coverage_eval['true'][path]:
         if i in coverage_eval['false'][path]:
             return "green"
-        return "yellow"
+        return "yellow" if jump else "orange"
     if i in coverage_eval['false'][path]:
-        return "orange"
+        return "orange" if jump else "yellow"
     return "red"
