@@ -15,7 +15,7 @@ from .listview import ListView
 from .select import ContractSelect, ReportSelect, HighlightSelect
 from .styles import (
     set_style,
-    # TEXT_STYLE
+    TEXT_STYLE
 )
 from .textbook import TextBook
 from .tooltip import ToolTip
@@ -84,10 +84,11 @@ class MainFrame(ttk.Frame):
         self.note.pack(side="top", fill="both", expand=True)
         self.note.configure(width=920, height=100)
 
-        # GUI console - will be implemented later!
-        # self.console = tk.Text(frame, height=1)
-        # self.console.pack(side="bottom", fill="both")
-        # self.console.configure(**TEXT_STYLE)
+        # TODO - clean this up
+        self.console = tk.Text(frame, height=1)
+        self.console.pack(side="bottom", fill="both")
+        self.console.configure(**TEXT_STYLE)
+        self.console.configure(background="#272727")
 
 
 class ToolbarFrame(ttk.Frame):

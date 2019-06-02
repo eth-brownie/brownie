@@ -78,12 +78,23 @@ class ListView(ttk.Treeview):
 
     def _select_bind(self, event):
         self.tag_configure(self._last, background="")
+        # TODO hacky console hacky-ness
+        self.root.main.console.configure(state="normal")
+        self.root.main.console.delete(1.0, "end")
+        self.root.main.console.configure(state="disabled")
         try:
             pc = self.selection()[0]
         except IndexError:
             return
         pcMap = self.root.pcMap
         note = self.root.main.note
+        # TODO hacky console hacky-ness
+        if 'value' in pcMap[pc]:
+            self.root.main.console.configure(state="normal")
+            self.root.main.console.insert(1.0, " {0[op]} {0[value]}".format(pcMap[pc]))
+            if pcMap[pc]['op'] == "PUSH2":
+                self.root.main.console.insert("end", "  ({})".format(int(pcMap[pc]['value'], 16)))
+            self.root.main.console.configure(state="disabled")
         tag = self.item(pc, 'tags')[0]
         if tag == "NoSource":
             note.active_frame().clear_highlight()
