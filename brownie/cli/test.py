@@ -13,12 +13,7 @@ import sys
 import time
 
 from brownie.cli.utils import color
-from brownie.test.coverage import (
-    analyze_coverage,
-    merge_coverage_eval,
-    merge_coverage_files,
-    generate_report
-)
+from brownie.test import coverage
 from brownie.exceptions import ExpectedFailing
 import brownie.network as network
 from brownie.network.contract import Contract
@@ -300,10 +295,7 @@ def run_test_method(fn, args, coverage_eval, p):
         fn()
         if ARGV['coverage']:
             ARGV['always_transact'] = True
-            coverage_eval = merge_coverage_eval(
-                coverage_eval,
-                analyze_coverage(history.copy())
-            )
+            coverage_eval = coverage.analyze(history.copy(), coverage_eval)
         if args['pending']:
             raise ExpectedFailing("Test was expected to fail")
         p.stop()
@@ -319,8 +311,8 @@ def run_test_method(fn, args, coverage_eval, p):
 
 
 def display_report(coverage_files, save):
-    coverage_eval = merge_coverage_files(coverage_files)
-    report = generate_report(coverage_eval)
+    coverage_eval = coverage.merge_files(coverage_files)
+    report = coverage.generate_report(coverage_eval)
     print("\nCoverage analysis:")
     for name in sorted(coverage_eval):
         pct = coverage_eval[name].pop('pct')
