@@ -239,7 +239,6 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
     source_map = deque(expand_source_map(source_map))
     opcodes = deque(opcodes.split(" "))
     id_map = dict((i.contract_id, i) for i in [contract_node]+contract_node.dependencies)
-    source_nodes = dict((i.parent.path, i.parent) for i in id_map.values())
     paths = set(v.parent.path for v in id_map.values())
 
     statement_nodes = dict((i, statement_nodes[i].copy()) for i in paths)
@@ -247,44 +246,55 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
 
     # possible branch offsets
     branch_nodes = dict((i, branch_nodes[i].copy()) for i in paths)
-    # currently active, awaiting a jump
+    # currently active branches, awaiting a jumpi
     branch_active = dict((i, set()) for i in paths)
-    # found a jump
+    # branches that have been set
     branch_set = dict((i, {}) for i in paths)
-    # final map
-    branch_map = dict((i, {}) for i in paths)
 
-    count = 0
+    count, pc = 0, 0
     pc_list = []
-    pc = 0
 
     while source_map:
+
+        # format of source is [start, stop, contract_id, jump code]
         source = source_map.popleft()
         pc_list.append({'op': opcodes.popleft(), 'pc': pc})
         pc += 1
+
         if source[3] != "-":
             pc_list[-1]['jump'] = source[3]
+
         if opcodes[0][:2] == "0x":
             pc_list[-1]['value'] = opcodes.popleft()
             pc += int(pc_list[-1]['op'][4:])
+
+        # set contract path (-1 means none)
         if source[2] == -1:
             continue
         node = id_map[source[2]]
         path = node.parent.path
         pc_list[-1]['path'] = path
+
+        # set source offset (-1 means none)
         if source[0] == -1:
             continue
         offset = (source[0], source[0]+source[1])
         pc_list[-1]['offset'] = offset
+
+        # if op is jumpi, set active branch markers
         if branch_active[path] and pc_list[-1]['op'] == "JUMPI":
             for offset in branch_active[path]:
                 branch_set[path][offset] = len(pc_list) - 1
             branch_active[path].clear()
+
+        # if op relates to previously set branch marker, clear it
         elif offset in branch_nodes[path]:
             if offset in branch_set[path]:
                 del branch_set[path][offset]
             branch_active[path].add(offset)
+
         try:
+            # set fn name and statement coverage marker
             if 'offset' in pc_list[-2] and offset == pc_list[-2]['offset']:
                 pc_list[-1]['fn'] = pc_list[-2]['fn']
             else:
@@ -300,6 +310,9 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
         except (KeyError, IndexError, StopIteration):
             continue
 
+    # set branch index markers and build final branch map
+    source_nodes = dict((i.parent.path, i.parent) for i in id_map.values())
+    branch_map = dict((i, {}) for i in paths)
     for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
         pc_list[idx]['branch'] = count
         if 'fn' in pc_list[idx]:
@@ -308,6 +321,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
             fn = source_nodes[path].child_by_offset(offset, 2).full_name
         branch_map[path].setdefault(fn, {})[count] = offset
         count += 1
+
     return pc_list, statement_map, branch_map
 
 
