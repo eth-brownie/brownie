@@ -239,6 +239,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
     source_map = deque(expand_source_map(source_map))
     opcodes = deque(opcodes.split(" "))
     id_map = dict((i.contract_id, i) for i in [contract_node]+contract_node.dependencies)
+    source_nodes = dict((i.parent.path, i.parent) for i in id_map.values())
     paths = set(v.parent.path for v in id_map.values())
 
     statement_nodes = dict((i, statement_nodes[i].copy()) for i in paths)
@@ -293,7 +294,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
                     is_inside_offset(offset, i)
                 )
                 statement_nodes[path].discard(statement)
-                statement_map[path][count] = statement
+                statement_map[path].setdefault(pc_list[-1]['fn'], {})[count] = statement
                 pc_list[-1]['statement'] = count
                 count += 1
         except (KeyError, IndexError, StopIteration):
@@ -301,13 +302,17 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
 
     for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
         pc_list[idx]['branch'] = count
-        branch_map[path][count] = offset
+        if 'fn' in pc_list[idx]:
+            fn = pc_list[idx]['fn']
+        else:
+            fn = source_nodes[path].child_by_offset(offset, 2).full_name
+        branch_map[path].setdefault(fn, {})[count] = offset
         count += 1
     return pc_list, statement_map, branch_map
 
 
 def pc_list_to_map(pc_list):
-    '''Convert a prgram counter list to a program counter map.'''
+    '''Convert a program counter list to a program counter map.'''
     return dict((i.pop('pc'), i) for i in pc_list)
 
 
