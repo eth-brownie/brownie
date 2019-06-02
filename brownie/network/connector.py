@@ -15,7 +15,7 @@ def connect(network=None):
         network: string of of the name of the network to connect to
 
     Network information is retrieved from brownie-config.json'''
-    if CONFIG['active_network']['name']:
+    if is_connected():
         raise ConnectionError("Already connected to network '{}'".format(
             CONFIG['active_network']['name']
         ))
@@ -36,6 +36,7 @@ def connect(network=None):
                 rpc.launch(CONFIG['active_network']['test-rpc'])
     except Exception:
         CONFIG['active_network']['name'] = None
+        web3.disconnect()
         raise
 
 
