@@ -22,8 +22,7 @@ def analyze(history, coverage_eval={}):
             }
         }'''
     for tx in filter(lambda k: k.trace, history):
-        build_json = build.get(tx.trace[0]['contractName'])
-        coverage_eval = _set_coverage_defaults(build_json, coverage_eval)
+        build_json = {'contractName': None}
         tx_trace = tx.trace
         for i in filter(lambda k: tx_trace[k]['source'], range(len(tx_trace))):
             trace = tx.trace[i]
