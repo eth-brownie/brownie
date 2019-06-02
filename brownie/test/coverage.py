@@ -7,10 +7,20 @@ from pathlib import Path
 from brownie.project import build
 
 
-def analyze_coverage(history, coverage_eval={}):
-    '''Given a list of TransactionReceipt objects, analyzes test coverage and
-    returns a coverage evaluation dict.
-    '''
+def analyze(history, coverage_eval={}):
+    '''Analyzes contract coverage.
+
+    Arguments:
+        history: List of TransactionReceipt objects.
+
+    Returns:
+        { "ContractName":
+            "statements": {"path/to/file": [index, ..], .. },
+            "branches": {
+                "true": {"path/to/file": [index, ..], .. },
+            "false": {"path/to/file": [index, ..], .. },
+            }
+        }'''
     for tx in filter(lambda k: k.trace, history):
         build_json = build.get(tx.trace[0]['contractName'])
         coverage_eval = _set_coverage_defaults(build_json, coverage_eval)
@@ -49,14 +59,20 @@ def _set_coverage_defaults(build_json, coverage_eval):
 # REMOVE ME DURING cli/test REFACTOR, thx
 def merge_files(coverage_files):
     '''Merges multiple coverage evaluation dicts that have been saved to json.'''
-    coverage_eval = [json.load(Path(i).open()) for i in coverage_files]
+    coverage_eval = [json.load(Path(i).open())['coverage'] for i in coverage_files]
     return merge(coverage_eval)
 
 
-def merge(*coverage_eval):
-    '''Merges multiple coverage evaluation dicts.'''
-    merged_eval = deepcopy(coverage_eval[0])
-    for cov in coverage_eval[1:]:
+def merge(coverage_eval_list):
+    '''Merges multiple coverage evaluation dicts.
+
+    Arguments:
+        coverage_eval_list: A list of coverage eval dicts.
+
+    Returns: coverage eval dict.
+    '''
+    merged_eval = deepcopy(coverage_eval_list[0])
+    for cov in coverage_eval_list[1:]:
         for name in cov:
             if name not in merged_eval:
                 merged_eval[name] = cov[name]
@@ -76,8 +92,15 @@ def _merge(original, new):
 
 
 def split_by_fn(coverage_eval):
-    '''Splits a coverage eval dict by contract function.
-    Once this is done, the dict can no longer be merged.'''
+    '''Splits a coverage eval dict so that coverage indexes are stored by contract
+    function. Once done, the dict is no longer compatible with other methods in this module.
+
+    Original format:
+        {"path/to/file": [index, ..], .. }
+
+    New format:
+        {"path/to/file": { "ContractName.functionName": [index, .. ], .. }
+    '''
     results = dict((i, {
         'statements': {},
         'branches': {'true': {}, 'false': {}}}
@@ -110,51 +133,122 @@ def _split_fn(coverage_eval, coverage_map):
     return results
 
 
-# TODO below here
+def get_totals(coverage_eval):
+    '''Returns a modified coverage eval dict showing counts and totals for each
+    contract function.
 
-def calculate_pct(coverage_eval):
+    Arguments:
+        coverage_eval: Standard coverage evaluation dict
+
+    Returns:
+        { "ContractName": {
+            "statements": {
+                "path/to/file": {
+                    "ContractName.functionName": (count, total), ..
+                }, ..
+            },
+            "branches" {
+                "path/to/file": {
+                    "ContractName.functionName": (true count, false count, total), ..
+                }, ..
+            }
+        }'''
     coverage_eval = split_by_fn(coverage_eval)
+    results = dict((i, {
+        'statements': {},
+        'totals': {'statements': 0, 'branches': [0, 0]},
+        'branches': {'true': {}, 'false': {}}}
+    ) for i in coverage_eval)
+    for name in coverage_eval:
+        coverage_map = build.get(name)['coverageMap']
+        r = results[name]
+        r['statements'], r['totals']['statements'] = _statement_totals(
+            coverage_eval[name]['statements'],
+            coverage_map['statements']
+        )
+        r['branches'], r['totals']['branches'] = _branch_totals(
+            coverage_eval[name]['branches'],
+            coverage_map['branches']
+        )
+    return results
 
 
-def generate_report(coverage_eval):
-    '''Converts coverage evaluation into highlight data suitable for the GUI'''
-    report = {
-        'highlights': {},
-        'coverage': {},
-        'sha1': {}
-    }
-    coverage_eval = split_by_fn(coverage_eval)
-    for name, coverage in coverage_eval.items():
-        report['highlights'][name] = {}
-        report['coverage'][name] = {'pct': {}}
+def _statement_totals(coverage_eval, coverage_map):
+    result = {}
+    count, total = 0, 0
+    for path, fn in [(k, x) for k, v in coverage_eval.items() for x in v]:
+        count += len(coverage_eval[path][fn])
+        total += len(coverage_map[path][fn])
+        result[fn] = (len(coverage_eval[path][fn]), len(coverage_map[path][fn]))
+    return result, (count, total)
 
-#         for path in [i for i in coverage if i != "pct"]:
-#             coverage_map = build.get(name)['coverageMap'][path]
-#             report['highlights'][name][path] = []
-#             for fn_name, lines in coverage_map.items():
-#                 # if function has 0% or 100% coverage, highlight entire function
-#                 report['coverage'][name][fn_name] = coverage[path][fn_name]['pct']
-#                 if coverage[path][fn_name]['pct'] in (0, 1):
-#                     color = "green" if coverage[path][fn_name]['pct'] else "red"
-#                     start, stop = sources.get_fn_offset(path, fn_name)
-#                     report['highlights'][name][path].append(
-#                         (start, stop, color, "")
-#                     )
-#                     continue
-#                 # otherwise, highlight individual statements
-#                 for i, ln in enumerate(lines):
-#                     if i in coverage[path][fn_name]['tx']:
-#                         color = "green"
-#                     elif i in coverage[path][fn_name]['true']:
-#                         color = "yellow" if _evaluate_branch(path, ln) else "orange"
-#                     elif i in coverage[path][fn_name]['false']:
-#                         color = "orange" if _evaluate_branch(path, ln) else "yellow"
-#                     else:
-#                         color = "red"
-#                     report['highlights'][name][path].append(
-#                         (ln['offset'][0], ln['offset'][1], color, "")
-#                     )
-#     return report
+
+def _branch_totals(coverage_eval, coverage_map):
+    result = {}
+    final = [0, 0, 0]
+    for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
+        true = len(coverage_eval['true'][path][fn])
+        false = len(coverage_eval['false'][path][fn])
+        total = len(coverage_map[path][fn])
+        result[fn] = (true, false, total)
+        for i in range(3):
+            final[i] += result[fn][i]
+    return result, final
+
+
+def get_highlights(coverage_eval):
+    '''Returns a highlight map formatted for display in the GUI.
+
+    Arguments:
+        coverage_eval: coverage evaluation dict
+
+    Returns:
+        {"ContractName":
+            "statements": {"path/to/file": [start, stop, color, msg .. ], .. },
+            "branches": {"path/to/file": [start, stop, color, msg .. ], .. }
+        }'''
+    results = dict((i, {'statements': {}, 'branches': {}}) for i in coverage_eval)
+    for name in coverage_eval:
+        coverage_map = build.get(name)['coverageMap']
+        results[name]['statements'] = _statement_highlights(
+            coverage_eval[name]['statements'],
+            coverage_map['statements']
+        )
+        results[name]['branches'] = _branch_highlights(
+            coverage_eval[name]['branches'],
+            coverage_map['branches']
+        )
+    return results
+
+
+def _statement_highlights(coverage_eval, coverage_map):
+    results = dict((i, []) for i in coverage_map)
+    for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
+        results[path].extend([
+            coverage_map[path][fn][i]+["green" if int(i) in coverage_eval[path] else "red", ""]
+            for i in coverage_map[path][fn]
+        ])
+    return results
+
+
+def _branch_highlights(coverage_eval, coverage_map):
+    results = dict((i, []) for i in coverage_map)
+    for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
+        results[path].extend([
+            coverage_map[path][fn][i]+[_branch_color(int(i), coverage_eval, path), ""]
+            for i in coverage_map[path][fn]
+        ])
+    return results
+
+
+def _branch_color(i, coverage_eval, path):
+    if i in coverage_eval['true'][path]:
+        if i in coverage_eval['false'][path]:
+            return "green"
+        return "yellow"
+    if coverage_eval['false'][path]:
+        return "orange"
+    return "red"
 
 
 # TODO - make sure GUI works with new coverage map format

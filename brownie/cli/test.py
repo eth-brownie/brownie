@@ -312,13 +312,22 @@ def run_test_method(fn, args, coverage_eval, p):
 
 def display_report(coverage_files, save):
     coverage_eval = coverage.merge_files(coverage_files)
-    report = coverage.generate_report(coverage_eval)
+    report = {
+        'highlights': coverage.get_highlights(coverage_eval),
+        'coverage': coverage.get_totals(coverage_eval),
+        'sha1': {}  # TODO
+    }
     print("\nCoverage analysis:")
-    for name in sorted(coverage_eval):
-        pct = coverage_eval[name].pop('pct')
+    for name in sorted(report['coverage']):
+        totals = report['coverage'][name]['totals']
+        pct = _pct(totals['statements'], totals['branches'])
+        print(pct)
         c = color(next(i[1] for i in COVERAGE_COLORS if pct <= i[0]))
         print("\n  contract: {0[contract]}{1}{0} - {2}{3:.1%}{0}".format(color, name, c, pct))
-        for fn_name, pct in [(x, v[x]['pct']) for v in coverage_eval[name].values() for x in v]:
+        cov = report['coverage'][name]
+        for fn_name, count in cov['statements'].items():
+            branch = cov['branches'][fn_name] if fn_name in cov['branches'] else (0, 0, 0)
+            pct = _pct(count, branch)
             print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
                 color,
                 fn_name,
@@ -340,6 +349,13 @@ def display_gas_profile():
     gas = history.gas_profile
     for i in sorted(gas):
         print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, gas[i]))
+
+
+def _pct(statement, branch):
+    pct = statement[0]/statement[1]
+    if branch[-1]:
+        pct = (pct + (branch[0]+branch[1])/(branch[2]*2)) / 2
+    return pct
 
 
 def _get_fn(module, name):
