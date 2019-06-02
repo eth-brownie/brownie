@@ -4,7 +4,6 @@ import pytest
 import solcx
 
 
-from brownie import config
 from brownie.project import build, compiler, sources
 from brownie.exceptions import CompilerError, ContractExists
 
@@ -12,8 +11,7 @@ from brownie.exceptions import CompilerError, ContractExists
 @pytest.fixture(scope="function")
 def version():
     yield
-    config['solc']['version'] = "v0.5.7"
-    compiler.set_solc_version()
+    compiler.set_solc_version("v0.5.7")
 
 
 def _solc_5_source():
@@ -42,17 +40,15 @@ def test_contract_exists():
 
 
 def test_set_solc_version(version):
-    config['solc']['version'] = "v0.5.0"
-    compiler.set_solc_version()
-    assert config['solc']['version'] == solcx.get_solc_version_string().strip('\n')
+    compiler.set_solc_version("v0.5.0")
+    assert "0.5.0" in solcx.get_solc_version_string()
 
 
 def test_unlinked_libraries(version):
     source = _solc_5_source()
     build_json = sources.compile_source(source)
     assert '__TestLib__' in build_json['TempTester']['bytecode']
-    config['solc']['version'] = "v0.4.25"
-    compiler.set_solc_version()
+    compiler.set_solc_version("v0.4.25")
     source = _solc_4_source()
     build_json = sources.compile_source(source)
     assert '__TestLib__' in build_json['TempTester']['bytecode']
@@ -65,6 +61,5 @@ def test_compiler_errors(version):
     source = _solc_4_source()
     with pytest.raises(CompilerError):
         sources.compile_source(source)
-    config['solc']['version'] = "v0.4.25"
-    compiler.set_solc_version()
+    compiler.set_solc_version("v0.4.25")
     sources.compile_source(source)

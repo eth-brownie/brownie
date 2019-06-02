@@ -35,8 +35,12 @@ def test_disconnect():
 
 
 def test_connect_ropsten():
-    network.connect('ropsten')
-    assert network.show_active() == "ropsten"
+    try:
+        network.connect('ropsten')
+        assert network.show_active() == "ropsten"
+    except Exception:
+        network.connect('development')
+        raise
 
 
 def test_connect_raises_connected():
