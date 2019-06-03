@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 
 import pytest
-import solcx
-
 
 from brownie.project import build, compiler, sources
 from brownie.exceptions import CompilerError, ContractExists
@@ -39,11 +37,6 @@ def test_contract_exists():
     sources.compile_paths(["contracts/BrownieTester.sol"])
 
 
-def test_set_solc_version(version):
-    compiler.set_solc_version("v0.5.0")
-    assert "0.5.0" in solcx.get_solc_version_string()
-
-
 def test_unlinked_libraries(version):
     source = _solc_5_source()
     build_json = sources.compile_source(source)
@@ -63,3 +56,30 @@ def test_compiler_errors(version):
         sources.compile_source(source)
     compiler.set_solc_version("v0.4.25")
     sources.compile_source(source)
+
+
+def test_minify():
+    source = sources.get('BrownieTester')
+    minified, offsets = sources.minify(source)
+    assert minified != source
+    assert "contract BrownieTester{" in minified
+    assert "library UnlinkedLib{" in minified
+
+
+def test_minify_compiles():
+    source = _solc_5_source()
+    build_json = sources.compile_source(source)['TempTester']
+    minified, _ = sources.minify(source)
+    minified_build = sources.compile_source(minified)['TempTester']
+    assert build_json['bytecodeSha1'] == minified_build['bytecodeSha1']
+    assert build_json['source'] != minified_build['source']
+
+
+def test_expand_offset():
+    source = sources.get('BrownieTester')
+    minified, _ = sources.minify(source)
+    expanded = sources.expand_offset(
+        "BrownieTester",
+        (minified.index("contract"), minified.index("contract")+7)
+    )
+    assert source.index("contract"), source.index("contract")+7 == expanded
