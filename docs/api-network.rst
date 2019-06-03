@@ -6,12 +6,12 @@ Network API
 
 The ``network`` package holds classes for interacting with the Ethereum blockchain. This is the most extensive package within Brownie and contains the majority of the user-facing functionality.
 
-``brownie.network.connector``
-=============================
+``brownie.network.main``
+========================
 
-The ``connector`` module contains methods for conncting to or disconnecting from the network. All of these methods are available directly from ``brownie.network``.
+The ``main`` module contains methods for conncting to or disconnecting from the network. All of these methods are available directly from ``brownie.network``.
 
-.. py:method:: connector.connect(network=None)
+.. py:method:: main.connect(network=None)
 
     Connects to the network.  Network settings are retrieved from ``brownie-config.json``
 
@@ -25,7 +25,7 @@ The ``connector`` module contains methods for conncting to or disconnecting from
         >>> from brownie import network
         >>> network.connect('development')
 
-.. py:method:: connector.disconnect()
+.. py:method:: main.disconnect()
 
     Disconnects from the network. The ``Web3`` provider is cleared and the local RPC client is terminated if it is running and a child process.
 
@@ -34,7 +34,7 @@ The ``connector`` module contains methods for conncting to or disconnecting from
         >>> from brownie import network
         >>> network.disconnect()
 
-.. py:method:: connector.is_connected()
+.. py:method:: main.is_connected()
 
     Returns ``True`` if the ``Web3`` object is connected to the network.
 
@@ -44,7 +44,7 @@ The ``connector`` module contains methods for conncting to or disconnecting from
         >>> network.is_connected()
         True
 
-.. py:method:: connector.show_active()
+.. py:method:: main.show_active()
 
     Returns the name of the network that is currently active, or ``None`` if not connected.
 
@@ -54,7 +54,7 @@ The ``connector`` module contains methods for conncting to or disconnecting from
         >>> network.show_active()
         'development'
 
-.. py:method:: connector.gas_limit()
+.. py:method:: main.gas_limit()
 
     Displays or modifies the default gas limit.
 
