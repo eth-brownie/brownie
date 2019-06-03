@@ -29,7 +29,6 @@ BUILD_KEYS = [
 ]
 
 _build = {}
-_paths = {}
 _revert_map = {}
 _project_path = None
 
@@ -141,7 +140,7 @@ def _add(build_json):
     if "0" in build_json['pcMap']:
         build_json['pcMap'] = dict((int(k), v) for k, v in build_json['pcMap'].items())
     if build_json['compiler']['minify_source']:
-        build_json = expand_offsets(build_json)
+        build_json = expand_build_offsets(build_json)
     _build[contract_name] = build_json
     _generate_revert_map(build_json['pcMap'])
 
@@ -180,7 +179,7 @@ def _get_offset(offset_map, name, offset):
     return (offset_map[offset[0]], offset_map[offset[1]])
 
 
-def expand_offsets(build_json):
+def expand_build_offsets(build_json):
     '''Expands minified source offsets in a build json dict.'''
     name = build_json['contractName']
     offset_map = {}
@@ -197,6 +196,6 @@ def expand_offsets(build_json):
             value = coverage_map[path][fn]
             coverage_map[path][fn] = dict((
                 k,
-                (_get_offset(offset_map, name, v[:2])+(v[2],))
+                _get_offset(offset_map, name, v[:2])+tuple(v[2:])
             ) for k, v in value.items())
     return build_json

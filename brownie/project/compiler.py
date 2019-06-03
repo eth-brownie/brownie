@@ -130,6 +130,7 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
         "optimize": input_json['settings']['optimizer']['enabled'],
         "runs": input_json['settings']['optimizer']['runs']
     })
+    minify = 'minify_source' in compiler_data and compiler_data['minify_source']
     build_json = {}
     path_list = list(input_json['sources'])
 
@@ -172,7 +173,7 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
             'offset': node.offset,
             'opcodes': evm['deployedBytecode']['opcodes'],
             'pcMap': pc_list_to_map(pc_list),
-            'sha1': sources.get_hash(contract_name),
+            'sha1': sources.get_hash(contract_name, minify),
             'source': input_json['sources'][path]['content'],
             'sourceMap': evm['bytecode']['sourceMap'],
             'sourcePath': path,

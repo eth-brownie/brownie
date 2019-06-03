@@ -166,7 +166,7 @@ def _compare_build_json(contract_name):
         return True
     return (
         build_json['compiler'] != CONFIG['solc'] or
-        build_json['sha1'] != sources.get_hash(contract_name)
+        build_json['sha1'] != sources.get_hash(contract_name, CONFIG['solc']['minify_source'])
     )
 
 

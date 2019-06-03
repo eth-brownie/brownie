@@ -73,10 +73,10 @@ def minify(source):
 
 
 def _get_contract_data(full_source, path):
-    uncommented, offset_map = minify(full_source)
+    minified_source, offset_map = minify(full_source)
     contracts = re.findall(
         r"((?:contract|library|interface)[^;{]*{[\s\S]*?})\s*(?=contract|library|interface|$)",
-        uncommented
+        minified_source
     )
     data = {}
     for source in contracts:
@@ -84,7 +84,7 @@ def _get_contract_data(full_source, path):
             r"\s*(contract|library|interface)\s{1,}(\S*)\s*(?:is\s{1,}(.*?)|)(?:{)",
             source
         )[0]
-        offset = uncommented.index(source)
+        offset = minified_source.index(source)
         if name in _contracts and not _contracts[name]['path'].startswith('<string-'):
             raise ContractExists(
                 "Contract '{}' already exists in the active project.".format(name)
@@ -92,8 +92,7 @@ def _get_contract_data(full_source, path):
         data[name] = {
             'path': str(path),
             'offset_map': offset_map,
-            'uncommented': uncommented,
-            'sha1': sha1(source.encode()).hexdigest(),
+            'minified': minified_source,
             'offset': (
                 offset + next(i[1] for i in offset_map if i[0] <= offset),
                 offset+len(source) + next(i[1] for i in offset_map if i[0] <= offset+len(source))
@@ -135,9 +134,12 @@ def compile_source(source, optimize=True, runs=200):
     return compiler.compile_and_format({path: source}, optimize=optimize, runs=runs, silent=True)
 
 
-def get_hash(contract_name):
+def get_hash(contract_name, minified):
     '''Returns a hash of the contract source code.'''
-    return _contracts[contract_name]['sha1']
+    if minified:
+        return sha1(_contracts[contract_name]['minified'].encode()).hexdigest()
+    offset = _contracts[contract_name]['offset']
+    return sha1(get(contract_name)[slice(*offset)].encode()).hexdigest()
 
 
 def get_source_path(contract_name):
