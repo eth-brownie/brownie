@@ -164,7 +164,6 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
             'compiler': compiler_data,
             'contractName': contract_name,
             'coverageMap': {'statements': statement_map, 'branches': branch_map},
-            'coverageMapTotals': {},
             'deployedBytecode': evm['deployedBytecode']['object'],
             'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
             'dependencies': [i.name for i in node.dependencies],

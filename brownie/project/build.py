@@ -14,7 +14,6 @@ BUILD_KEYS = [
     'compiler',
     'contractName',
     'coverageMap',
-    'coverageMapTotals',
     'deployedBytecode',
     'deployedSourceMap',
     'dependencies',
@@ -175,18 +174,29 @@ def _absolute(contract_name):
     return _project_path.joinpath('build/contracts/{}.json'.format(contract_name))
 
 
-def _get_offset(offset_map, name, value):
-    if value not in offset_map:
-        offset_map[value] = sources.expand_offset(name, value)
-    return offset_map[value]
+def _get_offset(offset_map, name, offset):
+    for o in [i for i in offset if i not in offset_map]:
+        offset_map[o] = sources.expand_offset(name, o)
+    return (offset_map[offset[0]], offset_map[offset[1]])
 
 
 def expand_offsets(build_json):
     '''Expands minified source offsets in a build json dict.'''
     name = build_json['contractName']
     offset_map = {}
+
     for value in [v for v in build_json['pcMap'].values() if 'offset' in v]:
-        value['offset'] = [_get_offset(offset_map, name, i) for i in value['offset']]
+        value['offset'] = _get_offset(offset_map, name, value['offset'])
+
     for value in build_json['fn_offsets']:
-        value[1] = [_get_offset(offset_map, name, i) for i in value[1]]
+        value[1] = _get_offset(offset_map, name, value[1])
+
+    for key in ('branches', 'statements'):
+        coverage_map = build_json['coverageMap'][key]
+        for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
+            value = coverage_map[path][fn]
+            coverage_map[path][fn] = dict((
+                k,
+                (_get_offset(offset_map, name, v[:2])+(v[2],))
+            ) for k, v in value.items())
     return build_json
