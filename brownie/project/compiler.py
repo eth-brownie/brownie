@@ -148,7 +148,7 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
         bytecode = format_link_references(evm)
         paths = sorted(set([node.parent().path]+[i.parent().path for i in node.dependencies]))
 
-        pc_list, statement_map, branch_map = generate_coverage_data(
+        pc_map, statement_map, branch_map = generate_coverage_data(
             evm['deployedBytecode']['sourceMap'],
             evm['deployedBytecode']['opcodes'],
             node,
@@ -172,7 +172,7 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
             'fn_offsets': [[node.name+'.'+i.name, i.offset] for i in node.functions],
             'offset': node.offset,
             'opcodes': evm['deployedBytecode']['opcodes'],
-            'pcMap': pc_list_to_map(pc_list),
+            'pcMap': pc_map,
             'sha1': sources.get_hash(contract_name, minify),
             'source': input_json['sources'][path]['content'],
             'sourceMap': evm['bytecode']['sourceMap'],
@@ -212,29 +212,31 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
         branch_nodes: branch node objects from get_branch_nodes
 
     Returns:
-        pc_list: expanded source mapping as a list
+        pc_map: program counter map
         statement_map: statement coverage map
         branch_map: branch coverage map
 
-    pc_list is formatted as follows. Keys where the value is False are excluded.
+    pc_map is formatted as follows. Keys where the value is False are excluded.
 
-    [{
-        'path': relative path of the contract source code
-        'jump': jump instruction as supplied in the sourceMap (-,i,o)
-        'op': opcode string
-        'pc': program counter as given by debug_traceTransaction
-        'offset': source code start and stop offsets
-        'value': value of the instruction
-        'branch': branch coverage index
-        'statement': statement coverage index
-    }, ... ]
+    {
+        'pc': {
+            'op': opcode string
+            'path': relative path of the contract source code
+            'offset': source code start and stop offsets
+            'fn': related contract function
+            'value': value of the instruction
+            'jump': jump instruction as supplied in the sourceMap (i, o)
+            'branch': branch coverage index
+            'statement': statement coverage index
+        }, ...
+    }
 
     statement_map and branch_map are formatted as follows:
 
     {'path/to/contract': { coverage_index: (start, stop), ..}, .. }
     '''
     if not opcodes:
-        return [], {}, {}
+        return {}, {}, {}
 
     source_map = deque(expand_source_map(source_map))
     opcodes = deque(opcodes.split(" "))
@@ -328,12 +330,8 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
         branch_map[path].setdefault(fn, {})[count] = offset+(node.jump,)
         count += 1
 
-    return pc_list, statement_map, branch_map
-
-
-def pc_list_to_map(pc_list):
-    '''Convert a program counter list to a program counter map.'''
-    return dict((i.pop('pc'), i) for i in pc_list)
+    pc_map = dict((i.pop('pc'), i) for i in pc_list)
+    return pc_map, statement_map, branch_map
 
 
 def expand_source_map(source_map):

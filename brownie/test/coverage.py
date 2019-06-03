@@ -14,13 +14,13 @@ def analyze(history, coverage_eval={}):
         history: List of TransactionReceipt objects.
 
     Returns:
-        { "ContractName":
-            "statements": {"path/to/file": [index, ..], .. },
+        { "ContractName": {
+            "statements": { "path/to/file": {index, index, ..}, .. },
             "branches": {
-                "true": {"path/to/file": [index, ..], .. },
-            "false": {"path/to/file": [index, ..], .. },
-            }
-        }'''
+                "true": {"path/to/file": {index, index, ..}, .. },
+                "false": {"path/to/file": {index, index, ..}, .. },
+            }, ..
+        } }'''
     for tx in filter(lambda k: k.trace, history):
         build_json = {'contractName': None}
         tx_trace = tx.trace
