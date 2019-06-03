@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from .connector import (  # NOQA 401
+from .main import (  # NOQA 401
     connect,
     disconnect,
     show_active,
