@@ -174,9 +174,9 @@ def _absolute(contract_name):
 
 
 def _get_offset(offset_map, name, offset):
-    for o in [i for i in offset if i not in offset_map]:
-        offset_map[o] = sources.expand_offset(name, o)
-    return (offset_map[offset[0]], offset_map[offset[1]])
+    if offset not in offset_map:
+        offset_map[offset] = sources.expand_offset(name, offset)
+    return offset_map[offset]
 
 
 def expand_build_offsets(build_json):

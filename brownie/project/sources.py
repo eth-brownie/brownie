@@ -136,10 +136,13 @@ def compile_source(source, optimize=True, runs=200):
 
 def get_hash(contract_name, minified):
     '''Returns a hash of the contract source code.'''
-    if minified:
-        return sha1(_contracts[contract_name]['minified'].encode()).hexdigest()
-    offset = _contracts[contract_name]['offset']
-    return sha1(get(contract_name)[slice(*offset)].encode()).hexdigest()
+    try:
+        if minified:
+            return sha1(_contracts[contract_name]['minified'].encode()).hexdigest()
+        offset = _contracts[contract_name]['offset']
+        return sha1(get(contract_name)[slice(*offset)].encode()).hexdigest()
+    except KeyError:
+        return ""
 
 
 def get_source_path(contract_name):
@@ -226,4 +229,8 @@ def is_inside_offset(inner, outer):
 def expand_offset(contract_name, offset):
     '''Converts an offset from source with comments removed, to one from the original source.'''
     offset_map = _contracts[contract_name]['offset_map']
-    return offset + next(i[1] for i in offset_map if i[0] <= offset)
+
+    return (
+        offset[0] + next(i[1] for i in offset_map if i[0] <= offset[0]),
+        offset[1] + next(i[1] for i in offset_map if i[0] < offset[1])
+    )

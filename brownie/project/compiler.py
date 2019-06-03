@@ -61,7 +61,7 @@ def compile_and_format(contracts, optimize=True, runs=200, minify=False, silent=
     }
 
     input_json = generate_input_json(contracts, optimize, runs, minify)
-    output_json = compile_contracts(input_json, silent)
+    output_json = compile_from_input_json(input_json, silent)
     build_json = generate_build_json(input_json, output_json, compiler_data, silent)
     return build_json
 
@@ -87,7 +87,7 @@ def generate_input_json(contracts, optimize=True, runs=200, minify=False):
     return input_json
 
 
-def compile_contracts(input_json, silent=True):
+def compile_from_input_json(input_json, silent=True):
     '''Compiles contracts from a standard input json.
 
     Args:
