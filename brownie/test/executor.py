@@ -1,0 +1,151 @@
+#!/usr/bin/python3
+
+import json
+from pathlib import Path
+from requests.exceptions import ReadTimeout
+import sys
+import time
+
+from .loader import get_ast_hash
+from .output import TestPrinter, cprint
+from brownie.project import build
+from brownie.network import history, rpc
+from brownie.cli.utils import color
+from brownie._config import CONFIG, ARGV
+from brownie.test import coverage
+from brownie.exceptions import ExpectedFailing
+import brownie.network as network
+from brownie.network.contract import Contract
+
+
+def run_test_modules(test_data, save):
+    TestPrinter.grand_total = len(test_data)
+    count = sum([len([x for x in i[3] if x[0] != "setup"]) for i in test_data])
+    print("Running {} tests across {} modules.".format(count, len(test_data)))
+    network.connect(ARGV['network'])
+    CONFIG._unlock()
+    CONFIG['active_network'].update(CONFIG['test'])
+    CONFIG._lock()
+    if not CONFIG['active_network']['broadcast_reverting_tx']:
+        cprint("WARNING", "Reverting transactions will NOT be broadcasted.")
+    traceback_info = []
+    start_time = time.time()
+    try:
+        for (module, build_path, coverage_eval, method_data) in test_data:
+            tb, cov, contracts = run_test(module, method_data)
+            if tb:
+                traceback_info += tb
+                # if build_path.exists():
+                #    build_path.unlink()
+                # continue
+
+            if save:
+                _save(module.__file__, build_path, cov or coverage_eval, contracts)
+        if not traceback_info:
+            cprint("SUCCESS", "All tests passed.")
+    except KeyboardInterrupt:
+        print("\n\nTest execution has been terminated by KeyboardInterrupt.")
+        sys.exit()
+    finally:
+        print("\nTotal runtime: {:.4f}s".format(time.time() - start_time))
+        if traceback_info:
+            cprint("WARNING", "{} test{} failed".format(
+                len(traceback_info),
+                "s" if traceback_info else ""
+            ))
+            for err in traceback_info:
+                print("\nTraceback for {0[0]}:\n{0[1]}".format(err))
+
+
+def _save(module_path, build_path, coverage_eval, contracts):
+    contract_names = set(i._name for i in contracts)
+    contract_names |= set(x for i in contracts for x in i._build['dependencies'])
+
+    build_files = [Path('build/contracts/{}.json'.format(i)) for i in contract_names]
+
+    build_json = {
+        'tests': [],
+        'coverage': coverage_eval,
+        'sha1': dict((str(i), build.get(i.stem)['bytecodeSha1']) for i in build_files)
+    }
+    path = str(Path(module_path).relative_to(sys.path[0]))
+    build_json['sha1'][path] = get_ast_hash(module_path)
+    json.dump(
+        build_json,
+        build_path.open('w'),
+        sort_keys=True,
+        indent=2,
+        default=sorted
+    )
+
+
+def run_test(module, method_data):
+    rpc.reset()
+
+    p = TestPrinter(
+        module.__file__,
+        0 if method_data[0][0].__name__ == "setup" else 1,
+        len(method_data)
+    )
+
+    coverage_eval = {}
+    if method_data[0][0].__name__ == "setup":
+        tb, coverage_eval = run_test_method(*method_data[0], {}, p)
+        if tb:
+            return tb, {}, set()
+        del method_data[0]
+    rpc.snapshot()
+    traceback_info = []
+    contracts = _get_contract_names()
+
+    for fn, args in method_data:
+        history.clear()
+        network.rpc.revert()
+        tb, coverage_eval = run_test_method(fn, args, coverage_eval, p)
+        contracts |= _get_contract_names()
+        traceback_info += tb
+        if tb and tb[0][2] == ReadTimeout:
+            cprint("WARNING", "RPC crashed, terminating test")
+            network.rpc.kill(False)
+            network.rpc.launch(CONFIG['active_network']['test-rpc'])
+            break
+
+    p.finish()
+    return traceback_info, coverage_eval, contracts
+
+
+def run_test_method(fn, args, coverage_eval, p):
+    desc = fn.__doc__ or fn.__name__
+    if args['skip']:
+        p.skip(desc)
+        return [], coverage_eval
+    p.start(desc)
+    traceback_info = []
+    try:
+        if ARGV['coverage'] and 'always_transact' in args:
+            ARGV['always_transact'] = args['always_transact']
+        fn()
+        if ARGV['coverage']:
+            ARGV['always_transact'] = True
+            # coverage_eval = coverage.analyze(history.copy(), coverage_eval)
+        if args['pending']:
+            raise ExpectedFailing("Test was expected to fail")
+        p.stop()
+        # return [], coverage_eval
+    except Exception as e:
+        p.stop(e, args['pending'])
+        if not args['pending'] or type(e) == ExpectedFailing:
+            path = Path(sys.modules[fn.__module__].__file__).relative_to(sys.path[0])
+            path = "{0[module]}{1}.{0[callable]}{2}{0}".format(color, str(path)[:-3], fn.__name__)
+            tb = color.format_tb(sys.exc_info(), sys.modules[fn.__module__].__file__)
+            traceback_info = [(path, tb, type(e))]
+    coverage_eval = coverage.analyze(history.copy(), coverage_eval)
+    return traceback_info, coverage_eval
+    # return [(path, tb, type(e))], {}
+
+
+def _get_contract_names():
+    return set(
+        i.contract_address for i in history if type(i.contract_address) is Contract and
+        not i.contract_address._build['sourcePath'].startswith('<string')
+    )
