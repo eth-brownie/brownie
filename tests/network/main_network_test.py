@@ -64,9 +64,9 @@ def test_connect_raises_missing_host():
 
 
 def test_connect_raises_block_height(monkeypatch):
-    monkeypatch.setattr('brownie.network.connector.is_connected', lambda: True)
-    monkeypatch.setattr('brownie.network.connector.web3.manager.request_blocking', lambda *x: 1)
-    with pytest.raises(ValueError):
+    monkeypatch.setattr('brownie.network.main.is_connected', lambda: True)
+    monkeypatch.setattr('brownie.network.web3.manager.request_blocking', lambda *x: 1)
+    with pytest.raises(ConnectionError):
         network.connect()
 
 
