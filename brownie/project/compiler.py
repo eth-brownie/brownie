@@ -378,19 +378,23 @@ def get_branch_nodes(source_nodes):
     branches = {}
     for node in source_nodes:
         branches[node.path] = set()
-        for child_node in node.children(filters=(
-            {'node_type': "FunctionCall", 'name': "require"},
-            {'node_type': "IfStatement"},
-            {'node_type': "Conditional"}
-        )):
-            branches[node.path] |= _get_recursive_branches(child_node)
+        for contract_node in node:
+            # only looking at functions for now, not modifiers
+            for child_node in [x for i in contract_node.functions for x in i.children(
+                filters=(
+                    {'node_type': "FunctionCall", 'name': "require"},
+                    {'node_type': "IfStatement"},
+                    {'node_type': "Conditional"}
+                )
+            )]:
+                branches[node.path] |= _get_recursive_branches(child_node)
     return branches
 
 
 def _get_recursive_branches(base_node):
     # if node is IfStatement or Conditional, look only at the condition
-    jump = True if base_node.node_type == "FunctionCall" else False
-    node = base_node.condition if hasattr(base_node, 'condition') else base_node
+    jump = not hasattr(base_node, 'condition')
+    node = base_node if jump else base_node.condition
     depth = base_node.depth
 
     filters = {'node_type': "BinaryOperation", 'type': "bool"}
@@ -399,7 +403,7 @@ def _get_recursive_branches(base_node):
     # if no BinaryOperation nodes are found, this node is the branch
     if not all_binaries:
         # if node is FunctionaCall, look at the first argument
-        if not hasattr(base_node, 'condition'):
+        if node.node_type == "FunctionCall":
             node.arguments[0].jump = jump
             return set([node.arguments[0]])
         node.jump = jump
