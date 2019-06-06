@@ -174,6 +174,7 @@ def _absolute(contract_name):
 
 
 def _get_offset(offset_map, name, offset):
+    offset = tuple(offset)
     if offset not in offset_map:
         offset_map[offset] = sources.expand_offset(name, offset)
     return offset_map[offset]

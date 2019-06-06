@@ -302,7 +302,11 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
             if 'offset' in pc_list[-2] and offset == pc_list[-2]['offset']:
                 pc_list[-1]['fn'] = pc_list[-2]['fn']
             else:
-                pc_list[-1]['fn'] = node.child_by_offset(offset).full_name
+                pc_list[-1]['fn'] = node.children(
+                    depth=2,
+                    inner_offset=offset,
+                    filters={'node_type': "FunctionDefinition"}
+                )[0].full_name
                 statement = next(
                     i for i in statement_nodes[path] if
                     is_inside_offset(offset, i)
@@ -325,7 +329,11 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
         if 'fn' in pc_list[idx[0]]:
             fn = pc_list[idx[0]]['fn']
         else:
-            fn = source_nodes[path].child_by_offset(offset, 2).full_name
+            fn = source_nodes[path].children(
+                depth=2,
+                inner_offset=offset,
+                filters={'node_type': "FunctionDefinition"}
+            )[0].full_name
         node = next(i for i in branch_original[path] if i.offset == offset)
         branch_map[path].setdefault(fn, {})[count] = offset+(node.jump,)
         count += 1
