@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 
-import json
 from pathlib import Path
 from requests.exceptions import ReadTimeout
 import sys
 import time
 
-from .loader import get_ast_hash
+from . import (
+    pathutils
+)
+
 from .output import TestPrinter, cprint
-from brownie.project import build
 from brownie.network import history, rpc
 from brownie.cli.utils import color
 from brownie._config import CONFIG, ARGV
@@ -39,8 +40,18 @@ def run_test_modules(test_data, save):
                 #    build_path.unlink()
                 # continue
 
-            if save:
-                _save(module.__file__, build_path, cov or coverage_eval, contracts)
+            if not save:
+                continue
+
+            contract_names = set(i._name for i in contracts)
+            contract_names |= set(x for i in contracts for x in i._build['dependencies'])
+            pathutils.save_build_json(
+                module.__file__,
+                build_path,
+                cov or coverage_eval,
+                contract_names
+            )
+
         if not traceback_info:
             cprint("SUCCESS", "All tests passed.")
     except KeyboardInterrupt:
@@ -55,28 +66,6 @@ def run_test_modules(test_data, save):
             ))
             for err in traceback_info:
                 print("\nTraceback for {0[0]}:\n{0[1]}".format(err))
-
-
-def _save(module_path, build_path, coverage_eval, contracts):
-    contract_names = set(i._name for i in contracts)
-    contract_names |= set(x for i in contracts for x in i._build['dependencies'])
-
-    build_files = [Path('build/contracts/{}.json'.format(i)) for i in contract_names]
-
-    build_json = {
-        'tests': [],
-        'coverage': coverage_eval,
-        'sha1': dict((str(i), build.get(i.stem)['bytecodeSha1']) for i in build_files)
-    }
-    path = str(Path(module_path).relative_to(sys.path[0]))
-    build_json['sha1'][path] = get_ast_hash(module_path)
-    json.dump(
-        build_json,
-        build_path.open('w'),
-        sort_keys=True,
-        indent=2,
-        default=sorted
-    )
 
 
 def run_test(module, method_data):

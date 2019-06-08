@@ -96,6 +96,7 @@ def cprint(type_, msg):
     print("{0}{1}{2}: {3}".format(color(CPRINT_TYPES[type_]), type_, color, msg))
 
 
+# TODO this could be three functions
 def display_report(coverage_files, report_path=None):
     coverage_eval = coverage.merge_files(coverage_files)
     report = {
