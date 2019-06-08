@@ -7,11 +7,10 @@ from brownie.test.main import run_tests
 from brownie._config import ARGV, CONFIG
 
 
-__doc__ = """Usage: brownie test [<filename>] [<range>] [options]
+__doc__ = """Usage: brownie test [<filename>] [options]
 
 Arguments:
   <filename>              Only run tests from a specific file or folder
-  <range>                 Number or range of tests to run from file
 
 Options:
 
