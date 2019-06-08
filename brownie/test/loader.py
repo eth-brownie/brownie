@@ -10,7 +10,7 @@ from brownie.types import FalseyDict
 
 def import_from_path(path):
     '''Imports a module from the given path.'''
-    path = path.relative_to(sys.path[0])
+    path = Path(path).relative_to(sys.path[0])
     import_str = ".".join(path.parts[:-1]+(path.stem,))
     return importlib.import_module(import_str)
 
@@ -28,6 +28,9 @@ def get_methods(path, coverage=False):
     node = ast.parse(source)
     fn_nodes = [i for i in node.body if type(i) is ast.FunctionDef and not i.name.startswith('_')]
 
+    if not fn_nodes:
+        return []
+
     # check for duplicate names
     if len(fn_nodes) != len(set(fn_nodes)):
         duplicates = set(i for i in fn_nodes if fn_nodes.count(i) > 1)
@@ -44,7 +47,8 @@ def get_methods(path, coverage=False):
             return []
         fn_nodes.remove(setup_fn)
         fn_nodes.insert(0, setup_fn)
-    return [(i.name, _get_args(i, default_args, coverage)) for i in fn_nodes]
+    module = import_from_path(path)
+    return [(getattr(module, i.name), _get_args(i, default_args, coverage)) for i in fn_nodes]
 
 
 def _get_args(node, defaults={}, coverage=False):

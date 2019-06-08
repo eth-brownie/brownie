@@ -104,21 +104,19 @@ def get_build_json(test_path):
     Args:
         test_path: path to the test file
 
-    Returns:
-        build_path: path to the build data file
-        build_json: loaded build data as a dict'''
+    Returns: loaded build data as a dict'''
     build_path = get_build_paths([test_path])[0]
     if build_path.exists():
         try:
-            return build_path, json.load(build_path.open())
+            return json.load(build_path.open())
         except json.JSONDecodeError:
             build_path.unlink()
     for path in list(build_path.parents)[::-1]:
         path.mkdir(exist_ok=True)
-    return build_path, {'tests': [], 'coverage': {}, 'sha1': {}}
+    return {'tests': [], 'coverage': {}, 'sha1': {}}
 
 
-def save_build_json(module_path, build_path, coverage_eval, contract_names):
+def save_build_json(module_path, coverage_eval, contract_names):
     '''
     Saves the result data for a given test.
 
@@ -130,6 +128,7 @@ def save_build_json(module_path, build_path, coverage_eval, contract_names):
 
     Returns: None'''
     project_path = check_for_project(module_path)
+    build_path = get_build_paths([module_path])[0]
     build_files = [Path('build/contracts/{}.json'.format(i)) for i in contract_names]
     build_json = {
         'tests': [],
