@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-import json
-from pathlib import Path
 import sys
 import time
 
@@ -93,43 +91,35 @@ class TestPrinter:
 
 
 def cprint(type_, msg):
+    '''Prepends a message with a colored tag and outputs it to the console.'''
     print("{0}{1}{2}: {3}".format(color(CPRINT_TYPES[type_]), type_, color, msg))
 
 
-# TODO this could be three functions
-def display_report(coverage_files, report_path=None):
-    coverage_eval = coverage.merge_files(coverage_files)
-    report = {
-        'highlights': coverage.get_highlights(coverage_eval),
-        'coverage': coverage.get_totals(coverage_eval),
-        'sha1': {}  # TODO
-    }
+def coverage_totals(coverage_eval):
+    '''Formats and prints a coverage evaluation report to the console.
+
+    Args:
+        coverage_eval: coverage evaluation dict
+
+    Returns: None'''
+    totals = coverage.get_totals(coverage_eval)
     print("\nCoverage analysis:")
-    for name in sorted(report['coverage']):
-        totals = report['coverage'][name]['totals']
-        pct = _pct(totals['statements'], totals['branches'])
-        c = color(next(i[1] for i in COVERAGE_COLORS if pct <= i[0]))
-        print("\n  contract: {0[contract]}{1}{0} - {2}{3:.1%}{0}".format(color, name, c, pct))
-        cov = report['coverage'][name]
+    for name in sorted(totals):
+        pct = _pct(totals[name]['totals']['statements'], totals[name]['totals']['branches'])
+        print("\n  contract: {0[contract]}{1}{0} - {2}{3:.1%}{0}".format(
+            color, name, _cov_color(pct), pct
+        ))
+        cov = totals[name]
         for fn_name, count in cov['statements'].items():
             branch = cov['branches'][fn_name] if fn_name in cov['branches'] else (0, 0, 0)
             pct = _pct(count, branch)
             print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
-                color,
-                fn_name,
-                color(next(i[1] for i in COVERAGE_COLORS if pct <= i[0])),
-                pct
+                color, fn_name, _cov_color(pct), pct
             ))
-    if not report_path:
-        return
-    report_path = Path(report_path)
-    if report_path.is_dir():
 
-        filename = "coverage-"+time.strftime('%d%m%y')+"{}.json"
-        count = len(list(report_path.glob(filename.format('*'))))
-        report_path = report_path.joinpath(filename.format("-"+str(count) if count else ""))
-    json.dump(report, report_path.open('w'), sort_keys=True, indent=2, default=sorted)
-    print("\nCoverage report saved at {}".format(report_path.relative_to(sys.path[0])))
+
+def _cov_color(pct):
+    return color(next(i[1] for i in COVERAGE_COLORS if pct <= i[0]))
 
 
 def _pct(statement, branch):
@@ -139,7 +129,8 @@ def _pct(statement, branch):
     return pct
 
 
-def display_gas_profile():
+def gas_profile():
+    '''Formats and prints a gas profile report to the console.'''
     print('\nGas Profile:')
     gas = history.gas_profile
     for i in sorted(gas):

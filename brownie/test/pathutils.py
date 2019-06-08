@@ -7,7 +7,9 @@ import json
 import os
 from pathlib import Path
 import sys
+import time
 
+from . import coverage
 from brownie.project import build, check_for_project
 
 
@@ -39,7 +41,7 @@ def check_build_hashes(base_path):
 
 
 def remove_empty_folders(base_path):
-    # remove empty folders
+    '''Removes empty subfolders within the given path.'''
     for path in [Path(i[0]) for i in list(os.walk(base_path))[:0:-1]]:
         if not list(path.glob('*')):
             path.rmdir()
@@ -67,7 +69,12 @@ def get_ast_hash(path):
 
 
 def get_paths(path_str=None):
-    '''Returns the absolute path to every test file within the given path.'''
+    '''Returns paths to test modules.
+
+    Args:
+        path_str: base path to look for modules in
+
+    Returns: list of Path objects'''
     path = Path(path_str or "tests")
     if not path.exists() and not path.absolute():
         if not path_str.startswith('tests/'):
@@ -138,3 +145,25 @@ def save_build_json(module_path, build_path, coverage_eval, contract_names):
         indent=2,
         default=sorted
     )
+
+
+def save_report(coverage_eval, report_path):
+    '''Saves a test coverage report for viewing in the GUI.
+
+    Args:
+        coverage_eval: Coverage evaluation dict
+        report_path: Path to save to. If a folder is given, saves as coverage-ddmmyy
+
+    Returns: None'''
+    report = {
+        'highlights': coverage.get_highlights(coverage_eval),
+        'coverage': coverage.get_totals(coverage_eval),
+        'sha1': {}  # TODO
+    }
+    report_path = Path(report_path)
+    if report_path.is_dir():
+        filename = "coverage-"+time.strftime('%d%m%y')+"{}.json"
+        count = len(list(report_path.glob(filename.format('*'))))
+        report_path = report_path.joinpath(filename.format("-"+str(count) if count else ""))
+    json.dump(report, report_path.open('w'), sort_keys=True, indent=2, default=sorted)
+    print("\nCoverage report saved at {}".format(report_path.relative_to(sys.path[0])))
