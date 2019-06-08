@@ -40,6 +40,10 @@ class TestPrinter:
             self.grand_total
         ))
 
+    @classmethod
+    def set_grand_total(cls, total):
+        cls.grand_total = total
+
     def skip(self, description):
         self._print(
             "{0} ({1[pending]}skipped{1[dull]})\n".format(description, color),

@@ -20,7 +20,7 @@ from brownie.network.contract import Contract
 
 
 def run_test_modules(test_data, save):
-    TestPrinter.grand_total = len(test_data)
+    TestPrinter.set_grand_total(len(test_data))
     count = sum([len([x for x in i[3] if x[0] != "setup"]) for i in test_data])
     print("Running {} tests across {} modules.".format(count, len(test_data)))
     network.connect(ARGV['network'])
