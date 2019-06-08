@@ -2,6 +2,7 @@
 
 from docopt import docopt
 
+from brownie import network
 from brownie.network import history
 from brownie.test.main import run_tests
 from brownie._config import ARGV, CONFIG
@@ -28,10 +29,13 @@ subfolders. Files and folders beginning with an underscore will be skipped."""
 def main():
     args = docopt(__doc__)
     ARGV._update_from_args(args)
+
+    # TODO - does this belong here?
     if ARGV['coverage']:
         ARGV['always_transact'] = True
         history._revert_lock = True
 
+    network.connect()
     run_tests(
         CONFIG['folders']['project'],
         args['<filename>'],

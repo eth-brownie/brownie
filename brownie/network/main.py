@@ -35,7 +35,7 @@ def connect(network=None):
             else:
                 rpc.launch(CONFIG['active_network']['test-rpc'])
     except Exception:
-        CONFIG['active_network']['name'] = None
+        CONFIG['active_network'] = {'name': None}
         web3.disconnect()
         raise
 
@@ -44,7 +44,7 @@ def disconnect():
     '''Disconnects from the network.'''
     if not is_connected():
         raise ConnectionError("Not connected to any network")
-    CONFIG['active_network']['name'] = None
+    CONFIG['active_network'] = {'name': None}
     web3.disconnect()
     if rpc.is_active():
         if rpc.is_child():

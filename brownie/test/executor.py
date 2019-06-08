@@ -5,14 +5,11 @@ from requests.exceptions import ReadTimeout
 import sys
 import time
 
-from . import (
-    pathutils
-)
-
+from . import pathutils
 from .output import TestPrinter, cprint
 from brownie.network import history, rpc
 from brownie.cli.utils import color
-from brownie._config import CONFIG, ARGV
+from brownie._config import ARGV
 from brownie.test import coverage
 from brownie.exceptions import ExpectedFailing
 import brownie.network as network
@@ -23,12 +20,6 @@ def run_test_modules(test_data, save):
     TestPrinter.set_grand_total(len(test_data))
     count = sum([len([x for x in i[3] if x[0] != "setup"]) for i in test_data])
     print("Running {} tests across {} modules.".format(count, len(test_data)))
-    network.connect(ARGV['network'])
-    CONFIG._unlock()
-    CONFIG['active_network'].update(CONFIG['test'])
-    CONFIG._lock()
-    if not CONFIG['active_network']['broadcast_reverting_tx']:
-        cprint("WARNING", "Reverting transactions will NOT be broadcasted.")
     traceback_info = []
     start_time = time.time()
     try:
@@ -94,11 +85,9 @@ def run_test(module, method_data):
         contracts |= _get_contract_names()
         traceback_info += tb
         if tb and tb[0][2] == ReadTimeout:
-            cprint("WARNING", "RPC crashed, terminating test")
-            network.rpc.kill(False)
-            network.rpc.launch(CONFIG['active_network']['test-rpc'])
-            break
-
+            raise ReadTimeout(
+                "Timeout while communicating with RPC. Possibly the local client has crashed."
+            )
     p.finish()
     return traceback_info, coverage_eval, contracts
 

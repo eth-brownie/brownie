@@ -62,11 +62,14 @@ def modify_network_config(network=None):
     try:
         if not network:
             network = CONFIG['network_defaults']['name']
-        CONFIG['active_network'] = CONFIG['networks'][network].copy()
+
+        CONFIG['active_network'] = {**CONFIG['network_defaults'], **CONFIG['networks'][network]}
         CONFIG['active_network']['name'] = network
-        for key, value in CONFIG['network_defaults'].items():
-            if key not in CONFIG['active_network']:
-                CONFIG['active_network'][key] = value
+
+        if ARGV['cli'] == "test":
+            CONFIG['active_network'].update(CONFIG['test'])
+            if not CONFIG['active_network']['broadcast_reverting_tx']:
+                print("WARNING: Reverting transactions will NOT be broadcasted.")
     except KeyError:
         raise KeyError("Network '{}' is not defined in config.json".format(network))
     finally:
