@@ -29,7 +29,7 @@ class TestPrinter:
     def __init__(self, path, count, total):
         self.path = path
         self.count = count
-        self.total = total - count
+        self.total = total
         self.total_time = time.time()
         print("\nRunning {0[module]}{1}{0} - {2} test{3} ({4}/{5})".format(
             color,

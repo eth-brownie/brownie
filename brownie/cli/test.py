@@ -2,7 +2,6 @@
 
 from docopt import docopt
 
-from brownie import network
 from brownie.network import history
 from brownie.test.main import run_tests
 from brownie._config import ARGV, CONFIG
@@ -35,7 +34,6 @@ def main():
         ARGV['always_transact'] = True
         history._revert_lock = True
 
-    network.connect()
     run_tests(
         CONFIG['folders']['project'],
         args['<filename>'],

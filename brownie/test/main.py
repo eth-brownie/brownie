@@ -4,7 +4,6 @@ from pathlib import Path
 
 from . import (
     pathutils,
-    loader,
     executor,
     coverage,
     output
@@ -37,17 +36,3 @@ def run_tests(base_path, test_path, only_update=True, check_coverage=False, gas_
 
 # cli.run
 # def run_script(base_path, script_path, method_name="main")
-
-
-def _get_test_data(test_paths, update, coverage):
-    test_data = []
-    for path in test_paths:
-        build_json = pathutils.get_build_json(path)
-        if build_json['sha1'] and update:
-            continue
-        fn_list = loader.get_methods(path, coverage)
-        if not fn_list:
-            continue
-        # test path, build data, list of (fn, args)
-        test_data.append((path, build_json, fn_list))
-    return test_data
