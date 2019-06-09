@@ -21,7 +21,8 @@ def check_build_hashes(base_path):
         base_path: root path of project to check
 
     Returns: None'''
-    build_path = Path(base_path).joinpath('build/tests')
+    base_path = Path(base_path)
+    build_path = base_path.joinpath('build/tests')
     for coverage_json in list(build_path.glob('**/*.json')):
         try:
             dependents = json.load(coverage_json.open())['sha1']
@@ -29,7 +30,7 @@ def check_build_hashes(base_path):
             coverage_json.unlink()
             continue
         for path, hash_ in dependents.items():
-            path = Path(path)
+            path = base_path.joinpath(path)
             if path.exists():
                 if path.suffix != ".json":
                     if get_ast_hash(path) == hash_:
@@ -92,7 +93,7 @@ def get_build_paths(test_paths):
     '''Given a list of test paths, returns an equivalent list of build paths'''
     base_path = check_for_project(test_paths[0])
     build_path = base_path.joinpath('build')
-    test_paths = [i.with_suffix('.json') for i in test_paths]
+    test_paths = [Path(i).absolute().with_suffix('.json') for i in test_paths]
     return [build_path.joinpath(i.relative_to(base_path)) for i in test_paths]
 
 
@@ -127,6 +128,7 @@ def save_build_json(module_path, result, coverage_eval, contract_names):
         contract_names: list of contracts called by the test
 
     Returns: None'''
+    module_path = Path(module_path).absolute()
     project_path = check_for_project(module_path)
     build_path = get_build_paths([module_path])[0]
     build_files = [Path('build/contracts/{}.json'.format(i)) for i in contract_names]
@@ -135,7 +137,7 @@ def save_build_json(module_path, result, coverage_eval, contract_names):
         'coverage': coverage_eval,
         'sha1': dict((str(i), build.get(i.stem)['bytecodeSha1']) for i in build_files)
     }
-    path = str(Path(module_path).relative_to(project_path))
+    path = str(module_path.relative_to(project_path))
     build_json['sha1'][path] = get_ast_hash(module_path)
     json.dump(
         build_json,
@@ -153,16 +155,17 @@ def save_report(coverage_eval, report_path):
         coverage_eval: Coverage evaluation dict
         report_path: Path to save to. If a folder is given, saves as coverage-ddmmyy
 
-    Returns: None'''
+    Returns: Path object where report file was saved'''
     report = {
         'highlights': coverage.get_highlights(coverage_eval),
         'coverage': coverage.get_totals(coverage_eval),
         'sha1': {}  # TODO
     }
-    report_path = Path(report_path)
+    report_path = Path(report_path).absolute()
     if report_path.is_dir():
         filename = "coverage-"+time.strftime('%d%m%y')+"{}.json"
         count = len(list(report_path.glob(filename.format('*'))))
         report_path = report_path.joinpath(filename.format("-"+str(count) if count else ""))
     json.dump(report, report_path.open('w'), sort_keys=True, indent=2, default=sorted)
     print("\nCoverage report saved at {}".format(report_path.relative_to(sys.path[0])))
+    return report_path

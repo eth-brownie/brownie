@@ -10,7 +10,7 @@ from brownie.types import FalseyDict
 
 def import_from_path(path):
     '''Imports a module from the given path.'''
-    path = Path(path).relative_to(sys.path[0])
+    path = Path(path).absolute().relative_to(sys.path[0])
     import_str = ".".join(path.parts[:-1]+(path.stem,))
     return importlib.import_module(import_str)
 
@@ -23,7 +23,7 @@ def get_methods(path, coverage=False):
         coverage: is coverage analysis enabled?
 
     Returns:
-        List of tuples as [('method name', FalseyDict({'arg': value}), ) .. ] '''
+        List of tuples as [(method, FalseyDict({'arg': value}), ) .. ] '''
     source = Path(path).open().read()
     node = ast.parse(source)
     fn_nodes = [i for i in node.body if type(i) is ast.FunctionDef and not i.name.startswith('_')]
@@ -54,10 +54,11 @@ def get_methods(path, coverage=False):
 def _get_args(node, defaults={}, coverage=False):
     args = dict((
         node.args.args[i].arg,
-        _coverage_to_bool(node.defaults[i].value, coverage)
+        _coverage_to_bool(node.args.defaults[i], coverage)
     ) for i in range(len(list(node.args.args))))
     return FalseyDict({**defaults, **args})
 
 
-def _coverage_to_bool(value, coverage):
+def _coverage_to_bool(node, coverage):
+    value = getattr(node, node._fields[0])
     return value if value != "coverage" else coverage

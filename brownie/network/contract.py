@@ -341,7 +341,7 @@ class ContractTx(_ContractMethod):
         signature: Bytes4 method signature.'''
 
     def __init__(self, fn, abi, name, owner):
-        if CONFIG['active_network']['default_contract_owner'] is False:
+        if ARGV['cli'] == "test" and CONFIG['test']['default_contract_owner'] is False:
             owner = None
         super().__init__(fn, abi, name, owner)
 

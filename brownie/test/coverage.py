@@ -7,7 +7,7 @@ from pathlib import Path
 from brownie.project import build
 
 
-def analyze(history, coverage_eval={}):
+def analyze(history, coverage_eval=None):
     '''Analyzes contract coverage.
 
     Arguments:
@@ -21,6 +21,8 @@ def analyze(history, coverage_eval={}):
                 "false": {"path/to/file": {index, index, ..}, .. },
             }, ..
         } }'''
+    if coverage_eval is None:
+        coverage_eval = {}
     for tx in filter(lambda k: k.trace, history):
         build_json = {'contractName': None}
         tx_trace = tx.trace
@@ -60,7 +62,6 @@ def _set_coverage_defaults(build_json, coverage_eval):
     return coverage_eval
 
 
-# REMOVE ME DURING cli/test REFACTOR, thx
 def merge_files(coverage_files):
     '''Merges multiple coverage evaluation dicts that have been saved to json.'''
     coverage_eval = [json.load(Path(i).open())['coverage'] for i in coverage_files]

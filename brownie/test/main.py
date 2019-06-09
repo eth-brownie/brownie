@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-from pathlib import Path
-
 from . import (
     pathutils,
     executor,
@@ -10,17 +8,16 @@ from . import (
 )
 
 
-def run_tests(base_path, test_path, only_update=True, check_coverage=False, gas_profile=False):
+def run_tests(test_path, only_update=True, check_coverage=False, gas_profile=False):
     '''Finds and runs tests for a project.
 
-    base_path: brownie project path
     test_path: path to locate tests in
     only_update: if True, will only run tests that were not previous run or where
                  changes to related files have occured
     check_coverage: if True, test coverage will also be evaluated
     gas_profile: if True, gas use data will be shown
     '''
-    base_path = Path(base_path)
+    base_path = pathutils.check_for_project(test_path or ".")
     pathutils.check_build_hashes(base_path)
     pathutils.remove_empty_folders(base_path.joinpath('build/tests'))
     test_paths = pathutils.get_paths(test_path)

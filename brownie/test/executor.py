@@ -68,10 +68,11 @@ def run_test_modules(test_paths, only_update=True, check_coverage=False, save=Tr
         if not traceback_info:
             print()
             notify("SUCCESS", "All tests passed.")
-        return True
+            return True
+        return False
     except KeyboardInterrupt:
         print("\n\nTest execution has been terminated by KeyboardInterrupt.")
-        return False
+        return
     finally:
         if check_coverage:
             del ARGV['always_transact']
