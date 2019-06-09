@@ -14,12 +14,6 @@ COVERAGE_COLORS = [
     (1, "bright green")
 ]
 
-CPRINT_TYPES = {
-    'WARNING': 'error',
-    'ERROR': 'error',
-    'SUCCESS': 'success'
-}
-
 
 class TestPrinter:
 
@@ -92,11 +86,6 @@ class TestPrinter:
             color
         ))
         sys.stdout.flush()
-
-
-def cprint(type_, msg):
-    '''Prepends a message with a colored tag and outputs it to the console.'''
-    print("{0}{1}{2}: {3}".format(color(CPRINT_TYPES[type_]), type_, color, msg))
 
 
 def coverage_totals(coverage_eval):

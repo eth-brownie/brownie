@@ -5,9 +5,9 @@ import sys
 import time
 
 from . import pathutils, loader
-from .output import TestPrinter, cprint
+from .output import TestPrinter
 from brownie.network import history, rpc
-from brownie.cli.utils import color
+from brownie.cli.utils import color, notify
 from brownie._config import ARGV
 from brownie.test import coverage
 from brownie.exceptions import ExpectedFailing
@@ -30,9 +30,9 @@ def run_test_modules(test_paths, only_update=True, check_coverage=False, save=Tr
     test_data = _get_data(test_paths, only_update, check_coverage)
     if not test_data:
         if test_paths and only_update:
-            cprint("SUCCESS", "All test results are up to date.")
+            notify("SUCCESS", "All test results are up to date.")
         else:
-            cprint("WARNING", "No tests were found.")
+            notify("WARNING", "No tests were found.")
         return
     TestPrinter.set_grand_total(len(test_data))
     print("Running {} tests across {} module{}.".format(
@@ -65,7 +65,8 @@ def run_test_modules(test_paths, only_update=True, check_coverage=False, save=Tr
             )
 
         if not traceback_info:
-            cprint("SUCCESS", "All tests passed.")
+            print()
+            notify("SUCCESS", "All tests passed.")
         return True
     except KeyboardInterrupt:
         print("\n\nTest execution has been terminated by KeyboardInterrupt.")
@@ -75,7 +76,7 @@ def run_test_modules(test_paths, only_update=True, check_coverage=False, save=Tr
             del ARGV['always_transact']
         print("\nTotal runtime: {:.4f}s".format(time.time() - start_time))
         if traceback_info:
-            cprint("WARNING", "{} test{} failed".format(
+            notify("WARNING", "{} test{} failed".format(
                 len(traceback_info),
                 "s" if len(traceback_info) > 1 else ""
             ))

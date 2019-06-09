@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 import brownie
-from brownie.cli.utils import color
+from brownie.cli.utils import color, notify
 import brownie.project as project
 
 __version__ = "1.0.0b7"  # did you change this in docs/conf.py as well?
@@ -51,10 +51,9 @@ def main():
     if args['<command>'] not in ("init", "bake"):
         path = project.check_for_project('.')
         if not path:
-            sys.exit(
-                "ERROR: Brownie environment has not been initiated for this folder."
-                "\nType 'brownie init' to create the file structure."
-            )
+            notify("ERROR", "Brownie environment has not been initiated for this folder.")
+            print("Type 'brownie init' to create the file structure.")
+            return
         if args['<command>'] != "compile" and "--help" not in opts:
             for container in project.load(path):
                 setattr(brownie, container._name, container)

@@ -28,6 +28,12 @@ TB_BASE = (
     "{0[value]}{1[3]}{0[dull]}, in {0[callable]}{1[5]}{0}{2}"
 )
 
+NOTIFY_COLORS = {
+    'WARNING': 'error',
+    'ERROR': 'error',
+    'SUCCESS': 'success'
+}
+
 
 class Color:
 
@@ -150,3 +156,9 @@ def _check_dict(value):
 
 def _check_list(value):
     return type(value) in (list, tuple) or hasattr(value, "_print_as_list")
+
+
+def notify(type_, msg):
+    '''Prepends a message with a colored tag and outputs it to the console.'''
+    color = Color()
+    print("{0}{1}{2}: {3}".format(color(NOTIFY_COLORS[type_]), type_, color, msg))
