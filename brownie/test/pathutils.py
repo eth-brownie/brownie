@@ -113,10 +113,10 @@ def get_build_json(test_path):
             build_path.unlink()
     for path in list(build_path.parents)[::-1]:
         path.mkdir(exist_ok=True)
-    return {'tests': [], 'coverage': {}, 'sha1': {}}
+    return {'result': None, 'coverage': {}, 'sha1': {}}
 
 
-def save_build_json(module_path, coverage_eval, contract_names):
+def save_build_json(module_path, result, coverage_eval, contract_names):
     '''
     Saves the result data for a given test.
 
@@ -131,7 +131,7 @@ def save_build_json(module_path, coverage_eval, contract_names):
     build_path = get_build_paths([module_path])[0]
     build_files = [Path('build/contracts/{}.json'.format(i)) for i in contract_names]
     build_json = {
-        'tests': [],
+        'result': result,
         'coverage': coverage_eval,
         'sha1': dict((str(i), build.get(i.stem)['bytecodeSha1']) for i in build_files)
     }

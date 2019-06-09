@@ -60,6 +60,7 @@ def run_test_modules(test_paths, only_update=True, check_coverage=False, save=Tr
             contract_names |= set(x for i in contracts for x in i._build['dependencies'])
             pathutils.save_build_json(
                 test_path,
+                "passing" if not tb else "failing",
                 coverage_eval or old_coverage_eval,
                 contract_names
             )
@@ -88,13 +89,16 @@ def _get_data(test_paths, only_update, check_coverage):
     test_data = []
     for path in test_paths:
         build_json = pathutils.get_build_json(path)
-        if build_json['sha1'] and only_update:
+        if (
+            only_update and build_json['result'] == "passing" and
+            (build_json['coverage'] or not check_coverage)
+        ):
             continue
         fn_list = loader.get_methods(path, check_coverage)
         if not fn_list:
             continue
         # test path, build data, list of (fn, args)
-        test_data.append((path, build_json, fn_list))
+        test_data.append((path, build_json['coverage'], fn_list))
     return test_data
 
 
