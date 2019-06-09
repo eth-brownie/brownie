@@ -3,7 +3,7 @@
 from docopt import docopt
 
 from brownie.test.main import run_tests
-
+from brownie._config import ARGV
 
 __doc__ = """Usage: brownie test [<filename>] [options]
 
