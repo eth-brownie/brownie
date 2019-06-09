@@ -63,7 +63,10 @@ def modify_network_config(network=None):
         if not network:
             network = CONFIG['network_defaults']['name']
 
-        CONFIG['active_network'] = {**CONFIG['network_defaults'], **CONFIG['networks'][network]}
+        CONFIG['active_network'] = {
+            **CONFIG['network_defaults'],
+            **CONFIG['networks'][network]
+        }
         CONFIG['active_network']['name'] = network
 
         if ARGV['cli'] == "test":
@@ -92,18 +95,11 @@ def _recursive_update(original, new, base):
         )
 
 
-# move argv flags into FalseyDict
+# create argv object
 ARGV = _Singleton("Argv", (FalseyDict,), {})()
-for key in [i for i in sys.argv if i[:2] == "--"]:
-    idx = sys.argv.index(key)
-    if len(sys.argv) >= idx+2 and sys.argv[idx+1][:2] != "--":
-        ARGV[key[2:]] = sys.argv[idx+1]
-    else:
-        ARGV[key[2:]] = True
-
-# used to determine various behaviours in other modules
 if len(sys.argv) > 1:
     ARGV['cli'] = sys.argv[1]
+
 
 # load config
 CONFIG = _load_default_config()
