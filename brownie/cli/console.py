@@ -79,7 +79,10 @@ class Console:
                 if ast_type not in (ast.ClassDef, ast.For, ast.FunctionDef) or not new_cmd:
                     return cmd
             except SyntaxError as e:
-                if e.msg != "unexpected EOF while parsing":
+                if e.msg not in (
+                    "EOF while scanning triple-quoted string literal",
+                    "unexpected EOF while parsing"
+                ):
                     self._prompt = ""
                     print(color.format_tb(sys.exc_info(), start=1))
                     return
