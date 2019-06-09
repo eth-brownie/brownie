@@ -43,6 +43,8 @@ def run_test_modules(test_paths, only_update=True, check_coverage=False, save=Tr
 
     if not network.is_connected():
         network.connect()
+    if check_coverage:
+        ARGV['always_transact'] = True
 
     traceback_info = []
     start_time = time.time()
@@ -64,10 +66,13 @@ def run_test_modules(test_paths, only_update=True, check_coverage=False, save=Tr
 
         if not traceback_info:
             cprint("SUCCESS", "All tests passed.")
+        return True
     except KeyboardInterrupt:
         print("\n\nTest execution has been terminated by KeyboardInterrupt.")
-        sys.exit()
+        return False
     finally:
+        if check_coverage:
+            del ARGV['always_transact']
         print("\nTotal runtime: {:.4f}s".format(time.time() - start_time))
         if traceback_info:
             cprint("WARNING", "{} test{} failed".format(

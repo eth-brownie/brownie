@@ -24,7 +24,8 @@ def run_tests(base_path, test_path, only_update=True, check_coverage=False, gas_
     pathutils.check_build_hashes(base_path)
     pathutils.remove_empty_folders(base_path.joinpath('build/tests'))
     test_paths = pathutils.get_paths(test_path)
-    executor.run_test_modules(test_paths, only_update, check_coverage, True)
+    if not executor.run_test_modules(test_paths, only_update, check_coverage, True):
+        return
     if check_coverage:
         build_paths = pathutils.get_build_paths(test_paths)
         coverage_eval = coverage.merge_files(build_paths)

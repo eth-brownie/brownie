@@ -43,10 +43,8 @@ class _ContractBase:
         ) for i in self.abi if i['type'] == "function")
 
     def get_method(self, calldata):
-        return next(
-            (k for k, v in self.signatures.items() if v == calldata[:10].lower()),
-            None
-        )
+        sig = calldata[:10].lower()
+        return next((k for k, v in self.signatures.items() if v == sig), None)
 
 
 class ContractContainer(_ContractBase):
@@ -343,7 +341,7 @@ class ContractTx(_ContractMethod):
         signature: Bytes4 method signature.'''
 
     def __init__(self, fn, abi, name, owner):
-        if ARGV['cli'] == "test" and not CONFIG['test']['default_contract_owner']:
+        if CONFIG['active_network']['default_contract_owner'] is False:
             owner = None
         super().__init__(fn, abi, name, owner)
 
