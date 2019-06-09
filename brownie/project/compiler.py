@@ -397,7 +397,10 @@ def _get_recursive_branches(base_node):
     node = base_node if jump else base_node.condition
     depth = base_node.depth
 
-    filters = {'node_type': "BinaryOperation", 'type': "bool"}
+    filters = (
+        {'node_type': "BinaryOperation", 'type': "bool", 'operator': "||"},
+        {'node_type': "BinaryOperation", 'type': "bool", 'operator': "&&"}
+    )
     all_binaries = node.children(include_parents=True, include_self=True, filters=filters)
 
     # if no BinaryOperation nodes are found, this node is the branch
@@ -409,26 +412,16 @@ def _get_recursive_branches(base_node):
         node.jump = jump
         return set([node])
 
-    # look at BinaryOperation nodes to find all possible branches
+    # look at children of BinaryOperation nodes to find all possible branches
     binary_branches = set()
-    for node in all_binaries:
-        # if node has no BinaryOperation children, include it
-        if not node.children(include_self=False, filters=filters):
-            if _is_rightmost_operation(node, depth):
-                node.jump = jump
-            else:
-                node.jump = _check_left_operator(node, depth)
-            binary_branches.add(node)
+    for node in (x for i in all_binaries for x in i):
+        if node.children(include_self=True, filters=filters):
             continue
-        # otherwise, include the immediate children if they are not BinaryOperations
-        for node in (node.left, node.right):
-            if node.children(include_self=True, filters=filters):
-                continue
-            if _is_rightmost_operation(node, depth):
-                node.jump = jump
-            else:
-                node.jump = _check_left_operator(node, depth)
-            binary_branches.add(node)
+        if _is_rightmost_operation(node, depth):
+            node.jump = jump
+        else:
+            node.jump = _check_left_operator(node, depth)
+        binary_branches.add(node)
 
     return binary_branches
 
