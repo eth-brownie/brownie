@@ -17,5 +17,5 @@ def test_get_methods():
     assert "balance" in fn_names, "skipped method was not included"
     assert not data[-1][1]['pending']
     assert 'test_param' in data[-1][1]
-    data = loader.get_methods(path, coverage=True)
+    data = loader.get_methods(path, check_coverage=True)
     assert data[-1][1]['pending'], "pending was not true with coverage flag"

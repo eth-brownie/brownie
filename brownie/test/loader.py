@@ -15,12 +15,12 @@ def import_from_path(path):
     return importlib.import_module(import_str)
 
 
-def get_methods(path, coverage=False):
+def get_methods(path, check_coverage=False):
     '''Parses a module and returns information about the methods it contains.
 
     Args:
         path: path to the module
-        coverage: is coverage analysis enabled?
+        check_coverage: is coverage analysis enabled?
 
     Returns:
         List of tuples as [(method, FalseyDict({'arg': value}), ) .. ] '''
@@ -42,24 +42,23 @@ def get_methods(path, coverage=False):
     setup_fn = next((i for i in fn_nodes if i.name == "setup"), False)
     if setup_fn:
         # apply default arguments across all methods in the module
-        default_args = _get_args(setup_fn, {}, coverage)
+        default_args = _get_args(setup_fn, {}, check_coverage)
         if 'skip' in default_args and default_args['skip']:
             return []
         fn_nodes.remove(setup_fn)
         fn_nodes.insert(0, setup_fn)
     module = import_from_path(path)
-    print(path)
-    return [(getattr(module, i.name), _get_args(i, default_args, coverage)) for i in fn_nodes]
+    return [(getattr(module, i.name), _get_args(i, default_args, check_coverage)) for i in fn_nodes]
 
 
-def _get_args(node, defaults={}, coverage=False):
+def _get_args(node, defaults={}, check_coverage=False):
     args = dict((
         node.args.args[i].arg,
-        _coverage_to_bool(node.args.defaults[i], coverage)
+        _coverage_to_bool(node.args.defaults[i], check_coverage)
     ) for i in range(len(list(node.args.args))))
     return FalseyDict({**defaults, **args})
 
 
-def _coverage_to_bool(node, coverage):
+def _coverage_to_bool(node, check_coverage):
     value = getattr(node, node._fields[0])
-    return value if value != "coverage" else coverage
+    return value if value != "coverage" else check_coverage

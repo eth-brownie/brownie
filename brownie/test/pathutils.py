@@ -69,20 +69,6 @@ def get_ast_hash(path):
     return sha1(dump.encode()).hexdigest()
 
 
-def get_paths(path_str=None, default_folder="tests"):
-    '''Returns paths to python modules.
-
-    Args:
-        path_str: base path to look for modules in
-        default_folder: default folder path to check if path_str is not found
-
-    Returns: list of Path objects'''
-    path = _get_path(path_str, default_folder)
-    if not path.is_dir():
-        return [path]
-    return [i for i in path.absolute().glob('**/[!_]*.py') if "/_" not in str(i)]
-
-
 def get_path(path_str, default_folder="scripts"):
     '''Returns path to a python module.
 
@@ -97,6 +83,20 @@ def get_path(path_str, default_folder="scripts"):
     if not path.is_file():
         raise FileNotFoundError("{} is not a file".format(path_str))
     return path
+
+
+def get_paths(path_str=None, default_folder="tests"):
+    '''Returns paths to python modules.
+
+    Args:
+        path_str: base path to look for modules in
+        default_folder: default folder path to check if path_str is not found
+
+    Returns: list of Path objects'''
+    path = _get_path(path_str, default_folder)
+    if not path.is_dir():
+        return [path]
+    return [i for i in path.absolute().glob('**/[!_]*.py') if "/_" not in str(i)]
 
 
 def _get_path(path_str, default_folder):
@@ -147,7 +147,7 @@ def save_build_json(module_path, result, coverage_eval, contract_names):
 
     Args:
         module_path: path of the test module
-        build_path: path to save the build data at
+        result: result of test execution (passing / failing)
         coverage_eval: coverage evaluation as a dict
         contract_names: list of contracts called by the test
 

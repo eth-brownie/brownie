@@ -874,6 +874,8 @@ TxHistory
 TxHistory Attributes
 --------------------
 
+.. _api-network-history-gas-profile:
+
 .. py:attribute:: TxHistory.gas_profile
 
     A dict that tracks gas cost statistics for contract function calls over time.
