@@ -196,13 +196,13 @@ class TransactionReceipt:
         return hash(self.txid)
 
     def __getattr__(self, attr):
-        if attr not in (
+        if attr not in {
             'events',
             'modified_state',
             'return_value',
             'revert_msg',
             'trace'
-        ):
+        }:
             raise AttributeError("'TransactionReceipt' object has no attribute '{}'".format(attr))
         if self.status == -1:
             return None
@@ -341,7 +341,7 @@ class TransactionReceipt:
             if trace[i]['depth'] > trace[i-1]['depth']:
                 address = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
                 contract = _contracts.find(address)
-                stack_idx = -4 if trace[i-1]['op'] in ('CALL', 'CALLCODE') else -3
+                stack_idx = -4 if trace[i-1]['op'] in {'CALL', 'CALLCODE'} else -3
                 memory_idx = int(trace[i-1]['stack'][stack_idx], 16) * 2
                 sig = "0x" + "".join(trace[i-1]['memory'])[memory_idx:memory_idx+8]
                 pc = contract._build['pcMap'][trace[i]['pc']]
@@ -384,15 +384,16 @@ class TransactionReceipt:
                 last['jumpDepth'] -= 1
 
     def call_trace(self):
-        '''Displays the sequence of contracts and methods that were called during
+        '''Displays the complete sequence of contracts and methods called during
         the transaction, and the range of trace step indexes for each method.
 
         Lines highlighed in red ended with a revert.'''
         trace = self.trace
         if not trace:
-            if self.contract_address:
-                raise NotImplementedError("Call trace is not available for contract deployment.")
-            return ""
+            if not self.contract_address:
+                return ""
+            raise NotImplementedError("Call trace is not available for deployment transactions.")
+        print("Call trace for '{0[value]}{1}{0}':".format(color, self.txid))
         indent = {0: 0}
         _step_print(trace[0], trace[-1], 0, 0, len(trace))
         trace_index = [(0, 0, 0)]+[
@@ -412,12 +413,48 @@ class TransactionReceipt:
                 )
                 _step_print(trace[idx], trace[end-1], depth+jump_depth+indent[depth], idx, end)
 
+    def traceback(self):
+        '''Returns an error traceback for the transaction.'''
+        if self.status == 1:
+            return ""
+        trace = self.trace
+        if not trace:
+            if not self.contract_address:
+                return ""
+            raise NotImplementedError("Traceback is not available for deployment transactions.")
+        try:
+            trace_range = range(len(trace)-1, -1, -1)
+            idx = next(i for i in trace_range if trace[i]['op'] in {"REVERT", "INVALID"})
+        except StopIteration:
+            return ""
+        result = []
+        while not trace[idx]['source']:
+            idx = next(trace_range)
+        result.append(idx)
+        depth, jump_depth = trace[idx]['depth'], trace[idx]['jumpDepth']
+
+        while True:
+            try:
+                idx = next(
+                    i for i in trace_range if trace[i]['depth'] < depth or
+                    (trace[i]['depth'] == depth and trace[i]['jumpDepth'] < jump_depth)
+                )
+                result.append(idx)
+                depth, jump_depth = trace[idx]['depth'], trace[idx]['jumpDepth']
+            except StopIteration:
+                break
+        return (
+            "Traceback for '{0[value]}{1}{0}':\n".format(color, self.txid) +
+            "\n".join(self.source(i, 0) for i in result[::-1])
+        )
+
     def error(self, pad=3):
-        '''Displays the source code that caused the transaction to revert.
+        '''Returns the source code that caused the transaction to revert.
 
         Args:
             pad: Number of unrelated lines of code to include before and after
-        '''
+
+        Returns: source code string'''
         if self.status == 1:
             return ""
         if self._revert_pc:
@@ -425,22 +462,15 @@ class TransactionReceipt:
             if error:
                 return _format_source(error, self._revert_pc, -1)
             self._revert_pc = None
-        try:
-            trace = next(i for i in self.trace[::-1] if i['op'] in ("REVERT", "INVALID"))
-            idx = self.trace.index(trace)
-        except StopIteration:
-            return ""
-        while True:
-            if idx < 0:
-                return ""
-            source = self.trace[idx]['source']
-            if not source:
-                idx -= 1
-                continue
-            if sources.get_fn(source['filename'], source['offset']) != self.trace[idx]['fn']:
-                idx -= 1
-                continue
-            return self.source(idx)
+        trace = self.trace
+        trace_range = range(len(trace)-1, -1, -1)
+        idx = next((i for i in trace_range if trace[i]['op'] in {"REVERT", "INVALID"}), -1)
+        while idx >= 0:
+            source = trace[idx]['source']
+            if source and sources.get_fn(source['filename'], source['offset']) == trace[idx]['fn']:
+                return self.source(idx)
+            idx -= 1
+        return ""
 
     def source(self, idx, pad=3):
         '''Displays the associated source code for a given stack trace step.
@@ -448,7 +478,8 @@ class TransactionReceipt:
         Args:
             idx: Stack trace step index
             pad: Number of unrelated lines of code to include before and after
-        '''
+
+        Returns: source code string'''
         source = self.trace[idx]['source']
         if not source:
             return ""
@@ -458,8 +489,9 @@ class TransactionReceipt:
 
 def _format_source(source, pc, idx):
     return (
-        'Source code for trace step {0[value]}{1}{0} (pc {0[value]}{2}{0}):\n  File ' +
-        '{0[string]}"{3[1]}"{0}, line {0[value]}{3[2]}{0}, in {0[callable]}{3[3]}{0}:{3[0]}'
+        '{0[dull]}Trace step {0[value]}{1}{0[dull]}, program counter {0[value]}{2}{0[dull]}:'
+        '\n  File {0[string]}"{3[1]}"{0[dull]}, line {0[value]}{3[2]}{0[dull]}, in '
+        '{0[callable]}{3[3]}{0[dull]}:{3[0]}'
     ).format(color, idx, pc, source)
 
 
@@ -471,11 +503,11 @@ def _step_print(step, last_step, indent, start, stop):
     print_str = "  "*indent + color('dull')
     if indent:
         print_str += "\u221f "
-    if last_step['op'] in ("REVERT", "INVALID") and _step_compare(step, last_step):
+    if last_step['op'] in {"REVERT", "INVALID"} and _step_compare(step, last_step):
         contract_color = color("error")
     else:
         contract_color = color("contract" if not step['jumpDepth'] else "contract_method")
-    print_str += "{1}{2} {0[dull]}{3}:{4}".format(
+    print_str += "{1}{2} {0[dull]}{3}:{4}{0}".format(
         color, contract_color, step['fn'], start, stop
     )
     if not step['jumpDepth']:
