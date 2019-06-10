@@ -3,7 +3,6 @@
 import threading
 import time
 
-import eth_abi
 from hexbytes import HexBytes
 
 from .web3 import Web3
@@ -12,8 +11,7 @@ from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.network.history import TxHistory, _ContractHistory
 from brownie.network.event import decode_logs, decode_trace
 from brownie.project import build, sources
-from brownie.types import KwargTuple
-from brownie.types.convert import format_output
+from brownie.types.convert import to_string
 from brownie._config import ARGV, CONFIG
 
 
@@ -108,11 +106,11 @@ class TransactionReceipt:
             if ARGV['cli'] == "console":
                 return
             if ARGV['coverage']:
-                self.trace
+                self._evaluate_trace()
             if not self.status:
                 if revert is None:
                     # no revert message and unable to check dev string - have to get trace
-                    self.trace
+                    self._evaluate_trace()
                 raise VirtualMachineError({
                     "message": "revert "+(self.revert_msg or ""),
                     "source": self.error(1)
@@ -206,46 +204,17 @@ class TransactionReceipt:
             raise AttributeError("'TransactionReceipt' object has no attribute '{}'".format(attr))
         if self.status == -1:
             return None
-        if self._trace is None:
-            self._get_trace()
         if attr == "trace":
             self._evaluate_trace()
+        elif self._trace is None:
+            self._get_trace()
         return self.__dict__[attr]
-
-    def info(self):
-        '''Displays verbose information about the transaction, including
-        decoded event logs.'''
-        if self.contract_address:
-            line = "New Contract Address{0}: {0[value]}{1}".format(color, self.contract_address)
-        else:
-            line = "To{0}: {0[value]}{1.receiver}{0}\n{0[key]}Value{0}: {0[value]}{1.value}".format(
-                color, self
-            )
-            if self.input != "0x00":
-                line += "\n{0[key]}Function{0}: {0[value]}{1}".format(color, self.fn_name)
-        print(TX_INFO.format(
-            color,
-            self,
-            self.sender if type(self.sender) is str else self.sender.address,
-            line,
-            "" if self.status else " ({0[error]}{1}{0})".format(
-                color, self.revert_msg or "reverted"
-            ),
-            self.gas_used / self.gas_limit
-        ))
-        if self.events:
-            print("   Events In This Transaction\n   --------------------------")
-            for event in self.events:
-                print("   "+color('bright yellow')+event.name+color())
-                for k, v in event.items():
-                    print("      {0[key]}{1}{0}: {0[value]}{2}{0}".format(
-                        color, k, v
-                    ))
-            print()
 
     def _get_trace(self):
         '''Retrieves the stack trace via debug_traceTransaction, and finds the
         return value, revert message and event logs in the trace.'''
+        if self._trace is not None:
+            return
         self.return_value = None
         if 'revert_msg' not in self.__dict__:
             self.revert_msg = None
@@ -254,10 +223,7 @@ class TransactionReceipt:
             self.modified_state = bool(self.contract_address)
             self.trace = []
             return
-        trace = web3.providers[0].make_request(
-            'debug_traceTransaction',
-            [self.txid, {}]
-        )
+        trace = web3.providers[0].make_request('debug_traceTransaction', [self.txid, {}])
         if 'error' in trace:
             self.modified_state = None
             raise RPCRequestError(trace['error']['message'])
@@ -265,24 +231,15 @@ class TransactionReceipt:
         if self.status:
             # get return value
             self.modified_state = bool(next((i for i in trace if i['op'] == "SSTORE"), False))
-            log = trace[-1]
-            if log['op'] != "RETURN":
+            step = trace[-1]
+            if step['op'] != "RETURN":
                 return
             contract = self.contract_address or self.receiver
             if type(contract) is str:
                 return
-            abi = getattr(contract, self.fn_name.split('.')[-1]).abi
-            offset = int(log['stack'][-1], 16) * 2
-            length = int(log['stack'][-2], 16) * 2
-            data = HexBytes("".join(log['memory'])[offset:offset+length])
-            return_value = eth_abi.decode_abi([i['type'] for i in abi['outputs']], data)
-            if not return_value:
-                return
-            return_value = format_output(abi, return_value)
-            if len(return_value) == 1:
-                self.return_value = return_value[0]
-            else:
-                self.return_value = KwargTuple(return_value, abi)
+            data = _get_memory(step, -1)
+            fn = getattr(contract, self.fn_name.split('.')[-1])
+            self.return_value = fn.decode_abi(data)
             return
         # get revert message
         self.modified_state = False
@@ -291,17 +248,15 @@ class TransactionReceipt:
         if self.revert_msg is not None:
             return
         if trace[-1]['op'] == "REVERT" and int(trace[-1]['stack'][-2], 16):
-            offset = int(trace[-1]['stack'][-1], 16) * 2
-            length = int(trace[-1]['stack'][-2], 16) * 2
-            data = HexBytes("".join(trace[-1]['memory'])[offset+8:offset+length])
-            self.revert_msg = eth_abi.decode_abi(["string"], data)[0].decode()
+            data = _get_memory(trace[-1], -1)[8:]
+            self.revert_msg = to_string(data[8:])
             return
         self.revert_msg = build.get_dev_revert(trace[-1]['pc'])
         if self.revert_msg is None:
             self._evaluate_trace()
             trace = self.trace[-1]
             try:
-                self.revert_msg = build[trace['contractName']]['pcMap'][trace['pc']]['dev']
+                self.revert_msg = build.get(trace['contractName'])['pcMap'][trace['pc']]['dev']
             except KeyError:
                 self.revert_msg = ""
 
@@ -314,6 +269,10 @@ class TransactionReceipt:
         source: Start and end offset associated source code.
         jumpDepth: Number of jumps made since entering this contract. The
                    initial value is 0.'''
+        if 'trace' in self.__dict__:
+            return
+        if self._trace is None:
+            self._get_trace()
         self.trace = trace = self._trace
         if not trace or 'fn' in trace[0]:
             return
@@ -359,7 +318,8 @@ class TransactionReceipt:
                 'address': last['address'],
                 'contractName': contract._name,
                 'fn': last['fn'][-1],
-                'jumpDepth': last['jumpDepth']
+                'jumpDepth': last['jumpDepth'],
+                'source': False
             })
             pc = contract._build['pcMap'][trace[i]['pc']]
             if 'path' in pc:
@@ -367,8 +327,6 @@ class TransactionReceipt:
                     'filename': pc['path'],
                     'offset': pc['offset']
                 }
-            else:
-                trace[i]['source'] = False
             if 'jump' not in pc or 'fn' not in pc:
                 continue
             # jump 'i' is moving into an internal function
@@ -383,6 +341,37 @@ class TransactionReceipt:
                 del last['fn'][-1]
                 last['jumpDepth'] -= 1
 
+    def info(self):
+        '''Displays verbose information about the transaction, including
+        decoded event logs.'''
+        if self.contract_address:
+            line = "New Contract Address{0}: {0[value]}{1}".format(color, self.contract_address)
+        else:
+            line = "To{0}: {0[value]}{1.receiver}{0}\n{0[key]}Value{0}: {0[value]}{1.value}".format(
+                color, self
+            )
+            if self.input != "0x00":
+                line += "\n{0[key]}Function{0}: {0[value]}{1}".format(color, self.fn_name)
+        print(TX_INFO.format(
+            color,
+            self,
+            self.sender if type(self.sender) is str else self.sender.address,
+            line,
+            "" if self.status else " ({0[error]}{1}{0})".format(
+                color, self.revert_msg or "reverted"
+            ),
+            self.gas_used / self.gas_limit
+        ))
+        if self.events:
+            print("   Events In This Transaction\n   --------------------------")
+            for event in self.events:
+                print("   "+color('bright yellow')+event.name+color())
+                for k, v in event.items():
+                    print("      {0[key]}{1}{0}: {0[value]}{2}{0}".format(
+                        color, k, v
+                    ))
+            print()
+
     def call_trace(self):
         '''Displays the complete sequence of contracts and methods called during
         the transaction, and the range of trace step indexes for each method.
@@ -393,9 +382,9 @@ class TransactionReceipt:
             if not self.contract_address:
                 return ""
             raise NotImplementedError("Call trace is not available for deployment transactions.")
-        print("Call trace for '{0[value]}{1}{0}':".format(color, self.txid))
+        result = "Call trace for '{0[value]}{1}{0}':\n".format(color, self.txid)
         indent = {0: 0}
-        _step_print(trace[0], trace[-1], 0, 0, len(trace))
+        result += _step_print(trace[0], trace[-1], 0, 0, len(trace))
         trace_index = [(0, 0, 0)]+[
             (i, trace[i]['depth'], trace[i]['jumpDepth'])
             for i in range(1, len(trace)) if not _step_compare(trace[i], trace[i-1])
@@ -405,13 +394,14 @@ class TransactionReceipt:
             if depth > last[1]:
                 indent[depth] = trace[idx-1]['jumpDepth'] + indent[depth-1]
                 end = next((x[0] for x in trace_index[i+1:] if x[1] < depth), len(trace))
-                _step_print(trace[idx], trace[end-1], depth+indent[depth], idx, end)
+                result += _step_print(trace[idx], trace[end-1], depth+indent[depth], idx, end)
             elif depth == last[1] and jump_depth > last[2]:
                 end = next(
                     (x[0] for x in trace_index[i+1:] if x[1] == depth and x[2] < jump_depth),
                     len(trace)
                 )
-                _step_print(trace[idx], trace[end-1], depth+jump_depth+indent[depth], idx, end)
+                _depth = depth+jump_depth+indent[depth]
+                result += _step_print(trace[idx], trace[end-1], _depth, idx, end)
 
     def traceback(self):
         '''Returns an error traceback for the transaction.'''
@@ -427,10 +417,8 @@ class TransactionReceipt:
             idx = next(i for i in trace_range if trace[i]['op'] in {"REVERT", "INVALID"})
         except StopIteration:
             return ""
-        result = []
-        while not trace[idx]['source']:
-            idx = next(trace_range)
-        result.append(idx)
+
+        result = [next(i for i in trace_range if trace[i]['source'])]
         depth, jump_depth = trace[idx]['depth'], trace[idx]['jumpDepth']
 
         while True:
@@ -443,6 +431,7 @@ class TransactionReceipt:
                 depth, jump_depth = trace[idx]['depth'], trace[idx]['jumpDepth']
             except StopIteration:
                 break
+
         return (
             "Traceback for '{0[value]}{1}{0}':\n".format(color, self.txid) +
             "\n".join(self.source(i, 0) for i in result[::-1])
@@ -512,4 +501,10 @@ def _step_print(step, last_step, indent, start, stop):
     )
     if not step['jumpDepth']:
         print_str += "  {0[dull]}({0}{1}{0[dull]}){0}".format(color, step['address'])
-    print(print_str)
+    return print_str
+
+
+def _get_memory(step, idx):
+    offset = int(step['stack'][idx], 16) * 2
+    length = int(step['stack'][idx-1], 16) * 2
+    return HexBytes("".join(step['memory'])[offset:offset+length]).hex()
