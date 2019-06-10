@@ -3,6 +3,7 @@
 from hashlib import sha1
 from pathlib import Path
 import re
+import textwrap
 
 from brownie.cli.utils import color
 from brownie.exceptions import ContractExists
@@ -207,12 +208,14 @@ def get_highlighted_source(path, offset, pad=3):
     pad_start = newlines[max(pad_start-(pad+1), 0)]
     pad_stop = newlines[min(pad_stop+pad, len(newlines)-1)]
 
-    return "{0[dull]}{1}{0}{2}{0[dull]}{3}{0}".format(
+    final = "{1}{0}{2}{0[dull]}{3}{0}".format(
         color,
         source[pad_start:offset[0]],
         source[offset[0]:offset[1]],
         source[offset[1]:pad_stop]
-    ), path, ln, get_fn(path, offset)
+    )
+    final = color('dull')+textwrap.indent(textwrap.dedent(final), "    ")
+    return final, path, ln, get_fn(path, offset)
 
 
 def is_inside_offset(inner, outer):
