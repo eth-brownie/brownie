@@ -69,24 +69,48 @@ def get_ast_hash(path):
     return sha1(dump.encode()).hexdigest()
 
 
-def get_paths(path_str=None):
-    '''Returns paths to test modules.
+def get_paths(path_str=None, default_folder="tests"):
+    '''Returns paths to python modules.
 
     Args:
         path_str: base path to look for modules in
+        default_folder: default folder path to check if path_str is not found
 
     Returns: list of Path objects'''
-    path = Path(path_str or "tests")
-    if not path.exists() and not path.absolute():
-        if not path_str.startswith('tests/'):
-            path = Path('tests').joinpath(path_str)
+    path = _get_path(path_str, default_folder)
+    if not path.is_dir():
+        return [path]
+    return [i for i in path.absolute().glob('**/[!_]*.py') if "/_" not in str(i)]
+
+
+def get_path(path_str, default_folder="scripts"):
+    '''Returns path to a python module.
+
+    Args:
+        path_str: module path
+        default_folder: default folder path to check if path_str is not found
+
+    Returns: Path object'''
+    if not path_str.endswith('.py'):
+        path_str += ".py"
+    path = _get_path(path_str, default_folder)
+    if not path.is_file():
+        raise FileNotFoundError("{} is not a file".format(path_str))
+    return path
+
+
+def _get_path(path_str, default_folder):
+    path = Path(path_str or default_folder)
+    if not path.exists() and not path.is_absolute():
+        if not path_str.startswith(default_folder+'/'):
+            path = Path(default_folder).joinpath(path_str)
         if not path.exists() and sys.path[0]:
             path = Path(sys.path[0]).joinpath(path)
     if not path.exists():
         raise FileNotFoundError("Cannot find {}".format(path_str))
-    if not path.is_dir():
-        return [path]
-    return [i for i in path.absolute().glob('**/[!_]*.py') if "/_" not in str(i)]
+    if path.is_file() and path.suffix != ".py":
+        raise TypeError("'{}' is not a python script".format(path_str))
+    return path
 
 
 def get_build_paths(test_paths):

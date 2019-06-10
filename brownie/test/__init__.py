@@ -1,3 +1,6 @@
 #!/usr/bin/python3
 
-from .main import run_tests  # noqa F401
+from .main import (  # noqa F401
+    run_tests,
+    run_script
+)

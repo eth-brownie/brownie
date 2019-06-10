@@ -48,6 +48,7 @@ def get_methods(path, coverage=False):
         fn_nodes.remove(setup_fn)
         fn_nodes.insert(0, setup_fn)
     module = import_from_path(path)
+    print(path)
     return [(getattr(module, i.name), _get_args(i, default_args, coverage)) for i in fn_nodes]
 
 

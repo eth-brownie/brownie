@@ -18,5 +18,11 @@ def test_run_test_modules_skip_only_coverage():
 
 
 def test_main_run_tests():
-    test.run_tests('tests/brownie-test-project')
-    test.run_tests('tests/brownie-test-project', check_coverage=True, gas_profile=True)
+    test.run_tests('tests/brownie-test-project/tests')
+    test.run_tests('tests/brownie-test-project/tests', check_coverage=True, gas_profile=True)
+
+
+def test_main_run_script():
+    test.run_script('tests/brownie-test-project/scripts/token.py')
+    test.run_script('token', gas_profile=True)
+    assert test.run_script('token', 'donothing', args=(2,)) == 2
