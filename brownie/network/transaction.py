@@ -66,25 +66,23 @@ class TransactionReceipt:
         if CONFIG['logging']['tx'] and not silent:
             print("\n{0[key]}Transaction sent{0}: {0[value]}{1}{0}".format(color, txid))
         history._add_tx(self)
-        self.__dict__.update({
-            '_trace': None,
-            '_revert_pc': None,
-            'block_number': None,
-            'contract_address': None,
-            'fn_name': name,
-            'gas_limit': None,
-            'gas_price': None,
-            'gas_used': None,
-            'input': None,
-            'logs': [],
-            'nonce': None,
-            'receiver': None,
-            'sender': sender,
-            'status': -1,
-            'txid': txid,
-            'txindex': None,
-            'value': None
-        })
+        self._trace = None
+        self._revert_pc = None
+        self.block_number = None
+        self.contract_address = None
+        self.fn_name = name
+        self.gas_limit = None
+        self.gas_price = None
+        self.gas_used = None
+        self.input = None
+        self.logs = []
+        self.nonce = None
+        self.receiver = None
+        self.sender = sender
+        self.status = -1
+        self.txid = txid
+        self.txindex = None
+        self.value = None
         if revert:
             self._revert_pc = revert[1]
             if revert[0]:
@@ -127,14 +125,12 @@ class TransactionReceipt:
             time.sleep(0.5)
         if not self.sender:
             self.sender = tx['from']
-        self.__dict__.update({
-            'receiver': tx['to'],
-            'value': tx['value'],
-            'gas_price': tx['gasPrice'],
-            'gas_limit': tx['gas'],
-            'input': tx['input'],
-            'nonce': tx['nonce'],
-        })
+        self.receiver = tx['to']
+        self.value = tx['value']
+        self.gas_price = tx['gasPrice']
+        self.gas_limit = tx['gas']
+        self.input = tx['input']
+        self.nonce = tx['nonce']
         if tx['to'] and _contracts.find(tx['to']) is not None:
             self.receiver = _contracts.find(tx['to'])
             if not self.fn_name:
@@ -145,14 +141,15 @@ class TransactionReceipt:
         if not tx['blockNumber'] and CONFIG['logging']['tx'] and not silent:
             print("Waiting for confirmation...")
         receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
-        self.__dict__.update({
-            'block_number': receipt['blockNumber'],
-            'txindex': receipt['transactionIndex'],
-            'gas_used': receipt['gasUsed'],
-            'contract_address': receipt['contractAddress'],
-            'logs': receipt['logs'],
-            'status': receipt['status']
-        })
+        self._after_confirm(receipt, silent, callback)
+
+    def _after_confirm(self, receipt, silent, callback):
+        self.block_number = receipt['blockNumber']
+        self.txindex = receipt['transactionIndex']
+        self.gas_used = receipt['gasUsed']
+        self.contract_address = receipt['contractAddress']
+        self.logs = receipt['logs']
+        self.status = receipt['status']
         if self.status:
             self.events = decode_logs(receipt['logs'])
         if self.fn_name:
