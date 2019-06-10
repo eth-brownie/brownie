@@ -369,12 +369,15 @@ class TransactionReceipt:
                 }
             else:
                 trace[i]['source'] = False
-            # jump 'i' is moving into an internal function
-            if 'jump' not in pc or 'fn' not in pc or pc['fn'] == last['fn'][-1]:
+            if 'jump' not in pc or 'fn' not in pc:
                 continue
+            # jump 'i' is moving into an internal function
             if pc['jump'] == 'i':
-                last['fn'].append(pc['fn'])
-                last['jumpDepth'] += 1
+                try:
+                    last['fn'].append(contract._build['pcMap'][trace[i+1]['pc']]['fn'])
+                    last['jumpDepth'] += 1
+                except KeyError:
+                    continue
             # jump 'o' is coming out of an internal function
             elif pc['jump'] == "o" and last['jumpDepth'] > 1:
                 del last['fn'][-1]
