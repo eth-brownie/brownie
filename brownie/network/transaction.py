@@ -313,7 +313,7 @@ class TransactionReceipt:
         fn: The name of the function.
         source: Start and end offset associated source code.
         jumpDepth: Number of jumps made since entering this contract. The
-                   initial value is 1.'''
+                   initial value is 0.'''
         self.trace = trace = self._trace
         if not trace or 'fn' in trace[0]:
             return
@@ -324,13 +324,13 @@ class TransactionReceipt:
             'address': contract.address,
             'contract': contract,
             'fn': [fn],
-            'jumpDepth': 1
+            'jumpDepth': 0
         }}
         trace[0].update({
             'address': last_map[0]['address'],
             'contractName': last_map[0]['contract']._name,
             'fn': last_map[0]['fn'][-1],
-            'jumpDepth': 1,
+            'jumpDepth': 0,
             'source': {
                 'filename': pc['path'],
                 'offset': pc['offset']
@@ -351,7 +351,7 @@ class TransactionReceipt:
                     'address': address,
                     'contract': contract,
                     'fn': [fn],
-                    'jumpDepth': 1
+                    'jumpDepth': 0
                     }
             last = last_map[trace[i]['depth']]
             contract = last['contract']
@@ -379,29 +379,38 @@ class TransactionReceipt:
                 except KeyError:
                     continue
             # jump 'o' is coming out of an internal function
-            elif pc['jump'] == "o" and last['jumpDepth'] > 1:
+            elif pc['jump'] == "o" and last['jumpDepth'] > 0:
                 del last['fn'][-1]
                 last['jumpDepth'] -= 1
 
     def call_trace(self):
-        '''Displays the sequence of contracts and functions called while
-        executing this transaction, and the structLog index where each call
-        or jump occured. Any functions that terminated with REVERT or INVALID
-        opcodes are highlighted in red.'''
+        '''Displays the sequence of contracts and methods that were called during
+        the transaction, and the range of trace step indexes for each method.
+
+        Lines highlighed in red ended with a revert.'''
         trace = self.trace
         if not trace:
-            return
-        sep = max(i['jumpDepth'] for i in trace)
-        idx = 0
-        for i in range(1, len(trace)):
-            if (
-                trace[i]['depth'] == trace[i-1]['depth'] and
-                trace[i]['jumpDepth'] == trace[i-1]['jumpDepth']
-            ):
-                continue
-            _print_path(trace[i-1], idx, sep)
-            idx = i
-        _print_path(trace[-1], idx, sep)
+            if self.contract_address:
+                raise NotImplementedError("Call trace is not available for contract deployment.")
+            return ""
+        indent = {0: 0}
+        _step_print(trace[0], trace[-1], 0, 0, len(trace))
+        trace_index = [(0, 0, 0)]+[
+            (i, trace[i]['depth'], trace[i]['jumpDepth'])
+            for i in range(1, len(trace)) if not _step_compare(trace[i], trace[i-1])
+        ]
+        for i, (idx, depth, jump_depth) in enumerate(trace_index[1:], start=1):
+            last = trace_index[i-1]
+            if depth > last[1]:
+                indent[depth] = trace[idx-1]['jumpDepth'] + indent[depth-1]
+                end = next((x[0] for x in trace_index[i+1:] if x[1] < depth), len(trace))
+                _step_print(trace[idx], trace[end-1], depth+indent[depth], idx, end)
+            elif depth == last[1] and jump_depth > last[2]:
+                end = next(
+                    (x[0] for x in trace_index[i+1:] if x[1] == depth and x[2] < jump_depth),
+                    len(trace)
+                )
+                _step_print(trace[idx], trace[end-1], depth+jump_depth+indent[depth], idx, end)
 
     def error(self, pad=3):
         '''Displays the source code that caused the transaction to revert.
@@ -454,11 +463,21 @@ def _format_source(source, pc, idx):
     ).format(color, idx, pc, source)
 
 
-def _print_path(trace, idx, sep):
-    col = "error" if trace['op'] in ("REVERT", "INVALID") else "pending"
-    name = "{}{}".format(trace['fn'], color(col))
-    print(
-        ("  "*sep*trace['depth']) + ("  "*(trace['jumpDepth']-1)) +
-        "{}{} {}{} ({})".format(color(col), name, color('dull'), idx, trace['address']) +
-        color()
+def _step_compare(a, b):
+    return a['depth'] == b['depth'] and a['jumpDepth'] == b['jumpDepth']
+
+
+def _step_print(step, last_step, indent, start, stop):
+    print_str = "  "*indent + color('dull')
+    if indent:
+        print_str += "\u221f "
+    if last_step['op'] in ("REVERT", "INVALID") and _step_compare(step, last_step):
+        contract_color = color("error")
+    else:
+        contract_color = color("contract" if not step['jumpDepth'] else "contract_method")
+    print_str += "{1}{2} {0[dull]}{3}:{4}".format(
+        color, contract_color, step['fn'], start, stop
     )
+    if not step['jumpDepth']:
+        print_str += "  {0[dull]}({0}{1}{0[dull]}){0}".format(color, step['address'])
+    print(print_str)
