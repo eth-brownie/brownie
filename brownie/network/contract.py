@@ -4,6 +4,7 @@ import re
 
 import eth_abi
 from eth_hash.auto import keccak
+from hexbytes import HexBytes
 
 from brownie.cli.utils import color
 from .event import get_topics
@@ -288,11 +289,7 @@ class _ContractMethod:
             data = web3.eth.call(dict((k, v) for k, v in tx.items() if v))
         except ValueError as e:
             raise VirtualMachineError(e)
-        result = eth_abi.decode_abi([i['type'] for i in self.abi['outputs']], data)
-        result = format_output(self.abi, result)
-        if len(result) == 1:
-            return result[0]
-        return KwargTuple(result, self.abi)
+        return self.decode_abi(data)
 
     def transact(self, *args, _rpc_clear=True):
         '''Broadcasts a transaction that calls this contract method.
@@ -330,6 +327,19 @@ class _ContractMethod:
         data = format_input(self.abi, args)
         types = [i['type'] for i in self.abi['inputs']]
         return self.signature + eth_abi.encode_abi(types, data).hex()
+
+    def decode_abi(self, hexstr):
+        '''Decodes hexstring data returned by this method.
+
+        Args:
+            hexstr: Hexstring of returned call data
+
+        Returns: Decoded values.'''
+        result = eth_abi.decode_abi([i['type'] for i in self.abi['outputs']], HexBytes(hexstr))
+        result = format_output(self.abi, result)
+        if len(result) == 1:
+            return result[0]
+        return KwargTuple(result, self.abi)
 
 
 class ContractTx(_ContractMethod):
