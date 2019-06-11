@@ -8,6 +8,7 @@ import shutil
 import sys
 import zipfile
 
+from brownie.cli.utils import notify
 from brownie._config import CONFIG
 
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
@@ -37,10 +38,9 @@ def main():
         sys.exit("ERROR: Bake folder already exists - {}".format(final_path))
 
     if CONFIG['folders']['brownie'] in str(path):
-        sys.exit(
-            "ERROR: Cannot bake inside the main brownie installation folder.\n"
-            "Create a new folder for your project and run brownie bake there."
-        )
+        notify("ERROR", "Cannot bake inside the main brownie installation folder.")
+        print("Create a new folder for your project and run brownie bake there.")
+        return
 
     print("Downloading from "+MIXES_URL.format(args['<mix>'])+" ...")
     request = requests.get(MIXES_URL.format(args['<mix>']))
@@ -51,4 +51,4 @@ def main():
         str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
         str(final_path.joinpath('brownie-config.json'))
     )
-    print("Brownie mix '{}' has been initiated at {}".format(args['<mix>'], final_path))
+    notify("SUCCESS", "Brownie mix '{}' has been initiated at {}".format(args['<mix>'], final_path))

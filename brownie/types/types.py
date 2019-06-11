@@ -99,14 +99,14 @@ class KwargTuple:
 
 
 class FalseyDict(dict):
-    '''Dict subclass that returns False if a key is not present'''
+    '''Dict subclass that returns None if a key is not present instead of raising'''
 
     _print_as_dict = True
 
     def __getitem__(self, key):
         if key in self:
             return super().__getitem__(key)
-        return False
+        return None
 
     def _update_from_args(self, values):
         '''Updates the dict from docopts.args'''

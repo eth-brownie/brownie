@@ -16,7 +16,7 @@ FOLDERS = [
     "tests",
     "build",
     "build/contracts",
-    "build/coverage"
+    "build/tests"
 ]
 
 

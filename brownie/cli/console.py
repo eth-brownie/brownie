@@ -3,13 +3,13 @@
 import ast
 import builtins
 from docopt import docopt
-import importlib
 from pathlib import Path
 import sys
 import threading
 
 import brownie
 import brownie.network as network
+from brownie.test.main import run_script
 from brownie.cli.utils import color
 from brownie._config import ARGV, CONFIG
 
@@ -38,7 +38,7 @@ class Console:
         self._print_lock = threading.Lock()
         self.__dict__.update({
             'dir': self._dir,
-            'run': _run_script
+            'run': run_script
         })
         self.__dict__.update((i, getattr(brownie, i)) for i in brownie.__all__)
         del self.__dict__['project']
@@ -79,7 +79,10 @@ class Console:
                 if ast_type not in (ast.ClassDef, ast.For, ast.FunctionDef) or not new_cmd:
                     return cmd
             except SyntaxError as e:
-                if e.msg != "unexpected EOF while parsing":
+                if e.msg not in (
+                    "EOF while scanning triple-quoted string literal",
+                    "unexpected EOF while parsing"
+                ):
                     self._prompt = ""
                     print(color.format_tb(sys.exc_info(), start=1))
                     return
@@ -185,19 +188,3 @@ def main():
         console._run()
     except EOFError:
         sys.stdout.write('\n')
-
-
-def _run_script(module=None, method="main", args=(), kwargs={}):
-    '''Loads a module from the scripts/ folder and calls a method.
-    If no name is given, returns a list of available scripts.
-
-    Args:
-        name (string): name of the script.
-        method (string): name of the method to call.
-        args (tuple): positional arguments for called method.
-        kwargs (dict): keyword arguments for called method.'''
-    path = Path(CONFIG['folders']['project']).joinpath('scripts')
-    if not module:
-        return [i.stem for i in path.glob('[!_]*.py')]
-    module = importlib.import_module("scripts."+module)
-    return getattr(module, method)(*args, **kwargs)

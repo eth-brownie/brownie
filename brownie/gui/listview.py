@@ -81,31 +81,36 @@ class ListView(ttk.Treeview):
         # TODO hacky console hacky-ness
         self.root.main.console.configure(state="normal")
         self.root.main.console.delete(1.0, "end")
-        self.root.main.console.configure(state="disabled")
         try:
             pc = self.selection()[0]
         except IndexError:
-            return
-        pcMap = self.root.pcMap
-        note = self.root.main.note
-        # TODO hacky console hacky-ness
-        if 'value' in pcMap[pc]:
-            self.root.main.console.configure(state="normal")
-            self.root.main.console.insert(1.0, " {0[op]} {0[value]}".format(pcMap[pc]))
-            if pcMap[pc]['op'] == "PUSH2":
-                self.root.main.console.insert("end", "  ({})".format(int(pcMap[pc]['value'], 16)))
             self.root.main.console.configure(state="disabled")
+            return
+        pcMap = self.root.pcMap[pc]
+        note = self.root.main.note
+
+        # TODO make this hacky console hacky-ness less hacky
+        console_str = " "+pcMap['op']
+        if 'value' in pcMap:
+            console_str += " "+pcMap['value']
+            if pcMap['op'] == "PUSH2":
+                console_str += " ({})".format(int(pcMap['value'], 16))
+        if 'offset' in pcMap:
+            console_str += "   {}".format(tuple(pcMap['offset']))
+        self.root.main.console.insert(1.0, console_str)
+        self.root.main.console.configure(state="disabled")
+
         tag = self.item(pc, 'tags')[0]
         if tag == "NoSource":
             note.active_frame().clear_highlight()
             return
         self.tag_configure(tag, background="#2a4864")
         self._last = tag
-        if 'path' not in pcMap[pc]:
+        if 'path' not in pcMap:
             note.active_frame().clear_highlight()
             return
-        note.set_active(pcMap[pc]['path'])
-        note.active_frame().highlight(*pcMap[pc]['offset'])
+        note.set_active(pcMap['path'])
+        note.active_frame().highlight(*pcMap['offset'])
 
     def _seek(self, event):
         if self._seek_last < time.time() - 1:

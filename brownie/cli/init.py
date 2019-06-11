@@ -2,9 +2,9 @@
 
 from docopt import docopt
 from pathlib import Path
-import sys
 
 import brownie.project as project
+from brownie.cli.utils import notify
 from brownie._config import CONFIG
 
 
@@ -33,10 +33,9 @@ def main():
     path = Path(args['<path>'] or '.').resolve()
 
     if CONFIG['folders']['brownie'] in str(path):
-        sys.exit(
-            "ERROR: Cannot init inside the main brownie installation folder.\n"
-            "Create a new folder for your project and run brownie init there."
-        )
+        notify("ERROR", "Cannot init inside the main brownie installation folder.")
+        print("Create a new folder for your project and run brownie init there.")
+        return
 
     project.new(path, args['--force'])
-    print("Brownie environment has been initiated at {}".format(path))
+    notify("SUCCESS", "Brownie environment has been initiated at {}".format(path))

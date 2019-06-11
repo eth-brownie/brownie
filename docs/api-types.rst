@@ -177,6 +177,8 @@ StrictDict
         >>> s
         {'test': 123, 'other': True}
 
+... _api-types-falseydict:
+
 FalseyDict
 ----------
 

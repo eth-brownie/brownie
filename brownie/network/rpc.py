@@ -63,6 +63,7 @@ class Rpc(metaclass=_Singleton):
                     cmd += ".cmd"
                 return self.launch(cmd)
             raise
+        print("Launching '{}'...".format(cmd))
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
