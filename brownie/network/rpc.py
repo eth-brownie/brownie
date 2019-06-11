@@ -116,6 +116,11 @@ class Rpc(metaclass=_Singleton):
             if not exc:
                 return
             raise SystemError("RPC is not active.")
+
+        try:
+            print("Terminating local RPC client...")
+        except ValueError:
+            pass
         for child in self._rpc.children():
             try:
                 child.kill()
