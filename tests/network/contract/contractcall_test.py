@@ -46,6 +46,6 @@ def test_always_transact(token):
         tx = history[-1]
         assert balance == result
         assert web3.eth.blockNumber == height + 1
-        assert tx.fn_name == "Token.balanceOf"
+        assert tx.fn_name == "balanceOf"
     finally:
         ARGV['always_transact'] = False

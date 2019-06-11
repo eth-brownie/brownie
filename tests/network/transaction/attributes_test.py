@@ -45,10 +45,14 @@ def test_input(token):
 
 def test_fn_name(token):
     tx = token.transfer(accounts[1], 1000, {'from': accounts[0]})
-    assert tx.fn_name == "Token.transfer"
+    assert tx.contract_name == "Token"
+    assert tx.fn_name == "transfer"
+    assert tx._full_name() == "Token.transfer"
     data = token.transfer.encode_abi(accounts[1], 1000)
     tx = accounts[0].transfer(token, 0, data=data)
-    assert tx.fn_name == "Token.transfer"
+    assert tx.contract_name == "Token"
+    assert tx.fn_name == "transfer"
+    assert tx._full_name() == "Token.transfer"
 
 
 def test_return_value(token):

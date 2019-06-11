@@ -41,6 +41,7 @@ class TransactionReceipt:
       may be very slow if the transaction involved many steps
 
     Attributes:
+        contract_name: Name of the contract called in the transaction
         fn_name: Name of the method called in the transaction
         txid: Transaction ID
         sender: Address of the sender
@@ -79,14 +80,13 @@ class TransactionReceipt:
         if type(txid) is not str:
             txid = txid.hex()
         if CONFIG['logging']['tx'] and not silent:
-            print("\n{0[key]}Transaction sent{0}: {0[value]}{1}{0}".format(color, txid))
+            print(f"\n{color['key']}Transaction sent{color}: {color['value']}{txid}{color}")
         history._add_tx(self)
 
         self._trace = None
         self._revert_pc = None
         self.block_number = None
         self.contract_address = None
-        self.fn_name = name
         self.gas_limit = None
         self.gas_price = None
         self.gas_used = None
@@ -99,6 +99,11 @@ class TransactionReceipt:
         self.txid = txid
         self.txindex = None
         self.value = None
+
+        self.contract_name = None
+        self.fn_name = name
+        if name and '.' in name:
+            self.contract_name, self.fn_name = name.split('.', maxsplit=1)
 
         # avoid querying the trace to get the revert string if possible
         if revert:
@@ -140,9 +145,7 @@ class TransactionReceipt:
 
     def __repr__(self):
         c = {-1: 'pending', 0: 'error', 1: None}
-        return "<Transaction object '{}{}{}'>".format(
-            color(c[self.status]), self.txid, color
-        )
+        return f"<Transaction object '{color[c[self.status]]}{self.txid}{color}'>"
 
     def __hash__(self):
         return hash(self.txid)
@@ -150,7 +153,7 @@ class TransactionReceipt:
     def __getattr__(self, attr):
         # these values require debug_traceTransaction, only request it from the RPC when needed
         if attr not in {'events', 'modified_state', 'return_value', 'revert_msg', 'trace'}:
-            raise AttributeError("'TransactionReceipt' object has no attribute '{}'".format(attr))
+            raise AttributeError(f"'TransactionReceipt' object has no attribute '{attr}'")
         if self.status == -1:
             return None
         if attr == "trace":
@@ -172,10 +175,11 @@ class TransactionReceipt:
         if not tx['blockNumber'] and CONFIG['logging']['tx'] and not silent:
             print("Waiting for confirmation...")
 
+        # await confirmation
         receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
         self._set_from_receipt(receipt)
         if not silent:
-            self._confirm_output()
+            print(self._confirm_output())
         if callback:
             callback(self)
 
@@ -193,10 +197,8 @@ class TransactionReceipt:
         if tx['to'] and _contracts.find(tx['to']) is not None:
             self.receiver = _contracts.find(tx['to'])
             if not self.fn_name:
-                self.fn_name = "{}.{}".format(
-                    self.receiver._name,
-                    self.receiver.get_method(tx['input'])
-                )
+                self.contract_name = self.receiver._name
+                self.fn_name = self.receiver.get_method(tx['input'])
 
     def _set_from_receipt(self, receipt):
         '''Set object attributes after the transaction has confirmed.'''
@@ -209,36 +211,33 @@ class TransactionReceipt:
         if self.status:
             self.events = decode_logs(receipt['logs'])
         if self.fn_name:
-            history._gas(self.fn_name, receipt['gasUsed'])
+            history._gas(self._full_name(), receipt['gasUsed'])
 
     def _confirm_output(self):
         if CONFIG['logging']['tx'] >= 2:
             return self.info()
-        print(
-            ("{1} confirmed {2}- {0[key]}block{0}: {0[value]}{3}{0}   "
-                "{0[key]}gas used{0}: {0[value]}{4}{0} ({0[value]}{5:.2%}{0})").format(
-                color,
-                self.fn_name or "Transaction",
-                "" if self.status else "({0[error]}{1}{0}) ".format(
-                    color,
-                    self.revert_msg or "reverted"
-                ),
-                self.block_number,
-                self.gas_used,
-                self.gas_used / self.gas_limit
-            )
+        status = ""
+        if not self.status:
+            status = f"({color['error']}{self.revert_msg or 'reverted'}{color}) "
+        result = (
+            f"{self._full_name()} confirmed {status}- "
+            f"{color['key']}block{color}: {color['value']}{self.block_number}{color}   "
+            f"{color['key']}gas used{color}: {color['value']}{self.gas_used}{color} "
+            f"({color['value']}{self.gas_used / self.gas_limit:.2%}{color})"
         )
         if self.contract_address:
-            print("{1} deployed at: {0[value]}{2}{0}".format(
-                color,
-                self.fn_name.split('.')[0],
-                self.contract_address
-            ))
+            result += (
+                f"{self.contract_name} deployed at: "
+                f"{color['value']}{self.contract_address}{color}"
+            )
+        return result
 
     def _get_trace(self):
         '''Retrieves the stack trace via debug_traceTransaction and finds the
         return value, revert message and event logs in the trace.
         '''
+
+        # check if trace has already been retrieved, or the tx warrants it
         if self._trace is not None:
             return
         self.return_value = None
@@ -249,6 +248,7 @@ class TransactionReceipt:
             self.modified_state = bool(self.contract_address)
             self.trace = []
             return
+
         trace = web3.providers[0].make_request('debug_traceTransaction', [self.txid, {}])
         if 'error' in trace:
             self.modified_state = None
@@ -266,7 +266,7 @@ class TransactionReceipt:
             return
         # get return value
         data = _get_memory(step, -1)
-        fn = getattr(self.receiver, self.fn_name.split('.')[-1])
+        fn = getattr(self.receiver, self.fn_name)
         self.return_value = fn.decode_abi(data)
         return
 
@@ -300,6 +300,7 @@ class TransactionReceipt:
         source: Start and end offset associated source code.
         jumpDepth: Number of jumps made since entering this contract. The
                    initial value is 0.'''
+
         if 'trace' in self.__dict__:
             return
         if self._trace is None:
@@ -307,13 +308,12 @@ class TransactionReceipt:
         self.trace = trace = self._trace
         if not trace or 'fn' in trace[0]:
             return
-        contract = self.contract_address or self.receiver
-        pc = contract._build['pcMap'][0]
-        fn = self.fn_name
+
+        pc = self.receiver._build['pcMap'][0]
         last_map = {0: {
-            'address': contract.address,
-            'contract': contract,
-            'fn': [fn],
+            'address': self.receiver.address,
+            'contract': self.receiver,
+            'fn': [self._full_name()],
             'jumpDepth': 0
         }}
         trace[0].update({
@@ -326,6 +326,7 @@ class TransactionReceipt:
                 'offset': pc['offset']
             }
         })
+
         for i in range(1, len(trace)):
             # if depth has increased, tx has called into a different contract
             if trace[i]['depth'] > trace[i-1]['depth']:
@@ -342,7 +343,8 @@ class TransactionReceipt:
                     'contract': contract,
                     'fn': [fn],
                     'jumpDepth': 0
-                    }
+                }
+
             last = last_map[trace[i]['depth']]
             contract = last['contract']
             trace[i].update({
@@ -372,35 +374,52 @@ class TransactionReceipt:
                 del last['fn'][-1]
                 last['jumpDepth'] -= 1
 
+    def _full_name(self):
+        if self.contract_name:
+            return f"{self.contract_name}.{self.fn_name}"
+        return self.fn_name or "Transaction"
+
     def info(self):
         '''Displays verbose information about the transaction, including decoded event logs.'''
+
+        status = ""
+        if not self.status:
+            status = f"({color['error']}{self.revert_msg or 'reverted'}{color})"
+
+        result = (
+            f"Transaction was Mined {status}\n---------------------\n"
+            f"{color['key']}Tx Hash{color}: {color['value']}{self.txid}\n"
+            f"{color['key']}From{color}: {color['value']}{self.sender}\n"
+        )
+
         if self.contract_address:
-            line = "New Contract Address{0}: {0[value]}{1}".format(color, self.contract_address)
-        else:
-            line = "To{0}: {0[value]}{1.receiver}{0}\n{0[key]}Value{0}: {0[value]}{1.value}".format(
-                color, self
+            result += (
+                f"{color['key']}New {self.contract_name} address{color}: "
+                f"{color['value']}{self.contract_address}\n"
             )
-            if self.input != "0x00":
-                line += "\n{0[key]}Function{0}: {0[value]}{1}".format(color, self.fn_name)
-        print(TX_INFO.format(
-            color,
-            self,
-            self.sender if type(self.sender) is str else self.sender.address,
-            line,
-            "" if self.status else " ({0[error]}{1}{0})".format(
-                color, self.revert_msg or "reverted"
-            ),
-            self.gas_used / self.gas_limit
-        ))
+        else:
+            result += (
+                f"{color['key']}To{color}: {color['value']}{self.receiver}{color}\n"
+                f"{color['key']}Value{color}: {color['value']}{self.value}\n"
+            )
+            if int(self.input, 16):
+                result += f"{color['key']}Function{color}: {color['value']}{self._full_name()}\n"
+
+        result += (
+            f"{color['key']}Block{color}: {color['value']}{self.block_number}{color}\n"
+            f"{color['key']}Gas Used{color}: "
+            f"{color['value']}{self.gas_used}{color} / {color['value']}{self.gas_limit}{color} "
+            f"({color['value']}{self.gas_used / self.gas_limit:.1%}{color})\n"
+        )
+
         if self.events:
-            print("   Events In This Transaction\n   --------------------------")
+            result += "\n   Events In This Transaction\n   --------------------------"
             for event in self.events:
-                print("   "+color('bright yellow')+event.name+color())
-                for k, v in event.items():
-                    print("      {0[key]}{1}{0}: {0[value]}{2}{0}".format(
-                        color, k, v
-                    ))
-            print()
+                result += f"\n   {color['bright yellow']}{event.name}{color}"
+                for key, value in event.items():
+                    result += f"\n      {color['key']}{key}{color}: {color['value']}{value}{color}"
+
+        return result+"\n"
 
     def call_trace(self):
         '''Displays the complete sequence of contracts and methods called during
@@ -413,7 +432,7 @@ class TransactionReceipt:
             if not self.contract_address:
                 return ""
             raise NotImplementedError("Call trace is not available for deployment transactions.")
-        result = "Call trace for '{0[value]}{1}{0}':\n".format(color, self.txid)
+        result = f"Call trace for '{color['value']}{self.txid}{color}':\n"
         indent = {0: 0}
         result += _step_print(trace[0], trace[-1], 0, 0, len(trace))
         trace_index = [(0, 0, 0)]+[
@@ -465,7 +484,7 @@ class TransactionReceipt:
                 break
 
         return (
-            "Traceback for '{0[value]}{1}{0}':\n".format(color, self.txid) +
+            f"Traceback for '{color['value']}{self.txid}{color}':\n"
             "\n".join(self.source(i, 0) for i in result[::-1])
         )
 
@@ -512,10 +531,12 @@ class TransactionReceipt:
 
 def _format_source(source, pc, idx):
     return (
-        '{0[dull]}Trace step {0[value]}{1}{0[dull]}, program counter {0[value]}{2}{0[dull]}:'
-        '\n  File {0[string]}"{3[1]}"{0[dull]}, line {0[value]}{3[2]}{0[dull]}, in '
-        '{0[callable]}{3[3]}{0[dull]}:{3[0]}'
-    ).format(color, idx, pc, source)
+        f"{color['dull']}Trace step {color['value']}{idx}{color['dull']}, "
+        f"program counter {color['value']}{pc}{color['dull']}:"
+        f"\n  File {color['string']}\"{source[1]}\"{color['dull']}, "
+        f"line {color['value']}{source[2]}{color['dull']}, in "
+        f"{color['callable']}{source[3]}{color['dull']}:{source[0]}"
+    )
 
 
 def _step_compare(a, b):
@@ -530,11 +551,9 @@ def _step_print(step, last_step, indent, start, stop):
         contract_color = color("error")
     else:
         contract_color = color("contract" if not step['jumpDepth'] else "contract_method")
-    print_str += "{1}{2} {0[dull]}{3}:{4}{0}".format(
-        color, contract_color, step['fn'], start, stop
-    )
+    print_str += f"{contract_color}{step['fn']} {color['dull']}{start}:{stop}{color}"
     if not step['jumpDepth']:
-        print_str += "  {0[dull]}({0}{1}{0[dull]}){0}".format(color, step['address'])
+        print_str += f"  {color['dull']}({color}{step['address']}{color['dull']}){color}"
     return print_str
 
 
