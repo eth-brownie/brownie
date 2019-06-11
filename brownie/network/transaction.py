@@ -5,26 +5,20 @@ import time
 
 from hexbytes import HexBytes
 
+from .history import (
+    TxHistory,
+    _ContractHistory
+)
+from .event import (
+    decode_logs,
+    decode_trace
+)
 from .web3 import Web3
 from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
-from brownie.network.history import TxHistory, _ContractHistory
-from brownie.network.event import decode_logs, decode_trace
 from brownie.project import build, sources
 from brownie.types.convert import to_string
 from brownie._config import ARGV, CONFIG
-
-
-TX_INFO = """
-Transaction was Mined{4}
----------------------
-{0[key]}Tx Hash{0}: {0[value]}{1.txid}{0}
-{0[key]}From{0}: {0[value]}{2}{0}
-{0[key]}{3}{0}
-{0[key]}Block{0}: {0[value]}{1.block_number}{0}
-{0[key]}Gas Used{0}: {0[value]}{1.gas_used}{0} / {0[value]}{1.gas_limit}{0} ({0[value]}{5:.1%}{0})
-"""
-
 
 history = TxHistory()
 _contracts = _ContractHistory()
@@ -201,13 +195,14 @@ class TransactionReceipt:
                 self.fn_name = self.receiver.get_method(tx['input'])
 
     def _set_from_receipt(self, receipt):
-        '''Set object attributes after the transaction has confirmed.'''
+        '''Sets object attributes based on the transaction reciept.'''
         self.block_number = receipt['blockNumber']
         self.txindex = receipt['transactionIndex']
         self.gas_used = receipt['gasUsed']
         self.contract_address = receipt['contractAddress']
         self.logs = receipt['logs']
         self.status = receipt['status']
+
         if self.status:
             self.events = decode_logs(receipt['logs'])
         if self.fn_name:
@@ -227,7 +222,7 @@ class TransactionReceipt:
         )
         if self.contract_address:
             result += (
-                f"{self.contract_name} deployed at: "
+                f"\n{self.contract_name} deployed at: "
                 f"{color['value']}{self.contract_address}{color}"
             )
         return result
@@ -297,9 +292,13 @@ class TransactionReceipt:
         address: The address executing this contract.
         contractName: The name of the contract.
         fn: The name of the function.
-        source: Start and end offset associated source code.
         jumpDepth: Number of jumps made since entering this contract. The
-                   initial value is 0.'''
+                   initial value is 0.
+        source: {
+            filename: path to the source file for this step
+            offset: Start and end offset associated source code
+        }
+        '''
 
         if 'trace' in self.__dict__:
             return
@@ -309,67 +308,63 @@ class TransactionReceipt:
         if not trace or 'fn' in trace[0]:
             return
 
-        pc = self.receiver._build['pcMap'][0]
+        # last_map gives a quick reference of previous values at each depth
         last_map = {0: {
             'address': self.receiver.address,
             'contract': self.receiver,
+            'name': self.receiver._name,
             'fn': [self._full_name()],
-            'jumpDepth': 0
-        }}
-        trace[0].update({
-            'address': last_map[0]['address'],
-            'contractName': last_map[0]['contract']._name,
-            'fn': last_map[0]['fn'][-1],
             'jumpDepth': 0,
-            'source': {
-                'filename': pc['path'],
-                'offset': pc['offset']
-            }
-        })
+            'pc_map': self.receiver._build['pcMap']
+        }}
 
-        for i in range(1, len(trace)):
+        for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
             if trace[i]['depth'] > trace[i-1]['depth']:
+                # get call signature
+                stack_idx = -4 if trace[i-1]['op'] in {'CALL', 'CALLCODE'} else -3
+                offset = int(trace[i-1]['stack'][stack_idx], 16) * 2
+                sig = HexBytes("".join(trace[i-1]['memory'])[offset:offset+8]).hex()
+
+                # get contract and method name
                 address = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
                 contract = _contracts.find(address)
-                stack_idx = -4 if trace[i-1]['op'] in {'CALL', 'CALLCODE'} else -3
-                memory_idx = int(trace[i-1]['stack'][stack_idx], 16) * 2
-                sig = "0x" + "".join(trace[i-1]['memory'])[memory_idx:memory_idx+8]
-                pc = contract._build['pcMap'][trace[i]['pc']]
-                fn = sources.get_contract_name(pc['path'], pc['offset'])
-                fn += "."+(contract.get_method(sig) or "")
+
+                # update last_map
                 last_map[trace[i]['depth']] = {
                     'address': address,
                     'contract': contract,
-                    'fn': [fn],
-                    'jumpDepth': 0
+                    'name': contract._name,
+                    'fn': [f"{contract._name}.{contract.get_method(sig)}"],
+                    'jumpDepth': 0,
+                    'pc_map': contract._build['pcMap']
                 }
 
+            # update trace from last_map
             last = last_map[trace[i]['depth']]
-            contract = last['contract']
             trace[i].update({
                 'address': last['address'],
-                'contractName': contract._name,
+                'contractName': last['name'],
                 'fn': last['fn'][-1],
                 'jumpDepth': last['jumpDepth'],
                 'source': False
             })
-            pc = contract._build['pcMap'][trace[i]['pc']]
+            pc = last['pc_map'][trace[i]['pc']]
             if 'path' in pc:
-                trace[i]['source'] = {
-                    'filename': pc['path'],
-                    'offset': pc['offset']
-                }
+                trace[i]['source'] = {'filename': pc['path'], 'offset': pc['offset']}
+
+            # ignore jumps with no function - they are compiler optimizations
             if 'jump' not in pc or 'fn' not in pc:
                 continue
-            # jump 'i' is moving into an internal function
+
+            # jump 'i' is calling into an internal function
             if pc['jump'] == 'i':
                 try:
-                    last['fn'].append(contract._build['pcMap'][trace[i+1]['pc']]['fn'])
+                    last['fn'].append(last['pc_map'][trace[i+1]['pc']]['fn'])
                     last['jumpDepth'] += 1
                 except KeyError:
                     continue
-            # jump 'o' is coming out of an internal function
+            # jump 'o' is returning from an internal function
             elif pc['jump'] == "o" and last['jumpDepth'] > 0:
                 del last['fn'][-1]
                 last['jumpDepth'] -= 1
@@ -381,7 +376,6 @@ class TransactionReceipt:
 
     def info(self):
         '''Displays verbose information about the transaction, including decoded event logs.'''
-
         status = ""
         if not self.status:
             status = f"({color['error']}{self.revert_msg or 'reverted'}{color})"
@@ -432,20 +426,26 @@ class TransactionReceipt:
             if not self.contract_address:
                 return ""
             raise NotImplementedError("Call trace is not available for deployment transactions.")
-        result = f"Call trace for '{color['value']}{self.txid}{color}':\n"
-        indent = {0: 0}
+
+        result = f"Call trace for '{color['value']}{self.txid}{color}':"
         result += _step_print(trace[0], trace[-1], 0, 0, len(trace))
-        trace_index = [(0, 0, 0)]+[
+        indent = {0: 0}
+
+        # (index, depth, jumpDepth) for relevent steps in the trace
+        trace_index = [(0, 0, 0)] + [
             (i, trace[i]['depth'], trace[i]['jumpDepth'])
             for i in range(1, len(trace)) if not _step_compare(trace[i], trace[i-1])
         ]
+
         for i, (idx, depth, jump_depth) in enumerate(trace_index[1:], start=1):
             last = trace_index[i-1]
             if depth > last[1]:
+                # called to a new contract
                 indent[depth] = trace[idx-1]['jumpDepth'] + indent[depth-1]
                 end = next((x[0] for x in trace_index[i+1:] if x[1] < depth), len(trace))
                 result += _step_print(trace[idx], trace[end-1], depth+indent[depth], idx, end)
             elif depth == last[1] and jump_depth > last[2]:
+                # jumped into an internal function
                 end = next(
                     (x[0] for x in trace_index[i+1:] if x[1] == depth and x[2] < jump_depth),
                     len(trace)
@@ -463,6 +463,7 @@ class TransactionReceipt:
             if not self.contract_address:
                 return ""
             raise NotImplementedError("Traceback is not available for deployment transactions.")
+
         try:
             trace_range = range(len(trace)-1, -1, -1)
             idx = next(i for i in trace_range if trace[i]['op'] in {"REVERT", "INVALID"})
@@ -484,7 +485,7 @@ class TransactionReceipt:
                 break
 
         return (
-            f"Traceback for '{color['value']}{self.txid}{color}':\n"
+            f"Traceback for '{color['value']}{self.txid}{color}':\n" +
             "\n".join(self.source(i, 0) for i in result[::-1])
         )
 
@@ -498,11 +499,15 @@ class TransactionReceipt:
         '''
         if self.status == 1:
             return ""
+
+        # if RPC returned a program counter, try to find source without querying trace
         if self._revert_pc:
             error = build.get_error_source_from_pc(self._revert_pc)
             if error:
                 return _format_source(error, self._revert_pc, -1)
             self._revert_pc = None
+
+        # iterate backward through the trace until a step has a source offset
         trace = self.trace
         trace_range = range(len(trace)-1, -1, -1)
         idx = next((i for i in trace_range if trace[i]['op'] in {"REVERT", "INVALID"}), -1)
@@ -544,13 +549,13 @@ def _step_compare(a, b):
 
 
 def _step_print(step, last_step, indent, start, stop):
-    print_str = "  "*indent + color('dull')
+    print_str = "\n" + ("  "*indent + color('dull'))
     if indent:
         print_str += "\u221f "
     if last_step['op'] in {"REVERT", "INVALID"} and _step_compare(step, last_step):
         contract_color = color("error")
     else:
-        contract_color = color("contract" if not step['jumpDepth'] else "contract_method")
+        contract_color = color("contract_method" if step['jumpDepth'] else "contract")
     print_str += f"{contract_color}{step['fn']} {color['dull']}{start}:{stop}{color}"
     if not step['jumpDepth']:
         print_str += f"  {color['dull']}({color}{step['address']}{color['dull']}){color}"
