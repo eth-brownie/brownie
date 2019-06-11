@@ -502,21 +502,20 @@ class TransactionReceipt:
 
         # if RPC returned a program counter, try to find source without querying trace
         if self._revert_pc:
-            error = build.get_error_source_from_pc(self._revert_pc)
+            error, fn_name = build.get_error_source_from_pc(self._revert_pc)
             if error:
-                return _format_source(error, self._revert_pc, -1)
+                return _format_source(error, self._revert_pc, -1, fn_name)
             self._revert_pc = None
 
         # iterate backward through the trace until a step has a source offset
         trace = self.trace
         trace_range = range(len(trace)-1, -1, -1)
-        idx = next((i for i in trace_range if trace[i]['op'] in {"REVERT", "INVALID"}), -1)
-        while idx >= 0:
-            source = trace[idx]['source']
-            if source and sources.get_fn(source['filename'], source['offset']) == trace[idx]['fn']:
-                return self.source(idx)
-            idx -= 1
-        return ""
+        try:
+            idx = next(i for i in trace_range if trace[i]['op'] in {"REVERT", "INVALID"})
+            idx = next(i for i in trace_range if trace[i]['source'])
+            return self.source(idx)
+        except StopIteration:
+            return ""
 
     def source(self, idx, pad=3):
         '''Displays the associated source code for a given stack trace step.
@@ -531,16 +530,16 @@ class TransactionReceipt:
         if not source:
             return ""
         source = sources.get_highlighted_source(source['filename'], source['offset'], pad)
-        return _format_source(source, self.trace[idx]['pc'], idx)
+        return _format_source(source, self.trace[idx]['pc'], idx, self.trace[idx]['fn'])
 
 
-def _format_source(source, pc, idx):
+def _format_source(source, pc, idx, fn_name):
     return (
         f"{color['dull']}Trace step {color['value']}{idx}{color['dull']}, "
         f"program counter {color['value']}{pc}{color['dull']}:"
         f"\n  File {color['string']}\"{source[1]}\"{color['dull']}, "
         f"line {color['value']}{source[2]}{color['dull']}, in "
-        f"{color['callable']}{source[3]}{color['dull']}:{source[0]}"
+        f"{color['callable']}{fn_name}{color['dull']}:{source[0]}"
     )
 
 

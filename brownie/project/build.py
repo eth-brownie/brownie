@@ -17,7 +17,6 @@ BUILD_KEYS = [
     'deployedBytecode',
     'deployedSourceMap',
     'dependencies',
-    'fn_offsets',
     'offset',
     'opcodes',
     'pcMap',
@@ -63,7 +62,7 @@ def get_dev_revert(pc):
     to revert, returns the commented dev string (if any).'''
     if pc not in _revert_map or len(_revert_map[pc]) > 1:
         return None
-    return next(iter(_revert_map[pc]))[2]
+    return next(iter(_revert_map[pc]))[3]
 
 
 def get_error_source_from_pc(pc, pad=3):
@@ -73,8 +72,8 @@ def get_error_source_from_pc(pc, pad=3):
         return None
     revert = next(iter(_revert_map[pc]))
     if revert[0] is False:
-        return ""
-    return sources.get_highlighted_source(*revert[:2], pad=pad)
+        return None, None
+    return sources.get_highlighted_source(*revert[:2], pad=pad), revert[2]
 
 
 def load(project_path):
@@ -146,19 +145,20 @@ def _add(build_json):
 
 
 def _generate_revert_map(pcMap):
+    # {pc: {("path", (start, stop), "function name", "error string" ) .. }}
     for pc, data in [(k, v) for k, v in pcMap.items() if v['op'] in ("REVERT", "INVALID")]:
         _revert_map.setdefault(pc, set())
-        if 'path' not in data:
-            _revert_map[pc].add((False, (-1, -1), ""))
+        if 'fn' not in data:
+            _revert_map[pc].add((False, (-1, -1), False, ""))
             continue
-        revert = [data['path'], tuple(data['offset']), ""]
+        revert = [data['path'], tuple(data['offset']), data['fn'], ""]
         try:
-            s = sources.get(data['path'])[data['offset'][1]:]
-            err = s[:s.index('\n')]
-            err = err[err.index('//')+2:].strip()
-            if err.startswith('dev:'):
-                revert[-1] = err
-                data['dev'] = err
+            revert_str = sources.get(data['path'])[data['offset'][1]:]
+            revert_str = revert_str[:revert_str.index('\n')]
+            revert_str = revert_str[revert_str.index('//')+2:].strip()
+            if revert_str.startswith('dev:'):
+                revert[-1] = revert_str
+                data['dev'] = revert_str
         except (KeyError, ValueError):
             pass
         _revert_map[pc].add(tuple(revert))
@@ -187,9 +187,6 @@ def expand_build_offsets(build_json):
 
     for value in [v for v in build_json['pcMap'].values() if 'offset' in v]:
         value['offset'] = _get_offset(offset_map, name, value['offset'])
-
-    for value in build_json['fn_offsets']:
-        value[1] = _get_offset(offset_map, name, value[1])
 
     for key in ('branches', 'statements'):
         coverage_map = build_json['coverageMap'][key]

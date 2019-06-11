@@ -5,9 +5,10 @@ from pathlib import Path
 import re
 import textwrap
 
+from . import compiler
 from brownie.cli.utils import color
 from brownie.exceptions import ContractExists
-from . import build, compiler
+
 
 MINIFY_REGEX_PATTERNS = [
     r"(?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)",                   # comments
@@ -151,39 +152,6 @@ def get_source_path(contract_name):
     return _contracts[contract_name]['path']
 
 
-def get_fn(contract, offset):
-    '''Given a contract name or path, and source offset tuple, returns the name of the
-    associated function. Returns False if the offset spans multiple functions.'''
-    if contract not in _contracts:
-        contract = get_contract_name(contract, offset)
-        if not contract:
-            return False
-    fn_offsets = build.get(contract)['fn_offsets']
-    return next((i[0] for i in fn_offsets if is_inside_offset(offset, i[1])), False)
-
-
-def get_fn_offset(contract, fn_name):
-    '''Given a contract and function name, returns the source offsets of the function.'''
-    try:
-        if contract not in _contracts:
-            contract = next(
-                k for k, v in build.items(contract) if
-                fn_name in [i[0] for i in v['fn_offsets']]
-            )
-        return next(i for i in build.get(contract)['fn_offsets'] if i[0] == fn_name)[1]
-    except StopIteration:
-        raise ValueError("Unknown function '{}' in contract {}".format(fn_name, contract))
-
-
-def get_contract_name(path, offset):
-    '''Given a path and source offset tuple, returns the name of the contract.
-    Returns False if the offset spans multiple contracts.'''
-    return next((
-        k for k, v in _contracts.items() if v['path'] == path and
-        is_inside_offset(offset, v['offset'])
-    ), False)
-
-
 def get_highlighted_source(path, offset, pad=3):
     '''Returns a highlighted section of source code.
 
@@ -193,10 +161,10 @@ def get_highlighted_source(path, offset, pad=3):
         pad: Number of unrelated lines of code to include before and after
 
     Returns:
-        str - Highlighted source code
-        str - Source code path
-        int - Line number that highlight begins on
-        str - Function name (or None)'''
+        str: Highlighted source code
+        str: Source code path
+        int: Line number that highlight begins on'''
+
     source = _source[path]
     newlines = [i for i in range(len(source)) if source[i] == "\n"]
     try:
@@ -215,7 +183,7 @@ def get_highlighted_source(path, offset, pad=3):
         source[offset[1]:pad_stop]
     )
     final = color('dull')+textwrap.indent(textwrap.dedent(final), "    ")
-    return final, path, ln, get_fn(path, offset)
+    return final, path, ln
 
 
 def is_inside_offset(inner, outer):
