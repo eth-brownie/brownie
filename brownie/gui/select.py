@@ -50,5 +50,28 @@ class ReportSelect(_Select):
         value = super()._select()
         if self.root.active_report == self._reports[value]:
             return
+        self.root.report_key = None
         self.root.active_report = self._reports[value]
+        self.root.toolbar.highlight_select.set_values(list(self._reports[value]['highlights']))
+        self.root.toolbar.highlight.reset()
+
+
+class HighlightSelect(_Select):
+
+    def __init__(self, parent):
+        super().__init__(parent, "", [])
+        self.config(state="disabled")
+
+    def set_values(self, values):
+        self['values'] = sorted(values)
+        if values:
+            self.set("Select a Highlight")
+            self.config(state="readonly")
+        else:
+            self.set("")
+            self.config(state="disabled")
+
+    def _select(self, event):
+        value = super()._select()
+        self.root.report_key = value
         self.root.toolbar.highlight.reset()

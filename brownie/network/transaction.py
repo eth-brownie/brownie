@@ -11,8 +11,7 @@ from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.network.history import TxHistory, _ContractHistory
 from brownie.network.event import decode_logs, decode_trace
-from brownie.project.build import Build
-from brownie.project.sources import Sources
+from brownie.project import build, sources
 from brownie.types import KwargTuple
 from brownie.types.convert import format_output
 from brownie._config import ARGV, CONFIG
@@ -32,8 +31,6 @@ Transaction was Mined{4}
 history = TxHistory()
 _contracts = _ContractHistory()
 web3 = Web3()
-sources = Sources()
-build = Build()
 
 
 class TransactionReceipt:
@@ -336,8 +333,7 @@ class TransactionReceipt:
             'jumpDepth': 1,
             'source': {
                 'filename': pc['path'],
-                'start': pc['start'],
-                'stop': pc['stop']
+                'offset': pc['offset']
             }
         })
         for i in range(1, len(trace)):
@@ -349,7 +345,7 @@ class TransactionReceipt:
                 memory_idx = int(trace[i-1]['stack'][stack_idx], 16) * 2
                 sig = "0x" + "".join(trace[i-1]['memory'])[memory_idx:memory_idx+8]
                 pc = contract._build['pcMap'][trace[i]['pc']]
-                fn = sources.get_contract_name(pc['path'], pc['start'], pc['stop'])
+                fn = sources.get_contract_name(pc['path'], pc['offset'])
                 fn += "."+(contract.get_method(sig) or "")
                 last_map[trace[i]['depth']] = {
                     'address': address,
@@ -366,11 +362,13 @@ class TransactionReceipt:
                 'jumpDepth': last['jumpDepth']
             })
             pc = contract._build['pcMap'][trace[i]['pc']]
-            trace[i]['source'] = {
-                'filename': pc['path'],
-                'start': pc['start'],
-                'stop': pc['stop']
-            }
+            if 'path' in pc:
+                trace[i]['source'] = {
+                    'filename': pc['path'],
+                    'offset': pc['offset']
+                }
+            else:
+                trace[i]['source'] = False
             # jump 'i' is moving into an internal function
             if 'jump' not in pc or 'fn' not in pc or pc['fn'] == last['fn'][-1]:
                 continue
@@ -421,14 +419,13 @@ class TransactionReceipt:
         except StopIteration:
             return ""
         while True:
-            if idx == -1:
+            if idx < 0:
                 return ""
-            trace = self.trace[idx]
-            if not trace['source']['filename']:
+            source = self.trace[idx]['source']
+            if not source:
                 idx -= 1
                 continue
-            span = (trace['source']['start'], trace['source']['stop'])
-            if sources.get_fn(trace['source']['filename'], span[0], span[1]) != trace['fn']:
+            if sources.get_fn(source['filename'], source['offset']) != self.trace[idx]['fn']:
                 idx -= 1
                 continue
             return self.source(idx)
@@ -440,16 +437,11 @@ class TransactionReceipt:
             idx: Stack trace step index
             pad: Number of unrelated lines of code to include before and after
         '''
-        trace = self.trace[idx]
-        if not trace['source']['filename']:
+        source = self.trace[idx]['source']
+        if not source:
             return ""
-        source = sources.get_highlighted_source(
-            trace['source']['filename'],
-            trace['source']['start'],
-            trace['source']['stop'],
-            pad
-        )
-        return _format_source(source, trace['pc'], idx)
+        source = sources.get_highlighted_source(source['filename'], source['offset'], pad)
+        return _format_source(source, self.trace[idx]['pc'], idx)
 
 
 def _format_source(source, pc, idx):

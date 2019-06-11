@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
+import ast
 from docopt import docopt
+from hashlib import sha1
 import importlib
 import json
 import os
@@ -11,18 +13,12 @@ import sys
 import time
 
 from brownie.cli.utils import color
-from brownie.test.coverage import (
-    analyze_coverage,
-    merge_coverage_eval,
-    merge_coverage_files,
-    generate_report
-)
+from brownie.test import coverage
 from brownie.exceptions import ExpectedFailing
 import brownie.network as network
 from brownie.network.contract import Contract
 from brownie.network.history import TxHistory
-from brownie.project.build import Build, get_ast_hash
-from brownie.project.sources import Sources
+from brownie.project import build
 from brownie.types import FalseyDict
 from brownie._config import ARGV, CONFIG
 
@@ -36,7 +32,6 @@ WARN = "{0[error]}WARNING{0}: ".format(color)
 ERROR = "{0[error]}ERROR{0}: ".format(color)
 
 history = TxHistory()
-sources = Sources()
 
 __doc__ = """Usage: brownie test [<filename>] [<range>] [options]
 
@@ -63,6 +58,11 @@ def main():
     if ARGV['coverage']:
         ARGV['always_transact'] = True
         history._revert_lock = True
+
+    # cleanup
+    project_path = Path(CONFIG['folders']['project'])
+    check_coverage_hashes(project_path)
+    recursive_unlink(project_path.joinpath('build/coverage'))
 
     test_paths = get_test_paths(args['<filename>'])
     coverage_files, test_data = get_test_data(test_paths)
@@ -95,6 +95,33 @@ def get_test_paths(path):
     if not path.exists():
         sys.exit(ERROR+"Cannot find {0[module]}tests/{1}{0}".format(color, path.name))
     return [path]
+
+
+def check_coverage_hashes(base_path):
+    # remove coverage data where hashes have changed
+    coverage_path = Path(base_path).joinpath('build/coverage')
+    for coverage_json in list(coverage_path.glob('**/*.json')):
+        try:
+            dependents = json.load(coverage_json.open())['sha1']
+        except json.JSONDecodeError:
+            coverage_json.unlink()
+            continue
+        for path, hash_ in dependents.items():
+            path = Path(path)
+            if path.exists():
+                if path.suffix != ".json":
+                    if get_ast_hash(path) == hash_:
+                        continue
+                elif build.get(path.stem)['bytecodeSha1'] == hash_:
+                    continue
+            coverage_json.unlink()
+            break
+
+
+def recursive_unlink(base_path):
+    for path in [Path(i[0]) for i in list(os.walk(base_path))[:0:-1]]:
+        if not list(path.glob('*')):
+            path.rmdir()
 
 
 def get_test_data(test_paths):
@@ -183,12 +210,15 @@ def run_test_modules(test_data, save):
                 continue
             if ARGV['coverage']:
                 coverage_eval = cov
-            contracts |= set([x for i in contracts for x in sources.inheritance_map(i)])
-            build_files = [Path('build/contracts/{}.json'.format(i)) for i in contracts]
+
+            contract_names = set(i._name for i in contracts)
+            contract_names |= set(x for i in contracts for x in i._build['dependencies'])
+
+            build_files = [Path('build/contracts/{}.json'.format(i)) for i in contract_names]
 
             coverage_eval = {
                 'coverage': coverage_eval,
-                'sha1': dict((str(i), Build()[i.stem]['bytecodeSha1']) for i in build_files)
+                'sha1': dict((str(i), build.get(i.stem)['bytecodeSha1']) for i in build_files)
             }
             path = str(Path(module.__file__).relative_to(CONFIG['folders']['project']))
             coverage_eval['sha1'][path] = get_ast_hash(module.__file__)
@@ -265,10 +295,7 @@ def run_test_method(fn, args, coverage_eval, p):
         fn()
         if ARGV['coverage']:
             ARGV['always_transact'] = True
-            coverage_eval = merge_coverage_eval(
-                coverage_eval,
-                analyze_coverage(history.copy())
-            )
+            coverage_eval = coverage.analyze(history.copy(), coverage_eval)
         if args['pending']:
             raise ExpectedFailing("Test was expected to fail")
         p.stop()
@@ -284,14 +311,22 @@ def run_test_method(fn, args, coverage_eval, p):
 
 
 def display_report(coverage_files, save):
-    coverage_eval = merge_coverage_files(coverage_files)
-    report = generate_report(coverage_eval)
+    coverage_eval = coverage.merge_files(coverage_files)
+    report = {
+        'highlights': coverage.get_highlights(coverage_eval),
+        'coverage': coverage.get_totals(coverage_eval),
+        'sha1': {}  # TODO
+    }
     print("\nCoverage analysis:")
-    for name in sorted(coverage_eval):
-        pct = coverage_eval[name].pop('pct')
+    for name in sorted(report['coverage']):
+        totals = report['coverage'][name]['totals']
+        pct = _pct(totals['statements'], totals['branches'])
         c = color(next(i[1] for i in COVERAGE_COLORS if pct <= i[0]))
         print("\n  contract: {0[contract]}{1}{0} - {2}{3:.1%}{0}".format(color, name, c, pct))
-        for fn_name, pct in [(x, v[x]['pct']) for v in coverage_eval[name].values() for x in v]:
+        cov = report['coverage'][name]
+        for fn_name, count in cov['statements'].items():
+            branch = cov['branches'][fn_name] if fn_name in cov['branches'] else (0, 0, 0)
+            pct = _pct(count, branch)
             print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
                 color,
                 fn_name,
@@ -313,6 +348,13 @@ def display_gas_profile():
     gas = history.gas_profile
     for i in sorted(gas):
         print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, gas[i]))
+
+
+def _pct(statement, branch):
+    pct = statement[0]/statement[1]
+    if branch[-1]:
+        pct = (pct + (branch[0]+branch[1])/(branch[2]*2)) / 2
+    return pct
 
 
 def _get_fn(module, name):
@@ -396,7 +438,20 @@ class TestPrinter:
 
 def _get_contract_names():
     return set(
-        i.contract_address._name for i in history if
-        type(i.contract_address) is Contract and
-        not i.contract_address._source_path.startswith('<string')
+        i.contract_address for i in history if type(i.contract_address) is Contract and
+        not i.contract_address._build['sourcePath'].startswith('<string')
     )
+
+
+def get_ast_hash(script_path):
+    ast_list = [ast.parse(Path(script_path).open().read())]
+    for obj in [i for i in ast_list[0].body if type(i) in (ast.Import, ast.ImportFrom)]:
+        if type(obj) is ast.Import:
+            name = obj.names[0].name
+        else:
+            name = obj.module
+        origin = importlib.util.find_spec(name).origin
+        if CONFIG['folders']['project'] in origin:
+            ast_list.append(ast.parse(open(origin).read()))
+    dump = "\n".join(ast.dump(i) for i in ast_list)
+    return sha1(dump.encode()).hexdigest()

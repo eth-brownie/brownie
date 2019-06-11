@@ -5,16 +5,15 @@ import pytest
 
 
 from brownie import network, project
-from brownie.project.build import Build
+from brownie.project import build
 from brownie.network.contract import ContractContainer
 from brownie.exceptions import AmbiguousMethods
 
 accounts = network.accounts
-build = Build()
 
 
 def test_ambiguous_methods():
-    b = deepcopy(build['Token'])
+    b = deepcopy(build.get('Token'))
     b['abi'].append({
         'constant': False,
         'inputs': [

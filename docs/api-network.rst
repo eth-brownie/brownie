@@ -4,17 +4,14 @@
 Network API
 ===========
 
-``brownie.network``
-===================
-
 The ``network`` package holds classes for interacting with the Ethereum blockchain. This is the most extensive package within Brownie and contains the majority of the user-facing functionality.
 
-Package Methods
----------------
+``brownie.network.main``
+========================
 
-Methods in the base ``network`` package are used from connect to and disconnect from the network.
+The ``main`` module contains methods for conncting to or disconnecting from the network. All of these methods are available directly from ``brownie.network``.
 
-.. py:method:: brownie.network.connect(network=None)
+.. py:method:: main.connect(network=None)
 
     Connects to the network.  Network settings are retrieved from ``brownie-config.json``
 
@@ -27,34 +24,53 @@ Methods in the base ``network`` package are used from connect to and disconnect 
 
         >>> from brownie import network
         >>> network.connect('development')
-        >>>
 
-.. py:method:: brownie.network.disconnect()
+.. py:method:: main.disconnect()
 
     Disconnects from the network. The ``Web3`` provider is cleared and the local RPC client is terminated if it is running and a child process.
 
     .. code-block:: python
 
+        >>> from brownie import network
         >>> network.disconnect()
-        >>>
 
-.. py:method:: brownie.network.is_connected()
+.. py:method:: main.is_connected()
 
     Returns ``True`` if the ``Web3`` object is connected to the network.
 
     .. code-block:: python
 
+        >>> from brownie import network
         >>> network.is_connected()
         True
 
-.. py:method:: brownie.network.show_active()
+.. py:method:: main.show_active()
 
     Returns the name of the network that is currently active, or ``None`` if not connected.
 
     .. code-block:: python
 
+        >>> from brownie import network
         >>> network.show_active()
         'development'
+
+.. py:method:: main.gas_limit()
+
+    Displays or modifies the default gas limit.
+
+    * If no argument is given, the current default is displayed.
+    * If an integer value is given, this will be the default gas limit.
+    * If set to "auto", None, True or False, the gas limit is determined automatically.
+
+    .. code-block:: python
+
+        >>> from brownie import network
+        >>> network.gas_limit()
+        'Gas limit is set to automatic'
+        >>> network.gas_limit(6700000)
+        'Gas limit is set to 6700000'
+        >>> network.gas_limit('auto')
+        'Gas limit is set to automatic'
 
 ``brownie.network.account``
 ===========================
@@ -407,7 +423,6 @@ Module Methods
         >>> alert.stop_all()
         >>> alert.show()
         []
-
 
 ``brownie.network.contract``
 ============================
@@ -855,6 +870,35 @@ TxHistory
         >>> dir(history)
         [copy, from_sender, of_address, to_receiver]
 
+
+TxHistory Attributes
+--------------------
+
+.. py:attribute:: TxHistory.gas_profile
+
+    A dict that tracks gas cost statistics for contract function calls over time.
+
+    .. code-block:: python
+
+        >>> history.gas_profile
+        {
+            'Token.constructor': {
+                'avg': 742912,
+                'count': 1,
+                'high': 742912,
+                'low': 742912
+            },
+            'Token.transfer': {
+                'avg': 43535,
+                'count': 2,
+                'high': 51035,
+                'low': 36035
+            }
+        }
+
+TxHistory Methods
+-----------------
+
 .. py:classmethod:: TxHistory.copy
 
     Returns a shallow copy of the object as a ``list``.
@@ -1294,7 +1338,7 @@ TransactionReceipt Attributes
     * ``contractName``: The name of the contract
     * ``fn``: The name of the function
     * ``jumpDepth``: The number of jumps made since entering this contract. The initial function has a value of 1.
-    * ``source``: The start and end offset of the source code associated with this opcode.
+    * ``source``: The path and offset of the source code associated with this opcode.
 
     .. code-block:: python
 
@@ -1308,7 +1352,7 @@ TransactionReceipt Attributes
             'contractName': "Token",
             'depth': 0,
             'error': "",
-            'fn': "transfer",
+            'fn': "Token.transfer",
             'gas': 128049,
             'gasCost': 22872,
             'jumpDepth': 1,
@@ -1317,8 +1361,7 @@ TransactionReceipt Attributes
             'pc': 0,
             'source': {
                 'filename': "contracts/Token.sol",
-                'start': 53,
-                'stop': 2053
+                'offset': [53, 2053]
             },
             'stack': [],
             'storage': {

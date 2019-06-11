@@ -8,6 +8,7 @@ from tkinter import ttk
 
 from .styles import TEXT_STYLE, TEXT_COLORS
 
+from brownie.project.sources import is_inside_offset
 from brownie._config import CONFIG
 
 
@@ -129,8 +130,8 @@ class TextBook(ttk.Notebook):
         else:
             pc = [
                 k for k, v in self.root.pcMap.items() if
-                v['path'] and frame._label in v['path'] and
-                start >= v['start'] and stop <= v['stop']
+                'path' in v and frame._label in v['path'] and
+                is_inside_offset((start, stop), v['offset'])
             ]
         if not pc:
             frame.clear_highlight()
@@ -139,8 +140,8 @@ class TextBook(ttk.Notebook):
 
         def key(k):
             return (
-                (start - self.root.pcMap[k]['start']) +
-                (self.root.pcMap[k]['stop'] - stop)
+                (start - self.root.pcMap[k]['offset'][0]) +
+                (self.root.pcMap[k]['offset'][1] - stop)
             )
         id_ = sorted(pc, key=key)[0]
         tree.selection_set(id_)

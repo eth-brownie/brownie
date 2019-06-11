@@ -3,23 +3,18 @@
 import pytest
 import solcx
 
-
-from brownie import config
-from brownie.project import build, compiler, sources
-from brownie.exceptions import CompilerError, ContractExists
-
-sources = sources.Sources()
+from brownie.project import compiler, sources, build
+from brownie.exceptions import CompilerError
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(autouse=True, scope="function")
 def version():
     yield
-    config['solc']['version'] = "v0.5.7"
-    compiler.set_solc_version()
+    compiler.set_solc_version("v0.5.7")
 
 
 def _solc_5_source():
-    source = sources['BrownieTester']
+    source = sources.get('BrownieTester')
     source = source.replace('BrownieTester', 'TempTester')
     source = source.replace('UnlinkedLib', 'TestLib')
     return source
@@ -32,41 +27,90 @@ def _solc_4_source():
     return source
 
 
-def test_build_keys():
-    build_json = compiler.compile_contracts(["contracts/BrownieTester.sol"])
-    assert set(build.BUILD_KEYS) == set(build_json['BrownieTester'])
+def _solc_4_output_json():
+    compiler.set_solc_version("0.4.25")
+    source = _solc_4_source()
+    input_json = compiler.generate_input_json({'path': source}, True, 200)
+    return compiler.compile_from_input_json(input_json)
 
 
-def test_contract_exists():
-    with pytest.raises(ContractExists):
-        compiler.compile_source(sources['BrownieTester'])
-    compiler.compile_contracts(["contracts/BrownieTester.sol"])
-
-
-def test_set_solc_version(version):
-    config['solc']['version'] = "v0.5.0"
-    compiler.set_solc_version()
-    assert config['solc']['version'] == solcx.get_solc_version_string().strip('\n')
-
-
-def test_unlinked_libraries(version):
+def _solc_5_output_json():
     source = _solc_5_source()
-    build_json = compiler.compile_source(source)
+    input_json = compiler.generate_input_json({'path': source}, True, 200)
+    return compiler.compile_from_input_json(input_json)
+
+
+def test_set_solc_version():
+    compiler.set_solc_version("0.5.7")
+    assert "0.5.7" in solcx.get_solc_version_string()
+    compiler.set_solc_version("0.4.25")
+    assert "0.4.25" in solcx.get_solc_version_string()
+
+
+def test_generate_input_json():
+    source = _solc_5_source()
+    input_json = compiler.generate_input_json({'path': source}, True, 200)
+    assert input_json['settings']['optimizer']['enabled'] is True
+    assert input_json['settings']['optimizer']['runs'] == 200
+    assert input_json['sources']['path']['content'] == source
+    input_json = compiler.generate_input_json({'path': source}, False, 0, True)
+    assert input_json['settings']['optimizer']['enabled'] is False
+    assert input_json['settings']['optimizer']['runs'] == 0
+    assert input_json['sources']['path']['content'] != source
+
+
+def test_compile_input_json():
+    output_json = _solc_5_output_json()
+    assert "TempTester" in output_json['contracts']['path']
+    assert "TestLib" in output_json['contracts']['path']
+
+
+def test_compile_input_json_raises():
+    input_json = compiler.generate_input_json({'path': "potato"}, True, 200)
+    with pytest.raises(CompilerError):
+        compiler.compile_from_input_json(input_json)
+
+
+def test_compile_optimizer(monkeypatch):
+    def _test_compiler(a, **kwargs):
+        assert kwargs['optimize'] is True
+        assert kwargs['optimize_runs'] == 666
+    monkeypatch.setattr('solcx.compile_standard', _test_compiler)
+    input_json = {'settings': {'optimizer': {'enabled': True, 'runs': 666}}}
+    compiler.compile_from_input_json(input_json)
+    input_json = {'settings': {'optimizer': {'enabled': True, 'runs': 31337}}}
+    with pytest.raises(AssertionError):
+        compiler.compile_from_input_json(input_json)
+    input_json = {'settings': {'optimizer': {'enabled': False, 'runs': 666}}}
+    with pytest.raises(AssertionError):
+        compiler.compile_from_input_json(input_json)
+
+
+def test_build_json_keys():
+    build_json = compiler.compile_and_format({'path': _solc_5_source()})
+    assert set(build.BUILD_KEYS) == set(build_json['TempTester'])
+
+
+def test_build_json_unlinked_libraries():
+    build_json = compiler.compile_and_format({'path': _solc_5_source()})
     assert '__TestLib__' in build_json['TempTester']['bytecode']
-    config['solc']['version'] = "v0.4.25"
-    compiler.set_solc_version()
-    source = _solc_4_source()
-    build_json = compiler.compile_source(source)
+    compiler.set_solc_version("v0.4.25")
+    build_json = compiler.compile_and_format({'path': _solc_4_source()})
     assert '__TestLib__' in build_json['TempTester']['bytecode']
 
 
-def test_compiler_errors(version):
+def test_format_link_references():
+    output_json = _solc_5_output_json()
+    evm = output_json['contracts']['path']['TempTester']['evm']
+    assert '__TestLib__' in compiler.format_link_references(evm)
+    output_json = _solc_4_output_json()
+    evm = output_json['contracts']['path']['TempTester']['evm']
+    assert '__TestLib__' in compiler.format_link_references(evm)
+
+
+def test_compiler_errors():
     with pytest.raises(CompilerError):
-        compiler.compile_contracts(["contracts/Token.sol"])
-    compiler.compile_contracts(["contracts/Token.sol", "contracts/SafeMath.sol"])
-    source = _solc_4_source()
+        compiler.compile_and_format({'path': _solc_4_source()})
+    solcx.set_solc_version('0.4.25')
     with pytest.raises(CompilerError):
-        compiler.compile_source(source)
-    config['solc']['version'] = "v0.4.25"
-    compiler.set_solc_version()
-    compiler.compile_source(source)
+        compiler.compile_and_format({'path': _solc_5_source()})

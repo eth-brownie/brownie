@@ -223,6 +223,9 @@ class Contract(_ContractBase):
             else:
                 setattr(self, i['name'], ContractTx(address, i, name, owner))
 
+    def __hash__(self):
+        return hash(self._name+self.address)
+
     def __repr__(self):
         return "<{0._name} Contract object '{1[string]}{0.address}{1}'>".format(self, color)
 

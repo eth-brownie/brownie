@@ -5,13 +5,9 @@ import sys
 import os
 from pathlib import Path
 
-from brownie import project
 from brownie.cli.compile import main as compile_main
 
-
 project_path = Path("tests/brownie-test-project")
-sources = project.sources.Sources()
-build = project.build.Build()
 
 
 @pytest.fixture(autouse=True, scope="function")

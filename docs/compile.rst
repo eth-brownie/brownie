@@ -10,7 +10,7 @@ To compile a project:
 
     $ brownie compile
 
-Each time the compiler runs, Brownie compares hashes of the contract source code against the existing compiled versions.  If a contract has not changed it will not be recompiled.  If you wish to force a recompile of the entire project, use ``brownie compile --all``.
+Each time the compiler runs, Brownie compares hashes of the contract source code against the existing compiled versions.  If a contract has not changed it will not be recompiled. If you wish to force a recompile of the entire project, use ``brownie compile --all``.
 
 The compiler version is set in ``brownie-config.json``. If the required version is not present, it will be installed when Brownie loads.
 
@@ -20,28 +20,31 @@ The compiler version is set in ``brownie-config.json``. If the required version 
         "solc":{
             "optimize": true,
             "runs": 200,
-            "version": "0.5.7"
+            "version": "0.5.7",
+            "minify_source": false
         }
     }
 
 Modifying the compiler version or optimization settings will result in a full recompile of the project.
 
+If ``minify_source`` is ``true``, the contract source is minified before compiling. Brownie will then minify the source code before checking the hashes to determine if a recompile is necessary. This allows you to modify formatting and comments without triggering a recompile.
+
 .. _compile-json:
 
-Compiled JSON Format
-====================
+Build JSON Format
+=================
 
 .. note::
 
     Unless you are integrating a third party tool or hacking on the Brownie source code, you won't need to understand the compiled contract format. If you're just using Brownie for developing a project you can skip the rest of this section.
 
-Each contract will have it's own ``.json`` file stored in the ``build/contracts`` folder. The format of this file is as follows:
+Each contract has it's own JSON file stored in the ``build/contracts`` folder. The format of this file is as follows:
 
 .. code-block:: javascript
 
     {
         'abi': [], // contract ABI
-        'allSourcePaths': [], // absolute paths to every related contract source code file
+        'allSourcePaths': [], // relative paths to every related contract source code file
         'ast': {}, // the AST object
         'bytecode': "0x00", // bytecode object as a hex string, used for deployment
         'bytecodeSha1': "", // hash of bytecode without final metadata
@@ -50,68 +53,79 @@ Each contract will have it's own ``.json`` file stored in the ``build/contracts`
         'coverageMap': {}, // map for evaluating unit test coverage
         'deployedBytecode': "0x00", // bytecode as hex string after deployment
         'deployedSourceMap': "", // source mapping of the deployed bytecode
+        'dependencies': [], // contracts and libraries that this contract inherits from or is linked to
+        'fn_offsets': {}, // source code offsets for contract functions
+        'offset': [], // source code offsets for this contract
         'opcodes': "", // deployed contract opcodes list
         'pcMap': [], // program counter map
         'sha1': "", // hash of the contract source, used to check if a recompile is necessary
-        'source': "", // source code as a string
+        'source': "", // compiled source code as a string
         'sourceMap': "", // source mapping of undeployed bytecode
-        'sourcePath': "", // absolute path to the contract source code file
+        'sourcePath': "", // relative path to the contract source code file
         'type': "" // contract, library, interface
     }
 
-This raw data is available through the :ref:`api-project-build` object:
+This raw data is available through the `build <api-project-build>`_ module. If the contract was minified before compiling, Brownie will automatically adjust the source map offsets in ``pcMap``, ``fn_offsets`` and ``coverageMap`` to fit the current source.
 
 .. code-block:: python
 
-    >>> from brownie.project.build import Build
-    >>> build = Build()
-    >>> token_json = build["Token"]
-    >>> token_json.keys()
-    dict_keys(['abi', 'allSourcePaths', 'ast', 'bytecode', 'bytecodeSha1', 'compiler', 'contractName', 'coverageMap', 'deployedBytecode', 'deployedSourceMap', 'opcodes', 'pcMap', 'sha1', 'source', 'sourceMap', 'sourcePath', 'type'])
+    >>> from brownie.project import build
+    >>> token_json = build.get("Token")
+    >>> token_json['contractName']
+    "Token"
+
+.. _compile-pc-map:
 
 Program Counter Map
 -------------------
 
-Brownie generates an expanded version of the deployed source mapping that it uses for debugging and test coverage evaluation. It is structured as a list of dictionaries in the following format:
+Brownie generates an expanded version of the `deployed source mapping <https://solidity.readthedocs.io/en/latest/miscellaneous.html#source-mappings>`_ that it uses for debugging and test coverage evaluation. It is structured as a dictionary of dictionaries, where each key is a program counter as given by ``debug_traceTransaction``.
+
+If a value is ``false`` or the type equivalent, the key is not included.
 
 .. code-block:: javascript
 
     {
-        'contract': "", // relative path to the contract source code
-        'jump': "", // jump instruction as supplied in the sourceMap (-,i,o)
-        'op': "", // opcode string
-        'pc': 0, // program counter as given by debug_traceTransaction
-        'start': 0, // source code start offset
-        'stop': 0, // source code stop offset
-        'value': "0x00" // hex string value of the instruction, if any
+        'pc': {
+            'op': "", // opcode string
+            'path': "", // relative path to the contract source code
+            'offset': [0, 0], // source code start and stop offsets
+            'fn': str, // name of the related method
+            'jump': "", // jump instruction as given in the sourceMap (i, o)
+            'value': "0x00", // hex string value of the instruction
+            'statement': 0, // statement coverage index
+            'branch': 0 // branch coverage index
+        }
     }
+
+.. _compile-coverage-map:
 
 Coverage Map
 ------------
 
-All build files include a field ``coverageMap`` which is used when evaluating test coverage. It is structured as a nested dictionary in the following format:
+All build files include a ``coverageMap`` which is used when evaluating test coverage. It is structured as a nested dictionary in the following format:
 
 .. code-block:: javascript
 
     {
-        "/path/to/contract/file.sol": {
-            "functionName": {
-                "fn": {},
-                "line": [{}, {}, {}],
-                "total": 0
+        "statements": {
+            "/path/to/contract/file.sol": {
+                "ContractName.functionName": {
+                    "index": [start, stop]  // source offsets
+                }
+            }
+        },
+        "branches": {
+            "/path/to/contract/file.sol": {
+                "ContractName.functionName": {
+                    "index": [start, stop, bool]  // source offsets, jump boolean
+                }
             }
         }
     }
 
-Each dictionary within ``fn`` and ``line`` are the actual maps, structured as follows:
 
-.. code-block:: javascript
-
-    {
-        'jump': false, // pc of the JUMPI instruction, if it is a jump - otherwise false
-        'pc': [], // list of opcode program counters tied to the map item
-        'start': 0, // associated source code start offset
-        'stop': 0 // associated source code stop offset
-    }
+* Each ``statement`` index exists on a single program counter step. The statement is considered to have executed when the corresponding opcode executes within a transaction.
+* Each ``branch`` index is found on two program counters, one of which is always a ``JUMPI`` instruction. A transaction must run both opcodes before the branch is considered to have executed. Whether it evaluates true or false depends on if the jump occurs.
 
 See :ref:`coverage` for more information on test coverage evaluation.

@@ -15,7 +15,7 @@ def connect(network=None):
         network: string of of the name of the network to connect to
 
     Network information is retrieved from brownie-config.json'''
-    if CONFIG['active_network']['name']:
+    if is_connected():
         raise ConnectionError("Already connected to network '{}'".format(
             CONFIG['active_network']['name']
         ))
@@ -36,18 +36,21 @@ def connect(network=None):
                 rpc.launch(CONFIG['active_network']['test-rpc'])
     except Exception:
         CONFIG['active_network']['name'] = None
+        web3.disconnect()
         raise
 
 
 def disconnect():
     '''Disconnects from the network.'''
+    if not is_connected():
+        raise ConnectionError("Not connected to any network")
+    CONFIG['active_network']['name'] = None
     web3.disconnect()
     if rpc.is_active():
         if rpc.is_child():
             rpc.kill()
         else:
             rpc.reset()
-    CONFIG['active_network']['name'] = None
 
 
 def show_active():
@@ -69,14 +72,19 @@ def gas_limit(*args):
     * If an integer value is given, this will be the default gas limit.
     * If set to "auto", None, True or False, the gas limit is determined
     automatically.'''
+    if not is_connected():
+        raise ConnectionError("Not connected to any network")
     if args:
         if args[0] in ("auto", None, False, True):
             CONFIG['active_network']['gas_limit'] = False
         else:
             try:
-                CONFIG['active_network']['gas_limit'] = int(args[0])
-            except Exception:
-                return "Invalid gas limit."
+                limit = int(args[0])
+            except ValueError:
+                raise TypeError("Invalid gas limit '{}'".format(args[0]))
+            if limit < 21000:
+                raise ValueError("Minimum gas limit is 21000")
+            CONFIG['active_network']['gas_limit'] = limit
     return "Gas limit is set to {}".format(
         CONFIG['active_network']['gas_limit'] or "automatic"
     )

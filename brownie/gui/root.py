@@ -12,18 +12,16 @@ from .buttons import (
     HighlightsToggle
 )
 from .listview import ListView
-from .select import ContractSelect, ReportSelect
+from .select import ContractSelect, ReportSelect, HighlightSelect
 from .styles import (
     set_style,
-    # TEXT_STYLE
+    TEXT_STYLE
 )
 from .textbook import TextBook
 from .tooltip import ToolTip
 
-from brownie.project.build import Build
+from brownie.project import build
 from brownie._config import CONFIG
-
-build = Build()
 
 
 class Root(tk.Tk):
@@ -54,7 +52,7 @@ class Root(tk.Tk):
         set_style(self)
 
     def set_active(self, contract_name):
-        build_json = build[contract_name]
+        build_json = build.get(contract_name)
         self.main.note.set_visible(build_json['allSourcePaths'])
         self.main.note.set_active(build_json['sourcePath'])
         self.main.oplist.set_opcodes(build_json['pcMap'])
@@ -86,10 +84,11 @@ class MainFrame(ttk.Frame):
         self.note.pack(side="top", fill="both", expand=True)
         self.note.configure(width=920, height=100)
 
-        # GUI console - will be implemented later!
-        # self.console = tk.Text(frame, height=1)
-        # self.console.pack(side="bottom", fill="both")
-        # self.console.configure(**TEXT_STYLE)
+        # TODO - clean this up
+        self.console = tk.Text(frame, height=1)
+        self.console.pack(side="bottom", fill="both")
+        self.console.configure(**TEXT_STYLE)
+        self.console.configure(background="#272727")
 
 
 class ToolbarFrame(ttk.Frame):
@@ -121,3 +120,7 @@ class ToolbarFrame(ttk.Frame):
         self.highlight = HighlightsToggle(self)
         self.highlight.pack(side="left")
         ToolTip(self.highlight, "Toggle report highlighting")
+
+        self.highlight_select = HighlightSelect(self)
+        self.highlight_select.pack(side="left", padx=10)
+        ToolTip(self.highlight_select, "Toggle report highlighting")

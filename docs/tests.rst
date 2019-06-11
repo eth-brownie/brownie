@@ -57,6 +57,8 @@ Any arguments applied to a test module's ``setup`` method will be used as the de
 
 Tests rely heavily on methods in the Brownie ``check`` module as an alternative to normal ``assert`` statements. You can read about them in the API :ref:`api_check` documentation.
 
+.. _dev-revert:
+
 Developer Revert Strings
 ========================
 

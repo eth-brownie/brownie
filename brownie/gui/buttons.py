@@ -4,6 +4,7 @@ from pathlib import Path
 import tkinter as tk
 
 from .styles import BUTTON_STYLE
+from brownie.project.sources import is_inside_offset
 
 
 class _Toggle(tk.Button):
@@ -49,14 +50,14 @@ class ScopingToggle(_Toggle):
         pc = self.root.pcMap[op]
         for key, value in sorted(self.root.pcMap.items(), key=lambda k: int(k[0])):
             if (
-                not value['path'] or value['path'] != pc['path'] or
-                value['start'] < pc['start'] or value['stop'] > pc['stop']
+                'path' not in value or value['path'] != pc['path'] or
+                not is_inside_offset(value['offset'], pc['offset'])
             ):
                 self.oplist.detach(key)
             else:
                 self.oplist.move(key, '', key)
         self.oplist.see(op)
-        self.root.main.note.apply_scope(pc['start'], pc['stop'])
+        self.root.main.note.apply_scope(*pc['offset'])
         return True
 
     def toggle_off(self):
@@ -88,12 +89,12 @@ class HighlightsToggle(_Toggle):
         self.note = self.root.main.note
 
     def toggle_on(self):
-        if not self.root.active_report:
+        if not self.root.active_report or not self.root.report_key:
             return False
         contract = self.root.get_active()
-        if contract not in self.root.active_report['highlights']:
+        if contract not in self.root.active_report['highlights'][self.root.report_key]:
             return False
-        report = self.root.active_report['highlights'][contract]
+        report = self.root.active_report['highlights'][self.root.report_key][contract]
         for path, item in [(k, x) for k, v in report.items() for x in v]:
             label = Path(path).name
             self.note.mark(label, item[2], item[0], item[1])
