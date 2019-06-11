@@ -35,10 +35,10 @@ class TransactionReceipt:
 
     '''Attributes and methods relating to a broadcasted transaction.
 
-    * All ether values are given in wei.
-    * Before the tx confirms, many values are set to None.
-    * trace, revert_msg return_value, and events from a reverted tx
-      are only available if debug_traceTransaction is enabled in the RPC.
+    * All ether values are given as integers denominated in wei.
+    * Before the tx has confirmed, most attributes are set to None
+    * Accessing methods / attributes that query debug_traceTransaction
+      may be very slow if the transaction involved many steps
 
     Attributes:
         fn_name: Name of the method called in the transaction
@@ -55,17 +55,33 @@ class TransactionReceipt:
         contract_address: Address of contract deployed by the transaction
         logs: Raw transaction logs
         status: Transaction status: -1 pending, 0 reverted, 1 successful
+
+    Additional attributes:
+    (only available if debug_traceTransaction is enabled in the RPC)
+
         events: Decoded transaction log events
-        trace: Stack trace from debug_traceTransaction
-        return_value: Returned value from contract call
-        revert_msg: Error string from reverted contract all'''
+        trace: Expanded stack trace from debug_traceTransaction
+        return_value: Return value(s) from contract call
+        revert_msg: Error string from reverted contract all
+        modified_state: Boolean, did this contract write to storage?'''
 
     def __init__(self, txid, sender=None, silent=False, name='', callback=None, revert=None):
+        '''Instantiates a new TransactionReceipt object.
+
+        Args:
+            txid: hexstring transaction ID
+            sender: sender as a hex string or Account object
+            silent: toggles console verbosity
+            name: contract function being called
+            callback: optional callback function
+            revert: (revert string, program counter)
+        '''
         if type(txid) is not str:
             txid = txid.hex()
         if CONFIG['logging']['tx'] and not silent:
             print("\n{0[key]}Transaction sent{0}: {0[value]}{1}{0}".format(color, txid))
         history._add_tx(self)
+
         self._trace = None
         self._revert_pc = None
         self.block_number = None
@@ -83,6 +99,8 @@ class TransactionReceipt:
         self.txid = txid
         self.txindex = None
         self.value = None
+
+        # avoid querying the trace to get the revert string if possible
         if revert:
             self._revert_pc = revert[1]
             if revert[0]:
@@ -93,22 +111,25 @@ class TransactionReceipt:
                 revert = build.get_dev_revert(revert[1])
                 if type(revert) is str:
                     self.revert_msg = revert
-        t = threading.Thread(
-            target=self._await_confirm,
-            args=[silent, callback],
+
+        # threaded to allow impatient users to ctrl-c to stop waiting in the console
+        confirm_thread = threading.Thread(
+            target=self._await_confirmation,
+            args=(silent, callback),
             daemon=True
         )
-        t.start()
+        confirm_thread.start()
         try:
-            t.join()
+            confirm_thread.join()
             if ARGV['cli'] == "console":
                 return
+            # if coverage evaluation is active, get the trace immediately
             if ARGV['coverage']:
-                self._evaluate_trace()
+                self._expand_trace()
             if not self.status:
                 if revert is None:
                     # no revert message and unable to check dev string - have to get trace
-                    self._evaluate_trace()
+                    self._expand_trace()
                 raise VirtualMachineError({
                     "message": "revert "+(self.revert_msg or ""),
                     "source": self.error(1)
@@ -116,70 +137,6 @@ class TransactionReceipt:
         except KeyboardInterrupt:
             if ARGV['cli'] != "console":
                 raise
-
-    def _await_confirm(self, silent, callback):
-        while True:
-            tx = web3.eth.getTransaction(self.txid)
-            if tx:
-                break
-            time.sleep(0.5)
-        if not self.sender:
-            self.sender = tx['from']
-        self.receiver = tx['to']
-        self.value = tx['value']
-        self.gas_price = tx['gasPrice']
-        self.gas_limit = tx['gas']
-        self.input = tx['input']
-        self.nonce = tx['nonce']
-        if tx['to'] and _contracts.find(tx['to']) is not None:
-            self.receiver = _contracts.find(tx['to'])
-            if not self.fn_name:
-                self.fn_name = "{}.{}".format(
-                    self.receiver._name,
-                    self.receiver.get_method(tx['input'])
-                )
-        if not tx['blockNumber'] and CONFIG['logging']['tx'] and not silent:
-            print("Waiting for confirmation...")
-        receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
-        self._after_confirm(receipt, silent, callback)
-
-    def _after_confirm(self, receipt, silent, callback):
-        self.block_number = receipt['blockNumber']
-        self.txindex = receipt['transactionIndex']
-        self.gas_used = receipt['gasUsed']
-        self.contract_address = receipt['contractAddress']
-        self.logs = receipt['logs']
-        self.status = receipt['status']
-        if self.status:
-            self.events = decode_logs(receipt['logs'])
-        if self.fn_name:
-            history._gas(self.fn_name, receipt['gasUsed'])
-        if not silent:
-            if CONFIG['logging']['tx'] >= 2:
-                self.info()
-            elif CONFIG['logging']['tx']:
-                print(
-                    ("{1} confirmed {2}- {0[key]}block{0}: {0[value]}{3}{0}   "
-                     "{0[key]}gas used{0}: {0[value]}{4}{0} ({0[value]}{5:.2%}{0})").format(
-                        color,
-                        self.fn_name or "Transaction",
-                        "" if self.status else "({0[error]}{1}{0}) ".format(
-                            color,
-                            self.revert_msg or "reverted"
-                        ),
-                        self.block_number,
-                        self.gas_used,
-                        self.gas_used / self.gas_limit
-                    )
-                )
-                if receipt['contractAddress']:
-                    print("{1} deployed at: {0[value]}{2}{0}".format(
-                        color,
-                        self.fn_name.split('.')[0],
-                        receipt['contractAddress']
-                    ))
-        if callback:
-            callback(self)
 
     def __repr__(self):
         c = {-1: 'pending', 0: 'error', 1: None}
@@ -191,25 +148,97 @@ class TransactionReceipt:
         return hash(self.txid)
 
     def __getattr__(self, attr):
-        if attr not in {
-            'events',
-            'modified_state',
-            'return_value',
-            'revert_msg',
-            'trace'
-        }:
+        # these values require debug_traceTransaction, only request it from the RPC when needed
+        if attr not in {'events', 'modified_state', 'return_value', 'revert_msg', 'trace'}:
             raise AttributeError("'TransactionReceipt' object has no attribute '{}'".format(attr))
         if self.status == -1:
             return None
         if attr == "trace":
-            self._evaluate_trace()
+            self._expand_trace()
         elif self._trace is None:
             self._get_trace()
         return self.__dict__[attr]
 
+    def _await_confirmation(self, silent, callback):
+
+        # await tx showing in mempool
+        while True:
+            tx = web3.eth.getTransaction(self.txid)
+            if tx:
+                break
+            time.sleep(0.5)
+        self._set_from_tx(tx)
+
+        if not tx['blockNumber'] and CONFIG['logging']['tx'] and not silent:
+            print("Waiting for confirmation...")
+
+        receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
+        self._set_from_receipt(receipt)
+        if not silent:
+            self._confirm_output()
+        if callback:
+            callback(self)
+
+    def _set_from_tx(self, tx):
+        if not self.sender:
+            self.sender = tx['from']
+        self.receiver = tx['to']
+        self.value = tx['value']
+        self.gas_price = tx['gasPrice']
+        self.gas_limit = tx['gas']
+        self.input = tx['input']
+        self.nonce = tx['nonce']
+
+        # if receiver is a known contract, set function name
+        if tx['to'] and _contracts.find(tx['to']) is not None:
+            self.receiver = _contracts.find(tx['to'])
+            if not self.fn_name:
+                self.fn_name = "{}.{}".format(
+                    self.receiver._name,
+                    self.receiver.get_method(tx['input'])
+                )
+
+    def _set_from_receipt(self, receipt):
+        '''Set object attributes after the transaction has confirmed.'''
+        self.block_number = receipt['blockNumber']
+        self.txindex = receipt['transactionIndex']
+        self.gas_used = receipt['gasUsed']
+        self.contract_address = receipt['contractAddress']
+        self.logs = receipt['logs']
+        self.status = receipt['status']
+        if self.status:
+            self.events = decode_logs(receipt['logs'])
+        if self.fn_name:
+            history._gas(self.fn_name, receipt['gasUsed'])
+
+    def _confirm_output(self):
+        if CONFIG['logging']['tx'] >= 2:
+            return self.info()
+        print(
+            ("{1} confirmed {2}- {0[key]}block{0}: {0[value]}{3}{0}   "
+                "{0[key]}gas used{0}: {0[value]}{4}{0} ({0[value]}{5:.2%}{0})").format(
+                color,
+                self.fn_name or "Transaction",
+                "" if self.status else "({0[error]}{1}{0}) ".format(
+                    color,
+                    self.revert_msg or "reverted"
+                ),
+                self.block_number,
+                self.gas_used,
+                self.gas_used / self.gas_limit
+            )
+        )
+        if self.contract_address:
+            print("{1} deployed at: {0[value]}{2}{0}".format(
+                color,
+                self.fn_name.split('.')[0],
+                self.contract_address
+            ))
+
     def _get_trace(self):
-        '''Retrieves the stack trace via debug_traceTransaction, and finds the
-        return value, revert message and event logs in the trace.'''
+        '''Retrieves the stack trace via debug_traceTransaction and finds the
+        return value, revert message and event logs in the trace.
+        '''
         if self._trace is not None:
             return
         self.return_value = None
@@ -226,38 +255,43 @@ class TransactionReceipt:
             raise RPCRequestError(trace['error']['message'])
         self._trace = trace = trace['result']['structLogs']
         if self.status:
-            # get return value
-            self.modified_state = bool(next((i for i in trace if i['op'] == "SSTORE"), False))
-            step = trace[-1]
-            if step['op'] != "RETURN":
-                return
-            contract = self.contract_address or self.receiver
-            if type(contract) is str:
-                return
-            data = _get_memory(step, -1)
-            fn = getattr(contract, self.fn_name.split('.')[-1])
-            self.return_value = fn.decode_abi(data)
+            self._confirmed_trace(trace)
+        else:
+            self._reverted_trace(trace)
+
+    def _confirmed_trace(self, trace):
+        self.modified_state = next((True for i in trace if i['op'] == "SSTORE"), False)
+        step = trace[-1]
+        if step['op'] != "RETURN" or type(self.receiver) is str:
             return
-        # get revert message
+        # get return value
+        data = _get_memory(step, -1)
+        fn = getattr(self.receiver, self.fn_name.split('.')[-1])
+        self.return_value = fn.decode_abi(data)
+        return
+
+    def _reverted_trace(self, trace):
         self.modified_state = False
         # get events from trace
         self.events = decode_trace(trace)
         if self.revert_msg is not None:
             return
-        if trace[-1]['op'] == "REVERT" and int(trace[-1]['stack'][-2], 16):
-            data = _get_memory(trace[-1], -1)[8:]
-            self.revert_msg = to_string(data[8:])
+        step = trace[-1]
+        if step['op'] == "REVERT" and int(step['stack'][-2], 16):
+            # get revert message
+            data = _get_memory(step, -1)[8:]
+            self.revert_msg = to_string(data)
             return
-        self.revert_msg = build.get_dev_revert(trace[-1]['pc'])
-        if self.revert_msg is None:
-            self._evaluate_trace()
-            trace = self.trace[-1]
-            try:
-                self.revert_msg = build.get(trace['contractName'])['pcMap'][trace['pc']]['dev']
-            except KeyError:
-                self.revert_msg = ""
+        self.revert_msg = build.get_dev_revert(step['pc'])
+        if self.revert_msg is not None:
+            return
+        self._expand_trace()
+        try:
+            self.revert_msg = build.get(step['contractName'])['pcMap'][step['pc']]['dev']
+        except KeyError:
+            self.revert_msg = ""
 
-    def _evaluate_trace(self):
+    def _expand_trace(self):
         '''Adds the following attributes to each step of the stack trace:
 
         address: The address executing this contract.
@@ -339,8 +373,7 @@ class TransactionReceipt:
                 last['jumpDepth'] -= 1
 
     def info(self):
-        '''Displays verbose information about the transaction, including
-        decoded event logs.'''
+        '''Displays verbose information about the transaction, including decoded event logs.'''
         if self.contract_address:
             line = "New Contract Address{0}: {0[value]}{1}".format(color, self.contract_address)
         else:
@@ -373,7 +406,8 @@ class TransactionReceipt:
         '''Displays the complete sequence of contracts and methods called during
         the transaction, and the range of trace step indexes for each method.
 
-        Lines highlighed in red ended with a revert.'''
+        Lines highlighed in red ended with a revert.
+        '''
         trace = self.trace
         if not trace:
             if not self.contract_address:
@@ -399,6 +433,7 @@ class TransactionReceipt:
                 )
                 _depth = depth+jump_depth+indent[depth]
                 result += _step_print(trace[idx], trace[end-1], _depth, idx, end)
+        return result
 
     def traceback(self):
         '''Returns an error traceback for the transaction.'''
@@ -440,7 +475,8 @@ class TransactionReceipt:
         Args:
             pad: Number of unrelated lines of code to include before and after
 
-        Returns: source code string'''
+        Returns: source code string
+        '''
         if self.status == 1:
             return ""
         if self._revert_pc:
@@ -465,7 +501,8 @@ class TransactionReceipt:
             idx: Stack trace step index
             pad: Number of unrelated lines of code to include before and after
 
-        Returns: source code string'''
+        Returns: source code string
+        '''
         source = self.trace[idx]['source']
         if not source:
             return ""
