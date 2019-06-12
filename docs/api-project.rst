@@ -189,7 +189,9 @@ Module Methods
 
 .. py:method:: build.get_error_source_from_pc(pc)
 
-    Given the program counter from a stack trace that caused a transaction to revert, returns the highlighted relevent source code.  Used by ``TransactionReceipt`` when generating a ``VirtualMachineError``.
+    Given the program counter from a stack trace that caused a transaction to revert, returns the highlighted relevent source code and the name of the method that reverted.
+
+    Used by ``TransactionReceipt`` when generating a ``VirtualMachineError``.
 
 .. py:method:: build.expand_build_offsets(build_json)
 
@@ -398,36 +400,6 @@ Module Methods
         >>> from brownie.project import sources
         >>> sources.get_source_path('Token')
         'contracts/Token.sol'
-
-.. py:method:: sources.get_fn(contract, offset)
-
-    Given a contract name, start and stop offset, returns the name of the associated function. Returns ``False`` if the offset spans multiple functions.
-
-    .. code-block:: python
-
-        >>> from brownie.project import sources
-        >>> sources.get_fn("Token", (2000, 2020))
-        'Token.balanceOf'
-
-.. py:method:: sources.get_fn_offset(contract, fn_name)
-
-    Given a contract and function name, returns the source offsets of the function.
-
-    .. code-block:: python
-
-        >>> from brownie.project import sources
-        >>> sources.get_fn_offset("Token", "balanceOf")
-        (1992, 2050)
-
-.. py:method:: sources.get_contract_name(path, offset)
-
-    Given a path and source offsets, returns the name of the contract. Returns ``False`` if the offset spans multiple contracts.
-
-    .. code-block:: python
-
-        >>> from brownie.project import sources
-        >>> sources.get_contract_name("contracts/Token.sol", (1000, 1200))
-        "Token"
 
 .. py:method: sources.get_highlighted_source(path, offset, pad=3)
 
