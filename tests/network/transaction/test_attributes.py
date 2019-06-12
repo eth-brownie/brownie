@@ -2,6 +2,7 @@
 
 from brownie.network.account import Account
 from brownie.network.contract import Contract
+from brownie.types import EventDict
 from brownie import accounts
 
 
@@ -84,3 +85,21 @@ def test_revert_msg(console_mode, tester):
     assert tx.revert_msg == "two"
     tx = tester.testRevertStrings(3)
     assert tx.revert_msg == ""
+
+
+def test_events(console_mode, tester):
+    tx = tester.testRevertStrings(5)
+    assert tx.status == 1
+    assert type(tx.events) is EventDict
+    assert 'Debug' in tx.events
+    tx = tester.testRevertStrings(0)
+    assert tx.status == 0
+    assert type(tx.events) is EventDict
+    assert 'Debug' in tx.events
+
+
+def test_hash(tester):
+    a = tester.doNothing()
+    b = tester.doNothing()
+    assert a != b
+    assert a == a

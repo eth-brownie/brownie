@@ -31,14 +31,16 @@ def noload():
 def tester():
     network.rpc.reset()
     project.UnlinkedLib.deploy({'from': accounts[0]})
-    yield project.BrownieTester.deploy({'from': accounts[0]})
+    contract = project.BrownieTester.deploy({'from': accounts[0]})
+    yield contract
     network.rpc.reset()
 
 
 @pytest.fixture(scope="module")
 def token():
     network.rpc.reset()
-    yield project.Token.deploy("TST", "Test Token", 18, 1000000, {'from': accounts[0]})
+    contract = project.Token.deploy("TST", "Test Token", 18, 1000000, {'from': accounts[0]})
+    yield contract
     network.rpc.reset()
 
 
