@@ -69,7 +69,7 @@ def get_error_source_from_pc(pc, pad=3):
     '''Given the program counter from a stack trace that caused a transaction
     to revert, returns the highlighted relevent source code.'''
     if pc not in _revert_map or len(_revert_map[pc]) > 1:
-        return None
+        return None, None
     revert = next(iter(_revert_map[pc]))
     if revert[0] is False:
         return None, None

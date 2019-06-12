@@ -3,6 +3,7 @@
 import threading
 import time
 
+from eth_abi import decode_abi
 from hexbytes import HexBytes
 
 from .history import (
@@ -17,7 +18,6 @@ from .web3 import Web3
 from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build, sources
-from brownie.types.convert import to_string
 from brownie._config import ARGV, CONFIG
 
 history = TxHistory()
@@ -172,7 +172,7 @@ class TransactionReceipt:
         # await confirmation
         receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
         self._set_from_receipt(receipt)
-        if not silent:
+        if not silent and CONFIG['logging']['tx']:
             print(self._confirm_output())
         if callback:
             callback(self)
@@ -274,8 +274,8 @@ class TransactionReceipt:
         step = trace[-1]
         if step['op'] == "REVERT" and int(step['stack'][-2], 16):
             # get revert message
-            data = _get_memory(step, -1)[8:]
-            self.revert_msg = to_string(data)
+            data = _get_memory(step, -1)[4:]
+            self.revert_msg = decode_abi(['string'], data)[0].decode()
             return
         self.revert_msg = build.get_dev_revert(step['pc'])
         if self.revert_msg is not None:
@@ -530,6 +530,8 @@ class TransactionReceipt:
         if not source:
             return ""
         source = sources.get_highlighted_source(source['filename'], source['offset'], pad)
+        if not source:
+            return ""
         return _format_source(source, self.trace[idx]['pc'], idx, self.trace[idx]['fn'])
 
 
@@ -564,4 +566,4 @@ def _step_print(step, last_step, indent, start, stop):
 def _get_memory(step, idx):
     offset = int(step['stack'][idx], 16) * 2
     length = int(step['stack'][idx-1], 16) * 2
-    return HexBytes("".join(step['memory'])[offset:offset+length]).hex()
+    return HexBytes("".join(step['memory'])[offset:offset+length])

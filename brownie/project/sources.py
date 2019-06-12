@@ -171,7 +171,7 @@ def get_highlighted_source(path, offset, pad=3):
         pad_start = newlines.index(next(i for i in newlines if i >= offset[0]))
         pad_stop = newlines.index(next(i for i in newlines if i >= offset[1]))
     except StopIteration:
-        return ""
+        return
     ln = pad_start + 1
     pad_start = newlines[max(pad_start-(pad+1), 0)]
     pad_stop = newlines[min(pad_stop+pad, len(newlines)-1)]
