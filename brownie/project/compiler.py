@@ -169,7 +169,6 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
             'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
             'dependencies': [i.name for i in node.dependencies],
             # 'networks': {},
-            'fn_offsets': [[node.name+'.'+i.name, i.offset] for i in node.functions],
             'offset': node.offset,
             'opcodes': evm['deployedBytecode']['opcodes'],
             'pcMap': pc_map,
@@ -240,8 +239,10 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
 
     source_map = deque(expand_source_map(source_map))
     opcodes = deque(opcodes.split(" "))
-    id_map = dict((i.contract_id, i) for i in [contract_node]+contract_node.dependencies)
-    paths = set(v.parent().path for v in id_map.values())
+
+    contract_nodes = [contract_node]+contract_node.dependencies
+    source_nodes = dict((i.contract_id, i.parent()) for i in contract_nodes)
+    paths = set(v.path for v in source_nodes.values())
 
     statement_nodes = dict((i, statement_nodes[i].copy()) for i in paths)
     statement_map = dict((i, {}) for i in paths)
@@ -274,8 +275,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
         # set contract path (-1 means none)
         if source[2] == -1:
             continue
-        node = id_map[source[2]]
-        path = node.parent().path
+        path = source_nodes[source[2]].path
         pc_list[-1]['path'] = path
 
         # set source offset (-1 means none)
@@ -302,7 +302,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
             if 'offset' in pc_list[-2] and offset == pc_list[-2]['offset']:
                 pc_list[-1]['fn'] = pc_list[-2]['fn']
             else:
-                pc_list[-1]['fn'] = node.children(
+                pc_list[-1]['fn'] = source_nodes[source[2]].children(
                     depth=2,
                     inner_offset=offset,
                     filters={'node_type': "FunctionDefinition"}
@@ -319,7 +319,6 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
             continue
 
     # set branch index markers and build final branch map
-    source_nodes = dict((i.parent().path, i.parent()) for i in id_map.values())
     branch_map = dict((i, {}) for i in paths)
     for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
         # for branch to be hit, need an op relating to the source and the next JUMPI

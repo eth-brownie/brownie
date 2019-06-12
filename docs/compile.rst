@@ -54,7 +54,6 @@ Each contract has it's own JSON file stored in the ``build/contracts`` folder. T
         'deployedBytecode': "0x00", // bytecode as hex string after deployment
         'deployedSourceMap': "", // source mapping of the deployed bytecode
         'dependencies': [], // contracts and libraries that this contract inherits from or is linked to
-        'fn_offsets': {}, // source code offsets for contract functions
         'offset': [], // source code offsets for this contract
         'opcodes': "", // deployed contract opcodes list
         'pcMap': [], // program counter map
@@ -65,7 +64,7 @@ Each contract has it's own JSON file stored in the ``build/contracts`` folder. T
         'type': "" // contract, library, interface
     }
 
-This raw data is available through the `build <api-project-build>`_ module. If the contract was minified before compiling, Brownie will automatically adjust the source map offsets in ``pcMap``, ``fn_offsets`` and ``coverageMap`` to fit the current source.
+This raw data is available through the `build <api-project-build>`_ module. If the contract was minified before compiling, Brownie will automatically adjust the source map offsets in ``pcMap`` and ``coverageMap`` to fit the current source.
 
 .. code-block:: python
 

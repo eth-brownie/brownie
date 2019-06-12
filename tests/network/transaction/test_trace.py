@@ -3,7 +3,7 @@
 '''debug_traceTransaction is a very expensive call and should be avoided where
 possible. These tests check that it is only being called when absolutely necessary.'''
 
-from brownie import accounts
+from brownie import accounts, project
 from brownie.project import build
 
 
@@ -62,6 +62,12 @@ def test_modified_state(console_mode, tester):
     assert 'trace' not in tx.__dict__
 
 
+def test_modified_state_revert(console_mode, tester):
+    tx = tester.testRevertStrings(1)
+    assert not tx._trace
+    assert tx.modified_state is False
+
+
 def test_trace(tester):
     '''getting the trace also evaluates the trace'''
     tx = tester.doNothing()
@@ -115,3 +121,40 @@ def test_trace_transfer():
     '''trace is not calculated for regular transfers of eth'''
     tx = accounts[0].transfer(accounts[1], "1 ether")
     assert not tx.trace
+
+
+def test_expand_first(tester):
+    '''can call _expand_trace without _get_trace first'''
+    tx = tester.doNothing()
+    assert not tx._trace
+    tx._expand_trace()
+    assert 'trace' in tx.__dict__
+
+
+def test_expand_multiple(tester):
+    '''multiple calls to get_trace and expand_trace should not raise'''
+    tx = tester.doNothing()
+    tx._expand_trace()
+    tx._get_trace()
+    tx._expand_trace()
+    tx = tester.doNothing()
+    tx._get_trace()
+    tx._expand_trace()
+    tx._get_trace()
+
+
+def test_external_jump():
+    ext = accounts[0].deploy(project.ExternalCallTester)
+    other = accounts[0].deploy(project.Other)
+    tx = ext.doNotCall(other)
+    assert not next((i for i in tx.trace if i['depth'] != 0), False)
+    tx = ext.callAnother(other, 4)
+    assert next(i for i in tx.trace if i['depth'] != 0)
+
+
+def test_revert_string_from_trace(console_mode, tester):
+    tx = tester.testRevertStrings(0)
+    msg = tx.revert_msg
+    tx.revert_msg = None
+    tx._reverted_trace(tx.trace)
+    assert tx.revert_msg == msg
