@@ -257,17 +257,28 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
 
     count, pc = 0, 0
     pc_list = []
+    first_revert = None
+    revert_map = {}
 
     while source_map:
 
         # format of source is [start, stop, contract_id, jump code]
         source = source_map.popleft()
         pc_list.append({'op': opcodes.popleft(), 'pc': pc})
-        pc += 1
+
+        if (
+            first_revert is None and pc_list[-1]['op'] == "REVERT" and
+            [i['op'] for i in pc_list[-4:-1]] == ["JUMPDEST", "PUSH1", "DUP1"]
+        ):
+            # flag the REVERT op at the end of the function selector,
+            # later reverts may jump to it instead of having their own REVERT op
+            first_revert = "0x"+hex(pc-4).upper()[2:]
+            pc_list[-1]['first_revert'] = True
 
         if source[3] != "-":
             pc_list[-1]['jump'] = source[3]
 
+        pc += 1
         if opcodes[0][:2] == "0x":
             pc_list[-1]['value'] = opcodes.popleft()
             pc += int(pc_list[-1]['op'][4:])
@@ -316,7 +327,31 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
                 pc_list[-1]['statement'] = count
                 count += 1
         except (KeyError, IndexError, StopIteration):
+            pass
+        if 'value' not in pc_list[-1]:
             continue
+        if pc_list[-1]['value'] == first_revert and opcodes[0] in {'JUMP', 'JUMPI'}:
+            # track all jumps to the initial revert
+            revert_map.setdefault((pc_list[-1]['path'], pc_list[-1]['fn']), []).append(len(pc_list))
+
+    # compare revert() statements against the map of revert jumps to find
+    for (path, fn_name), values in revert_map.items():
+        fn_node = next(i for i in source_nodes.values() if i.path == path).children(
+            depth=2,
+            include_children=False,
+            filters={'node_type': "FunctionDefinition", 'full_name': fn_name}
+        )[0]
+        revert_nodes = fn_node.children(filters={'node_type': "FunctionCall", 'name': "revert"})
+        # if the node has arguments it will always be included in the source map
+        for node in (i for i in revert_nodes if not i.arguments):
+            offset = node.offset
+            # if the node offset is not in the source map, apply it's offset to the JUMPI op
+            if not next((x for x in pc_list if 'offset' in x and x['offset'] == offset), False):
+                pc_list[values[0]].update({
+                    'offset': offset,
+                    'jump_revert': True
+                })
+                del values[0]
 
     # set branch index markers and build final branch map
     branch_map = dict((i, {}) for i in paths)

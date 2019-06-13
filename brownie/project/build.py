@@ -60,19 +60,17 @@ def get_dependents(contract_name):
 def get_dev_revert(pc):
     '''Given the program counter from a stack trace that caused a transaction
     to revert, returns the commented dev string (if any).'''
-    if pc not in _revert_map or len(_revert_map[pc]) > 1:
+    if pc not in _revert_map or _revert_map[pc] is False:
         return None
-    return next(iter(_revert_map[pc]))[3]
+    return _revert_map[pc][3]
 
 
 def get_error_source_from_pc(pc, pad=3):
     '''Given the program counter from a stack trace that caused a transaction
     to revert, returns the highlighted relevent source code and the method name.'''
-    if pc not in _revert_map or len(_revert_map[pc]) > 1:
+    if pc not in _revert_map or _revert_map[pc] is False:
         return None, None
-    revert = next(iter(_revert_map[pc]))
-    if revert[0] is False:
-        return None, None
+    revert = _revert_map[pc]
     return sources.get_highlighted_source(*revert[:2], pad=pad), revert[2]
 
 
@@ -145,23 +143,43 @@ def _add(build_json):
 
 
 def _generate_revert_map(pcMap):
-    # {pc: {("path", (start, stop), "function name", "error string" ) .. }}
-    for pc, data in [(k, v) for k, v in pcMap.items() if v['op'] in ("REVERT", "INVALID")]:
-        _revert_map.setdefault(pc, set())
-        if 'fn' not in data:
-            _revert_map[pc].add((False, (-1, -1), False, ""))
+    '''Adds a contract's dev revert strings to the revert map and it's pcMap.
+
+    The revert map is dict of tuples, where each key is a program counter that
+    contains a REVERT or INVALID operation for a contract in the active project.
+    When a transaction reverts, the dev revert string can be determined by looking
+    up the final program counter in this mapping.
+
+    Each value is a 4 item tuple as follows:
+
+    ("path/to/source", (start, stop), "function name", "dev: revert string"),
+
+    When two contracts have differing values for the same program counter, the value
+    in the revert map is set to False. If a transaction reverts with this pc,
+    the entire trace must be queried to determine which contract reverted and get
+    the dev string from it's pcMap.
+    '''
+    for pc, data in (
+        (k, v) for k, v in pcMap.items() if
+        v['op'] in {"REVERT", "INVALID"} or 'jump_revert' in v
+    ):
+        if 'fn' not in data or 'first_revert' in data:
+            _revert_map[pc] = False
             continue
-        revert = [data['path'], tuple(data['offset']), data['fn'], ""]
+        data['dev'] = ""
         try:
             revert_str = sources.get(data['path'])[data['offset'][1]:]
             revert_str = revert_str[:revert_str.index('\n')]
             revert_str = revert_str[revert_str.index('//')+2:].strip()
             if revert_str.startswith('dev:'):
-                revert[-1] = revert_str
                 data['dev'] = revert_str
         except (KeyError, ValueError):
             pass
-        _revert_map[pc].add(tuple(revert))
+        revert = (data['path'], tuple(data['offset']), data['fn'], data['dev'])
+        if pc in _revert_map and revert != _revert_map[pc]:
+            _revert_map[pc] = False
+            continue
+        _revert_map[pc] = revert
 
 
 def _stem(contract_name):

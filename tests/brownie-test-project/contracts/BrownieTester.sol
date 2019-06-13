@@ -45,7 +45,10 @@ contract BrownieTester {
         require (a != 1); // dev: one
         require (a != 2, "two"); // dev: error
         require (a != 3); // error
-        return true;
+        if (a != 31337) {
+            return true;
+        }
+        revert(); // dev: great job
     }
 
     function doNothing() external returns (bool) {

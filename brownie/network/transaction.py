@@ -106,7 +106,7 @@ class TransactionReceipt:
                 # revert message was returned
                 self.revert_msg = revert[0]
             else:
-                # check for revert message as comment
+                # check for dev revert string as a comment
                 revert = build.get_dev_revert(revert[1])
                 if type(revert) is str:
                     self.revert_msg = revert
@@ -271,18 +271,27 @@ class TransactionReceipt:
         self.events = decode_trace(trace)
         if self.revert_msg is not None:
             return
-        step = trace[-1]
+        # get revert message
+        step = next(i for i in trace if i['op'] == "REVERT")
         if step['op'] == "REVERT" and int(step['stack'][-2], 16):
-            # get revert message
+            # get returned error string from stack
             data = _get_memory(step, -1)[4:]
             self.revert_msg = decode_abi(['string'], data)[0].decode()
             return
+        # check for dev revert string using program counter
         self.revert_msg = build.get_dev_revert(step['pc'])
         if self.revert_msg is not None:
             return
+        # if none is found, expand the trace and get it from the pcMap
         self._expand_trace()
         try:
-            self.revert_msg = build.get(step['contractName'])['pcMap'][step['pc']]['dev']
+            pc_map = build.get(step['contractName'])['pcMap']
+            # if this is the function selector revert, check for a jump
+            if 'first_revert' in pc_map[step['pc']]:
+                i = trace.index(step) - 4
+                if trace[i]['pc'] != step['pc'] - 4:
+                    step = trace[i]
+            self.revert_msg = pc_map[step['pc']]['dev']
         except KeyError:
             self.revert_msg = ""
 
@@ -446,10 +455,10 @@ class TransactionReceipt:
                 result += _step_print(trace[idx], trace[end-1], depth+indent[depth], idx, end)
             elif depth == last[1] and jump_depth > last[2]:
                 # jumped into an internal function
-                end = next(
-                    (x[0] for x in trace_index[i+1:] if x[1] == depth and x[2] < jump_depth),
-                    len(trace)
-                )
+                end = next((
+                    x[0] for x in trace_index[i+1:] if x[1] < depth or
+                    (x[1] == depth and x[2] < jump_depth)
+                ), len(trace))
                 _depth = depth+jump_depth+indent[depth]
                 result += _step_print(trace[idx], trace[end-1], _depth, idx, end)
         return result
@@ -465,8 +474,8 @@ class TransactionReceipt:
             raise NotImplementedError("Traceback is not available for deployment transactions.")
 
         try:
-            trace_range = range(len(trace)-1, -1, -1)
-            idx = next(i for i in trace_range if trace[i]['op'] in {"REVERT", "INVALID"})
+            idx = next(i for i in range(len(trace)) if trace[i]['op'] in {"REVERT", "INVALID"})
+            trace_range = range(idx, -1, -1)
         except StopIteration:
             return ""
 

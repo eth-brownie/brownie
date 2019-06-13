@@ -166,12 +166,14 @@ def _compare_input(a, b, strict=False):
         return _convert_str(a) == _convert_str(b)
     if type(b) not in (tuple, list, KwargTuple) or len(b) != len(a):
         return False
-    return not [i for i in range(len(a)) if not _compare_input(a[i], b[i], strict)]
+    return next((False for i in range(len(a)) if not _compare_input(a[i], b[i], strict)), True)
 
 
 def _convert_str(value):
     if type(value) is not str:
-        return value
+        if not hasattr(value, 'address'):
+            return value
+        value = value.address
     if value.startswith('0x'):
         return "0x" + value.lstrip('0x').lower()
     if value.count(" ") != 1:
