@@ -271,7 +271,7 @@ class TransactionReceipt:
         self.events = decode_trace(trace)
         if self.revert_msg is not None:
             return
-        step = trace[-1]
+        step = next(i for i in trace if i['op'] == "REVERT")
         if step['op'] == "REVERT" and int(step['stack'][-2], 16):
             # get revert message
             data = _get_memory(step, -1)[4:]
@@ -283,8 +283,10 @@ class TransactionReceipt:
         self._expand_trace()
         try:
             pc_map = build.get(step['contractName'])['pcMap']
-            if 'first_revert' in pc_map[step['pc']] and trace[-5]['pc'] != step['pc']-5:
-                step = trace[-5]
+            if 'first_revert' in pc_map[step['pc']]:
+                i = trace.index(step) - 5
+                if trace[i]['pc'] != step['pc']-5:
+                    step = trace[i]
             self.revert_msg = pc_map[step['pc']]['dev']
         except KeyError:
             self.revert_msg = ""
@@ -449,10 +451,10 @@ class TransactionReceipt:
                 result += _step_print(trace[idx], trace[end-1], depth+indent[depth], idx, end)
             elif depth == last[1] and jump_depth > last[2]:
                 # jumped into an internal function
-                end = next(
-                    (x[0] for x in trace_index[i+1:] if x[1] == depth and x[2] < jump_depth),
-                    len(trace)
-                )
+                end = next((
+                    x[0] for x in trace_index[i+1:] if x[1] < depth or
+                    (x[1] == depth and x[2] < jump_depth)
+                ), len(trace))
                 _depth = depth+jump_depth+indent[depth]
                 result += _step_print(trace[idx], trace[end-1], _depth, idx, end)
         return result
@@ -468,8 +470,8 @@ class TransactionReceipt:
             raise NotImplementedError("Traceback is not available for deployment transactions.")
 
         try:
-            trace_range = range(len(trace)-1, -1, -1)
-            idx = next(i for i in trace_range if trace[i]['op'] in {"REVERT", "INVALID"})
+            idx = next(i for i in range(len(trace)) if trace[i]['op'] in {"REVERT", "INVALID"})
+            trace_range = range(idx, -1, -1)
         except StopIteration:
             return ""
 
