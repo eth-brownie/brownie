@@ -106,7 +106,7 @@ class TransactionReceipt:
                 # revert message was returned
                 self.revert_msg = revert[0]
             else:
-                # check for revert message as comment
+                # check for dev revert string as a comment
                 revert = build.get_dev_revert(revert[1])
                 if type(revert) is str:
                     self.revert_msg = revert
@@ -271,15 +271,18 @@ class TransactionReceipt:
         self.events = decode_trace(trace)
         if self.revert_msg is not None:
             return
+        # get revert message
         step = next(i for i in trace if i['op'] == "REVERT")
         if step['op'] == "REVERT" and int(step['stack'][-2], 16):
-            # get revert message
+            # get returned error string from stack
             data = _get_memory(step, -1)[4:]
             self.revert_msg = decode_abi(['string'], data)[0].decode()
             return
+        # check for dev revert string using program counter
         self.revert_msg = build.get_dev_revert(step['pc'])
         if self.revert_msg is not None:
             return
+        # if none is found, expand the trace and get it from the pcMap
         self._expand_trace()
         try:
             pc_map = build.get(step['contractName'])['pcMap']

@@ -270,6 +270,8 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
             first_revert is None and pc_list[-1]['op'] == "REVERT" and
             [i['op'] for i in pc_list[-4:-1]] == ["JUMPDEST", "PUSH1", "DUP1"]
         ):
+            # flag the REVERT op at the end of the function selector,
+            # later reverts may jump to it instead of having their own REVERT op
             first_revert = "0x"+hex(pc-4).upper()[2:]
             pc_list[-1]['first_revert'] = True
 
@@ -329,17 +331,21 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
         if 'value' not in pc_list[-1]:
             continue
         if pc_list[-1]['value'] == first_revert and opcodes[0] in {'JUMP', 'JUMPI'}:
+            # track all jumps to the initial revert
             revert_map.setdefault((pc_list[-1]['path'], pc_list[-1]['fn']), []).append(len(pc_list))
 
+    # compare revert() statements against the map of revert jumps to find
     for (path, fn_name), values in revert_map.items():
-        node = next(i for i in source_nodes.values() if i.path == path).children(
+        fn_node = next(i for i in source_nodes.values() if i.path == path).children(
             depth=2,
             include_children=False,
             filters={'node_type': "FunctionDefinition", 'full_name': fn_name}
         )[0]
-        revert_nodes = node.children(filters={'node_type': "FunctionCall", 'name': "revert"})
-        for i in range(len(revert_nodes)):
-            offset = revert_nodes[i].offset
+        revert_nodes = fn_node.children(filters={'node_type': "FunctionCall", 'name': "revert"})
+        # if the node has arguments it will always be included in the source map
+        for node in (i for i in revert_nodes if not i.arguments):
+            offset = node.offset
+            # if the node offset is not in the source map, apply it's offset to the JUMPI op
             if not next((x for x in pc_list if 'offset' in x and x['offset'] == offset), False):
                 pc_list[values[0]].update({
                     'offset': offset,

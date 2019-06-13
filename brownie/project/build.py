@@ -142,15 +142,27 @@ def _add(build_json):
     _generate_revert_map(build_json['pcMap'])
 
 
-def _revert_filter(pc):
-    # if 'fn' not in pc[1] or 'first_revert' in pc[1]:
-    #     return False
-    return pc[1]['op'] in {"REVERT", "INVALID"} or 'jump_revert' in pc[1]
-
-
 def _generate_revert_map(pcMap):
-    # {pc: {("path", (start, stop), "function name", "error string" ) .. }}
-    for pc, data in filter(_revert_filter, pcMap.items()):
+    '''Adds a contract's dev revert strings to the revert map and it's pcMap.
+
+    The revert map is dict of tuples, where each key is a program counter that
+    contains a REVERT or INVALID operation for a contract in the active project.
+    When a transaction reverts, the dev revert string can be determined by looking
+    up the final program counter in this mapping.
+
+    Each value is a 4 item tuple as follows:
+
+    ("path/to/source", (start, stop), "function name", "dev: revert string"),
+
+    When two contracts have differing values for the same program counter, the value
+    in the revert map is set to False. If a transaction reverts with this pc,
+    the entire trace must be queried to determine which contract reverted and get
+    the dev string from it's pcMap.
+    '''
+    for pc, data in (
+        (k, v) for k, v in pcMap.items() if
+        v['op'] in {"REVERT", "INVALID"} or 'jump_revert' in v
+    ):
         if 'fn' not in data or 'first_revert' in data:
             _revert_map[pc] = False
             continue
