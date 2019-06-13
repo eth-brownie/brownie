@@ -144,13 +144,16 @@ def _add(build_json):
     _generate_revert_map(build_json['pcMap'])
 
 
+def _revert_filter(pc):
+    if 'fn' not in pc[1] or 'first_revert' in pc[1]:
+        return False
+    return pc[1]['op'] in {"REVERT", "INVALID"} or 'jump_revert' in pc[1]
+
+
 def _generate_revert_map(pcMap):
     # {pc: {("path", (start, stop), "function name", "error string" ) .. }}
-    for pc, data in [(k, v) for k, v in pcMap.items() if v['op'] in ("REVERT", "INVALID")]:
+    for pc, data in filter(_revert_filter, pcMap.items()):
         _revert_map.setdefault(pc, set())
-        if 'fn' not in data:
-            _revert_map[pc].add((False, (-1, -1), False, ""))
-            continue
         revert = [data['path'], tuple(data['offset']), data['fn'], ""]
         try:
             revert_str = sources.get(data['path'])[data['offset'][1]:]
