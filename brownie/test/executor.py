@@ -117,6 +117,7 @@ def _run_module(test_path, method_data, check_coverage):
     if has_setup:
         tb, coverage_eval = _run_method(*method_data[0], {}, printer, check_coverage)
         if tb:
+            printer.finish()
             return tb, {}, set()
         del method_data[0]
     rpc.snapshot()
