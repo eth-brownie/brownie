@@ -286,9 +286,10 @@ class TransactionReceipt:
         self._expand_trace()
         try:
             pc_map = build.get(step['contractName'])['pcMap']
+            # if this is the function selector revert, check for a jump
             if 'first_revert' in pc_map[step['pc']]:
-                i = trace.index(step) - 5
-                if trace[i]['pc'] != step['pc']-5:
+                i = trace.index(step) - 4
+                if trace[i]['pc'] != step['pc'] - 4:
                     step = trace[i]
             self.revert_msg = pc_map[step['pc']]['dev']
         except KeyError:

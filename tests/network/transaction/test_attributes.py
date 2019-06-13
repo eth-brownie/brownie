@@ -85,6 +85,8 @@ def test_revert_msg(console_mode, tester):
     assert tx.revert_msg == "two"
     tx = tester.testRevertStrings(3)
     assert tx.revert_msg == ""
+    tx = tester.testRevertStrings(31337)
+    assert tx.revert_msg == "dev: great job"
 
 
 def test_events(console_mode, tester):
