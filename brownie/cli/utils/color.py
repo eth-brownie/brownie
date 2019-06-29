@@ -135,9 +135,9 @@ class Color:
             try:
                 start = tb.index(next(i for i in tb if filename in i))
                 stop = tb.index(next(i for i in tb[::-1] if filename in i)) + 1
-                tb = tb[start:stop]
             except Exception:
                 pass
+        tb = tb[start:stop]
         for i in range(len(tb)):
             info, code = tb[i].split('\n')[:2]
             if CONFIG['folders']['project']:
