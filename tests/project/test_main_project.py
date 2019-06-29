@@ -23,17 +23,35 @@ def test_check_for_project():
 
 def test_new(noload, tmpdir):
     assert tmpdir == project.new(tmpdir)
-    assert config['folders']['project'] == tmpdir
+    assert config['folders']['project'] is None
     assert Path(tmpdir).joinpath('brownie-config.json').exists()
 
 
 def test_new_raises(noload, tmpdir):
     project.new(tmpdir)
+    project.load(tmpdir)
     with pytest.raises(ProjectAlreadyLoaded):
         project.new(tmpdir)
     project.close()
     with pytest.raises(SystemError):
         project.new(tmpdir+"/contracts")
+
+
+def test_pull(noload, testpath):
+    path = project.pull('token')
+    assert config['folders']['project'] != path != testpath
+    assert Path(path).joinpath('brownie-config.json').exists()
+    assert Path(path).joinpath('contracts/Token.sol').exists()
+    assert Path(path).joinpath('contracts/SafeMath.sol').exists()
+    project.load(path)
+
+
+def test_pull_raises(noload, testpath):
+    project.new(testpath+'/token')
+    with pytest.raises(FileExistsError):
+        project.pull('token')
+    with pytest.raises(SystemError):
+        project.pull(testpath+"/token/contracts")
 
 
 def test_load_raises_already_loaded():

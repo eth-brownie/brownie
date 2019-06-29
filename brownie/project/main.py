@@ -50,7 +50,6 @@ def new(project_path=".", ignore_subfolder=False):
             str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
             str(project_path.joinpath('brownie-config.json'))
         )
-    CONFIG['folders']['project'] = str(project_path)
     _add_to_sys_path(project_path)
     return str(project_path)
 
@@ -65,7 +64,7 @@ def pull(project_name, project_path=None, ignore_subfolder=False):
 
     Returns the path to the project as a string.
     '''
-    project_name = project_name.replace('-mix', '')
+    project_name = str(project_name).replace('-mix', '')
     url = MIXES_URL.format(project_name)
     if project_path is None:
         project_path = Path('.').joinpath(project_name)
