@@ -5,9 +5,10 @@ import importlib
 from pathlib import Path
 import sys
 
-import brownie
 from brownie.cli.utils import color, notify
+import brownie.network as network
 import brownie.project as project
+from brownie._config import ARGV
 
 __version__ = "1.0.0b7"  # did you change this in docs/conf.py as well?
 
@@ -31,22 +32,23 @@ each command."""
 
 def main():
 
-    print("Brownie v{} - Python development framework for Ethereum\n".format(__version__))
+    print(f"Brownie v{__version__} - Python development framework for Ethereum\n")
 
+    # remove options before calling docopt
     if len(sys.argv) > 1 and sys.argv[1][0] != "-":
-        try:
-            idx = next(sys.argv.index(i) for i in sys.argv if i[0] == "-")
-            opts = sys.argv[idx:]
-            sys.argv = sys.argv[:idx]
-        except StopIteration:
-            opts = []
-
+        idx = next((sys.argv.index(i) for i in sys.argv if i.startswith("-")), len(sys.argv))
+        opts = sys.argv[idx:]
+        sys.argv = sys.argv[:idx]
     args = docopt(__doc__)
     sys.argv += opts
 
     cmd_list = [i.stem for i in Path(__file__).parent.glob('[!_]*.py')]
     if args['<command>'] not in cmd_list:
         sys.exit("Invalid command. Try 'brownie --help' for available commands.")
+
+    ARGV['cli'] = args['<command>']
+    sys.modules['brownie'].a = network.accounts
+    sys.modules['brownie'].__all__.append('a')
 
     if args['<command>'] not in ("init", "bake"):
         path = project.check_for_project('.')
@@ -55,11 +57,7 @@ def main():
             print("Type 'brownie init' to create the file structure.")
             return
         if args['<command>'] != "compile" and "--help" not in opts:
-            for container in project.load(path):
-                setattr(brownie, container._name, container)
-                brownie.__all__.append(container._name)
-            brownie.a = brownie.accounts
-            brownie.__all__.append('a')
+            project.load(path)
 
     try:
         importlib.import_module("brownie.cli."+args['<command>']).main()

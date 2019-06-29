@@ -10,7 +10,7 @@ import zipfile
 from brownie.network.contract import ContractContainer
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.project import build, sources, compiler
-from brownie._config import CONFIG, load_project_config
+from brownie._config import ARGV, CONFIG, load_project_config
 
 FOLDERS = [
     "contracts",
@@ -216,11 +216,15 @@ def _create_objects():
         if not data['bytecode']:
             continue
         container = ContractContainer(data)
+        result.append(container)
         sys.modules['brownie.project'].__dict__[name] = container
         sys.modules['brownie.project'].__all__.append(name)
-        result.append(container)
+        # if running via brownie cli, add to brownie namespace
+        if ARGV['cli']:
+            sys.modules['brownie'].__dict__[name] = container
+            sys.modules['brownie'].__all__.append(name)
         # if running via interpreter, add to main namespace if package was imported via from
-        if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
+        elif '__brownie_import_all__' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].__dict__[name] = container
     return result
 
