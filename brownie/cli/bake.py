@@ -1,17 +1,9 @@
 #!/usr/bin/python3
 
 from docopt import docopt
-from io import BytesIO
-from pathlib import Path
-import requests
-import shutil
-import sys
-import zipfile
 
+import brownie.project as project
 from brownie.cli.utils import notify
-from brownie._config import CONFIG
-
-MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 
 __doc__ = """Usage: brownie bake <mix> [<path>] [options]
 
@@ -32,23 +24,5 @@ For a complete list of Brownie mixes visit https://www.github.com/brownie-mixes
 
 def main():
     args = docopt(__doc__)
-    path = Path(args['<path>'] or '.').resolve()
-    final_path = path.joinpath(args['<mix>'])
-    if final_path.exists():
-        sys.exit("ERROR: Bake folder already exists - {}".format(final_path))
-
-    if CONFIG['folders']['brownie'] in str(path):
-        notify("ERROR", "Cannot bake inside the main brownie installation folder.")
-        print("Create a new folder for your project and run brownie bake there.")
-        return
-
-    print("Downloading from "+MIXES_URL.format(args['<mix>'])+" ...")
-    request = requests.get(MIXES_URL.format(args['<mix>']))
-    with zipfile.ZipFile(BytesIO(request.content)) as zf:
-        zf.extractall(str(path))
-    path.joinpath(args['<mix>']+'-mix-master').rename(final_path)
-    shutil.copy(
-        str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
-        str(final_path.joinpath('brownie-config.json'))
-    )
-    notify("SUCCESS", "Brownie mix '{}' has been initiated at {}".format(args['<mix>'], final_path))
+    path = project.pull(args['<mix>'], args['<path>'], args['--force'])
+    notify("SUCCESS", f"Brownie mix '{args['<mix>']}' has been initiated at {path}")

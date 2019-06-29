@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 
 from docopt import docopt
-from pathlib import Path
 
 import brownie.project as project
 from brownie.cli.utils import notify
-from brownie._config import CONFIG
 
 
 __doc__ = """Usage: brownie init [<path>] [options]
@@ -30,12 +28,5 @@ brownie-config.json     Project configuration file"""
 
 def main():
     args = docopt(__doc__)
-    path = Path(args['<path>'] or '.').resolve()
-
-    if CONFIG['folders']['brownie'] in str(path):
-        notify("ERROR", "Cannot init inside the main brownie installation folder.")
-        print("Create a new folder for your project and run brownie init there.")
-        return
-
-    project.new(path, args['--force'])
-    notify("SUCCESS", "Brownie environment has been initiated at {}".format(path))
+    path = project.new(args['<path>'] or '.', args['--force'])
+    notify("SUCCESS", f"Brownie environment has been initiated at {path}")

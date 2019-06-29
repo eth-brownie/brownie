@@ -89,12 +89,12 @@ def _new_checks(project_path, ignore_subfolder):
     if CONFIG['folders']['project']:
         raise ProjectAlreadyLoaded("Project has already been loaded")
     project_path = Path(project_path).resolve()
+    if CONFIG['folders']['brownie'] in str(project_path):
+        raise SystemError("Cannot make a new project inside the main brownie installation folder.")
     if not ignore_subfolder:
         check = check_for_project(project_path)
         if check and check != project_path:
-            raise SystemError(
-                "Cannot make a new project inside the subfolder of an existing project."
-            )
+            raise SystemError("Cannot make a new project in a subfolder of an existing project.")
     return project_path
 
 
