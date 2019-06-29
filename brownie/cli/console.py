@@ -8,7 +8,7 @@ import sys
 import threading
 
 import brownie
-import brownie.network as network
+from brownie import network, project
 from brownie.test.main import run_script
 from brownie.cli.utils import color
 from brownie._config import ARGV, CONFIG
@@ -180,6 +180,7 @@ def main():
     args = docopt(__doc__)
     ARGV._update_from_args(args)
 
+    project.load()
     network.connect(ARGV['network'])
     console = Console()
     print("Brownie environment is ready.")

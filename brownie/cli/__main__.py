@@ -5,9 +5,9 @@ import importlib
 from pathlib import Path
 import sys
 
+from brownie import network
 from brownie.cli.utils import color, notify
-import brownie.network as network
-import brownie.project as project
+from brownie.exceptions import ProjectNotFound
 from brownie._config import ARGV
 
 __version__ = "1.0.0b7"  # did you change this in docs/conf.py as well?
@@ -50,16 +50,10 @@ def main():
     sys.modules['brownie'].a = network.accounts
     sys.modules['brownie'].__all__.append('a')
 
-    if args['<command>'] not in ("init", "bake"):
-        path = project.check_for_project('.')
-        if not path:
-            notify("ERROR", "Brownie environment has not been initiated for this folder.")
-            print("Type 'brownie init' to create the file structure.")
-            return
-        if args['<command>'] != "compile" and "--help" not in opts:
-            project.load(path)
-
     try:
         importlib.import_module("brownie.cli."+args['<command>']).main()
+    except ProjectNotFound:
+        notify("ERROR", "Brownie environment has not been initiated for this folder.")
+        print("Type 'brownie init' to create the file structure.")
     except Exception:
         print(color.format_tb(sys.exc_info()))

@@ -2,6 +2,7 @@
 
 from docopt import docopt
 
+from brownie import project
 from brownie.test.main import run_tests
 from brownie._config import ARGV
 
@@ -27,6 +28,7 @@ def main():
     args = docopt(__doc__)
     ARGV._update_from_args(args)
 
+    project.load()
     run_tests(
         args['<filename>'],
         ARGV['update'],
