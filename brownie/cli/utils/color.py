@@ -62,72 +62,58 @@ class Color:
 
     # format dicts for console printing
     def pretty_dict(self, value, indent=0, start=True):
+        text = ""
         if start:
-            sys.stdout.write(' '*indent+'{}{{'.format(self['dull']))
+            text = f"{' '*indent}{self['dull']}{{"
         indent += 4
         for c, k in enumerate(sorted(value.keys(), key=lambda k: str(k))):
             if c:
-                sys.stdout.write(',')
-            sys.stdout.write('\n'+' '*indent)
-            if type(k) is str:
-                sys.stdout.write("'{0[key]}{1}{0[dull]}': ".format(self, k))
-            else:
-                sys.stdout.write("{0[key]}{1}{0[dull]}: ".format(self, k))
+                text += ","
+            s = "'" if type(k) is str else ""
+            text += f"\n{' '*indent}{s}{self['key']}{k}{self['dull']}{s}: "
             if _check_dict(value[k]):
-                sys.stdout.write('{')
-                self.pretty_dict(value[k], indent, False)
+                text += "{" + self.pretty_dict(value[k], indent, False)
                 continue
             if _check_list(value[k]):
-                sys.stdout.write(str(value[k])[0])
-                self.pretty_list(value[k], indent, False)
+                text += str(value[k])[0] + self.pretty_list(value[k], indent, False)
                 continue
-            self._write(value[k])
+            text += self._write(value[k])
         indent -= 4
-        sys.stdout.write('\n'+' '*indent+'}')
+        text += f"\n{' '*indent}}}"
         if start:
-            sys.stdout.write('\n{}'.format(self))
-        sys.stdout.flush()
+            text += f'{self}'
+        return text
 
     # format lists for console printing
     def pretty_list(self, value, indent=0, start=True):
+        text = ""
         brackets = str(value)[0], str(value)[-1]
         if start:
-            sys.stdout.write(' '*indent+'{}{}'.format(self['dull'], brackets[0]))
+            text += f"{' '*indent}{self['dull']}{brackets[0]}"
         if value and len(value) == len([i for i in value if _check_dict(i)]):
             # list of dicts
-            sys.stdout.write('\n'+' '*(indent+4)+'{')
-            for c, i in enumerate(value):
-                if c:
-                    sys.stdout.write(',')
-                self.pretty_dict(i, indent+4, False)
-            sys.stdout.write('\n'+' '*indent+brackets[1])
+            text += f"\n{' '*indent}{{"
+            text += ",".join(self.pretty_dict(i, indent+4, False) for i in value)
+            text += f"\n{' '*indent}{brackets[1]}"
         elif (
             value and len(value) == len([i for i in value if type(i) is str]) and
             set(len(i) for i in value) == {64}
         ):
             # list of bytes32 hexstrings (stack trace)
-            for c, i in enumerate(value):
-                if c:
-                    sys.stdout.write(',')
-                sys.stdout.write('\n'+' '*(indent+4))
-                self._write(i)
-            sys.stdout.write('\n'+' '*indent+brackets[1])
+            text += ",".join(f"\n{' '*(indent+4)}{self._write(i)}" for i in value)
+            text += f"\n{' '*indent}{brackets[1]}"
         else:
             # all other cases
-            for c, i in enumerate(value):
-                if c:
-                    sys.stdout.write(', ')
-                self._write(i)
-            sys.stdout.write(brackets[1])
+            text += ",".join(self._write(i) for i in value)
+            text += brackets[1]
         if start:
-            sys.stdout.write('\n{}'.format(self))
-        sys.stdout.flush()
+            text += f"{self}"
+        return text
 
     def _write(self, value):
-        if type(value) is str:
-            sys.stdout.write('"{0[string]}{1}{0[dull]}"'.format(self, value))
-        else:
-            sys.stdout.write('{0[value]}{1}{0[dull]}'.format(self, value))
+        s = '"' if type(value) is str else ''
+        key = "string" if type(value) is str else "value"
+        return f"{s}{self[key]}{value}{self['dull']}{s}"
 
     def format_tb(self, exc, filename=None, start=None, stop=None):
         tb = [i.replace("./", "") for i in traceback.format_tb(exc[2])]
@@ -146,12 +132,12 @@ class Color:
             if 'site-packages/' in info[1]:
                 info[1] = '"'+info[1].split('site-packages/')[1]
             tb[i] = TB_BASE.format(self, info, "\n"+code if code else "")
-        tb.append("{0[error]}{1}{0}: {2}".format(self, exc[0].__name__, exc[1]))
+        tb.append(f"{self['error']}{exc[0].__name__}{self}: {exc[1]}")
         return "\n".join(tb)
 
 
 def _check_dict(value):
-    return type(value) is dict or hasattr(value, '_print_as_dict')
+    return type(value) is dict or hasattr(value, "_print_as_dict")
 
 
 def _check_list(value):
@@ -161,4 +147,4 @@ def _check_list(value):
 def notify(type_, msg):
     '''Prepends a message with a colored tag and outputs it to the console.'''
     color = Color()
-    print("{0}{1}{2}: {3}".format(color(NOTIFY_COLORS[type_]), type_, color, msg))
+    print(f"{color(NOTIFY_COLORS[type_])}{type_}{color}: {msg}")

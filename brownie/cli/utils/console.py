@@ -17,6 +17,8 @@ class Console(code.InteractiveConsole):
 
     def __init__(self, locals_dict):
         builtins.dir = self._dir
+        self._write = sys.stdout.write
+        sys.stdout.write = self._console_write
         super().__init__(locals_dict)
 
     # replaces builtin dir method, for simplified and colorful output
@@ -29,6 +31,17 @@ class Console(code.InteractiveConsole):
             results = [(i, getattr(obj, i)) for i in obj.__dict__ if not i.startswith('_')]
         results = sorted(results, key=lambda k: k[0])
         self.write("["+f"{color}, ".join(_dir_color(i[1])+i[0] for i in results)+f"{color}]\n")
+
+    def _console_write(self, text):
+        try:
+            obj = eval(text)
+            if type(obj) is dict:
+                text = color.pretty_dict(obj)
+            elif type(obj) in (tuple, list):
+                text = color.pretty_list(obj)
+        except SyntaxError:
+            pass
+        return self._write(text)
 
     def showtraceback(self):
         tb = color.format_tb(sys.exc_info(), start=1)
