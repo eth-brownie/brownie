@@ -131,7 +131,7 @@ class TransactionReceipt:
                     self._expand_trace()
                 raise VirtualMachineError({
                     "message": "revert "+(self.revert_msg or ""),
-                    "source": self.error(1)
+                    "source": self._error_string(1)
                 })
         except KeyboardInterrupt:
             if ARGV['cli'] != "console":
@@ -249,7 +249,9 @@ class TransactionReceipt:
             self.modified_state = None
             raise RPCRequestError(trace['error']['message'])
         self._trace = trace = trace['result']['structLogs']
-        if self.status:
+        if not trace:
+            self.modified_state = False
+        elif self.status:
             self._confirmed_trace(trace)
         else:
             self._reverted_trace(trace)
@@ -421,8 +423,7 @@ class TransactionReceipt:
                 result += f"\n   {color['bright yellow']}{event.name}{color}"
                 for key, value in event.items():
                     result += f"\n      {color['key']}{key}{color}: {color['value']}{value}{color}"
-
-        return result+"\n"
+        print(result)
 
     def call_trace(self):
         '''Displays the complete sequence of contracts and methods called during
@@ -433,7 +434,7 @@ class TransactionReceipt:
         trace = self.trace
         if not trace:
             if not self.contract_address:
-                return ""
+                return
             raise NotImplementedError("Call trace is not available for deployment transactions.")
 
         result = f"Call trace for '{color['value']}{self.txid}{color}':"
@@ -461,23 +462,23 @@ class TransactionReceipt:
                 ), len(trace))
                 _depth = depth+jump_depth+indent[depth]
                 result += _step_print(trace[idx], trace[end-1], _depth, idx, end)
-        return result
+        print(result)
 
     def traceback(self):
         '''Returns an error traceback for the transaction.'''
         if self.status == 1:
-            return ""
+            return
         trace = self.trace
         if not trace:
             if not self.contract_address:
-                return ""
+                return
             raise NotImplementedError("Traceback is not available for deployment transactions.")
 
         try:
             idx = next(i for i in range(len(trace)) if trace[i]['op'] in {"REVERT", "INVALID"})
             trace_range = range(idx, -1, -1)
         except StopIteration:
-            return ""
+            return
 
         result = [next(i for i in trace_range if trace[i]['source'])]
         depth, jump_depth = trace[idx]['depth'], trace[idx]['jumpDepth']
@@ -492,13 +493,15 @@ class TransactionReceipt:
                 depth, jump_depth = trace[idx]['depth'], trace[idx]['jumpDepth']
             except StopIteration:
                 break
-
-        return (
+        print(
             f"Traceback for '{color['value']}{self.txid}{color}':\n" +
-            "\n".join(self.source(i, 0) for i in result[::-1])
+            "\n".join(self._source_string(i, 0) for i in result[::-1])
         )
 
     def error(self, pad=3):
+        print(self._error_string(pad))
+
+    def _error_string(self, pad=3):
         '''Returns the source code that caused the transaction to revert.
 
         Args:
@@ -522,11 +525,14 @@ class TransactionReceipt:
         try:
             idx = next(i for i in trace_range if trace[i]['op'] in {"REVERT", "INVALID"})
             idx = next(i for i in trace_range if trace[i]['source'])
-            return self.source(idx)
+            return self._source_string(idx, pad)
         except StopIteration:
             return ""
 
     def source(self, idx, pad=3):
+        print(self._source_string(idx, pad))
+
+    def _source_string(self, idx, pad):
         '''Displays the associated source code for a given stack trace step.
 
         Args:
@@ -565,7 +571,7 @@ def _step_print(step, last_step, indent, start, stop):
     if last_step['op'] in {"REVERT", "INVALID"} and _step_compare(step, last_step):
         contract_color = color("error")
     else:
-        contract_color = color("contract_method" if step['jumpDepth'] else "contract")
+        contract_color = color("contract_method" if not step['jumpDepth'] else "")
     print_str += f"{contract_color}{step['fn']} {color['dull']}{start}:{stop}{color}"
     if not step['jumpDepth']:
         print_str += f"  {color['dull']}({color}{step['address']}{color['dull']}){color}"
