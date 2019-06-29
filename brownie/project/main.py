@@ -51,19 +51,19 @@ def new(project_path=".", ignore_subfolder=False):
             str(project_path.joinpath('brownie-config.json'))
         )
     CONFIG['folders']['project'] = str(project_path)
-    sys.path.insert(0, str(project_path))
+    _add_to_sys_path(project_path)
     return str(project_path)
 
 
 def pull(project_name, project_path=None, ignore_subfolder=False):
-    '''Downloads and loads a project template. Templates are downloaded from
+    '''Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mixes
 
     Args:
         project_path: Path to initialize the project at.
         ignore_subfolders: If True, will not raise if initializing in a project subfolder.
 
-    Returns a list of ContractContainer objects.
+    Returns the path to the project as a string.
     '''
     project_name = project_name.replace('-mix', '')
     url = MIXES_URL.format(project_name)
@@ -82,7 +82,8 @@ def pull(project_name, project_path=None, ignore_subfolder=False):
         str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
         str(project_path.joinpath('brownie-config.json'))
     )
-    return load(project_path)
+    _add_to_sys_path(project_path)
+    return str(project_path)
 
 
 def _new_checks(project_path, ignore_subfolder):
@@ -156,7 +157,7 @@ def load(project_path=None):
     # paths
     project_path = Path(project_path).resolve()
     _create_folders(project_path)
-    sys.path.insert(0, str(project_path))
+    _add_to_sys_path(project_path)
 
     # load config
     load_project_config(project_path)
@@ -222,3 +223,10 @@ def _create_objects():
         if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].__dict__[name] = container
     return result
+
+
+def _add_to_sys_path(project_path):
+    project_path = str(project_path)
+    if project_path in sys.path:
+        return
+    sys.path.insert(0, project_path)
