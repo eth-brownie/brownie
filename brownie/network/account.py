@@ -49,7 +49,7 @@ class Accounts(metaclass=_Singleton):
         except ValueError:
             return False
 
-    def _console_repr(self):
+    def __repr__(self):
         return str(self._accounts)
 
     def __iter__(self):
@@ -289,7 +289,7 @@ class Account(_AccountBase):
         address: Public address of the account.
         nonce: Current nonce of the account.'''
 
-    def _console_repr(self):
+    def __repr__(self):
         return "<Account object '{0[string]}{1}{0}'>".format(color, self.address)
 
     def _transact(self, tx):
@@ -313,7 +313,7 @@ class LocalAccount(_AccountBase):
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
 
-    def _console_repr(self):
+    def __repr__(self):
         return "<LocalAccount object '{0[string]}{1}{0}'>".format(color, self.address)
 
     def save(self, filename, overwrite=False):
