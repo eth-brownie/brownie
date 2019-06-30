@@ -97,9 +97,6 @@ def _recursive_update(original, new, base):
 
 # create argv object
 ARGV = _Singleton("Argv", (FalseyDict,), {})()
-if len(sys.argv) > 1:
-    ARGV['cli'] = sys.argv[1]
-
 
 # load config
 CONFIG = _load_default_config()

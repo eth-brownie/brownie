@@ -22,11 +22,13 @@ def reverted_tx(token):
     config['logging']['tx'] = 1
 
 
-def test_info(tx):
+def test_info(tx, capfd):
     config['logging']['tx'] = 2
-    info = tx.info()
+    tx.info()
+    out = capfd.readouterr()[0].strip()
     config['logging']['tx'] = 1
-    assert info == tx.info()
+    tx.info()
+    assert out == capfd.readouterr()[0].strip()
 
 
 def test_confirm_output(tx):
@@ -36,23 +38,33 @@ def test_confirm_output(tx):
     assert info != tx._confirm_output()
 
 
-def test_traceback(tx, reverted_tx):
-    assert reverted_tx.traceback()
-    assert not tx.traceback()
+def test_traceback(tx, reverted_tx, capfd):
+    reverted_tx.traceback()
+    assert capfd.readouterr()[0].strip()
+    tx.traceback()
+    assert not capfd.readouterr()[0].strip()
 
 
-def test_call_trace(tx, reverted_tx):
-    assert tx.call_trace()
-    assert reverted_tx.call_trace()
+def test_call_trace(tx, reverted_tx, capfd):
+    tx.call_trace()
+    assert capfd.readouterr()[0].strip()
+    reverted_tx.call_trace()
+    assert capfd.readouterr()[0].strip()
 
 
-def test_source(tx):
+def test_source(tx, capfd):
     i = tx.trace.index(next(i for i in tx.trace if not i['source']))
-    assert not tx.source(i)
-    assert tx.source(-1)
+    tx.source(i)
+    assert not capfd.readouterr()[0].strip()
+    tx.source(-1)
+    assert capfd.readouterr()[0].strip()
 
 
-def test_error(tx, reverted_tx):
-    assert not tx.error()
-    assert reverted_tx.error()
-    assert reverted_tx.error() == reverted_tx.source(-1)
+def test_error(tx, reverted_tx, capfd):
+    tx.error()
+    assert not capfd.readouterr()[0].strip()
+    reverted_tx.error()
+    out = capfd.readouterr()[0].strip()
+    assert out
+    reverted_tx.source(-1)
+    assert out == capfd.readouterr()[0].strip()

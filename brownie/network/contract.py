@@ -79,9 +79,6 @@ class ContractContainer(_ContractBase):
         return len(_contracts.list(self._name))
 
     def __repr__(self):
-        return "<ContractContainer object '{1[string]}{0._name}{1}'>".format(self, color)
-
-    def _console_repr(self):
         return str(_contracts.list(self._name))
 
     def remove(self, contract):

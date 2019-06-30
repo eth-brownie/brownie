@@ -4,7 +4,6 @@ from copy import deepcopy
 from collections import deque
 from hashlib import sha1
 import solcast
-from solcast.utils import is_inside_offset
 import solcx
 
 from . import sources
@@ -320,7 +319,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
                 )[0].full_name
                 statement = next(
                     i for i in statement_nodes[path] if
-                    is_inside_offset(offset, i)
+                    sources.is_inside_offset(offset, i)
                 )
                 statement_nodes[path].discard(statement)
                 statement_map[path].setdefault(pc_list[-1]['fn'], {})[count] = statement

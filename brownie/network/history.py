@@ -21,6 +21,9 @@ class TxHistory(metaclass=_Singleton):
         self.gas_profile = {}
         Rpc()._objects.append(self)
 
+    def __repr__(self):
+        return str(self._list)
+
     def __bool__(self):
         return bool(self._list)
 
@@ -42,9 +45,6 @@ class TxHistory(metaclass=_Singleton):
     def _revert(self):
         height = web3.eth.blockNumber
         self._list = [i for i in self._list if i.block_number <= height]
-
-    def _console_repr(self):
-        return str(self._list)
 
     def _add_tx(self, tx):
         self._list.append(tx)

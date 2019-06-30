@@ -2,7 +2,8 @@
 
 from docopt import docopt
 
-from brownie import network
+
+from brownie import network, project
 from brownie.test.main import run_script
 from brownie._config import ARGV, CONFIG
 
@@ -27,5 +28,6 @@ interactions, or for gas profiling.""".format(CONFIG['network_defaults']['name']
 def main():
     args = docopt(__doc__)
     ARGV._update_from_args(args)
+    project.load()
     network.connect(ARGV['network'])
     run_script(args['<filename>'], args['<function>'] or "main", gas_profile=ARGV['gas'])

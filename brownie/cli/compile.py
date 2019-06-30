@@ -3,7 +3,8 @@
 from docopt import docopt
 import shutil
 
-import brownie.project as project
+from brownie import project
+from brownie.exceptions import ProjectNotFound
 
 __doc__ = """Usage: brownie compile [options]
 
@@ -18,6 +19,8 @@ in the build/contracts folder."""
 def main():
     args = docopt(__doc__)
     project_path = project.check_for_project('.')
+    if project_path is None:
+        raise ProjectNotFound
     build_path = project_path.joinpath('build/contracts')
     if args['--all']:
         shutil.rmtree(build_path, ignore_errors=True)

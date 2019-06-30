@@ -1,13 +1,16 @@
 #!/usr/bin/python3
 
+from io import BytesIO
 from pathlib import Path
+import requests
 import shutil
 import sys
+import zipfile
 
 from brownie.network.contract import ContractContainer
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.project import build, sources, compiler
-from brownie._config import CONFIG, load_project_config
+from brownie._config import ARGV, CONFIG, load_project_config
 
 FOLDERS = [
     "contracts",
@@ -18,6 +21,7 @@ FOLDERS = [
     "build/contracts",
     "build/tests"
 ]
+MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 
 
 def check_for_project(path):
@@ -33,20 +37,12 @@ def new(project_path=".", ignore_subfolder=False):
     '''Initializes a new project.
 
     Args:
-        path: Path to initialize the project at. If not exists, it will be created.
+        project_path: Path to initialize the project at. If not exists, it will be created.
         ignore_subfolders: If True, will not raise if initializing in a project subfolder.
 
     Returns the path to the project as a string.
     '''
-    if CONFIG['folders']['project']:
-        raise ProjectAlreadyLoaded("Project has already been loaded")
-    project_path = Path(project_path).resolve()
-    if not ignore_subfolder:
-        check = check_for_project(project_path)
-        if check and check != project_path:
-            raise SystemError(
-                "Cannot make a new project inside the subfolder of an existing project."
-            )
+    project_path = _new_checks(project_path, ignore_subfolder)
     project_path.mkdir(exist_ok=True)
     _create_folders(project_path)
     if not project_path.joinpath('brownie-config.json').exists():
@@ -54,9 +50,52 @@ def new(project_path=".", ignore_subfolder=False):
             str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
             str(project_path.joinpath('brownie-config.json'))
         )
-    CONFIG['folders']['project'] = str(project_path)
-    sys.path.insert(0, str(project_path))
+    _add_to_sys_path(project_path)
     return str(project_path)
+
+
+def pull(project_name, project_path=None, ignore_subfolder=False):
+    '''Initializes a new project via a template. Templates are downloaded from
+    https://www.github.com/brownie-mix
+
+    Args:
+        project_path: Path to initialize the project at.
+        ignore_subfolders: If True, will not raise if initializing in a project subfolder.
+
+    Returns the path to the project as a string.
+    '''
+    project_name = str(project_name).replace('-mix', '')
+    url = MIXES_URL.format(project_name)
+    if project_path is None:
+        project_path = Path('.').joinpath(project_name)
+    project_path = _new_checks(project_path, ignore_subfolder)
+    if project_path.exists():
+        raise FileExistsError("Folder already exists - {}".format(project_path))
+
+    print(f"Downloading from {url}...")
+    request = requests.get(url)
+    with zipfile.ZipFile(BytesIO(request.content)) as zf:
+        zf.extractall(str(project_path.parent))
+    project_path.parent.joinpath(project_name+'-mix-master').rename(project_path)
+    shutil.copy(
+        str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
+        str(project_path.joinpath('brownie-config.json'))
+    )
+    _add_to_sys_path(project_path)
+    return str(project_path)
+
+
+def _new_checks(project_path, ignore_subfolder):
+    if CONFIG['folders']['project']:
+        raise ProjectAlreadyLoaded("Project has already been loaded")
+    project_path = Path(project_path).resolve()
+    if CONFIG['folders']['brownie'] in str(project_path):
+        raise SystemError("Cannot make a new project inside the main brownie installation folder.")
+    if not ignore_subfolder:
+        check = check_for_project(project_path)
+        if check and check != project_path:
+            raise SystemError("Cannot make a new project in a subfolder of an existing project.")
+    return project_path
 
 
 def close(raises=True):
@@ -117,7 +156,7 @@ def load(project_path=None):
     # paths
     project_path = Path(project_path).resolve()
     _create_folders(project_path)
-    sys.path.insert(0, str(project_path))
+    _add_to_sys_path(project_path)
 
     # load config
     load_project_config(project_path)
@@ -176,10 +215,21 @@ def _create_objects():
         if not data['bytecode']:
             continue
         container = ContractContainer(data)
+        result.append(container)
         sys.modules['brownie.project'].__dict__[name] = container
         sys.modules['brownie.project'].__all__.append(name)
-        result.append(container)
+        # if running via brownie cli, add to brownie namespace
+        if ARGV['cli']:
+            sys.modules['brownie'].__dict__[name] = container
+            sys.modules['brownie'].__all__.append(name)
         # if running via interpreter, add to main namespace if package was imported via from
-        if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
+        elif '__brownie_import_all__' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].__dict__[name] = container
     return result
+
+
+def _add_to_sys_path(project_path):
+    project_path = str(project_path)
+    if project_path in sys.path:
+        return
+    sys.path.insert(0, project_path)

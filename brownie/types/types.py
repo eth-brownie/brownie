@@ -49,7 +49,7 @@ class KwargTuple:
                 continue
             self._dict[i['name']] = values[c]
 
-    def _console_repr(self):
+    def __repr__(self):
         return repr(self._tuple)
 
     def __str__(self):

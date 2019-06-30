@@ -39,7 +39,22 @@ Package Methods
 
         >>> from brownie import project
         >>> project.new('/my_projects/new_project')
-        PosixPath('/my_projects/new_project')
+        '/my_projects/new_project'
+
+.. py:method:: main.pull(project_name, project_path=None, ignore_subfolder=False)
+
+    Initializes a new project via a template. Templates are downloaded from the `Brownie Mix github repo <https://www.github.com/brownie-mix>`_.
+
+    If no path is given, the project will be initialized in a subfolder of the same name.
+
+    Returns the path to the project as a string.
+
+    .. code-block:: python
+
+        >>> from brownie import project
+        >>> project.pull('token')
+        Downloading from https://github.com/brownie-mix/token-mix/archive/master.zip...
+        'my_projects/token'
 
 .. py:method:: main.load(project_path=None)
 

@@ -2,6 +2,7 @@
 
 from docopt import docopt
 
+from brownie import project
 from brownie.gui import Gui
 
 __doc__ = """Usage: brownie gui
@@ -29,6 +30,7 @@ Opens the brownie GUI. Basic functionality is as follows:
 
 def main():
     docopt(__doc__)
+    project.load()
     print("Loading Brownie GUI...")
     Gui().mainloop()
     print("GUI was terminated.")

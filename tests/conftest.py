@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import os
 import shutil
 import pytest
 from pathlib import Path
@@ -74,3 +75,11 @@ def clean_network():
     network.rpc.reset()
     yield
     network.rpc.reset()
+
+
+@pytest.fixture(scope="function")
+def testpath(tmpdir):
+    original_path = os.getcwd()
+    os.chdir(tmpdir)
+    yield tmpdir
+    os.chdir(original_path)
