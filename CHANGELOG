@@ -1,3 +1,16 @@
+1.0.0b8
+-------
+
+ - Rebuild of coverage evaluation functionality using contract ASTs
+ - Split coverage eval results between branches and statements, add GUI support
+ - Add tracebacks for failed transactions, better call trace formatting
+ - Allow contract minification before compiling
+ - Enable output console in GUI (very basic for now)
+ - Rebuild brownie console using code.InteractiveConsole
+ - Significant code refactoring and reorganization
+ - Emphasis on standardized structure across modules and increased ease of testing
+ - More tests, coverage at 88%
+
 1.0.0b7
 -------
 
