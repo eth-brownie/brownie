@@ -35,13 +35,13 @@ def test_revert_msg_get_trace_no_revert_map(console_mode, tester):
         build._revert_map = revert_map
 
 
-def test_error_get_trace(console_mode, tester):
+def test_error_get_trace(console_mode, tester, capfd):
     '''getting the error should not query the trace'''
     tx = tester.doNothing()
-    assert not tx.error()
+    assert not tx._error_string()
     assert not tx._trace
     tx = tester.testRevertStrings(1)
-    assert tx.error()
+    assert tx._error_string()
     assert not tx._trace
 
 
