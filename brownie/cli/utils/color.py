@@ -71,10 +71,10 @@ class Color:
                 text += ","
             s = "'" if type(k) is str else ""
             text += f"\n{' '*indent}{s}{self['key']}{k}{self['dull']}{s}: "
-            if _check_dict(value[k]):
+            if type(value[k]) is dict:
                 text += "{" + self.pretty_dict(value[k], indent, False)
                 continue
-            if _check_list(value[k]):
+            if type(value[k]) in (list, tuple, set):
                 text += str(value[k])[0] + self.pretty_list(value[k], indent, False)
                 continue
             text += self._write(value[k])
@@ -90,15 +90,14 @@ class Color:
         brackets = str(value)[0], str(value)[-1]
         if start:
             text += f"{' '*indent}{self['dull']}{brackets[0]}"
-        if value and len(value) == len([i for i in value if _check_dict(i)]):
+        if value and not [i for i in value if type(i) is not dict]:
             # list of dicts
-            text += f"\n{' '*indent}{{"
-            text += ",".join(self.pretty_dict(i, indent+4, False) for i in value)
+            text += f"\n{' '*(indent+4)}{{"
+            text += f",\n{' '*(indent+4)}{{".join(
+                self.pretty_dict(i, indent+4, False) for i in value
+            )
             text += f"\n{' '*indent}{brackets[1]}"
-        elif (
-            value and len(value) == len([i for i in value if type(i) is str]) and
-            set(len(i) for i in value) == {64}
-        ):
+        elif value and not [i for i in value if type(i) is not str or len(i) != 64]:
             # list of bytes32 hexstrings (stack trace)
             text += ",".join(f"\n{' '*(indent+4)}{self._write(i)}" for i in value)
             text += f"\n{' '*indent}{brackets[1]}"
@@ -128,20 +127,12 @@ class Color:
             info, code = tb[i].split('\n')[:2]
             if CONFIG['folders']['project']:
                 info = info.replace(CONFIG['folders']['project'], ".")
-            info = [x.strip(',') for x in info.strip().split(' ')]
-            if 'site-packages/' in info[1]:
-                info[1] = '"'+info[1].split('site-packages/')[1]
+            info = [x.strip(",") for x in info.strip().split(" ")]
+            if "site-packages/" in info[1]:
+                info[1] = '"'+info[1].split("site-packages/")[1]
             tb[i] = TB_BASE.format(self, info, "\n"+code if code else "")
         tb.append(f"{self['error']}{exc[0].__name__}{self}: {exc[1]}")
         return "\n".join(tb)
-
-
-def _check_dict(value):
-    return type(value) is dict or hasattr(value, "_print_as_dict")
-
-
-def _check_list(value):
-    return type(value) in (list, tuple) or hasattr(value, "_print_as_list")
 
 
 def notify(type_, msg):

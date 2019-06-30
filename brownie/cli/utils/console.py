@@ -41,9 +41,9 @@ class Console(code.InteractiveConsole):
     def _console_write(self, text):
         try:
             obj = eval(text)
-            if type(obj) is dict:
+            if obj and type(obj) is dict:
                 text = color.pretty_dict(obj)
-            elif type(obj) in (tuple, list):
+            elif obj and type(obj) in (tuple, list, set):
                 text = color.pretty_list(obj)
         except SyntaxError:
             pass
