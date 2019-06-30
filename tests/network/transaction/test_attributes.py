@@ -2,6 +2,7 @@
 
 from brownie.network.account import Account
 from brownie.network.contract import Contract
+from brownie.types import EventDict
 from brownie import accounts
 
 
@@ -45,10 +46,14 @@ def test_input(token):
 
 def test_fn_name(token):
     tx = token.transfer(accounts[1], 1000, {'from': accounts[0]})
-    assert tx.fn_name == "Token.transfer"
+    assert tx.contract_name == "Token"
+    assert tx.fn_name == "transfer"
+    assert tx._full_name() == "Token.transfer"
     data = token.transfer.encode_abi(accounts[1], 1000)
     tx = accounts[0].transfer(token, 0, data=data)
-    assert tx.fn_name == "Token.transfer"
+    assert tx.contract_name == "Token"
+    assert tx.fn_name == "transfer"
+    assert tx._full_name() == "Token.transfer"
 
 
 def test_return_value(token):
@@ -80,3 +85,23 @@ def test_revert_msg(console_mode, tester):
     assert tx.revert_msg == "two"
     tx = tester.testRevertStrings(3)
     assert tx.revert_msg == ""
+    tx = tester.testRevertStrings(31337)
+    assert tx.revert_msg == "dev: great job"
+
+
+def test_events(console_mode, tester):
+    tx = tester.testRevertStrings(5)
+    assert tx.status == 1
+    assert type(tx.events) is EventDict
+    assert 'Debug' in tx.events
+    tx = tester.testRevertStrings(0)
+    assert tx.status == 0
+    assert type(tx.events) is EventDict
+    assert 'Debug' in tx.events
+
+
+def test_hash(tester):
+    a = tester.doNothing()
+    b = tester.doNothing()
+    assert a != b
+    assert a == a

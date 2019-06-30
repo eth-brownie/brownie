@@ -26,12 +26,12 @@ def setup(sphinx):
 
 project = 'Brownie'
 copyright = '2019, HyperLink Technology'
-author = 'Benjamin Hauser'
+author = 'Ben Hauser'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = 'v1.0.0b7'
+release = 'v1.0.0b8'
 
 
 # -- General configuration ---------------------------------------------------
@@ -134,7 +134,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'Brownie.tex', 'Brownie Documentation',
-     'Benjamin Hauser', 'manual'),
+     'Ben Hauser', 'manual'),
 ]
 
 

@@ -63,6 +63,7 @@ class Rpc(metaclass=_Singleton):
                     cmd += ".cmd"
                 return self.launch(cmd)
             raise
+        print("Launching '{}'...".format(cmd))
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
@@ -115,6 +116,11 @@ class Rpc(metaclass=_Singleton):
             if not exc:
                 return
             raise SystemError("RPC is not active.")
+
+        try:
+            print("Terminating local RPC client...")
+        except ValueError:
+            pass
         for child in self._rpc.children():
             try:
                 child.kill()

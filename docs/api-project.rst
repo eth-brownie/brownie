@@ -4,28 +4,32 @@
 Project API
 ===========
 
-``brownie.project``
-===================
-
 The ``project`` package contains classes and methods for initializing, loading and compiling Brownie projects.
+
+At startup Brownie automatically loads your project and creates objects to interact with it. It is unlikely you will need to use this package unless you are using Brownie via the regular python interpreter.
+
+``brownie.project.main``
+==========================
+
+The ``main`` module contains higher level methods for creating, loading, and closing projects. All of these methods are available directly from ``brownie.project``.
 
 Package Methods
 ---------------
 
-.. py:method:: project.check_for_project(path)
+.. py:method:: main.check_for_project(path)
 
     Checks for an existing Brownie project within a folder and it's parent folders, and returns the base path to the project as a ``Path`` object.  Returns ``None`` if no project is found.
 
     .. code-block:: python
 
-        >>> from brownie.project import check_for_project
+        >>> from brownie import project
         >>> Path('.').resolve()
         PosixPath('/my_projects/token/build/contracts')
-        >>> check_for_project('.')
+        >>> project.check_for_project('.')
         PosixPath('/my_projects/token')
 
 
-.. py:method:: project.new(path=".", ignore_subfolder=False)
+.. py:method:: main.new(project_path=".", ignore_subfolder=False)
 
     Initializes a new project at the given path.  If the folder does not exist, it will be created.
 
@@ -35,15 +39,30 @@ Package Methods
 
         >>> from brownie import project
         >>> project.new('/my_projects/new_project')
-        PosixPath('/my_projects/new_project')
+        '/my_projects/new_project'
 
-.. py:method:: project.load(path=None)
+.. py:method:: main.pull(project_name, project_path=None, ignore_subfolder=False)
 
-    Loads a Brownie project and instantiates various related objects. If no path is given, attempts to find one using ``check_for_project('.')``.
+    Initializes a new project via a template. Templates are downloaded from the `Brownie Mix github repo <https://www.github.com/brownie-mix>`_.
+
+    If no path is given, the project will be initialized in a subfolder of the same name.
+
+    Returns the path to the project as a string.
+
+    .. code-block:: python
+
+        >>> from brownie import project
+        >>> project.pull('token')
+        Downloading from https://github.com/brownie-mix/token-mix/archive/master.zip...
+        'my_projects/token'
+
+.. py:method:: main.load(project_path=None)
+
+    Loads a Brownie project and creates ``ContractContainer`` objects. If no path is given, attempts to find one using ``check_for_project('.')``.
 
     Instantiated objects will be available from within the ``project`` module after this call.  If Brownie was previously imported via ``from brownie import *``, they will also be available in the local namespace.
 
-    Returns a list of ``ContractDeployer`` objects.
+    Returns a list of ``ContractContainer`` objects.
 
     .. code-block:: python
 
@@ -53,8 +72,16 @@ Package Methods
         >>> project.Token
         <ContractContainer object 'Token'>
 
+.. py:method:: main.close(raises=True)
 
-.. py:method:: project.compile_source(source)
+    Closes the active Brownie project and removes the ``ContractContainer`` instances from the namespace.
+
+    .. code-block:: python
+
+        >>> from brownie import project
+        >>> project.close()
+
+.. py:method:: main.compile_source(source)
 
     Compiles the given Solidity source code string and returns a list of ``ContractContainer`` objects. The containers are **not** added to the global or project namespaces.
 
@@ -77,121 +104,352 @@ Package Methods
         >>> container
         [<ContractContainer object 'SimpleTest'>]
 
+.. _api-project-build:
 
 ``brownie.project.build``
 =========================
 
-The ``build`` module contains classes and methods used internally by Brownie to interact with files in a project's ``build`` folder.
-
-.. _api-project-build:
-
-Build
------
-
-.. py:class:: build.Build()
-
-    Dict-like :ref:`api-types-singleton` container. Used internally to access the build data in ``build/contracts``.
-
-    .. code-block:: python
-
-        >>> from brownie.project.build import Build
-        >>> build = Build()
-        >>> token_json = build["Token"]
-        >>> token_json.keys()
-        dict_keys(['abi', 'allSourcePaths', 'ast', 'bytecode', 'bytecodeSha1', 'compiler', 'contractName', 'coverageMap', 'deployedBytecode', 'deployedSourceMap', 'opcodes', 'pcMap', 'sha1', 'source', 'sourceMap', 'sourcePath', 'type'])
+The ``build`` module contains methods used internally by Brownie to interact with files in a project's ``build/contracts`` folder.
 
 Module Methods
 --------------
 
-.. py:method:: build.get_ast_hash(script_path)
+.. py:method:: build.load(project_path)
 
-    Given the path of a python script, Generates a hash from it's `AST <https://docs.python.org/3/library/ast.html>`_ and each of it's local imports. This is used to check for changes when determining if unit tests need to be re-run.
+    Loads all build files for the given project path. Files that are corrupted or missing required keys will be deleted.
 
     .. code-block:: python
 
-        >>> from brownie.project.build import get_ast_hash
-        >>> get_ast_hash('tests/transfer.py')
-        e1a0a28ec557194e8f1e76db0604b75a5a070bb7
+        >>> from brownie.project import build
+        >>> build.load('/my_projects/token')
+
+.. py:method:: build.add(build_json)
+
+    Adds a build json to the active project. The data is saved in the ``build/contracts`` folder.
+
+    .. code-block:: python
+
+        >>> from brownie.project import build
+        >>> build.add(build_json)
+
+.. py:method:: build.delete(contract_name)
+
+    Removes a contract's build data from the active project.  The json file in ``build/contracts`` is deleted.
+
+    .. code-block:: python
+
+        >>> from brownie.project import build
+        >>> build.delete('Token')
+
+.. py:method:: build.clear()
+
+    Clears all currently available build data.  No files are deleted.
+
+    .. code-block:: python
+
+        >>> from brownie.project import build
+        >>> build.clear()
+
+.. py:method:: build.get(contract_name)
+
+    Returns build data for the given contract name.
+
+    .. code-block:: python
+
+        >>> from brownie.project import build
+        >>> build.get('Token')
+        {...}
+
+.. py:method:: build.items(path=None)
+
+    Provides an list of tuples in the format ``('contract_name', build_json)``, similar to calling ``dict.items``.  If a path is given, only contracts derived from that source file are returned.
+
+    .. code-block:: python
+
+        >>> from brownie.project import build
+        >>> for name, data in build.items():
+        ...     print(name)
+        Token
+        SafeMath
+
+.. py:method:: build.contains(contract_name)
+
+    Checks if a contract with the given name is in the currently loaded build data.
+
+    .. code-block:: python
+
+        >>> from brownie.project import build
+        >>> build.contains('Token')
+        True
+
+.. py:method:: build.get_dependents(contract_name)
+
+    Returns a list of contract names that the given contract inherits from or links to. Used by the compiler when determining which contracts to recompile based on a changed source file.
+
+    .. code-block:: python
+
+        >>> from brownie.project import build
+        >>> build.get_dependents('Token')
+        ['SafeMath']
+
+.. py:method:: build.get_dev_revert(pc)
+
+    Given the program counter from a stack trace that caused a transaction to revert, returns the :ref:`commented dev string <dev-revert>` (if any). Used by ``TransactionReceipt``.
+
+    .. code-block:: python
+
+        >>> from brownie.project import build
+        >>> build.get_dev_revert(1847)
+        "dev: zero value"
+
+.. py:method:: build.get_error_source_from_pc(pc)
+
+    Given the program counter from a stack trace that caused a transaction to revert, returns the highlighted relevent source code and the name of the method that reverted.
+
+    Used by ``TransactionReceipt`` when generating a ``VirtualMachineError``.
+
+.. py:method:: build.expand_build_offsets(build_json)
+
+    Given a build json as a dict, expands the minified offsets to match the original source code.
 
 ``brownie.project.compiler``
 ============================
 
-The ``compiler`` module contains methods for compiling contracts and formatting the compiled data. This module is used internally whenever a Brownie project is loaded.
+The ``compiler`` module contains methods for compiling contracts, and formatting the compiled data. This module is used internally whenever a Brownie project is loaded.
+
+In most cases you will not wish to call methods in this module directly. Instead you should use ``project.load`` to compile your project initially and ``project.compile_source`` for adding individual, temporary contracts. Along with compiling, these methods also add the returned data to ``project.build`` and return ``ContractContainer`` objects.
 
 Module Methods
 --------------
 
-.. py:method:: compiler.set_solc_version()
+.. py:method:: compiler.set_solc_version(version)
 
-    Sets the ``solc`` version based on the configuration settings for the active project.
+    Sets the ``solc`` version. If the requested version is not available it will be installed.
 
-.. py:method:: compiler.compile_contracts(contract_paths)
+    .. code-block:: python
 
-    Given a list of contract paths as strings or ``Path`` objects, compiles them and returns a dict of compiled data.  See :ref:`compile-json`.
+        >>> from brownie.project import compiler
+        >>> compiler.set_solc_version("0.4.25")
+        Using solc version v0.4.25
 
-.. py:method:: compiler.compile_source(source)
+.. py:method:: compiler.compile_and_format(contracts, optimize=True, runs=200, minify=False, silent=True)
 
-    Given a string of contract source code, compiles it and returns a dict of compiled data.
+    Given a dict in the format ``{'path': "source code"}``, compiles the contracts and returns the formatted `build data <compile-json>`_.
 
-    It is usually preferred to call ``project.compile_source``, which calls this method under the hood and then instantiates a ``ContractContainer`` from the returned build data.
+    * ``contracts``: dict in the format ``{'path': "source code"}``
+    * ``optimize``: Toggle compiler optimization
+    * ``runs``: Number of compiler optimization runs
+    * ``minify``: Should contract sources be `minified <sources-minify>`_?
+    * ``silent``: Toggle console verbosity
+
+    Calling this method is equivalent to the following:
+
+    .. code-block:: python
+
+        >>> from brownie.project import compiler
+
+        >>> input_json = compiler.generate_input_json(contracts)
+        >>> output_json = compiler.compile_from_input_json(input_json)
+        >>> build_json = compiler.generate_build_json(input_json, output_json)
+
+.. py:method:: compiler.generate_input_json(contracts, optimize=True, runs=200, minify=False)
+
+    Generates a `standard solc input JSON <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_ as a dict.
+
+
+.. py:method:: compiler.compile_from_input_json(input_json, silent=True)
+
+    Compiles from an input JSON and returns a `standard solc output JSON <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#output-description>`_ as a dict.
+
+.. py:method:: compiler.generate_build_json(input_json, output_json, compiler_data={}, silent=True)
+
+    Formats input and output compiler JSONs and returns a Brownie `build JSON <compile-json>`_ dict.
+
+    * ``input_json``: Compiler input JSON dict
+    * ``output_json``: Computer output JSON dict
+    * ``compiler_data``: Additional compiler data to include
+    * ``silent``: Toggles console verbosity
+
+Internals
+---------
+
+These are more low-level methods, called internally during the execution of the above.
+
+.. py:method:: compiler.generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, branch_nodes)
+
+    Generates the `program counter <compile-pc-map>`_ and `coverage <compile-coverage-map>`_ maps that are used by Brownie for debugging and test coverage evaluation.
+
+    Takes the following arguments:
+
+    * ``source_map``: `deployed source mapping <https://solidity.readthedocs.io/en/latest/miscellaneous.html#source-mappings>`_ as given by the compiler
+    * ``opcodes``: deployed bytecode opcodes string as given by the compiler
+    * ``contract_node``: py-solc-ast contract node object
+    * ``statement_nodes``: list of statement node objects from ``compiler.get_statment_nodes``
+    * ``branch_nodes``: list of branch node objects from ``compiler.get_branch_nodes``
+
+    Returns:
+
+    * ``pc_list``: program counter map
+    * ``statement_map``: statement coverage map
+    * ``branch_map``: branch coverage map
+
+.. py:method:: compiler.get_statement_nodes(source_nodes)
+
+    Given a list of AST source node objects from `py-solc-ast <https://github.com/iamdefinitelyahuman/py-solc-ast>`_, returns a list of statement nodes.  Used to generate the statement coverage map.
+
+.. py:method:: compiler.get_branch_nodes(source_nodes)
+
+    Given a list of AST source node objects from `py-solc-ast <https://github.com/iamdefinitelyahuman/py-solc-ast>`_, returns a list of branch nodes.  Used to generate the branch coverage map.
+
+.. py:method:: compiler.format_link_references(evm)
+
+    Standardizes formatting for unlinked library placeholders within bytecode. Used internally to ensure that unlinked libraries are represented uniformly regardless of the compiler version used.
+
+    * ``evm``: The ``'evm'`` object from a compiler output JSON.
+
+.. py:method:: compiler.get_bytecode_hash(bytecode)
+
+    Removes the final metadata from a bytecode hex string and returns a hash of the result. Used to check if a contract has changed when the source code is modified.
+
+.. py:method:: compiler.expand_source_map(source_map)
+
+    Returns an uncompressed source mapping as a list of lists where no values are omitted.
+
+    .. code-block:: python
+
+        >>> from brownie.project.compiler import expand_source_map
+        >>> expand_source_map("1:2:1:-;:9;2:1:2;;;")
+        [[1, 2, 1, '-'], [1, 9, 1, '-'], [2, 1, 2, '-'], [2, 1, 2, '-'], [2, 1, 2, '-'], [2, 1, 2, '-']]
+
 
 ``brownie.project.sources``
 ===========================
 
-The ``sources`` module contains the ``Sources`` class which is used to access project source code and information about it.
+The ``sources`` module contains methods to access project source code files and information about them.
 
-Sources
--------
+Module Methods
+--------------
 
-.. py:class:: sources.Sources()
+.. py:method:: sources.get(name)
 
-    Dict-like :ref:`api-types-singleton` container used internally to access source code for the project's contracts.
+    Returns the source code file for the given name. ``name`` can be a path or a contract name.
 
     .. code-block:: python
 
-        >>> from brownie.project.sources import Sources
-        >>> s = Sources()
+        >>> from brownie.project import sources
+        >>> sources.get('SafeMath')
+        "pragma solidity ^0.5.0; ..."
 
-.. py:classmethod:: Sources.get_hash(contract_name)
+.. py:method:: sources.get_path_list()
+
+    Returns a list of contract source paths for the active project.
+
+    .. code-block:: python
+
+        >>> from brownie.project import sources
+        >>> sources.get_path_list()
+        ['contracts/Token.sol', 'contracts/SafeMath.sol']
+
+.. py:method:: sources.get_contract_list()
+
+    Returns a list of contract names for the active project.
+
+    .. code-block:: python
+
+        >>> from brownie.project import sources
+        >>> sources.get_contract_list()
+        ['Token', 'SafeMath']
+
+.. py:method:: sources.load(project_path)
+
+    Loads all source files for the given project path. Raises ``ContractExists`` if two source files contain contracts with the same name.
+
+    .. code-block:: python
+
+        >>> from brownie.project import sources
+        >>> sources.load('my_projects/token')
+
+.. py:method:: sources.clear()
+
+    Clears all currently loaded source files.
+
+    .. code-block:: python
+
+        >>> from brownie.project import sources
+        >>> sources.clear()
+
+.. py:method:: sources.compile_paths(paths)
+
+    Compiles a list of contracts given in ``paths``. The contract sources must have already been loaded via ``sources.load``.
+
+    .. code-block:: python
+
+        >>> from brownie.project import sources
+        >>> sources.compile_paths(['contracts/Token.sol'])
+
+.. py:method:: sources.compile_source(source)
+
+    Compiles source code given as a string and adds it to the available sources. The path will be set to ``<string-X>`` where X is an integer staring at one.
+
+    .. code-block:: python
+
+        >>> from brownie.project import sources
+        >>> source.compile_source('...')
+
+.. py:method:: sources.get_hash(contract_name)
 
     Returns a hash of the contract source code.
 
-.. py:classmethod:: Sources.get_path(contract_name)
+    .. code-block:: python
+
+        >>> from brownie.project import sources
+        >>> sources.get_hash('Token')
+        'da39a3ee5e6b4b0d3255bfef95601890afd80709'
+
+.. py:method:: sources.get_source_path(contract_name)
 
     Returns the path to the file where a contract is located.
 
-.. py:classmethod:: Sources.get_type(contract_name)
+    .. code-block:: python
 
-    Returns the type of contract (contract, interface, library).
+        >>> from brownie.project import sources
+        >>> sources.get_source_path('Token')
+        'contracts/Token.sol'
 
-.. py:classmethod:: Sources.get_fn(name, start, stop)
+.. py:method: sources.get_highlighted_source(path, offset, pad=3)
 
-    Given a contract name, start and stop offset, returns the name of the associated function. Returns ``False`` if the offset spans multiple functions.
+    Given a path, start and stop offset, returns highlighted source code. Called internally by ``TransactionReceipt.source``.
 
-.. py:classmethod:: Sources.get_fn_offset(name, fn_name)
+.. _sources-minify:
 
-    Given a contract and function name, returns the source offsets of the function.
+.. py:method:: sources.minify(source)
 
-.. py:classmethod:: Sources.get_contract_name(path, start, stop)
-
-    Given a path and source offsets, returns the name of the contract. Returns ``False`` if the offset spans multiple contracts.
-
-.. py:classmethod:: Sources.inheritance_map(contract_name=None)
-
-    Returns a dictionary of sets, where each key is a contract name and each value is the name of each contract that the main contact inherits from.
-
-    If ``contract_name`` is not ``None``, returns the set for the given contract name.
+    Given contract source as a string, returns a minified version and an offset map used internally to translate minified offsets to the original ones.
 
     .. code-block:: python
 
-        >>> sources.inheritance_map()
-        {
-            'SafeMath': set(),
-            'Token': {'SafeMath'}
-        }
-        >>> sources.inheritance_map('Token')
-        {'SafeMath'}
+        >>> from brownie.project import sources
+        >>> token_source = sources.get('Token')
+        >>> source.minify(token_source)
+        "pragma solidity^0.5.0;\nimport"./SafeMath.sol";\ncontract Token{\nusing SafeMath for uint256; ..."
 
-.. py:classmethod: Sources.get_source(path, start, stop, pad=3)
 
-    Given a path, start and stop offset, returns highlighted source code. Called internally by ``TransactionReceipt.source``.
+.. py:method:: sources.is_inside_offset(inner, outer)
+
+    Returns a boolean indicating if the first offset is contained completely within the second offset.
+
+    .. code-block:: python
+
+        >>> from brownie.project import sources
+        >>> sources.is_inside_offset([100, 200], [100, 250])
+        True
+
+.. py:method:: sources.expand_offset(contract_name, offset)
+
+    Converts a minified offset to one that matches the current source code.
+
+    .. code-block:: python
+
+        >>> from brownie.project import sources
+        >>> sources.expand_offset("Token", [1258, 1466])
+        (2344, 2839)

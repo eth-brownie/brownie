@@ -35,18 +35,6 @@ def test_reverts(clean_network):
     assert tx not in history
 
 
-def test_revert_lock(clean_network):
-    accounts[0].transfer(accounts[1], "1 ether")
-    rpc.snapshot()
-    for i in range(3):
-        accounts[0].transfer(accounts[1], "1 ether")
-    history._revert_lock = True
-    rpc.revert()
-    assert len(history) == 4
-    rpc.reset()
-    assert len(history) == 0
-
-
 def test_from(clean_network):
     for i in range(1, 4):
         accounts[0].transfer(accounts[i], "1 ether")

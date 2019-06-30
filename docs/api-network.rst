@@ -4,17 +4,14 @@
 Network API
 ===========
 
-``brownie.network``
-===================
-
 The ``network`` package holds classes for interacting with the Ethereum blockchain. This is the most extensive package within Brownie and contains the majority of the user-facing functionality.
 
-Package Methods
----------------
+``brownie.network.main``
+========================
 
-Methods in the base ``network`` package are used from connect to and disconnect from the network.
+The ``main`` module contains methods for conncting to or disconnecting from the network. All of these methods are available directly from ``brownie.network``.
 
-.. py:method:: brownie.network.connect(network=None)
+.. py:method:: main.connect(network=None)
 
     Connects to the network.  Network settings are retrieved from ``brownie-config.json``
 
@@ -27,34 +24,53 @@ Methods in the base ``network`` package are used from connect to and disconnect 
 
         >>> from brownie import network
         >>> network.connect('development')
-        >>>
 
-.. py:method:: brownie.network.disconnect()
+.. py:method:: main.disconnect()
 
     Disconnects from the network. The ``Web3`` provider is cleared and the local RPC client is terminated if it is running and a child process.
 
     .. code-block:: python
 
+        >>> from brownie import network
         >>> network.disconnect()
-        >>>
 
-.. py:method:: brownie.network.is_connected()
+.. py:method:: main.is_connected()
 
     Returns ``True`` if the ``Web3`` object is connected to the network.
 
     .. code-block:: python
 
+        >>> from brownie import network
         >>> network.is_connected()
         True
 
-.. py:method:: brownie.network.show_active()
+.. py:method:: main.show_active()
 
     Returns the name of the network that is currently active, or ``None`` if not connected.
 
     .. code-block:: python
 
+        >>> from brownie import network
         >>> network.show_active()
         'development'
+
+.. py:method:: main.gas_limit()
+
+    Displays or modifies the default gas limit.
+
+    * If no argument is given, the current default is displayed.
+    * If an integer value is given, this will be the default gas limit.
+    * If set to "auto", None, True or False, the gas limit is determined automatically.
+
+    .. code-block:: python
+
+        >>> from brownie import network
+        >>> network.gas_limit()
+        'Gas limit is set to automatic'
+        >>> network.gas_limit(6700000)
+        'Gas limit is set to 6700000'
+        >>> network.gas_limit('auto')
+        'Gas limit is set to automatic'
 
 ``brownie.network.account``
 ===========================
@@ -107,7 +123,6 @@ Accounts
     .. code-block:: python
 
         >>> accounts.clear()
-        >>>
 
 .. py:classmethod:: Accounts.load(filename=None)
 
@@ -132,7 +147,6 @@ Accounts
     .. code-block:: python
 
         >>> accounts.remove('0xc1826925377b4103cC92DeeCDF6F96A03142F37a')
-        >>>
 
 .. _api-network-account:
 
@@ -407,7 +421,6 @@ Module Methods
         >>> alert.stop_all()
         >>> alert.show()
         []
-
 
 ``brownie.network.contract``
 ============================
@@ -768,6 +781,15 @@ ContractTx Methods
         <Transaction object '0x8dbf15878104571669f9843c18afc40529305ddb842f94522094454dcde22186'>
 
 
+.. py:classmethod:: ContractTx.decode_abi(hexstr)
+
+    Decodes raw hexstring data returned by this method.
+
+    .. code-block:: python
+
+        >>>  Token[0].balanceOf.decode_abi("0x00000000000000000000000000000000000000000000003635c9adc5dea00000")
+        1000000000000000000000
+
 ``brownie.network.event``
 =========================
 
@@ -855,6 +877,37 @@ TxHistory
         >>> dir(history)
         [copy, from_sender, of_address, to_receiver]
 
+
+TxHistory Attributes
+--------------------
+
+.. _api-network-history-gas-profile:
+
+.. py:attribute:: TxHistory.gas_profile
+
+    A dict that tracks gas cost statistics for contract function calls over time.
+
+    .. code-block:: python
+
+        >>> history.gas_profile
+        {
+            'Token.constructor': {
+                'avg': 742912,
+                'count': 1,
+                'high': 742912,
+                'low': 742912
+            },
+            'Token.transfer': {
+                'avg': 43535,
+                'count': 2,
+                'high': 51035,
+                'low': 36035
+            }
+        }
+
+TxHistory Methods
+-----------------
+
 .. py:classmethod:: TxHistory.copy
 
     Returns a shallow copy of the object as a ``list``.
@@ -940,7 +993,7 @@ Rpc
     .. code-block:: python
 
         >>> rpc.launch('ganache-cli')
-        >>>
+        Launching 'ganache-cli'...
 
 .. py:classmethod:: Rpc.attach(laddr)
 
@@ -953,7 +1006,6 @@ Rpc
     .. code-block:: python
 
         >>> rpc.attach('http://127.0.0.1:8545')
-        >>>
 
 .. py:classmethod:: Rpc.kill(exc=True)
 
@@ -962,7 +1014,7 @@ Rpc
     .. code-block:: python
 
         >>> rpc.kill()
-        >>>
+        Terminating local RPC client...
 
     .. note:: Brownie registers this method with the `atexit <https://docs.python.org/3/library/atexit.html>`_ module. It is not necessary to explicitly kill ``Rpc`` before terminating a script or console session.
 
@@ -973,7 +1025,6 @@ Rpc
     .. code-block:: python
 
         >>> rpc.reset()
-        >>>
 
 .. py:classmethod:: Rpc.is_active()
 
@@ -1094,7 +1145,7 @@ TransactionReceipt
         >>> tx
         <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> dir(tx)
-        [block_number, call_trace, contract_address, error, events, fn_name, gas_limit, gas_price, gas_used, info, input, logs, nonce, receiver, sender, status, txid, txindex, value]
+        [block_number, call_trace, contract_address, contract_name, error, events, fn_name, gas_limit, gas_price, gas_used, info, input, logs, nonce, receiver, sender, status, txid, txindex, value]
 
 TransactionReceipt Attributes
 *****************************
@@ -1112,7 +1163,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.contract_address
 
-    The address of the contract deployed as a result of this transaction, if any.
+    The address of the contract deployed as a result of this transaction, if any. If the contract is known, this will be a ``Contract`` object.
 
     .. code-block:: python
 
@@ -1120,6 +1171,17 @@ TransactionReceipt Attributes
         <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.contract_address
         None
+
+.. py:attribute:: TransactionReceipt.contract_name
+
+    The name of the contract that was called or deployed in this transaction.
+
+    .. code-block:: python
+
+        >>> tx
+        <Transaction object '0xcdd07c6235bf093e1f30ac393d844550362ebb9b314b7029667538bfaf849749'>
+        >>> tx.contract_name
+        Token
 
 .. py:attribute:: TransactionReceipt.events
 
@@ -1142,14 +1204,14 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.fn_name
 
-    The name of the contract and function called by the transaction.
+    The name of the function called by the transaction.
 
     .. code-block:: python
 
         >>> tx
         <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.fn_name
-        'Token.transfer'
+        'transfer'
 
 .. py:attribute:: TransactionReceipt.gas_limit
 
@@ -1294,7 +1356,7 @@ TransactionReceipt Attributes
     * ``contractName``: The name of the contract
     * ``fn``: The name of the function
     * ``jumpDepth``: The number of jumps made since entering this contract. The initial function has a value of 1.
-    * ``source``: The start and end offset of the source code associated with this opcode.
+    * ``source``: The path and offset of the source code associated with this opcode.
 
     .. code-block:: python
 
@@ -1308,7 +1370,7 @@ TransactionReceipt Attributes
             'contractName': "Token",
             'depth': 0,
             'error': "",
-            'fn': "transfer",
+            'fn': "Token.transfer",
             'gas': 128049,
             'gasCost': 22872,
             'jumpDepth': 1,
@@ -1317,8 +1379,7 @@ TransactionReceipt Attributes
             'pc': 0,
             'source': {
                 'filename': "contracts/Token.sol",
-                'start': 53,
-                'stop': 2053
+                'offset': [53, 2053]
             },
             'stack': [],
             'storage': {
@@ -1389,7 +1450,7 @@ TransactionReceipt Methods
 
 .. py:classmethod:: TransactionReceipt.call_trace()
 
-    Displays the sequence of contracts and functions called while executing this transaction, and the structLog index where each call or jump occured. Any functions that terminated with ``REVERT`` or ``INVALID`` opcodes are highlighted in red.
+    Returns the sequence of contracts and functions called while executing this transaction, and the step indexes where each new method is entered and exitted. Any functions that terminated with ``REVERT`` or ``INVALID`` opcodes are highlighted in red.
 
     .. code-block:: python
 
@@ -1399,8 +1460,32 @@ TransactionReceipt Methods
         Token.transferFrom confirmed (reverted) - block: 4   gas used: 25425 (26.42%)
 
         >>> tx.call_trace()
-        Token.transferFrom 0 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
-          SafeMath.sub 86 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
+        Call trace for '0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753':
+        Token.transfer 0:244  (0x4A32104371b05837F2A36dF6D850FA33A92a178D)
+          ∟ Token.transfer 72:226
+            ∟ SafeMath.sub 100:114
+            ∟ SafeMath.add 149:165
+
+.. py:classmethod:: TransactionReceipt.traceback()
+
+    Returns an error traceback for the transaction, similar to a regular python traceback. If the transaction did not revert, returns an empty string.
+
+    .. code-block:: python
+
+        >>> tx = >>> Token[0].transfer(accounts[1], "100000 ether")
+
+        Transaction sent: 0x9542e92a904e9d345def311ea52f22c3191816c6feaf7286f9b48081ab255ffa
+        Token.transfer confirmed (reverted) - block: 5   gas used: 23956 (100.00%)
+        <Transaction object '0x9542e92a904e9d345def311ea52f22c3191816c6feaf7286f9b48081ab255ffa'>
+
+        >>> tx.traceback()
+        Traceback for '0x9542e92a904e9d345def311ea52f22c3191816c6feaf7286f9b48081ab255ffa':
+        Trace step 99, program counter 1699:
+          File "contracts/Token.sol", line 67, in Token.transfer:
+            balances[msg.sender] = balances[msg.sender].sub(_value);
+        Trace step 110, program counter 1909:
+          File "contracts/SafeMath.sol", line 9, in SafeMath.sub:
+            require(b <= a);
 
 .. py:classmethod:: TransactionReceipt.error(pad=3)
 

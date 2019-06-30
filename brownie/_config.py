@@ -36,20 +36,24 @@ def _load_default_config():
     return config
 
 
-def load_project_config():
+def load_project_config(project_path):
     '''Loads configuration settings from a project's brownie-config.json'''
+    project_path = Path(project_path)
+    if not project_path.exists():
+        raise ValueError("Project does not exist!")
     CONFIG._unlock()
-    if CONFIG['folders']['project']:
-        path = Path(CONFIG['folders']['project']).joinpath("brownie-config.json")
-        if path.exists():
-            _recursive_update(CONFIG, json.load(path.open()), [])
-        else:
-            shutil.copy(
-                str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
-                str(path)
-            )
-            print("WARNING: No config file found for this project. A new one has been created.")
+    CONFIG['folders']['project'] = str(project_path)
+    config_path = project_path.joinpath("brownie-config.json")
+    if config_path.exists():
+        _recursive_update(CONFIG, json.load(config_path.open()), [])
+    else:
+        shutil.copy(
+            str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
+            str(config_path)
+        )
+        print("WARNING: No config file found for this project. A new one has been created.")
     CONFIG.setdefault('active_network', {'name': None})
+    CONFIG._lock()
 
 
 def modify_network_config(network=None):
@@ -58,11 +62,17 @@ def modify_network_config(network=None):
     try:
         if not network:
             network = CONFIG['network_defaults']['name']
-        CONFIG['active_network'] = CONFIG['networks'][network].copy()
+
+        CONFIG['active_network'] = {
+            **CONFIG['network_defaults'],
+            **CONFIG['networks'][network]
+        }
         CONFIG['active_network']['name'] = network
-        for key, value in CONFIG['network_defaults'].items():
-            if key not in CONFIG['active_network']:
-                CONFIG['active_network'][key] = value
+
+        if ARGV['cli'] == "test":
+            CONFIG['active_network'].update(CONFIG['test'])
+            if not CONFIG['active_network']['broadcast_reverting_tx']:
+                print("WARNING: Reverting transactions will NOT be broadcasted.")
     except KeyError:
         raise KeyError("Network '{}' is not defined in config.json".format(network))
     finally:
@@ -85,18 +95,8 @@ def _recursive_update(original, new, base):
         )
 
 
-# move argv flags into FalseyDict
+# create argv object
 ARGV = _Singleton("Argv", (FalseyDict,), {})()
-for key in [i for i in sys.argv if i[:2] == "--"]:
-    idx = sys.argv.index(key)
-    if len(sys.argv) >= idx+2 and sys.argv[idx+1][:2] != "--":
-        ARGV[key[2:]] = sys.argv[idx+1]
-    else:
-        ARGV[key[2:]] = True
-
-# used to determine various behaviours in other modules
-if len(sys.argv) > 1:
-    ARGV['cli'] = sys.argv[1]
 
 # load config
 CONFIG = _load_default_config()

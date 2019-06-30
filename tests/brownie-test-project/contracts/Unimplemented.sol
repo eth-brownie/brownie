@@ -35,5 +35,11 @@ contract TokenABC {
 
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool);
 
+}
 
+contract Blank {}
+
+contract OnlyEvents {
+    event Transfer(address from, address to, uint256 value);
+    event Approval(address owner, address spender, uint256 value);
 }

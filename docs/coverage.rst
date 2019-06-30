@@ -4,9 +4,7 @@
 Checking Test Coverage
 ======================
 
-.. warning:: Test coverage evaluation is still under development. There may be undiscovered issues, particularly cases where conditional ``True``/``False`` evaluation is incorrect. Use common sense when viewing coverage reports and please open an issue on github if you encounter any issues.
-
-Test coverage is estimated by generating a map of opcodes associated with each function and line of the smart contract source code, and then analyzing the stack trace of each transaction to see which opcodes were executed.
+Test coverage is calculated by generating a map of opcodes associated with each statement and branch of the source code, and then analyzing the stack trace of each transaction to see which opcodes were executed.
 
 During analysis, all contract calls are executed as transactions. This gives a more accurate coverage picture by allowing analysis of methods that are typically non-state changing.  Whenever one of these calls-as-transactions results in a state change, the blockchain will be reverted to ensure that the outcome of the test is not effected. For tests that involve many calls this can result in significantly slower execution time. You can prevent this behaviour by adding ``always_transact=False`` as a keyword argument for a test.
 

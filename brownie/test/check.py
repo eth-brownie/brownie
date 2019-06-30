@@ -6,6 +6,17 @@ from brownie.types import KwargTuple
 from brownie.types.convert import wei
 from brownie.network.transaction import VirtualMachineError
 
+__console_dir__ = [
+    'true',
+    'false',
+    'confirms',
+    'reverts',
+    'event_fired',
+    'event_not_fired',
+    'equal',
+    'not_equal'
+]
+
 
 def true(statement, fail_msg="Expected statement to be True"):
     '''Expects an object or statement to evaluate True.
@@ -155,12 +166,14 @@ def _compare_input(a, b, strict=False):
         return _convert_str(a) == _convert_str(b)
     if type(b) not in (tuple, list, KwargTuple) or len(b) != len(a):
         return False
-    return not [i for i in range(len(a)) if not _compare_input(a[i], b[i], strict)]
+    return next((False for i in range(len(a)) if not _compare_input(a[i], b[i], strict)), True)
 
 
 def _convert_str(value):
     if type(value) is not str:
-        return value
+        if not hasattr(value, 'address'):
+            return value
+        value = value.address
     if value.startswith('0x'):
         return "0x" + value.lstrip('0x').lower()
     if value.count(" ") != 1:

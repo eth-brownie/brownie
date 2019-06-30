@@ -40,6 +40,7 @@ The following settings are available:
     * ``optimize``: Set to true if you wish to use contract optimization.
     * ``runs``: The number of times the optimizer should run.
     * ``version``: The version of solc to use. Should be written as ``v0.x.x``. If the specified version is not present, it will be installed when Brownie loads.
+    * ``minify_source``: If set to true, contracts are minified before compiling. This allows you to modify formatting and comments without triggering a recompile.
 
 .. py:attribute:: test
 

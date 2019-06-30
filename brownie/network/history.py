@@ -18,8 +18,11 @@ class TxHistory(metaclass=_Singleton):
 
     def __init__(self):
         self._list = []
-        self._revert_lock = False
+        self.gas_profile = {}
         Rpc()._objects.append(self)
+
+    def __repr__(self):
+        return str(self._list)
 
     def __bool__(self):
         return bool(self._list)
@@ -40,13 +43,8 @@ class TxHistory(metaclass=_Singleton):
         self._list.clear()
 
     def _revert(self):
-        if self._revert_lock:
-            return
         height = web3.eth.blockNumber
         self._list = [i for i in self._list if i.block_number <= height]
-
-    def _console_repr(self):
-        return str(self._list)
 
     def _add_tx(self, tx):
         self._list.append(tx)
@@ -69,6 +67,23 @@ class TxHistory(metaclass=_Singleton):
     def of_address(self, account):
         '''Returns a list of transactions where account is the sender or receiver'''
         return [i for i in self._list if i.receiver == account or i.sender == account]
+
+    def _gas(self, fn_name, gas_used):
+        if fn_name not in self.gas_profile:
+            self.gas_profile[fn_name] = {
+                'avg': gas_used,
+                'high': gas_used,
+                'low': gas_used,
+                'count': 1
+            }
+            return
+        gas = self.gas_profile[fn_name]
+        gas.update({
+            'avg': (gas['avg']*gas['count'] + gas_used) // (gas['count']+1),
+            'high': max(gas['high'], gas_used),
+            'low': min(gas['low'], gas_used)
+        })
+        gas['count'] += 1
 
 
 class _ContractHistory(metaclass=_Singleton):

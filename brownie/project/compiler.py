@@ -1,12 +1,13 @@
 #!/usr/bin/python3
 
+from copy import deepcopy
+from collections import deque
 from hashlib import sha1
-from pathlib import Path
+import solcast
 import solcx
 
-from .sources import Sources
+from . import sources
 from brownie.exceptions import CompilerError
-from brownie._config import CONFIG
 
 STANDARD_JSON = {
     'language': "Solidity",
@@ -22,312 +23,450 @@ STANDARD_JSON = {
             '': ["ast"]
         }},
         "optimizer": {
-            "enabled": CONFIG['solc']['optimize'],
-            "runs": CONFIG['solc']['runs']
+            "enabled": True,
+            "runs": 200
         }
     }
 }
 
-sources = Sources()
 
-
-def set_solc_version():
-    '''Sets the solc version based on the project config file.'''
+def set_solc_version(version):
+    '''Sets the solc version. If not available it will be installed.'''
     try:
-        solcx.set_solc_version(CONFIG['solc']['version'])
+        solcx.set_solc_version(version)
     except solcx.exceptions.SolcNotInstalled:
-        solcx.install_solc(CONFIG['solc']['version'])
-        solcx.set_solc_version(CONFIG['solc']['version'])
-    CONFIG['solc']['version'] = solcx.get_solc_version_string().strip('\n')
+        solcx.install_solc(version)
+        solcx.set_solc_version(version)
+    return solcx.get_solc_version_string().strip('\n')
 
 
-def compile_contracts(contract_paths):
-    '''Compiles the contract files and returns a dict of build data.'''
-    print("Compiling contracts...")
-    print("Optimizer: {}".format(
-        "Enabled  Runs: "+str(CONFIG['solc']['runs']) if
-        CONFIG['solc']['optimize'] else "Disabled"
-    ))
+def compile_and_format(contracts, optimize=True, runs=200, minify=False, silent=True):
+    '''Compiles contracts and returns build data.
 
-    contract_paths = [Path(i) for i in contract_paths]
-    print("\n".join(" - {}...".format(i.name) for i in contract_paths))
-    input_json = STANDARD_JSON.copy()
+    Args:
+        contracts: a dictionary in the form of {path: 'source code'}
+        optimize: enable solc optimizer
+        runs: optimizer runs
+        minify: minify source files
+        silent: verbose reporting
+
+    Returns: build data dict'''
+    if not contracts:
+        return {}
+
+    compiler_data = {
+        'minify_source': minify,
+        'version': solcx.get_solc_version_string().strip('\n')
+    }
+
+    input_json = generate_input_json(contracts, optimize, runs, minify)
+    output_json = compile_from_input_json(input_json, silent)
+    build_json = generate_build_json(input_json, output_json, compiler_data, silent)
+    return build_json
+
+
+def generate_input_json(contracts, optimize=True, runs=200, minify=False):
+    '''Formats contracts to the standard solc input json.
+
+    Args:
+        contracts: a dictionary in the form of {path: 'source code'}
+        optimize: enable solc optimizer
+        runs: optimizer runs
+        minify: should source code be minified?
+
+    Returns: dict
+    '''
+    input_json = deepcopy(STANDARD_JSON)
+    input_json['settings']['optimizer']['enabled'] = optimize
+    input_json['settings']['optimizer']['runs'] = runs if optimize else False
     input_json['sources'] = dict((
-        str(i),
-        {'content': sources[i]}
-    ) for i in contract_paths)
-    return _compile_and_format(input_json)
+        k,
+        {'content': sources.minify(v)[0] if minify else v}
+    ) for k, v in contracts.items())
+    return input_json
 
 
-def compile_source(code):
-    '''Compiles the contract source and returns a dict of build data.'''
-    path = sources._add_source(code)
-    input_json = STANDARD_JSON.copy()
-    input_json['sources'] = {path: {'content': code}}
-    return _compile_and_format(input_json)
+def compile_from_input_json(input_json, silent=True):
+    '''Compiles contracts from a standard input json.
 
+    Args:
+        input_json: solc input json
+        silent: verbose reporting
 
-def _compile_and_format(input_json):
+    Returns: standard compiler output json'''
+    optimizer = input_json['settings']['optimizer']
+    if not silent:
+        print("Compiling contracts...")
+        print("Optimizer: {}".format(
+            "Enabled  Runs: "+str(optimizer['runs']) if
+            optimizer['enabled'] else "Disabled"
+        ))
     try:
-        compiled = solcx.compile_standard(
+        return solcx.compile_standard(
             input_json,
-            optimize=CONFIG['solc']['optimize'],
-            optimize_runs=CONFIG['solc']['runs'],
+            optimize=optimizer['enabled'],
+            optimize_runs=optimizer['runs'],
             allow_paths="."
         )
     except solcx.exceptions.SolcError as e:
         raise CompilerError(e)
-    compiled = _generate_pcMap(compiled)
-    result = {}
 
-    for filename, name in [(k, v) for k in input_json['sources'] for v in compiled['contracts'][k]]:
-        data = compiled['contracts'][filename][name]
-        evm = data['evm']
-        ref = [
-            (k, x) for v in evm['bytecode']['linkReferences'].values()
-            for k, x in v.items()
-        ]
-        # standardize unlinked library tags
-        for n, loc in [(i[0], x['start']*2) for i in ref for x in i[1]]:
-            evm['bytecode']['object'] = "{}__{:_<36}__{}".format(
-                evm['bytecode']['object'][:loc],
-                n[:36],
-                evm['bytecode']['object'][loc+40:]
-            )
-        all_paths = sorted(set(v['contract'] for v in evm['pcMap'].values() if v['contract']))
-        result[name] = {
-            'abi': data['abi'],
-            'allSourcePaths': all_paths,
-            'ast': compiled['sources'][filename]['ast'],
-            'bytecode': evm['bytecode']['object'],
-            'bytecodeSha1': sha1(evm['bytecode']['object'][:-68].encode()).hexdigest(),
-            'compiler': dict(CONFIG['solc']),
-            'contractName': name,
+
+def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
+    '''Formats standard compiler output to the brownie build json.
+
+    Args:
+        input_json: solc input json used to compile
+        output_json: output json returned by compiler
+        compiler_data: additonal data to include under 'compiler' in build json
+        silent: verbose reporting
+
+    Returns: build json dict'''
+    if not silent:
+        print("Generating build data...")
+
+    compiler_data.update({
+        "optimize": input_json['settings']['optimizer']['enabled'],
+        "runs": input_json['settings']['optimizer']['runs']
+    })
+    minify = 'minify_source' in compiler_data and compiler_data['minify_source']
+    build_json = {}
+    path_list = list(input_json['sources'])
+
+    source_nodes = solcast.from_standard_output(deepcopy(output_json))
+    statement_nodes = get_statement_nodes(source_nodes)
+    branch_nodes = get_branch_nodes(source_nodes)
+
+    for path, contract_name in [(k, v) for k in path_list for v in output_json['contracts'][k]]:
+
+        if not silent:
+            print(" - {}...".format(contract_name))
+
+        evm = output_json['contracts'][path][contract_name]['evm']
+        node = next(i[contract_name] for i in source_nodes if i.name == path)
+        bytecode = format_link_references(evm)
+        paths = sorted(set([node.parent().path]+[i.parent().path for i in node.dependencies]))
+
+        pc_map, statement_map, branch_map = generate_coverage_data(
+            evm['deployedBytecode']['sourceMap'],
+            evm['deployedBytecode']['opcodes'],
+            node,
+            statement_nodes,
+            branch_nodes
+        )
+
+        build_json[contract_name] = {
+            'abi': output_json['contracts'][path][contract_name]['abi'],
+            'allSourcePaths': paths,
+            'ast': output_json['sources'][path]['ast'],
+            'bytecode': bytecode,
+            'bytecodeSha1': get_bytecode_hash(bytecode),
+            'compiler': compiler_data,
+            'contractName': contract_name,
+            'coverageMap': {'statements': statement_map, 'branches': branch_map},
             'deployedBytecode': evm['deployedBytecode']['object'],
             'deployedSourceMap': evm['deployedBytecode']['sourceMap'],
+            'dependencies': [i.name for i in node.dependencies],
             # 'networks': {},
+            'offset': node.offset,
             'opcodes': evm['deployedBytecode']['opcodes'],
-            'pcMap': evm['pcMap'],
-            'sha1': sources.get_hash(name),
-            'source': input_json['sources'][filename]['content'],
+            'pcMap': pc_map,
+            'sha1': sources.get_hash(contract_name, minify),
+            'source': input_json['sources'][path]['content'],
             'sourceMap': evm['bytecode']['sourceMap'],
-            'sourcePath': filename,
-            'type': sources.get_type(name)
+            'sourcePath': path,
+            'type': node.type
         }
-        result[name]['coverageMap'] = _generate_coverageMap(result[name])
-        result[name]['coverageMapTotals'] = _generate_coverageMapTotals(result[name]['coverageMap'])
-    return result
+    return build_json
 
 
-def _generate_pcMap(compiled):
+def format_link_references(evm):
+    '''Standardizes formatting for unlinked libraries within bytecode.'''
+    bytecode = evm['bytecode']['object']
+    references = [(k, x) for v in evm['bytecode']['linkReferences'].values() for k, x in v.items()]
+    for n, loc in [(i[0], x['start']*2) for i in references for x in i[1]]:
+        bytecode = "{}__{:_<36}__{}".format(
+            bytecode[:loc],
+            n[:36],
+            bytecode[loc+40:]
+        )
+    return bytecode
+
+
+def get_bytecode_hash(bytecode):
+    '''Returns a sha1 hash of the given bytecode without metadata.'''
+    return sha1(bytecode[:-68].encode()).hexdigest()
+
+
+def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, branch_nodes):
     '''
-    Generates an expanded sourceMap useful for debugging.
-    [{
-        'contract': relative path of the contract source code
-        'jump': jump instruction as supplied in the sourceMap (-,i,o)
-        'op': opcode string
-        'pc': program counter as given by debug_traceTransaction
-        'start': source code start offset
-        'stop': source code stop offset
-        'value': value of the instruction, if any
-    }, ... ]
-    '''
-    id_map = dict((v['id'], k) for k, v in compiled['sources'].items())
-    for filename, name in [(k, x) for k, v in compiled['contracts'].items() for x in v]:
-        bytecode = compiled['contracts'][filename][name]['evm']['deployedBytecode']
+    Generates data used by Brownie for debugging and coverage evaluation.
 
-        if not bytecode['object']:
-            compiled['contracts'][filename][name]['evm']['pcMap'] = {}
-            continue
-        opcodes = bytecode['opcodes']
-        source_map = bytecode['sourceMap']
-        while True:
-            try:
-                i = opcodes[:-1].rindex(' STOP')
-            except ValueError:
-                break
-            if 'JUMPDEST' in opcodes[i:]:
-                break
-            opcodes = opcodes[:i+5]
-        opcodes = opcodes.split(" ")[::-1]
-        pc = 0
-        last = source_map.split(';')[0].split(':')
-        for i in range(3):
-            last[i] = int(last[i])
-        pcMap = {0: {
-            'start': last[0],
-            'stop': last[0]+last[1],
-            'op': opcodes.pop(),
-            'contract': id_map[last[2]],
-            'jump': last[3],
-            'fn': False
-        }}
-        pcMap[0]['value'] = opcodes.pop()
-        for value in source_map.split(';')[1:]:
-            if pcMap[pc]['op'][:4] == "PUSH":
-                pc += int(pcMap[pc]['op'][4:])
-            pc += 1
-            if value:
-                value = (value+":::").split(':')[:4]
-                for i in range(3):
-                    value[i] = int(value[i] or last[i])
-                value[3] = value[3] or last[3]
-                last = value
-            contract = id_map[last[2]] if last[2] != -1 else False
-            pcMap[pc] = {
-                'start': last[0],
-                'stop': last[0]+last[1],
-                'op': opcodes.pop(),
-                'contract': contract,
-                'jump': last[3],
-                'fn': sources.get_fn(contract, last[0], last[0]+last[1])
-            }
-            if opcodes[-1][:2] == "0x":
-                pcMap[pc]['value'] = opcodes.pop()
-        compiled['contracts'][filename][name]['evm']['pcMap'] = pcMap
-    return compiled
+    Arguments:
+        source_map: compressed SourceMap from solc compiler
+        opcodes: deployed bytecode opcode string from solc compiler
+        contract_node: ContractDefinition AST node object generated by solc-ast
+        statement_nodes: statement node objects from get_statement_nodes
+        branch_nodes: branch node objects from get_branch_nodes
 
+    Returns:
+        pc_map: program counter map
+        statement_map: statement coverage map
+        branch_map: branch coverage map
 
-def _generate_coverageMap(build):
-    """Adds coverage data to a build json.
-
-    A new key 'coverageMap' is created, structured as follows:
+    pc_map is formatted as follows. Keys where the value is False are excluded.
 
     {
-        "/path/to/contract/file.sol": {
-            "functionName": [{
-                'jump': pc of the JUMPI instruction, if it is a jump
-                'start': source code start offest
-                'stop': source code stop offset
-            }],
-        }
+        'pc': {
+            'op': opcode string
+            'path': relative path of the contract source code
+            'offset': source code start and stop offsets
+            'fn': related contract function
+            'value': value of the instruction
+            'jump': jump instruction as supplied in the sourceMap (i, o)
+            'branch': branch coverage index
+            'statement': statement coverage index
+        }, ...
     }
 
-    Relevent items in the pcMap also have a 'coverageIndex' added that corresponds
-    to an entry in the coverageMap."""
-    line_map = _isolate_lines(build)
-    if not line_map:
-        return {}
+    statement_map and branch_map are formatted as follows:
 
-    final = dict((i, {}) for i in set(i['contract'] for i in line_map))
-    for i in line_map:
-        fn = sources.get_fn(i['contract'], i['start'], i['stop'])
-        if not fn:
+    {'path/to/contract': { coverage_index: (start, stop), ..}, .. }
+    '''
+    if not opcodes:
+        return {}, {}, {}
+
+    source_map = deque(expand_source_map(source_map))
+    opcodes = deque(opcodes.split(" "))
+
+    contract_nodes = [contract_node]+contract_node.dependencies
+    source_nodes = dict((i.contract_id, i.parent()) for i in contract_nodes)
+    paths = set(v.path for v in source_nodes.values())
+
+    statement_nodes = dict((i, statement_nodes[i].copy()) for i in paths)
+    statement_map = dict((i, {}) for i in paths)
+
+    # possible branch offsets
+    branch_original = dict((i, branch_nodes[i].copy()) for i in paths)
+    branch_nodes = dict((i, set(i.offset for i in branch_nodes[i])) for i in paths)
+    # currently active branches, awaiting a jumpi
+    branch_active = dict((i, {}) for i in paths)
+    # branches that have been set
+    branch_set = dict((i, {}) for i in paths)
+
+    count, pc = 0, 0
+    pc_list = []
+    first_revert = None
+    revert_map = {}
+
+    while source_map:
+
+        # format of source is [start, stop, contract_id, jump code]
+        source = source_map.popleft()
+        pc_list.append({'op': opcodes.popleft(), 'pc': pc})
+
+        if (
+            first_revert is None and pc_list[-1]['op'] == "REVERT" and
+            [i['op'] for i in pc_list[-4:-1]] == ["JUMPDEST", "PUSH1", "DUP1"]
+        ):
+            # flag the REVERT op at the end of the function selector,
+            # later reverts may jump to it instead of having their own REVERT op
+            first_revert = "0x"+hex(pc-4).upper()[2:]
+            pc_list[-1]['first_revert'] = True
+
+        if source[3] != "-":
+            pc_list[-1]['jump'] = source[3]
+
+        pc += 1
+        if opcodes[0][:2] == "0x":
+            pc_list[-1]['value'] = opcodes.popleft()
+            pc += int(pc_list[-1]['op'][4:])
+
+        # set contract path (-1 means none)
+        if source[2] == -1:
             continue
-        final[i['contract']].setdefault(fn, []).append({
-            'jump': i['jump'],
-            'start': i['start'],
-            'stop': i['stop']
-        })
-        for pc in i['pc']:
-            build['pcMap'][pc]['coverageIndex'] = len(final[i['contract']][fn]) - 1
-    return final
+        path = source_nodes[source[2]].path
+        pc_list[-1]['path'] = path
 
-
-def _generate_coverageMapTotals(coverage_map):
-    totals = {'total': 0}
-    for path, fn_name in [(k, x) for k, v in coverage_map.items() for x in v]:
-        maps = coverage_map[path][fn_name]
-        count = len([i for i in maps if not i['jump']]) + len([i for i in maps if i['jump']])*2
-        totals[fn_name] = count
-        totals['total'] += count
-    return totals
-
-
-def _isolate_lines(compiled):
-    '''Identify line based coverage map items.
-
-    For lines where a JUMPI is not present, coverage items will merge
-    to include as much of the line as possible in a single item. Where a
-    JUMPI is involved, no merge will happen and overlapping non-jump items
-    are discarded.'''
-    pcMap = compiled['pcMap']
-    line_map = {}
-
-    # find all the JUMPI opcodes
-    for i in [k for k, v in pcMap.items() if v['contract'] and v['op'] == "JUMPI"]:
-        op = pcMap[i]
-        if op['contract'] not in line_map:
-            line_map[op['contract']] = []
-        # if followed by INVALID or the source contains public, ignore it
-        if pcMap[i+1]['op'] == "INVALID" or " public " in _get_source(op):
+        # set source offset (-1 means none)
+        if source[0] == -1:
             continue
+        offset = (source[0], source[0]+source[1])
+        pc_list[-1]['offset'] = offset
+
+        # if op is jumpi, set active branch markers
+        if branch_active[path] and pc_list[-1]['op'] == "JUMPI":
+            for offset in branch_active[path]:
+                # ( program counter index, JUMPI index)
+                branch_set[path][offset] = (branch_active[path][offset], len(pc_list)-1)
+            branch_active[path].clear()
+
+        # if op relates to previously set branch marker, clear it
+        elif offset in branch_nodes[path]:
+            if offset in branch_set[path]:
+                del branch_set[path][offset]
+            branch_active[path][offset] = len(pc_list)-1
+
         try:
-            # JUMPI is to the closest previous opcode that has
-            # a different source offset and is not a JUMPDEST
-            pc = next(
-                x for x in range(i - 4, 0, -1) if x in pcMap and
-                pcMap[x]['contract'] and pcMap[x]['op'] != "JUMPDEST" and
-                (pcMap[x]['start'], pcMap[x]['stop']) != (op['start'], op['stop'])
-            )
-        except StopIteration:
+            # set fn name and statement coverage marker
+            if 'offset' in pc_list[-2] and offset == pc_list[-2]['offset']:
+                pc_list[-1]['fn'] = pc_list[-2]['fn']
+            else:
+                pc_list[-1]['fn'] = source_nodes[source[2]].children(
+                    depth=2,
+                    inner_offset=offset,
+                    filters={'node_type': "FunctionDefinition"}
+                )[0].full_name
+                statement = next(
+                    i for i in statement_nodes[path] if
+                    sources.is_inside_offset(offset, i)
+                )
+                statement_nodes[path].discard(statement)
+                statement_map[path].setdefault(pc_list[-1]['fn'], {})[count] = statement
+                pc_list[-1]['statement'] = count
+                count += 1
+        except (KeyError, IndexError, StopIteration):
+            pass
+        if 'value' not in pc_list[-1]:
             continue
-        line_map[op['contract']].append(_base(pc, pcMap[pc]))
-        line_map[op['contract']][-1].update({'jump': i})
+        if pc_list[-1]['value'] == first_revert and opcodes[0] in {'JUMP', 'JUMPI'}:
+            # track all jumps to the initial revert
+            revert_map.setdefault((pc_list[-1]['path'], pc_list[-1]['fn']), []).append(len(pc_list))
 
-    # analyze all the opcodes
-    for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)]:
-        # ignore code that spans multiple lines
-        if not op['contract'] or ';' in _get_source(op):
+    # compare revert() statements against the map of revert jumps to find
+    for (path, fn_name), values in revert_map.items():
+        fn_node = next(i for i in source_nodes.values() if i.path == path).children(
+            depth=2,
+            include_children=False,
+            filters={'node_type': "FunctionDefinition", 'full_name': fn_name}
+        )[0]
+        revert_nodes = fn_node.children(filters={'node_type': "FunctionCall", 'name': "revert"})
+        # if the node has arguments it will always be included in the source map
+        for node in (i for i in revert_nodes if not i.arguments):
+            offset = node.offset
+            # if the node offset is not in the source map, apply it's offset to the JUMPI op
+            if not next((x for x in pc_list if 'offset' in x and x['offset'] == offset), False):
+                pc_list[values[0]].update({
+                    'offset': offset,
+                    'jump_revert': True
+                })
+                del values[0]
+
+    # set branch index markers and build final branch map
+    branch_map = dict((i, {}) for i in paths)
+    for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
+        # for branch to be hit, need an op relating to the source and the next JUMPI
+        # this is because of how the compiler optimizes nested BinaryOperations
+        pc_list[idx[0]]['branch'] = count
+        pc_list[idx[1]]['branch'] = count
+        if 'fn' in pc_list[idx[0]]:
+            fn = pc_list[idx[0]]['fn']
+        else:
+            fn = source_nodes[path].children(
+                depth=2,
+                inner_offset=offset,
+                filters={'node_type': "FunctionDefinition"}
+            )[0].full_name
+        node = next(i for i in branch_original[path] if i.offset == offset)
+        branch_map[path].setdefault(fn, {})[count] = offset+(node.jump,)
+        count += 1
+
+    pc_map = dict((i.pop('pc'), i) for i in pc_list)
+    return pc_map, statement_map, branch_map
+
+
+def expand_source_map(source_map):
+    '''Expands the compressed sourceMap supplied by solc into a list of lists.'''
+    source_map = [_expand_row(i) if i else None for i in source_map.split(';')]
+    for i in range(1, len(source_map)):
+        if not source_map[i]:
+            source_map[i] = source_map[i-1]
             continue
-        if op['contract'] not in line_map:
-            line_map[op['contract']] = []
-        # find existing related coverage map item, make a new one if none exists
-        try:
-            ln = next(
-                i for i in line_map[op['contract']] if
-                i['contract'] == op['contract'] and
-                i['start'] <= op['start'] < i['stop']
-            )
-        except StopIteration:
-            line_map[op['contract']].append(_base(pc, op))
+        for x in range(4):
+            if source_map[i][x] is None:
+                source_map[i][x] = source_map[i-1][x]
+    return source_map
+
+
+def _expand_row(row):
+    row = row.split(':')
+    return [int(i) if i else None for i in row[:3]] + row[3:] + [None]*(4-len(row))
+
+
+def get_statement_nodes(source_nodes):
+    '''Given a list of source nodes, returns a dict of lists of statement nodes.'''
+    statements = {}
+    for node in source_nodes:
+        statements[node.path] = set(i.offset for i in node.children(
+            include_parents=False,
+            filters={'node_class': "Statement"},
+            exclude={'name': "<constructor>"}
+        ))
+    return statements
+
+
+def get_branch_nodes(source_nodes):
+    '''Given a list of source nodes, returns a dict of lists of nodes corresponding
+    to possible branches in the code.'''
+    branches = {}
+    for node in source_nodes:
+        branches[node.path] = set()
+        for contract_node in node:
+            # only looking at functions for now, not modifiers
+            for child_node in [x for i in contract_node.functions for x in i.children(
+                filters=(
+                    {'node_type': "FunctionCall", 'name': "require"},
+                    {'node_type': "IfStatement"},
+                    {'node_type': "Conditional"}
+                )
+            )]:
+                branches[node.path] |= _get_recursive_branches(child_node)
+    return branches
+
+
+def _get_recursive_branches(base_node):
+    # if node is IfStatement or Conditional, look only at the condition
+    jump = not hasattr(base_node, 'condition')
+    node = base_node if jump else base_node.condition
+    depth = base_node.depth
+
+    filters = (
+        {'node_type': "BinaryOperation", 'type': "bool", 'operator': "||"},
+        {'node_type': "BinaryOperation", 'type': "bool", 'operator': "&&"}
+    )
+    all_binaries = node.children(include_parents=True, include_self=True, filters=filters)
+
+    # if no BinaryOperation nodes are found, this node is the branch
+    if not all_binaries:
+        # if node is FunctionaCall, look at the first argument
+        if node.node_type == "FunctionCall":
+            node.arguments[0].jump = jump
+            return set([node.arguments[0]])
+        node.jump = jump
+        return set([node])
+
+    # look at children of BinaryOperation nodes to find all possible branches
+    binary_branches = set()
+    for node in (x for i in all_binaries for x in i):
+        if node.children(include_self=True, filters=filters):
             continue
-        if op['stop'] > ln['stop']:
-            # if coverage map item is a jump, do not modify the source offsets
-            if ln['jump']:
-                continue
-            ln['stop'] = op['stop']
-        ln['pc'].add(pc)
+        if _is_rightmost_operation(node, depth):
+            node.jump = jump
+        else:
+            node.jump = _check_left_operator(node, depth)
+        binary_branches.add(node)
 
-    # sort the coverage map and merge overlaps where possible
-    for contract in line_map:
-        line_map[contract] = sorted(
-            line_map[contract],
-            key=lambda k: (k['contract'], k['start'], k['stop'])
-        )
-        ln_map = line_map[contract]
-        i = 0
-        while True:
-            if len(ln_map) <= i + 1:
-                break
-            if ln_map[i]['jump']:
-                i += 1
-                continue
-            # JUMPI overlaps cannot merge
-            if ln_map[i+1]['jump']:
-                if ln_map[i]['stop'] > ln_map[i+1]['start']:
-                    del ln_map[i]
-                else:
-                    i += 1
-                continue
-            if ln_map[i]['stop'] >= ln_map[i+1]['start']:
-                ln_map[i]['pc'] |= ln_map[i+1]['pc']
-                ln_map[i]['stop'] = max(ln_map[i]['stop'], ln_map[i+1]['stop'])
-                del ln_map[i+1]
-                continue
-            i += 1
-    return [x for v in line_map.values() for x in v]
+    return binary_branches
 
 
-def _get_source(op):
-    return sources[op['contract']][op['start']:op['stop']]
+def _is_rightmost_operation(node, depth):
+    '''Check if the node is the final operation within the expression.'''
+    parents = node.parents(depth, {'node_type': "BinaryOperation", 'type': "bool"})
+    return not next((i for i in parents if i.left == node or node.is_child_of(i.left)), False)
 
 
-def _base(pc, op):
-    return {
-        'contract': op['contract'],
-        'start': op['start'],
-        'stop': op['stop'],
-        'pc': set([pc]),
-        'jump': False
-    }
+def _check_left_operator(node, depth):
+    '''Find the nearest parent boolean where this node sits on the left side of
+    the comparison, and return True if that node's operator is ||'''
+    parents = node.parents(depth, {'node_type': "BinaryOperation", 'type': "bool"})
+    return next(i for i in parents if i.left == node or node.is_child_of(i.left)).operator == "||"

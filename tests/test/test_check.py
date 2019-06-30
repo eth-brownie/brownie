@@ -125,3 +125,14 @@ def test_not_equal():
         for a, b in [(i, x) for i in row for x in row if x is not i]:
             check.not_equal(a, b)
             check.not_equal(a, b, strict=True)
+
+
+def test_check_equal_accounts():
+    check.equal(accounts[0], accounts[0].address)
+    check.equal(accounts[0].address, accounts[0])
+    check.not_equal(accounts[0], accounts[1])
+    a = accounts.add("0x125192be77a29090a29cbcd20c86d2d0b52aea30bc5cbb1e3262cf96682d0d2e")
+    check.equal(a, "0x0f4fB750E15592489F0CFf7C287AA74563c71Cae")
+    check.equal("0x0f4fB750E15592489F0CFf7C287AA74563c71Cae", a)
+    check.not_equal(a, accounts[0])
+    check.not_equal(a, accounts.add())

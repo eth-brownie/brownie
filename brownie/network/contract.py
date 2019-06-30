@@ -4,6 +4,7 @@ import re
 
 import eth_abi
 from eth_hash.auto import keccak
+from hexbytes import HexBytes
 
 from brownie.cli.utils import color
 from .event import get_topics
@@ -43,10 +44,8 @@ class _ContractBase:
         ) for i in self.abi if i['type'] == "function")
 
     def get_method(self, calldata):
-        return next(
-            (k for k, v in self.signatures.items() if v == calldata[:10].lower()),
-            None
-        )
+        sig = calldata[:10].lower()
+        return next((k for k, v in self.signatures.items() if v == sig), None)
 
 
 class ContractContainer(_ContractBase):
@@ -80,9 +79,6 @@ class ContractContainer(_ContractBase):
         return len(_contracts.list(self._name))
 
     def __repr__(self):
-        return "<ContractContainer object '{1[string]}{0._name}{1}'>".format(self, color)
-
-    def _console_repr(self):
         return str(_contracts.list(self._name))
 
     def remove(self, contract):
@@ -223,6 +219,9 @@ class Contract(_ContractBase):
             else:
                 setattr(self, i['name'], ContractTx(address, i, name, owner))
 
+    def __hash__(self):
+        return hash(self._name+self.address)
+
     def __repr__(self):
         return "<{0._name} Contract object '{1[string]}{0.address}{1}'>".format(self, color)
 
@@ -287,11 +286,7 @@ class _ContractMethod:
             data = web3.eth.call(dict((k, v) for k, v in tx.items() if v))
         except ValueError as e:
             raise VirtualMachineError(e)
-        result = eth_abi.decode_abi([i['type'] for i in self.abi['outputs']], data)
-        result = format_output(self.abi, result)
-        if len(result) == 1:
-            return result[0]
-        return KwargTuple(result, self.abi)
+        return self.decode_abi(data)
 
     def transact(self, *args, _rpc_clear=True):
         '''Broadcasts a transaction that calls this contract method.
@@ -330,6 +325,19 @@ class _ContractMethod:
         types = [i['type'] for i in self.abi['inputs']]
         return self.signature + eth_abi.encode_abi(types, data).hex()
 
+    def decode_abi(self, hexstr):
+        '''Decodes hexstring data returned by this method.
+
+        Args:
+            hexstr: Hexstring of returned call data
+
+        Returns: Decoded values.'''
+        result = eth_abi.decode_abi([i['type'] for i in self.abi['outputs']], HexBytes(hexstr))
+        result = format_output(self.abi, result)
+        if len(result) == 1:
+            return result[0]
+        return KwargTuple(result, self.abi)
+
 
 class ContractTx(_ContractMethod):
 
@@ -340,7 +348,7 @@ class ContractTx(_ContractMethod):
         signature: Bytes4 method signature.'''
 
     def __init__(self, fn, abi, name, owner):
-        if ARGV['cli'] == "test" and not CONFIG['test']['default_contract_owner']:
+        if ARGV['cli'] == "test" and CONFIG['test']['default_contract_owner'] is False:
             owner = None
         super().__init__(fn, abi, name, owner)
 

@@ -4,7 +4,7 @@ from brownie import project, accounts, check
 import scripts.token
 
 
-def setup():
+def setup(test_param=True):
     scripts.token.main()
     global token
     token = project.Token[0]
@@ -81,6 +81,6 @@ def revert():
     )
 
 
-def unfinished(pending=True):
+def unfinished(pending="coverage"):
     '''This test is expected to fail'''
     token.secretFunction(accounts[1], "10 ether")

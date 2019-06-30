@@ -1,23 +1,9 @@
 #!/usr/bin/python3
 
-import ast
-from hashlib import sha1
-import importlib.util
 import json
-import os
 from pathlib import Path
 
-from . import compiler
-from .sources import Sources
-from brownie.types.types import _Singleton
-from brownie._config import CONFIG
-
-BUILD_FOLDERS = [
-    "build",
-    "build/contracts",
-    "build/coverage",
-    "build/networks"
-]
+from . import sources
 
 BUILD_KEYS = [
     'abi',
@@ -28,9 +14,10 @@ BUILD_KEYS = [
     'compiler',
     'contractName',
     'coverageMap',
-    'coverageMapTotals',
     'deployedBytecode',
     'deployedSourceMap',
+    'dependencies',
+    'offset',
     'opcodes',
     'pcMap',
     'sha1',
@@ -40,156 +27,191 @@ BUILD_KEYS = [
     'type'
 ]
 
-sources = Sources()
+_build = {}
+_revert_map = {}
+_project_path = None
 
 
-class Build(metaclass=_Singleton):
+def get(contract_name):
+    '''Returns build data for the given contract name.'''
+    return _build[_stem(contract_name)]
 
-    def __init__(self):
-        self._build = {}
-        self._path = None
 
-    def __getitem__(self, contract_name):
-        return self._build[contract_name.replace('.json', '')]
+def items(path=None):
+    '''Provides an list of tuples as (key,value), similar to calling dict.items.
+    If a path is given, only contracts derived from that source file are returned.'''
+    if path is None:
+        return _build.items()
+    return [(k, v) for k, v in _build.items() if v['sourcePath'] == path]
 
-    def __contains__(self, contract_name):
-        return contract_name.replace('.json', '') in self._build
 
-    def _load(self):
-        self. _path = Path(CONFIG['folders']['project']).joinpath('build/contracts')
-        # check build paths
-        _check_build_paths()
-        # load existing build data
-        self._load_build_data()
-        # check for changed contracts, recompile
-        changed_paths = self._get_changed_contracts()
-        if changed_paths:
-            build_json = compiler.compile_contracts(changed_paths)
-            for name, data in build_json.items():
-                json.dump(
-                    data,
-                    self._path.joinpath("{}.json".format(name)).open('w'),
-                    sort_keys=True,
-                    indent=2,
-                    default=sorted
-                )
-            self._build.update(build_json)
-        self._generate_revert_map()
-        # check for changed tests
-        self._check_coverage_hashes()
-        _recursive_unlink(str(self._path.parent.joinpath('coverage')))
+def contains(contract_name):
+    '''Checks if the contract name exists in the currently loaded build data.'''
+    return _stem(contract_name) in _build
 
-    def _load_build_data(self):
-        project_path = Path(CONFIG['folders']['project'])
-        for path in list(self._path.glob('*.json')):
-            try:
-                build_json = json.load(path.open())
-                if (
-                    set(BUILD_KEYS).issubset(build_json) and
-                    project_path.joinpath(build_json['sourcePath']).exists()
-                ):
-                    build_json['pcMap'] = dict((int(k), v) for k, v in build_json['pcMap'].items())
-                    self._build[path.stem] = build_json
-                    continue
-            except json.JSONDecodeError:
-                pass
+
+def get_dependents(contract_name):
+    '''Returns a list of contract names that the given contract inherits from
+    or links to. Used by the compiler when determining which contracts to
+    recompile based on a changed source file.'''
+    return [k for k, v in _build.items() if contract_name in v['dependencies']]
+
+
+def get_dev_revert(pc):
+    '''Given the program counter from a stack trace that caused a transaction
+    to revert, returns the commented dev string (if any).'''
+    if pc not in _revert_map or _revert_map[pc] is False:
+        return None
+    return _revert_map[pc][3]
+
+
+def get_error_source_from_pc(pc, pad=3):
+    '''Given the program counter from a stack trace that caused a transaction
+    to revert, returns the highlighted relevent source code and the method name.'''
+    if pc not in _revert_map or _revert_map[pc] is False:
+        return None, None
+    revert = _revert_map[pc]
+    return sources.get_highlighted_source(*revert[:2], pad=pad), revert[2]
+
+
+def load(project_path):
+    '''Loads all build files for the given project path.
+    Files that are corrupted or missing required keys will be deleted.
+
+    Args:
+        project_path: root path of the project to load.'''
+    clear()
+    global _project_path
+    _project_path = Path(project_path)
+    for path in list(_project_path.glob('build/contracts/*.json')):
+        try:
+            build_json = json.load(path.open())
+        except json.JSONDecodeError:
+            build_json = {}
+        if (
+            not set(BUILD_KEYS).issubset(build_json) or
+            not project_path.joinpath(build_json['sourcePath']).exists()
+        ):
             path.unlink()
-
-    def _get_changed_contracts(self):
-        inheritance_map = sources.inheritance_map()
-        changed = [i for i in inheritance_map if self._compare_build_json(i)]
-        final = set(changed)
-        for name, inherited in inheritance_map.items():
-            if inherited.intersection(changed):
-                final.add(name)
-        for name in [i for i in final if i in self._build]:
-            self._path.joinpath(name+'.json').unlink()
-            del self._build[name]
-        return set(sources.get_path(i) for i in final)
-
-    def _compare_build_json(self, name):
-        return (
-            name not in self._build or
-            self._build[name]['compiler'] != CONFIG['solc'] or
-            self._build[name]['sha1'] != sources.get_hash(name)
-        )
-
-    def _generate_revert_map(self):
-        self._revert_map = {}
-        for pcMap in [v['pcMap'] for v in self._build.values()]:
-            for pc, data in [(k, v) for k, v in pcMap.items() if v['op'] in ("REVERT", "INVALID")]:
-                revert = [data['contract'], data['start'], data['stop'], ""]
-                try:
-                    s = sources[data['contract']][data['stop']:]
-                    err = s[:s.index('\n')]
-                    err = err[err.index('//')+2:].strip()
-                    if err.startswith('dev:'):
-                        revert[-1] = err
-                        data['dev'] = err
-                except (KeyError, ValueError):
-                    pass
-                self._revert_map.setdefault(pc, set()).add(tuple(revert))
-
-    def _check_coverage_hashes(self):
-        # remove coverage data where hashes have changed
-        coverage_path = self._path.parent.joinpath('coverage')
-        for coverage_json in list(coverage_path.glob('**/*.json')):
-            try:
-                dependents = json.load(coverage_json.open())['sha1']
-            except json.JSONDecodeError:
-                coverage_json.unlink()
-                continue
-            for path, hash_ in dependents.items():
-                path = Path(path)
-                if path.exists():
-                    if path.suffix != ".json":
-                        if get_ast_hash(path) == hash_:
-                            continue
-                    elif self._build[path.stem]['bytecodeSha1'] == hash_:
-                        continue
-                coverage_json.unlink()
-                break
-
-    def items(self):
-        return self._build.items()
-
-    def get_error_source_from_pc(self, pc, pad=3):
-        if pc not in self._revert_map or len(self._revert_map[pc]) > 1:
-            return
-        if len(self._revert_map[pc]) == len([i for i in self._revert_map[pc] if i[0] is False]):
-            return ""
-        revert = next(iter(self._revert_map[pc]))
-        return sources.get_highlighted_source(*revert[:3], pad=pad)
-
-    def get_dev_revert(self, pc):
-        if pc not in self._revert_map or len(self._revert_map[pc]) > 1:
-            return None
-        if len(self._revert_map[pc]) == len([i for i in self._revert_map[pc] if i[0] is False]):
-            return ""
-        return next(iter(self._revert_map[pc]))[3]
+            continue
+        _add(build_json)
 
 
-def get_ast_hash(script_path):
-    ast_list = [ast.parse(Path(script_path).open().read())]
-    for obj in [i for i in ast_list[0].body if type(i) in (ast.Import, ast.ImportFrom)]:
-        if type(obj) is ast.Import:
-            name = obj.names[0].name
-        else:
-            name = obj.module
-        origin = importlib.util.find_spec(name).origin
-        if CONFIG['folders']['project'] in origin:
-            ast_list.append(ast.parse(open(origin).read()))
-    dump = "\n".join(ast.dump(i) for i in ast_list)
-    return sha1(dump.encode()).hexdigest()
+def add(build_json):
+    '''Adds a build json to the active project. The data is saved in the
+    project's build/contracts folder.
+
+    Args:
+        build_json - dictionary of build data to add.'''
+    path = _absolute(build_json['contractName'])
+    json.dump(
+        build_json,
+        path.open('w'),
+        sort_keys=True,
+        indent=2,
+        default=sorted
+    )
+    _add(build_json)
 
 
-def _check_build_paths():
-    path = Path(CONFIG['folders']['project']).resolve()
-    for folder in [i for i in BUILD_FOLDERS]:
-        path.joinpath(folder).mkdir(exist_ok=True)
+def delete(contract_name):
+    '''Removes a contract's build data from the active project.
+    The json file in ``build/contracts`` is deleted.
+
+    Args:
+        contract_name: name of the contract to delete.'''
+    del _build[_stem(contract_name)]
+    _absolute(contract_name).unlink()
 
 
-def _recursive_unlink(base_path):
-    for path in [Path(i[0]) for i in list(os.walk(base_path))[:0:-1]]:
-        if not list(path.glob('*')):
-            path.rmdir()
+def clear():
+    '''Clears all currently loaded build data.  No files are deleted.'''
+    global _project_path
+    _project_path = None
+    _build.clear()
+    _revert_map.clear()
+
+
+def _add(build_json):
+    contract_name = build_json['contractName']
+    if "0" in build_json['pcMap']:
+        build_json['pcMap'] = dict((int(k), v) for k, v in build_json['pcMap'].items())
+    if build_json['compiler']['minify_source']:
+        build_json = expand_build_offsets(build_json)
+    _build[contract_name] = build_json
+    _generate_revert_map(build_json['pcMap'])
+
+
+def _generate_revert_map(pcMap):
+    '''Adds a contract's dev revert strings to the revert map and it's pcMap.
+
+    The revert map is dict of tuples, where each key is a program counter that
+    contains a REVERT or INVALID operation for a contract in the active project.
+    When a transaction reverts, the dev revert string can be determined by looking
+    up the final program counter in this mapping.
+
+    Each value is a 4 item tuple as follows:
+
+    ("path/to/source", (start, stop), "function name", "dev: revert string"),
+
+    When two contracts have differing values for the same program counter, the value
+    in the revert map is set to False. If a transaction reverts with this pc,
+    the entire trace must be queried to determine which contract reverted and get
+    the dev string from it's pcMap.
+    '''
+    for pc, data in (
+        (k, v) for k, v in pcMap.items() if
+        v['op'] in {"REVERT", "INVALID"} or 'jump_revert' in v
+    ):
+        if 'fn' not in data or 'first_revert' in data:
+            _revert_map[pc] = False
+            continue
+        data['dev'] = ""
+        try:
+            revert_str = sources.get(data['path'])[data['offset'][1]:]
+            revert_str = revert_str[:revert_str.index('\n')]
+            revert_str = revert_str[revert_str.index('//')+2:].strip()
+            if revert_str.startswith('dev:'):
+                data['dev'] = revert_str
+        except (KeyError, ValueError):
+            pass
+        revert = (data['path'], tuple(data['offset']), data['fn'], data['dev'])
+        if pc in _revert_map and revert != _revert_map[pc]:
+            _revert_map[pc] = False
+            continue
+        _revert_map[pc] = revert
+
+
+def _stem(contract_name):
+    return contract_name.replace('.json', '')
+
+
+def _absolute(contract_name):
+    contract_name = _stem(contract_name)
+    return _project_path.joinpath('build/contracts/{}.json'.format(contract_name))
+
+
+def _get_offset(offset_map, name, offset):
+    offset = tuple(offset)
+    if offset not in offset_map:
+        offset_map[offset] = sources.expand_offset(name, offset)
+    return offset_map[offset]
+
+
+def expand_build_offsets(build_json):
+    '''Expands minified source offsets in a build json dict.'''
+    name = build_json['contractName']
+    offset_map = {}
+
+    for value in [v for v in build_json['pcMap'].values() if 'offset' in v]:
+        value['offset'] = _get_offset(offset_map, name, value['offset'])
+
+    for key in ('branches', 'statements'):
+        coverage_map = build_json['coverageMap'][key]
+        for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
+            value = coverage_map[path][fn]
+            coverage_map[path][fn] = dict((
+                k,
+                _get_offset(offset_map, name, v[:2])+tuple(v[2:])
+            ) for k, v in value.items())
+    return build_json

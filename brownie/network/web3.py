@@ -35,4 +35,5 @@ class Web3(_Web3, metaclass=_Singleton):
 
     def disconnect(self):
         '''Disconnects from a provider'''
-        self.providers.clear()
+        if self.providers:
+            self.providers.clear()

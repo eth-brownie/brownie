@@ -67,35 +67,50 @@ class ListView(ttk.Treeview):
     def set_opcodes(self, pcMap):
         self.delete_all()
         for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)]:
-            if not op['contract'] or (
-                op['contract'] == pcMap[0]['contract'] and
-                op['start'] == pcMap[0]['start'] and
-                op['stop'] == pcMap[0]['stop']
+            if 'path' not in op or (
+                op['path'] == pcMap[0]['path'] and
+                op['offset'] == pcMap[0]['offset']
             ):
                 tag = "NoSource"
             else:
-                tag = "{0[start]}:{0[stop]}:{0[contract]}".format(op)
+                tag = "{0[path]}:{0[offset][0]}:{0[offset][1]}".format(op)
             self.insert([str(pc), op['op']], [tag, op['op']])
 
     def _select_bind(self, event):
         self.tag_configure(self._last, background="")
+        # TODO hacky console hacky-ness
+        self.root.main.console.configure(state="normal")
+        self.root.main.console.delete(1.0, "end")
         try:
             pc = self.selection()[0]
         except IndexError:
+            self.root.main.console.configure(state="disabled")
             return
-        pcMap = self.root.pcMap
+        pcMap = self.root.pcMap[pc]
         note = self.root.main.note
+
+        # TODO make this hacky console hacky-ness less hacky
+        console_str = " "+pcMap['op']
+        if 'value' in pcMap:
+            console_str += " "+pcMap['value']
+            if pcMap['op'] == "PUSH2":
+                console_str += " ({})".format(int(pcMap['value'], 16))
+        if 'offset' in pcMap:
+            console_str += "   {}".format(tuple(pcMap['offset']))
+        self.root.main.console.insert(1.0, console_str)
+        self.root.main.console.configure(state="disabled")
+
         tag = self.item(pc, 'tags')[0]
         if tag == "NoSource":
             note.active_frame().clear_highlight()
             return
         self.tag_configure(tag, background="#2a4864")
         self._last = tag
-        if not pcMap[pc]['contract']:
+        if 'path' not in pcMap:
             note.active_frame().clear_highlight()
             return
-        note.set_active(pcMap[pc]['contract'])
-        note.active_frame().highlight(pcMap[pc]['start'], pcMap[pc]['stop'])
+        note.set_active(pcMap['path'])
+        note.active_frame().highlight(*pcMap['offset'])
 
     def _seek(self, event):
         if self._seek_last < time.time() - 1:
