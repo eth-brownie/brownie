@@ -2,6 +2,7 @@
 
 import builtins
 import code
+from pathlib import Path
 import sys
 
 from . import color
@@ -15,10 +16,15 @@ else:
 
 class Console(code.InteractiveConsole):
 
-    def __init__(self, locals_dict):
+    def __init__(self, locals_dict, history_file):
         builtins.dir = self._dir
-        self._write = sys.stdout.write
+        self._stdout_write = sys.stdout.write
         sys.stdout.write = self._console_write
+        history_file = Path(history_file)
+        if not history_file.exists():
+            history_file.open('w').write("")
+        self._readline = str(history_file)
+        readline.read_history_file(self._readline)
         super().__init__(locals_dict)
 
     # replaces builtin dir method, for simplified and colorful output
@@ -41,11 +47,29 @@ class Console(code.InteractiveConsole):
                 text = color.pretty_list(obj)
         except SyntaxError:
             pass
-        return self._write(text)
+        return self._stdout_write(text)
 
     def showtraceback(self):
         tb = color.format_tb(sys.exc_info(), start=1)
         self.write(tb+'\n')
+
+    # save user input to readline history file, filter for private keys
+    def push(self, line):
+        try:
+            cls_, method = line[:line.index("(")].split(".")
+            method = getattr(self.locals[cls_], method)
+            if hasattr(method, "_private"):
+                readline.replace_history_item(
+                    readline.get_current_history_length() - 1,
+                    line[:line.index("(")] + "()"
+                )
+        except (ValueError, AttributeError):
+            pass
+        if sys.platform == "win32":
+            readline.write_history_file(self._readline)
+        else:
+            readline.append_history_file(1, self._readline)
+        return super().push(line)
 
 
 def _dir_color(obj):

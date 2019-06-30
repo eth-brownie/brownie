@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from docopt import docopt
+from pathlib import Path
 
 import brownie
 from brownie import network, project
@@ -32,5 +33,5 @@ def main():
     console_dict['run'] = run_script
     del console_dict['project']
 
-    shell = Console(console_dict)
+    shell = Console(console_dict, Path(CONFIG['folders']['project']).joinpath('.history'))
     shell.interact(banner="Brownie environment is ready.", exitmsg="")
