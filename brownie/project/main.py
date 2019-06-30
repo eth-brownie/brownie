@@ -56,7 +56,7 @@ def new(project_path=".", ignore_subfolder=False):
 
 def pull(project_name, project_path=None, ignore_subfolder=False):
     '''Initializes a new project via a template. Templates are downloaded from
-    https://www.github.com/brownie-mixes
+    https://www.github.com/brownie-mix
 
     Args:
         project_path: Path to initialize the project at.
