@@ -9,10 +9,6 @@ class UnknownAccount(Exception):
     pass
 
 
-class AmbiguousMethods(Exception):
-    pass
-
-
 class UndeployedLibrary(Exception):
     pass
 

@@ -1,34 +1,8 @@
 #!/usr/bin/python3
 
-from copy import deepcopy
-import pytest
-
-
 from brownie import network, project
-from brownie.project import build
-from brownie.network.contract import ContractContainer
-from brownie.exceptions import AmbiguousMethods
 
 accounts = network.accounts
-
-
-def test_ambiguous_methods():
-    b = deepcopy(build.get('Token'))
-    b['abi'].append({
-        'constant': False,
-        'inputs': [
-            {'name': '_to', 'type': 'address'},
-            {'name': '_value', 'type': 'uint256'},
-            {'name': '_test', 'type': 'uint256'}
-        ],
-        'name': 'transfer',
-        'outputs': [{'name': '', 'type': 'bool'}],
-        'payable': False,
-        'stateMutability': 'nonpayable',
-        'type': 'function'
-    })
-    with pytest.raises(AmbiguousMethods):
-        ContractContainer(b)
 
 
 def test_get_method():

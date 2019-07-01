@@ -13,7 +13,7 @@ from .rpc import Rpc
 from .web3 import Web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_input, format_output, to_address
-from brownie.exceptions import AmbiguousMethods, UndeployedLibrary, VirtualMachineError
+from brownie.exceptions import UndeployedLibrary, VirtualMachineError
 from brownie._config import ARGV, CONFIG
 
 _contracts = _ContractHistory()
@@ -30,11 +30,6 @@ class _ContractBase:
         self.abi = build['abi']
         self._name = build['contractName']
         self._source_path = build['sourcePath']
-        names = [i['name'] for i in self.abi if i['type'] == "function"]
-        duplicates = set(i for i in names if names.count(i) > 1)
-        if duplicates:
-            raise AmbiguousMethods("Multiple methods with same name in {}: {}".format(
-                self._name, ",".join(duplicates)))
         self.topics = get_topics(self.abi)
         self.signatures = dict((
             i['name'],
@@ -208,16 +203,21 @@ class Contract(_ContractBase):
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         self._owner = owner
         self.address = address
-        for i in [i for i in self.abi if i['type'] == "function"]:
-            if hasattr(self, i['name']):
-                raise AttributeError(
-                    "Namespace collision: '{}.{}'".format(self._name, i['name'])
-                )
-            name = "{}.{}".format(self._name, i['name'])
-            if i['stateMutability'] in ('view', 'pure'):
-                setattr(self, i['name'], ContractCall(address, i, name, owner))
-            else:
-                setattr(self, i['name'], ContractTx(address, i, name, owner))
+        fn_names = [i['name'] for i in self.abi if i['type'] == "function"]
+        for abi in [i for i in self.abi if i['type'] == "function"]:
+            name = f"{self._name}.{abi['name']}"
+            if fn_names.count(abi['name']) == 1:
+                self._check_and_set(abi['name'], _get_method_object(address, abi, name, owner))
+                continue
+            if not hasattr(self, abi['name']):
+                self._check_and_set(abi['name'], OverloadedMethod(address, name, owner))
+            key = ",".join(i['type'] for i in abi['inputs']).replace('256', '')
+            getattr(self, abi['name']).methods[key] = _get_method_object(address, abi, name, owner)
+
+    def _check_and_set(self, name, obj):
+        if hasattr(self, name):
+            raise AttributeError(f"Namespace collision: '{self._name}.{name}'")
+        setattr(self, name, obj)
 
     def __hash__(self):
         return hash(self._name+self.address)
@@ -242,6 +242,27 @@ class Contract(_ContractBase):
     def balance(self):
         '''Returns the current ether balance of the contract, in wei.'''
         return web3.eth.getBalance(self.address)
+
+
+class OverloadedMethod:
+
+    def __init__(self, address, name, owner):
+        self._address = address
+        self._name = name
+        self._owner = owner
+        self.methods = {}
+
+    def __getitem__(self, key):
+        if type(key) is tuple:
+            key = ",".join(key)
+        key = key.replace("256", "").replace(", ", ",")
+        try:
+            return self.methods[key]
+        except KeyError:
+            raise
+
+    def __repr__(self):
+        return f"<OverloadedMethod object '{self._name}'>"
 
 
 class _ContractMethod:
@@ -406,3 +427,9 @@ def _get_tx(owner, args):
             if key in tx:
                 tx[target] = tx[key]
     return args, tx
+
+
+def _get_method_object(address, abi, name, owner):
+    if abi['stateMutability'] in ('view', 'pure'):
+        return ContractCall(address, abi, name, owner)
+    return ContractTx(address, abi, name, owner)
