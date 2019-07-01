@@ -28,9 +28,8 @@ class Console(code.InteractiveConsole):
         self._stdout_write = sys.stdout.write
         sys.stdout.write = self._console_write
 
-        history_file = Path(CONFIG['folders']['project']).joinpath('.history')
-        if not history_file.exists():
-            history_file.open('w').write("")
+        history_file = Path(CONFIG['folders']['project']).joinpath('.history').absolute()
+        history_file.touch(exist_ok=True)
         self._readline = str(history_file)
         readline.read_history_file(self._readline)
 
