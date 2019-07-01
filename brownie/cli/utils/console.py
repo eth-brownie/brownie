@@ -49,6 +49,10 @@ class Console(code.InteractiveConsole):
             pass
         return self._stdout_write(text)
 
+    def showsyntaxerror(self, filename):
+        tb = color.format_syntaxerror(sys.exc_info()[1])
+        self.write(tb+'\n')
+
     def showtraceback(self):
         tb = color.format_tb(sys.exc_info(), start=1)
         self.write(tb+'\n')

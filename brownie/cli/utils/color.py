@@ -115,6 +115,8 @@ class Color:
         return f"{s}{self[key]}{value}{self['dull']}{s}"
 
     def format_tb(self, exc, filename=None, start=None, stop=None):
+        if exc[0] is SyntaxError:
+            return self.format_syntaxerror(exc[1])
         tb = [i.replace("./", "") for i in traceback.format_tb(exc[2])]
         if filename and not ARGV['tb']:
             try:
@@ -133,6 +135,16 @@ class Color:
             tb[i] = TB_BASE.format(self, info, "\n"+code if code else "")
         tb.append(f"{self['error']}{exc[0].__name__}{self}: {exc[1]}")
         return "\n".join(tb)
+
+    def format_syntaxerror(self, exc):
+        offset = exc.offset+len(exc.text.lstrip())-len(exc.text)+3
+        if CONFIG['folders']['project']:
+            exc.filename = exc.filename.replace(CONFIG['folders']['project'], ".")
+        return (
+            f"  {self['dull']}File \"{self['string']}{exc.filename}{self['dull']}\", line "
+            f"{self['value']}{exc.lineno}{self['dull']},\n{self}    {exc.text.strip()}\n"
+            f"{' '*offset}^\n{self['error']}SyntaxError{self}: {exc.msg}"
+        )
 
 
 def notify(type_, msg):

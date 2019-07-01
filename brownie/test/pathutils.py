@@ -55,7 +55,7 @@ def get_ast_hash(path):
         path: path of the script to hash
 
     Returns: sha1 hash as bytes'''
-    ast_list = [ast.parse(Path(path).open().read())]
+    ast_list = [ast.parse(Path(path).open().read(), path)]
     base_path = str(check_for_project(path))
     for obj in [i for i in ast_list[0].body if type(i) in (ast.Import, ast.ImportFrom)]:
         if type(obj) is ast.Import:
@@ -64,7 +64,7 @@ def get_ast_hash(path):
             name = obj.module
         origin = importlib.util.find_spec(name).origin
         if base_path in origin:
-            ast_list.append(ast.parse(open(origin).read()))
+            ast_list.append(ast.parse(open(origin).read(), origin))
     dump = "\n".join(ast.dump(i) for i in ast_list)
     return sha1(dump.encode()).hexdigest()
 
