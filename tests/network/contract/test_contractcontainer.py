@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-from brownie import network, project
+import pytest
 
-accounts = network.accounts
+from brownie import network, project, accounts
 
 
 def test_get_method():
@@ -36,3 +36,9 @@ def test_remove_at(clean_network):
     assert len(Token) == 0
     assert Token.at(t.address) == t
     assert len(Token) == 1
+    t2 = Token.deploy("", "", 0, 0, {'from': accounts[0]})
+    t2._name = "Potato"
+    with pytest.raises(TypeError):
+        Token.remove(t2)
+    with pytest.raises(TypeError):
+        Token.remove(123)

@@ -94,3 +94,13 @@ def test_unlinked_library(clean_network):
     lib = project.UnlinkedLib.deploy({'from': accounts[0]})
     meta = project.BrownieTester.deploy({'from': accounts[0]})
     assert lib.address[2:].lower() in meta.bytecode
+
+
+def test_no_from():
+    with pytest.raises(AttributeError):
+        project.BrownieTester.deploy()
+
+
+def test_repr():
+    repr(project.Token)
+    repr(project.Token.deploy)

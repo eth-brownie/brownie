@@ -252,6 +252,9 @@ class OverloadedMethod:
     def __repr__(self):
         return f"<OverloadedMethod object '{self._name}'>"
 
+    def __len__(self):
+        return len(self.methods)
+
 
 class _ContractMethod:
 
