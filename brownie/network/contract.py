@@ -33,9 +33,7 @@ class _ContractBase:
         self.topics = get_topics(self.abi)
         self.signatures = dict((
             i['name'],
-            "0x"+keccak("{}({})".format(
-                i['name'], ",".join(x['type'] for x in i['inputs'])
-            ).encode()).hex()[:8]
+            _signature(i)
         ) for i in self.abi if i['type'] == "function")
 
     def get_method(self, calldata):
@@ -97,13 +95,11 @@ class ContractContainer(_ContractBase):
         address = to_address(address)
         contract = _contracts.find(address)
         if contract:
-            if contract._name != self._name:
-                raise ValueError("Contract '{}' already declared at {}".format(
-                    contract._name, address
-                ))
-            return contract
+            if contract._name == self._name:
+                return contract
+            raise ValueError(f"Contract '{contract._name}' already declared at {address}")
         if web3.eth.getCode(address).hex() == "0x":
-            raise ValueError("No contract deployed at {}".format(address))
+            raise ValueError(f"No contract deployed at {address}")
         contract = Contract(address, self._build, owner, tx)
         _contracts.add(contract)
         return contract
@@ -127,14 +123,7 @@ class ContractConstructor:
         self._name = name
 
     def __repr__(self):
-        return "<{} object '{}.constructor({})'>".format(
-            type(self).__name__,
-            self._name,
-            ", ".join("{0[type]}{1}{0[name]}".format(
-                i,
-                " " if i['name'] else ""
-            ) for i in self.abi['inputs'])
-        )
+        return f"<{type(self).__name__} object '{self._name}.constructor({_inputs(self.abi)})'>"
 
     def __call__(self, *args):
         '''Deploys a contract.
@@ -175,8 +164,7 @@ class ContractConstructor:
             library = marker.strip('_')
             if not _contracts.list(library):
                 raise UndeployedLibrary(
-                    "Contract requires '{}' library".format(library) +
-                    " but it has not been deployed yet"
+                    f"Contract requires '{library}' library but it has not been deployed yet"
                 )
             address = _contracts.list(library)[-1].address[-40:]
             bytecode = bytecode.replace(marker, address)
@@ -223,7 +211,7 @@ class Contract(_ContractBase):
         return hash(self._name+self.address)
 
     def __repr__(self):
-        return "<{0._name} Contract object '{1[string]}{0.address}{1}'>".format(self, color)
+        return f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
 
     def __str__(self):
         return self.address
@@ -274,21 +262,11 @@ class _ContractMethod:
         self._name = name
         self.abi = abi
         self._owner = owner
-        self.signature = "0x"+keccak("{}({})".format(
-            abi['name'],
-            ",".join(i['type'] for i in abi['inputs'])
-            ).encode()).hex()[:8]
+        self.signature = _signature(abi)
 
     def __repr__(self):
-        return "<{} {}object '{}({})'>".format(
-            type(self).__name__,
-            "payable " if self.abi['stateMutability'] == "payable" else "",
-            self.abi['name'],
-            ", ".join("{0[type]}{1}{0[name]}".format(
-                i,
-                " " if i['name'] else ""
-            ) for i in self.abi['inputs'])
-        )
+        pay = "payable " if self.abi['stateMutability'] == "payable" else ""
+        return f"<{type(self).__name__} {pay}object '{self.abi['name']}({_inputs(self.abi)})'>"
 
     def call(self, *args):
         '''Calls the contract method without broadcasting a transaction.
@@ -433,3 +411,12 @@ def _get_method_object(address, abi, name, owner):
     if abi['stateMutability'] in ('view', 'pure'):
         return ContractCall(address, abi, name, owner)
     return ContractTx(address, abi, name, owner)
+
+
+def _inputs(abi):
+    return ", ".join(f"{i['type']}{' '+i['name'] if i['name'] else ''}" for i in abi['inputs'])
+
+
+def _signature(abi):
+    key = f"{abi['name']}({','.join(i['type'] for i in abi['inputs'])})".encode()
+    return "0x"+keccak(key).hex()[:8]
