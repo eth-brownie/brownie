@@ -25,14 +25,10 @@ class TestPrinter:
         self.count = count
         self.total = total
         self.total_time = time.time()
-        print("\nRunning {0[module]}{1}{0} - {2} test{3} ({4}/{5})".format(
-            color,
-            path,
-            self.total,
-            "s" if total != 1 else "",
-            self.grand_count,
-            self.grand_total
-        ))
+        print(
+            f"\nRunning {color['module']}{path}{color} - {self.total} test"
+            f"{'s' if total != 1 else ''} ({self.grand_count}/{self.grand_total})"
+        )
 
     @classmethod
     def set_grand_total(cls, total):
@@ -40,7 +36,7 @@ class TestPrinter:
 
     def skip(self, description):
         self._print(
-            "{0} ({1[pending]}skipped{1[dull]})\n".format(description, color),
+            f"{description} ({color['pending']}skipped{color['dull']})\n",
             "\u229d",
             "pending",
             "dull"
@@ -49,42 +45,30 @@ class TestPrinter:
 
     def start(self, description):
         self.desc = description
-        self._print("{} ({}/{})...".format(description, self.count, self.total))
+        self._print(f"{description} ({self.count}/{self.total})...")
         self.time = time.time()
 
     def stop(self, err=None, expect=False):
         if not err:
-            self._print("{} ({:.4f}s)  \n".format(self.desc, time.time() - self.time), "\u2713")
+            self._print(f"{self.desc} ({time.time() - self.time:.4f}s)  \n", "\u2713")
         else:
             err = type(err).__name__
             color_str = 'success' if expect and err != "ExpectedFailing" else 'error'
             symbol = '\u2717' if err in ("AssertionError", "VirtualMachineError") else '\u203C'
-            msg = "{} ({}{}{})\n".format(
-                self.desc,
-                color(color_str),
-                err,
-                color('dull')
-            )
+            msg = f"{self.desc} ({color(color_str)}{err}{color['dull']})\n"
             self._print(msg, symbol, color_str, "dull")
         self.count += 1
 
     def finish(self):
-        print("Completed {0[module]}{1}{0} ({2:.4f}s)".format(
-            color,
-            self.path,
-            time.time() - self.total_time
-        ))
+        print(
+            f"Completed {color['module']}{self.path}{color} ({time.time() - self.total_time:.4f}s)"
+        )
         TestPrinter.grand_count += 1
 
     def _print(self, msg, symbol=" ", symbol_color="success", main_color=None):
-        sys.stdout.write("\r {}{}{} {} - {}{}".format(
-            color(symbol_color),
-            symbol,
-            color(main_color),
-            self.count,
-            msg,
-            color
-        ))
+        sys.stdout.write(
+            f"\r {color[symbol_color]}{symbol}{color[main_color]} {self.count} - {msg}{color}"
+        )
         sys.stdout.flush()
 
 
@@ -99,16 +83,15 @@ def coverage_totals(coverage_eval):
     print("\nCoverage analysis:")
     for name in sorted(totals):
         pct = _pct(totals[name]['totals']['statements'], totals[name]['totals']['branches'])
-        print("\n  contract: {0[contract]}{1}{0} - {2}{3:.1%}{0}".format(
-            color, name, _cov_color(pct), pct
-        ))
+        print(f"\n  contract: {color['contract']}{name}{color} - {_cov_color(pct)}{pct:.1%}{color}")
         cov = totals[name]
         for fn_name, count in cov['statements'].items():
             branch = cov['branches'][fn_name] if fn_name in cov['branches'] else (0, 0, 0)
             pct = _pct(count, branch)
-            print("    {0[contract_method]}{1}{0} - {2}{3:.1%}{0}".format(
-                color, fn_name, _cov_color(pct), pct
-            ))
+            print(
+                f"    {color['contract_method']}{fn_name}{color}"
+                f" - {_cov_color(pct)}{pct:.1%}{color}"
+            )
 
 
 def _cov_color(pct):
@@ -127,4 +110,4 @@ def gas_profile():
     print('\nGas Profile:')
     gas = history.gas_profile
     for i in sorted(gas):
-        print("{0} -  avg: {1[avg]:.0f}  low: {1[low]}  high: {1[high]}".format(i, gas[i]))
+        print(f"{i} -  avg: {gas[i]['avg']:.0f}  low: {gas[i]['low']}  high: {gas[i]['high']}")

@@ -84,7 +84,7 @@ def get_path(path_str, default_folder="scripts"):
         path_str += ".py"
     path = _get_path(path_str, default_folder)
     if not path.is_file():
-        raise FileNotFoundError("{} is not a file".format(path_str))
+        raise FileNotFoundError(f"{path_str} is not a file")
     return path
 
 
@@ -110,9 +110,9 @@ def _get_path(path_str, default_folder):
         if not path.exists() and sys.path[0]:
             path = Path(sys.path[0]).joinpath(path)
     if not path.exists():
-        raise FileNotFoundError("Cannot find {}".format(path_str))
+        raise FileNotFoundError(f"Cannot find {path_str}")
     if path.is_file() and path.suffix != ".py":
-        raise TypeError("'{}' is not a python script".format(path_str))
+        raise TypeError(f"'{path_str}' is not a python script")
     return path
 
 
@@ -159,7 +159,7 @@ def save_build_json(module_path, result, coverage_eval, contract_names):
     module_path = Path(module_path).absolute()
     project_path = check_for_project(module_path)
     build_path = get_build_paths([module_path])[0]
-    build_files = [Path('build/contracts/{}.json'.format(i)) for i in contract_names]
+    build_files = [Path(f"build/contracts/{i}.json") for i in contract_names]
     build_json = {
         'result': result,
         'coverage': coverage_eval,
@@ -191,5 +191,5 @@ def save_report(coverage_eval, report_path):
         report_path = report_path.joinpath(filename.format("-"+str(count) if count else ""))
     with report_path.open('w') as f:
         json.dump(report, f, sort_keys=True, indent=2, default=sorted)
-    print("\nCoverage report saved at {}".format(report_path.relative_to(sys.path[0])))
+    print(f"\nCoverage report saved at {report_path.relative_to(sys.path[0])}")
     return report_path
