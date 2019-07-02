@@ -33,11 +33,10 @@ def get_methods(path, check_coverage=False):
         return []
 
     # check for duplicate names
-    if len(fn_nodes) != len(set(fn_nodes)):
-        duplicates = set(i for i in fn_nodes if fn_nodes.count(i) > 1)
-        raise ValueError(
-            "{}: multiple methods of same name - {}".format(path.name, ", ".join(duplicates))
-        )
+    names = [i.name for i in fn_nodes]
+    if len(names) != len(set(names)):
+        duplicates = set(i for i in names if names.count(i) > 1)
+        raise ValueError(f"{path.name}: multiple methods of same name - {', '.join(duplicates)}")
 
     default_args = {}
     setup_fn = next((i for i in fn_nodes if i.name == "setup"), False)
