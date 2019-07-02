@@ -49,6 +49,7 @@ def test_overloaded():
     assert type(fn['address', 'uint']) == ContractTx
     assert fn['address, uint256'] != fn['address, uint256, uint256']
     assert fn['address', 'uint'] == fn['address,uint256']
+    repr(fn)
 
 
 def test_set_methods():

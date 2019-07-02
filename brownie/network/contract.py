@@ -244,10 +244,7 @@ class OverloadedMethod:
         if type(key) is tuple:
             key = ",".join(key)
         key = key.replace("256", "").replace(", ", ",")
-        try:
-            return self.methods[key]
-        except KeyError:
-            raise
+        return self.methods[key]
 
     def __repr__(self):
         return f"<OverloadedMethod object '{self._name}'>"
