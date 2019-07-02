@@ -63,7 +63,7 @@ class Rpc(metaclass=_Singleton):
                     cmd += ".cmd"
                 return self.launch(cmd)
             raise
-        print("Launching '{}'...".format(cmd))
+        print(f"Launching '{cmd}'...")
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
@@ -202,12 +202,12 @@ class Rpc(metaclass=_Singleton):
             raise TypeError("blocks must be an integer value")
         for i in range(blocks):
             self._request("evm_mine", [])
-        return "Block height at {}".format(web3.eth.blockNumber)
+        return f"Block height at {web3.eth.blockNumber}"
 
     def snapshot(self):
         '''Takes a snapshot of the current state of the EVM.'''
         self._snapshot_id = self._snap()
-        return "Snapshot taken at block height {}".format(web3.eth.blockNumber)
+        return f"Snapshot taken at block height {web3.eth.blockNumber}"
 
     def revert(self):
         '''Reverts the EVM to the most recently taken snapshot.'''
@@ -215,7 +215,7 @@ class Rpc(metaclass=_Singleton):
             raise ValueError("No snapshot set")
         self._internal_id = None
         self._snapshot_id = self._revert(self._snapshot_id)
-        return "Block height reverted to {}".format(web3.eth.blockNumber)
+        return f"Block height reverted to {web3.eth.blockNumber}"
 
     def reset(self):
         '''Reverts the EVM to the genesis state.'''

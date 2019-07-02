@@ -545,8 +545,6 @@ class TransactionReceipt:
         if not source:
             return ""
         source = sources.get_highlighted_source(source['filename'], source['offset'], pad)
-        if not source:
-            return ""
         return _format_source(source, self.trace[idx]['pc'], idx, self.trace[idx]['fn'])
 
 

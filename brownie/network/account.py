@@ -101,7 +101,7 @@ class Accounts(metaclass=_Singleton):
         if not json_file.exists():
             json_file = project_path.joinpath(filename)
             if not json_file.exists():
-                raise FileNotFoundError("Cannot find {}".format(json_file))
+                raise FileNotFoundError(f"Cannot find {json_file}")
         with json_file.open() as f:
             priv_key = web3.eth.account.decrypt(
                 json.load(f),
@@ -123,7 +123,7 @@ class Accounts(metaclass=_Singleton):
         try:
             return next(i for i in self._accounts if i == address)
         except StopIteration:
-            raise UnknownAccount("No account exists for {}".format(address))
+            raise UnknownAccount(f"No account exists for {address}")
 
     def remove(self, address):
         '''Removes an account instance from the container.
@@ -134,7 +134,7 @@ class Accounts(metaclass=_Singleton):
         try:
             self._accounts.remove(address)
         except ValueError:
-            raise UnknownAccount("No account exists for {}".format(address))
+            raise UnknownAccount(f"No account exists for {address}")
 
     def clear(self):
         '''Empties the container.'''
@@ -153,7 +153,7 @@ class _AccountBase:
         return hash(self.address)
 
     def __repr__(self):
-        return "'{0[string]}{1}{0}'".format(color, self.address)
+        return f"'{color['string']}{self.address}{color}'"
 
     def __str__(self):
         return self.address
@@ -291,7 +291,7 @@ class Account(_AccountBase):
         nonce: Current nonce of the account.'''
 
     def __repr__(self):
-        return "<Account object '{0[string]}{1}{0}'>".format(color, self.address)
+        return f"<Account object '{color['string']}{self.address}{color}'>"
 
     def _transact(self, tx):
         self._check_for_revert(tx)
@@ -315,7 +315,7 @@ class LocalAccount(_AccountBase):
         super().__init__(address)
 
     def __repr__(self):
-        return "<LocalAccount object '{0[string]}{1}{0}'>".format(color, self.address)
+        return f"<LocalAccount object '{color['string']}{self.address}{color}'>"
 
     def save(self, filename, overwrite=False):
         '''Encrypts the private key and saves it in a keystore json.

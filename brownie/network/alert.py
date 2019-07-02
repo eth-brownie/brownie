@@ -50,7 +50,7 @@ class Alert:
                 continue
             if msg:
                 msg = msg.format(start_value, value)
-                print("{0[bright red]}ALERT{0}: {1}".format(color, msg))
+                print(f"{color['bright red']}ALERT{color}: {msg}")
             if callback:
                 callback(start_value, value)
             _instances.discard(self)

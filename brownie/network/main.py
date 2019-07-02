@@ -16,15 +16,12 @@ def connect(network=None):
 
     Network information is retrieved from brownie-config.json'''
     if is_connected():
-        raise ConnectionError("Already connected to network '{}'".format(
-            CONFIG['active_network']['name']
-        ))
+        raise ConnectionError(f"Already connected to network '{CONFIG['active_network']['name']}'")
     try:
         modify_network_config(network or CONFIG['network_defaults']['name'])
         if 'host' not in CONFIG['active_network']:
             raise KeyError(
-                "No host given in brownie-config.json for network"
-                " '{}'".format(CONFIG['active_network']['name'])
+                f"No host in brownie-config.json for network '{CONFIG['active_network']['name']}'"
             )
         web3.connect(CONFIG['active_network']['host'])
         if 'test-rpc' in CONFIG['active_network'] and not rpc.is_active():
@@ -81,10 +78,8 @@ def gas_limit(*args):
             try:
                 limit = int(args[0])
             except ValueError:
-                raise TypeError("Invalid gas limit '{}'".format(args[0]))
+                raise TypeError(f"Invalid gas limit '{args[0]}'")
             if limit < 21000:
                 raise ValueError("Minimum gas limit is 21000")
             CONFIG['active_network']['gas_limit'] = limit
-    return "Gas limit is set to {}".format(
-        CONFIG['active_network']['gas_limit'] or "automatic"
-    )
+    return f"Gas limit is set to {CONFIG['active_network']['gas_limit'] or 'automatic'}"
