@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import atexit
 import builtins
 import code
 from pathlib import Path
@@ -28,13 +29,12 @@ class Console(code.InteractiveConsole):
         self._stdout_write = sys.stdout.write
         sys.stdout.write = self._console_write
 
-        history_file = Path(CONFIG['folders']['project']).joinpath('.history').absolute()
-        self._readline = str(history_file)
+        history_file = str(Path(CONFIG['folders']['project']).joinpath('.history').absolute())
+        atexit.register(_atexit_readline, history_file)
         try:
-            readline.read_history_file(self._readline)
+            readline.read_history_file(history_file)
         except (FileNotFoundError, OSError):
-            with history_file.open('w') as f:
-                f.write('')
+            pass
         super().__init__(locals_dict)
 
     # replaces builtin dir method, for simplified and colorful output
@@ -79,10 +79,6 @@ class Console(code.InteractiveConsole):
                 )
         except (ValueError, AttributeError, KeyError):
             pass
-        if sys.platform == "win32":
-            readline.write_history_file(self._readline)
-        else:
-            readline.append_history_file(1, self._readline)
         return super().push(line)
 
 
@@ -94,3 +90,8 @@ def _dir_color(obj):
     if not callable(obj):
         return color('value')
     return color('callable')
+
+
+def _atexit_readline(history_file):
+    readline.set_history_length(1000)
+    readline.write_history_file(history_file)
