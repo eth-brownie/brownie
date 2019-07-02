@@ -48,7 +48,7 @@ def test_run(console):
 
 def test_multiple_commands(console):
     _run_cmd(console, [
-        'dir()',
+        'config',
         'accounts[0].deploy(Token, "", "", 18, 100000000)',
         'Token[0].transfer(accounts[1], 10000, {"from": accounts[0]})',
         'accounts.add("0x416b8a7d9290502f5661da81f0cf43893e3d19cb9aea3c426cfb36e8186e9c09")'
@@ -64,6 +64,7 @@ def test_multiline_commands(console):
         '(2, "5 ether"),',
         '(3, "7 ether"),',
         ']',
+        'to_send',
         'for i in to_send:',
         '    accounts[0].transfer(accounts[i[0]], i[1])',
         ''
@@ -102,3 +103,7 @@ def test_syntax(console, monkeypatch):
         console.push('x = [)')
     with pytest.raises(SyntaxError):
         _run_cmd(console, ['x = [', '', ')'])
+
+
+def test_dir(console):
+    _run_cmd(console, ['dir()', 'dir(check)', 'dir(accounts)'])

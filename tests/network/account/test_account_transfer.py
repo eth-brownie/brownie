@@ -2,12 +2,9 @@
 
 import pytest
 
-from brownie import network, project, config
+from brownie import network, accounts, config, web3
 from brownie.exceptions import VirtualMachineError
 from brownie.network.transaction import TransactionReceipt
-
-accounts = network.accounts
-web3 = network.web3
 
 
 def test_to_string():
@@ -22,11 +19,10 @@ def test_to_account():
     assert str(tx.receiver) == accounts[1].address
 
 
-def test_to_contract():
+def test_to_contract(token):
     '''Can send to a Contract object'''
-    c = accounts[0].deploy(project.Token, "TST", "Test Token", 18, 1000000)
-    tx = accounts[0].transfer(c, 0, data="0x06fdde03")
-    assert str(tx.receiver) == c.address
+    tx = accounts[0].transfer(token, 0, data="0x06fdde03")
+    assert str(tx.receiver) == token.address
 
 
 def test_returns_tx_on_success():
@@ -35,17 +31,27 @@ def test_returns_tx_on_success():
     assert type(tx) == TransactionReceipt
 
 
-def test_raises_on_revert():
+def test_raises_on_revert(token):
     '''raises on revert'''
-    c = accounts[0].deploy(project.Token, "TST", "Test Token", 18, 1000000)
     with pytest.raises(VirtualMachineError):
-        accounts[0].transfer(c, 10000)
+        accounts[0].transfer(token, 10000)
 
 
-def test_returns_tx_on_revert_in_console(console_mode):
+def test_broadcast_revert(token):
+    config['active_network']['broadcast_reverting_tx'] = False
+    count = accounts[0].nonce
+    with pytest.raises(VirtualMachineError):
+        accounts[0].transfer(token, 10000)
+    assert accounts[0].nonce == count
+    config['active_network']['broadcast_reverting_tx'] = True
+    with pytest.raises(VirtualMachineError):
+        accounts[0].transfer(token, 10000)
+    assert accounts[0].nonce == count + 1
+
+
+def test_returns_tx_on_revert_in_console(console_mode, token):
     '''returns a tx on revert in console'''
-    c = accounts[0].deploy(project.Token, "TST", "Test Token", 18, 1000000)
-    tx = accounts[0].transfer(c, 10000)
+    tx = accounts[0].transfer(token, 10000)
     assert type(tx) == TransactionReceipt
     assert tx.status == 0
 

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from copy import deepcopy
 import pytest
 
 from brownie import accounts, config
@@ -68,3 +69,12 @@ def test_error(tx, reverted_tx, capfd):
     assert out
     reverted_tx.source(-1)
     assert out == capfd.readouterr()[0].strip()
+
+
+def test_deploy_reverts(token):
+    tx = deepcopy(token.tx)
+    tx.status = 0
+    with pytest.raises(NotImplementedError):
+        tx.call_trace()
+    with pytest.raises(NotImplementedError):
+        tx.traceback()

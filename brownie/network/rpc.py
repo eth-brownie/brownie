@@ -141,7 +141,7 @@ class Rpc(metaclass=_Singleton):
             if 'result' in response:
                 return response['result']
         except IndexError:
-            raise RPCConnectionError("Web3 is not connected.")
+            raise RPCRequestError("Web3 is not connected.")
         raise RPCRequestError(response['error']['message'])
 
     def _snap(self):

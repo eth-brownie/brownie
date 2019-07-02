@@ -39,6 +39,7 @@ class Alert:
             target=self._loop, daemon=True,
             args=(fn, args, kwargs, delay, msg, callback))
         self._thread.start()
+        self.start_time = time.time()
         _instances.add(self)
 
     def _loop(self, fn, args, kwargs, delay, msg, callback):
@@ -70,7 +71,7 @@ def new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None):
 
 def show():
     '''Returns a list of all currently active Alert instances.'''
-    return list(_instances)
+    return sorted(_instances, key=lambda k: k.start_time)
 
 
 def stop_all():
