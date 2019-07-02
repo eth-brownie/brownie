@@ -105,11 +105,11 @@ class TransactionReceipt:
             if revert[0]:
                 # revert message was returned
                 self.revert_msg = revert[0]
-            else:
+            elif revert[2] == "revert":
                 # check for dev revert string as a comment
-                revert = build.get_dev_revert(revert[1])
-                if type(revert) is str:
-                    self.revert_msg = revert
+                revert[0] = build.get_dev_revert(revert[1])
+                if type(revert[0]) is str:
+                    self.revert_msg = revert[0]
 
         # threaded to allow impatient users to ctrl-c to stop waiting in the console
         confirm_thread = threading.Thread(
@@ -126,11 +126,11 @@ class TransactionReceipt:
             if ARGV['coverage']:
                 self._expand_trace()
             if not self.status:
-                if revert is None:
+                if revert[0] is None:
                     # no revert message and unable to check dev string - have to get trace
                     self._expand_trace()
                 raise VirtualMachineError({
-                    "message": "revert "+(self.revert_msg or ""),
+                    "message": f"{revert[2]} {self.revert_msg or ''}",
                     "source": self._error_string(1)
                 })
         except KeyboardInterrupt:
@@ -274,7 +274,7 @@ class TransactionReceipt:
         if self.revert_msg is not None:
             return
         # get revert message
-        step = next(i for i in trace if i['op'] == "REVERT")
+        step = next(i for i in trace if i['op'] in ("REVERT", "INVALID"))
         if step['op'] == "REVERT" and int(step['stack'][-2], 16):
             # get returned error string from stack
             data = _get_memory(step, -1)[4:]
@@ -563,7 +563,7 @@ def _step_compare(a, b):
 
 
 def _step_print(step, last_step, indent, start, stop):
-    print_str = "\n" + ("  "*indent + color('dull'))
+    print_str = f"\n{'  '*indent}{color['dull']}"
     if indent:
         print_str += "\u221f "
     if last_step['op'] in {"REVERT", "INVALID"} and _step_compare(step, last_step):

@@ -358,7 +358,8 @@ def _raise_or_return_tx(exc):
         txid = next(i for i in data.keys() if i[:2] == "0x")
         reason = data[txid]['reason'] if 'reason' in data[txid] else None
         pc = data[txid]['program_counter'] - 1
-        return txid, (reason, pc)
+        error = data[txid]['error']
+        return txid, [reason, pc, error]
     except SyntaxError:
         raise exc
     except Exception:
