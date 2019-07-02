@@ -35,7 +35,8 @@ class ReportSelect(_Select):
         self._reports = {}
         for path in report_paths:
             try:
-                self._reports[path.stem] = json.load(path.open())
+                with path.open() as f:
+                    self._reports[path.stem] = json.load(f)
             except Exception:
                 continue
         super().__init__(

@@ -24,7 +24,8 @@ def get_methods(path, check_coverage=False):
 
     Returns:
         List of tuples as [(method, FalseyDict({'arg': value}), ) .. ] '''
-    source = Path(path).open().read()
+    with Path(path).open() as f:
+        source = f.read()
     node = ast.parse(source)
     fn_nodes = [i for i in node.body if type(i) is ast.FunctionDef and not i.name.startswith('_')]
 

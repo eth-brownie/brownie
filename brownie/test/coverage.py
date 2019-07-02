@@ -64,7 +64,10 @@ def _set_coverage_defaults(build_json, coverage_eval):
 
 def merge_files(coverage_files):
     '''Merges multiple coverage evaluation dicts that have been saved to json.'''
-    coverage_eval = [json.load(Path(i).open())['coverage'] for i in coverage_files]
+    coverage_eval = []
+    for i in coverage_files:
+        with Path(i).open() as f:
+            coverage_eval.append(json.load(f)['coverage'])
     return merge(coverage_eval)
 
 

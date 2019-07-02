@@ -29,10 +29,12 @@ class Console(code.InteractiveConsole):
         sys.stdout.write = self._console_write
 
         history_file = Path(CONFIG['folders']['project']).joinpath('.history').absolute()
-        history_file.touch(exist_ok=True)
         self._readline = str(history_file)
-        readline.read_history_file(self._readline)
-
+        try:
+            readline.read_history_file(self._readline)
+        except (FileNotFoundError, OSError):
+            with history_file.open('w') as f:
+                f.write('')
         super().__init__(locals_dict)
 
     # replaces builtin dir method, for simplified and colorful output
