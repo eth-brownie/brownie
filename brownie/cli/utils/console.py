@@ -55,7 +55,7 @@ class Console(code.InteractiveConsole):
                 text = color.pretty_dict(obj)
             elif obj and type(obj) in (tuple, list, set):
                 text = color.pretty_list(obj)
-        except SyntaxError:
+        except (SyntaxError, NameError):
             pass
         return self._stdout_write(text)
 
