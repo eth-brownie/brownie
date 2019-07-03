@@ -191,5 +191,5 @@ def save_report(coverage_eval, report_path):
         report_path = report_path.joinpath(filename.format("-"+str(count) if count else ""))
     with report_path.open('w') as f:
         json.dump(report, f, sort_keys=True, indent=2, default=sorted)
-    print(f"\nCoverage report saved at {report_path.relative_to(sys.path[0])}")
+    print(f"\nCoverage report saved at {report_path}")
     return report_path

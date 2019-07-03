@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 
+from pathlib import Path
 import pytest
 
 import brownie
-from brownie.test import output, coverage
-from brownie._config import ARGV
+from . import output, coverage, pathutils
+from brownie._config import CONFIG, ARGV
 
 
 class RevertContextManager:
@@ -69,6 +70,10 @@ else:
     def pytest_sessionfinish():
         if ARGV['coverage']:
             output.coverage_totals(coverage._coverage_eval)
+            pathutils.save_report(
+                coverage._coverage_eval,
+                Path(CONFIG['folders']['project']).joinpath("reports")
+            )
         if ARGV['gas']:
             output.gas_profile()
 
