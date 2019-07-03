@@ -3,6 +3,8 @@
 import pytest
 
 import brownie
+from brownie.test import output, coverage
+from brownie._config import ARGV
 
 
 class RevertContextManager:
@@ -36,8 +38,28 @@ try:
 except brownie.exceptions.ProjectNotFound:
     pass
 else:
-    brownie.network.connect()
-    pytest.reverts = RevertContextManager
+
+    def pytest_addoption(parser):
+        parser.addoption(
+            "--coverage",
+            default=False,
+            const=True,
+            nargs='?',
+            help="calculate contract test coverage"
+        )
+
+    def pytest_configure(config):
+        if config.getoption("--coverage"):
+            ARGV['coverage'] = True
+
+    def pytest_runtestloop():
+        brownie.network.connect()
+        pytest.reverts = RevertContextManager
+
+    def pytest_sessionfinish():
+        if not ARGV['coverage']:
+            return
+        output.coverage_totals(coverage._coverage_eval)
 
     @pytest.fixture(scope="module")
     def module_isolation():
@@ -76,5 +98,5 @@ else:
         yield brownie.web3
 
     @pytest.fixture()
-    def config():
+    def brownie_config():
         yield brownie.config

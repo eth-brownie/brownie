@@ -7,7 +7,11 @@ from pathlib import Path
 from brownie.project import build
 
 
-def analyze(history, coverage_eval=None):
+_coverage_eval = {}
+_known_tx = set()
+
+
+def analyze(tx):
     '''Analyzes contract coverage.
 
     Arguments:
@@ -21,31 +25,32 @@ def analyze(history, coverage_eval=None):
                 "false": {"path/to/file": {index, index, ..}, .. },
             }, ..
         } }'''
-    if coverage_eval is None:
-        coverage_eval = {}
-    for tx in filter(lambda k: k.trace, history):
-        build_json = {'contractName': None}
-        tx_trace = tx.trace
-        active_branches = set()
-        for i in filter(lambda k: tx_trace[k]['source'], range(len(tx_trace))):
-            trace = tx.trace[i]
-            name = trace['contractName']
-            if not build.contains(name):
-                continue
-            if build_json['contractName'] != name:
-                build_json = build.get(name)
-                coverage_eval = _set_coverage_defaults(build_json, coverage_eval)
-            pc = build_json['pcMap'][trace['pc']]
-            if 'statement' in pc:
-                coverage_eval[name]['statements'][pc['path']].add(pc['statement'])
-            if 'branch' in pc:
-                if pc['op'] != "JUMPI":
-                    active_branches.add(pc['branch'])
-                elif pc['branch'] in active_branches:
-                    key = "false" if tx.trace[i+1]['pc'] == trace['pc']+1 else "true"
-                    coverage_eval[name]['branches'][key][pc['path']].add(pc['branch'])
-                    active_branches.remove(pc['branch'])
-    return coverage_eval
+    key = tx._coverage_hash()
+    print('key', key)
+    if key in _known_tx:
+        return
+    _known_tx.add(key)
+    build_json = {'contractName': None}
+    tx_trace = tx.trace
+    active_branches = set()
+    for i in filter(lambda k: tx_trace[k]['source'], range(len(tx_trace))):
+        trace = tx.trace[i]
+        name = trace['contractName']
+        if not build.contains(name):
+            continue
+        if build_json['contractName'] != name:
+            build_json = build.get(name)
+            _set_coverage_defaults(build_json, _coverage_eval)
+        pc = build_json['pcMap'][trace['pc']]
+        if 'statement' in pc:
+            _coverage_eval[name]['statements'][pc['path']].add(pc['statement'])
+        if 'branch' in pc:
+            if pc['op'] != "JUMPI":
+                active_branches.add(pc['branch'])
+            elif pc['branch'] in active_branches:
+                key = "false" if tx.trace[i+1]['pc'] == trace['pc']+1 else "true"
+                _coverage_eval[name]['branches'][key][pc['path']].add(pc['branch'])
+                active_branches.remove(pc['branch'])
 
 
 def _set_coverage_defaults(build_json, coverage_eval):

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from hashlib import sha1
 import threading
 import time
 
@@ -15,6 +16,7 @@ from .event import (
     decode_trace
 )
 from .web3 import Web3
+from brownie.test import coverage
 from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build, sources
@@ -123,8 +125,8 @@ class TransactionReceipt:
             if ARGV['cli'] == "console":
                 return
             # if coverage evaluation is active, get the trace immediately
-            if ARGV['coverage']:
-                self._expand_trace()
+            if ARGV['coverage'] and self.trace:
+                coverage.analyze(self)
             if not self.status:
                 if revert[0] is None:
                     # no revert message and unable to check dev string - have to get trace
@@ -140,6 +142,13 @@ class TransactionReceipt:
     def __repr__(self):
         c = {-1: 'pending', 0: 'error', 1: None}
         return f"<Transaction object '{color[c[self.status]]}{self.txid}{color}'>"
+
+    def _coverage_hash(self):
+        base = (
+            f"{self.nonce}{self.block_number}{self.sender}{self.receiver}"
+            f"{self.value}{self.input}{self.status}{self.gas_used}{self.txindex}"
+        )
+        return sha1(base.encode()).hexdigest()
 
     def __hash__(self):
         return hash(self.txid)
