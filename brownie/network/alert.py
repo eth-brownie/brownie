@@ -39,6 +39,7 @@ class Alert:
             target=self._loop, daemon=True,
             args=(fn, args, kwargs, delay, msg, callback))
         self._thread.start()
+        self.start_time = time.time()
         _instances.add(self)
 
     def _loop(self, fn, args, kwargs, delay, msg, callback):
@@ -50,7 +51,7 @@ class Alert:
                 continue
             if msg:
                 msg = msg.format(start_value, value)
-                print("{0[bright red]}ALERT{0}: {1}".format(color, msg))
+                print(f"{color['bright red']}ALERT{color}: {msg}")
             if callback:
                 callback(start_value, value)
             _instances.discard(self)
@@ -70,7 +71,7 @@ def new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None):
 
 def show():
     '''Returns a list of all currently active Alert instances.'''
-    return list(_instances)
+    return sorted(_instances, key=lambda k: k.start_time)
 
 
 def stop_all():

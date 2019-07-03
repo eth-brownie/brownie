@@ -17,8 +17,8 @@ IGNORE = ['active_network', 'folders', 'logging']
 
 def _load_default_config():
     '''Loads the default configuration settings from brownie/data/config.json'''
-    path = Path(__file__).parent.joinpath("data/config.json")
-    config = _Singleton("Config", (StrictDict,), {})(json.load(path.open()))
+    with Path(__file__).parent.joinpath("data/config.json").open() as f:
+        config = _Singleton("Config", (StrictDict,), {})(json.load(f))
     config['folders'] = {
         'brownie': str(Path(__file__).parent),
         'project': None
@@ -44,9 +44,10 @@ def load_project_config(project_path):
     CONFIG._unlock()
     CONFIG['folders']['project'] = str(project_path)
     config_path = project_path.joinpath("brownie-config.json")
-    if config_path.exists():
-        _recursive_update(CONFIG, json.load(config_path.open()), [])
-    else:
+    try:
+        with config_path.open() as f:
+            _recursive_update(CONFIG, json.load(f), [])
+    except FileNotFoundError:
         shutil.copy(
             str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
             str(config_path)

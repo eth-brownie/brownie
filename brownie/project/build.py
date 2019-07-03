@@ -85,7 +85,8 @@ def load(project_path):
     _project_path = Path(project_path)
     for path in list(_project_path.glob('build/contracts/*.json')):
         try:
-            build_json = json.load(path.open())
+            with path.open() as f:
+                build_json = json.load(f)
         except json.JSONDecodeError:
             build_json = {}
         if (
@@ -103,14 +104,8 @@ def add(build_json):
 
     Args:
         build_json - dictionary of build data to add.'''
-    path = _absolute(build_json['contractName'])
-    json.dump(
-        build_json,
-        path.open('w'),
-        sort_keys=True,
-        indent=2,
-        default=sorted
-    )
+    with _absolute(build_json['contractName']).open('w') as f:
+        json.dump(build_json, f, sort_keys=True, indent=2, default=sorted)
     _add(build_json)
 
 

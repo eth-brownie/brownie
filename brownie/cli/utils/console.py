@@ -1,11 +1,15 @@
 #!/usr/bin/python3
 
+import atexit
 import builtins
 import code
 from pathlib import Path
 import sys
 
+import brownie
+from brownie.test.main import run_script
 from . import color
+from brownie._config import CONFIG
 
 if sys.platform == "win32":
     from pyreadline import Readline
@@ -16,15 +20,21 @@ else:
 
 class Console(code.InteractiveConsole):
 
-    def __init__(self, locals_dict, history_file):
+    def __init__(self):
+        locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
+        locals_dict['run'] = run_script
+        del locals_dict['project']
+
         builtins.dir = self._dir
         self._stdout_write = sys.stdout.write
         sys.stdout.write = self._console_write
-        history_file = Path(history_file)
-        if not history_file.exists():
-            history_file.open('w').write("")
-        self._readline = str(history_file)
-        readline.read_history_file(self._readline)
+
+        history_file = str(Path(CONFIG['folders']['project']).joinpath('.history').absolute())
+        atexit.register(_atexit_readline, history_file)
+        try:
+            readline.read_history_file(history_file)
+        except (FileNotFoundError, OSError):
+            pass
         super().__init__(locals_dict)
 
     # replaces builtin dir method, for simplified and colorful output
@@ -49,6 +59,10 @@ class Console(code.InteractiveConsole):
             pass
         return self._stdout_write(text)
 
+    def showsyntaxerror(self, filename):
+        tb = color.format_syntaxerror(sys.exc_info()[1])
+        self.write(tb+'\n')
+
     def showtraceback(self):
         tb = color.format_tb(sys.exc_info(), start=1)
         self.write(tb+'\n')
@@ -63,12 +77,8 @@ class Console(code.InteractiveConsole):
                     readline.get_current_history_length() - 1,
                     line[:line.index("(")] + "()"
                 )
-        except (ValueError, AttributeError):
+        except (ValueError, AttributeError, KeyError):
             pass
-        if sys.platform == "win32":
-            readline.write_history_file(self._readline)
-        else:
-            readline.append_history_file(1, self._readline)
         return super().push(line)
 
 
@@ -80,3 +90,8 @@ def _dir_color(obj):
     if not callable(obj):
         return color('value')
     return color('callable')
+
+
+def _atexit_readline(history_file):
+    readline.set_history_length(1000)
+    readline.write_history_file(history_file)

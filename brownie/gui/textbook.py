@@ -32,7 +32,8 @@ class TextBook(ttk.Notebook):
         label = path.name
         if label in [i._label for i in self._frames]:
             return
-        frame = TextBox(self, path.open().read())
+        with path.open() as f:
+            frame = TextBox(self, f.read())
         super().add(frame, text="   {}   ".format(label))
         frame._id = len(self._frames)
         frame._label = label

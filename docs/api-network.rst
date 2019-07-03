@@ -790,6 +790,32 @@ ContractTx Methods
         >>>  Token[0].balanceOf.decode_abi("0x00000000000000000000000000000000000000000000003635c9adc5dea00000")
         1000000000000000000000
 
+
+OverloadedMethod
+----------------
+
+.. py:class:: brownie.network.contract.OverloadedMethod(address, name, owner)
+
+    When a contract uses `overloaded function names <https://solidity.readthedocs.io/en/latest/contracts.html#function-overloading>`_, the ``ContractTx`` or ``ContractCall`` objects are stored inside a dict-like ``OverloadedMethod`` container.
+
+    .. code-block:: python
+
+        >>> erc223 = ERC223Token[0]
+        >>> erc223.transfer
+        <OverloadedMethod object 'ERC223Token.transfer'>
+
+    Individual methods are mapped to keys that correspond to the function input types. Input types can be given as a single comma-seperated string or a tuple of strings. ``uint`` and ``uint256`` are equivalent.
+
+    .. code-block:: python
+
+        >>> erc223.transfer['address,uint']
+        <ContractTx object 'transfer(address,uint256)'>
+
+        >>> erc223.transfer['address', 'uint256', 'uint256']
+        <ContractTx object 'transfer(address,uint256,uint256)'>
+
+
+
 ``brownie.network.event``
 =========================
 

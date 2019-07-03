@@ -25,7 +25,8 @@ def check_build_hashes(base_path):
     build_path = base_path.joinpath('build/tests')
     for coverage_json in list(build_path.glob('**/*.json')):
         try:
-            dependents = json.load(coverage_json.open())['sha1']
+            with coverage_json.open() as f:
+                dependents = json.load(f)['sha1']
         except json.JSONDecodeError:
             coverage_json.unlink()
             continue
@@ -55,7 +56,8 @@ def get_ast_hash(path):
         path: path of the script to hash
 
     Returns: sha1 hash as bytes'''
-    ast_list = [ast.parse(Path(path).open().read())]
+    with Path(path).open() as f:
+        ast_list = [ast.parse(f.read(), path)]
     base_path = str(check_for_project(path))
     for obj in [i for i in ast_list[0].body if type(i) in (ast.Import, ast.ImportFrom)]:
         if type(obj) is ast.Import:
@@ -64,7 +66,8 @@ def get_ast_hash(path):
             name = obj.module
         origin = importlib.util.find_spec(name).origin
         if base_path in origin:
-            ast_list.append(ast.parse(open(origin).read()))
+            with open(origin) as f:
+                ast_list.append(ast.parse(f.read(), origin))
     dump = "\n".join(ast.dump(i) for i in ast_list)
     return sha1(dump.encode()).hexdigest()
 
@@ -81,7 +84,7 @@ def get_path(path_str, default_folder="scripts"):
         path_str += ".py"
     path = _get_path(path_str, default_folder)
     if not path.is_file():
-        raise FileNotFoundError("{} is not a file".format(path_str))
+        raise FileNotFoundError(f"{path_str} is not a file")
     return path
 
 
@@ -107,9 +110,9 @@ def _get_path(path_str, default_folder):
         if not path.exists() and sys.path[0]:
             path = Path(sys.path[0]).joinpath(path)
     if not path.exists():
-        raise FileNotFoundError("Cannot find {}".format(path_str))
+        raise FileNotFoundError(f"Cannot find {path_str}")
     if path.is_file() and path.suffix != ".py":
-        raise TypeError("'{}' is not a python script".format(path_str))
+        raise TypeError(f"'{path_str}' is not a python script")
     return path
 
 
@@ -133,7 +136,8 @@ def get_build_json(test_path):
     build_path = get_build_paths([test_path])[0]
     if build_path.exists():
         try:
-            return json.load(build_path.open())
+            with build_path.open() as f:
+                return json.load(f)
         except json.JSONDecodeError:
             build_path.unlink()
     for path in list(build_path.parents)[::-1]:
@@ -155,7 +159,7 @@ def save_build_json(module_path, result, coverage_eval, contract_names):
     module_path = Path(module_path).absolute()
     project_path = check_for_project(module_path)
     build_path = get_build_paths([module_path])[0]
-    build_files = [Path('build/contracts/{}.json'.format(i)) for i in contract_names]
+    build_files = [Path(f"build/contracts/{i}.json") for i in contract_names]
     build_json = {
         'result': result,
         'coverage': coverage_eval,
@@ -163,13 +167,8 @@ def save_build_json(module_path, result, coverage_eval, contract_names):
     }
     path = str(module_path.relative_to(project_path))
     build_json['sha1'][path] = get_ast_hash(module_path)
-    json.dump(
-        build_json,
-        build_path.open('w'),
-        sort_keys=True,
-        indent=2,
-        default=sorted
-    )
+    with build_path.open('w') as f:
+        json.dump(build_json, f, sort_keys=True, indent=2, default=sorted)
 
 
 def save_report(coverage_eval, report_path):
@@ -190,6 +189,7 @@ def save_report(coverage_eval, report_path):
         filename = "coverage-"+time.strftime('%d%m%y')+"{}.json"
         count = len(list(report_path.glob(filename.format('*'))))
         report_path = report_path.joinpath(filename.format("-"+str(count) if count else ""))
-    json.dump(report, report_path.open('w'), sort_keys=True, indent=2, default=sorted)
-    print("\nCoverage report saved at {}".format(report_path.relative_to(sys.path[0])))
+    with report_path.open('w') as f:
+        json.dump(report, f, sort_keys=True, indent=2, default=sorted)
+    print(f"\nCoverage report saved at {report_path.relative_to(sys.path[0])}")
     return report_path

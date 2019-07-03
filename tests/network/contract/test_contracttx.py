@@ -2,11 +2,10 @@
 
 import pytest
 
-from brownie import network, project, config, web3
+from brownie import network, accounts, project, config, web3
 from brownie.exceptions import VirtualMachineError
 from brownie.network.transaction import TransactionReceipt
 
-accounts = network.accounts
 abi = {
         'constant': False,
         'inputs': [
@@ -53,6 +52,10 @@ def test_no_from(token):
     tx = token.transfer(accounts[1], 1000)
     assert tx.sender == accounts[0]
     assert accounts[0].nonce == nonce + 1
+    token.transfer._owner = None
+    with pytest.raises(AttributeError):
+        token.transfer(accounts[1], 1000)
+    token.transfer._owner = accounts[0]
 
 
 def test_call(token):
@@ -155,3 +158,8 @@ def test_gas_limit_config(tester):
     tx = tester.doNothing({'from': accounts[0]})
     assert tx.gas_limit == 50000
     config['active_network']['gas_limit'] = False
+
+
+def test_repr(token):
+    repr(token.transfer)
+    repr(token.balanceOf)

@@ -1,11 +1,8 @@
 #!/usr/bin/python3
 
 from docopt import docopt
-from pathlib import Path
 
-import brownie
 from brownie import network, project
-from brownie.test.main import run_script
 from brownie.cli.utils.console import Console
 from brownie._config import ARGV, CONFIG
 
@@ -29,9 +26,5 @@ def main():
     project.load()
     network.connect(ARGV['network'])
 
-    console_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
-    console_dict['run'] = run_script
-    del console_dict['project']
-
-    shell = Console(console_dict, Path(CONFIG['folders']['project']).joinpath('.history'))
+    shell = Console()
     shell.interact(banner="Brownie environment is ready.", exitmsg="")

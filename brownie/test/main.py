@@ -48,10 +48,11 @@ def run_script(script_path, method_name="main", args=(), kwargs={}, gas_profile=
     script_path = pathutils.get_path(script_path, "scripts")
     module = loader.import_from_path(script_path)
     if not hasattr(module, method_name):
-        raise AttributeError("Module '{}' has no method '{}'".format(module.__name__, method_name))
-    print("\nRunning '{0[module]}{1}{0}.{0[callable]}{2}{0}'...".format(
-        color, module.__name__, method_name
-    ))
+        raise AttributeError(f"Module '{module.__name__}' has no method '{method_name}'")
+    print(
+        f"\nRunning '{color['module']}{module.__name__}{color}."
+        f"{color['callable']}{method_name}{color}'..."
+    )
     result = getattr(module, method_name)(*args, **kwargs)
     if gas_profile:
         output.gas_profile()

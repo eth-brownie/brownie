@@ -13,7 +13,7 @@ from .rpc import Rpc
 from .web3 import Web3
 from brownie.types import KwargTuple
 from brownie.types.convert import format_input, format_output, to_address
-from brownie.exceptions import AmbiguousMethods, UndeployedLibrary, VirtualMachineError
+from brownie.exceptions import UndeployedLibrary, VirtualMachineError
 from brownie._config import ARGV, CONFIG
 
 _contracts = _ContractHistory()
@@ -30,17 +30,10 @@ class _ContractBase:
         self.abi = build['abi']
         self._name = build['contractName']
         self._source_path = build['sourcePath']
-        names = [i['name'] for i in self.abi if i['type'] == "function"]
-        duplicates = set(i for i in names if names.count(i) > 1)
-        if duplicates:
-            raise AmbiguousMethods("Multiple methods with same name in {}: {}".format(
-                self._name, ",".join(duplicates)))
         self.topics = get_topics(self.abi)
         self.signatures = dict((
             i['name'],
-            "0x"+keccak("{}({})".format(
-                i['name'], ",".join(x['type'] for x in i['inputs'])
-            ).encode()).hex()[:8]
+            _signature(i)
         ) for i in self.abi if i['type'] == "function")
 
     def get_method(self, calldata):
@@ -102,13 +95,11 @@ class ContractContainer(_ContractBase):
         address = to_address(address)
         contract = _contracts.find(address)
         if contract:
-            if contract._name != self._name:
-                raise ValueError("Contract '{}' already declared at {}".format(
-                    contract._name, address
-                ))
-            return contract
+            if contract._name == self._name:
+                return contract
+            raise ValueError(f"Contract '{contract._name}' already declared at {address}")
         if web3.eth.getCode(address).hex() == "0x":
-            raise ValueError("No contract deployed at {}".format(address))
+            raise ValueError(f"No contract deployed at {address}")
         contract = Contract(address, self._build, owner, tx)
         _contracts.add(contract)
         return contract
@@ -132,14 +123,7 @@ class ContractConstructor:
         self._name = name
 
     def __repr__(self):
-        return "<{} object '{}.constructor({})'>".format(
-            type(self).__name__,
-            self._name,
-            ", ".join("{0[type]}{1}{0[name]}".format(
-                i,
-                " " if i['name'] else ""
-            ) for i in self.abi['inputs'])
-        )
+        return f"<{type(self).__name__} object '{self._name}.constructor({_inputs(self.abi)})'>"
 
     def __call__(self, *args):
         '''Deploys a contract.
@@ -180,8 +164,7 @@ class ContractConstructor:
             library = marker.strip('_')
             if not _contracts.list(library):
                 raise UndeployedLibrary(
-                    "Contract requires '{}' library".format(library) +
-                    " but it has not been deployed yet"
+                    f"Contract requires '{library}' library but it has not been deployed yet"
                 )
             address = _contracts.list(library)[-1].address[-40:]
             bytecode = bytecode.replace(marker, address)
@@ -208,22 +191,27 @@ class Contract(_ContractBase):
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         self._owner = owner
         self.address = address
-        for i in [i for i in self.abi if i['type'] == "function"]:
-            if hasattr(self, i['name']):
-                raise AttributeError(
-                    "Namespace collision: '{}.{}'".format(self._name, i['name'])
-                )
-            name = "{}.{}".format(self._name, i['name'])
-            if i['stateMutability'] in ('view', 'pure'):
-                setattr(self, i['name'], ContractCall(address, i, name, owner))
-            else:
-                setattr(self, i['name'], ContractTx(address, i, name, owner))
+        fn_names = [i['name'] for i in self.abi if i['type'] == "function"]
+        for abi in [i for i in self.abi if i['type'] == "function"]:
+            name = f"{self._name}.{abi['name']}"
+            if fn_names.count(abi['name']) == 1:
+                self._check_and_set(abi['name'], _get_method_object(address, abi, name, owner))
+                continue
+            if not hasattr(self, abi['name']):
+                self._check_and_set(abi['name'], OverloadedMethod(address, name, owner))
+            key = ",".join(i['type'] for i in abi['inputs']).replace('256', '')
+            getattr(self, abi['name']).methods[key] = _get_method_object(address, abi, name, owner)
+
+    def _check_and_set(self, name, obj):
+        if hasattr(self, name):
+            raise AttributeError(f"Namespace collision: '{self._name}.{name}'")
+        setattr(self, name, obj)
 
     def __hash__(self):
         return hash(self._name+self.address)
 
     def __repr__(self):
-        return "<{0._name} Contract object '{1[string]}{0.address}{1}'>".format(self, color)
+        return f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
 
     def __str__(self):
         return self.address
@@ -244,6 +232,27 @@ class Contract(_ContractBase):
         return web3.eth.getBalance(self.address)
 
 
+class OverloadedMethod:
+
+    def __init__(self, address, name, owner):
+        self._address = address
+        self._name = name
+        self._owner = owner
+        self.methods = {}
+
+    def __getitem__(self, key):
+        if type(key) is tuple:
+            key = ",".join(key)
+        key = key.replace("256", "").replace(", ", ",")
+        return self.methods[key]
+
+    def __repr__(self):
+        return f"<OverloadedMethod object '{self._name}'>"
+
+    def __len__(self):
+        return len(self.methods)
+
+
 class _ContractMethod:
 
     _dir_color = "contract_method"
@@ -253,21 +262,11 @@ class _ContractMethod:
         self._name = name
         self.abi = abi
         self._owner = owner
-        self.signature = "0x"+keccak("{}({})".format(
-            abi['name'],
-            ",".join(i['type'] for i in abi['inputs'])
-            ).encode()).hex()[:8]
+        self.signature = _signature(abi)
 
     def __repr__(self):
-        return "<{} {}object '{}({})'>".format(
-            type(self).__name__,
-            "payable " if self.abi['stateMutability'] == "payable" else "",
-            self.abi['name'],
-            ", ".join("{0[type]}{1}{0[name]}".format(
-                i,
-                " " if i['name'] else ""
-            ) for i in self.abi['inputs'])
-        )
+        pay = "payable " if self.abi['stateMutability'] == "payable" else ""
+        return f"<{type(self).__name__} {pay}object '{self.abi['name']}({_inputs(self.abi)})'>"
 
     def call(self, *args):
         '''Calls the contract method without broadcasting a transaction.
@@ -406,3 +405,18 @@ def _get_tx(owner, args):
             if key in tx:
                 tx[target] = tx[key]
     return args, tx
+
+
+def _get_method_object(address, abi, name, owner):
+    if abi['stateMutability'] in ('view', 'pure'):
+        return ContractCall(address, abi, name, owner)
+    return ContractTx(address, abi, name, owner)
+
+
+def _inputs(abi):
+    return ", ".join(f"{i['type']}{' '+i['name'] if i['name'] else ''}" for i in abi['inputs'])
+
+
+def _signature(abi):
+    key = f"{abi['name']}({','.join(i['type'] for i in abi['inputs'])})".encode()
+    return "0x"+keccak(key).hex()[:8]

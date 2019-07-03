@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import pytest
+
 from brownie.network.account import Account
 from brownie.network.contract import Contract
 from brownie.types import EventDict
@@ -103,5 +105,12 @@ def test_events(console_mode, tester):
 def test_hash(tester):
     a = tester.doNothing()
     b = tester.doNothing()
+    hash(a)
     assert a != b
     assert a == a
+
+
+def test_attribute_error(tester):
+    tx = tester.doNothing()
+    with pytest.raises(AttributeError):
+        tx.unknownthing
