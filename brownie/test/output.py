@@ -80,7 +80,7 @@ def coverage_totals(coverage_eval):
 
     Returns: None'''
     totals = coverage.get_totals(coverage_eval)
-    print("\nCoverage analysis:")
+    print("\n\nCoverage analysis:")
     for name in sorted(totals):
         pct = _pct(totals[name]['totals']['statements'], totals[name]['totals']['branches'])
         print(f"\n  contract: {color['contract']}{name}{color} - {_cov_color(pct)}{pct:.1%}{color}")
@@ -107,7 +107,7 @@ def _pct(statement, branch):
 
 def gas_profile():
     '''Formats and prints a gas profile report to the console.'''
-    print('\nGas Profile:')
+    print('\n\nGas Profile:')
     gas = history.gas_profile
     for i in sorted(gas):
         print(f"{i} -  avg: {gas[i]['avg']:.0f}  low: {gas[i]['low']}  high: {gas[i]['high']}")

@@ -45,22 +45,32 @@ else:
             default=False,
             const=True,
             nargs='?',
-            help="calculate contract test coverage"
+            help="Evaluate contract test coverage"
+        )
+        parser.addoption(
+            "--gas",
+            default=False,
+            const=True,
+            nargs='?',
+            help="Display gas profile for function calls"
         )
 
     def pytest_configure(config):
         if config.getoption("--coverage"):
             ARGV['coverage'] = True
             ARGV['always_transact'] = True
+        if config.getoption("--gas"):
+            ARGV['gas'] = True
 
     def pytest_runtestloop():
         brownie.network.connect()
         pytest.reverts = RevertContextManager
 
     def pytest_sessionfinish():
-        if not ARGV['coverage']:
-            return
-        output.coverage_totals(coverage._coverage_eval)
+        if ARGV['coverage']:
+            output.coverage_totals(coverage._coverage_eval)
+        if ARGV['gas']:
+            output.gas_profile()
 
     @pytest.fixture(scope="module")
     def module_isolation():
