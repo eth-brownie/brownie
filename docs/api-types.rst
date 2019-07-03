@@ -62,31 +62,38 @@ The following methods are used to convert arguments supplied to ``ContractTx`` a
 
 .. _wei:
 
-.. py:method:: brownie.types.convert.wei(value)
+.. py:class:: brownie.types.convert.Wei(value)
 
-    Converts a value to an integer in wei. Useful for strings where you specify the unit, or for large floats given in scientific notation, where a direct conversion to ``int`` would cause inaccuracy from floating point errors.
+    Integer subclass that converts a value to wei and allows comparisons using the same conversion.
 
-    ``wei`` is automatically applied in all Brownie methods when an input is meant to specify an amount of ether.
+    ``Wei`` is useful for strings where you specify the unit, for large floats given in scientific notation, or where a direct conversion to ``int`` would cause inaccuracy from floating point errors.
+
+    Whenever a Brownie method takes an input referring to an amount of ether, the value is converted to ``Wei``. All integer values returned from a contract call are given in ``Wei```.
 
     .. code-block:: python
 
-        >>> from brownie import wei
-        >>> wei("1 ether")
+        >>> from brownie import Wei
+        >>> Wei("1 ether")
         1000000000000000000
-        >>> wei("12.49 gwei")
+        >>> Wei("12.49 gwei")
         12490000000
-        >>> wei("0.029 shannon")
+        >>> Wei("0.029 shannon")
         29000000
-        >>> wei(8.38e32)
+        >>> Wei(8.38e32)
         838000000000000000000000000000000
+        >>> Wei(1e18) == "1 ether"
+        True
+        >>> Wei("1 ether") < "2 ether"
+        True
+
 
 .. py:method:: brownie.types.convert.to_uint(value, type_="uint256")
 
-    Converts a value to an unsigned integer. This is equivalent to calling ``wei`` and then applying checks for over/underflows.
+    Converts a value to an unsigned integer. This is equivalent to calling ``Wei`` and then applying checks for over/underflows.
 
 .. py:method:: brownie.types.convert.to_int(value, type_="int256")
 
-    Converts a value to a signed integer. This is equivalent to calling ``wei`` and then applying checks for over/underflows.
+    Converts a value to a signed integer. This is equivalent to calling ``Wei`` and then applying checks for over/underflows.
 
 .. py:method:: brownie.types.convert.to_bool(value)
 

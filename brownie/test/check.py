@@ -3,7 +3,7 @@
 '''Assertion methods for writing brownie unit tests.'''
 
 from brownie.types import KwargTuple
-from brownie.types.convert import wei
+from brownie.types.convert import Wei
 from brownie.network.transaction import VirtualMachineError
 
 __console_dir__ = [
@@ -169,6 +169,6 @@ def _convert_str(value):
     if value.count(" ") != 1:
         return value
     try:
-        return wei(value)
+        return Wei(value)
     except ValueError:
         return value

@@ -14,7 +14,7 @@ from brownie.exceptions import VirtualMachineError, UnknownAccount
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
-from brownie.types.convert import to_address, wei
+from brownie.types.convert import to_address, Wei
 from brownie.types.types import _Singleton
 from brownie._config import CONFIG
 
@@ -211,10 +211,10 @@ class _AccountBase:
         try:
             txid = self._transact({
                 'from': self.address,
-                'value': wei(amount),
+                'value': Wei(amount),
                 'nonce': self.nonce,
-                'gasPrice': wei(gas_price) or self._gas_price(),
-                'gas': wei(gas_limit) or self._gas_limit("", amount, data),
+                'gasPrice': Wei(gas_price) or self._gas_price(),
+                'gas': Wei(gas_limit) or self._gas_limit("", amount, data),
                 'data': HexBytes(data)
             })
             revert = None
@@ -247,7 +247,7 @@ class _AccountBase:
         return web3.eth.estimateGas({
             'from': self.address,
             'to': str(to),
-            'value': wei(amount),
+            'value': Wei(amount),
             'data': HexBytes(data)
         })
 
@@ -269,10 +269,10 @@ class _AccountBase:
             txid = self._transact({
                 'from': self.address,
                 'to': str(to),
-                'value': wei(amount),
+                'value': Wei(amount),
                 'nonce': self.nonce,
-                'gasPrice': wei(gas_price) if gas_price is not None else self._gas_price(),
-                'gas': wei(gas_limit) or self._gas_limit(to, amount, data),
+                'gasPrice': Wei(gas_price) if gas_price is not None else self._gas_price(),
+                'gas': Wei(gas_limit) or self._gas_limit(to, amount, data),
                 'data': HexBytes(data)
             })
             revert = None

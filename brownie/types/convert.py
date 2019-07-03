@@ -30,7 +30,7 @@ def _check_int_size(type_):
 
 def to_uint(value, type_="uint256"):
     '''Convert a value to an unsigned integer'''
-    value = wei(value)
+    value = Wei(value)
     size = _check_int_size(type_)
     if value < 0 or value >= 2**int(size):
         raise OverflowError(f"{value} is outside allowable range for {type_}")
@@ -39,7 +39,7 @@ def to_uint(value, type_="uint256"):
 
 def to_int(value, type_="int256"):
     '''Convert a value to a signed integer'''
-    value = wei(value)
+    value = Wei(value)
     size = _check_int_size(type_)
     if value < -2**int(size) // 2 or value >= 2**int(size) // 2:
         raise OverflowError(f"{value} is outside allowable range for {type_}")
@@ -104,8 +104,10 @@ def to_string(value):
     return value
 
 
-def wei(value):
-    '''Converts a value to wei.
+class Wei(int):
+
+    '''Integer subclass that converts a value to wei and allows comparison against
+    similarly formatted values.
 
     Useful for the following formats:
         * a string specifying the unit: "10 ether", "300 gwei", "0.25 shannon"
@@ -113,6 +115,30 @@ def wei(value):
           would cause inaccuracy: 8.3e32
         * bytes: b'\xff\xff'
         * hex strings: "0x330124"'''
+
+    def __new__(cls, value):
+        return super().__new__(cls, _to_wei(value))
+
+    def __lt__(self, other):
+        return super().__lt__(_to_wei(other))
+
+    def __le__(self, other):
+        return super().__le__(_to_wei(other))
+
+    def __eq__(self, other):
+        return super().__eq__(_to_wei(other))
+
+    def __ne__(self, other):
+        return super().__ne__(_to_wei(other))
+
+    def __ge__(self, other):
+        return super().__ge__(_to_wei(other))
+
+    def __gt__(self, other):
+        return super().__gt__(_to_wei(other))
+
+
+def _to_wei(value):
     original = value
     if value is None:
         return 0
