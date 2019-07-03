@@ -51,6 +51,7 @@ else:
     def pytest_configure(config):
         if config.getoption("--coverage"):
             ARGV['coverage'] = True
+            ARGV['always_transact'] = True
 
     def pytest_runtestloop():
         brownie.network.connect()
@@ -67,7 +68,7 @@ else:
         yield
         brownie.rpc.reset()
 
-    @pytest.fixture(scope="function")
+    @pytest.fixture()
     def test_isolation(module_isolation):
         brownie.rpc.snapshot()
         yield
@@ -85,7 +86,7 @@ else:
     def history():
         yield brownie.history
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture()
     def project():
         yield brownie.project
 
@@ -100,3 +101,9 @@ else:
     @pytest.fixture()
     def brownie_config():
         yield brownie.config
+
+    @pytest.fixture()
+    def no_call_coverage():
+        ARGV['always_transact'] = False
+        yield
+        ARGV['always_transact'] = ARGV['coverage']
