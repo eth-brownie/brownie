@@ -21,7 +21,10 @@ setup(
     url="https://github.com/HyperLink-Technology/brownie",
     keywords=['brownie'],
     install_requires=requirements,
-    entry_points={'console_scripts': ["brownie=brownie.cli.__main__:main"]},
+    entry_points={
+        'console_scripts': ["brownie=brownie.cli.__main__:main"],
+        'pytest11': ["pytest-brownie=brownie.test.plugin"]
+    },
     include_package_data=True,
     python_requires=">=3.6,<4",
     classifiers=[
