@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
+from .convert import Wei
+
 
 class StrictDict(dict):
     '''Dict subclass that prevents adding new keys when locked'''
-
-    _print_as_dict = True
 
     def __init__(self, values={}):
         self._locked = False
@@ -38,8 +38,6 @@ class StrictDict(dict):
 class KwargTuple:
     '''Tuple/dict hybrid container, used for return values on callable functions'''
 
-    _print_as_list = True
-
     def __init__(self, values, abi):
         self._tuple = tuple(values)
         self._abi = abi
@@ -56,7 +54,7 @@ class KwargTuple:
         return str(self._tuple)
 
     def __eq__(self, other):
-        return self._tuple == other
+        return _kwargtuple_compare(self, other)
 
     def __getitem__(self, key):
         if type(key) in (int, slice):
@@ -98,10 +96,36 @@ class KwargTuple:
         return self._dict.values()
 
 
+def _kwargtuple_compare(a, b):
+    if type(a) not in (tuple, list, KwargTuple):
+        types_ = set([type(a), type(b)])
+        if dict in types_:
+            return a == b
+        if types_.intersection([bool, type(None)]):
+            return a is b
+        return _convert_str(a) == _convert_str(b)
+    if type(b) not in (tuple, list, KwargTuple) or len(b) != len(a):
+        return False
+    return next((False for i in range(len(a)) if not _kwargtuple_compare(a[i], b[i])), True)
+
+
+def _convert_str(value):
+    if type(value) is not str:
+        if not hasattr(value, "address"):
+            return value
+        value = value.address
+    if value.startswith("0x"):
+        return "0x" + value.lstrip("0x").lower()
+    if value.count(" ") != 1:
+        return value
+    try:
+        return Wei(value)
+    except ValueError:
+        return value
+
+
 class FalseyDict(dict):
     '''Dict subclass that returns None if a key is not present instead of raising'''
-
-    _print_as_dict = True
 
     def __getitem__(self, key):
         if key in self:
@@ -118,8 +142,6 @@ class FalseyDict(dict):
 
 class EventDict:
     '''Dict/list hybrid container, base class for all events fired in a transaction.'''
-
-    _print_as_dict = True
 
     def __init__(self, events):
         '''Instantiates the class.
@@ -141,6 +163,9 @@ class EventDict:
                 events,
                 tuple(i.pos[0] for i in events)
             )
+
+    def __repr__(self):
+        return str(self)
 
     def __bool__(self):
         return bool(self._ordered)
@@ -195,10 +220,6 @@ class _EventItem:
         self.name = name
         self._ordered = event_data
         self.pos = pos
-        if len(event_data) > 1:
-            self._print_as_list = True
-        else:
-            self._print_as_dict = True
 
     def __getitem__(self, key):
         '''if key is int: returns the n'th event that was fired with this name
@@ -215,6 +236,9 @@ class _EventItem:
     def __len__(self):
         '''returns the number of events held in this container.'''
         return len(self._ordered)
+
+    def __repr__(self):
+        return str(self)
 
     def __str__(self):
         if len(self._ordered) == 1:

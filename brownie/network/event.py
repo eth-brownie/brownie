@@ -6,6 +6,7 @@ from pathlib import Path
 import eth_event
 
 from brownie.types import EventDict
+from brownie.types.convert import format_event
 from brownie._config import CONFIG
 
 
@@ -24,17 +25,19 @@ def get_topics(abi):
 
 
 def decode_logs(logs):
-    try:
-        return EventDict(eth_event.decode_logs(logs, _topics))
-    except Exception:
+    if not logs:
         return []
+    events = eth_event.decode_logs(logs, _topics)
+    events = [format_event(i) for i in events]
+    return EventDict(events)
 
 
 def decode_trace(trace):
-    try:
-        return EventDict(eth_event.decode_trace(trace, _topics))
-    except Exception:
+    if not trace:
         return []
+    events = eth_event.decode_trace(trace, _topics)
+    events = [format_event(i) for i in events]
+    return EventDict(events)
 
 
 try:

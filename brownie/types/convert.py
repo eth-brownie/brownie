@@ -199,6 +199,19 @@ def format_output(abi, outputs):
     return _format(abi, "outputs", outputs)
 
 
+def format_event(event):
+    '''Format event data.
+
+    Args:
+        event: decoded event as given by eth_event.decode_logs or eth_event.decode_trace
+
+    Mutates the event in place and returns it.'''
+    values = _format(event, 'data', [i['value'] for i in event['data']])
+    for i in range(len(event['data'])):
+        event['data'][i]['value'] = values[i]
+    return event
+
+
 def _format(abi, key, values):
     try:
         name = abi['name']
