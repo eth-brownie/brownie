@@ -124,3 +124,9 @@ class _ContractHistory(metaclass=_Singleton):
         address = to_address(address)
         contracts = [x for v in self._dict.values() for x in v.values()]
         return next((i for i in contracts if i == address), None)
+
+    def dependencies(self):
+        dependencies = set(k for k, v in self._dict.items() if v)
+        for i in dependencies.copy():
+            dependencies.update(list(self._dict[i].values())[0]._build['dependencies'])
+        return list(dependencies)

@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 
+import functools
 from pathlib import Path
 import pytest
 
 import brownie
+from .update import UpdateManager
 from . import output, coverage, pathutils
 from brownie._config import CONFIG, ARGV
 
@@ -30,31 +32,21 @@ def generate_fixture(container, docstring):
     return pytest.fixture(scope="session")(dynamic_fixture)
 
 
-try:
+if brownie.project.check_for_project('.'):
+
     for container in brownie.project.load():
         globals()[container._name] = generate_fixture(
             container,
             f"Provides access to the brownie ContractContainer object '{container._name}'"
         )
-except brownie.exceptions.ProjectNotFound:
-    pass
-else:
+
+    u = UpdateManager(Path(CONFIG['folders']['project']).joinpath('build/tests.json'))
 
     def pytest_addoption(parser):
-        parser.addoption(
-            "--coverage",
-            default=False,
-            const=True,
-            nargs='?',
-            help="Evaluate contract test coverage"
-        )
-        parser.addoption(
-            "--gas",
-            default=False,
-            const=True,
-            nargs='?',
-            help="Display gas profile for function calls"
-        )
+        addopt = functools.partial(parser.addoption, action='store_true')
+        addopt('--coverage', '-C', help="Evaluate contract test coverage")
+        addopt('--gas', '-G', help="Display gas profile for function calls")
+        addopt('--update', '-U', help="Only run tests where changes have occurred")
 
     def pytest_configure(config):
         if config.getoption("--coverage"):
@@ -62,6 +54,29 @@ else:
             ARGV['always_transact'] = True
         if config.getoption("--gas"):
             ARGV['gas'] = True
+
+    def pytest_collect_file(path, parent):
+        if Path(path).name == "conftest.py":
+            u.add_setup(path)
+            pass
+
+    def pytest_collection_modifyitems(session, config, items):
+        tests = {}
+        for i in items:
+            path = i.parent.fspath
+            if 'module_isolation' not in i.fixturenames:
+                tests[path] = None
+                continue
+            if path in tests and tests[path] is None:
+                continue
+            tests.setdefault(i.parent.fspath, []).append(i)
+        u.set_ignore(set(k for k, v in tests.items() if not v))
+        if not config.getoption('--update'):
+            return
+        tests = dict((k, v) for k, v in tests.items() if v)
+        for path in filter(u.check_module, tests):
+            for i in tests[path]:
+                i.add_marker("skip")
 
     def pytest_runtestloop():
         brownie.network.connect()
@@ -77,10 +92,12 @@ else:
         if ARGV['gas']:
             output.gas_profile()
 
+    # fixtures
     @pytest.fixture(scope="module")
-    def module_isolation():
+    def module_isolation(request):
         brownie.rpc.reset()
         yield
+        u.update_module(request.fspath)
         brownie.rpc.reset()
 
     @pytest.fixture()
