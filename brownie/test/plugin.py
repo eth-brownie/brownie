@@ -47,6 +47,13 @@ if brownie.project.check_for_project('.'):
         addopt('--coverage', '-C', help="Evaluate contract test coverage")
         addopt('--gas', '-G', help="Display gas profile for function calls")
         addopt('--update', '-U', help="Only run tests where changes have occurred")
+        parser.addoption(
+            '--network',
+            '-N',
+            default=False,
+            nargs=1,
+            help=f"Use a specific network (default {CONFIG['network_defaults']['name']})"
+        )
 
     def pytest_configure(config):
         if config.getoption("--coverage"):
@@ -54,6 +61,8 @@ if brownie.project.check_for_project('.'):
             ARGV['always_transact'] = True
         if config.getoption("--gas"):
             ARGV['gas'] = True
+        if config.getoption('--network'):
+           ARGV['network'] = config.getoption('--network')[0]
 
     def pytest_collect_file(path, parent):
         if Path(path).name == "conftest.py":
@@ -79,7 +88,7 @@ if brownie.project.check_for_project('.'):
                 i.add_marker("skip")
 
     def pytest_runtestloop():
-        brownie.network.connect()
+        brownie.network.connect(ARGV['network'])
         pytest.reverts = RevertContextManager
 
     def pytest_sessionfinish():
