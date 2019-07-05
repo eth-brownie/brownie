@@ -50,10 +50,6 @@ class UpdateManager:
         for name, hash_ in hashes['contracts'].items():
             if build.contains(name) and build.get(name)['bytecodeSha1'] == hash_:
                 self.contracts[name] = hash_
-        # self.final = {
-        #     'tests': {},
-        #     'contracts': {}
-        # }
 
     def add_setup(self, path):
         path = str(path)
@@ -80,7 +76,6 @@ class UpdateManager:
             if not build.contains(name) or build.get(name)['bytecodeSha1'] != self.contracts[name]:
                 del self.tests[path]
                 return False
-        # self.final['tests'][path] = self.tests[path]
         return True
 
     def update_module(self, path):

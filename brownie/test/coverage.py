@@ -26,7 +26,6 @@ def analyze(tx):
             }, ..
         } }'''
     key = tx._coverage_hash()
-    print('key', key)
     if key in _known_tx:
         return
     _known_tx.add(key)

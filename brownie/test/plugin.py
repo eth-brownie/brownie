@@ -62,7 +62,7 @@ if brownie.project.check_for_project('.'):
         if config.getoption("--gas"):
             ARGV['gas'] = True
         if config.getoption('--network'):
-           ARGV['network'] = config.getoption('--network')[0]
+            ARGV['network'] = config.getoption('--network')[0]
 
     def pytest_collect_file(path, parent):
         if Path(path).name == "conftest.py":
