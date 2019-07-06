@@ -68,11 +68,6 @@ if brownie.project.check_for_project('.'):
         if config.getoption('--network'):
             ARGV['network'] = config.getoption('--network')[0]
 
-    def pytest_collect_file(path, parent):
-        if Path(path).name == "conftest.py":
-            u.add_setup(path)
-            pass
-
     def pytest_collection_modifyitems(session, config, items):
         tests = {}
         for i in items:
@@ -88,8 +83,7 @@ if brownie.project.check_for_project('.'):
         if not config.getoption('--update'):
             return
         for path in filter(u.check_updated, tests):
-            for i in tests[path]:
-                i.add_marker("skip")
+            tests[path][0].parent.add_marker('skip')
 
     def pytest_runtestloop():
         brownie.network.connect(ARGV['network'])
@@ -97,12 +91,10 @@ if brownie.project.check_for_project('.'):
 
     def pytest_runtest_teardown(item, nextitem):
         # called before teardown, use to check if this was last test in the module
+        if list(item.parent.iter_markers('skip')):
+            return
         if not nextitem or item.parent.fspath != nextitem.parent.fspath:
             u.finish_module(item.parent.fspath)
-
-    def pytest_runtest_logfinish(nodeid, location):
-        # called after teardown - if runtest_teardown says this was last test, save the json
-        pass
 
     def pytest_sessionfinish():
         if ARGV['coverage']:

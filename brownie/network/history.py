@@ -142,4 +142,4 @@ class _ContractHistory(metaclass=_Singleton):
         dependencies = set(k for k, v in self._dict.items() if v)
         for i in dependencies.copy():
             dependencies.update(list(self._dict[i].values())[0]._build['dependencies'])
-        return list(dependencies)
+        return sorted(dependencies)

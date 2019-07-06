@@ -10,6 +10,7 @@ from pathlib import Path
 from brownie.project import check_for_project
 from brownie.project import build
 from brownie import history
+from brownie.network.history import _ContractHistory
 from brownie._config import ARGV
 
 
@@ -40,8 +41,9 @@ class UpdateManager:
 
     def __init__(self, path):
         self.path = path
-        self.conf_hashes = {}
-        self.skipped = set()
+        self.conf_hashes = dict(
+            (str(i.absolute()), get_ast_hash(i)) for i in Path(path).glob('tests/**/conftest.py')
+        )
         try:
             with open(path) as fp:
                 hashes = json.load(fp)
@@ -52,31 +54,24 @@ class UpdateManager:
             (k, v) for k, v in hashes['tests'].items() if
             Path(k).exists() and self._get_hash(k) == v['sha1']
         )
-        self.contracts = dict((k, v['bytecodeSha1']) for k, v in build.items() if v['bytecodeSha1'])
+        self.contracts = dict((k, v['bytecodeSha1']) for k, v in build.items() if v['bytecode'])
         changed_contracts = set(
             k for k, v in hashes['contracts'].items() if
             k not in self.contracts or v != self.contracts[k]
         )
         if changed_contracts:
-            changed_tx = set()
             for txhash, coverage_eval in hashes['tx'].items():
-                if changed_contracts.intersection(coverage_eval.keys()):
-                    changed_tx.add(txhash)
-                    continue
-                history.add_coverage(txhash, coverage_eval)
+                if not changed_contracts.intersection(coverage_eval.keys()):
+                    history.add_coverage(txhash, coverage_eval)
             self.tests = dict(
-                (k, v) for k, v in self.tests.items() if
-                not changed_tx.intersection(v['txhash'])
+                (k, v) for k, v in self.tests.items() if v['isolated'] is not False
+                and not changed_contracts.intersection(v['isolated'])
             )
         else:
             for txhash, coverage_eval in hashes['tx'].items():
                 history.add_coverage(txhash, coverage_eval)
         atexit.register(self._save_json)
         return
-
-    def add_setup(self, path):
-        path = str(path)
-        self.conf_hashes[path] = get_ast_hash(path)
 
     def set_isolated(self, paths):
         self.isolated = paths
@@ -97,11 +92,12 @@ class UpdateManager:
 
     def finish_module(self, path):
         path = str(path)
-        if path in self.skipped:
-            return
+        isolated = False
+        if path in self.isolated:
+            isolated = [i for i in _ContractHistory().dependencies() if i in self.contracts]
         self.tests[path] = {
             'sha1': self._get_hash(path),
-            'isolated': path in self.isolated,
+            'isolated': isolated,
             'coverage': ARGV['coverage'] or (path in self.tests and self.tests[path]['coverage']),
             'txhash': history.get_coverage_hashes()
         }
