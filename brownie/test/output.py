@@ -88,10 +88,7 @@ def coverage_totals(coverage_eval):
         for fn_name, count in cov['statements'].items():
             branch = cov['branches'][fn_name] if fn_name in cov['branches'] else (0, 0, 0)
             pct = _pct(count, branch)
-            print(
-                f"    {color['contract_method']}{fn_name}{color}"
-                f" - {_cov_color(pct)}{pct:.1%}{color}"
-            )
+            print(f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}")
 
 
 def _cov_color(pct):

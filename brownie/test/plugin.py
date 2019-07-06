@@ -106,9 +106,13 @@ if brownie.project.check_for_project('.'):
 
     def pytest_sessionfinish():
         if ARGV['coverage']:
-            output.coverage_totals(coverage._coverage_eval)
+
+            coverage_eval = brownie.history.get_coverage()
+            coverage_eval = coverage.merge(coverage_eval)
+
+            output.coverage_totals(coverage_eval)
             pathutils.save_report(
-                coverage._coverage_eval,
+                coverage_eval,
                 Path(CONFIG['folders']['project']).joinpath("reports")
             )
         if ARGV['gas']:

@@ -392,6 +392,7 @@ class TransactionReceipt:
                 if pc['op'] != "JUMPI":
                     active_branches.add(pc['branch'])
                 elif pc['branch'] in active_branches:
+                    # false, true
                     key = 1 if trace[i+1]['pc'] == trace[i]['pc']+1 else 2
                     coverage_eval[last['name']][pc['path']][key].add(pc['branch'])
                     active_branches.remove(pc['branch'])

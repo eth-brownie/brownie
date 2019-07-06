@@ -1,84 +1,11 @@
 #!/usr/bin/python3
 
 from copy import deepcopy
-import json
-from pathlib import Path
 
 from brownie.project import build
 
 
-_coverage_eval = {}
-_known_tx = set()
-
-
-def analyze(tx):
-    '''Analyzes contract coverage.
-
-    Arguments:
-        history: List of TransactionReceipt objects.
-
-    Returns:
-        { "ContractName": {
-            "statements": { "path/to/file": {index, index, ..}, .. },
-            "branches": {
-                "true": {"path/to/file": {index, index, ..}, .. },
-                "false": {"path/to/file": {index, index, ..}, .. },
-            }, ..
-        } }'''
-    key = tx._coverage_hash()
-    if key in _coverage_eval:
-        return
-    coverage_eval = {}
-    build_json = {'contractName': None}
-    tx_trace = tx.trace
-    active_branches = set()
-    contracts = set()
-    for i in filter(lambda k: tx_trace[k]['source'], range(len(tx_trace))):
-        trace = tx.trace[i]
-        name = trace['contractName']
-        if not build.contains(name):
-            continue
-        if build_json['contractName'] != name:
-            build_json = build.get(name)
-            contracts.add(name)
-            coverage_eval = _set_coverage_defaults(build_json, coverage_eval)
-        pc = build_json['pcMap'][trace['pc']]
-        if 'statement' in pc:
-            coverage_eval[name]['statements'][pc['path']].add(pc['statement'])
-        if 'branch' in pc:
-            if pc['op'] != "JUMPI":
-                active_branches.add(pc['branch'])
-            elif pc['branch'] in active_branches:
-                key = "false" if tx.trace[i+1]['pc'] == trace['pc']+1 else "true"
-                coverage_eval[name]['branches'][key][pc['path']].add(pc['branch'])
-                active_branches.remove(pc['branch'])
-    _coverage_eval[key] = {'coverage': coverage_eval, 'contracts': contracts}
-
-
-def _set_coverage_defaults(build_json, coverage_eval):
-    name = build_json['contractName']
-    if name in coverage_eval:
-        return coverage_eval
-    coverage_eval[name] = {
-        'statements': dict((k, set()) for k in build_json['coverageMap']['statements'].keys()),
-        'branches': {
-            "true": dict((k, set()) for k in build_json['coverageMap']['branches'].keys()),
-            "false": dict((k, set()) for k in build_json['coverageMap']['branches'].keys())
-        }
-    }
-    return coverage_eval
-
-
-def merge_files(coverage_files):
-    '''Merges multiple coverage evaluation dicts that have been saved to json.'''
-    coverage_eval = []
-    for i in coverage_files:
-        with Path(i).open() as f:
-            coverage_eval.append(json.load(f)['coverage'])
-    return merge(coverage_eval)
-
-
-def merge(coverage_eval_list):
+def merge(coverage_eval_dict):
     '''Merges multiple coverage evaluation dicts.
 
     Arguments:
@@ -86,24 +13,20 @@ def merge(coverage_eval_list):
 
     Returns: coverage eval dict.
     '''
-    merged_eval = deepcopy(coverage_eval_list[0])
-    for cov in coverage_eval_list[1:]:
-        for name in cov:
+    coverage_eval_list = list(coverage_eval_dict.values())
+    merged_eval = deepcopy(coverage_eval_list.pop())
+    for coverage_eval in coverage_eval_list:
+        for name in coverage_eval:
             if name not in merged_eval:
-                merged_eval[name] = cov[name]
+                merged_eval[name] = coverage_eval[name]
                 continue
-            _merge(merged_eval[name]['statements'], cov[name]['statements'])
-            _merge(merged_eval[name]['branches']['true'], cov[name]['branches']['true'])
-            _merge(merged_eval[name]['branches']['false'], cov[name]['branches']['false'])
+            for path, map_ in coverage_eval[name].items():
+                if path not in merged_eval[name]:
+                    merged_eval[name][path] = map_
+                    continue
+                for i in range(3):
+                    merged_eval[name][path][i] = set(merged_eval[name][path][i]).union(map_[i])
     return merged_eval
-
-
-def _merge(original, new):
-    for path, map_ in new.items():
-        if path not in original:
-            original[path] = map_
-            continue
-        original[path] = set(original[path]).union(map_)
 
 
 def split_by_fn(coverage_eval):
@@ -121,30 +44,18 @@ def split_by_fn(coverage_eval):
         'branches': {'true': {}, 'false': {}}}
     ) for i in coverage_eval)
     for name in coverage_eval:
-        coverage_map = build.get(name)['coverageMap']
-        results[name]['statements'] = _split_path(
-            coverage_eval[name]['statements'],
-            coverage_map['statements']
-        )
-        for key in ('true', 'false'):
-            results[name]['branches'][key] = _split_path(
-                coverage_eval[name]['branches'][key],
-                coverage_map['branches']
-            )
+        map_ = build.get(name)['coverageMap']
+        results[name] = dict((k, _split(v, map_, k)) for k, v in coverage_eval[name].items())
     return results
 
 
-def _split_path(coverage_eval, coverage_map):
+def _split(coverage_eval, coverage_map, key):
     results = {}
-    for path, eval_ in coverage_eval.items():
-        results[path] = _split_fn(eval_, coverage_map[path])
-    return results
-
-
-def _split_fn(coverage_eval, coverage_map):
-    results = {}
-    for fn, map_ in coverage_map.items():
-        results[fn] = [i for i in map_ if int(i) in coverage_eval]
+    for fn, map_ in coverage_map['statements'][key].items():
+        results[fn] = [[i for i in map_ if int(i) in coverage_eval[0]], [], []]
+    for fn, map_ in coverage_map['branches'][key].items():
+        results[fn][1] = [i for i in map_ if int(i) in coverage_eval[1]]
+        results[fn][2] = [i for i in map_ if int(i) in coverage_eval[2]]
     return results
 
 
@@ -178,11 +89,11 @@ def get_totals(coverage_eval):
         coverage_map = build.get(name)['coverageMap']
         r = results[name]
         r['statements'], r['totals']['statements'] = _statement_totals(
-            coverage_eval[name]['statements'],
+            coverage_eval[name],
             coverage_map['statements']
         )
         r['branches'], r['totals']['branches'] = _branch_totals(
-            coverage_eval[name]['branches'],
+            coverage_eval[name],
             coverage_map['branches']
         )
     return results
@@ -192,9 +103,9 @@ def _statement_totals(coverage_eval, coverage_map):
     result = {}
     count, total = 0, 0
     for path, fn in [(k, x) for k, v in coverage_eval.items() for x in v]:
-        count += len(coverage_eval[path][fn])
+        count += len(coverage_eval[path][fn][0])
         total += len(coverage_map[path][fn])
-        result[fn] = (len(coverage_eval[path][fn]), len(coverage_map[path][fn]))
+        result[fn] = (len(coverage_eval[path][fn][0]), len(coverage_map[path][fn]))
     return result, (count, total)
 
 
@@ -202,8 +113,11 @@ def _branch_totals(coverage_eval, coverage_map):
     result = {}
     final = [0, 0, 0]
     for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
-        true = len(coverage_eval['true'][path][fn])
-        false = len(coverage_eval['false'][path][fn])
+        if path not in coverage_eval:
+            true, false = 0, 0
+        else:
+            true = len(coverage_eval[path][fn][2])
+            false = len(coverage_eval[path][fn][1])
         total = len(coverage_map[path][fn])
         result[fn] = (true, false, total)
         for i in range(3):
@@ -233,11 +147,11 @@ def get_highlights(coverage_eval):
     for name in coverage_eval:
         coverage_map = build.get(name)['coverageMap']
         results['statements'][name] = _statement_highlights(
-            coverage_eval[name]['statements'],
+            coverage_eval[name],
             coverage_map['statements']
         )
         results['branches'][name] = _branch_highlights(
-            coverage_eval[name]['branches'],
+            coverage_eval[name],
             coverage_map['branches']
         )
     return results
@@ -247,28 +161,35 @@ def _statement_highlights(coverage_eval, coverage_map):
     results = dict((i, []) for i in coverage_map)
     for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
         results[path].extend([
-            list(offset) + ["green" if int(i) in coverage_eval[path] else "red", ""]
+            list(offset) + [_statement_color(i, coverage_eval, path), ""]
             for i, offset in coverage_map[path][fn].items()
         ])
     return results
+
+
+def _statement_color(i, coverage_eval, path):
+    if path not in coverage_eval or int(i) not in coverage_eval[path][0]:
+        return "red"
+    return "green"
 
 
 def _branch_highlights(coverage_eval, coverage_map):
     results = dict((i, []) for i in coverage_map)
     for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
         results[path].extend([
-            list(offset[:2]) +
-            [_branch_color(int(i), coverage_eval, path, offset[2]), ""]
+            list(offset[:2]) + [_branch_color(int(i), coverage_eval, path, offset[2]), ""]
             for i, offset in coverage_map[path][fn].items()
         ])
     return results
 
 
 def _branch_color(i, coverage_eval, path, jump):
-    if i in coverage_eval['true'][path]:
-        if i in coverage_eval['false'][path]:
+    if path not in coverage_eval:
+        return "red"
+    if i in coverage_eval[path][2]:
+        if i in coverage_eval[path][1]:
             return "green"
         return "yellow" if jump else "orange"
-    if i in coverage_eval['false'][path]:
+    if i in coverage_eval[path][1]:
         return "orange" if jump else "yellow"
     return "red"
