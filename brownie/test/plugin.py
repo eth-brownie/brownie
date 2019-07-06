@@ -79,17 +79,26 @@ if brownie.project.check_for_project('.'):
             if path in tests and tests[path] is None:
                 continue
             tests.setdefault(i.parent.fspath, []).append(i)
-        u.set_ignore(set(k for k, v in tests.items() if not v))
+        tests = dict((k, v) for k, v in tests.items() if v)
+        u.set_isolated(set(tests))
         if not config.getoption('--update'):
             return
-        tests = dict((k, v) for k, v in tests.items() if v)
-        for path in filter(u.check_module, tests):
+        for path in filter(u.check_updated, tests):
             for i in tests[path]:
                 i.add_marker("skip")
 
     def pytest_runtestloop():
         brownie.network.connect(ARGV['network'])
         pytest.reverts = RevertContextManager
+
+    def pytest_runtest_teardown(item, nextitem):
+        # called before teardown, use to check if this was last test in the module
+        if not nextitem or item.parent.fspath != nextitem.parent.fspath:
+            u.finish_module(item.parent.fspath)
+
+    def pytest_runtest_logfinish(nodeid, location):
+        # called after teardown - if runtest_teardown says this was last test, save the json
+        pass
 
     def pytest_sessionfinish():
         if ARGV['coverage']:
@@ -106,7 +115,6 @@ if brownie.project.check_for_project('.'):
     def module_isolation(request):
         brownie.rpc.reset()
         yield
-        u.update_module(request.fspath)
         brownie.rpc.reset()
 
     @pytest.fixture()

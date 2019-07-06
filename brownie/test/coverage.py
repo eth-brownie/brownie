@@ -26,12 +26,13 @@ def analyze(tx):
             }, ..
         } }'''
     key = tx._coverage_hash()
-    if key in _known_tx:
+    if key in _coverage_eval:
         return
-    _known_tx.add(key)
+    coverage_eval = {}
     build_json = {'contractName': None}
     tx_trace = tx.trace
     active_branches = set()
+    contracts = set()
     for i in filter(lambda k: tx_trace[k]['source'], range(len(tx_trace))):
         trace = tx.trace[i]
         name = trace['contractName']
@@ -39,17 +40,19 @@ def analyze(tx):
             continue
         if build_json['contractName'] != name:
             build_json = build.get(name)
-            _set_coverage_defaults(build_json, _coverage_eval)
+            contracts.add(name)
+            coverage_eval = _set_coverage_defaults(build_json, coverage_eval)
         pc = build_json['pcMap'][trace['pc']]
         if 'statement' in pc:
-            _coverage_eval[name]['statements'][pc['path']].add(pc['statement'])
+            coverage_eval[name]['statements'][pc['path']].add(pc['statement'])
         if 'branch' in pc:
             if pc['op'] != "JUMPI":
                 active_branches.add(pc['branch'])
             elif pc['branch'] in active_branches:
                 key = "false" if tx.trace[i+1]['pc'] == trace['pc']+1 else "true"
-                _coverage_eval[name]['branches'][key][pc['path']].add(pc['branch'])
+                coverage_eval[name]['branches'][key][pc['path']].add(pc['branch'])
                 active_branches.remove(pc['branch'])
+    _coverage_eval[key] = {'coverage': coverage_eval, 'contracts': contracts}
 
 
 def _set_coverage_defaults(build_json, coverage_eval):

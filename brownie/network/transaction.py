@@ -16,7 +16,6 @@ from .event import (
     decode_trace
 )
 from .web3 import Web3
-from brownie.test import coverage
 from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build, sources
@@ -125,8 +124,9 @@ class TransactionReceipt:
             if ARGV['cli'] == "console":
                 return
             # if coverage evaluation is active, get the trace immediately
-            if ARGV['coverage'] and self.trace:
-                coverage.analyze(self)
+            if ARGV['coverage'] and not history.has_coverage(self.coverage_hash) and self.trace:
+                self._expand_trace()
+                history.add_coverage(self.coverage_hash, self._coverage_eval)
             if not self.status:
                 if revert[0] is None:
                     # no revert message and unable to check dev string - have to get trace
@@ -142,13 +142,6 @@ class TransactionReceipt:
     def __repr__(self):
         c = {-1: 'pending', 0: 'error', 1: None}
         return f"<Transaction object '{color[c[self.status]]}{self.txid}{color}'>"
-
-    def _coverage_hash(self):
-        base = (
-            f"{self.nonce}{self.block_number}{self.sender}{self.receiver}"
-            f"{self.value}{self.input}{self.status}{self.gas_used}{self.txindex}"
-        )
-        return sha1(base.encode()).hexdigest()
 
     def __hash__(self):
         return hash(self.txid)
@@ -211,6 +204,12 @@ class TransactionReceipt:
         self.contract_address = receipt['contractAddress']
         self.logs = receipt['logs']
         self.status = receipt['status']
+
+        base = (
+            f"{self.nonce}{self.block_number}{self.sender}{self.receiver}"
+            f"{self.value}{self.input}{self.status}{self.gas_used}{self.txindex}"
+        )
+        self.coverage_hash = sha1(base.encode()).hexdigest()
 
         if self.status:
             self.events = decode_logs(receipt['logs'])
@@ -326,6 +325,7 @@ class TransactionReceipt:
             self._get_trace()
         self.trace = trace = self._trace
         if not trace or 'fn' in trace[0]:
+            self._coverage_eval = {}
             return
 
         # last_map gives a quick reference of previous values at each depth
@@ -337,6 +337,9 @@ class TransactionReceipt:
             'jumpDepth': 0,
             'pc_map': self.receiver._build['pcMap']
         }}
+
+        coverage_eval = {self.receiver._name: {}}
+        active_branches = set()
 
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
@@ -359,6 +362,8 @@ class TransactionReceipt:
                     'jumpDepth': 0,
                     'pc_map': contract._build['pcMap']
                 }
+                if contract._name not in coverage_eval:
+                    coverage_eval[contract._name] = {}
 
             # update trace from last_map
             last = last_map[trace[i]['depth']]
@@ -370,11 +375,29 @@ class TransactionReceipt:
                 'source': False
             })
             pc = last['pc_map'][trace[i]['pc']]
-            if 'path' in pc:
-                trace[i]['source'] = {'filename': pc['path'], 'offset': pc['offset']}
+            if 'path' not in pc:
+                continue
+
+            trace[i]['source'] = {'filename': pc['path'], 'offset': pc['offset']}
+            if pc['path'] not in coverage_eval[last['name']]:
+                coverage_eval[last['name']][pc['path']] = [set(), set(), set()]
+
+            if 'fn' not in pc:
+                continue
+
+            if 'statement' in pc:
+                coverage_eval[last['name']][pc['path']][0].add(pc['statement'])
+                # coverage_eval[name]['statements'][pc['path']].add(pc['statement'])
+            if 'branch' in pc:
+                if pc['op'] != "JUMPI":
+                    active_branches.add(pc['branch'])
+                elif pc['branch'] in active_branches:
+                    key = 1 if trace[i+1]['pc'] == trace[i]['pc']+1 else 2
+                    coverage_eval[last['name']][pc['path']][key].add(pc['branch'])
+                    active_branches.remove(pc['branch'])
 
             # ignore jumps with no function - they are compiler optimizations
-            if 'jump' not in pc or 'fn' not in pc:
+            if 'jump' not in pc:
                 continue
 
             # jump 'i' is calling into an internal function
@@ -388,6 +411,7 @@ class TransactionReceipt:
             elif pc['jump'] == "o" and last['jumpDepth'] > 0:
                 del last['fn'][-1]
                 last['jumpDepth'] -= 1
+        self._coverage_eval = coverage_eval
 
     def _full_name(self):
         if self.contract_name:

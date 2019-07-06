@@ -18,6 +18,7 @@ class TxHistory(metaclass=_Singleton):
 
     def __init__(self):
         self._list = []
+        self._coverage = {}
         self.gas_profile = {}
         Rpc()._objects.append(self)
 
@@ -48,6 +49,18 @@ class TxHistory(metaclass=_Singleton):
 
     def _add_tx(self, tx):
         self._list.append(tx)
+
+    def has_coverage(self, txhash):
+        return txhash in self._coverage
+
+    def add_coverage(self, txhash, coverage_eval):
+        self._coverage[txhash] = coverage_eval
+
+    def get_coverage(self):
+        return self._coverage
+
+    def get_coverage_hashes(self):
+        return [i.coverage_hash for i in self._list]
 
     def clear(self):
         self._list.clear()
