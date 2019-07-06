@@ -253,7 +253,11 @@ class TransactionReceipt:
             self.trace = []
             return
 
-        trace = web3.providers[0].make_request('debug_traceTransaction', [self.txid, {}])
+        trace = web3.providers[0].make_request(
+            'debug_traceTransaction',
+            (self.txid, {'disableStorage': ARGV['cli'] != "console"})
+        )
+
         if 'error' in trace:
             self.modified_state = None
             raise RPCRequestError(trace['error']['message'])
