@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import functools
 from pathlib import Path
 import pytest
 
@@ -43,10 +42,15 @@ if brownie.project.check_for_project('.'):
     u = UpdateManager(Path(CONFIG['folders']['project']).joinpath('build/tests.json'))
 
     def pytest_addoption(parser):
-        addopt = functools.partial(parser.addoption, action='store_true')
-        addopt('--coverage', '-C', help="Evaluate contract test coverage")
-        addopt('--gas', '-G', help="Display gas profile for function calls")
-        addopt('--update', '-U', help="Only run tests where changes have occurred")
+        parser.addoption(
+            '--coverage', '-C', action="store_true", help="Evaluate contract test coverage"
+        )
+        parser.addoption(
+            '--gas', '-G', action="store_true", help="Display gas profile for function calls"
+        )
+        parser.addoption(
+            '--update', '-U', action="store_true", help="Only run tests where changes have occurred"
+        )
         parser.addoption(
             '--network',
             '-N',
