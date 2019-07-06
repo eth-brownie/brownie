@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+import json
+from pathlib import Path
+import time
 
 from brownie.cli.utils import color
 from brownie.network import history
@@ -12,7 +15,43 @@ COVERAGE_COLORS = [
 ]
 
 
-def coverage_totals(coverage_eval):
+def save_coverage_report(coverage_eval, report_path):
+    '''Saves a test coverage report for viewing in the GUI.
+
+    Args:
+        coverage_eval: Coverage evaluation dict
+        report_path: Path to save to. If a folder is given, saves as coverage-ddmmyy
+
+    Returns: Path object where report file was saved'''
+    report = {
+        'highlights': coverage.get_highlights(coverage_eval),
+        'coverage': coverage.get_totals(coverage_eval),
+        'sha1': {}  # TODO
+    }
+    report = json.loads(json.dumps(report, default=sorted))
+    report_path = Path(report_path).absolute()
+    if report_path.is_dir():
+        filename = "coverage-"+time.strftime('%d%m%y')+"{}.json"
+        count = len(list(report_path.glob(filename.format('*'))))
+        if count:
+            last_path = _report_path(report_path, filename, count-1)
+            with last_path.open() as fp:
+                last_report = json.load(fp)
+            if last_report == report:
+                print(f"\nCoverage report saved at {last_path}")
+                return last_path
+        report_path = _report_path(report_path, filename, count)
+    with report_path.open('w') as fp:
+        json.dump(report, fp, sort_keys=True, indent=2)
+    print(f"\nCoverage report saved at {report_path}")
+    return report_path
+
+
+def _report_path(base_path, filename, count):
+    return base_path.joinpath(filename.format("-"+str(count) if count else ""))
+
+
+def print_coverage_totals(coverage_eval):
     '''Formats and prints a coverage evaluation report to the console.
 
     Args:
@@ -42,7 +81,7 @@ def _pct(statement, branch):
     return pct
 
 
-def gas_profile():
+def print_gas_profile():
     '''Formats and prints a gas profile report to the console.'''
     print('\n\nGas Profile:')
     gas = history.gas_profile

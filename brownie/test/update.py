@@ -20,8 +20,8 @@ def get_ast_hash(path):
         path: path of the script to hash
 
     Returns: sha1 hash as bytes'''
-    with Path(path).open() as f:
-        ast_list = [ast.parse(f.read(), path)]
+    with Path(path).open() as fp:
+        ast_list = [ast.parse(fp.read(), path)]
     base_path = str(check_for_project(path))
     for obj in [i for i in ast_list[0].body if type(i) in (ast.Import, ast.ImportFrom)]:
         if type(obj) is ast.Import:
@@ -30,8 +30,8 @@ def get_ast_hash(path):
             name = obj.module
         origin = importlib.util.find_spec(name).origin
         if base_path in origin:
-            with open(origin) as f:
-                ast_list.append(ast.parse(f.read(), origin))
+            with open(origin) as fp:
+                ast_list.append(ast.parse(fp.read(), origin))
     dump = "\n".join(ast.dump(i) for i in ast_list)
     return sha1(dump.encode()).hexdigest()
 
@@ -71,7 +71,7 @@ class UpdateManager:
         else:
             for txhash, coverage_eval in hashes['tx'].items():
                 history.add_coverage(txhash, coverage_eval)
-        atexit.register(self.save_json)
+        atexit.register(self._save_json)
         return
 
     def add_setup(self, path):
@@ -106,7 +106,7 @@ class UpdateManager:
             'txhash': history.get_coverage_hashes()
         }
 
-    def save_json(self):
+    def _save_json(self):
         report = {
             'tests': self.tests,
             'contracts': self.contracts,
@@ -114,4 +114,3 @@ class UpdateManager:
         }
         with open(self.path, 'w') as fp:
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
-        atexit.unregister(self.save_json)

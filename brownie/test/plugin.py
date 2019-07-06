@@ -5,7 +5,7 @@ import pytest
 
 import brownie
 from .update import UpdateManager
-from . import output, coverage, pathutils
+from . import output, coverage
 from brownie._config import CONFIG, ARGV
 
 
@@ -110,13 +110,13 @@ if brownie.project.check_for_project('.'):
             coverage_eval = brownie.history.get_coverage()
             coverage_eval = coverage.merge(coverage_eval)
 
-            output.coverage_totals(coverage_eval)
-            pathutils.save_report(
+            output.print_coverage_totals(coverage_eval)
+            output.save_coverage_report(
                 coverage_eval,
                 Path(CONFIG['folders']['project']).joinpath("reports")
             )
         if ARGV['gas']:
-            output.gas_profile()
+            output.print_gas_profile()
 
     # fixtures
     @pytest.fixture(scope="module")

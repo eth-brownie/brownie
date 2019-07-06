@@ -7,7 +7,6 @@ from pathlib import Path
 import sys
 
 import brownie
-from brownie.test.main import run_script
 from . import color
 from brownie._config import CONFIG
 
@@ -22,7 +21,6 @@ class Console(code.InteractiveConsole):
 
     def __init__(self):
         locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
-        locals_dict['run'] = run_script
         del locals_dict['project']
 
         builtins.dir = self._dir
