@@ -37,6 +37,10 @@ def get_ast_hash(path):
     return sha1(dump.encode()).hexdigest()
 
 
+def _path(path, base):
+    return Path(path).absolute().relative_to(base)
+
+
 class UpdateManager:
 
     def __init__(self, path):
@@ -45,7 +49,7 @@ class UpdateManager:
             (str(i.absolute()), get_ast_hash(i)) for i in Path(path).glob('tests/**/conftest.py')
         )
         try:
-            with open(path) as fp:
+            with path.joinpath('build/tests.json').open() as fp:
                 hashes = json.load(fp)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             hashes = {'tests': {}, 'contracts': {}, 'tx': {}}
@@ -73,8 +77,11 @@ class UpdateManager:
         atexit.register(self._save_json)
         return
 
+    def _path(self, path):
+        return str(Path(path).absolute().relative_to(self.path))
+
     def set_isolated(self, paths):
-        self.isolated = paths
+        self.isolated = set(self._path(i) for i in paths)
 
     def _get_hash(self, path):
         hash_ = get_ast_hash(path)
@@ -83,7 +90,7 @@ class UpdateManager:
         return sha1(hash_.encode()).hexdigest()
 
     def check_updated(self, path):
-        path = str(path)
+        path = self._path(path)
         if path not in self.tests or not self.tests[path]['isolated']:
             return False
         if ARGV['coverage'] and not self.tests[path]['coverage']:
@@ -91,7 +98,7 @@ class UpdateManager:
         return True
 
     def finish_module(self, path):
-        path = str(path)
+        path = self._path(path)
         isolated = False
         if path in self.isolated:
             isolated = [i for i in _ContractHistory().dependencies() if i in self.contracts]
@@ -108,5 +115,5 @@ class UpdateManager:
             'contracts': self.contracts,
             'tx': history.get_coverage()
         }
-        with open(self.path, 'w') as fp:
+        with self.path.joinpath('build/tests.json').open('w') as fp:
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)

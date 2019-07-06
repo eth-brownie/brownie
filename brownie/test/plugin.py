@@ -39,7 +39,7 @@ if brownie.project.check_for_project('.'):
             f"Provides access to the brownie ContractContainer object '{container._name}'"
         )
 
-    u = UpdateManager(Path(CONFIG['folders']['project']).joinpath('build/tests.json'))
+    u = UpdateManager(Path(CONFIG['folders']['project']))
 
     def pytest_addoption(parser):
         parser.addoption(
@@ -79,7 +79,7 @@ if brownie.project.check_for_project('.'):
                 continue
             tests.setdefault(i.parent.fspath, []).append(i)
         tests = dict((k, v) for k, v in tests.items() if v)
-        u.set_isolated(set(tests))
+        u.set_isolated(tests)
         if not config.getoption('--update'):
             return
         for path in filter(u.check_updated, tests):
