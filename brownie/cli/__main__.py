@@ -21,7 +21,6 @@ Commands:
   gui                Load the GUI to view opcodes and test coverage
   init               Initialize a new brownie project
   run                Run a script in the /scripts folder
-  test               Run test scripts in the /tests folder
 
 Options:
   --help -h          Display this message
