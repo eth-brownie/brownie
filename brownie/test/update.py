@@ -10,6 +10,7 @@ from pathlib import Path
 from brownie.project import check_for_project
 from brownie.project import build
 from brownie import history
+from brownie._config import ARGV
 
 
 def get_ast_hash(path):
@@ -88,10 +89,11 @@ class UpdateManager:
 
     def check_updated(self, path):
         path = str(path)
-        if path in self.tests and self.tests[path]['isolated']:
-            self.skipped.add(path)
-            return True
-        return False
+        if path not in self.tests or not self.tests[path]['isolated']:
+            return False
+        if ARGV['coverage'] and not self.tests[path]['coverage']:
+            return False
+        return True
 
     def finish_module(self, path):
         path = str(path)
@@ -100,6 +102,7 @@ class UpdateManager:
         self.tests[path] = {
             'sha1': self._get_hash(path),
             'isolated': path in self.isolated,
+            'coverage': ARGV['coverage'] or (path in self.tests and self.tests[path]['coverage']),
             'txhash': history.get_coverage_hashes()
         }
 

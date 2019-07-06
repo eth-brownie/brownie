@@ -13,6 +13,8 @@ def merge(coverage_eval_dict):
 
     Returns: coverage eval dict.
     '''
+    if not coverage_eval_dict:
+        return {}
     coverage_eval_list = list(coverage_eval_dict.values())
     merged_eval = deepcopy(coverage_eval_list.pop())
     for coverage_eval in coverage_eval_list:
