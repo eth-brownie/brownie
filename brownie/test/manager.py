@@ -7,11 +7,14 @@ import importlib
 import json
 from pathlib import Path
 
-from brownie.project import check_for_project
-from brownie.project import build
 from brownie import history
 from brownie.network.history import _ContractHistory
+from brownie.project import build, check_for_project
+from brownie.test import coverage
 from brownie._config import ARGV
+
+
+_contracts = _ContractHistory()
 
 
 def get_ast_hash(path):
@@ -41,7 +44,7 @@ def _path(path, base):
     return Path(path).absolute().relative_to(base)
 
 
-class UpdateManager:
+class TestManager:
 
     def __init__(self, path):
         self.path = path
@@ -66,21 +69,21 @@ class UpdateManager:
         if changed_contracts:
             for txhash, coverage_eval in hashes['tx'].items():
                 if not changed_contracts.intersection(coverage_eval.keys()):
-                    history.add_coverage(txhash, coverage_eval)
+                    coverage[txhash] = coverage_eval
             self.tests = dict(
                 (k, v) for k, v in self.tests.items() if v['isolated'] is not False
                 and not changed_contracts.intersection(v['isolated'])
             )
         else:
             for txhash, coverage_eval in hashes['tx'].items():
-                history.add_coverage(txhash, coverage_eval)
+                coverage[txhash] = coverage_eval
         atexit.register(self._save_json)
         return
 
     def _path(self, path):
         return str(Path(path).absolute().relative_to(self.path))
 
-    def set_isolated(self, paths):
+    def set_isolated_modules(self, paths):
         self.isolated = set(self._path(i) for i in paths)
 
     def _get_hash(self, path):
@@ -97,11 +100,11 @@ class UpdateManager:
             return False
         return True
 
-    def finish_module(self, path):
+    def module_completed(self, path):
         path = self._path(path)
         isolated = False
         if path in self.isolated:
-            isolated = [i for i in _ContractHistory().dependencies() if i in self.contracts]
+            isolated = [i for i in _contracts.dependencies() if i in self.contracts]
         self.tests[path] = {
             'sha1': self._get_hash(path),
             'isolated': isolated,
@@ -113,7 +116,7 @@ class UpdateManager:
         report = {
             'tests': self.tests,
             'contracts': self.contracts,
-            'tx': history.get_coverage()
+            'tx': coverage.get()
         }
         with self.path.joinpath('build/tests.json').open('w') as fp:
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)

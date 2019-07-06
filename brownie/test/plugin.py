@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 
 import brownie
-from .update import UpdateManager
-from . import output, coverage
+from brownie.test import output
+from brownie.test.manager import TestManager
 from brownie._config import CONFIG, ARGV
 
 
@@ -24,23 +24,23 @@ class RevertContextManager:
         return True
 
 
-def generate_fixture(container, docstring):
-    def dynamic_fixture():
+def _generate_fixture(container):
+    def _fixture():
         yield container
-    dynamic_fixture.__doc__ = docstring
-    return pytest.fixture(scope="session")(dynamic_fixture)
+    _fixture.__doc__ = f"Provides access to Brownie ContractContainer object '{container._name}'"
+    return pytest.fixture(scope="session")(_fixture)
 
 
 if brownie.project.check_for_project('.'):
 
+    # load project and generate dynamic fixtures
     for container in brownie.project.load():
-        globals()[container._name] = generate_fixture(
-            container,
-            f"Provides access to the brownie ContractContainer object '{container._name}'"
-        )
+        globals()[container._name] = _generate_fixture(container)
 
-    u = UpdateManager(Path(CONFIG['folders']['project']))
+    # create test manager - for reading and writing to build/test.json
+    manager = TestManager(Path(CONFIG['folders']['project']))
 
+    # set commandline options
     def pytest_addoption(parser):
         parser.addoption(
             '--coverage', '-C', action="store_true", help="Evaluate contract test coverage"
@@ -68,7 +68,9 @@ if brownie.project.check_for_project('.'):
         if config.getoption('--network'):
             ARGV['network'] = config.getoption('--network')[0]
 
+    # plugin hooks
     def pytest_collection_modifyitems(session, config, items):
+        # determine which modules are properly isolated
         tests = {}
         for i in items:
             path = i.parent.fspath
@@ -79,10 +81,11 @@ if brownie.project.check_for_project('.'):
                 continue
             tests.setdefault(i.parent.fspath, []).append(i)
         tests = dict((k, v) for k, v in tests.items() if v)
-        u.set_isolated(tests)
+        manager.set_isolated_modules(tests)
         if not config.getoption('--update'):
             return
-        for path in filter(u.check_updated, tests):
+        # if update flag is active, add skip marker to unchanged tests
+        for path in filter(manager.check_updated, tests):
             tests[path][0].parent.add_marker('skip')
 
     def pytest_runtestloop():
@@ -90,18 +93,15 @@ if brownie.project.check_for_project('.'):
         pytest.reverts = RevertContextManager
 
     def pytest_runtest_teardown(item, nextitem):
-        # called before teardown, use to check if this was last test in the module
         if list(item.parent.iter_markers('skip')):
             return
+        # if this is the last test in a module, record the results
         if not nextitem or item.parent.fspath != nextitem.parent.fspath:
-            u.finish_module(item.parent.fspath)
+            manager.module_completed(item.parent.fspath)
 
     def pytest_sessionfinish():
         if ARGV['coverage']:
-
-            coverage_eval = brownie.history.get_coverage()
-            coverage_eval = coverage.merge(coverage_eval)
-
+            coverage_eval = brownie.test.coverage.get_merged()
             output.print_coverage_totals(coverage_eval)
             output.save_coverage_report(
                 coverage_eval,

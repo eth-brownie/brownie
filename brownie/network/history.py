@@ -50,15 +50,6 @@ class TxHistory(metaclass=_Singleton):
     def _add_tx(self, tx):
         self._list.append(tx)
 
-    def has_coverage(self, txhash):
-        return txhash in self._coverage
-
-    def add_coverage(self, txhash, coverage_eval):
-        self._coverage[txhash] = coverage_eval
-
-    def get_coverage(self):
-        return self._coverage
-
     def get_coverage_hashes(self):
         return [i.coverage_hash for i in self._list]
 

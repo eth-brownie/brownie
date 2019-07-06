@@ -19,6 +19,7 @@ from .web3 import Web3
 from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build, sources
+from brownie.test import coverage
 from brownie._config import ARGV, CONFIG
 
 history = TxHistory()
@@ -123,10 +124,10 @@ class TransactionReceipt:
             confirm_thread.join()
             if ARGV['cli'] == "console":
                 return
-            # if coverage evaluation is active, get the trace immediately
-            if ARGV['coverage'] and not history.has_coverage(self.coverage_hash) and self.trace:
+            # if coverage evaluation is active, evaluate the trace
+            if ARGV['coverage'] and self.coverage_hash not in coverage and self.trace:
                 self._expand_trace()
-                history.add_coverage(self.coverage_hash, self._coverage_eval)
+                coverage[self.coverage_hash] = self._coverage_eval
             if not self.status:
                 if revert[0] is None:
                     # no revert message and unable to check dev string - have to get trace
@@ -385,9 +386,9 @@ class TransactionReceipt:
             if 'fn' not in pc:
                 continue
 
+            # calculate coverage
             if 'statement' in pc:
                 coverage_eval[last['name']][pc['path']][0].add(pc['statement'])
-                # coverage_eval[name]['statements'][pc['path']].add(pc['statement'])
             if 'branch' in pc:
                 if pc['op'] != "JUMPI":
                     active_branches.add(pc['branch'])
