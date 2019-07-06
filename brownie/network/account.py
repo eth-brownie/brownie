@@ -102,9 +102,9 @@ class Accounts(metaclass=_Singleton):
             json_file = project_path.joinpath(filename)
             if not json_file.exists():
                 raise FileNotFoundError(f"Cannot find {json_file}")
-        with json_file.open() as f:
+        with json_file.open() as fp:
             priv_key = web3.eth.account.decrypt(
-                json.load(f),
+                json.load(fp),
                 getpass("Enter the password for this account: ")
             )
         return self.add(priv_key)
@@ -342,8 +342,8 @@ class LocalAccount(_AccountBase):
             self.private_key,
             getpass("Enter the password to encrypt this account with: ")
         )
-        with json_file.open('w') as f:
-            json.dump(encrypted, f)
+        with json_file.open('w') as fp:
+            json.dump(encrypted, fp)
         return str(json_file)
 
     def _transact(self, tx):

@@ -55,8 +55,8 @@ def load(project_path):
     for path in project_path.glob('contracts/**/*.sol'):
         if "/_" in str(path):
             continue
-        with path.open() as f:
-            source = f.read()
+        with path.open() as fp:
+            source = fp.read()
         path = str(path.relative_to(project_path))
         _source[path] = source
         _contracts.update(_get_contract_data(source, path))

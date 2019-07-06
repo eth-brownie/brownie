@@ -19,8 +19,8 @@ def get_topics(abi):
     new_topics.update(eth_event.get_event_abi(abi))
     if new_topics != _topics:
         _topics.update(new_topics)
-        with _get_path().open('w') as f:
-            json.dump(new_topics, f, sort_keys=True, indent=2)
+        with _get_path().open('w') as fp:
+            json.dump(new_topics, fp, sort_keys=True, indent=2)
     return eth_event.get_topics(abi)
 
 
@@ -41,7 +41,7 @@ def decode_trace(trace):
 
 
 try:
-    with _get_path().open() as f:
-        _topics = json.load(f)
+    with _get_path().open() as fp:
+        _topics = json.load(fp)
 except (FileNotFoundError, json.decoder.JSONDecodeError):
     _topics = {}
