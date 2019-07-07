@@ -131,33 +131,25 @@ if brownie.project.check_for_project('.'):
         yield
         brownie.rpc.revert()
 
-    @pytest.fixture()
+    @pytest.fixture(scope="session")
     def a():
         yield brownie.accounts
 
-    @pytest.fixture()
+    @pytest.fixture(scope="session")
     def accounts():
         yield brownie.accounts
 
-    @pytest.fixture()
+    @pytest.fixture(scope="session")
     def history():
         yield brownie.history
 
-    @pytest.fixture()
-    def project():
-        yield brownie.project
-
-    @pytest.fixture()
+    @pytest.fixture(scope="session")
     def rpc():
         yield brownie.rpc
 
-    @pytest.fixture()
+    @pytest.fixture(scope="session")
     def web3():
         yield brownie.web3
-
-    @pytest.fixture()
-    def brownie_config():
-        yield brownie.config
 
     @pytest.fixture()
     def no_call_coverage():
