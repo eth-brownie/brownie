@@ -382,23 +382,24 @@ class TransactionReceipt:
                 continue
 
             trace[i]['source'] = {'filename': pc['path'], 'offset': pc['offset']}
-            if pc['path'] not in coverage_eval[last['name']]:
-                coverage_eval[last['name']][pc['path']] = [set(), set(), set()]
 
             if 'fn' not in pc:
                 continue
 
             # calculate coverage
-            if 'statement' in pc:
-                coverage_eval[last['name']][pc['path']][0].add(pc['statement'])
-            if 'branch' in pc:
-                if pc['op'] != "JUMPI":
-                    active_branches.add(pc['branch'])
-                elif pc['branch'] in active_branches:
-                    # false, true
-                    key = 1 if trace[i+1]['pc'] == trace[i]['pc']+1 else 2
-                    coverage_eval[last['name']][pc['path']][key].add(pc['branch'])
-                    active_branches.remove(pc['branch'])
+            if '<string' not in pc['path']:
+                if pc['path'] not in coverage_eval[last['name']]:
+                    coverage_eval[last['name']][pc['path']] = [set(), set(), set()]
+                if 'statement' in pc:
+                    coverage_eval[last['name']][pc['path']][0].add(pc['statement'])
+                if 'branch' in pc:
+                    if pc['op'] != "JUMPI":
+                        active_branches.add(pc['branch'])
+                    elif pc['branch'] in active_branches:
+                        # false, true
+                        key = 1 if trace[i+1]['pc'] == trace[i]['pc']+1 else 2
+                        coverage_eval[last['name']][pc['path']][key].add(pc['branch'])
+                        active_branches.remove(pc['branch'])
 
             # ignore jumps with no function - they are compiler optimizations
             if 'jump' not in pc:
@@ -415,7 +416,7 @@ class TransactionReceipt:
             elif pc['jump'] == "o" and last['jumpDepth'] > 0:
                 del last['fn'][-1]
                 last['jumpDepth'] -= 1
-        self._coverage_eval = coverage_eval
+        self._coverage_eval = dict((k, v) for k, v in coverage_eval.items() if v)
 
     def _full_name(self):
         if self.contract_name:
