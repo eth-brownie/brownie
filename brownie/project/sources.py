@@ -173,17 +173,23 @@ def get_highlighted_source(path, offset, pad=3):
         pad_stop = newlines.index(next(i for i in newlines if i >= offset[1]))
     except StopIteration:
         return
-    ln = pad_start + 1
+
+    ln = (pad_start + 1, pad_stop + 1)
     pad_start = newlines[max(pad_start-(pad+1), 0)]
     pad_stop = newlines[min(pad_stop+pad, len(newlines)-1)]
 
-    final = "{1}{0}{2}{0[dull]}{3}{0}".format(
-        color,
-        source[pad_start:offset[0]],
-        source[offset[0]:offset[1]],
-        source[offset[1]:pad_stop]
-    )
-    final = color('dull')+textwrap.indent(textwrap.dedent(final), "    ")
+    final = textwrap.indent(textwrap.dedent(
+        f"{color['dull']}{source[pad_start:offset[0]]}{color}"
+        f"{source[offset[0]:offset[1]]}{color['dull']}{source[offset[1]:pad_stop]}{color}"
+    ), "    ")
+
+    count = source[pad_start:offset[0]].count("\n")
+    final = final.replace("\n ", f"\n{color['dull']} ", count)
+    count = source[offset[0]:offset[1]].count('\n')
+    final = final.replace('\n ', f"\n{color} ", count)
+    count = source[offset[1]:pad_stop].count("\n")
+    final = final.replace("\n ", f"\n{color['dull']} ", count)
+
     return final, path, ln
 
 

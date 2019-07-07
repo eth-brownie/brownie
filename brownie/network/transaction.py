@@ -20,7 +20,7 @@ from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build, sources
 from brownie.test import coverage
-from brownie._config import ARGV, CONFIG
+from brownie._config import ARGV
 
 history = TxHistory()
 _contracts = _ContractHistory()
@@ -75,7 +75,7 @@ class TransactionReceipt:
         '''
         if type(txid) is not str:
             txid = txid.hex()
-        if CONFIG['logging']['tx'] and not silent:
+        if not silent:
             print(f"\n{color['key']}Transaction sent{color}: {color['value']}{txid}{color}")
         history._add_tx(self)
 
@@ -134,7 +134,7 @@ class TransactionReceipt:
                     self._expand_trace()
                 raise VirtualMachineError({
                     "message": f"{revert[2]} {self.revert_msg or ''}",
-                    "source": self._error_string(1)
+                    "source": self._traceback_string() if ARGV['revert'] else self._error_string(1)
                 })
         except KeyboardInterrupt:
             if ARGV['cli'] != "console":
@@ -169,13 +169,13 @@ class TransactionReceipt:
             time.sleep(0.5)
         self._set_from_tx(tx)
 
-        if not tx['blockNumber'] and CONFIG['logging']['tx'] and not silent:
+        if not tx['blockNumber'] and not silent:
             print("Waiting for confirmation...")
 
         # await confirmation
         receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
         self._set_from_receipt(receipt)
-        if not silent and CONFIG['logging']['tx']:
+        if not silent:
             print(self._confirm_output())
         if callback:
             callback(self)
@@ -218,8 +218,6 @@ class TransactionReceipt:
             history._gas(self._full_name(), receipt['gasUsed'])
 
     def _confirm_output(self):
-        if CONFIG['logging']['tx'] >= 2:
-            return self.info()
         status = ""
         if not self.status:
             status = f"({color['error']}{self.revert_msg or 'reverted'}{color}) "
@@ -504,20 +502,23 @@ class TransactionReceipt:
         print(result)
 
     def traceback(self):
+        print(self._traceback_string())
+
+    def _traceback_string(self):
         '''Returns an error traceback for the transaction.'''
         if self.status == 1:
-            return
+            return ""
         trace = self.trace
         if not trace:
             if not self.contract_address:
-                return
+                return ""
             raise NotImplementedError("Traceback is not available for deployment transactions.")
 
         try:
-            idx = next(i for i in range(len(trace)) if trace[i]['op'] in {"REVERT", "INVALID"})
+            idx = next(i for i in range(len(trace)) if trace[i]['op'] in ("REVERT", "INVALID"))
             trace_range = range(idx, -1, -1)
         except StopIteration:
-            return
+            return ""
 
         result = [next(i for i in trace_range if trace[i]['source'])]
         depth, jump_depth = trace[idx]['depth'], trace[idx]['jumpDepth']
@@ -532,8 +533,8 @@ class TransactionReceipt:
                 depth, jump_depth = trace[idx]['depth'], trace[idx]['jumpDepth']
             except StopIteration:
                 break
-        print(
-            f"Traceback for '{color['value']}{self.txid}{color}':\n" +
+        return (
+            f"{color}Traceback for '{color['value']}{self.txid}{color}':\n" +
             "\n".join(self._source_string(i, 0) for i in result[::-1])
         )
 
@@ -588,12 +589,14 @@ class TransactionReceipt:
 
 
 def _format_source(source, pc, idx, fn_name):
+    ln = f" {color['value']}{source[2][0]}"
+    if source[2][1] > source[2][0]:
+        ln = f"s{ln}{color['dull']}-{color['value']}{source[2][1]}"
     return (
         f"{color['dull']}Trace step {color['value']}{idx}{color['dull']}, "
-        f"program counter {color['value']}{pc}{color['dull']}:"
-        f"\n  File {color['string']}\"{source[1]}\"{color['dull']}, "
-        f"line {color['value']}{source[2]}{color['dull']}, in "
-        f"{color['callable']}{fn_name}{color['dull']}:{source[0]}"
+        f"program counter {color['value']}{pc}{color['dull']}:\n  {color['dull']}"
+        f"File {color['string']}\"{source[1]}\"{color['dull']}, line{ln}{color['dull']},"
+        f" in {color['callable']}{fn_name}{color['dull']}:{source[0]}"
     )
 
 

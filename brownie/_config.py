@@ -3,7 +3,6 @@
 import json
 from pathlib import Path
 import shutil
-import sys
 
 from brownie.types.types import (
     FalseyDict,
@@ -12,7 +11,7 @@ from brownie.types.types import (
 )
 
 REPLACE = ['active_network', 'networks']
-IGNORE = ['active_network', 'folders', 'logging']
+IGNORE = ['active_network', 'folders']
 
 
 def _load_default_config():
@@ -24,15 +23,6 @@ def _load_default_config():
         'project': None
     }
     config['active_network'] = {'name': None}
-    # set logging
-    try:
-        config['logging'] = config['logging'][sys.argv[1]]
-        config['logging'].setdefault('tx', 0)
-        config['logging'].setdefault('exc', 0)
-        for k, v in [(k, v) for k, v in config['logging'].items() if type(v) is list]:
-            config['logging'][k] = v[1 if '--verbose' in sys.argv else 0]
-    except Exception:
-        config['logging'] = {"tx": 1, "exc": 1}
     return config
 
 
@@ -75,7 +65,7 @@ def modify_network_config(network=None):
             if not CONFIG['active_network']['broadcast_reverting_tx']:
                 print("WARNING: Reverting transactions will NOT be broadcasted.")
     except KeyError:
-        raise KeyError("Network '{}' is not defined in config.json".format(network))
+        raise KeyError(f"Network '{network}' is not defined in config.json")
     finally:
         CONFIG._lock()
 
@@ -91,8 +81,8 @@ def _recursive_update(original, new, base):
             original[k] = new[k]
     for k in [i for i in original if i not in new and not set(base+[i]).intersection(IGNORE)]:
         print(
-            "WARNING: Value '{}' not found in the config file for this project."
-            " The default setting has been used.".format(".".join(base+[k]))
+            f"WARNING: '{'.'.join(base+[k])}' not found in the config file for this project."
+            " The default setting has been used."
         )
 
 

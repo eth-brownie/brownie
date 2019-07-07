@@ -20,9 +20,11 @@ class RevertContextManager:
     def __exit__(self, exc_type, exc_value, traceback):
         if exc_type is not brownie.exceptions.VirtualMachineError:
             raise AssertionError("Transaction did not revert") from None
-        if self.revert_msg is not None and self.revert_msg != exc_value.revert_msg:
-            raise AssertionError(f"Unexpected revert string: {exc_value.revert_msg}") from None
-        return True
+        if self.revert_msg is None or self.revert_msg == exc_value.revert_msg:
+            return True
+        raise AssertionError(
+            f"Unexpected revert string '{exc_value.revert_msg}'\n{exc_value.source}"
+        ) from None
 
 
 def _generate_fixture(container):
@@ -53,6 +55,9 @@ if brownie.project.check_for_project('.'):
             '--update', '-U', action="store_true", help="Only run tests where changes have occurred"
         )
         parser.addoption(
+            '--revert', '-R', action="store_true", help="Show detailed traceback on tx reverts"
+        )
+        parser.addoption(
             '--network',
             '-N',
             default=False,
@@ -66,6 +71,8 @@ if brownie.project.check_for_project('.'):
             ARGV['always_transact'] = True
         if config.getoption("--gas"):
             ARGV['gas'] = True
+        if config.getoption('--revert') or CONFIG['test']['revert_traceback']:
+            ARGV['revert'] = True
         if config.getoption('--network'):
             ARGV['network'] = config.getoption('--network')[0]
 
