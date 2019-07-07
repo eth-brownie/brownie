@@ -13,7 +13,7 @@ class StrictDict(dict):
 
     def __setitem__(self, key, value):
         if self._locked and key not in self:
-            raise KeyError("{} is not a known config setting".format(key))
+            raise KeyError(f"{key} is not a known config setting")
         if type(value) is dict:
             value = StrictDict(value)
         super().__setitem__(key, value)

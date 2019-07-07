@@ -183,7 +183,7 @@ def _stem(contract_name):
 
 def _absolute(contract_name):
     contract_name = _stem(contract_name)
-    return _project_path.joinpath('build/contracts/{}.json'.format(contract_name))
+    return _project_path.joinpath(f"build/contracts/{contract_name}.json")
 
 
 def _get_offset(offset_map, name, offset):

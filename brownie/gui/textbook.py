@@ -34,7 +34,7 @@ class TextBook(ttk.Notebook):
             return
         with path.open() as fp:
             frame = TextBox(self, fp.read())
-        super().add(frame, text="   {}   ".format(label))
+        super().add(frame, text=f"   {label}   ")
         frame._id = len(self._frames)
         frame._label = label
         frame._visible = True
@@ -57,7 +57,7 @@ class TextBook(ttk.Notebook):
         if frame._visible:
             return
         frame._visible = True
-        super().add(frame, text="   {}   ".format(label))
+        super().add(frame, text=f"   {label}   ")
 
     def set_visible(self, labels):
         labels = [Path(i).name for i in labels]
@@ -215,7 +215,7 @@ class TextBox(tk.Frame):
         text = self._text.get(1.0, "end")
         line = text[:value].count('\n') + 1
         offset = len(text[:value].split('\n')[-1])
-        return "{}.{}".format(line, offset)
+        return f"{line}.{offset}"
 
     def _coord_to_offset(self, value):
         row, col = [int(i) for i in value.split('.')]

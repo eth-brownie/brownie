@@ -97,9 +97,9 @@ def compile_from_input_json(input_json, silent=True):
     optimizer = input_json['settings']['optimizer']
     if not silent:
         print("Compiling contracts...")
-        print("Optimizer: {}".format(
-            "Enabled  Runs: "+str(optimizer['runs']) if
-            optimizer['enabled'] else "Disabled"
+        print("Optimizer: " + (
+            f"Enabled  Runs: {optimizer['runs']}" if
+            optimizer['enabled'] else 'Disabled'
         ))
     try:
         return solcx.compile_standard(
@@ -140,7 +140,7 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
     for path, contract_name in [(k, v) for k in path_list for v in output_json['contracts'][k]]:
 
         if not silent:
-            print(" - {}...".format(contract_name))
+            print(f" - {contract_name}...")
 
         evm = output_json['contracts'][path][contract_name]['evm']
         node = next(i[contract_name] for i in source_nodes if i.name == path)
@@ -185,11 +185,7 @@ def format_link_references(evm):
     bytecode = evm['bytecode']['object']
     references = [(k, x) for v in evm['bytecode']['linkReferences'].values() for k, x in v.items()]
     for n, loc in [(i[0], x['start']*2) for i in references for x in i[1]]:
-        bytecode = "{}__{:_<36}__{}".format(
-            bytecode[:loc],
-            n[:36],
-            bytecode[loc+40:]
-        )
+        bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"
     return bytecode
 
 

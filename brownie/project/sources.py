@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from hashlib import sha1
+import itertools
 from pathlib import Path
 import re
 import textwrap
@@ -66,7 +67,7 @@ def minify(source):
     '''Given contract source as a string, returns a minified version and an
     offset map.'''
     offsets = [(0, 0)]
-    pattern = "({})".format("|".join(MINIFY_REGEX_PATTERNS))
+    pattern = f"({'|'.join(MINIFY_REGEX_PATTERNS)})"
     for match in re.finditer(pattern, source):
         offsets.append((
             match.start() - offsets[-1][1],
@@ -90,7 +91,7 @@ def _get_contract_data(full_source, path):
         offset = minified_source.index(source)
         if name in _contracts and not _contracts[name]['path'].startswith('<string-'):
             raise ContractExists(
-                "Contract '{}' already exists in the active project.".format(name)
+                f"Contract '{name}' already exists in the active project."
             )
         data[name] = {
             'path': str(path),
@@ -128,10 +129,8 @@ def compile_source(source, optimize=True, runs=200):
     X is a an integer increased with each successive call.
 
     Returns the build json data.'''
-    key = 1
-    while "<string-{}".format(key) in _source:
-        key += 1
-    path = "<string-{}>".format(key)
+
+    path = next(f"<string-{i}>" for i in itertools.count() if f"<string-{i}>" not in _source)
     _source[path] = source
     _contracts.update(_get_contract_data(source, path))
     return compiler.compile_and_format({path: source}, optimize=optimize, runs=runs, silent=True)
