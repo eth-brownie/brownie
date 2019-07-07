@@ -363,4 +363,4 @@ def _raise_or_return_tx(exc):
     except SyntaxError:
         raise exc
     except Exception:
-        raise VirtualMachineError(exc)
+        raise VirtualMachineError(exc) from None
