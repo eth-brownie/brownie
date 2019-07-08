@@ -81,10 +81,20 @@ if brownie.project.check_for_project('.'):
     # plugin hooks
 
     def pytest_generate_tests(metafunc):
-        # ensure module_isolation always runs first
-        if 'module_isolation' in metafunc.fixturenames:
-            metafunc.fixturenames.remove('module_isolation')
-            metafunc.fixturenames.insert(0, 'module_isolation')
+        # module_isolation always runs first
+        fixtures = metafunc.fixturenames
+        if 'module_isolation' in fixtures:
+            fixtures.remove('module_isolation')
+            fixtures.insert(0, 'module_isolation')
+        # test_isolation always runs before other function scoped fixtures
+        if 'test_isolation' not in fixtures:
+            fixtures.remove('test_isolation')
+            defs = metafunc._arg2fixturedefs
+            idx = next((
+                fixtures.index(i) for i in fixtures if
+                i in defs and defs[i][0].scope == "function"
+            ), len(fixtures))
+            fixtures.insert(idx, 'test_isolation')
 
     def pytest_collection_modifyitems(session, config, items):
         # determine which modules are properly isolated
@@ -134,7 +144,7 @@ if brownie.project.check_for_project('.'):
         yield
         brownie.rpc.reset()
 
-    @pytest.fixture()
+    @pytest.fixture
     def test_isolation(module_isolation):
         brownie.rpc.snapshot()
         yield
@@ -160,7 +170,7 @@ if brownie.project.check_for_project('.'):
     def web3():
         yield brownie.web3
 
-    @pytest.fixture()
+    @pytest.fixture
     def no_call_coverage():
         ARGV['always_transact'] = False
         yield
