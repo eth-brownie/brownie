@@ -18,8 +18,10 @@ class RevertContextManager:
         pass
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type is not brownie.exceptions.VirtualMachineError:
+        if exc_type is None:
             raise AssertionError("Transaction did not revert") from None
+        if exc_type is not brownie.exceptions.VirtualMachineError:
+            raise exc_type(exc_value).with_traceback(traceback)
         if self.revert_msg is None or self.revert_msg == exc_value.revert_msg:
             return True
         raise AssertionError(
