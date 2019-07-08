@@ -77,6 +77,13 @@ if brownie.project.check_for_project('.'):
             ARGV['network'] = config.getoption('--network')[0]
 
     # plugin hooks
+
+    def pytest_generate_tests(metafunc):
+        # ensure module_isolation always runs first
+        if 'module_isolation' in metafunc.fixturenames:
+            metafunc.fixturenames.remove('module_isolation')
+            metafunc.fixturenames.insert(0, 'module_isolation')
+
     def pytest_collection_modifyitems(session, config, items):
         # determine which modules are properly isolated
         tests = {}
