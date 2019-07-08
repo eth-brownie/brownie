@@ -132,10 +132,11 @@ class TransactionReceipt:
                 if revert[0] is None:
                     # no revert message and unable to check dev string - have to get trace
                     self._expand_trace()
-                raise VirtualMachineError({
-                    "message": f"{revert[2]} {self.revert_msg or ''}",
-                    "source": self._traceback_string() if ARGV['revert'] else self._error_string(1)
-                })
+                # raise from a new function to reduce pytest traceback length
+                _raise(
+                    f"{revert[2]} {self.revert_msg or ''}",
+                    self._traceback_string() if ARGV['revert'] else self._error_string(1)
+                )
         except KeyboardInterrupt:
             if ARGV['cli'] != "console":
                 raise
@@ -623,3 +624,7 @@ def _get_memory(step, idx):
     offset = int(step['stack'][idx], 16) * 2
     length = int(step['stack'][idx-1], 16) * 2
     return HexBytes("".join(step['memory'])[offset:offset+length])
+
+
+def _raise(msg, source):
+    raise VirtualMachineError({"message": msg, "source": source})
