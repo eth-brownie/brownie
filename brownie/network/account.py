@@ -184,7 +184,7 @@ class _AccountBase:
         try:
             web3.eth.call(dict((k, v) for k, v in tx.items() if v))
         except ValueError as e:
-            raise VirtualMachineError(e)
+            raise VirtualMachineError(e) from None
 
     def balance(self):
         '''Returns the current balance at the address, in wei.'''

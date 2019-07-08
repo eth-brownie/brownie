@@ -284,7 +284,7 @@ class _ContractMethod:
         try:
             data = web3.eth.call(dict((k, v) for k, v in tx.items() if v))
         except ValueError as e:
-            raise VirtualMachineError(e)
+            raise VirtualMachineError(e) from None
         return self.decode_abi(data)
 
     def transact(self, *args, _rpc_clear=True):
