@@ -40,16 +40,12 @@ def get_ast_hash(path):
     return sha1(dump.encode()).hexdigest()
 
 
-def _path(path, base):
-    return Path(path).absolute().relative_to(base)
-
-
 class TestManager:
 
     def __init__(self, path):
         self.path = path
         self.conf_hashes = dict(
-            (str(i.absolute()), get_ast_hash(i)) for i in Path(path).glob('tests/**/conftest.py')
+            (self._path(i.parent), get_ast_hash(i)) for i in Path(path).glob('tests/**/conftest.py')
         )
         try:
             with path.joinpath('build/tests.json').open() as fp:
@@ -89,7 +85,7 @@ class TestManager:
     def _get_hash(self, path):
         hash_ = get_ast_hash(path)
         for confpath in filter(lambda k: k in path, sorted(self.conf_hashes)):
-            hash_ += confpath
+            hash_ += self.conf_hashes[confpath]
         return sha1(hash_.encode()).hexdigest()
 
     def check_updated(self, path):
