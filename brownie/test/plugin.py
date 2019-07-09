@@ -77,6 +77,8 @@ if brownie.project.check_for_project('.'):
             ARGV['revert'] = True
         if config.getoption('--network'):
             ARGV['network'] = config.getoption('--network')[0]
+        if config.getoption('--update'):
+            ARGV['update'] = True
 
     # plugin hooks
 
@@ -118,6 +120,12 @@ if brownie.project.check_for_project('.'):
     def pytest_runtestloop():
         brownie.network.connect(ARGV['network'])
         pytest.reverts = RevertContextManager
+
+    def pytest_runtest_protocol(item):
+        manager.set_active(item.parent.fspath)
+
+    def pytest_report_teststatus(report):
+        return manager.check_status(report)
 
     def pytest_runtest_teardown(item, nextitem):
         if list(item.parent.iter_markers('skip')):

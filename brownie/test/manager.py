@@ -7,12 +7,24 @@ import importlib
 import json
 from pathlib import Path
 
+from brownie.cli.utils import color
 from brownie import history
 from brownie.network.history import _ContractHistory
 from brownie.project import build, check_for_project
 from brownie.test import coverage
 from brownie._config import ARGV
 
+STATUS_COLORS = {
+    '.': "green",
+    's': "yellow",
+    'F': "red"
+}
+
+STATUS_SYMBOLS = {
+    'skipped': 's',
+    'passed': '.',
+    'failed': 'F'
+}
 
 _contracts = _ContractHistory()
 
@@ -43,6 +55,9 @@ def get_ast_hash(path):
 class TestManager:
 
     def __init__(self, path):
+        self.active = None
+        self.count = 0
+        self.results = None
         self.path = path
         self.conf_hashes = dict(
             (self._path(i.parent), get_ast_hash(i)) for i in Path(path).glob('tests/**/conftest.py')
@@ -105,8 +120,11 @@ class TestManager:
             'sha1': self._get_hash(path),
             'isolated': isolated,
             'coverage': ARGV['coverage'] or (path in self.tests and self.tests[path]['coverage']),
-            'txhash': history.get_coverage_hashes()
+            'txhash': history.get_coverage_hashes(),
+            'results': "".join(self.results)
         }
+        self.results = []
+        self.count = 0
 
     def _save_json(self):
         report = {
@@ -116,3 +134,34 @@ class TestManager:
         }
         with self.path.joinpath('build/tests.json').open('w') as fp:
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
+
+    def set_active(self, path):
+        path = self._path(path)
+        if path == self.active:
+            self.count += 1
+            return
+        self.active = path
+        self.count = 0
+        if path in self.tests and ARGV['update']:
+            self.results = list(self.tests[path]['results'])
+        else:
+            self.results = []
+
+    def check_status(self, report):
+        if report.when == "setup":
+            if len(self.results) < self.count+1:
+                self.results.append(None)
+            elif ARGV['update'] and report.skipped:
+                key = STATUS_COLORS[self.results[self.count]]
+                return report.outcome, f"{color[key]}s", report.outcome.upper()
+            if report.failed:
+                self.results[self.count] = "F"
+                return "error", "E", "ERROR"
+            return "", "", ""
+        if report.when == "teardown":
+            if report.failed:
+                self.results[self.count] = "F"
+                return "error", "E", "ERROR"
+            return "", "", ""
+        self.results[self.count] = STATUS_SYMBOLS[report.outcome]
+        return report.outcome, STATUS_SYMBOLS[report.outcome], report.outcome.upper()
