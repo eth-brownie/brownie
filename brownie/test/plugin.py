@@ -44,6 +44,7 @@ if brownie.project.check_for_project('.'):
 
     # create test manager - for reading and writing to build/test.json
     manager = TestManager(Path(CONFIG['folders']['project']))
+    pytest.reverts = RevertContextManager
 
     # set commandline options
     def pytest_addoption(parser):
@@ -98,7 +99,7 @@ if brownie.project.check_for_project('.'):
             ), len(fixtures))
             fixtures.insert(idx, 'test_isolation')
 
-    def pytest_collection_modifyitems(session, config, items):
+    def pytest_collection_modifyitems(session, items):
         # determine which modules are properly isolated
         tests = {}
         for i in items:
@@ -111,15 +112,17 @@ if brownie.project.check_for_project('.'):
             tests.setdefault(i.parent.fspath, []).append(i)
         tests = dict((k, v) for k, v in tests.items() if v)
         manager.set_isolated_modules(tests)
-        if not config.getoption('--update'):
+        if not ARGV['update']:
             return
+        if not tests or sorted(filter(manager.check_updated, tests)) == sorted(tests):
+            ARGV['norpc'] = True
         # if update flag is active, add skip marker to unchanged tests
         for path in filter(manager.check_updated, tests):
             tests[path][0].parent.add_marker('skip')
 
     def pytest_runtestloop():
-        brownie.network.connect(ARGV['network'])
-        pytest.reverts = RevertContextManager
+        if not ARGV['norpc']:
+            brownie.network.connect(ARGV['network'])
 
     def pytest_runtest_protocol(item):
         manager.set_active(item.parent.fspath)
