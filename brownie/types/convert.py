@@ -206,6 +206,10 @@ def format_event(event):
         event: decoded event as given by eth_event.decode_logs or eth_event.decode_trace
 
     Mutates the event in place and returns it.'''
+
+    for e in [i for i in event['data'] if not i['decoded']]:
+        e['type'] = "bytes32"
+        e['name'] += " (indexed)"
     values = _format(event, 'data', [i['value'] for i in event['data']])
     for i in range(len(event['data'])):
         event['data'][i]['value'] = values[i]
