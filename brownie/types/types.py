@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from .convert import Wei
+from .convert import EthAddress, HexString, Wei
 
 
 class StrictDict(dict):
@@ -99,10 +99,10 @@ class KwargTuple:
 def _kwargtuple_compare(a, b):
     if type(a) not in (tuple, list, KwargTuple):
         types_ = set([type(a), type(b)])
-        if dict in types_:
-            return a == b
         if types_.intersection([bool, type(None)]):
             return a is b
+        if types_.intersection([dict, EthAddress, HexString]):
+            return a == b
         return _convert_str(a) == _convert_str(b)
     if type(b) not in (tuple, list, KwargTuple) or len(b) != len(a):
         return False

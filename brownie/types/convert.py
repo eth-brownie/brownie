@@ -72,7 +72,7 @@ def to_address(value):
 
 def to_bytes(value, type_="bytes32"):
     '''Convert a value to bytes'''
-    if type(value) not in (HexBytes, bytes, str, int):
+    if type(value) not in (HexBytes, HexString, bytes, str, int):
         raise TypeError(f"'{value}', type {type(value)}, cannot convert to {type_}")
     if type_ == "byte":
         type_ = "bytes1"
@@ -166,7 +166,7 @@ def _to_wei(value):
 
 def bytes_to_hex(value):
     '''Convert a bytes value to a hexstring'''
-    if type(value) not in (bytes, HexBytes, str, int):
+    if type(value) not in (bytes, HexBytes, HexString, str, int):
         raise TypeError(f"Cannot convert {type(value)} '{value}' from bytes to hex.")
     if type(value) in (bytes, HexBytes):
         value = HexBytes(value).hex()
@@ -252,17 +252,64 @@ def _format(abi, key, values):
                 values[i] = to_uint(values[i], type_)
             elif "int" in type_:
                 values[i] = to_int(values[i], type_)
-            elif "bool" in type_:
+            elif type_ == "bool":
                 values[i] = to_bool(values[i])
-            elif "address" in type_:
-                values[i] = to_address(values[i])
+            elif type_ == "address":
+                if key == "inputs":
+                    values[i] = to_address(values[i])
+                else:
+                    values[i] = EthAddress(values[i])
             elif "byte" in type_:
                 if key == "inputs":
                     values[i] = to_bytes(values[i], type_)
                 else:
-                    values[i] = bytes_to_hex(values[i])
+                    values[i] = HexString(values[i])
             elif "string" in type_:
                 values[i] = to_string(values[i])
         except Exception as e:
             raise type(e)(f"{name} argument #{i}: '{values[i]}' - {e}")
     return tuple(values)
+
+
+class EthAddress(str):
+
+    '''String subclass that raises TypeError when compared to a non-address.'''
+
+    def __new__(cls, value):
+        return super().__new__(cls, to_address(value))
+
+    def __eq__(self, other):
+        return _address_compare(str(self), other)
+
+    def __ne__(self, other):
+        return not _address_compare(str(self), other)
+
+
+def _address_compare(a, b):
+    b = str(b)
+    if not b.startswith('0x') or not eth_utils.is_hex(b) or len(b) != 42:
+        raise TypeError(f"Invalid type for comparison: '{b}' is not a valid address")
+    return a.lower() == b.lower()
+
+
+class HexString(str):
+
+    '''String subclass for hexstring comparisons. Raises TypeError if compared to
+    a non-hexstring. Evaluates True for hexstrings with the same value but differing
+    leading zeros or capitalization.'''
+
+    def __new__(cls, value):
+        return super().__new__(cls, bytes_to_hex(value))
+
+    def __eq__(self, other):
+        return _hex_compare(self, other)
+
+    def __ne__(self, other):
+        return not _hex_compare(self, other)
+
+
+def _hex_compare(a, b):
+    b = str(b)
+    if not b.startswith('0x') or not eth_utils.is_hex(b):
+        raise TypeError(f"Invalid type for comparison: '{b}' is not a valid hex string")
+    return a.lstrip('0x').lower() == b.lstrip('0x').lower()
