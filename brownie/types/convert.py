@@ -119,6 +119,9 @@ class Wei(int):
     def __new__(cls, value):
         return super().__new__(cls, _to_wei(value))
 
+    def __hash__(self):
+        return super().__hash__()
+
     def __lt__(self, other):
         return super().__lt__(_to_wei(other))
 
