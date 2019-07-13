@@ -97,7 +97,7 @@ if brownie.project.check_for_project('.'):
             fixtures.remove('module_isolation')
             fixtures.insert(0, 'module_isolation')
         # test_isolation always runs before other function scoped fixtures
-        if 'test_isolation' not in fixtures:
+        if 'test_isolation' in fixtures:
             fixtures.remove('test_isolation')
             defs = metafunc._arg2fixturedefs
             idx = next((
