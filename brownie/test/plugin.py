@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import pytest
+import sys
 
 import brownie
 from brownie.test import output
@@ -80,6 +81,12 @@ if brownie.project.check_for_project('.'):
             ARGV['network'] = config.getoption('--network')[0]
         if config.getoption('--update'):
             ARGV['update'] = True
+        # skip coverage marker
+        skipcoverage = pytest.mark.skipif(
+            ARGV['coverage'] is True,
+            reason="Coverage evaluation is active"
+        )
+        setattr(sys.modules['brownie.test'], 'skipcoverage', skipcoverage)
 
     # plugin hooks
 

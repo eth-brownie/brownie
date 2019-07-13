@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from hashlib import sha1
+import requests
 import threading
 import time
 
@@ -252,10 +253,18 @@ class TransactionReceipt:
             self.trace = []
             return
 
-        trace = web3.providers[0].make_request(
-            'debug_traceTransaction',
-            (self.txid, {'disableStorage': ARGV['cli'] != "console"})
-        )
+        try:
+            trace = web3.providers[0].make_request(
+                'debug_traceTransaction',
+                (self.txid, {'disableStorage': ARGV['cli'] != "console"})
+            )
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            msg = f"Encountered a {type(e).__name__} while requesting "
+            msg += "debug_traceTransaction. The local RPC client has likely crashed."
+            if ARGV['coverage']:
+                msg += " If the error persists, import brownie.test.skipcoverage"
+                msg += " and apply @skipcoverage to this test."
+            raise RPCRequestError(msg) from None
 
         if 'error' in trace:
             self.modified_state = None
