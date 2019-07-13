@@ -145,6 +145,7 @@ if brownie.project.check_for_project('.'):
             manager.module_completed(item.parent.fspath)
 
     def pytest_sessionfinish():
+        manager.save_json()
         if ARGV['coverage']:
             coverage_eval = brownie.test.coverage.get_merged()
             output.print_coverage_totals(coverage_eval)
@@ -155,18 +156,23 @@ if brownie.project.check_for_project('.'):
         if ARGV['gas']:
             output.print_gas_profile()
 
+    def pytest_keyboard_interrupt():
+        ARGV['interrupt'] = True
+
     # fixtures
     @pytest.fixture(scope="module")
     def module_isolation(request):
         brownie.rpc.reset()
         yield
-        brownie.rpc.reset()
+        if not ARGV['interrupt']:
+            brownie.rpc.reset()
 
     @pytest.fixture
     def test_isolation(module_isolation):
         brownie.rpc.snapshot()
         yield
-        brownie.rpc.revert()
+        if not ARGV['interrupt']:
+            brownie.rpc.revert()
 
     @pytest.fixture(scope="session")
     def a():

@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import ast
-import atexit
 from hashlib import sha1
 import importlib
 import json
@@ -88,8 +87,6 @@ class TestManager:
         else:
             for txhash, coverage_eval in hashes['tx'].items():
                 coverage[txhash] = coverage_eval
-        atexit.register(self._save_json)
-        return
 
     def _path(self, path):
         return str(Path(path).absolute().relative_to(self.path))
@@ -124,7 +121,7 @@ class TestManager:
             'results': "".join(self.results)
         }
 
-    def _save_json(self):
+    def save_json(self):
         report = {
             'tests': self.tests,
             'contracts': self.contracts,

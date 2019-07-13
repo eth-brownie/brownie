@@ -6,7 +6,7 @@ import time
 
 from brownie.cli.utils import color
 from brownie.project import build
-from brownie.network import history
+from brownie.network.history import TxHistory
 
 COVERAGE_COLORS = [
     (0.5, "bright red"),
@@ -54,7 +54,7 @@ def _report_path(base_path, filename, count):
 def print_gas_profile():
     '''Formats and prints a gas profile report to the console.'''
     print('\n\nGas Profile:')
-    gas = history.gas_profile
+    gas = TxHistory().gas_profile
     for i in sorted(gas):
         print(f"{i} -  avg: {gas[i]['avg']:.0f}  low: {gas[i]['low']}  high: {gas[i]['high']}")
 
