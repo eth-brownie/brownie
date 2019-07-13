@@ -6,22 +6,22 @@ import importlib
 import json
 from pathlib import Path
 
-from brownie.cli.utils import color
 from brownie.network.history import TxHistory, _ContractHistory
 from brownie.project import build, check_for_project
 from brownie.test import coverage
 from brownie._config import ARGV
 
-STATUS_COLORS = {
-    '.': "green",
-    's': "yellow",
-    'F': "red"
-}
 
 STATUS_SYMBOLS = {
-    'skipped': 's',
     'passed': '.',
+    'skipped': 's',
     'failed': 'F'
+}
+
+STATUS_TYPES = {
+    '.': "passed",
+    's': "skipped",
+    'F': "failed"
 }
 
 history = TxHistory()
@@ -151,11 +151,9 @@ class TestManager:
 
     def check_status(self, report):
         if report.when == "setup":
+            self._skip = report.skipped
             if len(self.results) < self.count+1:
                 self.results.append("s" if report.skipped else None)
-            if report.skipped:
-                key = STATUS_COLORS[self.results[self.count]]
-                return report.outcome, f"{color[key]}s", report.outcome.upper()
             if report.failed:
                 self.results[self.count] = "F"
                 return "error", "E", "ERROR"
@@ -164,7 +162,8 @@ class TestManager:
             if report.failed:
                 self.results[self.count] = "F"
                 return "error", "E", "ERROR"
-            elif report.skipped and self.results[self.count] == "s":
+            elif self._skip:
+                report.outcome = STATUS_TYPES[self.results[self.count]]
                 return "skipped", "s", "SKIPPED"
             return "", "", ""
         self.results[self.count] = STATUS_SYMBOLS[report.outcome]
