@@ -225,11 +225,7 @@ class Rpc(metaclass=_Singleton):
         return "Block height reset to 0"
 
     def _internal_snap(self):
-        if not self._internal_id:
-            self._internal_id = self._snap()
-
-    def _internal_clear(self):
-        self._internal_id = None
+        self._internal_id = self._snap()
 
     def _internal_revert(self):
         self._request("evm_revert", [self._internal_id])

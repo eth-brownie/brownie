@@ -287,7 +287,7 @@ class _ContractMethod:
             raise VirtualMachineError(e) from None
         return self.decode_abi(data)
 
-    def transact(self, *args, _rpc_clear=True):
+    def transact(self, *args):
         '''Broadcasts a transaction that calls this contract method.
 
         Args:
@@ -302,8 +302,6 @@ class _ContractMethod:
                 "No deployer address given. You must supply a tx dict"
                 " with a 'from' field as the last argument."
             )
-        if _rpc_clear:
-            rpc._internal_clear()
         return tx['from'].transfer(
             self._address,
             tx['value'],
@@ -380,15 +378,16 @@ class ContractCall(_ContractMethod):
 
         Returns:
             Contract method return value(s).'''
-        if ARGV['always_transact']:
-            rpc._internal_snap()
-            args, tx = _get_tx(self._owner, args)
-            tx['gas_price'] = 0
-            tx = self.transact(*args, tx, _rpc_clear=False)
-            if tx.modified_state:
-                rpc._internal_revert()
+        if not ARGV['always_transact']:
+            return self.call(*args)
+        rpc._internal_snap()
+        args, tx = _get_tx(self._owner, args)
+        tx['gas_price'] = 0
+        try:
+            tx = self.transact(*args, tx)
             return tx.return_value
-        return self.call(*args)
+        finally:
+            rpc._internal_revert()
 
 
 def _get_tx(owner, args):
