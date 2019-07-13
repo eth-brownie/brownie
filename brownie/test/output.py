@@ -9,8 +9,8 @@ from brownie.project import build
 from brownie.network.history import TxHistory
 
 COVERAGE_COLORS = [
-    (0.5, "bright red"),
-    (0.85, "bright yellow"),
+    (0.8, "bright red"),
+    (0.9, "bright yellow"),
     (1, "bright green")
 ]
 

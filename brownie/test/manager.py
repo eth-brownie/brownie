@@ -79,14 +79,14 @@ class TestManager:
         if changed_contracts:
             for txhash, coverage_eval in hashes['tx'].items():
                 if not changed_contracts.intersection(coverage_eval.keys()):
-                    coverage[txhash] = coverage_eval
+                    coverage.add_cached(txhash, coverage_eval)
             self.tests = dict(
                 (k, v) for k, v in self.tests.items() if v['isolated'] is not False
                 and not changed_contracts.intersection(v['isolated'])
             )
         else:
             for txhash, coverage_eval in hashes['tx'].items():
-                coverage[txhash] = coverage_eval
+                coverage.add_cached(txhash, coverage_eval)
 
     def _path(self, path):
         return str(Path(path).absolute().relative_to(self.path))
@@ -106,6 +106,8 @@ class TestManager:
             return False
         if ARGV['coverage'] and not self.tests[path]['coverage']:
             return False
+        for txhash in self.tests[path]['txhash']:
+            coverage.add_from_cached(txhash, False)
         return True
 
     def module_completed(self, path):
@@ -113,19 +115,24 @@ class TestManager:
         isolated = False
         if path in self.isolated:
             isolated = [i for i in _contracts.dependencies() if i in self.contracts]
+        txhash = coverage.get_and_clear_active()
+        if not ARGV['coverage'] and (path in self.tests and self.tests[path]['coverage']):
+            txhash = self.tests[path]['txhash']
         self.tests[path] = {
             'sha1': self._get_hash(path),
             'isolated': isolated,
             'coverage': ARGV['coverage'] or (path in self.tests and self.tests[path]['coverage']),
-            'txhash': history.get_coverage_hashes(),
+            'txhash': txhash,
             'results': "".join(self.results)
         }
 
     def save_json(self):
+        txhash = set(x for v in self.tests.values() for x in v['txhash'])
+        coverage_eval = dict((k, v) for k, v in coverage.get_all().items() if k in txhash)
         report = {
             'tests': self.tests,
             'contracts': self.contracts,
-            'tx': coverage.get()
+            'tx': coverage_eval
         }
         with self.path.joinpath('build/tests.json').open('w') as fp:
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
