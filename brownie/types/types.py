@@ -124,22 +124,6 @@ def _convert_str(value):
         return value
 
 
-class FalseyDict(dict):
-    '''Dict subclass that returns None if a key is not present instead of raising'''
-
-    def __getitem__(self, key):
-        if key in self:
-            return super().__getitem__(key)
-        return None
-
-    def _update_from_args(self, values):
-        '''Updates the dict from docopts.args'''
-        self.update(dict((k.lstrip("-"), v) for k, v in values.items()))
-
-    def copy(self):
-        return FalseyDict(self)
-
-
 class EventDict:
     '''Dict/list hybrid container, base class for all events fired in a transaction.'''
 

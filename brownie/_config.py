@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
+from collections import defaultdict
 import json
 from pathlib import Path
 import shutil
 
 from brownie.types.types import (
-    FalseyDict,
     StrictDict,
     _Singleton
 )
@@ -86,8 +86,12 @@ def _recursive_update(original, new, base):
         )
 
 
+def update_argv_from_docopt(args):
+    ARGV.update(dict((k.lstrip("-"), v) for k, v in args.items()))
+
+
 # create argv object
-ARGV = _Singleton("Argv", (FalseyDict,), {})()
+ARGV = _Singleton("Argv", (defaultdict,), {})(lambda: None)
 
 # load config
 CONFIG = _load_default_config()

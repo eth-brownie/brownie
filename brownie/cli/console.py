@@ -4,7 +4,7 @@ from docopt import docopt
 
 from brownie import network, project
 from brownie.cli.utils.console import Console
-from brownie._config import ARGV, CONFIG
+from brownie._config import ARGV, CONFIG, update_argv_from_docopt
 
 
 __doc__ = f"""Usage: brownie console [options]
@@ -21,7 +21,7 @@ Connects to the network and opens the brownie console.
 
 def main():
     args = docopt(__doc__)
-    ARGV._update_from_args(args)
+    update_argv_from_docopt(args)
 
     project.load()
     network.connect(ARGV['network'])
