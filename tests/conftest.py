@@ -8,6 +8,8 @@ from pathlib import Path
 from brownie import accounts, network, project
 from brownie._config import ARGV
 
+pytest_plugins = 'pytester'
+
 
 @pytest.fixture(autouse=True, scope="session")
 def session_setup():
@@ -20,12 +22,9 @@ def session_setup():
             shutil.rmtree(str(path))
 
 
-@pytest.fixture(scope="function")
-def noload():
-    project.close(False)
-    yield
-    project.close(False)
-    project.load(Path(__file__).parent.joinpath('brownie-test-project'))
+@pytest.fixture(scope="session")
+def projectpath():
+    yield Path(__file__).parent.joinpath('brownie-test-project')
 
 
 @pytest.fixture(scope="module")
@@ -46,20 +45,28 @@ def token():
 
 
 @pytest.fixture(scope="function")
+def noload(projectpath):
+    project.close(False)
+    yield
+    project.close(False)
+    project.load(projectpath)
+
+
+@pytest.fixture
 def console_mode():
     ARGV['cli'] = "console"
     yield
     ARGV['cli'] = False
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def test_mode():
     ARGV['cli'] = "test"
     yield
     ARGV['cli'] = False
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def coverage_mode():
     ARGV['cli'] = "test"
     ARGV['coverage'] = True
@@ -70,14 +77,14 @@ def coverage_mode():
     ARGV['always_transact'] = False
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def clean_network():
     network.rpc.reset()
     yield
     network.rpc.reset()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def testpath(tmpdir):
     original_path = os.getcwd()
     os.chdir(tmpdir)

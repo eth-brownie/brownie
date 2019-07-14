@@ -119,7 +119,10 @@ def close(raises=True):
     sys.modules['brownie.project'].__all__ = ['__brownie_import_all__']
 
     # clear paths
-    sys.path.remove(CONFIG['folders']['project'])
+    try:
+        sys.path.remove(CONFIG['folders']['project'])
+    except ValueError:
+        pass
     CONFIG['folders']['project'] = None
 
 
