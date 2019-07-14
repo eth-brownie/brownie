@@ -3,13 +3,16 @@
 from copy import deepcopy
 import pytest
 
-from brownie import accounts
+from brownie import accounts, project
 from brownie._config import ARGV
 
 
 @pytest.fixture(scope="module")
-def tx(token):
-    tx = token.transfer(accounts[1], 100)
+def tx():
+    ext = accounts[0].deploy(project.ExternalCallTester)
+    other = accounts[0].deploy(project.Other)
+    tx = ext.callAnother(other, 4)
+    tx.trace
     yield tx
 
 

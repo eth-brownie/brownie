@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+from copy import deepcopy
+
 from brownie.convert import EthAddress, HexString, Wei
 
 
@@ -25,12 +27,16 @@ class ReturnValue:
         return _kwargtuple_compare(self, other)
 
     def __getitem__(self, key):
-        if type(key) in (int, slice):
+        if type(key) is slice:
+            abi = deepcopy(self._abi)
+            abi['outputs'] = abi['outputs'][key]
+            return ReturnValue(self._tuple[key], abi)
+        if type(key) is int:
             return self._tuple[key]
         return self._dict[key]
 
     def __contains__(self, value):
-        return value in self._tuple
+        return self.count(value) > 0
 
     def __iter__(self):
         return iter(self._tuple)
@@ -44,16 +50,31 @@ class ReturnValue:
 
     def count(self, value):
         '''ReturnValue.count(value) -> integer -- return number of occurrences of value'''
-        return self._tuple.count(value)
+        count = 0
+        for item in self:
+            try:
+                if _kwargtuple_compare(item, value):
+                    count += 1
+            except TypeError:
+                continue
+        return count
 
     def dict(self):
         '''ReturnValue.dict() -> a dictionary of ReturnValue's named items'''
         return self._dict
 
-    def index(self, value, *args):
+    def index(self, value, start=0, stop=None):
         '''ReturnValue.index(value, [start, [stop]]) -> integer -- return first index of value.
         Raises ValueError if the value is not present.'''
-        return self._tuple.index(value, *args)
+        if stop is None:
+            stop = len(self)
+        for i in range(start, stop):
+            try:
+                if _kwargtuple_compare(self._tuple[i], value):
+                    return i
+            except TypeError:
+                continue
+        raise ValueError(f"{value} is not in ReturnValue")
 
     def items(self):
         '''ReturnValue.items() -> a set-like object providing a view on ReturnValue's named items'''
@@ -61,7 +82,7 @@ class ReturnValue:
 
     def keys(self):
         '''ReturnValue.keys() -> a set-like object providing a view on ReturnValue's keys'''
-        return self._dict.values()
+        return self._dict.keys()
 
 
 def _kwargtuple_compare(a, b):

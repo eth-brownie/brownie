@@ -129,10 +129,16 @@ class Wei(int):
         return super().__le__(_to_wei(other))
 
     def __eq__(self, other):
-        return super().__eq__(_to_wei(other))
+        try:
+            return super().__eq__(_to_wei(other))
+        except TypeError:
+            return False
 
     def __ne__(self, other):
-        return super().__ne__(_to_wei(other))
+        try:
+            return super().__ne__(_to_wei(other))
+        except TypeError:
+            return True
 
     def __ge__(self, other):
         return super().__ge__(_to_wei(other))
@@ -152,7 +158,7 @@ def _to_wei(value):
         num = num.split(".") if "." in num else [num, ""]
         return int(num[0] + num[1][:int(dec)] + "0" * (int(dec) - len(num[1])))
     if type(value) is not str:
-        return int(value)
+        return _return_int(original, value)
     if value[:2] == "0x":
         return int(value, 16)
     for unit, dec in UNITS.items():
@@ -161,6 +167,10 @@ def _to_wei(value):
         num = value.split(" ")[0]
         num = num.split(".") if "." in num else [num, ""]
         return int(num[0] + num[1][:int(dec)] + "0" * (int(dec) - len(num[1])))
+    return _return_int(original, value)
+
+
+def _return_int(original, value):
     try:
         return int(value)
     except ValueError:
