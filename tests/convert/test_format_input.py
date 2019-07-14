@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie.types.convert import format_input
+from brownie.convert import format_input
 from brownie.exceptions import InvalidABI
 
 abi = {

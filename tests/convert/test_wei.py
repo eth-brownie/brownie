@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from brownie.types.convert import Wei
+from brownie.convert import Wei
 
 
 def test_nonetype():

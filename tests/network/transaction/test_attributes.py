@@ -4,7 +4,7 @@ import pytest
 
 from brownie.network.account import Account
 from brownie.network.contract import Contract
-from brownie.types import EventDict
+from brownie.network.event import EventDict
 from brownie import accounts
 
 
