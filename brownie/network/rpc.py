@@ -8,8 +8,12 @@ import time
 
 from .web3 import Web3
 
-from brownie.types.types import _Singleton
-from brownie.exceptions import RPCProcessError, RPCConnectionError, RPCRequestError
+from brownie._singleton import _Singleton
+from brownie.exceptions import (
+    RPCProcessError,
+    RPCConnectionError,
+    RPCRequestError
+)
 
 
 web3 = Web3()

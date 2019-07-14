@@ -5,19 +5,49 @@ import json
 from pathlib import Path
 import shutil
 
-from brownie.types.types import (
-    StrictDict,
-    _Singleton
-)
+from brownie._singleton import _Singleton
+
 
 REPLACE = ['active_network', 'networks']
 IGNORE = ['active_network', 'folders']
 
 
+class ConfigDict(dict):
+    '''Dict subclass that prevents adding new keys when locked'''
+
+    def __init__(self, values={}):
+        self._locked = False
+        super().__init__()
+        self.update(values)
+
+    def __setitem__(self, key, value):
+        if self._locked and key not in self:
+            raise KeyError(f"{key} is not a known config setting")
+        if type(value) is dict:
+            value = ConfigDict(value)
+        super().__setitem__(key, value)
+
+    def update(self, arg):
+        for k, v in arg.items():
+            self.__setitem__(k, v)
+
+    def _lock(self):
+        '''Locks the dict so that new keys cannot be added'''
+        for v in [i for i in self.values() if type(i) is ConfigDict]:
+            v._lock()
+        self._locked = True
+
+    def _unlock(self):
+        '''Unlocks the dict so that new keys can be added'''
+        for v in [i for i in self.values() if type(i) is ConfigDict]:
+            v._unlock()
+        self._locked = False
+
+
 def _load_default_config():
     '''Loads the default configuration settings from brownie/data/config.json'''
     with Path(__file__).parent.joinpath("data/config.json").open() as fp:
-        config = _Singleton("Config", (StrictDict,), {})(json.load(fp))
+        config = _Singleton("Config", (ConfigDict,), {})(json.load(fp))
     config['folders'] = {
         'brownie': str(Path(__file__).parent),
         'project': None

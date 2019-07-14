@@ -8,7 +8,7 @@ from web3 import (
     Web3 as _Web3
 )
 
-from brownie.types.types import _Singleton
+from brownie._singleton import _Singleton
 
 
 class Web3(_Web3, metaclass=_Singleton):

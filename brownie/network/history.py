@@ -3,9 +3,10 @@
 from collections import OrderedDict
 
 from .rpc import Rpc
-from brownie.types.types import _Singleton
-from brownie.types.convert import to_address
 from .web3 import Web3
+from brownie.convert import to_address
+from brownie._singleton import _Singleton
+
 
 web3 = Web3()
 

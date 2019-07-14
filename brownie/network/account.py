@@ -14,8 +14,8 @@ from brownie.exceptions import VirtualMachineError, UnknownAccount
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
-from brownie.types.convert import to_address, Wei
-from brownie.types.types import _Singleton
+from brownie.convert import to_address, Wei
+from brownie._singleton import _Singleton
 from brownie._config import CONFIG
 
 web3 = Web3()

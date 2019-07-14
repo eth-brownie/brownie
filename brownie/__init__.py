@@ -14,7 +14,7 @@ from .project import (
 )
 from brownie.gui import Gui
 from brownie._config import CONFIG as config
-from brownie.types.convert import Wei
+from brownie.convert import Wei
 
 __all__ = [
     'accounts',

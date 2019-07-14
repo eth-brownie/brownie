@@ -11,8 +11,8 @@ from .event import get_topics
 from .history import _ContractHistory
 from .rpc import Rpc
 from .web3 import Web3
-from brownie.types import KwargTuple
-from brownie.types.convert import format_input, format_output, to_address
+from .return_value import ReturnValue
+from brownie.convert import format_input, format_output, to_address
 from brownie.exceptions import UndeployedLibrary, VirtualMachineError
 from brownie._config import ARGV, CONFIG
 
@@ -333,7 +333,7 @@ class _ContractMethod:
         result = format_output(self.abi, result)
         if len(result) == 1:
             return result[0]
-        return KwargTuple(result, self.abi)
+        return ReturnValue(result, self.abi)
 
 
 class ContractTx(_ContractMethod):
