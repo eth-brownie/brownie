@@ -12,7 +12,7 @@ from .history import _ContractHistory
 from .rpc import Rpc
 from .web3 import Web3
 from .return_value import ReturnValue
-from brownie.convert import format_input, format_output, to_address
+from brownie.convert import format_input, format_output, to_address, Wei
 from brownie.exceptions import UndeployedLibrary, VirtualMachineError
 from brownie._config import ARGV, CONFIG
 
@@ -229,7 +229,8 @@ class Contract(_ContractBase):
 
     def balance(self):
         '''Returns the current ether balance of the contract, in wei.'''
-        return web3.eth.getBalance(self.address)
+        balance = web3.eth.getBalance(self.address)
+        return Wei(balance)
 
 
 class OverloadedMethod:

@@ -189,7 +189,8 @@ class _AccountBase:
 
     def balance(self):
         '''Returns the current balance at the address, in wei.'''
-        return web3.eth.getBalance(self.address)
+        balance = web3.eth.getBalance(self.address)
+        return Wei(balance)
 
     def deploy(self, contract, *args, amount=None, gas_limit=None, gas_price=None, callback=None):
         '''Deploys a contract.

@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import atexit
-import builtins
 import code
 from pathlib import Path
 import sys
@@ -21,9 +20,9 @@ class Console(code.InteractiveConsole):
 
     def __init__(self):
         locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
+        locals_dict['dir'] = self._dir
         del locals_dict['project']
 
-        builtins.dir = self._dir
         self._stdout_write = sys.stdout.write
         sys.stdout.write = self._console_write
 
@@ -35,7 +34,7 @@ class Console(code.InteractiveConsole):
             pass
         super().__init__(locals_dict)
 
-    # replaces builtin dir method, for simplified and colorful output
+    # console dir method, for simplified and colorful output
     def _dir(self, obj=None):
         if obj is None:
             results = [(k, v) for k, v in self.locals.items() if not k.startswith('_')]
