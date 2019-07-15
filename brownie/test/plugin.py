@@ -70,17 +70,14 @@ if brownie.project.check_for_project('.'):
         )
 
     def pytest_configure(config):
-        if config.getoption("--coverage"):
-            ARGV['coverage'] = True
-            ARGV['always_transact'] = True
-        if config.getoption("--gas"):
-            ARGV['gas'] = True
-        if config.getoption('--revert') or CONFIG['test']['revert_traceback']:
-            ARGV['revert'] = True
+        for key in ('coverage', 'always_transact'):
+            ARGV[key] = config.getoption("--coverage")
+        ARGV['gas'] = config.getoption("--gas")
+        ARGV['revert'] = config.getoption('--revert') or CONFIG['test']['revert_traceback']
+        ARGV['update'] = config.getoption('--update')
+        ARGV['network'] = None
         if config.getoption('--network'):
             ARGV['network'] = config.getoption('--network')[0]
-        if config.getoption('--update'):
-            ARGV['update'] = True
         # skip coverage marker
         skipcoverage = pytest.mark.skipif(
             ARGV['coverage'] is True,
@@ -157,6 +154,7 @@ if brownie.project.check_for_project('.'):
             )
         if ARGV['gas']:
             output.print_gas_profile()
+        brownie.project.close(False)
 
     def pytest_keyboard_interrupt():
         ARGV['interrupt'] = True
