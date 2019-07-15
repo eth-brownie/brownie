@@ -117,15 +117,17 @@ if brownie.project.check_for_project('.'):
             if path in tests and tests[path] is None:
                 continue
             tests.setdefault(i.parent.fspath, []).append(i)
-        tests = dict((k, v) for k, v in tests.items() if v)
-        manager.set_isolated_modules(tests)
-        if not ARGV['update']:
-            return
-        if not tests or sorted(filter(manager.check_updated, tests)) == sorted(tests):
-            ARGV['norpc'] = True
-        # if update flag is active, add skip marker to unchanged tests
-        for path in filter(manager.check_updated, tests):
-            tests[path][0].parent.add_marker('skip')
+        isolated_tests = sorted(k for k, v in tests.items() if v)
+        manager.set_isolated_modules(isolated_tests)
+
+        if ARGV['update']:
+            isolated_tests = list(filter(manager.check_updated, tests))
+            # if all tests will be skipped, do not launch the rpc client
+            if sorted(tests) == isolated_tests:
+                ARGV['norpc'] = True
+            # if update flag is active, add skip marker to unchanged tests
+            for path in isolated_tests:
+                tests[path][0].parent.add_marker('skip')
 
     def pytest_runtestloop():
         if not ARGV['norpc']:
