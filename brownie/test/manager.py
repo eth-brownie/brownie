@@ -21,7 +21,10 @@ STATUS_SYMBOLS = {
 STATUS_TYPES = {
     '.': "passed",
     's': "skipped",
-    'F': "failed"
+    'F': "failed",
+    'E': "error",
+    'x': "xfailed",
+    'X': "xpassed"
 }
 
 history = TxHistory()
@@ -155,16 +158,22 @@ class TestManager:
             if len(self.results) < self.count+1:
                 self.results.append("s" if report.skipped else None)
             if report.failed:
-                self.results[self.count] = "F"
+                self.results[self.count] = "E"
                 return "error", "E", "ERROR"
             return "", "", ""
         if report.when == "teardown":
             if report.failed:
-                self.results[self.count] = "F"
+                self.results[self.count] = "E"
                 return "error", "E", "ERROR"
             elif self._skip:
                 report.outcome = STATUS_TYPES[self.results[self.count]]
                 return "skipped", "s", "SKIPPED"
             return "", "", ""
+        if hasattr(report, "wasxfail"):
+            self.results[self.count] = 'x' if report.skipped else 'X'
+            if report.skipped:
+                return "xfailed", "x", "XFAIL"
+            elif report.passed:
+                return "xpassed", "X", "XPASS"
         self.results[self.count] = STATUS_SYMBOLS[report.outcome]
         return report.outcome, STATUS_SYMBOLS[report.outcome], report.outcome.upper()
