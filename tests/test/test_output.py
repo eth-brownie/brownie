@@ -1,29 +1,27 @@
 #!/usr/bin/python3
 
-from brownie.test import output
 
-
-def test_config_gas(testdir, callcatch):
-    callcatch.patch(output, 'print_gas_profile')
-    assert not callcatch
+def test_config_gas(testdir, methodwatch):
+    methodwatch.watch('brownie.test.output.print_gas_profile')
+    methodwatch.assert_not_called()
     testdir.runpytest("tests/reverts.py", '--gas')
-    assert callcatch
-    callcatch.reset()
-    assert not callcatch
+    methodwatch.assert_called()
+    methodwatch.reset()
+    methodwatch.assert_not_called()
     testdir.runpytest("tests/reverts.py")
-    assert not callcatch
+    methodwatch.assert_not_called()
     testdir.runpytest("tests/reverts.py", '-G')
-    assert callcatch
+    methodwatch.assert_called()
 
 
-def test_config_coverage(testdir, callcatch):
-    callcatch.patch(output, 'print_coverage_totals')
-    assert not callcatch
+def test_config_coverage(testdir, methodwatch):
+    methodwatch.watch('brownie.test.output.print_coverage_totals')
+    methodwatch.assert_not_called()
     testdir.runpytest("tests/reverts.py", '--coverage')
-    assert callcatch
-    callcatch.reset()
-    assert not callcatch
+    methodwatch.assert_called()
+    methodwatch.reset()
+    methodwatch.assert_not_called()
     testdir.runpytest("tests/reverts.py")
-    assert not callcatch
+    methodwatch.assert_not_called()
     testdir.runpytest("tests/reverts.py", '-C')
-    assert callcatch
+    methodwatch.assert_called()

@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import functools
 import shutil
 from pathlib import Path
 import pytest
@@ -28,31 +27,3 @@ def setup(monkeypatch, testdir, projectpath):
             shutil.copy(path, dest)
     yield
     project.close(False)
-
-
-class MethodCallTester:
-
-    def __init__(self, monkeypatch):
-        self.monkeypatch = monkeypatch
-        self.targets = {}
-
-    def __bool__(self):
-        return False not in self.targets.values()
-
-    def patch(self, obj, attr):
-        key = f"{obj.__name__}.{attr}"
-        self.targets[key] = False
-        fn = functools.partial(self.catch, key, getattr(obj, attr))
-
-        self.monkeypatch.setattr(obj, attr, fn)
-
-    def catch(self, key, fn, *args, **kwargs):
-        self.targets[key] = True
-
-    def reset(self):
-        self.targets = dict((i, False) for i in self.targets)
-
-
-@pytest.fixture
-def callcatch(monkeypatch):
-    yield MethodCallTester(monkeypatch)

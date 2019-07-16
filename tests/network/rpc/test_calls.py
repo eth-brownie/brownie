@@ -15,7 +15,7 @@ def noweb3():
     web3.connect(uri)
 
 
-def test_time(monkeypatch):
+def test_time():
     assert rpc.time() == int(time.time())
     rpc.sleep(25)
     rpc.snapshot()

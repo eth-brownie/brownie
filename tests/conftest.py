@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 
+import functools
 import os
 import shutil
-import pytest
 from pathlib import Path
+import pytest
+from _pytest.monkeypatch import derive_importpath
 
 from brownie import accounts, network, project
 from brownie._config import ARGV
@@ -44,7 +46,7 @@ def token():
     network.rpc.reset()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def noload(projectpath):
     project.close(False)
     yield
@@ -90,3 +92,39 @@ def testpath(tmpdir):
     os.chdir(tmpdir)
     yield tmpdir
     os.chdir(original_path)
+
+
+class MethodWatcher:
+
+    '''Extension of pytest's monkeypath. Wraps around methods so we can check
+    if they were called during the execution of a test.'''
+
+    def __init__(self, monkeypatch):
+        self.monkeypatch = monkeypatch
+        self.targets = {}
+
+    def assert_called(self):
+        assert False not in self.targets.values()
+
+    def assert_not_called(self):
+        assert set(self.targets.values()) == {False}
+
+    def watch(self, *targets):
+        for t in targets:
+            name, target = derive_importpath(t, True)
+            key = f"{target}.{name}"
+            self.targets[key] = False
+            fn = functools.partial(self._catch, key, getattr(target, name))
+            self.monkeypatch.setattr(target, name, fn)
+
+    def _catch(self, key, fn, *args, **kwargs):
+        fn(*args, **kwargs)
+        self.targets[key] = True
+
+    def reset(self):
+        self.targets = dict((i, False) for i in self.targets)
+
+
+@pytest.fixture
+def methodwatch(monkeypatch):
+    yield MethodWatcher(monkeypatch)
