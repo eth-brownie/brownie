@@ -2,7 +2,6 @@
 
 from pathlib import Path
 import pytest
-import sys
 
 import brownie
 from brownie.test import output
@@ -79,11 +78,7 @@ if brownie.project.check_for_project('.'):
         if config.getoption('--network'):
             ARGV['network'] = config.getoption('--network')[0]
         # skip coverage marker
-        skipcoverage = pytest.mark.skipif(
-            ARGV['coverage'] is True,
-            reason="Coverage evaluation is active"
-        )
-        setattr(sys.modules['brownie.test'], 'skipcoverage', skipcoverage)
+        brownie.test.skipcoverage.mark.__dict__['args'] = (ARGV['coverage'],)
 
     # plugin hooks
 
@@ -118,7 +113,7 @@ if brownie.project.check_for_project('.'):
         manager.set_isolated_modules(isolated_tests)
 
         if ARGV['update']:
-            isolated_tests = list(filter(manager.check_updated, tests))
+            isolated_tests = sorted(filter(manager.check_updated, tests))
             # if all tests will be skipped, do not launch the rpc client
             if sorted(tests) == isolated_tests:
                 ARGV['norpc'] = True

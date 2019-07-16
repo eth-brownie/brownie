@@ -10,6 +10,7 @@ import zipfile
 from brownie.network.contract import ContractContainer
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.project import build, sources, compiler
+from brownie.test import coverage
 from brownie._config import ARGV, CONFIG, load_project_config
 
 FOLDERS = [
@@ -105,9 +106,10 @@ def close(raises=True):
             return
         raise ProjectNotFound("No Brownie project currently open.")
 
-    # clear sources and build
+    # clear sources, build, coverage
     sources.clear()
     build.clear()
+    coverage.clear()
 
     # remove objects from namespace
     for name in sys.modules['brownie.project'].__all__.copy():

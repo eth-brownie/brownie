@@ -30,21 +30,29 @@ def save_coverage_report(coverage_eval, report_path):
     }
     report = json.loads(json.dumps(report, default=sorted))
     report_path = Path(report_path).absolute()
+    save = True
     if report_path.is_dir():
-        filename = "coverage-"+time.strftime('%d%m%y')+"{}.json"
-        count = len(list(report_path.glob(filename.format('*'))))
-        if count:
-            last_path = _report_path(report_path, filename, count-1)
+        report_path, save = _check_last_path(report, report_path)
+    if save:
+        with report_path.open('w') as fp:
+            json.dump(report, fp, sort_keys=True, indent=2)
+    print(f"\nCoverage report saved at {report_path}")
+    return report_path
+
+
+def _check_last_path(report, path):
+    filename = "coverage-"+time.strftime('%d%m%y')+"{}.json"
+    count = len(list(path.glob(filename.format('*'))))
+    if count:
+        last_path = _report_path(path, filename, count-1)
+        try:
             with last_path.open() as fp:
                 last_report = json.load(fp)
             if last_report == report:
-                print(f"\nCoverage report saved at {last_path}")
-                return last_path
-        report_path = _report_path(report_path, filename, count)
-    with report_path.open('w') as fp:
-        json.dump(report, fp, sort_keys=True, indent=2)
-    print(f"\nCoverage report saved at {report_path}")
-    return report_path
+                return last_path, False
+        except json.JSONDecodeError:
+            pass
+    return _report_path(path, filename, count), True
 
 
 def _report_path(base_path, filename, count):

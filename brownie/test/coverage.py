@@ -59,3 +59,9 @@ def get_merged():
                 for i in range(3):
                     merged_eval[name][path][i] = set(merged_eval[name][path][i]).union(map_[i])
     return merged_eval
+
+
+def clear():
+    _coverage_eval.clear()
+    _cached.clear()
+    _active_txhash.clear()

@@ -14,7 +14,7 @@ def module_setup(projectpath):
 
 
 @pytest.fixture(autouse=True)
-def setup(monkeypatch, testdir, projectpath):
+def setup(monkeypatch, testdir, projectpath, request):
     project.close(False)
     monkeypatch.setattr('brownie.network.connect', lambda k: None)
     testdir.plugins.extend(['pytest-brownie', 'pytest-cov'])
@@ -25,5 +25,15 @@ def setup(monkeypatch, testdir, projectpath):
             shutil.copytree(path, dest)
         else:
             shutil.copy(path, dest)
+    try:
+        test_source = getattr(request.module, 'test_source')
+        testdir.makepyfile(test_source)
+    except AttributeError:
+        pass
     yield
     project.close(False)
+
+
+@pytest.fixture
+def json_path(testdir):
+    yield Path(testdir.tmpdir).joinpath('build/tests.json')
