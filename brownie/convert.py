@@ -21,89 +21,6 @@ UNITS = {
 }
 
 
-def _check_int_size(type_):
-    size = int(type_.strip("uint") or 256)
-    if size < 8 or size > 256 or size // 8 != size / 8:
-        raise ValueError(f"Invalid type: {type_}")
-    return size
-
-
-def to_uint(value, type_="uint256"):
-    '''Convert a value to an unsigned integer'''
-    value = Wei(value)
-    size = _check_int_size(type_)
-    if value < 0 or value >= 2**int(size):
-        raise OverflowError(f"{value} is outside allowable range for {type_}")
-    return value
-
-
-def to_int(value, type_="int256"):
-    '''Convert a value to a signed integer'''
-    value = Wei(value)
-    size = _check_int_size(type_)
-    if value < -2**int(size) // 2 or value >= 2**int(size) // 2:
-        raise OverflowError(f"{value} is outside allowable range for {type_}")
-    return value
-
-
-def to_bool(value):
-    '''Convert a value to a boolean'''
-    if type(value) not in (int, float, bool, bytes, HexBytes, str):
-        raise TypeError(f"Cannot convert {type(value)} '{value}' to bool")
-    if type(value) in (bytes, HexBytes):
-        value = HexBytes(value).hex()
-    if type(value) is str and value[:2] == "0x":
-        value = int(value, 16)
-    if value not in (0, 1, True, False):
-        raise ValueError(f"Cannot convert {type(value)} '{value}' to bool")
-    return bool(value)
-
-
-def to_address(value):
-    '''Convert a value to an address'''
-    if type(value) in (bytes, HexBytes):
-        value = HexBytes(value).hex()
-    value = eth_utils.add_0x_prefix(str(value))
-    try:
-        return eth_utils.to_checksum_address(value)
-    except ValueError:
-        raise ValueError(f"'{value}' is not a valid ETH address.")
-
-
-def to_bytes(value, type_="bytes32"):
-    '''Convert a value to bytes'''
-    if type(value) not in (HexBytes, HexString, bytes, str, int):
-        raise TypeError(f"'{value}', type {type(value)}, cannot convert to {type_}")
-    if type_ == "byte":
-        type_ = "bytes1"
-    if type_ != "bytes":
-        size = int(type_.strip("bytes"))
-        if size < 1 or size > 32:
-            raise ValueError(f"Invalid type: {type_}")
-    else:
-        size = float('inf')
-    value = bytes_to_hex(value)
-    if type_ == "bytes":
-        return eth_utils.to_bytes(hexstr=value)
-    try:
-        return int(value, 16).to_bytes(size, "big")
-    except OverflowError:
-        raise OverflowError(f"'{value}' exceeds maximum length for {type_}")
-
-
-def to_string(value):
-    '''Convert a value to a string'''
-    if type(value) in (bytes, HexBytes):
-        value = HexBytes(value).hex()
-    value = str(value)
-    if value.startswith("0x") and eth_utils.is_hex(value):
-        try:
-            return eth_utils.to_text(hexstr=value)
-        except UnicodeDecodeError as e:
-            raise ValueError(e)
-    return value
-
-
 class Wei(int):
 
     '''Integer subclass that converts a value to wei and allows comparison against
@@ -177,6 +94,107 @@ def _return_int(original, value):
         raise TypeError(f"Could not convert {type(original)} '{original}' to wei.")
 
 
+def to_uint(value, type_="uint256"):
+    '''Convert a value to an unsigned integer'''
+    value = Wei(value)
+    size = _check_int_size(type_)
+    if value < 0 or value >= 2**int(size):
+        raise OverflowError(f"{value} is outside allowable range for {type_}")
+    return value
+
+
+def to_int(value, type_="int256"):
+    '''Convert a value to a signed integer'''
+    value = Wei(value)
+    size = _check_int_size(type_)
+    if value < -2**int(size) // 2 or value >= 2**int(size) // 2:
+        raise OverflowError(f"{value} is outside allowable range for {type_}")
+    return value
+
+
+def _check_int_size(type_):
+    size = int(type_.strip("uint") or 256)
+    if size < 8 or size > 256 or size // 8 != size / 8:
+        raise ValueError(f"Invalid type: {type_}")
+    return size
+
+
+class EthAddress(str):
+
+    '''String subclass that raises TypeError when compared to a non-address.'''
+
+    def __new__(cls, value):
+        return super().__new__(cls, to_address(value))
+
+    def __eq__(self, other):
+        return _address_compare(str(self), other)
+
+    def __ne__(self, other):
+        return not _address_compare(str(self), other)
+
+
+def _address_compare(a, b):
+    b = str(b)
+    if not b.startswith('0x') or not eth_utils.is_hex(b) or len(b) != 42:
+        raise TypeError(f"Invalid type for comparison: '{b}' is not a valid address")
+    return a.lower() == b.lower()
+
+
+def to_address(value):
+    '''Convert a value to an address'''
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
+    value = eth_utils.add_0x_prefix(str(value))
+    try:
+        return eth_utils.to_checksum_address(value)
+    except ValueError:
+        raise ValueError(f"'{value}' is not a valid ETH address.") from None
+
+
+class HexString(str):
+
+    '''String subclass for hexstring comparisons. Raises TypeError if compared to
+    a non-hexstring. Evaluates True for hexstrings with the same value but differing
+    leading zeros or capitalization.'''
+
+    def __new__(cls, value):
+        return super().__new__(cls, bytes_to_hex(value))
+
+    def __eq__(self, other):
+        return _hex_compare(self, other)
+
+    def __ne__(self, other):
+        return not _hex_compare(self, other)
+
+
+def _hex_compare(a, b):
+    b = str(b)
+    if not b.startswith('0x') or not eth_utils.is_hex(b):
+        raise TypeError(f"Invalid type for comparison: '{b}' is not a valid hex string")
+    return a.lstrip('0x').lower() == b.lstrip('0x').lower()
+
+
+def to_bytes(value, type_="bytes32"):
+    '''Convert a value to bytes'''
+    if type(value) not in (HexBytes, HexString, bytes, str, int):
+        raise TypeError(f"'{value}', type {type(value)}, cannot convert to {type_}")
+    if type_ == "byte":
+        type_ = "bytes1"
+    if type_ != "bytes":
+        size = int(type_.strip("bytes"))
+        if size < 1 or size > 32:
+            raise ValueError(f"Invalid type: {type_}")
+    else:
+        size = float('inf')
+    value = bytes_to_hex(value)
+    if type_ == "bytes":
+        return eth_utils.to_bytes(hexstr=value)
+    try:
+        return int(value, 16).to_bytes(size, "big")
+    except OverflowError:
+        raise OverflowError(f"'{value}' exceeds maximum length for {type_}")
+
+
 def bytes_to_hex(value):
     '''Convert a bytes value to a hexstring'''
     if type(value) not in (bytes, HexBytes, HexString, str, int):
@@ -188,6 +206,32 @@ def bytes_to_hex(value):
     if not eth_utils.is_hex(value):
         raise ValueError(f"'{value}' is not a valid hex string")
     return eth_utils.add_0x_prefix(value)
+
+
+def to_bool(value):
+    '''Convert a value to a boolean'''
+    if type(value) not in (int, float, bool, bytes, HexBytes, str):
+        raise TypeError(f"Cannot convert {type(value)} '{value}' to bool")
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
+    if type(value) is str and value[:2] == "0x":
+        value = int(value, 16)
+    if value not in (0, 1, True, False):
+        raise ValueError(f"Cannot convert {type(value)} '{value}' to bool")
+    return bool(value)
+
+
+def to_string(value):
+    '''Convert a value to a string'''
+    if type(value) in (bytes, HexBytes):
+        value = HexBytes(value).hex()
+    value = str(value)
+    if value.startswith("0x") and eth_utils.is_hex(value):
+        try:
+            return eth_utils.to_text(hexstr=value)
+        except UnicodeDecodeError as e:
+            raise ValueError(e)
+    return value
 
 
 def format_input(abi, inputs):
@@ -279,50 +323,8 @@ def _format(abi, key, values):
                     values[i] = HexString(values[i])
             elif "string" in type_:
                 values[i] = to_string(values[i])
+            else:
+                raise TypeError(f"Unknown type: {type_}")
         except Exception as e:
             raise type(e)(f"{name} argument #{i}: '{values[i]}' - {e}")
     return tuple(values)
-
-
-class EthAddress(str):
-
-    '''String subclass that raises TypeError when compared to a non-address.'''
-
-    def __new__(cls, value):
-        return super().__new__(cls, to_address(value))
-
-    def __eq__(self, other):
-        return _address_compare(str(self), other)
-
-    def __ne__(self, other):
-        return not _address_compare(str(self), other)
-
-
-def _address_compare(a, b):
-    b = str(b)
-    if not b.startswith('0x') or not eth_utils.is_hex(b) or len(b) != 42:
-        raise TypeError(f"Invalid type for comparison: '{b}' is not a valid address")
-    return a.lower() == b.lower()
-
-
-class HexString(str):
-
-    '''String subclass for hexstring comparisons. Raises TypeError if compared to
-    a non-hexstring. Evaluates True for hexstrings with the same value but differing
-    leading zeros or capitalization.'''
-
-    def __new__(cls, value):
-        return super().__new__(cls, bytes_to_hex(value))
-
-    def __eq__(self, other):
-        return _hex_compare(self, other)
-
-    def __ne__(self, other):
-        return not _hex_compare(self, other)
-
-
-def _hex_compare(a, b):
-    b = str(b)
-    if not b.startswith('0x') or not eth_utils.is_hex(b):
-        raise TypeError(f"Invalid type for comparison: '{b}' is not a valid hex string")
-    return a.lstrip('0x').lower() == b.lstrip('0x').lower()
