@@ -17,6 +17,7 @@ from .event import (
     decode_trace
 )
 from .web3 import Web3
+from brownie.convert import Wei
 from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build, sources
@@ -185,7 +186,7 @@ class TransactionReceipt:
         if not self.sender:
             self.sender = tx['from']
         self.receiver = tx['to']
-        self.value = tx['value']
+        self.value = Wei(tx['value'])
         self.gas_price = tx['gasPrice']
         self.gas_limit = tx['gas']
         self.input = tx['input']

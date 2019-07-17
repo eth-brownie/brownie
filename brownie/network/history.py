@@ -19,7 +19,6 @@ class TxHistory(metaclass=_Singleton):
 
     def __init__(self):
         self._list = []
-        self._coverage = {}
         self.gas_profile = {}
         Rpc()._objects.append(self)
 
