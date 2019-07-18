@@ -321,6 +321,44 @@ These are more low-level methods, called internally during the execution of the 
         >>> expand_source_map("1:2:1:-;:9;2:1:2;;;")
         [[1, 2, 1, '-'], [1, 9, 1, '-'], [2, 1, 2, '-'], [2, 1, 2, '-'], [2, 1, 2, '-'], [2, 1, 2, '-']]
 
+``brownie.project.scripts``
+===========================
+
+The ``scripts`` module contains methods for comparing, importing and executing python scripts related to a project.
+
+.. py:method:: scripts.run(script_path, method_name="main", args=None, kwargs=None, gas_profile=False)
+
+    Imports a project script, runs a method in it and returns the result.
+
+    ``script_path``: path of script to import
+    ``method_name``: name of method in the script to run
+    ``args``: method args
+    ``kwargs``: method kwargs
+    ``gas_profile``: if ``True``, gas use data will be displayed when the script completes
+
+    .. code-block:: python
+
+        >>> from brownie import run
+        >>> run('token')
+
+        Running 'scripts.token.main'...
+
+        Transaction sent: 0xeb9dfb6d97e8647f824a3031bc22a3e523d03e2b94674c0a8ee9b3ff601f967b
+        Token.constructor confirmed - block: 1   gas used: 627391 (100.00%)
+        Token deployed at: 0x8dc446C44C821F27B333C1357990821E07189E35
+
+
+.. py:method:: scripts.get_ast_hash(path)
+
+    Returns a hash based on the AST of a script and any scripts that it imports. Used to determine if a project script has been altered since it was last run.
+
+    ``path``: path of the script
+
+    .. code-block:: python
+
+        >>> from brownie.project.scripts import get_ast_hash
+        >>> get_ast_hash('scripts/deploy.py')
+        '12b57e7bb8d88e3f289e27ba29e5cc28eb110e45'
 
 ``brownie.project.sources``
 ===========================

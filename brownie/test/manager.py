@@ -1,13 +1,12 @@
 #!/usr/bin/python3
 
-import ast
 from hashlib import sha1
-import importlib
 import json
 from pathlib import Path
 
 from brownie.network.history import TxHistory, _ContractHistory
-from brownie.project import build, check_for_project
+from brownie.project import build
+from brownie.project.scripts import get_ast_hash
 from brownie.test import coverage
 from brownie._config import ARGV
 
@@ -29,29 +28,6 @@ STATUS_TYPES = {
 
 history = TxHistory()
 _contracts = _ContractHistory()
-
-
-def get_ast_hash(path):
-    '''Generates a hash based on the AST of a script.
-
-    Args:
-        path: path of the script to hash
-
-    Returns: sha1 hash as bytes'''
-    with Path(path).open() as fp:
-        ast_list = [ast.parse(fp.read(), path)]
-    base_path = str(check_for_project(path))
-    for obj in [i for i in ast_list[0].body if type(i) in (ast.Import, ast.ImportFrom)]:
-        if type(obj) is ast.Import:
-            name = obj.names[0].name
-        else:
-            name = obj.module
-        origin = importlib.util.find_spec(name).origin
-        if base_path in origin:
-            with open(origin) as fp:
-                ast_list.append(ast.parse(fp.read(), origin))
-    dump = "\n".join(ast.dump(i) for i in ast_list)
-    return sha1(dump.encode()).hexdigest()
 
 
 class TestManager:
