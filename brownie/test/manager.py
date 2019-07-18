@@ -33,10 +33,11 @@ _contracts = _ContractHistory()
 class TestManager:
 
     def __init__(self, path):
-        self.active = None
+        self.project_path = path
+        self.active_path = None
         self.count = 0
         self.results = None
-        self.path = path
+        self.isolated = set()
         self.conf_hashes = dict(
             (self._path(i.parent), get_ast_hash(i)) for i in Path(path).glob('tests/**/conftest.py')
         )
@@ -68,7 +69,7 @@ class TestManager:
                 coverage.add_cached(txhash, coverage_eval)
 
     def _path(self, path):
-        return str(Path(path).absolute().relative_to(self.path))
+        return str(Path(path).absolute().relative_to(self.project_path))
 
     def set_isolated_modules(self, paths):
         self.isolated = set(self._path(i) for i in paths)
@@ -113,15 +114,15 @@ class TestManager:
             'contracts': self.contracts,
             'tx': coverage_eval
         }
-        with self.path.joinpath('build/tests.json').open('w') as fp:
+        with self.project_path.joinpath('build/tests.json').open('w') as fp:
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
 
     def set_active(self, path):
         path = self._path(path)
-        if path == self.active:
+        if path == self.active_path:
             self.count += 1
             return
-        self.active = path
+        self.active_path = path
         self.count = 0
         if path in self.tests and ARGV['update']:
             self.results = list(self.tests[path]['results'])

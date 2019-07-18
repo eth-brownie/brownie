@@ -1809,6 +1809,8 @@ TransactionReceipt Methods
 
 The ``web3`` module contains a slightly modified version of the web3.py `Web3 <https://web3py.readthedocs.io/en/stable/web3.main.html#web3.Web3>`__ class that is used throughout various Brownie modules for RPC communication.
 
+.. _web3:
+
 Web3
 ----
 

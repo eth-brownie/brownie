@@ -96,7 +96,7 @@ if brownie.project.check_for_project('.'):
             ), len(fixtures))
             fixtures.insert(idx, 'test_isolation')
 
-    def pytest_collection_modifyitems(session, items):
+    def pytest_collection_modifyitems(items):
         # determine which modules are properly isolated
         tests = {}
         for i in items:

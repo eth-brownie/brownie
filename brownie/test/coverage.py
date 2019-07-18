@@ -38,9 +38,6 @@ def get_all():
 def get_merged():
     '''Merges multiple coverage evaluation dicts.
 
-    Arguments:
-        coverage_eval_list: A list of coverage eval dicts.
-
     Returns: coverage eval dict.
     '''
     if not _coverage_eval:
