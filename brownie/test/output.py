@@ -24,8 +24,8 @@ def save_coverage_report(coverage_eval, report_path):
 
     Returns: Path object where report file was saved'''
     report = {
-        'highlights': get_highlights(coverage_eval),
-        'coverage': get_totals(coverage_eval),
+        'highlights': _get_highlights(coverage_eval),
+        'coverage': _get_totals(coverage_eval),
         'sha1': {}  # TODO
     }
     report = json.loads(json.dumps(report, default=sorted))
@@ -74,7 +74,7 @@ def print_coverage_totals(coverage_eval):
         coverage_eval: coverage evaluation dict
 
     Returns: None'''
-    totals = get_totals(coverage_eval)
+    totals = _get_totals(coverage_eval)
     print("\n\nCoverage analysis:")
     for name in sorted(totals):
         pct = _pct(totals[name]['totals']['statements'], totals[name]['totals']['branches'])
@@ -97,7 +97,7 @@ def _pct(statement, branch):
     return pct
 
 
-def get_totals(coverage_eval):
+def _get_totals(coverage_eval):
     '''Returns a modified coverage eval dict showing counts and totals for each
     contract function.
 
@@ -117,7 +117,7 @@ def get_totals(coverage_eval):
                 }, ..
             }
         }'''
-    coverage_eval = split_by_fn(coverage_eval)
+    coverage_eval = _split_by_fn(coverage_eval)
     results = dict((i, {
         'statements': {},
         'totals': {'statements': 0, 'branches': [0, 0]},
@@ -137,7 +137,7 @@ def get_totals(coverage_eval):
     return results
 
 
-def split_by_fn(coverage_eval):
+def _split_by_fn(coverage_eval):
     '''Splits a coverage eval dict so that coverage indexes are stored by contract
     function. Once done, the dict is no longer compatible with other methods in this module.
 
@@ -193,7 +193,7 @@ def _branch_totals(coverage_eval, coverage_map):
     return result, final
 
 
-def get_highlights(coverage_eval):
+def _get_highlights(coverage_eval):
     '''Returns a highlight map formatted for display in the GUI.
 
     Arguments:
