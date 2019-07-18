@@ -77,8 +77,6 @@ if brownie.project.check_for_project('.'):
         ARGV['network'] = None
         if config.getoption('--network'):
             ARGV['network'] = config.getoption('--network')[0]
-        # skip coverage marker
-        brownie.test.skipcoverage.mark.__dict__['args'] = (ARGV['coverage'],)
 
     # plugin hooks
 
@@ -102,6 +100,8 @@ if brownie.project.check_for_project('.'):
         # determine which modules are properly isolated
         tests = {}
         for i in items:
+            if 'skip_coverage' in i.fixturenames and ARGV['coverage']:
+                i.add_marker('skip')
             path = i.parent.fspath
             if 'module_isolation' not in i.fixturenames:
                 tests[path] = None
@@ -194,3 +194,7 @@ if brownie.project.check_for_project('.'):
         ARGV['always_transact'] = False
         yield
         ARGV['always_transact'] = ARGV['coverage']
+
+    @pytest.fixture
+    def skip_coverage():
+        pass

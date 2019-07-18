@@ -1,10 +1,7 @@
 #!/usr/bin/python3
 
 test_source = '''
-from brownie.test import skipcoverage
-
-@skipcoverage
-def test_call_and_transact(Token, accounts):
+def test_call_and_transact(Token, accounts, skip_coverage):
     token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
     token.transfer(accounts[1], "10 ether", {'from': accounts[0]})
 
