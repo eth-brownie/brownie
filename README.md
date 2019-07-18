@@ -50,15 +50,11 @@ To run the tests, first install the developer dependencies:
 $ pip install -r requirements-dev.txt
 ```
 
-Then use ``tox`` to run the complete suite against the full set of build targets, or ``py.test`` to run specific tests against a specific version of Python.
+Then use ``tox`` to run the complete suite against the full set of build targets, or ``pytest`` to run tests against a specific version of Python. If you are using ``pytest`` you must include the ``-p no:pytest-brownie`` flag to prevent it from loading the Brownie plugin.
 
 ## Contributing
 
-Help is always appreciated! In particular, Brownie needs work in the following areas before we can comfortably take it out of beta:
-
-* More tests
-
-Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
+Help is always appreciated! Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
 
 ## License
 
