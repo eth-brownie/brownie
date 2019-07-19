@@ -23,7 +23,7 @@ def test_isolation_second(accounts, web3):
 
 
 def test_test_isolation(testdir):
-    testdir.makepyfile(isolation_source.format('test', 1))
+    testdir.makepyfile(isolation_source.format('fn', 1))
     result = testdir.runpytest()
     result.assert_outcomes(passed=2)
     assert web3.eth.blockNumber == 0

@@ -86,15 +86,15 @@ if brownie.project.check_for_project('.'):
         if 'module_isolation' in fixtures:
             fixtures.remove('module_isolation')
             fixtures.insert(0, 'module_isolation')
-        # test_isolation always runs before other function scoped fixtures
-        if 'test_isolation' in fixtures:
-            fixtures.remove('test_isolation')
+        # fn_isolation always runs before other function scoped fixtures
+        if 'fn_isolation' in fixtures:
+            fixtures.remove('fn_isolation')
             defs = metafunc._arg2fixturedefs
             idx = next((
                 fixtures.index(i) for i in fixtures if
                 i in defs and defs[i][0].scope == "function"
             ), len(fixtures))
-            fixtures.insert(idx, 'test_isolation')
+            fixtures.insert(idx, 'fn_isolation')
 
     def pytest_collection_modifyitems(items):
         # determine which modules are properly isolated
@@ -156,14 +156,14 @@ if brownie.project.check_for_project('.'):
 
     # fixtures
     @pytest.fixture(scope="module")
-    def module_isolation(request):
+    def module_isolation():
         brownie.rpc.reset()
         yield
         if not ARGV['interrupt']:
             brownie.rpc.reset()
 
     @pytest.fixture
-    def test_isolation(module_isolation):
+    def fn_isolation(module_isolation):
         brownie.rpc.snapshot()
         yield
         if not ARGV['interrupt']:
