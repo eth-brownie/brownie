@@ -63,6 +63,12 @@ class Wei(int):
     def __gt__(self, other):
         return super().__gt__(_to_wei(other))
 
+    def __add__(self, other):
+        return Wei(super().__add__(_to_wei(other)))
+
+    def __sub__(self, other):
+        return Wei(super().__sub__(_to_wei(other)))
+
 
 def _to_wei(value):
     original = value
