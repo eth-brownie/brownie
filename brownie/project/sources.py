@@ -177,8 +177,8 @@ def get_highlighted_source(path, offset, pad=3):
     pad_start = newlines[max(pad_start-(pad+1), 0)]
     pad_stop = newlines[min(pad_stop+pad, len(newlines)-1)]
 
-    final = textwrap.indent(textwrap.dedent(
-        f"{color['dull']}{source[pad_start:offset[0]]}{color}"
+    final = textwrap.indent(f"{color['dull']}"+textwrap.dedent(
+        f"{source[pad_start:offset[0]]}{color}"
         f"{source[offset[0]:offset[1]]}{color['dull']}{source[offset[1]:pad_stop]}{color}"
     ), "    ")
 

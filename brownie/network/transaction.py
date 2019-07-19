@@ -486,8 +486,9 @@ class TransactionReceipt:
             raise NotImplementedError("Call trace is not available for deployment transactions.")
 
         result = f"Call trace for '{color['value']}{self.txid}{color}':"
-        result += _step_print(trace[0], trace[-1], 0, 0, len(trace))
+        result += _step_print(trace[0], trace[-1], None, 0, len(trace))
         indent = {0: 0}
+        indent_chars = [""]*1000
 
         # (index, depth, jumpDepth) for relevent steps in the trace
         trace_index = [(0, 0, 0)] + [
@@ -499,9 +500,12 @@ class TransactionReceipt:
             last = trace_index[i-1]
             if depth > last[1]:
                 # called to a new contract
-                indent[depth] = trace[idx-1]['jumpDepth'] + indent[depth-1]
+                indent[depth] = trace_index[i-1][2] + indent[depth-1]
                 end = next((x[0] for x in trace_index[i+1:] if x[1] < depth), len(trace))
-                result += _step_print(trace[idx], trace[end-1], depth+indent[depth], idx, end)
+                _depth = depth+indent[depth]
+                symbol, indent_chars[_depth] = _check_last(trace_index[i-1:])
+                indent_str = "".join(indent_chars[:_depth])+symbol
+                result += _step_print(trace[idx], trace[end-1], indent_str, idx, end)
             elif depth == last[1] and jump_depth > last[2]:
                 # jumped into an internal function
                 end = next((
@@ -509,7 +513,9 @@ class TransactionReceipt:
                     (x[1] == depth and x[2] < jump_depth)
                 ), len(trace))
                 _depth = depth+jump_depth+indent[depth]
-                result += _step_print(trace[idx], trace[end-1], _depth, idx, end)
+                symbol, indent_chars[_depth] = _check_last(trace_index[i-1:])
+                indent_str = "".join(indent_chars[:_depth])+symbol
+                result += _step_print(trace[idx], trace[end-1], indent_str, idx, end)
         print(result)
 
     def traceback(self):
@@ -617,10 +623,23 @@ def _step_compare(a, b):
     return a['depth'] == b['depth'] and a['jumpDepth'] == b['jumpDepth']
 
 
+def _check_last(trace_index):
+    initial = trace_index[0][1:]
+    try:
+        trace = next(i for i in trace_index[1:-1] if i[1:] == initial)
+    except StopIteration:
+        return "\u2514", "  "
+    i = trace_index[1:].index(trace) + 2
+    next_ = trace_index[i][1:]
+    if next_[0] < initial[0] or (next_[0] == initial[0] and next_[1] <= initial[1]):
+        return "\u2514", "  "
+    return "\u251c", "\u2502 "
+
+
 def _step_print(step, last_step, indent, start, stop):
-    print_str = f"\n{'  '*indent}{color['dull']}"
-    if indent:
-        print_str += "\u221f "
+    print_str = f"\n{color['dull']}"
+    if indent is not None:
+        print_str += f"{indent}\u2500"
     if last_step['op'] in {"REVERT", "INVALID"} and _step_compare(step, last_step):
         contract_color = color("error")
     else:
