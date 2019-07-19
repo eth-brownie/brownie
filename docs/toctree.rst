@@ -11,10 +11,9 @@ Brownie
     init.rst
     compile.rst
     interaction.rst
-    deploy.rst
-    debug.rst
     tests.rst
-    coverage.rst
+    debug.rst
+    deploy.rst
     test-rpc.rst
     config.rst
     python-package.rst

@@ -21,50 +21,11 @@ Brownie includes the following `fixtures <https://docs.pytest.org/en/latest/fixt
 
 .. note:: These fixtures are only available when pytest is run from inside a Brownie project folder.
 
-Isolation Fixtures
-******************
 
-These fixtures are used to effectively isolate tests. By including on every test within a module, that module may now be skipped via the ``--update`` flag when none of the related files have changed since it was last run.
-
-.. py:attribute:: plugin.module_isolation
-
-    Module scope. When used, this fixture is **always** applied before any other module-scoped fixtures.
-
-    Resets the local environment before starting the first test and again after completing the final test.
-
-.. py:method:: plugin.test_isolation(module_isolation)
-
-    Function scope. When used, this fixture is **always** applied before any other function-scoped fixtures.
-
-    Applies the ``module_isolation`` fixture, and additionally takes a snapshot prior to running each test which is then reverted to after the test completes. The snapshot is taken immediately after any module-scoped fixtures are applied, and before all function-scoped ones.
-
-Project Fixtures
+Session Fixtures
 ****************
 
 These fixtures provide access to objects related to the project being tested.
-
-If you are accessing the same object across many tests, you may prefer to import it from the ``brownie`` package instead of accessing it via fixtures. The following two examples will work identically:
-
-.. code-block:: python
-    :linenos:
-
-    def test_account_balance(accounts):
-        assert accounts[0].balance() == "100 ether"
-
-    def test_account_nonce(accounts):
-        assert accounts[0].nonce == 0
-
-.. code-block:: python
-    :linenos:
-
-    from brownie import accounts
-
-    def test_account_balance():
-        assert accounts[0].balance() == "100 ether"
-
-    def test_account_nonce():
-        assert accounts[0].nonce == 0
-
 
 .. py:attribute:: plugin.accounts
 
@@ -86,6 +47,23 @@ If you are accessing the same object across many tests, you may prefer to import
 
     Session scope. Yields an instantiated :ref:`Web3<web3>` object.
 
+Isolation Fixtures
+******************
+
+These fixtures are used to effectively isolate tests. By including on every test within a module, that module may now be skipped via the ``--update`` flag when none of the related files have changed since it was last run.
+
+.. py:attribute:: plugin.module_isolation
+
+    Module scope. When used, this fixture is **always** applied before any other module-scoped fixtures.
+
+    Resets the local environment before starting the first test and again after completing the final test.
+
+.. py:method:: plugin.fn_isolation(module_isolation)
+
+    Function scope. When used, this fixture is **always** applied before any other function-scoped fixtures.
+
+    Applies the ``module_isolation`` fixture, and additionally takes a snapshot prior to running each test which is then reverted to after the test completes. The snapshot is taken immediately after any module-scoped fixtures are applied, and before all function-scoped ones.
+
 Coverage Fixtures
 *****************
 
@@ -98,22 +76,6 @@ These fixtures allow you to alter the behaviour of tests when coverage evaluatio
 .. py:attribute:: plugin.skip_coverage
 
     Function scope. If coverage evaluation is active, this test will be skipped.
-
-Dynamic Fixtures
-****************
-
-Brownie also creates dynamic fixtures to access each :ref:`api-network-contractcontainer` object for a project.
-
-For example: if your project contains a contract named ``Token``, there will be a ``Token`` fixture available.
-
-.. code-block:: python
-    :linenos:
-
-    from brownie import accounts
-
-    def test_token_deploys(Token):
-        token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
-        assert token.name() == "Test Token"
 
 RevertContextManager
 --------------------

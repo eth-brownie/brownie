@@ -125,8 +125,18 @@ Checking a token balance and transfering tokens:
     >>> t.balanceOf(accounts[2])
     100000000000000000000
 
-Running Scripts
-===============
+Testing your Project
+====================
+
+Brownie provides ``pytest`` fixtures that aid in the testing of your project. Tests should be stored in the ``tests/`` folder.  To run the full suite:
+
+::
+
+    $ pytest tests/
+
+
+Deploying Your Project
+======================
 
 You can write scripts to automate contract deployment and interaction:
 
@@ -145,62 +155,3 @@ Within the token project, you will find an example script at `scripts/token.py <
         accounts[0].deploy(Token, "Test Token", "TEST", 18, "1000 ether")
 
 This deploys the ``Token`` contract from ``contracts/Token.sol`` using ``web3.eth.accounts[0]``.
-
-Testing your Project
-====================
-
-To run all of the test scripts in ``tests/``:
-
-::
-
-    $ brownie test
-
-Running it in the token project, you will receive output similar to the following:
-
-::
-
-    Brownie v1.0.0 - Python development framework for Ethereum
-
-    Using network 'development'
-    Running 'ganache-cli -a 20'...
-    Compiling contracts...
-    Optimizer: Enabled   Runs: 200
-
-    Running transfer.py - 1 test
-     ✓ Deployment 'token' (0.1127s)
-     ✓ Transfer tokens (0.1115s)
-
-    Running approve_transferFrom.py - 3 tests
-     ✓ Deployment 'token' (0.0783s)
-     ✓ Set approval (0.1504s)
-     ✓ Transfer tokens with transferFrom (0.1158s)
-     ✓ transerFrom should revert (0.0441s)
-
-    SUCCESS: All tests passed.
-
-You can create as many test scripts as needed. Here is an example test script from the token project, `tests/transfer.py <https://github.com/brownie-mix/token-mix/blob/master/tests/transfer.py>`__:
-
-.. code-block:: python
-    :linenos:
-
-    from brownie import *
-    import scripts.token
-
-    def setup():
-        scripts.token.main()
-
-    def transfer():
-        '''Transfer tokens'''
-        token = Token[0]
-        check.equal(token.totalSupply(), "1000 ether", "totalSupply is wrong")
-        token.transfer(accounts[1], "0.1 ether", {'from': accounts[0]})
-        check.equal(
-            token.balanceOf(accounts[1]),
-            "0.1 ether",
-            "Accounts 1 balance is wrong"
-        )
-        check.equal(
-            token.balanceOf(accounts[0]),
-            "999.9 ether",
-            "Accounts 0 balance is wrong"
-        )

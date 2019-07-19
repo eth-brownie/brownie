@@ -597,6 +597,8 @@ ContractContainer Methods
         >>> Token
         []
 
+.. _api-network-contract:
+
 Contract
 --------
 
@@ -835,7 +837,7 @@ The ``event`` module contains classes and methods related to decoding transactio
 
 Brownie stores encrypted event topics in ``brownie/data/topics.json``. The JSON file is loaded when this module is imported.
 
-.. _api-types-eventdict:
+.. _api-network-eventdict:
 
 EventDict
 ---------

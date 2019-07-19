@@ -87,7 +87,7 @@ You can call ``rpc.time`` to view the current epoch time. To fast forward, call 
 Snapshots
 ---------
 
-``rpc.snapshot`` takes a snapshot of the current state of the blockchain. You can return to this state later using ``rpc.revert``.
+``rpc.snapshot`` takes a snapshot of the current state of the blockchain:
 
 .. code-block:: python
 
@@ -100,12 +100,19 @@ Snapshots
     Transaction sent: 0xd5d3b40eb298dfc48721807935eda48d03916a3f48b51f20bcded372113e1dca
     Transaction confirmed - block: 5   gas used: 21000 (100.00%)
     <Transaction object '0xd5d3b40eb298dfc48721807935eda48d03916a3f48b51f20bcded372113e1dca'>
+
+You can return to this state later using ``rpc.revert``:
+
+.. code-block:: python
+
     >>> accounts[0].balance()
     89999580000000000000
     >>> rpc.revert()
     Block height reverted to 4
     >>> accounts[0].balance()
     100000000000000000000
+
+Reverting does not consume a snapshot. You can return to the same snapshot as many times as needed.  However, if you take a new snapshot the previous one is no longer accessible.
 
 To return to the genesis state, use ``rpc.reset``.
 
