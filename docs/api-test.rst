@@ -17,7 +17,7 @@ The ``plugin`` module contains classes and methods used in the Brownie Pytest pl
 Pytest Fixtures
 ---------------
 
-Brownie includes the following `fixtures <https://docs.pytest.org/en/latest/fixture.html>`_ for use with Pytest.
+Brownie includes the following fixtures for use with ``pytest``.
 
 .. note:: These fixtures are only available when pytest is run from inside a Brownie project folder.
 
@@ -50,24 +50,24 @@ These fixtures provide access to objects related to the project being tested.
 Isolation Fixtures
 ******************
 
-These fixtures are used to effectively isolate tests. By including on every test within a module, that module may now be skipped via the ``--update`` flag when none of the related files have changed since it was last run.
+These fixtures are used to effectively isolate tests. If included on every test within a module, that module may now be skipped via the ``--update`` flag when none of the related files have changed since it was last run.
 
 .. py:attribute:: plugin.module_isolation
 
-    Module scope. When used, this fixture is **always** applied before any other module-scoped fixtures.
+    Module scope. When used, this fixture is always applied before any other module-scoped fixtures.
 
     Resets the local environment before starting the first test and again after completing the final test.
 
 .. py:method:: plugin.fn_isolation(module_isolation)
 
-    Function scope. When used, this fixture is **always** applied before any other function-scoped fixtures.
+    Function scope. When used, this fixture is always applied before any other function-scoped fixtures.
 
     Applies the ``module_isolation`` fixture, and additionally takes a snapshot prior to running each test which is then reverted to after the test completes. The snapshot is taken immediately after any module-scoped fixtures are applied, and before all function-scoped ones.
 
 Coverage Fixtures
 *****************
 
-These fixtures allow you to alter the behaviour of tests when coverage evaluation is active. This is useful for tests with many repetitive functions, to avoid the slowdown from ``debug_traceTransaction`` queries.
+These fixtures alter the behaviour of tests when coverage evaluation is active.
 
 .. py:attribute:: plugin.no_call_coverage
 

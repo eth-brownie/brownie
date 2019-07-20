@@ -58,7 +58,7 @@ if brownie.project.check_for_project('.'):
             '--update', '-U', action="store_true", help="Only run tests where changes have occurred"
         )
         parser.addoption(
-            '--revert', '-R', action="store_true", help="Show detailed traceback on tx reverts"
+            '--revert-tb', '-R', action="store_true", help="Show detailed traceback on tx reverts"
         )
         parser.addoption(
             '--network',

@@ -151,10 +151,12 @@ You may optionally supply a string as an argument. If given, the error string re
 
 .. _dev-revert:
 
-Developer Revert Strings
-------------------------
+Developer Revert Comments
+-------------------------
 
-You can include revert strings as source code comments that Brownie will insert into ``TransactionReceipt.revert_msg``. This allows you to write tests that target a specific revert or require statement without increasing gas costs by including a revert string in the compiled code.
+Each revert string adds a minimum 20000 gas to your contract deployment cost, and increases the cost for a function to execute. Including a revert string for every ``require`` and ``revert`` statement is often impractical and sometimes simply not possible due to the block gas limit.
+
+For this reason, Brownie allows you to include revert strings as source code comments that are not included in the bytecode but still accessible via ``TransactionReceipt.revert_msg``. This aids in development and testing of your contract, letting you write tests that target a specific ``require`` or ``revert`` statement without increasing gas costs.
 
 Revert string comments must begin with ``// dev:`` in order for Brownie to recognize them. Priority is always given to compiled revert strings. Some examples:
 
@@ -173,6 +175,17 @@ Revert string comments must begin with ``// dev:`` in order for Brownie to recog
 * Line 4 will use the given string ``"cannot be four"`` and ignore the subsitution string.
 * Line 5 will have no revert string. The comment did not begin with ``"dev:"`` and so is ignored.
 
+If the above function is executed in the console:
+
+.. code-block:: python
+
+    >>> tx = test.revertExamples(3)
+    Transaction sent: 0xd31c1c8db46a5bf2d3be822778c767e1b12e0257152fcc14dcf7e4a942793cb4
+    test.revertExamples confirmed (dev: is three) - block: 2   gas used: 31337 (6.66%)
+    <Transaction object '0xd31c1c8db46a5bf2d3be822778c767e1b12e0257152fcc14dcf7e4a942793cb4'>
+
+    >>> tx.revert_msg
+    'dev: is three'
 
 Isolating Tests
 ===============
@@ -495,3 +508,5 @@ The following test configuration settings are available in ``brownie-config.json
 .. py:attribute:: revert_traceback
 
     If ``True``, unhandled ``VirtualMachineError`` exceptions will include a full transaction traceback. This is useful for debugging but slows test execution.
+
+    This can also be enabled from the command line with the ``--revert-tb`` flag.

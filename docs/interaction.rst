@@ -247,10 +247,16 @@ To get human-readable information on a transaction, use ``TransactionReceipt.inf
         to: 0xfae9bc8a468ee0d8c84ec00c8345377710e0f0bb
         value: 1000000000000000000
 
+.. _event-data:
+
 Accessing Event Data
 --------------------
 
 Events are stored at ``TransactionReceipt.events`` using the :ref:`api-network-eventdict` class. ``EventDict`` hybrid container with both dict-like and list-like properties.
+
+.. note::
+
+    If a transaction reverts, the events the fired are still visible.
 
 .. code-block:: python
 

@@ -1617,7 +1617,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.trace
 
-    The structLog from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC method. If you are using Infura this attribute is not available.
+    An expanded `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#basic-traces>`_ structLog, returned from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC endpoint. If you are using Infura this attribute is not available.
 
     Along with the standard data, the structLog also contains the following additional information:
 
@@ -1731,9 +1731,9 @@ TransactionReceipt Methods
         >>> tx.call_trace()
         Call trace for '0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753':
         Token.transfer 0:244  (0x4A32104371b05837F2A36dF6D850FA33A92a178D)
-          ∟ Token.transfer 72:226
-            ∟ SafeMath.sub 100:114
-            ∟ SafeMath.add 149:165
+        └─Token.transfer 72:226
+          ├─SafeMath.sub 100:114
+          └─SafeMath.add 149:165
 
 .. py:classmethod:: TransactionReceipt.traceback()
 
