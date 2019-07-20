@@ -55,4 +55,17 @@ contract BrownieTester {
         return true;
     }
 
+    function returnMultiple(
+        uint a,
+        bool b,
+        address c,
+        bytes32 d
+    )
+        external
+        view
+        returns (uint _num, bool _bool, address _addr, bytes32 _bytes)
+    {
+        return (a, b, c, d);
+    }
+
 }

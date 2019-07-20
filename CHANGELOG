@@ -1,3 +1,14 @@
+1.0.0b10
+--------
+
+ - Use pytest for unit testing
+ - remove check module, add check.equals comparison logic to ReturnValue
+ - Modify coverage evaluation to work with pytest
+ - remove brownie.types package, move classes to related modules
+ - replace wei function with Wei class, expand functionality
+ - add EthAddress and HexString helper classes
+ - improved formatting for tx.traceback and tx.call_trace
+
 1.0.0b9
 -------
 

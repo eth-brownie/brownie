@@ -25,4 +25,4 @@ def main():
     if args['--all']:
         shutil.rmtree(build_path, ignore_errors=True)
     project.load(project_path)
-    print("Brownie project has been compiled at {}".format(build_path))
+    print(f"Brownie project has been compiled at {build_path}")

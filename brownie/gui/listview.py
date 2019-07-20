@@ -73,7 +73,7 @@ class ListView(ttk.Treeview):
             ):
                 tag = "NoSource"
             else:
-                tag = "{0[path]}:{0[offset][0]}:{0[offset][1]}".format(op)
+                tag = f"{op['path']}:{op['offset'][0]}:{op['offset'][1]}"
             self.insert([str(pc), op['op']], [tag, op['op']])
 
     def _select_bind(self, event):
@@ -94,9 +94,9 @@ class ListView(ttk.Treeview):
         if 'value' in pcMap:
             console_str += " "+pcMap['value']
             if pcMap['op'] == "PUSH2":
-                console_str += " ({})".format(int(pcMap['value'], 16))
+                console_str += f" ({int(pcMap['value'], 16)})"
         if 'offset' in pcMap:
-            console_str += "   {}".format(tuple(pcMap['offset']))
+            console_str += f"   {tuple(pcMap['offset'])}"
         self.root.main.console.insert(1.0, console_str)
         self.root.main.console.configure(state="disabled")
 

@@ -47,19 +47,9 @@ The following settings are available:
     Properties that affect only affect Brownie's configuration when running tests. See Test :ref:`test_settings` for detailed information on the effects and implications of these settings.
 
     * ``gas_limit``: Replaces the default network gas limit.
-
-    * ``broadcast_reverting_tx``: Replaces the default network setting for broadcasting reverting transactions.
-
     * ``default_contract_owner``: If ``false``, deployed contracts will not remember the account that they were created by and you will have to supply a ``from`` kwarg for every contract transaction.
-
-.. py:attribute:: logging
-
-    Default logging levels for each brownie mode.
-
-    * ``tx``: Transaction information
-    * ``exc``: Exception information
-
-    Valid values range from 0 (nothing) to 2 (detailed). When given as a 2 item list, it corresponds to normal/verbose. When given as a single value, adding the ``--verbose`` tag will do nothing.
+    * ``broadcast_reverting_tx``: Replaces the default network setting for broadcasting reverting transactions.
+    * ``revert_traceback``: if ``true``, unhandled ``VirtualMachineError`` exceptions will include a full traceback for the reverted transaction.
 
 .. py:attribute:: colors
 

@@ -10,7 +10,7 @@ The easiest way to install Brownie is via pip.
 
     $ pip install eth-brownie
 
-You can also clone the `github repository <https://github.com/HyperLink-Technology/brownie>`__ and use setuptools for the most up-to-date version.
+You can also clone the `github repository <https://github.com/iamdefinitelyahuman/brownie>`__ and use setuptools for the most up-to-date version.
 
 ::
 

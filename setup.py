@@ -11,17 +11,20 @@ with open("requirements.txt", "r") as f:
 setup(
     name="eth-brownie",
     packages=find_packages(),
-    version="1.0.0b9",
+    version="1.0.0b10",
     license="MIT",
     description="A Python framework for Ethereum smart contract deployment, testing and interaction.",  # noqa: E501
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Ben Hauser",
     author_email="b.hauser@zerolaw.tech",
-    url="https://github.com/HyperLink-Technology/brownie",
+    url="https://github.com/iamdefinitelyahuman/brownie",
     keywords=['brownie'],
     install_requires=requirements,
-    entry_points={'console_scripts': ["brownie=brownie.cli.__main__:main"]},
+    entry_points={
+        'console_scripts': ["brownie=brownie.cli.__main__:main"],
+        'pytest11': ["pytest-brownie=brownie.test.plugin"]
+    },
     include_package_data=True,
     python_requires=">=3.6,<4",
     classifiers=[

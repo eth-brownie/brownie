@@ -10,6 +10,7 @@ import zipfile
 from brownie.network.contract import ContractContainer
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.project import build, sources, compiler
+from brownie.test import coverage
 from brownie._config import ARGV, CONFIG, load_project_config
 
 FOLDERS = [
@@ -70,7 +71,7 @@ def pull(project_name, project_path=None, ignore_subfolder=False):
         project_path = Path('.').joinpath(project_name)
     project_path = _new_checks(project_path, ignore_subfolder)
     if project_path.exists():
-        raise FileExistsError("Folder already exists - {}".format(project_path))
+        raise FileExistsError(f"Folder already exists - {project_path}")
 
     print(f"Downloading from {url}...")
     request = requests.get(url)
@@ -105,9 +106,10 @@ def close(raises=True):
             return
         raise ProjectNotFound("No Brownie project currently open.")
 
-    # clear sources and build
+    # clear sources, build, coverage
     sources.clear()
     build.clear()
+    coverage.clear()
 
     # remove objects from namespace
     for name in sys.modules['brownie.project'].__all__.copy():
@@ -119,7 +121,10 @@ def close(raises=True):
     sys.modules['brownie.project'].__all__ = ['__brownie_import_all__']
 
     # clear paths
-    sys.path.remove(CONFIG['folders']['project'])
+    try:
+        sys.path.remove(CONFIG['folders']['project'])
+    except ValueError:
+        pass
     CONFIG['folders']['project'] = None
 
 
@@ -145,9 +150,7 @@ def load(project_path=None):
     '''
     # checks
     if CONFIG['folders']['project']:
-        raise ProjectAlreadyLoaded(
-            "Project has already been loaded at {}".format(CONFIG['folders']['project'])
-        )
+        raise ProjectAlreadyLoaded(f"Project already loaded at {CONFIG['folders']['project']}")
     if project_path is None:
         project_path = check_for_project('.')
     if not project_path or not Path(project_path).joinpath("brownie-config.json").exists():

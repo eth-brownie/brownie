@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie.types.convert import to_bytes
+from brownie.convert import to_bytes
 
 
 def test_type_bounds():

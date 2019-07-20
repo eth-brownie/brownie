@@ -96,14 +96,7 @@ def test_cli_console(cli_tester, project_path):
 
 
 def test_cli_run(cli_tester, project_path):
-    cli_tester.patch('brownie.test.main.run_script')
+    cli_tester.patch('brownie.run')
     cli_tester.counter_patch('brownie.project.load', 'brownie.network.connect')
     cli_tester('run testfile', 'testfile', 'main', gas_profile=False)
     cli_tester('run testfile xx --gas', 'testfile', 'xx', gas_profile=True)
-
-
-def test_cli_test(cli_tester, project_path):
-    cli_tester.patch('brownie.test.main.run_tests')
-    cli_tester.counter_patch('brownie.project.load')
-    cli_tester('test', None, False, False, False)
-    cli_tester('test test/path --coverage --gas --update', 'test/path', True, True, True)

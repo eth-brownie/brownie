@@ -11,8 +11,8 @@ from .event import get_topics
 from .history import _ContractHistory
 from .rpc import Rpc
 from .web3 import Web3
-from brownie.types import KwargTuple
-from brownie.types.convert import format_input, format_output, to_address
+from .return_value import ReturnValue
+from brownie.convert import format_input, format_output, to_address, Wei
 from brownie.exceptions import UndeployedLibrary, VirtualMachineError
 from brownie._config import ARGV, CONFIG
 
@@ -229,7 +229,8 @@ class Contract(_ContractBase):
 
     def balance(self):
         '''Returns the current ether balance of the contract, in wei.'''
-        return web3.eth.getBalance(self.address)
+        balance = web3.eth.getBalance(self.address)
+        return Wei(balance)
 
 
 class OverloadedMethod:
@@ -284,10 +285,10 @@ class _ContractMethod:
         try:
             data = web3.eth.call(dict((k, v) for k, v in tx.items() if v))
         except ValueError as e:
-            raise VirtualMachineError(e)
+            raise VirtualMachineError(e) from None
         return self.decode_abi(data)
 
-    def transact(self, *args, _rpc_clear=True):
+    def transact(self, *args):
         '''Broadcasts a transaction that calls this contract method.
 
         Args:
@@ -302,8 +303,6 @@ class _ContractMethod:
                 "No deployer address given. You must supply a tx dict"
                 " with a 'from' field as the last argument."
             )
-        if _rpc_clear:
-            rpc._internal_clear()
         return tx['from'].transfer(
             self._address,
             tx['value'],
@@ -335,7 +334,7 @@ class _ContractMethod:
         result = format_output(self.abi, result)
         if len(result) == 1:
             return result[0]
-        return KwargTuple(result, self.abi)
+        return ReturnValue(result, self.abi)
 
 
 class ContractTx(_ContractMethod):
@@ -380,15 +379,16 @@ class ContractCall(_ContractMethod):
 
         Returns:
             Contract method return value(s).'''
-        if ARGV['always_transact']:
-            rpc._internal_snap()
-            args, tx = _get_tx(self._owner, args)
-            tx['gas_price'] = 0
-            tx = self.transact(*args, tx, _rpc_clear=False)
-            if tx.modified_state:
-                rpc._internal_revert()
+        if not ARGV['always_transact']:
+            return self.call(*args)
+        rpc._internal_snap()
+        args, tx = _get_tx(self._owner, args)
+        tx['gas_price'] = 0
+        try:
+            tx = self.transact(*args, tx)
             return tx.return_value
-        return self.call(*args)
+        finally:
+            rpc._internal_revert()
 
 
 def _get_tx(owner, args):

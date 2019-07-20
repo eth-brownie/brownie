@@ -14,8 +14,8 @@ from brownie.exceptions import VirtualMachineError, UnknownAccount
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
-from brownie.types.convert import to_address, wei
-from brownie.types.types import _Singleton
+from brownie.convert import to_address, Wei
+from brownie._singleton import _Singleton
 from brownie._config import CONFIG
 
 web3 = Web3()
@@ -30,6 +30,7 @@ class Accounts(metaclass=_Singleton):
         # prevent private keys from being stored in read history
         self.add.__dict__['_private'] = True
         Rpc()._objects.append(self)
+        self._reset()
 
     def _reset(self):
         self._accounts.clear()
@@ -102,9 +103,9 @@ class Accounts(metaclass=_Singleton):
             json_file = project_path.joinpath(filename)
             if not json_file.exists():
                 raise FileNotFoundError(f"Cannot find {json_file}")
-        with json_file.open() as f:
+        with json_file.open() as fp:
             priv_key = web3.eth.account.decrypt(
-                json.load(f),
+                json.load(fp),
                 getpass("Enter the password for this account: ")
             )
         return self.add(priv_key)
@@ -184,11 +185,12 @@ class _AccountBase:
         try:
             web3.eth.call(dict((k, v) for k, v in tx.items() if v))
         except ValueError as e:
-            raise VirtualMachineError(e)
+            raise VirtualMachineError(e) from None
 
     def balance(self):
         '''Returns the current balance at the address, in wei.'''
-        return web3.eth.getBalance(self.address)
+        balance = web3.eth.getBalance(self.address)
+        return Wei(balance)
 
     def deploy(self, contract, *args, amount=None, gas_limit=None, gas_price=None, callback=None):
         '''Deploys a contract.
@@ -211,10 +213,10 @@ class _AccountBase:
         try:
             txid = self._transact({
                 'from': self.address,
-                'value': wei(amount),
+                'value': Wei(amount),
                 'nonce': self.nonce,
-                'gasPrice': wei(gas_price) or self._gas_price(),
-                'gas': wei(gas_limit) or self._gas_limit("", amount, data),
+                'gasPrice': Wei(gas_price) or self._gas_price(),
+                'gas': Wei(gas_limit) or self._gas_limit("", amount, data),
                 'data': HexBytes(data)
             })
             revert = None
@@ -247,7 +249,7 @@ class _AccountBase:
         return web3.eth.estimateGas({
             'from': self.address,
             'to': str(to),
-            'value': wei(amount),
+            'value': Wei(amount),
             'data': HexBytes(data)
         })
 
@@ -269,10 +271,10 @@ class _AccountBase:
             txid = self._transact({
                 'from': self.address,
                 'to': str(to),
-                'value': wei(amount),
+                'value': Wei(amount),
                 'nonce': self.nonce,
-                'gasPrice': wei(gas_price) if gas_price is not None else self._gas_price(),
-                'gas': wei(gas_limit) or self._gas_limit(to, amount, data),
+                'gasPrice': Wei(gas_price) if gas_price is not None else self._gas_price(),
+                'gas': Wei(gas_limit) or self._gas_limit(to, amount, data),
                 'data': HexBytes(data)
             })
             revert = None
@@ -342,8 +344,8 @@ class LocalAccount(_AccountBase):
             self.private_key,
             getpass("Enter the password to encrypt this account with: ")
         )
-        with json_file.open('w') as f:
-            json.dump(encrypted, f)
+        with json_file.open('w') as fp:
+            json.dump(encrypted, fp)
         return str(json_file)
 
     def _transact(self, tx):
@@ -363,4 +365,4 @@ def _raise_or_return_tx(exc):
     except SyntaxError:
         raise exc
     except Exception:
-        raise VirtualMachineError(exc)
+        raise VirtualMachineError(exc) from None

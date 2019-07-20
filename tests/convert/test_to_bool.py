@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie.types.convert import to_bool
+from brownie.convert import to_bool
 
 
 def test_success_bool():

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from hashlib import sha1
+import itertools
 from pathlib import Path
 import re
 import textwrap
@@ -55,8 +56,8 @@ def load(project_path):
     for path in project_path.glob('contracts/**/*.sol'):
         if "/_" in str(path):
             continue
-        with path.open() as f:
-            source = f.read()
+        with path.open() as fp:
+            source = fp.read()
         path = str(path.relative_to(project_path))
         _source[path] = source
         _contracts.update(_get_contract_data(source, path))
@@ -66,7 +67,7 @@ def minify(source):
     '''Given contract source as a string, returns a minified version and an
     offset map.'''
     offsets = [(0, 0)]
-    pattern = "({})".format("|".join(MINIFY_REGEX_PATTERNS))
+    pattern = f"({'|'.join(MINIFY_REGEX_PATTERNS)})"
     for match in re.finditer(pattern, source):
         offsets.append((
             match.start() - offsets[-1][1],
@@ -90,7 +91,7 @@ def _get_contract_data(full_source, path):
         offset = minified_source.index(source)
         if name in _contracts and not _contracts[name]['path'].startswith('<string-'):
             raise ContractExists(
-                "Contract '{}' already exists in the active project.".format(name)
+                f"Contract '{name}' already exists in the active project."
             )
         data[name] = {
             'path': str(path),
@@ -128,10 +129,8 @@ def compile_source(source, optimize=True, runs=200):
     X is a an integer increased with each successive call.
 
     Returns the build json data.'''
-    key = 1
-    while "<string-{}".format(key) in _source:
-        key += 1
-    path = "<string-{}>".format(key)
+
+    path = next(f"<string-{i}>" for i in itertools.count() if f"<string-{i}>" not in _source)
     _source[path] = source
     _contracts.update(_get_contract_data(source, path))
     return compiler.compile_and_format({path: source}, optimize=optimize, runs=runs, silent=True)
@@ -173,17 +172,23 @@ def get_highlighted_source(path, offset, pad=3):
         pad_stop = newlines.index(next(i for i in newlines if i >= offset[1]))
     except StopIteration:
         return
-    ln = pad_start + 1
+
+    ln = (pad_start + 1, pad_stop + 1)
     pad_start = newlines[max(pad_start-(pad+1), 0)]
     pad_stop = newlines[min(pad_stop+pad, len(newlines)-1)]
 
-    final = "{1}{0}{2}{0[dull]}{3}{0}".format(
-        color,
-        source[pad_start:offset[0]],
-        source[offset[0]:offset[1]],
-        source[offset[1]:pad_stop]
-    )
-    final = color('dull')+textwrap.indent(textwrap.dedent(final), "    ")
+    final = textwrap.indent(f"{color['dull']}"+textwrap.dedent(
+        f"{source[pad_start:offset[0]]}{color}"
+        f"{source[offset[0]:offset[1]]}{color['dull']}{source[offset[1]:pad_stop]}{color}"
+    ), "    ")
+
+    count = source[pad_start:offset[0]].count("\n")
+    final = final.replace("\n ", f"\n{color['dull']} ", count)
+    count = source[offset[0]:offset[1]].count('\n')
+    final = final.replace('\n ', f"\n{color} ", count)
+    count = source[offset[1]:pad_stop].count("\n")
+    final = final.replace("\n ", f"\n{color['dull']} ", count)
+
     return final, path, ln
 
 

@@ -18,32 +18,14 @@
     "test": {
         "gas_limit": 6721975,
         "default_contract_owner": false,
-        "broadcast_reverting_tx": true
+        "broadcast_reverting_tx": true,
+        "revert_traceback": false
     },
     "solc": {
         "version": "0.5.7",
         "optimize": true,
         "runs": 200,
         "minify_source": false
-    },
-    "logging": {
-        "test": {
-            "tx": 0,
-            "exc": [1, 2]
-
-        },
-        "run": {
-            "tx": [1, 2],
-            "exc": 2
-        },
-        "console": {
-            "tx": 1,
-            "exc": 2
-        },
-        "coverage": {
-            "tx": 0,
-            "exc": [1, 2]
-        }
     },
     "colors": {
         "key": "",

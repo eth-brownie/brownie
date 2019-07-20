@@ -1,38 +1,58 @@
 #!/usr/bin/python3
 
+from collections import defaultdict
 import json
 from pathlib import Path
 import shutil
-import sys
 
-from brownie.types.types import (
-    FalseyDict,
-    StrictDict,
-    _Singleton
-)
+from brownie._singleton import _Singleton
+
 
 REPLACE = ['active_network', 'networks']
-IGNORE = ['active_network', 'folders', 'logging']
+IGNORE = ['active_network', 'folders']
+
+
+class ConfigDict(dict):
+    '''Dict subclass that prevents adding new keys when locked'''
+
+    def __init__(self, values={}):
+        self._locked = False
+        super().__init__()
+        self.update(values)
+
+    def __setitem__(self, key, value):
+        if self._locked and key not in self:
+            raise KeyError(f"{key} is not a known config setting")
+        if type(value) is dict:
+            value = ConfigDict(value)
+        super().__setitem__(key, value)
+
+    def update(self, arg):
+        for k, v in arg.items():
+            self.__setitem__(k, v)
+
+    def _lock(self):
+        '''Locks the dict so that new keys cannot be added'''
+        for v in [i for i in self.values() if type(i) is ConfigDict]:
+            v._lock()
+        self._locked = True
+
+    def _unlock(self):
+        '''Unlocks the dict so that new keys can be added'''
+        for v in [i for i in self.values() if type(i) is ConfigDict]:
+            v._unlock()
+        self._locked = False
 
 
 def _load_default_config():
     '''Loads the default configuration settings from brownie/data/config.json'''
-    with Path(__file__).parent.joinpath("data/config.json").open() as f:
-        config = _Singleton("Config", (StrictDict,), {})(json.load(f))
+    with Path(__file__).parent.joinpath("data/config.json").open() as fp:
+        config = _Singleton("Config", (ConfigDict,), {})(json.load(fp))
     config['folders'] = {
         'brownie': str(Path(__file__).parent),
         'project': None
     }
     config['active_network'] = {'name': None}
-    # set logging
-    try:
-        config['logging'] = config['logging'][sys.argv[1]]
-        config['logging'].setdefault('tx', 0)
-        config['logging'].setdefault('exc', 0)
-        for k, v in [(k, v) for k, v in config['logging'].items() if type(v) is list]:
-            config['logging'][k] = v[1 if '--verbose' in sys.argv else 0]
-    except Exception:
-        config['logging'] = {"tx": 1, "exc": 1}
     return config
 
 
@@ -45,8 +65,8 @@ def load_project_config(project_path):
     CONFIG['folders']['project'] = str(project_path)
     config_path = project_path.joinpath("brownie-config.json")
     try:
-        with config_path.open() as f:
-            _recursive_update(CONFIG, json.load(f), [])
+        with config_path.open() as fp:
+            _recursive_update(CONFIG, json.load(fp), [])
     except FileNotFoundError:
         shutil.copy(
             str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
@@ -75,7 +95,7 @@ def modify_network_config(network=None):
             if not CONFIG['active_network']['broadcast_reverting_tx']:
                 print("WARNING: Reverting transactions will NOT be broadcasted.")
     except KeyError:
-        raise KeyError("Network '{}' is not defined in config.json".format(network))
+        raise KeyError(f"Network '{network}' is not defined in config.json")
     finally:
         CONFIG._lock()
 
@@ -91,13 +111,17 @@ def _recursive_update(original, new, base):
             original[k] = new[k]
     for k in [i for i in original if i not in new and not set(base+[i]).intersection(IGNORE)]:
         print(
-            "WARNING: Value '{}' not found in the config file for this project."
-            " The default setting has been used.".format(".".join(base+[k]))
+            f"WARNING: '{'.'.join(base+[k])}' not found in the config file for this project."
+            " The default setting has been used."
         )
 
 
+def update_argv_from_docopt(args):
+    ARGV.update(dict((k.lstrip("-"), v) for k, v in args.items()))
+
+
 # create argv object
-ARGV = _Singleton("Argv", (FalseyDict,), {})()
+ARGV = _Singleton("Argv", (defaultdict,), {})(lambda: None)
 
 # load config
 CONFIG = _load_default_config()

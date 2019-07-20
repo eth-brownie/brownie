@@ -9,12 +9,12 @@ from .network import (
 )
 from .project import (
     compile_source,
+    run,
     __brownie_import_all__
 )
 from brownie.gui import Gui
-from brownie.test import check
 from brownie._config import CONFIG as config
-from brownie.types.convert import wei
+from brownie.convert import Wei
 
 __all__ = [
     'accounts',
@@ -25,9 +25,9 @@ __all__ = [
     'web3',
     'project',
     '__brownie_import_all__',
-    'check',
     'compile_source',
-    'wei',
+    'run',
+    'Wei',
     'config',
     'Gui'
 ]
