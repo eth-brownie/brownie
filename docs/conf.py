@@ -25,13 +25,13 @@ def setup(sphinx):
 
 
 project = 'Brownie'
-copyright = '2019, HyperLink Technology'
+copyright = '2019'
 author = 'Ben Hauser'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = 'v1.0.0b9'
+release = 'v1.0.0b10'
 
 
 # -- General configuration ---------------------------------------------------
