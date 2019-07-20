@@ -43,7 +43,7 @@ Package Methods
 
 .. py:method:: main.pull(project_name, project_path=None, ignore_subfolder=False)
 
-    Initializes a new project via a template. Templates are downloaded from the `Brownie Mix github repo <https://www.github.com/brownie-mix>`_.
+    Initializes a new project via a template. Templates are downloaded from the `Brownie Mix github repo <https://github.com/brownie-mix>`_.
 
     If no path is given, the project will be initialized in a subfolder of the same name.
 

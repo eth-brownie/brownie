@@ -141,11 +141,11 @@ For certain types of contract data, Brownie uses subclasses to assist with conve
 
 .. py:class:: brownie.convert.Wei(value)
 
-    Integer subclass that converts a value to wei and allows comparisons using the same conversion.
+    Integer subclass that converts a value to wei and allows comparisons, addition and subtraction using the same conversion.
 
     ``Wei`` is useful for strings where you specify the unit, for large floats given in scientific notation, or where a direct conversion to ``int`` would cause inaccuracy from floating point errors.
 
-    Whenever a Brownie method takes an input referring to an amount of ether, the value is converted to ``Wei``. All ``uint`` and ``int`` values returned from a contract call or as part of an event log are given in ``Wei``.
+    Whenever a Brownie method takes an input referring to an amount of ether, the given value is converted to ``Wei``. Balances and ``uint``/``int`` values returned in contract calls and events are given in ``Wei``.
 
     .. code-block:: python
 
@@ -162,6 +162,8 @@ For certain types of contract data, Brownie uses subclasses to assist with conve
         True
         >>> Wei("1 ether") < "2 ether"
         True
+        >>> Wei("1 ether") - "0.75 ether"
+        250000000000000000
 
 .. py:class:: brownie.convert.EthAddress(value)
 

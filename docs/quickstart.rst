@@ -9,7 +9,7 @@ This page will walk you through the basics of using Brownie. Please review the r
 Initializing a New Project
 ==========================
 
-The first step to using Brownie is to initialize a new project. To do this, create a new empty folder and then type:
+The first step to using Brownie is to initialize a new project. To do this, create an empty folder and then type:
 
 ::
 
@@ -23,7 +23,7 @@ This will create the following project structure within the folder:
 * ``tests/``: Scripts for testing your project
 * ``brownie-config.json``: Configuration file for the project
 
-You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`__", simple templates to build your project upon. For the purposes of this document, we will use the `token <https://github.com/brownie-mix/token-mix>`__ mix, which is a very basic ERC-20 implementation:
+You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`__", simple templates to build your project upon. For the examples in this document we will use the `token <https://github.com/brownie-mix/token-mix>`__ mix, which is a very basic ERC-20 implementation:
 
 ::
 
@@ -57,17 +57,29 @@ Once a contract has been complied, it will only be recompiled if the source file
 Interacting with your Project
 =============================
 
-The Brownie console is useful when you want to interact directly with contracts deployed on a non-local chain, or for quick testing as you develop. It feels similar to the standard python interpreter. To open it:
+Brownie provides two ways to interact with your project:
+
+* The **console** is useful for quick testing and debugging as you develop
+* Via **scripts** that handle deployments and to automate common tasks
+
+The Console
+-----------
+
+The console is an easy to use command-line environment for debugging and testing as you develop. It is almost identical the standard python interpreter. To open it:
 
 ::
 
     $ brownie console
 
-Brownie will compile your contracts, start the local RPC, and then give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`.
+Brownie will compile your contracts, start the local RPC client, and give you a command prompt. From here you may interact with the network with the full range of functionality offered by the :ref:`api`.
 
 .. hint::
 
-    You can use builtins ``dir`` and ``help`` for quick reference to available methods and attributes.
+    Within the console, the builtin ``dir`` is modified to only display public methods and attributes. It is a valuable tool for exploring Brownie's functionality as you are getting started.
+
+    You can also call ``help`` for detailed information on most objects.
+
+Access to local accounts is through ``accounts``, a list-like object that contains ``Account`` objects capable of making transactions.
 
 Here is an example of checking a balance and transfering some ether:
 
@@ -85,7 +97,9 @@ Here is an example of checking a balance and transfering some ether:
     >>> accounts[1].balance()
     110000000000000000000
 
-Deploying a contract:
+Brownie creates a ``ContractContainer`` object for each contract in your project. They are list-like objects used to deploy new contracts.
+
+Here is an example of deploying a contract:
 
 .. code-block:: python
 
@@ -103,7 +117,9 @@ Deploying a contract:
     >>> t
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
-Checking a token balance and transfering tokens:
+When a contact is deployed you are returned a ``Contract`` object that can be used to interact with it. This object is also added to the ``ContractContainer``.
+
+``Contract`` objects contain class methods for performing calls and transactions. In this example we are checking a token balance and transfering tokens:
 
 .. code-block:: python
 
@@ -125,24 +141,18 @@ Checking a token balance and transfering tokens:
     >>> t.balanceOf(accounts[2])
     100000000000000000000
 
-Testing your Project
-====================
+See :ref:`interaction` for more information on available objects and how they function.
 
-Brownie provides ``pytest`` fixtures that aid in the testing of your project. Tests should be stored in the ``tests/`` folder.  To run the full suite:
+Writing Scripts
+---------------
 
-::
+You can write scripts to automate contract deployment and interaction. By placing ``from brownie import *`` at the beginning of your script, you can access objects identically to the way you would in the console.
 
-    $ pytest tests/
-
-
-Deploying Your Project
-======================
-
-You can write scripts to automate contract deployment and interaction:
+To execute the ``main`` function in a script, store it in the ``scripts/`` folder and type:
 
 ::
 
-    $ brownie run
+    $ brownie run [script name]
 
 Within the token project, you will find an example script at `scripts/token.py <https://github.com/brownie-mix/token-mix/blob/master/scripts/token.py>`__ that is used for deployment:
 
@@ -154,4 +164,106 @@ Within the token project, you will find an example script at `scripts/token.py <
     def main():
         accounts[0].deploy(Token, "Test Token", "TEST", 18, "1000 ether")
 
-This deploys the ``Token`` contract from ``contracts/Token.sol`` using ``web3.eth.accounts[0]``.
+Testing your Project
+====================
+
+Brownie uses the ``pytest`` framework for contract testing.
+
+Tests should be stored in the ``tests/`` folder.  To run the full suite:
+
+::
+
+    $ pytest tests/
+
+Brownie provides pytest fixtures to allow you to interact with your project and to aid in testing. To use a fixture, add an argument with the same name to the inputs of your test function.
+
+Here is an example test function using Brownie fixtures:
+
+.. code-block:: python
+    :linenos:
+
+    def test_transfer(Token, accounts):
+        token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
+        assert token.totalSupply() == "1000 ether"
+        token.transfer(accounts[1], "0.1 ether", {'from': accounts[0]})
+        assert token.balanceOf(accounts[1]) == "0.1 ether"
+        assert token.balanceOf(accounts[0]) == "999.9 ether"
+
+Transactions that revert raise a ``VirtualMachineError`` exception. To write assertions around this you can use ``pytest.reverts`` as a context manager, which functions very similarly to ``pytest.raises``:
+
+.. code-block:: python
+    :linenos:
+
+    import pytest
+
+    def test_transferFrom_reverts(Token, accounts):
+        token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
+        with pytest.reverts():
+            token.transferFrom(accounts[0], accounts[3], "10 ether", {'from': accounts[1]})
+
+Test isolation is handled through the ``module_isolation`` and ``fn_isolation`` fixtures:
+
+* ``module_isolation`` resets the local chain before and after completion of the module, ensuring a clean environment for this module and that the results of it will not affect subsequent modules.
+* ``fn_isolation`` additionally takes a snapshot of the chain before running each test, and reverts to it when the test completes. This allows you to define a common state for each test, reducing repetitive transactions.
+
+This example uses isolation and a shared setup fixture:
+
+.. code-block:: python
+    :linenos:
+
+    import pytest
+    from brownie import accounts
+
+    @pytest.fixture(scope="module")
+    def token(Token):
+        t = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
+        yield t
+
+    def test_transferFrom(fn_isolation, token):
+        token.approve(accounts[1], "6 ether", {'from': accounts[0]})
+        token.transferFrom(accounts[0], accounts[2], "5 ether", {'from': accounts[1]})
+        assert token.balanceOf(accounts[2]) == "5 ether"
+        assert token.balanceOf(accounts[0]) == "995 ether"
+        assert token.allowance(accounts[0], accounts[1]) == "1 ether"
+
+    def test_balance_allowance(fn_isolation, token):
+        assert token.balanceOf(accounts[0]) == "1000 ether"
+        assert token.allowance(accounts[0], accounts[1]) == 0
+
+Brownie monitors which files have changed since the test suite was last executed. Tests that are properly isolated can be skipped if none of the contracts or related test files have changed. To enable this, include the ``--update`` flag when running ``pytest``.
+
+See :ref:`test` for more information on available fixtures, and other features and options related to unit testing.
+
+Analyzing Test Coverage
+=======================
+
+Test coverage is calculated by generating a map of opcodes associated with each statement and branch of the source code, and then analyzing the stack trace of each transaction to see which opcodes executed.
+
+To check test coverage:
+
+::
+
+    $ pytest tests/ --coverage
+
+To view detailed results, first the Brownie GUI:
+
+::
+
+    $ brownie gui
+
+Next:
+
+    * In the upper-right drop box, select a contract to view.
+    * In the drop box immediately left of the contract selection, choose the generated coverage report JSON.
+    * In the upper left, choose to view either the "statement" or "branch" coverage report.
+
+Relevant code will be highlighted in different colors:
+
+* Green - code was executed during the tests
+* Yellow - code was executed, but only evaluated truthfully
+* Orange - code was executed, but only evaluated falsely
+* Red - code was not executed
+
+.. image:: opview.png
+
+See :ref:`test-coverage` for more information.

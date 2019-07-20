@@ -81,7 +81,7 @@ See the :ref:`events<event-data>` section of :ref:`interaction` for information 
 The Transaction Trace
 =====================
 
-The best way to understand exactly happened in a failing transaction is to generate and examine the `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#basic-traces>`_. This is available as a list of dictionaries at ``TransactionReceipt.trace``, with several fields added to make it easier to understand.
+The best way to understand exactly happened in a failing transaction is to generate and examine the `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#user-content-basic-traces>`_. This is available as a list of dictionaries at ``TransactionReceipt.trace``, with several fields added to make it easier to understand.
 
 Each step in the trace includes the following data:
 

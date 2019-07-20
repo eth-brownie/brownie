@@ -262,15 +262,15 @@ The ``fn_isolation`` fixture is **always the first function-scoped fixture to ex
 
 The sequence of events in the above example is:
 
-    1. The setup phase of ``module_isolation`` runs, resetting the local environment.
-    2. The module-scoped ``token`` fixture runs, deploying a ``Token`` contract with a total supply of 1000 tokens.
-    3. The setup phase of the function-scoped ``fn_isolation`` fixture runs. A snapshot of the blockchain is taken.
-    4. ``test_transfer`` runs, transferring 100 tokens from ``accounts[0]`` to ``accounts[1]``
-    5. The teardown phase of ``fn_isolation`` runs. The blockchain is reverted to it's state before ``test_transfer``.
-    6. The setup phase of the ``fn_isolation`` fixture runs again. Another snapshot is taken - identical to the previous one.
-    7. ``test_chain_reverted`` runs. The assert statement passes because of the ``fn_isolation`` fixture.
-    8. The teardown phase of ``fn_isolation`` runs. The blockchain is reverted to it's state before ``test_chain_reverted``.
-    9. The teardown phase of ``module_isolation`` runs, resetting the local environment.
+1. The setup phase of ``module_isolation`` runs, resetting the local environment.
+2. The module-scoped ``token`` fixture runs, deploying a ``Token`` contract with a total supply of 1000 tokens.
+3. The setup phase of the function-scoped ``fn_isolation`` fixture runs. A snapshot of the blockchain is taken.
+4. ``test_transfer`` runs, transferring 100 tokens from ``accounts[0]`` to ``accounts[1]``
+5. The teardown phase of ``fn_isolation`` runs. The blockchain is reverted to it's state before ``test_transfer``.
+6. The setup phase of the ``fn_isolation`` fixture runs again. Another snapshot is taken - identical to the previous one.
+7. ``test_chain_reverted`` runs. The assert statement passes because of the ``fn_isolation`` fixture.
+8. The teardown phase of ``fn_isolation`` runs. The blockchain is reverted to it's state before ``test_chain_reverted``.
+9. The teardown phase of ``module_isolation`` runs, resetting the local environment.
 
 Additionally, remember that **module-scoped fixtures will always execute prior to function-scoped**. New module-scoped fixtures can be introduced part way through a module, and in this way modify the setup snapshot. Expanding on the previous example:
 
@@ -308,22 +308,23 @@ Additionally, remember that **module-scoped fixtures will always execute prior t
 
 Let's look at the sequence of events, starting from the teardown of ``test_chain_reverted`` (step 8 in the previous example):
 
-    8. The teardown phase of ``fn_isolation`` runs. The blockchain is reverted to it's state before ``test_chain_reverted``.
-    9. The module-scoped ``transfer_tokens`` fixture runs. 100 tokens are transferred to ``accounts[1]``.
-    10. The setup phase of ``fn_isolation`` runs. A new snapshot is taken, this time including the transfer performed by ``transfer_tokens``.
-    11. ``test_module_fixture_transfer`` runs. 50  tokens are transferred and the assert statement passes.
-    12. The teardown phase of ``fn_isolation`` runs. The state is reverted to immediately before ``test_module_fixture_transfer`` was run.
-    13. The setup phase of ``fn_isolation`` runs. Another snapshot is taken - identical to the previous one.
-    14. ``test_snapshot_altered`` runs. The assertion passes.
-    15. ``fn_isolation`` and then ``module_isolation`` perform their final teardowns. The local environment is reset and the module is completed.
+8. The teardown phase of ``fn_isolation`` runs. The blockchain is reverted to it's state before ``test_chain_reverted``.
+9. The module-scoped ``transfer_tokens`` fixture runs. 100 tokens are transferred to ``accounts[1]``.
+10. The setup phase of ``fn_isolation`` runs. A new snapshot is taken, this time including the transfer performed by ``transfer_tokens``.
+11. ``test_module_fixture_transfer`` runs. 50  tokens are transferred and the assert statement passes.
+12. The teardown phase of ``fn_isolation`` runs. The state is reverted to immediately before ``test_module_fixture_transfer`` was run.
+13. The setup phase of ``fn_isolation`` runs. Another snapshot is taken - identical to the previous one.
+14. ``test_snapshot_altered`` runs. The assertion passes.
+15. ``fn_isolation`` and then ``module_isolation`` perform their final teardowns. The local environment is reset and the module is completed.
 
-Evaluating Test Coverage
-========================
+.. _test-coverage:
+
+Coverage Evaluation
+===================
 
 Test coverage is calculated by generating a map of opcodes associated with each statement and branch of the source code, and then analyzing the stack trace of each transaction to see which opcodes executed.
 
 During coverage analysis, all contract calls are executed as transactions. This gives a more accurate coverage picture by allowing analysis of methods that are typically non-state changing. A snapshot is taken before each of these calls-as-transactions and the state is reverted immediately after, to ensure that the outcome of the test is not affected. For tests that involve many calls this can result in significantly slower execution time.
-
 
 .. note::
 
@@ -362,6 +363,50 @@ Both of these fixtures are function-scoped.
 .. py:attribute:: skip_coverage
 
     This test will be skipped if coverage evaluation is active.
+
+Running Tests
+=============
+
+Test scripts are stored in the ``tests/`` folder. Test discovery follows the standard pytest `discovery rules <https://docs.pytest.org/en/latest/goodpractices.html#test-discovery>`_.
+
+To run the complete test suite:
+
+::
+
+    $ pytest tests
+
+Or to run a specific test:
+
+::
+
+    $ pytest tests/test_transfer.py
+
+.. note::
+
+    Because of Brownie's dynamically named contract fixtures, you cannot run ``pytest`` outside of the Brownie project folder.
+
+Test results are saved at ``build/tests.json``. This file holds the results of each test, coverage analysis data, and hashes that are used to determine if any related files have changed since the tests last ran. If you abort test execution early via a ``KeyboardInterrupt``, results are only be saved for modules that fully completed.
+
+Only Running Updated Tests
+--------------------------
+
+After the test suite has been run once, you can use the ``--update`` flag to only repeat tests where changes have occured:
+
+::
+
+    $ pytest tests --update
+
+A module must use the ``module_isolation`` or ``fn_isolation`` fixture in every test function in order to be skipped in this way.
+
+The ``pytest`` console output will represent skipped tests with an "s", but it will be colored green or red to indicate if the test passed when it last ran.
+
+If coverage analysis is also active, tests that previously completed but were not analyzed will be re-run.  The final coverage report will include results for skipped modules.
+
+Brownie compares hashes of the following items to check if a test should be re-run:
+
+    * The bytecode for every contract deployed during execution of the test
+    * The AST of the test module
+    * The AST of all ``conftest.py`` modules that are accessible to the test module
 
 Evaluating Coverage
 -------------------
@@ -427,51 +472,6 @@ Relevant code will be highlighted in different colors:
 * Red - code was not executed
 
 .. image:: opview.png
-
-
-Running Tests
-=============
-
-Test scripts are stored in the ``tests/`` folder. Test discovery follows the standard pytest `discovery rules <https://docs.pytest.org/en/latest/goodpractices.html#test-discovery>`_.
-
-To run the complete test suite:
-
-::
-
-    $ pytest tests
-
-Or to run a specific test:
-
-::
-
-    $ pytest tests/test_transfer.py
-
-.. note::
-
-    Because of Brownie's dynamically named contract fixtures, you cannot run ``pytest`` outside of the Brownie project folder.
-
-Test results are saved at ``build/tests.json``. This file holds the results of each test, coverage analysis data, and hashes that are used to determine if any related files have changed since the tests last ran. If you abort test execution early via a ``KeyboardInterrupt``, results are only be saved for modules that fully completed.
-
-Only Running Updated Tests
---------------------------
-
-After the test suite has been run once, you can use the ``--update`` flag to only repeat tests where changes have occured:
-
-::
-
-    $ pytest tests --update
-
-A module must use the ``module_isolation`` or ``fn_isolation`` fixture in every test function in order to be skipped in this way.
-
-The ``pytest`` console output will represent skipped tests with an "s", but it will be colored green or red to indicate if the test passed when it last ran.
-
-If coverage analysis is also active, tests that previously completed but were not analyzed will be re-run.  The final coverage report will include results for skipped modules.
-
-Brownie compares hashes of the following items to check if a test should be re-run:
-
-    * The bytecode for every contract deployed during execution of the test
-    * The AST of the test module
-    * The AST of all ``conftest.py`` modules that are accessible to the test module
 
 .. _test_settings:
 

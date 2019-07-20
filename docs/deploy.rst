@@ -4,9 +4,9 @@
 Deploying Contracts
 ===================
 
-Along with the console, you can interact with your project by writing Python scripts. Scriping is especially useful for deploying contracts and automating common processes.
+Brownie lets you write scripts to interact with your project. Scripting is especially useful for deploying your contracts to the main-net, or for automating processes that you perform regularly.
 
-Every script must begin with ``from brownie import *``. This imports the instantiated project classes into the local namespace and gives access to the full Brownie :ref:`api`.
+Every script should begin with ``from brownie import *``. This imports the instantiated project classes into the local namespace and gives access to the Brownie :ref:`api` in exactly the same way as if you were using the console.
 
 To execute a script from the command line:
 
@@ -14,7 +14,7 @@ To execute a script from the command line:
 
     $ brownie run <script> [function]
 
-From the console you can use the ``run`` method:
+Or from the console, use the ``run`` method:
 
 .. code-block:: python
 

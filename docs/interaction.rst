@@ -20,8 +20,8 @@ Brownie will compile the contracts, launch or attach to :ref:`test-rpc`, and the
 
     You can also call ``help`` on most classes and methods to get detailed information on how they work.
 
-Working with Accounts
-=====================
+Accounts
+========
 
 The :ref:`api-network-accounts` container (available as ``accounts`` or just ``a``) allows you to access all your local accounts.
 
@@ -80,8 +80,8 @@ Imported accounts may be saved with an identifier and then loaded again at a lat
     Enter the password for this account:
     <LocalAccount object '0xa9c2DD830DfFE8934fEb0A93BAbcb6e823e1FF05'>
 
-Working with Contracts
-======================
+Contracts
+=========
 
 Deploying
 ---------
@@ -209,8 +209,42 @@ If the contract method has a state mutability of ``view`` or ``pure``, the relat
     >>> tx.return_value
     1000000000000000000000
 
-Working with Transactions
-=========================
+Ether Values
+============
+
+Brownie uses the :ref:`Wei<wei>` class when a value is meant to represent an amount of ether. ``Wei`` is a subclass of ``int`` that converts strings, scientific notation and hex strings into wei denominated integers:
+
+.. code-block:: python
+
+    >>> Wei("1 ether")
+    1000000000000000000
+    >>> Wei("12.49 gwei")
+    12490000000
+    >>> Wei("0.029 shannon")
+    29000000
+    >>> Wei(8.38e32)
+    838000000000000000000000000000000
+
+It also converts other values to ``Wei`` before performing comparisons, addition or subtraction:
+
+    >>> Wei(1e18) == "1 ether"
+    True
+    >>> Wei("1 ether") < "2 ether"
+    True
+    >>> Wei("1 ether") - "0.75 ether"
+    250000000000000000
+
+Whenever a Brownie method takes an input referring to an amount of ether, the given value is converted to ``Wei``. Balances and ``uint``/``int`` values returned in contract calls and events are given in ``Wei``.
+
+.. code-block:: python
+
+    >>> accounts[0].balance()
+    100000000000000000000
+    >>> type(accounts[0].balance())
+    <class 'brownie.convert.Wei'>
+
+Transactions
+============
 
 Each transaction returns a :ref:`api-network-tx` object. This object contains all relevant information about the transaction, as well as various methods to aid in debugging if it reverted.
 

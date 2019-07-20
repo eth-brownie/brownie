@@ -1014,7 +1014,7 @@ Module Methods
 
 .. py:method:: brownie.network.event.decode_logs(logs)
 
-    Given an array of logs as returned by ``eth_getLogs`` or ``eth_getTransactionReceipt`` RPC calls, returns an :ref:`api-types-eventdict`.
+    Given an array of logs as returned by ``eth_getLogs`` or ``eth_getTransactionReceipt`` RPC calls, returns an :ref:`api-network-eventdict`.
 
     .. code-block:: python
 
@@ -1038,7 +1038,7 @@ Module Methods
 
 .. py:method:: brownie.network.event.decode_trace(trace)
 
-    Given the ``structLog`` from a ``debug_traceTransaction`` RPC call, returns an :ref:`api-types-eventdict`.
+    Given the ``structLog`` from a ``debug_traceTransaction`` RPC call, returns an :ref:`api-network-eventdict`.
 
     .. code-block:: python
 
@@ -1452,7 +1452,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.events
 
-    An :ref:`api-types-eventdict` of decoded event logs for this transaction.
+    An :ref:`api-network-eventdict` of decoded event logs for this transaction.
 
     .. note:: If you are connected to an RPC client that allows for ``debug_traceTransaction``, event data is still available when the transaction reverts.
 
@@ -1617,7 +1617,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.trace
 
-    An expanded `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#basic-traces>`_ structLog, returned from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC endpoint. If you are using Infura this attribute is not available.
+    An expanded `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#user-content-basic-traces>`_ structLog, returned from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC endpoint. If you are using Infura this attribute is not available.
 
     Along with the standard data, the structLog also contains the following additional information:
 
