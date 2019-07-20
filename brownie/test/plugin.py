@@ -72,7 +72,7 @@ if brownie.project.check_for_project('.'):
         for key in ('coverage', 'always_transact'):
             ARGV[key] = config.getoption("--coverage")
         ARGV['gas'] = config.getoption("--gas")
-        ARGV['revert'] = config.getoption('--revert') or CONFIG['test']['revert_traceback']
+        ARGV['revert'] = config.getoption('--revert-tb') or CONFIG['test']['revert_traceback']
         ARGV['update'] = config.getoption('--update')
         ARGV['network'] = None
         if config.getoption('--network'):
