@@ -87,7 +87,10 @@ def get_ast_hash(path):
             name = obj.names[0].name
         else:
             name = obj.module
-        origin = importlib.util.find_spec(name).origin
+        try:
+            origin = importlib.util.find_spec(name).origin
+        except Exception as e:
+            raise type(e)(f"in {path} - {e}") from None
         if base_path in origin:
             with open(origin) as fp:
                 ast_list.append(ast.parse(fp.read(), origin))
