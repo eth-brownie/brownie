@@ -1,10 +1,10 @@
 .. _interaction:
 
-==========================
-Interacting with a Project
-==========================
+===================================
+Project Interaction via the Console
+===================================
 
-The console is useful when you want to interact directly with contracts deployed on a non-local chain, or for quick testing as you develop.  It's also a great starting point to familiarize yourself with Brownie's functionality.
+The console is useful when you want to interact directly with contracts deployed on a non-local chain, or for quick testing as you develop. It's also a great starting point to familiarize yourself with Brownie's functionality.
 
 The console feels very similar to a regular python interpreter. From inside a project folder, load it by typing:
 
@@ -20,8 +20,8 @@ Brownie will compile the contracts, launch or attach to :ref:`test-rpc`, and the
 
     You can also call ``help`` on most classes and methods to get detailed information on how they work.
 
-Working with Accounts
-=====================
+Accounts
+========
 
 The :ref:`api-network-accounts` container (available as ``accounts`` or just ``a``) allows you to access all your local accounts.
 
@@ -80,10 +80,15 @@ Imported accounts may be saved with an identifier and then loaded again at a lat
     Enter the password for this account:
     <LocalAccount object '0xa9c2DD830DfFE8934fEb0A93BAbcb6e823e1FF05'>
 
-Working with Contracts
-======================
+Contracts
+=========
 
-Each contract in the project has a :ref:`api-network-contractcontainer` class, which allows you to deploy new contracts and is a container that holds specific instances of that contract. To deploy a contract, include the deploying account as the first argument followed by the constructor arguments.
+Deploying
+---------
+
+Each deployable contract and library has a :ref:`api-network-contractcontainer` class, used to deploy new contracts and access already existing ones.
+
+To deploy a contract, include the deploying ``Account`` as the first argument followed by the constructor arguments. A :ref:`api-network-contract` object is returned, and also appended to the ``ContractContainer``.
 
 .. code-block:: python
 
@@ -107,7 +112,7 @@ Each contract in the project has a :ref:`api-network-contractcontainer` class, w
     >>> Token[0]
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
-Alternatively, you can deploy from ``account`` with the ``ContractContainer`` as the first argument.
+Alternatively, you can deploy from ``Account`` with the ``ContractContainer`` as the first argument.
 
 .. code-block:: python
 
@@ -127,23 +132,70 @@ Alternatively, you can deploy from ``account`` with the ``ContractContainer`` as
     >>> Token[0]
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
-You can also use ``ContractDeployer.at`` to access an already existing contract.
+You can also use ``ContractContainer.at`` to create a new ``Contract`` object for an already deployed contract.
 
 .. code-block:: python
 
     >>> Token.at("0x5419710735c2D6c3e4db8F30EF2d361F70a4b380")
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
-External and public contract methods are callable by class methods of the same name. Arguments given to these objects are converted using the methods outlined in the :ref:`type-conversions` section of the API documentation.
+Unlinked Libraries
+------------------
+
+If a contract requires a library, Brownie will automatically link to the most recently deployed one. If the required library has not been deployed yet an ``UndeployedLibrary`` exception is raised.
 
 .. code-block:: python
 
-    >>> Token[0].balanceOf
-    <ContractCall object 'balanceOf(address _owner)'>
+    >>> accounts[0].deploy(MetaCoin)
+      File "brownie/network/contract.py", line 167, in __call__
+        f"Contract requires '{library}' library but it has not been deployed yet"
+    UndeployedLibrary: Contract requires 'ConvertLib' library but it has not been deployed yet
+
+    >>> accounts[0].deploy(ConvertLib)
+    Transaction sent: 0xff3f5cff35c68a73658ad367850b6fa34783b4d59026520bd61b72b6613d871c
+    ConvertLib.constructor confirmed - block: 1   gas used: 95101 (48.74%)
+    ConvertLib deployed at: 0x08c4C7F19200d5636A1665f6048105b0686DFf01
+    <ConvertLib Contract object '0x08c4C7F19200d5636A1665f6048105b0686DFf01'>
+
+    >>> accounts[0].deploy(MetaCoin)
+    Transaction sent: 0xd0969b36819337fc3bac27194c1ff0294dd65da8f57c729b5efd7d256b9ecfb3
+    MetaCoin.constructor confirmed - block: 2   gas used: 231857 (69.87%)
+    MetaCoin deployed at: 0x8954d0c17F3056A6C98c7A6056C63aBFD3e8FA6f
+    <MetaCoin Contract object '0x8954d0c17F3056A6C98c7A6056C63aBFD3e8FA6f'>
+
+Accessing Contract Methods
+--------------------------
+
+External and public contract methods are callable from the ``Contract`` object via class methods of the same name. Arguments given to these objects are converted using the methods outlined in the :ref:`type-conversions` section of the API documentation.
+
+.. code-block:: python
+
     >>> Token[0].transfer
     <ContractTx object 'transfer(address _to, uint256 _value)'>
+    >>> Token[0].balanceOf
+    <ContractCall object 'balanceOf(address _owner)'>
 
-If the contract method has a state mutability of ``view`` or ``pure``, the related class method type is :ref:`api-contract-call`. Calling this object will result in a call to the method. If you wish to call the method as a transaction you can use ``ContractCall.transact``.
+Transactions
+************
+
+For state changing contract methods, the related class method is :ref:`api-contract-tx`. Calls to this object perform a transaction and return a :ref:`api-network-tx` object. If you wish to call the contract method without a transaction, use the ``ContractTx.call`` method.
+
+For transactions you can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``from`` value, the transaction will be sent from the same address that deployed the contract.
+
+.. code-block:: python
+
+    >>> Token[0].transfer(accounts[1], "1 ether", {'from': accounts[0]})
+
+    Transaction sent: 0x6e557594e657faf1270235bf4b3f27be7f5a3cb8a9c981cfffb12133cbaa165e
+    Token.transfer confirmed - block: 4   gas used: 51019 (33.78%)
+    <Transaction object '0x6e557594e657faf1270235bf4b3f27be7f5a3cb8a9c981cfffb12133cbaa165e'>
+    >>> Token[0].transfer.call(accounts[1], "1 ether", {'from': accounts[0]})
+    True
+
+Calls
+*****
+
+If the contract method has a state mutability of ``view`` or ``pure``, the related class method type is :ref:`api-contract-call`. Calling this object will call the contract method and return the result. If you wish to access the method via a transaction you can use ``ContractCall.transact``.
 
 .. code-block:: python
 
@@ -157,19 +209,39 @@ If the contract method has a state mutability of ``view`` or ``pure``, the relat
     >>> tx.return_value
     1000000000000000000000
 
-For state changing methods the type is :ref:`api-contract-tx`. Calls to this object will perform a transaction. If you wish to call the contract method without a transaction, use ``ContractTx.call``.
+Ether Values
+============
 
-For transactions you can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``from`` value, the transaction will be sent from the same address that deployed the contract.
+Brownie uses the :ref:`Wei<wei>` class when a value is meant to represent an amount of ether. ``Wei`` is a subclass of ``int`` that converts strings, scientific notation and hex strings into wei denominated integers:
 
 .. code-block:: python
 
-    >>> Token[0].transfer(accounts[1], "1 ether", {'from': accounts[0]})
+    >>> Wei("1 ether")
+    1000000000000000000
+    >>> Wei("12.49 gwei")
+    12490000000
+    >>> Wei("0.029 shannon")
+    29000000
+    >>> Wei(8.38e32)
+    838000000000000000000000000000000
 
-    Transaction sent: 0x6e557594e657faf1270235bf4b3f27be7f5a3cb8a9c981cfffb12133cbaa165e
-    Token.transfer confirmed - block: 4   gas used: 51019 (33.78%)
-    <Transaction object '0x6e557594e657faf1270235bf4b3f27be7f5a3cb8a9c981cfffb12133cbaa165e'>
-    >>> Token[0].transfer.call(accounts[1], "1 ether", {'from': accounts[0]})
+It also converts other values to ``Wei`` before performing comparisons, addition or subtraction:
+
+    >>> Wei(1e18) == "1 ether"
     True
+    >>> Wei("1 ether") < "2 ether"
+    True
+    >>> Wei("1 ether") - "0.75 ether"
+    250000000000000000
+
+Whenever a Brownie method takes an input referring to an amount of ether, the given value is converted to ``Wei``. Balances and ``uint``/``int`` values returned in contract calls and events are given in ``Wei``.
+
+.. code-block:: python
+
+    >>> accounts[0].balance()
+    100000000000000000000
+    >>> type(accounts[0].balance())
+    <class 'brownie.convert.Wei'>
 
 Transactions
 ============
@@ -185,7 +257,6 @@ Each transaction returns a :ref:`api-network-tx` object. This object contains al
     <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>
     >>> tx
     <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>
-
 
 To get human-readable information on a transaction, use ``TransactionReceipt.info()``.
 
@@ -210,20 +281,81 @@ To get human-readable information on a transaction, use ``TransactionReceipt.inf
         to: 0xfae9bc8a468ee0d8c84ec00c8345377710e0f0bb
         value: 1000000000000000000
 
-Events are stored at ``TransactionReceipt.events`` using the :ref:`api-types-eventdict` class.
+.. _event-data:
+
+Accessing Event Data
+--------------------
+
+Events are stored at ``TransactionReceipt.events`` using the :ref:`api-network-eventdict` class. ``EventDict`` hybrid container with both dict-like and list-like properties.
+
+.. note::
+
+    If a transaction reverts, the events the fired are still visible.
 
 .. code-block:: python
 
-    >>> history[-2].events
+    >>> tx.events
     {
-        'Transfer': {
-            'from': "0x4fe357adbdb4c6c37164c54640851d6bff9296c8",
-            'to': "0xfae9bc8a468ee0d8c84ec00c8345377710e0f0bb",
-            'value': 1000000000000000000
-        }
+        'CountryModified': [
+            {
+                'country': 1,
+                'limits': (0,0,0,0,0,0,0,0),
+                'minrating': 1,
+                'permitted': True
+            },
+            {
+                'country': 2,
+                'limits': (0,0,0,0,0,0,0,0),
+                'minrating': 1,
+                'permitted': True
+            }
+        ],
+        'MultiSigCallApproved': [
+            {
+                'callHash': "0x0013ae2e37373648c5161d81ca78d84e599f6207ad689693d6e5938c3ae4031d",
+                'callSignature': "0xa513efa4",
+                'caller': "0xF9c1fd2f0452FA1c60B15f29cA3250DfcB1081b9",
+                'id': "0x8be1198d7f1848ebeddb3f807146ce7d26e63d3b6715f27697428ddb52db9b63"
+            }
+        ]
     }
 
-When a transaction reverts you will still receive a ``TransactionReceipt`` but it will show as reverted. If an error string is given, it will be displayed in brackets and highlighted in red.
+Use it as a dict for looking at specific events when the sequence they are fired in does not matter:
+
+.. code-block:: python
+
+    >>> len(tx.events)
+    3
+    >>> len(tx.events['CountryModified'])
+    2
+    >>> 'MultiSigCallApproved' in tx.events
+    True
+    >>> tx.events['MultiSigCallApproved']
+    {
+        'callHash': "0x0013ae2e37373648c5161d81ca78d84e599f6207ad689693d6e5938c3ae4031d",
+        'callSignature': "0xa513efa4",
+        'caller': "0xF9c1fd2f0452FA1c60B15f29cA3250DfcB1081b9",
+        'id': "0x8be1198d7f1848ebeddb3f807146ce7d26e63d3b6715f27697428ddb52db9b63"
+    }
+
+Or as a list when the sequence is important, or more than one event of the same type was fired:
+
+.. code-block:: python
+
+    >>> tx.events[1].name
+    'CountryModified'
+    >>> tx.events[1]
+    {
+        'country': 1,
+        'limits': (0,0,0,0,0,0,0,0),
+        'minrating': 1,
+        'permitted': True
+    }
+
+Reverted Transactions
+---------------------
+
+When a transaction reverts in the console you are still returned a ``TransactionReceipt``, but it will show as reverted. If an error string is given, it will be displayed in brackets and highlighted in red.
 
 .. code-block:: python
 
@@ -233,7 +365,7 @@ When a transaction reverts you will still receive a ``TransactionReceipt`` but i
     Token.transfer confirmed (Insufficient Balance) - block: 2   gas used: 23858 (19.26%)
     <Transaction object '0x5ff198f3a52250856f24792889b5251c120a9ecfb8d224549cb97c465c04262a'>
 
-You can use ``TransactionReceipt.error()`` to see the section of the source code that caused the revert.
+You can use ``TransactionReceipt.error()`` to see the section of the source code that caused the revert:
 
 .. code-block:: python
 
@@ -247,7 +379,20 @@ You can use ``TransactionReceipt.error()`` to see the section of the source code
             balances[_to] = balances[_to].add(_value);
             emit Transfer(msg.sender, _to, _value);
 
-You can also call ``TransactionReceipt.call_trace()`` to see all the contract jumps, internal and external, that occured prior to the revert.
+Or ``TransactionReceipt.traceback()`` for a full traceback leading up to the revert:
+
+.. code-block:: python
+
+    >>> tx.traceback()
+    Traceback for '0x9542e92a904e9d345def311ea52f22c3191816c6feaf7286f9b48081ab255ffa':
+    Trace step 99, program counter 1699:
+      File "contracts/Token.sol", line 67, in Token.transfer:
+        balances[msg.sender] = balances[msg.sender].sub(_value);
+    Trace step 110, program counter 1909:
+      File "contracts/SafeMath.sol", line 9, in SafeMath.sub:
+        require(b <= a);
+
+You can also call ``TransactionReceipt.call_trace()`` to see all the contract jumps, internal and external, that occured during the transaction. This method is available for all transactions, not only those that reverted.
 
 .. code-block:: python
 
@@ -257,8 +402,13 @@ You can also call ``TransactionReceipt.call_trace()`` to see all the contract ju
     Token.transferFrom confirmed (reverted) - block: 4   gas used: 25425 (26.42%)
 
     >>> tx.call_trace()
-    Token.transferFrom 0 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
-        Token.sub 86 (0x4C2588c6BFD533E0a27bF7572538ca509f31882F)
+    Call trace for '0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753':
+    Token.transfer 0:244  (0x4A32104371b05837F2A36dF6D850FA33A92a178D)
+      ∟ Token.transfer 72:226
+      ∟ SafeMath.sub 100:114
+      ∟ SafeMath.add 149:165
+
+See :ref:`debug` for more information on debugging reverted transactions.
 
 Unconfirmed Transactions
 ------------------------
@@ -267,9 +417,55 @@ If you are working on a chain where blocks are not mined automatically, you can 
 
 If you send another transaction from the same account before the previous one has confirmed, it will still broadcast with the next sequential nonce.
 
-The :ref:`api-network-history` object, available as ``history``, holds all TransactionReceipts. You can use it to access individual transactions if you did not assign them a unique name when making the call.
+Accessing Historic Transactions
+-------------------------------
+
+The :ref:`api-network-history` object, available as ``history``, holds all the transactions that have been broadcasted. You can use it to access ``TransactionReceipt`` objects if you did not assign them a unique name when making the call.
 
 .. code-block:: python
 
     >>> history
     [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>, <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>]
+
+The Local Test Environment
+==========================
+
+Brownie is designed to use `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__ as a local development environment.  Functionality such as snapshotting and time travel is accessible via the :ref:`rpc` object, available as ``rpc``:
+
+.. code-block:: python
+
+    >>> rpc
+    <brownie.network.rpc.Rpc object at 0x7f720f65fd68>
+
+``Rpc`` is useful when you need to perform tests dependent on time:
+
+.. code-block:: python
+
+    >>> rpc.time()
+    1557151189
+    >>> rpc.sleep(100)
+    >>> rpc.time()
+    1557151289
+
+Or for returning to a previous state during tests:
+
+.. code-block:: python
+
+    >>> rpc.snapshot()
+    Snapshot taken at block height 4
+    >>> accounts[0].balance()
+    100000000000000000000
+    >>> accounts[0].transfer(accounts[1], "10 ether")
+
+    Transaction sent: 0xd5d3b40eb298dfc48721807935eda48d03916a3f48b51f20bcded372113e1dca
+    Transaction confirmed - block: 5   gas used: 21000 (100.00%)
+    <Transaction object '0xd5d3b40eb298dfc48721807935eda48d03916a3f48b51f20bcded372113e1dca'>
+
+    >>> accounts[0].balance()
+    89999580000000000000
+    >>> rpc.revert()
+    Block height reverted to 4
+    >>> accounts[0].balance()
+    100000000000000000000
+
+See :ref:`test-rpc` for more information on how to use ``Rpc``.

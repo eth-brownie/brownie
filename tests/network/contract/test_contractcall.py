@@ -37,15 +37,19 @@ def test_transact(token):
     assert accounts[0].nonce == nonce + 1
 
 
-def test_always_transact(token):
+def test_always_transact(token, monkeypatch):
     balance = token.balanceOf(accounts[0])
     ARGV['always_transact'] = True
+    height = web3.eth.blockNumber
     try:
-        height = web3.eth.blockNumber
+        result = token.balanceOf(accounts[0])
+        assert balance == result
+        assert web3.eth.blockNumber == height == len(history)
+        monkeypatch.setattr('brownie.network.rpc._internal_revert', lambda: None)
         result = token.balanceOf(accounts[0])
         tx = history[-1]
         assert balance == result
-        assert web3.eth.blockNumber == height + 1
+        assert web3.eth.blockNumber == height + 1 == len(history)
         assert tx.fn_name == "balanceOf"
     finally:
         ARGV['always_transact'] = False

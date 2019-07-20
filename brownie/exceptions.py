@@ -20,9 +20,8 @@ class _RPCBaseException(Exception):
         out = proc.stdout.read().decode().strip() or "  (Empty)"
         err = proc.stderr.read().decode().strip() or "  (Empty)"
         super().__init__(
-            "{}\n\nCommand: {}\nURI: {}\nExit Code: {}\n\nStdout:\n{}\n\nStderr:\n{}".format(
-                msg, cmd, uri, code, out, err
-            )
+            f"{msg}\n\nCommand: {cmd}\nURI: {uri}\nExit Code: {code}"
+            f"\n\nStdout:\n{out}\n\nStderr:\n{err}"
         )
 
 

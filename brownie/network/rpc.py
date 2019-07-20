@@ -8,8 +8,12 @@ import time
 
 from .web3 import Web3
 
-from brownie.types.types import _Singleton
-from brownie.exceptions import RPCProcessError, RPCConnectionError, RPCRequestError
+from brownie._singleton import _Singleton
+from brownie.exceptions import (
+    RPCProcessError,
+    RPCConnectionError,
+    RPCRequestError
+)
 
 
 web3 = Web3()
@@ -225,11 +229,7 @@ class Rpc(metaclass=_Singleton):
         return "Block height reset to 0"
 
     def _internal_snap(self):
-        if not self._internal_id:
-            self._internal_id = self._snap()
-
-    def _internal_clear(self):
-        self._internal_id = None
+        self._internal_id = self._snap()
 
     def _internal_revert(self):
         self._request("evm_revert", [self._internal_id])

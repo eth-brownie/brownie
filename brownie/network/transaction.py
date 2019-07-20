@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+from hashlib import sha1
+import requests
 import threading
 import time
 
@@ -15,10 +17,12 @@ from .event import (
     decode_trace
 )
 from .web3 import Web3
+from brownie.convert import Wei
 from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build, sources
-from brownie._config import ARGV, CONFIG
+from brownie.test import coverage
+from brownie._config import ARGV
 
 history = TxHistory()
 _contracts = _ContractHistory()
@@ -73,7 +77,7 @@ class TransactionReceipt:
         '''
         if type(txid) is not str:
             txid = txid.hex()
-        if CONFIG['logging']['tx'] and not silent:
+        if not silent:
             print(f"\n{color['key']}Transaction sent{color}: {color['value']}{txid}{color}")
         history._add_tx(self)
 
@@ -122,17 +126,18 @@ class TransactionReceipt:
             confirm_thread.join()
             if ARGV['cli'] == "console":
                 return
-            # if coverage evaluation is active, get the trace immediately
-            if ARGV['coverage']:
+            # if coverage evaluation is active, evaluate the trace
+            if ARGV['coverage'] and not coverage.add_from_cached(self.coverage_hash) and self.trace:
                 self._expand_trace()
             if not self.status:
                 if revert[0] is None:
                     # no revert message and unable to check dev string - have to get trace
                     self._expand_trace()
-                raise VirtualMachineError({
-                    "message": f"{revert[2]} {self.revert_msg or ''}",
-                    "source": self._error_string(1)
-                })
+                # raise from a new function to reduce pytest traceback length
+                _raise(
+                    f"{revert[2]} {self.revert_msg or ''}",
+                    self._traceback_string() if ARGV['revert'] else self._error_string(1)
+                )
         except KeyboardInterrupt:
             if ARGV['cli'] != "console":
                 raise
@@ -166,13 +171,13 @@ class TransactionReceipt:
             time.sleep(0.5)
         self._set_from_tx(tx)
 
-        if not tx['blockNumber'] and CONFIG['logging']['tx'] and not silent:
+        if not tx['blockNumber'] and not silent:
             print("Waiting for confirmation...")
 
         # await confirmation
         receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
         self._set_from_receipt(receipt)
-        if not silent and CONFIG['logging']['tx']:
+        if not silent:
             print(self._confirm_output())
         if callback:
             callback(self)
@@ -181,7 +186,7 @@ class TransactionReceipt:
         if not self.sender:
             self.sender = tx['from']
         self.receiver = tx['to']
-        self.value = tx['value']
+        self.value = Wei(tx['value'])
         self.gas_price = tx['gasPrice']
         self.gas_limit = tx['gas']
         self.input = tx['input']
@@ -203,14 +208,18 @@ class TransactionReceipt:
         self.logs = receipt['logs']
         self.status = receipt['status']
 
+        base = (
+            f"{self.nonce}{self.block_number}{self.sender}{self.receiver}"
+            f"{self.value}{self.input}{self.status}{self.gas_used}{self.txindex}"
+        )
+        self.coverage_hash = sha1(base.encode()).hexdigest()
+
         if self.status:
             self.events = decode_logs(receipt['logs'])
         if self.fn_name:
             history._gas(self._full_name(), receipt['gasUsed'])
 
     def _confirm_output(self):
-        if CONFIG['logging']['tx'] >= 2:
-            return self.info()
         status = ""
         if not self.status:
             status = f"({color['error']}{self.revert_msg or 'reverted'}{color}) "
@@ -244,7 +253,19 @@ class TransactionReceipt:
             self.trace = []
             return
 
-        trace = web3.providers[0].make_request('debug_traceTransaction', [self.txid, {}])
+        try:
+            trace = web3.providers[0].make_request(
+                'debug_traceTransaction',
+                (self.txid, {'disableStorage': ARGV['cli'] != "console"})
+            )
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            msg = f"Encountered a {type(e).__name__} while requesting "
+            msg += "debug_traceTransaction. The local RPC client has likely crashed."
+            if ARGV['coverage']:
+                msg += " If the error persists, import brownie.test.skipcoverage"
+                msg += " and apply @skipcoverage to this test."
+            raise RPCRequestError(msg) from None
+
         if 'error' in trace:
             self.modified_state = None
             raise RPCRequestError(trace['error']['message'])
@@ -317,6 +338,7 @@ class TransactionReceipt:
             self._get_trace()
         self.trace = trace = self._trace
         if not trace or 'fn' in trace[0]:
+            coverage.add(self.coverage_hash, {})
             return
 
         # last_map gives a quick reference of previous values at each depth
@@ -328,6 +350,9 @@ class TransactionReceipt:
             'jumpDepth': 0,
             'pc_map': self.receiver._build['pcMap']
         }}
+
+        coverage_eval = {self.receiver._name: {}}
+        active_branches = set()
 
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
@@ -350,6 +375,8 @@ class TransactionReceipt:
                     'jumpDepth': 0,
                     'pc_map': contract._build['pcMap']
                 }
+                if contract._name not in coverage_eval:
+                    coverage_eval[contract._name] = {}
 
             # update trace from last_map
             last = last_map[trace[i]['depth']]
@@ -361,11 +388,31 @@ class TransactionReceipt:
                 'source': False
             })
             pc = last['pc_map'][trace[i]['pc']]
-            if 'path' in pc:
-                trace[i]['source'] = {'filename': pc['path'], 'offset': pc['offset']}
+            if 'path' not in pc:
+                continue
+
+            trace[i]['source'] = {'filename': pc['path'], 'offset': pc['offset']}
+
+            if 'fn' not in pc:
+                continue
+
+            # calculate coverage
+            if '<string' not in pc['path']:
+                if pc['path'] not in coverage_eval[last['name']]:
+                    coverage_eval[last['name']][pc['path']] = [set(), set(), set()]
+                if 'statement' in pc:
+                    coverage_eval[last['name']][pc['path']][0].add(pc['statement'])
+                if 'branch' in pc:
+                    if pc['op'] != "JUMPI":
+                        active_branches.add(pc['branch'])
+                    elif pc['branch'] in active_branches:
+                        # false, true
+                        key = 1 if trace[i+1]['pc'] == trace[i]['pc']+1 else 2
+                        coverage_eval[last['name']][pc['path']][key].add(pc['branch'])
+                        active_branches.remove(pc['branch'])
 
             # ignore jumps with no function - they are compiler optimizations
-            if 'jump' not in pc or 'fn' not in pc:
+            if 'jump' not in pc:
                 continue
 
             # jump 'i' is calling into an internal function
@@ -379,6 +426,7 @@ class TransactionReceipt:
             elif pc['jump'] == "o" and last['jumpDepth'] > 0:
                 del last['fn'][-1]
                 last['jumpDepth'] -= 1
+        coverage.add(self.coverage_hash, dict((k, v) for k, v in coverage_eval.items() if v))
 
     def _full_name(self):
         if self.contract_name:
@@ -438,8 +486,9 @@ class TransactionReceipt:
             raise NotImplementedError("Call trace is not available for deployment transactions.")
 
         result = f"Call trace for '{color['value']}{self.txid}{color}':"
-        result += _step_print(trace[0], trace[-1], 0, 0, len(trace))
+        result += _step_print(trace[0], trace[-1], None, 0, len(trace))
         indent = {0: 0}
+        indent_chars = [""]*1000
 
         # (index, depth, jumpDepth) for relevent steps in the trace
         trace_index = [(0, 0, 0)] + [
@@ -451,9 +500,12 @@ class TransactionReceipt:
             last = trace_index[i-1]
             if depth > last[1]:
                 # called to a new contract
-                indent[depth] = trace[idx-1]['jumpDepth'] + indent[depth-1]
+                indent[depth] = trace_index[i-1][2] + indent[depth-1]
                 end = next((x[0] for x in trace_index[i+1:] if x[1] < depth), len(trace))
-                result += _step_print(trace[idx], trace[end-1], depth+indent[depth], idx, end)
+                _depth = depth+indent[depth]
+                symbol, indent_chars[_depth] = _check_last(trace_index[i-1:])
+                indent_str = "".join(indent_chars[:_depth])+symbol
+                result += _step_print(trace[idx], trace[end-1], indent_str, idx, end)
             elif depth == last[1] and jump_depth > last[2]:
                 # jumped into an internal function
                 end = next((
@@ -461,24 +513,29 @@ class TransactionReceipt:
                     (x[1] == depth and x[2] < jump_depth)
                 ), len(trace))
                 _depth = depth+jump_depth+indent[depth]
-                result += _step_print(trace[idx], trace[end-1], _depth, idx, end)
+                symbol, indent_chars[_depth] = _check_last(trace_index[i-1:])
+                indent_str = "".join(indent_chars[:_depth])+symbol
+                result += _step_print(trace[idx], trace[end-1], indent_str, idx, end)
         print(result)
 
     def traceback(self):
+        print(self._traceback_string())
+
+    def _traceback_string(self):
         '''Returns an error traceback for the transaction.'''
         if self.status == 1:
-            return
+            return ""
         trace = self.trace
         if not trace:
             if not self.contract_address:
-                return
+                return ""
             raise NotImplementedError("Traceback is not available for deployment transactions.")
 
         try:
-            idx = next(i for i in range(len(trace)) if trace[i]['op'] in {"REVERT", "INVALID"})
+            idx = next(i for i in range(len(trace)) if trace[i]['op'] in ("REVERT", "INVALID"))
             trace_range = range(idx, -1, -1)
         except StopIteration:
-            return
+            return ""
 
         result = [next(i for i in trace_range if trace[i]['source'])]
         depth, jump_depth = trace[idx]['depth'], trace[idx]['jumpDepth']
@@ -493,8 +550,8 @@ class TransactionReceipt:
                 depth, jump_depth = trace[idx]['depth'], trace[idx]['jumpDepth']
             except StopIteration:
                 break
-        print(
-            f"Traceback for '{color['value']}{self.txid}{color}':\n" +
+        return (
+            f"{color}Traceback for '{color['value']}{self.txid}{color}':\n" +
             "\n".join(self._source_string(i, 0) for i in result[::-1])
         )
 
@@ -545,16 +602,20 @@ class TransactionReceipt:
         if not source:
             return ""
         source = sources.get_highlighted_source(source['filename'], source['offset'], pad)
+        if not source:
+            return ""
         return _format_source(source, self.trace[idx]['pc'], idx, self.trace[idx]['fn'])
 
 
 def _format_source(source, pc, idx, fn_name):
+    ln = f" {color['value']}{source[2][0]}"
+    if source[2][1] > source[2][0]:
+        ln = f"s{ln}{color['dull']}-{color['value']}{source[2][1]}"
     return (
         f"{color['dull']}Trace step {color['value']}{idx}{color['dull']}, "
-        f"program counter {color['value']}{pc}{color['dull']}:"
-        f"\n  File {color['string']}\"{source[1]}\"{color['dull']}, "
-        f"line {color['value']}{source[2]}{color['dull']}, in "
-        f"{color['callable']}{fn_name}{color['dull']}:{source[0]}"
+        f"program counter {color['value']}{pc}{color['dull']}:\n  {color['dull']}"
+        f"File {color['string']}\"{source[1]}\"{color['dull']}, line{ln}{color['dull']},"
+        f" in {color['callable']}{fn_name}{color['dull']}:{source[0]}"
     )
 
 
@@ -562,10 +623,23 @@ def _step_compare(a, b):
     return a['depth'] == b['depth'] and a['jumpDepth'] == b['jumpDepth']
 
 
+def _check_last(trace_index):
+    initial = trace_index[0][1:]
+    try:
+        trace = next(i for i in trace_index[1:-1] if i[1:] == initial)
+    except StopIteration:
+        return "\u2514", "  "
+    i = trace_index[1:].index(trace) + 2
+    next_ = trace_index[i][1:]
+    if next_[0] < initial[0] or (next_[0] == initial[0] and next_[1] <= initial[1]):
+        return "\u2514", "  "
+    return "\u251c", "\u2502 "
+
+
 def _step_print(step, last_step, indent, start, stop):
-    print_str = f"\n{'  '*indent}{color['dull']}"
-    if indent:
-        print_str += "\u221f "
+    print_str = f"\n{color['dull']}"
+    if indent is not None:
+        print_str += f"{indent}\u2500"
     if last_step['op'] in {"REVERT", "INVALID"} and _step_compare(step, last_step):
         contract_color = color("error")
     else:
@@ -580,3 +654,7 @@ def _get_memory(step, idx):
     offset = int(step['stack'][idx], 16) * 2
     length = int(step['stack'][idx-1], 16) * 2
     return HexBytes("".join(step['memory'])[offset:offset+length])
+
+
+def _raise(msg, source):
+    raise VirtualMachineError({"message": msg, "source": source})

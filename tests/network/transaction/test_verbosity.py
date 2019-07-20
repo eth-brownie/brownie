@@ -3,15 +3,17 @@
 from copy import deepcopy
 import pytest
 
-from brownie import accounts, config
+from brownie import accounts, project
 from brownie._config import ARGV
 
 
 @pytest.fixture(scope="module")
-def tx(token):
-    tx = token.transfer(accounts[1], 100)
+def tx():
+    ext = accounts[0].deploy(project.ExternalCallTester)
+    other = accounts[0].deploy(project.Other)
+    tx = ext.callAnother(other, 4)
+    tx.trace
     yield tx
-    config['logging']['tx'] = 1
 
 
 @pytest.fixture(scope="module")
@@ -20,23 +22,6 @@ def reverted_tx(token):
     tx = token.transferFrom(accounts[4], accounts[1], 100)
     ARGV['cli'] = False
     yield tx
-    config['logging']['tx'] = 1
-
-
-def test_info(tx, capfd):
-    config['logging']['tx'] = 2
-    tx.info()
-    out = capfd.readouterr()[0].strip()
-    config['logging']['tx'] = 1
-    tx.info()
-    assert out == capfd.readouterr()[0].strip()
-
-
-def test_confirm_output(tx):
-    config['logging']['tx'] = 2
-    info = tx._confirm_output()
-    config['logging']['tx'] = 1
-    assert info != tx._confirm_output()
 
 
 def test_traceback(tx, reverted_tx, capfd):

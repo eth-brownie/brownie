@@ -1,6 +1,6 @@
 # Brownie
 
-[![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg)](https://pypi.org/project/eth-brownie/) [![Build Status](https://img.shields.io/travis/com/HyperLink-Technology/brownie.svg)](https://travis-ci.com/HyperLink-Technology/brownie) [![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)](https://eth-brownie.readthedocs.io/en/latest/) [![Coverage Status](https://coveralls.io/repos/github/HyperLink-Technology/brownie/badge.svg?branch=master)](https://coveralls.io/github/HyperLink-Technology/brownie?branch=master)
+[![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg)](https://pypi.org/project/eth-brownie/) [![Build Status](https://img.shields.io/travis/com/iamdefinitelyahuman/brownie.svg)](https://travis-ci.com/iamdefinitelyahuman/brownie) [![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)](https://eth-brownie.readthedocs.io/en/latest/) [![Coverage Status](https://coveralls.io/repos/github/iamdefinitelyahuman/brownie/badge.svg?branch=master)](https://coveralls.io/github/iamdefinitelyahuman/brownie?branch=master)
 
 Brownie is a Python framework for deploying, testing and interacting with Ethereum smart contracts.
 
@@ -50,15 +50,11 @@ To run the tests, first install the developer dependencies:
 $ pip install -r requirements-dev.txt
 ```
 
-Then use ``tox`` to run the complete suite against the full set of build targets, or ``py.test`` to run specific tests against a specific version of Python.
+Then use ``tox`` to run the complete suite against the full set of build targets, or ``pytest`` to run tests against a specific version of Python. If you are using ``pytest`` you must include the ``-p no:pytest-brownie`` flag to prevent it from loading the Brownie plugin.
 
 ## Contributing
 
-Help is always appreciated! In particular, Brownie needs work in the following areas before we can comfortably take it out of beta:
-
-* More tests
-
-Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
+Help is always appreciated! Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
 
 ## License
 

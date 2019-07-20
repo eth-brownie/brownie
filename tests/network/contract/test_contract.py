@@ -3,7 +3,7 @@
 from copy import deepcopy
 import pytest
 
-from brownie import accounts
+from brownie import accounts, Wei
 from brownie.project import build
 from brownie.network.contract import Contract, ContractCall, ContractTx, OverloadedMethod
 
@@ -66,8 +66,9 @@ def test_set_methods():
 
 
 def test_balance():
-    c = Contract(str(accounts[1]), build.get('Token'), None)
-    assert c.balance() == 100000000000000000000
+    balance = Contract(str(accounts[1]), build.get('Token'), None).balance()
+    assert type(balance) is Wei
+    assert balance == "100 ether"
 
 
 def test_comparison():

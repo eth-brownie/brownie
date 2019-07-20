@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie.types.convert import to_int
+from brownie.convert import to_int
 
 
 def test_success():

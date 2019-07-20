@@ -127,4 +127,4 @@ All build files include a ``coverageMap`` which is used when evaluating test cov
 * Each ``statement`` index exists on a single program counter step. The statement is considered to have executed when the corresponding opcode executes within a transaction.
 * Each ``branch`` index is found on two program counters, one of which is always a ``JUMPI`` instruction. A transaction must run both opcodes before the branch is considered to have executed. Whether it evaluates true or false depends on if the jump occurs.
 
-See :ref:`coverage` for more information on test coverage evaluation.
+See :ref:`test-coverage` for more information on test coverage evaluation.

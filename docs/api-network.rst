@@ -190,12 +190,14 @@ Account Methods
 
 .. py:classmethod:: Account.balance()
 
-    Returns the current balance at the address, in wei as an integer.
+    Returns the current balance at the address, in :ref:`wei<wei>`.
 
     .. code-block:: python
 
         >>> accounts[0].balance()
         100000000000000000000
+        >>> accounts[0].balance() == "100 ether"
+        True
 
 .. py:classmethod:: Account.deploy(contract, *args, amount=None, gas_limit=None, gas_price=None, callback=None)
 
@@ -203,9 +205,9 @@ Account Methods
 
     * ``contract``: A ``ContractContainer`` instance of the contract to be deployed.
     * ``*args``: Contract constructor arguments.
-    * ``amount``: Amount to send, in :ref:`wei <wei>`.
-    * ``gas_limit``: Gas limit, in :ref:`wei <wei>`. If none is given, the price is set using ``eth_estimateGas``.
-    * ``gas_price``: Gas price, in :ref:`wei <wei>`. If none is given, the price is set using ``eth_gasPrice``.
+    * ``amount``: Amount of ether to send with the transaction. The given value is converted to :ref:`wei <wei>`.
+    * ``gas_limit``: Gas limit for the transaction. The given value is converted to :ref:`wei <wei>`. If none is given, the price is set using ``eth_estimateGas``.
+    * ``gas_price``: Gas price for the transaction. The given value is converted to :ref:`wei <wei>`. If none is given, the price is set using ``eth_gasPrice``.
 
     Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
 
@@ -231,8 +233,10 @@ Account Methods
 
     Estimates the gas required to perform a transaction. Raises a ``VirtualMachineError`` if the transaction would revert.
 
+    The returned value is given as an ``int`` denominated in wei.
+
     * ``to``: Recipient address. Can be an ``Account`` instance or string.
-    * ``amount``: Amount to send, in :ref:`wei <wei>`.
+    * ``amount``: Amount of ether to send. The given value is converted to :ref:`wei <wei>`.
     * ``data``: Transaction data hexstring.
 
     .. code-block:: python
@@ -245,9 +249,9 @@ Account Methods
     Broadcasts a transaction from this account.
 
     * ``to``: Recipient address. Can be an ``Account`` instance or string.
-    * ``amount``: Amount to send, in :ref:`wei <wei>`.
-    * ``gas_limit``: Gas limit, in :ref:`wei <wei>`. If none is given, the price is set using ``eth_estimateGas``.
-    * ``gas_price``: Gas price, in :ref:`wei <wei>`. If none is given, the price is set using ``eth_gasPrice``.
+    * ``amount``: Amount of ether to send. The given value is converted to :ref:`wei <wei>`.
+    * ``gas_limit``: Gas limit for the transaction. The given value is converted to :ref:`wei <wei>`. If none is given, the price is set using ``eth_estimateGas``.
+    * ``gas_price``: Gas price for the transaction. The given value is converted to :ref:`wei <wei>`. If none is given, the price is set using ``eth_gasPrice``.
     * ``data``: Transaction data hexstring.
 
     Returns a ``TransactionReceipt`` instance.
@@ -429,7 +433,7 @@ The ``contract`` module contains classes for interacting with smart contracts.
 
 Classes in this module are not meant to be instantiated directly. When a project is loaded, Brownie automatically creates ``ContractContainer`` instances from on the files in the ``contracts/`` folder. New ``Contract`` instances are created via methods in the container.
 
-Arguments supplied to calls or transaction methods are converted using the methods outlined in :ref:`type-conversions`.
+Arguments supplied to calls or transaction methods are converted using the methods outlined in the :ref:`convert<api-brownie-convert>` module.
 
 .. _api-network-contractcontainer:
 
@@ -593,6 +597,8 @@ ContractContainer Methods
         >>> Token
         []
 
+.. _api-network-contract:
+
 Contract
 --------
 
@@ -633,7 +639,7 @@ Contract Methods
 
 .. py:classmethod:: Contract.balance()
 
-    Returns the balance at the contract address, in wei at an int.
+    Returns the current balance at the contract address, in :ref:`wei<wei>`.
 
     .. code-block:: python
 
@@ -650,6 +656,8 @@ ContractCall
     Calls a non state-changing contract method without broadcasting a transaction, and returns the result. ``args`` must match the required inputs for the method.
 
     The expected inputs are shown in the method's ``__repr__`` value.
+
+    Inputs and return values are formatted via methods in the :ref:`convert<api-brownie-convert>` module. Multiple values are returned inside a :ref:`ReturnValue<return_value>`.
 
     .. code-block:: python
 
@@ -713,6 +721,10 @@ ContractTx
 
     Broadcasts a transaction to a potentially state-changing contract method. Returns a ``TransactionReceipt``.
 
+    The given ``args`` must match the required inputs for the method. The expected inputs are shown in the method's ``__repr__`` value.
+
+    Inputs are formatted via methods in the :ref:`convert<api-brownie-convert>` module.
+
     You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
     .. code-block:: python
@@ -760,6 +772,8 @@ ContractTx Methods
 .. py:classmethod:: ContractTx.call(*args)
 
     Calls the contract method without broadcasting a transaction, and returns the result.
+
+    Inputs and return values are formatted via methods in the :ref:`convert<api-brownie-convert>` module. Multiple values are returned inside a :ref:`ReturnValue<return_value>`.
 
     .. code-block:: python
 
@@ -819,9 +833,169 @@ OverloadedMethod
 ``brownie.network.event``
 =========================
 
-The ``event`` module contains methods related to decoding transaction event logs. It is largely a wrapper around `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`__.
+The ``event`` module contains classes and methods related to decoding transaction event logs. It is largely a wrapper around `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`__.
 
 Brownie stores encrypted event topics in ``brownie/data/topics.json``. The JSON file is loaded when this module is imported.
+
+.. _api-network-eventdict:
+
+EventDict
+---------
+
+.. py:class:: brownie.types.types.EventDict
+
+    Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`__. Base class, used to hold all events that are fired in a transaction.
+
+    When accessing events inside the object:
+
+    * If the key is given as an integer, events are handled as a list in the order that they fired. An ``_EventItem`` is returned for the specific event that fired at the given position.
+    * If the key is given as a string, a ``_EventItem`` is returned that contains all the events with the given name.
+
+    .. code-block:: python
+
+        >>> tx
+        <Transaction object '0xf1806643c21a69fcfa29187ea4d817fb82c880bcd7beee444ef34ea3b207cebe'>
+        >>> tx.events
+        {
+            'CountryModified': [
+                {
+                    'country': 1,
+                    'limits': (0, 0, 0, 0, 0, 0, 0, 0),
+                    'minrating': 1,
+                    'permitted': True
+                },
+                    'country': 2,
+                    'limits': (0, 0, 0, 0, 0, 0, 0, 0),
+                    'minrating': 1,
+                    'permitted': True
+                }
+            ],
+            'MultiSigCallApproved': {
+                'callHash': "0x0013ae2e37373648c5161d81ca78d84e599f6207ad689693d6e5938c3ae4031d",
+                'caller': "0xf9c1fd2f0452fa1c60b15f29ca3250dfcb1081b9"
+            }
+        }
+        >>> tx.events['CountryModified']
+        [
+            {
+                'country': 1,
+                'limits': (0, 0, 0, 0, 0, 0, 0, 0),
+                'minrating': 1,
+                'permitted': True
+            },
+                'country': 2,
+                'limits': (0, 0, 0, 0, 0, 0, 0, 0),
+                'minrating': 1,
+                'permitted': True
+            }
+        ]
+        >>> tx.events[0]
+        {
+            'callHash': "0x0013ae2e37373648c5161d81ca78d84e599f6207ad689693d6e5938c3ae4031d",
+            'caller': "0xf9c1fd2f0452fa1c60b15f29ca3250dfcb1081b9"
+        }
+
+.. py:classmethod:: EventDict.count(name)
+
+    Returns the number of events that fired with the given name.
+
+    .. code-block:: python
+
+        >>> tx.events.count('CountryModified')
+        2
+
+.. py:classmethod:: EventDict.items
+
+    Returns a set-like object providing a view on the object's items.
+
+.. py:classmethod:: EventDict.keys
+
+    Returns a set-like object providing a view on the object's keys.
+
+.. py:classmethod:: EventDict.values
+
+    Returns an object providing a view on the object's values.
+
+_EventItem
+----------
+
+.. py:class:: brownie.types.types._EventItem
+
+    Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`__. Represents one or more events with the same name that were fired in a transaction.
+
+    Instances of this class are created by ``EventDict``, it is not intended to be instantiated directly.
+
+    When accessing events inside the object:
+
+    * If the key is given as an integer, events are handled as a list in the order that they fired. An ``_EventItem`` is returned for the specific event that fired at the given position.
+    * If the key is given as a string, ``_EventItem`` assumes that you wish to access the first event contained within the object. ``event['value']`` is equivalent to ``event[0]['value']``.
+
+    All values within the object are formatted by methods outlined in the :ref:`convert<api-brownie-convert>` module.
+
+    .. code-block:: python
+
+        >>> event = tx.events['CountryModified']
+        <Transaction object '0xf1806643c21a69fcfa29187ea4d817fb82c880bcd7beee444ef34ea3b207cebe'>
+        >>> event
+        [
+            {
+                'country': 1,
+                'limits': (0, 0, 0, 0, 0, 0, 0, 0),
+                'minrating': 1,
+                'permitted': True
+            },
+                'country': 2,
+                'limits': (0, 0, 0, 0, 0, 0, 0, 0),
+                'minrating': 1,
+                'permitted': True
+            }
+        ]
+        >>> event[0]
+        {
+            'country': 1,
+            'limits': (0, 0, 0, 0, 0, 0, 0, 0),
+            'minrating': 1,
+            'permitted': True
+        }
+        >>> event['country']
+        1
+        >>> event[1]['country']
+        2
+
+.. py:attribute:: _EventItem.name
+
+    The name of the event(s) contained within this object.
+
+    .. code-block:: python
+
+        >>> tx.events[2].name
+        CountryModified
+
+
+.. py:attribute:: _EventItem.pos
+
+    A tuple giving the absolute position of each event contained within this object.
+
+    .. code-block:: python
+
+        >>> event.pos
+        (1, 2)
+        >>> event[1].pos
+        (2,)
+        >>> tx.events[2] == event[1]
+        True
+
+.. py:classmethod:: _EventItem.items
+
+    Returns a set-like object providing a view on the items in the first event within this object.
+
+.. py:classmethod:: _EventItem.keys
+
+    Returns a set-like object providing a view on the keys in the first event within this object.
+
+.. py:classmethod:: _EventItem.values
+
+    Returns an object providing a view on the values in the first event within this object.
 
 Module Methods
 --------------
@@ -840,7 +1014,7 @@ Module Methods
 
 .. py:method:: brownie.network.event.decode_logs(logs)
 
-    Given an array of logs as returned by ``eth_getLogs`` or ``eth_getTransactionReceipt`` RPC calls, returns an :ref:`api-types-eventdict`.
+    Given an array of logs as returned by ``eth_getLogs`` or ``eth_getTransactionReceipt`` RPC calls, returns an :ref:`api-network-eventdict`.
 
     .. code-block:: python
 
@@ -864,7 +1038,7 @@ Module Methods
 
 .. py:method:: brownie.network.event.decode_trace(trace)
 
-    Given the ``structLog`` from a ``debug_traceTransaction`` RPC call, returns an :ref:`api-types-eventdict`.
+    Given the ``structLog`` from a ``debug_traceTransaction`` RPC call, returns an :ref:`api-network-eventdict`.
 
     .. code-block:: python
 
@@ -982,7 +1156,74 @@ _ContractHistory
 
     A :ref:`api-types-singleton` dict of ``OrderedDict`` instances, used internally by Brownie to track deployed contracts.
 
-    Under the hood, calls to get objects from ``ContractContainer`` instances are redirected to this class. The primary use case is to simplify deleting ``Contract`` instances after the local RPC is reset or reverted.
+    Under the hood, calls to get objects from ``ContractContainer`` instances are redirected to this class. The primary use case is to simplify deleting  ``Contract`` instances after the local RPC is reset or reverted.
+
+.. _return_value:
+
+``brownie.network.return_value``
+================================
+
+ReturnValue
+-----------
+
+The ``return_value`` module contains the ``ReturnValue`` class, a container used when returning multiple values from a contract call.
+
+.. py:class:: brownie.network.return_value.ReturnValue
+
+    Hybrid container type with similaries to both `tuple <https://docs.python.org/3/library/stdtypes.html#tuples>`__ and `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__. Used for contract return values.
+
+    .. code-block:: python
+
+        >>> result = issuer.getCountry(784)
+        >>> result
+        (1, (0, 0, 0, 0), (100, 0, 0, 0))
+        >>> result[2]
+        (100, 0, 0, 0)
+        >>> result.dict()
+        {
+            '_count': (0, 0, 0, 0),
+            '_limit': (100, 0, 0, 0),
+            '_minRating': 1
+        }
+        >>> result['_minRating']
+        1
+
+    When checking equality, ``ReturnValue`` objects ignore the type of container compared against. Tuples and lists will both return ``True`` so long as they contain the same values.
+
+    .. code-block:: python
+
+        >>> result = issuer.getCountry(784)
+        >>> result
+        (1, (0, 0, 0, 0), (100, 0, 0, 0))
+        >>> result == (1, (0, 0, 0, 0), (100, 0, 0, 0))
+        True
+        >>> result == [1, [0, 0, 0, 0], [100, 0, 0, 0]]
+        True
+
+.. py:classmethod:: ReturnValue.copy
+
+    Returns a shallow copy of the object.
+
+.. py:classmethod:: ReturnValue.count(value)
+
+    Returns the number of occurances of ``value`` within the object.
+
+.. py:classmethod:: ReturnValue.dict
+
+    Returns a ``dict`` of the named values within the object.
+
+.. py:classmethod:: ReturnValue.index(value, [start, [stop]])
+
+    Returns the first index of ``value``. Raises ``ValueError`` if the value is not present.
+
+.. py:classmethod:: ReturnValue.items
+
+    Returns a set-like object providing a view on the object's named items.
+
+.. py:classmethod:: ReturnValue.keys
+
+    Returns a set-like object providing a view on the object's keys.
+
 
 ``brownie.network.rpc``
 =======================
@@ -1211,7 +1452,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.events
 
-    An :ref:`api-types-eventdict` of decoded event logs for this transaction.
+    An :ref:`api-network-eventdict` of decoded event logs for this transaction.
 
     .. note:: If you are connected to an RPC client that allows for ``debug_traceTransaction``, event data is still available when the transaction reverts.
 
@@ -1241,7 +1482,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.gas_limit
 
-    The gas limit of the transaction, in wei as an int.
+    The gas limit of the transaction, in wei as an ``int``.
 
     .. code-block:: python
 
@@ -1252,7 +1493,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.gas_price
 
-    The gas price of the transaction, in wei as an int.
+    The gas price of the transaction, in wei as an ``int``.
 
     .. code-block:: python
 
@@ -1263,7 +1504,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.gas_used
 
-    The amount of gas consumed by the transaction, in wei as an int.
+    The amount of gas consumed by the transaction, in wei as an ``int``.
 
     .. code-block:: python
 
@@ -1343,6 +1584,8 @@ TransactionReceipt Attributes
 
     The value returned from the called function, if any. Only available if the RPC client allows ``debug_traceTransaction``.
 
+    If more then one value was returned, they are stored in a :ref:`ReturnValue<return_value>`.
+
     .. code-block:: python
 
         >>> tx
@@ -1374,7 +1617,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.trace
 
-    The structLog from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC method. If you are using Infura this attribute is not available.
+    An expanded `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#user-content-basic-traces>`_ structLog, returned from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC endpoint. If you are using Infura this attribute is not available.
 
     Along with the standard data, the structLog also contains the following additional information:
 
@@ -1436,7 +1679,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.value
 
-    The value of the transaction, in wei as an int.
+    The value of the transaction, in  :ref:`wei<wei>`.
 
     .. code-block:: python
 
@@ -1488,9 +1731,9 @@ TransactionReceipt Methods
         >>> tx.call_trace()
         Call trace for '0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753':
         Token.transfer 0:244  (0x4A32104371b05837F2A36dF6D850FA33A92a178D)
-          ∟ Token.transfer 72:226
-            ∟ SafeMath.sub 100:114
-            ∟ SafeMath.add 149:165
+        └─Token.transfer 72:226
+          ├─SafeMath.sub 100:114
+          └─SafeMath.add 149:165
 
 .. py:classmethod:: TransactionReceipt.traceback()
 
@@ -1567,6 +1810,8 @@ TransactionReceipt Methods
 ========================
 
 The ``web3`` module contains a slightly modified version of the web3.py `Web3 <https://web3py.readthedocs.io/en/stable/web3.main.html#web3.Web3>`__ class that is used throughout various Brownie modules for RPC communication.
+
+.. _web3:
 
 Web3
 ----

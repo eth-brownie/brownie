@@ -1,86 +1,81 @@
 #!/usr/bin/python3
 
-import sys
+import json
+from pathlib import Path
 import time
 
-
 from brownie.cli.utils import color
-from brownie.network import history
-from . import coverage
+from brownie.project import build
+from brownie.network.history import TxHistory
 
 COVERAGE_COLORS = [
-    (0.5, "bright red"),
-    (0.85, "bright yellow"),
+    (0.8, "bright red"),
+    (0.9, "bright yellow"),
     (1, "bright green")
 ]
 
 
-class TestPrinter:
+def save_coverage_report(coverage_eval, report_path):
+    '''Saves a test coverage report for viewing in the GUI.
 
-    grand_count = 1
-    grand_total = 0
+    Args:
+        coverage_eval: Coverage evaluation dict
+        report_path: Path to save to. If a folder is given, saves as coverage-ddmmyy
 
-    def __init__(self, path, count, total):
-        self.path = path
-        self.count = count
-        self.total = total
-        self.total_time = time.time()
-        print(
-            f"\nRunning {color['module']}{path}{color} - {self.total} test"
-            f"{'s' if total != 1 else ''} ({self.grand_count}/{self.grand_total})"
-        )
-
-    @classmethod
-    def set_grand_total(cls, total):
-        cls.grand_total = total
-
-    def skip(self, description):
-        self._print(
-            f"{description} ({color['pending']}skipped{color['dull']})\n",
-            "\u229d",
-            "pending",
-            "dull"
-        )
-        self.count += 1
-
-    def start(self, description):
-        self.desc = description
-        self._print(f"{description} ({self.count}/{self.total})...")
-        self.time = time.time()
-
-    def stop(self, err=None, expect=False):
-        if not err:
-            self._print(f"{self.desc} ({time.time() - self.time:.4f}s)  \n", "\u2713")
-        else:
-            err = type(err).__name__
-            color_str = 'success' if expect and err != "ExpectedFailing" else 'error'
-            symbol = '\u2717' if err in ("AssertionError", "VirtualMachineError") else '\u203C'
-            msg = f"{self.desc} ({color(color_str)}{err}{color['dull']})\n"
-            self._print(msg, symbol, color_str, "dull")
-        self.count += 1
-
-    def finish(self):
-        print(
-            f"Completed {color['module']}{self.path}{color} ({time.time() - self.total_time:.4f}s)"
-        )
-        TestPrinter.grand_count += 1
-
-    def _print(self, msg, symbol=" ", symbol_color="success", main_color=None):
-        sys.stdout.write(
-            f"\r {color[symbol_color]}{symbol}{color[main_color]} {self.count} - {msg}{color}"
-        )
-        sys.stdout.flush()
+    Returns: Path object where report file was saved'''
+    report = {
+        'highlights': _get_highlights(coverage_eval),
+        'coverage': _get_totals(coverage_eval),
+        'sha1': {}  # TODO
+    }
+    report = json.loads(json.dumps(report, default=sorted))
+    report_path = Path(report_path).absolute()
+    save = True
+    if report_path.is_dir():
+        report_path, save = _check_last_path(report, report_path)
+    if save:
+        with report_path.open('w') as fp:
+            json.dump(report, fp, sort_keys=True, indent=2)
+    print(f"\nCoverage report saved at {report_path}")
+    return report_path
 
 
-def coverage_totals(coverage_eval):
+def _check_last_path(report, path):
+    filename = "coverage-"+time.strftime('%d%m%y')+"{}.json"
+    count = len(list(path.glob(filename.format('*'))))
+    if count:
+        last_path = _report_path(path, filename, count-1)
+        try:
+            with last_path.open() as fp:
+                last_report = json.load(fp)
+            if last_report == report:
+                return last_path, False
+        except json.JSONDecodeError:
+            pass
+    return _report_path(path, filename, count), True
+
+
+def _report_path(base_path, filename, count):
+    return base_path.joinpath(filename.format("-"+str(count) if count else ""))
+
+
+def print_gas_profile():
+    '''Formats and prints a gas profile report to the console.'''
+    print('\n\nGas Profile:')
+    gas = TxHistory().gas_profile
+    for i in sorted(gas):
+        print(f"{i} -  avg: {gas[i]['avg']:.0f}  low: {gas[i]['low']}  high: {gas[i]['high']}")
+
+
+def print_coverage_totals(coverage_eval):
     '''Formats and prints a coverage evaluation report to the console.
 
     Args:
         coverage_eval: coverage evaluation dict
 
     Returns: None'''
-    totals = coverage.get_totals(coverage_eval)
-    print("\nCoverage analysis:")
+    totals = _get_totals(coverage_eval)
+    print("\n\nCoverage analysis:")
     for name in sorted(totals):
         pct = _pct(totals[name]['totals']['statements'], totals[name]['totals']['branches'])
         print(f"\n  contract: {color['contract']}{name}{color} - {_cov_color(pct)}{pct:.1%}{color}")
@@ -88,10 +83,7 @@ def coverage_totals(coverage_eval):
         for fn_name, count in cov['statements'].items():
             branch = cov['branches'][fn_name] if fn_name in cov['branches'] else (0, 0, 0)
             pct = _pct(count, branch)
-            print(
-                f"    {color['contract_method']}{fn_name}{color}"
-                f" - {_cov_color(pct)}{pct:.1%}{color}"
-            )
+            print(f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}")
 
 
 def _cov_color(pct):
@@ -105,9 +97,161 @@ def _pct(statement, branch):
     return pct
 
 
-def gas_profile():
-    '''Formats and prints a gas profile report to the console.'''
-    print('\nGas Profile:')
-    gas = history.gas_profile
-    for i in sorted(gas):
-        print(f"{i} -  avg: {gas[i]['avg']:.0f}  low: {gas[i]['low']}  high: {gas[i]['high']}")
+def _get_totals(coverage_eval):
+    '''Returns a modified coverage eval dict showing counts and totals for each
+    contract function.
+
+    Arguments:
+        coverage_eval: Standard coverage evaluation dict
+
+    Returns:
+        { "ContractName": {
+            "statements": {
+                "path/to/file": {
+                    "ContractName.functionName": (count, total), ..
+                }, ..
+            },
+            "branches" {
+                "path/to/file": {
+                    "ContractName.functionName": (true count, false count, total), ..
+                }, ..
+            }
+        }'''
+    coverage_eval = _split_by_fn(coverage_eval)
+    results = dict((i, {
+        'statements': {},
+        'totals': {'statements': 0, 'branches': [0, 0]},
+        'branches': {'true': {}, 'false': {}}}
+    ) for i in coverage_eval)
+    for name in coverage_eval:
+        coverage_map = build.get(name)['coverageMap']
+        r = results[name]
+        r['statements'], r['totals']['statements'] = _statement_totals(
+            coverage_eval[name],
+            coverage_map['statements']
+        )
+        r['branches'], r['totals']['branches'] = _branch_totals(
+            coverage_eval[name],
+            coverage_map['branches']
+        )
+    return results
+
+
+def _split_by_fn(coverage_eval):
+    '''Splits a coverage eval dict so that coverage indexes are stored by contract
+    function. Once done, the dict is no longer compatible with other methods in this module.
+
+    Original format:
+        {"path/to/file": [index, ..], .. }
+
+    New format:
+        {"path/to/file": { "ContractName.functionName": [index, .. ], .. }
+    '''
+    results = dict((i, {
+        'statements': {},
+        'branches': {'true': {}, 'false': {}}}
+    ) for i in coverage_eval)
+    for name in coverage_eval:
+        map_ = build.get(name)['coverageMap']
+        results[name] = dict((k, _split(v, map_, k)) for k, v in coverage_eval[name].items())
+    return results
+
+
+def _split(coverage_eval, coverage_map, key):
+    results = {}
+    for fn, map_ in coverage_map['statements'][key].items():
+        results[fn] = [[i for i in map_ if int(i) in coverage_eval[0]], [], []]
+    for fn, map_ in coverage_map['branches'][key].items():
+        results[fn][1] = [i for i in map_ if int(i) in coverage_eval[1]]
+        results[fn][2] = [i for i in map_ if int(i) in coverage_eval[2]]
+    return results
+
+
+def _statement_totals(coverage_eval, coverage_map):
+    result = {}
+    count, total = 0, 0
+    for path, fn in [(k, x) for k, v in coverage_eval.items() for x in v]:
+        count += len(coverage_eval[path][fn][0])
+        total += len(coverage_map[path][fn])
+        result[fn] = (len(coverage_eval[path][fn][0]), len(coverage_map[path][fn]))
+    return result, (count, total)
+
+
+def _branch_totals(coverage_eval, coverage_map):
+    result = {}
+    final = [0, 0, 0]
+    for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
+        if path not in coverage_eval:
+            true, false = 0, 0
+        else:
+            true = len(coverage_eval[path][fn][2])
+            false = len(coverage_eval[path][fn][1])
+        total = len(coverage_map[path][fn])
+        result[fn] = (true, false, total)
+        for i in range(3):
+            final[i] += result[fn][i]
+    return result, final
+
+
+def _get_highlights(coverage_eval):
+    '''Returns a highlight map formatted for display in the GUI.
+
+    Arguments:
+        coverage_eval: coverage evaluation dict
+
+    Returns:
+        {
+            "statements": {
+                "ContractName": {"path/to/file": [start, stop, color, msg .. ], .. },
+            },
+            "branches": {
+                "ContractName": {"path/to/file": [start, stop, color, msg .. ], .. },
+            }
+        }'''
+    results = {
+        'statements': {},
+        'branches': {}
+    }
+    for name, eval_ in coverage_eval.items():
+        coverage_map = build.get(name)['coverageMap']
+        results['statements'][name] = _statement_highlights(eval_, coverage_map['statements'])
+        results['branches'][name] = _branch_highlights(eval_, coverage_map['branches'])
+    return results
+
+
+def _statement_highlights(coverage_eval, coverage_map):
+    results = dict((i, []) for i in coverage_map)
+    for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
+        results[path].extend([
+            list(offset) + [_statement_color(i, coverage_eval, path), ""]
+            for i, offset in coverage_map[path][fn].items()
+        ])
+    return results
+
+
+def _statement_color(i, coverage_eval, path):
+    if path not in coverage_eval or int(i) not in coverage_eval[path][0]:
+        return "red"
+    return "green"
+
+
+def _branch_highlights(coverage_eval, coverage_map):
+    results = dict((i, []) for i in coverage_map)
+    for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
+        results[path].extend([
+            list(offset[:2]) + [_branch_color(int(i), coverage_eval, path, offset[2]), ""]
+            for i, offset in coverage_map[path][fn].items()
+        ])
+    return results
+
+
+def _branch_color(i, coverage_eval, path, jump):
+    if path not in coverage_eval:
+        return "red"
+    if i in coverage_eval[path][2]:
+        if i in coverage_eval[path][1]:
+            return "green"
+        return "yellow" if jump else "orange"
+    if i in coverage_eval[path][1]:
+        return "orange" if jump else "yellow"
+    return "red"

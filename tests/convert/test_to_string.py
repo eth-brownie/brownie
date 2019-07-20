@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie.types.convert import to_string
+from brownie.convert import to_string
 
 
 def test_string():

@@ -2,6 +2,7 @@
 
 from .web3 import Web3
 from .rpc import Rpc
+from .account import Accounts
 from brownie._config import CONFIG, modify_network_config
 
 rpc = Rpc()
@@ -31,6 +32,8 @@ def connect(network=None):
                 rpc.attach(CONFIG['active_network']['host'])
             else:
                 rpc.launch(CONFIG['active_network']['test-rpc'])
+        else:
+            Accounts()._reset()
     except Exception:
         CONFIG['active_network'] = {'name': None}
         web3.disconnect()

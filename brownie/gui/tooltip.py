@@ -26,10 +26,7 @@ class ToolTip(tk.Toplevel):
     def show(self):
         if self.kill:
             return
-        self.geometry("+{}+{}".format(
-            self.winfo_pointerx()+5,
-            self.winfo_pointery()+5
-        ))
+        self.geometry(f"+{self.winfo_pointerx()+5}+{self.winfo_pointery()+5}")
         self.lift()
         self.deiconify()
 

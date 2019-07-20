@@ -4,13 +4,13 @@ import pytest
 
 from brownie.network.account import Account
 from brownie.network.contract import Contract
-from brownie.types import EventDict
-from brownie import accounts
+from brownie.network.event import EventDict
+from brownie import accounts, Wei
 
 
 def test_value():
     tx = accounts[0].transfer(accounts[1], "1 ether")
-    assert type(tx.value) is int
+    assert type(tx.value) is Wei
     assert tx.value == 1000000000000000000
 
 
