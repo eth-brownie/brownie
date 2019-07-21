@@ -27,6 +27,7 @@ The first step in determining why a transaction has failed is to look at the err
 A good coding practice is to use one expression per ``require`` so your revert strings can be more precise.  For example, if a transaction fails from the following require statement you cannot immediately tell whether it failed because of the balance or the allowance:
 
 .. code-block:: solidity
+    :linenos:
 
     function transferFrom(address _from, address _to, uint _amount) external returns (bool) {
         require (allowed[_from][msg.sender] >= _amount && balance[_from] >= _amount);
@@ -34,6 +35,7 @@ A good coding practice is to use one expression per ``require`` so your revert s
 By seperating the ``require`` expressions, unique revert strings are possible and determining the cause becomes trivial:
 
 .. code-block:: solidity
+    :linenos:
 
     function transferFrom(address _from, address _to, uint _amount) external returns (bool) {
         require (allowed[_from][msg.sender] >= _amount, "Insufficient allowance");

@@ -15,7 +15,7 @@ Test scripts are stored in the ``tests/`` folder of your project. To run the com
     $ pytest tests
 
 
-Brownie pytest Fixtures
+Brownie Pytest Fixtures
 =======================
 
 Brownie provides `pytest fixtures <https://docs.pytest.org/en/latest/fixture.html>`_ which allow you to interact with your project. To use a fixture, add an argument with the same name to the inputs of your test function.
@@ -134,7 +134,7 @@ When running tests, transactions that revert raise a ``VirtualMachineError`` exc
 
     def test_transfer_reverts(Token):
         token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
-        with pytest.raises():
+        with pytest.reverts():
             token.transfer(accounts[1], "2000 ether", {'from': accounts[0]})
 
 You may optionally supply a string as an argument. If given, the error string returned by the transaction must match it in order for the test to pass.
@@ -146,7 +146,7 @@ You may optionally supply a string as an argument. If given, the error string re
 
     def test_transfer_reverts(Token):
         token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
-        with pytest.raises("Insufficient Balance"):
+        with pytest.reverts("Insufficient Balance"):
             token.transfer(accounts[1], "9001 ether", {'from': accounts[0]})
 
 .. _dev-revert:
@@ -156,7 +156,7 @@ Developer Revert Comments
 
 Each revert string adds a minimum 20000 gas to your contract deployment cost, and increases the cost for a function to execute. Including a revert string for every ``require`` and ``revert`` statement is often impractical and sometimes simply not possible due to the block gas limit.
 
-For this reason, Brownie allows you to include revert strings as source code comments that are not included in the bytecode but still accessible via ``TransactionReceipt.revert_msg``. This aids in development and testing of your contract, letting you write tests that target a specific ``require`` or ``revert`` statement without increasing gas costs.
+For this reason, Brownie allows you to include revert strings as source code comments that are not included in the bytecode but still accessible via ``TransactionReceipt.revert_msg``. You write tests that target a specific ``require`` or ``revert`` statement without increasing gas costs.
 
 Revert string comments must begin with ``// dev:`` in order for Brownie to recognize them. Priority is always given to compiled revert strings. Some examples:
 

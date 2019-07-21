@@ -290,7 +290,7 @@ Events are stored at ``TransactionReceipt.events`` using the :ref:`api-network-e
 
 .. note::
 
-    If a transaction reverts, the events the fired are still visible.
+    Event data is still available when a transaction reverts.
 
 .. code-block:: python
 
