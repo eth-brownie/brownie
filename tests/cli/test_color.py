@@ -26,6 +26,7 @@ def win32():
     w.off()
 
 
+@pytest.mark.skipif('sys.platform == "win32"')
 def test_no_colors_on_windows(win32):
     a = color('error')
     assert not a
@@ -33,6 +34,7 @@ def test_no_colors_on_windows(win32):
     assert a != color('error')
 
 
+@pytest.mark.skipif('sys.platform == "win32"')
 def test_call_getitem(win32):
     assert color('success') == color['success'] == ""
     assert str(color) == ""
@@ -41,6 +43,7 @@ def test_call_getitem(win32):
     assert str(color) == "\x1b[0;m"
 
 
+@pytest.mark.skipif('sys.platform == "win32"')
 def test_bright_dark():
     assert color('yellow') != color('dark yellow') != color('bright yellow') != ""
 
