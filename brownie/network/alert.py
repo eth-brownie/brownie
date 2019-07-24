@@ -52,12 +52,14 @@ class Alert:
         if not callable(fn):
             raise TypeError("You can only set an alert on a callable object")
         if isinstance(repeat, int) and repeat < 0:
-            raise ValueError()
+            raise ValueError("repeat must be True, False or a positive integer")
         self._kill = False
         start_value = fn(*args, **kwargs)
         self._thread = Thread(
-            target=self._loop, daemon=True,
-            args=(fn, args, kwargs, start_value, delay, msg, callback, repeat))
+            target=self._loop,
+            daemon=True,
+            args=(fn, args, kwargs, start_value, delay, msg, callback, repeat)
+        )
         self._thread.start()
         self.start_time = time.time()
         _instances.add(self)
@@ -108,9 +110,9 @@ class Alert:
             self.wait()
 
 
-def new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None):
+def new(fn, args=None, kwargs=None, delay=0.5, msg=None, callback=None, repeat=False):
     '''Alias for creating a new Alert instance.'''
-    return Alert(fn, args, kwargs, delay, msg, callback)
+    return Alert(fn, args, kwargs, delay, msg, callback, repeat)
 
 
 def show():
@@ -122,3 +124,4 @@ def stop_all():
     '''Stops all currently active Alert instances.'''
     for t in _instances.copy():
         t.stop()
+    _instances.clear()
