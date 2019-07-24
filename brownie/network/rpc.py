@@ -80,7 +80,7 @@ class Rpc(metaclass=_Singleton):
                     break
                 time.sleep(0.05)
             if rpc is None:
-                raise FileNotFoundError(f"Could not launch RPC process {cmd}")
+                raise SystemError(f"Could not launch RPC process {cmd}")
         # check that web3 can connect
         self._rpc = rpc
         if not web3.providers:
@@ -255,4 +255,5 @@ def _win_proc_filter(proc, match):
         cmdline = " ".join(proc.cmdline())
     except psutil.AccessDenied:
         return False
-    return "node" in cmdline and match in cmdline
+    match = ["node"] + match.split()
+    return not [i for i in match if i not in cmdline]
