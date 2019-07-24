@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+from psutil import Popen
 
 
 # network
@@ -16,6 +17,9 @@ class UndeployedLibrary(Exception):
 class _RPCBaseException(Exception):
 
     def __init__(self, msg, cmd, proc, uri):
+        if type(proc) is not Popen:
+            super().__init__(f"{msg}\nCommand: {cmd}")
+            return
         code = proc.poll()
         out = proc.stdout.read().decode().strip() or "  (Empty)"
         err = proc.stderr.read().decode().strip() or "  (Empty)"

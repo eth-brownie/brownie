@@ -59,7 +59,7 @@ class Rpc(metaclass=_Singleton):
         self._is_child = True
         uri = web3.providers[0].endpoint_uri if web3.providers else None
         if sys.platform != "win32":
-            self._rpc = psutil.Popen(
+            rpc = psutil.Popen(
                 cmd.split(" "),
                 stdin=DEVNULL,
                 stdout=PIPE,
@@ -67,32 +67,36 @@ class Rpc(metaclass=_Singleton):
                 bufsize=1
             )
             # check if process loads successfully
-            self._rpc.stdout.peek()
+            rpc.stdout.peek()
             time.sleep(0.1)
-            if self._rpc.poll():
-                raise RPCProcessError(cmd, self._rpc, uri)
+            if rpc.poll():
+                raise RPCProcessError(cmd, rpc, uri)
         else:
             # ganache does not play nicely in Windows when spawned as a child process
             os.system(f"start /min {cmd}")
             for x in range(60):
                 rpc = next((i for i in psutil.process_iter() if _win_proc_filter(i, cmd)), None)
                 if rpc is not None:
-                    self._rpc = rpc
                     break
                 time.sleep(0.05)
             if rpc is None:
                 raise FileNotFoundError(f"Could not launch RPC process {cmd}")
         # check that web3 can connect
+        self._rpc = rpc
         if not web3.providers:
             self._reset()
             return
-        for i in range(50):
-            time.sleep(0.05)
+        for i in range(100):
             if web3.isConnected():
                 self._reset_id = self._snap()
                 self._reset()
                 return
-        rpc = self._rpc
+            time.sleep(0.1)
+            if type(rpc) is psutil.Popen:
+                rpc.poll()
+            if not rpc.is_running():
+                self.kill(False)
+                raise RPCProcessError(cmd, rpc, uri)
         self.kill(False)
         raise RPCConnectionError(cmd, rpc, uri)
 
