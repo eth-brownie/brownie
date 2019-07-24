@@ -41,7 +41,7 @@ matrix:
         - choco install python
         - python -m pip install --upgrade pip
         - python -m pip install -r requirements-dev.txt
-        - python -m pip install -r requirements.txt
+        - python setup.py install
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
       script: python -m pytest tests/ --cov=brownie/ -p no:pytest-brownie
       after_success: python -m coveralls 

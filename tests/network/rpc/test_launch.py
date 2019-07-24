@@ -3,7 +3,7 @@
 import pytest
 
 from brownie import rpc
-from brownie.exceptions import RPCProcessError, RPCConnectionError
+from brownie.exceptions import RPCProcessError
 
 
 @pytest.mark.skipif('sys.platform == "win32"')
@@ -14,7 +14,7 @@ def test_launch_file_not_found(no_rpc):
 
 @pytest.mark.skipif('sys.platform == "win32"')
 def test_launch_cant_connect(no_rpc):
-    with pytest.raises(RPCConnectionError):
+    with pytest.raises(RPCProcessError):
         rpc.launch("ganache-cli --help")
 
 
