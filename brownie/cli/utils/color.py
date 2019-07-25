@@ -5,6 +5,11 @@ import traceback
 
 from brownie._config import ARGV, CONFIG
 
+if sys.platform == "win32":
+    import colorama
+    colorama.init()
+
+
 BASE = "\x1b[0;"
 
 MODIFIERS = {
@@ -38,8 +43,6 @@ NOTIFY_COLORS = {
 class Color:
 
     def __call__(self, color=None):
-        if sys.platform == "win32":
-            return ""
         if color in CONFIG['colors']:
             color = CONFIG['colors'][color]
         if not color:
@@ -53,8 +56,6 @@ class Color:
             return BASE+"m"
 
     def __str__(self):
-        if sys.platform == "win32":
-            return ""
         return BASE+"m"
 
     def __getitem__(self, color):
