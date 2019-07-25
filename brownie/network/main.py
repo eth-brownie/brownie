@@ -45,12 +45,12 @@ def disconnect():
     if not is_connected():
         raise ConnectionError("Not connected to any network")
     CONFIG['active_network'] = {'name': None}
-    web3.disconnect()
     if rpc.is_active():
         if rpc.is_child():
             rpc.kill()
         else:
             rpc.reset()
+    web3.disconnect()
 
 
 def show_active():

@@ -14,7 +14,7 @@ def module_setup(projectpath):
 
 
 @pytest.fixture(autouse=True)
-def setup(monkeypatch, testdir, projectpath, request):
+def fn_setup(monkeypatch, testdir, projectpath, request):
     project.close(False)
     monkeypatch.setattr('brownie.network.connect', lambda k: None)
     testdir.plugins.extend(['pytest-brownie', 'pytest-cov'])

@@ -1,6 +1,5 @@
-flake8==3.7.7
-pytest==4.5.0
-Sphinx==2.0.1
-tox==3.10.0
+coveralls>=1.7.0
+pytest>=5.0.0
+pytest-cov>=2.7.1
 twine==1.13.0
 wheel==0.33.4

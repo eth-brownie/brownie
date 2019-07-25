@@ -15,7 +15,6 @@ from brownie.exceptions import (
     RPCRequestError
 )
 
-
 web3 = Web3()
 
 
@@ -51,45 +50,35 @@ class Rpc(metaclass=_Singleton):
             cmd: command string to execute as subprocess'''
         if self.is_active():
             raise SystemError("RPC is already active.")
-        try:
-            self._rpc = psutil.Popen(
-                cmd.split(" "),
-                stdin=DEVNULL,
-                stdout=PIPE,
-                stderr=PIPE,
-                bufsize=1
-            )
-        except FileNotFoundError:
-            if sys.platform == "win32" and cmd.split(" ")[0][-4:] != ".cmd":
-                if " " in cmd:
-                    cmd = cmd.replace(" ", ".cmd ", 1)
-                else:
-                    cmd += ".cmd"
-                return self.launch(cmd)
-            raise
         print(f"Launching '{cmd}'...")
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
-        uri = web3.providers[0].endpoint_uri if web3.providers else None
-        # check if process loads successfully
-        self._rpc.stdout.peek()
-        time.sleep(0.1)
-        if self._rpc.poll():
-            raise RPCProcessError(cmd, self._rpc, uri)
+        if sys.platform == "win32" and not cmd.split(" ")[0].endswith(".cmd"):
+            if " " in cmd:
+                cmd = cmd.replace(" ", ".cmd ", 1)
+            else:
+                cmd += ".cmd"
+        out = DEVNULL if sys.platform == "win32" else PIPE
+        self._rpc = psutil.Popen(cmd.split(" "), stdin=DEVNULL, stdout=out, stderr=out)
         # check that web3 can connect
         if not web3.providers:
             self._reset()
             return
-        for i in range(50):
-            time.sleep(0.05)
+        uri = web3.providers[0].endpoint_uri if web3.providers else None
+        for i in range(100):
             if web3.isConnected():
                 self._reset_id = self._snap()
                 self._reset()
                 return
-        rpc = self._rpc
+            time.sleep(0.1)
+            if type(self._rpc) is psutil.Popen:
+                self._rpc.poll()
+            if not self._rpc.is_running():
+                self.kill(False)
+                raise RPCProcessError(cmd, self._rpc, uri)
         self.kill(False)
-        raise RPCConnectionError(cmd, rpc, uri)
+        raise RPCConnectionError(cmd, self._rpc, uri)
 
     def attach(self, laddr):
         '''Attaches to an already running RPC client subprocess.
@@ -237,3 +226,12 @@ class Rpc(metaclass=_Singleton):
         self.sleep(0)
         for i in self._objects:
             i._revert()
+
+
+def _win_proc_filter(proc, match):
+    try:
+        cmdline = " ".join(proc.cmdline())
+    except psutil.AccessDenied:
+        return False
+    match = ["node"] + match.split()
+    return not [i for i in match if i not in cmdline]

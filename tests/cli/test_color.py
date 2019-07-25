@@ -6,37 +6,17 @@ import sys
 from brownie.cli.utils import color
 
 
-class Win32:
-
-    def __init__(self):
-        self.platform = sys.platform
-        self.on()
-
-    def on(self):
-        sys.platform = "win32"
-
-    def off(self):
-        sys.platform = self.platform
+@pytest.fixture
+def colorpatch(monkeypatch):
+    def patched(*args):
+        return ""
+    monkeypatch.setattr('brownie.cli.utils.Color.__call__', patched)
+    monkeypatch.setattr('brownie.cli.utils.Color.__getitem__', patched)
+    monkeypatch.setattr('brownie.cli.utils.Color.__str__', patched)
+    yield
 
 
-@pytest.fixture(scope="function")
-def win32():
-    w = Win32()
-    yield w
-    w.off()
-
-
-def test_no_colors_on_windows(win32):
-    a = color('error')
-    assert not a
-    win32.off()
-    assert a != color('error')
-
-
-def test_call_getitem(win32):
-    assert color('success') == color['success'] == ""
-    assert str(color) == ""
-    win32.off()
+def test_call_getitem():
     assert color('success') == color['success'] != ""
     assert str(color) == "\x1b[0;m"
 
@@ -45,7 +25,7 @@ def test_bright_dark():
     assert color('yellow') != color('dark yellow') != color('bright yellow') != ""
 
 
-def test_pretty_dict(win32):
+def test_pretty_dict(colorpatch):
     x = {1: 2, "foo": "bar", "baz": True}
     assert x == eval(color.pretty_dict(x))
     x = {'foo': [1, 2], 'bar': ["a", "b", "c"]}
@@ -54,7 +34,7 @@ def test_pretty_dict(win32):
     assert x == eval(color.pretty_dict(x))
 
 
-def test_pretty_list(win32):
+def test_pretty_list(colorpatch):
     x = [1, 2, 3, 4, 5]
     assert x == eval(color.pretty_list(x))
     x = (1, 2, 3, 4, 5)

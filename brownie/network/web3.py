@@ -21,9 +21,13 @@ class Web3(_Web3, metaclass=_Singleton):
 
     def connect(self, uri):
         '''Connects to a provider'''
-        if Path(uri).exists():
-            self.providers = [IPCProvider(uri)]
-        elif uri[:3] == "ws:":
+        try:
+            if Path(uri).exists():
+                self.providers = [IPCProvider(uri)]
+                return
+        except OSError:
+            pass
+        if uri[:3] == "ws:":
             self.providers = [WebsocketProvider(uri)]
         elif uri[:4] == "http":
             self.providers = [HTTPProvider(uri)]

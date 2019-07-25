@@ -6,7 +6,9 @@ from brownie import rpc, config, web3
 
 
 def _launch(cmd):
-    rpc._launch(cmd+" -p 31337")
+    if '-p ' not in cmd:
+        cmd += " -p 31337"
+    rpc._launch(cmd)
 
 
 @pytest.fixture(scope="module")

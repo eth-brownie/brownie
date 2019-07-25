@@ -15,6 +15,7 @@ pytest_plugins = 'pytester'
 
 @pytest.fixture(autouse=True, scope="session")
 def session_setup():
+    # start_time = time.time()
     network.connect('development')
     project.load('tests/brownie-test-project')
     yield

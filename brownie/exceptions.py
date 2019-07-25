@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import sys
 
 
 # network
@@ -16,13 +17,12 @@ class UndeployedLibrary(Exception):
 class _RPCBaseException(Exception):
 
     def __init__(self, msg, cmd, proc, uri):
-        code = proc.poll()
-        out = proc.stdout.read().decode().strip() or "  (Empty)"
-        err = proc.stderr.read().decode().strip() or "  (Empty)"
-        super().__init__(
-            f"{msg}\n\nCommand: {cmd}\nURI: {uri}\nExit Code: {code}"
-            f"\n\nStdout:\n{out}\n\nStderr:\n{err}"
-        )
+        msg = f"{msg}\n\nCommand: {cmd}\nURI: {uri}\nExit Code: {proc.poll()}"
+        if sys.platform != "win32":
+            out = proc.stdout.read().decode().strip() or "  (Empty)"
+            err = proc.stderr.read().decode().strip() or "  (Empty)"
+            msg += f"\n\nStdout:\n{out}\n\nStderr:\n{err}"
+        super().__init__(msg)
 
 
 class RPCProcessError(_RPCBaseException):

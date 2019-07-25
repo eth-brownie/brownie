@@ -11,7 +11,7 @@ def test_attach_lookup_error(no_rpc):
 
 
 def test_already_active(no_rpc):
-    rpc.launch("ganache-cli")
+    rpc.launch("ganache-cli -a 20")
     with pytest.raises(SystemError):
         rpc.attach("http://127.0.0.1:31337")
 

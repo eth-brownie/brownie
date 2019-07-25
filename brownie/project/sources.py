@@ -54,11 +54,11 @@ def load(project_path):
     clear()
     project_path = Path(project_path)
     for path in project_path.glob('contracts/**/*.sol'):
-        if "/_" in str(path):
+        if "/_" in str(path.as_posix()):
             continue
         with path.open() as fp:
             source = fp.read()
-        path = str(path.relative_to(project_path))
+        path = str(path.relative_to(project_path).as_posix())
         _source[path] = source
         _contracts.update(_get_contract_data(source, path))
 
@@ -94,7 +94,7 @@ def _get_contract_data(full_source, path):
                 f"Contract '{name}' already exists in the active project."
             )
         data[name] = {
-            'path': str(path),
+            'path': path,
             'offset_map': offset_map,
             'minified': minified_source,
             'offset': (

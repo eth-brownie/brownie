@@ -332,7 +332,7 @@ Alert
 
 Alerts and callbacks are handled by creating instances of the ``Alert`` class.
 
-.. py:class:: brownie.network.alert.Alert(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None)
+.. py:class:: brownie.network.alert.Alert(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None, repeat=False)
 
     An alert object. It is active immediately upon creation of the instance.
 
@@ -342,6 +342,9 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
     * ``delay``: Number of seconds to wait between checking for changes.
     * ``msg``: String to display upon change. The string will have ``.format(initial_value, new_value)`` applied before displaying.
     * ``callback``: A callback function to call upon a change in value. It should accept two arguments, the initial value and the new value.
+    * ``repeat``: If ``False``, the alert will terminate after the first time it first. if ``True``, it will continue to fire with each change until it is stopped via ``Alert.stop()``.  If an ``int`` value is given, it will fire a total of ``n+1`` times before terminating.
+
+    Alerts are **non-blocking**, threading is used to monitor changes. Once an alert has finished running it cannot be restarted.
 
     A basic example of an alert, watching for a changed balance:
 
@@ -350,6 +353,7 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
         >>> from brownie.network.alert import Alert
         >>> Alert(accounts[1].balance, msg="Account 1 balance has changed from {} to {}")
         <brownie.network.alert.Alert object at 0x7f9fd25d55f8>
+        
         >>> alert.show()
         [<brownie.network.alert.Alert object at 0x7f9fd25d55f8>]
         >>> accounts[2].transfer(accounts[1], "1 ether")
@@ -365,9 +369,10 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
 
         >>> alert.new(accounts[3].balance, msg="Account 3 balance has changed from {} to {}")
         <brownie.network.alert.Alert object at 0x7fc743e415f8>
+        
         >>> def on_receive(old_value, new_value):
         ...     accounts[2].transfer(accounts[3], new_value-old_value)
-        ...
+
         >>> alert.new(accounts[2].balance, callback=on_receive)
         <brownie.network.alert.Alert object at 0x7fc743e55cf8>
         >>> accounts[1].transfer(accounts[2],"1 ether")
@@ -380,7 +385,25 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
         Transaction confirmed - block: 2   gas spent: 21000
         ALERT: Account 3 balance has changed from 100000000000000000000 to 101000000000000000000
 
-.. py:classmethod:: Alert.stop()
+.. py:classmethod:: Alert.is_alive()
+
+    Returns a boolean indicating if an alert is currently running.
+
+    .. code-block:: python
+
+        >>> a.is_alive()
+        True
+
+
+.. py:classmethod:: Alert.wait(timeout=None)
+
+    Blocks until an alert has completed firing or the timeout value is reached. Similar to ``Thread.join()``.
+
+    .. code-block:: python
+
+        >>> a.wait()
+
+.. py:classmethod:: Alert.stop(wait=True)
 
     Stops the alert.
 
@@ -395,7 +418,7 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
 Module Methods
 --------------
 
-.. py:method:: alert.new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None)
+.. py:method:: alert.new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None, repeat=False)
 
     Alias for creating a new ``Alert`` instance.
 
