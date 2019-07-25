@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import atexit
-import os
 import psutil
 from subprocess import DEVNULL, PIPE
 import sys
@@ -34,13 +33,12 @@ class Rpc(metaclass=_Singleton):
         self._internal_id = False
         self._reset_id = False
         self._objects = []
-        self._is_child = False
         atexit.register(self._at_exit)
 
     def _at_exit(self):
         if not self.is_active():
             return
-        if self._is_child:
+        if self._rpc.parent() == psutil.Process():
             self.kill(False)
         else:
             self._request("evm_revert", [self._reset_id])
@@ -56,49 +54,31 @@ class Rpc(metaclass=_Singleton):
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
-        self._is_child = True
-        uri = web3.providers[0].endpoint_uri if web3.providers else None
-        if sys.platform != "win32":
-            rpc = psutil.Popen(
-                cmd.split(" "),
-                stdin=DEVNULL,
-                stdout=PIPE,
-                stderr=PIPE,
-                bufsize=1
-            )
-            # check if process loads successfully
-            rpc.stdout.peek()
-            time.sleep(0.1)
-            if rpc.poll():
-                raise RPCProcessError(cmd, rpc, uri)
-        else:
-            # ganache does not play nicely in Windows when spawned as a child process
-            os.system(f"start /min {cmd}")
-            for x in range(60):
-                rpc = next((i for i in psutil.process_iter() if _win_proc_filter(i, cmd)), None)
-                if rpc is not None:
-                    break
-                time.sleep(0.05)
-            if rpc is None:
-                raise SystemError(f"Could not launch RPC process {cmd}")
+        if sys.platform == "win32" and not cmd.split(" ")[0].endswith(".cmd"):
+            if " " in cmd:
+                cmd = cmd.replace(" ", ".cmd ", 1)
+            else:
+                cmd += ".cmd"
+        out = DEVNULL if sys.platform == "win32" else PIPE
+        self._rpc = psutil.Popen(cmd.split(" "), stdin=DEVNULL, stdout=out, stderr=out)
         # check that web3 can connect
-        self._rpc = rpc
         if not web3.providers:
             self._reset()
             return
+        uri = web3.providers[0].endpoint_uri if web3.providers else None
         for i in range(100):
             if web3.isConnected():
                 self._reset_id = self._snap()
                 self._reset()
                 return
             time.sleep(0.1)
-            if type(rpc) is psutil.Popen:
-                rpc.poll()
-            if not rpc.is_running():
+            if type(self._rpc) is psutil.Popen:
+                self._rpc.poll()
+            if not self._rpc.is_running():
                 self.kill(False)
-                raise RPCProcessError(cmd, rpc, uri)
+                raise RPCProcessError(cmd, self._rpc, uri)
         self.kill(False)
-        raise RPCConnectionError(cmd, rpc, uri)
+        raise RPCConnectionError(cmd, self._rpc, uri)
 
     def attach(self, laddr):
         '''Attaches to an already running RPC client subprocess.
@@ -116,7 +96,6 @@ class Rpc(metaclass=_Singleton):
         except StopIteration:
             raise ProcessLookupError("Could not find RPC process.")
         self._rpc = psutil.Process(proc.pid)
-        self._is_child = False
         if web3.providers:
             self._reset_id = self._snap()
         self._reset()
@@ -141,7 +120,6 @@ class Rpc(metaclass=_Singleton):
             except psutil.NoSuchProcess:
                 pass
         self._rpc.kill()
-        self._is_child = False
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
@@ -191,7 +169,7 @@ class Rpc(metaclass=_Singleton):
         '''Returns True if the Rpc client is active and was launched by Brownie.'''
         if not self.is_active():
             return False
-        return self._is_child
+        return self._rpc.parent() == psutil.Process()
 
     def time(self):
         '''Returns the current epoch time from the test RPC as an int'''

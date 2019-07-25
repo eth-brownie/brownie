@@ -4,10 +4,8 @@ import functools
 import os
 import shutil
 from pathlib import Path
-import psutil
 import pytest
 from _pytest.monkeypatch import derive_importpath
-import sys
 
 from brownie import accounts, network, project
 from brownie._config import ARGV
@@ -17,6 +15,7 @@ pytest_plugins = 'pytester'
 
 @pytest.fixture(autouse=True, scope="session")
 def session_setup():
+    # start_time = time.time()
     network.connect('development')
     project.load('tests/brownie-test-project')
     yield
@@ -24,14 +23,6 @@ def session_setup():
         path = Path('tests/brownie-test-project').joinpath(path)
         if path.exists():
             shutil.rmtree(str(path))
-    # clean up any child processes so travis doesn't time out
-    if sys.platform == "win32":
-        for proc in list(psutil.process_iter()):
-            try:
-                if proc.name() in ("node.exe", "cmd.exe"):
-                    proc.kill()
-            except psutil.AccessDenied:
-                pass
 
 
 @pytest.fixture(scope="session")
