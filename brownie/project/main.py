@@ -177,6 +177,7 @@ def load(project_path=None):
         changed_paths,
         optimize=CONFIG['solc']['optimize'],
         runs=CONFIG['solc']['runs'],
+        evm_version=CONFIG['solc']['evm_version'],
         minify=CONFIG['solc']['minify_source']
     )
     for data in build_json.values():
