@@ -15,10 +15,14 @@ pytest_plugins = 'pytester'
 
 @pytest.fixture(autouse=True, scope="session")
 def session_setup():
-    # start_time = time.time()
     network.connect('development')
+    conf_json = Path('tests/brownie-test-project/brownie-config.json')
+    if conf_json.exists():
+        conf_json.unlink()
+    shutil.copyfile('brownie/data/config.json', conf_json)
     project.load('tests/brownie-test-project')
     yield
+    conf_json.unlink()
     for path in ("build", "reports"):
         path = Path('tests/brownie-test-project').joinpath(path)
         if path.exists():

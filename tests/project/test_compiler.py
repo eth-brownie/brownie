@@ -53,7 +53,7 @@ def test_generate_input_json():
     assert input_json['settings']['optimizer']['enabled'] is True
     assert input_json['settings']['optimizer']['runs'] == 200
     assert input_json['sources']['path']['content'] == source
-    input_json = compiler.generate_input_json({'path': source}, False, 0, True)
+    input_json = compiler.generate_input_json({'path': source}, False, 0, minify=True)
     assert input_json['settings']['optimizer']['enabled'] is False
     assert input_json['settings']['optimizer']['runs'] == 0
     assert input_json['sources']['path']['content'] != source
