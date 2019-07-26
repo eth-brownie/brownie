@@ -3,7 +3,7 @@
 import pytest
 
 from brownie import network, project, config
-from brownie.exceptions import UndeployedLibrary, VirtualMachineError
+from brownie.exceptions import UndeployedLibrary, VirtualMachineError, IncompatibleEVMVersion
 from brownie.network.contract import Contract
 from brownie.network.transaction import TransactionReceipt
 
@@ -93,3 +93,9 @@ def test_unlinked_library(clean_network):
     lib = accounts[0].deploy(project.UnlinkedLib)
     meta = accounts[0].deploy(project.BrownieTester)
     assert lib.address[2:].lower() in meta.bytecode
+
+
+def test_evm_version(clean_network, monkeypatch):
+    monkeypatch.setattr('psutil.Popen.cmdline', lambda s: ['-k', 'byzantium'])
+    with pytest.raises(IncompatibleEVMVersion):
+        accounts[0].deploy(project.Token, "TST", "Test Token", 18, 1000000, amount=10)

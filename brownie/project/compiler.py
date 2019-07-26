@@ -59,6 +59,7 @@ def compile_and_format(
         optimize: enable solc optimizer
         runs: optimizer runs
         minify: minify source files
+        evm_version: evm version to compile for
         silent: verbose reporting
 
     Returns: build data dict'''
@@ -83,6 +84,7 @@ def generate_input_json(contracts, optimize=True, runs=200, evm_version=None, mi
         contracts: a dictionary in the form of {path: 'source code'}
         optimize: enable solc optimizer
         runs: optimizer runs
+        evm_version: evm version to compile for
         minify: should source code be minified?
 
     Returns: dict

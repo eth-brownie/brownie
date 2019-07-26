@@ -198,6 +198,8 @@ class Rpc(metaclass=_Singleton):
             return EVM_VERSIONS[-1]
 
     def evm_compatible(self, version):
+        if not self.is_active():
+            raise RPCRequestError("RPC is not active")
         try:
             return EVM_VERSIONS.index(version) <= EVM_VERSIONS.index(self.evm_version())
         except ValueError:

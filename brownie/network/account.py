@@ -211,7 +211,7 @@ class _AccountBase:
             * Contract instance if the transaction confirms
             * TransactionReceipt if the transaction is pending or reverts'''
         evm = contract._build['compiler']['evm_version']
-        if not rpc.evm_compatible(evm):
+        if rpc.is_active() and not rpc.evm_compatible(evm):
             raise IncompatibleEVMVersion(
                 f"Local RPC using '{rpc.evm_version()}' but contract was compiled for '{evm}'"
             )

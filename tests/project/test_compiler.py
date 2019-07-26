@@ -4,7 +4,7 @@ import pytest
 import solcx
 
 from brownie.project import compiler, sources, build
-from brownie.exceptions import CompilerError
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion
 
 
 @pytest.fixture(autouse=True, scope="function")
@@ -114,3 +114,8 @@ def test_compiler_errors():
     solcx.set_solc_version('0.4.25')
     with pytest.raises(CompilerError):
         compiler.compile_and_format({'path': _solc_5_source()})
+
+
+def test_min_version():
+    with pytest.raises(IncompatibleSolcVersion):
+        compiler.set_solc_version('v0.4.21')
