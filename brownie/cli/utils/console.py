@@ -41,7 +41,7 @@ class Console(code.InteractiveConsole):
         elif hasattr(obj, '__console_dir__'):
             results = [(i, getattr(obj, i)) for i in obj.__console_dir__]
         else:
-            results = [(i, getattr(obj, i)) for i in obj.__dict__ if not i.startswith('_')]
+            results = [(i, getattr(obj, i)) for i in dir(obj) if not i.startswith('_')]
         results = sorted(results, key=lambda k: k[0])
         self.write("["+f"{color}, ".join(_dir_color(i[1])+i[0] for i in results)+f"{color}]\n")
 

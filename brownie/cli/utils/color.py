@@ -100,11 +100,11 @@ class Color:
             text += f"\n{' '*indent}{brackets[1]}"
         elif value and not [i for i in value if type(i) is not str or len(i) != 64]:
             # list of bytes32 hexstrings (stack trace)
-            text += ",".join(f"\n{' '*(indent+4)}{self._write(i)}" for i in value)
+            text += ", ".join(f"\n{' '*(indent+4)}{self._write(i)}" for i in value)
             text += f"\n{' '*indent}{brackets[1]}"
         else:
             # all other cases
-            text += ",".join(self._write(i) for i in value)
+            text += ", ".join(self._write(i) for i in value)
             text += brackets[1]
         if start:
             text += f"{self}"
