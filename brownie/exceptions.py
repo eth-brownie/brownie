@@ -92,6 +92,10 @@ class CompilerError(Exception):
         super().__init__("Compiler returned the following errors:\n\n"+"\n".join(err))
 
 
+class IncompatibleSolcVersion(Exception):
+    pass
+
+
 # test/
 
 class ExpectedFailing(Exception):

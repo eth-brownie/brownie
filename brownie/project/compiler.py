@@ -8,7 +8,7 @@ from semantic_version import Version
 import solcx
 
 from . import sources
-from brownie.exceptions import CompilerError
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion
 
 STANDARD_JSON = {
     'language': "Solidity",
@@ -34,6 +34,8 @@ STANDARD_JSON = {
 
 def set_solc_version(version):
     '''Sets the solc version. If not available it will be installed.'''
+    if Version(version.lstrip('v')) < Version('0.4.22'):
+        raise IncompatibleSolcVersion("Brownie only supports Solidity versions >=0.4.22")
     try:
         solcx.set_solc_version(version)
     except solcx.exceptions.SolcNotInstalled:
