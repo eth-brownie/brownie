@@ -14,6 +14,10 @@ class UndeployedLibrary(Exception):
     pass
 
 
+class IncompatibleEVMVersion(Exception):
+    pass
+
+
 class _RPCBaseException(Exception):
 
     def __init__(self, msg, cmd, proc, uri):

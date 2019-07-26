@@ -25,6 +25,12 @@ CLI_FLAGS = {
     "mnemonic": "--mnemonic"
 }
 
+EVM_VERSIONS = [
+    "byzantium",
+    "constantinople",
+    "petersburg"
+]
+
 
 class Rpc(metaclass=_Singleton):
 
@@ -180,6 +186,22 @@ class Rpc(metaclass=_Singleton):
         if not self.is_active():
             return False
         return self._rpc.parent() == psutil.Process()
+
+    def evm_version(self):
+        if not self.is_active():
+            return None
+        cmd = self._rpc.cmdline()
+        key = next((i for i in ('--hardfork', '-k') if i in cmd), None)
+        try:
+            return cmd[cmd.index(key) + 1]
+        except (ValueError, IndexError):
+            return EVM_VERSIONS[-1]
+
+    def evm_compatible(self, version):
+        try:
+            return EVM_VERSIONS.index(version) <= EVM_VERSIONS.index(self.evm_version())
+        except ValueError:
+            raise ValueError(f"Unknown EVM version: '{version}'") from None
 
     def time(self):
         '''Returns the current epoch time from the test RPC as an int'''

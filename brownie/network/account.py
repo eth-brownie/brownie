@@ -10,7 +10,7 @@ from eth_hash.auto import keccak
 import eth_keys
 
 from brownie.cli.utils import color
-from brownie.exceptions import VirtualMachineError, UnknownAccount
+from brownie.exceptions import VirtualMachineError, UnknownAccount, IncompatibleEVMVersion
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
@@ -19,6 +19,7 @@ from brownie._singleton import _Singleton
 from brownie._config import CONFIG
 
 web3 = Web3()
+rpc = Rpc()
 
 
 class Accounts(metaclass=_Singleton):
@@ -29,7 +30,7 @@ class Accounts(metaclass=_Singleton):
         self._accounts = []
         # prevent private keys from being stored in read history
         self.add.__dict__['_private'] = True
-        Rpc()._objects.append(self)
+        rpc._objects.append(self)
         self._reset()
 
     def _reset(self):
@@ -209,6 +210,11 @@ class _AccountBase:
         Returns:
             * Contract instance if the transaction confirms
             * TransactionReceipt if the transaction is pending or reverts'''
+        evm = contract._build['compiler']['evm_version']
+        if not rpc.evm_compatible(evm):
+            raise IncompatibleEVMVersion(
+                f"Local RPC using '{rpc.evm_version()}' but contract was compiled for '{evm}'"
+            )
         data = contract.deploy.encode_abi(*args)
         try:
             txid = self._transact({
