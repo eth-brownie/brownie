@@ -17,6 +17,14 @@ from brownie.exceptions import (
 
 web3 = Web3()
 
+CLI_FLAGS = {
+    "port": "--port",
+    "gas_limit": "--gasLimit",
+    "accounts": "--accounts",
+    "evm_version": "--hardfork",
+    "mnemonic": "--mnemonic"
+}
+
 
 class Rpc(metaclass=_Singleton):
 
@@ -43,22 +51,24 @@ class Rpc(metaclass=_Singleton):
         else:
             self._request("evm_revert", [self._reset_id])
 
-    def launch(self, cmd):
+    def launch(self, cmd, **kwargs):
         '''Launches the RPC client.
 
         Args:
             cmd: command string to execute as subprocess'''
         if self.is_active():
             raise SystemError("RPC is already active.")
-        print(f"Launching '{cmd}'...")
-        self._time_offset = 0
-        self._snapshot_id = False
-        self._reset_id = False
         if sys.platform == "win32" and not cmd.split(" ")[0].endswith(".cmd"):
             if " " in cmd:
                 cmd = cmd.replace(" ", ".cmd ", 1)
             else:
                 cmd += ".cmd"
+        for key, value in [(k, v) for k, v in kwargs.items() if v]:
+            cmd += f" {CLI_FLAGS[key]} {value}"
+        print(f"Launching '{cmd}'...")
+        self._time_offset = 0
+        self._snapshot_id = False
+        self._reset_id = False
         out = DEVNULL if sys.platform == "win32" else PIPE
         self._rpc = psutil.Popen(cmd.split(" "), stdin=DEVNULL, stdout=out, stderr=out)
         # check that web3 can connect

@@ -19,19 +19,19 @@ def connect(network=None):
     if is_connected():
         raise ConnectionError(f"Already connected to network '{CONFIG['active_network']['name']}'")
     try:
-        modify_network_config(network or CONFIG['network_defaults']['name'])
-        if 'host' not in CONFIG['active_network']:
+        active = modify_network_config(network or CONFIG['network_defaults']['name'])
+        if 'host' not in active:
             raise KeyError(
-                f"No host in brownie-config.json for network '{CONFIG['active_network']['name']}'"
+                f"No host in brownie-config.json for network '{active['name']}'"
             )
-        web3.connect(CONFIG['active_network']['host'])
-        if 'test-rpc' in CONFIG['active_network'] and not rpc.is_active():
+        web3.connect(active['host'])
+        if 'test_rpc' in active and not rpc.is_active():
             if is_connected():
                 if web3.eth.blockNumber != 0:
                     raise ValueError("Local RPC Client has a block height > 0")
-                rpc.attach(CONFIG['active_network']['host'])
+                rpc.attach(active['host'])
             else:
-                rpc.launch(CONFIG['active_network']['test-rpc'])
+                rpc.launch(**active['test_rpc'])
         else:
             Accounts()._reset()
     except Exception:
