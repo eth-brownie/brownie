@@ -1,6 +1,7 @@
 1.0.0b11
 --------
 
+ - Set EVM version in config file
  - Expanded Alert functionality
  - Windows bugfixes
 

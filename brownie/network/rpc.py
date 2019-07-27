@@ -188,6 +188,7 @@ class Rpc(metaclass=_Singleton):
         return self._rpc.parent() == psutil.Process()
 
     def evm_version(self):
+        '''Returns the currently active EVM version.'''
         if not self.is_active():
             return None
         cmd = self._rpc.cmdline()
@@ -198,6 +199,8 @@ class Rpc(metaclass=_Singleton):
             return EVM_VERSIONS[-1]
 
     def evm_compatible(self, version):
+        '''Returns a boolean indicating if the given version is compatible with
+        the currently active EVM version.'''
         if not self.is_active():
             raise RPCRequestError("RPC is not active")
         try:

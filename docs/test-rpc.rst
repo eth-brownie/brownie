@@ -14,7 +14,14 @@ The connection settings for the local RPC are outlined in ``brownie-config.json`
 .. code-block:: javascript
 
     "development": {
-        "test-rpc": "ganache-cli",
+        "test_rpc": {
+            "cmd": "ganache-cli", // command to load the client - you can add any extra flags here as needed
+            "port": 8545,  // port the client should listen on
+            "gas_limit": 6721975,  // block gas limit
+            "accounts": 10,  // number of accounts in web3.eth.accounts
+            "evm_version": "petersburg",  // evm version
+            "mnemonic": "brownie"  // accounts are derived from this mnemonic - set to null for different addresses on each load
+        },
         "host": "http://127.0.0.1:8545"
     }
 

@@ -96,12 +96,6 @@ class IncompatibleSolcVersion(Exception):
     pass
 
 
-# test/
-
-class ExpectedFailing(Exception):
-    pass
-
-
 # types/
 
 class InvalidABI(Exception):

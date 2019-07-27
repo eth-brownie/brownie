@@ -1337,6 +1337,24 @@ Rpc
         >>> rpc.is_child()
         True
 
+.. py:classmethod:: Rpc.evm_version()
+
+    Returns the currently active EVM version as a string.
+
+    .. code-block:: python
+
+        >>> rpc.evm_version()
+        'petersburg'
+
+.. py:classmethod:: Rpc.evm_compatible(version)
+
+    Returns a boolean indicating if the given ``version`` is compatible with the currently active EVM version.
+
+    .. code-block:: python
+
+        >>> rpc.evm_compatible('byzantium')
+        True
+
 .. py:classmethod:: Rpc.time()
 
     Returns the current epoch time in the RPC as an integer.
