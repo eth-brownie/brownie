@@ -40,11 +40,11 @@ def test_encode_abi(token):
 
 def test_cli_no_owner(test_mode):
     try:
-        config['test']['default_contract_owner'] = False
+        config['pytest']['default_contract_owner'] = False
         token = project.Token.deploy("", "", 18, 1000000, {'from': accounts[0]})
         assert token.transfer._owner is None
     finally:
-        config['test']['default_contract_owner'] = True
+        config['pytest']['default_contract_owner'] = True
 
 
 def test_no_from(token):

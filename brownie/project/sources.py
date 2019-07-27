@@ -105,7 +105,7 @@ def _get_contract_data(full_source, path):
     return data
 
 
-def compile_paths(paths, optimize=True, runs=200, minify=False, silent=False):
+def compile_paths(paths, optimize=True, runs=200, minify=False, evm_version=None, silent=False):
     '''Compiles a list of contracts. The source code must have already been
     loaded via sources.load
 
@@ -120,6 +120,7 @@ def compile_paths(paths, optimize=True, runs=200, minify=False, silent=False):
         optimize=optimize,
         runs=runs,
         minify=minify,
+        evm_version=evm_version,
         silent=silent
     )
 

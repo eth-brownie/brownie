@@ -14,6 +14,10 @@ class UndeployedLibrary(Exception):
     pass
 
 
+class IncompatibleEVMVersion(Exception):
+    pass
+
+
 class _RPCBaseException(Exception):
 
     def __init__(self, msg, cmd, proc, uri):
@@ -88,9 +92,7 @@ class CompilerError(Exception):
         super().__init__("Compiler returned the following errors:\n\n"+"\n".join(err))
 
 
-# test/
-
-class ExpectedFailing(Exception):
+class IncompatibleSolcVersion(Exception):
     pass
 
 

@@ -22,27 +22,30 @@ The following settings are available:
     Defines the available networks. The following properties can be set:
 
     * ``host``: The address and port of the RPC API you wish to connect to. If using `Infura <https://infura.io/>`__, be sure to obtain and include your own network access token in the address.
-    * ``test-rpc``: Optional. If given, this command will be run in a shell when brownie is started. In this way you can initialize Ganache or another local environment automatically when Brownie starts.
-    * ``gas_price``: The default gas price for all transactions. If left as false the gas price will be determined using ``web3.eth.gasPrice``.
-    * ``gas_limit``: The default gas limit for all transactions. If left as false the gas limit will be determined using ``web3.eth.estimateGas``.
+    * ``test-rpc``: Optional dictionary outlining settings for the local RPC client should be loaded. See :ref:`test-rpc`.
+    * ``gas_price``: The default gas price for all transactions. If left as ``false`` the gas price will be determined using ``web3.eth.gasPrice``.
+    * ``gas_limit``: The default gas limit for all transactions. If left as ``false`` the gas limit will be determined using ``web3.eth.estimateGas``.
     * ``broadcast_reverting_tx``: Optional. If set to ``false``, transactions that would revert will instead raise a ``VirtualMachineError``.
 
 .. py:attribute:: network_defaults
 
-    Default networks settings, used when specific properties aren't defined for individual networks.
+    Default networks settings that are are applied to all networks. Any network-specific settings will override these.
 
-    You **must** specify a ``name`` property. This is the default network to use when brownie is loaded.
+    You **must** specify a ``name`` property. This is the default network that Brownie uses when loaded.
+
+.. _config-solc:
 
 .. py:attribute:: solc
 
     Properties relating to the solc compiler.
 
-    * ``optimize``: Set to true if you wish to use contract optimization.
+    * ``version``: The version of solc to use. Should be written as ``v0.x.x``. Brownie supports solc versions ``>=0.4.22``.
+    * ``evm_version``: The EVM version to compile for.
+    * ``optimize``: Set to ``true`` if you wish to enable compiler optimization.
     * ``runs``: The number of times the optimizer should run.
-    * ``version``: The version of solc to use. Should be written as ``v0.x.x``. If the specified version is not present, it will be installed when Brownie loads.
-    * ``minify_source``: If set to true, contracts are minified before compiling. This allows you to modify formatting and comments without triggering a recompile.
+    * ``minify_source``: If ``true``, contracts are minified before compiling. This allows you to modify formatting and comments without triggering a recompile.
 
-.. py:attribute:: test
+.. py:attribute:: pytest
 
     Properties that affect only affect Brownie's configuration when running tests. See Test :ref:`test_settings` for detailed information on the effects and implications of these settings.
 

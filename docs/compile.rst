@@ -4,6 +4,10 @@
 Compiling Contracts
 ===================
 
+.. note::
+
+    Brownie supports Solidity versions ``>=0.4.22``.
+
 To compile a project:
 
 ::
@@ -12,20 +16,24 @@ To compile a project:
 
 Each time the compiler runs, Brownie compares hashes of the contract source code against the existing compiled versions.  If a contract has not changed it will not be recompiled. If you wish to force a recompile of the entire project, use ``brownie compile --all``.
 
-The compiler version is set in ``brownie-config.json``. If the required version is not present, it will be installed when Brownie loads.
+Compiler Settings
+=================
+
+The compiler version is set in ``brownie-config.json``. If the required version of solc is not present, it will be installed when Brownie loads.
 
 .. code-block:: javascript
 
     {
         "solc":{
+            "version": "0.5.10",
+            "evm_version": "petersburg",
             "optimize": true,
             "runs": 200,
-            "version": "0.5.7",
             "minify_source": false
         }
     }
 
-Modifying the compiler version or optimization settings will result in a full recompile of the project.
+Modifying any compiler settings will result in a full recompile of the project.
 
 If ``minify_source`` is ``true``, the contract source is minified before compiling. Brownie will then minify the source code before checking the hashes to determine if a recompile is necessary. This allows you to modify formatting and comments without triggering a recompile.
 

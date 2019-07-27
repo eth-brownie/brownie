@@ -224,13 +224,13 @@ network
 
     Raised when the ``Accounts`` container cannot locate a specified ``Account`` object.
 
-.. py:exception:: brownie.exceptions.AmbiguousMethods
-
-    Raised by ``ContractContainer`` when a contract has multiple methods that share the same name.
-
 .. py:exception:: brownie.exceptions.UndeployedLibrary
 
     Raised when attempting to deploy a contract that requires an unlinked library, but the library has not yet been deployed.
+
+.. py:exception:: brownie.exceptions.IncompatibleEVMVersion
+
+    Raised when attempting to deploy a contract that was compiled to target an EVM version that is imcompatible than the currently active local RPC client.
 
 .. py:exception:: brownie.exceptions.RPCConnectionError
 
@@ -267,12 +267,9 @@ project
 
     Raised by the compiler when there is an error within a contract's source code.
 
-test
-****
+.. py:exception:: brownie.exceptions.IncompatibleSolcVersion
 
-.. py:exception:: brownie.exceptions.ExpectedFailing
-
-    Raised when a unit test is marked as ``pending=True`` but it still passes.
+    Raised if a project requires a version of solc ``<0.4.22``.
 
 types
 *****

@@ -17,6 +17,20 @@ from brownie.exceptions import (
 
 web3 = Web3()
 
+CLI_FLAGS = {
+    "port": "--port",
+    "gas_limit": "--gasLimit",
+    "accounts": "--accounts",
+    "evm_version": "--hardfork",
+    "mnemonic": "--mnemonic"
+}
+
+EVM_VERSIONS = [
+    "byzantium",
+    "constantinople",
+    "petersburg"
+]
+
 
 class Rpc(metaclass=_Singleton):
 
@@ -43,22 +57,24 @@ class Rpc(metaclass=_Singleton):
         else:
             self._request("evm_revert", [self._reset_id])
 
-    def launch(self, cmd):
+    def launch(self, cmd, **kwargs):
         '''Launches the RPC client.
 
         Args:
             cmd: command string to execute as subprocess'''
         if self.is_active():
             raise SystemError("RPC is already active.")
-        print(f"Launching '{cmd}'...")
-        self._time_offset = 0
-        self._snapshot_id = False
-        self._reset_id = False
         if sys.platform == "win32" and not cmd.split(" ")[0].endswith(".cmd"):
             if " " in cmd:
                 cmd = cmd.replace(" ", ".cmd ", 1)
             else:
                 cmd += ".cmd"
+        for key, value in [(k, v) for k, v in kwargs.items() if v]:
+            cmd += f" {CLI_FLAGS[key]} {value}"
+        print(f"Launching '{cmd}'...")
+        self._time_offset = 0
+        self._snapshot_id = False
+        self._reset_id = False
         out = DEVNULL if sys.platform == "win32" else PIPE
         self._rpc = psutil.Popen(cmd.split(" "), stdin=DEVNULL, stdout=out, stderr=out)
         # check that web3 can connect
@@ -170,6 +186,27 @@ class Rpc(metaclass=_Singleton):
         if not self.is_active():
             return False
         return self._rpc.parent() == psutil.Process()
+
+    def evm_version(self):
+        '''Returns the currently active EVM version.'''
+        if not self.is_active():
+            return None
+        cmd = self._rpc.cmdline()
+        key = next((i for i in ('--hardfork', '-k') if i in cmd), None)
+        try:
+            return cmd[cmd.index(key) + 1]
+        except (ValueError, IndexError):
+            return EVM_VERSIONS[-1]
+
+    def evm_compatible(self, version):
+        '''Returns a boolean indicating if the given version is compatible with
+        the currently active EVM version.'''
+        if not self.is_active():
+            raise RPCRequestError("RPC is not active")
+        try:
+            return EVM_VERSIONS.index(version) <= EVM_VERSIONS.index(self.evm_version())
+        except ValueError:
+            raise ValueError(f"Unknown EVM version: '{version}'") from None
 
     def time(self):
         '''Returns the current epoch time from the test RPC as an int'''

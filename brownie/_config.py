@@ -91,9 +91,10 @@ def modify_network_config(network=None):
         CONFIG['active_network']['name'] = network
 
         if ARGV['cli'] == "test":
-            CONFIG['active_network'].update(CONFIG['test'])
+            CONFIG['active_network'].update(CONFIG['pytest'])
             if not CONFIG['active_network']['broadcast_reverting_tx']:
                 print("WARNING: Reverting transactions will NOT be broadcasted.")
+        return CONFIG['active_network']
     except KeyError:
         raise KeyError(f"Network '{network}' is not defined in config.json")
     finally:

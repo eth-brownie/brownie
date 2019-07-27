@@ -232,13 +232,14 @@ Module Methods
         >>> compiler.set_solc_version("0.4.25")
         Using solc version v0.4.25
 
-.. py:method:: compiler.compile_and_format(contracts, optimize=True, runs=200, minify=False, silent=True)
+.. py:method:: compiler.compile_and_format(contracts, optimize=True, runs=200, evm_version=None, minify=False, silent=True)
 
     Given a dict in the format ``{'path': "source code"}``, compiles the contracts and returns the formatted `build data <compile-json>`_.
 
     * ``contracts``: dict in the format ``{'path': "source code"}``
     * ``optimize``: Toggle compiler optimization
     * ``runs``: Number of compiler optimization runs
+    * ``evm_version``: EVM version to target. If ``None`` the compiler default is used.
     * ``minify``: Should contract sources be `minified <sources-minify>`_?
     * ``silent``: Toggle console verbosity
 
@@ -252,7 +253,7 @@ Module Methods
         >>> output_json = compiler.compile_from_input_json(input_json)
         >>> build_json = compiler.generate_build_json(input_json, output_json)
 
-.. py:method:: compiler.generate_input_json(contracts, optimize=True, runs=200, minify=False)
+.. py:method:: compiler.generate_input_json(contracts, optimize=True, runs=200, evm_version=None, minify=False)
 
     Generates a `standard solc input JSON <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_ as a dict.
 
@@ -416,7 +417,7 @@ Module Methods
         >>> from brownie.project import sources
         >>> sources.clear()
 
-.. py:method:: sources.compile_paths(paths)
+.. py:method:: sources.compile_paths(paths, optimize=True, runs=200, minify=False, evm_version=None, silent=False)
 
     Compiles a list of contracts given in ``paths``. The contract sources must have already been loaded via ``sources.load``.
 

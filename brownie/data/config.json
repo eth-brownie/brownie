@@ -2,27 +2,44 @@
     "network_defaults": {
         "name": "development",
         "gas_limit": false,
-        "gas_price": false
+        "gas_price": false,
+        "broadcast_reverting_tx": false
     },
     "networks": {
         "development": {
-            "test-rpc": "ganache-cli",
+            "test_rpc": {
+                "cmd": "ganache-cli",
+                "port": 8545,
+                "gas_limit": 6721975,
+                "accounts": 10,
+                "evm_version": "petersburg",
+                "mnemonic": "brownie"
+            },
             "host": "http://127.0.0.1:8545",
             "broadcast_reverting_tx": true
         },
+        "goerli": {
+            "host": "https://goerli.infura.io/"
+        },
+        "kovan": {
+            "host": "https://kovan.infura.io/"
+        },
+        "rinkeby": {
+            "host": "https://rinkeby.infura.io/"
+        },
         "ropsten": {
-            "host": "https://ropsten.infura.io/",
-            "broadcast_reverting_tx": false
+            "host": "https://ropsten.infura.io/"
         }
     },
-    "test": {
+    "pytest": {
         "gas_limit": 6721975,
         "default_contract_owner": false,
         "broadcast_reverting_tx": true,
         "revert_traceback": false
     },
     "solc": {
-        "version": "0.5.7",
+        "version": "0.5.10",
+        "evm_version": "petersburg",
         "optimize": true,
         "runs": 200,
         "minify_source": false

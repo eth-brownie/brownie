@@ -4,10 +4,11 @@ from copy import deepcopy
 from collections import deque
 from hashlib import sha1
 import solcast
+from semantic_version import Version
 import solcx
 
 from . import sources
-from brownie.exceptions import CompilerError
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion
 
 STANDARD_JSON = {
     'language': "Solidity",
@@ -25,13 +26,16 @@ STANDARD_JSON = {
         "optimizer": {
             "enabled": True,
             "runs": 200
-        }
+        },
+        "evmVersion": None
     }
 }
 
 
 def set_solc_version(version):
     '''Sets the solc version. If not available it will be installed.'''
+    if Version(version.lstrip('v')) < Version('0.4.22'):
+        raise IncompatibleSolcVersion("Brownie only supports Solidity versions >=0.4.22")
     try:
         solcx.set_solc_version(version)
     except solcx.exceptions.SolcNotInstalled:
@@ -40,7 +44,14 @@ def set_solc_version(version):
     return solcx.get_solc_version_string().strip('\n')
 
 
-def compile_and_format(contracts, optimize=True, runs=200, minify=False, silent=True):
+def compile_and_format(
+    contracts,
+    optimize=True,
+    runs=200,
+    evm_version=None,
+    minify=False,
+    silent=True
+):
     '''Compiles contracts and returns build data.
 
     Args:
@@ -48,6 +59,7 @@ def compile_and_format(contracts, optimize=True, runs=200, minify=False, silent=
         optimize: enable solc optimizer
         runs: optimizer runs
         minify: minify source files
+        evm_version: evm version to compile for
         silent: verbose reporting
 
     Returns: build data dict'''
@@ -59,26 +71,30 @@ def compile_and_format(contracts, optimize=True, runs=200, minify=False, silent=
         'version': solcx.get_solc_version_string().strip('\n')
     }
 
-    input_json = generate_input_json(contracts, optimize, runs, minify)
+    input_json = generate_input_json(contracts, optimize, runs, evm_version, minify)
     output_json = compile_from_input_json(input_json, silent)
     build_json = generate_build_json(input_json, output_json, compiler_data, silent)
     return build_json
 
 
-def generate_input_json(contracts, optimize=True, runs=200, minify=False):
+def generate_input_json(contracts, optimize=True, runs=200, evm_version=None, minify=False):
     '''Formats contracts to the standard solc input json.
 
     Args:
         contracts: a dictionary in the form of {path: 'source code'}
         optimize: enable solc optimizer
         runs: optimizer runs
+        evm_version: evm version to compile for
         minify: should source code be minified?
 
     Returns: dict
     '''
+    if evm_version is None:
+        evm_version = "petersburg" if solcx.get_solc_version() >= Version("0.5.5") else "byzantium"
     input_json = deepcopy(STANDARD_JSON)
     input_json['settings']['optimizer']['enabled'] = optimize
     input_json['settings']['optimizer']['runs'] = runs if optimize else False
+    input_json['settings']['evmVersion'] = evm_version
     input_json['sources'] = dict((
         k,
         {'content': sources.minify(v)[0] if minify else v}
@@ -95,17 +111,21 @@ def compile_from_input_json(input_json, silent=True):
 
     Returns: standard compiler output json'''
     optimizer = input_json['settings']['optimizer']
+    input_json['settings'].setdefault('evmVersion', None)
     if not silent:
         print("Compiling contracts...")
-        print("Optimizer: " + (
+        print("  Optimizer: " + (
             f"Enabled  Runs: {optimizer['runs']}" if
             optimizer['enabled'] else 'Disabled'
         ))
+        if input_json['settings']['evmVersion']:
+            print(f"  EVM Version: {input_json['settings']['evmVersion'].capitalize()}")
     try:
         return solcx.compile_standard(
             input_json,
             optimize=optimizer['enabled'],
             optimize_runs=optimizer['runs'],
+            evm_version=input_json['settings']['evmVersion'],
             allow_paths="."
         )
     except solcx.exceptions.SolcError as e:
@@ -127,7 +147,8 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
 
     compiler_data.update({
         "optimize": input_json['settings']['optimizer']['enabled'],
-        "runs": input_json['settings']['optimizer']['runs']
+        "runs": input_json['settings']['optimizer']['runs'],
+        "evm_version": input_json['settings']['evmVersion']
     })
     minify = 'minify_source' in compiler_data and compiler_data['minify_source']
     build_json = {}
