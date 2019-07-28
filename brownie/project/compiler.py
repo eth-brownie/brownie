@@ -9,7 +9,7 @@ from semantic_version import Version, Spec, SpecItem
 import solcx
 
 from . import sources
-from brownie.exceptions import CompilerError, IncompatibleSolcVersion
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 
 STANDARD_JSON = {
     'language': "Solidity",
@@ -73,7 +73,7 @@ def compile_and_format(
     if solc_version is not None:
         path_versions = {solc_version: list(contracts)}
     else:
-        path_versions = find_versions(contracts)
+        path_versions = find_solc_versions(contracts)
 
     for version, path_list in path_versions.items():
         set_solc_version(version)
@@ -89,35 +89,51 @@ def compile_and_format(
     return build_json
 
 
-def find_versions(contracts):
-    pragma_specs = dict((i, set()) for i in contracts)
-    installed = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
-    available = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
+def find_solc_versions(contracts):
+    installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
+    available_versions = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
 
     pragma_regex = re.compile(r"pragma +solidity([^;]*);")
     version_regex = re.compile(r"(([<>]?=?|\^)\d+\.\d+\.\d+)+")
 
+    pragma_specs = dict((i, set()) for i in contracts)
     to_install = set()
     for path, source in contracts.items():
-        pragma_string = next(pragma_regex.finditer(source))[0]
+        try:
+            pragma_string = next(pragma_regex.finditer(source))[0]
+        except StopIteration:
+            raise PragmaError(f"No version pragma in '{path}'") from None
+
+        # convert pragma to Version objects
         comparator_set_range = pragma_string.replace(" ", "").split('||')
         for comparator_set in comparator_set_range:
             spec = Spec(*(i[0] for i in version_regex.findall(comparator_set)))
-            spec = standardize_spec(spec)
+            spec = _standardize_spec(spec)
             pragma_specs[path].add(spec)
-        if not next((i for i in pragma_specs[path] if i.select(installed)), None):
-            version = max(i.select(available) for i in pragma_specs[path] if i.select(available))
-            to_install.add(version)
+
+        # if no installed version of solc matches the pragma, find the latest available version
+        if not next((i for i in pragma_specs[path] if i.select(installed_versions)), None):
+            try:
+                version = _select_max(pragma_specs[path], available_versions)
+                to_install.add(version)
+            except ValueError:
+                raise PragmaError(
+                    f"No installable solc version matching '{pragma_string}' in '{path}'"
+                ) from None
+
+    # install new versions if needed
     if to_install:
         for version in to_install:
             solcx.install_solc(str(version))
-        installed = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
-    compile_versions = {}
+        installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
+
+    # organize source paths by latest available solc version
+    compiler_versions = {}
     new_versions = set()
     for path, spec_list in pragma_specs.items():
-        version = _select_max(spec_list, installed)
-        compile_versions.setdefault(str(version), []).append(path)
-        latest = _select_max(spec_list, available)
+        version = _select_max(spec_list, installed_versions)
+        compiler_versions.setdefault(str(version), []).append(path)
+        latest = _select_max(spec_list, available_versions)
         if latest > version:
             new_versions.add(str(latest))
     if new_versions:
@@ -125,15 +141,15 @@ def find_versions(contracts):
             f"New compatible solc version{'s' if len(new_versions) > 1 else ''}"
             f" available: {', '.join(new_versions)}"
         )
-    return compile_versions
+    return compiler_versions
 
 
 def _select_max(spec_list, version_list):
     return max(i.select(version_list) for i in spec_list if i.select(version_list))
 
 
-# convert all specitems in a spec to be of types (==, >=, <)
-def standardize_spec(spec):
+# convert all specitems to be of types (==, >=, <)
+def _standardize_spec(spec):
     final_spec = deepcopy(spec)
     if spec.specs[0].kind == "==":
         return final_spec
