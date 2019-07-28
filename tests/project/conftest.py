@@ -9,7 +9,7 @@ from brownie.project import sources
 def versionpatch(monkeypatch):
     monkeypatch.setattr(
         "solcx.get_available_solc_versions",
-        lambda: ['v0.5.10', 'v0.5.7', 'v0.4.25']
+        lambda: ['v0.5.10', 'v0.5.9', 'v0.5.8', 'v0.5.7', 'v0.4.25', 'v0.4.24', 'v0.4.22']
     )
 
 
