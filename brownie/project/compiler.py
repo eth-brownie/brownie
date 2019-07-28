@@ -3,8 +3,9 @@
 from copy import deepcopy
 from collections import deque
 from hashlib import sha1
+import re
 import solcast
-from semantic_version import Version
+from semantic_version import Version, Spec, SpecItem
 import solcx
 
 from . import sources
@@ -37,15 +38,16 @@ def set_solc_version(version):
     if Version(version.lstrip('v')) < Version('0.4.22'):
         raise IncompatibleSolcVersion("Brownie only supports Solidity versions >=0.4.22")
     try:
-        solcx.set_solc_version(version)
+        solcx.set_solc_version(version, silent=True)
     except solcx.exceptions.SolcNotInstalled:
         solcx.install_solc(version)
-        solcx.set_solc_version(version)
-    return solcx.get_solc_version_string().strip('\n')
+        solcx.set_solc_version(version, silent=True)
+    return solcx.get_solc_version_string()
 
 
 def compile_and_format(
     contracts,
+    solc_version=None,
     optimize=True,
     runs=200,
     evm_version=None,
@@ -66,15 +68,89 @@ def compile_and_format(
     if not contracts:
         return {}
 
-    compiler_data = {
-        'minify_source': minify,
-        'version': solcx.get_solc_version_string().strip('\n')
-    }
+    build_json = {}
 
-    input_json = generate_input_json(contracts, optimize, runs, evm_version, minify)
-    output_json = compile_from_input_json(input_json, silent)
-    build_json = generate_build_json(input_json, output_json, compiler_data, silent)
+    if solc_version is not None:
+        path_versions = {solc_version: list(contracts)}
+    else:
+        path_versions = find_versions(contracts)
+
+    for version, path_list in path_versions.items():
+        set_solc_version(version)
+        compiler_data = {
+            'minify_source': minify,
+            'version': solcx.get_solc_version_string()
+        }
+        to_compile = dict((k, v) for k, v in contracts.items() if k in path_list)
+
+        input_json = generate_input_json(to_compile, optimize, runs, evm_version, minify)
+        output_json = compile_from_input_json(input_json, silent)
+        build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
     return build_json
+
+
+def find_versions(contracts):
+    pragma_specs = dict((i, set()) for i in contracts)
+    installed = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
+    available = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
+
+    pragma_regex = re.compile(r"pragma +solidity([^;]*);")
+    version_regex = re.compile(r"(([<>]?=?|\^)\d+\.\d+\.\d+)+")
+
+    to_install = set()
+    for path, source in contracts.items():
+        pragma_string = next(pragma_regex.finditer(source))[0]
+        comparator_set_range = pragma_string.replace(" ", "").split('||')
+        for comparator_set in comparator_set_range:
+            spec = Spec(*(i[0] for i in version_regex.findall(comparator_set)))
+            spec = standardize_spec(spec)
+            pragma_specs[path].add(spec)
+        if not next((i for i in pragma_specs[path] if i.select(installed)), None):
+            version = max(i.select(available) for i in pragma_specs[path] if i.select(available))
+            to_install.add(version)
+    if to_install:
+        for version in to_install:
+            solcx.install_solc(str(version))
+        installed = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
+    compile_versions = {}
+    new_versions = set()
+    for path, spec_list in pragma_specs.items():
+        version = _select_max(spec_list, installed)
+        compile_versions.setdefault(str(version), []).append(path)
+        latest = _select_max(spec_list, available)
+        if latest > version:
+            new_versions.add(str(latest))
+    if new_versions:
+        print(
+            f"New compatible solc version{'s' if len(new_versions) > 1 else ''}"
+            f" available: {', '.join(new_versions)}"
+        )
+    return compile_versions
+
+
+def _select_max(spec_list, version_list):
+    return max(i.select(version_list) for i in spec_list if i.select(version_list))
+
+
+# convert all specitems in a spec to be of types (==, >=, <)
+def standardize_spec(spec):
+    final_spec = deepcopy(spec)
+    if spec.specs[0].kind == "==":
+        return final_spec
+    spec_list = list(spec.specs)
+    for s in spec_list:
+        if s.kind in (">", "<="):
+            s.kind = {'>': ">=", '<=': "<"}[s.kind]
+            s.spec.patch += 1
+        elif s.kind == "^":
+            s.kind = ">="
+            spec_list.append(SpecItem(f"<{s.spec.next_minor()}"))
+    spec_list = [
+        max((i for i in spec_list if i.kind == ">="), default=None, key=lambda k: k.spec),
+        min((i for i in spec_list if i.kind == "<"), default=None, key=lambda k: k.spec)
+    ]
+    final_spec.specs = tuple(i for i in spec_list if i)
+    return final_spec
 
 
 def generate_input_json(contracts, optimize=True, runs=200, evm_version=None, minify=False):
@@ -113,7 +189,8 @@ def compile_from_input_json(input_json, silent=True):
     optimizer = input_json['settings']['optimizer']
     input_json['settings'].setdefault('evmVersion', None)
     if not silent:
-        print("Compiling contracts...")
+        print("\nCompiling contracts...")
+        print(f"  Solc {solcx.get_solc_version_string()}")
         print("  Optimizer: " + (
             f"Enabled  Runs: {optimizer['runs']}" if
             optimizer['enabled'] else 'Disabled'
