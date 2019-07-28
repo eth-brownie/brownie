@@ -269,7 +269,11 @@ project
 
 .. py:exception:: brownie.exceptions.IncompatibleSolcVersion
 
-    Raised if a project requires a version of solc ``<0.4.22``.
+    Raised when a project requires a version of solc that is not installed or not supported by Brownie.
+
+.. py:exception:: brownie.exceptions.PragmaError
+
+    Raised when a contract has no pragma directive, or a pragma which requires a version of solc that cannot be installed.
 
 types
 *****

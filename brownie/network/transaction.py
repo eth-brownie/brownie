@@ -262,8 +262,7 @@ class TransactionReceipt:
             msg = f"Encountered a {type(e).__name__} while requesting "
             msg += "debug_traceTransaction. The local RPC client has likely crashed."
             if ARGV['coverage']:
-                msg += " If the error persists, import brownie.test.skipcoverage"
-                msg += " and apply @skipcoverage to this test."
+                msg += " If the error persists, add the skip_coverage fixture to this test."
             raise RPCRequestError(msg) from None
 
         if 'error' in trace:

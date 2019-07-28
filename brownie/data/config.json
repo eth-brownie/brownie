@@ -38,8 +38,8 @@
         "revert_traceback": false
     },
     "solc": {
-        "version": "0.5.10",
-        "evm_version": "petersburg",
+        "version": null,
+        "evm_version": null,
         "optimize": true,
         "runs": 200,
         "minify_source": false
