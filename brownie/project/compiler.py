@@ -40,9 +40,15 @@ def set_solc_version(version):
     try:
         solcx.set_solc_version(version, silent=True)
     except solcx.exceptions.SolcNotInstalled:
-        solcx.install_solc(version)
+        install_solc(version)
         solcx.set_solc_version(version, silent=True)
     return solcx.get_solc_version_string()
+
+
+def install_solc(*versions):
+    '''Installs solc versions.'''
+    for version in versions:
+        solcx.install_solc(str(version))
 
 
 def compile_and_format(
@@ -57,11 +63,12 @@ def compile_and_format(
     '''Compiles contracts and returns build data.
 
     Args:
-        contracts: a dictionary in the form of {path: 'source code'}
+        contracts: a dictionary in the form of {'path': "source code"}
+        solc_version: solc version to compile with (use None to set via pragmas)
         optimize: enable solc optimizer
         runs: optimizer runs
-        minify: minify source files
         evm_version: evm version to compile for
+        minify: minify source files
         silent: verbose reporting
 
     Returns: build data dict'''
@@ -73,7 +80,7 @@ def compile_and_format(
     if solc_version is not None:
         path_versions = {solc_version: list(contracts)}
     else:
-        path_versions = find_solc_versions(contracts)
+        path_versions = find_solc_versions(contracts, install_needed=True, silent=silent)
 
     for version, path_list in path_versions.items():
         set_solc_version(version)
@@ -89,7 +96,19 @@ def compile_and_format(
     return build_json
 
 
-def find_solc_versions(contracts):
+def find_solc_versions(contracts, install_needed=False, install_latest=False, silent=True):
+    '''Analyzes contract pragmas and determines which solc version(s) to use.
+
+    Args:
+        contracts: a dictionary in the form of {'path': "source code"}
+        install_needed: if True, will install when no installed version matches
+                        the contract pragma
+        install_latest: if True, will install when a newer version is available
+                        than the installed one
+        silent: enables verbose reporting
+
+    Returns: dictionary of {'version': ['path', 'path', ..]}
+    '''
     installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
     available_versions = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
 
@@ -120,11 +139,14 @@ def find_solc_versions(contracts):
                 raise PragmaError(
                     f"No installable solc version matching '{pragma_string}' in '{path}'"
                 ) from None
+            if not install_needed:
+                raise IncompatibleSolcVersion(
+                    f"No installed solc version matching '{pragma_string}' in '{path}'"
+                )
 
     # install new versions if needed
     if to_install:
-        for version in to_install:
-            solcx.install_solc(str(version))
+        install_solc(*to_install)
         installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
 
     # organize source paths by latest available solc version
@@ -137,10 +159,14 @@ def find_solc_versions(contracts):
         if latest > version:
             new_versions.add(str(latest))
     if new_versions:
-        print(
-            f"New compatible solc version{'s' if len(new_versions) > 1 else ''}"
-            f" available: {', '.join(new_versions)}"
-        )
+        if install_latest:
+            install_solc(*new_versions)
+            return find_solc_versions(contracts)
+        if not silent:
+            print(
+                f"New compatible solc version{'s' if len(new_versions) > 1 else ''}"
+                f" available: {', '.join(new_versions)}"
+            )
     return compiler_versions
 
 
