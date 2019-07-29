@@ -163,22 +163,26 @@ def load(project_path=None):
 
     # load config
     load_project_config(project_path)
-    CONFIG['solc']['version'] = compiler.set_solc_version(CONFIG['solc']['version'])
+    solc_version = CONFIG['solc']['version']
+    if solc_version:
+        CONFIG['solc']['version'] = compiler.set_solc_version(CONFIG['solc']['version'])
 
     # load sources and build
     sources.load(project_path)
     build.load(project_path)
 
     # compare build, erase as needed
-    changed_paths = _get_changed_contracts()
+    changed = _get_changed_contracts()
 
     # compile sources, update build
-    build_json = sources.compile_paths(
-        changed_paths,
+    build_json = compiler.compile_and_format(
+        changed,
+        solc_version=solc_version,
         optimize=CONFIG['solc']['optimize'],
         runs=CONFIG['solc']['runs'],
         evm_version=CONFIG['solc']['evm_version'],
-        minify=CONFIG['solc']['minify_source']
+        minify=CONFIG['solc']['minify_source'],
+        silent=False
     )
     for data in build_json.values():
         build.add(data)
@@ -199,7 +203,8 @@ def _get_changed_contracts():
         final.update(build.get_dependents(contract_name))
     for name in [i for i in final if build.contains(i)]:
         build.delete(name)
-    return set(sources.get_source_path(i) for i in final)
+    changed = set(sources.get_source_path(i) for i in final)
+    return dict((i, sources.get(i)) for i in changed)
 
 
 def _compare_build_json(contract_name):
@@ -207,10 +212,12 @@ def _compare_build_json(contract_name):
         build_json = build.get(contract_name)
     except KeyError:
         return True
-    return (
-        build_json['compiler'] != CONFIG['solc'] or
-        build_json['sha1'] != sources.get_hash(contract_name, CONFIG['solc']['minify_source'])
-    )
+    if build_json['sha1'] != sources.get_hash(contract_name, CONFIG['solc']['minify_source']):
+        return True
+    for key, value in [(k, v) for k, v in build_json['compiler'].items() if CONFIG['solc'][k]]:
+        if value != CONFIG['solc'][key]:
+            return True
+    return False
 
 
 def _create_objects():

@@ -2,6 +2,7 @@
 --------
 
  - Set EVM version in config file
+ - Determine solc version using pragma, allow multiple versions in one project
  - Expanded Alert functionality
  - Windows bugfixes
 

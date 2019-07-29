@@ -96,6 +96,10 @@ class IncompatibleSolcVersion(Exception):
     pass
 
 
+class PragmaError(Exception):
+    pass
+
+
 # types/
 
 class InvalidABI(Exception):

@@ -14,7 +14,7 @@ The connection settings for the local RPC are outlined in ``brownie-config.json`
 .. code-block:: javascript
 
     "development": {
-        "test_rpc": {
+        "test-rpc": {
             "cmd": "ganache-cli", // command to load the client - you can add any extra flags here as needed
             "port": 8545,  // port the client should listen on
             "gas_limit": 6721975,  // block gas limit
@@ -24,6 +24,8 @@ The connection settings for the local RPC are outlined in ``brownie-config.json`
         },
         "host": "http://127.0.0.1:8545"
     }
+
+Brownie will launch or attach to the client when using any network that includes a ``test-rpc`` dictionary in it's settings.
 
 Each time Brownie is loaded, it will first attempt to connect to the ``host`` address to determine if the RPC client is already active.
 

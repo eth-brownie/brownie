@@ -1,43 +1,49 @@
 #!/usr/bin/python3
 
+import functools
 import pytest
+from semantic_version import Version
 import solcx
 
-from brownie.project import compiler, sources, build
-from brownie.exceptions import CompilerError, IncompatibleSolcVersion
+from brownie.project import compiler, build
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 
 
-@pytest.fixture(autouse=True, scope="function")
-def version():
-    yield
-    compiler.set_solc_version("v0.5.7")
-
-
-def _solc_5_source():
-    source = sources.get('BrownieTester')
-    source = source.replace('BrownieTester', 'TempTester')
-    source = source.replace('UnlinkedLib', 'TestLib')
-    return source
-
-
-def _solc_4_source():
-    source = _solc_5_source()
-    source = source.replace('payable ', '')
-    source = source.replace('^0.5.0', '^0.4.25')
-    return source
-
-
-def _solc_4_output_json():
+@pytest.fixture(scope="module")
+def solc4json(solc4source):
     compiler.set_solc_version("0.4.25")
-    source = _solc_4_source()
-    input_json = compiler.generate_input_json({'path': source}, True, 200)
-    return compiler.compile_from_input_json(input_json)
+    input_json = compiler.generate_input_json({'path': solc4source}, True, 200)
+    yield compiler.compile_from_input_json(input_json)
 
 
-def _solc_5_output_json():
-    source = _solc_5_source()
-    input_json = compiler.generate_input_json({'path': source}, True, 200)
-    return compiler.compile_from_input_json(input_json)
+@pytest.fixture(scope="module")
+def solc5json(solc5source):
+    compiler.set_solc_version("0.5.7")
+    input_json = compiler.generate_input_json({'path': solc5source}, True, 200)
+    yield compiler.compile_from_input_json(input_json)
+
+
+@pytest.fixture
+def find_version():
+    source = """pragma solidity{};contract Foo {{}}"""
+
+    def fn(version, **kwargs):
+        return compiler.find_solc_versions({'Foo': source.format(version)}, **kwargs)
+    yield fn
+
+
+@pytest.fixture
+def msolc(monkeypatch):
+    installed = ['v0.5.8', 'v0.5.7', 'v0.4.23', 'v0.4.22', 'v0.4.6']
+    monkeypatch.setattr(
+        "solcx.get_installed_solc_versions",
+        lambda: installed
+    )
+    monkeypatch.setattr(
+        "solcx.install_solc",
+        lambda k: installed.append("v"+k)
+    )
+    yield installed
 
 
 def test_set_solc_version():
@@ -47,22 +53,37 @@ def test_set_solc_version():
     assert "0.4.25" in solcx.get_solc_version_string()
 
 
-def test_generate_input_json():
-    source = _solc_5_source()
-    input_json = compiler.generate_input_json({'path': source}, True, 200)
+def test_generate_input_json(solc5source):
+    input_json = compiler.generate_input_json({'path': solc5source}, True, 200)
     assert input_json['settings']['optimizer']['enabled'] is True
     assert input_json['settings']['optimizer']['runs'] == 200
-    assert input_json['sources']['path']['content'] == source
-    input_json = compiler.generate_input_json({'path': source}, False, 0, minify=True)
+    assert input_json['sources']['path']['content'] == solc5source
+    input_json = compiler.generate_input_json(
+        {'path': solc5source},
+        optimize=False,
+        runs=0,
+        minify=True
+    )
     assert input_json['settings']['optimizer']['enabled'] is False
     assert input_json['settings']['optimizer']['runs'] == 0
-    assert input_json['sources']['path']['content'] != source
+    assert input_json['sources']['path']['content'] != solc5source
 
 
-def test_compile_input_json():
-    output_json = _solc_5_output_json()
-    assert "TempTester" in output_json['contracts']['path']
-    assert "TestLib" in output_json['contracts']['path']
+def test_generate_input_json_evm(solc5source, monkeypatch):
+    monkeypatch.setattr('solcx.get_solc_version', lambda: Version('0.5.5'))
+    fn = functools.partial(compiler.generate_input_json, {'path': solc5source})
+    assert fn()['settings']['evmVersion'] == "petersburg"
+    assert fn(evm_version="byzantium")['settings']['evmVersion'] == "byzantium"
+    assert fn(evm_version="petersburg")['settings']['evmVersion'] == "petersburg"
+    monkeypatch.setattr('solcx.get_solc_version', lambda: Version('0.5.4'))
+    assert fn()['settings']['evmVersion'] == "byzantium"
+    assert fn(evm_version="byzantium")['settings']['evmVersion'] == "byzantium"
+    assert fn(evm_version="petersburg")['settings']['evmVersion'] == "petersburg"
+
+
+def test_compile_input_json(solc5json):
+    assert "TempTester" in solc5json['contracts']['path']
+    assert "TestLib" in solc5json['contracts']['path']
 
 
 def test_compile_input_json_raises():
@@ -86,36 +107,67 @@ def test_compile_optimizer(monkeypatch):
         compiler.compile_from_input_json(input_json)
 
 
-def test_build_json_keys():
-    build_json = compiler.compile_and_format({'path': _solc_5_source()})
+def test_build_json_keys(solc5source):
+    build_json = compiler.compile_and_format({'path': solc5source})
     assert set(build.BUILD_KEYS) == set(build_json['TempTester'])
 
 
-def test_build_json_unlinked_libraries():
-    build_json = compiler.compile_and_format({'path': _solc_5_source()})
+def test_build_json_unlinked_libraries(solc4source, solc5source):
+    build_json = compiler.compile_and_format({'path': solc5source}, solc_version="0.5.7")
     assert '__TestLib__' in build_json['TempTester']['bytecode']
-    compiler.set_solc_version("v0.4.25")
-    build_json = compiler.compile_and_format({'path': _solc_4_source()})
+    build_json = compiler.compile_and_format({'path': solc4source}, solc_version="0.4.25")
     assert '__TestLib__' in build_json['TempTester']['bytecode']
 
 
-def test_format_link_references():
-    output_json = _solc_5_output_json()
-    evm = output_json['contracts']['path']['TempTester']['evm']
+def test_format_link_references(solc4json, solc5json):
+    evm = solc5json['contracts']['path']['TempTester']['evm']
     assert '__TestLib__' in compiler.format_link_references(evm)
-    output_json = _solc_4_output_json()
-    evm = output_json['contracts']['path']['TempTester']['evm']
+    evm = solc4json['contracts']['path']['TempTester']['evm']
     assert '__TestLib__' in compiler.format_link_references(evm)
 
 
-def test_compiler_errors():
+def test_compiler_errors(solc4source, solc5source):
     with pytest.raises(CompilerError):
-        compiler.compile_and_format({'path': _solc_4_source()})
-    solcx.set_solc_version('0.4.25')
+        compiler.compile_and_format({'path': solc4source}, solc_version="0.5.7")
     with pytest.raises(CompilerError):
-        compiler.compile_and_format({'path': _solc_5_source()})
+        compiler.compile_and_format({'path': solc5source}, solc_version="0.4.25")
 
 
 def test_min_version():
     with pytest.raises(IncompatibleSolcVersion):
         compiler.set_solc_version('v0.4.21')
+
+
+def test_find_solc_versions(find_version, msolc):
+    assert '0.4.22' in find_version('0.4.22')
+    assert '0.4.23' in find_version('^0.4.20')
+    assert '0.5.8' in find_version('>0.4.20')
+    assert '0.5.8' in find_version('<=0.5.8')
+    assert '0.5.7' in find_version('>=0.4.2 <0.5.8')
+    assert '0.5.7' in find_version('>0.4.8 <0.5.8 || 0.5.11')
+    assert '0.4.22' in find_version('0.5.9 || 0.4.22')
+    with pytest.raises(PragmaError):
+        compiler.find_solc_versions({'Foo': "contract Foo {}"})
+    with pytest.raises(PragmaError):
+        find_version('^0.6.0', install_needed=False)
+
+
+def test_find_solc_versions_install(find_version, msolc):
+    assert 'v0.4.25' not in msolc
+    assert 'v0.5.10' not in msolc
+    find_version('^0.4.24', install_needed=True)
+    assert msolc.pop() == 'v0.4.25'
+    find_version('^0.4.22', install_latest=True)
+    assert msolc.pop() == 'v0.4.25'
+    find_version('^0.4.24 || >=0.5.10', install_needed=True)
+    assert msolc.pop() == 'v0.5.10'
+    find_version('>=0.4.24', install_latest=True)
+    assert msolc.pop() == 'v0.5.10'
+
+
+def test_install_solc(msolc):
+    assert 'v0.5.10' not in msolc
+    assert 'v0.6.0' not in msolc
+    compiler.install_solc('0.6.0', '0.5.10')
+    assert 'v0.5.10' in msolc
+    assert 'v0.6.0' in msolc

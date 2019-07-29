@@ -232,18 +232,29 @@ Module Methods
         >>> compiler.set_solc_version("0.4.25")
         Using solc version v0.4.25
 
-.. py:method:: compiler.compile_and_format(contracts, optimize=True, runs=200, evm_version=None, minify=False, silent=True)
+
+.. py:method:: compiler.install_solc(*versions)
+
+    Installs one or more versions of ``solc``.
+
+    .. code-block:: python
+
+        >>> from brownie.project import compiler
+        >>> compiler.install_solc("0.4.25", "0.5.10")
+
+.. py:method:: compiler.compile_and_format(contracts, solc_version=None, optimize=True, runs=200, evm_version=None, minify=False, silent=True)
 
     Given a dict in the format ``{'path': "source code"}``, compiles the contracts and returns the formatted `build data <compile-json>`_.
 
-    * ``contracts``: dict in the format ``{'path': "source code"}``
+    * ``contracts``: ``dict`` in the format ``{'path': "source code"}``
+    * ``solc_version``: solc version to compile with. If ``None``, each contract is compiled with the latest installed version that matches the pragma.
     * ``optimize``: Toggle compiler optimization
     * ``runs``: Number of compiler optimization runs
     * ``evm_version``: EVM version to target. If ``None`` the compiler default is used.
     * ``minify``: Should contract sources be `minified <sources-minify>`_?
     * ``silent``: Toggle console verbosity
 
-    Calling this method is equivalent to the following:
+    Calling this method is roughly equivalent to the following:
 
     .. code-block:: python
 
@@ -252,6 +263,17 @@ Module Methods
         >>> input_json = compiler.generate_input_json(contracts)
         >>> output_json = compiler.compile_from_input_json(input_json)
         >>> build_json = compiler.generate_build_json(input_json, output_json)
+
+.. py:method:: compiler.find_solc_versions(contracts, install_needed=False, install_latest=False, silent=True)
+
+    Analyzes contract pragmas and determines which solc version(s) to use.
+
+    * ``contracts``: ``dict`` in the format ``{'path': "source code"}``
+    * ``install_needed``: if ``True``, solc is installed when no installed version matches a contract pragma
+    * ``install_latest``: if ``True``, solc is installed when a newer version is available than the installed one
+    * ``silent``: enables verbose reporting
+
+    Returns a ``dict`` of ``{'version': ["path", "path", ..]}``.
 
 .. py:method:: compiler.generate_input_json(contracts, optimize=True, runs=200, evm_version=None, minify=False)
 
@@ -416,15 +438,6 @@ Module Methods
 
         >>> from brownie.project import sources
         >>> sources.clear()
-
-.. py:method:: sources.compile_paths(paths, optimize=True, runs=200, minify=False, evm_version=None, silent=False)
-
-    Compiles a list of contracts given in ``paths``. The contract sources must have already been loaded via ``sources.load``.
-
-    .. code-block:: python
-
-        >>> from brownie.project import sources
-        >>> sources.compile_paths(['contracts/Token.sol'])
 
 .. py:method:: sources.compile_source(source)
 

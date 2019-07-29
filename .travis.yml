@@ -45,5 +45,10 @@ matrix:
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
       script: python -m pytest tests/ --cov=brownie/ -p no:pytest-brownie
       after_success: python -m coveralls 
+
+env:
+  global: COVERALLS_PARALLEL=true
+
 notifications:
   email: false
+  webhooks: https://coveralls.io/webhook
