@@ -5,7 +5,7 @@ import os
 import shutil
 from pathlib import Path
 import pytest
-from _pytest.monkeypatch import derive_importpath
+from _pytest.monkeypatch import MonkeyPatch, derive_importpath
 
 from brownie import accounts, network, project
 from brownie._config import ARGV
@@ -13,8 +13,16 @@ from brownie._config import ARGV
 pytest_plugins = 'pytester'
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def session_setup():
+
+    # github blocks travis from their API, so this method is patched for the entire session
+    monkeypatch_session = MonkeyPatch()
+    monkeypatch_session.setattr(
+        "solcx.get_available_solc_versions",
+        lambda: ['v0.5.10', 'v0.5.9', 'v0.5.8', 'v0.5.7', 'v0.4.25', 'v0.4.24', 'v0.4.22']
+    )
+
     network.connect('development')
     conf_json = Path('tests/brownie-test-project/brownie-config.json')
     if conf_json.exists():
@@ -22,6 +30,7 @@ def session_setup():
     shutil.copyfile('brownie/data/config.json', conf_json)
     project.load('tests/brownie-test-project')
     yield
+    monkeypatch_session.undo()
     conf_json.unlink()
     for path in ("build", "reports"):
         path = Path('tests/brownie-test-project').joinpath(path)
@@ -101,7 +110,7 @@ def testpath(tmpdir):
 
 class MethodWatcher:
 
-    '''Extension of pytest's monkeypath. Wraps around methods so we can check
+    '''Extension of pytest's monkeypatch. Wraps around methods so we can check
     if they were called during the execution of a test.'''
 
     def __init__(self, monkeypatch):
