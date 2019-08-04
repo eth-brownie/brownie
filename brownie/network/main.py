@@ -55,7 +55,7 @@ def disconnect():
 
 def show_active():
     '''Returns the name of the currently active network'''
-    if not web3.providers:
+    if not web3.provider:
         return None
     return CONFIG['active_network']['name']
 

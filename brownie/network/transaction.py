@@ -4,6 +4,7 @@ from hashlib import sha1
 import requests
 import threading
 import time
+from web3.exceptions import TransactionNotFound
 
 from eth_abi import decode_abi
 from hexbytes import HexBytes
@@ -165,10 +166,11 @@ class TransactionReceipt:
 
         # await tx showing in mempool
         while True:
-            tx = web3.eth.getTransaction(self.txid)
-            if tx:
+            try:
+                tx = web3.eth.getTransaction(self.txid)
                 break
-            time.sleep(0.5)
+            except TransactionNotFound:
+                time.sleep(0.5)
         self._set_from_tx(tx)
 
         if not tx['blockNumber'] and not silent:
@@ -254,7 +256,7 @@ class TransactionReceipt:
             return
 
         try:
-            trace = web3.providers[0].make_request(
+            trace = web3.provider.make_request(
                 'debug_traceTransaction',
                 (self.txid, {'disableStorage': ARGV['cli'] != "console"})
             )
@@ -298,7 +300,7 @@ class TransactionReceipt:
         if step['op'] == "REVERT" and int(step['stack'][-2], 16):
             # get returned error string from stack
             data = _get_memory(step, -1)[4:]
-            self.revert_msg = decode_abi(['string'], data)[0].decode()
+            self.revert_msg = decode_abi(['string'], data)[0]
             return
         # check for dev revert string using program counter
         self.revert_msg = build.get_dev_revert(step['pc'])

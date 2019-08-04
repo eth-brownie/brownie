@@ -78,10 +78,10 @@ class Rpc(metaclass=_Singleton):
         out = DEVNULL if sys.platform == "win32" else PIPE
         self._rpc = psutil.Popen(cmd.split(" "), stdin=DEVNULL, stdout=out, stderr=out)
         # check that web3 can connect
-        if not web3.providers:
+        if not web3.provider:
             self._reset()
             return
-        uri = web3.providers[0].endpoint_uri if web3.providers else None
+        uri = web3.provider.endpoint_uri if web3.provider else None
         for i in range(100):
             if web3.isConnected():
                 self._reset_id = self._snap()
@@ -112,7 +112,7 @@ class Rpc(metaclass=_Singleton):
         except StopIteration:
             raise ProcessLookupError("Could not find RPC process.")
         self._rpc = psutil.Process(proc.pid)
-        if web3.providers:
+        if web3.provider:
             self._reset_id = self._snap()
         self._reset()
 
@@ -146,10 +146,10 @@ class Rpc(metaclass=_Singleton):
         if not self.is_active():
             raise SystemError("RPC is not active.")
         try:
-            response = web3.providers[0].make_request(*args)
+            response = web3.provider.make_request(*args)
             if 'result' in response:
                 return response['result']
-        except IndexError:
+        except AttributeError:
             raise RPCRequestError("Web3 is not connected.")
         raise RPCRequestError(response['error']['message'])
 
