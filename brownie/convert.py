@@ -284,7 +284,7 @@ def _format(abi, key, values):
         name = abi['name']
         types = [i['type'] for i in abi[key]]
     except Exception:
-        raise InvalidABI(f"ABI must be a dictionary with name and {key} values.")
+        raise InvalidABI(f"ABI must be a dictionary with name and {key} values.") from None
     values = list(values)
     if len(values) and not len(types):
         raise TypeError(f"{name} requires no arguments")
@@ -304,14 +304,17 @@ def _format(abi, key, values):
                 raise ValueError(
                     f"{name} argument #{i}, sequence has {len(values[i])} items, should be {type_}"
                 )
-            values[i] = _format(
-                {'name': name, key: [{'type': base_type}] * len(values[i])},
-                key,
-                values[i]
-            )
+            if base_type == "tuple":
+                params = [{'type': "tuple", 'components': abi[key][i]['components']}]
+            else:
+                params = [{'type': base_type}]
+            params *= len(values[i])
+            values[i] = _format({'name': name, key: params}, key, values[i])
             continue
         try:
-            if "uint" in type_:
+            if type_ == "tuple":
+                values[i] = _format({'name': name, key: abi[key][i]['components']}, key, values[i])
+            elif "uint" in type_:
                 values[i] = to_uint(values[i], type_)
             elif "int" in type_:
                 values[i] = to_int(values[i], type_)
