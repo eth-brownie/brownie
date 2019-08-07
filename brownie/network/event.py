@@ -118,6 +118,8 @@ class _EventItem:
         return iter(self._ordered)
 
     def __eq__(self, other):
+        if len(self._ordered) == 1:
+            return other == self._ordered[0]
         return other == self._ordered
 
     def items(self):
