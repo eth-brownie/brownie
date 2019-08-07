@@ -4,7 +4,7 @@ cytoolz>=0.9.0,<1.0.0;implementation_name=='cpython'
 docopt==0.6.2
 eth-abi>=2.0.0,<3.0.0
 eth-account>=0.4.0,<0.5.0
-eth-event>=0.1.4
+eth-event>=0.2.1,<1.0.0
 eth-hash[pycryptodome]>=0.2.0,<1.0.0
 eth-utils>=1.4.0,<2.0.0
 hexbytes>=0.2.0,<1.0.0

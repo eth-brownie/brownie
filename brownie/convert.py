@@ -313,7 +313,10 @@ def _format(abi, key, values):
             continue
         try:
             if type_ == "tuple":
-                values[i] = _format({'name': name, key: abi[key][i]['components']}, key, values[i])
+                # event data has already been formatted
+                if key != "data":
+                    tuple_abi = {'name': name, key: abi[key][i]['components']}
+                    values[i] = _format(tuple_abi, key, values[i])
             elif "uint" in type_:
                 values[i] = to_uint(values[i], type_)
             elif "int" in type_:
