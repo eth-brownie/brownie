@@ -1,6 +1,8 @@
 1.0.0b11
 --------
 
+ - Require web3.py version 5, updates based on breaking changes
+ - Add support for ABIEncoderV2
  - Set EVM version in config file
  - Determine solc version using pragma, allow multiple versions in one project
  - Expanded Alert functionality

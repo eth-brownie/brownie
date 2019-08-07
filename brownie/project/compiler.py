@@ -4,6 +4,7 @@ from copy import deepcopy
 from collections import deque
 from hashlib import sha1
 import re
+from requests.exceptions import ConnectionError
 import solcast
 from semantic_version import Version, Spec, SpecItem
 import solcx
@@ -110,7 +111,12 @@ def find_solc_versions(contracts, install_needed=False, install_latest=False, si
     Returns: dictionary of {'version': ['path', 'path', ..]}
     '''
     installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
-    available_versions = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
+    try:
+        available_versions = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
+    except ConnectionError:
+        if not installed_versions:
+            raise ConnectionError("Solc not installed and cannot connect to GitHub")
+        available_versions = installed_versions
 
     pragma_regex = re.compile(r"pragma +solidity([^;]*);")
     version_regex = re.compile(r"(([<>]?=?|\^)\d+\.\d+\.\d+)+")

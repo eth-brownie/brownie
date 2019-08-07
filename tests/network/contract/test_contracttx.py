@@ -163,3 +163,12 @@ def test_gas_limit_config(tester):
 def test_repr(token):
     repr(token.transfer)
     repr(token.balanceOf)
+
+
+def test_tuples(tupletester):
+    value = ["blahblah", accounts[1], ["yesyesyes", "0x1234"]]
+    tx = tupletester.setTuple(value)
+    assert tx.status == 1
+    tx = tupletester.getTuple.transact(accounts[1], {'from': accounts[0]})
+    assert tx.status == 1
+    assert tx.return_value == value

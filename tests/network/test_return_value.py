@@ -3,8 +3,7 @@
 import pytest
 
 from brownie import accounts
-from brownie.network.return_value import ReturnValue
-from brownie.convert import EthAddress, HexString, Wei
+from brownie.convert import ReturnValue, EthAddress, HexString, Wei
 
 
 @pytest.fixture(scope="module")
@@ -82,6 +81,7 @@ def test_getitem(ret):
 def test_getitem_slice(ret):
     s = ret[1:3]
     assert s == [False, accounts[2]]
+    assert s == (False, accounts[2])
     assert type(s) is ReturnValue
     assert s[0] == s['_bool']
     assert '_num' not in s

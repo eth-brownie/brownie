@@ -11,7 +11,6 @@ from .event import get_topics
 from .history import _ContractHistory
 from .rpc import Rpc
 from .web3 import Web3
-from .return_value import ReturnValue
 from brownie.convert import format_input, format_output, to_address, Wei
 from brownie.exceptions import UndeployedLibrary, VirtualMachineError
 from brownie._config import ARGV, CONFIG
@@ -170,7 +169,7 @@ class ContractConstructor:
             bytecode = bytecode.replace(marker, address)
 
         data = format_input(self.abi, args)
-        types = [i['type'] for i in self.abi['inputs']]
+        types = [i[1] for i in _params(self.abi['inputs'])]
         return bytecode + eth_abi.encode_abi(types, data).hex()
 
 
@@ -320,7 +319,7 @@ class _ContractMethod:
         Returns:
             Hexstring of encoded ABI data.'''
         data = format_input(self.abi, args)
-        types = [i['type'] for i in self.abi['inputs']]
+        types = [i[1] for i in _params(self.abi['inputs'])]
         return self.signature + eth_abi.encode_abi(types, data).hex()
 
     def decode_abi(self, hexstr):
@@ -330,11 +329,12 @@ class _ContractMethod:
             hexstr: Hexstring of returned call data
 
         Returns: Decoded values.'''
-        result = eth_abi.decode_abi([i['type'] for i in self.abi['outputs']], HexBytes(hexstr))
+        types = [i[1] for i in _params(self.abi['outputs'])]
+        result = eth_abi.decode_abi(types, HexBytes(hexstr))
         result = format_output(self.abi, result)
         if len(result) == 1:
-            return result[0]
-        return ReturnValue(result, self.abi)
+            result = result[0]
+        return result
 
 
 class ContractTx(_ContractMethod):
@@ -413,10 +413,22 @@ def _get_method_object(address, abi, name, owner):
     return ContractTx(address, abi, name, owner)
 
 
+def _params(abi_params):
+    types = []
+    for i in abi_params:
+        if i['type'] != "tuple":
+            types.append((i['name'], i['type']))
+            continue
+        types.append((i['name'], f"({','.join(x[1] for x in _params(i['components']))})"))
+    return types
+
+
 def _inputs(abi):
-    return ", ".join(f"{i['type']}{' '+i['name'] if i['name'] else ''}" for i in abi['inputs'])
+    params = _params(abi['inputs'])
+    return ", ".join(f"{i[1]}{' '+i[0] if i[0] else ''}" for i in params)
 
 
 def _signature(abi):
-    key = f"{abi['name']}({','.join(i['type'] for i in abi['inputs'])})".encode()
+    types = [i[1] for i in _params(abi['inputs'])]
+    key = f"{abi['name']}({','.join(types)})".encode()
     return "0x"+keccak(key).hex()[:8]
