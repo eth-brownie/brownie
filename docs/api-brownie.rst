@@ -192,15 +192,15 @@ For certain types of contract data, Brownie uses subclasses to assist with conve
             raise TypeError(f"Invalid type for comparison: '{b}' is not a valid address")
         TypeError: Invalid type for comparison: 'potato' is not a valid address
 
-.. py:class:: brownie.convert.HexString(value)
+.. py:class:: brownie.convert.HexString(value, type_)
 
-    String subclass for hexstring comparisons. Raises ``TypeError`` if compared to a non-hexstring. Evaluates ``True`` for hex strings with the same value but differing leading zeros or capitalization.
+    Bytes subclass for hexstring comparisons. Raises ``TypeError`` if compared to a non-hexstring. Evaluates ``True`` for hex strings with the same value but differing leading zeros or capitalization.
 
     All ``bytes`` values returned from a contract call or as part of an event log are given in this type.
 
     .. code-block:: python
 
-        >>> h = HexString('0x00abcd')
+        >>> h = HexString("0x00abcd", "bytes2")
         "0xabcd"
         >>> h == "0xabcd"
         True
@@ -211,6 +211,52 @@ For certain types of contract data, Brownie uses subclasses to assist with conve
         File "brownie/convert.py", line 327, in _hex_compare
           raise TypeError(f"Invalid type for comparison: '{b}' is not a valid hex string")
         TypeError: Invalid type for comparison: 'potato' is not a valid hex string
+
+.. _return_value:
+
+.. py:class:: brownie.network.return_value.ReturnValue
+
+    Tuple subclass with limited `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`_-like functionality. Used for iterable return values from contract calls or event logs.
+
+    .. code-block:: python
+
+        >>> result = issuer.getCountry(784)
+        >>> result
+        (1, (0, 0, 0, 0), (100, 0, 0, 0))
+        >>> result[2]
+        (100, 0, 0, 0)
+        >>> result.dict()
+        {
+            '_count': (0, 0, 0, 0),
+            '_limit': (100, 0, 0, 0),
+            '_minRating': 1
+        }
+        >>> result['_minRating']
+        1
+
+    When checking equality, ``ReturnValue`` objects ignore the type of container compared against. Tuples and lists will both return ``True`` so long as they contain the same values.
+
+    .. code-block:: python
+
+        >>> result = issuer.getCountry(784)
+        >>> result
+        (1, (0, 0, 0, 0), (100, 0, 0, 0))
+        >>> result == (1, (0, 0, 0, 0), (100, 0, 0, 0))
+        True
+        >>> result == [1, [0, 0, 0, 0], [100, 0, 0, 0]]
+        True
+
+.. py:classmethod:: ReturnValue.dict
+
+    Returns a ``dict`` of the named values within the object.
+
+.. py:classmethod:: ReturnValue.items
+
+    Returns a set-like object providing a view on the object's named items.
+
+.. py:classmethod:: ReturnValue.keys
+
+    Returns a set-like object providing a view on the object's keys.
 
 ``brownie.exceptions``
 ======================
@@ -274,13 +320,6 @@ project
 .. py:exception:: brownie.exceptions.PragmaError
 
     Raised when a contract has no pragma directive, or a pragma which requires a version of solc that cannot be installed.
-
-types
-*****
-
-.. py:exception:: brownie.exceptions.InvalidABI
-
-    Raised when an invalid ABI is given while converting contract inputs or outputs.
 
 ``brownie._config``
 ===================

@@ -340,7 +340,7 @@ def _format_single(type_, value):
 
 
 class ReturnValue(tuple):
-    '''Tuple/dict hybrid container, used for iterable return values'''
+    '''Tuple subclass with dict-like functionality, used for iterable return values.'''
 
     def __new__(cls, values, abi=None):
         self = super().__new__(cls, values)
