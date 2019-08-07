@@ -60,6 +60,14 @@ def token():
     network.rpc.reset()
 
 
+@pytest.fixture(scope="module")
+def tupletester():
+    network.rpc.reset()
+    contract = project.TupleTester.deploy({'from': accounts[0]})
+    yield contract
+    network.rpc.reset()
+
+
 @pytest.fixture
 def noload(projectpath):
     project.close(False)

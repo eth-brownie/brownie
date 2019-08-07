@@ -53,3 +53,9 @@ def test_always_transact(token, monkeypatch):
         assert tx.fn_name == "balanceOf"
     finally:
         ARGV['always_transact'] = False
+
+
+def test_tuples(tupletester):
+    value = ["blahblah", accounts[1], ["yesyesyes", "0x1234"]]
+    tupletester.setTuple(value)
+    assert tupletester.getTuple(accounts[1], {'from': accounts[0]}) == value
