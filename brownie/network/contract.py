@@ -11,7 +11,6 @@ from .event import get_topics
 from .history import _ContractHistory
 from .rpc import Rpc
 from .web3 import Web3
-from .return_value import ReturnValue
 from brownie.convert import format_input, format_output, to_address, Wei
 from brownie.exceptions import UndeployedLibrary, VirtualMachineError
 from brownie._config import ARGV, CONFIG
@@ -334,8 +333,8 @@ class _ContractMethod:
         result = eth_abi.decode_abi(types, HexBytes(hexstr))
         result = format_output(self.abi, result)
         if len(result) == 1:
-            return result[0]
-        return ReturnValue(result, self.abi)
+            result = result[0]
+        return result
 
 
 class ContractTx(_ContractMethod):
