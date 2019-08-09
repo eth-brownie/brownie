@@ -76,7 +76,6 @@ def load_project_config(project_path):
     '''Loads configuration settings from a project's brownie-config.json'''
     config_data = _get_project_config_file(project_path)
     CONFIG._unlock()
-    CONFIG['folders']['project'] = str(project_path)
     _recursive_update(CONFIG, config_data, [])
     CONFIG.setdefault('active_network', {'name': None})
     CONFIG._lock()

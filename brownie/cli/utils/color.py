@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from pathlib import Path
 import sys
 import traceback
 
@@ -39,6 +40,7 @@ NOTIFY_COLORS = {
     'SUCCESS': 'success'
 }
 
+base_path = str(Path('.').absolute())
 
 class Color:
 
@@ -128,8 +130,7 @@ class Color:
         tb = tb[start:stop]
         for i in range(len(tb)):
             info, code = tb[i].split('\n')[:2]
-            if CONFIG['folders']['project']:
-                info = info.replace(CONFIG['folders']['project'], ".")
+            info = info.replace(base_path, ".")
             info = [x.strip(",") for x in info.strip().split(" ")]
             if "site-packages/" in info[1]:
                 info[1] = '"'+info[1].split("site-packages/")[1]
@@ -139,8 +140,7 @@ class Color:
 
     def format_syntaxerror(self, exc):
         offset = exc.offset+len(exc.text.lstrip())-len(exc.text)+3
-        if CONFIG['folders']['project']:
-            exc.filename = exc.filename.replace(CONFIG['folders']['project'], ".")
+        exc.filename = exc.filename.replace(base_path, ".")
         return (
             f"  {self['dull']}File \"{self['string']}{exc.filename}{self['dull']}\", line "
             f"{self['value']}{exc.lineno}{self['dull']},\n{self}    {exc.text.strip()}\n"

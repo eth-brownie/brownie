@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 
 from brownie.network.history import TxHistory, _ContractHistory
-from brownie.project import build
 from brownie.project.scripts import get_ast_hash
 from brownie.test import coverage
 from brownie._config import ARGV
@@ -32,17 +31,17 @@ _contracts = _ContractHistory()
 
 class TestManager:
 
-    def __init__(self, path):
-        self.project_path = path
+    def __init__(self, project):
+        self.project = project
+        self.project_path = project._project_path
         self.active_path = None
         self.count = 0
         self.results = None
         self.isolated = set()
-        self.conf_hashes = dict(
-            (self._path(i.parent), get_ast_hash(i)) for i in Path(path).glob('tests/**/conftest.py')
-        )
+        glob = self.project_path.glob('tests/**/conftest.py')
+        self.conf_hashes = dict((self._path(i.parent), get_ast_hash(i)) for i in glob)
         try:
-            with path.joinpath('build/tests.json').open() as fp:
+            with self.project_path.joinpath('build/tests.json').open() as fp:
                 hashes = json.load(fp)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             hashes = {'tests': {}, 'contracts': {}, 'tx': {}}
@@ -51,6 +50,7 @@ class TestManager:
             (k, v) for k, v in hashes['tests'].items() if
             Path(k).exists() and self._get_hash(k) == v['sha1']
         )
+        build = self.project._build
         self.contracts = dict((k, v['bytecodeSha1']) for k, v in build.items() if v['bytecode'])
         changed_contracts = set(
             k for k, v in hashes['contracts'].items() if

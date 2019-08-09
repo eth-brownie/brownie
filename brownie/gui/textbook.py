@@ -9,7 +9,6 @@ from tkinter import ttk
 from .styles import TEXT_STYLE, TEXT_COLORS
 
 from brownie.project.sources import is_inside_offset
-from brownie._config import CONFIG
 
 
 class TextBook(ttk.Notebook):
@@ -22,7 +21,7 @@ class TextBook(ttk.Notebook):
         self._frames = []
         self.root.bind("<Left>", self.key_left)
         self.root.bind("<Right>", self.key_right)
-        base_path = Path(CONFIG['folders']['project']).joinpath('contracts')
+        base_path = self.root._project._project_path.joinpath('contracts')
         for path in base_path.glob('**/*.sol'):
             self.add(path)
         self.set_visible([])

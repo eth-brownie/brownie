@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-from pathlib import Path
 import pytest
 
 import brownie
@@ -39,11 +38,12 @@ def _generate_fixture(container):
 if brownie.project.check_for_project('.'):
 
     # load project and generate dynamic fixtures
-    for container in brownie.project.load():
+    project = brownie.project.load()
+    for container in project:
         globals()[container._name] = _generate_fixture(container)
 
     # create test manager - for reading and writing to build/test.json
-    manager = TestManager(Path(CONFIG['folders']['project']))
+    manager = TestManager(project)
     pytest.reverts = RevertContextManager
 
     # set commandline options
@@ -142,14 +142,15 @@ if brownie.project.check_for_project('.'):
         manager.save_json()
         if ARGV['coverage']:
             coverage_eval = brownie.test.coverage.get_merged()
-            output.print_coverage_totals(coverage_eval)
+            output.print_coverage_totals(project, coverage_eval)
             output.save_coverage_report(
+                project,
                 coverage_eval,
-                Path(CONFIG['folders']['project']).joinpath("reports")
+                project._project_path.joinpath("reports")
             )
         if ARGV['gas']:
             output.print_gas_profile()
-        brownie.project.close(False)
+        project.close(False)
 
     def pytest_keyboard_interrupt():
         ARGV['interrupt'] = True

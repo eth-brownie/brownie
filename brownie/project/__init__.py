@@ -5,7 +5,8 @@ from .main import (  # NOQA 401
     new,
     pull,
     load,
-    compile_source
+    compile_source,
+    get_loaded_projects
 )
 from .scripts import run
 

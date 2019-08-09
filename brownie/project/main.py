@@ -9,7 +9,7 @@ import zipfile
 
 from brownie.cli.utils import color
 from brownie.network.contract import ContractContainer
-from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
+from brownie.exceptions import ProjectNotFound
 from brownie.project import compiler
 from brownie.project.sources import Sources, get_hash
 from brownie.project.build import Build
@@ -95,8 +95,6 @@ def pull(project_name, project_path=None, ignore_subfolder=False):
 
 
 def _new_checks(project_path, ignore_subfolder):
-    if CONFIG['folders']['project']:
-        raise ProjectAlreadyLoaded("Project has already been loaded")
     project_path = Path(project_path).resolve()
     if CONFIG['folders']['brownie'] in str(project_path):
         raise SystemError("Cannot make a new project inside the main brownie installation folder.")
@@ -149,8 +147,6 @@ def load(project_path=None, name=None):
     Returns a list of ContractContainer objects.
     '''
     # checks
-    if CONFIG['folders']['project']:
-        raise ProjectAlreadyLoaded(f"Project already loaded at {CONFIG['folders']['project']}")
     if project_path is None:
         project_path = check_for_project('.')
     if not project_path or not Path(project_path).joinpath("brownie-config.json").exists():
@@ -212,7 +208,7 @@ class Project:
 
         # create container objects
         self._containers = []
-        for name, data in self._build.items():
+        for _, data in self._build.items():
             if data['bytecode']:
                 container = ContractContainer(data)
                 self._containers.append(container)
