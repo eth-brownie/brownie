@@ -23,8 +23,9 @@ def main():
     args = docopt(__doc__)
     update_argv_from_docopt(args)
 
-    project.load()
+    p = project.load()
+    p.load_config()
     network.connect(ARGV['network'])
 
-    shell = Console()
+    shell = Console(p)
     shell.interact(banner="Brownie environment is ready.", exitmsg="")

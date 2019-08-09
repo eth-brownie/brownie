@@ -56,25 +56,35 @@ def _load_default_config():
     return config
 
 
-def load_project_config(project_path):
-    '''Loads configuration settings from a project's brownie-config.json'''
+def _get_project_config_file(project_path):
     project_path = Path(project_path)
     if not project_path.exists():
         raise ValueError("Project does not exist!")
-    CONFIG._unlock()
-    CONFIG['folders']['project'] = str(project_path)
-    config_path = project_path.joinpath("brownie-config.json")
+    config_path = Path(project_path).joinpath("brownie-config.json")
     try:
         with config_path.open() as fp:
-            _recursive_update(CONFIG, json.load(fp), [])
+            return json.load(fp)
     except FileNotFoundError:
         shutil.copy(
             str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
             str(config_path)
         )
         print("WARNING: No config file found for this project. A new one has been created.")
+
+
+def load_project_config(project_path):
+    '''Loads configuration settings from a project's brownie-config.json'''
+    config_data = _get_project_config_file(project_path)
+    CONFIG._unlock()
+    CONFIG['folders']['project'] = str(project_path)
+    _recursive_update(CONFIG, config_data, [])
     CONFIG.setdefault('active_network', {'name': None})
     CONFIG._lock()
+
+
+def load_project_compiler_config(project_path):
+    config_data = _get_project_config_file(project_path)
+    return config_data['solc']
 
 
 def modify_network_config(network=None):

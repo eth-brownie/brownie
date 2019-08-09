@@ -309,7 +309,8 @@ class TransactionReceipt:
         # if none is found, expand the trace and get it from the pcMap
         self._expand_trace()
         try:
-            pc_map = build.get(step['contractName'])['pcMap']
+            pc_map = _contracts.find(step['address'])._build['pcMap']
+            # pc_map = build.get(step['contractName'])['pcMap']
             # if this is the function selector revert, check for a jump
             if 'first_revert' in pc_map[step['pc']]:
                 i = trace.index(step) - 4

@@ -257,7 +257,7 @@ def compile_from_input_json(input_json, silent=True):
         raise CompilerError(e)
 
 
-def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
+def generate_build_json(input_json, output_json, compiler_data=None, silent=True):
     '''Formats standard compiler output to the brownie build json.
 
     Args:
@@ -270,12 +270,14 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
     if not silent:
         print("Generating build data...")
 
+    if compiler_data is None:
+        compiler_data = {}
     compiler_data.update({
         "optimize": input_json['settings']['optimizer']['enabled'],
         "runs": input_json['settings']['optimizer']['runs'],
         "evm_version": input_json['settings']['evmVersion']
     })
-    minify = 'minify_source' in compiler_data and compiler_data['minify_source']
+    minified = 'minify_source' in compiler_data and compiler_data['minify_source']
     build_json = {}
     path_list = list(input_json['sources'])
 
@@ -292,6 +294,7 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
         node = next(i[contract_name] for i in source_nodes if i.name == path)
         bytecode = format_link_references(evm)
         paths = sorted(set([node.parent().path]+[i.parent().path for i in node.dependencies]))
+        hash_ = sources.get_hash(input_json['sources'][path]['content'], contract_name, minified)
 
         pc_map, statement_map, branch_map = generate_coverage_data(
             evm['deployedBytecode']['sourceMap'],
@@ -317,7 +320,7 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
             'offset': node.offset,
             'opcodes': evm['deployedBytecode']['opcodes'],
             'pcMap': pc_map,
-            'sha1': sources.get_hash(contract_name, minify),
+            'sha1': hash_,
             'source': input_json['sources'][path]['content'],
             'sourceMap': evm['bytecode']['sourceMap'],
             'sourcePath': path,

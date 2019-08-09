@@ -18,10 +18,13 @@ else:
 
 class Console(code.InteractiveConsole):
 
-    def __init__(self):
+    def __init__(self, *projects):
         locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
         locals_dict['dir'] = self._dir
         del locals_dict['project']
+
+        for p in projects:
+            locals_dict.update(p.dict())
 
         self._stdout_write = sys.stdout.write
         sys.stdout.write = self._console_write

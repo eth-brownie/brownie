@@ -26,12 +26,14 @@ BUILD_KEYS = [
 ]
 
 
+_revert_map = {}
+
+
 class Build:
 
     def __init__(self, project_path, sources):
         self._sources = sources
         self._build = {}
-        self._revert_map = {}
 
         self._project_path = Path(project_path)
         for path in list(self._project_path.glob('build/contracts/*.json')):
@@ -65,9 +67,9 @@ class Build:
         When a transaction reverts, the dev revert string can be determined by looking
         up the final program counter in this mapping.
 
-        Each value is a 4 item tuple as follows:
+        Each value is a 5 item tuple as follows:
 
-        ("path/to/source", (start, stop), "function name", "dev: revert string"),
+        ("path/to/source", (start, stop), "function name", "dev: revert string", self._source),
 
         When two contracts have differing values for the same program counter, the value
         in the revert map is set to False. If a transaction reverts with this pc,
@@ -79,7 +81,7 @@ class Build:
             v['op'] in {"REVERT", "INVALID"} or 'jump_revert' in v
         ):
             if 'fn' not in data or 'first_revert' in data:
-                self._revert_map[pc] = False
+                _revert_map[pc] = False
                 continue
             data['dev'] = ""
             try:
@@ -90,11 +92,11 @@ class Build:
                     data['dev'] = revert_str
             except (KeyError, ValueError):
                 pass
-            revert = (data['path'], tuple(data['offset']), data['fn'], data['dev'])
-            if pc in self._revert_map and revert != self._revert_map[pc]:
-                self._revert_map[pc] = False
+            revert = (data['path'], tuple(data['offset']), data['fn'], data['dev'], self._sources)
+            if pc in _revert_map and revert != _revert_map[pc]:
+                _revert_map[pc] = False
                 continue
-            self._revert_map[pc] = revert
+            _revert_map[pc] = revert
 
     def add(self, build_json):
         '''Adds a build json to the active project. The data is saved in the
@@ -126,21 +128,6 @@ class Build:
         or links to. Used by the compiler when determining which contracts to
         recompile based on a changed source file.'''
         return [k for k, v in self._build.items() if contract_name in v['dependencies']]
-
-    def get_dev_revert(self, pc):
-        '''Given the program counter from a stack trace that caused a transaction
-        to revert, returns the commented dev string (if any).'''
-        if pc not in self._revert_map or self._revert_map[pc] is False:
-            return None
-        return self._revert_map[pc][3]
-
-    def get_error_source_from_pc(self, pc, pad=3):
-        '''Given the program counter from a stack trace that caused a transaction
-        to revert, returns the highlighted relevent source code and the method name.'''
-        if pc not in self._revert_map or self._revert_map[pc] is False:
-            return None, None
-        revert = self._revert_map[pc]
-        return self._sources.get_highlighted_source(*revert[:2], pad=pad), revert[2]
 
     def delete(self, contract_name):
         '''Removes a contract's build data from the active project.
@@ -188,3 +175,21 @@ class Build:
         if offset not in offset_map:
             offset_map[offset] = self._sources.expand_offset(name, offset)
         return offset_map[offset]
+
+
+def get_dev_revert(pc):
+    '''Given the program counter from a stack trace that caused a transaction
+    to revert, returns the commented dev string (if any).'''
+    if pc not in _revert_map or _revert_map[pc] is False:
+        return None
+    return _revert_map[pc][3]
+
+
+def get_error_source_from_pc(pc, pad=3):
+    '''Given the program counter from a stack trace that caused a transaction
+    to revert, returns the highlighted relevent source code and the method name.'''
+    if pc not in _revert_map or _revert_map[pc] is False:
+        return None, None
+    revert = _revert_map[pc]
+    source = revert[4]
+    return source.get_highlighted_source(*revert[:2], pad=pad), revert[2]

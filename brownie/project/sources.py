@@ -31,36 +31,14 @@ class Sources:
                 source = fp.read()
             path = str(path.relative_to(self._project_path).as_posix())
             self._source[path] = source
-            self._contracts.update(self._get_contract_data(source, path))
-
-    def _get_contract_data(self, full_source, path):
-        minified_source, offset_map = minify(full_source)
-        contracts = re.findall(
-            r"((?:contract|library|interface)[^;{]*{[\s\S]*?})\s*(?=contract|library|interface|$)",
-            minified_source
-        )
-        data = {}
-        for source in contracts:
-            type_, name, inherited = re.findall(
-                r"\s*(contract|library|interface)\s{1,}(\S*)\s*(?:is\s{1,}(.*?)|)(?:{)",
-                source
-            )[0]
-            offset = minified_source.index(source)
-            if name in self._contracts and not self._contracts[name]['path'].startswith('<string-'):
-                raise ContractExists(
-                    f"Contract '{name}' already exists in the active project."
-                )
-            offset = (
-                offset + next(i[1] for i in offset_map if i[0] <= offset),
-                offset+len(source) + next(i[1] for i in offset_map if i[0] <= offset+len(source))
-            )
-            data[name] = {
-                'path': path,
-                'offset_map': offset_map,
-                'minified': minified_source,
-                'offset': offset
-            }
-        return data
+            data = _get_contract_data(source)
+            for name, values in data.items():
+                if name in self._contracts:
+                    raise ContractExists(
+                        f"Contract '{name}' already exists within this project."
+                    )
+                values['path'] = path
+                self._contracts[name] = values
 
     def get(self, name):
         '''Returns the source code file for the given name.
@@ -105,16 +83,6 @@ class Sources:
             evm_version=evm_version,
             silent=True
         )
-
-    def get_hash(self, contract_name, minified):
-        '''Returns a hash of the contract source code.'''
-        try:
-            if minified:
-                return sha1(self._contracts[contract_name]['minified'].encode()).hexdigest()
-            offset = self._contracts[contract_name]['offset']
-            return sha1(self.get(contract_name)[slice(*offset)].encode()).hexdigest()
-        except KeyError:
-            return ""
 
     def get_source_path(self, contract_name):
         '''Returns the path to the source file where a contract is located.'''
@@ -191,3 +159,51 @@ def is_inside_offset(inner, outer):
 
     Returns: bool'''
     return outer[0] <= inner[0] <= inner[1] <= outer[1]
+
+
+def get_hash(source, contract_name, minified):
+    '''Returns a hash of the contract source code.'''
+    if minified:
+        source = minify(source)
+    try:
+        data = _get_contract_data(source)[contract_name]
+        offset = slice(*data['offset'])
+        return sha1(source[offset].encode()).hexdigest()
+    except KeyError:
+        return ""
+
+
+_contract_data = {}
+
+
+def _get_contract_data(full_source):
+    key = sha1(full_source.encode()).hexdigest()
+    if key in _contract_data:
+        return _contract_data[key]
+    minified_source, offset_map = minify(full_source)
+    minified_key = sha1(minified_source.encode()).hexdigest()
+    if minified_key in _contract_data:
+        return _contract_data[minified_key]
+
+    contracts = re.findall(
+        r"((?:contract|library|interface)[^;{]*{[\s\S]*?})\s*(?=contract|library|interface|$)",
+        minified_source
+    )
+    data = {}
+    for source in contracts:
+        type_, name, inherited = re.findall(
+            r"\s*(contract|library|interface)\s{1,}(\S*)\s*(?:is\s{1,}(.*?)|)(?:{)",
+            source
+        )[0]
+        offset = minified_source.index(source)
+        offset = (
+            offset + next(i[1] for i in offset_map if i[0] <= offset),
+            offset+len(source) + next(i[1] for i in offset_map if i[0] <= offset+len(source))
+        )
+        data[name] = {
+            'offset_map': offset_map,
+            'offset': offset
+        }
+    _contract_data[key] = data
+    _contract_data[minified_key] = data
+    return data
