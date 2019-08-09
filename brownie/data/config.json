@@ -19,16 +19,16 @@
             "broadcast_reverting_tx": true
         },
         "goerli": {
-            "host": "https://goerli.infura.io/"
+            "host": "https://goerli.infura.io/v3/INFURA_PROJECT_ID"
         },
         "kovan": {
-            "host": "https://kovan.infura.io/"
+            "host": "https://kovan.infura.io/v3/INFURA_PROJECT_ID"
         },
         "rinkeby": {
-            "host": "https://rinkeby.infura.io/"
+            "host": "https://rinkeby.infura.io/v3/INFURA_PROJECT_ID"
         },
         "ropsten": {
-            "host": "https://ropsten.infura.io/"
+            "host": "https://ropsten.infura.io/v3/INFURA_PROJECT_ID"
         }
     },
     "pytest": {

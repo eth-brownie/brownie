@@ -1,12 +1,10 @@
 #!/usr/bin/python3
 
 from hashlib import sha1
-import itertools
 from pathlib import Path
 import re
 import textwrap
 
-from . import compiler
 from brownie.cli.utils import color
 from brownie.exceptions import ContractExists
 
@@ -17,28 +15,39 @@ MINIFY_REGEX_PATTERNS = [
     r"(?<=[^\w\s])[ \t]{1,}(?=\w)|(?<=\w)[ \t]{1,}(?=[^\w\s])"  # whitespace between expressions
 ]
 
+_contract_data = {}
+
 
 class Sources:
 
     def __init__(self, project_path):
         self._source = {}
         self._contracts = {}
-        self._project_path = Path(project_path)
-        for path in self._project_path.glob('contracts/**/*.sol'):
-            if "/_" in str(path.as_posix()):
+        if not project_path:
+            return
+        project_path = Path(project_path)
+        for path in project_path.glob('contracts/**/*.sol'):
+            if "/_" in path.as_posix():
                 continue
             with path.open() as fp:
                 source = fp.read()
-            path = str(path.relative_to(self._project_path).as_posix())
-            self._source[path] = source
-            data = _get_contract_data(source)
-            for name, values in data.items():
-                if name in self._contracts:
-                    raise ContractExists(
-                        f"Contract '{name}' already exists within this project."
-                    )
-                values['path'] = path
-                self._contracts[name] = values
+            path = path.relative_to(project_path).as_posix()
+            self.add(path, source)
+
+    def add(self, path, source, replace=False):
+        if path in self._source and not replace:
+            raise ContractExists(
+                f"Contract with path '{path}' already exists in this project."
+            )
+        data = _get_contract_data(source)
+        for name, values in data.items():
+            if name in self._contracts and not replace:
+                raise ContractExists(
+                    f"Contract '{name}' already exists in this project."
+                )
+            values['path'] = path
+        self._source[path] = source
+        self._contracts.update(data)
 
     def get(self, name):
         '''Returns the source code file for the given name.
@@ -58,31 +67,6 @@ class Sources:
     def get_contract_list(self):
         '''Returns a list of contract names for the active project.'''
         return list(self._contracts.keys())
-
-    # def clear(self):
-    #     '''Clears all currently loaded source files.'''
-    #     self._source.clear()
-    #     self._contracts.clear()
-
-    def compile_source(self, source, solc_version=None, optimize=True, runs=200, evm_version=None):
-        '''Compiles the given source and saves it with a path <string-X>, where
-        X is a an integer increased with each successive call.
-
-        Returns the build json data.'''
-
-        path = next(
-            f"<string-{i}>" for i in itertools.count() if f"<string-{i}>" not in self._source
-        )
-        self._source[path] = source
-        self._contracts.update(self._get_contract_data(source, path))
-        return compiler.compile_and_format(
-            {path: source},
-            solc_version=solc_version,
-            optimize=optimize,
-            runs=runs,
-            evm_version=evm_version,
-            silent=True
-        )
 
     def get_source_path(self, contract_name):
         '''Returns the path to the source file where a contract is located.'''
@@ -171,9 +155,6 @@ def get_hash(source, contract_name, minified):
         return sha1(source[offset].encode()).hexdigest()
     except KeyError:
         return ""
-
-
-_contract_data = {}
 
 
 def _get_contract_data(full_source):

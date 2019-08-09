@@ -35,6 +35,8 @@ class Build:
         self._sources = sources
         self._build = {}
 
+        if not project_path:
+            return
         self._project_path = Path(project_path)
         for path in list(self._project_path.glob('build/contracts/*.json')):
             try:
@@ -137,13 +139,6 @@ class Build:
             contract_name: name of the contract to delete.'''
         del self._build[self._stem(contract_name)]
         self._absolute(contract_name).unlink()
-
-    # def clear(self):
-    #     '''Clears all currently loaded build data.  No files are deleted.'''
-    #     global _project_path
-    #     _project_path = None
-    #     self._build.clear()
-    #     self._revert_map.clear()
 
     def _absolute(self, contract_name):
         contract_name = self._stem(contract_name)

@@ -24,12 +24,16 @@ class Console(code.InteractiveConsole):
         del locals_dict['project']
 
         for p in projects:
-            locals_dict.update(p.dict())
+            p._update_and_register(locals_dict)
 
         self._stdout_write = sys.stdout.write
         sys.stdout.write = self._console_write
 
-        history_file = str(Path(CONFIG['folders']['project']).joinpath('.history').absolute())
+        if len(projects) == 1:
+            history_file = projects[0]._project_path
+        else:
+            history_file = Path(CONFIG['folders']['brownie'])
+        history_file = str(history_file.joinpath('.history').absolute())
         atexit.register(_atexit_readline, history_file)
         try:
             readline.read_history_file(history_file)

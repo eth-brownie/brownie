@@ -83,6 +83,8 @@ def load_project_config(project_path):
 
 
 def load_project_compiler_config(project_path):
+    if not project_path:
+        return CONFIG['solc']
     config_data = _get_project_config_file(project_path)
     return config_data['solc']
 

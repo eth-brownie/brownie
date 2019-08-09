@@ -21,7 +21,7 @@ from .web3 import Web3
 from brownie.convert import Wei
 from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
-from brownie.project import build, sources
+from brownie.project import build
 from brownie.test import coverage
 from brownie._config import ARGV
 
@@ -310,7 +310,6 @@ class TransactionReceipt:
         self._expand_trace()
         try:
             pc_map = _contracts.find(step['address'])._build['pcMap']
-            # pc_map = build.get(step['contractName'])['pcMap']
             # if this is the function selector revert, check for a jump
             if 'first_revert' in pc_map[step['pc']]:
                 i = trace.index(step) - 4
@@ -603,7 +602,8 @@ class TransactionReceipt:
         source = self.trace[idx]['source']
         if not source:
             return ""
-        source = sources.get_highlighted_source(source['filename'], source['offset'], pad)
+        contract = _contracts.find(self.trace[idx]['address'])
+        source = contract._sources.get_highlighted_source(source['filename'], source['offset'], pad)
         if not source:
             return ""
         return _format_source(source, self.trace[idx]['pc'], idx, self.trace[idx]['fn'])

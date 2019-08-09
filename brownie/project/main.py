@@ -13,7 +13,6 @@ from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.project import compiler
 from brownie.project.sources import Sources, get_hash
 from brownie.project.build import Build
-# from brownie.test import coverage
 from brownie._config import CONFIG, load_project_config, load_project_compiler_config
 
 FOLDERS = [
@@ -27,6 +26,8 @@ FOLDERS = [
 ]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 
+_loaded_projects = []
+
 
 def check_for_project(path):
     '''Checks for a Brownie project.'''
@@ -35,6 +36,10 @@ def check_for_project(path):
         if folder.joinpath("brownie-config.json").exists():
             return folder
     return None
+
+
+def get_loaded_projects():
+    return _loaded_projects.copy()
 
 
 def new(project_path=".", ignore_subfolder=False):
@@ -102,44 +107,36 @@ def _new_checks(project_path, ignore_subfolder):
     return project_path
 
 
-# def close(raises=True):
-#     '''Closes the active project.'''
-#     if not CONFIG['folders']['project']:
-#         if not raises:
-#             return
-#         raise ProjectNotFound("No Brownie project currently open.")
-
-#     # clear sources, build, coverage
-#     sources.clear()
-#     build.clear()
-#     coverage.clear()
-
-#     # remove objects from namespace
-#     for name in sys.modules['brownie.project'].__all__.copy():
-#         if name == "__brownie_import_all__":
-#             continue
-#         del sys.modules['brownie.project'].__dict__[name]
-#         if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
-#             del sys.modules['__main__'].__dict__[name]
-#     sys.modules['brownie.project'].__all__ = ['__brownie_import_all__']
-
-#     # clear paths
-#     try:
-#         sys.path.remove(CONFIG['folders']['project'])
-#     except ValueError:
-#         pass
-#     CONFIG['folders']['project'] = None
-
-
-def compile_source(source):
+def compile_source(source, solc_version=None, optimize=True, runs=200, evm_version=None):
     '''Compiles the given source code string and returns a list of
     ContractContainer instances.'''
-    result = []
-    for name, build_json in sources.compile_source(source).items():
-        if build_json['type'] == "interface":
+
+    # if no temporary project exists, create one
+    module = sys.modules[__name__]
+    project = getattr(module, '_temp_project', None)
+    if project is None:
+        project = Project(None, "temp")
+        # close the project immediately so it's not easily accessible
+        project.close()
+        setattr(module, '_temp_project', project)
+
+    path = f"<string-{len(project._sources.get_path_list())}>"
+    project._sources.add(path, source, True)
+    build_json = compiler.compile_and_format(
+        {path: source},
+        solc_version=solc_version,
+        optimize=optimize,
+        runs=runs,
+        evm_version=evm_version,
+        silent=True
+    )
+
+    containers = []
+    for name, data in build_json.items():
+        if data['type'] == "interface":
             continue
-        result.append(ContractContainer(build_json))
-    return result
+        containers.append(ContractContainer(data))
+    return containers
 
 
 def load(project_path=None, name=None):
@@ -166,13 +163,11 @@ def load(project_path=None, name=None):
 
     # load sources and build
     if name is None:
-        name = project_path.name + " project"
+        name = project_path.name
+        if not name.lower().endswith("project"):
+            name += " project"
         name = "".join(i for i in name.title() if i.isalpha())
-    project = Project(project_path, name)
-    setattr(sys.modules[__name__], name, project)
-    return project
-    # sources.load(project_path)
-    # build.load(project_path)
+    return Project(project_path, name)
 
 
 def _create_folders(project_path):
@@ -190,7 +185,7 @@ def _add_to_sys_path(project_path):
 class Project:
 
     def __init__(self, project_path, name):
-        self._project_path = Path(project_path)
+        self._project_path = project_path
         self._name = name
 
         self._compiler_config = load_project_compiler_config(project_path)
@@ -215,17 +210,26 @@ class Project:
         for data in build_json.values():
             self._build.add(data)
 
-        # create objects, add to namespace
-        self._contracts = _create_objects(self._build)
-        for contract in self._contracts:
-            setattr(self, contract._name, contract)
+        # create container objects
+        self._containers = []
+        for name, data in self._build.items():
+            if data['bytecode']:
+                container = ContractContainer(data)
+                self._containers.append(container)
+                setattr(self, container._name, container)
 
-        import_key = f"__brownie_import_all_{name}__"
-        setattr(self, import_key, True)
-        self.__all__ = [import_key]+[i._name for i in self._contracts]
+        # add project to namespaces, apply import blackmagic
+        self.__all__ = [i._name for i in self._containers]
         sys.modules[f'brownie.project.{name}'] = self
         sys.modules['brownie.project'].__dict__[name] = self
         sys.modules['brownie.project'].__all__.append(name)
+        self._namespaces = [
+            sys.modules['__main__'].__dict__,
+            sys.modules['brownie.project'].__dict__
+        ]
+
+        self._active = True
+        _loaded_projects.append(self)
 
     def _get_changed_contracts(self):
         changed = [i for i in self._sources.get_contract_list() if self._compare_build_json(i)]
@@ -251,69 +255,58 @@ class Project:
             False
         )
 
+    def _update_and_register(self, dict_):
+        dict_.update(self)
+        self._namespaces.append(dict_)
+
     def __repr__(self):
         items = [
             f"<{type(i).__name__} object '{color['string']}{i._name}{color}'>"
-            for i in self._contracts
+            for i in self._containers
         ]
         return f"[{', '.join(items)}]"
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            return next(i for i in self._containers if i._name == key)
+        return self._containers[key]
+
+    def __iter__(self):
+        return iter(self._containers)
+
+    def __len__(self):
+        return len(self._containers)
 
     def load_config(self):
         load_project_config(self._project_path)
 
-    def __getitem__(self, key):
-        if isinstance(key, str):
-            return next(i for i in self._contracts if i._name == key)
-        return self._contracts[key]
-
-    def __iter__(self):
-        return iter(self._contracts)
-
-    def __len__(self):
-        return len(self._contracts)
-
     def dict(self):
-        return dict((i._name, i) for i in self._contracts)
+        return dict((i._name, i) for i in self._containers)
 
-    def close(self):
+    def keys(self):
+        return [i._name for i in self._containers]
+
+    def close(self, raises=True):
         '''Closes the active project.'''
-        name = self._name
-        delattr(sys.modules[__name__], name)
-        del sys.modules[f'brownie.project.{name}']
-        # remove objects from namespace
-        main = sys.modules['__main__']
-        key = f"__brownie_import_all_{name}__"
-        if getattr(main, name, None) == self:
-            delattr(main, name)
-        if hasattr(main, key):
-            for item in self.__all__:
-                if getattr(main, item, None) == getattr(self, item):
-                    delattr(main, item)
+        if not self._active:
+            if not raises:
+                return
+            raise ProjectNotFound("Project is not currently loaded.")
 
-        del sys.modules['brownie.project'].__dict__[name]
+        # remove objects from namespace
+        for dict_ in self._namespaces:
+            keys = [k for k, v in dict_.items() if v == self or v in self]
+            for k in keys:
+                del dict_[k]
+
+        name = self._name
+        del sys.modules[f'brownie.project.{name}']
         sys.modules['brownie.project'].__all__.remove(name)
+        self._active = False
+        _loaded_projects.remove(self)
 
         # clear paths
         try:
             sys.path.remove(self._project_path)
         except ValueError:
             pass
-
-
-def _create_objects(build):
-    result = []
-    for name, data in build.items():
-        if not data['bytecode']:
-            continue
-        container = ContractContainer(data)
-        result.append(container)
-        # sys.modules['brownie.project'].__dict__[name] = container
-        # sys.modules['brownie.project'].__all__.append(name)
-        # # if running via brownie cli, add to brownie namespace
-        # if ARGV['cli']:
-        #     sys.modules['brownie'].__dict__[name] = container
-        #     sys.modules['brownie'].__all__.append(name)
-        # # if running via interpreter, add to main namespace if package was imported via from
-        # elif '__brownie_import_all__' in sys.modules['__main__'].__dict__:
-        #     sys.modules['__main__'].__dict__[name] = container
-    return sorted(result, key=lambda k: k._name)

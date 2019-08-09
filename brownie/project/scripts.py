@@ -8,7 +8,7 @@ import sys
 
 from brownie.cli.utils import color
 from brownie.test.output import print_gas_profile
-from brownie.project import check_for_project
+from brownie.project.main import check_for_project, get_loaded_projects
 
 
 def run(script_path, method_name="main", args=None, kwargs=None, gas_profile=False):
@@ -28,6 +28,8 @@ def run(script_path, method_name="main", args=None, kwargs=None, gas_profile=Fal
         kwargs = {}
     script_path = _get_path(script_path, "scripts")
     module = _import_from_path(script_path)
+    for project in get_loaded_projects():
+        module.__dict__.update(project)
     name = module.__name__
     if not hasattr(module, method_name):
         raise AttributeError(f"Module '{name}' has no method '{method_name}'")
