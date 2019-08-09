@@ -9,7 +9,9 @@ import zipfile
 
 from brownie.network.contract import ContractContainer
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
-from brownie.project import build, sources, compiler
+from brownie.project import compiler
+from brownie.project.sources import Sources
+from brownie.project.build import Build
 from brownie.test import coverage
 from brownie._config import ARGV, CONFIG, load_project_config
 
@@ -99,33 +101,33 @@ def _new_checks(project_path, ignore_subfolder):
     return project_path
 
 
-def close(raises=True):
-    '''Closes the active project.'''
-    if not CONFIG['folders']['project']:
-        if not raises:
-            return
-        raise ProjectNotFound("No Brownie project currently open.")
+# def close(raises=True):
+#     '''Closes the active project.'''
+#     if not CONFIG['folders']['project']:
+#         if not raises:
+#             return
+#         raise ProjectNotFound("No Brownie project currently open.")
 
-    # clear sources, build, coverage
-    sources.clear()
-    build.clear()
-    coverage.clear()
+#     # clear sources, build, coverage
+#     sources.clear()
+#     build.clear()
+#     coverage.clear()
 
-    # remove objects from namespace
-    for name in sys.modules['brownie.project'].__all__.copy():
-        if name == "__brownie_import_all__":
-            continue
-        del sys.modules['brownie.project'].__dict__[name]
-        if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
-            del sys.modules['__main__'].__dict__[name]
-    sys.modules['brownie.project'].__all__ = ['__brownie_import_all__']
+#     # remove objects from namespace
+#     for name in sys.modules['brownie.project'].__all__.copy():
+#         if name == "__brownie_import_all__":
+#             continue
+#         del sys.modules['brownie.project'].__dict__[name]
+#         if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
+#             del sys.modules['__main__'].__dict__[name]
+#     sys.modules['brownie.project'].__all__ = ['__brownie_import_all__']
 
-    # clear paths
-    try:
-        sys.path.remove(CONFIG['folders']['project'])
-    except ValueError:
-        pass
-    CONFIG['folders']['project'] = None
+#     # clear paths
+#     try:
+#         sys.path.remove(CONFIG['folders']['project'])
+#     except ValueError:
+#         pass
+#     CONFIG['folders']['project'] = None
 
 
 def compile_source(source):
@@ -139,7 +141,7 @@ def compile_source(source):
     return result
 
 
-def load(project_path=None):
+def load(project_path=None, name=None):
     '''Loads a project and instantiates various related objects.
 
     Args:
@@ -168,27 +170,12 @@ def load(project_path=None):
         CONFIG['solc']['version'] = compiler.set_solc_version(CONFIG['solc']['version'])
 
     # load sources and build
-    sources.load(project_path)
-    build.load(project_path)
-
-    # compare build, erase as needed
-    changed = _get_changed_contracts()
-
-    # compile sources, update build
-    build_json = compiler.compile_and_format(
-        changed,
-        solc_version=solc_version,
-        optimize=CONFIG['solc']['optimize'],
-        runs=CONFIG['solc']['runs'],
-        evm_version=CONFIG['solc']['evm_version'],
-        minify=CONFIG['solc']['minify_source'],
-        silent=False
-    )
-    for data in build_json.values():
-        build.add(data)
-
-    # create objects, add to namespace
-    return _create_objects()
+    if name is None:
+        name = "".join(i for i in project_path.name.title() if i.isalpha())
+    project = Project(project_path)
+    setattr(sys.modules[__name__], name, project)
+    # sources.load(project_path)
+    # build.load(project_path)
 
 
 def _create_folders(project_path):
@@ -196,31 +183,62 @@ def _create_folders(project_path):
         project_path.joinpath(path).mkdir(exist_ok=True)
 
 
-def _get_changed_contracts():
-    changed = [i for i in sources.get_contract_list() if _compare_build_json(i)]
-    final = set(changed)
-    for contract_name in changed:
-        final.update(build.get_dependents(contract_name))
-    for name in [i for i in final if build.contains(i)]:
-        build.delete(name)
-    changed = set(sources.get_source_path(i) for i in final)
-    return dict((i, sources.get(i)) for i in changed)
+def _add_to_sys_path(project_path):
+    project_path = str(project_path)
+    if project_path in sys.path:
+        return
+    sys.path.insert(0, project_path)
 
 
-def _compare_build_json(contract_name):
-    try:
-        build_json = build.get(contract_name)
-    except KeyError:
-        return True
-    if build_json['sha1'] != sources.get_hash(contract_name, CONFIG['solc']['minify_source']):
-        return True
-    for key, value in [(k, v) for k, v in build_json['compiler'].items() if CONFIG['solc'][k]]:
-        if value != CONFIG['solc'][key]:
-            return True
-    return False
+class Project:
+
+    def __init__(self, project_path, name):
+        self._name = name
+        self._sources = Sources(project_path)
+        self._build = Build(project_path)
+        self._contracts = []
+
+        # compile updated sources, update build
+        changed = _get_changed_contracts(self._sources, self._build)
+        build_json = compiler.compile_and_format(
+            changed,
+            solc_version=solc_version,
+            optimize=CONFIG['solc']['optimize'],
+            runs=CONFIG['solc']['runs'],
+            evm_version=CONFIG['solc']['evm_version'],
+            minify=CONFIG['solc']['minify_source'],
+            silent=False
+        )
+        for data in build_json.values():
+            self._build.add(data)
+
+        # create objects, add to namespace
+        self._contracts = _create_objects(self._build)
+
+    def __repr__(self):
+        return str(self._contracts)
+
+    def close(self):
+        '''Closes the active project.'''
+        delattr(sys.modules[__name__], self._name)
+        # remove objects from namespace
+        for name in sys.modules['brownie.project'].__all__.copy():
+            if name == "__brownie_import_all__":
+                continue
+            del sys.modules['brownie.project'].__dict__[name]
+            if '__brownie_import_all__' in sys.modules['__main__'].__dict__:
+                del sys.modules['__main__'].__dict__[name]
+        sys.modules['brownie.project'].__all__ = ['__brownie_import_all__']
+
+        # clear paths
+        try:
+            sys.path.remove(CONFIG['folders']['project'])
+        except ValueError:
+            pass
+        CONFIG['folders']['project'] = None
 
 
-def _create_objects():
+def _create_objects(build):
     result = []
     for name, data in build.items():
         if not data['bytecode']:
@@ -236,11 +254,28 @@ def _create_objects():
         # if running via interpreter, add to main namespace if package was imported via from
         elif '__brownie_import_all__' in sys.modules['__main__'].__dict__:
             sys.modules['__main__'].__dict__[name] = container
-    return result
+    return sorted(result)
 
 
-def _add_to_sys_path(project_path):
-    project_path = str(project_path)
-    if project_path in sys.path:
-        return
-    sys.path.insert(0, project_path)
+def _get_changed_contracts(sources, build):
+    changed = [i for i in sources.get_contract_list() if _compare_build_json(sources, build, i)]
+    final = set(changed)
+    for contract_name in changed:
+        final.update(build.get_dependents(contract_name))
+    for name in [i for i in final if build.contains(i)]:
+        build.delete(name)
+    changed = set(sources.get_source_path(i) for i in final)
+    return dict((i, sources.get(i)) for i in changed)
+
+
+def _compare_build_json(sources, build, contract_name):
+    try:
+        build_json = build.get(contract_name)
+    except KeyError:
+        return True
+    if build_json['sha1'] != sources.get_hash(contract_name, CONFIG['solc']['minify_source']):
+        return True
+    for key, value in [(k, v) for k, v in build_json['compiler'].items() if CONFIG['solc'][k]]:
+        if value != CONFIG['solc'][key]:
+            return True
+    return False
