@@ -9,7 +9,7 @@ rpc = Rpc()
 web3 = Web3()
 
 
-def connect(network=None):
+def connect(network=None, launch_rpc=True):
     '''Connects to the network.
 
     Args:
@@ -25,7 +25,7 @@ def connect(network=None):
                 f"No host in brownie-config.json for network '{active['name']}'"
             )
         web3.connect(active['host'])
-        if 'test_rpc' in active and not rpc.is_active():
+        if 'test_rpc' in active and launch_rpc and not rpc.is_active():
             if is_connected():
                 if web3.eth.blockNumber != 0:
                     raise ValueError("Local RPC Client has a block height > 0")
@@ -40,12 +40,12 @@ def connect(network=None):
         raise
 
 
-def disconnect():
+def disconnect(kill_rpc=True):
     '''Disconnects from the network.'''
     if not is_connected():
         raise ConnectionError("Not connected to any network")
     CONFIG['active_network'] = {'name': None}
-    if rpc.is_active():
+    if kill_rpc and rpc.is_active():
         if rpc.is_child():
             rpc.kill()
         else:

@@ -42,6 +42,7 @@ NOTIFY_COLORS = {
 
 base_path = str(Path('.').absolute())
 
+
 class Color:
 
     def __call__(self, color=None):

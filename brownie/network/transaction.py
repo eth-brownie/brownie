@@ -22,6 +22,7 @@ from brownie.convert import Wei
 from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build
+from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie._config import ARGV
 
@@ -572,9 +573,9 @@ class TransactionReceipt:
 
         # if RPC returned a program counter, try to find source without querying trace
         if self._revert_pc:
-            error, fn_name = build.get_error_source_from_pc(self._revert_pc)
-            if error:
-                return _format_source(error, self._revert_pc, -1, fn_name)
+            highlight, linenos, path, fn_name = build.get_error_source_from_pc(self._revert_pc)
+            if highlight:
+                return _format_source(highlight, linenos, path, self._revert_pc, -1, fn_name)
             self._revert_pc = None
 
         # iterate backward through the trace until a step has a source offset
@@ -599,25 +600,36 @@ class TransactionReceipt:
 
         Returns: source code string
         '''
-        source = self.trace[idx]['source']
-        if not source:
+        trace = self.trace[idx]
+        if not trace['source']:
             return ""
         contract = _contracts.find(self.trace[idx]['address'])
-        source = contract._sources.get_highlighted_source(source['filename'], source['offset'], pad)
+        source, linenos = highlight_source(
+            contract._build['source'],
+            trace['source']['offset'],
+            pad
+        )
         if not source:
             return ""
-        return _format_source(source, self.trace[idx]['pc'], idx, self.trace[idx]['fn'])
+        return _format_source(
+            source,
+            linenos,
+            trace['source']['filename'],
+            trace['pc'],
+            idx,
+            trace['fn']
+        )
 
 
-def _format_source(source, pc, idx, fn_name):
-    ln = f" {color['value']}{source[2][0]}"
-    if source[2][1] > source[2][0]:
-        ln = f"s{ln}{color['dull']}-{color['value']}{source[2][1]}"
+def _format_source(source, linenos, path, pc, idx, fn_name):
+    ln = f" {color['value']}{linenos[0]}"
+    if linenos[1] > linenos[0]:
+        ln = f"s{ln}{color['dull']}-{color['value']}{linenos[1]}"
     return (
         f"{color['dull']}Trace step {color['value']}{idx}{color['dull']}, "
         f"program counter {color['value']}{pc}{color['dull']}:\n  {color['dull']}"
-        f"File {color['string']}\"{source[1]}\"{color['dull']}, line{ln}{color['dull']},"
-        f" in {color['callable']}{fn_name}{color['dull']}:{source[0]}"
+        f"File {color['string']}\"{path}\"{color['dull']}, line{ln}{color['dull']},"
+        f" in {color['callable']}{fn_name}{color['dull']}:{source}"
     )
 
 

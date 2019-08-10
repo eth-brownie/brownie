@@ -129,11 +129,11 @@ def compile_source(source, solc_version=None, optimize=True, runs=200, evm_versi
         silent=True
     )
 
-    containers = []
+    containers = {}
     for name, data in build_json.items():
         if data['type'] == "interface":
             continue
-        containers.append(ContractContainer(data))
+        containers[name] = ContractContainer(data)
     return containers
 
 

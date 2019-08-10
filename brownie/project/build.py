@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+from .sources import highlight_source
+
 BUILD_KEYS = [
     'abi',
     'allSourcePaths',
@@ -182,9 +184,14 @@ def get_dev_revert(pc):
 
 def get_error_source_from_pc(pc, pad=3):
     '''Given the program counter from a stack trace that caused a transaction
-    to revert, returns the highlighted relevent source code and the method name.'''
+    to revert, returns the highlighted relevent source code and the method name.
+
+    Returns:
+        highlighted source, line numbers, path, function name
+    '''
     if pc not in _revert_map or _revert_map[pc] is False:
-        return None, None
+        return (None,) * 4
     revert = _revert_map[pc]
-    source = revert[4]
-    return source.get_highlighted_source(*revert[:2], pad=pad), revert[2]
+    source = revert[4].get(revert[0])
+    highlight, linenos = highlight_source(source, revert[1], pad=pad)
+    return highlight, linenos, revert[0], revert[2]

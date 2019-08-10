@@ -28,7 +28,6 @@ class _ContractBase:
         self._build = build
         self.abi = build['abi']
         self._name = build['contractName']
-        self._source_path = build['sourcePath']
         self.topics = get_topics(self.abi)
         self.signatures = dict((
             i['name'],

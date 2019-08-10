@@ -72,45 +72,6 @@ class Sources:
         '''Returns the path to the source file where a contract is located.'''
         return self._contracts[contract_name]['path']
 
-    def get_highlighted_source(self, path, offset, pad=3):
-        '''Returns a highlighted section of source code.
-
-        Args:
-            path: Path to the source
-            offset: Tuple of (start offset, stop offset)
-            pad: Number of unrelated lines of code to include before and after
-
-        Returns:
-            str: Highlighted source code
-            str: Source code path
-            int: Line number that highlight begins on'''
-
-        source = self._source[path]
-        newlines = [i for i in range(len(source)) if source[i] == "\n"]
-        try:
-            pad_start = newlines.index(next(i for i in newlines if i >= offset[0]))
-            pad_stop = newlines.index(next(i for i in newlines if i >= offset[1]))
-        except StopIteration:
-            return
-
-        ln = (pad_start + 1, pad_stop + 1)
-        pad_start = newlines[max(pad_start-(pad+1), 0)]
-        pad_stop = newlines[min(pad_stop+pad, len(newlines)-1)]
-
-        final = textwrap.indent(f"{color['dull']}"+textwrap.dedent(
-            f"{source[pad_start:offset[0]]}{color}"
-            f"{source[offset[0]:offset[1]]}{color['dull']}{source[offset[1]:pad_stop]}{color}"
-        ), "    ")
-
-        count = source[pad_start:offset[0]].count("\n")
-        final = final.replace("\n ", f"\n{color['dull']} ", count)
-        count = source[offset[0]:offset[1]].count('\n')
-        final = final.replace('\n ', f"\n{color} ", count)
-        count = source[offset[1]:pad_stop].count("\n")
-        final = final.replace("\n ", f"\n{color['dull']} ", count)
-
-        return final, path, ln
-
     def expand_offset(self, contract_name, offset):
         '''Converts an offset from source with comments removed, to one from the original source.'''
         offset_map = self._contracts[contract_name]['offset_map']
@@ -155,6 +116,44 @@ def get_hash(source, contract_name, minified):
         return sha1(source[offset].encode()).hexdigest()
     except KeyError:
         return ""
+
+
+def highlight_source(source, offset, pad=3):
+    '''Returns a highlighted section of source code.
+
+    Args:
+        path: Path to the source
+        offset: Tuple of (start offset, stop offset)
+        pad: Number of unrelated lines of code to include before and after
+
+    Returns:
+        str: Highlighted source code
+        int: Line number that highlight begins on'''
+
+    newlines = [i for i in range(len(source)) if source[i] == "\n"]
+    try:
+        pad_start = newlines.index(next(i for i in newlines if i >= offset[0]))
+        pad_stop = newlines.index(next(i for i in newlines if i >= offset[1]))
+    except StopIteration:
+        return None, None
+
+    ln = (pad_start + 1, pad_stop + 1)
+    pad_start = newlines[max(pad_start-(pad+1), 0)]
+    pad_stop = newlines[min(pad_stop+pad, len(newlines)-1)]
+
+    final = textwrap.indent(f"{color['dull']}"+textwrap.dedent(
+        f"{source[pad_start:offset[0]]}{color}"
+        f"{source[offset[0]:offset[1]]}{color['dull']}{source[offset[1]:pad_stop]}{color}"
+    ), "    ")
+
+    count = source[pad_start:offset[0]].count("\n")
+    final = final.replace("\n ", f"\n{color['dull']} ", count)
+    count = source[offset[0]:offset[1]].count('\n')
+    final = final.replace('\n ', f"\n{color} ", count)
+    count = source[offset[1]:pad_stop].count("\n")
+    final = final.replace("\n ", f"\n{color['dull']} ", count)
+
+    return final, ln
 
 
 def _get_contract_data(full_source):
