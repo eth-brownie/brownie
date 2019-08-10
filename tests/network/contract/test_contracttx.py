@@ -2,7 +2,6 @@
 
 import pytest
 
-from brownie import network, accounts, project, config, web3
 from brownie.exceptions import VirtualMachineError
 from brownie.network.transaction import TransactionReceipt
 
@@ -20,100 +19,104 @@ abi = {
     }
 
 
-def test_attributes(token):
-    assert token.transfer._address == token.address
-    assert token.transfer._name == "Token.transfer"
-    assert token.transfer._owner == accounts[0]
-    assert token.transfer.abi == abi
-    assert token.transfer.signature == "0xa9059cbb"
+def test_attributes(tester, accounts):
+    assert tester.revertStrings._address == tester.address
+    assert tester.revertStrings._name == "BrownieTester.revertStrings"
+    assert tester.revertStrings._owner == accounts[0]
+    assert type(tester.revertStrings.abi) is dict
+    assert tester.revertStrings.signature == "0xd8046e7d"
 
 
-def test_encode_abi(token):
-    assert token.transfer.encode_abi(
-        "0x2f084926Fd8A120089cA5F622975Fe7F1306AFF9",
-        10000
-    ) == (
-        "0xa9059cbb0000000000000000000000002f084926fd8a120089ca5f622975fe7f1306aff9"
-        "0000000000000000000000000000000000000000000000000000000000002710"
+def test_encode_abi(tester):
+    inputs = ("hello", "0x66aB6D9362d4F35596279692F0251Db635165871", ("potato", "0x1234"))
+    calldata = tester.setTuple.encode_abi(inputs)
+    assert calldata == (
+        "0xad31c804000000000000000000000000000000000000000000000000000000000000002"
+        "0000000000000000000000000000000000000000000000000000000000000006000000000"
+        "000000000000000066ab6d9362d4f35596279692f0251db63516587100000000000000000"
+        "000000000000000000000000000000000000000000000a000000000000000000000000000"
+        "0000000000000000000000000000000000000568656c6c6f0000000000000000000000000"
+        "0000000000000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000004000000000000000000000000000000000000000000000000000000"
+        "0000000123400000000000000000000000000000000000000000000000000000000000000"
+        "06706f7461746f0000000000000000000000000000000000000000000000000000"
     )
 
 
-def test_cli_no_owner(test_mode):
+def test_cli_no_owner(BrownieTester, accounts, test_mode, config):
     try:
         config['pytest']['default_contract_owner'] = False
-        token = project.Token.deploy("", "", 18, 1000000, {'from': accounts[0]})
-        assert token.transfer._owner is None
+        tester = BrownieTester.deploy(True, {'from': accounts[0]})
+        assert tester.revertStrings._owner is None
     finally:
         config['pytest']['default_contract_owner'] = True
 
 
-def test_no_from(token):
+def test_no_from(tester, accounts):
     nonce = accounts[0].nonce
-    tx = token.transfer(accounts[1], 1000)
+    tx = tester.revertStrings(5)
     assert tx.sender == accounts[0]
     assert accounts[0].nonce == nonce + 1
-    token.transfer._owner = None
+    tester.revertStrings._owner = None
     with pytest.raises(AttributeError):
-        token.transfer(accounts[1], 1000)
-    token.transfer._owner = accounts[0]
+        tester.revertStrings(5)
+    tester.revertStrings._owner = accounts[0]
 
 
-def test_call(token):
+def test_call(tester, accounts):
     nonce = accounts[0].nonce
-    result = token.transfer.call(accounts[1], 1000, {'from': accounts[0]})
+    result = tester.revertStrings.call(5, {'from': accounts[0]})
     assert result is True
     assert accounts[0].nonce == nonce
 
 
-def test_call_revert(token):
+def test_call_revert(tester, accounts):
     nonce = accounts[0].nonce
     with pytest.raises(VirtualMachineError):
-        token.transfer.call(accounts[1], 1000, {'from': accounts[5]})
+        tester.revertStrings.call(31337, {'from': accounts[5]})
     assert accounts[0].nonce == nonce
 
 
-def test_returns_tx_on_success(token):
+def test_returns_tx_on_success(tester, accounts):
     '''returns a TransactionReceipt on success'''
-    tx = token.transfer(accounts[1], 1000)
+    tx = tester.revertStrings(5)
     assert type(tx) == TransactionReceipt
 
 
-def test_raises_on_revert(token):
+def test_raises_on_revert(tester, accounts):
     '''raises on revert'''
     with pytest.raises(VirtualMachineError):
-        token.transfer(accounts[1], 10000000000000)
+        tester.revertStrings(0)
 
 
-def test_returns_tx_on_revert_in_console(console_mode, token):
+def test_returns_tx_on_revert_in_console(tester, accounts, console_mode):
     '''returns a tx on revert in console'''
-    tx = token.transfer(accounts[1], 10000000000000)
+    tx = tester.revertStrings(0)
     assert type(tx) == TransactionReceipt
     assert tx.status == 0
 
 
-def test_nonce(token):
+def test_nonce(tester, accounts):
     '''nonces increment properly'''
     nonce = accounts[0].nonce
-    token.transfer(accounts[1], 1000, {'from': accounts[0]})
+    tester.revertStrings(5, {'from': accounts[0]})
     assert accounts[0].nonce == nonce + 1
 
 
-def test_balance_int(tester):
+def test_balance_int(tester, accounts, web3):
     '''transfers use the correct balance'''
-    network.rpc.snapshot()
-    tester.receiveEth({'from': accounts[1], 'amount': 1000000})
+    tester.receiveEth({'from': accounts[0], 'amount': 1000000})
     assert tester.balance() == 1000000
     assert web3.eth.getBalance(tester.address) == 1000000
-    network.rpc.revert()
 
 
-def test_balance_wei(tester):
+def test_balance_wei(tester, accounts):
     '''transfer balances are converted using wei'''
-    tester.receiveEth({'from': accounts[1], 'amount': "1 ether"})
+    tester.receiveEth({'from': accounts[0], 'amount': "1 ether"})
     assert tester.balance() == 1000000000000000000
 
 
-def test_gas_price_manual(tester):
+def test_gas_price_manual(tester, accounts):
     '''gas price is set correctly when specified in the call'''
     balance = accounts[0].balance()
     tx = tester.doNothing({'from': accounts[0], 'gas_price': 100})
@@ -121,7 +124,7 @@ def test_gas_price_manual(tester):
     assert accounts[0].balance() == balance - (100*tx.gas_used)
 
 
-def test_gas_price_automatic(tester):
+def test_gas_price_automatic(tester, accounts, config, web3):
     '''gas price is set correctly using web3.eth.gasPrice'''
     config['active_network']['gas_price'] = False
     balance = accounts[0].balance()
@@ -130,7 +133,7 @@ def test_gas_price_automatic(tester):
     assert accounts[0].balance() == balance - (tx.gas_price*tx.gas_used)
 
 
-def test_gas_price_config(tester):
+def test_gas_price_config(tester, accounts, config):
     '''gas price is set correctly from the config'''
     config['active_network']['gas_price'] = 50
     balance = accounts[0].balance()
@@ -139,20 +142,20 @@ def test_gas_price_config(tester):
     assert accounts[0].balance() == balance - (50*tx.gas_used)
 
 
-def test_gas_limit_manual(tester):
+def test_gas_limit_manual(tester, accounts):
     '''gas limit is set correctly when specified in the call'''
     tx = tester.doNothing({'from': accounts[0], 'gas_limit': 100000})
     assert tx.gas_limit == 100000
 
 
-def test_gas_limit_automatic(tester):
+def test_gas_limit_automatic(tester, accounts, config):
     '''gas limit is set correctly using web3.eth.estimateGas'''
     config['active_network']['gas_limit'] = False
     tx = tester.doNothing({'from': accounts[0]})
     assert tx.gas_limit == tx.gas_used
 
 
-def test_gas_limit_config(tester):
+def test_gas_limit_config(tester, accounts, config):
     '''gas limit is set correctly from the config'''
     config['active_network']['gas_limit'] = 50000
     tx = tester.doNothing({'from': accounts[0]})
@@ -160,15 +163,14 @@ def test_gas_limit_config(tester):
     config['active_network']['gas_limit'] = False
 
 
-def test_repr(token):
-    repr(token.transfer)
-    repr(token.balanceOf)
+def test_repr(tester):
+    repr(tester.revertStrings)
 
 
-def test_tuples(tupletester):
+def test_tuples(tester, accounts):
     value = ["blahblah", accounts[1], ["yesyesyes", "0x1234"]]
-    tx = tupletester.setTuple(value)
+    tx = tester.setTuple(value)
     assert tx.status == 1
-    tx = tupletester.getTuple.transact(accounts[1], {'from': accounts[0]})
+    tx = tester.getTuple.transact(accounts[1], {'from': accounts[0]})
     assert tx.status == 1
     assert tx.return_value == value

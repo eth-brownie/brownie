@@ -2,43 +2,37 @@
 
 import pytest
 
-from brownie import network, project, accounts
+
+def test_get_method(BrownieTester):
+    calldata = "0x2e27149600000000000000000000000066ab6d9362d4f35596279692f0251db635165871"
+    assert BrownieTester.get_method(calldata) == "getTuple"
 
 
-def test_get_method():
-    assert project.Token.get_method(
-        "0xa9059cbb0000000000000000000000000a4a71b2518f7a3273595cba15c3308182b32cd1"
-        "0000000000000000000000000000000000000000000000020f5b1eaad8d80000"
-    ) == "transfer"
+def test_container(BrownieTester, accounts, rpc):
+    assert len(BrownieTester) == 0
+    t = BrownieTester.deploy(True, {'from': accounts[0]})
+    t2 = BrownieTester.deploy(True, {'from': accounts[0]})
+    assert len(BrownieTester) == 2
+    assert BrownieTester[0] == t
+    assert BrownieTester[1] == t2
+    assert list(BrownieTester) == [t, t2]
+    assert t in BrownieTester
+    del BrownieTester[0]
+    assert len(BrownieTester) == 1
+    assert BrownieTester[0] == t2
+    rpc.reset()
+    assert len(BrownieTester) == 0
 
 
-def test_container(clean_network):
-    Token = project.Token
-    assert len(Token) == 0
-    t = Token.deploy("", "", 0, 0, {'from': accounts[0]})
-    t2 = Token.deploy("", "", 0, 0, {'from': accounts[0]})
-    assert len(Token) == 2
-    assert Token[0] == t
-    assert Token[1] == t2
-    assert list(Token) == [t, t2]
-    assert t in Token
-    del Token[0]
-    assert len(Token) == 1
-    assert Token[0] == t2
-    network.rpc.reset()
-    assert len(Token) == 0
-
-
-def test_remove_at(clean_network):
-    Token = project.Token
-    t = Token.deploy("", "", 0, 0, {'from': accounts[0]})
-    Token.remove(t)
-    assert len(Token) == 0
-    assert Token.at(t.address) == t
-    assert len(Token) == 1
-    t2 = Token.deploy("", "", 0, 0, {'from': accounts[0]})
+def test_remove_at(BrownieTester, accounts):
+    t = BrownieTester.deploy(True, {'from': accounts[0]})
+    BrownieTester.remove(t)
+    assert len(BrownieTester) == 0
+    assert BrownieTester.at(t.address) == t
+    assert len(BrownieTester) == 1
+    t2 = BrownieTester.deploy(True, {'from': accounts[0]})
     t2._name = "Potato"
     with pytest.raises(TypeError):
-        Token.remove(t2)
+        BrownieTester.remove(t2)
     with pytest.raises(TypeError):
-        Token.remove(123)
+        BrownieTester.remove(123)
