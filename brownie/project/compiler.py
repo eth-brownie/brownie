@@ -290,22 +290,24 @@ def generate_build_json(input_json, output_json, compiler_data=None, silent=True
         if not silent:
             print(f" - {contract_name}...")
 
+        abi = output_json['contracts'][path][contract_name]['abi']
         evm = output_json['contracts'][path][contract_name]['evm']
-        node = next(i[contract_name] for i in source_nodes if i.name == path)
         bytecode = format_link_references(evm)
-        paths = sorted(set([node.parent().path]+[i.parent().path for i in node.dependencies]))
         hash_ = sources.get_hash(input_json['sources'][path]['content'], contract_name, minified)
+        node = next(i[contract_name] for i in source_nodes if i.name == path)
+        paths = sorted(set([node.parent().path]+[i.parent().path for i in node.dependencies]))
 
         pc_map, statement_map, branch_map = generate_coverage_data(
             evm['deployedBytecode']['sourceMap'],
             evm['deployedBytecode']['opcodes'],
             node,
             statement_nodes,
-            branch_nodes
+            branch_nodes,
+            next((True for i in abi if i['type'] == "fallback"), False)
         )
 
         build_json[contract_name] = {
-            'abi': output_json['contracts'][path][contract_name]['abi'],
+            'abi': abi,
             'allSourcePaths': paths,
             'ast': output_json['sources'][path]['ast'],
             'bytecode': bytecode,
@@ -343,7 +345,7 @@ def get_bytecode_hash(bytecode):
     return sha1(bytecode[:-68].encode()).hexdigest()
 
 
-def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, branch_nodes):
+def generate_coverage_data(source_map, opcodes, contract_node, stmt_nodes, branch_nodes, fallback):
     '''
     Generates data used by Brownie for debugging and coverage evaluation.
 
@@ -388,7 +390,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
     source_nodes = dict((i.contract_id, i.parent()) for i in contract_nodes)
     paths = set(v.path for v in source_nodes.values())
 
-    statement_nodes = dict((i, statement_nodes[i].copy()) for i in paths)
+    stmt_nodes = dict((i, stmt_nodes[i].copy()) for i in paths)
     statement_map = dict((i, {}) for i in paths)
 
     # possible branch offsets
@@ -401,7 +403,6 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
 
     count, pc = 0, 0
     pc_list = []
-    first_revert = None
     revert_map = {}
 
     while source_map:
@@ -411,12 +412,12 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
         pc_list.append({'op': opcodes.popleft(), 'pc': pc})
 
         if (
-            first_revert is None and pc_list[-1]['op'] == "REVERT" and
+            fallback is False and pc_list[-1]['op'] == "REVERT" and
             [i['op'] for i in pc_list[-4:-1]] == ["JUMPDEST", "PUSH1", "DUP1"]
         ):
             # flag the REVERT op at the end of the function selector,
             # later reverts may jump to it instead of having their own REVERT op
-            first_revert = "0x"+hex(pc-4).upper()[2:]
+            fallback = "0x"+hex(pc-4).upper()[2:]
             pc_list[-1]['first_revert'] = True
 
         if source[3] != "-":
@@ -463,10 +464,10 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
                     filters={'node_type': "FunctionDefinition"}
                 )[0].full_name
                 statement = next(
-                    i for i in statement_nodes[path] if
+                    i for i in stmt_nodes[path] if
                     sources.is_inside_offset(offset, i)
                 )
-                statement_nodes[path].discard(statement)
+                stmt_nodes[path].discard(statement)
                 statement_map[path].setdefault(pc_list[-1]['fn'], {})[count] = statement
                 pc_list[-1]['statement'] = count
                 count += 1
@@ -474,7 +475,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
             pass
         if 'value' not in pc_list[-1]:
             continue
-        if pc_list[-1]['value'] == first_revert and opcodes[0] in {'JUMP', 'JUMPI'}:
+        if pc_list[-1]['value'] == fallback and opcodes[0] in {'JUMP', 'JUMPI'}:
             # track all jumps to the initial revert
             revert_map.setdefault((pc_list[-1]['path'], pc_list[-1]['fn']), []).append(len(pc_list))
 
