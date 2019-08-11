@@ -419,13 +419,12 @@ class TransactionReceipt:
 
             # jump 'i' is calling into an internal function
             if pc['jump'] == 'i':
-                try:
-                    last['fn'].append(last['pc_map'][trace[i+1]['pc']]['fn'])
+                fn = last['pc_map'][trace[i+1]['pc']]['fn']
+                if fn != last['fn'][-1]:
+                    last['fn'].append(fn)
                     last['jumpDepth'] += 1
-                except KeyError:
-                    continue
             # jump 'o' is returning from an internal function
-            elif pc['jump'] == "o" and last['jumpDepth'] > 0:
+            elif last['jumpDepth'] > 0:
                 del last['fn'][-1]
                 last['jumpDepth'] -= 1
         coverage.add(self.coverage_hash, dict((k, v) for k, v in coverage_eval.items() if v))
@@ -616,7 +615,7 @@ class TransactionReceipt:
             linenos,
             trace['source']['filename'],
             trace['pc'],
-            idx,
+            self.trace.index(trace),
             trace['fn']
         )
 
