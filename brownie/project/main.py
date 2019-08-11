@@ -133,7 +133,7 @@ def compile_source(source, solc_version=None, optimize=True, runs=200, evm_versi
     for name, data in build_json.items():
         if data['type'] == "interface":
             continue
-        containers[name] = ContractContainer(data)
+        containers[name] = ContractContainer(project, data)
     return containers
 
 
@@ -210,7 +210,7 @@ class Project:
         self._containers = []
         for _, data in self._build.items():
             if data['bytecode']:
-                container = ContractContainer(data)
+                container = ContractContainer(self, data)
                 self._containers.append(container)
                 setattr(self, container._name, container)
 

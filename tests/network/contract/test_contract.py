@@ -33,7 +33,7 @@ def test_namespace_collision(accounts, build):
         'type': 'function'
     })
     with pytest.raises(AttributeError):
-        Contract(str(accounts[1]), build, None)
+        Contract(None, build, str(accounts[1]), None)
 
 
 def test_overloaded(accounts, build):
@@ -50,7 +50,7 @@ def test_overloaded(accounts, build):
         'stateMutability': 'nonpayable',
         'type': 'function'
     })
-    c = Contract(str(accounts[1]), build, None)
+    c = Contract(None, build, str(accounts[1]), None)
     fn = c.revertStrings
     assert type(fn) == OverloadedMethod
     assert len(fn) == 2
@@ -62,7 +62,7 @@ def test_overloaded(accounts, build):
 
 
 def test_set_methods(accounts, build):
-    c = Contract(str(accounts[1]), build, None)
+    c = Contract(None, build, str(accounts[1]), None)
     for item in build['abi']:
         if item['type'] != "function":
             if 'name' not in item:
@@ -75,18 +75,18 @@ def test_set_methods(accounts, build):
 
 
 def test_balance(accounts, build):
-    balance = Contract(str(accounts[1]), build, None).balance()
+    balance = Contract(None, build, str(accounts[1]), None).balance()
     assert type(balance) is Wei
     assert balance == "100 ether"
 
 
 def test_comparison(accounts, build):
-    c = Contract(str(accounts[1]), build, None)
+    c = Contract(None, build, str(accounts[1]), None)
     assert c != 123
     assert c == str(accounts[1])
-    assert c != Contract(str(accounts[2]), build, None)
+    assert c != Contract(None, build, str(accounts[2]), None)
 
 
 def test_repr(accounts, build):
-    c = Contract(str(accounts[1]), build, None)
+    c = Contract(None, build, str(accounts[1]), None)
     repr(c)

@@ -24,10 +24,11 @@ class _ContractBase:
 
     _dir_color = "contract"
 
-    def __init__(self, build):
+    def __init__(self, project, build):
+        self._project = project
         self._build = build
-        self.abi = build['abi']
         self._name = build['contractName']
+        self.abi = build['abi']
         self.topics = get_topics(self.abi)
         self.signatures = dict((
             i['name'],
@@ -50,10 +51,10 @@ class ContractContainer(_ContractBase):
         signatures: Dictionary of {'function name': "bytes4 signature"}
         topics: Dictionary of {'event name': "bytes32 topic"}'''
 
-    def __init__(self, build):
+    def __init__(self, project, build):
         self.tx = None
         self.bytecode = build['bytecode']
-        super().__init__(build)
+        super().__init__(project, build)
         self.deploy = ContractConstructor(self, self._name)
 
     def __iter__(self):
@@ -98,7 +99,7 @@ class ContractContainer(_ContractBase):
             raise ValueError(f"Contract '{contract._name}' already declared at {address}")
         if web3.eth.getCode(address).hex() == "0x":
             raise ValueError(f"No contract deployed at {address}")
-        contract = Contract(address, self._build, owner, tx)
+        contract = Contract(self._project, self._build, address, owner, tx)
         _contracts.add(contract)
         return contract
 
@@ -183,8 +184,8 @@ class Contract(_ContractBase):
         bytecode: Bytecode of the deployed contract, including constructor args.
         tx: TransactionReceipt of the of the tx that deployed the contract.'''
 
-    def __init__(self, address, build, owner, tx=None):
-        super().__init__(build)
+    def __init__(self, project, build, address, owner, tx=None):
+        super().__init__(project, build)
         self.tx = tx
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         self._owner = owner
