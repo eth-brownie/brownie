@@ -14,7 +14,7 @@ def noweb3(config, web3):
     web3.connect(uri)
 
 
-def test_time(rpc):
+def test_time(devnetwork, rpc):
     assert rpc.time() == int(time.time())
     rpc.sleep(25)
     rpc.snapshot()
@@ -24,7 +24,7 @@ def test_time(rpc):
     assert rpc.time() == int(time.time()+25)
 
 
-def test_time_exceptions(rpc, monkeypatch):
+def test_time_exceptions(devnetwork, rpc, monkeypatch):
     with pytest.raises(TypeError):
         rpc.sleep("foo")
     with pytest.raises(TypeError):
@@ -34,7 +34,7 @@ def test_time_exceptions(rpc, monkeypatch):
         rpc.time()
 
 
-def test_mine(rpc, web3):
+def test_mine(devnetwork, rpc, web3):
     height = web3.eth.blockNumber
     rpc.mine()
     assert web3.eth.blockNumber == height + 1
@@ -42,7 +42,7 @@ def test_mine(rpc, web3):
     assert web3.eth.blockNumber == height + 6
 
 
-def test_mine_exceptions(rpc):
+def test_mine_exceptions(devnetwork, rpc):
     with pytest.raises(TypeError):
         rpc.mine("foo")
     with pytest.raises(TypeError):
@@ -66,7 +66,7 @@ def test_snapshot_revert(BrownieTester, accounts, rpc, web3):
     assert count == len(BrownieTester)
 
 
-def test_revert_exceptions(rpc):
+def test_revert_exceptions(devnetwork, rpc):
     rpc.reset()
     with pytest.raises(ValueError):
         rpc.revert()
@@ -81,7 +81,7 @@ def test_reset(BrownieTester, accounts, rpc, web3):
     assert len(BrownieTester) == 0
 
 
-def test_request_exceptions(rpc, noweb3, monkeypatch):
+def test_request_exceptions(devnetwork, rpc, noweb3, monkeypatch):
     with pytest.raises(RPCRequestError):
         rpc.mine()
     monkeypatch.setattr('brownie.rpc.is_active', lambda: False)

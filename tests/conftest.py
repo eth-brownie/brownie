@@ -6,7 +6,7 @@ from _pytest.monkeypatch import MonkeyPatch  # derive_importpath
 
 
 import brownie
-from brownie import network, project
+from brownie import project
 from brownie.test import coverage
 from brownie._config import ARGV
 
@@ -46,33 +46,42 @@ def testproject(_project_factory, tmp_path):
 
 
 @pytest.fixture
-def devnetwork():
-    network.connect('development')
-    yield
-    network.rpc.reset()
-    network.disconnect(False)
+def devnetwork(network, rpc):
+    if brownie.network.is_connected():
+        brownie.network.disconnect(False)
+    brownie.network.connect('development')
+    yield brownie.network
+    if rpc.is_active():
+        rpc.reset()
 
 
 # brownie object fixtures
 
 @pytest.fixture
 def accounts(devnetwork):
-    return network.accounts
+    return brownie.network.accounts
 
 
 @pytest.fixture
 def history():
-    return network.history
+    return brownie.network.history
 
 
 @pytest.fixture
-def rpc(devnetwork):
-    return network.rpc
+def network():
+    yield brownie.network
+    if brownie.network.is_connected():
+        brownie.network.disconnect(False)
+
+
+@pytest.fixture
+def rpc():
+    return brownie.network.rpc
 
 
 @pytest.fixture
 def web3():
-    return network.web3
+    return brownie.network.web3
 
 
 # configuration fixtures

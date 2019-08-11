@@ -42,10 +42,10 @@ def test_error(tx, reverted_tx, capfd):
     tx.error()
     assert not capfd.readouterr()[0].strip()
     reverted_tx.error()
-    out = capfd.readouterr()[0].strip()
+    out = capfd.readouterr()[0].strip().split(',', maxsplit=1)[1]
     assert out
     reverted_tx.source(-1)
-    assert out == capfd.readouterr()[0].strip()
+    assert out == capfd.readouterr()[0].strip().split(',', maxsplit=1)[1]
 
 
 def test_deploy_reverts(BrownieTester, accounts, console_mode):
