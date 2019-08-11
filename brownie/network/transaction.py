@@ -419,7 +419,10 @@ class TransactionReceipt:
 
             # jump 'i' is calling into an internal function
             if pc['jump'] == 'i':
-                fn = last['pc_map'][trace[i+1]['pc']]['fn']
+                try:
+                    fn = last['pc_map'][trace[i+1]['pc']]['fn']
+                except (KeyError, IndexError):
+                    continue
                 if fn != last['fn'][-1]:
                     last['fn'].append(fn)
                     last['jumpDepth'] += 1

@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-from brownie import web3
-
 isolation_source = '''import pytest
 
 @pytest.fixture(autouse=True)
@@ -22,15 +20,15 @@ def test_isolation_second(accounts, web3):
     assert accounts[1].balance() == "10{1} ether"'''
 
 
-def test_test_isolation(testdir):
-    testdir.makepyfile(isolation_source.format('fn', 1))
-    result = testdir.runpytest()
+def test_test_isolation(plugintester, web3):
+    plugintester.makepyfile(isolation_source.format('fn', 1))
+    result = plugintester.runpytest()
     result.assert_outcomes(passed=2)
     assert web3.eth.blockNumber == 0
 
 
-def test_module_isolation(testdir):
-    testdir.makepyfile(isolation_source.format('module', 2))
-    result = testdir.runpytest()
+def test_module_isolation(plugintester, web3):
+    plugintester.makepyfile(isolation_source.format('module', 2))
+    result = plugintester.runpytest()
     result.assert_outcomes(passed=2)
     assert web3.eth.blockNumber == 0

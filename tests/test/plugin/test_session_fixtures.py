@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 test_source = '''import brownie
-from brownie import project
+from brownie.network.contract import ContractContainer
 
 def test_accounts(accounts, a):
     assert a == accounts
@@ -16,11 +16,11 @@ def test_rpc(rpc):
 def test_web3(web3):
     assert web3 == brownie.web3
 
-def test_contract_container(Token, CoverageTester):
-    assert Token == project.Token
-    assert CoverageTester == project.CoverageTester'''
+def test_contract_container(BrownieTester, CoverageTester):
+    assert type(BrownieTester) is ContractContainer
+    assert type(CoverageTester) is ContractContainer'''
 
 
-def test_fixtures(testdir):
-    result = testdir.runpytest()
+def test_fixtures(plugintester):
+    result = plugintester.runpytest()
     result.assert_outcomes(passed=5)

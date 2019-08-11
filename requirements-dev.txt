@@ -1,5 +1,6 @@
 coveralls>=1.7.0
 pytest>=5.0.0
 pytest-cov>=2.7.1
+pytest-mock>=1.10.4
 twine==1.13.0
 wheel==0.33.4
