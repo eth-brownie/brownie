@@ -9,6 +9,7 @@ contract BrownieTester {
     using SafeMath for uint;
 
     address payable public owner;
+    uint256 num;
 
     struct Nested {
         string a;
@@ -70,6 +71,11 @@ contract BrownieTester {
         return testMap[_addr];
     }
 
+    function setNum(uint _num) external returns (bool) {
+        num = _num;
+        return true;
+    }
+
     function manyValues(
         uint a,
         bool[] calldata b,
@@ -83,8 +89,13 @@ contract BrownieTester {
         return (a, b, c, d);
     }
 
+    function useSafeMath(uint a, uint b) external returns (uint) {
+        uint c = a.mul(b);
+        return c;
+    }
+
     function makeExternalCall(ExternalCallTester other, uint a) external returns (bool) {
-        bool ok = other.getCalled(a.sub(2));
+        bool ok = other.getCalled(a);
         return ok;
     }
 

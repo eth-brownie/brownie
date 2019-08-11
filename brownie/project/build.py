@@ -97,10 +97,12 @@ class Build:
             except (KeyError, ValueError):
                 pass
             revert = (data['path'], tuple(data['offset']), data['fn'], data['dev'], self._sources)
-            if pc in _revert_map and revert != _revert_map[pc]:
-                _revert_map[pc] = False
+
+            # do not compare the final tuple item in case the same project was loaded twice
+            if pc not in _revert_map or (_revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]):
+                _revert_map[pc] = revert
                 continue
-            _revert_map[pc] = revert
+            _revert_map[pc] = False
 
     def add(self, build_json):
         '''Adds a build json to the active project. The data is saved in the

@@ -1,27 +1,19 @@
 #!/usr/bin/python3
 
-from copy import deepcopy
 import pytest
 
-from brownie import accounts, project
-from brownie._config import ARGV
+
+@pytest.fixture
+def tx(accounts, testproject, tester):
+    other = accounts[0].deploy(testproject.ExternalCallTester)
+    tx = tester.makeExternalCall(other, 42)
+    return tx
 
 
-@pytest.fixture(scope="module")
-def tx():
-    ext = accounts[0].deploy(project.ExternalCallTester)
-    other = accounts[0].deploy(project.Other)
-    tx = ext.callAnother(other, 4)
-    tx.trace
-    yield tx
-
-
-@pytest.fixture(scope="module")
-def reverted_tx(token):
-    ARGV['cli'] = "console"
-    tx = token.transferFrom(accounts[4], accounts[1], 100)
-    ARGV['cli'] = False
-    yield tx
+@pytest.fixture
+def reverted_tx(accounts, tester, console_mode):
+    tx = tester.revertStrings(1, {'from': accounts[0]})
+    return tx
 
 
 def test_traceback(tx, reverted_tx, capfd):
@@ -56,10 +48,13 @@ def test_error(tx, reverted_tx, capfd):
     assert out == capfd.readouterr()[0].strip()
 
 
-def test_deploy_reverts(token):
-    tx = deepcopy(token.tx)
-    tx.status = 0
+def test_deploy_reverts(BrownieTester, accounts, console_mode):
+    tx = BrownieTester.deploy(True, {'from': accounts[0]}).tx
+    tx.traceback()
     with pytest.raises(NotImplementedError):
         tx.call_trace()
+    revertingtx = BrownieTester.deploy(False, {'from': accounts[0]})
     with pytest.raises(NotImplementedError):
-        tx.traceback()
+        revertingtx.call_trace()
+    with pytest.raises(NotImplementedError):
+        revertingtx.traceback()

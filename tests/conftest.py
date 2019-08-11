@@ -7,6 +7,7 @@ from _pytest.monkeypatch import MonkeyPatch  # derive_importpath
 
 import brownie
 from brownie import network, project
+from brownie.test import coverage
 from brownie._config import ARGV
 
 pytest_plugins = 'pytester'
@@ -21,20 +22,8 @@ def pytest_sessionstart():
         lambda: ['v0.5.10', 'v0.5.9', 'v0.5.8', 'v0.5.7', 'v0.4.25', 'v0.4.24', 'v0.4.22']
     )
 
-#     network.connect('development')
-#     conf_json = Path('tests/brownie-test-project/brownie-config.json')
-#     if conf_json.exists():
-#         conf_json.unlink()
-#     shutil.copyfile('brownie/data/config.json', conf_json)
-#     project.load('tests/brownie-test-project')
-#     yield
-#     monkeypatch_session.undo()
-#     conf_json.unlink()
-#     for path in ("build", "reports"):
-#         path = Path('tests/brownie-test-project').joinpath(path)
-#         if path.exists():
-#             shutil.rmtree(str(path))
 
+# project / network fixtures
 
 @pytest.fixture(scope="session")
 def _project_factory(tmp_path_factory):
@@ -64,6 +53,8 @@ def devnetwork():
     network.disconnect(False)
 
 
+# brownie object fixtures
+
 @pytest.fixture
 def accounts(devnetwork):
     return network.accounts
@@ -83,6 +74,9 @@ def rpc(devnetwork):
 def web3():
     return network.web3
 
+
+# configuration fixtures
+# changes to config or argv are reverted during teardown
 
 @pytest.fixture
 def config(testproject):
@@ -107,6 +101,21 @@ def console_mode(argv):
 def test_mode(argv):
     argv['cli'] = "test"
 
+
+@pytest.fixture
+def coverage_mode(argv, test_mode):
+    cov_eval = coverage._coverage_eval
+    cached = coverage._cached
+    coverage._coverage_eval = {}
+    coverage._cached = {}
+    argv['coverage'] = True
+    argv['always_transact'] = True
+    yield
+    coverage._coverage_eval = cov_eval
+    coverage._cached = cached
+
+
+# contract fixtures
 
 @pytest.fixture
 def BrownieTester(testproject, devnetwork):
@@ -141,17 +150,6 @@ def tester(BrownieTester, accounts):
 #     contract = project.BrownieTestProject.BrownieTester.deploy({'from': accounts[0]})
 #     yield contract
 #     network.rpc.reset()
-
-
-# @pytest.fixture
-# def coverage_mode():
-#     ARGV['cli'] = "test"
-#     ARGV['coverage'] = True
-#     ARGV['always_transact'] = True
-#     yield
-#     ARGV['cli'] = False
-#     ARGV['coverage'] = False
-#     ARGV['always_transact'] = False
 
 
 # @pytest.fixture
