@@ -153,17 +153,25 @@ class Build:
 
     def expand_build_offsets(self, build_json):
         '''Expands minified source offsets in a build json dict.'''
-        name = build_json['contractName']
-        offset_map = {}
 
-        for value in [v for v in build_json['pcMap'].values() if 'offset' in v]:
+        offset_map = {}
+        name = build_json['contractName']
+
+        # minification only happens to the target contract that was compiled,
+        # so we ignore any import sources
+        source_path = build_json['sourcePath']
+
+        for value in (
+            v for v in build_json['pcMap'].values() if
+            'offset' in v and
+            'path' in v and v['path'] == source_path
+        ):
             value['offset'] = self._get_offset(offset_map, name, value['offset'])
 
         for key in ('branches', 'statements'):
-            coverage_map = build_json['coverageMap'][key]
-            for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
-                value = coverage_map[path][fn]
-                coverage_map[path][fn] = dict((
+            coverage_map = build_json['coverageMap'][key][source_path]
+            for fn, value in coverage_map.items():
+                coverage_map[fn] = dict((
                     k,
                     self._get_offset(offset_map, name, v[:2])+tuple(v[2:])
                 ) for k, v in value.items())

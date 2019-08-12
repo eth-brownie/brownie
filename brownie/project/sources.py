@@ -109,7 +109,7 @@ def is_inside_offset(inner, outer):
 def get_hash(source, contract_name, minified):
     '''Returns a hash of the contract source code.'''
     if minified:
-        source = minify(source)
+        source = minify(source)[0]
     try:
         data = _get_contract_data(source)[contract_name]
         offset = slice(*data['offset'])
