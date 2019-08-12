@@ -32,6 +32,163 @@ MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 _loaded_projects = []
 
 
+class _ProjectBase:
+
+    def __init__(self, project_path, name):
+        self._project_path = project_path
+        self._name = name
+        self._sources = Sources(project_path)
+        self._build = Build(project_path, self._sources)
+
+    def _compile(self, sources, compiler_config, silent):
+        build_json = compiler.compile_and_format(
+            sources,
+            solc_version=compiler_config['version'],
+            optimize=compiler_config['optimize'],
+            runs=compiler_config['runs'],
+            evm_version=compiler_config['evm_version'],
+            minify=compiler_config['minify_source'],
+            silent=silent
+        )
+        for data in build_json.values():
+            self._build.add(data)
+
+    def _create_containers(self):
+        # create container objects
+        self._containers = {}
+        for key, data in self._build.items():
+            if data['bytecode']:
+                container = ContractContainer(self, data)
+                self._containers[key] = container
+                setattr(self, container._name, container)
+
+    def __getitem__(self, key):
+        return self._containers[key]
+
+    def __iter__(self):
+        return iter(self._containers[i] for i in sorted(self._containers))
+
+    def __len__(self):
+        return len(self._containers)
+
+    def __contains__(self, item):
+        return item in self._containers
+
+    def dict(self):
+        return dict(self._containers)
+
+    def keys(self):
+        return self._containers.keys()
+
+
+class Project(_ProjectBase):
+
+    def __init__(self, project_path, name):
+        super().__init__(project_path, name)
+        self._active = False
+        self.load()
+
+    def load(self):
+        if self._active:
+            raise ProjectAlreadyLoaded("Project is already active")
+
+        self._compiler_config = load_project_compiler_config(self._project_path)
+        solc_version = self._compiler_config['version']
+        if solc_version:
+            self._compiler_config['version'] = compiler.set_solc_version(solc_version)
+
+        # compile updated sources, update build
+        changed = self._get_changed_contracts()
+        self._compiler_config['version'] = solc_version
+        self._compile(changed, self._compiler_config, False)
+        self._create_containers()
+
+        # add project to namespaces, apply import blackmagic
+        name = self._name
+        self.__all__ = list(self._containers)
+        sys.modules[f'brownie.project.{name}'] = self
+        sys.modules['brownie.project'].__dict__[name] = self
+        sys.modules['brownie.project'].__all__.append(name)
+        sys.modules['brownie.project'].__console_dir__.append(name)
+        self._namespaces = [
+            sys.modules['__main__'].__dict__,
+            sys.modules['brownie.project'].__dict__
+        ]
+        self._active = True
+        _loaded_projects.append(self)
+
+    def _get_changed_contracts(self):
+        changed = [i for i in self._sources.get_contract_list() if self._compare_build_json(i)]
+        final = set(changed)
+        for contract_name in changed:
+            final.update(self._build.get_dependents(contract_name))
+        for name in [i for i in final if self._build.contains(i)]:
+            self._build.delete(name)
+        changed = set(self._sources.get_source_path(i) for i in final)
+        return dict((i, self._sources.get(i)) for i in changed)
+
+    def _compare_build_json(self, contract_name):
+        config = self._compiler_config
+        try:
+            source = self._sources.get(contract_name)
+            build_json = self._build.get(contract_name)
+        except KeyError:
+            return True
+        if build_json['sha1'] != get_hash(source, contract_name, config['minify_source']):
+            return True
+        return next(
+            (True for k, v in build_json['compiler'].items() if config[k] and v != config[k]),
+            False
+        )
+
+    def _update_and_register(self, dict_):
+        dict_.update(self)
+        self._namespaces.append(dict_)
+
+    def __repr__(self):
+        return f"<Project object '{color['string']}{self._name}{color}'>"
+
+    def load_config(self):
+        load_project_config(self._project_path)
+
+    def close(self, raises=True):
+        '''Closes the active project.'''
+        if not self._active:
+            if not raises:
+                return
+            raise ProjectNotFound("Project is not currently loaded.")
+
+        # remove objects from namespace
+        for dict_ in self._namespaces:
+            for key in [k for k, v in dict_.items() if v == self or (k in self and v == self[k])]:
+                del dict_[key]
+
+        name = self._name
+        del sys.modules[f'brownie.project.{name}']
+        sys.modules['brownie.project'].__all__.remove(name)
+        sys.modules['brownie.project'].__console_dir__.remove(name)
+        self._active = False
+        _loaded_projects.remove(self)
+
+        # clear paths
+        try:
+            sys.path.remove(self._project_path)
+        except ValueError:
+            pass
+
+
+class TempProject(_ProjectBase):
+
+    def __init__(self, source, compiler_config):
+        super().__init__(None, "TempProject")
+        self._sources.add("<stdin>", source)
+        self._compile({'<stdin>': source}, compiler_config, True)
+        self._create_containers()
+
+    def __repr__(self):
+        return f"<TempProject object>"
+
+
 def check_for_project(path="."):
     '''Checks for a Brownie project.'''
     path = Path(path).resolve()
@@ -112,32 +269,14 @@ def compile_source(source, solc_version=None, optimize=True, runs=200, evm_versi
     '''Compiles the given source code string and returns a list of
     ContractContainer instances.'''
 
-    # if no temporary project exists, create one
-    module = sys.modules[__name__]
-    project = getattr(module, '_temp_project', None)
-    if project is None:
-        project = Project(None, "temp")
-        # close the project immediately so it's not easily accessible
-        project.close()
-        setattr(module, '_temp_project', project)
-
-    path = f"<string-{len(project._sources.get_path_list())}>"
-    project._sources.add(path, source, True)
-    build_json = compiler.compile_and_format(
-        {path: source},
-        solc_version=solc_version,
-        optimize=optimize,
-        runs=runs,
-        evm_version=evm_version,
-        silent=True
-    )
-
-    containers = {}
-    for name, data in build_json.items():
-        if data['type'] == "interface":
-            continue
-        containers[name] = ContractContainer(project, data)
-    return containers
+    compiler_config = {
+        'version': solc_version,
+        'optimize': optimize,
+        'runs': runs,
+        'evm_version': evm_version,
+        'minify_source': False
+    }
+    return TempProject(source, compiler_config)
 
 
 def load(project_path=None, name=None):
@@ -182,132 +321,3 @@ def _add_to_sys_path(project_path):
     if project_path in sys.path:
         return
     sys.path.insert(0, project_path)
-
-
-class Project:
-
-    def __init__(self, project_path, name):
-        self._project_path = project_path
-        self._name = name
-
-        self._compiler_config = load_project_compiler_config(project_path)
-        solc_version = self._compiler_config['version']
-        if solc_version:
-            self._compiler_config['version'] = compiler.set_solc_version(solc_version)
-
-        self._sources = Sources(project_path)
-        self._build = Build(project_path, self._sources)
-
-        # compile updated sources, update build
-        changed = self._get_changed_contracts()
-        build_json = compiler.compile_and_format(
-            changed,
-            solc_version=solc_version,
-            optimize=self._compiler_config['optimize'],
-            runs=self._compiler_config['runs'],
-            evm_version=self._compiler_config['evm_version'],
-            minify=self._compiler_config['minify_source'],
-            silent=False
-        )
-        for data in build_json.values():
-            self._build.add(data)
-
-        # create container objects
-        self._containers = []
-        for _, data in self._build.items():
-            if data['bytecode']:
-                container = ContractContainer(self, data)
-                self._containers.append(container)
-                setattr(self, container._name, container)
-
-        # add project to namespaces, apply import blackmagic
-        self.__all__ = [i._name for i in self._containers]
-        sys.modules[f'brownie.project.{name}'] = self
-        sys.modules['brownie.project'].__dict__[name] = self
-        sys.modules['brownie.project'].__all__.append(name)
-        sys.modules['brownie.project'].__console_dir__.append(name)
-        self._namespaces = [
-            sys.modules['__main__'].__dict__,
-            sys.modules['brownie.project'].__dict__
-        ]
-
-        self._active = True
-        _loaded_projects.append(self)
-
-    def _get_changed_contracts(self):
-        changed = [i for i in self._sources.get_contract_list() if self._compare_build_json(i)]
-        final = set(changed)
-        for contract_name in changed:
-            final.update(self._build.get_dependents(contract_name))
-        for name in [i for i in final if self._build.contains(i)]:
-            self._build.delete(name)
-        changed = set(self._sources.get_source_path(i) for i in final)
-        return dict((i, self._sources.get(i)) for i in changed)
-
-    def _compare_build_json(self, contract_name):
-        config = self._compiler_config
-        try:
-            source = self._sources.get(contract_name)
-            build_json = self._build.get(contract_name)
-        except KeyError:
-            return True
-        if build_json['sha1'] != get_hash(source, contract_name, config['minify_source']):
-            return True
-        return next(
-            (True for k, v in build_json['compiler'].items() if config[k] and v != config[k]),
-            False
-        )
-
-    def _update_and_register(self, dict_):
-        dict_.update(self)
-        self._namespaces.append(dict_)
-
-    def __repr__(self):
-        return f"<Project object '{color['string']}{self._name}{color}'>"
-
-    def __getitem__(self, key):
-        try:
-            return next(i for i in self._containers if i._name == key)
-        except StopIteration:
-            raise KeyError(key) from None
-
-    def __iter__(self):
-        return iter(self._containers)
-
-    def __len__(self):
-        return len(self._containers)
-
-    def load_config(self):
-        load_project_config(self._project_path)
-
-    def dict(self):
-        return dict((i._name, i) for i in self._containers)
-
-    def keys(self):
-        return [i._name for i in self._containers]
-
-    def close(self, raises=True):
-        '''Closes the active project.'''
-        if not self._active:
-            if not raises:
-                return
-            raise ProjectNotFound("Project is not currently loaded.")
-
-        # remove objects from namespace
-        for dict_ in self._namespaces:
-            keys = [k for k, v in dict_.items() if v == self or v in self]
-            for k in keys:
-                del dict_[k]
-
-        name = self._name
-        del sys.modules[f'brownie.project.{name}']
-        sys.modules['brownie.project'].__all__.remove(name)
-        sys.modules['brownie.project'].__console_dir__.remove(name)
-        self._active = False
-        _loaded_projects.remove(self)
-
-        # clear paths
-        try:
-            sys.path.remove(self._project_path)
-        except ValueError:
-            pass

@@ -38,7 +38,9 @@ class Build:
         self._build = {}
 
         if not project_path:
+            self._project_path = None
             return
+
         self._project_path = Path(project_path)
         for path in list(self._project_path.glob('build/contracts/*.json')):
             try:
@@ -47,8 +49,8 @@ class Build:
             except json.JSONDecodeError:
                 build_json = {}
             if (
-                not set(BUILD_KEYS).issubset(build_json) or
-                not project_path.joinpath(build_json['sourcePath']).exists()
+                not set(BUILD_KEYS).issubset(build_json) or not
+                project_path.joinpath(build_json['sourcePath']).exists()
             ):
                 path.unlink()
                 continue
@@ -91,7 +93,7 @@ class Build:
             try:
                 revert_str = self._sources.get(data['path'])[data['offset'][1]:]
                 revert_str = revert_str[:revert_str.index('\n')]
-                revert_str = revert_str[revert_str.index('//')+2:].strip()
+                revert_str = revert_str[revert_str.index('//') + 2:].strip()
                 if revert_str.startswith('dev:'):
                     data['dev'] = revert_str
             except (KeyError, ValueError):
@@ -110,8 +112,9 @@ class Build:
 
         Args:
             build_json - dictionary of build data to add.'''
-        with self._absolute(build_json['contractName']).open('w') as fp:
-            json.dump(build_json, fp, sort_keys=True, indent=2, default=sorted)
+        if self._project_path:
+            with self._absolute(build_json['contractName']).open('w') as fp:
+                json.dump(build_json, fp, sort_keys=True, indent=2, default=sorted)
         self._add(build_json)
 
     def get(self, contract_name):
@@ -163,8 +166,7 @@ class Build:
 
         for value in (
             v for v in build_json['pcMap'].values() if
-            'offset' in v and
-            'path' in v and v['path'] == source_path
+            'offset' in v and 'path' in v and v['path'] == source_path
         ):
             value['offset'] = self._get_offset(offset_map, name, value['offset'])
 
@@ -173,7 +175,7 @@ class Build:
             for fn, value in coverage_map.items():
                 coverage_map[fn] = dict((
                     k,
-                    self._get_offset(offset_map, name, v[:2])+tuple(v[2:])
+                    self._get_offset(offset_map, name, v[:2]) + tuple(v[2:])
                 ) for k, v in value.items())
         return build_json
 
