@@ -31,7 +31,7 @@ each command."""
 
 def main():
 
-    print(f"Brownie v{__version__} - Python development framework for Ethereum")
+    print(f"Brownie v{__version__} - Python development framework for Ethereum\n")
 
     # remove options before calling docopt
     if len(sys.argv) > 1 and sys.argv[1][0] != "-":

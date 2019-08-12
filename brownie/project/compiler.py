@@ -237,7 +237,7 @@ def compile_from_input_json(input_json, silent=True):
     optimizer = input_json['settings']['optimizer']
     input_json['settings'].setdefault('evmVersion', None)
     if not silent:
-        print("\nCompiling contracts...")
+        print("Compiling contracts...")
         print(f"  Solc {solcx.get_solc_version_string()}")
         print("  Optimizer: " + (
             f"Enabled  Runs: {optimizer['runs']}" if
@@ -328,6 +328,10 @@ def generate_build_json(input_json, output_json, compiler_data=None, silent=True
             'sourcePath': path,
             'type': node.type
         }
+
+    if not silent:
+        print("")
+
     return build_json
 
 
