@@ -9,7 +9,10 @@ import zipfile
 
 from brownie.cli.utils import color
 from brownie.network.contract import ContractContainer
-from brownie.exceptions import ProjectNotFound
+from brownie.exceptions import (
+    ProjectAlreadyLoaded,
+    ProjectNotFound,
+)
 from brownie.project import compiler
 from brownie.project.sources import Sources, get_hash
 from brownie.project.build import Build
@@ -152,17 +155,20 @@ def load(project_path=None, name=None):
     if not project_path or not Path(project_path).joinpath("brownie-config.json").exists():
         raise ProjectNotFound("Could not find Brownie project")
 
-    # paths
     project_path = Path(project_path).resolve()
-    _create_folders(project_path)
-    _add_to_sys_path(project_path)
-
-    # load sources and build
     if name is None:
         name = project_path.name
         if not name.lower().endswith("project"):
             name += " project"
         name = "".join(i for i in name.title() if i.isalpha())
+    if next((True for i in _loaded_projects if i._name == name), False):
+        raise ProjectAlreadyLoaded("There is already a project loaded with this name")
+
+    # paths
+    _create_folders(project_path)
+    _add_to_sys_path(project_path)
+
+    # load sources and build
     return Project(project_path, name)
 
 

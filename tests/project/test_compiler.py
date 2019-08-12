@@ -9,14 +9,14 @@ from brownie.project import compiler, build
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def solc4json(solc4source):
     compiler.set_solc_version("0.4.25")
     input_json = compiler.generate_input_json({'path': solc4source}, True, 200)
     yield compiler.compile_from_input_json(input_json)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def solc5json(solc5source):
     compiler.set_solc_version("0.5.7")
     input_json = compiler.generate_input_json({'path': solc5source}, True, 200)
@@ -82,8 +82,8 @@ def test_generate_input_json_evm(solc5source, monkeypatch):
 
 
 def test_compile_input_json(solc5json):
-    assert "TempTester" in solc5json['contracts']['path']
-    assert "TestLib" in solc5json['contracts']['path']
+    assert "Foo" in solc5json['contracts']['path']
+    assert "Bar" in solc5json['contracts']['path']
 
 
 def test_compile_input_json_raises():
@@ -109,21 +109,21 @@ def test_compile_optimizer(monkeypatch):
 
 def test_build_json_keys(solc5source):
     build_json = compiler.compile_and_format({'path': solc5source})
-    assert set(build.BUILD_KEYS) == set(build_json['TempTester'])
+    assert set(build.BUILD_KEYS) == set(build_json['Foo'])
 
 
 def test_build_json_unlinked_libraries(solc4source, solc5source):
     build_json = compiler.compile_and_format({'path': solc5source}, solc_version="0.5.7")
-    assert '__TestLib__' in build_json['TempTester']['bytecode']
+    assert '__Bar__' in build_json['Foo']['bytecode']
     build_json = compiler.compile_and_format({'path': solc4source}, solc_version="0.4.25")
-    assert '__TestLib__' in build_json['TempTester']['bytecode']
+    assert '__Bar__' in build_json['Foo']['bytecode']
 
 
 def test_format_link_references(solc4json, solc5json):
-    evm = solc5json['contracts']['path']['TempTester']['evm']
-    assert '__TestLib__' in compiler.format_link_references(evm)
-    evm = solc4json['contracts']['path']['TempTester']['evm']
-    assert '__TestLib__' in compiler.format_link_references(evm)
+    evm = solc5json['contracts']['path']['Foo']['evm']
+    assert '__Bar__' in compiler.format_link_references(evm)
+    evm = solc4json['contracts']['path']['Foo']['evm']
+    assert '__Bar__' in compiler.format_link_references(evm)
 
 
 def test_compiler_errors(solc4source, solc5source):

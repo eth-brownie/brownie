@@ -3,85 +3,69 @@
 from pathlib import Path
 import pytest
 
-from brownie import project, config
-from brownie.project import sources
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 
 
-def test_namespace():
-    assert hasattr(project, 'Token'), "did not initialize Token ContractContainer"
-    assert hasattr(project, 'SafeMath'), "did not initialize SafeMath ContractContainer"
-    assert not hasattr(project, "TokenABC"), "initialized TokenABC ContractContainer"
-    assert not hasattr(project, "TokenInterface"), "initialized TokenInterface ContractContainer"
+def test_namespace(project, testproject):
+    assert hasattr(project, 'TestProject')
+    assert hasattr(testproject, 'BrownieTester')
+    assert hasattr(testproject, 'SafeMath')
+    assert not hasattr(testproject, "TokenABC")
+    assert not hasattr(testproject, "TokenInterface")
 
 
-def test_check_for_project():
-    path = project.check_for_project('tests/brownie-test-project')
-    assert path == project.check_for_project('tests/brownie-test-project/contracts')
+def test_check_for_project(project, testproject):
+    path = project.check_for_project(testproject._project_path)
+    assert path == project.check_for_project(testproject._project_path.joinpath('contracts'))
     assert not project.check_for_project('/')
 
 
-def test_new(noload, tmpdir):
-    assert tmpdir == project.new(tmpdir)
-    assert config['folders']['project'] is None
-    assert Path(tmpdir).joinpath('brownie-config.json').exists()
+def test_new(tmp_path, project):
+    assert str(tmp_path) == project.new(tmp_path)
+    assert tmp_path.joinpath('brownie-config.json').exists()
 
 
-def test_new_raises(noload, tmpdir):
-    project.new(tmpdir)
-    project.load(tmpdir)
-    with pytest.raises(ProjectAlreadyLoaded):
-        project.new(tmpdir)
-    project.close()
-    with pytest.raises(SystemError):
-        project.new(tmpdir+"/contracts")
-
-
-def test_pull(noload, testpath):
+def test_pull(project, tmp_path):
     path = project.pull('token')
-    assert config['folders']['project'] != path != testpath
+    assert path != tmp_path
     assert Path(path).joinpath('brownie-config.json').exists()
     assert Path(path).joinpath('contracts/Token.sol').exists()
     assert Path(path).joinpath('contracts/SafeMath.sol').exists()
     project.load(path)
 
 
-def test_pull_raises(noload, testpath):
-    project.new(testpath+'/token')
+def test_pull_raises(project, tmp_path):
+    project.new(tmp_path.joinpath('token'))
     with pytest.raises(FileExistsError):
         project.pull('token')
     with pytest.raises(SystemError):
-        project.pull(testpath+"/token/contracts")
+        project.pull(tmp_path.joinpath("token/contracts"))
 
 
-def test_load_raises_already_loaded():
+def test_load_raises_already_loaded(project, testproject):
     with pytest.raises(ProjectAlreadyLoaded):
-        project.load('tests/brownie-test-project')
+        project.load(testproject._project_path, 'TestProject')
 
 
-def test_load_raises_cannot_find(noload, tmpdir):
+def test_load_raises_cannot_find(project, tmp_path):
     with pytest.raises(ProjectNotFound):
-        project.load(tmpdir)
+        project.load(tmp_path)
 
 
-def test_close():
-    project.close()
-    project.close(False)
+def test_close(testproject):
+    testproject.close()
+    testproject.close(False)
     with pytest.raises(ProjectNotFound):
-        project.close()
-    project.load('tests/brownie-test-project')
+        testproject.close()
 
 
-def test_compile():
-    source = sources.get('BrownieTester')
-    source = source.replace('BrownieTester', 'TempTester')
-    source = source.replace('UnlinkedLib', 'TestLib')
-    obj = project.compile_source(source)
-    assert obj[0]._name == "TempTester"
-    assert obj[1]._name == "TestLib"
+def test_compile(project, solc5source):
+    obj = project.compile_source(solc5source)
+    assert 'Foo' in obj
+    assert 'Bar' in obj
 
 
-def test_create_folders(tmpdir):
-    project.main._create_folders(Path(tmpdir))
+def test_create_folders(project, tmp_path):
+    project.main._create_folders(Path(tmp_path))
     for path in ("contracts", "scripts", "reports", "tests", "build"):
-        assert Path(tmpdir).joinpath(path).exists()
+        assert Path(tmp_path).joinpath(path).exists()
