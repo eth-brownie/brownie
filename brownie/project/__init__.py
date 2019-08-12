@@ -11,3 +11,5 @@ from .main import (  # NOQA 401
 from .scripts import run
 
 __all__ = ['run']
+
+__console_dir__ = ['run', 'new', 'pull', 'load', 'compile_source']

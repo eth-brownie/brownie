@@ -11,7 +11,6 @@ __doc__ = f"""Usage: brownie console [options]
 
 Options:
   --network <name>        Use a specific network (default {CONFIG['network_defaults']['name']})
-  --verbose -v            Enable verbose reporting
   --tb -t                 Show entire python traceback on exceptions
   --help -h               Display this message
 
@@ -23,8 +22,14 @@ def main():
     args = docopt(__doc__)
     update_argv_from_docopt(args)
 
-    p = project.load()
-    p.load_config()
+    if project.check_for_project():
+        p = project.load()
+        p.load_config()
+        print(f"{p._name} is the active project.")
+    else:
+        p = None
+        print("No active project loaded.")
+
     network.connect(ARGV['network'])
 
     shell = Console(p)

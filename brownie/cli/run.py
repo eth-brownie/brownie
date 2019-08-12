@@ -15,7 +15,6 @@ Arguments:
 Options:
   --network [name]        Use a specific network (default {CONFIG['network_defaults']['name']})
   --gas -g                Display gas profile for function calls
-  --verbose -v            Enable verbose reporting
   --tb -t                 Show entire python traceback on exceptions
   --help -h               Display this message
 

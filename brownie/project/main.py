@@ -32,10 +32,10 @@ MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 _loaded_projects = []
 
 
-def check_for_project(path):
+def check_for_project(path="."):
     '''Checks for a Brownie project.'''
     path = Path(path).resolve()
-    for folder in [path]+list(path.parents):
+    for folder in [path] + list(path.parents):
         if folder.joinpath("brownie-config.json").exists():
             return folder
     return None
@@ -88,7 +88,7 @@ def pull(project_name, project_path=None, ignore_subfolder=False):
     request = requests.get(url)
     with zipfile.ZipFile(BytesIO(request.content)) as zf:
         zf.extractall(str(project_path.parent))
-    project_path.parent.joinpath(project_name+'-mix-master').rename(project_path)
+    project_path.parent.joinpath(project_name + '-mix-master').rename(project_path)
     shutil.copy(
         str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
         str(project_path.joinpath('brownie-config.json'))
@@ -225,6 +225,7 @@ class Project:
         sys.modules[f'brownie.project.{name}'] = self
         sys.modules['brownie.project'].__dict__[name] = self
         sys.modules['brownie.project'].__all__.append(name)
+        sys.modules['brownie.project'].__console_dir__.append(name)
         self._namespaces = [
             sys.modules['__main__'].__dict__,
             sys.modules['brownie.project'].__dict__
@@ -262,16 +263,13 @@ class Project:
         self._namespaces.append(dict_)
 
     def __repr__(self):
-        items = [
-            f"<{type(i).__name__} object '{color['string']}{i._name}{color}'>"
-            for i in self._containers
-        ]
-        return f"[{', '.join(items)}]"
+        return f"<Project object '{color['string']}{self._name}{color}'>"
 
     def __getitem__(self, key):
-        if isinstance(key, str):
+        try:
             return next(i for i in self._containers if i._name == key)
-        return self._containers[key]
+        except StopIteration:
+            raise KeyError(key) from None
 
     def __iter__(self):
         return iter(self._containers)
@@ -304,6 +302,7 @@ class Project:
         name = self._name
         del sys.modules[f'brownie.project.{name}']
         sys.modules['brownie.project'].__all__.remove(name)
+        sys.modules['brownie.project'].__console_dir__.remove(name)
         self._active = False
         _loaded_projects.remove(self)
 
