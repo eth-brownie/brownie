@@ -2,7 +2,6 @@
 
 import atexit
 import code
-from pathlib import Path
 import sys
 
 import brownie
@@ -29,7 +28,7 @@ class Console(code.InteractiveConsole):
             project._update_and_register(locals_dict)
             history_file = project._project_path
         else:
-            history_file = Path(CONFIG['folders']['brownie'])
+            history_file = CONFIG['brownie_folder']
 
         history_file = str(history_file.joinpath('.history').absolute())
         atexit.register(_atexit_readline, history_file)

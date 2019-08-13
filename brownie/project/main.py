@@ -234,8 +234,8 @@ def new(project_path=".", ignore_subfolder=False):
     _create_folders(project_path)
     if not project_path.joinpath('brownie-config.json').exists():
         shutil.copy(
-            str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
-            str(project_path.joinpath('brownie-config.json'))
+            CONFIG['brownie_folder'].joinpath("data/config.json"),
+            project_path.joinpath('brownie-config.json')
         )
     _add_to_sys_path(project_path)
     return str(project_path)
@@ -265,8 +265,8 @@ def pull(project_name, project_path=None, ignore_subfolder=False):
         zf.extractall(str(project_path.parent))
     project_path.parent.joinpath(project_name + '-mix-master').rename(project_path)
     shutil.copy(
-        str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
-        str(project_path.joinpath('brownie-config.json'))
+        CONFIG['brownie_folder'].joinpath("data/config.json"),
+        project_path.joinpath('brownie-config.json')
     )
     _add_to_sys_path(project_path)
     return str(project_path)
@@ -274,7 +274,7 @@ def pull(project_name, project_path=None, ignore_subfolder=False):
 
 def _new_checks(project_path, ignore_subfolder):
     project_path = Path(project_path).resolve()
-    if CONFIG['folders']['brownie'] in str(project_path):
+    if str(CONFIG['brownie_folder']) in str(project_path):
         raise SystemError("Cannot make a new project inside the main brownie installation folder.")
     if not ignore_subfolder:
         check = check_for_project(project_path)

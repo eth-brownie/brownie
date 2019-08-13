@@ -48,11 +48,10 @@ def _load_default_config():
     '''Loads the default configuration settings from brownie/data/config.json'''
     with Path(__file__).parent.joinpath("data/config.json").open() as fp:
         config = _Singleton("Config", (ConfigDict,), {})(json.load(fp))
-    config['folders'] = {
-        'brownie': str(Path(__file__).parent),
-        'project': None
-    }
-    config['active_network'] = {'name': None}
+    config.update({
+        'active_network': {'name': None},
+        'brownie_folder': Path(__file__).parent,
+    })
     return config
 
 
@@ -118,10 +117,10 @@ def _recursive_update(original, new, base):
         if type(new[k]) is dict and k in REPLACE:
             original[k] = new[k]
         elif type(new[k]) is dict and k in original:
-            _recursive_update(original[k], new[k], base+[k])
+            _recursive_update(original[k], new[k], base + [k])
         else:
             original[k] = new[k]
-    for k in [i for i in original if i not in new and not set(base+[i]).intersection(IGNORE)]:
+    for k in [i for i in original if i not in new and not set(base + [i]).intersection(IGNORE)]:
         print(
             f"WARNING: '{'.'.join(base+[k])}' not found in the config file for this project."
             " The default setting has been used."
