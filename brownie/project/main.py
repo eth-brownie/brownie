@@ -303,8 +303,10 @@ def load(project_path=None, name=None):
     Args:
         project_path: Path of the project to load. If None, will attempt to
                       locate a project using check_for_project()
+        name: Name to assign to the project. If None, the name is generated
+              from the name of the project folder
 
-    Returns a list of ContractContainer objects.
+    Returns a Project object.
     '''
     # checks
     if project_path is None:
