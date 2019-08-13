@@ -33,6 +33,8 @@ _revert_map = {}
 
 class Build:
 
+    '''Methods for accessing and manipulating a project's contract build data.'''
+
     def __init__(self, project_path, sources):
         self._sources = sources
         self._build = {}
@@ -133,9 +135,9 @@ class Build:
         return self._stem(contract_name) in self._build
 
     def get_dependents(self, contract_name):
-        '''Returns a list of contract names that the given contract inherits from
-        or links to. Used by the compiler when determining which contracts to
-        recompile based on a changed source file.'''
+        '''Returns a list of contract names that inherit from or link to the given
+        contract. Used by the compiler when determining which contracts to recompile
+        based on a changed source file.'''
         return [k for k, v in self._build.items() if contract_name in v['dependencies']]
 
     def delete(self, contract_name):

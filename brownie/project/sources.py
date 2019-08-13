@@ -20,6 +20,8 @@ _contract_data = {}
 
 class Sources:
 
+    '''Methods for accessing and manipulating a project's contract source files.'''
+
     def __init__(self, project_path):
         self._source = {}
         self._contracts = {}

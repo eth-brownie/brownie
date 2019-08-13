@@ -2,8 +2,15 @@
 
 from pathlib import Path
 import pytest
+import sys
 
+from brownie.project.main import Project, TempProject, _ProjectBase
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
+
+
+def test_object(testproject):
+    assert type(testproject) is Project
+    assert isinstance(testproject, _ProjectBase)
 
 
 def test_namespace(project, testproject):
@@ -12,6 +19,10 @@ def test_namespace(project, testproject):
     assert hasattr(testproject, 'SafeMath')
     assert not hasattr(testproject, "TokenABC")
     assert not hasattr(testproject, "TokenInterface")
+    assert 'brownie.project.TestProject' in sys.modules
+    testproject.close()
+    assert not hasattr(project, 'TestProject')
+    assert 'brownie.project.TestProject' not in sys.modules
 
 
 def test_check_for_project(project, testproject):
@@ -45,6 +56,8 @@ def test_pull_raises(project, tmp_path):
 def test_load_raises_already_loaded(project, testproject):
     with pytest.raises(ProjectAlreadyLoaded):
         project.load(testproject._project_path, 'TestProject')
+    with pytest.raises(ProjectAlreadyLoaded):
+        testproject.load()
 
 
 def test_load_raises_cannot_find(project, tmp_path):
@@ -52,17 +65,55 @@ def test_load_raises_cannot_find(project, tmp_path):
         project.load(tmp_path)
 
 
-def test_close(testproject):
+def test_reload_from_project_object(project, testproject):
+    assert hasattr(project, 'TestProject')
+    assert len(project.get_loaded_projects()) == 1
     testproject.close()
+    assert not hasattr(project, 'TestProject')
+    assert len(project.get_loaded_projects()) == 0
+    testproject.load()
+    assert hasattr(project, 'TestProject')
+    assert len(project.get_loaded_projects()) == 1
+
+
+def test_load_multiple(project, testproject):
+    other = project.load(testproject._project_path, 'OtherProject')
+    assert hasattr(project, 'OtherProject')
+    assert len(project.get_loaded_projects()) == 2
+    other.close()
+    assert not hasattr(project, 'OtherProject')
+    assert hasattr(project, 'TestProject')
+    assert len(project.get_loaded_projects()) == 1
+
+
+def test_close(project, testproject):
+    testproject.close()
+    assert len(project.get_loaded_projects()) == 0
     testproject.close(False)
     with pytest.raises(ProjectNotFound):
         testproject.close()
 
 
-def test_compile(project, solc5source):
-    obj = project.compile_source(solc5source)
-    assert 'Foo' in obj
-    assert 'Bar' in obj
+def test_compile_object(project, solc5source):
+    temp = project.compile_source(solc5source)
+    assert type(temp) is TempProject
+    assert isinstance(temp, _ProjectBase)
+    assert len(temp) == 2
+    assert 'Foo' in temp
+    assert 'Bar' in temp
+
+
+def test_compile_namespace(project, solc5source):
+    project.compile_source(solc5source)
+    assert not hasattr(project, 'TempProject')
+    assert 'brownie.project.TempProject' not in sys.modules
+    assert len(project.get_loaded_projects()) == 0
+
+
+def test_compile_multiple(project, solc5source):
+    a = project.compile_source(solc5source)
+    b = project.compile_source(solc5source)
+    assert a != b
 
 
 def test_create_folders(project, tmp_path):

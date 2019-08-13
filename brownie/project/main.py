@@ -83,12 +83,25 @@ class _ProjectBase:
 
 class Project(_ProjectBase):
 
+    '''
+    Top level dict-like container that holds data and objects related to
+    a brownie project.
+
+    Attributes:
+        _project_path: Path object, absolute path to the project
+        _name: Name that the project is loaded as
+        _sources: project Source object
+        _build: project Build object
+    '''
+
     def __init__(self, project_path, name):
         super().__init__(project_path, name)
         self._active = False
         self.load()
 
     def load(self):
+        '''Compiles the project contracts, creates ContractContainer objects and
+        populates the namespace.'''
         if self._active:
             raise ProjectAlreadyLoaded("Project is already active")
 
@@ -149,10 +162,11 @@ class Project(_ProjectBase):
         return f"<Project object '{color['string']}{self._name}{color}'>"
 
     def load_config(self):
+        '''Loads the project config file settings'''
         load_project_config(self._project_path)
 
     def close(self, raises=True):
-        '''Closes the active project.'''
+        '''Removes pointers to the project's ContractContainer objects and this object.'''
         if not self._active:
             if not raises:
                 return
@@ -179,6 +193,9 @@ class Project(_ProjectBase):
 
 class TempProject(_ProjectBase):
 
+    '''Simplified Project class used to hold temporary contracts that are
+    compiled via project.compile_source'''
+
     def __init__(self, source, compiler_config):
         super().__init__(None, "TempProject")
         self._sources.add("<stdin>", source)
@@ -199,6 +216,7 @@ def check_for_project(path="."):
 
 
 def get_loaded_projects():
+    '''Returns a list of currently loaded Project objects.'''
     return _loaded_projects.copy()
 
 
@@ -266,8 +284,8 @@ def _new_checks(project_path, ignore_subfolder):
 
 
 def compile_source(source, solc_version=None, optimize=True, runs=200, evm_version=None):
-    '''Compiles the given source code string and returns a list of
-    ContractContainer instances.'''
+    '''Compiles the given source code string and returns a TempProject container with
+    the ContractContainer instances.'''
 
     compiler_config = {
         'version': solc_version,

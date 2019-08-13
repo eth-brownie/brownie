@@ -23,6 +23,6 @@ def test_expand_offset(btsource, BrownieTester):
     minified, _ = sources.minify(btsource)
     expanded = BrownieTester._project._sources.expand_offset(
         "BrownieTester",
-        (minified.index("contract"), minified.index("contract")+7)
+        (minified.index("contract"), minified.index("contract") + 7)
     )
-    assert btsource.index("contract"), btsource.index("contract")+7 == expanded
+    assert btsource.index("contract"), btsource.index("contract") + 7 == expanded

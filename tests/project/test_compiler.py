@@ -41,7 +41,7 @@ def msolc(monkeypatch):
     )
     monkeypatch.setattr(
         "solcx.install_solc",
-        lambda k: installed.append("v"+k)
+        lambda k: installed.append("v" + k)
     )
     yield installed
 
