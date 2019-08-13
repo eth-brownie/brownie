@@ -207,7 +207,7 @@ class Contract(_ContractBase):
         setattr(self, name, obj)
 
     def __hash__(self):
-        return hash(self._name+self.address)
+        return hash(self._name + self.address)
 
     def __repr__(self):
         return f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
@@ -218,7 +218,7 @@ class Contract(_ContractBase):
     def __eq__(self, other):
         if type(other) is Contract:
             return self.address == other.address and self.bytecode == other.bytecode
-        if type(other) is str:
+        if isinstance(other, str):
             try:
                 address = to_address(other)
                 return address == self.address
@@ -241,7 +241,7 @@ class OverloadedMethod:
         self.methods = {}
 
     def __getitem__(self, key):
-        if type(key) is tuple:
+        if isinstance(key, tuple):
             key = ",".join(key)
         key = key.replace("256", "").replace(", ", ",")
         return self.methods[key]
@@ -394,7 +394,7 @@ class ContractCall(_ContractMethod):
 def _get_tx(owner, args):
     # seperate contract inputs from tx dict and set default tx values
     tx = {'from': owner, 'value': 0, 'gas': None, 'gasPrice': None}
-    if args and type(args[-1]) is dict:
+    if args and isinstance(args[-1], dict):
         tx.update(args[-1])
         args = args[:-1]
         for key, target in [
@@ -431,4 +431,4 @@ def _inputs(abi):
 def _signature(abi):
     types = [i[1] for i in _params(abi['inputs'])]
     key = f"{abi['name']}({','.join(types)})".encode()
-    return "0x"+keccak(key).hex()[:8]
+    return "0x" + keccak(key).hex()[:8]

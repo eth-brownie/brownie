@@ -140,10 +140,10 @@ def highlight_source(source, offset, pad=3):
         return None, None
 
     ln = (pad_start + 1, pad_stop + 1)
-    pad_start = newlines[max(pad_start-(pad+1), 0)]
-    pad_stop = newlines[min(pad_stop+pad, len(newlines)-1)]
+    pad_start = newlines[max(pad_start - (pad + 1), 0)]
+    pad_stop = newlines[min(pad_stop + pad, len(newlines) - 1)]
 
-    final = textwrap.indent(f"{color['dull']}"+textwrap.dedent(
+    final = textwrap.indent(f"{color['dull']}" + textwrap.dedent(
         f"{source[pad_start:offset[0]]}{color}"
         f"{source[offset[0]:offset[1]]}{color['dull']}{source[offset[1]:pad_stop]}{color}"
     ), "    ")
@@ -180,7 +180,7 @@ def _get_contract_data(full_source):
         offset = minified_source.index(source)
         offset = (
             offset + next(i[1] for i in offset_map if i[0] <= offset),
-            offset+len(source) + next(i[1] for i in offset_map if i[0] <= offset+len(source))
+            offset + len(source) + next(i[1] for i in offset_map if i[0] <= offset + len(source))
         )
         data[name] = {
             'offset_map': offset_map,

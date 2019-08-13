@@ -61,8 +61,8 @@ class TestManager:
                 if not changed_contracts.intersection(coverage_eval.keys()):
                     coverage.add_cached(txhash, coverage_eval)
             self.tests = dict(
-                (k, v) for k, v in self.tests.items() if v['isolated'] is not False
-                and not changed_contracts.intersection(v['isolated'])
+                (k, v) for k, v in self.tests.items() if v['isolated'] is not False and
+                not changed_contracts.intersection(v['isolated'])
             )
         else:
             for txhash, coverage_eval in hashes['tx'].items():
@@ -132,7 +132,7 @@ class TestManager:
     def check_status(self, report):
         if report.when == "setup":
             self._skip = report.skipped
-            if len(self.results) < self.count+1:
+            if len(self.results) < self.count + 1:
                 self.results.append("s" if report.skipped else None)
             if report.failed:
                 self.results[self.count] = "E"

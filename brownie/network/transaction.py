@@ -358,14 +358,14 @@ class TransactionReceipt:
 
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
-            if trace[i]['depth'] > trace[i-1]['depth']:
+            if trace[i]['depth'] > trace[i - 1]['depth']:
                 # get call signature
-                stack_idx = -4 if trace[i-1]['op'] in {'CALL', 'CALLCODE'} else -3
-                offset = int(trace[i-1]['stack'][stack_idx], 16) * 2
-                sig = HexBytes("".join(trace[i-1]['memory'])[offset:offset+8]).hex()
+                stack_idx = -4 if trace[i - 1]['op'] in {'CALL', 'CALLCODE'} else -3
+                offset = int(trace[i - 1]['stack'][stack_idx], 16) * 2
+                sig = HexBytes("".join(trace[i - 1]['memory'])[offset:offset + 8]).hex()
 
                 # get contract and method name
-                address = web3.toChecksumAddress(trace[i-1]['stack'][-2][-40:])
+                address = web3.toChecksumAddress(trace[i - 1]['stack'][-2][-40:])
                 contract = _contracts.find(address)
 
                 # update last_map
@@ -409,7 +409,7 @@ class TransactionReceipt:
                         active_branches.add(pc['branch'])
                     elif pc['branch'] in active_branches:
                         # false, true
-                        key = 1 if trace[i+1]['pc'] == trace[i]['pc']+1 else 2
+                        key = 1 if trace[i + 1]['pc'] == trace[i]['pc'] + 1 else 2
                         coverage_eval[last['name']][pc['path']][key].add(pc['branch'])
                         active_branches.remove(pc['branch'])
 
@@ -420,7 +420,7 @@ class TransactionReceipt:
             # jump 'i' is calling into an internal function
             if pc['jump'] == 'i':
                 try:
-                    fn = last['pc_map'][trace[i+1]['pc']]['fn']
+                    fn = last['pc_map'][trace[i + 1]['pc']]['fn']
                 except (KeyError, IndexError):
                     continue
                 if fn != last['fn'][-1]:
@@ -492,34 +492,34 @@ class TransactionReceipt:
         result = f"Call trace for '{color['value']}{self.txid}{color}':"
         result += _step_print(trace[0], trace[-1], None, 0, len(trace))
         indent = {0: 0}
-        indent_chars = [""]*1000
+        indent_chars = [""] * 1000
 
         # (index, depth, jumpDepth) for relevent steps in the trace
         trace_index = [(0, 0, 0)] + [
             (i, trace[i]['depth'], trace[i]['jumpDepth'])
-            for i in range(1, len(trace)) if not _step_compare(trace[i], trace[i-1])
+            for i in range(1, len(trace)) if not _step_compare(trace[i], trace[i - 1])
         ]
 
         for i, (idx, depth, jump_depth) in enumerate(trace_index[1:], start=1):
-            last = trace_index[i-1]
+            last = trace_index[i - 1]
             if depth > last[1]:
                 # called to a new contract
-                indent[depth] = trace_index[i-1][2] + indent[depth-1]
-                end = next((x[0] for x in trace_index[i+1:] if x[1] < depth), len(trace))
-                _depth = depth+indent[depth]
-                symbol, indent_chars[_depth] = _check_last(trace_index[i-1:])
-                indent_str = "".join(indent_chars[:_depth])+symbol
-                result += _step_print(trace[idx], trace[end-1], indent_str, idx, end)
+                indent[depth] = trace_index[i - 1][2] + indent[depth - 1]
+                end = next((x[0] for x in trace_index[i + 1:] if x[1] < depth), len(trace))
+                _depth = depth + indent[depth]
+                symbol, indent_chars[_depth] = _check_last(trace_index[i - 1:])
+                indent_str = "".join(indent_chars[:_depth]) + symbol
+                result += _step_print(trace[idx], trace[end - 1], indent_str, idx, end)
             elif depth == last[1] and jump_depth > last[2]:
                 # jumped into an internal function
                 end = next((
-                    x[0] for x in trace_index[i+1:] if x[1] < depth or
+                    x[0] for x in trace_index[i + 1:] if x[1] < depth or
                     (x[1] == depth and x[2] < jump_depth)
                 ), len(trace))
-                _depth = depth+jump_depth+indent[depth]
-                symbol, indent_chars[_depth] = _check_last(trace_index[i-1:])
-                indent_str = "".join(indent_chars[:_depth])+symbol
-                result += _step_print(trace[idx], trace[end-1], indent_str, idx, end)
+                _depth = depth + jump_depth + indent[depth]
+                symbol, indent_chars[_depth] = _check_last(trace_index[i - 1:])
+                indent_str = "".join(indent_chars[:_depth]) + symbol
+                result += _step_print(trace[idx], trace[end - 1], indent_str, idx, end)
         print(result)
 
     def traceback(self):
@@ -582,7 +582,7 @@ class TransactionReceipt:
 
         # iterate backward through the trace until a step has a source offset
         trace = self.trace
-        trace_range = range(len(trace)-1, -1, -1)
+        trace_range = range(len(trace) - 1, -1, -1)
         try:
             idx = next(i for i in trace_range if trace[i]['op'] in {"REVERT", "INVALID"})
             idx = next(i for i in trace_range if trace[i]['source'])
@@ -668,8 +668,8 @@ def _step_print(step, last_step, indent, start, stop):
 
 def _get_memory(step, idx):
     offset = int(step['stack'][idx], 16) * 2
-    length = int(step['stack'][idx-1], 16) * 2
-    return HexBytes("".join(step['memory'])[offset:offset+length])
+    length = int(step['stack'][idx - 1], 16) * 2
+    return HexBytes("".join(step['memory'])[offset:offset + length])
 
 
 def _raise(msg, source):

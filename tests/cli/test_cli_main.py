@@ -31,7 +31,7 @@ class CliTester:
             self.total += 1
 
     def run(self, argv, args=(), kwargs={}):
-        sys.argv = ['brownie']+argv.split(' ')
+        sys.argv = ['brownie'] + argv.split(' ')
         self.args = args
         self.kwargs = kwargs
         cli_main()

@@ -54,7 +54,7 @@ def _get_path(path_str, default_folder="scripts"):
         path_str += ".py"
     path = Path(path_str)
     if not path.exists() and not path.is_absolute():
-        if not path_str.startswith(default_folder+'/'):
+        if not path_str.startswith(default_folder + "/"):
             path = Path(default_folder).joinpath(path_str)
         if not path.exists() and sys.path[0]:
             path = Path(sys.path[0]).joinpath(path)
@@ -70,7 +70,7 @@ def _get_path(path_str, default_folder="scripts"):
 def _import_from_path(path):
     '''Imports a module from the given path.'''
     path = Path(path).absolute().relative_to(sys.path[0])
-    import_str = ".".join(path.parts[:-1]+(path.stem,))
+    import_str = ".".join(path.parts[:-1] + (path.stem,))
     return importlib.import_module(import_str)
 
 

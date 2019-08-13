@@ -80,7 +80,7 @@ class TxHistory(metaclass=_Singleton):
             return
         gas = self.gas_profile[fn_name]
         gas.update({
-            'avg': (gas['avg']*gas['count'] + gas_used) // (gas['count']+1),
+            'avg': (gas['avg'] * gas['count'] + gas_used) // (gas['count'] + 1),
             'high': max(gas['high'], gas_used),
             'low': min(gas['low'], gas_used)
         })

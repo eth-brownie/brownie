@@ -212,7 +212,7 @@ class Rpc(metaclass=_Singleton):
         '''Returns the current epoch time from the test RPC as an int'''
         if not self.is_active():
             raise SystemError("RPC is not active.")
-        return int(time.time()+self._time_offset)
+        return int(time.time() + self._time_offset)
 
     def sleep(self, seconds):
         '''Increases the time within the test RPC.

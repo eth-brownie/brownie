@@ -295,7 +295,7 @@ def generate_build_json(input_json, output_json, compiler_data=None, silent=True
         bytecode = format_link_references(evm)
         hash_ = sources.get_hash(input_json['sources'][path]['content'], contract_name, minified)
         node = next(i[contract_name] for i in source_nodes if i.name == path)
-        paths = sorted(set([node.parent().path]+[i.parent().path for i in node.dependencies]))
+        paths = sorted(set([node.parent().path] + [i.parent().path for i in node.dependencies]))
 
         pc_map, statement_map, branch_map = generate_coverage_data(
             evm['deployedBytecode']['sourceMap'],
@@ -339,7 +339,7 @@ def format_link_references(evm):
     '''Standardizes formatting for unlinked libraries within bytecode.'''
     bytecode = evm['bytecode']['object']
     references = [(k, x) for v in evm['bytecode']['linkReferences'].values() for k, x in v.items()]
-    for n, loc in [(i[0], x['start']*2) for i in references for x in i[1]]:
+    for n, loc in [(i[0], x['start'] * 2) for i in references for x in i[1]]:
         bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"
     return bytecode
 
@@ -390,7 +390,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, stmt_nodes, branc
     source_map = deque(expand_source_map(source_map))
     opcodes = deque(opcodes.split(" "))
 
-    contract_nodes = [contract_node]+contract_node.dependencies
+    contract_nodes = [contract_node] + contract_node.dependencies
     source_nodes = dict((i.contract_id, i.parent()) for i in contract_nodes)
     paths = set(v.path for v in source_nodes.values())
 
@@ -421,7 +421,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, stmt_nodes, branc
         ):
             # flag the REVERT op at the end of the function selector,
             # later reverts may jump to it instead of having their own REVERT op
-            fallback = "0x"+hex(pc-4).upper()[2:]
+            fallback = "0x" + hex(pc - 4).upper()[2:]
             pc_list[-1]['first_revert'] = True
 
         if source[3] != "-":
@@ -441,21 +441,21 @@ def generate_coverage_data(source_map, opcodes, contract_node, stmt_nodes, branc
         # set source offset (-1 means none)
         if source[0] == -1:
             continue
-        offset = (source[0], source[0]+source[1])
+        offset = (source[0], source[0] + source[1])
         pc_list[-1]['offset'] = offset
 
         # if op is jumpi, set active branch markers
         if branch_active[path] and pc_list[-1]['op'] == "JUMPI":
             for offset in branch_active[path]:
                 # ( program counter index, JUMPI index)
-                branch_set[path][offset] = (branch_active[path][offset], len(pc_list)-1)
+                branch_set[path][offset] = (branch_active[path][offset], len(pc_list) - 1)
             branch_active[path].clear()
 
         # if op relates to previously set branch marker, clear it
         elif offset in branch_nodes[path]:
             if offset in branch_set[path]:
                 del branch_set[path][offset]
-            branch_active[path][offset] = len(pc_list)-1
+            branch_active[path][offset] = len(pc_list) - 1
 
         try:
             # set fn name and statement coverage marker
@@ -518,7 +518,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, stmt_nodes, branc
                 filters={'node_type': "FunctionDefinition"}
             )[0].full_name
         node = next(i for i in branch_original[path] if i.offset == offset)
-        branch_map[path].setdefault(fn, {})[count] = offset+(node.jump,)
+        branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
         count += 1
 
     pc_map = dict((i.pop('pc'), i) for i in pc_list)
@@ -530,17 +530,17 @@ def expand_source_map(source_map):
     source_map = [_expand_row(i) if i else None for i in source_map.split(';')]
     for i in range(1, len(source_map)):
         if not source_map[i]:
-            source_map[i] = source_map[i-1]
+            source_map[i] = source_map[i - 1]
             continue
         for x in range(4):
             if source_map[i][x] is None:
-                source_map[i][x] = source_map[i-1][x]
+                source_map[i][x] = source_map[i - 1][x]
     return source_map
 
 
 def _expand_row(row):
     row = row.split(':')
-    return [int(i) if i else None for i in row[:3]] + row[3:] + [None]*(4-len(row))
+    return [int(i) if i else None for i in row[:3]] + row[3:] + [None] * (4 - len(row))
 
 
 def get_statement_nodes(source_nodes):

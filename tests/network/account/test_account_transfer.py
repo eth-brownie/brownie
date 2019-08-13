@@ -96,7 +96,7 @@ def test_gas_price_manual(accounts):
     balance = accounts[0].balance()
     tx = accounts[0].transfer(accounts[1], 0, gas_price=100)
     assert tx.gas_price == 100
-    assert accounts[0].balance() == balance - (100*21000)
+    assert accounts[0].balance() == balance - (100 * 21000)
 
 
 def test_gas_price_automatic(accounts, config, web3):
@@ -105,7 +105,7 @@ def test_gas_price_automatic(accounts, config, web3):
     balance = accounts[0].balance()
     tx = accounts[0].transfer(accounts[1], 0)
     assert tx.gas_price == web3.eth.gasPrice
-    assert accounts[0].balance() == balance - (tx.gas_price*21000)
+    assert accounts[0].balance() == balance - (tx.gas_price * 21000)
 
 
 def test_gas_price_config(accounts, config):
@@ -114,7 +114,7 @@ def test_gas_price_config(accounts, config):
     balance = accounts[0].balance()
     tx = accounts[0].transfer(accounts[1], 0)
     assert tx.gas_price == 50
-    assert accounts[0].balance() == balance - (50*21000)
+    assert accounts[0].balance() == balance - (50 * 21000)
 
 
 def test_gas_limit_manual(accounts):

@@ -19,9 +19,9 @@ def test_time(devnetwork, rpc):
     rpc.sleep(25)
     rpc.snapshot()
     rpc.sleep(75)
-    assert rpc.time() == int(time.time()+100)
+    assert rpc.time() == int(time.time() + 100)
     rpc.revert()
-    assert rpc.time() == int(time.time()+25)
+    assert rpc.time() == int(time.time() + 25)
 
 
 def test_time_exceptions(devnetwork, rpc, monkeypatch):

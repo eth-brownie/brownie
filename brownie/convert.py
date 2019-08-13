@@ -172,7 +172,7 @@ class HexString(bytes):
         return not _hex_compare(self.hex(), other)
 
     def __str__(self):
-        return "0x"+self.hex()
+        return "0x" + self.hex()
 
 
 def _hex_compare(a, b):

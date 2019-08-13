@@ -43,7 +43,7 @@ def test_gas_price_manual(BrownieTester, accounts):
     balance = accounts[0].balance()
     tx = accounts[0].deploy(BrownieTester, True, gas_price=100).tx
     assert tx.gas_price == 100
-    assert accounts[0].balance() == balance - (tx.gas_used*100)
+    assert accounts[0].balance() == balance - (tx.gas_used * 100)
 
 
 def test_gas_price_automatic(BrownieTester, accounts, config, web3):
@@ -52,7 +52,7 @@ def test_gas_price_automatic(BrownieTester, accounts, config, web3):
     balance = accounts[0].balance()
     tx = accounts[0].deploy(BrownieTester, True).tx
     assert tx.gas_price == web3.eth.gasPrice
-    assert accounts[0].balance() == balance - (tx.gas_price*tx.gas_used)
+    assert accounts[0].balance() == balance - (tx.gas_price * tx.gas_used)
 
 
 def test_gas_price_config(BrownieTester, accounts, config, web3):
@@ -61,7 +61,7 @@ def test_gas_price_config(BrownieTester, accounts, config, web3):
     balance = accounts[0].balance()
     tx = accounts[0].deploy(BrownieTester, True).tx
     assert tx.gas_price == 50
-    assert accounts[0].balance() == balance - (50*tx.gas_used)
+    assert accounts[0].balance() == balance - (50 * tx.gas_used)
 
 
 def test_gas_limit_manual(BrownieTester, accounts):

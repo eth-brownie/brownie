@@ -40,7 +40,7 @@ class Root(tk.Tk):
 
         self._project = projects[0]
         name = self._project._name
-        super().__init__(className=" Brownie GUI - "+name)
+        super().__init__(className=f" Brownie GUI - {name}")
         self.bind("<Escape>", lambda k: self.destroy())
 
         # main widgets

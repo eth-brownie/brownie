@@ -6,17 +6,17 @@ from brownie.exceptions import VirtualMachineError
 from brownie.network.transaction import TransactionReceipt
 
 abi = {
-        'constant': False,
-        'inputs': [
-            {'name': '_to', 'type': 'address'},
-            {'name': '_value', 'type': 'uint256'}
-        ],
-        'name': 'transfer',
-        'outputs': [{'name': '', 'type': 'bool'}],
-        'payable': False,
-        'stateMutability': 'nonpayable',
-        'type': 'function'
-    }
+    'constant': False,
+    'inputs': [
+        {'name': '_to', 'type': 'address'},
+        {'name': '_value', 'type': 'uint256'}
+    ],
+    'name': 'transfer',
+    'outputs': [{'name': '', 'type': 'bool'}],
+    'payable': False,
+    'stateMutability': 'nonpayable',
+    'type': 'function'
+}
 
 
 def test_attributes(tester, accounts):
@@ -121,7 +121,7 @@ def test_gas_price_manual(tester, accounts):
     balance = accounts[0].balance()
     tx = tester.doNothing({'from': accounts[0], 'gas_price': 100})
     assert tx.gas_price == 100
-    assert accounts[0].balance() == balance - (100*tx.gas_used)
+    assert accounts[0].balance() == balance - (100 * tx.gas_used)
 
 
 def test_gas_price_automatic(tester, accounts, config, web3):
@@ -130,7 +130,7 @@ def test_gas_price_automatic(tester, accounts, config, web3):
     balance = accounts[0].balance()
     tx = tester.doNothing({'from': accounts[0]})
     assert tx.gas_price == web3.eth.gasPrice
-    assert accounts[0].balance() == balance - (tx.gas_price*tx.gas_used)
+    assert accounts[0].balance() == balance - (tx.gas_price * tx.gas_used)
 
 
 def test_gas_price_config(tester, accounts, config):
@@ -139,7 +139,7 @@ def test_gas_price_config(tester, accounts, config):
     balance = accounts[0].balance()
     tx = tester.doNothing({'from': accounts[0]})
     assert tx.gas_price == 50
-    assert accounts[0].balance() == balance - (50*tx.gas_used)
+    assert accounts[0].balance() == balance - (50 * tx.gas_used)
 
 
 def test_gas_limit_manual(tester, accounts):

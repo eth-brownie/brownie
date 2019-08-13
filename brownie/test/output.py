@@ -41,10 +41,10 @@ def save_coverage_report(project, coverage_eval, report_path):
 
 
 def _check_last_path(report, path):
-    filename = "coverage-"+time.strftime('%d%m%y')+"{}.json"
+    filename = "coverage-" + time.strftime('%d%m%y') + "{}.json"
     count = len(list(path.glob(filename.format('*'))))
     if count:
-        last_path = _report_path(path, filename, count-1)
+        last_path = _report_path(path, filename, count - 1)
         try:
             with last_path.open() as fp:
                 last_report = json.load(fp)
@@ -56,7 +56,7 @@ def _check_last_path(report, path):
 
 
 def _report_path(base_path, filename, count):
-    return base_path.joinpath(filename.format("-"+str(count) if count else ""))
+    return base_path.joinpath(filename.format("-" + str(count) if count else ""))
 
 
 def print_gas_profile():
@@ -91,9 +91,9 @@ def _cov_color(pct):
 
 
 def _pct(statement, branch):
-    pct = statement[0]/statement[1]
+    pct = statement[0] / statement[1]
     if branch[-1]:
-        pct = (pct + (branch[0]+branch[1])/(branch[2]*2)) / 2
+        pct = (pct + (branch[0] + branch[1]) / (branch[2] * 2)) / 2
     return pct
 
 
