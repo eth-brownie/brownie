@@ -3,6 +3,7 @@
 from .web3 import Web3
 from .rpc import Rpc
 from .account import Accounts
+from brownie.convert import Wei
 from brownie._config import CONFIG, modify_network_config
 
 rpc = Rpc()
@@ -19,12 +20,18 @@ def connect(network=None, launch_rpc=True):
     if is_connected():
         raise ConnectionError(f"Already connected to network '{CONFIG['active_network']['name']}'")
     try:
-        active = modify_network_config(network or CONFIG['network_defaults']['name'])
+        active = modify_network_config(network or CONFIG['network']['default'])
         if 'host' not in active:
             raise KeyError(
                 f"No host in brownie-config.json for network '{active['name']}'"
             )
-        web3.connect(active['host'])
+        host = active['host']
+        if ':' not in host.split('//', maxsplit=1)[-1]:
+            try:
+                host += f":{active['test_rpc']['port']}"
+            except KeyError:
+                pass
+        web3.connect(host)
         if 'test_rpc' in active and launch_rpc and not rpc.is_active():
             if is_connected():
                 if web3.eth.blockNumber != 0:
@@ -66,16 +73,15 @@ def is_connected():
 
 
 def gas_limit(*args):
-    '''Displays or modifies the default gas limit.
+    '''Gets and optionally sets the default gas limit.
 
-    * If no argument is given, the current default is displayed.
     * If an integer value is given, this will be the default gas limit.
-    * If set to "auto", None, True or False, the gas limit is determined
+    * If set to None, True or False, the gas limit is determined
     automatically.'''
     if not is_connected():
         raise ConnectionError("Not connected to any network")
     if args:
-        if args[0] in ("auto", None, False, True):
+        if args[0] in (None, False, True):
             CONFIG['active_network']['gas_limit'] = False
         else:
             try:
@@ -85,4 +91,24 @@ def gas_limit(*args):
             if limit < 21000:
                 raise ValueError("Minimum gas limit is 21000")
             CONFIG['active_network']['gas_limit'] = limit
-    return f"Gas limit is set to {CONFIG['active_network']['gas_limit'] or 'automatic'}"
+    return CONFIG['active_network']['gas_limit']
+
+
+def gas_price(*args):
+    '''Gets and optionally sets the default gas price.
+
+    * If an integer value is given, this will be the default gas price.
+    * If set to None, True or False, the gas price is determined
+    automatically.'''
+    if not is_connected():
+        raise ConnectionError("Not connected to any network")
+    if args:
+        if args[0] in (None, False, True):
+            CONFIG['active_network']['gas_price'] = False
+        else:
+            try:
+                price = Wei(args[0])
+            except ValueError:
+                raise TypeError(f"Invalid gas price '{args[0]}'")
+            CONFIG['active_network']['gas_price'] = price
+    return CONFIG['active_network']['gas_price']

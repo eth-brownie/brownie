@@ -1,48 +1,55 @@
+// Brownie configuration file
+// https://eth-brownie.readthedocs.io/en/latest/config.html
 {
-    "network_defaults": {
-        "name": "development",
-        "gas_limit": false,
-        "gas_price": false,
-        "broadcast_reverting_tx": false
-    },
-    "networks": {
-        "development": {
-            "test_rpc": {
-                "cmd": "ganache-cli",
-                "port": 8545,
-                "gas_limit": 6721975,
-                "accounts": 10,
-                "evm_version": "petersburg",
-                "mnemonic": "brownie"
+    "network": {
+        "default": "development", // the default network that brownie connects to
+        "settings": {
+            "broadcast_reverting_tx": false,
+            "gas_limit": false,
+            "gas_price": false
+        },
+        "networks": { // any settings given here will replace the defaults
+            "development": {
+                "test_rpc": {
+                    "cmd": "ganache-cli",
+                    "port": 8545,
+                    "gas_limit": 6721975,
+                    "accounts": 10,
+                    "evm_version": "petersburg",
+                    "mnemonic": "brownie"
+                },
+                "host": "http://127.0.0.1",
+                "broadcast_reverting_tx": true
             },
-            "host": "http://127.0.0.1:8545",
-            "broadcast_reverting_tx": true
-        },
-        "goerli": {
-            "host": "https://goerli.infura.io/v3/INFURA_PROJECT_ID"
-        },
-        "kovan": {
-            "host": "https://kovan.infura.io/v3/INFURA_PROJECT_ID"
-        },
-        "rinkeby": {
-            "host": "https://rinkeby.infura.io/v3/INFURA_PROJECT_ID"
-        },
-        "ropsten": {
-            "host": "https://ropsten.infura.io/v3/INFURA_PROJECT_ID"
+            // replace INFURA_PROJECT_ID with your personal API token
+            "goerli": {
+                "host": "https://goerli.infura.io/v3/INFURA_PROJECT_ID"
+            },
+            "kovan": {
+                "host": "https://kovan.infura.io/v3/INFURA_PROJECT_ID"
+            },
+            "rinkeby": {
+                "host": "https://rinkeby.infura.io/v3/INFURA_PROJECT_ID"
+            },
+            "ropsten": {
+                "host": "https://ropsten.infura.io/v3/INFURA_PROJECT_ID"
+            }
         }
     },
-    "pytest": {
+    "pytest": { // these settings replace the defaults when running pytest
         "gas_limit": 6721975,
         "default_contract_owner": false,
         "broadcast_reverting_tx": true,
         "revert_traceback": false
     },
-    "solc": {
-        "version": null,
-        "evm_version": null,
-        "optimize": true,
-        "runs": 200,
-        "minify_source": false
+    "compiler": {
+        "solc": {
+            "version": null,
+            "evm_version": null,
+            "optimize": true,
+            "runs": 200,
+            "minify_source": false
+        }
     },
     "colors": {
         "key": "",

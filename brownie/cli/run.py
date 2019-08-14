@@ -13,7 +13,7 @@ Arguments:
   [<function>]            The function to call (default is main)
 
 Options:
-  --network [name]        Use a specific network (default {CONFIG['network_defaults']['name']})
+  --network [name]        Use a specific network (default {CONFIG['network']['default']})
   --gas -g                Display gas profile for function calls
   --tb -t                 Show entire python traceback on exceptions
   --help -h               Display this message

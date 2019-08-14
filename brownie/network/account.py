@@ -161,7 +161,7 @@ class _AccountBase:
         return self.address
 
     def __eq__(self, other):
-        if type(other) is str:
+        if isinstance(other, str):
             try:
                 address = to_address(other)
                 return address == self.address
@@ -170,12 +170,12 @@ class _AccountBase:
         return super().__eq__(other)
 
     def _gas_limit(self, to, amount, data=""):
-        if type(CONFIG['active_network']['gas_limit']) is int:
-            return CONFIG['active_network']['gas_limit']
+        if CONFIG['active_network']['gas_limit'] not in (True, False, None):
+            return Wei(CONFIG['active_network']['gas_limit'])
         return self.estimate_gas(to, amount, data)
 
     def _gas_price(self):
-        return CONFIG['active_network']['gas_price'] or web3.eth.gasPrice
+        return Wei(CONFIG['active_network']['gas_price'] or web3.eth.gasPrice)
 
     def _check_for_revert(self, tx):
         if (

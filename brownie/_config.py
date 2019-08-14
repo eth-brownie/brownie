@@ -3,13 +3,13 @@
 from collections import defaultdict
 import json
 from pathlib import Path
-import shutil
+import re
 
 from brownie._singleton import _Singleton
 
 
 REPLACE = ['active_network', 'networks']
-IGNORE = ['active_network', 'folders']
+IGNORE = ['active_network', 'brownie_folder']
 
 
 class ConfigDict(dict):
@@ -44,13 +44,21 @@ class ConfigDict(dict):
         self._locked = False
 
 
+def _load_json(path):
+    with path.open() as fp:
+        raw_json = fp.read()
+    valid_json = re.sub(r'\/\/[^"]*?(?=\n|$)', '', raw_json)
+    return json.loads(valid_json)
+
+
 def _load_default_config():
     '''Loads the default configuration settings from brownie/data/config.json'''
-    with Path(__file__).parent.joinpath("data/config.json").open() as fp:
-        config = _Singleton("Config", (ConfigDict,), {})(json.load(fp))
+    brownie_path = Path(__file__).parent
+    path = brownie_path.joinpath("data/config.json")
+    config = _Singleton("Config", (ConfigDict,), {})(_load_json(path))
     config.update({
         'active_network': {'name': None},
-        'brownie_folder': Path(__file__).parent,
+        'brownie_folder': brownie_path,
     })
     return config
 
@@ -60,15 +68,7 @@ def _get_project_config_file(project_path):
     if not project_path.exists():
         raise ValueError("Project does not exist!")
     config_path = Path(project_path).joinpath("brownie-config.json")
-    try:
-        with config_path.open() as fp:
-            return json.load(fp)
-    except FileNotFoundError:
-        shutil.copy(
-            str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
-            str(config_path)
-        )
-        print("WARNING: No config file found for this project. A new one has been created.")
+    return _load_json(config_path)
 
 
 def load_project_config(project_path):
@@ -80,11 +80,11 @@ def load_project_config(project_path):
     CONFIG._lock()
 
 
-def load_project_compiler_config(project_path):
+def load_project_compiler_config(project_path, compiler):
     if not project_path:
-        return CONFIG['solc']
+        return CONFIG['compiler'][compiler]
     config_data = _get_project_config_file(project_path)
-    return config_data['solc']
+    return config_data['compiler'][compiler]
 
 
 def modify_network_config(network=None):
@@ -92,11 +92,11 @@ def modify_network_config(network=None):
     CONFIG._unlock()
     try:
         if not network:
-            network = CONFIG['network_defaults']['name']
+            network = CONFIG['network']['default']
 
         CONFIG['active_network'] = {
-            **CONFIG['network_defaults'],
-            **CONFIG['networks'][network]
+            **CONFIG['network']['settings'],
+            **CONFIG['network']['networks'][network]
         }
         CONFIG['active_network']['name'] = network
 

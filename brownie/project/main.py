@@ -105,7 +105,7 @@ class Project(_ProjectBase):
         if self._active:
             raise ProjectAlreadyLoaded("Project is already active")
 
-        self._compiler_config = load_project_compiler_config(self._project_path)
+        self._compiler_config = load_project_compiler_config(self._project_path, "solc")
         solc_version = self._compiler_config['version']
         if solc_version:
             self._compiler_config['version'] = compiler.set_solc_version(solc_version)
