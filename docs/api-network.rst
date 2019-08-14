@@ -56,23 +56,46 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         >>> network.show_active()
         'development'
 
-.. py:method:: main.gas_limit()
+.. py:method:: main.gas_limit(*value)
 
-    Displays or modifies the default gas limit.
+    Gets and optionally sets the default gas limit.
 
     * If no argument is given, the current default is displayed.
     * If an integer value is given, this will be the default gas limit.
-    * If set to "auto", None, True or False, the gas limit is determined automatically.
+    * If set to ``None``, ``True`` or ``False``, the gas limit is determined automatically via ``web3.eth.estimateGas``.
+
+    Returns ``False`` if the gas limit is set automatically, or an ``int`` if it is set to a fixed value.
 
     .. code-block:: python
 
         >>> from brownie import network
         >>> network.gas_limit()
-        'Gas limit is set to automatic'
+        False
         >>> network.gas_limit(6700000)
-        'Gas limit is set to 6700000'
-        >>> network.gas_limit('auto')
-        'Gas limit is set to automatic'
+        6700000
+        >>> network.gas_limit(None)
+        False
+
+.. py:method:: main.gas_price(*value)
+
+    Gets and optionally sets the default gas price.
+
+    * If an integer value is given, this will be the default gas price.
+    * If set to ``None``, ``True`` or ``False``, the gas price is determined automatically via ``web3.eth.getPrice``.
+
+    Returns ``False`` if the gas price is set automatically, or an ``int`` if it is set to a fixed value.
+
+    .. code-block:: python
+
+        >>> from brownie import network
+        >>> network.gas_price()
+        False
+        >>> network.gas_price(10000000000)
+        10000000000
+        >>> network.gas_price("1.2 gwei")
+        1200000000
+        >>> network.gas_price(False)
+        False
 
 ``brownie.network.account``
 ===========================

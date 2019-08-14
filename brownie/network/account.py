@@ -170,7 +170,7 @@ class _AccountBase:
         return super().__eq__(other)
 
     def _gas_limit(self, to, amount, data=""):
-        if type(CONFIG['active_network']['gas_limit']) not in (bool, None):
+        if CONFIG['active_network']['gas_limit'] not in (True, False, None):
             return Wei(CONFIG['active_network']['gas_limit'])
         return self.estimate_gas(to, amount, data)
 
