@@ -79,7 +79,7 @@ class TransactionReceipt:
         if type(txid) is not str:
             txid = txid.hex()
         if not silent:
-            print(f"\n{color['key']}Transaction sent{color}: {color['value']}{txid}{color}")
+            print(f"{color['key']}Transaction sent{color}: {color['value']}{txid}{color}")
         history._add_tx(self)
 
         self._trace = None
@@ -173,6 +173,11 @@ class TransactionReceipt:
                 time.sleep(0.5)
         self._set_from_tx(tx)
 
+        if not silent:
+            print(
+                f"  Gas price: {color['value']}{self.gas_price/10**9}{color} gwei"
+                f"   Gas limit: {color['value']}{self.gas_limit}{color}"
+            )
         if not tx['blockNumber'] and not silent:
             print("Waiting for confirmation...")
 
@@ -226,17 +231,17 @@ class TransactionReceipt:
         if not self.status:
             status = f"({color['error']}{self.revert_msg or 'reverted'}{color}) "
         result = (
-            f"{self._full_name()} confirmed {status}- "
-            f"{color['key']}block{color}: {color['value']}{self.block_number}{color}   "
-            f"{color['key']}gas used{color}: {color['value']}{self.gas_used}{color} "
+            f"  {self._full_name()} confirmed {status}- "
+            f"{color['key']}Block{color}: {color['value']}{self.block_number}{color}   "
+            f"{color['key']}Gas used{color}: {color['value']}{self.gas_used}{color} "
             f"({color['value']}{self.gas_used / self.gas_limit:.2%}{color})"
         )
         if self.contract_address:
             result += (
-                f"\n{self.contract_name} deployed at: "
+                f"\n  {self.contract_name} deployed at: "
                 f"{color['value']}{self.contract_address}{color}"
             )
-        return result
+        return result + "\n"
 
     def _get_trace(self):
         '''Retrieves the stack trace via debug_traceTransaction and finds the
