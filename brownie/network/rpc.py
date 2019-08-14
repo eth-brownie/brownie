@@ -46,7 +46,7 @@ class Rpc(metaclass=_Singleton):
         self._snapshot_id = False
         self._internal_id = False
         self._reset_id = False
-        self._objects = []
+        self._revert_objects = []
         atexit.register(self._at_exit)
 
     def _at_exit(self):
@@ -162,7 +162,7 @@ class Rpc(metaclass=_Singleton):
         self._request("evm_revert", [id_])
         id_ = self._snap()
         self.sleep(0)
-        for i in self._objects:
+        for i in self._revert_objects:
             if web3.eth.blockNumber == 0:
                 i._reset()
             else:
@@ -170,7 +170,7 @@ class Rpc(metaclass=_Singleton):
         return id_
 
     def _reset(self):
-        for i in self._objects:
+        for i in self._revert_objects:
             i._reset()
 
     def is_active(self):
@@ -261,8 +261,14 @@ class Rpc(metaclass=_Singleton):
         self._request("evm_revert", [self._internal_id])
         self._internal_id = None
         self.sleep(0)
-        for i in self._objects:
+        for i in self._revert_objects:
             i._revert()
+
+    def _revert_register(self, obj):
+        self._revert_objects.append(obj)
+
+    def _revert_unregister(self, obj):
+        self._revert_objects.remove(obj)
 
 
 def _win_proc_filter(proc, match):

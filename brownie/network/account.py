@@ -30,7 +30,7 @@ class Accounts(metaclass=_Singleton):
         self._accounts = []
         # prevent private keys from being stored in read history
         self.add.__dict__['_private'] = True
-        rpc._objects.append(self)
+        rpc._revert_register(self)
         self._reset()
 
     def _reset(self):

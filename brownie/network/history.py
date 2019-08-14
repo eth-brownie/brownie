@@ -20,7 +20,7 @@ class TxHistory(metaclass=_Singleton):
     def __init__(self):
         self._list = []
         self.gas_profile = {}
-        Rpc()._objects.append(self)
+        Rpc()._revert_register(self)
 
     def __repr__(self):
         return str(self._list)
@@ -94,7 +94,7 @@ class _ContractHistory(metaclass=_Singleton):
 
     def __init__(self):
         self._dict = {}
-        Rpc()._objects.append(self)
+        Rpc()._revert_register(self)
 
     def _reset(self):
         self._dict.clear()
