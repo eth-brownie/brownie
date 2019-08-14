@@ -10,7 +10,7 @@ from brownie._config import ARGV, CONFIG, update_argv_from_docopt
 __doc__ = f"""Usage: brownie console [options]
 
 Options:
-  --network <name>        Use a specific network (default {CONFIG['network_defaults']['name']})
+  --network <name>        Use a specific network (default {CONFIG['network']['default']})
   --tb -t                 Show entire python traceback on exceptions
   --help -h               Display this message
 

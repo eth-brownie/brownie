@@ -37,7 +37,7 @@ def test_connect_raises_unknown(network):
 
 
 def test_connect_raises_missing_host(network, config):
-    del config['networks']['ropsten']['host']
+    del config['network']['networks']['ropsten']['host']
     with pytest.raises(KeyError):
         network.connect('ropsten')
 

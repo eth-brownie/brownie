@@ -8,7 +8,7 @@ priv_key = "0x416b8a7d9290502f5661da81f0cf43893e3d19cb9aea3c426cfb36e8186e9c09"
 addr = "0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E"
 
 
-def test_repopulate(accounts, network, rpc, config):
+def test_repopulate(accounts, network, rpc):
     assert len(accounts) > 0
     a = list(accounts)
     rpc.reset()
@@ -19,7 +19,6 @@ def test_repopulate(accounts, network, rpc, config):
     network.disconnect()
     assert len(accounts) == 0
     assert not rpc.is_active()
-    del config['networks']['development']['test_rpc']['mnemonic']
     network.connect('development')
     assert len(accounts) == len(a)
 

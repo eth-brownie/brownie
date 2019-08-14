@@ -19,7 +19,7 @@ def connect(network=None, launch_rpc=True):
     if is_connected():
         raise ConnectionError(f"Already connected to network '{CONFIG['active_network']['name']}'")
     try:
-        active = modify_network_config(network or CONFIG['network_defaults']['name'])
+        active = modify_network_config(network or CONFIG['network']['default'])
         if 'host' not in active:
             raise KeyError(
                 f"No host in brownie-config.json for network '{active['name']}'"

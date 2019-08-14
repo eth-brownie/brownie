@@ -65,7 +65,7 @@ if brownie.project.check_for_project('.'):
             '-N',
             default=False,
             nargs=1,
-            help=f"Use a specific network (default {CONFIG['network_defaults']['name']})"
+            help=f"Use a specific network (default {CONFIG['network']['default']})"
         )
 
     def pytest_configure(config):
