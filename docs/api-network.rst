@@ -1174,14 +1174,18 @@ TxHistory Methods
         >>> history.of_address(accounts[1])
         [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
 
-_ContractHistory
-----------------
+Module Methods
+--------------
 
-.. py:class:: brownie.network.history._ContractHistory
+.. py:method:: brownie.network.history.find_contract(address)
 
-    A :ref:`api-types-singleton` dict of ``OrderedDict`` instances, used internally by Brownie to track deployed contracts.
+    Given an address, returns the related ``Contract`` object. If none exists, returns ``None``.
 
-    Under the hood, calls to get objects from ``ContractContainer`` instances are redirected to this class. The primary use case is to simplify deleting  ``Contract`` instances after the local RPC is reset or reverted.
+.. py:method:: brownie.network.history.get_current_dependencies()
+
+    Returns a list of the names of all currently deployed contracts, and of every contract that these contracts are dependent upon.
+
+    Used during testing to determine which contracts must change before a test needs to be re-run.
 
 ``brownie.network.rpc``
 =======================
