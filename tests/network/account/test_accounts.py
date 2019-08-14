@@ -12,13 +12,16 @@ def test_repopulate(accounts, network, rpc, config):
     assert len(accounts) > 0
     a = list(accounts)
     rpc.reset()
-    assert a == list(accounts)
+    assert len(accounts) == len(a)
+    for i in range(len(a)):
+        assert a[i] != accounts[i]
+        assert str(a[i]) == str(accounts[i])
     network.disconnect()
     assert len(accounts) == 0
     assert not rpc.is_active()
     del config['networks']['development']['test_rpc']['mnemonic']
     network.connect('development')
-    assert len(accounts) > 0
+    assert len(accounts) == len(a)
 
 
 def test_add(devnetwork, accounts):

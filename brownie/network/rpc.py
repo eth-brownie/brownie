@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 
 import atexit
+import gc
 import psutil
 from subprocess import DEVNULL, PIPE
 import sys
 import time
+import weakref
 
 from .web3 import Web3
 
@@ -46,7 +48,7 @@ class Rpc(metaclass=_Singleton):
         self._snapshot_id = False
         self._internal_id = False
         self._reset_id = False
-        self._revert_objects = []
+        self._revert_refs = []
         atexit.register(self._at_exit)
 
     def _at_exit(self):
@@ -79,13 +81,13 @@ class Rpc(metaclass=_Singleton):
         self._rpc = psutil.Popen(cmd.split(" "), stdin=DEVNULL, stdout=out, stderr=out)
         # check that web3 can connect
         if not web3.provider:
-            self._reset()
+            self._notify_registry(0)
             return
         uri = web3.provider.endpoint_uri if web3.provider else None
         for i in range(100):
             if web3.isConnected():
                 self._reset_id = self._snap()
-                self._reset()
+                self._notify_registry(0)
                 return
             time.sleep(0.1)
             if type(self._rpc) is psutil.Popen:
@@ -114,7 +116,7 @@ class Rpc(metaclass=_Singleton):
         self._rpc = psutil.Process(proc.pid)
         if web3.provider:
             self._reset_id = self._snap()
-        self._reset()
+        self._notify_registry(0)
 
     def kill(self, exc=True):
         '''Terminates the RPC process and all children with SIGKILL.
@@ -140,7 +142,7 @@ class Rpc(metaclass=_Singleton):
         self._snapshot_id = False
         self._reset_id = False
         self._rpc = None
-        self._reset()
+        self._notify_registry(0)
 
     def _request(self, *args):
         if not self.is_active():
@@ -158,21 +160,13 @@ class Rpc(metaclass=_Singleton):
 
     def _revert(self, id_):
         if web3.isConnected() and not web3.eth.blockNumber and not self._time_offset:
+            self._notify_registry(0)
             return self._snap()
         self._request("evm_revert", [id_])
         id_ = self._snap()
         self.sleep(0)
-        height = web3.eth.blockNumber
-        for i in self._revert_objects:
-            if height:
-                i._revert(height)
-            else:
-                i._reset()
+        self._notify_registry()
         return id_
-
-    def _reset(self):
-        for i in self._revert_objects:
-            i._reset()
 
     def is_active(self):
         '''Returns True if Rpc client is currently active.'''
@@ -262,18 +256,26 @@ class Rpc(metaclass=_Singleton):
         self._request("evm_revert", [self._internal_id])
         self._internal_id = None
         self.sleep(0)
-        height = web3.eth.blockNumber
-        for i in self._revert_objects:
-            i._revert(height)
+        self._notify_registry()
 
     # objects that will update whenever the RPC is reset or reverted must register
     # by calling to this function. The must also include _revert and _reset methods
     # to recieve notifications from this object
     def _revert_register(self, obj):
-        self._revert_objects.append(obj)
+        self._revert_refs.append(weakref.ref(obj))
 
-    def _revert_unregister(self, obj):
-        self._revert_objects.remove(obj)
+    def _notify_registry(self, height=None):
+        gc.collect()
+        if height is None:
+            height = web3.eth.blockNumber
+        for ref in self._revert_refs.copy():
+            obj = ref()
+            if obj is None:
+                self._revert_refs.remove(ref)
+            elif height:
+                obj._revert(height)
+            else:
+                obj._reset()
 
 
 def _win_proc_filter(proc, match):

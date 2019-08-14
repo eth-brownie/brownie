@@ -42,8 +42,6 @@ def test_load_unload_project(BrownieTester, testproject, rpc, accounts):
     BrownieTester.deploy(True, {'from': accounts[0]})
     testproject.close()
     rpc.reset()
-    assert len(BrownieTester) == 1
+    assert len(BrownieTester) == 0
     testproject.load()
     assert testproject.BrownieTester != BrownieTester
-    assert len(BrownieTester) == 1
-    assert len(testproject.BrownieTester) == 0
