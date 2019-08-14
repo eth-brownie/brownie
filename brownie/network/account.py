@@ -40,7 +40,7 @@ class Accounts(metaclass=_Singleton):
         except Exception:
             pass
 
-    def _revert(self):
+    def _revert(self, height):
         for i in self._accounts:
             i.nonce = web3.eth.getTransactionCount(str(i))
 

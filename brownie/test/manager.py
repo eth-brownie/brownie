@@ -4,7 +4,7 @@ from hashlib import sha1
 import json
 from pathlib import Path
 
-from brownie.network.history import TxHistory, _ContractHistory
+from brownie.network.history import get_current_dependencies
 from brownie.project.scripts import get_ast_hash
 from brownie.test import coverage
 from brownie._config import ARGV
@@ -24,9 +24,6 @@ STATUS_TYPES = {
     'x': "xfailed",
     'X': "xpassed"
 }
-
-history = TxHistory()
-_contracts = _ContractHistory()
 
 
 class TestManager:
@@ -94,7 +91,7 @@ class TestManager:
         path = self._path(path)
         isolated = False
         if path in self.isolated:
-            isolated = [i for i in _contracts.dependencies() if i in self.contracts]
+            isolated = [i for i in get_current_dependencies() if i in self.contracts]
         txhash = coverage.get_and_clear_active()
         if not ARGV['coverage'] and (path in self.tests and self.tests[path]['coverage']):
             txhash = self.tests[path]['txhash']

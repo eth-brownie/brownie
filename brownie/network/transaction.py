@@ -11,7 +11,7 @@ from hexbytes import HexBytes
 
 from .history import (
     TxHistory,
-    _ContractHistory
+    find_contract
 )
 from .event import (
     decode_logs,
@@ -27,7 +27,6 @@ from brownie.test import coverage
 from brownie._config import ARGV
 
 history = TxHistory()
-_contracts = _ContractHistory()
 web3 = Web3()
 
 
@@ -196,8 +195,8 @@ class TransactionReceipt:
         self.nonce = tx['nonce']
 
         # if receiver is a known contract, set function name
-        if tx['to'] and _contracts.find(tx['to']) is not None:
-            self.receiver = _contracts.find(tx['to'])
+        if tx['to'] and find_contract(tx['to']) is not None:
+            self.receiver = find_contract(tx['to'])
             if not self.fn_name:
                 self.contract_name = self.receiver._name
                 self.fn_name = self.receiver.get_method(tx['input'])
@@ -310,7 +309,7 @@ class TransactionReceipt:
         # if none is found, expand the trace and get it from the pcMap
         self._expand_trace()
         try:
-            pc_map = _contracts.find(step['address'])._build['pcMap']
+            pc_map = find_contract(step['address'])._build['pcMap']
             # if this is the function selector revert, check for a jump
             if 'first_revert' in pc_map[step['pc']]:
                 i = trace.index(step) - 4
@@ -366,7 +365,7 @@ class TransactionReceipt:
 
                 # get contract and method name
                 address = web3.toChecksumAddress(trace[i - 1]['stack'][-2][-40:])
-                contract = _contracts.find(address)
+                contract = find_contract(address)
 
                 # update last_map
                 last_map[trace[i]['depth']] = {
@@ -605,7 +604,7 @@ class TransactionReceipt:
         trace = self.trace[idx]
         if not trace['source']:
             return ""
-        contract = _contracts.find(self.trace[idx]['address'])
+        contract = find_contract(self.trace[idx]['address'])
         source, linenos = highlight_source(
             contract._project._sources.get(trace['source']['filename']),
             trace['source']['offset'],

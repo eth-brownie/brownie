@@ -162,11 +162,12 @@ class Rpc(metaclass=_Singleton):
         self._request("evm_revert", [id_])
         id_ = self._snap()
         self.sleep(0)
+        height = web3.eth.blockNumber
         for i in self._revert_objects:
-            if web3.eth.blockNumber == 0:
-                i._reset()
+            if height:
+                i._revert(height)
             else:
-                i._revert()
+                i._reset()
         return id_
 
     def _reset(self):
@@ -261,9 +262,13 @@ class Rpc(metaclass=_Singleton):
         self._request("evm_revert", [self._internal_id])
         self._internal_id = None
         self.sleep(0)
+        height = web3.eth.blockNumber
         for i in self._revert_objects:
-            i._revert()
+            i._revert(height)
 
+    # objects that will update whenever the RPC is reset or reverted must register
+    # by calling to this function. The must also include _revert and _reset methods
+    # to recieve notifications from this object
     def _revert_register(self, obj):
         self._revert_objects.append(obj)
 

@@ -8,14 +8,13 @@ from hexbytes import HexBytes
 
 from brownie.cli.utils import color
 from .event import get_topics
-from .history import _ContractHistory
+from . import history
 from .rpc import Rpc
 from .web3 import Web3
 from brownie.convert import format_input, format_output, to_address, Wei
 from brownie.exceptions import UndeployedLibrary, VirtualMachineError
 from brownie._config import ARGV, CONFIG
 
-_contracts = _ContractHistory()
 rpc = Rpc()
 web3 = Web3()
 
@@ -54,33 +53,47 @@ class ContractContainer(_ContractBase):
     def __init__(self, project, build):
         self.tx = None
         self.bytecode = build['bytecode']
+        self._contracts = []
         super().__init__(project, build)
         self.deploy = ContractConstructor(self, self._name)
+        rpc._revert_register(self)
 
     def __iter__(self):
-        return iter(_contracts.list(self._name))
+        return iter(self._contracts)
 
     def __getitem__(self, i):
-        return _contracts.list(self._name)[i]
+        return self._contracts[i]
 
     def __delitem__(self, key):
-        item = _contracts.list(self._name)[key]
-        _contracts.remove(item)
+        item = self._contracts[key]
+        history.remove_contract(item)
+        self._contracts.remove(item)
 
     def __len__(self):
-        return len(_contracts.list(self._name))
+        return len(self._contracts)
 
     def __repr__(self):
-        return str(_contracts.list(self._name))
+        return str(self._contracts)
+
+    def _reset(self):
+        self._contracts.clear()
+
+    def _revert(self, height):
+        self._contracts = [
+            i for i in self._contracts if
+            (i.tx and i.tx.block_number <= height) or
+            len(web3.eth.getCode(i.address).hex()) > 4
+        ]
 
     def remove(self, contract):
         '''Removes a contract from the container.
 
         Args:
             contract: Contract instance of address string of the contract.'''
-        if type(contract) is not Contract or contract._name != self._name:
+        if contract not in self._contracts:
             raise TypeError("Object is not in container.")
-        _contracts.remove(contract)
+        self._contracts.remove(contract)
+        history.remove_contract(contract)
 
     def at(self, address, owner=None, tx=None):
         '''Returns a contract address.
@@ -92,15 +105,18 @@ class ContractContainer(_ContractBase):
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation.'''
         address = to_address(address)
-        contract = _contracts.find(address)
+        contract = history.find_contract(address)
         if contract:
-            if contract._name == self._name:
+            if contract._name == self._name and contract._project == self._project:
                 return contract
-            raise ValueError(f"Contract '{contract._name}' already declared at {address}")
+            raise ValueError(
+                f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
+            )
         if web3.eth.getCode(address).hex() == "0x":
             raise ValueError(f"No contract deployed at {address}")
         contract = Contract(self._project, self._build, address, owner, tx)
-        _contracts.add(contract)
+        self._contracts.append(contract)
+        history.add_contract(contract)
         return contract
 
 
@@ -161,11 +177,11 @@ class ContractConstructor:
         # find and replace unlinked library pointers in bytecode
         for marker in re.findall('_{1,}[^_]*_{1,}', bytecode):
             library = marker.strip('_')
-            if not _contracts.list(library):
+            if not self._parent._project[library]:
                 raise UndeployedLibrary(
-                    f"Contract requires '{library}' library but it has not been deployed yet"
+                    f"Contract requires '{library}' library, but it has not been deployed yet"
                 )
-            address = _contracts.list(library)[-1].address[-40:]
+            address = self._parent._project[library][-1].address[-40:]
             bytecode = bytecode.replace(marker, address)
 
         data = format_input(self.abi, args)
