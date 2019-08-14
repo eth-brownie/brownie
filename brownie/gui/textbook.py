@@ -9,7 +9,6 @@ from tkinter import ttk
 from .styles import TEXT_STYLE, TEXT_COLORS
 
 from brownie.project.sources import is_inside_offset
-from brownie._config import CONFIG
 
 
 class TextBook(ttk.Notebook):
@@ -22,7 +21,7 @@ class TextBook(ttk.Notebook):
         self._frames = []
         self.root.bind("<Left>", self.key_left)
         self.root.bind("<Right>", self.key_right)
-        base_path = Path(CONFIG['folders']['project']).joinpath('contracts')
+        base_path = self.root._project._project_path.joinpath('contracts')
         for path in base_path.glob('**/*.sol'):
             self.add(path)
         self.set_visible([])
@@ -87,7 +86,7 @@ class TextBook(ttk.Notebook):
         if visible[-1] == f:
             self.select(visible[0])
         else:
-            self.select(visible[visible.index(f)+1])
+            self.select(visible[visible.index(f) + 1])
 
     def apply_scope(self, start, stop):
         self.clear_scope()
@@ -169,7 +168,7 @@ class TextBox(tk.Frame):
         for match in re.finditer(pattern, text):
             self.tag_add('comment', match.start(), match.end())
 
-        self._line_no.insert(1.0, '\n'.join(str(i) for i in range(1, text.count('\n')+2)))
+        self._line_no.insert(1.0, '\n'.join(str(i) for i in range(1, text.count('\n') + 2)))
         self._line_no.tag_configure("justify", justify="right")
         self._line_no.tag_add("justify", 1.0, "end")
 
@@ -220,7 +219,7 @@ class TextBox(tk.Frame):
     def _coord_to_offset(self, value):
         row, col = [int(i) for i in value.split('.')]
         text = self._text.get(1.0, "end").split('\n')
-        return sum(len(i)+1 for i in text[:row-1])+col
+        return sum(len(i) + 1 for i in text[:row - 1]) + col
 
     def _scrollbar_scroll(self, action, position, type=None):
         self._text.yview_moveto(position)

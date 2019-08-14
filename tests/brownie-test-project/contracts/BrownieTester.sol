@@ -1,33 +1,40 @@
 pragma solidity ^0.5.0;
+pragma experimental ABIEncoderV2;
 
+import "./SafeMath.sol";
 
-
-library UnlinkedLib {
-
-    function linkMethod(
-        uint256 _value,
-        uint256 _multiplier
-    )
-        public
-        pure
-        returns (uint256)
-    {
-        return _value * _multiplier;
-    }
-}
-
+/** @notice This is the main contract used to test Brownie functionality */
 contract BrownieTester {
 
-    address payable owner;
+    using SafeMath for uint;
 
+    address payable public owner;
+    uint256 num;
+
+    struct Nested {
+        string a;
+        bytes32 b;
+    }
+
+    struct Base {
+        string str;
+        address addr;
+        Nested nested;
+    }
+
+    mapping (address => Base) testMap;
+
+    event TupleEvent(address addr, Base base);
     event Debug(uint a);
 
-    constructor () public {
+    constructor (bool success) public {
+        require(success);
         owner = msg.sender;
     }
 
-    function receiveEth() external payable returns (bool) {
-        return true;
+    function () external payable {
+        require(msg.value >= 1 ether);
+        emit Debug(31337);
     }
 
     function sendEth() external returns (bool) {
@@ -35,11 +42,15 @@ contract BrownieTester {
         return true;
     }
 
-    function testLibraryLink(uint amount, uint multiple) external view returns (uint) {
-        return UnlinkedLib.linkMethod(amount, multiple);
+    function receiveEth() external payable returns (bool) {
+        return true;
     }
 
-    function testRevertStrings(uint a) external returns (bool) {
+    function doNothing() external returns (bool) {
+        return true;
+    }
+
+    function revertStrings(uint a) external returns (bool) {
         emit Debug(a);
         require (a != 0, "zero");
         require (a != 1); // dev: one
@@ -51,21 +62,56 @@ contract BrownieTester {
         revert(); // dev: great job
     }
 
-    function doNothing() external returns (bool) {
+    function setTuple(Base memory _base) public {
+        testMap[_base.addr] = _base;
+        emit TupleEvent(_base.addr, _base);
+    }
+
+    function getTuple(address _addr) public view returns (Base memory) {
+        return testMap[_addr];
+    }
+
+    function setNum(uint _num) external returns (bool) {
+        num = _num;
         return true;
     }
 
-    function returnMultiple(
+    function manyValues(
         uint a,
-        bool b,
+        bool[] calldata b,
         address c,
-        bytes32 d
+        bytes32[2][] calldata d
     )
         external
         view
-        returns (uint _num, bool _bool, address _addr, bytes32 _bytes)
+        returns (uint _num, bool[] memory _bool, address _addr, bytes32[2][] memory _bytes)
     {
         return (a, b, c, d);
+    }
+
+    function useSafeMath(uint a, uint b) external returns (uint) {
+        uint c = a.mul(b);
+        return c;
+    }
+
+    function makeExternalCall(ExternalCallTester other, uint a) external returns (bool) {
+        bool ok = other.getCalled(a);
+        return ok;
+    }
+
+}
+
+
+contract ExternalCallTester {
+
+    function getCalled(uint a) external returns (bool) {
+        require(a > 2);
+        return true;
+    }
+
+    function makeExternalCall(BrownieTester other, uint a) external returns (bool) {
+        other.revertStrings(a);
+        return true;
     }
 
 }

@@ -5,11 +5,11 @@ from .main import (  # NOQA 401
     new,
     pull,
     load,
-    close,
-    compile_source
+    compile_source,
+    get_loaded_projects
 )
 from .scripts import run
 
-__all__ = ['__brownie_import_all__', 'run']
+__all__ = ['run']
 
-__brownie_import_all__ = None
+__console_dir__ = ['run', 'new', 'pull', 'load', 'compile_source']

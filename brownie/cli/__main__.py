@@ -50,7 +50,7 @@ def main():
     sys.modules['brownie'].__all__.append('a')
 
     try:
-        importlib.import_module("brownie.cli."+args['<command>']).main()
+        importlib.import_module(f"brownie.cli.{args['<command>']}").main()
     except ProjectNotFound:
         notify("ERROR", "Brownie environment has not been initiated for this folder.")
         print("Type 'brownie init' to create the file structure.")

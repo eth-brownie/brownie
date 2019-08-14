@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import json
-from pathlib import Path
 
 import eth_event
 
@@ -136,7 +135,7 @@ class _EventItem:
 
 
 def _get_path():
-    return Path(CONFIG['folders']['brownie']).joinpath('data/topics.json')
+    return CONFIG['brownie_folder'].joinpath('data/topics.json')
 
 
 def get_topics(abi):

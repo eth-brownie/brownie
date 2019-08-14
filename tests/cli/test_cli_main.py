@@ -1,22 +1,12 @@
 #!/usr/bin/python3
 
-import os
-from pathlib import Path
 import pytest
 import sys
 
 from brownie.cli.__main__ import main as cli_main
 
 
-@pytest.fixture(scope="module")
-def project_path():
-    original_path = os.getcwd()
-    os.chdir(original_path+"/tests/brownie-test-project")
-    yield Path(original_path+"/tests/brownie-test-project")
-    os.chdir(original_path)
-
-
-@pytest.fixture(scope="function")
+@pytest.fixture
 def cli_tester(monkeypatch):
     c = CliTester(monkeypatch)
     yield c
@@ -32,16 +22,16 @@ class CliTester:
         self.total = 0
         self.count = 0
 
-    def patch(self, location):
-        self.monkeypatch.setattr(location, self.catch)
+    def set_target(self, target):
+        self.monkeypatch.setattr(target, self.catch)
 
-    def counter_patch(self, *locations):
-        for item in locations:
-            self.monkeypatch.setattr(item, self.simplecatch)
+    def set_subtargets(self, *targets):
+        for item in targets:
+            self.monkeypatch.setattr(item, self.incremental_catch)
             self.total += 1
 
-    def __call__(self, argv, *args, **kwargs):
-        sys.argv = ['brownie']+argv.split(' ')
+    def run(self, argv, args=(), kwargs={}):
+        sys.argv = ['brownie'] + argv.split(' ')
         self.args = args
         self.kwargs = kwargs
         cli_main()
@@ -55,36 +45,36 @@ class CliTester:
         assert self.kwargs == kwargs
         self.called = True
 
-    def simplecatch(self, *args, **kwargs):
+    def incremental_catch(self, *args, **kwargs):
         self.count += 1
 
     def close(self):
         sys.argv = self.argv
 
 
-def test_cli_init(cli_tester, noload):
-    cli_tester.patch('brownie.project.new')
-    cli_tester('init', '.', False)
-    cli_tester('init test/path --force', 'test/path', True)
+def test_cli_init(cli_tester):
+    cli_tester.set_target('brownie.project.new')
+    cli_tester.run('init', args=('.', False))
+    cli_tester.run('init test/path --force', args=('test/path', True))
 
 
-def test_cli_bake(cli_tester, noload):
-    cli_tester.patch('brownie.project.pull')
-    cli_tester('bake token', 'token', None, False)
-    cli_tester('bake token test/path --force', 'token', 'test/path', True)
+def test_cli_bake(cli_tester):
+    cli_tester.set_target('brownie.project.pull')
+    cli_tester.run('bake token', args=('token', None, False))
+    cli_tester.run('bake token test/path --force', args=('token', 'test/path', True))
 
 
-def test_cli_compile(cli_tester, project_path):
-    cli_tester.patch('brownie.project.load')
-    cli_tester('compile', project_path)
-    cli_tester.counter_patch('shutil.rmtree')
-    cli_tester('compile --all', project_path)
+def test_cli_compile(cli_tester, testproject):
+    cli_tester.set_target('brownie.project.load')
+    cli_tester.run('compile', args=(testproject._project_path,))
+    cli_tester.run('compile --all', args=(testproject._project_path,))
 
 
-def test_cli_console(cli_tester, project_path):
-    cli_tester.patch('brownie.cli.utils.console.Console.interact')
-    cli_tester.counter_patch('brownie.project.load', 'brownie.network.connect')
-    cli_tester('console', banner="Brownie environment is ready.", exitmsg="")
+def test_cli_console(cli_tester, testproject):
+    testproject.close()
+    cli_tester.set_target('brownie.cli.utils.console.Console.interact')
+    cli_tester.set_subtargets('brownie.network.connect')
+    cli_tester.run('console', kwargs={'banner': "Brownie environment is ready.", 'exitmsg': ""})
 
 
 # travis doesn't like this
@@ -95,8 +85,8 @@ def test_cli_console(cli_tester, project_path):
 #     cli_tester('gui')
 
 
-def test_cli_run(cli_tester, project_path):
-    cli_tester.patch('brownie.run')
-    cli_tester.counter_patch('brownie.project.load', 'brownie.network.connect')
-    cli_tester('run testfile', 'testfile', 'main', gas_profile=False)
-    cli_tester('run testfile xx --gas', 'testfile', 'xx', gas_profile=True)
+def test_cli_run(cli_tester, testproject):
+    cli_tester.set_target('brownie.run')
+    cli_tester.set_subtargets('brownie.project.load', 'brownie.network.connect')
+    cli_tester.run('run testfile', args=('testfile', 'main'), kwargs={'gas_profile': False})
+    cli_tester.run('run testfile xx --gas', args=('testfile', 'xx'), kwargs={'gas_profile': True})

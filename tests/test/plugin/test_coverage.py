@@ -2,14 +2,13 @@
 
 import json
 
-from brownie import rpc
 
 test_source = '''
-def test_call_and_transact(Token, accounts, web3):
-    token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
-    token.transfer(accounts[1], "10 ether", {'from': accounts[0]})
+def test_call_and_transact(BrownieTester, accounts, web3, fn_isolation):
+    c = accounts[0].deploy(BrownieTester, True)
+    c.setNum(12, {'from': accounts[0]})
     assert web3.eth.blockNumber == 2
-    assert token.balanceOf(accounts[1]) == "10 ether"
+    c.getTuple(accounts[0])
     assert web3.eth.blockNumber == 2'''
 
 conf_source = '''
@@ -20,42 +19,36 @@ def setup(no_call_coverage):
     pass'''
 
 
-def test_always_transact(testdir, methodwatch):
-    # these methods are called to revert a call-as-a-tx
-    methodwatch.watch(
-        'brownie.rpc._internal_snap',
-        'brownie.rpc._internal_revert'
-    )
+def test_always_transact(plugintester, mocker, rpc):
+    mocker.spy(rpc, '_internal_snap')
+    mocker.spy(rpc, '_internal_revert')
 
-    # without coverage eval
-    rpc.reset()
-    result = testdir.runpytest()
+    result = plugintester.runpytest()
     result.assert_outcomes(passed=1)
-    methodwatch.assert_not_called()
+    assert rpc._internal_snap.call_count == 0
+    assert rpc._internal_revert.call_count == 0
 
     # with coverage eval
-    rpc.reset()
-    result = testdir.runpytest('--coverage')
+    result = plugintester.runpytest('--coverage')
     result.assert_outcomes(passed=1)
-    methodwatch.assert_called()
-    methodwatch.reset()
+    assert rpc._internal_snap.call_count == 1
+    assert rpc._internal_revert.call_count == 1
 
     # with coverage and no_call_coverage fixture
-    rpc.reset()
-    testdir.makeconftest(conf_source)
-    result = testdir.runpytest('--coverage')
+    plugintester.makeconftest(conf_source)
+    result = plugintester.runpytest('--coverage')
     result.assert_outcomes(passed=1)
-    methodwatch.assert_not_called()
+    assert rpc._internal_snap.call_count == 1
+    assert rpc._internal_revert.call_count == 1
 
 
-def test_coverage_tx(json_path, testdir):
-    rpc.reset()
-    testdir.runpytest()
+def test_coverage_tx(json_path, plugintester):
+    plugintester.runpytest()
     with json_path.open() as fp:
         build = json.load(fp)
     assert not len(build['tx'])
-    rpc.reset()
-    testdir.runpytest('-C')
+    plugintester.runpytest('-C')
     with json_path.open() as fp:
         build = json.load(fp)
+        print(build)
     assert len(build['tx']) == 3

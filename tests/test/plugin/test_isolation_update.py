@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from pathlib import Path
 import json
 import pytest
 
@@ -11,59 +12,55 @@ def isolation(module_isolation):
     pass'''
 
 test_source = '''
-def test_stuff(Token, accounts):
-    token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
-    token.transfer(accounts[1], "10 ether", {'from': accounts[0]})'''
+def test_stuff(BrownieTester, accounts):
+    c = accounts[0].deploy(BrownieTester, True)
+    c.doNothing({'from': accounts[0]})'''
 
 
 @pytest.fixture
-def runconf(testdir):
-    testdir.makeconftest(conf_source)
-    result = testdir.runpytest('-U')
+def runconf(plugintester):
+    plugintester.makeconftest(conf_source)
+    result = plugintester.runpytest('-U')
     result.assert_outcomes(passed=1)
 
 
-def test_update_no_isolation(testdir):
-    result = testdir.runpytest()
+def test_update_no_isolation(plugintester):
+    result = plugintester.runpytest()
     result.assert_outcomes(passed=1)
-    result = testdir.runpytest('-U')
+    result = plugintester.runpytest('-U')
     result.assert_outcomes(passed=1)
 
 
-def test_update_isolation(runconf, testdir):
-    result = testdir.runpytest('-U')
+def test_update_isolation(runconf, plugintester):
+    result = plugintester.runpytest('-U')
     result.assert_outcomes(skipped=1)
 
 
-def test_update_isolation_coverage(runconf, testdir):
-    result = testdir.runpytest('-C', '-U')
+def test_update_isolation_coverage(runconf, plugintester):
+    result = plugintester.runpytest('-C', '-U')
     result.assert_outcomes(passed=1)
-    result = testdir.runpytest('-C', '-U')
+    result = plugintester.runpytest('-C', '-U')
     result.assert_outcomes(skipped=1)
-    result = testdir.runpytest('-U')
+    result = plugintester.runpytest('-U')
     result.assert_outcomes(skipped=1)
-    testdir.runpytest()
-    result = testdir.runpytest('-C', '-U')
+    plugintester.runpytest()
+    result = plugintester.runpytest('-C', '-U')
     result.assert_outcomes(skipped=1)
 
 
-def test_update_isolation_contract_changed(runconf, json_path, testdir):
-    with json_path.open() as fp:
-        build = json.load(fp)
-    build['contracts']['Token'] = "potato"
-    with json_path.open('w') as fp:
-        build = json.dump(build, fp)
-
-    result = testdir.runpytest('-U')
+def test_update_isolation_contract_changed(runconf, json_path, plugintester):
+    with Path(plugintester.tmpdir).joinpath('contracts/BrownieTester.sol').open('a') as fp:
+        fp.write('\n\ncontract Foo {}')
+    result = plugintester.runpytest('-U')
     result.assert_outcomes(passed=1)
 
 
-def test_update_isolation_testfile_changed(runconf, json_path, testdir):
+def test_update_isolation_testfile_changed(runconf, json_path, plugintester):
     with json_path.open() as fp:
         build = json.load(fp)
     build['tests']['test_update_isolation_testfile_changed.py']['sha1'] = "potato"
     with json_path.open('w') as fp:
         build = json.dump(build, fp)
 
-    result = testdir.runpytest('-U')
+    result = plugintester.runpytest('-U')
     result.assert_outcomes(passed=1)

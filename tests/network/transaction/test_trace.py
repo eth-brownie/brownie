@@ -3,36 +3,40 @@
 '''debug_traceTransaction is a very expensive call and should be avoided where
 possible. These tests check that it is only being called when absolutely necessary.'''
 
-from brownie import accounts, project
+import pytest
+
 from brownie.project import build
 
 
-def test_revert_msg(console_mode, tester):
-    '''dev revert string comments should be correct and not query the trace'''
-    tx = tester.testRevertStrings(0)
-    tx.revert_msg
-    assert not tx._trace
-    tx = tester.testRevertStrings(1)
-    tx.revert_msg
-    assert not tx._trace
-    tx = tester.testRevertStrings(2)
-    tx.revert_msg
-    assert not tx._trace
-    tx = tester.testRevertStrings(3)
-    tx.revert_msg
-    assert not tx._trace
-
-
-def test_revert_msg_get_trace_no_revert_map(console_mode, tester):
-    '''without the revert map, getting the revert string queries the trace'''
+@pytest.fixture
+def norevertmap():
     revert_map = build._revert_map
     build._revert_map = {}
-    try:
-        tx = tester.testRevertStrings(1)
-        tx.revert_msg
-        assert 'trace' in tx.__dict__
-    finally:
-        build._revert_map = revert_map
+    yield
+    build._revert_map = revert_map
+
+
+def test_revert_msg_get_trace_no_revert_map(console_mode, tester, norevertmap):
+    '''without the revert map, getting the revert string queries the trace'''
+    tx = tester.revertStrings(1)
+    tx.revert_msg
+    assert 'trace' in tx.__dict__
+
+
+def test_revert_msg(console_mode, tester):
+    '''dev revert string comments should not query the trace'''
+    tx = tester.revertStrings(0)
+    tx.revert_msg
+    assert not tx._trace
+    tx = tester.revertStrings(1)
+    tx.revert_msg
+    assert not tx._trace
+    tx = tester.revertStrings(2)
+    tx.revert_msg
+    assert not tx._trace
+    tx = tester.revertStrings(3)
+    tx.revert_msg
+    assert not tx._trace
 
 
 def test_error_get_trace(console_mode, tester, capfd):
@@ -40,14 +44,14 @@ def test_error_get_trace(console_mode, tester, capfd):
     tx = tester.doNothing()
     assert not tx._error_string()
     assert not tx._trace
-    tx = tester.testRevertStrings(1)
+    tx = tester.revertStrings(1)
     assert tx._error_string()
     assert not tx._trace
 
 
 def test_revert_events(console_mode, tester):
     '''getting reverted events queries the trace but does not evaluate it'''
-    tx = tester.testRevertStrings(1)
+    tx = tester.revertStrings(1)
     assert len(tx.events) == 1
     assert 'Debug' in tx.events
     assert tx._trace
@@ -63,7 +67,7 @@ def test_modified_state(console_mode, tester):
 
 
 def test_modified_state_revert(console_mode, tester):
-    tx = tester.testRevertStrings(1)
+    tx = tester.revertStrings(1)
     assert not tx._trace
     assert tx.modified_state is False
 
@@ -75,9 +79,9 @@ def test_trace(tester):
     assert 'trace' in tx.__dict__
 
 
-def test_coverage_trace(coverage_mode, tester):
+def test_coverage_trace(accounts, tester, coverage_mode):
     '''coverage mode always evaluates the trace'''
-    tx = tester.doNothing()
+    tx = tester.doNothing({'from': accounts[0]})
     assert tx.status == 1
     assert 'trace' in tx.__dict__
 
@@ -96,7 +100,7 @@ def test_info(console_mode, tester):
     assert not tx._trace
     tx.info()
     assert not tx._trace
-    tx = tester.testRevertStrings(1)
+    tx = tester.revertStrings(1)
     tx.info()
     assert tx._trace
 
@@ -107,7 +111,7 @@ def test_call_trace(console_mode, tester):
     assert not tx._trace
     tx.call_trace()
     assert 'trace' in tx.__dict__
-    tx = tester.testRevertStrings(1)
+    tx = tester.revertStrings(1)
     tx.call_trace()
     assert 'trace' in tx.__dict__
 
@@ -117,7 +121,7 @@ def test_trace_deploy(tester):
     assert not tester.tx.trace
 
 
-def test_trace_transfer():
+def test_trace_transfer(accounts):
     '''trace is not calculated for regular transfers of eth'''
     tx = accounts[0].transfer(accounts[1], "1 ether")
     assert not tx.trace
@@ -143,18 +147,30 @@ def test_expand_multiple(tester):
     tx._get_trace()
 
 
-def test_external_jump():
-    ext = accounts[0].deploy(project.ExternalCallTester)
-    other = accounts[0].deploy(project.Other)
-    tx = ext.doNotCall(other)
-    assert not next((i for i in tx.trace if i['depth'] != 0), False)
-    tx = ext.callAnother(other, 4)
-    assert next(i for i in tx.trace if i['depth'] != 0)
-
-
 def test_revert_string_from_trace(console_mode, tester):
-    tx = tester.testRevertStrings(0)
+    tx = tester.revertStrings(0)
     msg = tx.revert_msg
     tx.revert_msg = None
     tx._reverted_trace(tx.trace)
     assert tx.revert_msg == msg
+
+
+def test_inlined_library_jump(accounts, tester):
+    tx = tester.useSafeMath(6, 7)
+
+    assert max([i['jumpDepth'] for i in tx.trace]) == 1
+
+
+def test_external_jump(accounts, testproject, tester):
+    ext = accounts[0].deploy(testproject.ExternalCallTester)
+    tx = tester.makeExternalCall(ext, 4)
+    assert max([i['depth'] for i in tx.trace]) == 1
+    assert max([i['jumpDepth'] for i in tx.trace]) == 0
+
+
+def test_delegatecall_jump(accounts, librarytester):
+    accounts[0].deploy(librarytester['TestLib'])
+    contract = accounts[0].deploy(librarytester['Unlinked'])
+    tx = contract.callLibrary(6, 7)
+    assert max([i['depth'] for i in tx.trace]) == 1
+    assert max([i['jumpDepth'] for i in tx.trace]) == 0

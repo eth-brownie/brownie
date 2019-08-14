@@ -8,7 +8,7 @@ import sys
 
 from brownie.cli.utils import color
 from brownie.test.output import print_gas_profile
-from brownie.project import check_for_project
+from brownie.project.main import check_for_project, get_loaded_projects
 
 
 def run(script_path, method_name="main", args=None, kwargs=None, gas_profile=False):
@@ -28,6 +28,8 @@ def run(script_path, method_name="main", args=None, kwargs=None, gas_profile=Fal
         kwargs = {}
     script_path = _get_path(script_path, "scripts")
     module = _import_from_path(script_path)
+    for project in get_loaded_projects():
+        module.__dict__.update(project)
     name = module.__name__
     if not hasattr(module, method_name):
         raise AttributeError(f"Module '{name}' has no method '{method_name}'")
@@ -52,7 +54,7 @@ def _get_path(path_str, default_folder="scripts"):
         path_str += ".py"
     path = Path(path_str)
     if not path.exists() and not path.is_absolute():
-        if not path_str.startswith(default_folder+'/'):
+        if not path_str.startswith(default_folder + "/"):
             path = Path(default_folder).joinpath(path_str)
         if not path.exists() and sys.path[0]:
             path = Path(sys.path[0]).joinpath(path)
@@ -68,7 +70,7 @@ def _get_path(path_str, default_folder="scripts"):
 def _import_from_path(path):
     '''Imports a module from the given path.'''
     path = Path(path).absolute().relative_to(sys.path[0])
-    import_str = ".".join(path.parts[:-1]+(path.stem,))
+    import_str = ".".join(path.parts[:-1] + (path.stem,))
     return importlib.import_module(import_str)
 
 

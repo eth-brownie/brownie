@@ -48,33 +48,43 @@ def _load_default_config():
     '''Loads the default configuration settings from brownie/data/config.json'''
     with Path(__file__).parent.joinpath("data/config.json").open() as fp:
         config = _Singleton("Config", (ConfigDict,), {})(json.load(fp))
-    config['folders'] = {
-        'brownie': str(Path(__file__).parent),
-        'project': None
-    }
-    config['active_network'] = {'name': None}
+    config.update({
+        'active_network': {'name': None},
+        'brownie_folder': Path(__file__).parent,
+    })
     return config
 
 
-def load_project_config(project_path):
-    '''Loads configuration settings from a project's brownie-config.json'''
+def _get_project_config_file(project_path):
     project_path = Path(project_path)
     if not project_path.exists():
         raise ValueError("Project does not exist!")
-    CONFIG._unlock()
-    CONFIG['folders']['project'] = str(project_path)
-    config_path = project_path.joinpath("brownie-config.json")
+    config_path = Path(project_path).joinpath("brownie-config.json")
     try:
         with config_path.open() as fp:
-            _recursive_update(CONFIG, json.load(fp), [])
+            return json.load(fp)
     except FileNotFoundError:
         shutil.copy(
             str(Path(CONFIG['folders']['brownie']).joinpath("data/config.json")),
             str(config_path)
         )
         print("WARNING: No config file found for this project. A new one has been created.")
+
+
+def load_project_config(project_path):
+    '''Loads configuration settings from a project's brownie-config.json'''
+    config_data = _get_project_config_file(project_path)
+    CONFIG._unlock()
+    _recursive_update(CONFIG, config_data, [])
     CONFIG.setdefault('active_network', {'name': None})
     CONFIG._lock()
+
+
+def load_project_compiler_config(project_path):
+    if not project_path:
+        return CONFIG['solc']
+    config_data = _get_project_config_file(project_path)
+    return config_data['solc']
 
 
 def modify_network_config(network=None):
@@ -107,10 +117,10 @@ def _recursive_update(original, new, base):
         if type(new[k]) is dict and k in REPLACE:
             original[k] = new[k]
         elif type(new[k]) is dict and k in original:
-            _recursive_update(original[k], new[k], base+[k])
+            _recursive_update(original[k], new[k], base + [k])
         else:
             original[k] = new[k]
-    for k in [i for i in original if i not in new and not set(base+[i]).intersection(IGNORE)]:
+    for k in [i for i in original if i not in new and not set(base + [i]).intersection(IGNORE)]:
         print(
             f"WARNING: '{'.'.join(base+[k])}' not found in the config file for this project."
             " The default setting has been used."

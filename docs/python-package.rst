@@ -2,14 +2,15 @@
 Brownie as a Python Package
 ===========================
 
-Brownie can be imported as a package and used within regular Python scripts. This can be useful if you only require a specific function, or you would like more granular control over how Brownie operates.
+Brownie can be imported as a package and used within regular Python scripts. This can be useful if you wish to incorporate a specific function or range of functionality within a greater project, or if you would like more granular control over how Brownie operates.
 
-For quick reference, the following three statements will give you an environment and namespace that is identical to what you have when loading the Brownie console:
+For quick reference, the following statements generate an environment and namespace identical to what you have when loading the Brownie console:
 
 .. code-block:: python
 
     from brownie import *
-    project.load('path/to/your/project')
+    project.load('my_projects/token', name="TokenProject")
+    from brownie.project.TokenProject import *
     network.conect('development')
 
 Loading a Project
@@ -21,24 +22,35 @@ The ``brownie.project`` module is used to load a Brownie project.
 
     >>> import brownie.project as project
     >>> project.load('myprojects/token')
-    [<ContractContainer object 'Token'>, <ContractContainer object 'SafeMath'>]
+    <Project object 'TokenProject'>
 
-Once loaded, the contract instances are available within ``project``.
+Once loaded, the ``Project`` object is available within ``brownie.project``. This container holds all of the related ``ContractContainer`` objects.
 
 .. code-block:: python
 
-    >>> project.Token
+    >>> p = project.TokenProject
+    >>> p
+    <Project object 'TokenProject'>
+    >>> p.Token
     <ContractContainer object 'Token'>
 
-Alternatively, use a ``from .. import *`` style command to import ``brownie`` or ``brownie.project`` and the classes will be available in the local namespace.
+Alternatively, use a ``from`` import statement to import ``ContractContainer`` objects to the local namespace:
 
 .. code-block:: python
 
-    >>> from brownie import *
-    >>> project.load('myprojects/token')
-    [<ContractContainer object 'Token'>, <ContractContainer object 'SafeMath'>]
+    >>> from brownie.project.TokenProject import Token
     >>> Token
     <ContractContainer object 'Token'>
+
+ Importing with a wildcard will retrieve every available ``ContractContainer``:
+
+.. code-block:: python
+
+    >>> from brownie.project.TokenProject import *
+    >>> Token
+    <ContractContainer object 'Token'>
+    >>> SafeMath
+    <ContractContainer object 'SafeMath'>
 
 Accessing the Network
 =====================
@@ -58,7 +70,7 @@ This method queries the network settings from the configuration file, launches t
     >>> rpc.launch('ganache-cli')
     >>> web3.connect('http://127.0.0.1:8545')
 
-Once connected, the ``accounts`` container will automatically populate with local accounts.
+Once connected, the ``accounts`` container is automatically populated with local accounts.
 
 .. code-block:: python
 

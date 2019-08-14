@@ -30,7 +30,7 @@ class Accounts(metaclass=_Singleton):
         self._accounts = []
         # prevent private keys from being stored in read history
         self.add.__dict__['_private'] = True
-        rpc._objects.append(self)
+        rpc._revert_register(self)
         self._reset()
 
     def _reset(self):
@@ -40,7 +40,7 @@ class Accounts(metaclass=_Singleton):
         except Exception:
             pass
 
-    def _revert(self):
+    def _revert(self, height):
         for i in self._accounts:
             i.nonce = web3.eth.getTransactionCount(str(i))
 
@@ -76,7 +76,7 @@ class Accounts(metaclass=_Singleton):
         Returns:
             Account instance.'''
         if not priv_key:
-            priv_key = "0x"+keccak(os.urandom(8192)).hex()
+            priv_key = "0x" + keccak(os.urandom(8192)).hex()
         w3account = web3.eth.account.from_key(priv_key)
         if w3account.address in self._accounts:
             return self.at(w3account.address)
@@ -93,7 +93,7 @@ class Accounts(metaclass=_Singleton):
 
         Returns:
             Account instance.'''
-        project_path = Path(CONFIG['folders']['brownie']).joinpath("data/accounts")
+        project_path = CONFIG['brownie_folder'].joinpath("data/accounts")
         if not filename:
             return [i.stem for i in project_path.glob('*.json')]
         filename = str(filename)
@@ -232,7 +232,7 @@ class _AccountBase:
         tx = TransactionReceipt(
             txid,
             self,
-            name=contract._name+".constructor",
+            name=contract._name + ".constructor",
             callback=callback,
             revert=revert
         )
@@ -335,7 +335,7 @@ class LocalAccount(_AccountBase):
 
         Returns the absolute path to the keystore file as a string.
         '''
-        path = Path(CONFIG['folders']['brownie']).joinpath('data/accounts')
+        path = CONFIG['brownie_folder'].joinpath('data/accounts')
         path.mkdir(exist_ok=True)
         filename = str(filename)
         if not filename.endswith(".json"):

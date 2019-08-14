@@ -25,4 +25,4 @@ def test_wrong_length():
     with pytest.raises(ValueError):
         to_address(addr[:20])
     with pytest.raises(ValueError):
-        to_address(addr+"00")
+        to_address(addr + "00")

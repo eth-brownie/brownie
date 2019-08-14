@@ -5,7 +5,6 @@ from pathlib import Path
 import time
 
 from brownie.cli.utils import color
-from brownie.project import build
 from brownie.network.history import TxHistory
 
 COVERAGE_COLORS = [
@@ -15,7 +14,7 @@ COVERAGE_COLORS = [
 ]
 
 
-def save_coverage_report(coverage_eval, report_path):
+def save_coverage_report(project, coverage_eval, report_path):
     '''Saves a test coverage report for viewing in the GUI.
 
     Args:
@@ -23,9 +22,10 @@ def save_coverage_report(coverage_eval, report_path):
         report_path: Path to save to. If a folder is given, saves as coverage-ddmmyy
 
     Returns: Path object where report file was saved'''
+    build = project._build
     report = {
-        'highlights': _get_highlights(coverage_eval),
-        'coverage': _get_totals(coverage_eval),
+        'highlights': _get_highlights(build, coverage_eval),
+        'coverage': _get_totals(build, coverage_eval),
         'sha1': {}  # TODO
     }
     report = json.loads(json.dumps(report, default=sorted))
@@ -41,10 +41,10 @@ def save_coverage_report(coverage_eval, report_path):
 
 
 def _check_last_path(report, path):
-    filename = "coverage-"+time.strftime('%d%m%y')+"{}.json"
+    filename = "coverage-" + time.strftime('%d%m%y') + "{}.json"
     count = len(list(path.glob(filename.format('*'))))
     if count:
-        last_path = _report_path(path, filename, count-1)
+        last_path = _report_path(path, filename, count - 1)
         try:
             with last_path.open() as fp:
                 last_report = json.load(fp)
@@ -56,7 +56,7 @@ def _check_last_path(report, path):
 
 
 def _report_path(base_path, filename, count):
-    return base_path.joinpath(filename.format("-"+str(count) if count else ""))
+    return base_path.joinpath(filename.format("-" + str(count) if count else ""))
 
 
 def print_gas_profile():
@@ -67,14 +67,14 @@ def print_gas_profile():
         print(f"{i} -  avg: {gas[i]['avg']:.0f}  low: {gas[i]['low']}  high: {gas[i]['high']}")
 
 
-def print_coverage_totals(coverage_eval):
+def print_coverage_totals(project, coverage_eval):
     '''Formats and prints a coverage evaluation report to the console.
 
     Args:
         coverage_eval: coverage evaluation dict
 
     Returns: None'''
-    totals = _get_totals(coverage_eval)
+    totals = _get_totals(project._build, coverage_eval)
     print("\n\nCoverage analysis:")
     for name in sorted(totals):
         pct = _pct(totals[name]['totals']['statements'], totals[name]['totals']['branches'])
@@ -91,13 +91,13 @@ def _cov_color(pct):
 
 
 def _pct(statement, branch):
-    pct = statement[0]/statement[1]
+    pct = statement[0] / statement[1]
     if branch[-1]:
-        pct = (pct + (branch[0]+branch[1])/(branch[2]*2)) / 2
+        pct = (pct + (branch[0] + branch[1]) / (branch[2] * 2)) / 2
     return pct
 
 
-def _get_totals(coverage_eval):
+def _get_totals(build, coverage_eval):
     '''Returns a modified coverage eval dict showing counts and totals for each
     contract function.
 
@@ -117,7 +117,7 @@ def _get_totals(coverage_eval):
                 }, ..
             }
         }'''
-    coverage_eval = _split_by_fn(coverage_eval)
+    coverage_eval = _split_by_fn(build, coverage_eval)
     results = dict((i, {
         'statements': {},
         'totals': {'statements': 0, 'branches': [0, 0]},
@@ -137,7 +137,7 @@ def _get_totals(coverage_eval):
     return results
 
 
-def _split_by_fn(coverage_eval):
+def _split_by_fn(build, coverage_eval):
     '''Splits a coverage eval dict so that coverage indexes are stored by contract
     function. Once done, the dict is no longer compatible with other methods in this module.
 
@@ -193,7 +193,7 @@ def _branch_totals(coverage_eval, coverage_map):
     return result, final
 
 
-def _get_highlights(coverage_eval):
+def _get_highlights(build, coverage_eval):
     '''Returns a highlight map formatted for display in the GUI.
 
     Arguments:

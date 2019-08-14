@@ -11,12 +11,12 @@ The ``network`` package holds classes for interacting with the Ethereum blockcha
 
 The ``main`` module contains methods for conncting to or disconnecting from the network. All of these methods are available directly from ``brownie.network``.
 
-.. py:method:: main.connect(network=None)
+.. py:method:: main.connect(network=None, launch_rpc=True)
 
     Connects to the network.  Network settings are retrieved from ``brownie-config.json``
 
-    * If ``network`` is ``None``, connects to the default network as specified in ``brownie-config.json``.
-    * If ``test-rpc`` is given for the network, attempts to attach or launch to a local RPC client. See :ref:`test-rpc` for detailed information on the sequence of events in this process.
+    * ``network``: The network to connect to. If ``None``, connects to the default network as specified in the config file.
+    * ``launch_rpc``: If ``True`` and the configuration for this network includes ``test_rpc`` settings, attempts to launch or attach to a local RPC client. See :ref:`test-rpc` for detailed information on the sequence of events in this process.
 
     Calling this method is favored over calling ``web3.connect`` and ``rpc.launch`` or ``rpc.attach`` individually.
 
@@ -25,9 +25,11 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         >>> from brownie import network
         >>> network.connect('development')
 
-.. py:method:: main.disconnect()
+.. py:method:: main.disconnect(kill_rpc=True)
 
-    Disconnects from the network. The ``Web3`` provider is cleared and the local RPC client is terminated if it is running and a child process.
+    Disconnects from the network.
+
+    The ``Web3`` provider is cleared, the active network is set to ``None`` and the local RPC client is terminated if it was launched as a child process.
 
     .. code-block:: python
 
@@ -353,7 +355,7 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
         >>> from brownie.network.alert import Alert
         >>> Alert(accounts[1].balance, msg="Account 1 balance has changed from {} to {}")
         <brownie.network.alert.Alert object at 0x7f9fd25d55f8>
-        
+
         >>> alert.show()
         [<brownie.network.alert.Alert object at 0x7f9fd25d55f8>]
         >>> accounts[2].transfer(accounts[1], "1 ether")
@@ -369,7 +371,7 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
 
         >>> alert.new(accounts[3].balance, msg="Account 3 balance has changed from {} to {}")
         <brownie.network.alert.Alert object at 0x7fc743e415f8>
-        
+
         >>> def on_receive(old_value, new_value):
         ...     accounts[2].transfer(accounts[3], new_value-old_value)
 
@@ -1102,7 +1104,7 @@ TxHistory
 
 
 TxHistory Attributes
---------------------
+********************
 
 .. _api-network-history-gas-profile:
 
@@ -1129,7 +1131,7 @@ TxHistory Attributes
         }
 
 TxHistory Methods
------------------
+*****************
 
 .. py:classmethod:: TxHistory.copy
 
@@ -1172,14 +1174,18 @@ TxHistory Methods
         >>> history.of_address(accounts[1])
         [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
 
-_ContractHistory
-----------------
+Module Methods
+--------------
 
-.. py:class:: brownie.network.history._ContractHistory
+.. py:method:: brownie.network.history.find_contract(address)
 
-    A :ref:`api-types-singleton` dict of ``OrderedDict`` instances, used internally by Brownie to track deployed contracts.
+    Given an address, returns the related ``Contract`` object. If none exists, returns ``None``.
 
-    Under the hood, calls to get objects from ``ContractContainer`` instances are redirected to this class. The primary use case is to simplify deleting  ``Contract`` instances after the local RPC is reset or reverted.
+.. py:method:: brownie.network.history.get_current_dependencies()
+
+    Returns a list of the names of all currently deployed contracts, and of every contract that these contracts are dependent upon.
+
+    Used during testing to determine which contracts must change before a test needs to be re-run.
 
 ``brownie.network.rpc``
 =======================

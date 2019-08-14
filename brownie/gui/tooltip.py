@@ -21,7 +21,7 @@ class ToolTip(tk.Toplevel):
         self.kill = False
         self.widget.bind("<Leave>", self.leave)
         self.widget.bind("<1>", self.leave)
-        self.after(int(TOOLTIP_DELAY*1000), self.show)
+        self.after(int(TOOLTIP_DELAY * 1000), self.show)
 
     def show(self):
         if self.kill:

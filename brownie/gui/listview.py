@@ -90,9 +90,9 @@ class ListView(ttk.Treeview):
         note = self.root.main.note
 
         # TODO make this hacky console hacky-ness less hacky
-        console_str = " "+pcMap['op']
+        console_str = " " + pcMap['op']
         if 'value' in pcMap:
-            console_str += " "+pcMap['value']
+            console_str += " " + pcMap['value']
             if pcMap['op'] == "PUSH2":
                 console_str += f" ({int(pcMap['value'], 16)})"
         if 'offset' in pcMap:
