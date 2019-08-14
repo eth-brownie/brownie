@@ -90,19 +90,12 @@ class TxHistory(metaclass=_Singleton):
 _contract_map = {}
 
 
-def add_contract(contract):
-    _contract_map[contract.address] = contract
-
-
 def find_contract(address):
+    '''Given an address, returns the related Contract object.'''
     address = to_address(address)
     if address not in _contract_map:
         return None
     return _contract_map[address]
-
-
-def remove_contract(contract):
-    del _contract_map[contract.address]
 
 
 def get_current_dependencies():
@@ -112,6 +105,20 @@ def get_current_dependencies():
         dependencies.update(contract._build['dependencies'])
     return sorted(dependencies)
 
+
+# _add_contract and _remove_contract are called by ContractContainer when Contract
+#  objects are created or destroyed - don't call them directly or things will start
+# to break in strange places!
+
+def _add_contract(contract):
+    _contract_map[contract.address] = contract
+
+
+def _remove_contract(contract):
+    del _contract_map[contract.address]
+
+
+# RPC registry methods
 
 def _reset():
     _contract_map.clear()

@@ -66,7 +66,7 @@ class ContractContainer(_ContractBase):
 
     def __delitem__(self, key):
         item = self._contracts[key]
-        history.remove_contract(item)
+        history._remove_contract(item)
         self._contracts.remove(item)
 
     def __len__(self):
@@ -93,7 +93,7 @@ class ContractContainer(_ContractBase):
         if contract not in self._contracts:
             raise TypeError("Object is not in container.")
         self._contracts.remove(contract)
-        history.remove_contract(contract)
+        history._remove_contract(contract)
 
     def at(self, address, owner=None, tx=None):
         '''Returns a contract address.
@@ -116,7 +116,7 @@ class ContractContainer(_ContractBase):
             raise ValueError(f"No contract deployed at {address}")
         contract = Contract(self._project, self._build, address, owner, tx)
         self._contracts.append(contract)
-        history.add_contract(contract)
+        history._add_contract(contract)
         return contract
 
 
