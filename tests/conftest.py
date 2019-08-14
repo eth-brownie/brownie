@@ -58,6 +58,11 @@ def testproject(_project_factory, project, tmp_path):
     _copy_all(_project_factory, tmp_path)
     return brownie.project.load(tmp_path, 'TestProject')
 
+
+@pytest.fixture
+def otherproject(testproject):
+    return brownie.project.load(testproject._project_path, 'OtherProject')
+
 # setup for pytest-brownie plugin testing
 @pytest.fixture
 def plugintester(_project_factory, project, testdir, request, rpc, monkeypatch):

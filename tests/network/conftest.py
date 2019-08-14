@@ -28,3 +28,9 @@ contract Unlinked {
 def librarytester(devnetwork):
     compiled = compile_source(source)
     return compiled
+
+
+@pytest.fixture
+def librarytester2(devnetwork):
+    compiled = compile_source(source)
+    return compiled

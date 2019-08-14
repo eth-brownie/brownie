@@ -108,4 +108,10 @@ contract ExternalCallTester {
         require(a > 2);
         return true;
     }
+
+    function makeExternalCall(BrownieTester other, uint a) external returns (bool) {
+        other.revertStrings(a);
+        return true;
+    }
+
 }

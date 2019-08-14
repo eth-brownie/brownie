@@ -31,8 +31,19 @@ def test_remove_at(BrownieTester, accounts):
     assert BrownieTester.at(t.address) == t
     assert len(BrownieTester) == 1
     t2 = BrownieTester.deploy(True, {'from': accounts[0]})
-    t2._name = "Potato"
+    BrownieTester.remove(t2)
     with pytest.raises(TypeError):
         BrownieTester.remove(t2)
     with pytest.raises(TypeError):
         BrownieTester.remove(123)
+
+
+def test_load_unload_project(BrownieTester, testproject, rpc, accounts):
+    BrownieTester.deploy(True, {'from': accounts[0]})
+    testproject.close()
+    rpc.reset()
+    assert len(BrownieTester) == 1
+    testproject.load()
+    assert testproject.BrownieTester != BrownieTester
+    assert len(BrownieTester) == 1
+    assert len(testproject.BrownieTester) == 0

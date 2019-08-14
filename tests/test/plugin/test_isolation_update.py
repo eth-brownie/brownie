@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from pathlib import Path
 import json
 import pytest
 
@@ -48,12 +49,8 @@ def test_update_isolation_coverage(runconf, plugintester):
 
 
 def test_update_isolation_contract_changed(runconf, json_path, plugintester):
-    with json_path.open() as fp:
-        build = json.load(fp)
-    build['contracts']['BrownieTester'] = "potato"
-    with json_path.open('w') as fp:
-        build = json.dump(build, fp)
-
+    with Path(plugintester.tmpdir).joinpath('contracts/BrownieTester.sol').open('a') as fp:
+        fp.write('\n\ncontract Foo {}')
     result = plugintester.runpytest('-U')
     result.assert_outcomes(passed=1)
 
