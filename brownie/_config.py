@@ -9,7 +9,7 @@ from brownie._singleton import _Singleton
 
 
 REPLACE = ['active_network', 'networks']
-IGNORE = ['active_network', 'folders']
+IGNORE = ['active_network', 'brownie_folder']
 
 
 class ConfigDict(dict):

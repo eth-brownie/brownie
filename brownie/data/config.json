@@ -18,7 +18,7 @@
                     "evm_version": "petersburg",
                     "mnemonic": "brownie"
                 },
-                "host": "http://127.0.0.1:8545",
+                "host": "http://127.0.0.1",
                 "broadcast_reverting_tx": true
             },
             // replace INFURA_PROJECT_ID with your personal API token

@@ -24,7 +24,13 @@ def connect(network=None, launch_rpc=True):
             raise KeyError(
                 f"No host in brownie-config.json for network '{active['name']}'"
             )
-        web3.connect(active['host'])
+        host = active['host']
+        if ':' not in host.split('//', maxsplit=1)[-1]:
+            try:
+                host += f":{active['test_rpc']['port']}"
+            except KeyError:
+                pass
+        web3.connect(host)
         if 'test_rpc' in active and launch_rpc and not rpc.is_active():
             if is_connected():
                 if web3.eth.blockNumber != 0:
