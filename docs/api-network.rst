@@ -347,6 +347,28 @@ LocalAccount Methods
         Enter the password to encrypt this account with:
         /home/computer/my_account.json
 
+PublicKeyAccount
+----------------
+
+.. py:class:: brownie.network.account.PublicKeyAccount
+
+    Simplified ``Account`` object for interacting with an Ethereum account where you do not control the private key. Can be used to check balances or to send ether to that address.
+
+    .. code-block:: python
+
+        >>> from brownie.network.account import PublicKeyAccount
+        >>> pub = PublicKeyAccount("0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E")
+        <PublicKeyAccount object '0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E'>
+
+.. py:class:: brownie.network.account.balance()
+
+    Returns the current balance at the address, in :ref:`wei<wei>`.
+
+    .. code-block:: python
+
+        >>> pub.balance()
+        1000000000000000000
+
 ``brownie.network.alert``
 =========================
 

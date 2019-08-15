@@ -154,9 +154,6 @@ class _AccountBase:
     def __hash__(self):
         return hash(self.address)
 
-    def __repr__(self):
-        return f"'{color['string']}{self.address}{color}'"
-
     def __str__(self):
         return self.address
 
@@ -358,6 +355,40 @@ class LocalAccount(_AccountBase):
         self._check_for_revert(tx)
         signed_tx = self._acct.signTransaction(tx).rawTransaction
         return web3.eth.sendRawTransaction(signed_tx)
+
+
+class PublicKeyAccount:
+
+    '''Class for interacting with an Ethereum account where you do not control
+    the private key. Can only be used to check the balance and to send ether to.'''
+
+    def __init__(self, addr):
+        self.address = to_address(addr)
+
+    def __repr__(self):
+        return f"<PublicKeyAccount object '{color['string']}{self.address}{color}'>"
+
+    def __hash__(self):
+        return hash(self.address)
+
+    def __str__(self):
+        return self.address
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            try:
+                address = to_address(other)
+                return address == self.address
+            except ValueError:
+                return False
+        if isinstance(other, PublicKeyAccount):
+            return other.address == self.address
+        return super().__eq__(other)
+
+    def balance(self):
+        '''Returns the current balance at the address, in wei.'''
+        balance = web3.eth.getBalance(self.address)
+        return Wei(balance)
 
 
 def _raise_or_return_tx(exc):
