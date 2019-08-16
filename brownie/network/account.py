@@ -190,7 +190,7 @@ class _AccountBase:
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
 
-    def deploy(self, contract, *args, amount=None, gas_limit=None, gas_price=None, callback=None):
+    def deploy(self, contract, *args, amount=None, gas_limit=None, gas_price=None):
         '''Deploys a contract.
 
         Args:
@@ -202,7 +202,6 @@ class _AccountBase:
             amount: Amount of ether to send with transaction, in wei.
             gas_limit: Gas limit of the transaction.
             gas_price: Gas price of the transaction.
-            callback: Callback function to attach to TransactionReceipt.
 
         Returns:
             * Contract instance if the transaction confirms
@@ -230,7 +229,6 @@ class _AccountBase:
             txid,
             self,
             name=contract._name + ".constructor",
-            callback=callback,
             revert=revert
         )
         if tx.status != 1:

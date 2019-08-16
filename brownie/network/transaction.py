@@ -93,7 +93,7 @@ class TransactionReceipt:
         'value',
     )
 
-    def __init__(self, txid, sender=None, silent=False, name='', callback=None, revert=None):
+    def __init__(self, txid, sender=None, silent=False, name='', revert=None):
         '''Instantiates a new TransactionReceipt object.
 
         Args:
@@ -101,7 +101,6 @@ class TransactionReceipt:
             sender: sender as a hex string or Account object
             silent: toggles console verbosity
             name: contract function being called
-            callback: optional callback function
             revert: (revert string, program counter)
         '''
         if type(txid) is not str:
@@ -134,7 +133,7 @@ class TransactionReceipt:
         # threaded to allow impatient users to ctrl-c to stop waiting in the console
         confirm_thread = threading.Thread(
             target=self._await_confirmation,
-            args=(silent, callback),
+            args=(silent,),
             daemon=True
         )
         confirm_thread.start()
@@ -180,7 +179,7 @@ class TransactionReceipt:
         finally:
             self._getattr = False
 
-    def _await_confirmation(self, silent, callback):
+    def _await_confirmation(self, silent):
 
         # await tx showing in mempool
         while True:
@@ -204,8 +203,6 @@ class TransactionReceipt:
         self._set_from_receipt(receipt)
         if not silent:
             print(self._confirm_output())
-        if callback:
-            callback(self)
 
     def _set_from_tx(self, tx):
         if not self.sender:
