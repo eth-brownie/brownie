@@ -65,6 +65,34 @@ class TransactionReceipt:
         revert_msg: Error string from reverted contract all
         modified_state: Boolean, did this contract write to storage?'''
 
+    __slots__ = (
+        '_getattr',
+        '_trace',
+        '_revert_pc',
+        'block_number',
+        'contract_address',
+        'contract_name',
+        'coverage_hash',
+        'events',
+        'fn_name',
+        'gas_limit',
+        'gas_price',
+        'gas_used',
+        'input',
+        'logs',
+        'modified_state',
+        'nonce',
+        'receiver',
+        'return_value',
+        'revert_msg',
+        'sender',
+        'status',
+        'trace',
+        'txid',
+        'txindex',
+        'value',
+    )
+
     def __init__(self, txid, sender=None, silent=False, name='', callback=None, revert=None):
         '''Instantiates a new TransactionReceipt object.
 
@@ -82,24 +110,11 @@ class TransactionReceipt:
             print(f"{color['key']}Transaction sent{color}: {color['value']}{txid}{color}")
         history._add_tx(self)
 
+        self._getattr = False
         self._trace = None
-        self._revert_pc = None
-        self.block_number = None
-        self.contract_address = None
-        self.gas_limit = None
-        self.gas_price = None
-        self.gas_used = None
-        self.input = None
-        self.logs = []
-        self.nonce = None
-        self.receiver = None
         self.sender = sender
         self.status = -1
         self.txid = txid
-        self.txindex = None
-        self.value = None
-
-        self.contract_name = None
         self.fn_name = name
         if name and '.' in name:
             self.contract_name, self.fn_name = name.split('.', maxsplit=1)
@@ -151,16 +166,19 @@ class TransactionReceipt:
         return hash(self.txid)
 
     def __getattr__(self, attr):
-        # these values require debug_traceTransaction, only request it from the RPC when needed
-        if attr not in {'events', 'modified_state', 'return_value', 'revert_msg', 'trace'}:
+        if self._getattr or attr not in self.__slots__:
             raise AttributeError(f"'TransactionReceipt' object has no attribute '{attr}'")
-        if self.status == -1:
-            return None
-        if attr == "trace":
-            self._expand_trace()
-        elif self._trace is None:
-            self._get_trace()
-        return self.__dict__[attr]
+        self._getattr = True
+        try:
+            if self.status == -1:
+                return None
+            if attr == "trace":
+                self._expand_trace()
+            elif self._trace is None:
+                self._get_trace()
+            return getattr(self, attr)
+        finally:
+            self._getattr = False
 
     def _await_confirmation(self, silent, callback):
 
@@ -252,7 +270,7 @@ class TransactionReceipt:
         if self._trace is not None:
             return
         self.return_value = None
-        if 'revert_msg' not in self.__dict__:
+        if not hasattr(self, 'revert_msg'):
             self.revert_msg = None
         self._trace = []
         if (self.input == "0x" and self.gas_used == 21000) or self.contract_address:
@@ -338,7 +356,7 @@ class TransactionReceipt:
         }
         '''
 
-        if 'trace' in self.__dict__:
+        if hasattr(self, 'trace'):
             return
         if self._trace is None:
             self._get_trace()
