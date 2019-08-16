@@ -692,9 +692,10 @@ def _get_last_map(address, sig):
         last_map.update({
             'contract': contract,
             'name': contract._name,
-            'fn': [f"{contract._name}.{contract.get_method(sig)}"],
-            'pc_map': contract._build['pcMap']
+            'fn': [f"{contract._name}.{contract.get_method(sig)}"]
         })
+        if contract._build:
+            last_map['pc_map'] = contract._build['pcMap']
     else:
         last_map.update({'contract': None, 'fn': [f"<UnknownContract>.{sig}"]})
     return last_map
