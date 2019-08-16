@@ -116,9 +116,13 @@ class ContractContainer(_ContractBase):
             raise ContractExists(
                 f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
             )
-        contract = Contract(self._project, self._build, address, owner, tx)
+        contract = ProjectContract(self._project, self._build, address, owner, tx)
         self._contracts.append(contract)
         return contract
+
+    def _add_from_tx(self, tx):
+        tx._confirmed.wait()
+        self.at(tx.contract_address, tx.sender, tx)
 
 
 class ContractConstructor:
@@ -225,6 +229,9 @@ class _DeployedContractBase(_ContractBase):
     def __str__(self):
         return self.address
 
+    def __repr__(self):
+        return f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
+
     def __eq__(self, other):
         if isinstance(other, _DeployedContractBase):
             return self.address == other.address and self.bytecode == other.bytecode
@@ -249,34 +256,28 @@ class _DeployedContractBase(_ContractBase):
 
 class Contract(_DeployedContractBase):
 
-    '''Methods for interacting with a deployed contract as part of a Brownie project.'''
-
-    def __init__(self, project, build, address, owner, tx=None):
-        _ContractBase.__init__(self, project, build, build['contractName'], build['abi'])
-        _DeployedContractBase.__init__(self, address, owner, tx)
-        history._add_contract(self)
-
-    def __repr__(self):
-        return f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
-
-
-class ContractABI(_DeployedContractBase):
-
-    def __init__(self, address, name, abi, owner=None, tx=None):
+    def __init__(self, address, name, abi, owner=None):
         _ContractBase.__init__(self, None, None, name, abi)
-        _DeployedContractBase.__init__(self, address, owner, tx)
+        _DeployedContractBase.__init__(self, address, owner, None)
         contract = history.find_contract(address)
         if not contract:
             return
-        if isinstance(contract, Contract):
+        if isinstance(contract, ProjectContract):
             raise ContractExists(
                 f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
             )
         if contract.bytecode != self.bytecode:
             contract._reverted = True
 
-    def __repr__(self):
-        return f"<{self._name} ContractABI object '{color['string']}{self.address}{color}'>"
+
+class ProjectContract(_DeployedContractBase):
+
+    '''Methods for interacting with a deployed contract as part of a Brownie project.'''
+
+    def __init__(self, project, build, address, owner, tx=None):
+        _ContractBase.__init__(self, project, build, build['contractName'], build['abi'])
+        _DeployedContractBase.__init__(self, address, owner, tx)
+        history._add_contract(self)
 
 
 class OverloadedMethod:

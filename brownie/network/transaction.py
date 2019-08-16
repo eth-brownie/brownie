@@ -69,6 +69,7 @@ class TransactionReceipt:
         '_getattr',
         '_trace',
         '_revert_pc',
+        '_confirmed',
         'block_number',
         'contract_address',
         'contract_name',
@@ -111,6 +112,7 @@ class TransactionReceipt:
 
         self._getattr = False
         self._trace = None
+        self._confirmed = threading.Event()
         self.sender = sender
         self.status = -1
         self.txid = txid
@@ -201,6 +203,7 @@ class TransactionReceipt:
         # await confirmation
         receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
         self._set_from_receipt(receipt)
+        self._confirmed.set()
         if not silent:
             print(self._confirm_output())
 
