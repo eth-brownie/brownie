@@ -218,11 +218,10 @@ class TransactionReceipt:
         self.nonce = tx['nonce']
 
         # if receiver is a known contract, set function name
-        if tx['to'] and find_contract(tx['to']) is not None:
-            self.receiver = find_contract(tx['to'])
-            if not self.fn_name:
-                self.contract_name = self.receiver._name
-                self.fn_name = self.receiver.get_method(tx['input'])
+        if not self.fn_name and find_contract(tx['to']) is not None:
+            contract = find_contract(tx['to'])
+            self.contract_name = contract._name
+            self.fn_name = contract.get_method(tx['input'])
 
     def _set_from_receipt(self, receipt):
         '''Sets object attributes based on the transaction reciept.'''
@@ -304,13 +303,13 @@ class TransactionReceipt:
     def _confirmed_trace(self, trace):
         self.modified_state = next((True for i in trace if i['op'] == "SSTORE"), False)
         step = trace[-1]
-        if step['op'] != "RETURN" or type(self.receiver) is str:
+        if step['op'] != "RETURN":
             return
-        # get return value
-        data = _get_memory(step, -1)
-        fn = getattr(self.receiver, self.fn_name)
-        self.return_value = fn.decode_abi(data)
-        return
+        contract = find_contract(self.receiver)
+        if contract:
+            data = _get_memory(step, -1)
+            fn = getattr(contract, self.fn_name)
+            self.return_value = fn.decode_abi(data)
 
     def _reverted_trace(self, trace):
         self.modified_state = False
@@ -355,7 +354,6 @@ class TransactionReceipt:
             offset: Start and end offset associated source code
         }
         '''
-
         if hasattr(self, 'trace'):
             return
         if self._trace is None:
@@ -366,16 +364,8 @@ class TransactionReceipt:
             return
 
         # last_map gives a quick reference of previous values at each depth
-        last_map = {0: {
-            'address': self.receiver.address,
-            'contract': self.receiver,
-            'name': self.receiver._name,
-            'fn': [self._full_name()],
-            'jumpDepth': 0,
-            'pc_map': self.receiver._build['pcMap']
-        }}
-
-        coverage_eval = {self.receiver._name: {}}
+        last_map = {0: _get_last_map(self.receiver, self.input[:10])}
+        coverage_eval = {last_map[0]['name']: {}}
         active_branches = set()
 
         for i in range(len(trace)):
@@ -387,20 +377,10 @@ class TransactionReceipt:
                 sig = HexBytes("".join(trace[i - 1]['memory'])[offset:offset + 8]).hex()
 
                 # get contract and method name
-                address = web3.toChecksumAddress(trace[i - 1]['stack'][-2][-40:])
-                contract = find_contract(address)
+                address = trace[i - 1]['stack'][-2][-40:]
 
-                # update last_map
-                last_map[trace[i]['depth']] = {
-                    'address': address,
-                    'contract': contract,
-                    'name': contract._name,
-                    'fn': [f"{contract._name}.{contract.get_method(sig)}"],
-                    'jumpDepth': 0,
-                    'pc_map': contract._build['pcMap']
-                }
-                if contract._name not in coverage_eval:
-                    coverage_eval[contract._name] = {}
+                last_map[trace[i]['depth']] = _get_last_map(address, sig)
+                coverage_eval.setdefault(last_map[trace[i]['depth']]['name'], {})
 
             # update trace from last_map
             last = last_map[trace[i]['depth']]
@@ -411,17 +391,20 @@ class TransactionReceipt:
                 'jumpDepth': last['jumpDepth'],
                 'source': False
             })
+
+            if 'pc_map' not in last:
+                continue
             pc = last['pc_map'][trace[i]['pc']]
+
             if 'path' not in pc:
                 continue
-
             trace[i]['source'] = {'filename': pc['path'], 'offset': pc['offset']}
 
             if 'fn' not in pc:
                 continue
 
             # calculate coverage
-            if '<string' not in pc['path']:
+            if pc['path'] != "<stdin>":
                 if pc['path'] not in coverage_eval[last['name']]:
                     coverage_eval[last['name']][pc['path']] = [set(), set(), set()]
                 if 'statement' in pc:
@@ -696,3 +679,22 @@ def _get_memory(step, idx):
 
 def _raise(msg, source):
     raise VirtualMachineError({"message": msg, "source": source})
+
+
+def _get_last_map(address, sig):
+    contract = find_contract(address)
+    last_map = {
+        'address': address,
+        'jumpDepth': 0,
+        'name': None,
+    }
+    if contract:
+        last_map.update({
+            'contract': contract,
+            'name': contract._name,
+            'fn': [f"{contract._name}.{contract.get_method(sig)}"],
+            'pc_map': contract._build['pcMap']
+        })
+    else:
+        last_map.update({'contract': None, 'fn': [f"<UnknownContract>.{sig}"]})
+    return last_map

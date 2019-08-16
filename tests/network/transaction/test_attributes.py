@@ -24,12 +24,12 @@ def test_sender_receiver(accounts):
 
 def test_receiver_contract(accounts, tester):
     tx = tester.doNothing({'from': accounts[0]})
-    assert type(tx.receiver) is Contract
-    assert tx.receiver == tester
+    assert type(tx.receiver) is str
+    assert tester == tx.receiver
     data = tester.revertStrings.encode_abi(5)
     tx = accounts[0].transfer(tester.address, 0, data=data)
-    assert type(tx.receiver) is Contract
-    assert tx.receiver == tester
+    assert type(tx.receiver) is str
+    assert tester == tx.receiver
 
 
 def test_contract_address(accounts, tester):
