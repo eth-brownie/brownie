@@ -5,6 +5,7 @@ import pytest
 from brownie.network.account import Account
 from brownie.network.contract import Contract
 from brownie.network.event import EventDict
+from brownie.convert import EthAddress
 from brownie import Wei
 
 
@@ -18,17 +19,17 @@ def test_sender_receiver(accounts):
     tx = accounts[0].transfer(accounts[1], "1 ether")
     assert type(tx.sender) is Account
     assert tx.sender == accounts[0]
-    assert type(tx.receiver) is str
+    assert type(tx.receiver) is EthAddress
     assert tx.receiver == accounts[1].address
 
 
 def test_receiver_contract(accounts, tester):
     tx = tester.doNothing({'from': accounts[0]})
-    assert type(tx.receiver) is str
+    assert type(tx.receiver) is EthAddress
     assert tester == tx.receiver
     data = tester.revertStrings.encode_abi(5)
     tx = accounts[0].transfer(tester.address, 0, data=data)
-    assert type(tx.receiver) is str
+    assert type(tx.receiver) is EthAddress
     assert tester == tx.receiver
 
 

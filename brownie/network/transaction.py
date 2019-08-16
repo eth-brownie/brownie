@@ -18,7 +18,7 @@ from .event import (
     decode_trace
 )
 from .web3 import Web3
-from brownie.convert import Wei
+from brownie.convert import EthAddress, Wei
 from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build
@@ -209,8 +209,8 @@ class TransactionReceipt:
 
     def _set_from_tx(self, tx):
         if not self.sender:
-            self.sender = tx['from']
-        self.receiver = tx['to']
+            self.sender = EthAddress(tx['from'])
+        self.receiver = EthAddress(tx['to']) if tx['to'] else None
         self.value = Wei(tx['value'])
         self.gas_price = tx['gasPrice']
         self.gas_limit = tx['gas']
@@ -684,7 +684,7 @@ def _raise(msg, source):
 def _get_last_map(address, sig):
     contract = find_contract(address)
     last_map = {
-        'address': address,
+        'address': EthAddress(address),
         'jumpDepth': 0,
         'name': None,
     }
