@@ -2,7 +2,10 @@
 
 import pytest
 
-from brownie.exceptions import VirtualMachineError
+from brownie.exceptions import (
+    ContractExists,
+    VirtualMachineError
+)
 
 
 def test_deploy(BrownieTester, otherproject, accounts):
@@ -18,7 +21,7 @@ def test_deploy(BrownieTester, otherproject, accounts):
 
 def test_at_remove(BrownieTester, otherproject, accounts):
     t = otherproject.BrownieTester.deploy(True, {'from': accounts[0]})
-    with pytest.raises(ValueError):
+    with pytest.raises(ContractExists):
         BrownieTester.at(t)
     otherproject.BrownieTester.remove(t)
     BrownieTester.at(t)

@@ -7,6 +7,7 @@ import pytest
 
 from brownie.network.transaction import TransactionReceipt
 from brownie.project import build
+from brownie import ContractABI
 
 
 @pytest.fixture
@@ -174,7 +175,6 @@ def test_revert_string_from_trace(console_mode, tester):
 
 def test_inlined_library_jump(accounts, tester):
     tx = tester.useSafeMath(6, 7)
-
     assert max([i['jumpDepth'] for i in tx.trace]) == 1
 
 
@@ -191,3 +191,18 @@ def test_delegatecall_jump(accounts, librarytester):
     tx = contract.callLibrary(6, 7)
     assert max([i['depth'] for i in tx.trace]) == 1
     assert max([i['jumpDepth'] for i in tx.trace]) == 0
+
+
+def test_unknown_contract(accounts, testproject, tester):
+    ext = accounts[0].deploy(testproject.ExternalCallTester)
+    tx = tester.makeExternalCall(ext, 4)
+    del testproject.ExternalCallTester[0]
+    tx.call_trace()
+
+
+def test_contractabi(accounts, testproject, tester):
+    ext = accounts[0].deploy(testproject.ExternalCallTester)
+    tx = tester.makeExternalCall(ext, 4)
+    del testproject.ExternalCallTester[0]
+    ext = ContractABI(ext.address, "ExternalTesterABI", ext.abi)
+    tx.call_trace()
