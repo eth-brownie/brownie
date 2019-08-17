@@ -7,18 +7,20 @@ from pathlib import Path
 import sys
 
 from brownie.cli.utils import color
-from brownie.test.output import print_gas_profile
-from brownie.project.main import check_for_project, get_loaded_projects
+from brownie.project.main import (
+    check_for_project,
+    get_loaded_projects
+)
 
 
-def run(script_path, method_name="main", args=None, kwargs=None, gas_profile=False):
+def run(script_path, method_name="main", args=None, kwargs=None, project=None):
     '''Loads a project script and runs a method in it.
 
     script_path: path of script to load
     method_name: name of method to run
     args: method args
     kwargs: method kwargs
-    gas_profile: if True, gas use data will be shown
+    project: project to add to the script namespace
 
     Returns: return value from called method
     '''
@@ -26,20 +28,38 @@ def run(script_path, method_name="main", args=None, kwargs=None, gas_profile=Fal
         args = tuple()
     if kwargs is None:
         kwargs = {}
-    script_path = _get_path(script_path, "scripts")
-    module = _import_from_path(script_path)
-    for project in get_loaded_projects():
-        module.__dict__.update(project)
-    name = module.__name__
-    if not hasattr(module, method_name):
-        raise AttributeError(f"Module '{name}' has no method '{method_name}'")
-    print(
-        f"\nRunning '{color['module']}{name}{color}.{color['callable']}{method_name}{color}'..."
-    )
-    result = getattr(module, method_name)(*args, **kwargs)
-    if gas_profile:
-        print_gas_profile()
-    return result
+
+    if not project and len(get_loaded_projects()) == 1:
+        project = get_loaded_projects()[0]
+
+    default_path = "scripts"
+    if project:
+        # if there is an active project, temporarily add all the ContractContainer
+        # instances to the main brownie namespace so they can be imported by the script
+        brownie = sys.modules['brownie']
+        brownie_dict = brownie.__dict__.copy()
+        brownie_all = brownie.__all__.copy()
+        brownie.__dict__.update(project)
+        brownie.__all__.extend(project.__all__)
+        default_path = project._project_path.joinpath("scripts").as_posix()
+
+    try:
+        script_path = _get_path(script_path, default_path)
+        module = _import_from_path(script_path)
+
+        name = module.__name__
+        if not hasattr(module, method_name):
+            raise AttributeError(f"Module '{name}' has no method '{method_name}'")
+        print(
+            f"\nRunning '{color['module']}{name}{color}.{color['callable']}{method_name}{color}'..."
+        )
+        return getattr(module, method_name)(*args, **kwargs)
+    finally:
+        if project:
+            # cleanup namespace
+            brownie.__dict__.clear()
+            brownie.__dict__.update(brownie_dict)
+            brownie.__all__ = brownie_all
 
 
 def _get_path(path_str, default_folder="scripts"):

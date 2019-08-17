@@ -23,14 +23,14 @@ def main():
     update_argv_from_docopt(args)
 
     if project.check_for_project():
-        p = project.load()
-        p.load_config()
-        print(f"{p._name} is the active project.")
+        active_project = project.load()
+        active_project.load_config()
+        print(f"{active_project._name} is the active project.")
     else:
-        p = None
-        print("No active project loaded.")
+        active_project = None
+        print("No project was loaded.")
 
     network.connect(ARGV['network'])
 
-    shell = Console(p)
+    shell = Console(active_project)
     shell.interact(banner="Brownie environment is ready.", exitmsg="")
