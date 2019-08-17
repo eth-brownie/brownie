@@ -1,14 +1,33 @@
 #!/usr/bin/python3
 
+from base64 import b64encode
 import os
 from pathlib import Path
 import pytest
 import requests
+import time
 
 
 from brownie.project.scripts import run
 
-MIXES = [i['name'] for i in requests.get('https://api.github.com/orgs/brownie-mix/repos').json()]
+
+if os.getenv('GITHUB_TOKEN'):
+    auth = b64encode(os.getenv('GITHUB_TOKEN').encode()).decode()
+    headers = {'Authorization': "Basic {}".format(auth)}
+else:
+    headers = None
+
+
+for i in range(10):
+    data = requests.get('https://api.github.com/orgs/brownie-mix/repos', headers=headers)
+    if data.status_code == 200:
+        break
+    time.sleep(30)
+
+if data.status_code != 200:
+    raise ConnectionError("Cannot connect to Github API")
+
+MIXES = [i['name'] for i in data.json()]
 
 
 @pytest.mark.parametrize('browniemix', MIXES)

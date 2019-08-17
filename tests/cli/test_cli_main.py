@@ -98,3 +98,8 @@ def test_cli_run(cli_tester, project):
         args=('testfile',),
         kwargs={'method_name': "xx", 'project': None}
     )
+
+
+def test_cli_incorrect(cli_tester):
+    with pytest.raises(SystemExit):
+        cli_tester.run('foo')

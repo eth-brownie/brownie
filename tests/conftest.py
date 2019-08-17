@@ -167,6 +167,15 @@ def BrownieTester(testproject, devnetwork):
 
 
 @pytest.fixture
+def ExternalCallTester(testproject, devnetwork):
+    return testproject.ExternalCallTester
+
+
+@pytest.fixture
 def tester(BrownieTester, accounts):
-    c = BrownieTester.deploy(True, {'from': accounts[0]})
-    return c
+    return BrownieTester.deploy(True, {'from': accounts[0]})
+
+
+@pytest.fixture
+def ext_tester(ExternalCallTester, accounts):
+    return ExternalCallTester.deploy({'from': accounts[0]})

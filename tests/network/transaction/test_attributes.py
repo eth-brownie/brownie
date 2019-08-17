@@ -91,6 +91,11 @@ def test_revert_msg(tester, console_mode):
     assert tx.revert_msg == "dev: great job"
 
 
+def test_revert_msg_via_jump(ext_tester, console_mode):
+    tx = ext_tester.getCalled(2)
+    assert tx.revert_msg == "dev: should jump to a revert"
+
+
 def test_events(tester, console_mode):
     tx = tester.revertStrings(5)
     assert tx.status == 1

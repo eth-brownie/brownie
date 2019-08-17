@@ -178,11 +178,30 @@ def test_inlined_library_jump(accounts, tester):
     assert max([i['jumpDepth'] for i in tx.trace]) == 1
 
 
-def test_external_jump(accounts, testproject, tester):
-    ext = accounts[0].deploy(testproject.ExternalCallTester)
-    tx = tester.makeExternalCall(ext, 4)
+def test_internal_jumps(accounts, testproject, tester):
+    tx = tester.makeInternalCalls(False, True)
+    assert max([i['depth'] for i in tx.trace]) == 0
+    assert max([i['jumpDepth'] for i in tx.trace]) == 1
+    tx = tester.makeInternalCalls(True, False)
+    assert max([i['depth'] for i in tx.trace]) == 0
+    assert max([i['jumpDepth'] for i in tx.trace]) == 2
+    tx = tester.makeInternalCalls(True, True)
+    assert max([i['depth'] for i in tx.trace]) == 0
+    assert max([i['jumpDepth'] for i in tx.trace]) == 2
+    tx.call_trace()
+
+
+def test_external_jump(accounts, tester, ext_tester):
+    tx = tester.makeExternalCall(ext_tester, 4)
     assert max([i['depth'] for i in tx.trace]) == 1
     assert max([i['jumpDepth'] for i in tx.trace]) == 0
+
+
+def test_external_jump_to_self(accounts, testproject, tester):
+    tx = tester.makeExternalCall(tester, 0)
+    assert max([i['depth'] for i in tx.trace]) == 1
+    assert max([i['jumpDepth'] for i in tx.trace]) == 1
+    tx.call_trace()
 
 
 def test_delegatecall_jump(accounts, librarytester):
@@ -193,16 +212,14 @@ def test_delegatecall_jump(accounts, librarytester):
     assert max([i['jumpDepth'] for i in tx.trace]) == 0
 
 
-def test_unknown_contract(accounts, testproject, tester):
-    ext = accounts[0].deploy(testproject.ExternalCallTester)
-    tx = tester.makeExternalCall(ext, 4)
-    del testproject.ExternalCallTester[0]
+def test_unknown_contract(ExternalCallTester, accounts, tester, ext_tester):
+    tx = tester.makeExternalCall(ext_tester, 4)
+    del ExternalCallTester[0]
     tx.call_trace()
 
 
-def test_contractabi(accounts, testproject, tester):
-    ext = accounts[0].deploy(testproject.ExternalCallTester)
-    tx = tester.makeExternalCall(ext, 4)
-    del testproject.ExternalCallTester[0]
-    ext = Contract(ext.address, "ExternalTesterABI", ext.abi)
+def test_contractabi(ExternalCallTester, accounts, tester, ext_tester):
+    tx = tester.makeExternalCall(ext_tester, 4)
+    del ExternalCallTester[0]
+    ext_tester = Contract(ext_tester.address, "ExternalTesterABI", ext_tester.abi)
     tx.call_trace()

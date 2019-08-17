@@ -146,3 +146,13 @@ def test_data(accounts):
     assert tx.input == "0x"
     tx = accounts[0].transfer(accounts[1], 1000, data="0x1234")
     assert tx.input == "0x1234"
+
+
+def test_localaccount(accounts):
+    local = accounts.add()
+    assert local.balance() == 0
+    accounts[0].transfer(local, "10 ether")
+    assert local.balance() == "10 ether"
+    local.transfer(accounts[1], "1 ether")
+    assert accounts[1].balance() == "101 ether"
+    assert local.nonce == 1

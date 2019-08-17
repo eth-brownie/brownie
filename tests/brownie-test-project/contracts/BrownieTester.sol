@@ -99,14 +99,34 @@ contract BrownieTester {
         return ok;
     }
 
+    function makeInternalCalls(bool callPublic, bool callPrivate) external returns (bool) {
+        if (callPublic) {
+            getCalled(0);
+        }
+        if (callPrivate) {
+            _getCalled(0);
+        }
+        return true;
+    }
+
+    function getCalled(uint a) public returns (bool) {
+        return _getCalled(a);
+    }
+
+    function _getCalled(uint a) internal returns (bool) {
+        return false;
+    }
+
 }
 
 
 contract ExternalCallTester {
 
     function getCalled(uint a) external returns (bool) {
-        require(a > 2);
-        return true;
+        if (a > 2) {
+            return true;
+        }
+        revert(); // dev: should jump to a revert
     }
 
     function makeExternalCall(BrownieTester other, uint a) external returns (bool) {

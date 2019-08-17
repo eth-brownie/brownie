@@ -171,3 +171,10 @@ def test_install_solc(msolc):
     compiler.install_solc('0.6.0', '0.5.10')
     assert 'v0.5.10' in msolc
     assert 'v0.6.0' in msolc
+
+
+def test_first_revert(BrownieTester, ExternalCallTester):
+    pc_map = ExternalCallTester._build['pcMap']
+    assert next((i for i in pc_map.values() if 'first_revert' in i), False)
+    pc_map = BrownieTester._build['pcMap']
+    assert not next((i for i in pc_map.values() if 'first_revert' in i), False)
