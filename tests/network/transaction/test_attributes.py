@@ -3,7 +3,6 @@
 import pytest
 
 from brownie.network.account import Account
-from brownie.network.contract import Contract
 from brownie.network.event import EventDict
 from brownie.convert import EthAddress
 from brownie import Wei
@@ -36,7 +35,7 @@ def test_receiver_contract(accounts, tester):
 def test_contract_address(accounts, tester):
     tx = accounts[0].transfer(accounts[1], "1 ether")
     assert tx.contract_address is None
-    assert type(tester.tx.contract_address) is Contract
+    assert type(tester.tx.contract_address) is str
     assert tester.tx.contract_address == tester
     assert tester.tx.receiver is None
 

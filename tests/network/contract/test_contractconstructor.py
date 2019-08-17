@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie.network.contract import Contract
+from brownie.network.contract import ProjectContract
 from brownie.network.transaction import TransactionReceipt
 from brownie.exceptions import VirtualMachineError
 
@@ -10,7 +10,7 @@ from brownie.exceptions import VirtualMachineError
 def test_returns_contract_on_success(BrownieTester, accounts):
     '''returns a Contract instance on successful deployment'''
     c = BrownieTester.deploy(True, {'from': accounts[0]})
-    assert type(c) == Contract
+    assert type(c) == ProjectContract
 
 
 def test_raises_on_revert(BrownieTester, accounts):

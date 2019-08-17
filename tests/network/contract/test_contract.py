@@ -6,11 +6,11 @@ import pytest
 from brownie import Wei
 from brownie.network.contract import (
     _DeployedContractBase,
-    ContractABI,
     Contract,
     ContractCall,
     ContractTx,
     OverloadedMethod,
+    ProjectContract,
 )
 from brownie.exceptions import (
     ContractExists,
@@ -25,7 +25,7 @@ def build(testproject):
 
 
 def test_type(tester):
-    assert type(tester) is Contract
+    assert type(tester) is ProjectContract
     assert isinstance(tester, _DeployedContractBase)
 
 
@@ -44,7 +44,7 @@ def test_namespace_collision(tester, build):
         'type': 'function'
     })
     with pytest.raises(AttributeError):
-        ContractABI(tester.address, None, build['abi'])
+        Contract(tester.address, None, build['abi'])
 
 
 def test_overloaded(testproject, tester, build):
@@ -62,7 +62,7 @@ def test_overloaded(testproject, tester, build):
         'type': 'function'
     })
     del testproject.BrownieTester[0]
-    c = ContractABI(tester.address, None, build['abi'])
+    c = Contract(tester.address, None, build['abi'])
     fn = c.revertStrings
     assert type(fn) == OverloadedMethod
     assert len(fn) == 2
@@ -95,7 +95,7 @@ def test_comparison(testproject, tester):
     del testproject.BrownieTester[0]
     assert tester != 123
     assert tester == str(tester.address)
-    assert tester == ContractABI(tester.address, "BrownieTester", tester.abi)
+    assert tester == Contract(tester.address, "BrownieTester", tester.abi)
     repr(tester)
 
 
@@ -107,7 +107,7 @@ def test_revert_not_found(tester, rpc):
 
 def test_contractabi_replace_contract(testproject, tester):
     with pytest.raises(ContractExists):
-        ContractABI(tester.address, "BrownieTester", tester.abi)
+        Contract(tester.address, "BrownieTester", tester.abi)
     del testproject.BrownieTester[0]
-    ContractABI(tester.address, "BrownieTester", tester.abi)
-    ContractABI(tester.address, "BrownieTester", tester.abi)
+    Contract(tester.address, "BrownieTester", tester.abi)
+    Contract(tester.address, "BrownieTester", tester.abi)

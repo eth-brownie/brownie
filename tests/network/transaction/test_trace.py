@@ -7,7 +7,7 @@ import pytest
 
 from brownie.network.transaction import TransactionReceipt
 from brownie.project import build
-from brownie import ContractABI
+from brownie import Contract
 
 
 @pytest.fixture
@@ -204,5 +204,5 @@ def test_contractabi(accounts, testproject, tester):
     ext = accounts[0].deploy(testproject.ExternalCallTester)
     tx = tester.makeExternalCall(ext, 4)
     del testproject.ExternalCallTester[0]
-    ext = ContractABI(ext.address, "ExternalTesterABI", ext.abi)
+    ext = Contract(ext.address, "ExternalTesterABI", ext.abi)
     tx.call_trace()
