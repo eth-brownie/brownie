@@ -8,15 +8,18 @@ from hexbytes import HexBytes
 
 from brownie.cli.utils import color
 from .event import get_topics
-from .history import _ContractHistory
+from . import history
 from .rpc import Rpc
 from .web3 import Web3
-from .return_value import ReturnValue
 from brownie.convert import format_input, format_output, to_address, Wei
-from brownie.exceptions import UndeployedLibrary, VirtualMachineError
+from brownie.exceptions import (
+    ContractExists,
+    ContractNotFound,
+    UndeployedLibrary,
+    VirtualMachineError
+)
 from brownie._config import ARGV, CONFIG
 
-_contracts = _ContractHistory()
 rpc = Rpc()
 web3 = Web3()
 
@@ -25,16 +28,16 @@ class _ContractBase:
 
     _dir_color = "contract"
 
-    def __init__(self, build):
+    def __init__(self, project, build, name, abi):
+        self._project = project
         self._build = build
-        self.abi = build['abi']
-        self._name = build['contractName']
-        self._source_path = build['sourcePath']
-        self.topics = get_topics(self.abi)
+        self._name = name
+        self.abi = abi
+        self.topics = get_topics(abi)
         self.signatures = dict((
             i['name'],
             _signature(i)
-        ) for i in self.abi if i['type'] == "function")
+        ) for i in abi if i['type'] == "function")
 
     def get_method(self, calldata):
         sig = calldata[:10].lower()
@@ -52,36 +55,50 @@ class ContractContainer(_ContractBase):
         signatures: Dictionary of {'function name': "bytes4 signature"}
         topics: Dictionary of {'event name': "bytes32 topic"}'''
 
-    def __init__(self, build):
+    def __init__(self, project, build):
         self.tx = None
         self.bytecode = build['bytecode']
-        super().__init__(build)
+        self._contracts = []
+        super().__init__(project, build, build['contractName'], build['abi'])
         self.deploy = ContractConstructor(self, self._name)
+        rpc._revert_register(self)
 
     def __iter__(self):
-        return iter(_contracts.list(self._name))
+        return iter(self._contracts)
 
     def __getitem__(self, i):
-        return _contracts.list(self._name)[i]
+        return self._contracts[i]
 
     def __delitem__(self, key):
-        item = _contracts.list(self._name)[key]
-        _contracts.remove(item)
+        item = self._contracts[key]
+        history._remove_contract(item)
+        self._contracts.remove(item)
 
     def __len__(self):
-        return len(_contracts.list(self._name))
+        return len(self._contracts)
 
     def __repr__(self):
-        return str(_contracts.list(self._name))
+        return str(self._contracts)
+
+    def _reset(self):
+        self._contracts.clear()
+
+    def _revert(self, height):
+        self._contracts = [
+            i for i in self._contracts if
+            (i.tx and i.tx.block_number <= height) or
+            len(web3.eth.getCode(i.address).hex()) > 4
+        ]
 
     def remove(self, contract):
         '''Removes a contract from the container.
 
         Args:
             contract: Contract instance of address string of the contract.'''
-        if type(contract) is not Contract or contract._name != self._name:
+        if contract not in self._contracts:
             raise TypeError("Object is not in container.")
-        _contracts.remove(contract)
+        self._contracts.remove(contract)
+        history._remove_contract(contract)
 
     def at(self, address, owner=None, tx=None):
         '''Returns a contract address.
@@ -92,17 +109,20 @@ class ContractContainer(_ContractBase):
             address: Address string of the contract.
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation.'''
-        address = to_address(address)
-        contract = _contracts.find(address)
+        contract = history.find_contract(address)
         if contract:
-            if contract._name == self._name:
+            if contract._name == self._name and contract._project == self._project:
                 return contract
-            raise ValueError(f"Contract '{contract._name}' already declared at {address}")
-        if web3.eth.getCode(address).hex() == "0x":
-            raise ValueError(f"No contract deployed at {address}")
-        contract = Contract(address, self._build, owner, tx)
-        _contracts.add(contract)
+            raise ContractExists(
+                f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
+            )
+        contract = ProjectContract(self._project, self._build, address, owner, tx)
+        self._contracts.append(contract)
         return contract
+
+    def _add_from_tx(self, tx):
+        tx._confirmed.wait()
+        self.at(tx.contract_address, tx.sender, tx)
 
 
 class ContractConstructor:
@@ -147,35 +167,27 @@ class ContractConstructor:
             *args,
             amount=tx['value'],
             gas_limit=tx['gas'],
-            gas_price=tx['gasPrice'],
-            callback=self._callback
+            gas_price=tx['gasPrice']
         )
-
-    def _callback(self, tx):
-        # ensures the Contract instance is added to the container if the user
-        # presses CTRL-C while deployment is still pending
-        if tx.status == 1:
-            tx.contract_address = self._parent.at(tx.contract_address, tx.sender, tx)
 
     def encode_abi(self, *args):
         bytecode = self._parent.bytecode
         # find and replace unlinked library pointers in bytecode
         for marker in re.findall('_{1,}[^_]*_{1,}', bytecode):
             library = marker.strip('_')
-            if not _contracts.list(library):
+            if not self._parent._project[library]:
                 raise UndeployedLibrary(
-                    f"Contract requires '{library}' library but it has not been deployed yet"
+                    f"Contract requires '{library}' library, but it has not been deployed yet"
                 )
-            address = _contracts.list(library)[-1].address[-40:]
+            address = self._parent._project[library][-1].address[-40:]
             bytecode = bytecode.replace(marker, address)
 
         data = format_input(self.abi, args)
-        types = [i['type'] for i in self.abi['inputs']]
+        types = [i[1] for i in _params(self.abi['inputs'])]
         return bytecode + eth_abi.encode_abi(types, data).hex()
 
 
-class Contract(_ContractBase):
-
+class _DeployedContractBase(_ContractBase):
     '''Methods for interacting with a deployed contract.
 
     Each public contract method is available as a ContractCall or ContractTx
@@ -185,11 +197,15 @@ class Contract(_ContractBase):
         bytecode: Bytecode of the deployed contract, including constructor args.
         tx: TransactionReceipt of the of the tx that deployed the contract.'''
 
-    def __init__(self, address, build, owner, tx=None):
-        super().__init__(build)
-        self.tx = tx
+    _reverted = False
+
+    def __init__(self, address, owner=None, tx=None):
+        address = to_address(address)
         self.bytecode = web3.eth.getCode(address).hex()[2:]
+        if not self.bytecode:
+            raise ContractNotFound(f"No contract deployed at {address}")
         self._owner = owner
+        self.tx = tx
         self.address = address
         fn_names = [i['name'] for i in self.abi if i['type'] == "function"]
         for abi in [i for i in self.abi if i['type'] == "function"]:
@@ -208,18 +224,18 @@ class Contract(_ContractBase):
         setattr(self, name, obj)
 
     def __hash__(self):
-        return hash(self._name+self.address)
-
-    def __repr__(self):
-        return f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
+        return hash(f"{self._name}{self.address}{self._project}")
 
     def __str__(self):
         return self.address
 
+    def __repr__(self):
+        return f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
+
     def __eq__(self, other):
-        if type(other) is Contract:
+        if isinstance(other, _DeployedContractBase):
             return self.address == other.address and self.bytecode == other.bytecode
-        if type(other) is str:
+        if isinstance(other, str):
             try:
                 address = to_address(other)
                 return address == self.address
@@ -227,10 +243,41 @@ class Contract(_ContractBase):
                 return False
         return super().__eq__(other)
 
+    def __getattribute__(self, name):
+        if super().__getattribute__('_reverted'):
+            raise ContractNotFound("This contract no longer exists.")
+        return super().__getattribute__(name)
+
     def balance(self):
         '''Returns the current ether balance of the contract, in wei.'''
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
+
+
+class Contract(_DeployedContractBase):
+
+    def __init__(self, address, name, abi, owner=None):
+        _ContractBase.__init__(self, None, None, name, abi)
+        _DeployedContractBase.__init__(self, address, owner, None)
+        contract = history.find_contract(address)
+        if not contract:
+            return
+        if isinstance(contract, ProjectContract):
+            raise ContractExists(
+                f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
+            )
+        if contract.bytecode != self.bytecode:
+            contract._reverted = True
+
+
+class ProjectContract(_DeployedContractBase):
+
+    '''Methods for interacting with a deployed contract as part of a Brownie project.'''
+
+    def __init__(self, project, build, address, owner, tx=None):
+        _ContractBase.__init__(self, project, build, build['contractName'], build['abi'])
+        _DeployedContractBase.__init__(self, address, owner, tx)
+        history._add_contract(self)
 
 
 class OverloadedMethod:
@@ -242,7 +289,7 @@ class OverloadedMethod:
         self.methods = {}
 
     def __getitem__(self, key):
-        if type(key) is tuple:
+        if isinstance(key, tuple):
             key = ",".join(key)
         key = key.replace("256", "").replace(", ", ",")
         return self.methods[key]
@@ -320,7 +367,7 @@ class _ContractMethod:
         Returns:
             Hexstring of encoded ABI data.'''
         data = format_input(self.abi, args)
-        types = [i['type'] for i in self.abi['inputs']]
+        types = [i[1] for i in _params(self.abi['inputs'])]
         return self.signature + eth_abi.encode_abi(types, data).hex()
 
     def decode_abi(self, hexstr):
@@ -330,11 +377,12 @@ class _ContractMethod:
             hexstr: Hexstring of returned call data
 
         Returns: Decoded values.'''
-        result = eth_abi.decode_abi([i['type'] for i in self.abi['outputs']], HexBytes(hexstr))
+        types = [i[1] for i in _params(self.abi['outputs'])]
+        result = eth_abi.decode_abi(types, HexBytes(hexstr))
         result = format_output(self.abi, result)
         if len(result) == 1:
-            return result[0]
-        return ReturnValue(result, self.abi)
+            result = result[0]
+        return result
 
 
 class ContractTx(_ContractMethod):
@@ -346,7 +394,7 @@ class ContractTx(_ContractMethod):
         signature: Bytes4 method signature.'''
 
     def __init__(self, fn, abi, name, owner):
-        if ARGV['cli'] == "test" and CONFIG['test']['default_contract_owner'] is False:
+        if ARGV['cli'] == "test" and CONFIG['pytest']['default_contract_owner'] is False:
             owner = None
         super().__init__(fn, abi, name, owner)
 
@@ -394,7 +442,7 @@ class ContractCall(_ContractMethod):
 def _get_tx(owner, args):
     # seperate contract inputs from tx dict and set default tx values
     tx = {'from': owner, 'value': 0, 'gas': None, 'gasPrice': None}
-    if args and type(args[-1]) is dict:
+    if args and isinstance(args[-1], dict):
         tx.update(args[-1])
         args = args[:-1]
         for key, target in [
@@ -413,10 +461,22 @@ def _get_method_object(address, abi, name, owner):
     return ContractTx(address, abi, name, owner)
 
 
+def _params(abi_params):
+    types = []
+    for i in abi_params:
+        if i['type'] != "tuple":
+            types.append((i['name'], i['type']))
+            continue
+        types.append((i['name'], f"({','.join(x[1] for x in _params(i['components']))})"))
+    return types
+
+
 def _inputs(abi):
-    return ", ".join(f"{i['type']}{' '+i['name'] if i['name'] else ''}" for i in abi['inputs'])
+    params = _params(abi['inputs'])
+    return ", ".join(f"{i[1]}{' '+i[0] if i[0] else ''}" for i in params)
 
 
 def _signature(abi):
-    key = f"{abi['name']}({','.join(i['type'] for i in abi['inputs'])})".encode()
-    return "0x"+keccak(key).hex()[:8]
+    types = [i[1] for i in _params(abi['inputs'])]
+    key = f"{abi['name']}({','.join(types)})".encode()
+    return "0x" + keccak(key).hex()[:8]

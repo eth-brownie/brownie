@@ -11,12 +11,12 @@ The ``network`` package holds classes for interacting with the Ethereum blockcha
 
 The ``main`` module contains methods for conncting to or disconnecting from the network. All of these methods are available directly from ``brownie.network``.
 
-.. py:method:: main.connect(network=None)
+.. py:method:: main.connect(network=None, launch_rpc=True)
 
     Connects to the network.  Network settings are retrieved from ``brownie-config.json``
 
-    * If ``network`` is ``None``, connects to the default network as specified in ``brownie-config.json``.
-    * If ``test-rpc`` is given for the network, attempts to attach or launch to a local RPC client. See :ref:`test-rpc` for detailed information on the sequence of events in this process.
+    * ``network``: The network to connect to. If ``None``, connects to the default network as specified in the config file.
+    * ``launch_rpc``: If ``True`` and the configuration for this network includes ``test_rpc`` settings, attempts to launch or attach to a local RPC client. See :ref:`test-rpc` for detailed information on the sequence of events in this process.
 
     Calling this method is favored over calling ``web3.connect`` and ``rpc.launch`` or ``rpc.attach`` individually.
 
@@ -25,9 +25,11 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         >>> from brownie import network
         >>> network.connect('development')
 
-.. py:method:: main.disconnect()
+.. py:method:: main.disconnect(kill_rpc=True)
 
-    Disconnects from the network. The ``Web3`` provider is cleared and the local RPC client is terminated if it is running and a child process.
+    Disconnects from the network.
+
+    The ``Web3`` provider is cleared, the active network is set to ``None`` and the local RPC client is terminated if it was launched as a child process.
 
     .. code-block:: python
 
@@ -54,23 +56,46 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         >>> network.show_active()
         'development'
 
-.. py:method:: main.gas_limit()
+.. py:method:: main.gas_limit(*value)
 
-    Displays or modifies the default gas limit.
+    Gets and optionally sets the default gas limit.
 
     * If no argument is given, the current default is displayed.
     * If an integer value is given, this will be the default gas limit.
-    * If set to "auto", None, True or False, the gas limit is determined automatically.
+    * If set to ``None``, ``True`` or ``False``, the gas limit is determined automatically via ``web3.eth.estimateGas``.
+
+    Returns ``False`` if the gas limit is set automatically, or an ``int`` if it is set to a fixed value.
 
     .. code-block:: python
 
         >>> from brownie import network
         >>> network.gas_limit()
-        'Gas limit is set to automatic'
+        False
         >>> network.gas_limit(6700000)
-        'Gas limit is set to 6700000'
-        >>> network.gas_limit('auto')
-        'Gas limit is set to automatic'
+        6700000
+        >>> network.gas_limit(None)
+        False
+
+.. py:method:: main.gas_price(*value)
+
+    Gets and optionally sets the default gas price.
+
+    * If an integer value is given, this will be the default gas price.
+    * If set to ``None``, ``True`` or ``False``, the gas price is determined automatically via ``web3.eth.getPrice``.
+
+    Returns ``False`` if the gas price is set automatically, or an ``int`` if it is set to a fixed value.
+
+    .. code-block:: python
+
+        >>> from brownie import network
+        >>> network.gas_price()
+        False
+        >>> network.gas_price(10000000000)
+        10000000000
+        >>> network.gas_price("1.2 gwei")
+        1200000000
+        >>> network.gas_price(False)
+        False
 
 ``brownie.network.account``
 ===========================
@@ -199,7 +224,7 @@ Account Methods
         >>> accounts[0].balance() == "100 ether"
         True
 
-.. py:classmethod:: Account.deploy(contract, *args, amount=None, gas_limit=None, gas_price=None, callback=None)
+.. py:classmethod:: Account.deploy(contract, *args, amount=None, gas_limit=None, gas_price=None)
 
     Deploys a contract.
 
@@ -322,6 +347,28 @@ LocalAccount Methods
         Enter the password to encrypt this account with:
         /home/computer/my_account.json
 
+PublicKeyAccount
+----------------
+
+.. py:class:: brownie.network.account.PublicKeyAccount
+
+    Simplified ``Account`` object for interacting with an Ethereum account where you do not control the private key. Can be used to check balances or to send ether to that address.
+
+    .. code-block:: python
+
+        >>> from brownie.network.account import PublicKeyAccount
+        >>> pub = PublicKeyAccount("0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E")
+        <PublicKeyAccount object '0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E'>
+
+.. py:class:: brownie.network.account.balance()
+
+    Returns the current balance at the address, in :ref:`wei<wei>`.
+
+    .. code-block:: python
+
+        >>> pub.balance()
+        1000000000000000000
+
 ``brownie.network.alert``
 =========================
 
@@ -332,7 +379,7 @@ Alert
 
 Alerts and callbacks are handled by creating instances of the ``Alert`` class.
 
-.. py:class:: brownie.network.alert.Alert(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None)
+.. py:class:: brownie.network.alert.Alert(fn, args=None, kwargs=None, delay=2, msg=None, callback=None, repeat=False)
 
     An alert object. It is active immediately upon creation of the instance.
 
@@ -342,6 +389,9 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
     * ``delay``: Number of seconds to wait between checking for changes.
     * ``msg``: String to display upon change. The string will have ``.format(initial_value, new_value)`` applied before displaying.
     * ``callback``: A callback function to call upon a change in value. It should accept two arguments, the initial value and the new value.
+    * ``repeat``: If ``False``, the alert will terminate after the first time it first. if ``True``, it will continue to fire with each change until it is stopped via ``Alert.stop()``.  If an ``int`` value is given, it will fire a total of ``n+1`` times before terminating.
+
+    Alerts are **non-blocking**, threading is used to monitor changes. Once an alert has finished running it cannot be restarted.
 
     A basic example of an alert, watching for a changed balance:
 
@@ -350,6 +400,7 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
         >>> from brownie.network.alert import Alert
         >>> Alert(accounts[1].balance, msg="Account 1 balance has changed from {} to {}")
         <brownie.network.alert.Alert object at 0x7f9fd25d55f8>
+
         >>> alert.show()
         [<brownie.network.alert.Alert object at 0x7f9fd25d55f8>]
         >>> accounts[2].transfer(accounts[1], "1 ether")
@@ -365,9 +416,10 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
 
         >>> alert.new(accounts[3].balance, msg="Account 3 balance has changed from {} to {}")
         <brownie.network.alert.Alert object at 0x7fc743e415f8>
+
         >>> def on_receive(old_value, new_value):
         ...     accounts[2].transfer(accounts[3], new_value-old_value)
-        ...
+
         >>> alert.new(accounts[2].balance, callback=on_receive)
         <brownie.network.alert.Alert object at 0x7fc743e55cf8>
         >>> accounts[1].transfer(accounts[2],"1 ether")
@@ -380,7 +432,24 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
         Transaction confirmed - block: 2   gas spent: 21000
         ALERT: Account 3 balance has changed from 100000000000000000000 to 101000000000000000000
 
-.. py:classmethod:: Alert.stop()
+.. py:classmethod:: Alert.is_alive()
+
+    Returns a boolean indicating if an alert is currently running.
+
+    .. code-block:: python
+
+        >>> a.is_alive()
+        True
+
+.. py:classmethod:: Alert.wait(timeout=None)
+
+    Blocks until an alert has completed firing or the timeout value is reached. Similar to ``Thread.join()``.
+
+    .. code-block:: python
+
+        >>> a.wait()
+
+.. py:classmethod:: Alert.stop(wait=True)
 
     Stops the alert.
 
@@ -395,7 +464,7 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
 Module Methods
 --------------
 
-.. py:method:: alert.new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None)
+.. py:method:: alert.new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None, repeat=False)
 
     Alias for creating a new ``Alert`` instance.
 
@@ -429,9 +498,11 @@ Module Methods
 ``brownie.network.contract``
 ============================
 
-The ``contract`` module contains classes for interacting with smart contracts.
+The ``contract`` module contains classes for deploying and interacting with smart contracts.
 
-Classes in this module are not meant to be instantiated directly. When a project is loaded, Brownie automatically creates ``ContractContainer`` instances from on the files in the ``contracts/`` folder. New ``Contract`` instances are created via methods in the container.
+When a project is loaded, Brownie automatically creates ``ContractContainer`` instances from on the files in the ``contracts/`` folder. New ``ProjectContract`` instances are created via methods in the container.
+
+If you wish to interact with a contract outside of a project where only the ABI is available, use the ``Contract`` class.
 
 Arguments supplied to calls or transaction methods are converted using the methods outlined in the :ref:`convert<api-brownie-convert>` module.
 
@@ -442,7 +513,7 @@ ContractContainer
 
 .. py:class:: brownie.network.contract.ContractContainer
 
-    A list-like container class that holds all ``Contract`` instances of the same type, and is used to deploy new instances of that contract.
+    A list-like container class that holds all ``ProjectContract`` instances of the same type, and is used to deploy new instances of that contract.
 
     .. code-block:: python
 
@@ -523,7 +594,7 @@ ContractContainer Methods
 
     If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``IndexError`` is raised.
 
-    Returns a ``Contract`` instance upon success.
+    Returns a ``ProjectContract`` object upon success.
 
     In the console if the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
 
@@ -549,7 +620,7 @@ ContractContainer Methods
 
 .. py:classmethod:: ContractContainer.at(address, owner=None)
 
-    Returns a ``Contract`` instance.
+    Returns a ``ProjectContract`` instance.
 
     * ``address``: Address where the contract is deployed. Raises a ValueError if there is no bytecode at the address.
     * ``owner``: ``Account`` instance to set as the contract owner. If transactions to the contract do not specify a ``'from'`` value, they will be sent from this account.
@@ -599,12 +670,30 @@ ContractContainer Methods
 
 .. _api-network-contract:
 
-Contract
---------
 
-.. py:class:: brownie.network.contract.Contract
+Contract and ProjectContract
+----------------------------
+
+``Contract`` and ``ProjectContract`` are both used to call or send transactions to smart contracts.
+
+* ``Contract`` objects are instantiated directly and only require an ABI. They are used for calls to existing contracts that exist outside of a project.
+* ``ProjectContract`` objects are created by calls to ``ContractContainer.deploy``. Because they are compiled and deployed directly by Brownie, they provide much greater debugging capability.
+
+These classes have identical APIs.
+
+.. py:class:: brownie.network.contract.Contract(address, name, abi, owner=None)
 
     A deployed contract. This class allows you to call or send transactions to the contract.
+
+    .. code-block:: python
+
+        >>> from brownie import Contract
+        >>> Contract('0x79447c97b6543F6eFBC91613C655977806CB18b0', "Token", abi)
+        <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
+
+.. py:class:: brownie.network.contract.ProjectContract
+
+    A deployed contract that is part of an active Brownie project. Along with making calls and transactions, this object allows access to Brownie's full range of debugging and testing capability.
 
     .. code-block:: python
 
@@ -1079,7 +1168,7 @@ TxHistory
 
 
 TxHistory Attributes
---------------------
+********************
 
 .. _api-network-history-gas-profile:
 
@@ -1106,7 +1195,7 @@ TxHistory Attributes
         }
 
 TxHistory Methods
------------------
+*****************
 
 .. py:classmethod:: TxHistory.copy
 
@@ -1149,81 +1238,20 @@ TxHistory Methods
         >>> history.of_address(accounts[1])
         [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
 
-_ContractHistory
-----------------
+Module Methods
+--------------
 
-.. py:class:: brownie.network.history._ContractHistory
+.. py:method:: brownie.network.history.find_contract(address)
 
-    A :ref:`api-types-singleton` dict of ``OrderedDict`` instances, used internally by Brownie to track deployed contracts.
+    Given an address, returns the related ``Contract`` or ``ProjectContract`` object. If none exists, returns ``None``.
 
-    Under the hood, calls to get objects from ``ContractContainer`` instances are redirected to this class. The primary use case is to simplify deleting  ``Contract`` instances after the local RPC is reset or reverted.
+    This method is used internally by Brownie to locate a ``ProjectContract`` when the project it belongs to is unknown.
 
-.. _return_value:
+.. py:method:: brownie.network.history.get_current_dependencies()
 
-``brownie.network.return_value``
-================================
+    Returns a list of the names of all currently deployed contracts, and of every contract that these contracts are dependent upon.
 
-ReturnValue
------------
-
-The ``return_value`` module contains the ``ReturnValue`` class, a container used when returning multiple values from a contract call.
-
-.. py:class:: brownie.network.return_value.ReturnValue
-
-    Hybrid container type with similaries to both `tuple <https://docs.python.org/3/library/stdtypes.html#tuples>`__ and `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__. Used for contract return values.
-
-    .. code-block:: python
-
-        >>> result = issuer.getCountry(784)
-        >>> result
-        (1, (0, 0, 0, 0), (100, 0, 0, 0))
-        >>> result[2]
-        (100, 0, 0, 0)
-        >>> result.dict()
-        {
-            '_count': (0, 0, 0, 0),
-            '_limit': (100, 0, 0, 0),
-            '_minRating': 1
-        }
-        >>> result['_minRating']
-        1
-
-    When checking equality, ``ReturnValue`` objects ignore the type of container compared against. Tuples and lists will both return ``True`` so long as they contain the same values.
-
-    .. code-block:: python
-
-        >>> result = issuer.getCountry(784)
-        >>> result
-        (1, (0, 0, 0, 0), (100, 0, 0, 0))
-        >>> result == (1, (0, 0, 0, 0), (100, 0, 0, 0))
-        True
-        >>> result == [1, [0, 0, 0, 0], [100, 0, 0, 0]]
-        True
-
-.. py:classmethod:: ReturnValue.copy
-
-    Returns a shallow copy of the object.
-
-.. py:classmethod:: ReturnValue.count(value)
-
-    Returns the number of occurances of ``value`` within the object.
-
-.. py:classmethod:: ReturnValue.dict
-
-    Returns a ``dict`` of the named values within the object.
-
-.. py:classmethod:: ReturnValue.index(value, [start, [stop]])
-
-    Returns the first index of ``value``. Raises ``ValueError`` if the value is not present.
-
-.. py:classmethod:: ReturnValue.items
-
-    Returns a set-like object providing a view on the object's named items.
-
-.. py:classmethod:: ReturnValue.keys
-
-    Returns a set-like object providing a view on the object's keys.
-
+    Used during testing to determine which contracts must change before a test needs to be re-run.
 
 ``brownie.network.rpc``
 =======================
@@ -1314,6 +1342,24 @@ Rpc
         >>> rpc.is_child()
         True
 
+.. py:classmethod:: Rpc.evm_version()
+
+    Returns the currently active EVM version as a string.
+
+    .. code-block:: python
+
+        >>> rpc.evm_version()
+        'petersburg'
+
+.. py:classmethod:: Rpc.evm_compatible(version)
+
+    Returns a boolean indicating if the given ``version`` is compatible with the currently active EVM version.
+
+    .. code-block:: python
+
+        >>> rpc.evm_compatible('byzantium')
+        True
+
 .. py:classmethod:: Rpc.time()
 
     Returns the current epoch time in the RPC as an integer.
@@ -1398,7 +1444,7 @@ TransactionReceipt
 
     An instance of this class is returned whenever a transaction is broadcasted. When printed in the console, the transaction hash will appear yellow if the transaction is still pending or red if the transaction caused the EVM to revert.
 
-    Many of the attributes will be set to ``None`` while the transaction is still pending.
+    Many of the attributes return ``None`` while the transaction is still pending.
 
     .. code-block:: python
 
@@ -1430,7 +1476,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.contract_address
 
-    The address of the contract deployed as a result of this transaction, if any. If the contract is known, this will be a ``Contract`` object.
+    The address of the contract deployed as a result of this transaction, if any.
 
     .. code-block:: python
 
@@ -1584,7 +1630,7 @@ TransactionReceipt Attributes
 
     The value returned from the called function, if any. Only available if the RPC client allows ``debug_traceTransaction``.
 
-    If more then one value was returned, they are stored in a :ref:`ReturnValue<return_value>`.
+    If more then one value is returned, they are stored in a :ref:`ReturnValue<return_value>`.
 
     .. code-block:: python
 

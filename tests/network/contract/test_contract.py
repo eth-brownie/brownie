@@ -3,14 +3,34 @@
 from copy import deepcopy
 import pytest
 
-from brownie import accounts, Wei
-from brownie.project import build
-from brownie.network.contract import Contract, ContractCall, ContractTx, OverloadedMethod
+from brownie import Wei
+from brownie.network.contract import (
+    _DeployedContractBase,
+    Contract,
+    ContractCall,
+    ContractTx,
+    OverloadedMethod,
+    ProjectContract,
+)
+from brownie.exceptions import (
+    ContractExists,
+    ContractNotFound
+)
 
 
-def test_namespace_collision():
-    b = deepcopy(build.get('Token'))
-    b['abi'].append({
+@pytest.fixture
+def build(testproject):
+    build = testproject._build.get('BrownieTester')
+    yield deepcopy(build)
+
+
+def test_type(tester):
+    assert type(tester) is ProjectContract
+    assert isinstance(tester, _DeployedContractBase)
+
+
+def test_namespace_collision(tester, build):
+    build['abi'].append({
         'constant': False,
         'inputs': [
             {'name': '_to', 'type': 'address'},
@@ -24,60 +44,70 @@ def test_namespace_collision():
         'type': 'function'
     })
     with pytest.raises(AttributeError):
-        Contract(str(accounts[1]), b, None)
+        Contract(tester.address, None, build['abi'])
 
 
-def test_overloaded():
-    b = deepcopy(build.get('Token'))
-    b['abi'].append({
+def test_overloaded(testproject, tester, build):
+    build['abi'].append({
         'constant': False,
         'inputs': [
             {'name': '_to', 'type': 'address'},
             {'name': '_value', 'type': 'uint256'},
             {'name': '_test', 'type': 'uint256'}
         ],
-        'name': 'transfer',
+        'name': 'revertStrings',
         'outputs': [{'name': '', 'type': 'bool'}],
         'payable': False,
         'stateMutability': 'nonpayable',
         'type': 'function'
     })
-    c = Contract(str(accounts[1]), b, None)
-    fn = c.transfer
+    del testproject.BrownieTester[0]
+    c = Contract(tester.address, None, build['abi'])
+    fn = c.revertStrings
     assert type(fn) == OverloadedMethod
     assert len(fn) == 2
-    assert type(fn['address', 'uint']) == ContractTx
-    assert fn['address, uint256'] != fn['address, uint256, uint256']
-    assert fn['address', 'uint'] == fn['address,uint256']
+    assert type(fn['uint']) == ContractTx
+    assert fn['address', 'uint256', 'uint256'] == fn['address, uint256, uint256']
+    assert fn['uint'] == fn['uint256']
+    assert fn['uint'] != fn['address, uint256, uint256']
     repr(fn)
 
 
-def test_set_methods():
-    c = Contract(str(accounts[1]), build.get('Token'), None)
-    for item in build.get('Token')['abi']:
+def test_set_methods(tester):
+    for item in tester.abi:
         if item['type'] != "function":
             if 'name' not in item:
                 continue
-            assert not hasattr(c, item['name'])
+            assert not hasattr(tester, item['name'])
         elif item['stateMutability'] in ('view', 'pure'):
-            assert type(getattr(c, item['name'])) == ContractCall
+            assert type(getattr(tester, item['name'])) == ContractCall
         else:
-            assert type(getattr(c, item['name'])) == ContractTx
+            assert type(getattr(tester, item['name'])) == ContractTx
 
 
-def test_balance():
-    balance = Contract(str(accounts[1]), build.get('Token'), None).balance()
+def test_balance(tester):
+    balance = tester.balance()
     assert type(balance) is Wei
-    assert balance == "100 ether"
+    assert balance == "0 ether"
 
 
-def test_comparison():
-    c = Contract(str(accounts[1]), build.get('Token'), None)
-    assert c != 123
-    assert c == str(accounts[1])
-    assert c != Contract(str(accounts[2]), build.get('Token'), None)
+def test_comparison(testproject, tester):
+    del testproject.BrownieTester[0]
+    assert tester != 123
+    assert tester == str(tester.address)
+    assert tester == Contract(tester.address, "BrownieTester", tester.abi)
+    repr(tester)
 
 
-def test_repr():
-    c = Contract(str(accounts[1]), build.get('Token'), None)
-    repr(c)
+def test_revert_not_found(tester, rpc):
+    rpc.reset()
+    with pytest.raises(ContractNotFound):
+        tester.balance()
+
+
+def test_contractabi_replace_contract(testproject, tester):
+    with pytest.raises(ContractExists):
+        Contract(tester.address, "BrownieTester", tester.abi)
+    del testproject.BrownieTester[0]
+    Contract(tester.address, "BrownieTester", tester.abi)
+    Contract(tester.address, "BrownieTester", tester.abi)

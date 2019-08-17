@@ -139,16 +139,34 @@ The ``coverage`` module is used internally for storing and accessing coverage ev
 Module Methods
 --------------
 
-.. py:method:: coverage.add(txhash, coverage_eval)
+.. py:method:: coverage.add_transaction(txhash, coverage_eval)
 
-.. py:method:: coverage.add_cached(txhash, coverage_eval)
+    Adds coverage eval data.
 
-.. py:method:: coverage.add_from_cached(txhash, active=True)
+.. py:method:: coverage.add_cached_transaction(txhash, coverage_eval)
 
-.. py:method:: coverage.get_and_clear_active()
+    Adds coverage data to the cache.
 
-.. py:method:: coverage.get_all()
+.. py:method:: coverage.check_cached(txhash, active=True)
 
-.. py:method:: coverage.get_merged()
+    Checks if a transaction hash is present within the cache, and if yes includes it in the active data.
+
+.. py:method:: coverage.get_active_txlist()
+
+    Returns a list of coverage hashes that are currently marked as active.
+
+.. py:method:: coverage.clear_active_txlist()
+
+    Clears the active coverage hash list.
+
+.. py:method:: coverage.get_coverage_eval()
+
+    Returns all coverage data, active and cached.
+
+.. py:method:: coverage.get_merged_coverage_eval()
+
+    Merges and returns all active coverage data as a single dict.
 
 .. py:method:: coverage.clear()
+
+    Clears all coverage eval data.

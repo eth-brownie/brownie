@@ -5,20 +5,23 @@ from hexbytes import HexBytes
 import os
 from pathlib import Path
 import json
+import threading
 
 from eth_hash.auto import keccak
 import eth_keys
 
 from brownie.cli.utils import color
-from brownie.exceptions import VirtualMachineError, UnknownAccount
+from brownie.exceptions import VirtualMachineError, UnknownAccount, IncompatibleEVMVersion
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
+from . import history
 from brownie.convert import to_address, Wei
 from brownie._singleton import _Singleton
 from brownie._config import CONFIG
 
 web3 = Web3()
+rpc = Rpc()
 
 
 class Accounts(metaclass=_Singleton):
@@ -29,7 +32,7 @@ class Accounts(metaclass=_Singleton):
         self._accounts = []
         # prevent private keys from being stored in read history
         self.add.__dict__['_private'] = True
-        Rpc()._objects.append(self)
+        rpc._revert_register(self)
         self._reset()
 
     def _reset(self):
@@ -39,7 +42,7 @@ class Accounts(metaclass=_Singleton):
         except Exception:
             pass
 
-    def _revert(self):
+    def _revert(self, height):
         for i in self._accounts:
             i.nonce = web3.eth.getTransactionCount(str(i))
 
@@ -75,8 +78,8 @@ class Accounts(metaclass=_Singleton):
         Returns:
             Account instance.'''
         if not priv_key:
-            priv_key = "0x"+keccak(os.urandom(8192)).hex()
-        w3account = web3.eth.account.privateKeyToAccount(priv_key)
+            priv_key = "0x" + keccak(os.urandom(8192)).hex()
+        w3account = web3.eth.account.from_key(priv_key)
         if w3account.address in self._accounts:
             return self.at(w3account.address)
         account = LocalAccount(w3account.address, w3account, priv_key)
@@ -92,7 +95,7 @@ class Accounts(metaclass=_Singleton):
 
         Returns:
             Account instance.'''
-        project_path = Path(CONFIG['folders']['brownie']).joinpath("data/accounts")
+        project_path = CONFIG['brownie_folder'].joinpath("data/accounts")
         if not filename:
             return [i.stem for i in project_path.glob('*.json')]
         filename = str(filename)
@@ -153,14 +156,11 @@ class _AccountBase:
     def __hash__(self):
         return hash(self.address)
 
-    def __repr__(self):
-        return f"'{color['string']}{self.address}{color}'"
-
     def __str__(self):
         return self.address
 
     def __eq__(self, other):
-        if type(other) is str:
+        if isinstance(other, str):
             try:
                 address = to_address(other)
                 return address == self.address
@@ -169,12 +169,12 @@ class _AccountBase:
         return super().__eq__(other)
 
     def _gas_limit(self, to, amount, data=""):
-        if type(CONFIG['active_network']['gas_limit']) is int:
-            return CONFIG['active_network']['gas_limit']
+        if CONFIG['active_network']['gas_limit'] not in (True, False, None):
+            return Wei(CONFIG['active_network']['gas_limit'])
         return self.estimate_gas(to, amount, data)
 
     def _gas_price(self):
-        return CONFIG['active_network']['gas_price'] or web3.eth.gasPrice
+        return Wei(CONFIG['active_network']['gas_price'] or web3.eth.gasPrice)
 
     def _check_for_revert(self, tx):
         if (
@@ -192,7 +192,7 @@ class _AccountBase:
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
 
-    def deploy(self, contract, *args, amount=None, gas_limit=None, gas_price=None, callback=None):
+    def deploy(self, contract, *args, amount=None, gas_limit=None, gas_price=None):
         '''Deploys a contract.
 
         Args:
@@ -204,11 +204,15 @@ class _AccountBase:
             amount: Amount of ether to send with transaction, in wei.
             gas_limit: Gas limit of the transaction.
             gas_price: Gas price of the transaction.
-            callback: Callback function to attach to TransactionReceipt.
 
         Returns:
             * Contract instance if the transaction confirms
             * TransactionReceipt if the transaction is pending or reverts'''
+        evm = contract._build['compiler']['evm_version']
+        if rpc.is_active() and not rpc.evm_compatible(evm):
+            raise IncompatibleEVMVersion(
+                f"Local RPC using '{rpc.evm_version()}' but contract was compiled for '{evm}'"
+            )
         data = contract.deploy.encode_abi(*args)
         try:
             txid = self._transact({
@@ -219,21 +223,22 @@ class _AccountBase:
                 'gas': Wei(gas_limit) or self._gas_limit("", amount, data),
                 'data': HexBytes(data)
             })
-            revert = None
+            revert_data = None
         except ValueError as e:
-            txid, revert = _raise_or_return_tx(e)
+            txid, revert_data = _raise_or_return_tx(e)
         self.nonce += 1
         tx = TransactionReceipt(
             txid,
             self,
-            name=contract._name+".constructor",
-            callback=callback,
-            revert=revert
+            name=contract._name + ".constructor",
+            revert_data=revert_data
         )
+        add_thread = threading.Thread(target=contract._add_from_tx, args=(tx,), daemon=True)
+        add_thread.start()
         if tx.status != 1:
             return tx
-        tx.contract_address = contract.at(tx.contract_address, self, tx)
-        return tx.contract_address
+        add_thread.join()
+        return history.find_contract(tx.contract_address)
 
     def estimate_gas(self, to, amount, data=""):
         '''Estimates the gas cost for a transaction. Raises VirtualMachineError
@@ -277,11 +282,11 @@ class _AccountBase:
                 'gas': Wei(gas_limit) or self._gas_limit(to, amount, data),
                 'data': HexBytes(data)
             })
-            revert = None
+            revert_data = None
         except ValueError as e:
-            txid, revert = _raise_or_return_tx(e)
+            txid, revert_data = _raise_or_return_tx(e)
         self.nonce += 1
-        return TransactionReceipt(txid, self, revert=revert)
+        return TransactionReceipt(txid, self, revert_data=revert_data)
 
 
 class Account(_AccountBase):
@@ -329,7 +334,7 @@ class LocalAccount(_AccountBase):
 
         Returns the absolute path to the keystore file as a string.
         '''
-        path = Path(CONFIG['folders']['brownie']).joinpath('data/accounts')
+        path = CONFIG['brownie_folder'].joinpath('data/accounts')
         path.mkdir(exist_ok=True)
         filename = str(filename)
         if not filename.endswith(".json"):
@@ -352,6 +357,40 @@ class LocalAccount(_AccountBase):
         self._check_for_revert(tx)
         signed_tx = self._acct.signTransaction(tx).rawTransaction
         return web3.eth.sendRawTransaction(signed_tx)
+
+
+class PublicKeyAccount:
+
+    '''Class for interacting with an Ethereum account where you do not control
+    the private key. Can only be used to check the balance and to send ether to.'''
+
+    def __init__(self, addr):
+        self.address = to_address(addr)
+
+    def __repr__(self):
+        return f"<PublicKeyAccount object '{color['string']}{self.address}{color}'>"
+
+    def __hash__(self):
+        return hash(self.address)
+
+    def __str__(self):
+        return self.address
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            try:
+                address = to_address(other)
+                return address == self.address
+            except ValueError:
+                return False
+        if isinstance(other, PublicKeyAccount):
+            return other.address == self.address
+        return super().__eq__(other)
+
+    def balance(self):
+        '''Returns the current balance at the address, in wei.'''
+        balance = web3.eth.getBalance(self.address)
+        return Wei(balance)
 
 
 def _raise_or_return_tx(exc):

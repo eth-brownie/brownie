@@ -1,3 +1,16 @@
+1.0.0b11
+--------
+
+ - Require web3.py version 5, updates based on breaking changes
+ - Add support for ABIEncoderV2
+ - Add Project class, allow opening multiple projects at the same time
+ - Determine solc version using pragma, allow multiple versions in one project
+ - Set EVM version in config file
+ - Allow config file comments, change structure
+ - Add PublicKeyAccount and Contract (via ABI), allow tracebacks on unknown contracts
+ - Expanded Alert functionality
+ - Windows bugfixes
+
 1.0.0b10
 --------
 

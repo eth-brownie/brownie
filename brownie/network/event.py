@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import json
-from pathlib import Path
 
 import eth_event
 
@@ -118,6 +117,8 @@ class _EventItem:
         return iter(self._ordered)
 
     def __eq__(self, other):
+        if len(self._ordered) == 1:
+            return other == self._ordered[0]
         return other == self._ordered
 
     def items(self):
@@ -134,7 +135,7 @@ class _EventItem:
 
 
 def _get_path():
-    return Path(CONFIG['folders']['brownie']).joinpath('data/topics.json')
+    return CONFIG['brownie_folder'].joinpath('data/topics.json')
 
 
 def get_topics(abi):

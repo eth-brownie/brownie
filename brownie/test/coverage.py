@@ -8,16 +8,20 @@ _cached = {}
 _active_txhash = set()
 
 
-def add(txhash, coverage_eval):
+def add_transaction(txhash, coverage_eval):
+    '''Adds coverage eval data.'''
     _coverage_eval[txhash] = coverage_eval
     _active_txhash.add(txhash)
 
 
-def add_cached(txhash, coverage_eval):
+def add_cached_transaction(txhash, coverage_eval):
+    '''Adds coverage data to the cache.'''
     _cached[txhash] = coverage_eval
 
 
-def add_from_cached(txhash, active=True):
+def check_cached(txhash, active=True):
+    '''Checks if a transaction hash is present within the cache, and if yes
+    includes it in the active data.'''
     if txhash in _cached:
         _coverage_eval[txhash] = _cached.pop(txhash)
         if active:
@@ -25,18 +29,23 @@ def add_from_cached(txhash, active=True):
     return txhash in _coverage_eval
 
 
-def get_and_clear_active():
-    result = sorted(_active_txhash)
+def get_active_txlist():
+    '''Returns a list of coverage hashes that are currently marked as active.'''
+    return sorted(_active_txhash)
+
+
+def clear_active_txlist():
+    '''Clears the active coverage hash list.'''
     _active_txhash.clear()
-    return result
 
 
-def get_all():
+def get_coverage_eval():
+    '''Returns all coverage data, active and cached.'''
     return {**_cached, **_coverage_eval}
 
 
-def get_merged():
-    '''Merges multiple coverage evaluation dicts.
+def get_merged_coverage_eval():
+    '''Merges and returns all active coverage data as a single dict.
 
     Returns: coverage eval dict.
     '''
@@ -59,6 +68,7 @@ def get_merged():
 
 
 def clear():
+    '''Clears all coverage eval data.'''
     _coverage_eval.clear()
     _cached.clear()
     _active_txhash.clear()

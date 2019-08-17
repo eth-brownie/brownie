@@ -1,19 +1,54 @@
-language: python
-dist: xenial
-sudo: true
-install:
-  - sudo add-apt-repository -y ppa:ethereum/ethereum
-  - sudo add-apt-repository -y ppa:deadsnakes/ppa
-  - sudo apt-get update
-  - sudo apt-get install -y python$TRAVIS_PYTHON_VERSION-dev python$TRAVIS_PYTHON_VERSION-tk npm solc
-  - npm -g install ganache-cli
-  - pip install -r requirements-dev.txt
-  - pip install tox-travis coveralls
+# Based on https://github.com/cclauss/Travis-CI-Python-on-three-OSes
 matrix:
   include:
-  - name: '3.6'
-    python: 3.6
-  - name: '3.7'
-    python: 3.7
-script: tox
-after_success: if [ "${TRAVIS_PYTHON_VERSION}" == "3.7" ]; then coveralls; fi;
+    - name: "Python 3.7.1 on Xenial Linux"
+      language: python  
+      python: 3.7
+      dist: xenial
+      sudo: true
+      install:
+        - sudo add-apt-repository -y ppa:ethereum/ethereum
+        - sudo add-apt-repository -y ppa:deadsnakes/ppa
+        - sudo apt-get update
+        - sudo apt-get install -y python3.7-dev python3.7-tk npm solc
+        - npm -g install ganache-cli
+        - python -m pip install -r requirements-dev.txt
+        - pip install tox tox-travis
+      script:
+        - tox
+      after_success:
+        - python -m coveralls
+    - name: "Python 3.6.8 on Xenial Linux"
+      language: python
+      python: 3.6
+      dist: xenial
+      sudo: true
+      install:
+        - sudo add-apt-repository -y ppa:ethereum/ethereum
+        - sudo add-apt-repository -y ppa:deadsnakes/ppa
+        - sudo apt-get update
+        - sudo apt-get install -y python3.6-dev python3.6-tk npm solc
+        - npm -g install ganache-cli
+        - python -m pip install -r requirements-dev.txt
+        - pip install tox tox-travis sphinx flake8
+      script: tox
+    - name: "Python 3.7.3 on Windows"
+      os: windows
+      language: node_js
+      node_js: '10'
+      install:
+        - npm -g install ganache-cli
+        - choco install python
+        - python -m pip install --upgrade pip
+        - python -m pip install -r requirements-dev.txt
+        - python setup.py install
+      env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
+      script: python -m pytest tests/ --cov=brownie/ -p no:pytest-brownie
+      after_success: python -m coveralls 
+
+env:
+  global: COVERALLS_PARALLEL=true
+
+notifications:
+  email: false
+  webhooks: https://coveralls.io/webhook

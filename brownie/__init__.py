@@ -10,8 +10,8 @@ from .network import (
 from .project import (
     compile_source,
     run,
-    __brownie_import_all__
 )
+from brownie.network.contract import Contract  # NOQA: F401
 from brownie.gui import Gui
 from brownie._config import CONFIG as config
 from brownie.convert import Wei
@@ -24,7 +24,6 @@ __all__ = [
     'rpc',
     'web3',
     'project',
-    '__brownie_import_all__',
     'compile_source',
     'run',
     'Wei',

@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 
 import atexit
+import gc
 import psutil
 from subprocess import DEVNULL, PIPE
 import sys
 import time
+import weakref
 
 from .web3 import Web3
 
@@ -15,8 +17,21 @@ from brownie.exceptions import (
     RPCRequestError
 )
 
-
 web3 = Web3()
+
+CLI_FLAGS = {
+    "port": "--port",
+    "gas_limit": "--gasLimit",
+    "accounts": "--accounts",
+    "evm_version": "--hardfork",
+    "mnemonic": "--mnemonic"
+}
+
+EVM_VERSIONS = [
+    "byzantium",
+    "constantinople",
+    "petersburg"
+]
 
 
 class Rpc(metaclass=_Singleton):
@@ -33,7 +48,7 @@ class Rpc(metaclass=_Singleton):
         self._snapshot_id = False
         self._internal_id = False
         self._reset_id = False
-        self._objects = []
+        self._revert_refs = []
         atexit.register(self._at_exit)
 
     def _at_exit(self):
@@ -44,52 +59,44 @@ class Rpc(metaclass=_Singleton):
         else:
             self._request("evm_revert", [self._reset_id])
 
-    def launch(self, cmd):
+    def launch(self, cmd, **kwargs):
         '''Launches the RPC client.
 
         Args:
             cmd: command string to execute as subprocess'''
         if self.is_active():
             raise SystemError("RPC is already active.")
-        try:
-            self._rpc = psutil.Popen(
-                cmd.split(" "),
-                stdin=DEVNULL,
-                stdout=PIPE,
-                stderr=PIPE,
-                bufsize=1
-            )
-        except FileNotFoundError:
-            if sys.platform == "win32" and cmd.split(" ")[0][-4:] != ".cmd":
-                if " " in cmd:
-                    cmd = cmd.replace(" ", ".cmd ", 1)
-                else:
-                    cmd += ".cmd"
-                return self.launch(cmd)
-            raise
+        if sys.platform == "win32" and not cmd.split(" ")[0].endswith(".cmd"):
+            if " " in cmd:
+                cmd = cmd.replace(" ", ".cmd ", 1)
+            else:
+                cmd += ".cmd"
+        for key, value in [(k, v) for k, v in kwargs.items() if v]:
+            cmd += f" {CLI_FLAGS[key]} {value}"
         print(f"Launching '{cmd}'...")
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
-        uri = web3.providers[0].endpoint_uri if web3.providers else None
-        # check if process loads successfully
-        self._rpc.stdout.peek()
-        time.sleep(0.1)
-        if self._rpc.poll():
-            raise RPCProcessError(cmd, self._rpc, uri)
+        out = DEVNULL if sys.platform == "win32" else PIPE
+        self._rpc = psutil.Popen(cmd.split(" "), stdin=DEVNULL, stdout=out, stderr=out)
         # check that web3 can connect
-        if not web3.providers:
-            self._reset()
+        if not web3.provider:
+            self._notify_registry(0)
             return
-        for i in range(50):
-            time.sleep(0.05)
+        uri = web3.provider.endpoint_uri if web3.provider else None
+        for i in range(100):
             if web3.isConnected():
                 self._reset_id = self._snap()
-                self._reset()
+                self._notify_registry(0)
                 return
-        rpc = self._rpc
+            time.sleep(0.1)
+            if type(self._rpc) is psutil.Popen:
+                self._rpc.poll()
+            if not self._rpc.is_running():
+                self.kill(False)
+                raise RPCProcessError(cmd, self._rpc, uri)
         self.kill(False)
-        raise RPCConnectionError(cmd, rpc, uri)
+        raise RPCConnectionError(cmd, self._rpc, uri)
 
     def attach(self, laddr):
         '''Attaches to an already running RPC client subprocess.
@@ -107,9 +114,9 @@ class Rpc(metaclass=_Singleton):
         except StopIteration:
             raise ProcessLookupError("Could not find RPC process.")
         self._rpc = psutil.Process(proc.pid)
-        if web3.providers:
+        if web3.provider:
             self._reset_id = self._snap()
-        self._reset()
+        self._notify_registry(0)
 
     def kill(self, exc=True):
         '''Terminates the RPC process and all children with SIGKILL.
@@ -135,16 +142,16 @@ class Rpc(metaclass=_Singleton):
         self._snapshot_id = False
         self._reset_id = False
         self._rpc = None
-        self._reset()
+        self._notify_registry(0)
 
     def _request(self, *args):
         if not self.is_active():
             raise SystemError("RPC is not active.")
         try:
-            response = web3.providers[0].make_request(*args)
+            response = web3.provider.make_request(*args)
             if 'result' in response:
                 return response['result']
-        except IndexError:
+        except AttributeError:
             raise RPCRequestError("Web3 is not connected.")
         raise RPCRequestError(response['error']['message'])
 
@@ -153,20 +160,13 @@ class Rpc(metaclass=_Singleton):
 
     def _revert(self, id_):
         if web3.isConnected() and not web3.eth.blockNumber and not self._time_offset:
+            self._notify_registry(0)
             return self._snap()
         self._request("evm_revert", [id_])
         id_ = self._snap()
         self.sleep(0)
-        for i in self._objects:
-            if web3.eth.blockNumber == 0:
-                i._reset()
-            else:
-                i._revert()
+        self._notify_registry()
         return id_
-
-    def _reset(self):
-        for i in self._objects:
-            i._reset()
 
     def is_active(self):
         '''Returns True if Rpc client is currently active.'''
@@ -182,11 +182,32 @@ class Rpc(metaclass=_Singleton):
             return False
         return self._rpc.parent() == psutil.Process()
 
+    def evm_version(self):
+        '''Returns the currently active EVM version.'''
+        if not self.is_active():
+            return None
+        cmd = self._rpc.cmdline()
+        key = next((i for i in ('--hardfork', '-k') if i in cmd), None)
+        try:
+            return cmd[cmd.index(key) + 1]
+        except (ValueError, IndexError):
+            return EVM_VERSIONS[-1]
+
+    def evm_compatible(self, version):
+        '''Returns a boolean indicating if the given version is compatible with
+        the currently active EVM version.'''
+        if not self.is_active():
+            raise RPCRequestError("RPC is not active")
+        try:
+            return EVM_VERSIONS.index(version) <= EVM_VERSIONS.index(self.evm_version())
+        except ValueError:
+            raise ValueError(f"Unknown EVM version: '{version}'") from None
+
     def time(self):
         '''Returns the current epoch time from the test RPC as an int'''
         if not self.is_active():
             raise SystemError("RPC is not active.")
-        return int(time.time()+self._time_offset)
+        return int(time.time() + self._time_offset)
 
     def sleep(self, seconds):
         '''Increases the time within the test RPC.
@@ -235,5 +256,23 @@ class Rpc(metaclass=_Singleton):
         self._request("evm_revert", [self._internal_id])
         self._internal_id = None
         self.sleep(0)
-        for i in self._objects:
-            i._revert()
+        self._notify_registry()
+
+    # objects that will update whenever the RPC is reset or reverted must register
+    # by calling to this function. The must also include _revert and _reset methods
+    # to recieve notifications from this object
+    def _revert_register(self, obj):
+        self._revert_refs.append(weakref.ref(obj))
+
+    def _notify_registry(self, height=None):
+        gc.collect()
+        if height is None:
+            height = web3.eth.blockNumber
+        for ref in self._revert_refs.copy():
+            obj = ref()
+            if obj is None:
+                self._revert_refs.remove(ref)
+            elif height:
+                obj._revert(height)
+            else:
+                obj._reset()

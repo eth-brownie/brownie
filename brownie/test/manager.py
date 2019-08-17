@@ -4,8 +4,7 @@ from hashlib import sha1
 import json
 from pathlib import Path
 
-from brownie.network.history import TxHistory, _ContractHistory
-from brownie.project import build
+from brownie.network.history import get_current_dependencies
 from brownie.project.scripts import get_ast_hash
 from brownie.test import coverage
 from brownie._config import ARGV
@@ -26,23 +25,20 @@ STATUS_TYPES = {
     'X': "xpassed"
 }
 
-history = TxHistory()
-_contracts = _ContractHistory()
-
 
 class TestManager:
 
-    def __init__(self, path):
-        self.project_path = path
+    def __init__(self, project):
+        self.project = project
+        self.project_path = project._project_path
         self.active_path = None
         self.count = 0
         self.results = None
         self.isolated = set()
-        self.conf_hashes = dict(
-            (self._path(i.parent), get_ast_hash(i)) for i in Path(path).glob('tests/**/conftest.py')
-        )
+        glob = self.project_path.glob('tests/**/conftest.py')
+        self.conf_hashes = dict((self._path(i.parent), get_ast_hash(i)) for i in glob)
         try:
-            with path.joinpath('build/tests.json').open() as fp:
+            with self.project_path.joinpath('build/tests.json').open() as fp:
                 hashes = json.load(fp)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             hashes = {'tests': {}, 'contracts': {}, 'tx': {}}
@@ -51,6 +47,7 @@ class TestManager:
             (k, v) for k, v in hashes['tests'].items() if
             Path(k).exists() and self._get_hash(k) == v['sha1']
         )
+        build = self.project._build
         self.contracts = dict((k, v['bytecodeSha1']) for k, v in build.items() if v['bytecode'])
         changed_contracts = set(
             k for k, v in hashes['contracts'].items() if
@@ -59,14 +56,14 @@ class TestManager:
         if changed_contracts:
             for txhash, coverage_eval in hashes['tx'].items():
                 if not changed_contracts.intersection(coverage_eval.keys()):
-                    coverage.add_cached(txhash, coverage_eval)
+                    coverage.add_cached_transaction(txhash, coverage_eval)
             self.tests = dict(
-                (k, v) for k, v in self.tests.items() if v['isolated'] is not False
-                and not changed_contracts.intersection(v['isolated'])
+                (k, v) for k, v in self.tests.items() if v['isolated'] is not False and
+                not changed_contracts.intersection(v['isolated'])
             )
         else:
             for txhash, coverage_eval in hashes['tx'].items():
-                coverage.add_cached(txhash, coverage_eval)
+                coverage.add_cached_transaction(txhash, coverage_eval)
 
     def _path(self, path):
         return str(Path(path).absolute().relative_to(self.project_path))
@@ -87,15 +84,16 @@ class TestManager:
         if ARGV['coverage'] and not self.tests[path]['coverage']:
             return False
         for txhash in self.tests[path]['txhash']:
-            coverage.add_from_cached(txhash, False)
+            coverage.check_cached(txhash, False)
         return True
 
     def module_completed(self, path):
         path = self._path(path)
         isolated = False
         if path in self.isolated:
-            isolated = [i for i in _contracts.dependencies() if i in self.contracts]
-        txhash = coverage.get_and_clear_active()
+            isolated = [i for i in get_current_dependencies() if i in self.contracts]
+        txhash = coverage.get_active_txlist()
+        coverage.clear_active_txlist()
         if not ARGV['coverage'] and (path in self.tests and self.tests[path]['coverage']):
             txhash = self.tests[path]['txhash']
         self.tests[path] = {
@@ -108,7 +106,7 @@ class TestManager:
 
     def save_json(self):
         txhash = set(x for v in self.tests.values() for x in v['txhash'])
-        coverage_eval = dict((k, v) for k, v in coverage.get_all().items() if k in txhash)
+        coverage_eval = dict((k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash)
         report = {
             'tests': self.tests,
             'contracts': self.contracts,
@@ -132,7 +130,7 @@ class TestManager:
     def check_status(self, report):
         if report.when == "setup":
             self._skip = report.skipped
-            if len(self.results) < self.count+1:
+            if len(self.results) < self.count + 1:
                 self.results.append("s" if report.skipped else None)
             if report.failed:
                 self.results[self.count] = "E"

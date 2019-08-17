@@ -192,15 +192,15 @@ For certain types of contract data, Brownie uses subclasses to assist with conve
             raise TypeError(f"Invalid type for comparison: '{b}' is not a valid address")
         TypeError: Invalid type for comparison: 'potato' is not a valid address
 
-.. py:class:: brownie.convert.HexString(value)
+.. py:class:: brownie.convert.HexString(value, type_)
 
-    String subclass for hexstring comparisons. Raises ``TypeError`` if compared to a non-hexstring. Evaluates ``True`` for hex strings with the same value but differing leading zeros or capitalization.
+    Bytes subclass for hexstring comparisons. Raises ``TypeError`` if compared to a non-hexstring. Evaluates ``True`` for hex strings with the same value but differing leading zeros or capitalization.
 
     All ``bytes`` values returned from a contract call or as part of an event log are given in this type.
 
     .. code-block:: python
 
-        >>> h = HexString('0x00abcd')
+        >>> h = HexString("0x00abcd", "bytes2")
         "0xabcd"
         >>> h == "0xabcd"
         True
@@ -212,6 +212,52 @@ For certain types of contract data, Brownie uses subclasses to assist with conve
           raise TypeError(f"Invalid type for comparison: '{b}' is not a valid hex string")
         TypeError: Invalid type for comparison: 'potato' is not a valid hex string
 
+.. _return_value:
+
+.. py:class:: brownie.network.return_value.ReturnValue
+
+    Tuple subclass with limited `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`_-like functionality. Used for iterable return values from contract calls or event logs.
+
+    .. code-block:: python
+
+        >>> result = issuer.getCountry(784)
+        >>> result
+        (1, (0, 0, 0, 0), (100, 0, 0, 0))
+        >>> result[2]
+        (100, 0, 0, 0)
+        >>> result.dict()
+        {
+            '_count': (0, 0, 0, 0),
+            '_limit': (100, 0, 0, 0),
+            '_minRating': 1
+        }
+        >>> result['_minRating']
+        1
+
+    When checking equality, ``ReturnValue`` objects ignore the type of container compared against. Tuples and lists will both return ``True`` so long as they contain the same values.
+
+    .. code-block:: python
+
+        >>> result = issuer.getCountry(784)
+        >>> result
+        (1, (0, 0, 0, 0), (100, 0, 0, 0))
+        >>> result == (1, (0, 0, 0, 0), (100, 0, 0, 0))
+        True
+        >>> result == [1, [0, 0, 0, 0], [100, 0, 0, 0]]
+        True
+
+.. py:classmethod:: ReturnValue.dict
+
+    Returns a ``dict`` of the named values within the object.
+
+.. py:classmethod:: ReturnValue.items
+
+    Returns a set-like object providing a view on the object's named items.
+
+.. py:classmethod:: ReturnValue.keys
+
+    Returns a set-like object providing a view on the object's keys.
+
 ``brownie.exceptions``
 ======================
 
@@ -220,17 +266,27 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 network
 *******
 
+.. py:exception:: brownie.exceptions.ContractExists
+
+    Raised when attempting to create a new ``Contract`` or ``ContractABI`` object, when one already exists for the given address.
+
+    Raised by ``project.compile_source`` when the source code contains a contract with a name that is the same as another in the same project.
+
+.. py:exception:: brownie.exceptions.ContractNotFound
+
+    Raised when attempting to access a ``Contract`` or ``ContractABI`` object that no longer exists because the local network was reverted.
+
 .. py:exception:: brownie.exceptions.UnknownAccount
 
     Raised when the ``Accounts`` container cannot locate a specified ``Account`` object.
 
-.. py:exception:: brownie.exceptions.AmbiguousMethods
-
-    Raised by ``ContractContainer`` when a contract has multiple methods that share the same name.
-
 .. py:exception:: brownie.exceptions.UndeployedLibrary
 
     Raised when attempting to deploy a contract that requires an unlinked library, but the library has not yet been deployed.
+
+.. py:exception:: brownie.exceptions.IncompatibleEVMVersion
+
+    Raised when attempting to deploy a contract that was compiled to target an EVM version that is imcompatible than the currently active local RPC client.
 
 .. py:exception:: brownie.exceptions.RPCConnectionError
 
@@ -251,10 +307,6 @@ network
 project
 *******
 
-.. py:exception:: brownie.exceptions.ContractExists
-
-    Raised by ``project.compile_source`` when the source code contains a contract with a name that is the same as a contract in the active project.
-
 .. py:exception:: brownie.exceptions.ProjectAlreadyLoaded
 
     Raised by ``project.load_project`` if a project has already been loaded.
@@ -267,19 +319,13 @@ project
 
     Raised by the compiler when there is an error within a contract's source code.
 
-test
-****
+.. py:exception:: brownie.exceptions.IncompatibleSolcVersion
 
-.. py:exception:: brownie.exceptions.ExpectedFailing
+    Raised when a project requires a version of solc that is not installed or not supported by Brownie.
 
-    Raised when a unit test is marked as ``pending=True`` but it still passes.
+.. py:exception:: brownie.exceptions.PragmaError
 
-types
-*****
-
-.. py:exception:: brownie.exceptions.InvalidABI
-
-    Raised when an invalid ABI is given while converting contract inputs or outputs.
+    Raised when a contract has no pragma directive, or a pragma which requires a version of solc that cannot be installed.
 
 ``brownie._config``
 ===================

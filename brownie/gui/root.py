@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-from pathlib import Path
 import threading
 
 import tkinter as tk
@@ -20,8 +19,7 @@ from .styles import (
 from .textbook import TextBook
 from .tooltip import ToolTip
 
-from brownie.project import build
-from brownie._config import CONFIG
+from brownie.project import get_loaded_projects
 
 
 class Root(tk.Tk):
@@ -29,15 +27,20 @@ class Root(tk.Tk):
     _active = threading.Event()
 
     def __init__(self):
-        if not CONFIG['folders']['project']:
+        projects = get_loaded_projects()
+        if not projects:
             raise SystemError("No project loaded")
+
+        if len(projects) > 1:
+            raise SystemError("More than one active project")
 
         if self._active.is_set():
             raise SystemError("GUI is already active")
         self._active.set()
 
-        name = Path(CONFIG['folders']['project']).name
-        super().__init__(className=" Brownie GUI - "+name)
+        self._project = projects[0]
+        name = self._project._name
+        super().__init__(className=f" Brownie GUI - {name}")
         self.bind("<Escape>", lambda k: self.destroy())
 
         # main widgets
@@ -45,14 +48,14 @@ class Root(tk.Tk):
         self.main.pack(side="bottom", expand=True, fill="both")
 
         # toolbar widgets
-        self.toolbar = ToolbarFrame(self)
+        self.toolbar = ToolbarFrame(self, self._project)
         self.toolbar.pack(side="top", expand="true", fill="both")
 
         self.active_report = False
         set_style(self)
 
     def set_active(self, contract_name):
-        build_json = build.get(contract_name)
+        build_json = self._project._build.get(contract_name)
         self.main.note.set_visible(build_json['allSourcePaths'])
         self.main.note.set_active(build_json['sourcePath'])
         self.main.oplist.set_opcodes(build_json['pcMap'])
@@ -93,17 +96,17 @@ class MainFrame(ttk.Frame):
 
 class ToolbarFrame(ttk.Frame):
 
-    def __init__(self, root):
+    def __init__(self, root, project):
         super().__init__(root)
         self.root = root
 
         # contract selection
-        self.combo = ContractSelect(self, [k for k, v in build.items() if v['bytecode']])
+        self.combo = ContractSelect(self, [k for k, v in project._build.items() if v['bytecode']])
         self.combo.pack(side="right", anchor="e")
         self.combo.configure(width=23)
         ToolTip(self.combo, "Select the contract source to view")
 
-        path = Path(CONFIG['folders']['project']).joinpath('reports')
+        path = project._project_path.joinpath('reports')
 
         self.report = ReportSelect(self, list(path.glob('**/*.json')))
         self.report.pack(side="right", anchor="e", padx=10)

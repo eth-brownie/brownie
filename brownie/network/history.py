@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 
-from collections import OrderedDict
+import sys
 
 from .rpc import Rpc
 from .web3 import Web3
 from brownie.convert import to_address
 from brownie._singleton import _Singleton
 
-
+rpc = Rpc()
 web3 = Web3()
+rpc._revert_register(sys.modules[__name__])
 
 
 class TxHistory(metaclass=_Singleton):
@@ -20,7 +21,7 @@ class TxHistory(metaclass=_Singleton):
     def __init__(self):
         self._list = []
         self.gas_profile = {}
-        Rpc()._objects.append(self)
+        rpc._revert_register(self)
 
     def __repr__(self):
         return str(self._list)
@@ -43,8 +44,7 @@ class TxHistory(metaclass=_Singleton):
     def _reset(self):
         self._list.clear()
 
-    def _revert(self):
-        height = web3.eth.blockNumber
+    def _revert(self, height):
         self._list = [i for i in self._list if i.block_number <= height]
 
     def _add_tx(self, tx):
@@ -80,54 +80,57 @@ class TxHistory(metaclass=_Singleton):
             return
         gas = self.gas_profile[fn_name]
         gas.update({
-            'avg': (gas['avg']*gas['count'] + gas_used) // (gas['count']+1),
+            'avg': (gas['avg'] * gas['count'] + gas_used) // (gas['count'] + 1),
             'high': max(gas['high'], gas_used),
             'low': min(gas['low'], gas_used)
         })
         gas['count'] += 1
 
 
-class _ContractHistory(metaclass=_Singleton):
+_contract_map = {}
 
-    '''Internal singleton dict of OrderedDicts that acts as a single container
-    for ContractContainer lists.'''
 
-    def __init__(self):
-        self._dict = {}
-        Rpc()._objects.append(self)
+def find_contract(address):
+    '''Given an address, returns the related Contract object.'''
+    address = to_address(address)
+    if address not in _contract_map:
+        return None
+    return _contract_map[address]
 
-    def _reset(self):
-        self._dict.clear()
 
-    def _revert(self):
-        height = web3.eth.blockNumber
-        for name, contracts in self._dict.items():
-            for contract in list(contracts.values()):
-                if contract.tx and contract.tx.block_number <= height:
-                    continue
-                elif len(web3.eth.getCode(contract.address).hex()) > 4:
-                    continue
-                del self._dict[name][contract.address]
+def get_current_dependencies():
+    '''Returns a list of the currently deployed contracts and their dependencies.'''
+    dependencies = set(v._name for v in _contract_map.values())
+    for contract in _contract_map.values():
+        dependencies.update(contract._build['dependencies'])
+    return sorted(dependencies)
 
-    def add(self, contract):
-        name = contract._name
-        self._dict.setdefault(name, OrderedDict())[contract.address] = contract
 
-    def remove(self, contract):
-        name = contract._name
-        del self._dict[name][contract.address]
+# _add_contract and _remove_contract are called by ContractContainer when Contract
+#  objects are created or destroyed - don't call them directly or things will start
+# to break in strange places!
 
-    def list(self, name):
-        self._dict.setdefault(name, OrderedDict())
-        return list(self._dict[name].values())
+def _add_contract(contract):
+    _contract_map[contract.address] = contract
 
-    def find(self, address):
-        address = to_address(address)
-        contracts = [x for v in self._dict.values() for x in v.values()]
-        return next((i for i in contracts if i == address), None)
 
-    def dependencies(self):
-        dependencies = set(k for k, v in self._dict.items() if v)
-        for i in dependencies.copy():
-            dependencies.update(list(self._dict[i].values())[0]._build['dependencies'])
-        return sorted(dependencies)
+def _remove_contract(contract):
+    del _contract_map[contract.address]
+
+
+# RPC registry methods
+
+def _reset():
+    for contract in _contract_map.values():
+        contract._reverted = True
+    _contract_map.clear()
+
+
+def _revert(height):
+    for address, contract in list(_contract_map.items()):
+        if contract.tx and contract.tx.block_number <= height:
+            continue
+        if len(web3.eth.getCode(contract.address).hex()) > 4:
+            continue
+        _contract_map[address]._reverted = True
+        del _contract_map[address]

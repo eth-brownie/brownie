@@ -3,11 +3,14 @@
 from copy import deepcopy
 from collections import deque
 from hashlib import sha1
+import re
+from requests.exceptions import ConnectionError
 import solcast
+from semantic_version import Version, Spec, SpecItem
 import solcx
 
 from . import sources
-from brownie.exceptions import CompilerError
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 
 STANDARD_JSON = {
     'language': "Solidity",
@@ -25,28 +28,47 @@ STANDARD_JSON = {
         "optimizer": {
             "enabled": True,
             "runs": 200
-        }
+        },
+        "evmVersion": None
     }
 }
 
 
 def set_solc_version(version):
     '''Sets the solc version. If not available it will be installed.'''
+    if Version(version.lstrip('v')) < Version('0.4.22'):
+        raise IncompatibleSolcVersion("Brownie only supports Solidity versions >=0.4.22")
     try:
-        solcx.set_solc_version(version)
+        solcx.set_solc_version(version, silent=True)
     except solcx.exceptions.SolcNotInstalled:
-        solcx.install_solc(version)
-        solcx.set_solc_version(version)
-    return solcx.get_solc_version_string().strip('\n')
+        install_solc(version)
+        solcx.set_solc_version(version, silent=True)
+    return solcx.get_solc_version_string()
 
 
-def compile_and_format(contracts, optimize=True, runs=200, minify=False, silent=True):
+def install_solc(*versions):
+    '''Installs solc versions.'''
+    for version in versions:
+        solcx.install_solc(str(version))
+
+
+def compile_and_format(
+    contracts,
+    solc_version=None,
+    optimize=True,
+    runs=200,
+    evm_version=None,
+    minify=False,
+    silent=True
+):
     '''Compiles contracts and returns build data.
 
     Args:
-        contracts: a dictionary in the form of {path: 'source code'}
+        contracts: a dictionary in the form of {'path': "source code"}
+        solc_version: solc version to compile with (use None to set via pragmas)
         optimize: enable solc optimizer
         runs: optimizer runs
+        evm_version: evm version to compile for
         minify: minify source files
         silent: verbose reporting
 
@@ -54,31 +76,149 @@ def compile_and_format(contracts, optimize=True, runs=200, minify=False, silent=
     if not contracts:
         return {}
 
-    compiler_data = {
-        'minify_source': minify,
-        'version': solcx.get_solc_version_string().strip('\n')
-    }
+    build_json = {}
 
-    input_json = generate_input_json(contracts, optimize, runs, minify)
-    output_json = compile_from_input_json(input_json, silent)
-    build_json = generate_build_json(input_json, output_json, compiler_data, silent)
+    if solc_version is not None:
+        path_versions = {solc_version: list(contracts)}
+    else:
+        path_versions = find_solc_versions(contracts, install_needed=True, silent=silent)
+
+    for version, path_list in path_versions.items():
+        set_solc_version(version)
+        compiler_data = {
+            'minify_source': minify,
+            'version': solcx.get_solc_version_string()
+        }
+        to_compile = dict((k, v) for k, v in contracts.items() if k in path_list)
+
+        input_json = generate_input_json(to_compile, optimize, runs, evm_version, minify)
+        output_json = compile_from_input_json(input_json, silent)
+        build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
     return build_json
 
 
-def generate_input_json(contracts, optimize=True, runs=200, minify=False):
+def find_solc_versions(contracts, install_needed=False, install_latest=False, silent=True):
+    '''Analyzes contract pragmas and determines which solc version(s) to use.
+
+    Args:
+        contracts: a dictionary in the form of {'path': "source code"}
+        install_needed: if True, will install when no installed version matches
+                        the contract pragma
+        install_latest: if True, will install when a newer version is available
+                        than the installed one
+        silent: enables verbose reporting
+
+    Returns: dictionary of {'version': ['path', 'path', ..]}
+    '''
+    installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
+    try:
+        available_versions = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
+    except ConnectionError:
+        if not installed_versions:
+            raise ConnectionError("Solc not installed and cannot connect to GitHub")
+        available_versions = installed_versions
+
+    pragma_regex = re.compile(r"pragma +solidity([^;]*);")
+    version_regex = re.compile(r"(([<>]?=?|\^)\d+\.\d+\.\d+)+")
+
+    pragma_specs = dict((i, set()) for i in contracts)
+    to_install = set()
+    for path, source in contracts.items():
+        try:
+            pragma_string = next(pragma_regex.finditer(source))[0]
+        except StopIteration:
+            raise PragmaError(f"No version pragma in '{path}'") from None
+
+        # convert pragma to Version objects
+        comparator_set_range = pragma_string.replace(" ", "").split('||')
+        for comparator_set in comparator_set_range:
+            spec = Spec(*(i[0] for i in version_regex.findall(comparator_set)))
+            spec = _standardize_spec(spec)
+            pragma_specs[path].add(spec)
+
+        # if no installed version of solc matches the pragma, find the latest available version
+        if not next((i for i in pragma_specs[path] if i.select(installed_versions)), None):
+            try:
+                version = _select_max(pragma_specs[path], available_versions)
+                to_install.add(version)
+            except ValueError:
+                raise PragmaError(
+                    f"No installable solc version matching '{pragma_string}' in '{path}'"
+                ) from None
+            if not install_needed:
+                raise IncompatibleSolcVersion(
+                    f"No installed solc version matching '{pragma_string}' in '{path}'"
+                )
+
+    # install new versions if needed
+    if to_install:
+        install_solc(*to_install)
+        installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
+
+    # organize source paths by latest available solc version
+    compiler_versions = {}
+    new_versions = set()
+    for path, spec_list in pragma_specs.items():
+        version = _select_max(spec_list, installed_versions)
+        compiler_versions.setdefault(str(version), []).append(path)
+        latest = _select_max(spec_list, available_versions)
+        if latest > version:
+            new_versions.add(str(latest))
+    if new_versions:
+        if install_latest:
+            install_solc(*new_versions)
+            return find_solc_versions(contracts)
+        if not silent:
+            print(
+                f"New compatible solc version{'s' if len(new_versions) > 1 else ''}"
+                f" available: {', '.join(new_versions)}"
+            )
+    return compiler_versions
+
+
+def _select_max(spec_list, version_list):
+    return max(i.select(version_list) for i in spec_list if i.select(version_list))
+
+
+# convert all specitems to be of types (==, >=, <)
+def _standardize_spec(spec):
+    final_spec = deepcopy(spec)
+    if spec.specs[0].kind == "==":
+        return final_spec
+    spec_list = list(spec.specs)
+    for s in spec_list:
+        if s.kind in (">", "<="):
+            s.kind = {'>': ">=", '<=': "<"}[s.kind]
+            s.spec.patch += 1
+        elif s.kind == "^":
+            s.kind = ">="
+            spec_list.append(SpecItem(f"<{s.spec.next_minor()}"))
+    spec_list = [
+        max((i for i in spec_list if i.kind == ">="), default=None, key=lambda k: k.spec),
+        min((i for i in spec_list if i.kind == "<"), default=None, key=lambda k: k.spec)
+    ]
+    final_spec.specs = tuple(i for i in spec_list if i)
+    return final_spec
+
+
+def generate_input_json(contracts, optimize=True, runs=200, evm_version=None, minify=False):
     '''Formats contracts to the standard solc input json.
 
     Args:
         contracts: a dictionary in the form of {path: 'source code'}
         optimize: enable solc optimizer
         runs: optimizer runs
+        evm_version: evm version to compile for
         minify: should source code be minified?
 
     Returns: dict
     '''
+    if evm_version is None:
+        evm_version = "petersburg" if solcx.get_solc_version() >= Version("0.5.5") else "byzantium"
     input_json = deepcopy(STANDARD_JSON)
     input_json['settings']['optimizer']['enabled'] = optimize
     input_json['settings']['optimizer']['runs'] = runs if optimize else False
+    input_json['settings']['evmVersion'] = evm_version
     input_json['sources'] = dict((
         k,
         {'content': sources.minify(v)[0] if minify else v}
@@ -95,24 +235,29 @@ def compile_from_input_json(input_json, silent=True):
 
     Returns: standard compiler output json'''
     optimizer = input_json['settings']['optimizer']
+    input_json['settings'].setdefault('evmVersion', None)
     if not silent:
         print("Compiling contracts...")
-        print("Optimizer: " + (
+        print(f"  Solc {solcx.get_solc_version_string()}")
+        print("  Optimizer: " + (
             f"Enabled  Runs: {optimizer['runs']}" if
             optimizer['enabled'] else 'Disabled'
         ))
+        if input_json['settings']['evmVersion']:
+            print(f"  EVM Version: {input_json['settings']['evmVersion'].capitalize()}")
     try:
         return solcx.compile_standard(
             input_json,
             optimize=optimizer['enabled'],
             optimize_runs=optimizer['runs'],
+            evm_version=input_json['settings']['evmVersion'],
             allow_paths="."
         )
     except solcx.exceptions.SolcError as e:
         raise CompilerError(e)
 
 
-def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
+def generate_build_json(input_json, output_json, compiler_data=None, silent=True):
     '''Formats standard compiler output to the brownie build json.
 
     Args:
@@ -125,11 +270,14 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
     if not silent:
         print("Generating build data...")
 
+    if compiler_data is None:
+        compiler_data = {}
     compiler_data.update({
         "optimize": input_json['settings']['optimizer']['enabled'],
-        "runs": input_json['settings']['optimizer']['runs']
+        "runs": input_json['settings']['optimizer']['runs'],
+        "evm_version": input_json['settings']['evmVersion']
     })
-    minify = 'minify_source' in compiler_data and compiler_data['minify_source']
+    minified = 'minify_source' in compiler_data and compiler_data['minify_source']
     build_json = {}
     path_list = list(input_json['sources'])
 
@@ -142,21 +290,24 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
         if not silent:
             print(f" - {contract_name}...")
 
+        abi = output_json['contracts'][path][contract_name]['abi']
         evm = output_json['contracts'][path][contract_name]['evm']
-        node = next(i[contract_name] for i in source_nodes if i.name == path)
         bytecode = format_link_references(evm)
-        paths = sorted(set([node.parent().path]+[i.parent().path for i in node.dependencies]))
+        hash_ = sources.get_hash(input_json['sources'][path]['content'], contract_name, minified)
+        node = next(i[contract_name] for i in source_nodes if i.name == path)
+        paths = sorted(set([node.parent().path] + [i.parent().path for i in node.dependencies]))
 
         pc_map, statement_map, branch_map = generate_coverage_data(
             evm['deployedBytecode']['sourceMap'],
             evm['deployedBytecode']['opcodes'],
             node,
             statement_nodes,
-            branch_nodes
+            branch_nodes,
+            next((True for i in abi if i['type'] == "fallback"), False)
         )
 
         build_json[contract_name] = {
-            'abi': output_json['contracts'][path][contract_name]['abi'],
+            'abi': abi,
             'allSourcePaths': paths,
             'ast': output_json['sources'][path]['ast'],
             'bytecode': bytecode,
@@ -171,12 +322,16 @@ def generate_build_json(input_json, output_json, compiler_data={}, silent=True):
             'offset': node.offset,
             'opcodes': evm['deployedBytecode']['opcodes'],
             'pcMap': pc_map,
-            'sha1': sources.get_hash(contract_name, minify),
+            'sha1': hash_,
             'source': input_json['sources'][path]['content'],
             'sourceMap': evm['bytecode']['sourceMap'],
             'sourcePath': path,
             'type': node.type
         }
+
+    if not silent:
+        print("")
+
     return build_json
 
 
@@ -184,7 +339,7 @@ def format_link_references(evm):
     '''Standardizes formatting for unlinked libraries within bytecode.'''
     bytecode = evm['bytecode']['object']
     references = [(k, x) for v in evm['bytecode']['linkReferences'].values() for k, x in v.items()]
-    for n, loc in [(i[0], x['start']*2) for i in references for x in i[1]]:
+    for n, loc in [(i[0], x['start'] * 2) for i in references for x in i[1]]:
         bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"
     return bytecode
 
@@ -194,7 +349,7 @@ def get_bytecode_hash(bytecode):
     return sha1(bytecode[:-68].encode()).hexdigest()
 
 
-def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, branch_nodes):
+def generate_coverage_data(source_map, opcodes, contract_node, stmt_nodes, branch_nodes, fallback):
     '''
     Generates data used by Brownie for debugging and coverage evaluation.
 
@@ -235,11 +390,11 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
     source_map = deque(expand_source_map(source_map))
     opcodes = deque(opcodes.split(" "))
 
-    contract_nodes = [contract_node]+contract_node.dependencies
+    contract_nodes = [contract_node] + contract_node.dependencies
     source_nodes = dict((i.contract_id, i.parent()) for i in contract_nodes)
     paths = set(v.path for v in source_nodes.values())
 
-    statement_nodes = dict((i, statement_nodes[i].copy()) for i in paths)
+    stmt_nodes = dict((i, stmt_nodes[i].copy()) for i in paths)
     statement_map = dict((i, {}) for i in paths)
 
     # possible branch offsets
@@ -252,7 +407,6 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
 
     count, pc = 0, 0
     pc_list = []
-    first_revert = None
     revert_map = {}
 
     while source_map:
@@ -262,12 +416,12 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
         pc_list.append({'op': opcodes.popleft(), 'pc': pc})
 
         if (
-            first_revert is None and pc_list[-1]['op'] == "REVERT" and
+            fallback is False and pc_list[-1]['op'] == "REVERT" and
             [i['op'] for i in pc_list[-4:-1]] == ["JUMPDEST", "PUSH1", "DUP1"]
         ):
             # flag the REVERT op at the end of the function selector,
             # later reverts may jump to it instead of having their own REVERT op
-            first_revert = "0x"+hex(pc-4).upper()[2:]
+            fallback = "0x" + hex(pc - 4).upper()[2:]
             pc_list[-1]['first_revert'] = True
 
         if source[3] != "-":
@@ -287,21 +441,21 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
         # set source offset (-1 means none)
         if source[0] == -1:
             continue
-        offset = (source[0], source[0]+source[1])
+        offset = (source[0], source[0] + source[1])
         pc_list[-1]['offset'] = offset
 
         # if op is jumpi, set active branch markers
         if branch_active[path] and pc_list[-1]['op'] == "JUMPI":
             for offset in branch_active[path]:
                 # ( program counter index, JUMPI index)
-                branch_set[path][offset] = (branch_active[path][offset], len(pc_list)-1)
+                branch_set[path][offset] = (branch_active[path][offset], len(pc_list) - 1)
             branch_active[path].clear()
 
         # if op relates to previously set branch marker, clear it
         elif offset in branch_nodes[path]:
             if offset in branch_set[path]:
                 del branch_set[path][offset]
-            branch_active[path][offset] = len(pc_list)-1
+            branch_active[path][offset] = len(pc_list) - 1
 
         try:
             # set fn name and statement coverage marker
@@ -314,10 +468,10 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
                     filters={'node_type': "FunctionDefinition"}
                 )[0].full_name
                 statement = next(
-                    i for i in statement_nodes[path] if
+                    i for i in stmt_nodes[path] if
                     sources.is_inside_offset(offset, i)
                 )
-                statement_nodes[path].discard(statement)
+                stmt_nodes[path].discard(statement)
                 statement_map[path].setdefault(pc_list[-1]['fn'], {})[count] = statement
                 pc_list[-1]['statement'] = count
                 count += 1
@@ -325,7 +479,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
             pass
         if 'value' not in pc_list[-1]:
             continue
-        if pc_list[-1]['value'] == first_revert and opcodes[0] in {'JUMP', 'JUMPI'}:
+        if pc_list[-1]['value'] == fallback and opcodes[0] in {'JUMP', 'JUMPI'}:
             # track all jumps to the initial revert
             revert_map.setdefault((pc_list[-1]['path'], pc_list[-1]['fn']), []).append(len(pc_list))
 
@@ -364,7 +518,7 @@ def generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, 
                 filters={'node_type': "FunctionDefinition"}
             )[0].full_name
         node = next(i for i in branch_original[path] if i.offset == offset)
-        branch_map[path].setdefault(fn, {})[count] = offset+(node.jump,)
+        branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
         count += 1
 
     pc_map = dict((i.pop('pc'), i) for i in pc_list)
@@ -376,17 +530,17 @@ def expand_source_map(source_map):
     source_map = [_expand_row(i) if i else None for i in source_map.split(';')]
     for i in range(1, len(source_map)):
         if not source_map[i]:
-            source_map[i] = source_map[i-1]
+            source_map[i] = source_map[i - 1]
             continue
         for x in range(4):
             if source_map[i][x] is None:
-                source_map[i][x] = source_map[i-1][x]
+                source_map[i][x] = source_map[i - 1][x]
     return source_map
 
 
 def _expand_row(row):
     row = row.split(':')
-    return [int(i) if i else None for i in row[:3]] + row[3:] + [None]*(4-len(row))
+    return [int(i) if i else None for i in row[:3]] + row[3:] + [None] * (4 - len(row))
 
 
 def get_statement_nodes(source_nodes):

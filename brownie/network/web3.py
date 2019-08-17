@@ -17,16 +17,20 @@ class Web3(_Web3, metaclass=_Singleton):
 
     def __init__(self):
         super().__init__(HTTPProvider('null'))
-        self.providers.clear()
+        self.provider = None
 
     def connect(self, uri):
         '''Connects to a provider'''
-        if Path(uri).exists():
-            self.providers = [IPCProvider(uri)]
-        elif uri[:3] == "ws:":
-            self.providers = [WebsocketProvider(uri)]
+        try:
+            if Path(uri).exists():
+                self.provider = IPCProvider(uri)
+                return
+        except OSError:
+            pass
+        if uri[:3] == "ws:":
+            self.provider = WebsocketProvider(uri)
         elif uri[:4] == "http":
-            self.providers = [HTTPProvider(uri)]
+            self.provider = HTTPProvider(uri)
         else:
             raise ValueError(
                 "Unknown URI - must be a path to an IPC socket, a websocket "
@@ -35,5 +39,10 @@ class Web3(_Web3, metaclass=_Singleton):
 
     def disconnect(self):
         '''Disconnects from a provider'''
-        if self.providers:
-            self.providers.clear()
+        if self.provider:
+            self.provider = None
+
+    def isConnected(self):
+        if not self.provider:
+            return False
+        return super().isConnected()

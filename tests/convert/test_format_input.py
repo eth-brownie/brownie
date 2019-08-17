@@ -3,7 +3,6 @@
 import pytest
 
 from brownie.convert import format_input
-from brownie.exceptions import InvalidABI
 
 abi = {
     'inputs': [
@@ -14,15 +13,6 @@ abi = {
     ],
     'name': 'testFunction'
 }
-
-
-def test_bad_abi():
-    with pytest.raises(InvalidABI):
-        format_input({'inputs': []}, [])
-    with pytest.raises(InvalidABI):
-        format_input({'name': "bad"}, [])
-    with pytest.raises(InvalidABI):
-        format_input([], [])
 
 
 def test_empty():

@@ -2,7 +2,6 @@
 
 import atexit
 import code
-from pathlib import Path
 import sys
 
 import brownie
@@ -18,15 +17,20 @@ else:
 
 class Console(code.InteractiveConsole):
 
-    def __init__(self):
+    def __init__(self, project=None):
         locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
         locals_dict['dir'] = self._dir
-        del locals_dict['project']
 
         self._stdout_write = sys.stdout.write
         sys.stdout.write = self._console_write
 
-        history_file = str(Path(CONFIG['folders']['project']).joinpath('.history').absolute())
+        if project:
+            project._update_and_register(locals_dict)
+            history_file = project._project_path
+        else:
+            history_file = CONFIG['brownie_folder']
+
+        history_file = str(history_file.joinpath('.history').absolute())
         atexit.register(_atexit_readline, history_file)
         try:
             readline.read_history_file(history_file)
@@ -41,9 +45,9 @@ class Console(code.InteractiveConsole):
         elif hasattr(obj, '__console_dir__'):
             results = [(i, getattr(obj, i)) for i in obj.__console_dir__]
         else:
-            results = [(i, getattr(obj, i)) for i in obj.__dict__ if not i.startswith('_')]
+            results = [(i, getattr(obj, i)) for i in dir(obj) if not i.startswith('_')]
         results = sorted(results, key=lambda k: k[0])
-        self.write("["+f"{color}, ".join(_dir_color(i[1])+i[0] for i in results)+f"{color}]\n")
+        self.write(f"[{f'{color}, '.join(_dir_color(i[1]) + i[0] for i in results)}{color}]\n")
 
     def _console_write(self, text):
         try:
@@ -58,11 +62,11 @@ class Console(code.InteractiveConsole):
 
     def showsyntaxerror(self, filename):
         tb = color.format_syntaxerror(sys.exc_info()[1])
-        self.write(tb+'\n')
+        self.write(tb + '\n')
 
     def showtraceback(self):
         tb = color.format_tb(sys.exc_info(), start=1)
-        self.write(tb+'\n')
+        self.write(tb + '\n')
 
     # save user input to readline history file, filter for private keys
     def push(self, line):
