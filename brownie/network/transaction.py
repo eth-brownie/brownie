@@ -18,7 +18,7 @@ from .event import (
     decode_trace
 )
 from .web3 import Web3
-from brownie.convert import Wei
+from brownie.convert import EthAddress, Wei
 from brownie.cli.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build
@@ -65,7 +65,36 @@ class TransactionReceipt:
         revert_msg: Error string from reverted contract all
         modified_state: Boolean, did this contract write to storage?'''
 
-    def __init__(self, txid, sender=None, silent=False, name='', callback=None, revert=None):
+    __slots__ = (
+        '_getattr',
+        '_trace',
+        '_revert_pc',
+        '_confirmed',
+        'block_number',
+        'contract_address',
+        'contract_name',
+        'coverage_hash',
+        'events',
+        'fn_name',
+        'gas_limit',
+        'gas_price',
+        'gas_used',
+        'input',
+        'logs',
+        'modified_state',
+        'nonce',
+        'receiver',
+        'return_value',
+        'revert_msg',
+        'sender',
+        'status',
+        'trace',
+        'txid',
+        'txindex',
+        'value',
+    )
+
+    def __init__(self, txid, sender=None, silent=False, name='', revert=None):
         '''Instantiates a new TransactionReceipt object.
 
         Args:
@@ -73,7 +102,6 @@ class TransactionReceipt:
             sender: sender as a hex string or Account object
             silent: toggles console verbosity
             name: contract function being called
-            callback: optional callback function
             revert: (revert string, program counter)
         '''
         if type(txid) is not str:
@@ -82,24 +110,12 @@ class TransactionReceipt:
             print(f"{color['key']}Transaction sent{color}: {color['value']}{txid}{color}")
         history._add_tx(self)
 
+        self._getattr = False
         self._trace = None
-        self._revert_pc = None
-        self.block_number = None
-        self.contract_address = None
-        self.gas_limit = None
-        self.gas_price = None
-        self.gas_used = None
-        self.input = None
-        self.logs = []
-        self.nonce = None
-        self.receiver = None
+        self._confirmed = threading.Event()
         self.sender = sender
         self.status = -1
         self.txid = txid
-        self.txindex = None
-        self.value = None
-
-        self.contract_name = None
         self.fn_name = name
         if name and '.' in name:
             self.contract_name, self.fn_name = name.split('.', maxsplit=1)
@@ -119,7 +135,7 @@ class TransactionReceipt:
         # threaded to allow impatient users to ctrl-c to stop waiting in the console
         confirm_thread = threading.Thread(
             target=self._await_confirmation,
-            args=(silent, callback),
+            args=(silent,),
             daemon=True
         )
         confirm_thread.start()
@@ -151,18 +167,21 @@ class TransactionReceipt:
         return hash(self.txid)
 
     def __getattr__(self, attr):
-        # these values require debug_traceTransaction, only request it from the RPC when needed
-        if attr not in {'events', 'modified_state', 'return_value', 'revert_msg', 'trace'}:
+        if self._getattr or attr not in self.__slots__:
             raise AttributeError(f"'TransactionReceipt' object has no attribute '{attr}'")
-        if self.status == -1:
-            return None
-        if attr == "trace":
-            self._expand_trace()
-        elif self._trace is None:
-            self._get_trace()
-        return self.__dict__[attr]
+        self._getattr = True
+        try:
+            if self.status == -1:
+                return None
+            if attr == "trace":
+                self._expand_trace()
+            elif self._trace is None:
+                self._get_trace()
+            return getattr(self, attr)
+        finally:
+            self._getattr = False
 
-    def _await_confirmation(self, silent, callback):
+    def _await_confirmation(self, silent):
 
         # await tx showing in mempool
         while True:
@@ -184,15 +203,14 @@ class TransactionReceipt:
         # await confirmation
         receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
         self._set_from_receipt(receipt)
+        self._confirmed.set()
         if not silent:
             print(self._confirm_output())
-        if callback:
-            callback(self)
 
     def _set_from_tx(self, tx):
         if not self.sender:
-            self.sender = tx['from']
-        self.receiver = tx['to']
+            self.sender = EthAddress(tx['from'])
+        self.receiver = EthAddress(tx['to']) if tx['to'] else None
         self.value = Wei(tx['value'])
         self.gas_price = tx['gasPrice']
         self.gas_limit = tx['gas']
@@ -200,11 +218,10 @@ class TransactionReceipt:
         self.nonce = tx['nonce']
 
         # if receiver is a known contract, set function name
-        if tx['to'] and find_contract(tx['to']) is not None:
-            self.receiver = find_contract(tx['to'])
-            if not self.fn_name:
-                self.contract_name = self.receiver._name
-                self.fn_name = self.receiver.get_method(tx['input'])
+        if not self.fn_name and find_contract(tx['to']) is not None:
+            contract = find_contract(tx['to'])
+            self.contract_name = contract._name
+            self.fn_name = contract.get_method(tx['input'])
 
     def _set_from_receipt(self, receipt):
         '''Sets object attributes based on the transaction reciept.'''
@@ -252,7 +269,7 @@ class TransactionReceipt:
         if self._trace is not None:
             return
         self.return_value = None
-        if 'revert_msg' not in self.__dict__:
+        if not hasattr(self, 'revert_msg'):
             self.revert_msg = None
         self._trace = []
         if (self.input == "0x" and self.gas_used == 21000) or self.contract_address:
@@ -286,13 +303,13 @@ class TransactionReceipt:
     def _confirmed_trace(self, trace):
         self.modified_state = next((True for i in trace if i['op'] == "SSTORE"), False)
         step = trace[-1]
-        if step['op'] != "RETURN" or type(self.receiver) is str:
+        if step['op'] != "RETURN":
             return
-        # get return value
-        data = _get_memory(step, -1)
-        fn = getattr(self.receiver, self.fn_name)
-        self.return_value = fn.decode_abi(data)
-        return
+        contract = find_contract(self.receiver)
+        if contract:
+            data = _get_memory(step, -1)
+            fn = getattr(contract, self.fn_name)
+            self.return_value = fn.decode_abi(data)
 
     def _reverted_trace(self, trace):
         self.modified_state = False
@@ -337,8 +354,7 @@ class TransactionReceipt:
             offset: Start and end offset associated source code
         }
         '''
-
-        if 'trace' in self.__dict__:
+        if hasattr(self, 'trace'):
             return
         if self._trace is None:
             self._get_trace()
@@ -348,16 +364,8 @@ class TransactionReceipt:
             return
 
         # last_map gives a quick reference of previous values at each depth
-        last_map = {0: {
-            'address': self.receiver.address,
-            'contract': self.receiver,
-            'name': self.receiver._name,
-            'fn': [self._full_name()],
-            'jumpDepth': 0,
-            'pc_map': self.receiver._build['pcMap']
-        }}
-
-        coverage_eval = {self.receiver._name: {}}
+        last_map = {0: _get_last_map(self.receiver, self.input[:10])}
+        coverage_eval = {last_map[0]['name']: {}}
         active_branches = set()
 
         for i in range(len(trace)):
@@ -369,20 +377,10 @@ class TransactionReceipt:
                 sig = HexBytes("".join(trace[i - 1]['memory'])[offset:offset + 8]).hex()
 
                 # get contract and method name
-                address = web3.toChecksumAddress(trace[i - 1]['stack'][-2][-40:])
-                contract = find_contract(address)
+                address = trace[i - 1]['stack'][-2][-40:]
 
-                # update last_map
-                last_map[trace[i]['depth']] = {
-                    'address': address,
-                    'contract': contract,
-                    'name': contract._name,
-                    'fn': [f"{contract._name}.{contract.get_method(sig)}"],
-                    'jumpDepth': 0,
-                    'pc_map': contract._build['pcMap']
-                }
-                if contract._name not in coverage_eval:
-                    coverage_eval[contract._name] = {}
+                last_map[trace[i]['depth']] = _get_last_map(address, sig)
+                coverage_eval.setdefault(last_map[trace[i]['depth']]['name'], {})
 
             # update trace from last_map
             last = last_map[trace[i]['depth']]
@@ -393,17 +391,20 @@ class TransactionReceipt:
                 'jumpDepth': last['jumpDepth'],
                 'source': False
             })
+
+            if 'pc_map' not in last:
+                continue
             pc = last['pc_map'][trace[i]['pc']]
+
             if 'path' not in pc:
                 continue
-
             trace[i]['source'] = {'filename': pc['path'], 'offset': pc['offset']}
 
             if 'fn' not in pc:
                 continue
 
             # calculate coverage
-            if '<string' not in pc['path']:
+            if pc['path'] != "<stdin>":
                 if pc['path'] not in coverage_eval[last['name']]:
                     coverage_eval[last['name']][pc['path']] = [set(), set(), set()]
                 if 'statement' in pc:
@@ -678,3 +679,23 @@ def _get_memory(step, idx):
 
 def _raise(msg, source):
     raise VirtualMachineError({"message": msg, "source": source})
+
+
+def _get_last_map(address, sig):
+    contract = find_contract(address)
+    last_map = {
+        'address': EthAddress(address),
+        'jumpDepth': 0,
+        'name': None,
+    }
+    if contract:
+        last_map.update({
+            'contract': contract,
+            'name': contract._name,
+            'fn': [f"{contract._name}.{contract.get_method(sig)}"]
+        })
+        if contract._build:
+            last_map['pc_map'] = contract._build['pcMap']
+    else:
+        last_map.update({'contract': None, 'fn': [f"<UnknownContract>.{sig}"]})
+    return last_map

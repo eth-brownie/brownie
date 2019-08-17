@@ -12,7 +12,12 @@ from . import history
 from .rpc import Rpc
 from .web3 import Web3
 from brownie.convert import format_input, format_output, to_address, Wei
-from brownie.exceptions import UndeployedLibrary, VirtualMachineError
+from brownie.exceptions import (
+    ContractExists,
+    ContractNotFound,
+    UndeployedLibrary,
+    VirtualMachineError
+)
 from brownie._config import ARGV, CONFIG
 
 rpc = Rpc()
@@ -23,16 +28,16 @@ class _ContractBase:
 
     _dir_color = "contract"
 
-    def __init__(self, project, build):
+    def __init__(self, project, build, name, abi):
         self._project = project
         self._build = build
-        self._name = build['contractName']
-        self.abi = build['abi']
-        self.topics = get_topics(self.abi)
+        self._name = name
+        self.abi = abi
+        self.topics = get_topics(abi)
         self.signatures = dict((
             i['name'],
             _signature(i)
-        ) for i in self.abi if i['type'] == "function")
+        ) for i in abi if i['type'] == "function")
 
     def get_method(self, calldata):
         sig = calldata[:10].lower()
@@ -54,7 +59,7 @@ class ContractContainer(_ContractBase):
         self.tx = None
         self.bytecode = build['bytecode']
         self._contracts = []
-        super().__init__(project, build)
+        super().__init__(project, build, build['contractName'], build['abi'])
         self.deploy = ContractConstructor(self, self._name)
         rpc._revert_register(self)
 
@@ -104,20 +109,20 @@ class ContractContainer(_ContractBase):
             address: Address string of the contract.
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation.'''
-        address = to_address(address)
         contract = history.find_contract(address)
         if contract:
             if contract._name == self._name and contract._project == self._project:
                 return contract
-            raise ValueError(
+            raise ContractExists(
                 f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
             )
-        if web3.eth.getCode(address).hex() == "0x":
-            raise ValueError(f"No contract deployed at {address}")
-        contract = Contract(self._project, self._build, address, owner, tx)
+        contract = ProjectContract(self._project, self._build, address, owner, tx)
         self._contracts.append(contract)
-        history._add_contract(contract)
         return contract
+
+    def _add_from_tx(self, tx):
+        tx._confirmed.wait()
+        self.at(tx.contract_address, tx.sender, tx)
 
 
 class ContractConstructor:
@@ -162,15 +167,8 @@ class ContractConstructor:
             *args,
             amount=tx['value'],
             gas_limit=tx['gas'],
-            gas_price=tx['gasPrice'],
-            callback=self._callback
+            gas_price=tx['gasPrice']
         )
-
-    def _callback(self, tx):
-        # ensures the Contract instance is added to the container if the user
-        # presses CTRL-C while deployment is still pending
-        if tx.status == 1:
-            tx.contract_address = self._parent.at(tx.contract_address, tx.sender, tx)
 
     def encode_abi(self, *args):
         bytecode = self._parent.bytecode
@@ -189,8 +187,7 @@ class ContractConstructor:
         return bytecode + eth_abi.encode_abi(types, data).hex()
 
 
-class Contract(_ContractBase):
-
+class _DeployedContractBase(_ContractBase):
     '''Methods for interacting with a deployed contract.
 
     Each public contract method is available as a ContractCall or ContractTx
@@ -200,11 +197,15 @@ class Contract(_ContractBase):
         bytecode: Bytecode of the deployed contract, including constructor args.
         tx: TransactionReceipt of the of the tx that deployed the contract.'''
 
-    def __init__(self, project, build, address, owner, tx=None):
-        super().__init__(project, build)
-        self.tx = tx
+    _reverted = False
+
+    def __init__(self, address, owner=None, tx=None):
+        address = to_address(address)
         self.bytecode = web3.eth.getCode(address).hex()[2:]
+        if not self.bytecode:
+            raise ContractNotFound(f"No contract deployed at {address}")
         self._owner = owner
+        self.tx = tx
         self.address = address
         fn_names = [i['name'] for i in self.abi if i['type'] == "function"]
         for abi in [i for i in self.abi if i['type'] == "function"]:
@@ -223,16 +224,16 @@ class Contract(_ContractBase):
         setattr(self, name, obj)
 
     def __hash__(self):
-        return hash(self._name + self.address)
-
-    def __repr__(self):
-        return f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
+        return hash(f"{self._name}{self.address}{self._project}")
 
     def __str__(self):
         return self.address
 
+    def __repr__(self):
+        return f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
+
     def __eq__(self, other):
-        if type(other) is Contract:
+        if isinstance(other, _DeployedContractBase):
             return self.address == other.address and self.bytecode == other.bytecode
         if isinstance(other, str):
             try:
@@ -242,10 +243,41 @@ class Contract(_ContractBase):
                 return False
         return super().__eq__(other)
 
+    def __getattribute__(self, name):
+        if super().__getattribute__('_reverted'):
+            raise ContractNotFound("This contract no longer exists.")
+        return super().__getattribute__(name)
+
     def balance(self):
         '''Returns the current ether balance of the contract, in wei.'''
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
+
+
+class Contract(_DeployedContractBase):
+
+    def __init__(self, address, name, abi, owner=None):
+        _ContractBase.__init__(self, None, None, name, abi)
+        _DeployedContractBase.__init__(self, address, owner, None)
+        contract = history.find_contract(address)
+        if not contract:
+            return
+        if isinstance(contract, ProjectContract):
+            raise ContractExists(
+                f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
+            )
+        if contract.bytecode != self.bytecode:
+            contract._reverted = True
+
+
+class ProjectContract(_DeployedContractBase):
+
+    '''Methods for interacting with a deployed contract as part of a Brownie project.'''
+
+    def __init__(self, project, build, address, owner, tx=None):
+        _ContractBase.__init__(self, project, build, build['contractName'], build['abi'])
+        _DeployedContractBase.__init__(self, address, owner, tx)
+        history._add_contract(self)
 
 
 class OverloadedMethod:

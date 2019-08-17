@@ -77,6 +77,10 @@ class ContractExists(Exception):
     pass
 
 
+class ContractNotFound(Exception):
+    pass
+
+
 class ProjectAlreadyLoaded(Exception):
     pass
 

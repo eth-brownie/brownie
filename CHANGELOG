@@ -7,6 +7,7 @@
  - Determine solc version using pragma, allow multiple versions in one project
  - Set EVM version in config file
  - Allow config file comments, change structure
+ - Add PublicKeyAccount and Contract (via ABI), allow tracebacks on unknown contracts
  - Expanded Alert functionality
  - Windows bugfixes
 

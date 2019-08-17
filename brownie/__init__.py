@@ -11,6 +11,7 @@ from .project import (
     compile_source,
     run,
 )
+from brownie.network.contract import Contract  # NOQA: F401
 from brownie.gui import Gui
 from brownie._config import CONFIG as config
 from brownie.convert import Wei

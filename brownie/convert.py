@@ -174,6 +174,9 @@ class HexString(bytes):
     def __str__(self):
         return "0x" + self.hex()
 
+    def __repr__(self):
+        return str(self)
+
 
 def _hex_compare(a, b):
     b = str(b)

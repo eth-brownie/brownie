@@ -224,7 +224,7 @@ Account Methods
         >>> accounts[0].balance() == "100 ether"
         True
 
-.. py:classmethod:: Account.deploy(contract, *args, amount=None, gas_limit=None, gas_price=None, callback=None)
+.. py:classmethod:: Account.deploy(contract, *args, amount=None, gas_limit=None, gas_price=None)
 
     Deploys a contract.
 
@@ -379,7 +379,7 @@ Alert
 
 Alerts and callbacks are handled by creating instances of the ``Alert`` class.
 
-.. py:class:: brownie.network.alert.Alert(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None, repeat=False)
+.. py:class:: brownie.network.alert.Alert(fn, args=None, kwargs=None, delay=2, msg=None, callback=None, repeat=False)
 
     An alert object. It is active immediately upon creation of the instance.
 
@@ -441,7 +441,6 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
         >>> a.is_alive()
         True
 
-
 .. py:classmethod:: Alert.wait(timeout=None)
 
     Blocks until an alert has completed firing or the timeout value is reached. Similar to ``Thread.join()``.
@@ -499,9 +498,11 @@ Module Methods
 ``brownie.network.contract``
 ============================
 
-The ``contract`` module contains classes for interacting with smart contracts.
+The ``contract`` module contains classes for deploying and interacting with smart contracts.
 
-Classes in this module are not meant to be instantiated directly. When a project is loaded, Brownie automatically creates ``ContractContainer`` instances from on the files in the ``contracts/`` folder. New ``Contract`` instances are created via methods in the container.
+When a project is loaded, Brownie automatically creates ``ContractContainer`` instances from on the files in the ``contracts/`` folder. New ``ProjectContract`` instances are created via methods in the container.
+
+If you wish to interact with a contract outside of a project where only the ABI is available, use the ``Contract`` class.
 
 Arguments supplied to calls or transaction methods are converted using the methods outlined in the :ref:`convert<api-brownie-convert>` module.
 
@@ -512,7 +513,7 @@ ContractContainer
 
 .. py:class:: brownie.network.contract.ContractContainer
 
-    A list-like container class that holds all ``Contract`` instances of the same type, and is used to deploy new instances of that contract.
+    A list-like container class that holds all ``ProjectContract`` instances of the same type, and is used to deploy new instances of that contract.
 
     .. code-block:: python
 
@@ -593,7 +594,7 @@ ContractContainer Methods
 
     If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``IndexError`` is raised.
 
-    Returns a ``Contract`` instance upon success.
+    Returns a ``ProjectContract`` object upon success.
 
     In the console if the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
 
@@ -619,7 +620,7 @@ ContractContainer Methods
 
 .. py:classmethod:: ContractContainer.at(address, owner=None)
 
-    Returns a ``Contract`` instance.
+    Returns a ``ProjectContract`` instance.
 
     * ``address``: Address where the contract is deployed. Raises a ValueError if there is no bytecode at the address.
     * ``owner``: ``Account`` instance to set as the contract owner. If transactions to the contract do not specify a ``'from'`` value, they will be sent from this account.
@@ -669,12 +670,30 @@ ContractContainer Methods
 
 .. _api-network-contract:
 
-Contract
---------
 
-.. py:class:: brownie.network.contract.Contract
+Contract and ProjectContract
+----------------------------
+
+``Contract`` and ``ProjectContract`` are both used to call or send transactions to smart contracts.
+
+* ``Contract`` objects are instantiated directly and only require an ABI. They are used for calls to existing contracts that exist outside of a project.
+* ``ProjectContract`` objects are created by calls to ``ContractContainer.deploy``. Because they are compiled and deployed directly by Brownie, they provide much greater debugging capability.
+
+These classes have identical APIs.
+
+.. py:class:: brownie.network.contract.Contract(address, name, abi, owner=None)
 
     A deployed contract. This class allows you to call or send transactions to the contract.
+
+    .. code-block:: python
+
+        >>> from brownie import Contract
+        >>> Contract('0x79447c97b6543F6eFBC91613C655977806CB18b0', "Token", abi)
+        <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
+
+.. py:class:: brownie.network.contract.ProjectContract
+
+    A deployed contract that is part of an active Brownie project. Along with making calls and transactions, this object allows access to Brownie's full range of debugging and testing capability.
 
     .. code-block:: python
 
@@ -1224,7 +1243,9 @@ Module Methods
 
 .. py:method:: brownie.network.history.find_contract(address)
 
-    Given an address, returns the related ``Contract`` object. If none exists, returns ``None``.
+    Given an address, returns the related ``Contract`` or ``ProjectContract`` object. If none exists, returns ``None``.
+
+    This method is used internally by Brownie to locate a ``ProjectContract`` when the project it belongs to is unknown.
 
 .. py:method:: brownie.network.history.get_current_dependencies()
 
@@ -1423,7 +1444,7 @@ TransactionReceipt
 
     An instance of this class is returned whenever a transaction is broadcasted. When printed in the console, the transaction hash will appear yellow if the transaction is still pending or red if the transaction caused the EVM to revert.
 
-    Many of the attributes will be set to ``None`` while the transaction is still pending.
+    Many of the attributes return ``None`` while the transaction is still pending.
 
     .. code-block:: python
 
@@ -1455,7 +1476,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.contract_address
 
-    The address of the contract deployed as a result of this transaction, if any. If the contract is known, this will be a ``Contract`` object.
+    The address of the contract deployed as a result of this transaction, if any.
 
     .. code-block:: python
 
@@ -1609,7 +1630,7 @@ TransactionReceipt Attributes
 
     The value returned from the called function, if any. Only available if the RPC client allows ``debug_traceTransaction``.
 
-    If more then one value was returned, they are stored in a :ref:`ReturnValue<return_value>`.
+    If more then one value is returned, they are stored in a :ref:`ReturnValue<return_value>`.
 
     .. code-block:: python
 

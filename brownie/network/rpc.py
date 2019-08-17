@@ -276,12 +276,3 @@ class Rpc(metaclass=_Singleton):
                 obj._revert(height)
             else:
                 obj._reset()
-
-
-def _win_proc_filter(proc, match):
-    try:
-        cmdline = " ".join(proc.cmdline())
-    except psutil.AccessDenied:
-        return False
-    match = ["node"] + match.split()
-    return not [i for i in match if i not in cmdline]

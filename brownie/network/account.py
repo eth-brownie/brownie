@@ -5,6 +5,7 @@ from hexbytes import HexBytes
 import os
 from pathlib import Path
 import json
+import threading
 
 from eth_hash.auto import keccak
 import eth_keys
@@ -14,6 +15,7 @@ from brownie.exceptions import VirtualMachineError, UnknownAccount, Incompatible
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
+from . import history
 from brownie.convert import to_address, Wei
 from brownie._singleton import _Singleton
 from brownie._config import CONFIG
@@ -190,7 +192,7 @@ class _AccountBase:
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
 
-    def deploy(self, contract, *args, amount=None, gas_limit=None, gas_price=None, callback=None):
+    def deploy(self, contract, *args, amount=None, gas_limit=None, gas_price=None):
         '''Deploys a contract.
 
         Args:
@@ -202,7 +204,6 @@ class _AccountBase:
             amount: Amount of ether to send with transaction, in wei.
             gas_limit: Gas limit of the transaction.
             gas_price: Gas price of the transaction.
-            callback: Callback function to attach to TransactionReceipt.
 
         Returns:
             * Contract instance if the transaction confirms
@@ -230,13 +231,14 @@ class _AccountBase:
             txid,
             self,
             name=contract._name + ".constructor",
-            callback=callback,
             revert=revert
         )
+        add_thread = threading.Thread(target=contract._add_from_tx, args=(tx,), daemon=True)
+        add_thread.start()
         if tx.status != 1:
             return tx
-        tx.contract_address = contract.at(tx.contract_address, self, tx)
-        return tx.contract_address
+        add_thread.join()
+        return history.find_contract(tx.contract_address)
 
     def estimate_gas(self, to, amount, data=""):
         '''Estimates the gas cost for a transaction. Raises VirtualMachineError

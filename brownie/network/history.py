@@ -121,6 +121,8 @@ def _remove_contract(contract):
 # RPC registry methods
 
 def _reset():
+    for contract in _contract_map.values():
+        contract._reverted = True
     _contract_map.clear()
 
 
@@ -130,4 +132,5 @@ def _revert(height):
             continue
         if len(web3.eth.getCode(contract.address).hex()) > 4:
             continue
+        _contract_map[address]._reverted = True
         del _contract_map[address]
