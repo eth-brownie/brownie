@@ -266,6 +266,16 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 network
 *******
 
+.. py:exception:: brownie.exceptions.ContractExists
+
+    Raised when attempting to create a new ``Contract`` or ``ContractABI`` object, when one already exists for the given address.
+
+    Raised by ``project.compile_source`` when the source code contains a contract with a name that is the same as another in the same project.
+
+.. py:exception:: brownie.exceptions.ContractNotFound
+
+    Raised when attempting to access a ``Contract`` or ``ContractABI`` object that no longer exists because the local network was reverted.
+
 .. py:exception:: brownie.exceptions.UnknownAccount
 
     Raised when the ``Accounts`` container cannot locate a specified ``Account`` object.
@@ -296,10 +306,6 @@ network
 
 project
 *******
-
-.. py:exception:: brownie.exceptions.ContractExists
-
-    Raised by ``project.compile_source`` when the source code contains a contract with a name that is the same as a contract in the active project.
 
 .. py:exception:: brownie.exceptions.ProjectAlreadyLoaded
 
