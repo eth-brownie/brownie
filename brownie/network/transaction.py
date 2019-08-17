@@ -143,7 +143,7 @@ class TransactionReceipt:
             if ARGV['cli'] == "console":
                 return
             # if coverage evaluation is active, evaluate the trace
-            if ARGV['coverage'] and not coverage.add_from_cached(self.coverage_hash) and self.trace:
+            if ARGV['coverage'] and not coverage.check_cached(self.coverage_hash) and self.trace:
                 self._expand_trace()
             if not self.status:
                 if revert_msg is None:
@@ -359,7 +359,7 @@ class TransactionReceipt:
             self._get_trace()
         self.trace = trace = self._trace
         if not trace or 'fn' in trace[0]:
-            coverage.add(self.coverage_hash, {})
+            coverage.add_transaction(self.coverage_hash, {})
             return
 
         # last_map gives a quick reference of previous values at each depth
@@ -434,7 +434,10 @@ class TransactionReceipt:
             elif last['jumpDepth'] > 0:
                 del last['fn'][-1]
                 last['jumpDepth'] -= 1
-        coverage.add(self.coverage_hash, dict((k, v) for k, v in coverage_eval.items() if v))
+        coverage.add_transaction(
+            self.coverage_hash,
+            dict((k, v) for k, v in coverage_eval.items() if v)
+        )
 
     def _full_name(self):
         if self.contract_name:

@@ -141,7 +141,7 @@ if brownie.project.check_for_project('.'):
     def pytest_sessionfinish():
         manager.save_json()
         if ARGV['coverage']:
-            coverage_eval = brownie.test.coverage.get_merged()
+            coverage_eval = brownie.test.coverage.get_merged_coverage_eval()
             output.print_coverage_totals(project, coverage_eval)
             output.save_coverage_report(
                 project,
