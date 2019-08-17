@@ -63,19 +63,25 @@ def testproject(_project_factory, project, tmp_path):
 def otherproject(testproject):
     return brownie.project.load(testproject._project_path, 'OtherProject')
 
-# setup for pytest-brownie plugin testing
+
 @pytest.fixture
-def plugintester(_project_factory, project, testdir, request, rpc, monkeypatch):
+def plugintesterbase(project, testdir, monkeypatch):
     brownie.test.coverage.clear()
     brownie.network.connect()
     monkeypatch.setattr('brownie.network.connect', lambda k: None)
     testdir.plugins.extend(['pytest-brownie', 'pytest-cov'])
-    _copy_all(_project_factory, testdir.tmpdir)
-    test_source = getattr(request.module, 'test_source', None)
-    if test_source:
-        testdir.makepyfile(test_source)
     yield testdir
     brownie.network.disconnect()
+
+
+# setup for pytest-brownie plugin testing
+@pytest.fixture
+def plugintester(_project_factory, plugintesterbase, request):
+    _copy_all(_project_factory, plugintesterbase.tmpdir)
+    test_source = getattr(request.module, 'test_source', None)
+    if test_source:
+        plugintesterbase.makepyfile(test_source)
+    yield plugintesterbase
 
 # launches and connects to ganache, yields the brownie.network module
 @pytest.fixture
@@ -161,6 +167,15 @@ def BrownieTester(testproject, devnetwork):
 
 
 @pytest.fixture
+def ExternalCallTester(testproject, devnetwork):
+    return testproject.ExternalCallTester
+
+
+@pytest.fixture
 def tester(BrownieTester, accounts):
-    c = BrownieTester.deploy(True, {'from': accounts[0]})
-    return c
+    return BrownieTester.deploy(True, {'from': accounts[0]})
+
+
+@pytest.fixture
+def ext_tester(ExternalCallTester, accounts):
+    return ExternalCallTester.deploy({'from': accounts[0]})

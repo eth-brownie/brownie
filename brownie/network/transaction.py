@@ -94,7 +94,7 @@ class TransactionReceipt:
         'value',
     )
 
-    def __init__(self, txid, sender=None, silent=False, name='', revert=None):
+    def __init__(self, txid, sender=None, silent=False, name='', revert_data=None):
         '''Instantiates a new TransactionReceipt object.
 
         Args:
@@ -102,7 +102,7 @@ class TransactionReceipt:
             sender: sender as a hex string or Account object
             silent: toggles console verbosity
             name: contract function being called
-            revert: (revert string, program counter)
+            revert_data: (revert string, program counter, revert type)
         '''
         if type(txid) is not str:
             txid = txid.hex()
@@ -121,16 +121,15 @@ class TransactionReceipt:
             self.contract_name, self.fn_name = name.split('.', maxsplit=1)
 
         # avoid querying the trace to get the revert string if possible
-        if revert:
-            self._revert_pc = revert[1]
-            if revert[0]:
-                # revert message was returned
-                self.revert_msg = revert[0]
-            elif revert[2] == "revert":
-                # check for dev revert string as a comment
-                revert[0] = build.get_dev_revert(revert[1])
-                if type(revert[0]) is str:
-                    self.revert_msg = revert[0]
+        revert_msg, self._revert_pc, revert_type = revert_data or (None, None, None)
+        if revert_msg:
+            # revert message was returned
+            self.revert_msg = revert_msg
+        elif revert_type == "revert":
+            # check for dev revert string as a comment
+            revert_msg = build.get_dev_revert(self._revert_pc)
+            if type(revert_msg) is str:
+                self.revert_msg = revert_msg
 
         # threaded to allow impatient users to ctrl-c to stop waiting in the console
         confirm_thread = threading.Thread(
@@ -144,15 +143,15 @@ class TransactionReceipt:
             if ARGV['cli'] == "console":
                 return
             # if coverage evaluation is active, evaluate the trace
-            if ARGV['coverage'] and not coverage.add_from_cached(self.coverage_hash) and self.trace:
+            if ARGV['coverage'] and not coverage.check_cached(self.coverage_hash) and self.trace:
                 self._expand_trace()
             if not self.status:
-                if revert[0] is None:
+                if revert_msg is None:
                     # no revert message and unable to check dev string - have to get trace
                     self._expand_trace()
                 # raise from a new function to reduce pytest traceback length
                 _raise(
-                    f"{revert[2]} {self.revert_msg or ''}",
+                    f"{revert_type} {self.revert_msg or ''}",
                     self._traceback_string() if ARGV['revert'] else self._error_string(1)
                 )
         except KeyboardInterrupt:
@@ -360,7 +359,7 @@ class TransactionReceipt:
             self._get_trace()
         self.trace = trace = self._trace
         if not trace or 'fn' in trace[0]:
-            coverage.add(self.coverage_hash, {})
+            coverage.add_transaction(self.coverage_hash, {})
             return
 
         # last_map gives a quick reference of previous values at each depth
@@ -435,7 +434,10 @@ class TransactionReceipt:
             elif last['jumpDepth'] > 0:
                 del last['fn'][-1]
                 last['jumpDepth'] -= 1
-        coverage.add(self.coverage_hash, dict((k, v) for k, v in coverage_eval.items() if v))
+        coverage.add_transaction(
+            self.coverage_hash,
+            dict((k, v) for k, v in coverage_eval.items() if v)
+        )
 
     def _full_name(self):
         if self.contract_name:

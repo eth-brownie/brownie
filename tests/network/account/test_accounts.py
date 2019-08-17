@@ -3,6 +3,7 @@
 import pytest
 
 from brownie.exceptions import UnknownAccount
+from brownie.network.account import LocalAccount
 
 priv_key = "0x416b8a7d9290502f5661da81f0cf43893e3d19cb9aea3c426cfb36e8186e9c09"
 addr = "0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E"
@@ -23,15 +24,25 @@ def test_repopulate(accounts, network, rpc):
     assert len(accounts) == len(a)
 
 
+def test_contains(accounts):
+    assert accounts[-1] in accounts
+    assert str(accounts[-1]) in accounts
+    assert "potato" not in accounts
+    assert 12345 not in accounts
+
+
 def test_add(devnetwork, accounts):
     assert len(accounts) == 10
-    accounts.add()
+    local = accounts.add()
     assert len(accounts) == 11
+    assert type(local) is LocalAccount
+    assert accounts[-1] == local
     accounts.add(priv_key)
     assert len(accounts) == 12
     assert accounts[-1].address == addr
     assert accounts[-1].private_key == priv_key
-    accounts._reset()
+    accounts.add(priv_key)
+    assert len(accounts) == 12
 
 
 def test_at(accounts):
@@ -63,3 +74,11 @@ def test_clear(accounts):
     accounts.clear()
     assert len(accounts) == 0
     accounts._reset()
+
+
+def test_delete(accounts):
+    assert len(accounts) == 10
+    a = accounts[-1]
+    del accounts[-1]
+    assert len(accounts) == 9
+    assert a not in accounts

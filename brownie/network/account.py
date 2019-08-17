@@ -223,15 +223,15 @@ class _AccountBase:
                 'gas': Wei(gas_limit) or self._gas_limit("", amount, data),
                 'data': HexBytes(data)
             })
-            revert = None
+            revert_data = None
         except ValueError as e:
-            txid, revert = _raise_or_return_tx(e)
+            txid, revert_data = _raise_or_return_tx(e)
         self.nonce += 1
         tx = TransactionReceipt(
             txid,
             self,
             name=contract._name + ".constructor",
-            revert=revert
+            revert_data=revert_data
         )
         add_thread = threading.Thread(target=contract._add_from_tx, args=(tx,), daemon=True)
         add_thread.start()
@@ -282,11 +282,11 @@ class _AccountBase:
                 'gas': Wei(gas_limit) or self._gas_limit(to, amount, data),
                 'data': HexBytes(data)
             })
-            revert = None
+            revert_data = None
         except ValueError as e:
-            txid, revert = _raise_or_return_tx(e)
+            txid, revert_data = _raise_or_return_tx(e)
         self.nonce += 1
-        return TransactionReceipt(txid, self, revert=revert)
+        return TransactionReceipt(txid, self, revert_data=revert_data)
 
 
 class Account(_AccountBase):

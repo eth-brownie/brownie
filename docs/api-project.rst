@@ -395,7 +395,7 @@ These are more low-level methods, called internally during the execution of the 
 
 The ``scripts`` module contains methods for comparing, importing and executing python scripts related to a project.
 
-.. py:method:: scripts.run(script_path, method_name="main", args=None, kwargs=None, gas_profile=False)
+.. py:method:: scripts.run(script_path, method_name="main", args=None, kwargs=None, project=None)
 
     Imports a project script, runs a method in it and returns the result.
 
@@ -403,7 +403,7 @@ The ``scripts`` module contains methods for comparing, importing and executing p
     ``method_name``: name of method in the script to run
     ``args``: method args
     ``kwargs``: method kwargs
-    ``gas_profile``: if ``True``, gas use data will be displayed when the script completes
+    ``project``: ``Project`` object that should available for import into the script namespace
 
     .. code-block:: python
 

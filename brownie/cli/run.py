@@ -3,6 +3,7 @@
 from docopt import docopt
 
 from brownie import network, project, run
+from brownie.test.output import print_gas_profile
 from brownie._config import ARGV, CONFIG, update_argv_from_docopt
 
 
@@ -25,6 +26,17 @@ interactions, or for gas profiling."""
 def main():
     args = docopt(__doc__)
     update_argv_from_docopt(args)
-    project.load()
+
+    if project.check_for_project():
+        active_project = project.load()
+        active_project.load_config()
+        print(f"{active_project._name} is the active project.")
+    else:
+        active_project = None
+        print("No project was loaded.")
+
     network.connect(ARGV['network'])
-    run(args['<filename>'], args['<function>'] or "main", gas_profile=ARGV['gas'])
+
+    run(args['<filename>'], method_name=args['<function>'] or "main", project=active_project)
+    if ARGV['gas']:
+        print_gas_profile()

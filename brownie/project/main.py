@@ -256,7 +256,7 @@ def pull(project_name, project_path=None, ignore_subfolder=False):
     if project_path is None:
         project_path = Path('.').joinpath(project_name)
     project_path = _new_checks(project_path, ignore_subfolder)
-    if project_path.exists():
+    if project_path.exists() and list(project_path.glob('*')):
         raise FileExistsError(f"Folder already exists - {project_path}")
 
     print(f"Downloading from {url}...")
