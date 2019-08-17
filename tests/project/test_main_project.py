@@ -36,15 +36,6 @@ def test_new(tmp_path, project):
     assert tmp_path.joinpath('brownie-config.json').exists()
 
 
-def test_pull(project, tmp_path):
-    path = project.pull('token')
-    assert path != tmp_path
-    assert Path(path).joinpath('brownie-config.json').exists()
-    assert Path(path).joinpath('contracts/Token.sol').exists()
-    assert Path(path).joinpath('contracts/SafeMath.sol').exists()
-    project.load(path)
-
-
 def test_pull_raises(project, tmp_path):
     project.new(tmp_path.joinpath('token'))
     with pytest.raises(FileExistsError):
