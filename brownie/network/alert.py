@@ -20,16 +20,7 @@ class Alert:
     '''Setup notifications and callbacks based on state changes to the blockchain.
     The alert is immediatly active as soon as the class is insantiated.'''
 
-    def __init__(
-        self,
-        fn,
-        args=None,
-        kwargs=None,
-        delay=0.5,
-        msg=None,
-        callback=None,
-        repeat=False
-    ):
+    def __init__(self, fn, args=None, kwargs=None, delay=2, msg=None, callback=None, repeat=False):
         '''Creates a new Alert.
 
         Args:

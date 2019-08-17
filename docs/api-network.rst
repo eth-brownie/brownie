@@ -379,7 +379,7 @@ Alert
 
 Alerts and callbacks are handled by creating instances of the ``Alert`` class.
 
-.. py:class:: brownie.network.alert.Alert(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None, repeat=False)
+.. py:class:: brownie.network.alert.Alert(fn, args=None, kwargs=None, delay=2, msg=None, callback=None, repeat=False)
 
     An alert object. It is active immediately upon creation of the instance.
 
@@ -440,7 +440,6 @@ Alerts and callbacks are handled by creating instances of the ``Alert`` class.
 
         >>> a.is_alive()
         True
-
 
 .. py:classmethod:: Alert.wait(timeout=None)
 
