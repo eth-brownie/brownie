@@ -12,3 +12,5 @@ docs/_templates
 venv
 *egg-info/
 .tox/
+.mypy_cache/
+.idea/
