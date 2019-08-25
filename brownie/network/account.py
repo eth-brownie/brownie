@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 
+from typing import List, Dict, Any, Union, Type, Iterable, Optional
 from getpass import getpass
+
+from eth_typing import ChecksumAddress
 from hexbytes import HexBytes
 import os
 from pathlib import Path
@@ -12,6 +15,7 @@ import eth_keys
 
 from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError, UnknownAccount, IncompatibleEVMVersion
+from brownie.network.contract import ContractContainer
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
@@ -28,47 +32,47 @@ class Accounts(metaclass=_Singleton):
 
     '''List-like container that holds all of the available Account instances.'''
 
-    def __init__(self):
-        self._accounts = []
+    def __init__(self) -> None:
+        self._accounts: List = []
         # prevent private keys from being stored in read history
         self.add.__dict__['_private'] = True
         rpc._revert_register(self)
         self._reset()
 
-    def _reset(self):
+    def _reset(self) -> None:
         self._accounts.clear()
         try:
             self._accounts = [Account(i) for i in web3.eth.accounts]
         except Exception:
             pass
 
-    def _revert(self, height):
+    def _revert(self, height: Any) -> None:
         for i in self._accounts:
             i.nonce = web3.eth.getTransactionCount(str(i))
 
-    def __contains__(self, address):
+    def __contains__(self, address: str) -> bool:
         try:
             address = to_address(address)
             return address in self._accounts
         except ValueError:
             return False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self._accounts)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable:
         return iter(self._accounts)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int) -> Account:
         return self._accounts[key]
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: int) -> None:
         del self._accounts[key]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._accounts)
 
-    def add(self, priv_key=None):
+    def add(self, priv_key: int = None) -> LocalAccount:
         '''Creates a new ``LocalAccount`` instance and appends it to the container.
 
         Args:
@@ -86,7 +90,7 @@ class Accounts(metaclass=_Singleton):
         self._accounts.append(account)
         return account
 
-    def load(self, filename=None):
+    def load(self, filename: str = None) -> Union[List, LocalAccount]:
         '''Loads a local account from a keystore file.
 
         Args:
@@ -113,7 +117,7 @@ class Accounts(metaclass=_Singleton):
             )
         return self.add(priv_key)
 
-    def at(self, address):
+    def at(self, address: str) -> LocalAccount:
         '''Retrieves an Account instance from the address string. Raises
         ValueError if the account cannot be found.
 
@@ -129,7 +133,7 @@ class Accounts(metaclass=_Singleton):
         except StopIteration:
             raise UnknownAccount(f"No account exists for {address}")
 
-    def remove(self, address):
+    def remove(self, address: str) -> None:
         '''Removes an account instance from the container.
 
         Args:
@@ -140,7 +144,7 @@ class Accounts(metaclass=_Singleton):
         except ValueError:
             raise UnknownAccount(f"No account exists for {address}")
 
-    def clear(self):
+    def clear(self) -> None:
         '''Empties the container.'''
         self._accounts.clear()
 
@@ -149,17 +153,17 @@ class _AccountBase:
 
     '''Base class for Account and LocalAccount'''
 
-    def __init__(self, addr):
+    def __init__(self, addr: str) -> None:
         self.address = addr
         self.nonce = web3.eth.getTransactionCount(self.address)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.address)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.address
 
-    def __eq__(self, other):
+    def __eq__(self, other: Union[str, object]) -> bool:
         if isinstance(other, str):
             try:
                 address = to_address(other)
@@ -168,15 +172,15 @@ class _AccountBase:
                 return False
         return super().__eq__(other)
 
-    def _gas_limit(self, to, amount, data=""):
+    def _gas_limit(self, to: Account, amount: int, data: str = "") -> int:
         if CONFIG['active_network']['gas_limit'] not in (True, False, None):
             return Wei(CONFIG['active_network']['gas_limit'])
         return self.estimate_gas(to, amount, data)
 
-    def _gas_price(self):
+    def _gas_price(self) -> Wei:
         return Wei(CONFIG['active_network']['gas_price'] or web3.eth.gasPrice)
 
-    def _check_for_revert(self, tx):
+    def _check_for_revert(self, tx: Dict) -> None:
         if (
             'broadcast_reverting_tx' not in CONFIG['active_network'] or
             CONFIG['active_network']['broadcast_reverting_tx']
@@ -187,12 +191,18 @@ class _AccountBase:
         except ValueError as e:
             raise VirtualMachineError(e) from None
 
-    def balance(self):
+    def balance(self) -> Wei:
         '''Returns the current balance at the address, in wei.'''
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
 
-    def deploy(self, contract, *args, amount=None, gas_limit=None, gas_price=None):
+    def deploy(
+            self,
+            contract,
+            *args,
+            amount=None,
+            gas_limit=None,
+            gas_price=None) -> Union[ContractContainer, TransactionReceipt]:
         '''Deploys a contract.
 
         Args:
@@ -240,7 +250,7 @@ class _AccountBase:
         add_thread.join()
         return history.find_contract(tx.contract_address)
 
-    def estimate_gas(self, to, amount, data=""):
+    def estimate_gas(self, to: Account, amount: int, data: str = "") -> int:
         '''Estimates the gas cost for a transaction. Raises VirtualMachineError
         if the transaction would revert.
 
@@ -258,7 +268,13 @@ class _AccountBase:
             'data': HexBytes(data)
         })
 
-    def transfer(self, to, amount, gas_limit=None, gas_price=None, data=""):
+    def transfer(
+            self,
+            to: Type[Account],
+            amount: int,
+            gas_limit: float = None,
+            gas_price: float = None,
+            data: str = "") -> TransactionReceipt:
         '''Transfers ether from this account.
 
         Args:
@@ -297,10 +313,10 @@ class Account(_AccountBase):
         address: Public address of the account.
         nonce: Current nonce of the account.'''
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Account object '{color['string']}{self.address}{color}'>"
 
-    def _transact(self, tx):
+    def _transact(self, tx: Dict) -> Any:
         self._check_for_revert(tx)
         return web3.eth.sendTransaction(tx)
 
@@ -315,16 +331,16 @@ class LocalAccount(_AccountBase):
         private_key: Account private key.
         public_key: Account public key.'''
 
-    def __init__(self, address, account, priv_key):
+    def __init__(self, address: str, account: Account, priv_key: Optional[int]) -> None:
         self._acct = account
         self.private_key = priv_key
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<LocalAccount object '{color['string']}{self.address}{color}'>"
 
-    def save(self, filename, overwrite=False):
+    def save(self, filename: str, overwrite: bool = False) -> str:
         '''Encrypts the private key and saves it in a keystore json.
 
         Attributes:
@@ -353,7 +369,7 @@ class LocalAccount(_AccountBase):
             json.dump(encrypted, fp)
         return str(json_file)
 
-    def _transact(self, tx):
+    def _transact(self, tx: Dict) -> None:
         self._check_for_revert(tx)
         signed_tx = self._acct.signTransaction(tx).rawTransaction
         return web3.eth.sendRawTransaction(signed_tx)
@@ -364,19 +380,19 @@ class PublicKeyAccount:
     '''Class for interacting with an Ethereum account where you do not control
     the private key. Can only be used to check the balance and to send ether to.'''
 
-    def __init__(self, addr):
+    def __init__(self, addr: ChecksumAddress) -> None:
         self.address = to_address(addr)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<PublicKeyAccount object '{color['string']}{self.address}{color}'>"
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.address)
 
-    def __str__(self):
+    def __str__(self) -> ChecksumAddress:
         return self.address
 
-    def __eq__(self, other):
+    def __eq__(self, other: Union[object, str]) -> bool:
         if isinstance(other, str):
             try:
                 address = to_address(other)
@@ -387,13 +403,13 @@ class PublicKeyAccount:
             return other.address == self.address
         return super().__eq__(other)
 
-    def balance(self):
+    def balance(self) -> Wei:
         '''Returns the current balance at the address, in wei.'''
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
 
 
-def _raise_or_return_tx(exc):
+def _raise_or_return_tx(exc: Any) -> Any:
     try:
         data = eval(str(exc))['data']
         txid = next(i for i in data.keys() if i[:2] == "0x")
