@@ -1,10 +1,14 @@
 #!/usr/bin/python3
 
+from typing import Type, Dict
+import psutil
+
 import json
 import sys
 
 
 # network
+
 
 class UnknownAccount(Exception):
     pass
@@ -20,7 +24,7 @@ class IncompatibleEVMVersion(Exception):
 
 class _RPCBaseException(Exception):
 
-    def __init__(self, msg, cmd, proc, uri):
+    def __init__(self, msg: str, cmd: str, proc: Type[psutil.Popen], uri: str):
         msg = f"{msg}\n\nCommand: {cmd}\nURI: {uri}\nExit Code: {proc.poll()}"
         if sys.platform != "win32":
             out = proc.stdout.read().decode().strip() or "  (Empty)"
@@ -31,13 +35,13 @@ class _RPCBaseException(Exception):
 
 class RPCProcessError(_RPCBaseException):
 
-    def __init__(self, cmd, proc, uri):
+    def __init__(self, cmd: str, proc: Type[psutil.Popen], uri: str):
         super().__init__("Unable to launch local RPC client.", cmd, proc, uri)
 
 
 class RPCConnectionError(_RPCBaseException):
 
-    def __init__(self, cmd, proc, uri):
+    def __init__(self, cmd: str, proc: Type[psutil.Popen], uri: str):
         super().__init__("Able to launch RPC client, but unable to connect.", cmd, proc, uri)
 
 
@@ -56,7 +60,7 @@ class VirtualMachineError(Exception):
     revert_msg = ""
     source = ""
 
-    def __init__(self, exc):
+    def __init__(self, exc: Dict):
         if type(exc) is not dict:
             try:
                 exc = eval(str(exc))
@@ -91,7 +95,7 @@ class ProjectNotFound(Exception):
 
 class CompilerError(Exception):
 
-    def __init__(self, e):
+    def __init__(self, e: Type[psutil.Popen]):
         err = [i['formattedMessage'] for i in json.loads(e.stdout_data)['errors']]
         super().__init__("Compiler returned the following errors:\n\n" + "\n".join(err))
 
