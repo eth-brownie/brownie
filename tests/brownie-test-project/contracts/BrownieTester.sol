@@ -26,6 +26,7 @@ contract BrownieTester {
 
     event TupleEvent(address addr, Base base);
     event Debug(uint a);
+    event IndexedEvent(string indexed str, uint256 indexed num);
 
     constructor (bool success) public {
         require(success);
@@ -47,6 +48,13 @@ contract BrownieTester {
     }
 
     function doNothing() external returns (bool) {
+        return true;
+    }
+
+    function emitEvents(string calldata str, uint256 num) external returns (bool) {
+        emit Debug(num);
+        emit IndexedEvent(str, num);
+        emit Debug(num + 2);
         return true;
     }
 
