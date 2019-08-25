@@ -14,3 +14,4 @@ venv
 .tox/
 .mypy_cache/
 .idea/
+.DS_Store
