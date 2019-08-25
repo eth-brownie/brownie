@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+from typing import List, Callable, Tuple, Dict, Optional, Union
+
 import time as time
 from threading import Thread
 
@@ -20,7 +22,16 @@ class Alert:
     '''Setup notifications and callbacks based on state changes to the blockchain.
     The alert is immediatly active as soon as the class is insantiated.'''
 
-    def __init__(self, fn, args=None, kwargs=None, delay=2, msg=None, callback=None, repeat=False):
+    def __init__(
+            self,
+            fn: Callable,
+            args: Tuple = None,
+            kwargs: Dict = None,
+            delay: float = 2,
+            msg: str = None,
+            callback: Callable = None,
+            repeat: bool = False):
+
         '''Creates a new Alert.
 
         Args:
@@ -55,7 +66,16 @@ class Alert:
         self.start_time = time.time()
         _instances.add(self)
 
-    def _loop(self, fn, args, kwargs, start_value, delay, msg, callback, repeat=False):
+    def _loop(
+            self,
+            fn: Callable,
+            args: Tuple,
+            kwargs: Dict,
+            start_value: int,
+            delay: float,
+            msg: str,
+            callback: Callable,
+            repeat: Union[int, bool, None] = False) -> None:
         try:
             sleep = min(delay, 0.05)
             while repeat is not None:
@@ -80,18 +100,18 @@ class Alert:
         finally:
             _instances.discard(self)
 
-    def is_alive(self):
+    def is_alive(self) -> bool:
         '''Checks if the alert is currently active.'''
         return self._thread.is_alive()
 
-    def wait(self, timeout=None):
+    def wait(self, timeout: int = None) -> None:
         '''Waits for the alert to fire.
 
         Args:
             timeout: Number of seconds to wait. If None, will wait indefinitely.'''
         self._thread.join(timeout)
 
-    def stop(self, wait=True):
+    def stop(self, wait: bool = True) -> None:
         '''Stops the alert.
 
         Args:
@@ -101,17 +121,17 @@ class Alert:
             self.wait()
 
 
-def new(fn, args=None, kwargs=None, delay=0.5, msg=None, callback=None, repeat=False):
+def new(fn: Callable, args: Tuple = None, kwargs: Dict = None, delay: float = 0.5, msg: str = None, callback: Callable = None, repeat: bool = False) -> Alert:
     '''Alias for creating a new Alert instance.'''
     return Alert(fn, args, kwargs, delay, msg, callback, repeat)
 
 
-def show():
+def show() -> List:
     '''Returns a list of all currently active Alert instances.'''
     return sorted(_instances, key=lambda k: k.start_time)
 
 
-def stop_all():
+def stop_all() -> None:
     '''Stops all currently active Alert instances.'''
     for t in _instances.copy():
         t.stop()
