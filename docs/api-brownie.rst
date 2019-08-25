@@ -304,6 +304,10 @@ network
 
     Raised when a contract call causes the EVM to revert.
 
+.. py:exception:: brownie.exceptions.EventLookupError
+
+    Raised during lookup errors by ``EventDict`` and ``_EventItem``.
+
 project
 *******
 
