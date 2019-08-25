@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from typing import Union, Dict, Iterable, KeysView, Any, Optional
 from io import BytesIO
 from pathlib import Path
 import requests
@@ -34,13 +35,13 @@ _loaded_projects = []
 
 class _ProjectBase:
 
-    def __init__(self, project_path, name):
+    def __init__(self, project_path: str, name: str) -> None:
         self._project_path = project_path
         self._name = name
         self._sources = Sources(project_path)
         self._build = Build(project_path, self._sources)
 
-    def _compile(self, sources, compiler_config, silent):
+    def _compile(self, sources: Sources, compiler_config: Dict, silent: bool) -> None:
         build_json = compiler.compile_and_format(
             sources,
             solc_version=compiler_config['version'],
@@ -53,31 +54,31 @@ class _ProjectBase:
         for data in build_json.values():
             self._build.add(data)
 
-    def _create_containers(self):
+    def _create_containers(self) -> None:
         # create container objects
-        self._containers = {}
+        self._containers: Dict = {}
         for key, data in self._build.items():
             if data['bytecode']:
                 container = ContractContainer(self, data)
                 self._containers[key] = container
                 setattr(self, container._name, container)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> ContractContainer:
         return self._containers[key]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable:
         return iter(self._containers[i] for i in sorted(self._containers))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._containers)
 
-    def __contains__(self, item):
+    def __contains__(self, item: ContractContainer) -> bool:
         return item in self._containers
 
-    def dict(self):
+    def dict(self) -> Dict:
         return dict(self._containers)
 
-    def keys(self):
+    def keys(self) -> KeysView[Any]:
         return self._containers.keys()
 
 
@@ -196,13 +197,13 @@ class TempProject(_ProjectBase):
     '''Simplified Project class used to hold temporary contracts that are
     compiled via project.compile_source'''
 
-    def __init__(self, source, compiler_config):
+    def __init__(self, source, compiler_config) -> None:
         super().__init__(None, "TempProject")
         self._sources.add("<stdin>", source)
         self._compile({'<stdin>': source}, compiler_config, True)
         self._create_containers()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<TempProject object>"
 
 
