@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 
+import itertools
+import json
 import os
 from pathlib import Path
 import shutil
 import pytest
-from _pytest.monkeypatch import MonkeyPatch  # derive_importpath
+from _pytest.monkeypatch import MonkeyPatch
 
 import brownie
 from brownie._config import ARGV
@@ -12,13 +14,27 @@ from brownie._config import ARGV
 pytest_plugins = 'pytester'
 
 
+# travis cannot call github ethereum/solidity API, so this method is patched
 def pytest_sessionstart():
-    # travis cannot call github ethereum/solidity API, so this method is patched
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setattr(
         "solcx.get_available_solc_versions",
         lambda: ['v0.5.10', 'v0.5.9', 'v0.5.8', 'v0.5.7', 'v0.4.25', 'v0.4.24', 'v0.4.22']
     )
+
+
+# auto-parametrize the evmtester fixture
+def pytest_generate_tests(metafunc):
+    if 'evmtester' in metafunc.fixturenames:
+        metafunc.parametrize(
+            'evmtester',
+            itertools.product(
+                ['0.4.25', '0.5.0', '0.5.7'],
+                [0, 200, 1000, 10000],
+                ['byzantium', 'constantinople']
+            ),
+            indirect=True
+        )
 
 
 @pytest.fixture(scope="session")
@@ -52,16 +68,40 @@ def project(tmp_path):
     for p in brownie.project.get_loaded_projects():
         p.close(False)
 
+
 # copies the tester project into a temporary folder, loads it, and yields a Project object
 @pytest.fixture
 def testproject(_project_factory, project, tmp_path):
     _copy_all(_project_factory, tmp_path)
-    return brownie.project.load(tmp_path, 'TestProject')
+    return project.load(tmp_path, 'TestProject')
 
 
 @pytest.fixture
 def otherproject(testproject):
     return brownie.project.load(testproject._project_path, 'OtherProject')
+
+
+# yields a deployed EVMTester contract
+# automatically parametrized with multiple compiler versions and settings
+@pytest.fixture
+def evmtester(_project_factory, project, tmp_path, accounts, request):
+    solc_version, runs, evm_version = request.param
+    tmp_path.joinpath('contracts').mkdir()
+    shutil.copyfile(
+        _project_factory.joinpath('contracts/EVMTester.sol'),
+        tmp_path.joinpath('contracts/EVMTester.sol')
+    )
+    conf_json = brownie._config._load_json(_project_factory.joinpath('brownie-config.json'))
+    conf_json['compiler']['solc'].update({
+        'version': solc_version,
+        'optimize': runs > 0,
+        'runs': runs,
+        'evm_version': evm_version,
+    })
+    with tmp_path.joinpath('brownie-config.json').open('w') as fp:
+        json.dump(conf_json, fp)
+    p = project.load(tmp_path, 'EVMProject')
+    return p.EVMTester.deploy({'from': accounts[0]})
 
 
 @pytest.fixture
@@ -82,6 +122,7 @@ def plugintester(_project_factory, plugintesterbase, request):
     if test_source:
         plugintesterbase.makepyfile(test_source)
     yield plugintesterbase
+
 
 # launches and connects to ganache, yields the brownie.network module
 @pytest.fixture

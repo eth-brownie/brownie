@@ -217,7 +217,7 @@ def generate_input_json(contracts, optimize=True, runs=200, evm_version=None, mi
         evm_version = "petersburg" if solcx.get_solc_version() >= Version("0.5.5") else "byzantium"
     input_json = deepcopy(STANDARD_JSON)
     input_json['settings']['optimizer']['enabled'] = optimize
-    input_json['settings']['optimizer']['runs'] = runs if optimize else False
+    input_json['settings']['optimizer']['runs'] = runs if optimize else 0
     input_json['settings']['evmVersion'] = evm_version
     input_json['sources'] = dict((
         k,
