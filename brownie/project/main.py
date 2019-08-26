@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Union, Dict, Iterable, KeysView, Any, Optional
+from typing import Union, Dict, Iterable, KeysView, Any, Optional, List
 from io import BytesIO
 from pathlib import Path
 import requests
@@ -35,7 +35,7 @@ _loaded_projects = []
 
 class _ProjectBase:
 
-    def __init__(self, project_path: str, name: str) -> None:
+    def __init__(self, project_path: Optional[str], name: str) -> None:
         self._project_path = project_path
         self._name = name
         self._sources = Sources(project_path)
@@ -95,12 +95,12 @@ class Project(_ProjectBase):
         _build: project Build object
     '''
 
-    def __init__(self, project_path, name):
+    def __init__(self, project_path: Union[Path, str], name: str) -> None:
         super().__init__(project_path, name)
         self._active = False
         self.load()
 
-    def load(self):
+    def load(self) -> None:
         '''Compiles the project contracts, creates ContractContainer objects and
         populates the namespace.'''
         if self._active:
@@ -131,7 +131,7 @@ class Project(_ProjectBase):
         self._active = True
         _loaded_projects.append(self)
 
-    def _get_changed_contracts(self):
+    def _get_changed_contracts(self) -> Dict:
         changed = [i for i in self._sources.get_contract_list() if self._compare_build_json(i)]
         final = set(changed)
         for contract_name in changed:
@@ -141,7 +141,7 @@ class Project(_ProjectBase):
         changed = set(self._sources.get_source_path(i) for i in final)
         return dict((i, self._sources.get(i)) for i in changed)
 
-    def _compare_build_json(self, contract_name):
+    def _compare_build_json(self, contract_name: str) -> Union[Iterable, bool]:
         config = self._compiler_config
         try:
             source = self._sources.get(contract_name)
@@ -155,18 +155,18 @@ class Project(_ProjectBase):
             False
         )
 
-    def _update_and_register(self, dict_):
+    def _update_and_register(self, dict_) -> None:
         dict_.update(self)
         self._namespaces.append(dict_)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Project object '{color['string']}{self._name}{color}'>"
 
-    def load_config(self):
+    def load_config(self) -> None:
         '''Loads the project config file settings'''
         load_project_config(self._project_path)
 
-    def close(self, raises=True):
+    def close(self, raises: bool = True) -> None:
         '''Removes pointers to the project's ContractContainer objects and this object.'''
         if not self._active:
             if not raises:
@@ -197,7 +197,7 @@ class TempProject(_ProjectBase):
     '''Simplified Project class used to hold temporary contracts that are
     compiled via project.compile_source'''
 
-    def __init__(self, source, compiler_config) -> None:
+    def __init__(self, source: Sources, compiler_config: Dict) -> None:
         super().__init__(None, "TempProject")
         self._sources.add("<stdin>", source)
         self._compile({'<stdin>': source}, compiler_config, True)
@@ -207,7 +207,7 @@ class TempProject(_ProjectBase):
         return f"<TempProject object>"
 
 
-def check_for_project(path="."):
+def check_for_project(path: Union[str, Path] = ".") -> Optional[Path]:
     '''Checks for a Brownie project.'''
     path = Path(path).resolve()
     for folder in [path] + list(path.parents):
@@ -216,12 +216,12 @@ def check_for_project(path="."):
     return None
 
 
-def get_loaded_projects():
+def get_loaded_projects() -> List:
     '''Returns a list of currently loaded Project objects.'''
     return _loaded_projects.copy()
 
 
-def new(project_path=".", ignore_subfolder=False):
+def new(project_path: Union[Path, str, None] = ".", ignore_subfolder: bool = False) -> str:
     '''Initializes a new project.
 
     Args:
@@ -242,7 +242,7 @@ def new(project_path=".", ignore_subfolder=False):
     return str(project_path)
 
 
-def pull(project_name, project_path=None, ignore_subfolder=False):
+def pull(project_name: str, project_path: Optional[Path] = None, ignore_subfolder: bool = False) -> str:
     '''Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mix
 
@@ -256,9 +256,11 @@ def pull(project_name, project_path=None, ignore_subfolder=False):
     url = MIXES_URL.format(project_name)
     if project_path is None:
         project_path = Path('.').joinpath(project_name)
+    else:
+        if project_path.exists() and list(project_path.glob('*')):
+            raise FileExistsError(f"Folder already exists - {project_path}")
     project_path = _new_checks(project_path, ignore_subfolder)
-    if project_path.exists() and list(project_path.glob('*')):
-        raise FileExistsError(f"Folder already exists - {project_path}")
+
 
     print(f"Downloading from {url}...")
     request = requests.get(url)
@@ -273,7 +275,7 @@ def pull(project_name, project_path=None, ignore_subfolder=False):
     return str(project_path)
 
 
-def _new_checks(project_path, ignore_subfolder):
+def _new_checks(project_path: Union[str, Path], ignore_subfolder: bool) -> Path:
     project_path = Path(project_path).resolve()
     if str(CONFIG['brownie_folder']) in str(project_path):
         raise SystemError("Cannot make a new project inside the main brownie installation folder.")
@@ -284,7 +286,12 @@ def _new_checks(project_path, ignore_subfolder):
     return project_path
 
 
-def compile_source(source, solc_version=None, optimize=True, runs=200, evm_version=None):
+def compile_source(
+        source: Sources,
+        solc_version: str = None,
+        optimize: bool = True,
+        runs: int =200,
+        evm_version: int = None) -> TempProject:
     '''Compiles the given source code string and returns a TempProject container with
     the ContractContainer instances.'''
 
@@ -298,7 +305,7 @@ def compile_source(source, solc_version=None, optimize=True, runs=200, evm_versi
     return TempProject(source, compiler_config)
 
 
-def load(project_path=None, name=None):
+def load(project_path: Union[str, Path, None] = None, name: Optional[str] = None) -> Project:
     '''Loads a project and instantiates various related objects.
 
     Args:
@@ -332,13 +339,13 @@ def load(project_path=None, name=None):
     return Project(project_path, name)
 
 
-def _create_folders(project_path):
+def _create_folders(project_path: Path) -> None:
     for path in [i for i in FOLDERS]:
         project_path.joinpath(path).mkdir(exist_ok=True)
 
 
-def _add_to_sys_path(project_path):
-    project_path = str(project_path)
-    if project_path in sys.path:
+def _add_to_sys_path(project_path: Path) -> None:
+    project_path_string = str(project_path)
+    if project_path_string in sys.path:
         return
-    sys.path.insert(0, project_path)
+    sys.path.insert(0, project_path_string)
