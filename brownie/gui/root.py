@@ -43,13 +43,18 @@ class Root(tk.Tk):
         super().__init__(className=f" Brownie GUI - {name}")
         self.bind("<Escape>", lambda k: self.destroy())
 
+        # geometry
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, minsize=30)
+        self.rowconfigure(1, weight=1)
+
         # main widgets
         self.main = MainFrame(self)
-        self.main.pack(side="bottom", expand=True, fill="both")
+        self.main.grid(row=1, column=0, sticky="nsew")
 
         # toolbar widgets
         self.toolbar = ToolbarFrame(self, self._project)
-        self.toolbar.pack(side="top", expand="true", fill="both")
+        self.toolbar.grid(row=0, column=0, sticky='nsew')
 
         self.active_report = False
         set_style(self)
@@ -77,19 +82,20 @@ class MainFrame(ttk.Frame):
     def __init__(self, root):
         super().__init__(root)
 
-        self.oplist = ListView(self, (("pc", 80), ("opcode", 200)))
-        self.oplist.configure(height=30)
-        self.oplist.pack(side="right", fill="y", expand=True)
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, minsize=280)
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, minsize=30)
 
-        frame = ttk.Frame(self)
-        frame.pack(side="left", fill="y", expand=True)
-        self.note = TextBook(frame)
-        self.note.pack(side="top", fill="both", expand=True)
-        self.note.configure(width=920, height=100)
+        self.oplist = ListView(self, (("pc", 80), ("opcode", 200)))
+        self.oplist.grid(row=0, column=1, rowspan=2, sticky="nsew")
+
+        self.note = TextBook(self)
+        self.note.grid(row=0, column=0, sticky="nsew")
 
         # TODO - clean this up
-        self.console = tk.Text(frame, height=1)
-        self.console.pack(side="bottom", fill="both")
+        self.console = tk.Text(self, height=1)
+        self.console.grid(row=1, column=0, sticky="nsew")
         self.console.configure(**TEXT_STYLE)
         self.console.configure(background="#272727")
 
@@ -110,7 +116,7 @@ class ToolbarFrame(ttk.Frame):
 
         self.report = ReportSelect(self, list(path.glob('**/*.json')))
         self.report.pack(side="right", anchor="e", padx=10)
-        self.report.configure(width=23)
+        self.report.configure(width=20)
         ToolTip(self.report, "Select a report to overlay onto source code")
 
         self.scope = ScopingToggle(self)

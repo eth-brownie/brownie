@@ -19,7 +19,7 @@ class ListView(ttk.Treeview):
             selectmode="browse",
             **kwargs
         )
-        super().pack(side="left", fill="y")
+        self.pack(side="left", fill="y")
         self.heading("#0", text=columns[0][0])
         self.column("#0", width=columns[0][1])
         for tag, width in columns[1:]:
@@ -38,8 +38,8 @@ class ListView(ttk.Treeview):
         for i in range(10):
             root.bind(str(i), self._seek)
 
-    def pack(self, *args, **kwargs):
-        self._frame.pack(*args, **kwargs)
+    def grid(self, *args, **kwargs):
+        self._frame.grid(*args, **kwargs)
 
     def insert(self, values, tags=[]):
         super().insert(
