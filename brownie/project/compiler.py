@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+from typing import Optional, Dict, Any
 from copy import deepcopy
 from collections import deque
 from hashlib import sha1
@@ -34,7 +34,7 @@ STANDARD_JSON = {
 }
 
 
-def set_solc_version(version):
+def set_solc_version(version: str) -> str:
     '''Sets the solc version. If not available it will be installed.'''
     if Version(version.lstrip('v')) < Version('0.4.22'):
         raise IncompatibleSolcVersion("Brownie only supports Solidity versions >=0.4.22")
@@ -46,21 +46,20 @@ def set_solc_version(version):
     return solcx.get_solc_version_string()
 
 
-def install_solc(*versions):
+def install_solc(*versions: str) -> None:
     '''Installs solc versions.'''
     for version in versions:
         solcx.install_solc(str(version))
 
 
 def compile_and_format(
-    contracts,
-    solc_version=None,
-    optimize=True,
-    runs=200,
-    evm_version=None,
-    minify=False,
-    silent=True
-):
+    contracts: Dict[str, Any],
+    solc_version: Optional[str] = None,
+    optimize: bool = True,
+    runs: int = 200,
+    evm_version: int = None,
+    minify: bool = False,
+    silent: bool = True) -> Dict:
     '''Compiles contracts and returns build data.
 
     Args:
@@ -76,7 +75,7 @@ def compile_and_format(
     if not contracts:
         return {}
 
-    build_json = {}
+    build_json: Dict = {}
 
     if solc_version is not None:
         path_versions = {solc_version: list(contracts)}
@@ -97,7 +96,11 @@ def compile_and_format(
     return build_json
 
 
-def find_solc_versions(contracts, install_needed=False, install_latest=False, silent=True):
+def find_solc_versions(
+        contracts: Dict[str, Any],
+        install_needed: bool = False,
+        install_latest: bool = False,
+        silent: bool = True) -> Dict:
     '''Analyzes contract pragmas and determines which solc version(s) to use.
 
     Args:
@@ -121,7 +124,7 @@ def find_solc_versions(contracts, install_needed=False, install_latest=False, si
     pragma_regex = re.compile(r"pragma +solidity([^;]*);")
     version_regex = re.compile(r"(([<>]?=?|\^)\d+\.\d+\.\d+)+")
 
-    pragma_specs = dict((i, set()) for i in contracts)
+    pragma_specs: Dict = dict((i, set()) for i in contracts)
     to_install = set()
     for path, source in contracts.items():
         try:
@@ -156,7 +159,7 @@ def find_solc_versions(contracts, install_needed=False, install_latest=False, si
         installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
 
     # organize source paths by latest available solc version
-    compiler_versions = {}
+    compiler_versions: Dict = {}
     new_versions = set()
     for path, spec_list in pragma_specs.items():
         version = _select_max(spec_list, installed_versions)
