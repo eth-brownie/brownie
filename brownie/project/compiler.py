@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-from typing import Optional, Dict, Any, List, Type, Union, Deque, Tuple
+from typing import Optional, Dict, Any, List, Type, Union, Set, Tuple, Iterable
+from solcast.main import SourceUnit
 
 from copy import deepcopy
 from collections import deque
@@ -523,7 +524,7 @@ def generate_coverage_data(
                 del values[0]
 
     # set branch index markers and build final branch map
-    branch_map = dict((i, {}) for i in paths)
+    branch_map: Dict = dict((i, {}) for i in paths)
     for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
         # for branch to be hit, need an op relating to the source and the next JUMPI
         # this is because of how the compiler optimizes nested BinaryOperations
@@ -545,9 +546,9 @@ def generate_coverage_data(
     return pc_map, statement_map, branch_map
 
 
-def expand_source_map(source_map):
+def expand_source_map(source_map_str: str) -> List:
     '''Expands the compressed sourceMap supplied by solc into a list of lists.'''
-    source_map = [_expand_row(i) if i else None for i in source_map.split(';')]
+    source_map: List = [_expand_row(i) if i else None for i in source_map_str.split(';')]
     for i in range(1, len(source_map)):
         if not source_map[i]:
             source_map[i] = source_map[i - 1]
@@ -558,12 +559,13 @@ def expand_source_map(source_map):
     return source_map
 
 
-def _expand_row(row):
-    row = row.split(':')
-    return [int(i) if i else None for i in row[:3]] + row[3:] + [None] * (4 - len(row))
+def _expand_row(row_str: str) -> Any:
+    row = row_str.split(':')
+    # ignore typing of next line - cannot concatenate List[str] and List[int]. Perhaps needs refactoring?
+    return [int(i) if i else None for i in row[:3]] + row[3:] + [None] * (4 - len(row)) # type: ignore
 
 
-def get_statement_nodes(source_nodes):
+def get_statement_nodes(source_nodes: Dict) -> Dict:
     '''Given a list of source nodes, returns a dict of lists of statement nodes.'''
     statements = {}
     for node in source_nodes:
@@ -575,10 +577,10 @@ def get_statement_nodes(source_nodes):
     return statements
 
 
-def get_branch_nodes(source_nodes):
+def get_branch_nodes(source_nodes: List) -> Dict:
     '''Given a list of source nodes, returns a dict of lists of nodes corresponding
     to possible branches in the code.'''
-    branches = {}
+    branches: Dict = {}
     for node in source_nodes:
         branches[node.path] = set()
         for contract_node in node:
@@ -594,7 +596,7 @@ def get_branch_nodes(source_nodes):
     return branches
 
 
-def _get_recursive_branches(base_node):
+def _get_recursive_branches(base_node: Any) -> Set:
     # if node is IfStatement or Conditional, look only at the condition
     jump = base_node.node_type == "FunctionCall"
     node = base_node if jump else base_node.condition
@@ -629,13 +631,13 @@ def _get_recursive_branches(base_node):
     return binary_branches
 
 
-def _is_rightmost_operation(node, depth):
+def _is_rightmost_operation(node: Type[SourceUnit], depth: int) -> bool:
     '''Check if the node is the final operation within the expression.'''
     parents = node.parents(depth, {'node_type': "BinaryOperation", 'type': "bool"})
     return not next((i for i in parents if i.left == node or node.is_child_of(i.left)), False)
 
 
-def _check_left_operator(node, depth):
+def _check_left_operator(node: Type[SourceUnit], depth: int) -> bool:
     '''Find the nearest parent boolean where this node sits on the left side of
     the comparison, and return True if that node's operator is ||'''
     parents = node.parents(depth, {'node_type': "BinaryOperation", 'type': "bool"})
