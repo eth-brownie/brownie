@@ -1,5 +1,7 @@
 #!/usr/bin/python3
-from typing import Optional, Dict, Any
+
+from typing import Optional, Dict, Any, List, Type, Union, Deque, Tuple
+
 from copy import deepcopy
 from collections import deque
 from hashlib import sha1
@@ -179,12 +181,12 @@ def find_solc_versions(
     return compiler_versions
 
 
-def _select_max(spec_list, version_list):
+def _select_max(spec_list: List, version_list: List) -> Any:
     return max(i.select(version_list) for i in spec_list if i.select(version_list))
 
 
 # convert all specitems to be of types (==, >=, <)
-def _standardize_spec(spec):
+def _standardize_spec(spec: Type[Spec]) -> Spec:
     final_spec = deepcopy(spec)
     if spec.specs[0].kind == "==":
         return final_spec
@@ -204,7 +206,12 @@ def _standardize_spec(spec):
     return final_spec
 
 
-def generate_input_json(contracts, optimize=True, runs=200, evm_version=None, minify=False):
+def generate_input_json(
+        contracts: Dict,
+        optimize: bool = True,
+        runs: int = 200,
+        evm_version: Union[int, str, None] = None,
+        minify: bool = False) -> Dict:
     '''Formats contracts to the standard solc input json.
 
     Args:
@@ -218,7 +225,7 @@ def generate_input_json(contracts, optimize=True, runs=200, evm_version=None, mi
     '''
     if evm_version is None:
         evm_version = "petersburg" if solcx.get_solc_version() >= Version("0.5.5") else "byzantium"
-    input_json = deepcopy(STANDARD_JSON)
+    input_json: Dict = deepcopy(STANDARD_JSON)
     input_json['settings']['optimizer']['enabled'] = optimize
     input_json['settings']['optimizer']['runs'] = runs if optimize else False
     input_json['settings']['evmVersion'] = evm_version
@@ -229,7 +236,7 @@ def generate_input_json(contracts, optimize=True, runs=200, evm_version=None, mi
     return input_json
 
 
-def compile_from_input_json(input_json, silent=True):
+def compile_from_input_json(input_json: Dict, silent: bool = True) -> Dict:
     '''Compiles contracts from a standard input json.
 
     Args:
@@ -260,7 +267,11 @@ def compile_from_input_json(input_json, silent=True):
         raise CompilerError(e)
 
 
-def generate_build_json(input_json, output_json, compiler_data=None, silent=True):
+def generate_build_json(
+        input_json: Dict,
+        output_json: Dict,
+        compiler_data: Optional[Dict] = None,
+        silent: bool = True) -> Dict:
     '''Formats standard compiler output to the brownie build json.
 
     Args:
@@ -338,7 +349,7 @@ def generate_build_json(input_json, output_json, compiler_data=None, silent=True
     return build_json
 
 
-def format_link_references(evm):
+def format_link_references(evm: Dict) -> Dict:
     '''Standardizes formatting for unlinked libraries within bytecode.'''
     bytecode = evm['bytecode']['object']
     references = [(k, x) for v in evm['bytecode']['linkReferences'].values() for k, x in v.items()]
@@ -347,12 +358,18 @@ def format_link_references(evm):
     return bytecode
 
 
-def get_bytecode_hash(bytecode):
+def get_bytecode_hash(bytecode: Dict) -> str:
     '''Returns a sha1 hash of the given bytecode without metadata.'''
     return sha1(bytecode[:-68].encode()).hexdigest()
 
 
-def generate_coverage_data(source_map, opcodes, contract_node, stmt_nodes, branch_nodes, fallback):
+def generate_coverage_data(
+        source_map: Any,
+        opcodes: Any,
+        contract_node: Any,
+        stmt_nodes: Any,
+        branch_nodes: Any,
+        fallback: Any) -> Tuple:
     '''
     Generates data used by Brownie for debugging and coverage evaluation.
 
@@ -398,19 +415,19 @@ def generate_coverage_data(source_map, opcodes, contract_node, stmt_nodes, branc
     paths = set(v.path for v in source_nodes.values())
 
     stmt_nodes = dict((i, stmt_nodes[i].copy()) for i in paths)
-    statement_map = dict((i, {}) for i in paths)
+    statement_map: Dict = dict((i, {}) for i in paths)
 
     # possible branch offsets
     branch_original = dict((i, branch_nodes[i].copy()) for i in paths)
     branch_nodes = dict((i, set(i.offset for i in branch_nodes[i])) for i in paths)
     # currently active branches, awaiting a jumpi
-    branch_active = dict((i, {}) for i in paths)
+    branch_active: Dict = dict((i, {}) for i in paths)
     # branches that have been set
-    branch_set = dict((i, {}) for i in paths)
+    branch_set: Dict = dict((i, {}) for i in paths)
 
     count, pc = 0, 0
     pc_list = []
-    revert_map = {}
+    revert_map: Dict = {}
 
     while source_map:
 
