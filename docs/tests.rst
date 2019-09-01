@@ -226,11 +226,11 @@ In the example below, the assert statement in ``test_isolated`` passes because t
     @pytest.fixture(autouse=True)
     def isolation(fn_isolation):
         pass
-    
+
     def test_transfer(accounts):
         accounts[0].transfer(accounts[1], "10 ether")
         assert accounts[1].balance() == "110 ether"
-    
+
     def test_isolated(accounts):
         assert accounts[1].balance() == "100 ether"
 
@@ -248,7 +248,7 @@ The ``fn_isolation`` fixture is **always the first function-scoped fixture to ex
     def token(Token, accounts):
         t = accounts[0].deploy(Token, "Test Token", "TST", 18, 1000)
         yield t
-    
+
     @pytest.fixture(autouse=True)
     def isolation(fn_isolation):
         pass
@@ -283,7 +283,7 @@ Additionally, remember that **module-scoped fixtures will always execute prior t
     def token(Token, accounts):
         t = accounts[0].deploy(Token, "Test Token", "TST", 18, 1000)
         yield t
-    
+
     @pytest.fixture(scope="module")
     def transfer_tokens(token, accounts):
         token.transfer(accounts[1], 100, {'from': accounts[0]})
@@ -354,8 +354,8 @@ Both of these fixtures are function-scoped.
 
         def test_normal(token):
             # this call is handled as a transaction, coverage is evaluated
-            assert token.balanceOf(accounts[0]) == 900 
-        
+            assert token.balanceOf(accounts[0]) == 900
+
         def test_no_call_cov(Token, no_call_coverage):
             # this call happens normally, no coverage evaluation
             assert token.balanceOf(accounts[1]) == 100
@@ -404,9 +404,9 @@ If coverage analysis is also active, tests that previously completed but were no
 
 Brownie compares hashes of the following items to check if a test should be re-run:
 
-    * The bytecode for every contract deployed during execution of the test
-    * The AST of the test module
-    * The AST of all ``conftest.py`` modules that are accessible to the test module
+* The bytecode for every contract deployed during execution of the test
+* The AST of the test module
+* The AST of all ``conftest.py`` modules that are accessible to the test module
 
 Evaluating Coverage
 -------------------
@@ -460,9 +460,9 @@ Or from the console:
 
 This opens the Brownie GUI. Next:
 
-    * In the upper-right drop box, select a contract to view.
-    * In the drop box immediately left of the contract selection, choose the generated coverage report JSON.
-    * In the upper left, choose to view either the "statement" or "branch" coverage report.
+* In the upper-right drop box, select a contract to view.
+* In the drop box immediately left of the contract selection, choose the generated coverage report JSON.
+* In the upper left, choose to view either the "statement" or "branch" coverage report.
 
 Relevant code will be highlighted in different colors:
 
@@ -510,3 +510,86 @@ The following test configuration settings are available in ``brownie-config.json
     If ``True``, unhandled ``VirtualMachineError`` exceptions will include a full transaction traceback. This is useful for debugging but slows test execution.
 
     This can also be enabled from the command line with the ``--revert-tb`` flag.
+
+Unit Test JSON Format
+=====================
+
+The ``build/test.json`` file holds information about unit tests and coverage evaluation.  It has the following format:
+
+.. code-block:: javascript
+
+    {
+        "contracts": {
+            "contractName": "0xff" // Hash of the contract source
+        },
+        //
+        "tests": {
+            "tests/path/of/test_file.py": {
+                "coverage": true, // Has coverage eval been performed for this module?
+                "isolated": [], // List of contracts deployed when executing this module. Used to determine if the tests must be re-run.
+                "results": ".....", // Test results. Follows the same format as pytest's output (.sfex)
+                "sha1": "0xff", // Hash of the module
+                "txhash": [] // List of transaction hashes generated when running this module.
+            },
+        },
+        // Coverage data for individual transactions
+        "tx": {
+            "0xff": { // Transaction hash
+                "ContractName": {
+                    // Coverage map indexes (see below)
+                    "path/to/contract.sol": [
+                        [], // statements
+                        [], // branches that evaluated True
+                        []  // branches that evaluated False
+                    ]
+                }
+            }
+        }
+    }
+
+.. _tests-coverage-map-indexes:
+
+Coverage Map Indexes
+--------------------
+
+In tracking coverage, Brownie produces a set of coverage map indexes for each transaction. They are represented as lists of lists, each list containing key values that correspond to that contract's :ref:`coverage map<compile-coverage-map>`. As an example, look at the following transaction coverage data:
+
+.. code-block:: javascript
+
+    {
+        "ae6ccafbd0b0c8cf2eb623e390080854755f3fa7": {
+            "Token": {
+                // Coverage map indexes (see below)
+                "contracts/Token.sol": [
+                    [1, 3],
+                    [],
+                    [5]
+                ],
+                "contracts/SafeMath.sol": [
+                    [8],
+                    [11],
+                    [11]
+                ],
+            }
+        }
+    }
+
+Here we see that within the ``Token`` contract:
+
+* Statements 1 and 3 were executed in ``"contracts/Token.sol"``, as well as statement 8 in ``"contracts/SafeMath.sol"``
+* No branches evaluated ``True`` in ``"contracts/Token.sol"``, branch 5 evaluated ``False``
+* Branch 11 evaluated both ``True`` and ``False`` in ``"contracts/SafeMath.sol"``
+
+To convert these indexes to source offsets, we check the :ref:`coverage map<compile-coverage-map>` for Token. For example, here is branch 11:
+
+.. code-block:: javascript
+
+    {
+        "contracts/SafeMath.sol": {
+            "SafeMath.add": {
+                "11": [147, 153, true]
+            }
+        }
+    }
+
+From this we know that the branch is within the ``add`` function, and that the related source code starts at position 147 and ends at 153.  The final boolean is used internally to determine whether a branch evaluated ``True`` or ``False``.
