@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import List, Dict, Any, Union, Type, Iterable, Optional, Tuple
+from typing import List, Dict, Any, Union, Iterable, Optional, Tuple
 from getpass import getpass
 
 from eth_typing import ChecksumAddress
@@ -63,7 +63,7 @@ class Accounts(metaclass=_Singleton):
     def __iter__(self) -> Iterable:
         return iter(self._accounts)
 
-    def __getitem__(self, key: int) -> Account:
+    def __getitem__(self, key: int) -> Any:
         return self._accounts[key]
 
     def __delitem__(self, key: int) -> None:
