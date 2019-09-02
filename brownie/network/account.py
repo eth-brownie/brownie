@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import List, Dict, Any, Union, Type, Iterable, Optional
+from typing import List, Dict, Any, Union, Type, Iterable, Optional, Tuple
 from getpass import getpass
 
 from eth_typing import ChecksumAddress
@@ -172,7 +172,7 @@ class _AccountBase:
                 return False
         return super().__eq__(other)
 
-    def _gas_limit(self, to: Account, amount: int, data: str = "") -> int:
+    def _gas_limit(self, to: Union[str, Account], amount: Optional[int], data: str = "") -> int:
         if CONFIG['active_network']['gas_limit'] not in (True, False, None):
             return Wei(CONFIG['active_network']['gas_limit'])
         return self.estimate_gas(to, amount, data)
@@ -198,11 +198,11 @@ class _AccountBase:
 
     def deploy(
             self,
-            contract,
-            *args,
-            amount=None,
-            gas_limit=None,
-            gas_price=None) -> Union[ContractContainer, TransactionReceipt]:
+            contract: ContractContainer,
+            *args: Tuple,
+            amount: Optional[int] = None,
+            gas_limit: Optional[int] = None,
+            gas_price: Optional[int] = None) -> Union[ContractContainer, TransactionReceipt]:
         '''Deploys a contract.
 
         Args:
@@ -225,7 +225,7 @@ class _AccountBase:
             )
         data = contract.deploy.encode_abi(*args)
         try:
-            txid = self._transact({
+            txid = self._transact({ # type: ignore
                 'from': self.address,
                 'value': Wei(amount),
                 'nonce': self.nonce,
@@ -250,7 +250,7 @@ class _AccountBase:
         add_thread.join()
         return history.find_contract(tx.contract_address)
 
-    def estimate_gas(self, to: Account, amount: int, data: str = "") -> int:
+    def estimate_gas(self, to: Union[str, Account], amount: Optional[int], data: str = "") -> int:
         '''Estimates the gas cost for a transaction. Raises VirtualMachineError
         if the transaction would revert.
 
@@ -270,7 +270,7 @@ class _AccountBase:
 
     def transfer(
             self,
-            to: Type[Account],
+            to: Account,
             amount: int,
             gas_limit: float = None,
             gas_price: float = None,
@@ -289,7 +289,7 @@ class _AccountBase:
         Returns:
             TransactionReceipt object'''
         try:
-            txid = self._transact({
+            txid = self._transact({ # type: ignore
                 'from': self.address,
                 'to': str(to),
                 'value': Wei(amount),
@@ -331,7 +331,7 @@ class LocalAccount(_AccountBase):
         private_key: Account private key.
         public_key: Account public key.'''
 
-    def __init__(self, address: str, account: Account, priv_key: Optional[int]) -> None:
+    def __init__(self, address: str, account: Account, priv_key: Union[int, bytes, str]) -> None:
         self._acct = account
         self.private_key = priv_key
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
@@ -371,7 +371,7 @@ class LocalAccount(_AccountBase):
 
     def _transact(self, tx: Dict) -> None:
         self._check_for_revert(tx)
-        signed_tx = self._acct.signTransaction(tx).rawTransaction
+        signed_tx = self._acct.signTransaction(tx).rawTransaction # type: ignore
         return web3.eth.sendRawTransaction(signed_tx)
 
 

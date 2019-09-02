@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Type, Dict
+from typing import Type, Dict, Union
 import psutil
 
 import json
@@ -60,7 +60,7 @@ class VirtualMachineError(Exception):
     revert_msg = ""
     source = ""
 
-    def __init__(self, exc: Dict):
+    def __init__(self, exc: Union[ValueError, Dict]):
         if type(exc) is not dict:
             try:
                 exc = eval(str(exc))
