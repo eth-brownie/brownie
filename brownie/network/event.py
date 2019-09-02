@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from typing import Dict, List, Union, Iterable, ValuesView, Tuple, Optional, Any
 from collections import OrderedDict
 import json
 
@@ -13,7 +14,7 @@ from brownie.exceptions import EventLookupError
 class EventDict:
     '''Dict/list hybrid container, base class for all events fired in a transaction.'''
 
-    def __init__(self, events):
+    def __init__(self, events: List) -> None:
         '''Instantiates the class.
 
         Args:
@@ -23,7 +24,9 @@ class EventDict:
             [OrderedDict((x['name'], x['value']) for x in i['data'])],
             (pos,)
         ) for pos, i in enumerate(events)]
-        self._dict = OrderedDict()
+        # Note, there are issues with OrderedDict's in mypy
+        # https://stackoverflow.com/questions/41207128/how-do-i-specify-ordereddict-k-v-types-for-mypy-type-annotation
+        self._dict: Dict = OrderedDict()
         for event in self._ordered:
             if event.name not in self._dict:
                 events = [i for i in self._ordered if i.name == event.name]
@@ -33,17 +36,19 @@ class EventDict:
                     tuple(i.pos[0] for i in events)
                 )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self._ordered)
 
-    def __contains__(self, name):
+    def __contains__(self, name: str) -> bool:
         '''returns True if an event fired with the given name.'''
         return name in [i.name for i in self._ordered]
 
-    def __getitem__(self, key):
+    # Note, see reference on returning class with various interpreters:
+    # https://stackoverflow.com/questions/33533148/how-do-i-specify-that-the-return-type-of-a-method-is-the-same-as-the-class-itsel
+    def __getitem__(self, key: Union[str, int]) -> '_EventItem':
         '''if key is int: returns the n'th event that was fired
         if key is str: returns a _EventItem dict of all events where name == key'''
         if not isinstance(key, (int, str)):
@@ -59,29 +64,29 @@ class EventDict:
             return self._dict[key]
         raise EventLookupError(f"Event '{key}' did not fire.")
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable:
         return iter(self._ordered)
 
-    def __len__(self):
+    def __len__(self) -> int:
         '''returns the number of events that fired.'''
         return len(self._ordered)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(dict((k, [i[0] for i in v._ordered]) for k, v in self._dict.items()))
 
-    def count(self, name):
+    def count(self, name: str) -> int:
         '''EventDict.count(name) -> integer -- return number of occurrences of name'''
         return len([i.name for i in self._ordered if i.name == name])
 
-    def items(self):
+    def items(self) -> List:
         '''EventDict.items() -> a list object providing a view on EventDict's items'''
         return list(self._dict.items())
 
-    def keys(self):
+    def keys(self) -> List:
         '''EventDict.keys() -> a list object providing a view on EventDict's keys'''
         return list(self._dict.keys())
 
-    def values(self):
+    def values(self) -> ValuesView:
         '''EventDict.values() -> a list object providing a view on EventDict's values'''
         return self._dict.values()
 
@@ -94,12 +99,12 @@ class _EventItem:
         name: event name
         pos: tuple of indexes where this event fired'''
 
-    def __init__(self, name, event_data, pos):
+    def __init__(self, name: str, event_data: List, pos: Tuple) -> None:
         self.name = name
         self._ordered = event_data
         self.pos = pos
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Union[int, str]) -> List:
         '''if key is int: returns the n'th event that was fired with this name
         if key is str: returns the value of data field 'key' from the 1st event
         within the container '''
@@ -121,48 +126,48 @@ class _EventItem:
             f"Unknown key '{key}' - the '{self.name}' event includes these keys: {valid_keys}"
         )
 
-    def __contains__(self, name):
+    def __contains__(self, name: str) -> bool:
         '''returns True if this event contains a value with the given name.'''
         return name in self._ordered[0]
 
-    def __len__(self):
+    def __len__(self) -> int:
         '''returns the number of events held in this container.'''
         return len(self._ordered)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         if len(self._ordered) == 1:
             return str(self._ordered[0])
         return str([i[0] for i in self._ordered])
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable:
         return iter(self._ordered)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if len(self._ordered) == 1:
             return other == self._ordered[0]
         return other == self._ordered
 
-    def items(self):
+    def items(self) -> List:
         '''_EventItem.items() -> a list object providing a view on _EventItem[0]'s items'''
         return [(i, self[i]) for i in self.keys()]
 
-    def keys(self):
+    def keys(self) -> List:
         '''_EventItem.keys() -> a list object providing a view on _EventItem[0]'s keys'''
         return [i.replace(" (indexed)", "") for i in self._ordered[0].keys()]
 
-    def values(self):
+    def values(self) -> List:
         '''_EventItem.values() -> a list object providing a view on _EventItem[0]'s values'''
         return list(self._ordered[0].values())
 
 
-def _get_path():
+def _get_path() -> Any:
     return CONFIG['brownie_folder'].joinpath('data/topics.json')
 
 
-def get_topics(abi):
+def get_topics(abi: List) -> Dict:
     new_topics = _topics.copy()
     new_topics.update(eth_event.get_event_abi(abi))
     if new_topics != _topics:
@@ -172,7 +177,7 @@ def get_topics(abi):
     return eth_event.get_topics(abi)
 
 
-def decode_logs(logs):
+def decode_logs(logs: Optional[str]) -> Union['EventDict', List[None]]:
     if not logs:
         return []
     events = eth_event.decode_logs(logs, _topics)
@@ -180,7 +185,7 @@ def decode_logs(logs):
     return EventDict(events)
 
 
-def decode_trace(trace):
+def decode_trace(trace: Optional[str]) -> Union['EventDict', List[None]]:
     if not trace:
         return []
     events = eth_event.decode_trace(trace, _topics)
@@ -190,6 +195,6 @@ def decode_trace(trace):
 
 try:
     with _get_path().open() as fp:
-        _topics = json.load(fp)
+        _topics: Dict = json.load(fp)
 except (FileNotFoundError, json.decoder.JSONDecodeError):
     _topics = {}
