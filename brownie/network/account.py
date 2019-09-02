@@ -72,7 +72,7 @@ class Accounts(metaclass=_Singleton):
     def __len__(self) -> int:
         return len(self._accounts)
 
-    def add(self, priv_key: int = None) -> LocalAccount:
+    def add(self, priv_key: Union[int, bytes, str] = None) -> LocalAccount:
         '''Creates a new ``LocalAccount`` instance and appends it to the container.
 
         Args:
@@ -81,12 +81,16 @@ class Accounts(metaclass=_Singleton):
 
         Returns:
             Account instance.'''
+        private_key: Union[int, bytes, str]
         if not priv_key:
-            priv_key = "0x" + keccak(os.urandom(8192)).hex()
+            private_key = "0x" + keccak(os.urandom(8192)).hex()
+        else:
+            private_key = priv_key
+
         w3account = web3.eth.account.from_key(priv_key)
         if w3account.address in self._accounts:
             return self.at(w3account.address)
-        account = LocalAccount(w3account.address, w3account, priv_key)
+        account = LocalAccount(w3account.address, w3account, private_key)
         self._accounts.append(account)
         return account
 
