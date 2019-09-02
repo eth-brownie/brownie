@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 from typing import Dict, Any, Tuple
 
+
 class _Singleton(type):
 
-    _instances: Dict[_Singleton, Any] = {}
+    _instances: Dict = {}
 
     def __call__(cls, *args: Tuple, **kwargs: Dict) -> Any:
         if cls not in cls._instances:
