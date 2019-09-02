@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import List, Callable, Tuple, Dict, Optional, Union
+from typing import List, Callable, Tuple, Dict, Union
 
 import time as time
 from threading import Thread
@@ -121,7 +121,13 @@ class Alert:
             self.wait()
 
 
-def new(fn: Callable, args: Tuple = None, kwargs: Dict = None, delay: float = 0.5, msg: str = None, callback: Callable = None, repeat: bool = False) -> Alert:
+def new(fn: Callable,
+        args: Tuple = None,
+        kwargs: Dict = None,
+        delay: float = 0.5,
+        msg: str = None,
+        callback: Callable = None,
+        repeat: bool = False) -> Alert:
     '''Alias for creating a new Alert instance.'''
     return Alert(fn, args, kwargs, delay, msg, callback, repeat)
 
