@@ -30,7 +30,7 @@ class Alert:
             delay: float = 2,
             msg: str = None,
             callback: Callable = None,
-            repeat: bool = False):
+            repeat: bool = False) -> None:
 
         '''Creates a new Alert.
 
@@ -127,7 +127,7 @@ def new(fn: Callable,
         delay: float = 0.5,
         msg: str = None,
         callback: Callable = None,
-        repeat: bool = False) -> Alert:
+        repeat: bool = False) -> 'Alert':
     '''Alias for creating a new Alert instance.'''
     return Alert(fn, args, kwargs, delay, msg, callback, repeat)
 

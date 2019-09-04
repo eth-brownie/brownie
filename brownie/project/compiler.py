@@ -187,7 +187,7 @@ def _select_max(spec_list: List, version_list: List) -> Any:
 
 
 # convert all specitems to be of types (==, >=, <)
-def _standardize_spec(spec: Type[Spec]) -> Spec:
+def _standardize_spec(spec: 'Spec') -> Tuple:
     final_spec = deepcopy(spec)
     if spec.specs[0].kind == "==":
         return final_spec

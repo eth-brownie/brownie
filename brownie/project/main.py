@@ -305,7 +305,7 @@ def compile_source(
     return TempProject(source, compiler_config)
 
 
-def load(project_path: Union[str, Path, None] = None, name: Optional[str] = None) -> Project:
+def load(project_path: Union[str, Path, None] = None, name: Optional[str] = None) -> 'Project':
     '''Loads a project and instantiates various related objects.
 
     Args:
