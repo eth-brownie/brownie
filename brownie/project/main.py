@@ -291,7 +291,7 @@ def compile_source(
         solc_version: str = None,
         optimize: bool = True,
         runs: int =200,
-        evm_version: int = None) -> TempProject:
+        evm_version: int = None) -> 'TempProject':
     '''Compiles the given source code string and returns a TempProject container with
     the ContractContainer instances.'''
 
