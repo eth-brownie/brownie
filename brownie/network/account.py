@@ -28,7 +28,6 @@ web3 = Web3()
 rpc = Rpc()
 
 
-
 class Accounts(metaclass=_Singleton):
 
     '''List-like container that holds all of the available Account instances.'''
