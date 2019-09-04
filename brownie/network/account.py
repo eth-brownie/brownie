@@ -176,7 +176,7 @@ class _AccountBase:
                 return False
         return super().__eq__(other)
 
-    def _gas_limit(self, to: Union[str, Account], amount: Optional[int], data: str = "") -> int:
+    def _gas_limit(self, to: Union[str, 'Accounts'], amount: Optional[int], data: str = "") -> int:
         if CONFIG['active_network']['gas_limit'] not in (True, False, None):
             return Wei(CONFIG['active_network']['gas_limit'])
         return self.estimate_gas(to, amount, data)
@@ -254,7 +254,7 @@ class _AccountBase:
         add_thread.join()
         return history.find_contract(tx.contract_address)
 
-    def estimate_gas(self, to: Union[str, Account], amount: Optional[int], data: str = "") -> int:
+    def estimate_gas(self, to: Union[str, 'Accounts'], amount: Optional[int], data: str = "") -> int:
         '''Estimates the gas cost for a transaction. Raises VirtualMachineError
         if the transaction would revert.
 
@@ -274,7 +274,7 @@ class _AccountBase:
 
     def transfer(
             self,
-            to: Account,
+            to: 'Accounts',
             amount: int,
             gas_limit: float = None,
             gas_price: float = None,
