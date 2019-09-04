@@ -278,7 +278,7 @@ class _AccountBase:
             amount: int,
             gas_limit: float = None,
             gas_price: float = None,
-            data: str = "") -> TransactionReceipt:
+            data: str = "") -> 'TransactionReceipt':
         '''Transfers ether from this account.
 
         Args:
