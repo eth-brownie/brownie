@@ -52,7 +52,7 @@ def run(
         default_path = project._project_path.joinpath("scripts").as_posix()
 
     try:
-        script: Path = _get_path(script_path, default_path)
+        script: 'Path' = _get_path(script_path, default_path)
         module = _import_from_path(script)
 
         name = module.__name__
@@ -70,7 +70,7 @@ def run(
             brownie.__all__ = brownie_all
 
 
-def _get_path(path_str: str, default_folder: str = "scripts") -> Path:
+def _get_path(path_str: str, default_folder: str = "scripts") -> 'Path':
     '''Returns path to a python module.
 
     Args:
