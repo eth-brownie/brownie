@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import List, Dict, Any, Union, Iterable, Optional, Tuple
+from typing import List, Dict, Any, Union, Iterable, Optional, Tuple, TypeVar
 from getpass import getpass
 
 from eth_typing import ChecksumAddress
@@ -26,6 +26,7 @@ from brownie._config import CONFIG
 
 web3 = Web3()
 rpc = Rpc()
+
 
 
 class Accounts(metaclass=_Singleton):
@@ -72,7 +73,7 @@ class Accounts(metaclass=_Singleton):
     def __len__(self) -> int:
         return len(self._accounts)
 
-    def add(self, priv_key: Union[int, bytes, str] = None) -> LocalAccount:
+    def add(self, priv_key: Union[int, bytes, str] = None) -> 'LocalAccount':
         '''Creates a new ``LocalAccount`` instance and appends it to the container.
 
         Args:
@@ -94,7 +95,7 @@ class Accounts(metaclass=_Singleton):
         self._accounts.append(account)
         return account
 
-    def load(self, filename: str = None) -> Union[List, LocalAccount]:
+    def load(self, filename: str = None) -> Union[List, 'LocalAccount']:
         '''Loads a local account from a keystore file.
 
         Args:
@@ -121,7 +122,7 @@ class Accounts(metaclass=_Singleton):
             )
         return self.add(priv_key)
 
-    def at(self, address: str) -> LocalAccount:
+    def at(self, address: str) -> 'LocalAccount':
         '''Retrieves an Account instance from the address string. Raises
         ValueError if the account cannot be found.
 
