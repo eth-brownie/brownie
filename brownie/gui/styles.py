@@ -30,7 +30,8 @@ BUTTON_STYLE = {
     'foreground': "#ECECEC",
     'highlightthickness': 0,
     'activebackground': "#383838",
-    'activeforeground': "white"
+    'activeforeground': "white",
+    'width': 1,
 }
 
 
@@ -44,7 +45,8 @@ def set_style(root):
         fieldbackground="#383838",
         foreground="#ECECEC",
         font=(None, 16),
-        rowheight=21,
+        rowheight=26,
+        height=1,
         borderwidth=0,
         relief="flat",
     )

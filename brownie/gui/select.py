@@ -12,6 +12,7 @@ class _Select(ttk.Combobox):
         self['values'] = sorted(values)
         self.set(initial)
         self.bind("<<ComboboxSelected>>", self._select)
+        self.configure(width=1)
 
     def _select(self):
         value = self.get()
