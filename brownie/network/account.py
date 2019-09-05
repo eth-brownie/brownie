@@ -19,7 +19,7 @@ from brownie.network.contract import ContractContainer
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
-from . import history
+from .history import find_contract
 from brownie.convert import to_address, Wei
 from brownie._singleton import _Singleton
 from brownie._config import CONFIG
@@ -27,6 +27,8 @@ from brownie._config import CONFIG
 web3 = Web3()
 rpc = Rpc()
 
+AB = TypeVar('AB', bound='_AccountBase')
+T = TypeVar('T', bound='LocalAccount')
 
 class Accounts(metaclass=_Singleton):
 
@@ -121,7 +123,7 @@ class Accounts(metaclass=_Singleton):
             )
         return self.add(priv_key)
 
-    def at(self, address: str) -> 'LocalAccount':
+    def at(self, address: str) -> AB:
         '''Retrieves an Account instance from the address string. Raises
         ValueError if the account cannot be found.
 
@@ -252,7 +254,7 @@ class _AccountBase:
         if tx.status != 1:
             return tx
         add_thread.join()
-        return history.find_contract(tx.contract_address)
+        return find_contract(tx.contract_address)
 
     def estimate_gas(self, to: Union[str, 'Accounts'], amount: Optional[int], data: str = "") -> int:
         '''Estimates the gas cost for a transaction. Raises VirtualMachineError

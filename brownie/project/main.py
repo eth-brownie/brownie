@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Union, Dict, Iterable, KeysView, Any, Optional, List
+from typing import Union, Dict, Iterable, KeysView, Any, Optional, List, Set
 from io import BytesIO
 from pathlib import Path
 import requests
@@ -35,13 +35,13 @@ _loaded_projects = []
 
 class _ProjectBase:
 
-    def __init__(self, project_path: Optional[str], name: str) -> None:
+    def __init__(self, project_path: Optional['Path'], name: str) -> None:
         self._project_path = project_path
         self._name = name
         self._sources = Sources(project_path)
         self._build = Build(project_path, self._sources)
 
-    def _compile(self, sources: Sources, compiler_config: Dict, silent: bool) -> None:
+    def _compile(self, sources: Dict, compiler_config: Dict, silent: bool) -> None:
         build_json = compiler.compile_and_format(
             sources,
             solc_version=compiler_config['version'],
@@ -95,7 +95,7 @@ class Project(_ProjectBase):
         _build: project Build object
     '''
 
-    def __init__(self, project_path: Union[Path, str], name: str) -> None:
+    def __init__(self, project_path: Optional['Path'], name: str) -> None:
         super().__init__(project_path, name)
         self._active = False
         self.load()
@@ -120,10 +120,10 @@ class Project(_ProjectBase):
         # add project to namespaces, apply import blackmagic
         name = self._name
         self.__all__ = list(self._containers)
-        sys.modules[f'brownie.project.{name}'] = self
+        sys.modules[f'brownie.project.{name}'] = self # type: ignore
         sys.modules['brownie.project'].__dict__[name] = self
-        sys.modules['brownie.project'].__all__.append(name)
-        sys.modules['brownie.project'].__console_dir__.append(name)
+        sys.modules['brownie.project'].__all__.append(name) # type: ignore
+        sys.modules['brownie.project'].__console_dir__.append(name) # type: ignore
         self._namespaces = [
             sys.modules['__main__'].__dict__,
             sys.modules['brownie.project'].__dict__
@@ -138,8 +138,8 @@ class Project(_ProjectBase):
             final.update(self._build.get_dependents(contract_name))
         for name in [i for i in final if self._build.contains(i)]:
             self._build.delete(name)
-        changed = set(self._sources.get_source_path(i) for i in final)
-        return dict((i, self._sources.get(i)) for i in changed)
+        changed_set: Set = set(self._sources.get_source_path(i) for i in final)
+        return dict((i, self._sources.get(i)) for i in changed_set)
 
     def _compare_build_json(self, contract_name: str) -> Union[Iterable, bool]:
         config = self._compiler_config
@@ -155,7 +155,7 @@ class Project(_ProjectBase):
             False
         )
 
-    def _update_and_register(self, dict_) -> None:
+    def _update_and_register(self, dict_: Any) -> None:
         dict_.update(self)
         self._namespaces.append(dict_)
 
@@ -175,19 +175,19 @@ class Project(_ProjectBase):
 
         # remove objects from namespace
         for dict_ in self._namespaces:
-            for key in [k for k, v in dict_.items() if v == self or (k in self and v == self[k])]:
+            for key in [k for k, v in dict_.items() if v == self or (k in self and v == self[k])]: # type: ignore
                 del dict_[key]
 
         name = self._name
         del sys.modules[f'brownie.project.{name}']
-        sys.modules['brownie.project'].__all__.remove(name)
-        sys.modules['brownie.project'].__console_dir__.remove(name)
+        sys.modules['brownie.project'].__all__.remove(name) # type: ignore
+        sys.modules['brownie.project'].__console_dir__.remove(name) # type: ignore
         self._active = False
         _loaded_projects.remove(self)
 
         # clear paths
         try:
-            sys.path.remove(self._project_path)
+            sys.path.remove(self._project_path) # type: ignore
         except ValueError:
             pass
 
@@ -221,7 +221,7 @@ def get_loaded_projects() -> List:
     return _loaded_projects.copy()
 
 
-def new(project_path: Union[Path, str, None] = ".", ignore_subfolder: bool = False) -> str:
+def new(project_path: Optional['Path'] = ".", ignore_subfolder: bool = False) -> str:
     '''Initializes a new project.
 
     Args:
@@ -275,8 +275,8 @@ def pull(project_name: str, project_path: Optional[Path] = None, ignore_subfolde
     return str(project_path)
 
 
-def _new_checks(project_path: Union[str, Path], ignore_subfolder: bool) -> Path:
-    project_path = Path(project_path).resolve()
+def _new_checks(project_path_str: str, ignore_subfolder: bool) -> Path:
+    project_path = Path(project_path_str).resolve()
     if str(CONFIG['brownie_folder']) in str(project_path):
         raise SystemError("Cannot make a new project inside the main brownie installation folder.")
     if not ignore_subfolder:
