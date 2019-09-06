@@ -25,7 +25,6 @@ FOLDERS = [
     "tests",
     "build",
     "build/contracts",
-    "build/tests"
 ]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 
