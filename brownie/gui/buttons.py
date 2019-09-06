@@ -75,7 +75,7 @@ class ConsoleToggle(_Toggle):
         self.console = self.root.main.console
 
     def toggle_on(self):
-        self.console.config(height=10)
+        self.console.config(height=3)
         return True
 
     def toggle_off(self):

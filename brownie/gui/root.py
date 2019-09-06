@@ -5,7 +5,7 @@ from tkinter import ttk
 
 from .buttons import (
     ScopingToggle,
-    # ConsoleToggle,
+    ConsoleToggle,
     HighlightsToggle
 )
 from .listview import ListView
@@ -87,7 +87,7 @@ class MainFrame(ttk.Frame):
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, minsize=280)
         self.rowconfigure(0, weight=1)
-        self.rowconfigure(1, minsize=30)
+        self.rowconfigure(1, minsize=24)
 
         self.oplist = ListView(self, (("pc", 80), ("opcode", 200)))
         self.oplist.grid(row=0, column=1, rowspan=2, sticky="nsew")
@@ -95,10 +95,8 @@ class MainFrame(ttk.Frame):
         self.note = TextBook(self)
         self.note.grid(row=0, column=0, sticky="nsew")
 
-        self.console = tk.Text(self, height=1)
+        self.console = Console(self)
         self.console.grid(row=1, column=0, sticky="nsew")
-        self.console.configure(**TEXT_STYLE)
-        self.console.configure(background="#272727")
 
 
 class ToolbarFrame(ttk.Frame):
@@ -108,10 +106,10 @@ class ToolbarFrame(ttk.Frame):
         self.root = root
 
         # geometry
-        self.columnconfigure([0, 1], minsize=80)
-        self.columnconfigure(3, weight=1)
-        self.columnconfigure([2, 4], minsize=250)
-        self.columnconfigure(5, minsize=304)
+        self.columnconfigure([0, 1, 2], minsize=80)
+        self.columnconfigure(4, weight=1)
+        self.columnconfigure([3, 5], minsize=250)
+        self.columnconfigure(6, minsize=304)
 
         # toggle buttons
         self.scope = ScopingToggle(self)
@@ -122,21 +120,44 @@ class ToolbarFrame(ttk.Frame):
         self.highlight.grid(row=0, column=1, sticky="nsew")
         ToolTip(self.highlight, "Toggle report highlighting")
 
-        # expand console toggle (working but not implemented)
-        # self.console = ConsoleToggle(self)
-        # self.console.pack(side="left")
+        self.console = ConsoleToggle(self)
+        self.console.grid(row=0, column=2, sticky="nsew")
 
         self.highlight_select = HighlightSelect(self)
-        self.highlight_select.grid(row=0, column=2, sticky="nsew", padx=10)
+        self.highlight_select.grid(row=0, column=3, sticky="nsew", padx=10)
         ToolTip(self.highlight_select, "Select a report to display")
 
         # report selection
         path = project._project_path.joinpath('reports')
         self.report = ReportSelect(self, list(path.glob('**/*.json')))
-        self.report.grid(row=0, column=4, sticky="nsew", padx=10)
+        self.report.grid(row=0, column=5, sticky="nsew", padx=10)
         ToolTip(self.report, "Select a report to overlay onto source code")
 
         # contract selection
         self.combo = ContractSelect(self, [k for k, v in project._build.items() if v['bytecode']])
-        self.combo.grid(row=0, column=5, sticky="nsew")
+        self.combo.grid(row=0, column=6, sticky="nsew")
         ToolTip(self.combo, "Select the contract source to view")
+
+
+class Console(tk.Text):
+
+    def __init__(self, parent):
+        super().__init__(parent, height=1)
+        self.configure(**TEXT_STYLE)
+        self.configure(background="#161616")
+
+    def write(self, text):
+        self.configure(state="normal")
+        self.delete(1.0, "end")
+        self.insert(1.0, text)
+        self.configure(state="disabled")
+
+    def append(self, text):
+        self.configure(state="normal")
+        self.insert("end", text)
+        self.configure(state="disabled")
+
+    def clear(self):
+        self.configure(state="normal")
+        self.delete(1.0, "end")
+        self.configure(state="disabled")
