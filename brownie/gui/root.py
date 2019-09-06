@@ -122,6 +122,7 @@ class ToolbarFrame(ttk.Frame):
 
         self.console = ConsoleToggle(self)
         self.console.grid(row=0, column=2, sticky="nsew")
+        ToolTip(self.console, "Toggle expanded console")
 
         self.highlight_select = HighlightSelect(self)
         self.highlight_select.grid(row=0, column=3, sticky="nsew", padx=10)

@@ -2,7 +2,6 @@
 
 import json
 from pathlib import Path
-import time
 
 from brownie.cli.utils import color
 from brownie.network.history import TxHistory
@@ -19,7 +18,7 @@ def save_coverage_report(project, coverage_eval, report_path):
 
     Args:
         coverage_eval: Coverage evaluation dict
-        report_path: Path to save to. If a folder is given, saves as coverage-ddmmyy
+        report_path: Path to save to. If a folder is given, saves as coverage.json
 
     Returns: Path object where report file was saved'''
     build = project._build
@@ -30,33 +29,12 @@ def save_coverage_report(project, coverage_eval, report_path):
     }
     report = json.loads(json.dumps(report, default=sorted))
     report_path = Path(report_path).absolute()
-    save = True
     if report_path.is_dir():
-        report_path, save = _check_last_path(report, report_path)
-    if save:
-        with report_path.open('w') as fp:
-            json.dump(report, fp, sort_keys=True, indent=2)
+        report_path = report_path.joinpath('coverage.json')
+    with report_path.open('w') as fp:
+        json.dump(report, fp, sort_keys=True, indent=2)
     print(f"\nCoverage report saved at {report_path}")
     return report_path
-
-
-def _check_last_path(report, path):
-    filename = "coverage-" + time.strftime('%d%m%y') + "{}.json"
-    count = len(list(path.glob(filename.format('*'))))
-    if count:
-        last_path = _report_path(path, filename, count - 1)
-        try:
-            with last_path.open() as fp:
-                last_report = json.load(fp)
-            if last_report == report:
-                return last_path, False
-        except json.JSONDecodeError:
-            pass
-    return _report_path(path, filename, count), True
-
-
-def _report_path(base_path, filename, count):
-    return base_path.joinpath(filename.format("-" + str(count) if count else ""))
 
 
 def print_gas_profile():
