@@ -6,12 +6,19 @@ import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk
 
-from .styles import TEXT_STYLE, TEXT_COLORS
+from .bases import (
+    SelectBox,
+)
+from .styles import (
+    TEXT_COLORS,
+    TEXT_STYLE,
+)
+from brownie.project.sources import (
+    is_inside_offset,
+)
 
-from brownie.project.sources import is_inside_offset
 
-
-class TextBook(ttk.Notebook):
+class SourceNoteBook(ttk.Notebook):
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -32,7 +39,7 @@ class TextBook(ttk.Notebook):
         if label in [i._label for i in self._frames]:
             return
         with path.open() as fp:
-            frame = TextBox(self, fp.read())
+            frame = SourceFrame(self, fp.read())
         super().add(frame, text=f"   {label}   ")
         frame._id = len(self._frames)
         frame._label = label
@@ -147,7 +154,7 @@ class TextBook(ttk.Notebook):
         tree.selection_set(id_)
 
 
-class TextBox(tk.Frame):
+class SourceFrame(tk.Frame):
 
     def __init__(self, root, text):
         super().__init__(root)
@@ -229,3 +236,13 @@ class TextBox(tk.Frame):
         self._text.yview_moveto(first)
         self._line_no.yview_moveto(first)
         self._scroll.set(first, last)
+
+
+class ContractSelect(SelectBox):
+
+    def __init__(self, parent, values):
+        super().__init__(parent, "Select a Contract", values)
+
+    def _select(self, event):
+        value = super()._select()
+        self.root.set_active(value)
