@@ -26,6 +26,7 @@ class SourceNoteBook(ttk.Notebook):
         self._scope = None
         self.configure(padding=0)
         self._frames = []
+        self.bind_count = 0
         self.root.bind("<Left>", self.key_left)
         self.root.bind("<Right>", self.key_right)
         base_path = self.root.active_project._project_path.joinpath('contracts')
@@ -108,18 +109,37 @@ class SourceNoteBook(ttk.Notebook):
         self.unmark_all('dark')
         self._scope = None
 
-    def mark(self, label, tag, start, stop):
+    def show_msg(self, frame, tag, msg):
+        text = self.root.main.console.read()
+        frame.tag_bind(tag, '<Leave>', lambda e: self.root.main.console.write(text))
+        self.root.main.console.write(msg)
+
+    def mark(self, label, tag, start, stop, msg=None):
         frame = self.get_frame(label)
         frame.tag_add(tag, start, stop)
+        self.root.main.console.read()
+        if msg:
+            bind_tag = f"bind-{self.bind_count}"
+            frame.tag_add(bind_tag, start, stop)
+            frame.tag_bind(bind_tag, '<Enter>', lambda e: self.show_msg(frame, bind_tag, msg))
+            self.bind_count += 1
 
     def unmark(self, label, tag):
         frame = self.get_frame(label)
         frame.tag_remove(tag)
 
     def unmark_all(self, *tags):
-        for f in self._frames:
+        for frame in self._frames:
             for tag in tags:
-                f.tag_remove(tag)
+                frame.tag_remove(tag)
+
+    def unbind_all(self):
+        for frame in self._frames:
+            for tag in (f"bind-{i}" for i in range(self.bind_count)):
+                frame.tag_remove(tag)
+                frame.tag_unbind(tag, "<Enter>")
+                frame.tag_unbind(tag, "<Leave>")
+        self.bind_count = 0
 
     def _search(self, event):
         frame = self.active_frame()

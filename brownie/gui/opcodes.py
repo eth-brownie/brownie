@@ -82,8 +82,9 @@ class OpcodeList(ttk.Treeview):
             ):
                 tag = "NoSource"
             else:
+                # used to find all the opcodes with the same source offset
                 tag = f"{op['path']}:{op['offset'][0]}:{op['offset'][1]}"
-            self.insert([str(pc), op['op']], [str(pc), tag, op['op']])
+            self.insert([str(pc), op['op']], [tag, op['op'], str(pc)])
 
     def _select_bind(self, event=None):
         for tag in self._last:

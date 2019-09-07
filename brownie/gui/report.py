@@ -61,10 +61,11 @@ class HighlightSelect(SelectBox):
         if contract not in self.root.active_report[value]:
             return
         report = self.root.active_report[value][contract]
-        for path, item in [(k, x) for k, v in report.items() for x in v]:
+        for path, (start, stop, color, msg) in [(k, x) for k, v in report.items() for x in v]:
             label = Path(path).name
-            self.note.mark(label, item[2], item[0], item[1])
+            self.note.mark(label, color, start, stop, msg)
 
     def toggle_off(self):
         self.root.highlight_key = None
         self.note.unmark_all('green', 'red', 'yellow', 'orange')
+        self.note.unbind_all()
