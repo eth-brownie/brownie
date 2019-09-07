@@ -221,7 +221,7 @@ def get_loaded_projects() -> List:
     return _loaded_projects.copy()
 
 
-def new(project_path: Optional['Path'] = ".", ignore_subfolder: bool = False) -> str:
+def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
     '''Initializes a new project.
 
     Args:
@@ -230,7 +230,7 @@ def new(project_path: Optional['Path'] = ".", ignore_subfolder: bool = False) ->
 
     Returns the path to the project as a string.
     '''
-    project_path = _new_checks(project_path, ignore_subfolder)
+    project_path = _new_checks(project_path_str, ignore_subfolder)
     project_path.mkdir(exist_ok=True)
     _create_folders(project_path)
     if not project_path.joinpath('brownie-config.json').exists():
@@ -242,7 +242,7 @@ def new(project_path: Optional['Path'] = ".", ignore_subfolder: bool = False) ->
     return str(project_path)
 
 
-def pull(project_name: str, project_path: Optional[Path] = None, ignore_subfolder: bool = False) -> str:
+def pull(project_name: str, project_path_str: str = None, ignore_subfolder: bool = False) -> str:
     '''Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mix
 
@@ -254,12 +254,14 @@ def pull(project_name: str, project_path: Optional[Path] = None, ignore_subfolde
     '''
     project_name = str(project_name).replace('-mix', '')
     url = MIXES_URL.format(project_name)
-    if project_path is None:
-        project_path = Path('.').joinpath(project_name)
+    if project_path_str is None:
+        project_path_str = ""
+        project_path: 'Path' = Path('.').joinpath(project_name)
     else:
+        project_path = Path(project_path_str)
         if project_path.exists() and list(project_path.glob('*')):
             raise FileExistsError(f"Folder already exists - {project_path}")
-    project_path = _new_checks(project_path, ignore_subfolder)
+    project_path = _new_checks(project_path_str, ignore_subfolder)
 
 
     print(f"Downloading from {url}...")
