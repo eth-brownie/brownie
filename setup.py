@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 
-from setuptools import setup, find_packages
+from setuptools import (
+    find_packages,
+    setup,
+)
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -11,7 +14,7 @@ with open("requirements.txt", "r") as f:
 setup(
     name="eth-brownie",
     packages=find_packages(),
-    version="1.0.0b11",
+    version="1.0.0b12",
     license="MIT",
     description="A Python framework for Ethereum smart contract deployment, testing and interaction.",  # noqa: E501
     long_description=long_description,
