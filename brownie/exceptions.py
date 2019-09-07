@@ -71,6 +71,10 @@ class VirtualMachineError(Exception):
             super().__init__(exc['message'])
 
 
+class EventLookupError(LookupError):
+    pass
+
+
 # project/
 
 class ContractExists(Exception):

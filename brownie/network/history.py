@@ -1,15 +1,10 @@
 #!/usr/bin/python3
 
-import sys
-
 from .rpc import Rpc
-from .web3 import Web3
 from brownie.convert import to_address
 from brownie._singleton import _Singleton
 
 rpc = Rpc()
-web3 = Web3()
-rpc._revert_register(sys.modules[__name__])
 
 
 class TxHistory(metaclass=_Singleton):
@@ -116,21 +111,3 @@ def _add_contract(contract):
 
 def _remove_contract(contract):
     del _contract_map[contract.address]
-
-
-# RPC registry methods
-
-def _reset():
-    for contract in _contract_map.values():
-        contract._reverted = True
-    _contract_map.clear()
-
-
-def _revert(height):
-    for address, contract in list(_contract_map.items()):
-        if contract.tx and contract.tx.block_number <= height:
-            continue
-        if len(web3.eth.getCode(contract.address).hex()) > 4:
-            continue
-        _contract_map[address]._reverted = True
-        del _contract_map[address]

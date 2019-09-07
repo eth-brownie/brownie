@@ -78,16 +78,16 @@ def test_modified_state(accounts, tester, console_mode):
     assert not tx.modified_state
 
 
-def test_revert_msg(tester, console_mode):
-    tx = tester.revertStrings(0)
+def test_revert_msg(evmtester, console_mode):
+    tx = evmtester.revertStrings(0)
     assert tx.revert_msg == "zero"
-    tx = tester.revertStrings(1)
+    tx = evmtester.revertStrings(1)
     assert tx.revert_msg == "dev: one"
-    tx = tester.revertStrings(2)
+    tx = evmtester.revertStrings(2)
     assert tx.revert_msg == "two"
-    tx = tester.revertStrings(3)
+    tx = evmtester.revertStrings(3)
     assert tx.revert_msg == ""
-    tx = tester.revertStrings(31337)
+    tx = evmtester.revertStrings(31337)
     assert tx.revert_msg == "dev: great job"
 
 

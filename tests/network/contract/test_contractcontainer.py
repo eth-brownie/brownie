@@ -8,7 +8,7 @@ def test_get_method(BrownieTester):
     assert BrownieTester.get_method(calldata) == "getTuple"
 
 
-def test_container(BrownieTester, accounts, rpc):
+def test_container_add_remove(BrownieTester, accounts, rpc):
     assert len(BrownieTester) == 0
     t = BrownieTester.deploy(True, {'from': accounts[0]})
     t2 = BrownieTester.deploy(True, {'from': accounts[0]})
@@ -22,6 +22,24 @@ def test_container(BrownieTester, accounts, rpc):
     assert BrownieTester[0] == t2
     rpc.reset()
     assert len(BrownieTester) == 0
+
+
+def test_container_reset(BrownieTester, accounts, rpc):
+    BrownieTester.deploy(True, {'from': accounts[0]})
+    assert len(BrownieTester) == 1
+    rpc.reset()
+    assert len(BrownieTester) == 0
+
+
+def test_container_revert(BrownieTester, accounts, rpc):
+    c = BrownieTester.deploy(True, {'from': accounts[0]})
+    assert len(BrownieTester) == 1
+    rpc.snapshot()
+    BrownieTester.deploy(True, {'from': accounts[0]})
+    assert len(BrownieTester) == 2
+    rpc.revert()
+    assert len(BrownieTester) == 1
+    assert BrownieTester[0] == c
 
 
 def test_remove_at(BrownieTester, accounts):

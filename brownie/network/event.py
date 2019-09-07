@@ -1,11 +1,13 @@
 #!/usr/bin/python3
 
+from collections import OrderedDict
 import json
 
 import eth_event
 
 from brownie.convert import format_event
 from brownie._config import CONFIG
+from brownie.exceptions import EventLookupError
 
 
 class EventDict:
@@ -18,19 +20,18 @@ class EventDict:
             events: event data as supplied by eth_event.decode_logs or eth_event.decode_trace'''
         self._ordered = [_EventItem(
             i['name'],
-            [dict((x['name'], x['value']) for x in i['data'])],
+            [OrderedDict((x['name'], x['value']) for x in i['data'])],
             (pos,)
         ) for pos, i in enumerate(events)]
-        self._dict = {}
+        self._dict = OrderedDict()
         for event in self._ordered:
-            if event.name in self._dict:
-                continue
-            events = [i for i in self._ordered if i.name == event.name]
-            self._dict[event.name] = _EventItem(
-                event.name,
-                events,
-                tuple(i.pos[0] for i in events)
-            )
+            if event.name not in self._dict:
+                events = [i for i in self._ordered if i.name == event.name]
+                self._dict[event.name] = _EventItem(
+                    event.name,
+                    events,
+                    tuple(i.pos[0] for i in events)
+                )
 
     def __repr__(self):
         return str(self)
@@ -45,9 +46,18 @@ class EventDict:
     def __getitem__(self, key):
         '''if key is int: returns the n'th event that was fired
         if key is str: returns a _EventItem dict of all events where name == key'''
-        if type(key) is int:
-            return self._ordered[key]
-        return self._dict[key]
+        if not isinstance(key, (int, str)):
+            raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
+        if isinstance(key, int):
+            try:
+                return self._ordered[key]
+            except IndexError:
+                raise EventLookupError(
+                    f"Index out of range - only {len(self._ordered)} events fired"
+                )
+        if key in self._dict:
+            return self._dict[key]
+        raise EventLookupError(f"Event '{key}' did not fire.")
 
     def __iter__(self):
         return iter(self._ordered)
@@ -64,15 +74,15 @@ class EventDict:
         return len([i.name for i in self._ordered if i.name == name])
 
     def items(self):
-        '''EventDict.items() -> a set-like object providing a view on EventDict's items'''
-        return self._dict.items()
+        '''EventDict.items() -> a list object providing a view on EventDict's items'''
+        return list(self._dict.items())
 
     def keys(self):
-        '''EventDict.keys() -> a set-like object providing a view on EventDict's keys'''
-        return self._dict.keys()
+        '''EventDict.keys() -> a list object providing a view on EventDict's keys'''
+        return list(self._dict.keys())
 
     def values(self):
-        '''EventDict.values() -> an object providing a view on EventDict's values'''
+        '''EventDict.values() -> a list object providing a view on EventDict's values'''
         return self._dict.values()
 
 
@@ -93,9 +103,23 @@ class _EventItem:
         '''if key is int: returns the n'th event that was fired with this name
         if key is str: returns the value of data field 'key' from the 1st event
         within the container '''
-        if type(key) is int:
-            return self._ordered[key]
-        return self._ordered[0][key]
+        if not isinstance(key, (int, str)):
+            raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
+        if isinstance(key, int):
+            try:
+                return self._ordered[key]
+            except IndexError:
+                raise EventLookupError(
+                    f"Index out of range - only {len(self._ordered)} '{self.name}' events fired"
+                )
+        if key in self._ordered[0]:
+            return self._ordered[0][key]
+        if f"{key} (indexed)" in self._ordered[0]:
+            return self._ordered[0][f"{key} (indexed)"]
+        valid_keys = ", ".join(self.keys())
+        raise EventLookupError(
+            f"Unknown key '{key}' - the '{self.name}' event includes these keys: {valid_keys}"
+        )
 
     def __contains__(self, name):
         '''returns True if this event contains a value with the given name.'''
@@ -122,16 +146,16 @@ class _EventItem:
         return other == self._ordered
 
     def items(self):
-        '''_EventItem.items() -> a set-like object providing a view on _EventItem[0]'s items'''
-        return self._ordered[0].items()
+        '''_EventItem.items() -> a list object providing a view on _EventItem[0]'s items'''
+        return [(i, self[i]) for i in self.keys()]
 
     def keys(self):
-        '''_EventItem.keys() -> a set-like object providing a view on _EventItem[0]'s keys'''
-        return self._ordered[0].keys()
+        '''_EventItem.keys() -> a list object providing a view on _EventItem[0]'s keys'''
+        return [i.replace(" (indexed)", "") for i in self._ordered[0].keys()]
 
     def values(self):
-        '''_EventItem.values() -> an object providing a view on _EventItem[0]'s values'''
-        return self._ordered[0].values()
+        '''_EventItem.values() -> a list object providing a view on _EventItem[0]'s values'''
+        return list(self._ordered[0].values())
 
 
 def _get_path():

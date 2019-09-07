@@ -42,8 +42,6 @@ Brownie documentation is hosted at [Read the Docs](https://eth-brownie.readthedo
 
 ## Testing
 
-Tests are still under development.
-
 To run the tests, first install the developer dependencies:
 
 ```bash

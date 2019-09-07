@@ -4,9 +4,9 @@ from pathlib import Path
 from brownie.test import output
 
 test_source = '''
-def test_stuff(Token, accounts):
-    token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
-    token.transfer(accounts[1], "10 ether", {'from': accounts[0]})'''
+def test_stuff(BrownieTester, accounts):
+    c = accounts[0].deploy(BrownieTester, True)
+    c.doNothing({'from': accounts[0]})'''
 
 
 def test_print_gas(plugintester, mocker):
@@ -34,9 +34,9 @@ def test_coverage_save_report(plugintester):
     plugintester.runpytest()
     assert not len(list(path.glob('*')))
     plugintester.runpytest('-C')
-    assert len(list(path.glob('*'))) == 1
+    assert [i.name for i in path.glob('*')] == ['coverage.json']
     plugintester.runpytest('-C')
-    assert len(list(path.glob('*'))) == 1
+    assert [i.name for i in path.glob('*')] == ['coverage.json']
     next(path.glob('*')).open('w').write("this isn't json, is it?")
     plugintester.runpytest('-C')
-    assert len(list(path.glob('*'))) == 2
+    assert [i.name for i in path.glob('*')] == ['coverage.json']

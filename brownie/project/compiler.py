@@ -6,7 +6,7 @@ from hashlib import sha1
 import re
 from requests.exceptions import ConnectionError
 import solcast
-from semantic_version import Version, Spec, SpecItem
+from semantic_version import NpmSpec, Version
 import solcx
 
 from . import sources
@@ -106,7 +106,7 @@ def find_solc_versions(contracts, install_needed=False, install_latest=False, si
                         the contract pragma
         install_latest: if True, will install when a newer version is available
                         than the installed one
-        silent: enables verbose reporting
+        silent: set to False to enable verbose reporting
 
     Returns: dictionary of {'version': ['path', 'path', ..]}
     '''
@@ -119,86 +119,53 @@ def find_solc_versions(contracts, install_needed=False, install_latest=False, si
         available_versions = installed_versions
 
     pragma_regex = re.compile(r"pragma +solidity([^;]*);")
-    version_regex = re.compile(r"(([<>]?=?|\^)\d+\.\d+\.\d+)+")
-
-    pragma_specs = dict((i, set()) for i in contracts)
+    pragma_specs = {}
     to_install = set()
-    for path, source in contracts.items():
-        try:
-            pragma_string = next(pragma_regex.finditer(source))[0]
-        except StopIteration:
-            raise PragmaError(f"No version pragma in '{path}'") from None
+    new_versions = set()
 
-        # convert pragma to Version objects
-        comparator_set_range = pragma_string.replace(" ", "").split('||')
-        for comparator_set in comparator_set_range:
-            spec = Spec(*(i[0] for i in version_regex.findall(comparator_set)))
-            spec = _standardize_spec(spec)
-            pragma_specs[path].add(spec)
+    for path, source in contracts.items():
+
+        pragma_string = next(pragma_regex.finditer(source), None)
+        if pragma_string is None:
+            raise PragmaError(f"No version pragma in '{path}'")
+        pragma_specs[path] = NpmSpec(pragma_string.groups()[0])
+        version = pragma_specs[path].select(installed_versions)
+
+        if not version and not (install_needed or install_latest):
+            raise IncompatibleSolcVersion(
+                f"No installed solc version matching '{pragma_string[0]}' in '{path}'"
+            )
 
         # if no installed version of solc matches the pragma, find the latest available version
-        if not next((i for i in pragma_specs[path] if i.select(installed_versions)), None):
-            try:
-                version = _select_max(pragma_specs[path], available_versions)
-                to_install.add(version)
-            except ValueError:
-                raise PragmaError(
-                    f"No installable solc version matching '{pragma_string}' in '{path}'"
-                ) from None
-            if not install_needed:
-                raise IncompatibleSolcVersion(
-                    f"No installed solc version matching '{pragma_string}' in '{path}'"
-                )
+        latest = pragma_specs[path].select(available_versions)
+
+        if not version and not latest:
+            raise PragmaError(
+                f"No installable solc version matching '{pragma_string[0]}' in '{path}'"
+            )
+
+        if not version or (install_latest and latest > version):
+            to_install.add(latest)
+        elif latest > version:
+            new_versions.add(str(version))
 
     # install new versions if needed
     if to_install:
         install_solc(*to_install)
         installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
+    elif new_versions and not silent:
+        print(
+            f"New compatible solc version{'s' if len(new_versions) > 1 else ''}"
+            f" available: {', '.join(new_versions)}"
+        )
 
     # organize source paths by latest available solc version
     compiler_versions = {}
-    new_versions = set()
-    for path, spec_list in pragma_specs.items():
-        version = _select_max(spec_list, installed_versions)
+    for path, spec in pragma_specs.items():
+        version = spec.select(installed_versions)
         compiler_versions.setdefault(str(version), []).append(path)
-        latest = _select_max(spec_list, available_versions)
-        if latest > version:
-            new_versions.add(str(latest))
-    if new_versions:
-        if install_latest:
-            install_solc(*new_versions)
-            return find_solc_versions(contracts)
-        if not silent:
-            print(
-                f"New compatible solc version{'s' if len(new_versions) > 1 else ''}"
-                f" available: {', '.join(new_versions)}"
-            )
+
     return compiler_versions
-
-
-def _select_max(spec_list, version_list):
-    return max(i.select(version_list) for i in spec_list if i.select(version_list))
-
-
-# convert all specitems to be of types (==, >=, <)
-def _standardize_spec(spec):
-    final_spec = deepcopy(spec)
-    if spec.specs[0].kind == "==":
-        return final_spec
-    spec_list = list(spec.specs)
-    for s in spec_list:
-        if s.kind in (">", "<="):
-            s.kind = {'>': ">=", '<=': "<"}[s.kind]
-            s.spec.patch += 1
-        elif s.kind == "^":
-            s.kind = ">="
-            spec_list.append(SpecItem(f"<{s.spec.next_minor()}"))
-    spec_list = [
-        max((i for i in spec_list if i.kind == ">="), default=None, key=lambda k: k.spec),
-        min((i for i in spec_list if i.kind == "<"), default=None, key=lambda k: k.spec)
-    ]
-    final_spec.specs = tuple(i for i in spec_list if i)
-    return final_spec
 
 
 def generate_input_json(contracts, optimize=True, runs=200, evm_version=None, minify=False):
@@ -217,7 +184,7 @@ def generate_input_json(contracts, optimize=True, runs=200, evm_version=None, mi
         evm_version = "petersburg" if solcx.get_solc_version() >= Version("0.5.5") else "byzantium"
     input_json = deepcopy(STANDARD_JSON)
     input_json['settings']['optimizer']['enabled'] = optimize
-    input_json['settings']['optimizer']['runs'] = runs if optimize else False
+    input_json['settings']['optimizer']['runs'] = runs if optimize else 0
     input_json['settings']['evmVersion'] = evm_version
     input_json['sources'] = dict((
         k,

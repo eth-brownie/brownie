@@ -1,3 +1,10 @@
+1.0.0b12
+--------
+
+ - Improve / refactor GUI
+ - Update dependencies, remove deprecated semantic_version methods
+ - Bugfixes
+
 1.0.0b11
 --------
 

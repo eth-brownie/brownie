@@ -148,8 +148,10 @@ def test_find_solc_versions(find_version, msolc):
     assert '0.4.22' in find_version('0.5.9 || 0.4.22')
     with pytest.raises(PragmaError):
         compiler.find_solc_versions({'Foo': "contract Foo {}"})
-    with pytest.raises(PragmaError):
+    with pytest.raises(IncompatibleSolcVersion):
         find_version('^0.6.0', install_needed=False)
+    with pytest.raises(PragmaError):
+        find_version('^0.6.0', install_needed=True)
 
 
 def test_find_solc_versions_install(find_version, msolc):
