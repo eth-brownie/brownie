@@ -17,6 +17,7 @@ def test_resets(accounts, history, rpc):
     assert len(history) == 3
     rpc.reset()
     assert len(history) == 0
+    assert not history
 
 
 def test_reverts(accounts, history, rpc):
@@ -56,3 +57,13 @@ def test_of(accounts, history):
     assert len(history.of_address(accounts[1])) == 1
     assert len(history.of_address(accounts[2])) == 1
     assert len(history.of_address(accounts[3])) == 1
+
+
+def test_copy(accounts, history, rpc):
+    accounts[0].transfer(accounts[1], "1 ether")
+    h = history.copy()
+    assert type(h) is list
+    assert len(h) == 1
+    assert h[0] == history[0]
+    rpc.reset()
+    assert len(h) == 1
