@@ -2,8 +2,6 @@
 
 import tkinter as tk
 
-TOOLTIP_DELAY = 1
-
 
 class ToolTip(tk.Toplevel):
 
@@ -21,7 +19,7 @@ class ToolTip(tk.Toplevel):
         self.kill = False
         self.widget.bind("<Leave>", self.leave)
         self.widget.bind("<1>", self.leave)
-        self.after(int(TOOLTIP_DELAY * 1000), self.show)
+        self.after(1000, self.show)
 
     def show(self):
         if self.kill:

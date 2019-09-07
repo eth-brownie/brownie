@@ -377,7 +377,7 @@ class LocalAccount(_AccountBase):
 
     def _transact(self, tx: Dict) -> None:
         self._check_for_revert(tx)
-        signed_tx = self._acct.signTransaction(tx).rawTransaction # type: ignore
+        signed_tx = self._acct.sign_transaction(tx).rawTransaction # type: ignore
         return web3.eth.sendRawTransaction(signed_tx)
 
 

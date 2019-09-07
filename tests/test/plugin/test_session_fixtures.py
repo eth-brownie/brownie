@@ -16,9 +16,9 @@ def test_rpc(rpc):
 def test_web3(web3):
     assert web3 == brownie.web3
 
-def test_contract_container(BrownieTester, CoverageTester):
+def test_contract_container(BrownieTester, EVMTester):
     assert type(BrownieTester) is ContractContainer
-    assert type(CoverageTester) is ContractContainer'''
+    assert type(EVMTester) is ContractContainer'''
 
 
 def test_fixtures(plugintester):

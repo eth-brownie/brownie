@@ -13,6 +13,7 @@ Brownie
     interaction.rst
     tests.rst
     debug.rst
+    gui.rst
     deploy.rst
     test-rpc.rst
     config.rst

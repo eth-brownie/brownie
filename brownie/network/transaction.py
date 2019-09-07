@@ -181,7 +181,6 @@ class TransactionReceipt:
             self._getattr = False
 
     def _await_confirmation(self, silent):
-
         # await tx showing in mempool
         while True:
             try:
@@ -440,9 +439,10 @@ class TransactionReceipt:
         )
 
     def _full_name(self):
-        if self.contract_name:
+        try:
             return f"{self.contract_name}.{self.fn_name}"
-        return self.fn_name or "Transaction"
+        except AttributeError:
+            return self.fn_name or "Transaction"
 
     def info(self):
         '''Displays verbose information about the transaction, including decoded event logs.'''

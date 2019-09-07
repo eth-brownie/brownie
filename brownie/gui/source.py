@@ -6,12 +6,19 @@ import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk
 
-from .styles import TEXT_STYLE, TEXT_COLORS
+from .bases import (
+    SelectBox,
+)
+from .styles import (
+    TEXT_COLORS,
+    TEXT_STYLE,
+)
+from brownie.project.sources import (
+    is_inside_offset,
+)
 
-from brownie.project.sources import is_inside_offset
 
-
-class TextBook(ttk.Notebook):
+class SourceNoteBook(ttk.Notebook):
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -19,9 +26,10 @@ class TextBook(ttk.Notebook):
         self._scope = None
         self.configure(padding=0)
         self._frames = []
+        self.bind_count = 0
         self.root.bind("<Left>", self.key_left)
         self.root.bind("<Right>", self.key_right)
-        base_path = self.root._project._project_path.joinpath('contracts')
+        base_path = self.root.active_project._project_path.joinpath('contracts')
         for path in base_path.glob('**/*.sol'):
             self.add(path)
         self.set_visible([])
@@ -32,7 +40,7 @@ class TextBook(ttk.Notebook):
         if label in [i._label for i in self._frames]:
             return
         with path.open() as fp:
-            frame = TextBox(self, fp.read())
+            frame = SourceFrame(self, fp.read())
         super().add(frame, text=f"   {label}   ")
         frame._id = len(self._frames)
         frame._label = label
@@ -101,18 +109,37 @@ class TextBook(ttk.Notebook):
         self.unmark_all('dark')
         self._scope = None
 
-    def mark(self, label, tag, start, stop):
+    def show_msg(self, frame, tag, msg):
+        text = self.root.main.console.read()
+        frame.tag_bind(tag, '<Leave>', lambda e: self.root.main.console.write(text))
+        self.root.main.console.write(msg)
+
+    def mark(self, label, tag, start, stop, msg=None):
         frame = self.get_frame(label)
         frame.tag_add(tag, start, stop)
+        self.root.main.console.read()
+        if msg:
+            bind_tag = f"bind-{self.bind_count}"
+            frame.tag_add(bind_tag, start, stop)
+            frame.tag_bind(bind_tag, '<Enter>', lambda e: self.show_msg(frame, bind_tag, msg))
+            self.bind_count += 1
 
     def unmark(self, label, tag):
         frame = self.get_frame(label)
         frame.tag_remove(tag)
 
     def unmark_all(self, *tags):
-        for f in self._frames:
+        for frame in self._frames:
             for tag in tags:
-                f.tag_remove(tag)
+                frame.tag_remove(tag)
+
+    def unbind_all(self):
+        for frame in self._frames:
+            for tag in (f"bind-{i}" for i in range(self.bind_count)):
+                frame.tag_remove(tag)
+                frame.tag_unbind(tag, "<Enter>")
+                frame.tag_unbind(tag, "<Leave>")
+        self.bind_count = 0
 
     def _search(self, event):
         frame = self.active_frame()
@@ -147,7 +174,7 @@ class TextBook(ttk.Notebook):
         tree.selection_set(id_)
 
 
-class TextBox(tk.Frame):
+class SourceFrame(tk.Frame):
 
     def __init__(self, root, text):
         super().__init__(root)
@@ -229,3 +256,13 @@ class TextBox(tk.Frame):
         self._text.yview_moveto(first)
         self._line_no.yview_moveto(first)
         self._scroll.set(first, last)
+
+
+class ContractSelect(SelectBox):
+
+    def __init__(self, parent, values):
+        super().__init__(parent, "Select a Contract", values)
+
+    def _select(self, event):
+        contract_name = super()._select()
+        self.root.set_active_contract(contract_name)

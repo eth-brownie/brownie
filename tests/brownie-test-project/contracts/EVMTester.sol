@@ -1,6 +1,6 @@
-pragma solidity ^0.5.0;
+pragma solidity >=0.4.22;
 
-contract CoverageTester {
+contract EVMTester {
 
     function ifBranches(bool a, bool b, bool c, bool d) public returns (bool) {
         if (a && b && c && d) return true;
@@ -26,4 +26,16 @@ contract CoverageTester {
         uint z = (a || b ? 1 : 2);
         return true;
     }
+
+    function revertStrings(uint a) external returns (bool) {
+        require (a != 0, "zero");
+        require (a != 1); // dev: one
+        require (a != 2, "two"); // dev: error
+        require (a != 3); // error
+        if (a != 31337) {
+            return true;
+        }
+        revert(); // dev: great job
+    }
+
 }
