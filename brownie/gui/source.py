@@ -244,5 +244,5 @@ class ContractSelect(SelectBox):
         super().__init__(parent, "Select a Contract", values)
 
     def _select(self, event):
-        value = super()._select()
-        self.root.set_active(value)
+        contract_name = super()._select()
+        self.root.set_active_contract(contract_name)

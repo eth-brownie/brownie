@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json
 import tkinter as tk
 from tkinter import ttk
 
@@ -20,6 +21,7 @@ from .source import (
     SourceNoteBook,
 )
 from .styles import set_style
+from .tooltip import ToolTip
 
 from brownie.project import get_loaded_projects
 
@@ -40,8 +42,19 @@ class Root(tk.Tk):
         Root._active = True
 
         self.active_project = projects[0]
-        name = self.active_project._name
-        super().__init__(className=f" Brownie GUI - {name}")
+        self.pcMap = {}
+
+        self.report_key = None
+        self.highlight_key = None
+        self.reports = {}
+        for path in self.active_project._project_path.glob('reports/*.json'):
+            try:
+                with path.open() as fp:
+                    self.reports[path.stem] = json.load(fp)
+            except Exception:
+                continue
+
+        super().__init__(className=f" Brownie GUI - {self.active_project._name}")
         self.bind("<Escape>", lambda k: self.destroy())
 
         # geometry and styling
@@ -58,17 +71,19 @@ class Root(tk.Tk):
         self.toolbar = ToolbarFrame(self, self.active_project)
         self.toolbar.grid(row=0, column=0, sticky='nsew')
 
-        self.active_report = False
+    @property
+    def active_report(self):
+        return self.reports[self.report_key]['highlights']
 
-    def set_active(self, contract_name):
+    def get_active_contract(self):
+        return self.toolbar.combo.get()
+
+    def set_active_contract(self, contract_name):
         build_json = self.active_project._build.get(contract_name)
         self.main.note.set_visible(build_json['allSourcePaths'])
         self.main.note.set_active(build_json['sourcePath'])
         self.main.oplist.set_opcodes(build_json['pcMap'])
         self.pcMap = dict((str(k), v) for k, v in build_json['pcMap'].items())
-
-    def get_active(self):
-        return self.toolbar.combo.get()
 
     def destroy(self):
         super().destroy()
@@ -124,8 +139,7 @@ class ToolbarFrame(ttk.Frame):
         self.highlight_select.hide()
         ToolTip(self.highlight_select, "Select which report highlights to display")
 
-        path = project._project_path.joinpath('reports')
-        self.report = ReportSelect(self, list(path.glob('**/*.json')))
+        self.report = ReportSelect(self)
         self.report.grid(row=0, column=9, sticky="nsew", padx=10)
         ToolTip(self.report, "Select a report to overlay onto the source code")
 
@@ -133,35 +147,3 @@ class ToolbarFrame(ttk.Frame):
         self.combo = ContractSelect(self, [k for k, v in project._build.items() if v['bytecode']])
         self.combo.grid(row=0, column=10, sticky="nsew")
         ToolTip(self.combo, "Select the contract source to view")
-
-
-class ToolTip(tk.Toplevel):
-
-    def __init__(self, widget, text=None, textvariable=None):
-        super().__init__(widget._root())
-        label = tk.Label(self, text=text, textvariable=textvariable, font=(None, 10))
-        label.pack()
-        self.wm_overrideredirect(True)
-        self.withdraw()
-        self.kill = False
-        self.widget = widget
-        widget.bind("<Enter>", self.enter)
-
-    def enter(self, event):
-        self.kill = False
-        self.widget.bind("<Leave>", self.leave)
-        self.widget.bind("<1>", self.leave)
-        self.after(1000, self.show)
-
-    def show(self):
-        if self.kill:
-            return
-        self.geometry(f"+{self.winfo_pointerx()+5}+{self.winfo_pointery()+5}")
-        self.lift()
-        self.deiconify()
-
-    def leave(self, event):
-        self.kill = True
-        self.widget.unbind("<Leave>")
-        self.withdraw()
-        self.widget.bind("<Enter>", self.enter)
