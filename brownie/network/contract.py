@@ -411,10 +411,10 @@ class ContractTx(_ContractMethod):
         abi: Contract ABI specific to this method.
         signature: Bytes4 method signature.'''
 
-    def __init__(self, fn: Any, abi: Any, name: str, owner: 'Accounts') -> None:
+    def __init__(self, address: str, abi: Any, name: str, owner: 'Accounts') -> None:
         if ARGV['cli'] == "test" and CONFIG['pytest']['default_contract_owner'] is False:
             owner = None
-        super().__init__(fn, abi, name, owner)
+        super().__init__(address, abi, name, owner)
 
     def __call__(self, *args):
         '''Broadcasts a transaction that calls this contract method.
