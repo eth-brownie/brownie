@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from typing import TypeVar, Iterable, List, Union, Dict, Any, Optional, Tuple, Callable
 import re
 
 import eth_abi
@@ -20,15 +21,17 @@ from brownie.exceptions import (
 )
 from brownie._config import ARGV, CONFIG
 
+from brownie.network.transaction import TransactionReceipt
+from brownie.network.account import Accounts
+
 rpc = Rpc()
 web3 = Web3()
-
 
 class _ContractBase:
 
     _dir_color = "contract"
 
-    def __init__(self, project, build, name, abi):
+    def __init__(self, project: Any, build: Any, name: str, abi: Any) -> None:
         self._project = project
         self._build = build
         self._name = name
@@ -39,7 +42,7 @@ class _ContractBase:
             _signature(i)
         ) for i in abi if i['type'] == "function")
 
-    def get_method(self, calldata):
+    def get_method(self, calldata: str) -> Optional[Iterable]:
         sig = calldata[:10].lower()
         return next((k for k, v in self.signatures.items() if v == sig), None)
 
@@ -55,42 +58,42 @@ class ContractContainer(_ContractBase):
         signatures: Dictionary of {'function name': "bytes4 signature"}
         topics: Dictionary of {'event name': "bytes32 topic"}'''
 
-    def __init__(self, project, build):
+    def __init__(self, project: Any, build: Dict) -> None:
         self.tx = None
         self.bytecode = build['bytecode']
-        self._contracts = []
+        self._contracts: List = []
         super().__init__(project, build, build['contractName'], build['abi'])
         self.deploy = ContractConstructor(self, self._name)
         rpc._revert_register(self)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable:
         return iter(self._contracts)
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: Any) -> Any:
         return self._contracts[i]
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: Any) -> None:
         item = self._contracts[key]
         history._remove_contract(item)
         self._contracts.remove(item)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._contracts)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self._contracts)
 
-    def _reset(self):
+    def _reset(self) -> None:
         self._contracts.clear()
 
-    def _revert(self, height):
+    def _revert(self, height: int) -> None:
         self._contracts = [
             i for i in self._contracts if
             (i.tx and i.tx.block_number <= height) or
             len(web3.eth.getCode(i.address).hex()) > 4
         ]
 
-    def remove(self, contract):
+    def remove(self, contract: str) -> None:
         '''Removes a contract from the container.
 
         Args:
@@ -100,7 +103,7 @@ class ContractContainer(_ContractBase):
         self._contracts.remove(contract)
         history._remove_contract(contract)
 
-    def at(self, address, owner=None, tx=None):
+    def at(self, address: str, owner: Optional['Accounts'] = None, tx: 'TransactionReceipt' = None) -> 'ProjectContract':
         '''Returns a contract address.
 
         Raises ValueError if no bytecode exists at the address.
@@ -120,7 +123,7 @@ class ContractContainer(_ContractBase):
         self._contracts.append(contract)
         return contract
 
-    def _add_from_tx(self, tx):
+    def _add_from_tx(self, tx: 'TransactionReceipt') -> None:
         tx._confirmed.wait()
         self.at(tx.contract_address, tx.sender, tx)
 
@@ -129,7 +132,7 @@ class ContractConstructor:
 
     _dir_color = "contract_method"
 
-    def __init__(self, parent, name):
+    def __init__(self, parent: Any, name: str) -> None:
         self._parent = parent
         try:
             self.abi = next(i for i in parent.abi if i['type'] == "constructor")
@@ -142,10 +145,10 @@ class ContractConstructor:
             }
         self._name = name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} object '{self._name}.constructor({_inputs(self.abi)})'>"
 
-    def __call__(self, *args):
+    def __call__(self, *args: Tuple) -> Union['Contract', 'TransactionReceipt']:
         '''Deploys a contract.
 
         Args:
@@ -170,7 +173,7 @@ class ContractConstructor:
             gas_price=tx['gasPrice']
         )
 
-    def encode_abi(self, *args):
+    def encode_abi(self, *args: tuple) -> str:
         bytecode = self._parent.bytecode
         # find and replace unlinked library pointers in bytecode
         for marker in re.findall('_{1,}[^_]*_{1,}', bytecode):
@@ -199,7 +202,7 @@ class _DeployedContractBase(_ContractBase):
 
     _reverted = False
 
-    def __init__(self, address, owner=None, tx=None):
+    def __init__(self, address: str, owner: Any = None, tx: 'TransactionReceipt' = None) -> None:
         address = to_address(address)
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         if not self.bytecode:
@@ -218,21 +221,21 @@ class _DeployedContractBase(_ContractBase):
             key = ",".join(i['type'] for i in abi['inputs']).replace('256', '')
             getattr(self, abi['name']).methods[key] = _get_method_object(address, abi, name, owner)
 
-    def _check_and_set(self, name, obj):
+    def _check_and_set(self, name: str, obj: Any) -> None:
         if hasattr(self, name):
             raise AttributeError(f"Namespace collision: '{self._name}.{name}'")
         setattr(self, name, obj)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(f"{self._name}{self.address}{self._project}")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.address
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, _DeployedContractBase):
             return self.address == other.address and self.bytecode == other.bytecode
         if isinstance(other, str):
@@ -243,12 +246,12 @@ class _DeployedContractBase(_ContractBase):
                 return False
         return super().__eq__(other)
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str) -> Any:
         if super().__getattribute__('_reverted'):
             raise ContractNotFound("This contract no longer exists.")
         return super().__getattribute__(name)
 
-    def balance(self):
+    def balance(self) -> int:
         '''Returns the current ether balance of the contract, in wei.'''
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
@@ -256,7 +259,7 @@ class _DeployedContractBase(_ContractBase):
 
 class Contract(_DeployedContractBase):
 
-    def __init__(self, address, name, abi, owner=None):
+    def __init__(self, address: Any, name: str, abi: Any, owner: 'Accounts' = None) -> None:
         _ContractBase.__init__(self, None, None, name, abi)
         _DeployedContractBase.__init__(self, address, owner, None)
         contract = history.find_contract(address)
@@ -274,7 +277,15 @@ class ProjectContract(_DeployedContractBase):
 
     '''Methods for interacting with a deployed contract as part of a Brownie project.'''
 
-    def __init__(self, project, build, address, owner, tx=None):
+    def __init__(
+            self,
+            project: '_DeployedContractBase',
+            build: Any,
+            address: str,
+            # Not really optional. Helps to satisfy None default in ContractContainer at method
+            # Could use some refactoring
+            owner: Optional['Accounts'],
+            tx: 'TransactionReceipt' = None) -> None:
         _ContractBase.__init__(self, project, build, build['contractName'], build['abi'])
         _DeployedContractBase.__init__(self, address, owner, tx)
         history._add_contract(self)
@@ -282,22 +293,22 @@ class ProjectContract(_DeployedContractBase):
 
 class OverloadedMethod:
 
-    def __init__(self, address, name, owner):
+    def __init__(self, address: str, name: str, owner: Any):
         self._address = address
         self._name = name
         self._owner = owner
-        self.methods = {}
+        self.methods: Dict = {}
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Any) -> Any:
         if isinstance(key, tuple):
             key = ",".join(key)
         key = key.replace("256", "").replace(", ", ",")
         return self.methods[key]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<OverloadedMethod object '{self._name}'>"
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.methods)
 
 
@@ -305,18 +316,18 @@ class _ContractMethod:
 
     _dir_color = "contract_method"
 
-    def __init__(self, address, abi, name, owner):
+    def __init__(self, address: str, abi: Any, name: str, owner: 'Accounts') -> None:
         self._address = address
         self._name = name
         self.abi = abi
         self._owner = owner
         self.signature = _signature(abi)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         pay = "payable " if self.abi['stateMutability'] == "payable" else ""
         return f"<{type(self).__name__} {pay}object '{self.abi['name']}({_inputs(self.abi)})'>"
 
-    def call(self, *args):
+    def call(self, *args: Tuple) -> Any:
         '''Calls the contract method without broadcasting a transaction.
 
         Args:
@@ -335,7 +346,7 @@ class _ContractMethod:
             raise VirtualMachineError(e) from None
         return self.decode_abi(data)
 
-    def transact(self, *args):
+    def transact(self, *args: Tuple) -> 'TransactionReceipt':
         '''Broadcasts a transaction that calls this contract method.
 
         Args:
@@ -358,7 +369,7 @@ class _ContractMethod:
             data=self.encode_abi(*args)
         )
 
-    def encode_abi(self, *args):
+    def encode_abi(self, *args: Tuple) -> str:
         '''Returns encoded ABI data to call the method with the given arguments.
 
         Args:
@@ -370,7 +381,7 @@ class _ContractMethod:
         types = [i[1] for i in _params(self.abi['inputs'])]
         return self.signature + eth_abi.encode_abi(types, data).hex()
 
-    def decode_abi(self, hexstr):
+    def decode_abi(self, hexstr: str) -> Tuple:
         '''Decodes hexstring data returned by this method.
 
         Args:
@@ -393,7 +404,7 @@ class ContractTx(_ContractMethod):
         abi: Contract ABI specific to this method.
         signature: Bytes4 method signature.'''
 
-    def __init__(self, fn, abi, name, owner):
+    def __init__(self, fn: Any, abi: Any, name: str, owner: 'Accounts') -> None:
         if ARGV['cli'] == "test" and CONFIG['pytest']['default_contract_owner'] is False:
             owner = None
         super().__init__(fn, abi, name, owner)
