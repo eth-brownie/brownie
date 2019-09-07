@@ -4,8 +4,13 @@
 import time
 from tkinter import ttk
 
+from brownie.project.sources import is_inside_offset
+from .bases import (
+    ToggleButton,
+)
 
-class ListView(ttk.Treeview):
+
+class OpcodeList(ttk.Treeview):
 
     def __init__(self, parent, columns, **kwargs):
         self._last = set()
@@ -77,8 +82,9 @@ class ListView(ttk.Treeview):
             ):
                 tag = "NoSource"
             else:
+                # used to find all the opcodes with the same source offset
                 tag = f"{op['path']}:{op['offset'][0]}:{op['offset'][1]}"
-            self.insert([str(pc), op['op']], [str(pc), tag, op['op']])
+            self.insert([str(pc), op['op']], [tag, op['op'], str(pc)])
 
     def _select_bind(self, event=None):
         for tag in self._last:
@@ -178,3 +184,37 @@ class ListView(ttk.Treeview):
     def _get_prev(self, pc):
         pc_list = sorted(self.root.pcMap, key=lambda k: int(k), reverse=True)
         return next(i for i in pc_list if int(i) < int(pc))
+
+
+class ScopingButton(ToggleButton):
+
+    def __init__(self, parent):
+        super().__init__(parent, "Scope", "s")
+        self.oplist = self.root.main.oplist
+
+    def toggle_on(self):
+        try:
+            op = self.oplist.selection()[0]
+        except IndexError:
+            return False
+        if self.oplist.item(op, 'tags')[0] == "NoSource":
+            return False
+        pc = self.root.pcMap[op]
+        for key, value in sorted(self.root.pcMap.items(), key=lambda k: int(k[0])):
+            if (
+                'path' not in value or value['path'] != pc['path'] or
+                not is_inside_offset(value['offset'], pc['offset'])
+            ):
+                self.oplist.detach(key)
+            else:
+                self.oplist.move(key, '', key)
+        self.oplist.see(op)
+        self.root.main.note.apply_scope(*pc['offset'])
+        return True
+
+    def toggle_off(self):
+        self.root.main.note.clear_scope()
+        for i in sorted(self.root.pcMap, key=lambda k: int(k)):
+            self.oplist.move(i, '', i)
+        if self.oplist.selection():
+            self.oplist.see(self.oplist.selection()[0])

@@ -437,43 +437,9 @@ When the tests complete, a report will display:
         Token.transfer - 85.7%
         Token.transferFrom - 100.0%
 
-    Coverage report saved at reports/coverage-010170.json
+    Coverage report saved at reports/coverage.json
 
-Brownie outputs a % score for each contract method that you can use to quickly gauge your overall coverage level. A detailed coverage report is also saved in the project's ``reports`` folder, that can be viewed via the Brownie GUI.
-
-.. _coverage-gui:
-
-Viewing Coverage Reports
-------------------------
-
-For an in-depth look at your test coverage, type:
-
-::
-
-    $ brownie gui
-
-Or from the console:
-
-.. code-block:: python
-
-    >>> Gui()
-
-This opens the Brownie GUI. Next:
-
-* In the upper-right drop box, select a contract to view.
-* In the drop box immediately left of the contract selection, choose the generated coverage report JSON.
-* In the upper left, choose to view either the "statement" or "branch" coverage report.
-
-Relevant code will be highlighted in different colors:
-
-* Green - code was executed during the tests
-* Yellow - code was executed, but only evaluated truthfully
-* Orange - code was executed, but only evaluated falsely
-* Red - code was not executed
-
-.. image:: opview.png
-
-.. _test_settings:
+Brownie outputs a % score for each contract method that you can use to quickly gauge your overall coverage level. A detailed coverage report is also saved in the project's ``reports`` folder, that can be viewed via the Brownie GUI. See :ref:`coverage-gui` for more information.
 
 Configuration Settings
 ======================

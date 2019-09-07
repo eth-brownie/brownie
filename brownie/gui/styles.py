@@ -14,6 +14,7 @@ TEXT_STYLE = {
     'state': "disabled"
 }
 
+# if these colors are changed, please also update docs/gui.rst
 TEXT_COLORS = {
     'comment': {'foreground': "#868686"},
     'dark': {'background': "#272727", 'foreground': "#A9A9A9"},

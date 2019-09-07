@@ -81,14 +81,21 @@ class ContractContainer(_ContractBase):
         return str(self._contracts)
 
     def _reset(self):
+        for contract in self._contracts:
+            history._remove_contract(contract)
+            contract._reverted = True
         self._contracts.clear()
 
     def _revert(self, height):
-        self._contracts = [
+        reverted = [
             i for i in self._contracts if
-            (i.tx and i.tx.block_number <= height) or
-            len(web3.eth.getCode(i.address).hex()) > 4
+            (i.tx and i.tx.block_number > height) or
+            len(web3.eth.getCode(i.address).hex()) <= 4
         ]
+        for contract in reverted:
+            history._remove_contract(contract)
+            self._contracts.remove(contract)
+            contract._reverted = True
 
     def remove(self, contract):
         '''Removes a contract from the container.

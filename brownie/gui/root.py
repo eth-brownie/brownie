@@ -1,24 +1,26 @@
 #!/usr/bin/python3
 
+import json
 import tkinter as tk
 from tkinter import ttk
 
-from .buttons import (
-    ScopingToggle,
-    ConsoleToggle,
-    HighlightsToggle
+from .console import (
+    Console,
+    ConsoleButton,
 )
-from .listview import ListView
-from .select import (
-    ContractSelect,
+from .opcodes import (
+    OpcodeList,
+    ScopingButton,
+)
+from .report import (
     HighlightSelect,
     ReportSelect,
 )
-from .styles import (
-    set_style,
-    TEXT_STYLE
+from .source import (
+    ContractSelect,
+    SourceNoteBook,
 )
-from .textbook import TextBook
+from .styles import set_style
 from .tooltip import ToolTip
 
 from brownie.project import get_loaded_projects
@@ -40,8 +42,19 @@ class Root(tk.Tk):
         Root._active = True
 
         self.active_project = projects[0]
-        name = self.active_project._name
-        super().__init__(className=f" Brownie GUI - {name}")
+        self.pcMap = {}
+
+        self.report_key = None
+        self.highlight_key = None
+        self.reports = {}
+        for path in self.active_project._project_path.glob('reports/*.json'):
+            try:
+                with path.open() as fp:
+                    self.reports[path.stem] = json.load(fp)
+            except Exception:
+                continue
+
+        super().__init__(className=f" Brownie GUI - {self.active_project._name}")
         self.bind("<Escape>", lambda k: self.destroy())
 
         # geometry and styling
@@ -58,19 +71,19 @@ class Root(tk.Tk):
         self.toolbar = ToolbarFrame(self, self.active_project)
         self.toolbar.grid(row=0, column=0, sticky='nsew')
 
-        self.active_report = False
+    @property
+    def active_report(self):
+        return self.reports[self.report_key]['highlights']
 
-    def set_active(self, contract_name):
+    def get_active_contract(self):
+        return self.toolbar.combo.get()
+
+    def set_active_contract(self, contract_name):
         build_json = self.active_project._build.get(contract_name)
         self.main.note.set_visible(build_json['allSourcePaths'])
         self.main.note.set_active(build_json['sourcePath'])
         self.main.oplist.set_opcodes(build_json['pcMap'])
         self.pcMap = dict((str(k), v) for k, v in build_json['pcMap'].items())
-        if self.toolbar.highlight.active:
-            self.toolbar.highlight.reset()
-
-    def get_active(self):
-        return self.toolbar.combo.get()
 
     def destroy(self):
         super().destroy()
@@ -89,10 +102,10 @@ class MainFrame(ttk.Frame):
         self.rowconfigure(0, weight=1)
         self.rowconfigure(1, minsize=24)
 
-        self.oplist = ListView(self, (("pc", 80), ("opcode", 200)))
+        self.oplist = OpcodeList(self, (("pc", 80), ("opcode", 200)))
         self.oplist.grid(row=0, column=1, rowspan=2, sticky="nsew")
 
-        self.note = TextBook(self)
+        self.note = SourceNoteBook(self)
         self.note.grid(row=0, column=0, sticky="nsew")
 
         self.console = Console(self)
@@ -106,59 +119,31 @@ class ToolbarFrame(ttk.Frame):
         self.root = root
 
         # geometry
-        self.columnconfigure([0, 1, 2], minsize=80)
-        self.columnconfigure(4, weight=1)
-        self.columnconfigure([3, 5], minsize=250)
-        self.columnconfigure(6, minsize=304)
+        self.columnconfigure([0, 1], minsize=80)
+        self.columnconfigure(7, weight=1)
+        self.columnconfigure([8, 9], minsize=200)
+        self.columnconfigure(10, minsize=304)
 
         # toggle buttons
-        self.scope = ScopingToggle(self)
-        self.scope.grid(row=0, column=0, sticky="nsew")
-        ToolTip(self.scope, "Filter opcodes to only show those\nrelated to the highlighted source")
-
-        self.highlight = HighlightsToggle(self)
-        self.highlight.grid(row=0, column=1, sticky="nsew")
-        ToolTip(self.highlight, "Toggle report highlighting")
-
-        self.console = ConsoleToggle(self)
-        self.console.grid(row=0, column=2, sticky="nsew")
+        self.console = ConsoleButton(self)
+        self.console.grid(row=0, column=0, sticky="nsew")
         ToolTip(self.console, "Toggle expanded console")
 
-        self.highlight_select = HighlightSelect(self)
-        self.highlight_select.grid(row=0, column=3, sticky="nsew", padx=10)
-        ToolTip(self.highlight_select, "Select a report to display")
+        self.scope = ScopingButton(self)
+        self.scope.grid(row=0, column=1, sticky="nsew")
+        ToolTip(self.scope, "Filter opcodes to only show those\nrelated to the highlighted source")
 
         # report selection
-        path = project._project_path.joinpath('reports')
-        self.report = ReportSelect(self, list(path.glob('**/*.json')))
-        self.report.grid(row=0, column=5, sticky="nsew", padx=10)
-        ToolTip(self.report, "Select a report to overlay onto source code")
+        self.highlight_select = HighlightSelect(self)
+        self.highlight_select.grid(row=0, column=8, sticky="nsew", padx=10)
+        self.highlight_select.hide()
+        ToolTip(self.highlight_select, "Select which report highlights to display")
+
+        self.report = ReportSelect(self)
+        self.report.grid(row=0, column=9, sticky="nsew", padx=10)
+        ToolTip(self.report, "Select a report to overlay onto the source code")
 
         # contract selection
         self.combo = ContractSelect(self, [k for k, v in project._build.items() if v['bytecode']])
-        self.combo.grid(row=0, column=6, sticky="nsew")
+        self.combo.grid(row=0, column=10, sticky="nsew")
         ToolTip(self.combo, "Select the contract source to view")
-
-
-class Console(tk.Text):
-
-    def __init__(self, parent):
-        super().__init__(parent, height=1)
-        self.configure(**TEXT_STYLE)
-        self.configure(background="#161616")
-
-    def write(self, text):
-        self.configure(state="normal")
-        self.delete(1.0, "end")
-        self.insert(1.0, text)
-        self.configure(state="disabled")
-
-    def append(self, text):
-        self.configure(state="normal")
-        self.insert("end", text)
-        self.configure(state="disabled")
-
-    def clear(self):
-        self.configure(state="normal")
-        self.delete(1.0, "end")
-        self.configure(state="disabled")
