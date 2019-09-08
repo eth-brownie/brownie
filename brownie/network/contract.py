@@ -89,7 +89,7 @@ class ContractContainer(_ContractBase):
             contract._reverted = True
         self._contracts.clear()
 
-    def _revert(self, height) -> None:
+    def _revert(self, height: int) -> None:
         reverted = [
             i for i in self._contracts if
             (i.tx and i.tx.block_number > height) or
@@ -323,7 +323,7 @@ class _ContractMethod:
 
     _dir_color = "contract_method"
 
-    def __init__(self, address: str, abi: Any, name: str, owner: 'Accounts') -> None:
+    def __init__(self, address: str, abi: Any, name: str, owner: Optional['Accounts']) -> None:
         self._address = address
         self._name = name
         self.abi = abi
@@ -411,12 +411,12 @@ class ContractTx(_ContractMethod):
         abi: Contract ABI specific to this method.
         signature: Bytes4 method signature.'''
 
-    def __init__(self, address: str, abi: Any, name: str, owner: 'Accounts') -> None:
+    def __init__(self, address: str, abi: Any, name: str, owner: Optional['Accounts']) -> None:
         if ARGV['cli'] == "test" and CONFIG['pytest']['default_contract_owner'] is False:
             owner = None
         super().__init__(address, abi, name, owner)
 
-    def __call__(self, *args):
+    def __call__(self, *args: Tuple) -> Any:
         '''Broadcasts a transaction that calls this contract method.
 
         Args:
@@ -436,7 +436,7 @@ class ContractCall(_ContractMethod):
         abi: Contract ABI specific to this method.
         signature: Bytes4 method signature.'''
 
-    def __call__(self, *args):
+    def __call__(self, *args: Tuple) -> Callable:
         '''Calls the contract method without broadcasting a transaction.
 
         Args:
@@ -457,7 +457,7 @@ class ContractCall(_ContractMethod):
             rpc._internal_revert()
 
 
-def _get_tx(owner, args):
+def _get_tx(owner: Optional['Accounts'], args: Any) -> Tuple:
     # seperate contract inputs from tx dict and set default tx values
     tx = {'from': owner, 'value': 0, 'gas': None, 'gasPrice': None}
     if args and isinstance(args[-1], dict):
@@ -473,13 +473,17 @@ def _get_tx(owner, args):
     return args, tx
 
 
-def _get_method_object(address, abi, name, owner):
+def _get_method_object(
+        address: str,
+        abi: Any,
+        name: str,
+        owner: Optional['Accounts']) -> Union['ContractCall', 'ContractTx']:
     if abi['stateMutability'] in ('view', 'pure'):
         return ContractCall(address, abi, name, owner)
     return ContractTx(address, abi, name, owner)
 
 
-def _params(abi_params):
+def _params(abi_params: List) -> Any:
     types = []
     for i in abi_params:
         if i['type'] != "tuple":
@@ -489,12 +493,12 @@ def _params(abi_params):
     return types
 
 
-def _inputs(abi):
+def _inputs(abi: Any) -> str:
     params = _params(abi['inputs'])
     return ", ".join(f"{i[1]}{' '+i[0] if i[0] else ''}" for i in params)
 
 
-def _signature(abi):
+def _signature(abi: Any) -> str:
     types = [i[1] for i in _params(abi['inputs'])]
     key = f"{abi['name']}({','.join(types)})".encode()
     return "0x" + keccak(key).hex()[:8]
