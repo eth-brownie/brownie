@@ -35,13 +35,13 @@ class _RPCBaseException(Exception):
 
 class RPCProcessError(_RPCBaseException):
 
-    def __init__(self, cmd: str, proc: Type[psutil.Popen], uri: str):
+    def __init__(self, cmd: str, proc: Type[psutil.Popen], uri: str) -> None:
         super().__init__("Unable to launch local RPC client.", cmd, proc, uri)
 
 
 class RPCConnectionError(_RPCBaseException):
 
-    def __init__(self, cmd: str, proc: Type[psutil.Popen], uri: str):
+    def __init__(self, cmd: str, proc: Type[psutil.Popen], uri: str) -> None:
         super().__init__("Able to launch RPC client, but unable to connect.", cmd, proc, uri)
 
 
@@ -99,7 +99,7 @@ class ProjectNotFound(Exception):
 
 class CompilerError(Exception):
 
-    def __init__(self, e: Type[psutil.Popen]):
+    def __init__(self, e: Type[psutil.Popen]) -> None:
         err = [i['formattedMessage'] for i in json.loads(e.stdout_data)['errors']]
         super().__init__("Compiler returned the following errors:\n\n" + "\n".join(err))
 
