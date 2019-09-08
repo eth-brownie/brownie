@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from typing import TypeVar, NewType, Any, Union, List, Tuple, Dict
 from copy import deepcopy
 import eth_utils
 from hexbytes import HexBytes
@@ -19,6 +20,8 @@ UNITS = {
     'ether': 18
 }
 
+WeiInputTypes = TypeVar('WeiInputTypes', str, float, int, None)
+W = TypeVar('W', bound='Wei')
 
 class Wei(int):
 
@@ -32,25 +35,26 @@ class Wei(int):
         * bytes: b'\xff\xff'
         * hex strings: "0x330124"'''
 
-    def __new__(cls, value):
-        return super().__new__(cls, _to_wei(value))
+    # Known typing error: https://github.com/python/mypy/issues/4290
+    def __new__(cls, value: Any) -> Any: # type: ignore
+        return super().__new__(cls, _to_wei(value)) # type: ignore
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return super().__hash__()
 
-    def __lt__(self, other):
+    def __lt__(self, other: Any) -> bool:
         return super().__lt__(_to_wei(other))
 
-    def __le__(self, other):
+    def __le__(self, other: Any) -> bool:
         return super().__le__(_to_wei(other))
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         try:
             return super().__eq__(_to_wei(other))
         except TypeError:
             return False
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         try:
             return super().__ne__(_to_wei(other))
         except TypeError:
@@ -69,7 +73,7 @@ class Wei(int):
         return Wei(super().__sub__(_to_wei(other)))
 
 
-def _to_wei(value):
+def _to_wei(value: WeiInputTypes) -> int:
     original = value
     if value is None:
         return 0
@@ -92,32 +96,32 @@ def _to_wei(value):
     return _return_int(original, value)
 
 
-def _return_int(original, value):
+def _return_int(original: Any, value: Any) -> int:
     try:
         return int(value)
     except ValueError:
         raise TypeError(f"Could not convert {type(original)} '{original}' to wei.")
 
 
-def to_uint(value, type_="uint256"):
+def to_uint(value: Any, type_: str = "uint256") -> 'Wei':
     '''Convert a value to an unsigned integer'''
-    value = Wei(value)
+    wei: 'Wei' = Wei(value)
     size = _check_int_size(type_)
-    if value < 0 or value >= 2**int(size):
+    if wei < 0 or wei >= 2**int(size):
         raise OverflowError(f"{value} is outside allowable range for {type_}")
-    return value
+    return wei
 
 
-def to_int(value, type_="int256"):
+def to_int(value: Any, type_: str = "int256") -> 'Wei':
     '''Convert a value to a signed integer'''
-    value = Wei(value)
+    wei = Wei(value)
     size = _check_int_size(type_)
-    if value < -2**int(size) // 2 or value >= 2**int(size) // 2:
+    if wei < -2**int(size) // 2 or wei >= 2**int(size) // 2:
         raise OverflowError(f"{value} is outside allowable range for {type_}")
-    return value
+    return wei
 
 
-def _check_int_size(type_):
+def _check_int_size(type_: Any) -> int:
     size = int(type_.strip("uint") or 256)
     if size < 8 or size > 256 or size // 8 != size / 8:
         raise ValueError(f"Invalid type: {type_}")
@@ -128,24 +132,25 @@ class EthAddress(str):
 
     '''String subclass that raises TypeError when compared to a non-address.'''
 
-    def __new__(cls, value):
-        return super().__new__(cls, to_address(value))
+    # Known typing error: https://github.com/python/mypy/issues/4290
+    def __new__(cls, value: Any) -> str: # type: ignore
+        return super().__new__(cls, to_address(value)) # type: ignore
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return _address_compare(str(self), other)
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not _address_compare(str(self), other)
 
 
-def _address_compare(a, b):
+def _address_compare(a: Any, b: Any) -> bool:
     b = str(b)
     if not b.startswith('0x') or not eth_utils.is_hex(b) or len(b) != 42:
         raise TypeError(f"Invalid type for comparison: '{b}' is not a valid address")
     return a.lower() == b.lower()
 
 
-def to_address(value):
+def to_address(value: str) -> str:
     '''Convert a value to an address'''
     if type(value) in (bytes, HexBytes):
         value = HexBytes(value).hex()
@@ -162,30 +167,31 @@ class HexString(bytes):
     a non-hexstring. Evaluates True for hexstrings with the same value but differing
     leading zeros or capitalization.'''
 
-    def __new__(cls, value, type_):
-        return super().__new__(cls, to_bytes(value, type_))
+    # Known typing error: https://github.com/python/mypy/issues/4290
+    def __new__(cls, value, type_): # type: ignore
+        return super().__new__(cls, to_bytes(value, type_)) # type: ignore
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return _hex_compare(self.hex(), other)
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not _hex_compare(self.hex(), other)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "0x" + self.hex()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
 
-def _hex_compare(a, b):
+def _hex_compare(a: Any, b: Any) -> bool:
     b = str(b)
     if not b.startswith('0x') or not eth_utils.is_hex(b):
         raise TypeError(f"Invalid type for comparison: '{b}' is not a valid hex string")
     return a.lstrip('0x').lower() == b.lstrip('0x').lower()
 
 
-def to_bytes(value, type_="bytes32"):
+def to_bytes(value: Any, type_: str = "bytes32") -> bytes:
     '''Convert a value to bytes'''
     if not isinstance(value, (bytes, str, int)):
         raise TypeError(f"'{value}', type {type(value)}, cannot convert to {type_}")
@@ -206,7 +212,7 @@ def to_bytes(value, type_="bytes32"):
         raise OverflowError(f"'{value}' exceeds maximum length for {type_}")
 
 
-def bytes_to_hex(value):
+def bytes_to_hex(value: Any) -> str:
     '''Convert a bytes value to a hexstring'''
     if type(value) not in (bytes, HexBytes, HexString, str, int):
         raise TypeError(f"Cannot convert {type(value)} '{value}' from bytes to hex.")
@@ -219,7 +225,7 @@ def bytes_to_hex(value):
     return eth_utils.add_0x_prefix(value)
 
 
-def to_bool(value):
+def to_bool(value: Any) -> bool:
     '''Convert a value to a boolean'''
     if type(value) not in (int, float, bool, bytes, HexBytes, str):
         raise TypeError(f"Cannot convert {type(value)} '{value}' to bool")
@@ -232,7 +238,7 @@ def to_bool(value):
     return bool(value)
 
 
-def to_string(value):
+def to_string(value: Any) -> str:
     '''Convert a value to a string'''
     if type(value) in (bytes, HexBytes):
         value = HexBytes(value).hex()
@@ -245,7 +251,7 @@ def to_string(value):
     return value
 
 
-def format_input(abi, inputs):
+def format_input(abi: Any, inputs: List) -> 'ReturnValue':
     '''Format contract inputs based on ABI types.
 
     Args:
@@ -261,7 +267,7 @@ def format_input(abi, inputs):
         raise type(e)(f"{abi['name']} {e}") from None
 
 
-def format_output(abi, outputs):
+def format_output(abi: Dict, outputs: List) -> List:
     '''Format contract outputs based on ABI types.
 
     Args:
