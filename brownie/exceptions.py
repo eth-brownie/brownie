@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Type, Dict, Union
+from typing import Type, Dict, Union, Any
 import psutil
 
 import json
@@ -24,7 +24,7 @@ class IncompatibleEVMVersion(Exception):
 
 class _RPCBaseException(Exception):
 
-    def __init__(self, msg: str, cmd: str, proc: Type[psutil.Popen], uri: str):
+    def __init__(self, msg: str, cmd: str, proc: Type[psutil.Popen], uri: str) -> None:
         msg = f"{msg}\n\nCommand: {cmd}\nURI: {uri}\nExit Code: {proc.poll()}"
         if sys.platform != "win32":
             out = proc.stdout.read().decode().strip() or "  (Empty)"
@@ -60,7 +60,7 @@ class VirtualMachineError(Exception):
     revert_msg = ""
     source = ""
 
-    def __init__(self, exc: Union[ValueError, Dict]):
+    def __init__(self, exc: Any) -> None:
         if type(exc) is not dict:
             try:
                 exc = eval(str(exc))
