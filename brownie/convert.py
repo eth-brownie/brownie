@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import TypeVar, NewType, Any, Union, List, Tuple, Dict
+from typing import TypeVar, NewType, Any, Union, List, Tuple, Dict, KeysView, ItemsView
 from copy import deepcopy
 import eth_utils
 from hexbytes import HexBytes
@@ -22,6 +22,7 @@ UNITS = {
 
 WeiInputTypes = TypeVar('WeiInputTypes', str, float, int, None)
 W = TypeVar('W', bound='Wei')
+RV = TypeVar('RV', bound='ReturnValue')
 
 class Wei(int):
 
@@ -60,16 +61,16 @@ class Wei(int):
         except TypeError:
             return True
 
-    def __ge__(self, other):
+    def __ge__(self, other: Any) -> bool:
         return super().__ge__(_to_wei(other))
 
-    def __gt__(self, other):
+    def __gt__(self, other: Any) -> bool:
         return super().__gt__(_to_wei(other))
 
-    def __add__(self, other):
+    def __add__(self, other: Any) -> 'Wei':
         return Wei(super().__add__(_to_wei(other)))
 
-    def __sub__(self, other):
+    def __sub__(self, other: Any) -> 'Wei':
         return Wei(super().__sub__(_to_wei(other)))
 
 
@@ -77,24 +78,28 @@ def _to_wei(value: WeiInputTypes) -> int:
     original = value
     if value is None:
         return 0
-    if type(value) in (bytes, HexBytes):
-        value = HexBytes(value).hex()
-    if type(value) is float and "e+" in str(value):
-        num, dec = str(value).split("e+")
-        num = num.split(".") if "." in num else [num, ""]
+    # if type(value) in (bytes, HexBytes):
+    elif isinstance(value, bytes) or isinstance(value, HexBytes):
+        value_hexstr: str = HexBytes(value).hex()
+        return int(value_hexstr, 16)
+        # value = HexBytes(value).hex()
+    elif type(value) is float and "e+" in str(value):
+        num_str, dec = str(value).split("e+")
+        num: List = num_str.split(".") if "." in num_str else [num_str, ""]
         return int(num[0] + num[1][:int(dec)] + "0" * (int(dec) - len(num[1])))
-    if type(value) is not str:
+    elif isinstance(value, str):
+        if value[:2] == "0x":
+            return int(value, 16)
+        else:
+            return 0
+    elif not isinstance(value, str):
         return _return_int(original, value)
-    if value[:2] == "0x":
-        return int(value, 16)
     for unit, dec in UNITS.items():
         if " " + unit not in value:
             continue
         num = value.split(" ")[0]
         num = num.split(".") if "." in num else [num, ""]
         return int(num[0] + num[1][:int(dec)] + "0" * (int(dec) - len(num[1])))
-    return _return_int(original, value)
-
 
 def _return_int(original: Any, value: Any) -> int:
     try:
@@ -198,7 +203,7 @@ def to_bytes(value: Any, type_: str = "bytes32") -> bytes:
     if type_ == "byte":
         type_ = "bytes1"
     if type_ != "bytes":
-        size = int(type_.strip("bytes"))
+        size: Union[int, float] = int(type_.strip("bytes"))
         if size < 1 or size > 32:
             raise ValueError(f"Invalid type: {type_}")
     else:
@@ -267,7 +272,7 @@ def format_input(abi: Any, inputs: List) -> 'ReturnValue':
         raise type(e)(f"{abi['name']} {e}") from None
 
 
-def format_output(abi: Dict, outputs: List) -> List:
+def format_output(abi: Dict, outputs: List) -> 'ReturnValue':
     '''Format contract outputs based on ABI types.
 
     Args:
@@ -278,7 +283,7 @@ def format_output(abi: Dict, outputs: List) -> List:
     return _format_abi(abi['outputs'], outputs)
 
 
-def format_event(event):
+def format_event(event: Any) -> Any:
     '''Format event data.
 
     Args:
@@ -295,7 +300,7 @@ def format_event(event):
     return event
 
 
-def _format_abi(abi, values):
+def _format_abi(abi: Any, values: Any) -> 'ReturnValue':
     '''Apply standard formatting to multiple values of differing types'''
     types = [i['type'] for i in abi]
     values = list(values)
@@ -314,7 +319,7 @@ def _format_abi(abi, values):
     return ReturnValue(values, abi)
 
 
-def _format_array(abi, values):
+def _format_array(abi: Any, values: Any) -> 'ReturnValue':
     '''Apply standard formatting to multiple values of the same type (arrays)'''
     base_type, length = abi['type'][:-1].rsplit('[', maxsplit=1)
     if not isinstance(values, (list, tuple)):
@@ -331,7 +336,7 @@ def _format_array(abi, values):
     return ReturnValue([_format_single(base_type, i) for i in values])
 
 
-def _format_single(type_, value):
+def _format_single(type_: str, value: Any) -> Any:
     '''Apply standard formatting to a single value'''
     if "uint" in type_:
         return to_uint(value, type_)
@@ -351,32 +356,32 @@ def _format_single(type_, value):
 class ReturnValue(tuple):
     '''Tuple subclass with dict-like functionality, used for iterable return values.'''
 
-    def __new__(cls, values, abi=None):
-        self = super().__new__(cls, values)
-        self._abi = abi or []
-        self._dict = {}
-        for c, i in enumerate(self._abi):
+    def __new__(cls, values: Any, abi: Any = None) -> 'ReturnValue':
+        self = super().__new__(cls, values) # type: ignore
+        self._abi = abi or [] # type: ignore
+        self._dict = {} # type: ignore
+        for c, i in enumerate(self._abi): # type: ignore
             if not i['name']:
                 continue
-            self._dict[i['name']] = values[c]
+            self._dict[i['name']] = values[c] # type: ignore
         return self
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> Any:
         return _kwargtuple_compare(self, other)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Any) -> Any:
         if type(key) is slice:
-            abi = deepcopy(self._abi)[key]
+            abi = deepcopy(self._abi)[key] # type: ignore
             result = super().__getitem__(key)
             return ReturnValue(result, abi)
         if isinstance(key, int):
             return super().__getitem__(key)
-        return self._dict[key]
+        return self._dict[key] # type: ignore
 
-    def __contains__(self, value):
+    def __contains__(self, value: Any) -> bool:
         return self.count(value) > 0
 
-    def count(self, value):
+    def count(self, value: Any) -> int:
         '''ReturnValue.count(value) -> integer -- return number of occurrences of value'''
         count = 0
         for item in self:
@@ -387,11 +392,11 @@ class ReturnValue(tuple):
                 continue
         return count
 
-    def dict(self):
+    def dict(self) -> Dict:
         '''ReturnValue.dict() -> a dictionary of ReturnValue's named items'''
-        return self._dict
+        return self._dict # type: ignore
 
-    def index(self, value, start=0, stop=None):
+    def index(self, value: Any, start: int = 0, stop: Any = None) -> int:
         '''ReturnValue.index(value, [start, [stop]]) -> integer -- return first index of value.
         Raises ValueError if the value is not present.'''
         if stop is None:
@@ -404,16 +409,16 @@ class ReturnValue(tuple):
                 continue
         raise ValueError(f"{value} is not in ReturnValue")
 
-    def items(self):
+    def items(self) -> ItemsView:
         '''ReturnValue.items() -> a set-like object providing a view on ReturnValue's named items'''
-        return self._dict.items()
+        return self._dict.items() # type: ignore
 
-    def keys(self):
+    def keys(self) -> KeysView:
         '''ReturnValue.keys() -> a set-like object providing a view on ReturnValue's keys'''
-        return self._dict.keys()
+        return self._dict.keys() # type: ignore
 
 
-def _kwargtuple_compare(a, b):
+def _kwargtuple_compare(a: Any, b: Any) -> Any:
     if type(a) not in (tuple, list, ReturnValue):
         types_ = set([type(a), type(b)])
         if types_.intersection([bool, type(None)]):
@@ -426,7 +431,7 @@ def _kwargtuple_compare(a, b):
     return next((False for i in range(len(a)) if not _kwargtuple_compare(a[i], b[i])), True)
 
 
-def _convert_str(value):
+def _convert_str(value: Any) -> 'Wei':
     if type(value) is not str:
         if not hasattr(value, "address"):
             return value
