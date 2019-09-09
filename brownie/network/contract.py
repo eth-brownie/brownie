@@ -22,7 +22,7 @@ from brownie.exceptions import (
 from brownie._config import ARGV, CONFIG
 
 from brownie.network.transaction import TransactionReceipt
-from brownie.network.account import Accounts, _AccountBase
+from brownie.network.account import Accounts
 
 rpc = Rpc()
 web3 = Web3()

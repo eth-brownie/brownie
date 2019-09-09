@@ -27,7 +27,6 @@ web3 = Web3()
 rpc = Rpc()
 
 AB = TypeVar('AB', bound='_AccountBase')
-T = TypeVar('T', bound='LocalAccount')
 
 class Accounts(metaclass=_Singleton):
 
