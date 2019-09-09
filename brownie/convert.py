@@ -22,6 +22,7 @@ UNITS = {
 
 WeiInputTypes = TypeVar('WeiInputTypes', str, float, int, None)
 
+
 class Wei(int):
 
     '''Integer subclass that converts a value to wei and allows comparison against
@@ -35,8 +36,8 @@ class Wei(int):
         * hex strings: "0x330124"'''
 
     # Known typing error: https://github.com/python/mypy/issues/4290
-    def __new__(cls, value: Any) -> Any: # type: ignore
-        return super().__new__(cls, _to_wei(value)) # type: ignore
+    def __new__(cls, value: Any) -> Any:  # type: ignore
+        return super().__new__(cls, _to_wei(value))  # type: ignore
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -99,6 +100,7 @@ def _to_wei(value: WeiInputTypes) -> int:
         num = num.split(".") if "." in num else [num, ""]
         return int(num[0] + num[1][:int(dec)] + "0" * (int(dec) - len(num[1])))
 
+
 def _return_int(original: Any, value: Any) -> int:
     try:
         return int(value)
@@ -136,8 +138,8 @@ class EthAddress(str):
     '''String subclass that raises TypeError when compared to a non-address.'''
 
     # Known typing error: https://github.com/python/mypy/issues/4290
-    def __new__(cls, value: Any) -> str: # type: ignore
-        return super().__new__(cls, to_address(value)) # type: ignore
+    def __new__(cls, value: Any) -> str:  # type: ignore
+        return super().__new__(cls, to_address(value))  # type: ignore
 
     def __eq__(self, other: Any) -> bool:
         return _address_compare(str(self), other)
@@ -171,8 +173,8 @@ class HexString(bytes):
     leading zeros or capitalization.'''
 
     # Known typing error: https://github.com/python/mypy/issues/4290
-    def __new__(cls, value, type_): # type: ignore
-        return super().__new__(cls, to_bytes(value, type_)) # type: ignore
+    def __new__(cls, value, type_):  # type: ignore
+        return super().__new__(cls, to_bytes(value, type_))  # type: ignore
 
     def __eq__(self, other: Any) -> bool:
         return _hex_compare(self.hex(), other)
@@ -210,7 +212,6 @@ def to_bytes(value: Any, type_: str = "bytes32") -> bytes:
         return int(value, 16).to_bytes(size, "big")
     except OverflowError:
         raise OverflowError(f"'{value}' exceeds maximum length for {type_}")
-
 
 
 def bytes_to_hex(value: Any) -> str:
@@ -353,13 +354,13 @@ class ReturnValue(tuple):
     '''Tuple subclass with dict-like functionality, used for iterable return values.'''
 
     def __new__(cls, values: Any, abi: Any = None) -> 'ReturnValue':
-        self = super().__new__(cls, values) # type: ignore
-        self._abi = abi or [] # type: ignore
-        self._dict = {} # type: ignore
-        for c, i in enumerate(self._abi): # type: ignore
+        self = super().__new__(cls, values)  # type: ignore
+        self._abi = abi or []  # type: ignore
+        self._dict = {}  # type: ignore
+        for c, i in enumerate(self._abi):  # type: ignore
             if not i['name']:
                 continue
-            self._dict[i['name']] = values[c] # type: ignore
+            self._dict[i['name']] = values[c]  # type: ignore
         return self
 
     def __eq__(self, other: Any) -> Any:
@@ -367,12 +368,12 @@ class ReturnValue(tuple):
 
     def __getitem__(self, key: Any) -> Any:
         if type(key) is slice:
-            abi = deepcopy(self._abi)[key] # type: ignore
+            abi = deepcopy(self._abi)[key]  # type: ignore
             result = super().__getitem__(key)
             return ReturnValue(result, abi)
         if isinstance(key, int):
             return super().__getitem__(key)
-        return self._dict[key] # type: ignore
+        return self._dict[key]  # type: ignore
 
     def __contains__(self, value: Any) -> bool:
         return self.count(value) > 0
@@ -390,7 +391,7 @@ class ReturnValue(tuple):
 
     def dict(self) -> Dict:
         '''ReturnValue.dict() -> a dictionary of ReturnValue's named items'''
-        return self._dict # type: ignore
+        return self._dict  # type: ignore
 
     def index(self, value: Any, start: int = 0, stop: Any = None) -> int:
         '''ReturnValue.index(value, [start, [stop]]) -> integer -- return first index of value.
@@ -407,11 +408,11 @@ class ReturnValue(tuple):
 
     def items(self) -> ItemsView:
         '''ReturnValue.items() -> a set-like object providing a view on ReturnValue's named items'''
-        return self._dict.items() # type: ignore
+        return self._dict.items()  # type: ignore
 
     def keys(self) -> KeysView:
         '''ReturnValue.keys() -> a set-like object providing a view on ReturnValue's keys'''
-        return self._dict.keys() # type: ignore
+        return self._dict.keys()  # type: ignore
 
 
 def _kwargtuple_compare(a: Any, b: Any) -> Any:
