@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import TypeVar, NewType, Any, Union, List, Tuple, Dict, KeysView, ItemsView
+from typing import TypeVar, Any, List, Tuple, Dict, KeysView, ItemsView
 from copy import deepcopy
 import eth_utils
 from hexbytes import HexBytes
@@ -21,8 +21,6 @@ UNITS = {
 }
 
 WeiInputTypes = TypeVar('WeiInputTypes', str, float, int, None)
-W = TypeVar('W', bound='Wei')
-RV = TypeVar('RV', bound='ReturnValue')
 
 class Wei(int):
 
