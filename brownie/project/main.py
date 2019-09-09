@@ -119,10 +119,10 @@ class Project(_ProjectBase):
         # add project to namespaces, apply import blackmagic
         name = self._name
         self.__all__ = list(self._containers)
-        sys.modules[f'brownie.project.{name}'] = self # type: ignore
+        sys.modules[f'brownie.project.{name}'] = self  # type: ignore
         sys.modules['brownie.project'].__dict__[name] = self
-        sys.modules['brownie.project'].__all__.append(name) # type: ignore
-        sys.modules['brownie.project'].__console_dir__.append(name) # type: ignore
+        sys.modules['brownie.project'].__all__.append(name)  # type: ignore
+        sys.modules['brownie.project'].__console_dir__.append(name)  # type: ignore
         self._namespaces = [
             sys.modules['__main__'].__dict__,
             sys.modules['brownie.project'].__dict__
@@ -175,19 +175,20 @@ class Project(_ProjectBase):
 
         # remove objects from namespace
         for dict_ in self._namespaces:
-            for key in [k for k, v in dict_.items() if v == self or (k in self and v == self[k])]: # type: ignore
+            for key in [k for k, v in dict_.items()
+                        if v == self or (k in self and v == self[k])]:  # type: ignore
                 del dict_[key]
 
         name = self._name
         del sys.modules[f'brownie.project.{name}']
-        sys.modules['brownie.project'].__all__.remove(name) # type: ignore
-        sys.modules['brownie.project'].__console_dir__.remove(name) # type: ignore
+        sys.modules['brownie.project'].__all__.remove(name)  # type: ignore
+        sys.modules['brownie.project'].__console_dir__.remove(name)  # type: ignore
         self._active = False
         _loaded_projects.remove(self)
 
         # clear paths
         try:
-            sys.path.remove(self._project_path) # type: ignore
+            sys.path.remove(self._project_path)  # type: ignore
         except ValueError:
             pass
 
@@ -263,7 +264,6 @@ def pull(project_name: str, project_path_str: str = None, ignore_subfolder: bool
             raise FileExistsError(f"Folder already exists - {project_path}")
     project_path = _new_checks(project_path_str, ignore_subfolder)
 
-
     print(f"Downloading from {url}...")
     request = requests.get(url)
     with zipfile.ZipFile(BytesIO(request.content)) as zf:
@@ -292,7 +292,7 @@ def compile_source(
         source: Sources,
         solc_version: str = None,
         optimize: bool = True,
-        runs: int =200,
+        runs: int = 200,
         evm_version: int = None) -> 'TempProject':
     '''Compiles the given source code string and returns a TempProject container with
     the ContractContainer instances.'''

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Dict, Optional, Union, Tuple, Any, KeysView, List
+from typing import Dict, Union, Tuple, Any, List
 from hashlib import sha1
 from pathlib import Path
 import re
@@ -85,7 +85,7 @@ class Sources:
         )
 
 
-def minify(source: str) -> Any: # Tuple[str, Any]:
+def minify(source: str) -> Any:  # Tuple[str, Any]:
     '''Given contract source as a string, returns a minified version and an
     offset map.'''
     offsets = [(0, 0)]

@@ -56,13 +56,13 @@ def install_solc(*versions: str) -> None:
 
 
 def compile_and_format(
-    contracts: Dict[str, Any],
-    solc_version: Optional[str] = None,
-    optimize: bool = True,
-    runs: int = 200,
-    evm_version: int = None,
-    minify: bool = False,
-    silent: bool = True) -> Dict:
+        contracts: Dict[str, Any],
+        solc_version: Optional[str] = None,
+        optimize: bool = True,
+        runs: int = 200,
+        evm_version: int = None,
+        minify: bool = False,
+        silent: bool = True) -> Dict:
     '''Compiles contracts and returns build data.
 
     Args:
@@ -74,7 +74,9 @@ def compile_and_format(
         minify: minify source files
         silent: verbose reporting
 
-    Returns: build data dict'''
+    Returns:
+        build data dict
+    '''
     if not contracts:
         return {}
 
@@ -528,8 +530,11 @@ def expand_source_map(source_map_str: str) -> List:
 
 def _expand_row(row_str: str) -> Any:
     row = row_str.split(':')
-    # ignore typing of next line - cannot concatenate List[str] and List[int]. Perhaps needs refactoring?
-    return [int(i) if i else None for i in row[:3]] + row[3:] + [None] * (4 - len(row)) # type: ignore
+    # ignore typing of next line
+    # Cannot concatenate List[str] and List[int]. Perhaps needs refactoring?
+
+    r = [int(i) if i else None for i in row[:3]] + row[3:] + [None] * (4 - len(row))  # type: ignore
+    return r
 
 
 def get_statement_nodes(source_nodes: Dict) -> Dict:

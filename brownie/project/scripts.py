@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Tuple, Optional, Dict, Any, Type
+from typing import Tuple, Optional, Dict, Any
 from types import ModuleType
 
 import ast
@@ -95,7 +95,8 @@ def _get_path(path_str: str, default_folder: str = "scripts") -> 'Path':
     return path
 
 
-# TODO: Come back to this - need to check if there are any cases where the argument path may be a str instead of Path
+# TODO: Come back to this
+# Need to check if there are any cases where the argument path may be a str instead of Path
 def _import_from_path(path: Any) -> ModuleType:
     '''Imports a module from the given path.'''
     path = Path(path).absolute().relative_to(sys.path[0])
@@ -115,9 +116,9 @@ def get_ast_hash(path: str) -> str:
     base_path = str(check_for_project(path))
     for obj in [i for i in ast_list[0].body if type(i) in (ast.Import, ast.ImportFrom)]:
         if type(obj) is ast.Import:
-            name = obj.names[0].name # type: ignore
+            name = obj.names[0].name  # type: ignore
         else:
-            name = obj.module # type: ignore
+            name = obj.module  # type: ignore
         try:
             origin = importlib.util.find_spec(name).origin
         except Exception as e:
