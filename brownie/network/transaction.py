@@ -29,8 +29,6 @@ from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie._config import ARGV
 
-from brownie.network.account import Accounts
-
 history = TxHistory()
 web3 = Web3()
 
@@ -644,7 +642,7 @@ class TransactionReceipt:
 
 
 def _format_source(
-        source: 'Accounts',
+        source: Any,  # source: 'Accounts'
         linenos: Any,
         path: 'Path',
         pc: Any,
@@ -698,7 +696,7 @@ def _get_memory(step: Dict, idx: int) -> HexBytes:
     return HexBytes("".join(step['memory'])[offset:offset + length])
 
 
-def _raise(msg: str, source: Union[str, 'Accounts']) -> None:
+def _raise(msg: str, source: Any) -> None:  # source: Union[str, 'Accounts']
     raise VirtualMachineError({"message": msg, "source": source})
 
 

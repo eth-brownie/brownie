@@ -14,7 +14,6 @@ import eth_keys
 
 from brownie.cli.utils import color
 from brownie.exceptions import VirtualMachineError, UnknownAccount, IncompatibleEVMVersion
-from brownie.network.contract import ContractContainer
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
@@ -203,11 +202,11 @@ class _AccountBase:
 
     def deploy(
             self,
-            contract: ContractContainer,
+            contract: Any,
             *args: Tuple,
             amount: Optional[int] = None,
             gas_limit: Optional[int] = None,
-            gas_price: Optional[int] = None) -> Union[ContractContainer, TransactionReceipt]:
+            gas_price: Optional[int] = None) -> Any:  # Returns ContractContainer or TransactionReceipt
         '''Deploys a contract.
 
         Args:

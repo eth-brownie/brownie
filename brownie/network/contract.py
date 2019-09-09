@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Iterable, List, Union, Dict, Any, Optional, Tuple, Callable
+from typing import Iterable, List, Union, Dict, Any, Optional, Tuple, Callable, TypeVar
 import re
 
 import eth_abi
@@ -20,8 +20,6 @@ from brownie.exceptions import (
     VirtualMachineError
 )
 from brownie._config import ARGV, CONFIG
-
-from brownie.network.transaction import TransactionReceipt
 
 rpc = Rpc()
 web3 = Web3()
@@ -114,7 +112,7 @@ class ContractContainer(_ContractBase):
             self,
             address: str,
             owner: Any = None,
-            tx: 'TransactionReceipt' = None) -> 'ProjectContract':
+            tx: Any = None) -> 'ProjectContract':  # tx: TransactionReceipt
         '''Returns a contract address.
 
         Raises ValueError if no bytecode exists at the address.
@@ -134,7 +132,7 @@ class ContractContainer(_ContractBase):
         self._contracts.append(contract)
         return contract
 
-    def _add_from_tx(self, tx: 'TransactionReceipt') -> None:
+    def _add_from_tx(self, tx: Any) -> None:  # tx: TransactionReceipt
         tx._confirmed.wait()
         self.at(tx.contract_address, tx.sender, tx)
 
@@ -159,7 +157,8 @@ class ContractConstructor:
     def __repr__(self) -> str:
         return f"<{type(self).__name__} object '{self._name}.constructor({_inputs(self.abi)})'>"
 
-    def __call__(self, *args: Tuple) -> Union['Contract', 'TransactionReceipt']:
+    # Returns either 'Contract' or 'TransactionReceipt'
+    def __call__(self, *args: Tuple) -> Any:
         '''Deploys a contract.
 
         Args:
@@ -213,7 +212,7 @@ class _DeployedContractBase(_ContractBase):
 
     _reverted = False
 
-    def __init__(self, address: str, owner: Any = None, tx: 'TransactionReceipt' = None) -> None:
+    def __init__(self, address: str, owner: Any = None, tx: Any = None) -> None: # tx: 'TransactionReceipt'
         address = to_address(address)
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         if not self.bytecode:
@@ -296,7 +295,7 @@ class ProjectContract(_DeployedContractBase):
             # Not really optional. Helps to satisfy None default in ContractContainer at method
             # Could use some refactoring
             owner: Any,
-            tx: 'TransactionReceipt' = None) -> None:
+            tx: Any = None) -> None:  # tx: TransactionReceipt
         _ContractBase.__init__(self, project, build, build['contractName'], build['abi'])
         _DeployedContractBase.__init__(self, address, owner, tx)
         history._add_contract(self)
@@ -357,7 +356,7 @@ class _ContractMethod:
             raise VirtualMachineError(e) from None
         return self.decode_abi(data)
 
-    def transact(self, *args: Tuple) -> 'TransactionReceipt':
+    def transact(self, *args: Tuple) -> Any:  # Returns 'TransactionReceipt'
         '''Broadcasts a transaction that calls this contract method.
 
         Args:
