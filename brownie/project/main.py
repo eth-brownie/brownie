@@ -163,7 +163,8 @@ class Project(_ProjectBase):
 
     def load_config(self) -> None:
         '''Loads the project config file settings'''
-        load_project_config(self._project_path)
+        if isinstance(self._project_path, Path):
+            load_project_config(self._project_path)
 
     def close(self, raises: bool = True) -> None:
         '''Removes pointers to the project's ContractContainer objects and this object.'''

@@ -109,9 +109,9 @@ def get_current_dependencies() -> List:
 #  objects are created or destroyed - don't call them directly or things will start
 # to break in strange places!
 
-def _add_contract(contract: '_DeployedContractBase') -> None:
+def _add_contract(contract: Any) -> None:
     _contract_map[contract.address] = contract
 
 
-def _remove_contract(contract: '_DeployedContractBase') -> None:
+def _remove_contract(contract: Any) -> None:
     del _contract_map[contract.address]

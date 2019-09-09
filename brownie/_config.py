@@ -88,7 +88,7 @@ def load_project_compiler_config(project_path: Optional['Path'], compiler: Any) 
     return config_data['compiler'][compiler]
 
 
-def modify_network_config(network: str = None) -> None:
+def modify_network_config(network: str = None) -> Any:
     '''Modifies the 'active_network' configuration settings'''
     CONFIG._unlock()
     try:

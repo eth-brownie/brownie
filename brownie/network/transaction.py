@@ -102,7 +102,7 @@ class TransactionReceipt:
     def __init__(
             self,
             txid: Any,
-            sender: Union[str, 'Accounts'] = None,
+            sender: Union[str, '_AccountBase'] = None,
             silent: bool = False,
             name: str = '',
             revert_data: Optional[Tuple] = None) -> None:
