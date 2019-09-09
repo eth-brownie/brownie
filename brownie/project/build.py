@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Dict, Optional, Any, ItemsView, Union, List
+from typing import Dict, Optional, Any, ItemsView, Union, List, Tuple, Iterable
 import json
 from pathlib import Path
 
@@ -29,7 +29,7 @@ BUILD_KEYS = [
 ]
 
 
-_revert_map = {}
+_revert_map: Dict = {}
 
 
 class Build:
@@ -68,7 +68,7 @@ class Build:
         self._build[contract_name] = build_json
         self._generate_revert_map(build_json['pcMap'])
 
-    def _generate_revert_map(self, pcMap):
+    def _generate_revert_map(self, pcMap: Dict) -> None:
         '''Adds a contract's dev revert strings to the revert map and it's pcMap.
 
         The revert map is dict of tuples, where each key is a program counter that
@@ -156,13 +156,13 @@ class Build:
             return Path('')
         return self._project_path.joinpath(f"build/contracts/{contract_name}.json")
 
-    def _stem(self, contract_name):
+    def _stem(self, contract_name: str) -> str:
         return contract_name.replace('.json', '')
 
-    def expand_build_offsets(self, build_json):
+    def expand_build_offsets(self, build_json: Dict) -> Dict:
         '''Expands minified source offsets in a build json dict.'''
 
-        offset_map = {}
+        offset_map: Dict = {}
         name = build_json['contractName']
 
         # minification only happens to the target contract that was compiled,
@@ -184,14 +184,14 @@ class Build:
                 ) for k, v in value.items())
         return build_json
 
-    def _get_offset(self, offset_map, name, offset):
+    def _get_offset(self, offset_map: Dict, name: str, offset: Iterable) -> Tuple:
         offset = tuple(offset)
         if offset not in offset_map:
             offset_map[offset] = self._sources.expand_offset(name, offset)
         return offset_map[offset]
 
 
-def get_dev_revert(pc):
+def get_dev_revert(pc: int) -> Optional[str]:
     '''Given the program counter from a stack trace that caused a transaction
     to revert, returns the commented dev string (if any).'''
     if pc not in _revert_map or _revert_map[pc] is False:
@@ -199,7 +199,7 @@ def get_dev_revert(pc):
     return _revert_map[pc][3]
 
 
-def get_error_source_from_pc(pc, pad=3):
+def get_error_source_from_pc(pc: int, pad: int = 3) -> Tuple:
     '''Given the program counter from a stack trace that caused a transaction
     to revert, returns the highlighted relevent source code and the method name.
 
@@ -210,5 +210,5 @@ def get_error_source_from_pc(pc, pad=3):
         return (None,) * 4
     revert = _revert_map[pc]
     source = revert[4].get(revert[0])
-    highlight, linenos = highlight_source(source, revert[1], pad=pad)
+    highlight, linenos = highlight_source(source, revert[1], pad=pad) # type: ignore
     return highlight, linenos, revert[0], revert[2]
