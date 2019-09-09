@@ -200,21 +200,19 @@ def to_bytes(value: Any, type_: str = "bytes32") -> bytes:
     '''Convert a value to bytes'''
     if not isinstance(value, (bytes, str, int)):
         raise TypeError(f"'{value}', type {type(value)}, cannot convert to {type_}")
-    if type_ == "byte":
-        type_ = "bytes1"
-    if type_ != "bytes":
-        size: Union[int, float] = int(type_.strip("bytes"))
-        if size < 1 or size > 32:
-            raise ValueError(f"Invalid type: {type_}")
-    else:
-        size = float('inf')
     value = bytes_to_hex(value)
     if type_ == "bytes":
         return eth_utils.to_bytes(hexstr=value)
+    if type_ == "byte":
+        type_ = "bytes1"
+    size = int(type_.strip("bytes"))
+    if size < 1 or size > 32:
+        raise ValueError(f"Invalid type: {type_}")
     try:
         return int(value, 16).to_bytes(size, "big")
     except OverflowError:
         raise OverflowError(f"'{value}' exceeds maximum length for {type_}")
+
 
 
 def bytes_to_hex(value: Any) -> str:
