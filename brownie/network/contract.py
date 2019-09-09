@@ -22,7 +22,6 @@ from brownie.exceptions import (
 from brownie._config import ARGV, CONFIG
 
 from brownie.network.transaction import TransactionReceipt
-from brownie.network.account import Accounts
 
 rpc = Rpc()
 web3 = Web3()
@@ -110,7 +109,7 @@ class ContractContainer(_ContractBase):
         self._contracts.remove(contract)
         history._remove_contract(contract)
 
-    def at(self, address: str, owner: Optional['Accounts'] = None, tx: 'TransactionReceipt' = None) -> 'ProjectContract':
+    def at(self, address: str, owner: Any = None, tx: 'TransactionReceipt' = None) -> 'ProjectContract':
         '''Returns a contract address.
 
         Raises ValueError if no bytecode exists at the address.
@@ -266,7 +265,7 @@ class _DeployedContractBase(_ContractBase):
 
 class Contract(_DeployedContractBase):
 
-    def __init__(self, address: Any, name: str, abi: Any, owner: 'Accounts' = None) -> None:
+    def __init__(self, address: Any, name: str, abi: Any, owner: Any = None) -> None:
         _ContractBase.__init__(self, None, None, name, abi)
         _DeployedContractBase.__init__(self, address, owner, None)
         contract = history.find_contract(address)
@@ -291,7 +290,7 @@ class ProjectContract(_DeployedContractBase):
             address: str,
             # Not really optional. Helps to satisfy None default in ContractContainer at method
             # Could use some refactoring
-            owner: Optional['Accounts'],
+            owner: Any,
             tx: 'TransactionReceipt' = None) -> None:
         _ContractBase.__init__(self, project, build, build['contractName'], build['abi'])
         _DeployedContractBase.__init__(self, address, owner, tx)
@@ -323,7 +322,7 @@ class _ContractMethod:
 
     _dir_color = "contract_method"
 
-    def __init__(self, address: str, abi: Any, name: str, owner: Optional['Accounts']) -> None:
+    def __init__(self, address: str, abi: Any, name: str, owner: Any) -> None:
         self._address = address
         self._name = name
         self.abi = abi
@@ -411,7 +410,7 @@ class ContractTx(_ContractMethod):
         abi: Contract ABI specific to this method.
         signature: Bytes4 method signature.'''
 
-    def __init__(self, address: str, abi: Any, name: str, owner: Optional['Accounts']) -> None:
+    def __init__(self, address: str, abi: Any, name: str, owner: Any) -> None:
         if ARGV['cli'] == "test" and CONFIG['pytest']['default_contract_owner'] is False:
             owner = None
         super().__init__(address, abi, name, owner)
@@ -457,7 +456,7 @@ class ContractCall(_ContractMethod):
             rpc._internal_revert()
 
 
-def _get_tx(owner: Optional['Accounts'], args: Any) -> Tuple:
+def _get_tx(owner: Any, args: Any) -> Tuple:
     # seperate contract inputs from tx dict and set default tx values
     tx = {'from': owner, 'value': 0, 'gas': None, 'gasPrice': None}
     if args and isinstance(args[-1], dict):
@@ -477,7 +476,7 @@ def _get_method_object(
         address: str,
         abi: Any,
         name: str,
-        owner: Optional['Accounts']) -> Union['ContractCall', 'ContractTx']:
+        owner: Any) -> Union['ContractCall', 'ContractTx']:
     if abi['stateMutability'] in ('view', 'pure'):
         return ContractCall(address, abi, name, owner)
     return ContractTx(address, abi, name, owner)
