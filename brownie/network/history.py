@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 
 from typing import List, Dict, Iterable, Any
-from brownie.network.transaction import TransactionReceipt
-from brownie.network.account import Accounts
 from .rpc import Rpc
 from brownie.convert import to_address
 from brownie._singleton import _Singleton
@@ -45,7 +43,7 @@ class TxHistory(metaclass=_Singleton):
     def _revert(self, height: int) -> None:
         self._list = [i for i in self._list if i.block_number <= height]
 
-    def _add_tx(self, tx: 'TransactionReceipt') -> None:
+    def _add_tx(self, tx: Any) -> None:
         self._list.append(tx)
 
     def clear(self) -> None:
@@ -55,15 +53,15 @@ class TxHistory(metaclass=_Singleton):
         '''Returns a shallow copy of the object as a list'''
         return self._list.copy()
 
-    def from_sender(self, account: 'Accounts') -> List:
+    def from_sender(self, account: Any) -> List:
         '''Returns a list of transactions where the sender is account'''
         return [i for i in self._list if i.sender == account]
 
-    def to_receiver(self, account: 'Accounts') -> List:
+    def to_receiver(self, account: Any) -> List:
         '''Returns a list of transactions where the receiver is account'''
         return [i for i in self._list if i.receiver == account]
 
-    def of_address(self, account: 'Accounts') -> List:
+    def of_address(self, account: Any) -> List:
         '''Returns a list of transactions where account is the sender or receiver'''
         return [i for i in self._list if i.receiver == account or i.sender == account]
 
