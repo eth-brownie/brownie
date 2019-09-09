@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from typing import Dict, Optional, Union, Tuple, Any, KeysView, List
 from hashlib import sha1
 from pathlib import Path
 import re
@@ -15,16 +16,16 @@ MINIFY_REGEX_PATTERNS = [
     r"(?<=[^\w\s])[ \t]{1,}(?=\w)|(?<=\w)[ \t]{1,}(?=[^\w\s])"  # whitespace between expressions
 ]
 
-_contract_data = {}
+_contract_data: Dict = {}
 
 
 class Sources:
 
     '''Methods for accessing and manipulating a project's contract source files.'''
 
-    def __init__(self, project_path):
-        self._source = {}
-        self._contracts = {}
+    def __init__(self, project_path: Union['Path', str, None]) -> None:
+        self._source: Dict = {}
+        self._contracts: Dict = {}
         if not project_path:
             return
         project_path = Path(project_path)
@@ -33,10 +34,10 @@ class Sources:
                 continue
             with path.open() as fp:
                 source = fp.read()
-            path = path.relative_to(project_path).as_posix()
-            self.add(path, source)
+            path_str: str = path.relative_to(project_path).as_posix()
+            self.add(path_str, source)
 
-    def add(self, path, source, replace=False):
+    def add(self, path: Union['Path', str], source: Any, replace: bool = False) -> None:
         if path in self._source and not replace:
             raise ContractExists(
                 f"Contract with path '{path}' already exists in this project."
@@ -51,7 +52,7 @@ class Sources:
         self._source[path] = source
         self._contracts.update(data)
 
-    def get(self, name):
+    def get(self, name: str) -> str:
         '''Returns the source code file for the given name.
 
         Args:
@@ -62,19 +63,19 @@ class Sources:
             return self._source[self._contracts[name]['path']]
         return self._source[str(name)]
 
-    def get_path_list(self):
+    def get_path_list(self) -> List:
         '''Returns a list of source code file paths for the active project.'''
         return list(self._source.keys())
 
-    def get_contract_list(self):
+    def get_contract_list(self) -> List:
         '''Returns a list of contract names for the active project.'''
         return list(self._contracts.keys())
 
-    def get_source_path(self, contract_name):
+    def get_source_path(self, contract_name: str) -> 'Path':
         '''Returns the path to the source file where a contract is located.'''
         return self._contracts[contract_name]['path']
 
-    def expand_offset(self, contract_name, offset):
+    def expand_offset(self, contract_name: str, offset: Tuple) -> Tuple:
         '''Converts an offset from source with comments removed, to one from the original source.'''
         offset_map = self._contracts[contract_name]['offset_map']
 
@@ -84,7 +85,7 @@ class Sources:
         )
 
 
-def minify(source):
+def minify(source: str) -> Any: # Tuple[str, Any]:
     '''Given contract source as a string, returns a minified version and an
     offset map.'''
     offsets = [(0, 0)]
@@ -97,7 +98,7 @@ def minify(source):
     return re.sub(pattern, "", source), offsets[::-1]
 
 
-def is_inside_offset(inner, outer):
+def is_inside_offset(inner: Tuple, outer: Tuple) -> bool:
     '''Checks if the first offset is contained in the second offset
 
     Args:
@@ -108,7 +109,7 @@ def is_inside_offset(inner, outer):
     return outer[0] <= inner[0] <= inner[1] <= outer[1]
 
 
-def get_hash(source, contract_name, minified):
+def get_hash(source: Any, contract_name: str, minified: bool) -> str:
     '''Returns a hash of the contract source code.'''
     if minified:
         source = minify(source)[0]
@@ -120,7 +121,8 @@ def get_hash(source, contract_name, minified):
         return ""
 
 
-def highlight_source(source, offset, pad=3):
+def highlight_source(source: Any, offset: Tuple, pad: int = 3) -> Union[str, int, Tuple]:
+    # TODO: Reconcile the args in the docs below, and return type
     '''Returns a highlighted section of source code.
 
     Args:
@@ -158,7 +160,7 @@ def highlight_source(source, offset, pad=3):
     return final, ln
 
 
-def _get_contract_data(full_source):
+def _get_contract_data(full_source: str) -> Dict:
     key = sha1(full_source.encode()).hexdigest()
     if key in _contract_data:
         return _contract_data[key]
