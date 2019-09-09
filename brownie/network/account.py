@@ -206,7 +206,7 @@ class _AccountBase:
             *args: Tuple,
             amount: Optional[int] = None,
             gas_limit: Optional[int] = None,
-            gas_price: Optional[int] = None) -> Any:  # Returns ContractContainer or TransactionReceipt
+            gas_price: Optional[int] = None) -> Any:
         '''Deploys a contract.
 
         Args:

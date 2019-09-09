@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Union, Any, Optional, Tuple, Dict, List
+from typing import Any, Optional, Tuple, Dict, List
 from hashlib import sha1
 
 import requests

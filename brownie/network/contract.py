@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Iterable, List, Union, Dict, Any, Optional, Tuple, Callable, TypeVar
+from typing import Iterable, List, Union, Dict, Any, Optional, Tuple, Callable
 import re
 
 import eth_abi
@@ -212,7 +212,8 @@ class _DeployedContractBase(_ContractBase):
 
     _reverted = False
 
-    def __init__(self, address: str, owner: Any = None, tx: Any = None) -> None: # tx: 'TransactionReceipt'
+    # note, tx: 'TransactionReceipt'
+    def __init__(self, address: str, owner: Any = None, tx: Any = None) -> None:
         address = to_address(address)
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         if not self.bytecode:
