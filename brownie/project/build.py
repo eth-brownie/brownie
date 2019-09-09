@@ -210,5 +210,5 @@ def get_error_source_from_pc(pc: int, pad: int = 3) -> Tuple:
         return (None,) * 4
     revert = _revert_map[pc]
     source = revert[4].get(revert[0])
-    highlight, linenos = highlight_source(source, revert[1], pad=pad) # type: ignore
+    highlight, linenos = highlight_source(source, revert[1], pad=pad)  # type: ignore
     return highlight, linenos, revert[0], revert[2]

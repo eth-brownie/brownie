@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 
-from typing import List, Dict, Iterable, Any, Optional
+from typing import List, Dict, Iterable, Any
 from brownie.network.transaction import TransactionReceipt
 from brownie.network.account import Accounts
-from brownie.network.contract import _DeployedContractBase
 from .rpc import Rpc
 from brownie.convert import to_address
 from brownie._singleton import _Singleton

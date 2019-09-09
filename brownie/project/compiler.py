@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Optional, Dict, Any, List, Type, Union, Set, Tuple, Iterable
+from typing import Optional, Dict, Any, List, Type, Union, Set, Tuple
 from solcast.main import SourceUnit
 
 from copy import deepcopy

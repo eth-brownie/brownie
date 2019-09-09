@@ -28,6 +28,7 @@ rpc = Rpc()
 
 AB = TypeVar('AB', bound='_AccountBase')
 
+
 class Accounts(metaclass=_Singleton):
 
     '''List-like container that holds all of the available Account instances.'''
@@ -229,7 +230,7 @@ class _AccountBase:
             )
         data = contract.deploy.encode_abi(*args)
         try:
-            txid = self._transact({ # type: ignore
+            txid = self._transact({  # type: ignore
                 'from': self.address,
                 'value': Wei(amount),
                 'nonce': self.nonce,
@@ -254,7 +255,11 @@ class _AccountBase:
         add_thread.join()
         return find_contract(tx.contract_address)
 
-    def estimate_gas(self, to: Union[str, 'Accounts'], amount: Optional[int], data: str = "") -> int:
+    def estimate_gas(
+            self,
+            to: Union[str, 'Accounts'],
+            amount: Optional[int],
+            data: str = "") -> int:
         '''Estimates the gas cost for a transaction. Raises VirtualMachineError
         if the transaction would revert.
 
@@ -293,7 +298,7 @@ class _AccountBase:
         Returns:
             TransactionReceipt object'''
         try:
-            txid = self._transact({ # type: ignore
+            txid = self._transact({  # type: ignore
                 'from': self.address,
                 'to': str(to),
                 'value': Wei(amount),
@@ -375,7 +380,7 @@ class LocalAccount(_AccountBase):
 
     def _transact(self, tx: Dict) -> None:
         self._check_for_revert(tx)
-        signed_tx = self._acct.sign_transaction(tx).rawTransaction # type: ignore
+        signed_tx = self._acct.sign_transaction(tx).rawTransaction  # type: ignore
         return web3.eth.sendRawTransaction(signed_tx)
 
 
