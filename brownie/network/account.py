@@ -3,7 +3,6 @@
 from typing import List, Dict, Any, Union, Iterable, Optional, Tuple, TypeVar
 from getpass import getpass
 
-from eth_typing import ChecksumAddress
 from hexbytes import HexBytes
 import os
 from pathlib import Path
@@ -386,7 +385,7 @@ class PublicKeyAccount:
     '''Class for interacting with an Ethereum account where you do not control
     the private key. Can only be used to check the balance and to send ether to.'''
 
-    def __init__(self, addr: ChecksumAddress) -> None:
+    def __init__(self, addr: str) -> None:
         self.address = to_address(addr)
 
     def __repr__(self) -> str:
@@ -395,7 +394,7 @@ class PublicKeyAccount:
     def __hash__(self) -> int:
         return hash(self.address)
 
-    def __str__(self) -> ChecksumAddress:
+    def __str__(self) -> str:
         return self.address
 
     def __eq__(self, other: Union[object, str]) -> bool:

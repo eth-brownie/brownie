@@ -256,7 +256,7 @@ def to_string(value: Any) -> str:
     return value
 
 
-def format_input(abi: Any, inputs: List) -> 'ReturnValue':
+def format_input(abi: Any, inputs: Tuple) -> 'ReturnValue':
     '''Format contract inputs based on ABI types.
 
     Args:
@@ -272,7 +272,7 @@ def format_input(abi: Any, inputs: List) -> 'ReturnValue':
         raise type(e)(f"{abi['name']} {e}") from None
 
 
-def format_output(abi: Dict, outputs: List) -> 'ReturnValue':
+def format_output(abi: Dict, outputs: Tuple) -> 'ReturnValue':
     '''Format contract outputs based on ABI types.
 
     Args:

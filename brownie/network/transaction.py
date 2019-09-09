@@ -29,7 +29,7 @@ from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie._config import ARGV
 
-from brownie.network.account import Accounts
+from brownie.network.account import _AccountBase, Accounts
 
 history = TxHistory()
 web3 = Web3()
@@ -643,7 +643,7 @@ class TransactionReceipt:
         )
 
 
-def _format_source(source: 'Accounts', linenos: List, path: 'Path', pc: Any, idx: int, fn_name: str) -> str:
+def _format_source(source: 'Accounts', linenos: Any, path: 'Path', pc: Any, idx: int, fn_name: str) -> str:
     ln = f" {color['value']}{linenos[0]}"
     if linenos[1] > linenos[0]:
         ln = f"s{ln}{color['dull']}-{color['value']}{linenos[1]}"

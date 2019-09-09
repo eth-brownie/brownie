@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import List, Dict, Iterable, Any
+from typing import List, Dict, Iterable, Any, Optional
 from brownie.network.transaction import TransactionReceipt
 from brownie.network.account import Accounts
 from brownie.network.contract import _DeployedContractBase
@@ -89,7 +89,7 @@ class TxHistory(metaclass=_Singleton):
 _contract_map: Dict = {}
 
 
-def find_contract(address: str) -> Any:
+def find_contract(address: Any) -> Any:
     '''Given an address, returns the related Contract object.'''
     address = to_address(address)
     if address not in _contract_map:

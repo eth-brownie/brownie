@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import TypeVar, Iterable, List, Union, Dict, Any, Optional, Tuple, Callable
+from typing import Iterable, List, Union, Dict, Any, Optional, Tuple, Callable
 import re
 
 import eth_abi
@@ -22,7 +22,7 @@ from brownie.exceptions import (
 from brownie._config import ARGV, CONFIG
 
 from brownie.network.transaction import TransactionReceipt
-from brownie.network.account import Accounts
+from brownie.network.account import Accounts, _AccountBase
 
 rpc = Rpc()
 web3 = Web3()
