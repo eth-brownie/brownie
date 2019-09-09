@@ -26,6 +26,7 @@ from brownie.network.transaction import TransactionReceipt
 rpc = Rpc()
 web3 = Web3()
 
+
 class _ContractBase:
 
     _dir_color = "contract"
@@ -109,7 +110,11 @@ class ContractContainer(_ContractBase):
         self._contracts.remove(contract)
         history._remove_contract(contract)
 
-    def at(self, address: str, owner: Any = None, tx: 'TransactionReceipt' = None) -> 'ProjectContract':
+    def at(
+            self,
+            address: str,
+            owner: Any = None,
+            tx: 'TransactionReceipt' = None) -> 'ProjectContract':
         '''Returns a contract address.
 
         Raises ValueError if no bytecode exists at the address.

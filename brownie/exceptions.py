@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Type, Dict, Union, Any
+from typing import Type, Any
 import psutil
 
 import json

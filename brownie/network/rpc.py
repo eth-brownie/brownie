@@ -108,8 +108,9 @@ class Rpc(metaclass=_Singleton):
         if self.is_active():
             raise SystemError("RPC is already active.")
         if type(laddr) is str:
-            # it's unclear why this typing is having issues. mypy seems to check this when input is Tuple
-            ip, port = laddr.strip('https://').split(':') # type: ignore
+            # it's unclear why this typing is having issues.
+            # mypy seems to check this when input is Tuple
+            ip, port = laddr.strip('https://').split(':')  # type: ignore
             laddr = (ip, int(port))
         try:
             proc = next(i for i in psutil.net_connections() if i.laddr == laddr)
@@ -150,7 +151,7 @@ class Rpc(metaclass=_Singleton):
         if not self.is_active():
             raise SystemError("RPC is not active.")
         try:
-            response = web3.provider.make_request(*args) # type: ignore
+            response = web3.provider.make_request(*args)  # type: ignore
             if 'result' in response:
                 return response['result']
         except AttributeError:

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from collections import defaultdict
 import json
 from pathlib import Path
@@ -28,7 +28,7 @@ class ConfigDict(dict):
             value = ConfigDict(value)
         super().__setitem__(key, value)
 
-    def update(self, arg): # type: ignore
+    def update(self, arg):  # type: ignore
         for k, v in arg.items():
             self.__setitem__(k, v)
 
@@ -133,7 +133,7 @@ def update_argv_from_docopt(args: Any) -> None:
 
 
 # create argv object
-ARGV = _Singleton("Argv", (defaultdict,), {})(lambda: None) # type: ignore
+ARGV = _Singleton("Argv", (defaultdict,), {})(lambda: None)  # type: ignore
 
 # load config
 CONFIG = _load_default_config()

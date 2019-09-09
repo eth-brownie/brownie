@@ -29,7 +29,7 @@ from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie._config import ARGV
 
-from brownie.network.account import _AccountBase, Accounts
+from brownie.network.account import Accounts
 
 history = TxHistory()
 web3 = Web3()
@@ -289,7 +289,7 @@ class TransactionReceipt:
             return
 
         try:
-            trace = web3.provider.make_request( # type: ignore
+            trace = web3.provider.make_request(  # type: ignore
                 'debug_traceTransaction',
                 (self.txid, {'disableStorage': ARGV['cli'] != "console"})
             )
@@ -491,9 +491,9 @@ class TransactionReceipt:
 
         if self.events:
             result += "\n   Events In This Transaction\n   --------------------------"
-            for event in self.events: # type: ignore
-                result += f"\n   {color['bright yellow']}{event.name}{color}" # type: ignore
-                for key, value in event.items(): # type: ignore
+            for event in self.events:  # type: ignore
+                result += f"\n   {color['bright yellow']}{event.name}{color}"  # type: ignore
+                for key, value in event.items():  # type: ignore
                     result += f"\n      {color['key']}{key}{color}: {color['value']}{value}{color}"
         print(result)
 
@@ -643,7 +643,13 @@ class TransactionReceipt:
         )
 
 
-def _format_source(source: 'Accounts', linenos: Any, path: 'Path', pc: Any, idx: int, fn_name: str) -> str:
+def _format_source(
+        source: 'Accounts',
+        linenos: Any,
+        path: 'Path',
+        pc: Any,
+        idx: int,
+        fn_name: str) -> str:
     ln = f" {color['value']}{linenos[0]}"
     if linenos[1] > linenos[0]:
         ln = f"s{ln}{color['dull']}-{color['value']}{linenos[1]}"
