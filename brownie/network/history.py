@@ -1,5 +1,9 @@
 #!/usr/bin/python3
 
+from typing import List, Dict, Iterable, Any
+from brownie.network.transaction import TransactionReceipt
+from brownie.network.account import Accounts
+from brownie.network.contract import _DeployedContractBase
 from .rpc import Rpc
 from brownie.convert import to_address
 from brownie._singleton import _Singleton
@@ -13,58 +17,58 @@ class TxHistory(metaclass=_Singleton):
     Whenever a transaction is broadcast, the TransactionReceipt is automatically
     added to this container.'''
 
-    def __init__(self):
-        self._list = []
-        self.gas_profile = {}
+    def __init__(self) -> None:
+        self._list: List = []
+        self.gas_profile: Dict = {}
         rpc._revert_register(self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self._list)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self._list)
 
-    def __contains__(self, item):
+    def __contains__(self, item: Any) -> bool:
         return item in self._list
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable:
         return iter(self._list)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Any) -> Any:
         return self._list[key]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._list)
 
-    def _reset(self):
+    def _reset(self) -> None:
         self._list.clear()
 
-    def _revert(self, height):
+    def _revert(self, height: int) -> None:
         self._list = [i for i in self._list if i.block_number <= height]
 
-    def _add_tx(self, tx):
+    def _add_tx(self, tx: 'TransactionReceipt') -> None:
         self._list.append(tx)
 
-    def clear(self):
+    def clear(self) -> None:
         self._list.clear()
 
-    def copy(self):
+    def copy(self) -> List:
         '''Returns a shallow copy of the object as a list'''
         return self._list.copy()
 
-    def from_sender(self, account):
+    def from_sender(self, account: 'Accounts') -> List:
         '''Returns a list of transactions where the sender is account'''
         return [i for i in self._list if i.sender == account]
 
-    def to_receiver(self, account):
+    def to_receiver(self, account: 'Accounts') -> List:
         '''Returns a list of transactions where the receiver is account'''
         return [i for i in self._list if i.receiver == account]
 
-    def of_address(self, account):
+    def of_address(self, account: 'Accounts') -> List:
         '''Returns a list of transactions where account is the sender or receiver'''
         return [i for i in self._list if i.receiver == account or i.sender == account]
 
-    def _gas(self, fn_name, gas_used):
+    def _gas(self, fn_name: str, gas_used: int) -> None:
         if fn_name not in self.gas_profile:
             self.gas_profile[fn_name] = {
                 'avg': gas_used,
@@ -82,10 +86,10 @@ class TxHistory(metaclass=_Singleton):
         gas['count'] += 1
 
 
-_contract_map = {}
+_contract_map: Dict = {}
 
 
-def find_contract(address):
+def find_contract(address: str) -> Any:
     '''Given an address, returns the related Contract object.'''
     address = to_address(address)
     if address not in _contract_map:
@@ -93,7 +97,7 @@ def find_contract(address):
     return _contract_map[address]
 
 
-def get_current_dependencies():
+def get_current_dependencies() -> List:
     '''Returns a list of the currently deployed contracts and their dependencies.'''
     dependencies = set(v._name for v in _contract_map.values())
     for contract in _contract_map.values():
@@ -105,9 +109,9 @@ def get_current_dependencies():
 #  objects are created or destroyed - don't call them directly or things will start
 # to break in strange places!
 
-def _add_contract(contract):
+def _add_contract(contract: '_DeployedContractBase') -> None:
     _contract_map[contract.address] = contract
 
 
-def _remove_contract(contract):
+def _remove_contract(contract: '_DeployedContractBase') -> None:
     del _contract_map[contract.address]
