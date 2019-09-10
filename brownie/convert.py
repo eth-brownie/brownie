@@ -77,29 +77,23 @@ def _to_wei(value: WeiInputTypes) -> int:
     original = value
     if value is None:
         return 0
-    # if type(value) in (bytes, HexBytes):
-    elif isinstance(value, bytes) or isinstance(value, HexBytes):
-        value_hexstr: str = HexBytes(value).hex()
-        return int(value_hexstr, 16)
-        # value = HexBytes(value).hex()
-    elif type(value) is float and "e+" in str(value):
+    if isinstance(value, bytes) or isinstance(value, HexBytes):
+        value = HexBytes(value).hex()
+    if isinstance(value, float) and "e+" in str(value):
         num_str, dec = str(value).split("e+")
-        num: List = num_str.split(".") if "." in num_str else [num_str, ""]
+        num = num_str.split(".") if "." in num_str else [num_str, ""]
         return int(num[0] + num[1][:int(dec)] + "0" * (int(dec) - len(num[1])))
-    elif isinstance(value, str):
-        if value[:2] == "0x":
-            return int(value, 16)
-        else:
-            return 0
-    elif not isinstance(value, str):
+    if not isinstance(value, str):
         return _return_int(original, value)
+    if value[:2] == "0x":
+        return int(value, 16)
     for unit, dec in UNITS.items():
         if " " + unit not in value:
             continue
-        num = value.split(" ")[0]
-        num = num.split(".") if "." in num else [num, ""]
+        num_str = value.split(" ")[0]
+        num = num_str.split(".") if "." in num_str else [num_str, ""]
         return int(num[0] + num[1][:int(dec)] + "0" * (int(dec) - len(num[1])))
-
+    return _return_int(original, value)
 
 def _return_int(original: Any, value: Any) -> int:
     try:
