@@ -17,15 +17,13 @@ from brownie.exceptions import VirtualMachineError, UnknownAccount, Incompatible
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
-from .history import find_contract
+from brownie.network.history import find_contract
 from brownie.convert import to_address, Wei
 from brownie._singleton import _Singleton
 from brownie._config import CONFIG
 
 web3 = Web3()
 rpc = Rpc()
-
-AB = TypeVar('AB', bound='_AccountBase')
 
 
 class Accounts(metaclass=_Singleton):
@@ -121,7 +119,7 @@ class Accounts(metaclass=_Singleton):
             )
         return self.add(priv_key)
 
-    def at(self, address: str) -> AB:
+    def at(self, address: str) -> 'LocalAccount':
         '''Retrieves an Account instance from the address string. Raises
         ValueError if the account cannot be found.
 
