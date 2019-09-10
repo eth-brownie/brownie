@@ -21,6 +21,9 @@ from brownie.exceptions import (
 )
 from brownie._config import ARGV, CONFIG
 
+from brownie.network.transaction import TransactionReceiptType
+# from brownie.typing import TransactionReceiptType
+
 rpc = Rpc()
 web3 = Web3()
 
@@ -132,7 +135,7 @@ class ContractContainer(_ContractBase):
         self._contracts.append(contract)
         return contract
 
-    def _add_from_tx(self, tx: Any) -> None:  # tx: TransactionReceipt
+    def _add_from_tx(self, tx: TransactionReceiptType) -> None:  # tx: TransactionReceipt
         tx._confirmed.wait()
         self.at(tx.contract_address, tx.sender, tx)
 

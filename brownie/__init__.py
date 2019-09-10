@@ -1,15 +1,15 @@
 #!/usr/bin/python3
 
+from .project import (
+    compile_source,
+    run,
+)
 from .network import (
     accounts,
     alert,
     history,
     rpc,
     web3
-)
-from .project import (
-    compile_source,
-    run,
 )
 from brownie.network.contract import Contract  # NOQA: F401
 from brownie.gui import Gui
