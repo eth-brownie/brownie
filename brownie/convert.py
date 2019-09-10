@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import TypeVar, Any, List, Tuple, Dict, KeysView, ItemsView
+from typing import TypeVar, Any, List, Tuple, Dict, KeysView, ItemsView, Union
 from copy import deepcopy
 import eth_utils
 from hexbytes import HexBytes
@@ -253,7 +253,7 @@ def to_string(value: Any) -> str:
     return value
 
 
-def format_input(abi: Any, inputs: Tuple) -> 'ReturnValue':
+def format_input(abi: Dict, inputs: Union[List, Tuple]) -> 'ReturnValue':
     '''Format contract inputs based on ABI types.
 
     Args:

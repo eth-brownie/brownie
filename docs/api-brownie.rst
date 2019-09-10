@@ -27,14 +27,16 @@ Formatting Contract Data
 
 The following methods are used to convert multiple values based on a contract ABI specification. Values are formatted via calls to the methods outlined under :ref:`type conversions<type-conversions>`, and where appropriate :ref:`type classes<type-classes>` are applied.
 
-.. py:method:: brownie.convert.format_input(abi, inputs)
+.. py:method:: brownie.convert.format_input(abi, inputs) -> 'ReturnValue'
 
     Formats inputs based on a contract method ABI.
+
+    Returns
 
     * ``abi``: A contract method ABI as a dict.
     * ``inputs``: List or tuple of values to format.
 
-    Returns a list of values formatted for use by ``ContractTx`` or ``ContractCall``.
+    Returns a tuple subclass (brownie.convert.ReturnValue) of values formatted for use by ``ContractTx`` or ``ContractCall``.
 
     Each value in ``inputs`` is converted using the one of the methods outlined in :ref:`type-conversions`.
 
@@ -43,11 +45,13 @@ The following methods are used to convert multiple values based on a contract AB
         >>> from brownie.convert import format_input
         >>> abi = {'constant': False, 'inputs': [{'name': '_to', 'type': 'address'}, {'name': '_value', 'type': 'uint256'}], 'name': 'transfer', 'outputs': [{'name': '', 'type': 'bool'}], 'payable': False, 'stateMutability': 'nonpayable', 'type': 'function'}
         >>> format_input(abi, ["0xB8c77482e45F1F44dE1745F52C74426C631bDD52","1 ether"])
-        ['0xB8c77482e45F1F44dE1745F52C74426C631bDD52', 1000000000000000000]
+        ('0xB8c77482e45F1F44dE1745F52C74426C631bDD52', 0)
 
-.. py:method:: brownie.convert.format_output(abi, outputs)
+.. py:method:: brownie.convert.format_output(abi, outputs) -> 'ReturnValue'
 
     Standardizes outputs from a contract call based on the contract's ABI.
+
+    Returns a tuple sublcass (brownie.convert.ReturnValue).
 
     * ``abi``: A contract method ABI as a dict.
     * ``outputs``: List or tuple of values to format.
@@ -61,7 +65,7 @@ The following methods are used to convert multiple values based on a contract AB
         >>> from brownie.convert import format_output
         >>> abi = {'constant': True, 'inputs': [], 'name': 'name', 'outputs': [{'name': '', 'type': 'string'}], 'payable': False, 'stateMutability': 'view', 'type': 'function'}
         >>> format_output(abi, ["0x5465737420546f6b656e"])
-        ["Test Token"]
+        ('Test Token',)
 
 .. py:method:: brownie.convert.format_event(event)
 
@@ -127,7 +131,7 @@ The following classes and methods are used to convert arguments supplied to ``Co
         0xFF
         >>> bytes_to_hex("Hello")
           File "brownie/types/convert.py", line 149, in bytes_to_hex
-            raise ValueError("'{}' is not a valid hex string".format(value))
+            raise ValueError("'{value}' is not a valid hex string".format(value))
         ValueError: 'Hello' is not a valid hex string
 
 .. _type-classes:
