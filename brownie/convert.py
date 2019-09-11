@@ -357,6 +357,9 @@ class ReturnValue(tuple):
             self._dict[i['name']] = values[c]  # type: ignore
         return self
 
+    def __hash__(self) -> Any:
+        return super().__hash__()
+
     def __eq__(self, other: Any) -> Any:
         return _kwargtuple_compare(self, other)
 
