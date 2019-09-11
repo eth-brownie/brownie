@@ -9,7 +9,7 @@ from .main import (  # NOQA 401
     gas_price,
 )
 from .account import Accounts
-from .history import TxHistory
+from .state import TxHistory
 from .rpc import Rpc
 from .web3 import Web3
 

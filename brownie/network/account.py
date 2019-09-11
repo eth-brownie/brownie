@@ -17,7 +17,7 @@ from brownie.exceptions import VirtualMachineError, UnknownAccount, Incompatible
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
-from brownie.network.history import find_contract
+from brownie.network.state import find_contract
 from brownie.convert import to_address, Wei
 from brownie._singleton import _Singleton
 from brownie._config import CONFIG

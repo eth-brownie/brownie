@@ -9,7 +9,12 @@ from hexbytes import HexBytes
 
 from brownie.cli.utils import color
 from .event import get_topics
-from . import history
+from .state import (
+    _add_contract,
+    _remove_contract,
+    find_contract,
+)
+
 from .rpc import Rpc
 from .web3 import Web3
 from brownie.convert import format_input, format_output, to_address, Wei
@@ -74,7 +79,7 @@ class ContractContainer(_ContractBase):
 
     def __delitem__(self, key: Any) -> None:
         item = self._contracts[key]
-        history._remove_contract(item)
+        _remove_contract(item)
         self._contracts.remove(item)
 
     def __len__(self) -> int:
@@ -85,7 +90,7 @@ class ContractContainer(_ContractBase):
 
     def _reset(self) -> None:
         for contract in self._contracts:
-            history._remove_contract(contract)
+            _remove_contract(contract)
             contract._reverted = True
         self._contracts.clear()
 
@@ -96,7 +101,7 @@ class ContractContainer(_ContractBase):
             len(web3.eth.getCode(i.address).hex()) <= 4
         ]
         for contract in reverted:
-            history._remove_contract(contract)
+            _remove_contract(contract)
             self._contracts.remove(contract)
             contract._reverted = True
 
@@ -108,7 +113,7 @@ class ContractContainer(_ContractBase):
         if contract not in self._contracts:
             raise TypeError("Object is not in container.")
         self._contracts.remove(contract)
-        history._remove_contract(contract)
+        _remove_contract(contract)
 
     def at(
             self,
@@ -123,7 +128,7 @@ class ContractContainer(_ContractBase):
             address: Address string of the contract.
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation.'''
-        contract = history.find_contract(address)
+        contract = find_contract(address)
         if contract:
             if contract._name == self._name and contract._project == self._project:
                 return contract
@@ -273,7 +278,7 @@ class Contract(_DeployedContractBase):
     def __init__(self, address: Any, name: str, abi: Any, owner: AccountsType = None) -> None:
         _ContractBase.__init__(self, None, None, name, abi)
         _DeployedContractBase.__init__(self, address, owner, None)
-        contract = history.find_contract(address)
+        contract = find_contract(address)
         if not contract:
             return
         if isinstance(contract, ProjectContract):
@@ -299,7 +304,7 @@ class ProjectContract(_DeployedContractBase):
             tx: TransactionReceiptType = None) -> None:
         _ContractBase.__init__(self, project, build, build['contractName'], build['abi'])
         _DeployedContractBase.__init__(self, address, owner, tx)
-        history._add_contract(self)
+        _add_contract(self)
 
 
 class OverloadedMethod:

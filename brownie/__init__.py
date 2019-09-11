@@ -7,7 +7,7 @@ from .project import (
 from .network import (
     accounts,
     alert,
-    history,
+    state,
     rpc,
     web3
 )
@@ -19,7 +19,7 @@ from brownie.convert import Wei
 __all__ = [
     'accounts',
     'alert',
-    'history',
+    'state',
     'network',
     'rpc',
     'web3',

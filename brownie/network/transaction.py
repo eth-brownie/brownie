@@ -11,7 +11,7 @@ from web3.exceptions import TransactionNotFound
 from eth_abi import decode_abi
 from hexbytes import HexBytes
 
-from .history import (
+from .state import (
     TxHistory,
     find_contract
 )
