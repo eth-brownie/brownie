@@ -143,8 +143,8 @@ def accounts(devnetwork):
 
 
 @pytest.fixture
-def state():
-    return brownie.network.state
+def history():
+    return brownie.network.history
 
 
 @pytest.fixture
