@@ -195,6 +195,8 @@ For certain types of contract data, Brownie uses subclasses to assist with conve
         File "brownie/convert.py", line 304, in _address_compare
             raise TypeError(f"Invalid type for comparison: '{b}' is not a valid address")
         TypeError: Invalid type for comparison: 'potato' is not a valid address
+        >>> type(e)
+        <class 'brownie.convert.EthAddress'>
 
 .. py:class:: brownie.convert.HexString(value, type_)
 
@@ -204,6 +206,7 @@ For certain types of contract data, Brownie uses subclasses to assist with conve
 
     .. code-block:: python
 
+        >>> from brownie.convert import HexString
         >>> h = HexString("0x00abcd", "bytes2")
         "0xabcd"
         >>> h == "0xabcd"
