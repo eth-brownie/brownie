@@ -54,6 +54,25 @@ Then use ``tox`` to run the complete suite against the full set of build targets
 
 Help is always appreciated! Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
 
+### Pre-Commit Hooks
+
+We use [pre-commit](https://pre-commit.com/) hooks, primarily to ensure consistent formatting among contributors.
+
+If you haven't already, install all dev dependencies in `requirements-dev.txt` to enable pre-commit hooks.
+
+Install pre-commit locally from the brownie root folder:
+
+```bash
+pre-commit install
+```
+
+Commiting will now automatically run the local pre-commit hooks.
+
+If, for some reason, you need to force the commit without running the pre-commit hooks, you can manually disable the pre-commit.
+```bash
+git commit -m "commit message" --no-verify
+```
+
 ## License
 
 This project is licensed under the [MIT license](LICENSE).
