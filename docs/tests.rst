@@ -451,7 +451,7 @@ The following test configuration settings are available in ``brownie-config.json
     {
         "test": {
             "gas_limit": 6721975,
-            "broadcast_reverting_tx": true,
+            "reverting_tx_gas_limit": 6721975,
             "default_contract_owner": false,
             "revert_traceback": false
         }
@@ -461,9 +461,9 @@ The following test configuration settings are available in ``brownie-config.json
 
     Replaces the default network gas limit.
 
-.. py:attribute:: broadcast_reverting_tx
+.. py:attribute:: reverting_tx_gas_limit
 
-    Replaces the default network setting for broadcasting transactions that would revert.
+    Replaces the default network setting for the gas limit on a tx that will revert.
 
 .. py:attribute:: default_contract_owner
 

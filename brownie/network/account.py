@@ -183,15 +183,11 @@ class _AccountBase:
         return Wei(CONFIG['active_network']['gas_price'] or web3.eth.gasPrice)
 
     def _check_for_revert(self, tx: Dict) -> None:
-        if (
-            'broadcast_reverting_tx' not in CONFIG['active_network'] or
-            CONFIG['active_network']['broadcast_reverting_tx']
-        ):
-            return
-        try:
-            web3.eth.call(dict((k, v) for k, v in tx.items() if v))
-        except ValueError as e:
-            raise VirtualMachineError(e) from None
+        if not CONFIG['active_network']['reverting_tx_gas_limit']:
+            try:
+                web3.eth.call(dict((k, v) for k, v in tx.items() if v))
+            except ValueError as e:
+                raise VirtualMachineError(e) from None
 
     def balance(self) -> Wei:
         '''Returns the current balance at the address, in wei.'''
@@ -267,12 +263,17 @@ class _AccountBase:
 
         Returns:
             Estimated gas value in wei.'''
-        return web3.eth.estimateGas({
-            'from': self.address,
-            'to': str(to),
-            'value': Wei(amount),
-            'data': HexBytes(data)
-        })
+        try:
+            return web3.eth.estimateGas({
+                'from': self.address,
+                'to': str(to),
+                'value': Wei(amount),
+                'data': HexBytes(data)
+            })
+        except ValueError:
+            if CONFIG['active_network']['reverting_tx_gas_limit']:
+                return CONFIG['active_network']['reverting_tx_gas_limit']
+            raise
 
     def transfer(
             self,

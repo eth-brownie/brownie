@@ -103,7 +103,7 @@ def modify_network_config(network: str = None) -> Any:
 
         if ARGV['cli'] == "test":
             CONFIG['active_network'].update(CONFIG['pytest'])
-            if not CONFIG['active_network']['broadcast_reverting_tx']:
+            if not CONFIG['active_network']['reverting_tx_gas_limit']:
                 print("WARNING: Reverting transactions will NOT be broadcasted.")
         return CONFIG['active_network']
     except KeyError:

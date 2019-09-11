@@ -52,12 +52,12 @@ def test_returns_tx_on_revert_in_console(accounts, tester, console_mode):
 
 
 def test_broadcast_revert(accounts, tester, config):
-    config['active_network']['broadcast_reverting_tx'] = False
+    config['active_network']['reverting_tx_gas_limit'] = False
     assert accounts[1].nonce == 0
     with pytest.raises(VirtualMachineError):
         accounts[1].transfer(tester, 0)
     assert accounts[1].nonce == 0
-    config['active_network']['broadcast_reverting_tx'] = True
+    config['active_network']['reverting_tx_gas_limit'] = 1000000
     with pytest.raises(VirtualMachineError):
         accounts[1].transfer(tester, 0)
     assert accounts[1].nonce == 1
