@@ -4,9 +4,10 @@
     "network": {
         "default": "development", // the default network that brownie connects to
         "settings": {
-            "broadcast_reverting_tx": false,
             "gas_limit": false,
-            "gas_price": false
+            "gas_price": false,
+            // if set to false, reverting tx's will raise without broadcasting
+            "reverting_tx_gas_limit": false
         },
         "networks": { // any settings given here will replace the defaults
             "development": {
@@ -19,7 +20,7 @@
                     "mnemonic": "brownie"
                 },
                 "host": "http://127.0.0.1",
-                "broadcast_reverting_tx": true
+                "reverting_tx_gas_limit": 6721975
             },
             // replace INFURA_PROJECT_ID with your personal API token
             "goerli": {
@@ -39,7 +40,7 @@
     "pytest": { // these settings replace the defaults when running pytest
         "gas_limit": 6721975,
         "default_contract_owner": false,
-        "broadcast_reverting_tx": true,
+        "reverting_tx_gas_limit": 6721975,
         "revert_traceback": false
     },
     "compiler": {
