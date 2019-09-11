@@ -256,13 +256,10 @@ def pull(project_name: str, project_path_str: str = None, ignore_subfolder: bool
     project_name = str(project_name).replace('-mix', '')
     url = MIXES_URL.format(project_name)
     if project_path_str is None:
-        project_path_str = ""
-        project_path: 'Path' = Path('.').joinpath(project_name)
-    else:
-        project_path = Path(project_path_str)
-        if project_path.exists() and list(project_path.glob('*')):
-            raise FileExistsError(f"Folder already exists - {project_path}")
-    project_path = _new_checks(project_path_str, ignore_subfolder)
+        project_path = Path('.').joinpath(project_name)
+    project_path = _new_checks(project_path, ignore_subfolder)
+    if project_path.exists() and list(project_path.glob('*')):
+        raise FileExistsError(f"Folder already exists - {project_path}")
 
     print(f"Downloading from {url}...")
     request = requests.get(url)
@@ -277,8 +274,8 @@ def pull(project_name: str, project_path_str: str = None, ignore_subfolder: bool
     return str(project_path)
 
 
-def _new_checks(project_path_str: str, ignore_subfolder: bool) -> Path:
-    project_path = Path(project_path_str).resolve()
+def _new_checks(project_path: Union['Path', str], ignore_subfolder: bool) -> Path:
+    project_path = Path(project_path).resolve()
     if str(CONFIG['brownie_folder']) in str(project_path):
         raise SystemError("Cannot make a new project inside the main brownie installation folder.")
     if not ignore_subfolder:
