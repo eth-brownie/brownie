@@ -243,7 +243,7 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
     return str(project_path)
 
 
-def pull(project_name: str, project_path_str: str = None, ignore_subfolder: bool = False) -> str:
+def pull(project_name: str, project_path: Union['Path', str] = None, ignore_subfolder: bool = False) -> str:
     '''Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mix
 
@@ -255,7 +255,7 @@ def pull(project_name: str, project_path_str: str = None, ignore_subfolder: bool
     '''
     project_name = str(project_name).replace('-mix', '')
     url = MIXES_URL.format(project_name)
-    if project_path_str is None:
+    if project_path is None:
         project_path = Path('.').joinpath(project_name)
     project_path = _new_checks(project_path, ignore_subfolder)
     if project_path.exists() and list(project_path.glob('*')):
