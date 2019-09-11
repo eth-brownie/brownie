@@ -185,10 +185,10 @@ class Rpc(metaclass=_Singleton):
             return False
         return self._rpc.parent() == psutil.Process()
 
-    def evm_version(self) -> str:
+    def evm_version(self) -> Optional[str]:
         '''Returns the currently active EVM version.'''
         if not self.is_active():
-            return ""
+            return None
         cmd = self._rpc.cmdline()
         key = next((i for i in ('--hardfork', '-k') if i in cmd), None)
         try:
@@ -202,7 +202,7 @@ class Rpc(metaclass=_Singleton):
         if not self.is_active():
             raise RPCRequestError("RPC is not active")
         try:
-            return EVM_VERSIONS.index(version) <= EVM_VERSIONS.index(self.evm_version())
+            return EVM_VERSIONS.index(version) <= EVM_VERSIONS.index(self.evm_version()) # type: ignore
         except ValueError:
             raise ValueError(f"Unknown EVM version: '{version}'") from None
 
