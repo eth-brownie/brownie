@@ -85,7 +85,7 @@ class Accounts(metaclass=_Singleton):
         else:
             private_key = priv_key
 
-        w3account = web3.eth.account.from_key(priv_key)
+        w3account = web3.eth.account.from_key(private_key)
         if w3account.address in self._accounts:
             return self.at(w3account.address)
         account = LocalAccount(w3account.address, w3account, private_key)
