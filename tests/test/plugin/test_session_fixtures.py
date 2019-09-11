@@ -7,8 +7,8 @@ def test_accounts(accounts, a):
     assert a == accounts
     assert accounts == brownie.accounts
 
-def test_history(history):
-    assert history == brownie.history
+def test_state(state):
+    assert state == brownie.state
 
 def test_rpc(rpc):
     assert rpc == brownie.rpc
