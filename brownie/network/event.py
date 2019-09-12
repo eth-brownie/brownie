@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Dict, List, Union, Iterable, ValuesView, Tuple, Optional, Any
+from typing import Dict, List, Union, Iterable, ValuesView, Tuple, Any
 from collections import OrderedDict
 import json
 
