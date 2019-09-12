@@ -7,7 +7,7 @@ from .project import (
 from .network import (
     accounts,
     alert,
-    state,
+    history,
     rpc,
     web3
 )
@@ -19,7 +19,7 @@ from brownie.convert import Wei
 __all__ = [
     'accounts',
     'alert',
-    'state',
+    'history', # history is a TxHistory singleton
     'network',
     'rpc',
     'web3',
