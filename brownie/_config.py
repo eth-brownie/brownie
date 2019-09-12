@@ -28,7 +28,7 @@ class ConfigDict(dict):
             value = ConfigDict(value)
         super().__setitem__(key, value)
 
-    def update(self, arg):  # type: ignore
+    def update(self, arg): # type: ignore
         for k, v in arg.items():
             self.__setitem__(k, v)
 
