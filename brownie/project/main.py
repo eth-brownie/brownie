@@ -243,7 +243,10 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
     return str(project_path)
 
 
-def pull(project_name: str, project_path: Union['Path', str] = None, ignore_subfolder: bool = False) -> str:
+def pull(
+        project_name: str,
+        project_path: Union['Path', str] = None,
+        ignore_subfolder: bool = False) -> str:
     '''Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mix
 

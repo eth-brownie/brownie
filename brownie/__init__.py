@@ -19,7 +19,7 @@ from brownie.convert import Wei
 __all__ = [
     'accounts',
     'alert',
-    'history', # history is a TxHistory singleton
+    'history',  # history is a TxHistory singleton
     'network',
     'rpc',
     'web3',

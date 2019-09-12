@@ -95,6 +95,7 @@ def _to_wei(value: WeiInputTypes) -> int:
         return int(num[0] + num[1][:int(dec)] + "0" * (int(dec) - len(num[1])))
     return _return_int(original, value)
 
+
 def _return_int(original: Any, value: Any) -> int:
     try:
         return int(value)

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import List, Dict, Any, Union, Iterable, Optional, Tuple, TypeVar
+from typing import List, Dict, Any, Union, Iterable, Optional, Tuple
 from getpass import getpass
 
 from hexbytes import HexBytes
