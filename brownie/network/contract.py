@@ -105,7 +105,7 @@ class ContractContainer(_ContractBase):
             self._contracts.remove(contract)
             contract._reverted = True
 
-    def remove(self, contract: str) -> None:
+    def remove(self, contract: 'Contract') -> None:
         '''Removes a contract from the container.
 
         Args:
