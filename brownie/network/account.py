@@ -416,7 +416,7 @@ class PublicKeyAccount:
         return Wei(balance)
 
 
-def _raise_or_return_tx(exc: Any) -> Any:
+def _raise_or_return_tx(exc: ValueError) -> Any:
     try:
         data = eval(str(exc))['data']
         txid = next(i for i in data.keys() if i[:2] == "0x")
