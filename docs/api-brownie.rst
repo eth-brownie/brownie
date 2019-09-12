@@ -45,7 +45,7 @@ The following methods are used to convert multiple values based on a contract AB
         >>> from brownie.convert import format_input
         >>> abi = {'constant': False, 'inputs': [{'name': '_to', 'type': 'address'}, {'name': '_value', 'type': 'uint256'}], 'name': 'transfer', 'outputs': [{'name': '', 'type': 'bool'}], 'payable': False, 'stateMutability': 'nonpayable', 'type': 'function'}
         >>> format_input(abi, ["0xB8c77482e45F1F44dE1745F52C74426C631bDD52","1 ether"])
-        ('0xB8c77482e45F1F44dE1745F52C74426C631bDD52', 0)
+        ('0xB8c77482e45F1F44dE1745F52C74426C631bDD52', 1000000000000000000)
 
 .. py:method:: brownie.convert.format_output(abi, outputs) -> 'ReturnValue'
 
