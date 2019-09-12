@@ -530,9 +530,6 @@ def expand_source_map(source_map_str: str) -> List:
 
 def _expand_row(row_str: str) -> Any:
     row = row_str.split(':')
-    # ignore typing of next line
-    # Cannot concatenate List[str] and List[int]. Perhaps needs refactoring?
-
     r = [int(i) if i else None for i in row[:3]] + row[3:] + [None] * (4 - len(row))  # type: ignore
     return r
 
