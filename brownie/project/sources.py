@@ -109,7 +109,7 @@ def is_inside_offset(inner: Tuple, outer: Tuple) -> bool:
     return outer[0] <= inner[0] <= inner[1] <= outer[1]
 
 
-def get_hash(source: Any, contract_name: str, minified: bool) -> str:
+def get_hash(source: str, contract_name: str, minified: bool) -> str:
     '''Returns a hash of the contract source code.'''
     if minified:
         source = minify(source)[0]
