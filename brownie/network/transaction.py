@@ -176,7 +176,7 @@ class TransactionReceipt:
     def __hash__(self) -> int:
         return hash(self.txid)
 
-    def __getattr__(self, attr: Any) -> None:
+    def __getattr__(self, attr: Any) -> Any:
         if self._getattr or attr not in self.__slots__:
             raise AttributeError(f"'TransactionReceipt' object has no attribute '{attr}'")
         self._getattr = True

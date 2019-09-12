@@ -177,7 +177,7 @@ def get_topics(abi: List) -> Dict:
     return eth_event.get_topics(abi)
 
 
-def decode_logs(logs: Optional[str]) -> Union['EventDict', List[None]]:
+def decode_logs(logs: List) -> Union['EventDict', List[None]]:
     if not logs:
         return []
     events = eth_event.decode_logs(logs, _topics)
@@ -185,7 +185,7 @@ def decode_logs(logs: Optional[str]) -> Union['EventDict', List[None]]:
     return EventDict(events)
 
 
-def decode_trace(trace: Optional[str]) -> Union['EventDict', List[None]]:
+def decode_trace(trace: List) -> Union['EventDict', List[None]]:
     if not trace:
         return []
     events = eth_event.decode_trace(trace, _topics)
