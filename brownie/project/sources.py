@@ -121,8 +121,7 @@ def get_hash(source: str, contract_name: str, minified: bool) -> str:
         return ""
 
 
-def highlight_source(source: Any, offset: Tuple, pad: int = 3) -> Any:
-    # TODO: Reconcile the args in the docs below, and return type
+def highlight_source(source: str, offset: Tuple, pad: int = 3) -> Tuple:
     '''Returns a highlighted section of source code.
 
     Args:
