@@ -95,9 +95,7 @@ def _get_path(path_str: str, default_folder: str = "scripts") -> 'Path':
     return path
 
 
-# TODO: Come back to this
-# Need to check if there are any cases where the argument path may be a str instead of Path
-def _import_from_path(path: Any) -> ModuleType:
+def _import_from_path(path: 'Path') -> ModuleType:
     '''Imports a module from the given path.'''
     path = Path(path).absolute().relative_to(sys.path[0])
     import_str = ".".join(path.parts[:-1] + (path.stem,))
