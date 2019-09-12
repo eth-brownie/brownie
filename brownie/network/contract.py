@@ -148,7 +148,7 @@ class ContractConstructor:
 
     _dir_color = "contract_method"
 
-    def __init__(self, parent: Any, name: str) -> None:
+    def __init__(self, parent: 'ContractContainer', name: str) -> None:
         self._parent = parent
         try:
             self.abi = next(i for i in parent.abi if i['type'] == "constructor")
