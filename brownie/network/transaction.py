@@ -128,7 +128,6 @@ class TransactionReceipt:
         self.status = -1
         self.txid = txid
         self.fn_name = name
-        self._revert_pc: Any
 
         if name and '.' in name:
             self.contract_name, self.fn_name = name.split('.', maxsplit=1)
