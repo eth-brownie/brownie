@@ -267,7 +267,7 @@ class _DeployedContractBase(_ContractBase):
             raise ContractNotFound("This contract no longer exists.")
         return super().__getattribute__(name)
 
-    def balance(self) -> int:
+    def balance(self) -> Wei:
         '''Returns the current ether balance of the contract, in wei.'''
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
@@ -484,7 +484,7 @@ def _get_tx(owner: Optional[AccountsType], args: Any) -> Tuple:
 
 def _get_method_object(
         address: str,
-        abi: Any,
+        abi: Dict,
         name: str,
         owner: Optional[AccountsType]) -> Union['ContractCall', 'ContractTx']:
     if abi['stateMutability'] in ('view', 'pure'):
@@ -492,7 +492,7 @@ def _get_method_object(
     return ContractTx(address, abi, name, owner)
 
 
-def _params(abi_params: List) -> Any:
+def _params(abi_params: List) -> List:
     types = []
     for i in abi_params:
         if i['type'] != "tuple":
@@ -502,12 +502,12 @@ def _params(abi_params: List) -> Any:
     return types
 
 
-def _inputs(abi: Any) -> str:
+def _inputs(abi: Dict) -> str:
     params = _params(abi['inputs'])
     return ", ".join(f"{i[1]}{' '+i[0] if i[0] else ''}" for i in params)
 
 
-def _signature(abi: Any) -> str:
+def _signature(abi: Dict) -> str:
     types = [i[1] for i in _params(abi['inputs'])]
     key = f"{abi['name']}({','.join(types)})".encode()
     return "0x" + keccak(key).hex()[:8]
