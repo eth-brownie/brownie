@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from brownie.cli.utils import color
-from brownie.network.history import TxHistory
+from brownie.network.state import TxHistory
 
 COVERAGE_COLORS = [
     (0.8, "bright red"),

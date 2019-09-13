@@ -9,6 +9,10 @@ dist/
 docs/_build
 docs/_static
 docs/_templates
-venv
+venv/
+env/
 *egg-info/
 .tox/
+.mypy_cache/
+.idea/
+.DS_Store
