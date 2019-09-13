@@ -29,8 +29,6 @@ from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie._config import ARGV
 
-# from brownie.typing import AccountsType
-
 history = TxHistory()
 web3 = Web3()
 
@@ -643,7 +641,7 @@ class TransactionReceipt:
 
 
 def _format_source(
-        source: Any,  # source: AccountsType
+        source: str,
         linenos: Any,
         path: 'Path',
         pc: Any,
