@@ -15,11 +15,11 @@ class Web3(_Web3, metaclass=_Singleton):
 
     '''Singleton version of web3.py's Web3.'''
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(HTTPProvider('null'))
         self.provider = None
 
-    def connect(self, uri):
+    def connect(self, uri: str) -> None:
         '''Connects to a provider'''
         try:
             if Path(uri).exists():
@@ -37,12 +37,12 @@ class Web3(_Web3, metaclass=_Singleton):
                 "beginning with 'ws' or a URL beginning with 'http'"
             )
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         '''Disconnects from a provider'''
         if self.provider:
             self.provider = None
 
-    def isConnected(self):
+    def isConnected(self) -> bool:
         if not self.provider:
             return False
         return super().isConnected()

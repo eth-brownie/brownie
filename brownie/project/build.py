@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from typing import Dict, Optional, Any, ItemsView, Union, List, Tuple, Iterable
 import json
 from pathlib import Path
 
@@ -28,16 +29,16 @@ BUILD_KEYS = [
 ]
 
 
-_revert_map = {}
+_revert_map: Dict = {}
 
 
 class Build:
 
     '''Methods for accessing and manipulating a project's contract build data.'''
 
-    def __init__(self, project_path, sources):
+    def __init__(self, project_path: Optional['Path'], sources: Any) -> None:
         self._sources = sources
-        self._build = {}
+        self._build: Dict = {}
 
         if not project_path:
             self._project_path = None
@@ -58,7 +59,7 @@ class Build:
                 continue
             self._add(build_json)
 
-    def _add(self, build_json):
+    def _add(self, build_json: Dict) -> None:
         contract_name = build_json['contractName']
         if "0" in build_json['pcMap']:
             build_json['pcMap'] = dict((int(k), v) for k, v in build_json['pcMap'].items())
@@ -67,7 +68,7 @@ class Build:
         self._build[contract_name] = build_json
         self._generate_revert_map(build_json['pcMap'])
 
-    def _generate_revert_map(self, pcMap):
+    def _generate_revert_map(self, pcMap: Dict) -> None:
         '''Adds a contract's dev revert strings to the revert map and it's pcMap.
 
         The revert map is dict of tuples, where each key is a program counter that
@@ -108,7 +109,7 @@ class Build:
                 continue
             _revert_map[pc] = False
 
-    def add(self, build_json):
+    def add(self, build_json: Dict) -> None:
         '''Adds a build json to the active project. The data is saved in the
         project's build/contracts folder.
 
@@ -119,28 +120,28 @@ class Build:
                 json.dump(build_json, fp, sort_keys=True, indent=2, default=sorted)
         self._add(build_json)
 
-    def get(self, contract_name):
+    def get(self, contract_name: str) -> Dict:
         '''Returns build data for the given contract name.'''
         return self._build[self._stem(contract_name)]
 
-    def items(self, path=None):
+    def items(self, path: Optional[str] = None) -> Union[ItemsView, List]:
         '''Provides an list of tuples as (key,value), similar to calling dict.items.
         If a path is given, only contracts derived from that source file are returned.'''
         if path is None:
             return self._build.items()
         return [(k, v) for k, v in self._build.items() if v['sourcePath'] == path]
 
-    def contains(self, contract_name):
+    def contains(self, contract_name: str) -> bool:
         '''Checks if the contract name exists in the currently loaded build data.'''
         return self._stem(contract_name) in self._build
 
-    def get_dependents(self, contract_name):
+    def get_dependents(self, contract_name: str) -> List:
         '''Returns a list of contract names that inherit from or link to the given
         contract. Used by the compiler when determining which contracts to recompile
         based on a changed source file.'''
         return [k for k, v in self._build.items() if contract_name in v['dependencies']]
 
-    def delete(self, contract_name):
+    def delete(self, contract_name: str) -> None:
         '''Removes a contract's build data from the active project.
         The json file in ``build/contracts`` is deleted.
 
@@ -149,17 +150,19 @@ class Build:
         del self._build[self._stem(contract_name)]
         self._absolute(contract_name).unlink()
 
-    def _absolute(self, contract_name):
+    def _absolute(self, contract_name: str) -> 'Path':
         contract_name = self._stem(contract_name)
+        if self._project_path is None:
+            return Path('')
         return self._project_path.joinpath(f"build/contracts/{contract_name}.json")
 
-    def _stem(self, contract_name):
+    def _stem(self, contract_name: str) -> str:
         return contract_name.replace('.json', '')
 
-    def expand_build_offsets(self, build_json):
+    def expand_build_offsets(self, build_json: Dict) -> Dict:
         '''Expands minified source offsets in a build json dict.'''
 
-        offset_map = {}
+        offset_map: Dict = {}
         name = build_json['contractName']
 
         # minification only happens to the target contract that was compiled,
@@ -181,14 +184,14 @@ class Build:
                 ) for k, v in value.items())
         return build_json
 
-    def _get_offset(self, offset_map, name, offset):
+    def _get_offset(self, offset_map: Dict, name: str, offset: Iterable) -> Tuple:
         offset = tuple(offset)
         if offset not in offset_map:
             offset_map[offset] = self._sources.expand_offset(name, offset)
         return offset_map[offset]
 
 
-def get_dev_revert(pc):
+def get_dev_revert(pc: int) -> Optional[str]:
     '''Given the program counter from a stack trace that caused a transaction
     to revert, returns the commented dev string (if any).'''
     if pc not in _revert_map or _revert_map[pc] is False:
@@ -196,7 +199,7 @@ def get_dev_revert(pc):
     return _revert_map[pc][3]
 
 
-def get_error_source_from_pc(pc, pad=3):
+def get_error_source_from_pc(pc: int, pad: int = 3) -> Tuple:
     '''Given the program counter from a stack trace that caused a transaction
     to revert, returns the highlighted relevent source code and the method name.
 
@@ -207,5 +210,5 @@ def get_error_source_from_pc(pc, pad=3):
         return (None,) * 4
     revert = _revert_map[pc]
     source = revert[4].get(revert[0])
-    highlight, linenos = highlight_source(source, revert[1], pad=pad)
+    highlight, linenos = highlight_source(source, revert[1], pad=pad)  # type: ignore
     return highlight, linenos, revert[0], revert[2]

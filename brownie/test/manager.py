@@ -4,7 +4,7 @@ from hashlib import sha1
 import json
 from pathlib import Path
 
-from brownie.network.history import get_current_dependencies
+from brownie.network.state import get_current_dependencies
 from brownie.project.scripts import get_ast_hash
 from brownie.test import coverage
 from brownie._config import ARGV

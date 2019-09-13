@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+from typing import Union, Optional
 
 from .web3 import Web3
 from .rpc import Rpc
@@ -10,7 +11,7 @@ rpc = Rpc()
 web3 = Web3()
 
 
-def connect(network=None, launch_rpc=True):
+def connect(network: str = None, launch_rpc: bool = True) -> None:
     '''Connects to the network.
 
     Args:
@@ -47,7 +48,7 @@ def connect(network=None, launch_rpc=True):
         raise
 
 
-def disconnect(kill_rpc=True):
+def disconnect(kill_rpc: bool = True) -> None:
     '''Disconnects from the network.'''
     if not is_connected():
         raise ConnectionError("Not connected to any network")
@@ -60,19 +61,19 @@ def disconnect(kill_rpc=True):
     web3.disconnect()
 
 
-def show_active():
+def show_active() -> Optional[str]:
     '''Returns the name of the currently active network'''
     if not web3.provider:
         return None
     return CONFIG['active_network']['name']
 
 
-def is_connected():
+def is_connected() -> bool:
     '''Returns a bool indicating if the Web3 object is currently connected'''
     return web3.isConnected()
 
 
-def gas_limit(*args):
+def gas_limit(*args: Union[int, str]) -> Union[int, bool]:
     '''Gets and optionally sets the default gas limit.
 
     * If an integer value is given, this will be the default gas limit.
@@ -94,7 +95,7 @@ def gas_limit(*args):
     return CONFIG['active_network']['gas_limit']
 
 
-def gas_price(*args):
+def gas_price(*args: Union[int, bool, None]) -> Union[int, bool]:
     '''Gets and optionally sets the default gas price.
 
     * If an integer value is given, this will be the default gas price.

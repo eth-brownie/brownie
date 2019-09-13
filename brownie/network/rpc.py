@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from typing import List, Dict, Any, Union, Tuple, Optional
 import atexit
 import gc
 import psutil
@@ -42,16 +43,16 @@ class Rpc(metaclass=_Singleton):
     Account balances, contract containers and transaction history are
     automatically modified when the RPC is terminated, reset or reverted.'''
 
-    def __init__(self):
-        self._rpc = None
-        self._time_offset = 0
-        self._snapshot_id = False
-        self._internal_id = False
-        self._reset_id = False
-        self._revert_refs = []
+    def __init__(self) -> None:
+        self._rpc: Any = None
+        self._time_offset: int = 0
+        self._snapshot_id: Union[int, Optional[bool]] = False
+        self._internal_id: Optional[bool] = False
+        self._reset_id: Union[int, bool] = False
+        self._revert_refs: List = []
         atexit.register(self._at_exit)
 
-    def _at_exit(self):
+    def _at_exit(self) -> None:
         if not self.is_active():
             return
         if self._rpc.parent() == psutil.Process():
@@ -59,7 +60,7 @@ class Rpc(metaclass=_Singleton):
         else:
             self._request("evm_revert", [self._reset_id])
 
-    def launch(self, cmd, **kwargs):
+    def launch(self, cmd: str, **kwargs: Dict) -> None:
         '''Launches the RPC client.
 
         Args:
@@ -98,7 +99,7 @@ class Rpc(metaclass=_Singleton):
         self.kill(False)
         raise RPCConnectionError(cmd, self._rpc, uri)
 
-    def attach(self, laddr):
+    def attach(self, laddr: Union[str, Tuple]) -> None:
         '''Attaches to an already running RPC client subprocess.
 
         Args:
@@ -107,7 +108,9 @@ class Rpc(metaclass=_Singleton):
         if self.is_active():
             raise SystemError("RPC is already active.")
         if type(laddr) is str:
-            ip, port = laddr.strip('https://').split(':')
+            # it's unclear why this typing is having issues.
+            # mypy seems to check this when input is Tuple
+            ip, port = laddr.strip('https://').split(':')  # type: ignore
             laddr = (ip, int(port))
         try:
             proc = next(i for i in psutil.net_connections() if i.laddr == laddr)
@@ -118,7 +121,7 @@ class Rpc(metaclass=_Singleton):
             self._reset_id = self._snap()
         self._notify_registry(0)
 
-    def kill(self, exc=True):
+    def kill(self, exc: bool = True) -> None:
         '''Terminates the RPC process and all children with SIGKILL.
 
         Args:
@@ -144,21 +147,21 @@ class Rpc(metaclass=_Singleton):
         self._rpc = None
         self._notify_registry(0)
 
-    def _request(self, *args):
+    def _request(self, *args: Any) -> int:
         if not self.is_active():
             raise SystemError("RPC is not active.")
         try:
-            response = web3.provider.make_request(*args)
+            response = web3.provider.make_request(*args)  # type: ignore
             if 'result' in response:
                 return response['result']
         except AttributeError:
             raise RPCRequestError("Web3 is not connected.")
         raise RPCRequestError(response['error']['message'])
 
-    def _snap(self):
+    def _snap(self) -> Any:
         return self._request("evm_snapshot", [])
 
-    def _revert(self, id_):
+    def _revert(self, id_: int) -> int:
         if web3.isConnected() and not web3.eth.blockNumber and not self._time_offset:
             self._notify_registry(0)
             return self._snap()
@@ -168,7 +171,7 @@ class Rpc(metaclass=_Singleton):
         self._notify_registry()
         return id_
 
-    def is_active(self):
+    def is_active(self) -> bool:
         '''Returns True if Rpc client is currently active.'''
         if not self._rpc:
             return False
@@ -176,13 +179,13 @@ class Rpc(metaclass=_Singleton):
             self._rpc.poll()
         return self._rpc.is_running()
 
-    def is_child(self):
+    def is_child(self) -> bool:
         '''Returns True if the Rpc client is active and was launched by Brownie.'''
         if not self.is_active():
             return False
         return self._rpc.parent() == psutil.Process()
 
-    def evm_version(self):
+    def evm_version(self) -> Optional[str]:
         '''Returns the currently active EVM version.'''
         if not self.is_active():
             return None
@@ -193,23 +196,24 @@ class Rpc(metaclass=_Singleton):
         except (ValueError, IndexError):
             return EVM_VERSIONS[-1]
 
-    def evm_compatible(self, version):
+    def evm_compatible(self, version: str) -> bool:
         '''Returns a boolean indicating if the given version is compatible with
         the currently active EVM version.'''
         if not self.is_active():
             raise RPCRequestError("RPC is not active")
         try:
-            return EVM_VERSIONS.index(version) <= EVM_VERSIONS.index(self.evm_version())
+            return EVM_VERSIONS.index(version) <= \
+                EVM_VERSIONS.index(self.evm_version())  # type: ignore
         except ValueError:
             raise ValueError(f"Unknown EVM version: '{version}'") from None
 
-    def time(self):
+    def time(self) -> int:
         '''Returns the current epoch time from the test RPC as an int'''
         if not self.is_active():
             raise SystemError("RPC is not active.")
         return int(time.time() + self._time_offset)
 
-    def sleep(self, seconds):
+    def sleep(self, seconds: int) -> None:
         '''Increases the time within the test RPC.
 
         Args:
@@ -218,7 +222,7 @@ class Rpc(metaclass=_Singleton):
             raise TypeError("seconds must be an integer value")
         self._time_offset = self._request("evm_increaseTime", [seconds])
 
-    def mine(self, blocks=1):
+    def mine(self, blocks: int = 1) -> str:
         '''Increases the block height within the test RPC.
 
         Args:
@@ -229,12 +233,12 @@ class Rpc(metaclass=_Singleton):
             self._request("evm_mine", [])
         return f"Block height at {web3.eth.blockNumber}"
 
-    def snapshot(self):
+    def snapshot(self) -> str:
         '''Takes a snapshot of the current state of the EVM.'''
         self._snapshot_id = self._snap()
         return f"Snapshot taken at block height {web3.eth.blockNumber}"
 
-    def revert(self):
+    def revert(self) -> str:
         '''Reverts the EVM to the most recently taken snapshot.'''
         if not self._snapshot_id:
             raise ValueError("No snapshot set")
@@ -242,17 +246,17 @@ class Rpc(metaclass=_Singleton):
         self._snapshot_id = self._revert(self._snapshot_id)
         return f"Block height reverted to {web3.eth.blockNumber}"
 
-    def reset(self):
+    def reset(self) -> str:
         '''Reverts the EVM to the genesis state.'''
         self._snapshot_id = None
         self._internal_id = None
         self._reset_id = self._revert(self._reset_id)
         return "Block height reset to 0"
 
-    def _internal_snap(self):
+    def _internal_snap(self) -> None:
         self._internal_id = self._snap()
 
-    def _internal_revert(self):
+    def _internal_revert(self) -> None:
         self._request("evm_revert", [self._internal_id])
         self._internal_id = None
         self.sleep(0)
@@ -261,10 +265,10 @@ class Rpc(metaclass=_Singleton):
     # objects that will update whenever the RPC is reset or reverted must register
     # by calling to this function. The must also include _revert and _reset methods
     # to recieve notifications from this object
-    def _revert_register(self, obj):
+    def _revert_register(self, obj: object) -> None:
         self._revert_refs.append(weakref.ref(obj))
 
-    def _notify_registry(self, height=None):
+    def _notify_registry(self, height: int = None) -> None:
         gc.collect()
         if height is None:
             height = web3.eth.blockNumber

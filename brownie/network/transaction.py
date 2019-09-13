@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
+from typing import Any, Optional, Tuple, Dict, List
 from hashlib import sha1
+
 import requests
 import threading
 import time
@@ -9,7 +11,7 @@ from web3.exceptions import TransactionNotFound
 from eth_abi import decode_abi
 from hexbytes import HexBytes
 
-from .history import (
+from .state import (
     TxHistory,
     find_contract
 )
@@ -17,6 +19,7 @@ from .event import (
     decode_logs,
     decode_trace
 )
+from pathlib import Path
 from .web3 import Web3
 from brownie.convert import EthAddress, Wei
 from brownie.cli.utils import color
@@ -94,7 +97,13 @@ class TransactionReceipt:
         'value',
     )
 
-    def __init__(self, txid, sender=None, silent=False, name='', revert_data=None):
+    def __init__(
+            self,
+            txid: Any,
+            sender: Any = None,
+            silent: bool = False,
+            name: str = '',
+            revert_data: Optional[Tuple] = None) -> None:
         '''Instantiates a new TransactionReceipt object.
 
         Args:
@@ -117,6 +126,7 @@ class TransactionReceipt:
         self.status = -1
         self.txid = txid
         self.fn_name = name
+
         if name and '.' in name:
             self.contract_name, self.fn_name = name.split('.', maxsplit=1)
 
@@ -158,14 +168,14 @@ class TransactionReceipt:
             if ARGV['cli'] != "console":
                 raise
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         c = {-1: 'pending', 0: 'error', 1: None}
         return f"<Transaction object '{color[c[self.status]]}{self.txid}{color}'>"
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.txid)
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: Any) -> Any:
         if self._getattr or attr not in self.__slots__:
             raise AttributeError(f"'TransactionReceipt' object has no attribute '{attr}'")
         self._getattr = True
@@ -180,7 +190,7 @@ class TransactionReceipt:
         finally:
             self._getattr = False
 
-    def _await_confirmation(self, silent):
+    def _await_confirmation(self, silent: bool) -> None:
         # await tx showing in mempool
         while True:
             try:
@@ -205,7 +215,7 @@ class TransactionReceipt:
         if not silent:
             print(self._confirm_output())
 
-    def _set_from_tx(self, tx):
+    def _set_from_tx(self, tx: Dict) -> None:
         if not self.sender:
             self.sender = EthAddress(tx['from'])
         self.receiver = EthAddress(tx['to']) if tx['to'] else None
@@ -221,7 +231,7 @@ class TransactionReceipt:
             self.contract_name = contract._name
             self.fn_name = contract.get_method(tx['input'])
 
-    def _set_from_receipt(self, receipt):
+    def _set_from_receipt(self, receipt: Dict) -> None:
         '''Sets object attributes based on the transaction reciept.'''
         self.block_number = receipt['blockNumber']
         self.txindex = receipt['transactionIndex']
@@ -241,7 +251,7 @@ class TransactionReceipt:
         if self.fn_name:
             history._gas(self._full_name(), receipt['gasUsed'])
 
-    def _confirm_output(self):
+    def _confirm_output(self) -> str:
         status = ""
         if not self.status:
             status = f"({color['error']}{self.revert_msg or 'reverted'}{color}) "
@@ -258,7 +268,7 @@ class TransactionReceipt:
             )
         return result + "\n"
 
-    def _get_trace(self):
+    def _get_trace(self) -> None:
         '''Retrieves the stack trace via debug_traceTransaction and finds the
         return value, revert message and event logs in the trace.
         '''
@@ -271,12 +281,12 @@ class TransactionReceipt:
             self.revert_msg = None
         self._trace = []
         if (self.input == "0x" and self.gas_used == 21000) or self.contract_address:
-            self.modified_state = bool(self.contract_address)
-            self.trace = []
+            self.modified_state: Optional[bool] = bool(self.contract_address)
+            self.trace: Any = []
             return
 
         try:
-            trace = web3.provider.make_request(
+            trace = web3.provider.make_request(  # type: ignore
                 'debug_traceTransaction',
                 (self.txid, {'disableStorage': ARGV['cli'] != "console"})
             )
@@ -298,7 +308,7 @@ class TransactionReceipt:
         else:
             self._reverted_trace(trace)
 
-    def _confirmed_trace(self, trace):
+    def _confirmed_trace(self, trace: List) -> None:
         self.modified_state = next((True for i in trace if i['op'] == "SSTORE"), False)
         step = trace[-1]
         if step['op'] != "RETURN":
@@ -309,7 +319,7 @@ class TransactionReceipt:
             fn = getattr(contract, self.fn_name)
             self.return_value = fn.decode_abi(data)
 
-    def _reverted_trace(self, trace):
+    def _reverted_trace(self, trace: Any) -> None:
         self.modified_state = False
         # get events from trace
         self.events = decode_trace(trace)
@@ -339,7 +349,7 @@ class TransactionReceipt:
         except KeyError:
             self.revert_msg = ""
 
-    def _expand_trace(self):
+    def _expand_trace(self) -> None:
         '''Adds the following attributes to each step of the stack trace:
 
         address: The address executing this contract.
@@ -363,7 +373,7 @@ class TransactionReceipt:
 
         # last_map gives a quick reference of previous values at each depth
         last_map = {0: _get_last_map(self.receiver, self.input[:10])}
-        coverage_eval = {last_map[0]['name']: {}}
+        coverage_eval: Dict = {last_map[0]['name']: {}}
         active_branches = set()
 
         for i in range(len(trace)):
@@ -438,13 +448,13 @@ class TransactionReceipt:
             dict((k, v) for k, v in coverage_eval.items() if v)
         )
 
-    def _full_name(self):
+    def _full_name(self) -> str:
         try:
             return f"{self.contract_name}.{self.fn_name}"
         except AttributeError:
             return self.fn_name or "Transaction"
 
-    def info(self):
+    def info(self) -> None:
         '''Displays verbose information about the transaction, including decoded event logs.'''
         status = ""
         if not self.status:
@@ -478,13 +488,13 @@ class TransactionReceipt:
 
         if self.events:
             result += "\n   Events In This Transaction\n   --------------------------"
-            for event in self.events:
-                result += f"\n   {color['bright yellow']}{event.name}{color}"
-                for key, value in event.items():
+            for event in self.events:  # type: ignore
+                result += f"\n   {color['bright yellow']}{event.name}{color}"  # type: ignore
+                for key, value in event.items():  # type: ignore
                     result += f"\n      {color['key']}{key}{color}: {color['value']}{value}{color}"
         print(result)
 
-    def call_trace(self):
+    def call_trace(self) -> None:
         '''Displays the complete sequence of contracts and methods called during
         the transaction, and the range of trace step indexes for each method.
 
@@ -529,10 +539,10 @@ class TransactionReceipt:
                 result += _step_print(trace[idx], trace[end - 1], indent_str, idx, end)
         print(result)
 
-    def traceback(self):
+    def traceback(self) -> None:
         print(self._traceback_string())
 
-    def _traceback_string(self):
+    def _traceback_string(self) -> str:
         '''Returns an error traceback for the transaction.'''
         if self.status == 1:
             return ""
@@ -566,10 +576,10 @@ class TransactionReceipt:
             "\n".join(self._source_string(i, 0) for i in result[::-1])
         )
 
-    def error(self, pad=3):
+    def error(self, pad: int = 3) -> None:
         print(self._error_string(pad))
 
-    def _error_string(self, pad=3):
+    def _error_string(self, pad: int = 3) -> str:
         '''Returns the source code that caused the transaction to revert.
 
         Args:
@@ -597,10 +607,10 @@ class TransactionReceipt:
         except StopIteration:
             return ""
 
-    def source(self, idx, pad=3):
+    def source(self, idx: int, pad: int = 3) -> None:
         print(self._source_string(idx, pad))
 
-    def _source_string(self, idx, pad):
+    def _source_string(self, idx: int, pad: int) -> str:
         '''Displays the associated source code for a given stack trace step.
 
         Args:
@@ -630,7 +640,13 @@ class TransactionReceipt:
         )
 
 
-def _format_source(source, linenos, path, pc, idx, fn_name):
+def _format_source(
+        source: str,
+        linenos: Any,
+        path: 'Path',
+        pc: Any,
+        idx: int,
+        fn_name: str) -> str:
     ln = f" {color['value']}{linenos[0]}"
     if linenos[1] > linenos[0]:
         ln = f"s{ln}{color['dull']}-{color['value']}{linenos[1]}"
@@ -642,11 +658,11 @@ def _format_source(source, linenos, path, pc, idx, fn_name):
     )
 
 
-def _step_compare(a, b):
+def _step_compare(a: Any, b: Any) -> bool:
     return a['depth'] == b['depth'] and a['jumpDepth'] == b['jumpDepth']
 
 
-def _check_last(trace_index):
+def _check_last(trace_index: Any) -> Tuple[str, str]:
     initial = trace_index[0][1:]
     try:
         trace = next(i for i in trace_index[1:-1] if i[1:] == initial)
@@ -659,7 +675,7 @@ def _check_last(trace_index):
     return "\u251c", "\u2502 "
 
 
-def _step_print(step, last_step, indent, start, stop):
+def _step_print(step: Dict, last_step: Any, indent: Any, start: int, stop: int) -> str:
     print_str = f"\n{color['dull']}"
     if indent is not None:
         print_str += f"{indent}\u2500"
@@ -673,17 +689,17 @@ def _step_print(step, last_step, indent, start, stop):
     return print_str
 
 
-def _get_memory(step, idx):
+def _get_memory(step: Dict, idx: int) -> HexBytes:
     offset = int(step['stack'][idx], 16) * 2
     length = int(step['stack'][idx - 1], 16) * 2
     return HexBytes("".join(step['memory'])[offset:offset + length])
 
 
-def _raise(msg, source):
+def _raise(msg: str, source: Any) -> None:  # source: Union[str, 'Accounts']
     raise VirtualMachineError({"message": msg, "source": source})
 
 
-def _get_last_map(address, sig):
+def _get_last_map(address: Any, sig: str) -> Dict:
     contract = find_contract(address)
     last_map = {
         'address': EthAddress(address),
