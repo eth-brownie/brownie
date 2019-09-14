@@ -10,7 +10,7 @@ def test_string():
 
 
 def test_hexstring():
-    assert to_string('0x48656c6c6f21') == "Hello!"
+    assert to_string("0x48656c6c6f21") == "Hello!"
 
 
 def test_hexstring_raise():

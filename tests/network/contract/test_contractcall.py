@@ -11,24 +11,27 @@ def test_attributes(accounts, tester):
 
 def test_encode_abi(tester):
     data = tester.getTuple.encode_abi("0x2f084926Fd8A120089cA5F622975Fe7F1306AFF9")
-    assert data == "0x2e2714960000000000000000000000002f084926fd8a120089ca5f622975fe7f1306aff9"
+    assert (
+        data
+        == "0x2e2714960000000000000000000000002f084926fd8a120089ca5f622975fe7f1306aff9"
+    )
 
 
 def test_transact(accounts, tester):
     nonce = accounts[0].nonce
-    tx = tester.getTuple.transact(accounts[0], {'from': accounts[0]})
+    tx = tester.getTuple.transact(accounts[0], {"from": accounts[0]})
     assert tx.return_value == tester.getTuple(accounts[0])
     assert accounts[0].nonce == nonce + 1
 
 
 def test_always_transact(accounts, tester, argv, web3, monkeypatch, history):
     owner = tester.owner()
-    argv['always_transact'] = True
+    argv["always_transact"] = True
     height = web3.eth.blockNumber
     result = tester.owner()
     assert owner == result
     assert web3.eth.blockNumber == height == len(history)
-    monkeypatch.setattr('brownie.network.rpc._internal_revert', lambda: None)
+    monkeypatch.setattr("brownie.network.rpc._internal_revert", lambda: None)
     result = tester.owner()
     tx = history[-1]
     assert owner == result
@@ -39,4 +42,4 @@ def test_always_transact(accounts, tester, argv, web3, monkeypatch, history):
 def test_tuples(tester, accounts):
     value = ["blahblah", accounts[1], ["yesyesyes", "0x1234"]]
     tester.setTuple(value)
-    assert tester.getTuple(accounts[1], {'from': accounts[0]}) == value
+    assert tester.getTuple(accounts[1], {"from": accounts[0]}) == value

@@ -8,25 +8,23 @@ from brownie._config import ARGV, CONFIG
 
 if sys.platform == "win32":
     import colorama
+
     colorama.init()
 
 
 BASE = "\x1b[0;"
 
-MODIFIERS = {
-    'bright': "1;",
-    'dark': "2;"
-}
+MODIFIERS = {"bright": "1;", "dark": "2;"}
 
 COLORS = {
-    'black': "30",
-    'red': "31",
-    'green': "32",
-    'yellow': "33",
-    'blue': "34",
-    'magenta': "35",
-    'cyan': "36",
-    'white': "37"
+    "black": "30",
+    "red": "31",
+    "green": "32",
+    "yellow": "33",
+    "blue": "34",
+    "magenta": "35",
+    "cyan": "36",
+    "white": "37",
 }
 
 TB_BASE = (
@@ -34,20 +32,15 @@ TB_BASE = (
     "{0[value]}{1[3]}{0[dull]}, in {0[callable]}{1[5]}{0}{2}"
 )
 
-NOTIFY_COLORS = {
-    'WARNING': 'error',
-    'ERROR': 'error',
-    'SUCCESS': 'success'
-}
+NOTIFY_COLORS = {"WARNING": "error", "ERROR": "error", "SUCCESS": "success"}
 
-base_path = str(Path('.').absolute())
+base_path = str(Path(".").absolute())
 
 
 class Color:
-
     def __call__(self, color=None):
-        if color in CONFIG['colors']:
-            color = CONFIG['colors'][color]
+        if color in CONFIG["colors"]:
+            color = CONFIG["colors"][color]
         if not color:
             return BASE + "m"
         color = color.split()
@@ -85,7 +78,7 @@ class Color:
         indent -= 4
         text += f"\n{' '*indent}}}"
         if start:
-            text += f'{self}'
+            text += f"{self}"
         return text
 
     # format lists for console printing
@@ -114,7 +107,7 @@ class Color:
         return text
 
     def _write(self, value):
-        s = '"' if isinstance(value, str) else ''
+        s = '"' if isinstance(value, str) else ""
         key = "string" if isinstance(value, str) else "value"
         return f"{s}{self[key]}{value}{self['dull']}{s}"
 
@@ -122,7 +115,7 @@ class Color:
         if exc[0] is SyntaxError:
             return self.format_syntaxerror(exc[1])
         tb = [i.replace("./", "") for i in traceback.format_tb(exc[2])]
-        if filename and not ARGV['tb']:
+        if filename and not ARGV["tb"]:
             try:
                 start = tb.index(next(i for i in tb if filename in i))
                 stop = tb.index(next(i for i in tb[::-1] if filename in i)) + 1
@@ -130,7 +123,7 @@ class Color:
                 pass
         tb = tb[start:stop]
         for i in range(len(tb)):
-            info, code = tb[i].split('\n')[:2]
+            info, code = tb[i].split("\n")[:2]
             info = info.replace(base_path, ".")
             info = [x.strip(",") for x in info.strip().split(" ")]
             if "site-packages/" in info[1]:
@@ -150,6 +143,6 @@ class Color:
 
 
 def notify(type_, msg):
-    '''Prepends a message with a colored tag and outputs it to the console.'''
+    """Prepends a message with a colored tag and outputs it to the console."""
     color = Color()
     print(f"{color(NOTIFY_COLORS[type_])}{type_}{color}: {msg}")

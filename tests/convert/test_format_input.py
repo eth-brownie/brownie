@@ -5,19 +5,19 @@ import pytest
 from brownie.convert import format_input
 
 abi = {
-    'inputs': [
-        {'name': 'fixedArray', 'type': 'uint16[3]'},
-        {'name': 'dynamicArray', 'type': 'uint8[]'},
-        {'name': 'nestedArray', 'type': 'uint32[2][]'},
-        {'name': 'simple', 'type': 'bytes32'},
+    "inputs": [
+        {"name": "fixedArray", "type": "uint16[3]"},
+        {"name": "dynamicArray", "type": "uint8[]"},
+        {"name": "nestedArray", "type": "uint32[2][]"},
+        {"name": "simple", "type": "bytes32"},
     ],
-    'name': 'testFunction'
+    "name": "testFunction",
 }
 
 
 def test_empty():
     with pytest.raises(TypeError):
-        format_input({'inputs': [], 'name': "empty"}, [1])
+        format_input({"inputs": [], "name": "empty"}, [1])
 
 
 def test_success():

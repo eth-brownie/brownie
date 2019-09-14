@@ -13,7 +13,11 @@ from eth_hash.auto import keccak
 import eth_keys
 
 from brownie.cli.utils import color
-from brownie.exceptions import VirtualMachineError, UnknownAccount, IncompatibleEVMVersion
+from brownie.exceptions import (
+    VirtualMachineError,
+    UnknownAccount,
+    IncompatibleEVMVersion,
+)
 from brownie.network.transaction import TransactionReceipt
 from .rpc import Rpc
 from .web3 import Web3
@@ -28,12 +32,12 @@ rpc = Rpc()
 
 class Accounts(metaclass=_Singleton):
 
-    '''List-like container that holds all of the available Account instances.'''
+    """List-like container that holds all of the available Account instances."""
 
     def __init__(self) -> None:
         self._accounts: List = []
         # prevent private keys from being stored in read history
-        self.add.__dict__['_private'] = True
+        self.add.__dict__["_private"] = True
         rpc._revert_register(self)
         self._reset()
 
@@ -70,15 +74,15 @@ class Accounts(metaclass=_Singleton):
     def __len__(self) -> int:
         return len(self._accounts)
 
-    def add(self, priv_key: Union[int, bytes, str] = None) -> 'LocalAccount':
-        '''Creates a new ``LocalAccount`` instance and appends it to the container.
+    def add(self, priv_key: Union[int, bytes, str] = None) -> "LocalAccount":
+        """Creates a new ``LocalAccount`` instance and appends it to the container.
 
         Args:
             priv_key: Private key of the account. If none is given, one is
                       randomly generated.
 
         Returns:
-            Account instance.'''
+            Account instance."""
         private_key: Union[int, bytes, str]
         if not priv_key:
             private_key = "0x" + keccak(os.urandom(8192)).hex()
@@ -92,18 +96,18 @@ class Accounts(metaclass=_Singleton):
         self._accounts.append(account)
         return account
 
-    def load(self, filename: str = None) -> Union[List, 'LocalAccount']:
-        '''Loads a local account from a keystore file.
+    def load(self, filename: str = None) -> Union[List, "LocalAccount"]:
+        """Loads a local account from a keystore file.
 
         Args:
             filename: Keystore filename. If none is given, returns a list of
                       available keystores.
 
         Returns:
-            Account instance.'''
-        project_path = CONFIG['brownie_folder'].joinpath("data/accounts")
+            Account instance."""
+        project_path = CONFIG["brownie_folder"].joinpath("data/accounts")
         if not filename:
-            return [i.stem for i in project_path.glob('*.json')]
+            return [i.stem for i in project_path.glob("*.json")]
         filename = str(filename)
         if not filename.endswith(".json"):
             filename += ".json"
@@ -114,13 +118,12 @@ class Accounts(metaclass=_Singleton):
                 raise FileNotFoundError(f"Cannot find {json_file}")
         with json_file.open() as fp:
             priv_key = web3.eth.account.decrypt(
-                json.load(fp),
-                getpass("Enter the password for this account: ")
+                json.load(fp), getpass("Enter the password for this account: ")
             )
         return self.add(priv_key)
 
-    def at(self, address: str) -> 'LocalAccount':
-        '''Retrieves an Account instance from the address string. Raises
+    def at(self, address: str) -> "LocalAccount":
+        """Retrieves an Account instance from the address string. Raises
         ValueError if the account cannot be found.
 
         Args:
@@ -128,7 +131,7 @@ class Accounts(metaclass=_Singleton):
 
         Returns:
             Account instance.
-        '''
+        """
         address = to_address(address)
         try:
             return next(i for i in self._accounts if i == address)
@@ -136,10 +139,10 @@ class Accounts(metaclass=_Singleton):
             raise UnknownAccount(f"No account exists for {address}")
 
     def remove(self, address: str) -> None:
-        '''Removes an account instance from the container.
+        """Removes an account instance from the container.
 
         Args:
-            address: Account instance or address string of account to remove.'''
+            address: Account instance or address string of account to remove."""
         address = to_address(address)
         try:
             self._accounts.remove(address)
@@ -147,13 +150,13 @@ class Accounts(metaclass=_Singleton):
             raise UnknownAccount(f"No account exists for {address}")
 
     def clear(self) -> None:
-        '''Empties the container.'''
+        """Empties the container."""
         self._accounts.clear()
 
 
 class _AccountBase:
 
-    '''Base class for Account and LocalAccount'''
+    """Base class for Account and LocalAccount"""
 
     def __init__(self, addr: str) -> None:
         self.address = addr
@@ -174,34 +177,37 @@ class _AccountBase:
                 return False
         return super().__eq__(other)
 
-    def _gas_limit(self, to: Union[str, 'Accounts'], amount: Optional[int], data: str = "") -> int:
-        if CONFIG['active_network']['gas_limit'] not in (True, False, None):
-            return Wei(CONFIG['active_network']['gas_limit'])
+    def _gas_limit(
+        self, to: Union[str, "Accounts"], amount: Optional[int], data: str = ""
+    ) -> int:
+        if CONFIG["active_network"]["gas_limit"] not in (True, False, None):
+            return Wei(CONFIG["active_network"]["gas_limit"])
         return self.estimate_gas(to, amount, data)
 
     def _gas_price(self) -> Wei:
-        return Wei(CONFIG['active_network']['gas_price'] or web3.eth.gasPrice)
+        return Wei(CONFIG["active_network"]["gas_price"] or web3.eth.gasPrice)
 
     def _check_for_revert(self, tx: Dict) -> None:
-        if not CONFIG['active_network']['reverting_tx_gas_limit']:
+        if not CONFIG["active_network"]["reverting_tx_gas_limit"]:
             try:
                 web3.eth.call(dict((k, v) for k, v in tx.items() if v))
             except ValueError as e:
                 raise VirtualMachineError(e) from None
 
     def balance(self) -> Wei:
-        '''Returns the current balance at the address, in wei.'''
+        """Returns the current balance at the address, in wei."""
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
 
     def deploy(
-            self,
-            contract: Any,
-            *args: Tuple,
-            amount: Optional[int] = None,
-            gas_limit: Optional[int] = None,
-            gas_price: Optional[int] = None) -> Any:
-        '''Deploys a contract.
+        self,
+        contract: Any,
+        *args: Tuple,
+        amount: Optional[int] = None,
+        gas_limit: Optional[int] = None,
+        gas_price: Optional[int] = None,
+    ) -> Any:
+        """Deploys a contract.
 
         Args:
             contract: ContractContainer instance.
@@ -215,33 +221,34 @@ class _AccountBase:
 
         Returns:
             * Contract instance if the transaction confirms
-            * TransactionReceipt if the transaction is pending or reverts'''
-        evm = contract._build['compiler']['evm_version']
+            * TransactionReceipt if the transaction is pending or reverts"""
+        evm = contract._build["compiler"]["evm_version"]
         if rpc.is_active() and not rpc.evm_compatible(evm):
             raise IncompatibleEVMVersion(
                 f"Local RPC using '{rpc.evm_version()}' but contract was compiled for '{evm}'"
             )
         data = contract.deploy.encode_abi(*args)
         try:
-            txid = self._transact({  # type: ignore
-                'from': self.address,
-                'value': Wei(amount),
-                'nonce': self.nonce,
-                'gasPrice': Wei(gas_price) or self._gas_price(),
-                'gas': Wei(gas_limit) or self._gas_limit("", amount, data),
-                'data': HexBytes(data)
-            })
+            txid = self._transact(
+                {  # type: ignore
+                    "from": self.address,
+                    "value": Wei(amount),
+                    "nonce": self.nonce,
+                    "gasPrice": Wei(gas_price) or self._gas_price(),
+                    "gas": Wei(gas_limit) or self._gas_limit("", amount, data),
+                    "data": HexBytes(data),
+                }
+            )
             revert_data = None
         except ValueError as e:
             txid, revert_data = _raise_or_return_tx(e)
         self.nonce += 1
         tx = TransactionReceipt(
-            txid,
-            self,
-            name=contract._name + ".constructor",
-            revert_data=revert_data
+            txid, self, name=contract._name + ".constructor", revert_data=revert_data
         )
-        add_thread = threading.Thread(target=contract._add_from_tx, args=(tx,), daemon=True)
+        add_thread = threading.Thread(
+            target=contract._add_from_tx, args=(tx,), daemon=True
+        )
         add_thread.start()
         if tx.status != 1:
             return tx
@@ -249,11 +256,9 @@ class _AccountBase:
         return find_contract(tx.contract_address)
 
     def estimate_gas(
-            self,
-            to: Union[str, 'Accounts'],
-            amount: Optional[int],
-            data: str = "") -> int:
-        '''Estimates the gas cost for a transaction. Raises VirtualMachineError
+        self, to: Union[str, "Accounts"], amount: Optional[int], data: str = ""
+    ) -> int:
+        """Estimates the gas cost for a transaction. Raises VirtualMachineError
         if the transaction would revert.
 
         Args:
@@ -262,27 +267,30 @@ class _AccountBase:
             data: Transaction data hexstring.
 
         Returns:
-            Estimated gas value in wei.'''
+            Estimated gas value in wei."""
         try:
-            return web3.eth.estimateGas({
-                'from': self.address,
-                'to': str(to),
-                'value': Wei(amount),
-                'data': HexBytes(data)
-            })
+            return web3.eth.estimateGas(
+                {
+                    "from": self.address,
+                    "to": str(to),
+                    "value": Wei(amount),
+                    "data": HexBytes(data),
+                }
+            )
         except ValueError:
-            if CONFIG['active_network']['reverting_tx_gas_limit']:
-                return CONFIG['active_network']['reverting_tx_gas_limit']
+            if CONFIG["active_network"]["reverting_tx_gas_limit"]:
+                return CONFIG["active_network"]["reverting_tx_gas_limit"]
             raise
 
     def transfer(
-            self,
-            to: 'Accounts',
-            amount: int,
-            gas_limit: float = None,
-            gas_price: float = None,
-            data: str = "") -> 'TransactionReceipt':
-        '''Transfers ether from this account.
+        self,
+        to: "Accounts",
+        amount: int,
+        gas_limit: float = None,
+        gas_price: float = None,
+        data: str = "",
+    ) -> "TransactionReceipt":
+        """Transfers ether from this account.
 
         Args:
             to: Account instance or address string to transfer to.
@@ -294,17 +302,21 @@ class _AccountBase:
             data: Hexstring of data to include in transaction.
 
         Returns:
-            TransactionReceipt object'''
+            TransactionReceipt object"""
         try:
-            txid = self._transact({  # type: ignore
-                'from': self.address,
-                'to': str(to),
-                'value': Wei(amount),
-                'nonce': self.nonce,
-                'gasPrice': Wei(gas_price) if gas_price is not None else self._gas_price(),
-                'gas': Wei(gas_limit) or self._gas_limit(to, amount, data),
-                'data': HexBytes(data)
-            })
+            txid = self._transact(
+                {  # type: ignore
+                    "from": self.address,
+                    "to": str(to),
+                    "value": Wei(amount),
+                    "nonce": self.nonce,
+                    "gasPrice": Wei(gas_price)
+                    if gas_price is not None
+                    else self._gas_price(),
+                    "gas": Wei(gas_limit) or self._gas_limit(to, amount, data),
+                    "data": HexBytes(data),
+                }
+            )
             revert_data = None
         except ValueError as e:
             txid, revert_data = _raise_or_return_tx(e)
@@ -314,11 +326,11 @@ class _AccountBase:
 
 class Account(_AccountBase):
 
-    '''Class for interacting with an Ethereum account.
+    """Class for interacting with an Ethereum account.
 
     Attributes:
         address: Public address of the account.
-        nonce: Current nonce of the account.'''
+        nonce: Current nonce of the account."""
 
     def __repr__(self) -> str:
         return f"<Account object '{color['string']}{self.address}{color}'>"
@@ -330,15 +342,17 @@ class Account(_AccountBase):
 
 class LocalAccount(_AccountBase):
 
-    '''Class for interacting with an Ethereum account.
+    """Class for interacting with an Ethereum account.
 
     Attributes:
         address: Public address of the account.
         nonce: Current nonce of the account.
         private_key: Account private key.
-        public_key: Account public key.'''
+        public_key: Account public key."""
 
-    def __init__(self, address: str, account: Account, priv_key: Union[int, bytes, str]) -> None:
+    def __init__(
+        self, address: str, account: Account, priv_key: Union[int, bytes, str]
+    ) -> None:
         self._acct = account
         self.private_key = priv_key
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
@@ -348,7 +362,7 @@ class LocalAccount(_AccountBase):
         return f"<LocalAccount object '{color['string']}{self.address}{color}'>"
 
     def save(self, filename: str, overwrite: bool = False) -> str:
-        '''Encrypts the private key and saves it in a keystore json.
+        """Encrypts the private key and saves it in a keystore json.
 
         Attributes:
             filename: path to keystore file. If no folder is given, saved in
@@ -356,8 +370,8 @@ class LocalAccount(_AccountBase):
             overwrite: if True, will overwrite an existing file.
 
         Returns the absolute path to the keystore file as a string.
-        '''
-        path = CONFIG['brownie_folder'].joinpath('data/accounts')
+        """
+        path = CONFIG["brownie_folder"].joinpath("data/accounts")
         path.mkdir(exist_ok=True)
         filename = str(filename)
         if not filename.endswith(".json"):
@@ -370,9 +384,9 @@ class LocalAccount(_AccountBase):
             raise FileExistsError("Account with this identifier already exists")
         encrypted = web3.eth.account.encrypt(
             self.private_key,
-            getpass("Enter the password to encrypt this account with: ")
+            getpass("Enter the password to encrypt this account with: "),
         )
-        with json_file.open('w') as fp:
+        with json_file.open("w") as fp:
             json.dump(encrypted, fp)
         return str(json_file)
 
@@ -384,8 +398,8 @@ class LocalAccount(_AccountBase):
 
 class PublicKeyAccount:
 
-    '''Class for interacting with an Ethereum account where you do not control
-    the private key. Can only be used to check the balance and to send ether to.'''
+    """Class for interacting with an Ethereum account where you do not control
+    the private key. Can only be used to check the balance and to send ether to."""
 
     def __init__(self, addr: str) -> None:
         self.address = to_address(addr)
@@ -411,18 +425,18 @@ class PublicKeyAccount:
         return super().__eq__(other)
 
     def balance(self) -> Wei:
-        '''Returns the current balance at the address, in wei.'''
+        """Returns the current balance at the address, in wei."""
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
 
 
 def _raise_or_return_tx(exc: ValueError) -> Any:
     try:
-        data = eval(str(exc))['data']
+        data = eval(str(exc))["data"]
         txid = next(i for i in data.keys() if i[:2] == "0x")
-        reason = data[txid]['reason'] if 'reason' in data[txid] else None
-        pc = data[txid]['program_counter'] - 1
-        error = data[txid]['error']
+        reason = data[txid]["reason"] if "reason" in data[txid] else None
+        pc = data[txid]["program_counter"] - 1
+        error = data[txid]["error"]
         return txid, [reason, pc, error]
     except SyntaxError:
         raise exc

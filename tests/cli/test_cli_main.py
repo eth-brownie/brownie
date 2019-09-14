@@ -14,7 +14,6 @@ def cli_tester(monkeypatch):
 
 
 class CliTester:
-
     def __init__(self, monkeypatch):
         self.argv = sys.argv.copy()
         self.monkeypatch = monkeypatch
@@ -31,7 +30,7 @@ class CliTester:
             self.total += 1
 
     def run(self, argv, args=(), kwargs={}):
-        sys.argv = ['brownie'] + argv.split(' ')
+        sys.argv = ["brownie"] + argv.split(" ")
         self.args = args
         self.kwargs = kwargs
         cli_main()
@@ -53,28 +52,30 @@ class CliTester:
 
 
 def test_cli_init(cli_tester):
-    cli_tester.set_target('brownie.project.new')
-    cli_tester.run('init', args=('.', False))
-    cli_tester.run('init test/path --force', args=('test/path', True))
+    cli_tester.set_target("brownie.project.new")
+    cli_tester.run("init", args=(".", False))
+    cli_tester.run("init test/path --force", args=("test/path", True))
 
 
 def test_cli_bake(cli_tester):
-    cli_tester.set_target('brownie.project.pull')
-    cli_tester.run('bake token', args=('token', None, False))
-    cli_tester.run('bake token test/path --force', args=('token', 'test/path', True))
+    cli_tester.set_target("brownie.project.pull")
+    cli_tester.run("bake token", args=("token", None, False))
+    cli_tester.run("bake token test/path --force", args=("token", "test/path", True))
 
 
 def test_cli_compile(cli_tester, testproject):
-    cli_tester.set_target('brownie.project.load')
-    cli_tester.run('compile', args=(testproject._project_path,))
-    cli_tester.run('compile --all', args=(testproject._project_path,))
+    cli_tester.set_target("brownie.project.load")
+    cli_tester.run("compile", args=(testproject._project_path,))
+    cli_tester.run("compile --all", args=(testproject._project_path,))
 
 
 def test_cli_console(cli_tester, testproject):
     testproject.close()
-    cli_tester.set_target('brownie.cli.utils.console.Console.interact')
-    cli_tester.set_subtargets('brownie.network.connect')
-    cli_tester.run('console', kwargs={'banner': "Brownie environment is ready.", 'exitmsg': ""})
+    cli_tester.set_target("brownie.cli.utils.console.Console.interact")
+    cli_tester.set_subtargets("brownie.network.connect")
+    cli_tester.run(
+        "console", kwargs={"banner": "Brownie environment is ready.", "exitmsg": ""}
+    )
 
 
 # travis doesn't like this
@@ -86,20 +87,20 @@ def test_cli_console(cli_tester, testproject):
 
 
 def test_cli_run(cli_tester, project):
-    cli_tester.set_target('brownie.run')
-    cli_tester.set_subtargets('brownie.network.connect')
+    cli_tester.set_target("brownie.run")
+    cli_tester.set_subtargets("brownie.network.connect")
     cli_tester.run(
-        'run testfile',
-        args=('testfile',),
-        kwargs={'method_name': "main", 'project': None}
+        "run testfile",
+        args=("testfile",),
+        kwargs={"method_name": "main", "project": None},
     )
     cli_tester.run(
-        'run testfile xx --gas',
-        args=('testfile',),
-        kwargs={'method_name': "xx", 'project': None}
+        "run testfile xx --gas",
+        args=("testfile",),
+        kwargs={"method_name": "xx", "project": None},
     )
 
 
 def test_cli_incorrect(cli_tester):
     with pytest.raises(SystemExit):
-        cli_tester.run('foo')
+        cli_tester.run("foo")

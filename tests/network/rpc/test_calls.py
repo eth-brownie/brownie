@@ -8,7 +8,7 @@ from brownie.exceptions import RPCRequestError
 
 @pytest.fixture
 def noweb3(config, web3):
-    uri = config['active_network']['host']
+    uri = config["active_network"]["host"]
     web3.disconnect()
     yield
     web3.connect(uri)
@@ -29,7 +29,7 @@ def test_time_exceptions(devnetwork, rpc, monkeypatch):
         rpc.sleep("foo")
     with pytest.raises(TypeError):
         rpc.sleep(3.0)
-    monkeypatch.setattr('brownie.rpc.is_active', lambda: False)
+    monkeypatch.setattr("brownie.rpc.is_active", lambda: False)
     with pytest.raises(SystemError):
         rpc.time()
 
@@ -55,7 +55,7 @@ def test_snapshot_revert(BrownieTester, accounts, rpc, web3):
     count = len(BrownieTester)
     rpc.snapshot()
     accounts[0].transfer(accounts[1], "1 ether")
-    BrownieTester.deploy(True, {'from': accounts[0]})
+    BrownieTester.deploy(True, {"from": accounts[0]})
     rpc.revert()
     assert height == web3.eth.blockNumber
     assert balance == accounts[0].balance()
@@ -74,7 +74,7 @@ def test_revert_exceptions(devnetwork, rpc):
 
 def test_reset(BrownieTester, accounts, rpc, web3):
     accounts[0].transfer(accounts[1], "1 ether")
-    BrownieTester.deploy(True, {'from': accounts[0]})
+    BrownieTester.deploy(True, {"from": accounts[0]})
     rpc.reset()
     assert web3.eth.blockNumber == 0
     assert accounts[0].balance() == 100000000000000000000
@@ -84,6 +84,6 @@ def test_reset(BrownieTester, accounts, rpc, web3):
 def test_request_exceptions(devnetwork, rpc, noweb3, monkeypatch):
     with pytest.raises(RPCRequestError):
         rpc.mine()
-    monkeypatch.setattr('brownie.rpc.is_active', lambda: False)
+    monkeypatch.setattr("brownie.rpc.is_active", lambda: False)
     with pytest.raises(SystemError):
         rpc.mine()

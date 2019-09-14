@@ -10,24 +10,19 @@ from brownie.test import coverage
 from brownie._config import ARGV
 
 
-STATUS_SYMBOLS = {
-    'passed': '.',
-    'skipped': 's',
-    'failed': 'F'
-}
+STATUS_SYMBOLS = {"passed": ".", "skipped": "s", "failed": "F"}
 
 STATUS_TYPES = {
-    '.': "passed",
-    's': "skipped",
-    'F': "failed",
-    'E': "error",
-    'x': "xfailed",
-    'X': "xpassed"
+    ".": "passed",
+    "s": "skipped",
+    "F": "failed",
+    "E": "error",
+    "x": "xfailed",
+    "X": "xpassed",
 }
 
 
 class TestManager:
-
     def __init__(self, project):
         self.project = project
         self.project_path = project._project_path
@@ -35,34 +30,40 @@ class TestManager:
         self.count = 0
         self.results = None
         self.isolated = set()
-        glob = self.project_path.glob('tests/**/conftest.py')
+        glob = self.project_path.glob("tests/**/conftest.py")
         self.conf_hashes = dict((self._path(i.parent), get_ast_hash(i)) for i in glob)
         try:
-            with self.project_path.joinpath('build/tests.json').open() as fp:
+            with self.project_path.joinpath("build/tests.json").open() as fp:
                 hashes = json.load(fp)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
-            hashes = {'tests': {}, 'contracts': {}, 'tx': {}}
+            hashes = {"tests": {}, "contracts": {}, "tx": {}}
 
         self.tests = dict(
-            (k, v) for k, v in hashes['tests'].items() if
-            Path(k).exists() and self._get_hash(k) == v['sha1']
+            (k, v)
+            for k, v in hashes["tests"].items()
+            if Path(k).exists() and self._get_hash(k) == v["sha1"]
         )
         build = self.project._build
-        self.contracts = dict((k, v['bytecodeSha1']) for k, v in build.items() if v['bytecode'])
+        self.contracts = dict(
+            (k, v["bytecodeSha1"]) for k, v in build.items() if v["bytecode"]
+        )
         changed_contracts = set(
-            k for k, v in hashes['contracts'].items() if
-            k not in self.contracts or v != self.contracts[k]
+            k
+            for k, v in hashes["contracts"].items()
+            if k not in self.contracts or v != self.contracts[k]
         )
         if changed_contracts:
-            for txhash, coverage_eval in hashes['tx'].items():
+            for txhash, coverage_eval in hashes["tx"].items():
                 if not changed_contracts.intersection(coverage_eval.keys()):
                     coverage.add_cached_transaction(txhash, coverage_eval)
             self.tests = dict(
-                (k, v) for k, v in self.tests.items() if v['isolated'] is not False and
-                not changed_contracts.intersection(v['isolated'])
+                (k, v)
+                for k, v in self.tests.items()
+                if v["isolated"] is not False
+                and not changed_contracts.intersection(v["isolated"])
             )
         else:
-            for txhash, coverage_eval in hashes['tx'].items():
+            for txhash, coverage_eval in hashes["tx"].items():
                 coverage.add_cached_transaction(txhash, coverage_eval)
 
     def _path(self, path):
@@ -79,11 +80,11 @@ class TestManager:
 
     def check_updated(self, path):
         path = self._path(path)
-        if path not in self.tests or not self.tests[path]['isolated']:
+        if path not in self.tests or not self.tests[path]["isolated"]:
             return False
-        if ARGV['coverage'] and not self.tests[path]['coverage']:
+        if ARGV["coverage"] and not self.tests[path]["coverage"]:
             return False
-        for txhash in self.tests[path]['txhash']:
+        for txhash in self.tests[path]["txhash"]:
             coverage.check_cached(txhash, False)
         return True
 
@@ -94,25 +95,26 @@ class TestManager:
             isolated = [i for i in get_current_dependencies() if i in self.contracts]
         txhash = coverage.get_active_txlist()
         coverage.clear_active_txlist()
-        if not ARGV['coverage'] and (path in self.tests and self.tests[path]['coverage']):
-            txhash = self.tests[path]['txhash']
+        if not ARGV["coverage"] and (
+            path in self.tests and self.tests[path]["coverage"]
+        ):
+            txhash = self.tests[path]["txhash"]
         self.tests[path] = {
-            'sha1': self._get_hash(path),
-            'isolated': isolated,
-            'coverage': ARGV['coverage'] or (path in self.tests and self.tests[path]['coverage']),
-            'txhash': txhash,
-            'results': "".join(self.results)
+            "sha1": self._get_hash(path),
+            "isolated": isolated,
+            "coverage": ARGV["coverage"]
+            or (path in self.tests and self.tests[path]["coverage"]),
+            "txhash": txhash,
+            "results": "".join(self.results),
         }
 
     def save_json(self):
-        txhash = set(x for v in self.tests.values() for x in v['txhash'])
-        coverage_eval = dict((k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash)
-        report = {
-            'tests': self.tests,
-            'contracts': self.contracts,
-            'tx': coverage_eval
-        }
-        with self.project_path.joinpath('build/tests.json').open('w') as fp:
+        txhash = set(x for v in self.tests.values() for x in v["txhash"])
+        coverage_eval = dict(
+            (k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash
+        )
+        report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
+        with self.project_path.joinpath("build/tests.json").open("w") as fp:
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
 
     def set_active(self, path):
@@ -122,8 +124,8 @@ class TestManager:
             return
         self.active_path = path
         self.count = 0
-        if path in self.tests and ARGV['update']:
-            self.results = list(self.tests[path]['results'])
+        if path in self.tests and ARGV["update"]:
+            self.results = list(self.tests[path]["results"])
         else:
             self.results = []
 
@@ -145,7 +147,7 @@ class TestManager:
                 return "skipped", "s", "SKIPPED"
             return "", "", ""
         if hasattr(report, "wasxfail"):
-            self.results[self.count] = 'x' if report.skipped else 'X'
+            self.results[self.count] = "x" if report.skipped else "X"
             if report.skipped:
                 return "xfailed", "x", "XFAIL"
             elif report.passed:

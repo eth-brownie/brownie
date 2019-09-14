@@ -6,4 +6,4 @@ import pytest
 
 @pytest.fixture
 def json_path(plugintester):
-    yield Path(plugintester.tmpdir).joinpath('build/tests.json')
+    yield Path(plugintester.tmpdir).joinpath("build/tests.json")

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-test_source = '''import pytest
+test_source = """import pytest
 
 @pytest.fixture(scope="module")
 def tester(BrownieTester, accounts):
@@ -26,7 +26,7 @@ def test_reverts_wrong_excetion(tester):
 @pytest.mark.xfail(condition=True, reason="", raises=AssertionError, strict=True)
 def test_does_not_revert(tester):
     with pytest.reverts():
-        1 + 2'''
+        1 + 2"""
 
 
 def test_revert_manager(plugintester):
