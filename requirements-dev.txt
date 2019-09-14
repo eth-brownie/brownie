@@ -4,3 +4,4 @@ pytest-cov>=2.7.1
 pytest-mock>=1.10.4
 twine==1.13.0
 wheel==0.33.4
+black==19.3b0
