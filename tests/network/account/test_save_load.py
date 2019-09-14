@@ -9,7 +9,7 @@ addr = "0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E"
 
 @pytest.fixture(autouse=True)
 def no_pass(monkeypatch):
-    monkeypatch.setattr('brownie.network.account.getpass', lambda x: "")
+    monkeypatch.setattr("brownie.network.account.getpass", lambda x: "")
 
 
 def test_save(accounts, tmpdir):

@@ -9,19 +9,19 @@ _active_txhash = set()
 
 
 def add_transaction(txhash, coverage_eval):
-    '''Adds coverage eval data.'''
+    """Adds coverage eval data."""
     _coverage_eval[txhash] = coverage_eval
     _active_txhash.add(txhash)
 
 
 def add_cached_transaction(txhash, coverage_eval):
-    '''Adds coverage data to the cache.'''
+    """Adds coverage data to the cache."""
     _cached[txhash] = coverage_eval
 
 
 def check_cached(txhash, active=True):
-    '''Checks if a transaction hash is present within the cache, and if yes
-    includes it in the active data.'''
+    """Checks if a transaction hash is present within the cache, and if yes
+    includes it in the active data."""
     if txhash in _cached:
         _coverage_eval[txhash] = _cached.pop(txhash)
         if active:
@@ -30,25 +30,25 @@ def check_cached(txhash, active=True):
 
 
 def get_active_txlist():
-    '''Returns a list of coverage hashes that are currently marked as active.'''
+    """Returns a list of coverage hashes that are currently marked as active."""
     return sorted(_active_txhash)
 
 
 def clear_active_txlist():
-    '''Clears the active coverage hash list.'''
+    """Clears the active coverage hash list."""
     _active_txhash.clear()
 
 
 def get_coverage_eval():
-    '''Returns all coverage data, active and cached.'''
+    """Returns all coverage data, active and cached."""
     return {**_cached, **_coverage_eval}
 
 
 def get_merged_coverage_eval():
-    '''Merges and returns all active coverage data as a single dict.
+    """Merges and returns all active coverage data as a single dict.
 
     Returns: coverage eval dict.
-    '''
+    """
     if not _coverage_eval:
         return {}
     coverage_eval_list = list(_coverage_eval.values())
@@ -63,12 +63,14 @@ def get_merged_coverage_eval():
                     merged_eval[name][path] = map_
                     continue
                 for i in range(3):
-                    merged_eval[name][path][i] = set(merged_eval[name][path][i]).union(map_[i])
+                    merged_eval[name][path][i] = set(merged_eval[name][path][i]).union(
+                        map_[i]
+                    )
     return merged_eval
 
 
 def clear():
-    '''Clears all coverage eval data.'''
+    """Clears all coverage eval data."""
     _coverage_eval.clear()
     _cached.clear()
     _active_txhash.clear()

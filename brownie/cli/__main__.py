@@ -35,19 +35,21 @@ def main():
 
     # remove options before calling docopt
     if len(sys.argv) > 1 and sys.argv[1][0] != "-":
-        idx = next((sys.argv.index(i) for i in sys.argv if i.startswith("-")), len(sys.argv))
+        idx = next(
+            (sys.argv.index(i) for i in sys.argv if i.startswith("-")), len(sys.argv)
+        )
         opts = sys.argv[idx:]
         sys.argv = sys.argv[:idx]
     args = docopt(__doc__)
     sys.argv += opts
 
-    cmd_list = [i.stem for i in Path(__file__).parent.glob('[!_]*.py')]
-    if args['<command>'] not in cmd_list:
+    cmd_list = [i.stem for i in Path(__file__).parent.glob("[!_]*.py")]
+    if args["<command>"] not in cmd_list:
         sys.exit("Invalid command. Try 'brownie --help' for available commands.")
 
-    ARGV['cli'] = args['<command>']
-    sys.modules['brownie'].a = network.accounts
-    sys.modules['brownie'].__all__.append('a')
+    ARGV["cli"] = args["<command>"]
+    sys.modules["brownie"].a = network.accounts
+    sys.modules["brownie"].__all__.append("a")
 
     try:
         importlib.import_module(f"brownie.cli.{args['<command>']}").main()

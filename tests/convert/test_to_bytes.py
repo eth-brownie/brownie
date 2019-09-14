@@ -26,9 +26,9 @@ def test_string_raises():
 
 
 def test_hexstring():
-    assert to_bytes("0xffff", "bytes") == b'\xff\xff'
-    assert to_bytes("0xffff", "bytes2") == b'\xff\xff'
-    assert to_bytes("0xffff", "bytes4") == b'\x00\x00\xff\xff'
+    assert to_bytes("0xffff", "bytes") == b"\xff\xff"
+    assert to_bytes("0xffff", "bytes2") == b"\xff\xff"
+    assert to_bytes("0xffff", "bytes4") == b"\x00\x00\xff\xff"
     assert to_bytes("abcdef")
 
 
@@ -41,6 +41,6 @@ def test_left_pad():
 def test_int_bounds():
     for i in range(1, 33):
         type_ = "bytes" + str(i)
-        assert to_bytes(2**(i * 8) - 1, type_).hex() == "ff" * i
+        assert to_bytes(2 ** (i * 8) - 1, type_).hex() == "ff" * i
         with pytest.raises(OverflowError):
-            to_bytes(2**(i * 8), type_)
+            to_bytes(2 ** (i * 8), type_)

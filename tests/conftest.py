@@ -11,7 +11,7 @@ from _pytest.monkeypatch import MonkeyPatch
 import brownie
 from brownie._config import ARGV
 
-pytest_plugins = 'pytester'
+pytest_plugins = "pytester"
 
 
 # travis cannot call github ethereum/solidity API, so this method is patched
@@ -19,42 +19,51 @@ def pytest_sessionstart():
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setattr(
         "solcx.get_available_solc_versions",
-        lambda: ['v0.5.10', 'v0.5.9', 'v0.5.8', 'v0.5.7', 'v0.4.25', 'v0.4.24', 'v0.4.22']
+        lambda: [
+            "v0.5.10",
+            "v0.5.9",
+            "v0.5.8",
+            "v0.5.7",
+            "v0.4.25",
+            "v0.4.24",
+            "v0.4.22",
+        ],
     )
 
 
 # auto-parametrize the evmtester fixture
 def pytest_generate_tests(metafunc):
-    if 'evmtester' in metafunc.fixturenames:
+    if "evmtester" in metafunc.fixturenames:
         metafunc.parametrize(
-            'evmtester',
+            "evmtester",
             itertools.product(
-                ['0.4.22', '0.4.25', '0.5.0', '0.5.10'],
+                ["0.4.22", "0.4.25", "0.5.0", "0.5.10"],
                 [0, 200, 10000],
-                ['byzantium', 'constantinople']
+                ["byzantium", "constantinople"],
             ),
-            indirect=True
+            indirect=True,
         )
 
 
 @pytest.fixture(scope="session")
 def _project_factory(tmp_path_factory):
-    path = tmp_path_factory.mktemp('base')
+    path = tmp_path_factory.mktemp("base")
     path.rmdir()
-    shutil.copytree('tests/brownie-test-project', path)
-    shutil.copyfile('brownie/data/config.json', path.joinpath('brownie-config.json'))
-    p = brownie.project.load(path, 'TestProject')
+    shutil.copytree("tests/brownie-test-project", path)
+    shutil.copyfile("brownie/data/config.json", path.joinpath("brownie-config.json"))
+    p = brownie.project.load(path, "TestProject")
     p.close()
     return path
 
 
 def _copy_all(src_folder, dest_folder):
-    for path in Path(src_folder).glob('*'):
+    for path in Path(src_folder).glob("*"):
         dest_path = Path(dest_folder).joinpath(path.name)
         if path.is_dir():
             shutil.copytree(path, dest_path)
         else:
             shutil.copy(path, dest_path)
+
 
 # project fixtures
 
@@ -73,12 +82,12 @@ def project(tmp_path):
 @pytest.fixture
 def testproject(_project_factory, project, tmp_path):
     _copy_all(_project_factory, tmp_path)
-    return project.load(tmp_path, 'TestProject')
+    return project.load(tmp_path, "TestProject")
 
 
 @pytest.fixture
 def otherproject(testproject):
-    return brownie.project.load(testproject._project_path, 'OtherProject')
+    return brownie.project.load(testproject._project_path, "OtherProject")
 
 
 # yields a deployed EVMTester contract
@@ -86,30 +95,34 @@ def otherproject(testproject):
 @pytest.fixture
 def evmtester(_project_factory, project, tmp_path, accounts, request):
     solc_version, runs, evm_version = request.param
-    tmp_path.joinpath('contracts').mkdir()
+    tmp_path.joinpath("contracts").mkdir()
     shutil.copyfile(
-        _project_factory.joinpath('contracts/EVMTester.sol'),
-        tmp_path.joinpath('contracts/EVMTester.sol')
+        _project_factory.joinpath("contracts/EVMTester.sol"),
+        tmp_path.joinpath("contracts/EVMTester.sol"),
     )
-    conf_json = brownie._config._load_json(_project_factory.joinpath('brownie-config.json'))
-    conf_json['compiler']['solc'].update({
-        'version': solc_version,
-        'optimize': runs > 0,
-        'runs': runs,
-        'evm_version': evm_version,
-    })
-    with tmp_path.joinpath('brownie-config.json').open('w') as fp:
+    conf_json = brownie._config._load_json(
+        _project_factory.joinpath("brownie-config.json")
+    )
+    conf_json["compiler"]["solc"].update(
+        {
+            "version": solc_version,
+            "optimize": runs > 0,
+            "runs": runs,
+            "evm_version": evm_version,
+        }
+    )
+    with tmp_path.joinpath("brownie-config.json").open("w") as fp:
         json.dump(conf_json, fp)
-    p = project.load(tmp_path, 'EVMProject')
-    return p.EVMTester.deploy({'from': accounts[0]})
+    p = project.load(tmp_path, "EVMProject")
+    return p.EVMTester.deploy({"from": accounts[0]})
 
 
 @pytest.fixture
 def plugintesterbase(project, testdir, monkeypatch):
     brownie.test.coverage.clear()
     brownie.network.connect()
-    monkeypatch.setattr('brownie.network.connect', lambda k: None)
-    testdir.plugins.extend(['pytest-brownie', 'pytest-cov'])
+    monkeypatch.setattr("brownie.network.connect", lambda k: None)
+    testdir.plugins.extend(["pytest-brownie", "pytest-cov"])
     yield testdir
     brownie.network.disconnect()
 
@@ -118,7 +131,7 @@ def plugintesterbase(project, testdir, monkeypatch):
 @pytest.fixture
 def plugintester(_project_factory, plugintesterbase, request):
     _copy_all(_project_factory, plugintesterbase.tmpdir)
-    test_source = getattr(request.module, 'test_source', None)
+    test_source = getattr(request.module, "test_source", None)
     if test_source:
         plugintesterbase.makepyfile(test_source)
     yield plugintesterbase
@@ -129,13 +142,14 @@ def plugintester(_project_factory, plugintesterbase, request):
 def devnetwork(network, rpc):
     if brownie.network.is_connected():
         brownie.network.disconnect(False)
-    brownie.network.connect('development')
+    brownie.network.connect("development")
     yield brownie.network
     if rpc.is_active():
         rpc.reset()
 
 
 # brownie object fixtures
+
 
 @pytest.fixture
 def accounts(devnetwork):
@@ -167,6 +181,7 @@ def web3():
 # configuration fixtures
 # changes to config or argv are reverted during teardown
 
+
 @pytest.fixture
 def config(testproject):
     return brownie.config
@@ -183,24 +198,26 @@ def argv():
 
 # cli mode fixtures
 
+
 @pytest.fixture
 def console_mode(argv):
-    argv['cli'] = "console"
+    argv["cli"] = "console"
 
 
 @pytest.fixture
 def test_mode(argv):
-    argv['cli'] = "test"
+    argv["cli"] = "test"
 
 
 @pytest.fixture
 def coverage_mode(argv, test_mode):
     brownie.test.coverage.clear()
-    argv['coverage'] = True
-    argv['always_transact'] = True
+    argv["coverage"] = True
+    argv["always_transact"] = True
 
 
 # contract fixtures
+
 
 @pytest.fixture
 def BrownieTester(testproject, devnetwork):
@@ -214,9 +231,9 @@ def ExternalCallTester(testproject, devnetwork):
 
 @pytest.fixture
 def tester(BrownieTester, accounts):
-    return BrownieTester.deploy(True, {'from': accounts[0]})
+    return BrownieTester.deploy(True, {"from": accounts[0]})
 
 
 @pytest.fixture
 def ext_tester(ExternalCallTester, accounts):
-    return ExternalCallTester.deploy({'from': accounts[0]})
+    return ExternalCallTester.deploy({"from": accounts[0]})

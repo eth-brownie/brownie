@@ -23,7 +23,6 @@ class IncompatibleEVMVersion(Exception):
 
 
 class _RPCBaseException(Exception):
-
     def __init__(self, msg: str, cmd: str, proc: Type[psutil.Popen], uri: str) -> None:
         msg = f"{msg}\n\nCommand: {cmd}\nURI: {uri}\nExit Code: {proc.poll()}"
         if sys.platform != "win32":
@@ -34,15 +33,15 @@ class _RPCBaseException(Exception):
 
 
 class RPCProcessError(_RPCBaseException):
-
     def __init__(self, cmd: str, proc: Type[psutil.Popen], uri: str) -> None:
         super().__init__("Unable to launch local RPC client.", cmd, proc, uri)
 
 
 class RPCConnectionError(_RPCBaseException):
-
     def __init__(self, cmd: str, proc: Type[psutil.Popen], uri: str) -> None:
-        super().__init__("Able to launch RPC client, but unable to connect.", cmd, proc, uri)
+        super().__init__(
+            "Able to launch RPC client, but unable to connect.", cmd, proc, uri
+        )
 
 
 class RPCRequestError(Exception):
@@ -51,11 +50,11 @@ class RPCRequestError(Exception):
 
 class VirtualMachineError(Exception):
 
-    '''Raised when a call to a contract causes an EVM exception.
+    """Raised when a call to a contract causes an EVM exception.
 
     Attributes:
         revert_msg: The returned error string, if any.
-        source: The contract source code where the revert occured, if available.'''
+        source: The contract source code where the revert occured, if available."""
 
     revert_msg = ""
     source = ""
@@ -65,14 +64,14 @@ class VirtualMachineError(Exception):
             try:
                 exc = eval(str(exc))
             except SyntaxError:
-                exc = {'message': str(exc)}
-        if len(exc['message'].split('revert ', maxsplit=1)) > 1:
-            self.revert_msg = exc['message'].split('revert ')[-1]
-        if 'source' in exc:
-            self.source = exc['source']
-            super().__init__(exc['message'] + "\n" + exc['source'])
+                exc = {"message": str(exc)}
+        if len(exc["message"].split("revert ", maxsplit=1)) > 1:
+            self.revert_msg = exc["message"].split("revert ")[-1]
+        if "source" in exc:
+            self.source = exc["source"]
+            super().__init__(exc["message"] + "\n" + exc["source"])
         else:
-            super().__init__(exc['message'])
+            super().__init__(exc["message"])
 
 
 class EventLookupError(LookupError):
@@ -80,6 +79,7 @@ class EventLookupError(LookupError):
 
 
 # project/
+
 
 class ContractExists(Exception):
     pass
@@ -98,9 +98,8 @@ class ProjectNotFound(Exception):
 
 
 class CompilerError(Exception):
-
     def __init__(self, e: Type[psutil.Popen]) -> None:
-        err = [i['formattedMessage'] for i in json.loads(e.stdout_data)['errors']]
+        err = [i["formattedMessage"] for i in json.loads(e.stdout_data)["errors"]]
         super().__init__("Compiler returned the following errors:\n\n" + "\n".join(err))
 
 

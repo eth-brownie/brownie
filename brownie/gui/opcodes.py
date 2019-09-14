@@ -5,13 +5,10 @@ import time
 from tkinter import ttk
 
 from brownie.project.sources import is_inside_offset
-from .bases import (
-    ToggleButton,
-)
+from .bases import ToggleButton
 
 
 class OpcodeList(ttk.Treeview):
-
     def __init__(self, parent, columns, **kwargs):
         self._last = set()
         self._seek_buffer = ""
@@ -22,7 +19,7 @@ class OpcodeList(ttk.Treeview):
             self._frame,
             columns=[i[0] for i in columns[1:]],
             selectmode="browse",
-            **kwargs
+            **kwargs,
         )
         self.pack(side="left", fill="y")
         self.heading("#0", text=columns[0][0])
@@ -52,12 +49,7 @@ class OpcodeList(ttk.Treeview):
 
     def insert(self, values, tags=[]):
         super().insert(
-            "",
-            "end",
-            iid=values[0],
-            text=values[0],
-            values=values[1:],
-            tags=tags
+            "", "end", iid=values[0], text=values[0], values=values[1:], tags=tags
         )
 
     def delete_all(self):
@@ -76,15 +68,14 @@ class OpcodeList(ttk.Treeview):
     def set_opcodes(self, pcMap):
         self.delete_all()
         for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)]:
-            if 'path' not in op or (
-                op['path'] == pcMap[0]['path'] and
-                op['offset'] == pcMap[0]['offset']
+            if "path" not in op or (
+                op["path"] == pcMap[0]["path"] and op["offset"] == pcMap[0]["offset"]
             ):
                 tag = "NoSource"
             else:
                 # used to find all the opcodes with the same source offset
                 tag = f"{op['path']}:{op['offset'][0]}:{op['offset'][1]}"
-            self.insert([str(pc), op['op']], [tag, op['op'], str(pc)])
+            self.insert([str(pc), op["op"]], [tag, op["op"], str(pc)])
 
     def _select_bind(self, event=None):
         for tag in self._last:
@@ -99,24 +90,26 @@ class OpcodeList(ttk.Treeview):
 
         console = self.root.main.console
         console.write(f"{pc} {pcMap['op']}")
-        if 'value' in pcMap:
+        if "value" in pcMap:
             console.append(f" {pcMap['value']}")
-        if 'offset' in pcMap:
+        if "offset" in pcMap:
             console.append(f"\nOffsets: {pcMap['offset'][0]}, {pcMap['offset'][1]}")
 
-        if pcMap['op'] in ("JUMP", "JUMPI"):
+        if pcMap["op"] in ("JUMP", "JUMPI"):
             prev = self._get_prev(pc)
-            if self.root.pcMap[prev]['op'] == "PUSH2":
-                tag = int(self.root.pcMap[prev]['value'], 16)
+            if self.root.pcMap[prev]["op"] == "PUSH2":
+                tag = int(self.root.pcMap[prev]["value"], 16)
                 self.tag_configure(tag, foreground="#00ff00")
                 self._last.add(tag)
                 console.append(f"\nTarget: {tag}")
 
-        if pcMap['op'] == "JUMPDEST":
+        if pcMap["op"] == "JUMPDEST":
             targets = [
-                str(int(k) + 3) for k, v in self.root.pcMap.items() if
-                v['op'] == "PUSH2" and int(v['value'], 16) == int(pc) and
-                self.root.pcMap[str(int(k) + 3)]['op'] in ("JUMP", "JUMPI")
+                str(int(k) + 3)
+                for k, v in self.root.pcMap.items()
+                if v["op"] == "PUSH2"
+                and int(v["value"], 16) == int(pc)
+                and self.root.pcMap[str(int(k) + 3)]["op"] in ("JUMP", "JUMPI")
             ]
             if targets:
                 console.append(f"\nJumps: {', '.join(targets)}")
@@ -126,17 +119,17 @@ class OpcodeList(ttk.Treeview):
                 self.tag_configure(item, foreground="#00ff00")
                 self._last.add(item)
 
-        tag = self.item(pc, 'tags')[0]
+        tag = self.item(pc, "tags")[0]
         if tag == "NoSource":
             note.active_frame().clear_highlight()
             return
         self.tag_configure(tag, background="#2a4864")
         self._last.add(tag)
-        if 'path' not in pcMap:
+        if "path" not in pcMap:
             note.active_frame().clear_highlight()
             return
-        note.set_active(pcMap['path'])
-        note.active_frame().highlight(*pcMap['offset'])
+        note.set_active(pcMap["path"])
+        note.active_frame().highlight(*pcMap["offset"])
 
     def _seek(self, event):
         if self._seek_last < time.time() - 1:
@@ -149,14 +142,13 @@ class OpcodeList(ttk.Treeview):
 
     def _highlight_opcode(self, event):
         pc = self.identify_row(event.y)
-        op = self.root.pcMap[pc]['op']
+        op = self.root.pcMap[pc]["op"]
         if op in self._highlighted:
-            self.tag_configure(op, foreground='')
+            self.tag_configure(op, foreground="")
             self._highlighted.remove(op)
             return
         self.tag_configure(
-            op,
-            foreground="#dd3333" if op in ("REVERT", "INVALID") else "#dddd33"
+            op, foreground="#dd3333" if op in ("REVERT", "INVALID") else "#dddd33"
         )
         self._highlighted.add(op)
 
@@ -165,11 +157,11 @@ class OpcodeList(ttk.Treeview):
             pc = self.selection()[0]
         except IndexError:
             return
-        if self.root.pcMap[pc]['op'] not in ("JUMP", "JUMPI"):
+        if self.root.pcMap[pc]["op"] not in ("JUMP", "JUMPI"):
             return
         prev = self._get_prev(pc)
-        if self.root.pcMap[prev]['op'] == "PUSH2":
-            tag = int(self.root.pcMap[prev]['value'], 16)
+        if self.root.pcMap[prev]["op"] == "PUSH2":
+            tag = int(self.root.pcMap[prev]["value"], 16)
             self.see(tag)
             self._select_bind()
 
@@ -187,7 +179,6 @@ class OpcodeList(ttk.Treeview):
 
 
 class ScopingButton(ToggleButton):
-
     def __init__(self, parent):
         super().__init__(parent, "Scope", "s")
         self.oplist = self.root.main.oplist
@@ -197,24 +188,25 @@ class ScopingButton(ToggleButton):
             op = self.oplist.selection()[0]
         except IndexError:
             return False
-        if self.oplist.item(op, 'tags')[0] == "NoSource":
+        if self.oplist.item(op, "tags")[0] == "NoSource":
             return False
         pc = self.root.pcMap[op]
         for key, value in sorted(self.root.pcMap.items(), key=lambda k: int(k[0])):
             if (
-                'path' not in value or value['path'] != pc['path'] or
-                not is_inside_offset(value['offset'], pc['offset'])
+                "path" not in value
+                or value["path"] != pc["path"]
+                or not is_inside_offset(value["offset"], pc["offset"])
             ):
                 self.oplist.detach(key)
             else:
-                self.oplist.move(key, '', key)
+                self.oplist.move(key, "", key)
         self.oplist.see(op)
-        self.root.main.note.apply_scope(*pc['offset'])
+        self.root.main.note.apply_scope(*pc["offset"])
         return True
 
     def toggle_off(self):
         self.root.main.note.clear_scope()
         for i in sorted(self.root.pcMap, key=lambda k: int(k)):
-            self.oplist.move(i, '', i)
+            self.oplist.move(i, "", i)
         if self.oplist.selection():
             self.oplist.see(self.oplist.selection()[0])

@@ -35,8 +35,12 @@ def main():
         active_project = None
         print("No project was loaded.")
 
-    network.connect(ARGV['network'])
+    network.connect(ARGV["network"])
 
-    run(args['<filename>'], method_name=args['<function>'] or "main", project=active_project)
-    if ARGV['gas']:
+    run(
+        args["<filename>"],
+        method_name=args["<function>"] or "main",
+        project=active_project,
+    )
+    if ARGV["gas"]:
         print_gas_profile()

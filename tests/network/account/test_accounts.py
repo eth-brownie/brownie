@@ -20,7 +20,7 @@ def test_repopulate(accounts, network, rpc):
     network.disconnect()
     assert len(accounts) == 0
     assert not rpc.is_active()
-    network.connect('development')
+    network.connect("development")
     assert len(accounts) == len(a)
 
 

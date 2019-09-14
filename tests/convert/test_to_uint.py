@@ -14,18 +14,18 @@ def test_success():
 def test_overflow():
     for i in range(8, 264, 8):
         type_ = "uint" + str(i)
-        assert to_uint(2**i - 1, type_) == 2**i - 1
+        assert to_uint(2 ** i - 1, type_) == 2 ** i - 1
         with pytest.raises(OverflowError):
-            to_uint(2**i, type_)
+            to_uint(2 ** i, type_)
 
 
 def test_overflow_uint():
-    assert to_uint(2**256 - 1) == 2**256 - 1
+    assert to_uint(2 ** 256 - 1) == 2 ** 256 - 1
     with pytest.raises(OverflowError):
-        to_uint(2**256)
-    assert to_uint(2**256 - 1, "uint") == 2**256 - 1
+        to_uint(2 ** 256)
+    assert to_uint(2 ** 256 - 1, "uint") == 2 ** 256 - 1
     with pytest.raises(OverflowError):
-        to_uint(2**256, "uint")
+        to_uint(2 ** 256, "uint")
 
 
 def test_underflow():

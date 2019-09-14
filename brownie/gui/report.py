@@ -2,20 +2,17 @@
 
 from pathlib import Path
 
-from .bases import (
-    SelectBox,
-)
+from .bases import SelectBox
 
 
 class ReportSelect(SelectBox):
-
     def __init__(self, parent):
         super().__init__(parent, "(No Reports)", [])
         reports = self._root().reports
         if not reports:
             self.config(state="disabled")
             return
-        self['values'] = ["None"] + sorted(reports)
+        self["values"] = ["None"] + sorted(reports)
         self.set("Select Report")
 
     def _select(self, event):
@@ -30,18 +27,19 @@ class ReportSelect(SelectBox):
             return
         self.root.toolbar.highlight_select.show()
         self.root.report_key = value
-        self.root.toolbar.highlight_select.set_values(list(self.root.reports[value]['highlights']))
+        self.root.toolbar.highlight_select.set_values(
+            list(self.root.reports[value]["highlights"])
+        )
 
 
 class HighlightSelect(SelectBox):
-
     def __init__(self, parent):
         super().__init__(parent, "", [])
         self.note = self.root.main.note
         self.config(state="readonly")
 
     def set_values(self, values):
-        self['values'] = ['None'] + sorted(values)
+        self["values"] = ["None"] + sorted(values)
         self.set("Report Type")
 
     def show(self):
@@ -61,11 +59,13 @@ class HighlightSelect(SelectBox):
         if contract not in self.root.active_report[value]:
             return
         report = self.root.active_report[value][contract]
-        for path, (start, stop, color, msg) in [(k, x) for k, v in report.items() for x in v]:
+        for path, (start, stop, color, msg) in [
+            (k, x) for k, v in report.items() for x in v
+        ]:
             label = Path(path).name
             self.note.mark(label, color, start, stop, msg)
 
     def toggle_off(self):
         self.root.highlight_key = None
-        self.note.unmark_all('green', 'red', 'yellow', 'orange')
+        self.note.unmark_all("green", "red", "yellow", "orange")
         self.note.unbind_all()

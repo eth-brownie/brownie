@@ -3,7 +3,7 @@
 import pytest
 
 
-test_source = '''
+test_source = """
 pragma solidity ^0.5.0;
 
 library Bar {
@@ -20,12 +20,12 @@ contract Foo {
         return Bar.baz(a, b);
     }
 }
-'''
+"""
 
 
 @pytest.fixture()
 def btsource(testproject):
-    path = testproject._project_path.joinpath('contracts/BrownieTester.sol')
+    path = testproject._project_path.joinpath("contracts/BrownieTester.sol")
     with path.open() as fs:
         return fs.read()
 
@@ -37,6 +37,6 @@ def solc5source():
 
 @pytest.fixture
 def solc4source():
-    source = test_source.replace('payable ', '')
-    source = source.replace('^0.5.0', '^0.4.25')
+    source = test_source.replace("payable ", "")
+    source = source.replace("^0.5.0", "^0.4.25")
     return source

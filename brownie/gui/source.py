@@ -6,20 +6,12 @@ import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk
 
-from .bases import (
-    SelectBox,
-)
-from .styles import (
-    TEXT_COLORS,
-    TEXT_STYLE,
-)
-from brownie.project.sources import (
-    is_inside_offset,
-)
+from .bases import SelectBox
+from .styles import TEXT_COLORS, TEXT_STYLE
+from brownie.project.sources import is_inside_offset
 
 
 class SourceNoteBook(ttk.Notebook):
-
     def __init__(self, parent):
         super().__init__(parent)
         self.root = self._root()
@@ -29,8 +21,8 @@ class SourceNoteBook(ttk.Notebook):
         self.bind_count = 0
         self.root.bind("<Left>", self.key_left)
         self.root.bind("<Right>", self.key_right)
-        base_path = self.root.active_project._project_path.joinpath('contracts')
-        for path in base_path.glob('**/*.sol'):
+        base_path = self.root.active_project._project_path.joinpath("contracts")
+        for path in base_path.glob("**/*.sol"):
             self.add(path)
         self.set_visible([])
 
@@ -100,18 +92,18 @@ class SourceNoteBook(ttk.Notebook):
         self.clear_scope()
         frame = self.active_frame()
         self._scope = [frame, start, stop]
-        frame.tag_add('dark', 0, start)
-        frame.tag_add('dark', stop, 'end')
+        frame.tag_add("dark", 0, start)
+        frame.tag_add("dark", stop, "end")
         for f in [v for v in self._frames if v != frame]:
-            f.tag_add('dark', 0, 'end')
+            f.tag_add("dark", 0, "end")
 
     def clear_scope(self):
-        self.unmark_all('dark')
+        self.unmark_all("dark")
         self._scope = None
 
     def show_msg(self, frame, tag, msg):
         text = self.root.main.console.read()
-        frame.tag_bind(tag, '<Leave>', lambda e: self.root.main.console.write(text))
+        frame.tag_bind(tag, "<Leave>", lambda e: self.root.main.console.write(text))
         self.root.main.console.write(msg)
 
     def mark(self, label, tag, start, stop, msg=None):
@@ -121,7 +113,9 @@ class SourceNoteBook(ttk.Notebook):
         if msg:
             bind_tag = f"bind-{self.bind_count}"
             frame.tag_add(bind_tag, start, stop)
-            frame.tag_bind(bind_tag, '<Enter>', lambda e: self.show_msg(frame, bind_tag, msg))
+            frame.tag_bind(
+                bind_tag, "<Enter>", lambda e: self.show_msg(frame, bind_tag, msg)
+            )
             self.bind_count += 1
 
     def unmark(self, label, tag):
@@ -144,21 +138,21 @@ class SourceNoteBook(ttk.Notebook):
     def _search(self, event):
         frame = self.active_frame()
         tree = self.root.main.oplist
-        if not frame.tag_ranges('sel'):
+        if not frame.tag_ranges("sel"):
             tree.clear_selection()
             return
-        start, stop = frame.tag_ranges('sel')
+        start, stop = frame.tag_ranges("sel")
         if self._scope and (
-            frame != self._scope[0] or
-            start < self._scope[1] or
-            stop > self._scope[2]
+            frame != self._scope[0] or start < self._scope[1] or stop > self._scope[2]
         ):
             pc = False
         else:
             pc = [
-                k for k, v in self.root.pcMap.items() if
-                'path' in v and frame._label in v['path'] and
-                is_inside_offset((start, stop), v['offset'])
+                k
+                for k, v in self.root.pcMap.items()
+                if "path" in v
+                and frame._label in v["path"]
+                and is_inside_offset((start, stop), v["offset"])
             ]
         if not pc:
             frame.clear_highlight()
@@ -166,16 +160,15 @@ class SourceNoteBook(ttk.Notebook):
             return
 
         def key(k):
-            return (
-                (start - self.root.pcMap[k]['offset'][0]) +
-                (self.root.pcMap[k]['offset'][1] - stop)
+            return (start - self.root.pcMap[k]["offset"][0]) + (
+                self.root.pcMap[k]["offset"][1] - stop
             )
+
         id_ = sorted(pc, key=key)[0]
         tree.selection_set(id_)
 
 
 class SourceFrame(tk.Frame):
-
     def __init__(self, root, text):
         super().__init__(root)
         self._text = tk.Text(self, width=90, yscrollcommand=self._text_scroll)
@@ -193,20 +186,21 @@ class SourceFrame(tk.Frame):
 
         pattern = r"((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))"
         for match in re.finditer(pattern, text):
-            self.tag_add('comment', match.start(), match.end())
+            self.tag_add("comment", match.start(), match.end())
 
-        self._line_no.insert(1.0, '\n'.join(str(i) for i in range(1, text.count('\n') + 2)))
+        self._line_no.insert(
+            1.0, "\n".join(str(i) for i in range(1, text.count("\n") + 2))
+        )
         self._line_no.tag_configure("justify", justify="right")
         self._line_no.tag_add("justify", 1.0, "end")
 
         for text in (self._line_no, self._text):
             text.config(**TEXT_STYLE)
             text.config(
-                tabs=tkFont.Font(font=text['font']).measure('    '),
-                wrap="none"
+                tabs=tkFont.Font(font=text["font"]).measure("    "), wrap="none"
             )
         self._line_no.config(background="#272727")
-        self._text.bind('<ButtonRelease-1>', root._search)
+        self._text.bind("<ButtonRelease-1>", root._search)
 
     def __getattr__(self, attr):
         return getattr(self._text, attr)
@@ -239,14 +233,14 @@ class SourceFrame(tk.Frame):
 
     def _offset_to_coord(self, value):
         text = self._text.get(1.0, "end")
-        line = text[:value].count('\n') + 1
-        offset = len(text[:value].split('\n')[-1])
+        line = text[:value].count("\n") + 1
+        offset = len(text[:value].split("\n")[-1])
         return f"{line}.{offset}"
 
     def _coord_to_offset(self, value):
-        row, col = [int(i) for i in value.split('.')]
-        text = self._text.get(1.0, "end").split('\n')
-        return sum(len(i) + 1 for i in text[:row - 1]) + col
+        row, col = [int(i) for i in value.split(".")]
+        text = self._text.get(1.0, "end").split("\n")
+        return sum(len(i) + 1 for i in text[: row - 1]) + col
 
     def _scrollbar_scroll(self, action, position, type=None):
         self._text.yview_moveto(position)
@@ -259,7 +253,6 @@ class SourceFrame(tk.Frame):
 
 
 class ContractSelect(SelectBox):
-
     def __init__(self, parent, values):
         super().__init__(parent, "Select a Contract", values)
 

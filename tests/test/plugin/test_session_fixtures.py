@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-test_source = '''import brownie
+test_source = """import brownie
 from brownie.network.contract import ContractContainer
 
 def test_accounts(accounts, a):
@@ -18,7 +18,7 @@ def test_web3(web3):
 
 def test_contract_container(BrownieTester, EVMTester):
     assert type(BrownieTester) is ContractContainer
-    assert type(EVMTester) is ContractContainer'''
+    assert type(EVMTester) is ContractContainer"""
 
 
 def test_fixtures(plugintester):

@@ -30,7 +30,7 @@ def main():
         active_project = None
         print("No project was loaded.")
 
-    network.connect(ARGV['network'])
+    network.connect(ARGV["network"])
 
     shell = Console(active_project)
     shell.interact(banner="Brownie environment is ready.", exitmsg="")

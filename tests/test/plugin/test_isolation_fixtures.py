@@ -21,14 +21,14 @@ def test_isolation_second(accounts, web3):
 
 
 def test_test_isolation(plugintester, web3):
-    plugintester.makepyfile(isolation_source.format('fn', 1))
+    plugintester.makepyfile(isolation_source.format("fn", 1))
     result = plugintester.runpytest()
     result.assert_outcomes(passed=2)
     assert web3.eth.blockNumber == 0
 
 
 def test_module_isolation(plugintester, web3):
-    plugintester.makepyfile(isolation_source.format('module', 2))
+    plugintester.makepyfile(isolation_source.format("module", 2))
     result = plugintester.runpytest()
     result.assert_outcomes(passed=2)
     assert web3.eth.blockNumber == 0

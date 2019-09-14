@@ -13,8 +13,15 @@ from .state import TxHistory
 from .rpc import Rpc
 from .web3 import Web3
 
-__all__ = ['accounts', 'history', 'rpc', 'web3']
-__console_dir__ = ['connect', 'disconnect', 'show_active', 'is_connected', 'gas_limit', 'gas_price']
+__all__ = ["accounts", "history", "rpc", "web3"]
+__console_dir__ = [
+    "connect",
+    "disconnect",
+    "show_active",
+    "is_connected",
+    "gas_limit",
+    "gas_price",
+]
 
 accounts = Accounts()
 rpc = Rpc()

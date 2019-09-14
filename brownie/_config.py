@@ -9,12 +9,12 @@ import re
 from brownie._singleton import _Singleton
 
 
-REPLACE = ['active_network', 'networks']
-IGNORE = ['active_network', 'brownie_folder']
+REPLACE = ["active_network", "networks"]
+IGNORE = ["active_network", "brownie_folder"]
 
 
 class ConfigDict(dict):
-    '''Dict subclass that prevents adding new keys when locked'''
+    """Dict subclass that prevents adding new keys when locked"""
 
     def __init__(self, values: Dict = {}) -> None:
         self._locked = False
@@ -33,79 +33,76 @@ class ConfigDict(dict):
             self.__setitem__(k, v)
 
     def _lock(self) -> None:
-        '''Locks the dict so that new keys cannot be added'''
+        """Locks the dict so that new keys cannot be added"""
         for v in [i for i in self.values() if type(i) is ConfigDict]:
             v._lock()
         self._locked = True
 
     def _unlock(self) -> None:
-        '''Unlocks the dict so that new keys can be added'''
+        """Unlocks the dict so that new keys can be added"""
         for v in [i for i in self.values() if type(i) is ConfigDict]:
             v._unlock()
         self._locked = False
 
 
-def _load_json(path: 'Path') -> Any:
+def _load_json(path: "Path") -> Any:
     with path.open() as fp:
         raw_json = fp.read()
-    valid_json = re.sub(r'\/\/[^"]*?(?=\n|$)', '', raw_json)
+    valid_json = re.sub(r'\/\/[^"]*?(?=\n|$)', "", raw_json)
     return json.loads(valid_json)
 
 
 def _load_default_config() -> Any:
-    '''Loads the default configuration settings from brownie/data/config.json'''
+    """Loads the default configuration settings from brownie/data/config.json"""
     brownie_path = Path(__file__).parent
     path = brownie_path.joinpath("data/config.json")
     config = _Singleton("Config", (ConfigDict,), {})(_load_json(path))
-    config.update({
-        'active_network': {'name': None},
-        'brownie_folder': brownie_path,
-    })
+    config.update({"active_network": {"name": None}, "brownie_folder": brownie_path})
     return config
 
 
-def _get_project_config_file(project_path: 'Path') -> Any:
+def _get_project_config_file(project_path: "Path") -> Any:
     project_path = Path(project_path)
     if not project_path.exists():
         raise ValueError("Project does not exist!")
-    config_path: 'Path' = Path(project_path).joinpath("brownie-config.json")
+    config_path: "Path" = Path(project_path).joinpath("brownie-config.json")
     return _load_json(config_path)
 
 
-def load_project_config(project_path: 'Path') -> None:
-    '''Loads configuration settings from a project's brownie-config.json'''
+def load_project_config(project_path: "Path") -> None:
+    """Loads configuration settings from a project's brownie-config.json"""
     config_data = _get_project_config_file(project_path)
     CONFIG._unlock()
     _recursive_update(CONFIG, config_data, [])
-    CONFIG.setdefault('active_network', {'name': None})
+    CONFIG.setdefault("active_network", {"name": None})
     CONFIG._lock()
 
 
-def load_project_compiler_config(project_path: Optional['Path'], compiler: Any) -> Any:
+def load_project_compiler_config(project_path: Optional["Path"], compiler: Any) -> Any:
     if not project_path:
-        return CONFIG['compiler'][compiler]
+        return CONFIG["compiler"][compiler]
     config_data = _get_project_config_file(project_path)
-    return config_data['compiler'][compiler]
+    return config_data["compiler"][compiler]
 
 
 def modify_network_config(network: str = None) -> Any:
-    '''Modifies the 'active_network' configuration settings'''
+    """Modifies the 'active_network' configuration settings"""
     CONFIG._unlock()
     try:
         if not network:
-            network = CONFIG['network']['default']
+            network = CONFIG["network"]["default"]
 
-        CONFIG['active_network'] = {
-            **CONFIG['network']['settings'],
-            **CONFIG['network']['networks'][network]
+        CONFIG["active_network"] = {
+            **CONFIG["network"]["settings"],
+            **CONFIG["network"]["networks"][network],
         }
-        CONFIG['active_network']['name'] = network
+        CONFIG["active_network"]["name"] = network
 
-        if ARGV['cli'] == "test":
-            CONFIG['active_network'].update(CONFIG['pytest'])
-            if not CONFIG['active_network']['reverting_tx_gas_limit']:
+        if ARGV["cli"] == "test":
+            CONFIG["active_network"].update(CONFIG["pytest"])
+            if not CONFIG["active_network"]["reverting_tx_gas_limit"]:
                 print("WARNING: Reverting transactions will NOT be broadcasted.")
-        return CONFIG['active_network']
+        return CONFIG["active_network"]
     except KeyError:
         raise KeyError(f"Network '{network}' is not defined in config.json")
     finally:
@@ -121,7 +118,9 @@ def _recursive_update(original: Any, new: Any, base: Any) -> None:
             _recursive_update(original[k], new[k], base + [k])
         else:
             original[k] = new[k]
-    for k in [i for i in original if i not in new and not set(base + [i]).intersection(IGNORE)]:
+    for k in [
+        i for i in original if i not in new and not set(base + [i]).intersection(IGNORE)
+    ]:
         print(
             f"WARNING: '{'.'.join(base+[k])}' not found in the config file for this project."
             " The default setting has been used."
