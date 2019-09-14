@@ -622,10 +622,15 @@ def get_branch_nodes(source_nodes: List) -> Dict:
 
 
 def _get_recursive_branches(base_node: Any) -> Set:
-    # if node is IfStatement or Conditional, look only at the condition
-    jump = base_node.node_type == "FunctionCall"
-    node = base_node if jump else base_node.condition
     depth = base_node.depth
+
+    # if node is IfStatement or Conditional, look only at the condition
+    if base_node.node_type == "FunctionCall":
+        jump_is_truthful = True
+        node = base_node
+    else:
+        jump_is_truthful = False
+        node = base_node.condition
 
     filters = (
         {"node_type": "BinaryOperation", "type": "bool", "operator": "||"},
@@ -639,9 +644,11 @@ def _get_recursive_branches(base_node: Any) -> Set:
     if not all_binaries:
         # if node is FunctionCall, look at the first argument
         if base_node.node_type == "FunctionCall":
-            node.arguments[0].jump = jump
-            return set([node.arguments[0]])
-        node.jump = jump
+            node = node.arguments[0]
+        # some versions of solc do not properly map unary opertions to bytecode
+        if node.node_type == "UnaryOperation":
+            node = node.expression
+        node.jump = jump_is_truthful
         return set([node])
 
     # look at children of BinaryOperation nodes to find all possible branches
@@ -649,10 +656,12 @@ def _get_recursive_branches(base_node: Any) -> Set:
     for node in (x for i in all_binaries for x in i):
         if node.children(include_self=True, filters=filters):
             continue
-        if _is_rightmost_operation(node, depth):
-            node.jump = jump
-        else:
-            node.jump = _check_left_operator(node, depth)
+        _jump = jump_is_truthful
+        if not _is_rightmost_operation(node, depth):
+            _jump = _check_left_operator(node, depth)
+        if node.node_type == "UnaryOperation":
+            node = node.expression
+        node.jump = _jump
         binary_branches.add(node)
 
     return binary_branches
