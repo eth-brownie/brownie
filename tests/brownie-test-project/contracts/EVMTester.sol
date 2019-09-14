@@ -2,29 +2,35 @@ pragma solidity >=0.4.22;
 
 contract EVMTester {
 
-    function ifBranches(bool a, bool b, bool c, bool d) public returns (bool) {
-        if (a && b && c && d) return true;
-        if ((a && b) || (c && d)) return true;
-        if (a || b || c || d) {
-            if (a && (c || d)) return true;
-        } else {
-            return false;
+    function ifBranches(uint i, bool a, bool b, bool c, bool d) public returns (bool) {
+        if (i == 1) {
+            if (a) return true;
+            if (!a) return true;
         }
-        return true;
-    }
-
-    function requireBranches(bool a, bool b, bool c, bool d) public returns (bool) {
-        require(a || b || c || d);
-        require((a || b) && (c || d));
-        require((a && c) || d);
-        return true;
-    }
-
-    function terneryBranches(bool a, bool b) public returns (bool) {
-        uint x = (a ? 1 : 2);
-        uint y = (a && b ? 1 : 2);
-        uint z = (a || b ? 1 : 2);
-        return true;
+        if (i == 2) {
+            if (a && b) return true;
+            if (a || b) return true;
+        }
+        if (i == 3) {
+            if (!a && !b) return true;
+            if (!a || !b) return true;
+        }
+        if (i == 4) {
+            if (a && b && c) return true;
+            if (a || b || c) return true;
+        }
+        if (i == 5) {
+            if (!a && !b && !c) return true;
+            if (!a || !b || !c) return true;
+        }
+        if (i == 6) {
+            if ((a && b) || (c && d)) return true;
+            if ((a || b) && (c || d)) return true;
+        }
+        if (i == 7) {
+            if ((!a && !b) || (!c && !d)) return true;
+            if ((!a || !b) && (!c || !d)) return true;
+        }
     }
 
     function revertStrings(uint a) external returns (bool) {
