@@ -33,6 +33,77 @@ contract EVMTester {
         }
     }
 
+    function requireBranches(uint i, bool a, bool b, bool c, bool d) public returns (bool) {
+        if (i == 1) {
+            require(a);
+            require(a, "error");
+        }
+        if (i == 2) {
+            require(!a);
+            require(!a, "error");
+        }
+        if (i == 3) {
+            require(a || b);
+            require(a || b, "error");
+            require(a && b);
+            require(a && b, "error");
+        }
+        if (i == 4) {
+            require(!a || !b);
+            require(!a || !b, "error");
+            require(!a && !b);
+            require(!a && !b, "error");
+        }
+        if (i == 5) {
+            require(a || b || c);
+            require(a || b || c, "error");
+            require(a && b && c);
+            require(a && b && c, "error");
+        }
+        if (i == 6) {
+            require(!a || !b || !c);
+            require(!a || !b || !c, "error");
+            require(!a && !b && !c);
+            require(!a && !b && !c, "error");
+        }
+        if (i == 7) {
+            require((a && b) || (c && d));
+            require((a && b) || (c && d), "error");
+            require((a || b) && (c || d));
+            require((a || b) && (c || d), "error");
+        }
+        if (i == 8) {
+            require((!a && !b) || (!c && !d));
+            require((!a && !b) || (!c && !d), "error");
+            require((!a || !b) && (!c || !d));
+            require((!a || !b) && (!c || !d), "error");
+        }
+    }
+
+    function terneryBranches(uint i, bool a, bool b, bool c, bool d) public returns (bool) {
+        uint x;
+        if (i == 1) {
+            x = a ? 1 : 2;
+            x = !a ? 1 : 2;
+        }
+        if (i == 2) {
+            x = (a && b) ? 1 : 2;
+            x = (a || b) ? 1 : 2;
+        }
+        if (i == 3) {
+            x = (!a && !b) ? 1 : 2;
+            x = (!a || !b) ? 1 : 2;
+        }
+        if (i == 4) {
+            x = (a && b && c) ? 1 : 2;
+            x = (a || b || c) ? 1 : 2;
+        }
+        if (i == 5) {
+            x = (!a && !b && !c) ? 1 : 2;
+            x = (!a || !b || !c) ? 1 : 2;
+        }
+    }
+
     function revertStrings(uint a) external returns (bool) {
         require (a != 0, "zero");
         require (a != 1); // dev: one
