@@ -505,8 +505,8 @@ The ``build/test.json`` file holds information about unit tests and coverage eva
                     // Coverage map indexes (see below)
                     "path/to/contract.sol": [
                         [], // statements
-                        [], // branches that evaluated True
-                        []  // branches that evaluated False
+                        [], // branches that did not jump
+                        []  // branches that did jump
                     ]
                 }
             }
@@ -543,8 +543,8 @@ In tracking coverage, Brownie produces a set of coverage map indexes for each tr
 Here we see that within the ``Token`` contract:
 
 * Statements 1 and 3 were executed in ``"contracts/Token.sol"``, as well as statement 8 in ``"contracts/SafeMath.sol"``
-* No branches evaluated ``True`` in ``"contracts/Token.sol"``, branch 5 evaluated ``False``
-* Branch 11 evaluated both ``True`` and ``False`` in ``"contracts/SafeMath.sol"``
+* In ``"contracts/Token.sol"``, there were no branches that were seen and did not jump, branch 5 was seen and did jump
+* In ``"contracts/SafeMath.sol"``, branch 11 was seen both jumping and not jumping
 
 To convert these indexes to source offsets, we check the :ref:`coverage map<compile-coverage-map>` for Token. For example, here is branch 11:
 
@@ -558,4 +558,4 @@ To convert these indexes to source offsets, we check the :ref:`coverage map<comp
         }
     }
 
-From this we know that the branch is within the ``add`` function, and that the related source code starts at position 147 and ends at 153.  The final boolean is used internally to determine whether a branch evaluated ``True`` or ``False``.
+From this we know that the branch is within the ``add`` function, and that the related source code starts at position 147 and ends at 153. The final boolean indicates whether a jump means the branch evaluated truthfully of falsely - in this case, a jump means it evaluated ``True``.
