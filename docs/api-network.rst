@@ -56,7 +56,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         >>> network.show_active()
         'development'
 
-.. py:method:: main.gas_limit(*value) -> Union[int, bool]
+.. py:method:: main.gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]
 
     Gets and optionally sets the default gas limit.
 
@@ -76,7 +76,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         >>> network.gas_limit(None)
         False
 
-.. py:method:: main.gas_price(*value)
+.. py:method:: main.gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]
 
     Gets and optionally sets the default gas price.
 
