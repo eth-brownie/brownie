@@ -6,6 +6,7 @@ from solcast.main import SourceUnit
 from copy import deepcopy
 from collections import deque
 from hashlib import sha1
+import logging
 import re
 from requests.exceptions import ConnectionError
 import solcast
@@ -14,6 +15,13 @@ import solcx
 
 from . import sources
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
+
+solcx_logger = logging.getLogger("solcx")
+solcx_logger.setLevel(10)
+sh = logging.StreamHandler()
+sh.setLevel(10)
+sh.setFormatter(logging.Formatter("%(message)s"))
+solcx_logger.addHandler(sh)
 
 STANDARD_JSON = {
     "language": "Solidity",
