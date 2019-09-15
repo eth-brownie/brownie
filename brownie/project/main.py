@@ -208,7 +208,7 @@ class TempProject(_ProjectBase):
         return f"<TempProject object>"
 
 
-def check_for_project(path: Union[str, Path] = ".") -> Optional[Path]:
+def check_for_project(path: Union[str, 'Path'] = ".") -> Optional['Path']:
     '''Checks for a Brownie project.'''
     path = Path(path).resolve()
     for folder in [path] + list(path.parents):
