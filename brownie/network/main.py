@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from typing import Union, Optional, Tuple, Any
+from typing import Union, Optional, Tuple
 
 from .web3 import Web3
 from .rpc import Rpc
