@@ -229,8 +229,8 @@ class _AccountBase:
             )
         data = contract.deploy.encode_abi(*args)
         try:
-            txid = self._transact(
-                {  # type: ignore
+            txid = self._transact(  # type: ignore
+                {
                     "from": self.address,
                     "value": Wei(amount),
                     "nonce": self.nonce,
@@ -304,8 +304,8 @@ class _AccountBase:
         Returns:
             TransactionReceipt object"""
         try:
-            txid = self._transact(
-                {  # type: ignore
+            txid = self._transact(  # type: ignore
+                {
                     "from": self.address,
                     "to": str(to),
                     "value": Wei(amount),

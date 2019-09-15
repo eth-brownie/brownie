@@ -173,8 +173,10 @@ class Project(_ProjectBase):
         # remove objects from namespace
         for dict_ in self._namespaces:
             for key in [
-                k for k, v in dict_.items() if v == self or (k in self and v == self[k])
-            ]:  # type: ignore
+                k
+                for k, v in dict_.items()
+                if v == self or (k in self and v == self[k])  # type: ignore
+            ]:
                 del dict_[key]
 
         name = self._name
