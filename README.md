@@ -54,6 +54,8 @@ Then use ``tox`` to run the complete suite against the full set of build targets
 
 Help is always appreciated! Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
 
+Join the Brownie [Gitter channel](https://gitter.im/eth-brownie/community) if you have any questions.
+
 ### Pre-Commit Hooks
 
 We use [pre-commit](https://pre-commit.com/) hooks, primarily to ensure consistent formatting among contributors.
