@@ -4,22 +4,10 @@ import json
 import tkinter as tk
 from tkinter import ttk
 
-from .console import (
-    Console,
-    ConsoleButton,
-)
-from .opcodes import (
-    OpcodeList,
-    ScopingButton,
-)
-from .report import (
-    HighlightSelect,
-    ReportSelect,
-)
-from .source import (
-    ContractSelect,
-    SourceNoteBook,
-)
+from .console import Console, ConsoleButton
+from .opcodes import OpcodeList, ScopingButton
+from .report import HighlightSelect, ReportSelect
+from .source import ContractSelect, SourceNoteBook
 from .styles import set_style
 from .tooltip import ToolTip
 
@@ -47,7 +35,7 @@ class Root(tk.Tk):
         self.report_key = None
         self.highlight_key = None
         self.reports = {}
-        for path in self.active_project._project_path.glob('reports/*.json'):
+        for path in self.active_project._project_path.glob("reports/*.json"):
             try:
                 with path.open() as fp:
                     self.reports[path.stem] = json.load(fp)
@@ -69,21 +57,21 @@ class Root(tk.Tk):
 
         # toolbar widgets
         self.toolbar = ToolbarFrame(self, self.active_project)
-        self.toolbar.grid(row=0, column=0, sticky='nsew')
+        self.toolbar.grid(row=0, column=0, sticky="nsew")
 
     @property
     def active_report(self):
-        return self.reports[self.report_key]['highlights']
+        return self.reports[self.report_key]["highlights"]
 
     def get_active_contract(self):
         return self.toolbar.combo.get()
 
     def set_active_contract(self, contract_name):
         build_json = self.active_project._build.get(contract_name)
-        self.main.note.set_visible(build_json['allSourcePaths'])
-        self.main.note.set_active(build_json['sourcePath'])
-        self.main.oplist.set_opcodes(build_json['pcMap'])
-        self.pcMap = dict((str(k), v) for k, v in build_json['pcMap'].items())
+        self.main.note.set_visible(build_json["allSourcePaths"])
+        self.main.note.set_active(build_json["sourcePath"])
+        self.main.oplist.set_opcodes(build_json["pcMap"])
+        self.pcMap = dict((str(k), v) for k, v in build_json["pcMap"].items())
 
     def destroy(self):
         super().destroy()
@@ -92,7 +80,6 @@ class Root(tk.Tk):
 
 
 class MainFrame(ttk.Frame):
-
     def __init__(self, root):
         super().__init__(root)
 
@@ -113,7 +100,6 @@ class MainFrame(ttk.Frame):
 
 
 class ToolbarFrame(ttk.Frame):
-
     def __init__(self, root, project):
         super().__init__(root)
         self.root = root
@@ -131,7 +117,10 @@ class ToolbarFrame(ttk.Frame):
 
         self.scope = ScopingButton(self)
         self.scope.grid(row=0, column=1, sticky="nsew")
-        ToolTip(self.scope, "Filter opcodes to only show those\nrelated to the highlighted source")
+        ToolTip(
+            self.scope,
+            "Filter opcodes to only show those\nrelated to the highlighted source",
+        )
 
         # report selection
         self.highlight_select = HighlightSelect(self)
@@ -144,6 +133,8 @@ class ToolbarFrame(ttk.Frame):
         ToolTip(self.report, "Select a report to overlay onto the source code")
 
         # contract selection
-        self.combo = ContractSelect(self, [k for k, v in project._build.items() if v['bytecode']])
+        self.combo = ContractSelect(
+            self, [k for k, v in project._build.items() if v["bytecode"]]
+        )
         self.combo.grid(row=0, column=10, sticky="nsew")
         ToolTip(self.combo, "Select the contract source to view")

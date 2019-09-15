@@ -7,17 +7,19 @@ from brownie.convert import ReturnValue, EthAddress, HexString, Wei
 
 @pytest.fixture
 def return_value(accounts, tester):
-    yield tester.manyValues(88, [False, False, False], accounts[2], [("0x1234", "0x6666")])
+    yield tester.manyValues(
+        88, [False, False, False], accounts[2], [("0x1234", "0x6666")]
+    )
 
 
 def test_type(return_value):
     assert type(return_value) is ReturnValue
-    assert type(return_value['_addr']) is EthAddress
-    assert type(return_value['_bool']) is ReturnValue
-    assert type(return_value['_bool'][0]) is bool
-    assert type(return_value['_num']) is Wei
-    assert type(return_value['_bytes']) is ReturnValue
-    assert type(return_value['_bytes'][0][0]) is HexString
+    assert type(return_value["_addr"]) is EthAddress
+    assert type(return_value["_bool"]) is ReturnValue
+    assert type(return_value["_bool"][0]) is bool
+    assert type(return_value["_num"]) is Wei
+    assert type(return_value["_bytes"]) is ReturnValue
+    assert type(return_value["_bytes"][0][0]) is HexString
 
 
 def test_len(return_value):
@@ -64,13 +66,13 @@ def test_dict(accounts, return_value):
     d = return_value.dict()
     assert type(d) is dict
     assert len(d) == 4
-    assert len(d['_bool']) == 3
-    assert sorted(d) == ['_addr', '_bool', '_bytes', '_num']
-    assert d['_addr'] == accounts[2]
+    assert len(d["_bool"]) == 3
+    assert sorted(d) == ["_addr", "_bool", "_bytes", "_num"]
+    assert d["_addr"] == accounts[2]
 
 
 def test_keys(return_value):
-    assert list(return_value.keys()) == ['_num', '_bool', '_addr', '_bytes']
+    assert list(return_value.keys()) == ["_num", "_bool", "_addr", "_bytes"]
 
 
 def test_items(return_value):
@@ -78,16 +80,16 @@ def test_items(return_value):
 
 
 def test_getitem(accounts, return_value):
-    assert return_value[2] == return_value['_addr'] == accounts[2]
-    assert return_value[0] == return_value['_num'] == 88
+    assert return_value[2] == return_value["_addr"] == accounts[2]
+    assert return_value[0] == return_value["_num"] == 88
 
 
 def test_getitem_slice(accounts, return_value):
     s = return_value[1:3]
     assert s == [[False, False, False], accounts[2]]
     assert type(s) is ReturnValue
-    assert s[0] == s['_bool']
-    assert '_num' not in s
+    assert s[0] == s["_bool"]
+    assert "_num" not in s
 
 
 def test_ethaddress_typeerror():
@@ -100,7 +102,7 @@ def test_ethaddress_typeerror():
 
 
 def test_hexstring_typeerror():
-    b = HexString('0x1234', "bytes32")
+    b = HexString("0x1234", "bytes32")
     with pytest.raises(TypeError):
         b == "potato"
     with pytest.raises(TypeError):
@@ -109,7 +111,7 @@ def test_hexstring_typeerror():
 
 
 def test_hexstring_length(return_value):
-    b = HexString('0x1234', "bytes32")
+    b = HexString("0x1234", "bytes32")
     assert b == "0x1234"
     assert b == "0x000000000000001234"
 

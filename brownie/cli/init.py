@@ -28,5 +28,5 @@ brownie-config.json     Project configuration file"""
 
 def main():
     args = docopt(__doc__)
-    path = project.new(args['<path>'] or '.', args['--force'])
+    path = project.new(args["<path>"] or ".", args["--force"])
     notify("SUCCESS", f"Brownie environment has been initiated at {path}")

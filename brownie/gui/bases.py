@@ -7,7 +7,6 @@ from .styles import BUTTON_STYLE
 
 
 class ToggleButton(tk.Button):
-
     def __init__(self, parent, text, keybind=None):
         self.active = False
         super().__init__(parent, text=text, command=self.toggle)
@@ -34,11 +33,10 @@ class ToggleButton(tk.Button):
 
 
 class SelectBox(ttk.Combobox):
-
     def __init__(self, parent, initial, values):
-        super().__init__(parent, state='readonly', font=(None, 16))
+        super().__init__(parent, state="readonly", font=(None, 16))
         self.root = self._root()
-        self['values'] = sorted(values)
+        self["values"] = sorted(values)
         self.set(initial)
         self.bind("<<ComboboxSelected>>", self._select)
         self.configure(width=1)

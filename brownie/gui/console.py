@@ -7,7 +7,6 @@ from .bases import ToggleButton
 
 
 class ConsoleButton(ToggleButton):
-
     def __init__(self, parent):
         super().__init__(parent, "Console", "c")
         self.console = self.root.main.console
@@ -21,7 +20,6 @@ class ConsoleButton(ToggleButton):
 
 
 class Console(tk.Text):
-
     def __init__(self, parent):
         super().__init__(parent, height=1)
         self.configure(**TEXT_STYLE)

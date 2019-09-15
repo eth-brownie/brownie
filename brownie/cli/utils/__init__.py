@@ -1,8 +1,5 @@
 #!/usr/bin/python3
 
-from .color import (  # noqa 401
-    Color,
-    notify
-)
+from .color import Color, notify  # noqa 401
 
 color = Color()

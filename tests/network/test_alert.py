@@ -7,7 +7,6 @@ from brownie import alert
 
 
 class AlertTest:
-
     def __init__(self, initial_value, args=tuple(), kwargs={}):
         self.value = [initial_value]
         self.args = args
@@ -105,8 +104,8 @@ def test_fire_callback(capfd):
 
 
 def test_args_kwargs():
-    t = AlertTest(False, (1, 2, 3), {'foo': "bar"})
-    alert.new(t, (1, 2, 3), {'foo': "bar"}, delay=0.01)
+    t = AlertTest(False, (1, 2, 3), {"foo": "bar"})
+    alert.new(t, (1, 2, 3), {"foo": "bar"}, delay=0.01)
     time.sleep(0.02)
     assert not t.raised
     assert len(alert.show()) == 1

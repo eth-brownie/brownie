@@ -7,32 +7,28 @@ from threading import Thread
 
 from brownie.cli.utils import color
 
-__console_dir__ = [
-    'Alert',
-    'new',
-    'show',
-    'stop_all'
-]
+__console_dir__ = ["Alert", "new", "show", "stop_all"]
 
 _instances = set()
 
 
 class Alert:
 
-    '''Setup notifications and callbacks based on state changes to the blockchain.
-    The alert is immediatly active as soon as the class is insantiated.'''
+    """Setup notifications and callbacks based on state changes to the blockchain.
+    The alert is immediatly active as soon as the class is insantiated."""
 
     def __init__(
-            self,
-            fn: Callable,
-            args: Tuple = None,
-            kwargs: Dict = None,
-            delay: float = 2,
-            msg: str = None,
-            callback: Callable = None,
-            repeat: bool = False) -> None:
+        self,
+        fn: Callable,
+        args: Tuple = None,
+        kwargs: Dict = None,
+        delay: float = 2,
+        msg: str = None,
+        callback: Callable = None,
+        repeat: bool = False,
+    ) -> None:
 
-        '''Creates a new Alert.
+        """Creates a new Alert.
 
         Args:
             fn: Callable to monitor for changes.
@@ -46,7 +42,7 @@ class Alert:
                     if True, the alert will continue to fire on changes until it
                     is terminated via Alert.stop()
                     if int, the alert will fire n+1 times before terminating.
-        '''
+        """
         if args is None:
             args = ()
         if kwargs is None:
@@ -60,22 +56,23 @@ class Alert:
         self._thread = Thread(
             target=self._loop,
             daemon=True,
-            args=(fn, args, kwargs, start_value, delay, msg, callback, repeat)
+            args=(fn, args, kwargs, start_value, delay, msg, callback, repeat),
         )
         self._thread.start()
         self.start_time = time.time()
         _instances.add(self)
 
     def _loop(
-            self,
-            fn: Callable,
-            args: Tuple,
-            kwargs: Dict,
-            start_value: int,
-            delay: float,
-            msg: str,
-            callback: Callable,
-            repeat: Union[int, bool, None] = False) -> None:
+        self,
+        fn: Callable,
+        args: Tuple,
+        kwargs: Dict,
+        start_value: int,
+        delay: float,
+        msg: str,
+        callback: Callable,
+        repeat: Union[int, bool, None] = False,
+    ) -> None:
         try:
             sleep = min(delay, 0.05)
             while repeat is not None:
@@ -101,44 +98,46 @@ class Alert:
             _instances.discard(self)
 
     def is_alive(self) -> bool:
-        '''Checks if the alert is currently active.'''
+        """Checks if the alert is currently active."""
         return self._thread.is_alive()
 
     def wait(self, timeout: int = None) -> None:
-        '''Waits for the alert to fire.
+        """Waits for the alert to fire.
 
         Args:
-            timeout: Number of seconds to wait. If None, will wait indefinitely.'''
+            timeout: Number of seconds to wait. If None, will wait indefinitely."""
         self._thread.join(timeout)
 
     def stop(self, wait: bool = True) -> None:
-        '''Stops the alert.
+        """Stops the alert.
 
         Args:
-            wait: If True, waits for the alert to terminate after stopping it.'''
+            wait: If True, waits for the alert to terminate after stopping it."""
         self._kill = True
         if wait:
             self.wait()
 
 
-def new(fn: Callable,
-        args: Tuple = None,
-        kwargs: Dict = None,
-        delay: float = 0.5,
-        msg: str = None,
-        callback: Callable = None,
-        repeat: bool = False) -> 'Alert':
-    '''Alias for creating a new Alert instance.'''
+def new(
+    fn: Callable,
+    args: Tuple = None,
+    kwargs: Dict = None,
+    delay: float = 0.5,
+    msg: str = None,
+    callback: Callable = None,
+    repeat: bool = False,
+) -> "Alert":
+    """Alias for creating a new Alert instance."""
     return Alert(fn, args, kwargs, delay, msg, callback, repeat)
 
 
 def show() -> List:
-    '''Returns a list of all currently active Alert instances.'''
+    """Returns a list of all currently active Alert instances."""
     return sorted(_instances, key=lambda k: k.start_time)
 
 
 def stop_all() -> None:
-    '''Stops all currently active Alert instances.'''
+    """Stops all currently active Alert instances."""
     for t in _instances.copy():
         t.stop()
     _instances.clear()

@@ -1,9 +1,6 @@
 #!/usr/bin/python3
 
-from setuptools import (
-    find_packages,
-    setup,
-)
+from setuptools import find_packages, setup
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -22,11 +19,11 @@ setup(
     author="Ben Hauser",
     author_email="b.hauser@zerolaw.tech",
     url="https://github.com/iamdefinitelyahuman/brownie",
-    keywords=['brownie'],
+    keywords=["brownie"],
     install_requires=requirements,
     entry_points={
-        'console_scripts': ["brownie=brownie.cli.__main__:main"],
-        'pytest11': ["pytest-brownie=brownie.test.plugin"]
+        "console_scripts": ["brownie=brownie.cli.__main__:main"],
+        "pytest11": ["pytest-brownie=brownie.test.plugin"],
     },
     include_package_data=True,
     python_requires=">=3.6,<4",
@@ -37,6 +34,6 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7"
+        "Programming Language :: Python :: 3.7",
     ],
 )

@@ -10,19 +10,17 @@ from pathlib import Path
 import sys
 
 from brownie.cli.utils import color
-from brownie.project.main import (
-    check_for_project,
-    get_loaded_projects
-)
+from brownie.project.main import check_for_project, get_loaded_projects
 
 
 def run(
-        script_path: str,
-        method_name: str = "main",
-        args: Optional[Tuple] = None,
-        kwargs: Optional[Dict] = None,
-        project: Any = None) -> None:
-    '''Loads a project script and runs a method in it.
+    script_path: str,
+    method_name: str = "main",
+    args: Optional[Tuple] = None,
+    kwargs: Optional[Dict] = None,
+    project: Any = None,
+) -> None:
+    """Loads a project script and runs a method in it.
 
     script_path: path of script to load
     method_name: name of method to run
@@ -31,7 +29,7 @@ def run(
     project: project to add to the script namespace
 
     Returns: return value from called method
-    '''
+    """
     if args is None:
         args = tuple()
     if kwargs is None:
@@ -44,7 +42,7 @@ def run(
     if project:
         # if there is an active project, temporarily add all the ContractContainer
         # instances to the main brownie namespace so they can be imported by the script
-        brownie: Any = sys.modules['brownie']
+        brownie: Any = sys.modules["brownie"]
         brownie_dict = brownie.__dict__.copy()
         brownie_all = brownie.__all__.copy()
         brownie.__dict__.update(project)
@@ -52,7 +50,7 @@ def run(
         default_path = project._project_path.joinpath("scripts").as_posix()
 
     try:
-        script: 'Path' = _get_path(script_path, default_path)
+        script: "Path" = _get_path(script_path, default_path)
         module = _import_from_path(script)
 
         name = module.__name__
@@ -70,15 +68,15 @@ def run(
             brownie.__all__ = brownie_all
 
 
-def _get_path(path_str: str, default_folder: str = "scripts") -> 'Path':
-    '''Returns path to a python module.
+def _get_path(path_str: str, default_folder: str = "scripts") -> "Path":
+    """Returns path to a python module.
 
     Args:
         path_str: module path
         default_folder: default folder path to check if path_str is not found
 
-    Returns: Path object'''
-    if not path_str.endswith('.py'):
+    Returns: Path object"""
+    if not path_str.endswith(".py"):
         path_str += ".py"
     path = Path(path_str)
     if not path.exists() and not path.is_absolute():
@@ -95,20 +93,20 @@ def _get_path(path_str: str, default_folder: str = "scripts") -> 'Path':
     return path
 
 
-def _import_from_path(path: 'Path') -> ModuleType:
-    '''Imports a module from the given path.'''
+def _import_from_path(path: "Path") -> ModuleType:
+    """Imports a module from the given path."""
     path = Path(path).absolute().relative_to(sys.path[0])
     import_str = ".".join(path.parts[:-1] + (path.stem,))
     return importlib.import_module(import_str)
 
 
 def get_ast_hash(path: str) -> str:
-    '''Generates a hash based on the AST of a script.
+    """Generates a hash based on the AST of a script.
 
     Args:
         path: path of the script to hash
 
-    Returns: sha1 hash as bytes'''
+    Returns: sha1 hash as bytes"""
     with Path(path).open() as fp:
         ast_list = [ast.parse(fp.read(), path)]
     base_path = str(check_for_project(path))

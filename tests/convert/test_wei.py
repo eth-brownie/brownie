@@ -8,7 +8,7 @@ def test_nonetype():
 
 
 def test_bytes():
-    assert Wei(b'\xff') == 255
+    assert Wei(b"\xff") == 255
 
 
 def test_scientific_notation():

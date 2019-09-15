@@ -4,7 +4,6 @@ import tkinter as tk
 
 
 class ToolTip(tk.Toplevel):
-
     def __init__(self, widget, text=None, textvariable=None):
         super().__init__(widget._root())
         label = tk.Label(self, text=text, textvariable=textvariable, font=(None, 10))

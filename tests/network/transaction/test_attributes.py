@@ -23,7 +23,7 @@ def test_sender_receiver(accounts):
 
 
 def test_receiver_contract(accounts, tester):
-    tx = tester.doNothing({'from': accounts[0]})
+    tx = tester.doNothing({"from": accounts[0]})
     assert type(tx.receiver) is EthAddress
     assert tester == tx.receiver
     data = tester.revertStrings.encode_abi(5)
@@ -47,7 +47,7 @@ def test_input(accounts, tester):
 
 
 def test_fn_name(accounts, tester):
-    tx = tester.setNum(42, {'from': accounts[0]})
+    tx = tester.setNum(42, {"from": accounts[0]})
     assert tx.contract_name == "BrownieTester"
     assert tx.fn_name == "setNum"
     assert tx._full_name() == "BrownieTester.setNum"
@@ -67,10 +67,10 @@ def test_return_value(accounts, tester):
 
 def test_modified_state(accounts, tester, console_mode):
     assert tester.tx.modified_state
-    tx = tester.setNum(42, {'from': accounts[0]})
+    tx = tester.setNum(42, {"from": accounts[0]})
     assert tx.status == 1
     assert tx.modified_state
-    tx = tester.revertStrings(0, {'from': accounts[2]})
+    tx = tester.revertStrings(0, {"from": accounts[2]})
     assert tx.status == 0
     assert not tx.modified_state
     tx = accounts[0].transfer(accounts[1], "1 ether")
@@ -100,11 +100,11 @@ def test_events(tester, console_mode):
     tx = tester.revertStrings(5)
     assert tx.status == 1
     assert type(tx.events) is EventDict
-    assert 'Debug' in tx.events
+    assert "Debug" in tx.events
     tx = tester.revertStrings(0)
     assert tx.status == 0
     assert type(tx.events) is EventDict
-    assert 'Debug' in tx.events
+    assert "Debug" in tx.events
 
 
 def test_hash(tester):

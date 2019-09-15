@@ -1,26 +1,21 @@
 #!/usr/bin/python3
 
 from pathlib import Path
-from web3 import (
-    HTTPProvider,
-    IPCProvider,
-    WebsocketProvider,
-    Web3 as _Web3
-)
+from web3 import HTTPProvider, IPCProvider, WebsocketProvider, Web3 as _Web3
 
 from brownie._singleton import _Singleton
 
 
 class Web3(_Web3, metaclass=_Singleton):
 
-    '''Singleton version of web3.py's Web3.'''
+    """Singleton version of web3.py's Web3."""
 
     def __init__(self) -> None:
-        super().__init__(HTTPProvider('null'))
+        super().__init__(HTTPProvider("null"))
         self.provider = None
 
     def connect(self, uri: str) -> None:
-        '''Connects to a provider'''
+        """Connects to a provider"""
         try:
             if Path(uri).exists():
                 self.provider = IPCProvider(uri)
@@ -38,7 +33,7 @@ class Web3(_Web3, metaclass=_Singleton):
             )
 
     def disconnect(self) -> None:
-        '''Disconnects from a provider'''
+        """Disconnects from a provider"""
         if self.provider:
             self.provider = None
 
