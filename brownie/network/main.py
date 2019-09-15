@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from typing import Union, Optional
+from typing import Union, Optional, Tuple
 
 from .web3 import Web3
 from .rpc import Rpc
@@ -75,7 +75,7 @@ def is_connected() -> bool:
     return web3.isConnected()
 
 
-def gas_limit(*args: Union[int, str]) -> Union[int, bool]:
+def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
     """Gets and optionally sets the default gas limit.
 
     * If an integer value is given, this will be the default gas limit.
@@ -88,7 +88,7 @@ def gas_limit(*args: Union[int, str]) -> Union[int, bool]:
             CONFIG["active_network"]["gas_limit"] = False
         else:
             try:
-                limit = int(args[0])
+                limit: int = int(args[0])  # type: ignore
             except ValueError:
                 raise TypeError(f"Invalid gas limit '{args[0]}'")
             if limit < 21000:
@@ -97,7 +97,7 @@ def gas_limit(*args: Union[int, str]) -> Union[int, bool]:
     return CONFIG["active_network"]["gas_limit"]
 
 
-def gas_price(*args: Union[int, bool, None]) -> Union[int, bool]:
+def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
     """Gets and optionally sets the default gas price.
 
     * If an integer value is given, this will be the default gas price.

@@ -21,17 +21,17 @@ The ``Project`` class is the top level container that holds all objects related 
 Project Methods
 ***************
 
-.. py:classmethod:: Project.load()
+.. py:classmethod:: Project.load() -> None
 
     Compiles the project source codes, instantiates ``ContractContainer`` objects, and populates the namespace.
 
     Projects are typically loaded via ``brownie.project.load()``, but if you have a ``Project`` object that was previously closed you can reload it using this method.
 
-.. py:classmethod:: Project.load_config()
+.. py:classmethod:: Project.load_config() -> None
 
     Updates the configuration settings from the ``brownie-config.json`` file within this project's root folder.
 
-.. py:classmethod:: Project.close(raises=True)
+.. py:classmethod:: Project.close(raises: bool = True) -> None
 
     Removes this object and the related ``ContractContainer`` objects from the namespace.
 
@@ -63,9 +63,11 @@ TempProject
 Module Methods
 --------------
 
-.. py:method:: main.check_for_project(path)
+.. py:method:: main.check_for_project(path: Union[str, 'Path']) -> Optional[Path]
 
     Checks for an existing Brownie project within a folder and it's parent folders, and returns the base path to the project as a ``Path`` object.  Returns ``None`` if no project is found.
+
+    Accepts a path as a str or a ``Path`` object.
 
     .. code-block:: python
 
@@ -75,7 +77,7 @@ Module Methods
         >>> project.check_for_project('.')
         PosixPath('/my_projects/token')
 
-.. py:method:: main.get_loaded_projects()
+.. py:method:: main.get_loaded_projects() -> List
 
     Returns a list of currently loaded ``Project`` objects.
 

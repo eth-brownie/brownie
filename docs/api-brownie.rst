@@ -179,7 +179,7 @@ For certain types of contract data, Brownie uses subclasses to assist with conve
 
         >>> from brownie.convert import EthAddress
         >>> e = EthAddress("0x0035424f91fd33084466f402d5d97f05f8e3b4af")
-        "0x0035424f91fd33084466f402d5d97f05f8e3b4af"
+        '0x0035424f91Fd33084466f402d5d97f05f8E3b4af'
         >>> e == "0x3506424F91fD33084466F402d5D97f05F8e3b4AF"
         False
         >>> e == "0x0035424F91fD33084466F402d5D97f05F8e3b4AF"

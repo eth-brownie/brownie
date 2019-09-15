@@ -496,8 +496,8 @@ class TransactionReceipt:
             result += "\n   Events In This Transaction\n   --------------------------"
             for event in self.events:  # type: ignore
                 result += (
-                    f"\n   {color['bright yellow']}{event.name}{color}"
-                )  # type: ignore
+                    f"\n   {color['bright yellow']}{event.name}{color}"  # type: ignore
+                )
                 for key, value in event.items():  # type: ignore
                     result += f"\n      {color['key']}{key}{color}: {color['value']}{value}{color}"
         print(result)

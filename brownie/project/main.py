@@ -173,8 +173,10 @@ class Project(_ProjectBase):
         # remove objects from namespace
         for dict_ in self._namespaces:
             for key in [
-                k for k, v in dict_.items() if v == self or (k in self and v == self[k])
-            ]:  # type: ignore
+                k
+                for k, v in dict_.items()
+                if v == self or (k in self and v == self[k])  # type: ignore
+            ]:
                 del dict_[key]
 
         name = self._name
@@ -206,7 +208,7 @@ class TempProject(_ProjectBase):
         return f"<TempProject object>"
 
 
-def check_for_project(path: Union[str, Path] = ".") -> Optional[Path]:
+def check_for_project(path: Union[str, "Path"] = ".") -> Optional["Path"]:
     """Checks for a Brownie project."""
     path = Path(path).resolve()
     for folder in [path] + list(path.parents):
