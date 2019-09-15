@@ -76,11 +76,11 @@ def is_connected() -> bool:
 
 
 def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
-    '''Gets and optionally sets the default gas limit.
+    """Gets and optionally sets the default gas limit.
 
     * If an integer value is given, this will be the default gas limit.
     * If set to None, True or False, the gas limit is determined
-    automatically.'''
+    automatically."""
     if not is_connected():
         raise ConnectionError("Not connected to any network")
     if args:
@@ -98,11 +98,11 @@ def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
 
 
 def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
-    '''Gets and optionally sets the default gas price.
+    """Gets and optionally sets the default gas price.
 
     * If an integer value is given, this will be the default gas price.
     * If set to None, True or False, the gas price is determined
-    automatically.'''
+    automatically."""
     if not is_connected():
         raise ConnectionError("Not connected to any network")
     if args:
