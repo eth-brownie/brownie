@@ -21,6 +21,7 @@ Commands:
   gui                Load the GUI to view opcodes and test coverage
   init               Initialize a new brownie project
   run                Run a script in the /scripts folder
+  analyze            Find security vulnerabilities using the MythX API
 
 Options:
   --help -h          Display this message
