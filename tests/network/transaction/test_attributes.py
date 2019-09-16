@@ -26,7 +26,7 @@ def test_receiver_contract(accounts, tester):
     tx = tester.doNothing({"from": accounts[0]})
     assert type(tx.receiver) is EthAddress
     assert tester == tx.receiver
-    data = tester.revertStrings.encode_abi(5)
+    data = tester.revertStrings.encode_input(5)
     tx = accounts[0].transfer(tester.address, 0, data=data)
     assert type(tx.receiver) is EthAddress
     assert tester == tx.receiver
@@ -41,7 +41,7 @@ def test_contract_address(accounts, tester):
 
 
 def test_input(accounts, tester):
-    data = tester.revertStrings.encode_abi(5)
+    data = tester.revertStrings.encode_input(5)
     tx = accounts[0].transfer(tester.address, 0, data=data)
     assert tx.input == data
 
@@ -51,7 +51,7 @@ def test_fn_name(accounts, tester):
     assert tx.contract_name == "BrownieTester"
     assert tx.fn_name == "setNum"
     assert tx._full_name() == "BrownieTester.setNum"
-    data = tester.setNum.encode_abi(13)
+    data = tester.setNum.encode_input(13)
     tx = accounts[0].transfer(tester, 0, data=data)
     assert tx.contract_name == "BrownieTester"
     assert tx.fn_name == "setNum"
@@ -61,7 +61,7 @@ def test_fn_name(accounts, tester):
 def test_return_value(accounts, tester):
     owner = tester.getTuple(accounts[0])
     assert owner == tester.getTuple.transact(accounts[0]).return_value
-    data = tester.getTuple.encode_abi(accounts[0])
+    data = tester.getTuple.encode_input(accounts[0])
     assert owner == accounts[0].transfer(tester, 0, data=data).return_value
 
 

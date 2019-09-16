@@ -22,59 +22,6 @@ The ``brownie`` package is the main package containing all of Brownie's function
 
 The ``convert`` module contains methods relating to data conversion.
 
-Formatting Contract Data
-************************
-
-The following methods are used to convert multiple values based on a contract ABI specification. Values are formatted via calls to the methods outlined under :ref:`type conversions<type-conversions>`, and where appropriate :ref:`type classes<type-classes>` are applied.
-
-.. py:method:: brownie.convert.format_input(abi, inputs) -> 'ReturnValue'
-
-    Formats inputs based on a contract method ABI.
-
-    Returns
-
-    * ``abi``: A contract method ABI as a dict.
-    * ``inputs``: List or tuple of values to format.
-
-    Returns a tuple subclass (brownie.convert.ReturnValue) of values formatted for use by ``ContractTx`` or ``ContractCall``.
-
-    Each value in ``inputs`` is converted using the one of the methods outlined in :ref:`type-conversions`.
-
-    .. code-block:: python
-
-        >>> from brownie.convert import format_input
-        >>> abi = {'constant': False, 'inputs': [{'name': '_to', 'type': 'address'}, {'name': '_value', 'type': 'uint256'}], 'name': 'transfer', 'outputs': [{'name': '', 'type': 'bool'}], 'payable': False, 'stateMutability': 'nonpayable', 'type': 'function'}
-        >>> format_input(abi, ["0xB8c77482e45F1F44dE1745F52C74426C631bDD52","1 ether"])
-        ('0xB8c77482e45F1F44dE1745F52C74426C631bDD52', 1000000000000000000)
-
-.. py:method:: brownie.convert.format_output(abi, outputs) -> 'ReturnValue'
-
-    Standardizes outputs from a contract call based on the contract's ABI.
-
-    Returns a tuple sublcass (brownie.convert.ReturnValue).
-
-    * ``abi``: A contract method ABI as a dict.
-    * ``outputs``: List or tuple of values to format.
-
-    Each value in ``outputs`` is converted using the one of the methods outlined in :ref:`type-conversions`.
-
-    This method is called internally by ``ContractCall`` to ensure that contract output formats remain consistent, regardless of the RPC client being used.
-
-    .. code-block:: python
-
-        >>> from brownie.convert import format_output
-        >>> abi = {'constant': True, 'inputs': [], 'name': 'name', 'outputs': [{'name': '', 'type': 'string'}], 'payable': False, 'stateMutability': 'view', 'type': 'function'}
-        >>> format_output(abi, ["0x5465737420546f6b656e"])
-        ('Test Token',)
-
-.. py:method:: brownie.convert.format_event(event)
-
-    Standardizes outputs from an event fired by a contract.
-
-    * ``event``: Decoded event data as given by the ``decode_event`` or ``decode_trace`` methods of the `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`__ package.
-
-    The given event data is mutated in-place and returned. If an event topic is indexed, the type is changed to ``bytes32`` and ``" (indexed)"`` is appended to the name.
-
 .. _type-conversions:
 
 Type Conversions
@@ -264,6 +211,62 @@ For certain types of contract data, Brownie uses subclasses to assist with conve
 .. py:classmethod:: ReturnValue.keys
 
     Returns a set-like object providing a view on the object's keys.
+
+Internal Methods
+****************
+
+Formatting Contract Data
+------------------------
+
+The following methods are used to convert multiple values based on a contract ABI specification. Values are formatted via calls to the methods outlined under :ref:`type conversions<type-conversions>`, and where appropriate :ref:`type classes<type-classes>` are applied.
+
+.. py:method:: brownie.convert._format_input(abi, inputs) -> 'ReturnValue'
+
+    Formats inputs based on a contract method ABI.
+
+    Returns
+
+    * ``abi``: A contract method ABI as a dict.
+    * ``inputs``: List or tuple of values to format.
+
+    Returns a tuple subclass (brownie.convert.ReturnValue) of values formatted for use by ``ContractTx`` or ``ContractCall``.
+
+    Each value in ``inputs`` is converted using the one of the methods outlined in :ref:`type-conversions`.
+
+    .. code-block:: python
+
+        >>> from brownie.convert import format_input
+        >>> abi = {'constant': False, 'inputs': [{'name': '_to', 'type': 'address'}, {'name': '_value', 'type': 'uint256'}], 'name': 'transfer', 'outputs': [{'name': '', 'type': 'bool'}], 'payable': False, 'stateMutability': 'nonpayable', 'type': 'function'}
+        >>> format_input(abi, ["0xB8c77482e45F1F44dE1745F52C74426C631bDD52","1 ether"])
+        ('0xB8c77482e45F1F44dE1745F52C74426C631bDD52', 1000000000000000000)
+
+.. py:method:: brownie.convert._format_output(abi, outputs) -> 'ReturnValue'
+
+    Standardizes outputs from a contract call based on the contract's ABI.
+
+    Returns a tuple sublcass (brownie.convert.ReturnValue).
+
+    * ``abi``: A contract method ABI as a dict.
+    * ``outputs``: List or tuple of values to format.
+
+    Each value in ``outputs`` is converted using the one of the methods outlined in :ref:`type-conversions`.
+
+    This method is called internally by ``ContractCall`` to ensure that contract output formats remain consistent, regardless of the RPC client being used.
+
+    .. code-block:: python
+
+        >>> from brownie.convert import format_output
+        >>> abi = {'constant': True, 'inputs': [], 'name': 'name', 'outputs': [{'name': '', 'type': 'string'}], 'payable': False, 'stateMutability': 'view', 'type': 'function'}
+        >>> format_output(abi, ["0x5465737420546f6b656e"])
+        ('Test Token',)
+
+.. py:method:: brownie.convert._format_event(event)
+
+    Standardizes outputs from an event fired by a contract.
+
+    * ``event``: Decoded event data as given by the ``decode_event`` or ``decode_trace`` methods of the `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`__ package.
+
+    The given event data is mutated in-place and returned. If an event topic is indexed, the type is changed to ``bytes32`` and ``" (indexed)"`` is appended to the name.
 
 ``brownie.exceptions``
 ======================

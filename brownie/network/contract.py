@@ -8,12 +8,12 @@ from eth_hash.auto import keccak
 from hexbytes import HexBytes
 
 from brownie.cli.utils import color
-from .event import get_topics
-from .state import _add_contract, _remove_contract, find_contract
+from .event import _get_topics
+from .state import _add_contract, _find_contract, _remove_contract
 
-from .rpc import Rpc
+from .rpc import Rpc, _revert_register
 from .web3 import Web3
-from brownie.convert import format_input, format_output, to_address, Wei
+from brownie.convert import _format_input, _format_output, to_address, Wei
 from brownie.exceptions import (
     ContractExists,
     ContractNotFound,
@@ -37,7 +37,7 @@ class _ContractBase:
         self._build = build
         self._name = name
         self.abi = abi
-        self.topics = get_topics(abi)
+        self.topics = _get_topics(abi)
         self.signatures = dict(
             (i["name"], _signature(i)) for i in abi if i["type"] == "function"
         )
@@ -64,7 +64,7 @@ class ContractContainer(_ContractBase):
         self._contracts: List = []
         super().__init__(project, build, build["contractName"], build["abi"])
         self.deploy = ContractConstructor(self, self._name)
-        rpc._revert_register(self)
+        _revert_register(self)
 
     def __iter__(self) -> Iterable:
         return iter(self._contracts)
@@ -122,7 +122,7 @@ class ContractContainer(_ContractBase):
             address: Address string of the contract.
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation."""
-        contract = find_contract(address)
+        contract = _find_contract(address)
         if contract:
             if contract._name == self._name and contract._project == self._project:
                 return contract
@@ -179,7 +179,7 @@ class ContractConstructor:
             gas_price=tx["gasPrice"],
         )
 
-    def encode_abi(self, *args: tuple) -> str:
+    def encode_input(self, *args: tuple) -> str:
         bytecode = self._parent.bytecode
         # find and replace unlinked library pointers in bytecode
         for marker in re.findall("_{1,}[^_]*_{1,}", bytecode):
@@ -191,7 +191,7 @@ class ContractConstructor:
             address = self._parent._project[library][-1].address[-40:]
             bytecode = bytecode.replace(marker, address)
 
-        data = format_input(self.abi, args)
+        data = _format_input(self.abi, args)
         types = [i[1] for i in _params(self.abi["inputs"])]
         return bytecode + eth_abi.encode_abi(types, data).hex()
 
@@ -277,7 +277,7 @@ class Contract(_DeployedContractBase):
     ) -> None:
         _ContractBase.__init__(self, None, None, name, abi)
         _DeployedContractBase.__init__(self, address, owner, None)
-        contract = find_contract(address)
+        contract = _find_contract(address)
         if not contract:
             return
         if isinstance(contract, ProjectContract):
@@ -358,12 +358,12 @@ class _ContractMethod:
         args, tx = _get_tx(self._owner, args)
         if tx["from"]:
             tx["from"] = str(tx["from"])
-        tx.update({"to": self._address, "data": self.encode_abi(*args)})
+        tx.update({"to": self._address, "data": self.encode_input(*args)})
         try:
             data = web3.eth.call(dict((k, v) for k, v in tx.items() if v))
         except ValueError as e:
             raise VirtualMachineError(e) from None
-        return self.decode_abi(data)
+        return self.decode_output(data)
 
     def transact(self, *args: Tuple) -> TransactionReceiptType:
         """Broadcasts a transaction that calls this contract method.
@@ -385,10 +385,10 @@ class _ContractMethod:
             tx["value"],
             gas_limit=tx["gas"],
             gas_price=tx["gasPrice"],
-            data=self.encode_abi(*args),
+            data=self.encode_input(*args),
         )
 
-    def encode_abi(self, *args: Tuple) -> str:
+    def encode_input(self, *args: Tuple) -> str:
         """Returns encoded ABI data to call the method with the given arguments.
 
         Args:
@@ -396,11 +396,11 @@ class _ContractMethod:
 
         Returns:
             Hexstring of encoded ABI data."""
-        data = format_input(self.abi, args)
+        data = _format_input(self.abi, args)
         types = [i[1] for i in _params(self.abi["inputs"])]
         return self.signature + eth_abi.encode_abi(types, data).hex()
 
-    def decode_abi(self, hexstr: str) -> Tuple:
+    def decode_output(self, hexstr: str) -> Tuple:
         """Decodes hexstring data returned by this method.
 
         Args:
@@ -409,7 +409,7 @@ class _ContractMethod:
         Returns: Decoded values."""
         types = [i[1] for i in _params(self.abi["outputs"])]
         result = eth_abi.decode_abi(types, HexBytes(hexstr))
-        result = format_output(self.abi, result)
+        result = _format_output(self.abi, result)
         if len(result) == 1:
             result = result[0]
         return result

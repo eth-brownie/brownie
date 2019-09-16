@@ -6,7 +6,7 @@ import json
 
 import eth_event
 
-from brownie.convert import format_event
+from brownie.convert import _format_event
 from brownie._config import CONFIG
 from brownie.exceptions import EventLookupError
 
@@ -27,8 +27,7 @@ class EventDict:
             )
             for pos, i in enumerate(events)
         ]
-        # Note, there are issues with OrderedDict's in mypy
-        # https://stackoverflow.com/questions/41207128/how-do-i-specify-ordereddict-k-v-types-for-mypy-type-annotation
+
         self._dict: Dict = OrderedDict()
         for event in self._ordered:
             if event.name not in self._dict:
@@ -47,8 +46,6 @@ class EventDict:
         """returns True if an event fired with the given name."""
         return name in [i.name for i in self._ordered]
 
-    # Note, see reference on returning class with various interpreters:
-    # https://stackoverflow.com/questions/33533148/how-do-i-specify-that-the-return-type-of-a-method-is-the-same-as-the-class-itsel
     def __getitem__(self, key: Union[str, int]) -> "_EventItem":
         """if key is int: returns the n'th event that was fired
         if key is str: returns a _EventItem dict of all events where name == key"""
@@ -168,38 +165,38 @@ class _EventItem:
         return list(self._ordered[0].values())
 
 
-def _get_path() -> Any:
+def __get_path() -> Any:
     return CONFIG["brownie_folder"].joinpath("data/topics.json")
 
 
-def get_topics(abi: List) -> Dict:
+def _get_topics(abi: List) -> Dict:
     new_topics = _topics.copy()
     new_topics.update(eth_event.get_event_abi(abi))
     if new_topics != _topics:
         _topics.update(new_topics)
-        with _get_path().open("w") as fp:
+        with __get_path().open("w") as fp:
             json.dump(new_topics, fp, sort_keys=True, indent=2)
     return eth_event.get_topics(abi)
 
 
-def decode_logs(logs: List) -> Union["EventDict", List[None]]:
+def _decode_logs(logs: List) -> Union["EventDict", List[None]]:
     if not logs:
         return []
     events = eth_event.decode_logs(logs, _topics)
-    events = [format_event(i) for i in events]
+    events = [_format_event(i) for i in events]
     return EventDict(events)
 
 
-def decode_trace(trace: List) -> Union["EventDict", List[None]]:
+def _decode_trace(trace: List) -> Union["EventDict", List[None]]:
     if not trace:
         return []
     events = eth_event.decode_trace(trace, _topics)
-    events = [format_event(i) for i in events]
+    events = [_format_event(i) for i in events]
     return EventDict(events)
 
 
 try:
-    with _get_path().open() as fp:
+    with __get_path().open() as fp:
         _topics: Dict = json.load(fp)
 except (FileNotFoundError, json.decoder.JSONDecodeError):
     _topics = {}

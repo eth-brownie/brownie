@@ -19,9 +19,9 @@ from brownie.exceptions import (
     IncompatibleEVMVersion,
 )
 from brownie.network.transaction import TransactionReceipt
-from .rpc import Rpc
+from .rpc import Rpc, _revert_register
 from .web3 import Web3
-from brownie.network.state import find_contract
+from brownie.network.state import _find_contract
 from brownie.convert import to_address, Wei
 from brownie._singleton import _Singleton
 from brownie._config import CONFIG
@@ -38,7 +38,7 @@ class Accounts(metaclass=_Singleton):
         self._accounts: List = []
         # prevent private keys from being stored in read history
         self.add.__dict__["_private"] = True
-        rpc._revert_register(self)
+        _revert_register(self)
         self._reset()
 
     def _reset(self) -> None:
@@ -227,7 +227,7 @@ class _AccountBase:
             raise IncompatibleEVMVersion(
                 f"Local RPC using '{rpc.evm_version()}' but contract was compiled for '{evm}'"
             )
-        data = contract.deploy.encode_abi(*args)
+        data = contract.deploy.encode_input(*args)
         try:
             txid = self._transact(  # type: ignore
                 {
@@ -253,7 +253,7 @@ class _AccountBase:
         if tx.status != 1:
             return tx
         add_thread.join()
-        return find_contract(tx.contract_address)
+        return _find_contract(tx.contract_address)
 
     def estimate_gas(
         self, to: Union[str, "Accounts"], amount: Optional[int], data: str = ""

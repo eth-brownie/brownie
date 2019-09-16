@@ -9,8 +9,8 @@ def test_attributes(accounts, tester):
     assert tester.getTuple.signature == "0x2e271496"
 
 
-def test_encode_abi(tester):
-    data = tester.getTuple.encode_abi("0x2f084926Fd8A120089cA5F622975Fe7F1306AFF9")
+def test_encode_input(tester):
+    data = tester.getTuple.encode_input("0x2f084926Fd8A120089cA5F622975Fe7F1306AFF9")
     assert (
         data
         == "0x2e2714960000000000000000000000002f084926fd8a120089ca5f622975fe7f1306aff9"
