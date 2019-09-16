@@ -10,13 +10,15 @@ from pythx import Client
 from pythx.middleware.toolname import ClientToolNameMiddleware
 
 from brownie import project
-from brownie._config import ARGV
+from brownie._config import ARGV, update_argv_from_docopt
 from brownie.cli.__main__ import __version__
+from brownie.gui import Gui
 from brownie.exceptions import ProjectNotFound
 
 __doc__ = f"""Usage: brownie analyze [options]
 
 Options:
+  --gui                   Launch the Brownie GUI after analysis
   --eth-address           The address of your MythX account
   --password              The password of your MythX account
   --help -h               Display this message
@@ -72,6 +74,7 @@ def construct_request_from_artifact(artifact):
 
 def main():
     args = docopt(__doc__)
+    update_argv_from_docopt(args)
     project_path = project.check_for_project(".")
     if project_path is None:
         raise ProjectNotFound
@@ -107,7 +110,6 @@ def main():
         or "0x0000000000000000000000000000000000000000",
         password=environ.get("MYTHX_PASSWORD") or ARGV["password"] or "trial",
         middlewares=[ClientToolNameMiddleware(name="brownie-{}".format(__version__))],
-        staging=True,
     )
 
     # submit to MythX
@@ -171,4 +173,5 @@ def main():
         with open("reports/security.json", "w+") as report_f:
             json.dump(highlight_report, report_f, indent=2, sort_keys=True)
 
-    # TODO: tell user to display GUI (or automatically launch using --gui)
+    if ARGV["gui"]:
+        Gui().mainloop()
