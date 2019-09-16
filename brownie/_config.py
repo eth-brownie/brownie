@@ -69,7 +69,7 @@ def _get_project_config_file(project_path: "Path") -> Any:
     return _load_json(config_path)
 
 
-def load_project_config(project_path: "Path") -> None:
+def _load_project_config(project_path: "Path") -> None:
     """Loads configuration settings from a project's brownie-config.json"""
     config_data = _get_project_config_file(project_path)
     CONFIG._unlock()
@@ -78,14 +78,14 @@ def load_project_config(project_path: "Path") -> None:
     CONFIG._lock()
 
 
-def load_project_compiler_config(project_path: Optional["Path"], compiler: Any) -> Any:
+def _load_project_compiler_config(project_path: Optional["Path"], compiler: Any) -> Any:
     if not project_path:
         return CONFIG["compiler"][compiler]
     config_data = _get_project_config_file(project_path)
     return config_data["compiler"][compiler]
 
 
-def modify_network_config(network: str = None) -> Any:
+def _modify_network_config(network: str = None) -> Any:
     """Modifies the 'active_network' configuration settings"""
     CONFIG._unlock()
     try:
@@ -127,7 +127,7 @@ def _recursive_update(original: Any, new: Any, base: Any) -> None:
         )
 
 
-def update_argv_from_docopt(args: Any) -> None:
+def _update_argv_from_docopt(args: Any) -> None:
     ARGV.update(dict((k.lstrip("-"), v) for k, v in args.items()))
 
 

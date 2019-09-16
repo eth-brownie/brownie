@@ -5,7 +5,7 @@ from .web3 import Web3
 from .rpc import Rpc
 from .account import Accounts
 from brownie.convert import Wei
-from brownie._config import CONFIG, modify_network_config
+from brownie._config import CONFIG, _modify_network_config
 
 rpc = Rpc()
 web3 = Web3()
@@ -23,7 +23,7 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
             f"Already connected to network '{CONFIG['active_network']['name']}'"
         )
     try:
-        active = modify_network_config(network or CONFIG["network"]["default"])
+        active = _modify_network_config(network or CONFIG["network"]["default"])
         if "host" not in active:
             raise KeyError(
                 f"No host in brownie-config.json for network '{active['name']}'"
