@@ -64,7 +64,7 @@ docker-compose up -d
 
 To open a session to the container:
 ```bash
-docker-coampose exec sandbox bash
+docker-compose exec sandbox bash
 ```
 
 To run arbitrary commands, use the `bash -c` prefix.
