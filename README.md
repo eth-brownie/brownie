@@ -50,6 +50,33 @@ $ pip install -r requirements-dev.txt
 
 Then use ``tox`` to run the complete suite against the full set of build targets, or ``pytest`` to run tests against a specific version of Python. If you are using ``pytest`` you must include the ``-p no:pytest-brownie`` flag to prevent it from loading the Brownie plugin.
 
+### Using Docker
+
+You can use a sandbox container provided in the docker-compose.yml file for testing inside a Docker environment.
+
+This container provides everything you need to test using a Python 3.6 interpreter.
+
+Start the test environment:
+
+```bash
+docker-compose up -d
+```
+
+To open a session to the container:
+```bash
+docker-compose exec sandbox bash
+```
+
+To run arbitrary commands, use the `bash -c` prefix.
+```bash
+docker-compose exec sandbox bash -c ''
+```
+
+For example, to run the tests in `brownie/tests/test_format_input.py`:
+```bash
+docker-compose exec sandbox bash -c 'python -m pytest tests/convert/test_format_input.py'
+```
+
 ## Contributing
 
 Help is always appreciated! Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
