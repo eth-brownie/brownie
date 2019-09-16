@@ -69,13 +69,7 @@ def run(
 
 
 def _get_path(path_str: str, default_folder: str = "scripts") -> "Path":
-    """Returns path to a python module.
-
-    Args:
-        path_str: module path
-        default_folder: default folder path to check if path_str is not found
-
-    Returns: Path object"""
+    # Returns path to a python module
     if not path_str.endswith(".py"):
         path_str += ".py"
     path = Path(path_str)
@@ -94,19 +88,14 @@ def _get_path(path_str: str, default_folder: str = "scripts") -> "Path":
 
 
 def _import_from_path(path: "Path") -> ModuleType:
-    """Imports a module from the given path."""
+    # Imports a module from the given path
     path = Path(path).absolute().relative_to(sys.path[0])
     import_str = ".".join(path.parts[:-1] + (path.stem,))
     return importlib.import_module(import_str)
 
 
-def get_ast_hash(path: str) -> str:
-    """Generates a hash based on the AST of a script.
-
-    Args:
-        path: path of the script to hash
-
-    Returns: sha1 hash as bytes"""
+def _get_ast_hash(path: str) -> str:
+    # Generates a hash based on the AST of a script.
     with Path(path).open() as fp:
         ast_list = [ast.parse(fp.read(), path)]
     base_path = str(check_for_project(path))

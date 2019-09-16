@@ -71,22 +71,7 @@ class Build:
         self._generate_revert_map(build_json["pcMap"])
 
     def _generate_revert_map(self, pcMap: Dict) -> None:
-        """Adds a contract's dev revert strings to the revert map and it's pcMap.
-
-        The revert map is dict of tuples, where each key is a program counter that
-        contains a REVERT or INVALID operation for a contract in the active project.
-        When a transaction reverts, the dev revert string can be determined by looking
-        up the final program counter in this mapping.
-
-        Each value is a 5 item tuple as follows:
-
-        ("path/to/source", (start, stop), "function name", "dev: revert string", self._source),
-
-        When two contracts have differing values for the same program counter, the value
-        in the revert map is set to False. If a transaction reverts with this pc,
-        the entire trace must be queried to determine which contract reverted and get
-        the dev string from it's pcMap.
-        """
+        # Adds a contract's dev revert strings to the revert map and it's pcMap
         for pc, data in (
             (k, v)
             for k, v in pcMap.items()
@@ -203,21 +188,17 @@ class Build:
         return offset_map[offset]
 
 
-def get_dev_revert(pc: int) -> Optional[str]:
-    """Given the program counter from a stack trace that caused a transaction
-    to revert, returns the commented dev string (if any)."""
+def _get_dev_revert(pc: int) -> Optional[str]:
+    # Given the program counter from a stack trace that caused a transaction
+    # to revert, returns the commented dev string (if any)
     if pc not in _revert_map or _revert_map[pc] is False:
         return None
     return _revert_map[pc][3]
 
 
-def get_error_source_from_pc(pc: int, pad: int = 3) -> Tuple:
-    """Given the program counter from a stack trace that caused a transaction
-    to revert, returns the highlighted relevent source code and the method name.
-
-    Returns:
-        highlighted source, line numbers, path, function name
-    """
+def _get_error_source_from_pc(pc: int, pad: int = 3) -> Tuple:
+    # Given the program counter from a stack trace that caused a transaction
+    # to revert, returns the highlighted relevent source code and the method name.
     if pc not in _revert_map or _revert_map[pc] is False:
         return (None,) * 4
     revert = _revert_map[pc]

@@ -1090,7 +1090,7 @@ _EventItem
     Returns an object providing a view on the values in the first event within this object.
 
 Internal Methods
-**************
+****************
 
 .. py:method:: brownie.network.event._get_topics(abi)
 

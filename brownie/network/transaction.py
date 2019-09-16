@@ -134,7 +134,7 @@ class TransactionReceipt:
             self.revert_msg = revert_msg
         elif revert_type == "revert":
             # check for dev revert string as a comment
-            revert_msg = build.get_dev_revert(self._revert_pc)
+            revert_msg = build._get_dev_revert(self._revert_pc)
             if type(revert_msg) is str:
                 self.revert_msg = revert_msg
 
@@ -336,7 +336,7 @@ class TransactionReceipt:
             self.revert_msg = decode_abi(["string"], data)[0]
             return
         # check for dev revert string using program counter
-        self.revert_msg = build.get_dev_revert(step["pc"])
+        self.revert_msg = build._get_dev_revert(step["pc"])
         if self.revert_msg is not None:
             return
         # if none is found, expand the trace and get it from the pcMap
@@ -618,7 +618,7 @@ class TransactionReceipt:
 
         # if RPC returned a program counter, try to find source without querying trace
         if self._revert_pc:
-            highlight, linenos, path, fn_name = build.get_error_source_from_pc(
+            highlight, linenos, path, fn_name = build._get_error_source_from_pc(
                 self._revert_pc
             )
             if highlight:
