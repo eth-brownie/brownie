@@ -9,27 +9,38 @@ In addition to using `ganache-cli <https://github.com/trufflesuite/ganache-cli>`
 Warning
 ========================
 Before you go any farther, consider that connecting to non-local networks can potentially open you up to several risks, including the below:
-* Brownie is a testing framework and not designed for interactions with any mainnet (Ethereum, xDai, POA, etc.) and has not been audited for any security risks
-* Brownie should not be used to sign or send transactions to any mainnet or real value can potentially be lost.
-* If you use an account where you have real value stored on any mainnet, you should not use that account when interacting with Brownie
+* When you are interacting with mainnet, make sure you verify all of the details of any transactions you sign/send before you send them.  
+* Always protect your private keys.  Don't leave them lying around unencrypted!
+
+Register with Infura
+========================
+Before you can connect to a non-local network, you need access to a remote Ethereum node that supports JSON RPC over HTTP.  `Infura <https://infura.io>`__ is one such option.  Once you register and create a project, Infura will provide you URLs with the API key that can be leveraged to access the given network.
 
 Non-local Network Configuration
 ========================
 
-The connection settings for non-local networks must be defined in ``brownie-config.json``:
+The connection settings for non-local networks must be defined in ``brownie-config.json``.  
+
+First, for each network you want to configure, create a new section in the network.networks section as below:
 
 .. code-block:: javascript
+    "networks": {
+        .
+        .
+        "ropsten": {
+            "host": "http://ropsten.infura.io/v3/[yourInfuraApiKey]"
+        }
+        "rinkeby":...
+        .
+        .
+    }
 
-    "development": {
-        "test-rpc": {
-            "cmd": "ganache-cli", // command to load the client - you can add any extra flags here as needed
-            "port": 8545,  // port the client should listen on
-            "gas_limit": 6721975,  // block gas limit
-            "accounts": 10,  // number of accounts in web3.eth.accounts
-            "evm_version": "petersburg",  // evm version
-            "mnemonic": "brownie"  // accounts are derived from this mnemonic - set to null for different addresses on each load
-        },
-        "host": "http://ropsten.infura.io/v3/[yourInfuraApiKey]"
+If you want to change the default network that brownie connects to, you need to update the network.default field as below:
+.. code-block:: javascript
+    "network": {
+        "default": "ropsten",
+        .
+        .
     }
 
 Launching and Connecting
