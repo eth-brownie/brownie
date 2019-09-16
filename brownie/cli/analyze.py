@@ -15,6 +15,14 @@ from brownie.cli.__main__ import __version__
 from brownie.gui import Gui
 from brownie.exceptions import ProjectNotFound
 
+# TODO: --full for full mode analyses
+# TODO: Authentication with direct access token
+# TODO: Display analyses with dashboard links once done
+# TODO: --async flag to print just UUIDs
+# TODO: Custom poll interval option after submission
+# TODO: Refactor core routines into helper functions
+# TODO: testtesttesttesttesttesttesttesttesttesttesttest
+
 __doc__ = f"""Usage: brownie analyze [options]
 
 Options:
@@ -49,7 +57,7 @@ def construct_source_dict_from_artifact(artifact):
     return {
         artifact.get("sourcePath"): {
             "source": artifact.get("source"),
-            # "ast": artifact.get("ast"),
+            # "ast": artifact.get("ast"),  # NOTE: Reenable once container issue fixed
         }
     }
 
@@ -75,6 +83,7 @@ def construct_request_from_artifact(artifact):
 def main():
     args = docopt(__doc__)
     update_argv_from_docopt(args)
+
     project_path = project.check_for_project(".")
     if project_path is None:
         raise ProjectNotFound
@@ -115,17 +124,13 @@ def main():
     # submit to MythX
     job_uuids = []
     for contract_name, analysis_request in job_data.items():
-        # print(json.dumps(analysis_request["sources"]))
-        # print(json.dumps(analysis_request, indent=2, sort_keys=True))
         resp = client.analyze(**analysis_request)
         print("Submitted analysis {} for contract {}".format(resp.uuid, contract_name))
         job_uuids.append(resp.uuid)
 
     # tell user execution in progress and poll (optionally async w/ UUID)
-    # TODO: --async
     for uuid in job_uuids:
         while not client.analysis_ready(uuid):
-            # TODO: Add poll interval option
             time.sleep(3)
 
     # assemble report json
@@ -170,8 +175,10 @@ def main():
                                 ]
                             )
 
+        # Write report to Brownie directory
         with open("reports/security.json", "w+") as report_f:
             json.dump(highlight_report, report_f, indent=2, sort_keys=True)
 
+    # Launch GUI if user requested it
     if ARGV["gui"]:
         Gui().mainloop()
