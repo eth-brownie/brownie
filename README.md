@@ -52,7 +52,7 @@ Then use ``tox`` to run the complete suite against the full set of build targets
 
 ### Using Docker
 
-You can use a sandbox container provided in the docker-compose.yml file for testing inside a Docker environment.repository
+You can use a sandbox container provided in the docker-compose.yml file for testing inside a Docker environment.
 
 This container provides everything you need to test using a Python 3.6 interpreter.
 
