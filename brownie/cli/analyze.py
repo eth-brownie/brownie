@@ -170,7 +170,7 @@ def main():
                                     comp.offset,
                                     comp.offset + comp.length,
                                     SEVERITY_COLOURS[issue.severity],
-                                    issue.description_short,
+                                    "{}: {}".format(issue.swc_id, issue.description_short),
                                 ]
                             )
 
