@@ -18,16 +18,16 @@ from brownie.exceptions import ProjectNotFound
 # TODO: --full for full mode analyses
 # TODO: Authentication with direct access token
 # TODO: Display analyses with dashboard links once done
-# TODO: --async flag to print just UUIDs
-# TODO: Custom poll interval option after submission
 # TODO: Refactor core routines into helper functions
 # TODO: testtesttesttesttesttesttesttesttesttesttesttest
 
-__doc__ = f"""Usage: brownie analyze [options]
+__doc__ = f"""Usage: brownie analyze [options] [--async | --interval=<sec>]
 
 Options:
   --gui                   Launch the Brownie GUI after analysis
   --full                  Perform a full scan (MythX Pro required)
+  --interval=<sec>        Result polling interval in seconds [default: 3]
+  --async                 Do not poll for results, print job IDs and exit
   --eth-address           The address of your MythX account
   --password              The password of your MythX account
   --help -h               Display this message
@@ -52,6 +52,7 @@ SEVERITY_COLOURS = {
     Severity.MEDIUM: "yellow",
     Severity.HIGH: "red",
 }
+DASHBOARD_BASE_URL = "https://dashboard.mythx.io/#/console/analyses/"
 
 
 def construct_source_dict_from_artifact(artifact):
@@ -78,7 +79,7 @@ def construct_request_from_artifact(artifact):
         "source_list": artifact.get("allSourcePaths"),
         "main_source": artifact.get("sourcePath"),
         "solc_version": artifact["compiler"]["version"].replace("Version:", "").strip(),
-        "analysis_mode": "full" if ARGV["full"] else "quick"
+        "analysis_mode": "full" if ARGV["full"] else "quick",
     }
 
 
@@ -126,13 +127,27 @@ def main():
     job_uuids = []
     for contract_name, analysis_request in job_data.items():
         resp = client.analyze(**analysis_request)
-        print("Submitted analysis {} for contract {}".format(resp.uuid, contract_name))
+        if ARGV["async"]:
+            print("The analysis for {} can be found at {}{}".format(
+                contract_name,
+                DASHBOARD_BASE_URL,
+                resp.uuid
+            ))
+        else:
+            print("Submitted analysis {} for contract {}".format(resp.uuid, contract_name))
         job_uuids.append(resp.uuid)
+
+    if ARGV["async"]:
+        print(
+            "\nAll contracts were submitted successfully. Check the dashboard at "
+            "https://dashboard.mythx.io/ for the progress and results of your analyses"
+        )
+        return
 
     # tell user execution in progress and poll (optionally async w/ UUID)
     for uuid in job_uuids:
         while not client.analysis_ready(uuid):
-            time.sleep(3)
+            time.sleep(int(ARGV["interval"]))
 
     # assemble report json
     printed = False
@@ -172,7 +187,9 @@ def main():
                                     comp.offset,
                                     comp.offset + comp.length,
                                     SEVERITY_COLOURS[issue.severity],
-                                    "{}: {}".format(issue.swc_id, issue.description_short),
+                                    "{}: {}".format(
+                                        issue.swc_id, issue.description_short
+                                    ),
                                 ]
                             )
 
