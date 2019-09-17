@@ -15,7 +15,6 @@ from brownie.cli.__main__ import __version__
 from brownie.gui import Gui
 from brownie.exceptions import ProjectNotFound
 
-# TODO: Authentication with direct access token
 # TODO: Refactor core routines into helper functions
 # TODO: testtesttesttesttesttesttesttesttesttesttesttest
 
