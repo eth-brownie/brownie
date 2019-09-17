@@ -1,5 +1,19 @@
 .. _quickstart:
 
+.. raw:: html
+
+    <style>
+    .green {background:#228822; color: #ffffff; padding: 2px 5px;}
+    .yellow {background:#ff9933; color: #ffffff; padding: 2px 5px;}
+    .orange {background:#ff3300; color: #ffffff; padding: 2px 5px;}
+    .red {background:#882222; color: #ffffff; padding: 2px 5px;}
+    </style>
+
+.. role:: green
+.. role:: yellow
+.. role:: orange
+.. role:: red
+
 ==========
 Quickstart
 ==========
@@ -247,7 +261,7 @@ To check test coverage:
 
     $ pytest tests/ --coverage
 
-To view detailed results, first the Brownie GUI:
+To view detailed results, first load the Brownie GUI:
 
 ::
 
@@ -256,16 +270,16 @@ To view detailed results, first the Brownie GUI:
 Next:
 
     * In the upper-right drop box, select a contract to view.
-    * In the drop box immediately left of the contract selection, choose the generated coverage report JSON.
-    * In the upper left, choose to view either the "statement" or "branch" coverage report.
+    * In the drop box immediately left of the contract selection, select "coverage". Then left of that, choose to view either the "statement" or "branch" coverage report.
 
 Relevant code will be highlighted in different colors:
 
-* Green - code was executed during the tests
-* Yellow - code was executed, but only evaluated truthfully
-* Orange - code was executed, but only evaluated falsely
-* Red - code was not executed
+* :green:`Green` code was executed during the tests
+* :yellow:`Yellow` branch code executed, but only evaluated truthfully
+* :orange:`Orange` branch code executed, but only evaluated falsely
+* :red:`Red` code did not execute during the tests
 
-.. image:: opview.png
+.. image:: gui4.png
+   :alt: Viewing Coverage Data
 
 See :ref:`test-coverage` for more information.

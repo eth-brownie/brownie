@@ -86,10 +86,10 @@ class Console(code.InteractiveConsole):
     def _console_write(self, text):
         try:
             obj = eval(text)
-            if obj and type(obj) is dict:
+            if obj and isinstance(obj, dict):
                 text = color.pretty_dict(obj)
-            elif obj and type(obj) in (tuple, list, set):
-                text = color.pretty_list(obj)
+            elif obj and isinstance(obj, (tuple, list, set)):
+                text = color.pretty_sequence(obj)
         except (SyntaxError, NameError):
             pass
         return self._stdout_write(text)

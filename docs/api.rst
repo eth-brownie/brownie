@@ -17,3 +17,4 @@ The following classes and methods are available when writing brownie scripts or 
     brownie.network <api-network.rst>
     brownie.project <api-project.rst>
     brownie.test <api-test.rst>
+    brownie.utils <api-utils.rst>

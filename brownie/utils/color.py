@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import sys
+from typing import Dict, Optional, Sequence
 import traceback
 
 from brownie._config import ARGV, CONFIG
@@ -58,51 +59,51 @@ class Color:
         return self(color)
 
     # format dicts for console printing
-    def pretty_dict(self, value, indent=0, start=True):
+    def pretty_dict(self, value: Dict, _indent: int = 0) -> str:
         text = ""
-        if start:
-            text = f"{' '*indent}{self['dull']}{{"
-        indent += 4
+        if not _indent:
+            text = f"{self['dull']}{{"
+        _indent += 4
         for c, k in enumerate(sorted(value.keys(), key=lambda k: str(k))):
             if c:
                 text += ","
             s = "'" if isinstance(k, str) else ""
-            text += f"\n{' '*indent}{s}{self['key']}{k}{self['dull']}{s}: "
+            text += f"\n{' '*_indent}{s}{self['key']}{k}{self['dull']}{s}: "
             if isinstance(value[k], dict):
-                text += "{" + self.pretty_dict(value[k], indent, False)
+                text += "{" + self.pretty_dict(value[k], _indent)
                 continue
             if isinstance(value[k], (list, tuple, set)):
-                text += str(value[k])[0] + self.pretty_list(value[k], indent, False)
+                text += str(value[k])[0] + self.pretty_sequence(value[k], _indent)
                 continue
             text += self._write(value[k])
-        indent -= 4
-        text += f"\n{' '*indent}}}"
-        if start:
+        _indent -= 4
+        text += f"\n{' '*_indent}}}"
+        if not _indent:
             text += f"{self}"
         return text
 
     # format lists for console printing
-    def pretty_list(self, value, indent=0, start=True):
+    def pretty_sequence(self, value: Sequence, _indent: int = 0) -> str:
         text = ""
         brackets = str(value)[0], str(value)[-1]
-        if start:
-            text += f"{' '*indent}{self['dull']}{brackets[0]}"
+        if not _indent:
+            text += f"{self['dull']}{brackets[0]}"
         if value and not [i for i in value if not isinstance(i, dict)]:
             # list of dicts
-            text += f"\n{' '*(indent+4)}{{"
-            text += f",\n{' '*(indent+4)}{{".join(
-                self.pretty_dict(i, indent + 4, False) for i in value
+            text += f"\n{' '*(_indent+4)}{{"
+            text += f",\n{' '*(_indent+4)}{{".join(
+                self.pretty_dict(i, _indent + 4) for i in value
             )
-            text += f"\n{' '*indent}{brackets[1]}"
+            text += f"\n{' '*_indent}{brackets[1]}"
         elif value and not [i for i in value if not isinstance(i, str) or len(i) != 64]:
             # list of bytes32 hexstrings (stack trace)
-            text += ", ".join(f"\n{' '*(indent+4)}{self._write(i)}" for i in value)
-            text += f"\n{' '*indent}{brackets[1]}"
+            text += ", ".join(f"\n{' '*(_indent+4)}{self._write(i)}" for i in value)
+            text += f"\n{' '*_indent}{brackets[1]}"
         else:
             # all other cases
             text += ", ".join(self._write(i) for i in value)
             text += brackets[1]
-        if start:
+        if not _indent:
             text += f"{self}"
         return text
 
@@ -111,7 +112,13 @@ class Color:
         key = "string" if isinstance(value, str) else "value"
         return f"{s}{self[key]}{value}{self['dull']}{s}"
 
-    def format_tb(self, exc, filename=None, start=None, stop=None):
+    def format_tb(
+        self,
+        exc: Exception,
+        filename: str = None,
+        start: Optional[int] = None,
+        stop: Optional[int] = None,
+    ) -> str:
         if exc[0] is SyntaxError:
             return self.format_syntaxerror(exc[1])
         tb = [i.replace("./", "") for i in traceback.format_tb(exc[2])]
@@ -132,7 +139,7 @@ class Color:
         tb.append(f"{self['error']}{exc[0].__name__}{self}: {exc[1]}")
         return "\n".join(tb)
 
-    def format_syntaxerror(self, exc):
+    def format_syntaxerror(self, exc: SyntaxError) -> str:
         offset = exc.offset + len(exc.text.lstrip()) - len(exc.text) + 3
         exc.filename = exc.filename.replace(base_path, ".")
         return (

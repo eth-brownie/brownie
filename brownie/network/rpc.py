@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Dict, Any, Union, Tuple, Optional
+from typing import Dict, Any, List, Union, Tuple, Optional
 import atexit
 import gc
 import psutil
@@ -26,7 +26,7 @@ CLI_FLAGS = {
 
 EVM_VERSIONS = ["byzantium", "constantinople", "petersburg"]
 
-_revert_refs = []
+_revert_refs: List = []
 
 
 class Rpc(metaclass=_Singleton):

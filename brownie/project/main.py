@@ -181,6 +181,7 @@ class Project(_ProjectBase):
             ]:
                 del dict_[key]
 
+        # undo black-magic
         name = self._name
         del sys.modules[f"brownie.project.{name}"]
         sys.modules["brownie.project"].__all__.remove(name)  # type: ignore
