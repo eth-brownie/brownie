@@ -7,7 +7,7 @@ import eth_abi
 from eth_hash.auto import keccak
 from hexbytes import HexBytes
 
-from brownie.cli.utils import color
+from brownie.utils import color
 from .event import _get_topics
 from .state import _add_contract, _find_contract, _remove_contract
 

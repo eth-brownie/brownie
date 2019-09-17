@@ -12,7 +12,7 @@ import threading
 from eth_hash.auto import keccak
 import eth_keys
 
-from brownie.cli.utils import color
+from brownie.utils import color
 from brownie.exceptions import (
     VirtualMachineError,
     UnknownAccount,

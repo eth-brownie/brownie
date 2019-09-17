@@ -8,7 +8,7 @@ import shutil
 import sys
 import zipfile
 
-from brownie.cli.utils import color
+from brownie.utils import color
 from brownie.network.contract import ContractContainer
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.project import compiler

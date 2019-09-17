@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import textwrap
 
-from brownie.cli.utils import color
+from brownie.utils import color
 from brownie.exceptions import ContractExists
 
 

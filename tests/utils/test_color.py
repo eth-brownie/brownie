@@ -3,7 +3,7 @@
 import pytest
 import sys
 
-from brownie.cli.utils import color
+from brownie.utils import color
 
 
 @pytest.fixture
@@ -11,9 +11,9 @@ def colorpatch(monkeypatch):
     def patched(*args):
         return ""
 
-    monkeypatch.setattr("brownie.cli.utils.Color.__call__", patched)
-    monkeypatch.setattr("brownie.cli.utils.Color.__getitem__", patched)
-    monkeypatch.setattr("brownie.cli.utils.Color.__str__", patched)
+    monkeypatch.setattr("brownie.utils.Color.__call__", patched)
+    monkeypatch.setattr("brownie.utils.Color.__getitem__", patched)
+    monkeypatch.setattr("brownie.utils.Color.__str__", patched)
     yield
 
 

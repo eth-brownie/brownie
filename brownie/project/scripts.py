@@ -9,7 +9,7 @@ import importlib
 from pathlib import Path
 import sys
 
-from brownie.cli.utils import color
+from brownie.utils import color
 from brownie.project.main import check_for_project, get_loaded_projects
 
 

@@ -16,7 +16,7 @@ from .event import _decode_logs, _decode_trace
 from pathlib import Path
 from .web3 import Web3
 from brownie.convert import EthAddress, Wei
-from brownie.cli.utils import color
+from brownie.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build
 from brownie.project.sources import highlight_source

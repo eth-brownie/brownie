@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 from brownie import network
-from brownie.cli.utils import color, notify
+from brownie.utils import color, notify
 from brownie.exceptions import ProjectNotFound
 from brownie._config import ARGV
 
