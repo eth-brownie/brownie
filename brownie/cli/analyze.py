@@ -181,22 +181,26 @@ def wait_for_jobs(job_uuids, client):
             time.sleep(int(ARGV["interval"]))
 
 
-def update_report(client, uuid, highlight_report, source_to_name):
+def print_trial_message(issue):
     global TRIAL_PRINTED
+    if issue.swc_id == "" or issue.severity in (
+            Severity.UNKNOWN,
+            Severity.NONE,
+    ):
+        if not TRIAL_PRINTED:
+            print(issue.description_short)
+            print(issue.description_long)
+            print()
+            TRIAL_PRINTED = True
+        return True
+    return False
 
+
+def update_report(client, uuid, highlight_report, source_to_name):
     resp = client.report(uuid)
     for report in resp.issue_reports:
         for issue in resp:
-            # handle non-code issues and print message only once
-            if issue.swc_id == "" or issue.severity in (
-                    Severity.UNKNOWN,
-                    Severity.NONE,
-            ):
-                if not TRIAL_PRINTED:
-                    print(issue.description_short)
-                    print(issue.description_long)
-                    print()
-                    TRIAL_PRINTED = True
+            if print_trial_message(issue):
                 continue
 
             # convert issue locations to report locations
