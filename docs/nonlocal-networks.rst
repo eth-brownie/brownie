@@ -44,8 +44,11 @@ If you want to change the default network that brownie connects to, you need to 
         .
     }
 
-Launching and Connecting
-========================
+Launching and Connecting to Networks
+====================================
+
+Using the CLI
+-------------
 
 Brownie will connect to whichever network is set as "default" in ``brownie-config.json``.  
 
@@ -57,4 +60,25 @@ Brownie will launch or attach to the client when using any network that includes
 
 Each time Brownie is loaded, it will first attempt to connect to the ``host`` address to determine if the RPC client is already active.
 
+Using the ``brownie.netowrk`` methods
+-------------------------------------
 
+You can interact with any network defined in ``brownie-config.json`` programatically using the ``brownie.network.main`` methods.
+
+Connecting to a network:
+.. code-block:: python
+    from brownie import *
+
+        def main():
+            network.connect(network='ropsten',launch_rpc='false')
+            if network.is_connected():
+                print("Successfully connected to " + network.show_active())
+            else;
+                print("Did not connect to network")
+        
+Disconnecting from a network:
+.. code-block:: python
+    from brownie import *
+
+        def main():
+            network.disconnect()
