@@ -1,18 +1,19 @@
 #!/usr/bin/python3
 
 from copy import deepcopy
+
 import pytest
 
 from brownie import Wei
+from brownie.exceptions import ContractExists, ContractNotFound
 from brownie.network.contract import (
-    _DeployedContractBase,
     Contract,
     ContractCall,
     ContractTx,
     OverloadedMethod,
     ProjectContract,
+    _DeployedContractBase,
 )
-from brownie.exceptions import ContractExists, ContractNotFound
 
 
 @pytest.fixture

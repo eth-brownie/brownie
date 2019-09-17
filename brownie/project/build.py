@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-from typing import Dict, Optional, Any, ItemsView, Union, List, Tuple, Sequence
 import json
 from pathlib import Path
+from typing import Any, Dict, ItemsView, List, Optional, Sequence, Tuple, Union
 
 from .sources import highlight_source
 

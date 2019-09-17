@@ -1,14 +1,13 @@
 #!/usr/bin/python3
 
-from hashlib import sha1
 import json
+from hashlib import sha1
 from pathlib import Path
 
+from brownie._config import ARGV
 from brownie.network.state import _get_current_dependencies
 from brownie.project.scripts import _get_ast_hash
 from brownie.test import coverage
-from brownie._config import ARGV
-
 
 STATUS_SYMBOLS = {"passed": ".", "skipped": "s", "failed": "F"}
 

@@ -3,9 +3,8 @@
 from docopt import docopt
 
 from brownie import network, project, run
-from brownie.test.output import _print_gas_profile
 from brownie._config import ARGV, CONFIG, _update_argv_from_docopt
-
+from brownie.test.output import _print_gas_profile
 
 __doc__ = f"""Usage: brownie run <filename> [<function>] [options]
 

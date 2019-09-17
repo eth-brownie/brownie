@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 
-from pathlib import Path
 import re
 import tkinter as tk
 import tkinter.font as tkFont
+from pathlib import Path
 from tkinter import ttk
+
+from brownie.project.sources import is_inside_offset
 
 from .bases import SelectBox
 from .styles import TEXT_COLORS, TEXT_STYLE
-from brownie.project.sources import is_inside_offset
 
 
 class SourceNoteBook(ttk.Notebook):

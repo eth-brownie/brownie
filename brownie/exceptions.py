@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
-from typing import Type, Any
-import psutil
-
 import json
 import sys
+from typing import Any, Type
 
+import psutil
 
 # network
 

@@ -1,14 +1,13 @@
 #!/usr/bin/python3
 
-from typing import Dict, Union, Tuple, Any, List
-from hashlib import sha1
-from pathlib import Path
 import re
 import textwrap
+from hashlib import sha1
+from pathlib import Path
+from typing import Any, Dict, List, Tuple, Union
 
-from brownie.utils import color
 from brownie.exceptions import ContractExists
-
+from brownie.utils import color
 
 MINIFY_REGEX_PATTERNS = [
     r"(?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)",  # comments

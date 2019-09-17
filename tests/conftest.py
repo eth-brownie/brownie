@@ -3,8 +3,9 @@
 import itertools
 import json
 import os
-from pathlib import Path
 import shutil
+from pathlib import Path
+
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 

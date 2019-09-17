@@ -1,11 +1,12 @@
 #!/usr/bin/python3
-from typing import Union, Optional, Tuple
+from typing import Optional, Tuple, Union
 
-from .web3 import Web3
-from .rpc import Rpc
-from .account import Accounts
-from brownie.convert import Wei
 from brownie._config import CONFIG, _modify_network_config
+from brownie.convert import Wei
+
+from .account import Accounts
+from .rpc import Rpc
+from .web3 import Web3
 
 rpc = Rpc()
 web3 = Web3()

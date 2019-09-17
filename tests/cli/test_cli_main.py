@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
-import pytest
 import sys
+
+import pytest
 
 from brownie._cli.__main__ import main as cli_main
 

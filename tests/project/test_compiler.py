@@ -1,12 +1,13 @@
 #!/usr/bin/python3
 
 import functools
-import pytest
-from semantic_version import Version
-import solcx
 
-from brownie.project import compiler, build
+import pytest
+import solcx
+from semantic_version import Version
+
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
+from brownie.project import build, compiler
 
 
 @pytest.fixture

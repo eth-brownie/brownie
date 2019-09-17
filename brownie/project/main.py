@@ -1,20 +1,21 @@
 #!/usr/bin/python3
 
-from typing import Union, Dict, Iterator, KeysView, Any, Optional, List, Set
-from io import BytesIO
-from pathlib import Path
-import requests
 import shutil
 import sys
 import zipfile
+from io import BytesIO
+from pathlib import Path
+from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Union
 
-from brownie.utils import color
-from brownie.network.contract import ContractContainer
+import requests
+
+from brownie._config import CONFIG, _load_project_compiler_config, _load_project_config
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
+from brownie.network.contract import ContractContainer
 from brownie.project import compiler
-from brownie.project.sources import Sources, get_hash
 from brownie.project.build import Build
-from brownie._config import CONFIG, _load_project_config, _load_project_compiler_config
+from brownie.project.sources import Sources, get_hash
+from brownie.utils import color
 
 FOLDERS = ["contracts", "scripts", "reports", "tests", "build", "build/contracts"]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"

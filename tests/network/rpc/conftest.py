@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie import rpc, config, web3
+from brownie import config, rpc, web3
 from brownie.network.rpc import _notify_registry
 
 

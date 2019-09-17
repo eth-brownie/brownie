@@ -2,7 +2,6 @@
 
 import json
 
-
 test_source = """
 def test_call_and_transact(BrownieTester, accounts, web3, fn_isolation):
     c = accounts[0].deploy(BrownieTester, True)

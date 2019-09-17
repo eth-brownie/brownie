@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie.exceptions import VirtualMachineError, IncompatibleEVMVersion
+from brownie.exceptions import IncompatibleEVMVersion, VirtualMachineError
 from brownie.network.contract import ProjectContract
 from brownie.network.transaction import TransactionReceipt
 

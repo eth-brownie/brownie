@@ -1,27 +1,27 @@
 #!/usr/bin/python3
 
-from typing import Any, Optional, Tuple, Dict, List
-from hashlib import sha1
-
-import requests
 import threading
 import time
-from web3.exceptions import TransactionNotFound
+from hashlib import sha1
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
+import requests
 from eth_abi import decode_abi
 from hexbytes import HexBytes
+from web3.exceptions import TransactionNotFound
 
-from .state import TxHistory, _find_contract
-from .event import _decode_logs, _decode_trace
-from pathlib import Path
-from .web3 import Web3
+from brownie._config import ARGV
 from brownie.convert import EthAddress, Wei
-from brownie.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
-from brownie._config import ARGV
+from brownie.utils import color
+
+from .event import _decode_logs, _decode_trace
+from .state import TxHistory, _find_contract
+from .web3 import Web3
 
 history = TxHistory()
 web3 = Web3()

@@ -5,6 +5,7 @@ import time
 from tkinter import ttk
 
 from brownie.project.sources import is_inside_offset
+
 from .bases import ToggleButton
 
 

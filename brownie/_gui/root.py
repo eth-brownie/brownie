@@ -4,14 +4,14 @@ import json
 import tkinter as tk
 from tkinter import ttk
 
+from brownie.project import get_loaded_projects
+
 from .console import Console, ConsoleButton
 from .opcodes import OpcodeList, ScopingButton
 from .report import HighlightSelect, ReportSelect
 from .source import ContractSelect, SourceNoteBook
 from .styles import set_style
 from .tooltip import ToolTip
-
-from brownie.project import get_loaded_projects
 
 
 class Root(tk.Tk):

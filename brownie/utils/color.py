@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-from pathlib import Path
 import sys
-from typing import Dict, Optional, Sequence
 import traceback
+from pathlib import Path
+from typing import Dict, Optional, Sequence
 
 from brownie._config import ARGV, CONFIG
 

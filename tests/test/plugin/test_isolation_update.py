@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
-from pathlib import Path
 import json
+from pathlib import Path
+
 import pytest
 
 conf_source = """

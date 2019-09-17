@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
-from typing import Dict, List, Union, Iterator, ValuesView, Tuple, Any
-from collections import OrderedDict
 import json
+from collections import OrderedDict
+from typing import Any, Dict, Iterator, List, Tuple, Union, ValuesView
 
 import eth_event
 
-from brownie.convert import _format_event
 from brownie._config import CONFIG
+from brownie.convert import _format_event
 from brownie.exceptions import EventLookupError
 
 

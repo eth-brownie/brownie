@@ -1,13 +1,12 @@
 #!/usr/bin/python3
 
-from typing import Dict, Any, Optional
-from collections import defaultdict
 import json
-from pathlib import Path
 import re
+from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 from brownie._singleton import _Singleton
-
 
 REPLACE = ["active_network", "networks"]
 IGNORE = ["active_network", "brownie_folder"]

@@ -7,9 +7,9 @@ import sys
 from docopt import docopt
 
 import brownie
-from brownie.utils import color
 from brownie import network, project
 from brownie._config import ARGV, CONFIG, _update_argv_from_docopt
+from brownie.utils import color
 
 if sys.platform == "win32":
     from pyreadline import Readline

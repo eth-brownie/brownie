@@ -3,9 +3,9 @@
 import pytest
 
 import brownie
+from brownie._config import ARGV, CONFIG
 from brownie.test import output
 from brownie.test._manager import TestManager
-from brownie._config import CONFIG, ARGV
 
 
 class RevertContextManager:

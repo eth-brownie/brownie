@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie.convert import ReturnValue, EthAddress, HexString, Wei
+from brownie.convert import EthAddress, HexString, ReturnValue, Wei
 
 
 @pytest.fixture

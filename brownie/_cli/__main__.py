@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 
-from docopt import docopt
 import importlib
-from pathlib import Path
 import sys
+from pathlib import Path
+
+from docopt import docopt
 
 from brownie import network
-from brownie.utils import color, notify
-from brownie.exceptions import ProjectNotFound
 from brownie._config import ARGV
+from brownie.exceptions import ProjectNotFound
+from brownie.utils import color, notify
 
 __version__ = "1.0.0b12"  # did you change this in docs/conf.py as well?
 

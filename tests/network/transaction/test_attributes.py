@@ -2,10 +2,10 @@
 
 import pytest
 
+from brownie import Wei
+from brownie.convert import EthAddress
 from brownie.network.account import Account
 from brownie.network.event import EventDict
-from brownie.convert import EthAddress
-from brownie import Wei
 
 
 def test_value(accounts):

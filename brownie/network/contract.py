@@ -1,28 +1,27 @@
 #!/usr/bin/python3
 
-from typing import Iterator, List, Union, Dict, Any, Optional, Tuple, Callable
 import re
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import eth_abi
 from eth_hash.auto import keccak
 from hexbytes import HexBytes
 
-from brownie.utils import color
-from .event import _get_topics
-from .state import _add_contract, _find_contract, _remove_contract
-
-from .rpc import Rpc, _revert_register
-from .web3 import Web3
-from brownie.convert import _format_input, _format_output, to_address, Wei
+from brownie._config import ARGV, CONFIG
+from brownie.convert import Wei, _format_input, _format_output, to_address
 from brownie.exceptions import (
     ContractExists,
     ContractNotFound,
     UndeployedLibrary,
     VirtualMachineError,
 )
-from brownie._config import ARGV, CONFIG
+from brownie.typing import AccountsType, TransactionReceiptType
+from brownie.utils import color
 
-from brownie.typing import TransactionReceiptType, AccountsType
+from .event import _get_topics
+from .rpc import Rpc, _revert_register
+from .state import _add_contract, _find_contract, _remove_contract
+from .web3 import Web3
 
 rpc = Rpc()
 web3 = Web3()

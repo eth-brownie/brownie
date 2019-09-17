@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 
-from typing import Dict
-
 from copy import deepcopy
+from typing import Dict
 
 _coverage_eval: Dict[str, Dict] = {}
 _cached: Dict[str, Dict] = {}

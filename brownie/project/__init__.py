@@ -2,11 +2,11 @@
 
 from .main import (  # NOQA 401
     check_for_project,
-    new,
-    pull,
-    load,
     compile_source,
     get_loaded_projects,
+    load,
+    new,
+    pull,
 )
 from .scripts import run
 

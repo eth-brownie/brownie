@@ -2,9 +2,9 @@
 
 import pytest
 
+from brownie.exceptions import VirtualMachineError
 from brownie.network.contract import ProjectContract
 from brownie.network.transaction import TransactionReceipt
-from brownie.exceptions import VirtualMachineError
 
 
 def test_returns_contract_on_success(BrownieTester, accounts):

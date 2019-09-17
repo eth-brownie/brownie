@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import functools
+
 import pytest
 
 from brownie.test import coverage

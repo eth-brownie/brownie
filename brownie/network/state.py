@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 
-from typing import List, Dict, Iterator, Any
-from .rpc import _revert_register
-from brownie.convert import to_address
+from typing import Any, Dict, Iterator, List
+
 from brownie._singleton import _Singleton
+from brownie.convert import to_address
+
+from .rpc import _revert_register
 
 _contract_map: Dict = {}
 

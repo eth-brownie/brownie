@@ -1,20 +1,21 @@
 #!/usr/bin/python3
 
-from typing import Optional, Dict, Any, List, Type, Union, Set, Tuple
-from solcast.main import SourceUnit
-
-from copy import deepcopy
-from collections import deque
-from hashlib import sha1
 import logging
 import re
-from requests.exceptions import ConnectionError
+from collections import deque
+from copy import deepcopy
+from hashlib import sha1
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
+
 import solcast
-from semantic_version import NpmSpec, Version
 import solcx
+from requests.exceptions import ConnectionError
+from semantic_version import NpmSpec, Version
+from solcast.main import SourceUnit
+
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 
 from . import sources
-from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 
 solcx_logger = logging.getLogger("solcx")
 solcx_logger.setLevel(10)

@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 
-from typing import List, Callable, Tuple, Dict, Union
-
 import time as time
 from threading import Thread
+from typing import Callable, Dict, List, Tuple, Union
 
 from brownie.utils import color
 

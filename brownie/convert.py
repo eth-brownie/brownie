@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
-from typing import TypeVar, Any, List, Tuple, Dict, KeysView, ItemsView, Union
 from copy import deepcopy
+from typing import Any, Dict, ItemsView, KeysView, List, Tuple, TypeVar, Union
+
 import eth_utils
 from hexbytes import HexBytes
 

@@ -1,30 +1,30 @@
 #!/usr/bin/python3
 
-from typing import List, Dict, Any, Union, Iterator, Optional, Tuple
-from getpass import getpass
-
-from hexbytes import HexBytes
-import os
-from pathlib import Path
 import json
+import os
 import threading
+from getpass import getpass
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
-from eth_hash.auto import keccak
 import eth_keys
+from eth_hash.auto import keccak
+from hexbytes import HexBytes
 
-from brownie.utils import color
+from brownie._config import CONFIG
+from brownie._singleton import _Singleton
+from brownie.convert import Wei, to_address
 from brownie.exceptions import (
-    VirtualMachineError,
-    UnknownAccount,
     IncompatibleEVMVersion,
+    UnknownAccount,
+    VirtualMachineError,
 )
+from brownie.network.state import _find_contract
 from brownie.network.transaction import TransactionReceipt
+from brownie.utils import color
+
 from .rpc import Rpc, _revert_register
 from .web3 import Web3
-from brownie.network.state import _find_contract
-from brownie.convert import to_address, Wei
-from brownie._singleton import _Singleton
-from brownie._config import CONFIG
 
 web3 = Web3()
 rpc = Rpc()
