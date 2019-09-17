@@ -57,6 +57,7 @@ SEVERITY_COLOURS = {
     Severity.HIGH: "red",
 }
 DASHBOARD_BASE_URL = "https://dashboard.mythx.io/#/console/analyses/"
+TRIAL_PRINTED = False
 
 
 def construct_source_dict_from_artifact(artifact):
@@ -117,30 +118,26 @@ def get_mythx_client():
     ), authenticated
 
 
-def main():
+def get_contract_locations(build):
+    return {d["sourcePath"]: d["contractName"] for _, d in build.items()}
 
-    args = docopt(__doc__)
-    update_argv_from_docopt(args)
 
-    project_path = project.check_for_project(".")
-    if project_path is None:
-        raise ProjectNotFound
-
-    build = project.load()._build
-
-    # aggregate main contracts and libraries
+def get_contract_types(build):
     contracts = set([n for n, d in build.items() if d["type"] == "contract"])
     libraries = set([n for n, d in build.items() if d["type"] == "library"])
 
-    source_to_name = {d["sourcePath"]: d["contractName"] for _, d in build.items()}
+    return contracts, libraries
 
-    # assemble basic MythX analysis jobs for each contract
+
+def assemble_contract_jobs(build, contracts):
     job_data = {}
     for contract in contracts:
         artifact = build.get(contract)
         job_data[contract] = construct_request_from_artifact(artifact)
+    return job_data
 
-    # update base requests with dependency data
+
+def update_contract_jobs_with_dependencies(build, contracts, libraries, job_data):
     for lib in libraries:
         artifact = build.get(lib)
         source_dict = construct_source_dict_from_artifact(artifact)
@@ -149,11 +146,13 @@ def main():
         for contract in dep_contracts:
             job_data[contract]["sources"].update(source_dict)
 
-    client, authenticated = get_mythx_client()
+    return job_data
 
-    # submit to MythX
+
+def send_to_mythx(job_data, client, authenticated):
     job_uuids = []
     for contract_name, analysis_request in job_data.items():
+        # print(json.dumps(analysis_request, indent=2, sort_keys=True))
         resp = client.analyze(**analysis_request)
         if ARGV["async"] and authenticated:
             print(
@@ -167,6 +166,78 @@ def main():
             )
         job_uuids.append(resp.uuid)
 
+    return job_uuids
+
+
+def wait_for_jobs(job_uuids, client):
+    for uuid in job_uuids:
+        while not client.analysis_ready(uuid):
+            time.sleep(int(ARGV["interval"]))
+
+
+def update_report(client, uuid, highlight_report, source_to_name):
+    global TRIAL_PRINTED
+
+    resp = client.report(uuid)
+    for report in resp.issue_reports:
+        for issue in resp:
+            # handle non-code issues and print message only once
+            if issue.swc_id == "" or issue.severity in (
+                    Severity.UNKNOWN,
+                    Severity.NONE,
+            ):
+                if not TRIAL_PRINTED:
+                    print(issue.description_short)
+                    print(issue.description_long)
+                    print()
+                    TRIAL_PRINTED = True
+                continue
+
+            # convert issue locations to report locations
+            # severities are highlighted according to SEVERITY_COLOURS
+            for loc in issue.locations:
+                comp = loc.source_map.components[0]
+                source_list = loc.source_list or report.source_list
+
+                if source_list and 0 <= comp.file_id < len(source_list):
+                    filename = source_list[comp.file_id]
+                    if filename in source_to_name:
+                        contract_name = source_to_name[filename]
+                        highlight_report["highlights"]["MythX"][contract_name][
+                            filename
+                        ].append(
+                            [
+                                comp.offset,
+                                comp.offset + comp.length,
+                                SEVERITY_COLOURS[issue.severity],
+                                "{}: {}".format(
+                                    issue.swc_id, issue.description_short
+                                ),
+                            ]
+                        )
+
+
+def main():
+    args = docopt(__doc__)
+    update_argv_from_docopt(args)
+
+    project_path = project.check_for_project(".")
+    if project_path is None:
+        raise ProjectNotFound
+
+    build = project.load()._build
+
+    contracts, libraries = get_contract_types(build)
+
+    job_data = assemble_contract_jobs(build, contracts)
+    job_data = update_contract_jobs_with_dependencies(
+        build, contracts, libraries, job_data
+    )
+
+    client, authenticated = get_mythx_client()
+
+    job_uuids = send_to_mythx(job_data, client, authenticated)
+
     # exit if user wants an async analysis run
     if ARGV["async"] and authenticated:
         print(
@@ -175,13 +246,13 @@ def main():
         )
         return
 
-    # poll in user-specified interval until all results are in
-    for uuid in job_uuids:
-        while not client.analysis_ready(uuid):
-            time.sleep(int(ARGV["interval"]))
+    wait_for_jobs(job_uuids, client)
 
     # assemble report json
-    printed = False
+    source_to_name = get_contract_locations(build)
+    highlight_report = {
+        "highlights": {"MythX": {cn: {cp: []} for cp, cn in source_to_name.items()}}
+    }
     for uuid in job_uuids:
         print("Generating report for job {}".format(uuid))
         if authenticated:
@@ -191,50 +262,11 @@ def main():
                 )
             )
 
-        highlight_report = {
-            "highlights": {"MythX": {cn: {cp: []} for cp, cn in source_to_name.items()}}
-        }
-        resp = client.report(uuid)
-        for report in resp.issue_reports:
-            for issue in resp:
-                # handle non-code issues and print message only once
-                if issue.swc_id == "" or issue.severity in (
-                    Severity.UNKNOWN,
-                    Severity.NONE,
-                ):
-                    if not printed:
-                        print(issue.description_short)
-                        print(issue.description_long)
-                        print()
-                        printed = True
-                    continue
+        update_report(client, uuid, highlight_report, source_to_name)
 
-                # convert issue locations to report locations
-                # severities are highlighted according to SEVERITY_COLOURS
-                for loc in issue.locations:
-                    comp = loc.source_map.components[0]
-                    source_list = loc.source_list or report.source_list
-
-                    if source_list and 0 <= comp.file_id < len(source_list):
-                        filename = source_list[comp.file_id]
-                        if filename in source_to_name:
-                            contract_name = source_to_name[filename]
-                            highlight_report["highlights"]["MythX"][contract_name][
-                                filename
-                            ].append(
-                                [
-                                    comp.offset,
-                                    comp.offset + comp.length,
-                                    SEVERITY_COLOURS[issue.severity],
-                                    "{}: {}".format(
-                                        issue.swc_id, issue.description_short
-                                    ),
-                                ]
-                            )
-
-        # Write report to Brownie directory
-        with open("reports/security.json", "w+") as report_f:
-            json.dump(highlight_report, report_f, indent=2, sort_keys=True)
+    # Write report to Brownie directory
+    with open("reports/security.json", "w+") as report_f:
+        json.dump(highlight_report, report_f, indent=2, sort_keys=True)
 
     # Launch GUI if user requested it
     if ARGV["gui"]:
