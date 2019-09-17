@@ -20,15 +20,7 @@ def pytest_sessionstart():
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setattr(
         "solcx.get_available_solc_versions",
-        lambda: [
-            "v0.5.10",
-            "v0.5.9",
-            "v0.5.8",
-            "v0.5.7",
-            "v0.4.25",
-            "v0.4.24",
-            "v0.4.22",
-        ],
+        lambda: ["v0.5.10", "v0.5.9", "v0.5.8", "v0.5.7", "v0.4.25", "v0.4.24", "v0.4.22"],
     )
 
 
@@ -101,16 +93,9 @@ def evmtester(_project_factory, project, tmp_path, accounts, request):
         _project_factory.joinpath("contracts/EVMTester.sol"),
         tmp_path.joinpath("contracts/EVMTester.sol"),
     )
-    conf_json = brownie._config._load_json(
-        _project_factory.joinpath("brownie-config.json")
-    )
+    conf_json = brownie._config._load_json(_project_factory.joinpath("brownie-config.json"))
     conf_json["compiler"]["solc"].update(
-        {
-            "version": solc_version,
-            "optimize": runs > 0,
-            "runs": runs,
-            "evm_version": evm_version,
-        }
+        {"version": solc_version, "optimize": runs > 0, "runs": runs, "evm_version": evm_version}
     )
     with tmp_path.joinpath("brownie-config.json").open("w") as fp:
         json.dump(conf_json, fp)

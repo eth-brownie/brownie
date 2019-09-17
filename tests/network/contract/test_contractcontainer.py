@@ -4,9 +4,7 @@ import pytest
 
 
 def test_get_method(BrownieTester):
-    calldata = (
-        "0x2e27149600000000000000000000000066ab6d9362d4f35596279692f0251db635165871"
-    )
+    calldata = "0x2e27149600000000000000000000000066ab6d9362d4f35596279692f0251db635165871"
     assert BrownieTester.get_method(calldata) == "getTuple"
 
 

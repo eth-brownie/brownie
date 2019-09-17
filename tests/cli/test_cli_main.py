@@ -74,9 +74,7 @@ def test_cli_console(cli_tester, testproject):
     testproject.close()
     cli_tester.set_target("brownie._cli.console.Console.interact")
     cli_tester.set_subtargets("brownie.network.connect")
-    cli_tester.run(
-        "console", kwargs={"banner": "Brownie environment is ready.", "exitmsg": ""}
-    )
+    cli_tester.run("console", kwargs={"banner": "Brownie environment is ready.", "exitmsg": ""})
 
 
 # travis doesn't like this
@@ -91,14 +89,10 @@ def test_cli_run(cli_tester, project):
     cli_tester.set_target("brownie.run")
     cli_tester.set_subtargets("brownie.network.connect")
     cli_tester.run(
-        "run testfile",
-        args=("testfile",),
-        kwargs={"method_name": "main", "project": None},
+        "run testfile", args=("testfile",), kwargs={"method_name": "main", "project": None}
     )
     cli_tester.run(
-        "run testfile xx --gas",
-        args=("testfile",),
-        kwargs={"method_name": "xx", "project": None},
+        "run testfile xx --gas", args=("testfile",), kwargs={"method_name": "xx", "project": None}
     )
 
 

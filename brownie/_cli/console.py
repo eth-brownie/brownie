@@ -79,9 +79,7 @@ class Console(code.InteractiveConsole):
         else:
             results = [(i, getattr(obj, i)) for i in dir(obj) if not i.startswith("_")]
         results = sorted(results, key=lambda k: k[0])
-        self.write(
-            f"[{f'{color}, '.join(_dir_color(i[1]) + i[0] for i in results)}{color}]\n"
-        )
+        self.write(f"[{f'{color}, '.join(_dir_color(i[1]) + i[0] for i in results)}{color}]\n")
 
     def _console_write(self, text):
         try:
@@ -109,8 +107,7 @@ class Console(code.InteractiveConsole):
             method = getattr(self.locals[cls_], method)
             if hasattr(method, "_private"):
                 readline.replace_history_item(
-                    readline.get_current_history_length() - 1,
-                    line[: line.index("(")] + "()",
+                    readline.get_current_history_length() - 1, line[: line.index("(")] + "()"
                 )
         except (ValueError, AttributeError, KeyError):
             pass

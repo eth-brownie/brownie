@@ -91,9 +91,7 @@ class Color:
         if value and not [i for i in value if not isinstance(i, dict)]:
             # list of dicts
             text += f"\n{' '*(_indent+4)}{{"
-            text += f",\n{' '*(_indent+4)}{{".join(
-                self.pretty_dict(i, _indent + 4) for i in value
-            )
+            text += f",\n{' '*(_indent+4)}{{".join(self.pretty_dict(i, _indent + 4) for i in value)
             text += f"\n{' '*_indent}{brackets[1]}"
         elif value and not [i for i in value if not isinstance(i, str) or len(i) != 64]:
             # list of bytes32 hexstrings (stack trace)

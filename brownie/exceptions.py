@@ -38,9 +38,7 @@ class RPCProcessError(_RPCBaseException):
 
 class RPCConnectionError(_RPCBaseException):
     def __init__(self, cmd: str, proc: Type[psutil.Popen], uri: str) -> None:
-        super().__init__(
-            "Able to launch RPC client, but unable to connect.", cmd, proc, uri
-        )
+        super().__init__("Able to launch RPC client, but unable to connect.", cmd, proc, uri)
 
 
 class RPCRequestError(Exception):

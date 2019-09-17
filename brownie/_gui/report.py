@@ -27,9 +27,7 @@ class ReportSelect(SelectBox):
             return
         self.root.toolbar.highlight_select.show()
         self.root.report_key = value
-        self.root.toolbar.highlight_select.set_values(
-            list(self.root.reports[value]["highlights"])
-        )
+        self.root.toolbar.highlight_select.set_values(list(self.root.reports[value]["highlights"]))
 
 
 class HighlightSelect(SelectBox):
@@ -59,9 +57,7 @@ class HighlightSelect(SelectBox):
         if contract not in self.root.active_report[value]:
             return
         report = self.root.active_report[value][contract]
-        for path, (start, stop, color, msg) in [
-            (k, x) for k, v in report.items() for x in v
-        ]:
+        for path, (start, stop, color, msg) in [(k, x) for k, v in report.items() for x in v]:
             label = Path(path).name
             self.note.mark(label, color, start, stop, msg)
 

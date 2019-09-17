@@ -107,13 +107,9 @@ def test_build_json_keys(solc5source):
 
 
 def test_build_json_unlinked_libraries(solc4source, solc5source):
-    build_json = compiler.compile_and_format(
-        {"path": solc5source}, solc_version="0.5.7"
-    )
+    build_json = compiler.compile_and_format({"path": solc5source}, solc_version="0.5.7")
     assert "__Bar__" in build_json["Foo"]["bytecode"]
-    build_json = compiler.compile_and_format(
-        {"path": solc4source}, solc_version="0.4.25"
-    )
+    build_json = compiler.compile_and_format({"path": solc4source}, solc_version="0.4.25")
     assert "__Bar__" in build_json["Foo"]["bytecode"]
 
 

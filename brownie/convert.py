@@ -278,9 +278,7 @@ def _format_abi(abi: Any, values: Any) -> "ReturnValue":
     types = [i["type"] for i in abi]
     values = list(values)
     if len(values) != len(types):
-        raise TypeError(
-            f"Expected {len(types)} arguments, got {len(values)}: {','.join(types)}"
-        )
+        raise TypeError(f"Expected {len(types)} arguments, got {len(values)}: {','.join(types)}")
     for i, type_ in enumerate(types):
         try:
             if "]" in type_:
@@ -300,9 +298,7 @@ def _format_array(abi: Any, values: Any) -> "ReturnValue":
     if not isinstance(values, (list, tuple)):
         raise TypeError(f"Expected sequence, got {type(values)}")
     if length != "" and len(values) != int(length):
-        raise ValueError(
-            f"Expected {abi['type']} but sequence has length of {len(values)}"
-        )
+        raise ValueError(f"Expected {abi['type']} but sequence has length of {len(values)}")
     if "]" in base_type:
         abi = deepcopy(abi)
         abi["type"] = base_type
@@ -408,9 +404,7 @@ def _kwargtuple_compare(a: Any, b: Any) -> Any:
         return _convert_str(a) == _convert_str(b)
     if type(b) not in (tuple, list, ReturnValue) or len(b) != len(a):
         return False
-    return next(
-        (False for i in range(len(a)) if not _kwargtuple_compare(a[i], b[i])), True
-    )
+    return next((False for i in range(len(a)) if not _kwargtuple_compare(a[i], b[i])), True)
 
 
 def _convert_str(value: Any) -> "Wei":

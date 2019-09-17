@@ -36,10 +36,6 @@ def main():
 
     network.connect(ARGV["network"])
 
-    run(
-        args["<filename>"],
-        method_name=args["<function>"] or "main",
-        project=active_project,
-    )
+    run(args["<filename>"], method_name=args["<function>"] or "main", project=active_project)
     if ARGV["gas"]:
         _print_gas_profile()

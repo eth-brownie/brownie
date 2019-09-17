@@ -28,9 +28,7 @@ def test_namespace(project, testproject):
 
 def test_check_for_project(project, testproject):
     path = project.check_for_project(testproject._project_path)
-    assert path == project.check_for_project(
-        testproject._project_path.joinpath("contracts")
-    )
+    assert path == project.check_for_project(testproject._project_path.joinpath("contracts"))
     assert not project.check_for_project("/")
 
 

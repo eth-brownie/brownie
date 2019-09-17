@@ -96,20 +96,14 @@ def set_style(root):
             (
                 "Vertical.Scrollbar.trough",
                 {
-                    "children": [
-                        ("Vertical.Scrollbar.thumb", {"expand": "1", "sticky": "nswe"})
-                    ],
+                    "children": [("Vertical.Scrollbar.thumb", {"expand": "1", "sticky": "nswe"})],
                     "sticky": "ns",
                 },
             )
         ],
     )
     style.configure(
-        "TCombobox",
-        foreground="#000000",
-        background="#555555",
-        borderwidth=0,
-        arrowsize=24,
+        "TCombobox", foreground="#000000", background="#555555", borderwidth=0, arrowsize=24
     )
     style.map(
         "TCombobox",

@@ -32,9 +32,7 @@ def get_merged_coverage_eval():
                     merged_eval[name][path] = map_
                     continue
                 for i in range(3):
-                    merged_eval[name][path][i] = set(merged_eval[name][path][i]).union(
-                        map_[i]
-                    )
+                    merged_eval[name][path][i] = set(merged_eval[name][path][i]).union(map_[i])
     return merged_eval
 
 

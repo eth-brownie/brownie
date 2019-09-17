@@ -17,10 +17,7 @@ class OpcodeList(ttk.Treeview):
         self._highlighted = set()
         self._frame = ttk.Frame(parent)
         super().__init__(
-            self._frame,
-            columns=[i[0] for i in columns[1:]],
-            selectmode="browse",
-            **kwargs,
+            self._frame, columns=[i[0] for i in columns[1:]], selectmode="browse", **kwargs
         )
         self.pack(side="left", fill="y")
         self.heading("#0", text=columns[0][0])
@@ -49,9 +46,7 @@ class OpcodeList(ttk.Treeview):
         self._frame.grid(*args, **kwargs)
 
     def insert(self, values, tags=[]):
-        super().insert(
-            "", "end", iid=values[0], text=values[0], values=values[1:], tags=tags
-        )
+        super().insert("", "end", iid=values[0], text=values[0], values=values[1:], tags=tags)
 
     def delete_all(self):
         for item in self.get_children():
@@ -148,9 +143,7 @@ class OpcodeList(ttk.Treeview):
             self.tag_configure(op, foreground="")
             self._highlighted.remove(op)
             return
-        self.tag_configure(
-            op, foreground="#dd3333" if op in ("REVERT", "INVALID") else "#dddd33"
-        )
+        self.tag_configure(op, foreground="#dd3333" if op in ("REVERT", "INVALID") else "#dddd33")
         self._highlighted.add(op)
 
     def _highlight_jumps(self, event):

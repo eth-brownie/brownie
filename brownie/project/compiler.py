@@ -29,10 +29,7 @@ STANDARD_JSON = {
     "sources": {},
     "settings": {
         "outputSelection": {
-            "*": {
-                "*": ["abi", "evm.assembly", "evm.bytecode", "evm.deployedBytecode"],
-                "": ["ast"],
-            }
+            "*": {"*": ["abi", "evm.assembly", "evm.bytecode", "evm.deployedBytecode"], "": ["ast"]}
         },
         "optimizer": {"enabled": True, "runs": 200},
         "evmVersion": None,
@@ -43,9 +40,7 @@ STANDARD_JSON = {
 def set_solc_version(version: str) -> str:
     """Sets the solc version. If not available it will be installed."""
     if Version(version.lstrip("v")) < Version("0.4.22"):
-        raise IncompatibleSolcVersion(
-            "Brownie only supports Solidity versions >=0.4.22"
-        )
+        raise IncompatibleSolcVersion("Brownie only supports Solidity versions >=0.4.22")
     try:
         solcx.set_solc_version(version, silent=True)
     except solcx.exceptions.SolcNotInstalled:
@@ -91,25 +86,16 @@ def compile_and_format(
     if solc_version is not None:
         path_versions = {solc_version: list(contracts)}
     else:
-        path_versions = find_solc_versions(
-            contracts, install_needed=True, silent=silent
-        )
+        path_versions = find_solc_versions(contracts, install_needed=True, silent=silent)
 
     for version, path_list in path_versions.items():
         set_solc_version(version)
-        compiler_data = {
-            "minify_source": minify,
-            "version": solcx.get_solc_version_string(),
-        }
+        compiler_data = {"minify_source": minify, "version": solcx.get_solc_version_string()}
         to_compile = dict((k, v) for k, v in contracts.items() if k in path_list)
 
-        input_json = generate_input_json(
-            to_compile, optimize, runs, evm_version, minify
-        )
+        input_json = generate_input_json(to_compile, optimize, runs, evm_version, minify)
         output_json = compile_from_input_json(input_json, silent)
-        build_json.update(
-            generate_build_json(input_json, output_json, compiler_data, silent)
-        )
+        build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
     return build_json
 
 
@@ -133,9 +119,7 @@ def find_solc_versions(
     """
     installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
     try:
-        available_versions = [
-            Version(i[1:]) for i in solcx.get_available_solc_versions()
-        ]
+        available_versions = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
     except ConnectionError:
         if not installed_versions:
             raise ConnectionError("Solc not installed and cannot connect to GitHub")
@@ -175,9 +159,7 @@ def find_solc_versions(
     # install new versions if needed
     if to_install:
         install_solc(*to_install)
-        installed_versions = [
-            Version(i[1:]) for i in solcx.get_installed_solc_versions()
-        ]
+        installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
     elif new_versions and not silent:
         print(
             f"New compatible solc version{'s' if len(new_versions) > 1 else ''}"
@@ -212,18 +194,13 @@ def generate_input_json(
     Returns: dict
     """
     if evm_version is None:
-        evm_version = (
-            "petersburg"
-            if solcx.get_solc_version() >= Version("0.5.5")
-            else "byzantium"
-        )
+        evm_version = "petersburg" if solcx.get_solc_version() >= Version("0.5.5") else "byzantium"
     input_json: Dict = deepcopy(STANDARD_JSON)
     input_json["settings"]["optimizer"]["enabled"] = optimize
     input_json["settings"]["optimizer"]["runs"] = runs if optimize else 0
     input_json["settings"]["evmVersion"] = evm_version
     input_json["sources"] = dict(
-        (k, {"content": sources.minify(v)[0] if minify else v})
-        for k, v in contracts.items()
+        (k, {"content": sources.minify(v)[0] if minify else v}) for k, v in contracts.items()
     )
     return input_json
 
@@ -243,11 +220,7 @@ def compile_from_input_json(input_json: Dict, silent: bool = True) -> Dict:
         print(f"  Solc {solcx.get_solc_version_string()}")
         print(
             "  Optimizer: "
-            + (
-                f"Enabled  Runs: {optimizer['runs']}"
-                if optimizer["enabled"]
-                else "Disabled"
-            )
+            + (f"Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled")
         )
         if input_json["settings"]["evmVersion"]:
             print(f"  EVM Version: {input_json['settings']['evmVersion'].capitalize()}")
@@ -264,10 +237,7 @@ def compile_from_input_json(input_json: Dict, silent: bool = True) -> Dict:
 
 
 def generate_build_json(
-    input_json: Dict,
-    output_json: Dict,
-    compiler_data: Optional[Dict] = None,
-    silent: bool = True,
+    input_json: Dict, output_json: Dict, compiler_data: Optional[Dict] = None, silent: bool = True
 ) -> Dict:
     """Formats standard compiler output to the brownie build json.
 
@@ -298,9 +268,7 @@ def generate_build_json(
     statement_nodes = _get_statement_nodes(source_nodes)
     branch_nodes = _get_branch_nodes(source_nodes)
 
-    for path, contract_name in [
-        (k, v) for k in path_list for v in output_json["contracts"][k]
-    ]:
+    for path, contract_name in [(k, v) for k in path_list for v in output_json["contracts"][k]]:
 
         if not silent:
             print(f" - {contract_name}...")
@@ -308,13 +276,9 @@ def generate_build_json(
         abi = output_json["contracts"][path][contract_name]["abi"]
         evm = output_json["contracts"][path][contract_name]["evm"]
         bytecode = _format_link_references(evm)
-        hash_ = sources.get_hash(
-            input_json["sources"][path]["content"], contract_name, minified
-        )
+        hash_ = sources.get_hash(input_json["sources"][path]["content"], contract_name, minified)
         node = next(i[contract_name] for i in source_nodes if i.name == path)
-        paths = sorted(
-            set([node.parent().path] + [i.parent().path for i in node.dependencies])
-        )
+        paths = sorted(set([node.parent().path] + [i.parent().path for i in node.dependencies]))
 
         pc_map, statement_map, branch_map = _generate_coverage_data(
             evm["deployedBytecode"]["sourceMap"],
@@ -357,9 +321,7 @@ def generate_build_json(
 def _format_link_references(evm: Dict) -> Dict:
     # Standardizes formatting for unlinked libraries within bytecode
     bytecode = evm["bytecode"]["object"]
-    references = [
-        (k, x) for v in evm["bytecode"]["linkReferences"].values() for k, x in v.items()
-    ]
+    references = [(k, x) for v in evm["bytecode"]["linkReferences"].values() for k, x in v.items()]
     for n, loc in [(i[0], x["start"] * 2) for i in references for x in i[1]]:
         bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"
     return bytecode
@@ -444,10 +406,7 @@ def _generate_coverage_data(
         if branch_active[path] and pc_list[-1]["op"] == "JUMPI":
             for offset in branch_active[path]:
                 # ( program counter index, JUMPI index)
-                branch_set[path][offset] = (
-                    branch_active[path][offset],
-                    len(pc_list) - 1,
-                )
+                branch_set[path][offset] = (branch_active[path][offset], len(pc_list) - 1)
             branch_active[path].clear()
 
         # if op relates to previously set branch marker, clear it
@@ -464,15 +423,11 @@ def _generate_coverage_data(
                 pc_list[-1]["fn"] = (
                     source_nodes[source[2]]
                     .children(
-                        depth=2,
-                        inner_offset=offset,
-                        filters={"node_type": "FunctionDefinition"},
+                        depth=2, inner_offset=offset, filters={"node_type": "FunctionDefinition"}
                     )[0]
                     .full_name
                 )
-                statement = next(
-                    i for i in stmt_nodes[path] if sources.is_inside_offset(offset, i)
-                )
+                statement = next(i for i in stmt_nodes[path] if sources.is_inside_offset(offset, i))
                 stmt_nodes[path].discard(statement)
                 statement_map[path].setdefault(pc_list[-1]["fn"], {})[count] = statement
                 pc_list[-1]["statement"] = count
@@ -483,9 +438,7 @@ def _generate_coverage_data(
             continue
         if pc_list[-1]["value"] == fallback and opcodes[0] in {"JUMP", "JUMPI"}:
             # track all jumps to the initial revert
-            revert_map.setdefault((pc_list[-1]["path"], pc_list[-1]["fn"]), []).append(
-                len(pc_list)
-            )
+            revert_map.setdefault((pc_list[-1]["path"], pc_list[-1]["fn"]), []).append(len(pc_list))
 
     # compare revert() statements against the map of revert jumps to find
     for (path, fn_name), values in revert_map.items():
@@ -494,24 +447,18 @@ def _generate_coverage_data(
             include_children=False,
             filters={"node_type": "FunctionDefinition", "full_name": fn_name},
         )[0]
-        revert_nodes = fn_node.children(
-            filters={"node_type": "FunctionCall", "name": "revert"}
-        )
+        revert_nodes = fn_node.children(filters={"node_type": "FunctionCall", "name": "revert"})
         # if the node has arguments it will always be included in the source map
         for node in (i for i in revert_nodes if not i.arguments):
             offset = node.offset
             # if the node offset is not in the source map, apply it's offset to the JUMPI op
-            if not next(
-                (x for x in pc_list if "offset" in x and x["offset"] == offset), False
-            ):
+            if not next((x for x in pc_list if "offset" in x and x["offset"] == offset), False):
                 pc_list[values[0]].update({"offset": offset, "jump_revert": True})
                 del values[0]
 
     # set branch index markers and build final branch map
     branch_map: Dict = dict((i, {}) for i in paths)
-    for path, offset, idx in [
-        (k, x, y) for k, v in branch_set.items() for x, y in v.items()
-    ]:
+    for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
         # for branch to be hit, need an op relating to the source and the next JUMPI
         # this is because of how the compiler optimizes nested BinaryOperations
         pc_list[idx[0]]["branch"] = count
@@ -522,9 +469,7 @@ def _generate_coverage_data(
             fn = (
                 source_nodes[path]
                 .children(
-                    depth=2,
-                    inner_offset=offset,
-                    filters={"node_type": "FunctionDefinition"},
+                    depth=2, inner_offset=offset, filters={"node_type": "FunctionDefinition"}
                 )[0]
                 .full_name
             )
@@ -538,9 +483,7 @@ def _generate_coverage_data(
 
 def _expand_source_map(source_map_str: str) -> List:
     # Expands the compressed sourceMap supplied by solc into a list of lists
-    source_map: List = [
-        _expand_row(i) if i else None for i in source_map_str.split(";")
-    ]
+    source_map: List = [_expand_row(i) if i else None for i in source_map_str.split(";")]
     for i in range(1, len(source_map)):
         if not source_map[i]:
             source_map[i] = source_map[i - 1]
@@ -609,9 +552,7 @@ def _get_recursive_branches(base_node: Any) -> Set:
         {"node_type": "BinaryOperation", "type": "bool", "operator": "||"},
         {"node_type": "BinaryOperation", "type": "bool", "operator": "&&"},
     )
-    all_binaries = node.children(
-        include_parents=True, include_self=True, filters=filters
-    )
+    all_binaries = node.children(include_parents=True, include_self=True, filters=filters)
 
     # if no BinaryOperation nodes are found, this node is the branch
     if not all_binaries:
@@ -643,16 +584,11 @@ def _get_recursive_branches(base_node: Any) -> Set:
 def _is_rightmost_operation(node: Type[SourceUnit], depth: int) -> bool:
     # Check if the node is the final operation within the expression
     parents = node.parents(depth, {"node_type": "BinaryOperation", "type": "bool"})
-    return not next(
-        (i for i in parents if i.left == node or node.is_child_of(i.left)), False
-    )
+    return not next((i for i in parents if i.left == node or node.is_child_of(i.left)), False)
 
 
 def _check_left_operator(node: Type[SourceUnit], depth: int) -> bool:
     # Find the nearest parent boolean where this node sits on the left side of
     # the comparison, and return True if that node's operator is ||
     parents = node.parents(depth, {"node_type": "BinaryOperation", "type": "bool"})
-    return (
-        next(i for i in parents if i.left == node or node.is_child_of(i.left)).operator
-        == "||"
-    )
+    return next(i for i in parents if i.left == node or node.is_child_of(i.left)).operator == "||"

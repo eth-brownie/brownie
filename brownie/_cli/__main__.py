@@ -36,9 +36,7 @@ def main():
 
     # remove options before calling docopt
     if len(sys.argv) > 1 and sys.argv[1][0] != "-":
-        idx = next(
-            (sys.argv.index(i) for i in sys.argv if i.startswith("-")), len(sys.argv)
-        )
+        idx = next((sys.argv.index(i) for i in sys.argv if i.startswith("-")), len(sys.argv))
         opts = sys.argv[idx:]
         sys.argv = sys.argv[:idx]
     args = docopt(__doc__)

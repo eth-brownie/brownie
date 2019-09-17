@@ -17,9 +17,7 @@ else:
     headers = None
 
 for i in range(10):
-    data = requests.get(
-        "https://api.github.com/orgs/brownie-mix/repos", headers=headers
-    )
+    data = requests.get("https://api.github.com/orgs/brownie-mix/repos", headers=headers)
     if data.status_code == 200:
         break
     time.sleep(30)

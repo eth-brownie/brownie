@@ -7,9 +7,7 @@ from brownie.convert import EthAddress, HexString, ReturnValue, Wei
 
 @pytest.fixture
 def return_value(accounts, tester):
-    yield tester.manyValues(
-        88, [False, False, False], accounts[2], [("0x1234", "0x6666")]
-    )
+    yield tester.manyValues(88, [False, False, False], accounts[2], [("0x1234", "0x6666")])
 
 
 def test_type(return_value):

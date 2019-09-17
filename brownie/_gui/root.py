@@ -117,10 +117,7 @@ class ToolbarFrame(ttk.Frame):
 
         self.scope = ScopingButton(self)
         self.scope.grid(row=0, column=1, sticky="nsew")
-        ToolTip(
-            self.scope,
-            "Filter opcodes to only show those\nrelated to the highlighted source",
-        )
+        ToolTip(self.scope, "Filter opcodes to only show those\nrelated to the highlighted source")
 
         # report selection
         self.highlight_select = HighlightSelect(self)
@@ -133,8 +130,6 @@ class ToolbarFrame(ttk.Frame):
         ToolTip(self.report, "Select a report to overlay onto the source code")
 
         # contract selection
-        self.combo = ContractSelect(
-            self, [k for k, v in project._build.items() if v["bytecode"]]
-        )
+        self.combo = ContractSelect(self, [k for k, v in project._build.items() if v["bytecode"]])
         self.combo.grid(row=0, column=10, sticky="nsew")
         ToolTip(self.combo, "Select the contract source to view")
