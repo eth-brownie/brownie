@@ -869,13 +869,13 @@ ContractTx Methods
         >>> Token[0].transfer.call(accounts[2], 10000, {'from': accounts[0]})
         True
 
-.. py:classmethod:: ContractTx.encode_abi(*args)
+.. py:classmethod:: ContractTx.encode_input(*args)
 
     Returns a hexstring of ABI calldata that can be used to call the method with the given arguments.
 
     .. code-block:: python
 
-        >>> calldata = Token[0].transfer.encode_abi(accounts[1], 1000)
+        >>> calldata = Token[0].transfer.encode_input(accounts[1], 1000)
         0xa9059cbb0000000000000000000000000d36bdba474b5b442310a5bfb989903020249bba00000000000000000000000000000000000000000000000000000000000003e8
         >>> accounts[0].transfer(Token[0], 0, data=calldata)
 
@@ -884,13 +884,13 @@ ContractTx Methods
         <Transaction object '0x8dbf15878104571669f9843c18afc40529305ddb842f94522094454dcde22186'>
 
 
-.. py:classmethod:: ContractTx.decode_abi(hexstr)
+.. py:classmethod:: ContractTx.decode_output(hexstr)
 
     Decodes raw hexstring data returned by this method.
 
     .. code-block:: python
 
-        >>>  Token[0].balanceOf.decode_abi("0x00000000000000000000000000000000000000000000003635c9adc5dea00000")
+        >>>  Token[0].balanceOf.decode_output("0x00000000000000000000000000000000000000000000003635c9adc5dea00000")
         1000000000000000000000
 
 
@@ -1005,8 +1005,11 @@ EventDict
 
     Returns an object providing a view on the object's values.
 
+Internal Classes and Methods
+----------------------------
+
 _EventItem
-----------
+**********
 
 .. py:class:: brownie.types.types._EventItem
 
@@ -1086,34 +1089,34 @@ _EventItem
 
     Returns an object providing a view on the values in the first event within this object.
 
-Module Methods
---------------
+Internal Methods
+****************
 
-.. py:method:: brownie.network.event.get_topics(abi)
+.. py:method:: brownie.network.event._get_topics(abi)
 
     Generates encoded topics from the given ABI, merges them with those already known in ``topics.json``, and returns a dictioary in the form of ``{'Name': "encoded topic hexstring"}``.
 
     .. code-block:: python
 
-        >>> from brownie.network.event import get_topics
+        >>> from brownie.network.event import _get_topics
         >>> abi = [{'name': 'Approval', 'anonymous': False, 'type': 'event', 'inputs': [{'name': 'owner', 'type': 'address', 'indexed': True}, {'name': 'spender', 'type': 'address', 'indexed': True}, {'name': 'value', 'type': 'uint256', 'indexed': False}]}, {'name': 'Transfer', 'anonymous': False, 'type': 'event', 'inputs': [{'name': 'from', 'type': 'address', 'indexed': True}, {'name': 'to', 'type': 'address', 'indexed': True}, {'name': 'value', 'type': 'uint256', 'indexed': False}]}]
-        >>> get_topics(abi)
+        >>> _get_topics(abi)
         {'Transfer': '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', 'Approval': '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'}
 
 
-.. py:method:: brownie.network.event.decode_logs(logs)
+.. py:method:: brownie.network.event._decode_logs(logs)
 
     Given an array of logs as returned by ``eth_getLogs`` or ``eth_getTransactionReceipt`` RPC calls, returns an :ref:`api-network-eventdict`.
 
     .. code-block:: python
 
-        >>> from brownie.network.event import decode_logs
+        >>> from brownie.network.event import _decode_logs
         >>> tx = Token[0].transfer(accounts[1], 100)
 
         Transaction sent: 0xfefc3b7d912ed438b312414fb31d94ff757970f4d2e74dd0950d5c58cc23fdb1
         Token.transfer confirmed - block: 2   gas used: 50993 (33.77%)
         <Transaction object '0xfefc3b7d912ed438b312414fb31d94ff757970f4d2e74dd0950d5c58cc23fdb1'>
-        >>> e = decode_logs(tx.logs)
+        >>> e = _decode_logs(tx.logs)
         >>> repr(e)
         <brownie.types.types.EventDict object at 0x7feed74aebe0>
         >>> e
@@ -1125,19 +1128,19 @@ Module Methods
             }
         }
 
-.. py:method:: brownie.network.event.decode_trace(trace)
+.. py:method:: brownie.network.event._decode_trace(trace)
 
     Given the ``structLog`` from a ``debug_traceTransaction`` RPC call, returns an :ref:`api-network-eventdict`.
 
     .. code-block:: python
 
-        >>> from brownie.network.event import decode_trace
+        >>> from brownie.network.event import _decode_trace
         >>> tx = Token[0].transfer(accounts[2], 1000, {'from': accounts[3]})
 
         Transaction sent: 0xc6365b065492ea69ad3cbe26039a45a68b2e9ab9d29c2ff7d5d9162970b176cd
         Token.transfer confirmed (Insufficient Balance) - block: 2   gas used: 23602 (19.10%)
         <Transaction object '0xc6365b065492ea69ad3cbe26039a45a68b2e9ab9d29c2ff7d5d9162970b176cd'>
-        >>> e = decode_trace(tx.trace)
+        >>> e = _decode_trace(tx.trace)
         >>> repr(e)
         <brownie.types.types.EventDict object at 0x7feed74aebe0>
         >>> e
@@ -1145,21 +1148,21 @@ Module Methods
 
 .. _api-network-history:
 
-``brownie.network.history``
-===========================
+``brownie.network.state``
+=========================
 
-The ``history`` module contains classes to record transactions and contracts as they occur on the blockchain.
+The ``state`` module contains classes to record transactions and contracts as they occur on the blockchain.
 
 TxHistory
 ---------
 
-.. py:class:: brownie.network.history.TxHistory
+.. py:class:: brownie.network.state.TxHistory
 
     List-like :ref:`api-types-singleton` container that contains :ref:`api-network-tx` objects. Whenever a transaction is broadcast, the ``TransactionReceipt`` is automatically added.
 
     .. code-block:: python
 
-        >>> from brownie.network.history import TxHistory
+        >>> from brownie.network.state import TxHistory
         >>> history = TxHistory()
         >>> history
         []
@@ -1238,16 +1241,26 @@ TxHistory Methods
         >>> history.of_address(accounts[1])
         [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
 
-Module Methods
---------------
+Internal Methods
+----------------
 
-.. py:method:: brownie.network.history.find_contract(address)
+The internal methods in the ``state`` module are primarily used for tracking and adjusting ``Contract`` instances whenever the local RPC network is reverted or reset.
+
+.. py:method:: brownie.network.state._add_contract(contract)
+
+    Adds a ``Contract`` or ``ProjectContract`` object to the global contract record.
+
+.. py:method:: brownie.network.state._find_contract(address)
 
     Given an address, returns the related ``Contract`` or ``ProjectContract`` object. If none exists, returns ``None``.
 
     This method is used internally by Brownie to locate a ``ProjectContract`` when the project it belongs to is unknown.
 
-.. py:method:: brownie.network.history.get_current_dependencies()
+.. py:method:: brownie.network.state._remove_contract(contract)
+
+    Removes a ``Contract`` or ``ProjectContract`` object to the global contract record.
+
+.. py:method:: brownie.network.state._get_current_dependencies()
 
     Returns a list of the names of all currently deployed contracts, and of every contract that these contracts are dependent upon.
 
@@ -1428,6 +1441,32 @@ Rpc
         Block height reverted to 4
         >>> accounts[0].balance()
         100000000000000000000
+
+Rpc Internal Methods
+********************
+
+.. py:classmethod:: Rpc._internal_snap()
+
+    Takes an internal snapshot at the current block height.
+
+.. py:classmethod:: Rpc._internal_revert()
+
+    Reverts to the most recently taken internal snapshot.
+
+    .. note::
+
+        When calling this method, you must ensure that the user has not had a chance to take their own snapshot since `_internal_snap` was called.
+
+Internal Methods
+----------------
+
+.. py:class:: brownie.network.rpc._revert_register(obj)
+
+    Registers an object to be called whenever the local RPC is reset or reverted. Objects that register must include `_revert` and `_reset` methods in order to receive these callbacks.
+
+.. py:class:: brownie.network.rpc._notify_registry(height)
+
+    Calls each registered object's `_revert` or `_reset` method after the local state has been reverted.
 
 
 ``brownie.network.transaction``

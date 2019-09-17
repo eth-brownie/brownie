@@ -27,13 +27,13 @@ def test_attributes(tester, accounts):
     assert tester.revertStrings.signature == "0xd8046e7d"
 
 
-def test_encode_abi(tester):
+def test_encode_input(tester):
     inputs = (
         "hello",
         "0x66aB6D9362d4F35596279692F0251Db635165871",
         ("potato", "0x1234"),
     )
-    calldata = tester.setTuple.encode_abi(inputs)
+    calldata = tester.setTuple.encode_input(inputs)
     assert calldata == (
         "0xad31c804000000000000000000000000000000000000000000000000000000000000002"
         "0000000000000000000000000000000000000000000000000000000000000006000000000"

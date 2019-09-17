@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
 from typing import List, Dict, Iterable, Any
-from .rpc import Rpc
+from .rpc import _revert_register
 from brownie.convert import to_address
 from brownie._singleton import _Singleton
 
-rpc = Rpc()
+_contract_map: Dict = {}
 
 
 class TxHistory(metaclass=_Singleton):
@@ -17,7 +17,7 @@ class TxHistory(metaclass=_Singleton):
     def __init__(self) -> None:
         self._list: List = []
         self.gas_profile: Dict = {}
-        rpc._revert_register(self)
+        _revert_register(self)
 
     def __repr__(self) -> str:
         return str(self._list)
@@ -85,28 +85,18 @@ class TxHistory(metaclass=_Singleton):
         gas["count"] += 1
 
 
-_contract_map: Dict = {}
-
-
-def find_contract(address: Any) -> Any:
-    """Given an address, returns the related Contract object."""
+def _find_contract(address: Any) -> Any:
     address = to_address(address)
     if address not in _contract_map:
         return None
     return _contract_map[address]
 
 
-def get_current_dependencies() -> List:
-    """Returns a list of the currently deployed contracts and their dependencies."""
+def _get_current_dependencies() -> List:
     dependencies = set(v._name for v in _contract_map.values())
     for contract in _contract_map.values():
         dependencies.update(contract._build["dependencies"])
     return sorted(dependencies)
-
-
-# _add_contract and _remove_contract are called by ContractContainer when Contract
-#  objects are created or destroyed - don't call them directly or things will start
-# to break in strange places!
 
 
 def _add_contract(contract: Any) -> None:

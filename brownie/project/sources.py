@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import textwrap
 
-from brownie.cli.utils import color
+from brownie.utils import color
 from brownie.exceptions import ContractExists
 
 
@@ -85,9 +85,8 @@ class Sources:
         )
 
 
-def minify(source: str) -> Any:  # Tuple[str, Any]:
-    """Given contract source as a string, returns a minified version and an
-    offset map."""
+def minify(source: str) -> Tuple[str, List]:
+    """Given contract source as a string, returns a minified version and an offset map."""
     offsets = [(0, 0)]
     pattern = f"({'|'.join(MINIFY_REGEX_PATTERNS)})"
     for match in re.finditer(pattern, source):
@@ -184,12 +183,12 @@ def _get_contract_data(full_source: str) -> Dict:
             r"\s*(contract|library|interface)\s{1,}(\S*)\s*(?:is\s{1,}(.*?)|)(?:{)",
             source,
         )[0]
-        offset = minified_source.index(source)
+        idx = minified_source.index(source)
         offset = (
-            offset + next(i[1] for i in offset_map if i[0] <= offset),
-            offset
+            idx + next(i[1] for i in offset_map if i[0] <= idx),
+            idx
             + len(source)
-            + next(i[1] for i in offset_map if i[0] <= offset + len(source)),
+            + next(i[1] for i in offset_map if i[0] <= idx + len(source)),
         )
         data[name] = {"offset_map": offset_map, "offset": offset}
     _contract_data[key] = data

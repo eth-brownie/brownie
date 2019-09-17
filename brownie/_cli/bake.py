@@ -3,7 +3,7 @@
 from docopt import docopt
 
 from brownie import project
-from brownie.cli.utils import notify
+from brownie.utils import notify
 
 __doc__ = """Usage: brownie bake <mix> [<path>] [options]
 

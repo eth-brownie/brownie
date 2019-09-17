@@ -10,23 +10,23 @@ def test_stuff(BrownieTester, accounts):
 
 
 def test_print_gas(plugintester, mocker):
-    mocker.spy(output, "print_gas_profile")
+    mocker.spy(output, "_print_gas_profile")
     plugintester.runpytest("--gas")
-    assert output.print_gas_profile.call_count == 1
+    assert output._print_gas_profile.call_count == 1
     plugintester.runpytest()
-    assert output.print_gas_profile.call_count == 1
+    assert output._print_gas_profile.call_count == 1
     plugintester.runpytest("-G")
-    assert output.print_gas_profile.call_count == 2
+    assert output._print_gas_profile.call_count == 2
 
 
 def test_print_coverage(plugintester, mocker):
-    mocker.spy(output, "print_coverage_totals")
+    mocker.spy(output, "_print_coverage_totals")
     plugintester.runpytest("--coverage")
-    assert output.print_coverage_totals.call_count == 1
+    assert output._print_coverage_totals.call_count == 1
     plugintester.runpytest()
-    assert output.print_coverage_totals.call_count == 1
+    assert output._print_coverage_totals.call_count == 1
     plugintester.runpytest("-C")
-    assert output.print_coverage_totals.call_count == 2
+    assert output._print_coverage_totals.call_count == 2
 
 
 def test_coverage_save_report(plugintester):

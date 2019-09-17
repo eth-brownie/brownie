@@ -8,13 +8,13 @@ import shutil
 import sys
 import zipfile
 
-from brownie.cli.utils import color
+from brownie.utils import color
 from brownie.network.contract import ContractContainer
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.project import compiler
 from brownie.project.sources import Sources, get_hash
 from brownie.project.build import Build
-from brownie._config import CONFIG, load_project_config, load_project_compiler_config
+from brownie._config import CONFIG, _load_project_config, _load_project_compiler_config
 
 FOLDERS = ["contracts", "scripts", "reports", "tests", "build", "build/contracts"]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
@@ -94,7 +94,9 @@ class Project(_ProjectBase):
         if self._active:
             raise ProjectAlreadyLoaded("Project is already active")
 
-        self._compiler_config = load_project_compiler_config(self._project_path, "solc")
+        self._compiler_config = _load_project_compiler_config(
+            self._project_path, "solc"
+        )
         solc_version = self._compiler_config["version"]
         if solc_version:
             self._compiler_config["version"] = compiler.set_solc_version(solc_version)
@@ -161,7 +163,7 @@ class Project(_ProjectBase):
     def load_config(self) -> None:
         """Loads the project config file settings"""
         if isinstance(self._project_path, Path):
-            load_project_config(self._project_path)
+            _load_project_config(self._project_path)
 
     def close(self, raises: bool = True) -> None:
         """Removes pointers to the project's ContractContainer objects and this object."""
@@ -179,6 +181,7 @@ class Project(_ProjectBase):
             ]:
                 del dict_[key]
 
+        # undo black-magic
         name = self._name
         del sys.modules[f"brownie.project.{name}"]
         sys.modules["brownie.project"].__all__.remove(name)  # type: ignore

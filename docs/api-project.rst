@@ -13,6 +13,8 @@ When Brownie is loaded from within a project folder, that project is automatical
 
 The ``main`` module contains the high-level methods and classes used to create, load, and close projects. All of these methods are available directly from ``brownie.project``.
 
+.. _api-project-project:
+
 Project
 -------
 
@@ -163,16 +165,21 @@ Module Methods
 
 The ``build`` module contains classes and methods used internally by Brownie to interact with files in a project's ``build/contracts`` folder.
 
+.. _api-project-build-build:
+
 Build
 -----
 
-The ``Build`` object provides access to the ``build/contracts/`` files for a specific project. It is instantiated automatically when a project is opened, and available as ``Project._build``.
+The ``Build`` object provides access to the ``build/contracts/`` files for a specific project. It is instantiated automatically when a project is opened, and available within the :ref:`api-project-project` object as ``Project._build``.
 
 .. code-block:: python
 
     >>> from brownie.project import TokenProject
     >>> TokenProject._build
     <brownie.project.build.Build object at 0x7fb74cb1b2b0>
+
+Build Methods
+*************
 
 .. py:classmethod:: Build.add(build_json)
 
@@ -238,13 +245,26 @@ The ``Build`` object provides access to the ``build/contracts/`` files for a spe
 
     Given a build json as a dict, expands the minified offsets to match the original source code.
 
+Build Internal Methods
+**********************
 
-Module Methods
---------------
+.. py:classmethod:: Build._generate_revert_map(pcMap)
+
+    Adds a contract's dev revert strings to the revert map and it's ``pcMap``. Called internally when adding a new contract.
+
+    The revert map is dict of tuples, where each key is a program counter that contains a ``REVERT`` or ``INVALID`` operation for a contract in the active project. When a transaction reverts, the dev revert string can be determined by looking up the final program counter in this mapping.
+
+    Each value is a 5 item tuple of: ``("path/to/source", (start, stop), "function name", "dev: revert string", self._source)``
+
+    When two contracts have differing values for the same program counter, the value in the revert map is set to ``False``. If a transaction reverts with this pc, the entire trace must be queried to determine which contract reverted and get the dev string from it's ``pcMap``.
+
+
+Internal Methods
+----------------
 
 The following methods exist outside the scope of individually loaded projects.
 
-.. py:method:: build.get_dev_revert(pc)
+.. py:method:: build._get_dev_revert(pc)
 
     Given the program counter from a stack trace that caused a transaction to revert, returns the :ref:`commented dev string <dev-revert>` (if any). Used by ``TransactionReceipt``.
 
@@ -254,7 +274,7 @@ The following methods exist outside the scope of individually loaded projects.
         >>> build.get_dev_revert(1847)
         "dev: zero value"
 
-.. py:method:: build.get_error_source_from_pc(pc)
+.. py:method:: build._get_error_source_from_pc(pc)
 
     Given the program counter from a stack trace that caused a transaction to revert, returns the highlighted relevent source code and the name of the method that reverted.
 
@@ -265,7 +285,7 @@ The following methods exist outside the scope of individually loaded projects.
 
 The ``compiler`` module contains methods for compiling contracts, and formatting the compiled data. This module is used internally whenever a Brownie project is loaded.
 
-In most cases you will not wish to call methods in this module directly. Instead you should use ``project.load`` to compile your project initially and ``project.compile_source`` for adding individual, temporary contracts. Along with compiling, these methods also add the returned data to ``project.build`` and return ``ContractContainer`` objects.
+In most cases you will not need to call methods in this module directly. Instead you should use ``project.load`` to compile your project initially and ``project.compile_source`` for adding individual, temporary contracts. Along with compiling, these methods also add the returned data to ``project.build`` and return ``ContractContainer`` objects.
 
 Module Methods
 --------------
@@ -341,12 +361,30 @@ Module Methods
     * ``compiler_data``: Additional compiler data to include
     * ``silent``: Toggles console verbosity
 
-Internals
----------
+Internal Methods
+----------------
 
-These are more low-level methods, called internally during the execution of the above.
+.. py:method:: compiler._format_link_references(evm)
 
-.. py:method:: compiler.generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, branch_nodes)
+    Standardizes formatting for unlinked library placeholders within bytecode. Used internally to ensure that unlinked libraries are represented uniformly regardless of the compiler version used.
+
+    * ``evm``: The ``'evm'`` object from a compiler output JSON.
+
+.. py:method:: compiler._get_bytecode_hash(bytecode)
+
+    Removes the final metadata from a bytecode hex string and returns a hash of the result. Used to check if a contract has changed when the source code is modified.
+
+.. py:method:: compiler._expand_source_map(source_map)
+
+    Returns an uncompressed source mapping as a list of lists where no values are omitted.
+
+    .. code-block:: python
+
+        >>> from brownie.project.compiler import expand_source_map
+        >>> expand_source_map("1:2:1:-;:9;2:1:2;;;")
+        [[1, 2, 1, '-'], [1, 9, 1, '-'], [2, 1, 2, '-'], [2, 1, 2, '-'], [2, 1, 2, '-'], [2, 1, 2, '-']]
+
+.. py:method:: compiler._generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, branch_nodes)
 
     Generates the `program counter <compile-pc-map>`_ and `coverage <compile-coverage-map>`_ maps that are used by Brownie for debugging and test coverage evaluation.
 
@@ -364,33 +402,13 @@ These are more low-level methods, called internally during the execution of the 
     * ``statement_map``: statement coverage map
     * ``branch_map``: branch coverage map
 
-.. py:method:: compiler.get_statement_nodes(source_nodes)
+.. py:method:: compiler._get_statement_nodes(source_nodes)
 
     Given a list of AST source node objects from `py-solc-ast <https://github.com/iamdefinitelyahuman/py-solc-ast>`_, returns a list of statement nodes.  Used to generate the statement coverage map.
 
-.. py:method:: compiler.get_branch_nodes(source_nodes)
+.. py:method:: compiler._get_branch_nodes(source_nodes)
 
     Given a list of AST source node objects from `py-solc-ast <https://github.com/iamdefinitelyahuman/py-solc-ast>`_, returns a list of branch nodes.  Used to generate the branch coverage map.
-
-.. py:method:: compiler.format_link_references(evm)
-
-    Standardizes formatting for unlinked library placeholders within bytecode. Used internally to ensure that unlinked libraries are represented uniformly regardless of the compiler version used.
-
-    * ``evm``: The ``'evm'`` object from a compiler output JSON.
-
-.. py:method:: compiler.get_bytecode_hash(bytecode)
-
-    Removes the final metadata from a bytecode hex string and returns a hash of the result. Used to check if a contract has changed when the source code is modified.
-
-.. py:method:: compiler.expand_source_map(source_map)
-
-    Returns an uncompressed source mapping as a list of lists where no values are omitted.
-
-    .. code-block:: python
-
-        >>> from brownie.project.compiler import expand_source_map
-        >>> expand_source_map("1:2:1:-;:9;2:1:2;;;")
-        [[1, 2, 1, '-'], [1, 9, 1, '-'], [2, 1, 2, '-'], [2, 1, 2, '-'], [2, 1, 2, '-'], [2, 1, 2, '-']]
 
 ``brownie.project.scripts``
 ===========================
@@ -418,8 +436,10 @@ The ``scripts`` module contains methods for comparing, importing and executing p
         Token.constructor confirmed - block: 1   gas used: 627391 (100.00%)
         Token deployed at: 0x8dc446C44C821F27B333C1357990821E07189E35
 
+Internal Methods
+----------------
 
-.. py:method:: scripts.get_ast_hash(path)
+.. py:method:: scripts._get_ast_hash(path)
 
     Returns a hash based on the AST of a script and any scripts that it imports. Used to determine if a project script has been altered since it was last run.
 
@@ -439,7 +459,7 @@ The ``sources`` module contains classes and methods to access project source cod
 Sources
 -------
 
-The ``Sources`` object provides access to the ``contracts/`` files for a specific project. It is instantiated automatically when a project is opened, and available as ``Project._sources``.
+The ``Sources`` object provides access to the ``contracts/`` files for a specific project. It is instantiated automatically when a project is opened, and available within the :ref:`api-project-project` object as ``Project._sources``.
 
 .. code-block:: python
 

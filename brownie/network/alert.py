@@ -5,7 +5,7 @@ from typing import List, Callable, Tuple, Dict, Union
 import time as time
 from threading import Thread
 
-from brownie.cli.utils import color
+from brownie.utils import color
 
 __console_dir__ = ["Alert", "new", "show", "stop_all"]
 

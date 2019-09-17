@@ -441,6 +441,8 @@ When the tests complete, a report will display:
 
 Brownie outputs a % score for each contract method that you can use to quickly gauge your overall coverage level. A detailed coverage report is also saved in the project's ``reports`` folder, that can be viewed via the Brownie GUI. See :ref:`coverage-gui` for more information.
 
+.. _test_settings:
+
 Configuration Settings
 ======================
 

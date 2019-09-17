@@ -3,7 +3,7 @@
 import pytest
 import sys
 
-from brownie.cli.__main__ import main as cli_main
+from brownie._cli.__main__ import main as cli_main
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ def test_cli_compile(cli_tester, testproject):
 
 def test_cli_console(cli_tester, testproject):
     testproject.close()
-    cli_tester.set_target("brownie.cli.utils.console.Console.interact")
+    cli_tester.set_target("brownie._cli.console.Console.interact")
     cli_tester.set_subtargets("brownie.network.connect")
     cli_tester.run(
         "console", kwargs={"banner": "Brownie environment is ready.", "exitmsg": ""}

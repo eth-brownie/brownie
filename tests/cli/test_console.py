@@ -3,7 +3,7 @@
 import pytest
 import sys
 
-from brownie.cli.utils.console import Console
+from brownie._cli.console import Console
 
 
 @pytest.fixture
@@ -89,7 +89,7 @@ def test_fn(accounts, history, console):
 
 
 def test_exceptions(console, monkeypatch):
-    monkeypatch.setattr("brownie.cli.utils.console.Console.showtraceback", _exception)
+    monkeypatch.setattr("brownie._cli.console.Console.showtraceback", _exception)
     with pytest.raises(NameError):
         console.push("x += 22")
     with pytest.raises(TypeError):
@@ -99,7 +99,7 @@ def test_exceptions(console, monkeypatch):
 
 
 def test_syntax(console, monkeypatch):
-    monkeypatch.setattr("brownie.cli.utils.console.Console.showsyntaxerror", _exception)
+    monkeypatch.setattr("brownie._cli.console.Console.showsyntaxerror", _exception)
     with pytest.raises(SyntaxError):
         console.push("x = [)")
     with pytest.raises(SyntaxError):

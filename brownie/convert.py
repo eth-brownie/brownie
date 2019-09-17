@@ -132,7 +132,6 @@ class EthAddress(str):
 
     """String subclass that raises TypeError when compared to a non-address."""
 
-    # Known typing error: https://github.com/python/mypy/issues/4290
     def __new__(cls, value: Any) -> str:  # type: ignore
         return super().__new__(cls, to_address(value))  # type: ignore
 
@@ -167,7 +166,6 @@ class HexString(bytes):
     a non-hexstring. Evaluates True for hexstrings with the same value but differing
     leading zeros or capitalization."""
 
-    # Known typing error: https://github.com/python/mypy/issues/4290
     def __new__(cls, value, type_):  # type: ignore
         return super().__new__(cls, to_bytes(value, type_))  # type: ignore
 
@@ -248,14 +246,8 @@ def to_string(value: Any) -> str:
     return value
 
 
-def format_input(abi: Dict, inputs: Union[List, Tuple]) -> "ReturnValue":
-    """Format contract inputs based on ABI types.
-
-    Args:
-        abi: contract method ABI
-        inputs: list of arguments to format
-
-    Returns a list of arguments formatted for use in a Contract tx or call."""
+def _format_input(abi: Dict, inputs: Union[List, Tuple]) -> "ReturnValue":
+    # Format contract inputs based on ABI types
     if len(inputs) and not len(abi["inputs"]):
         raise TypeError(f"{abi['name']} requires no arguments")
     try:
@@ -264,25 +256,13 @@ def format_input(abi: Dict, inputs: Union[List, Tuple]) -> "ReturnValue":
         raise type(e)(f"{abi['name']} {e}") from None
 
 
-def format_output(abi: Dict, outputs: Tuple) -> "ReturnValue":
-    """Format contract outputs based on ABI types.
-
-    Args:
-        abi: contract method ABI
-        outputs: list of arguments to format
-
-    Returns a list of arguments with standard formatting applied."""
+def _format_output(abi: Dict, outputs: Tuple) -> "ReturnValue":
+    # Format contract outputs based on ABI types
     return _format_abi(abi["outputs"], outputs)
 
 
-def format_event(event: Any) -> Any:
-    """Format event data.
-
-    Args:
-        event: decoded event as given by eth_event.decode_logs or eth_event.decode_trace
-
-    Mutates the event in place and returns it."""
-
+def _format_event(event: Dict) -> Any:
+    # Format event data based on ABI types
     for e in [i for i in event["data"] if not i["decoded"]]:
         e["type"] = "bytes32"
         e["name"] += " (indexed)"
@@ -293,7 +273,7 @@ def format_event(event: Any) -> Any:
 
 
 def _format_abi(abi: Any, values: Any) -> "ReturnValue":
-    """Apply standard formatting to multiple values of differing types"""
+    # Apply standard formatting to multiple values of differing types
     types = [i["type"] for i in abi]
     values = list(values)
     if len(values) != len(types):
@@ -314,7 +294,7 @@ def _format_abi(abi: Any, values: Any) -> "ReturnValue":
 
 
 def _format_array(abi: Any, values: Any) -> "ReturnValue":
-    """Apply standard formatting to multiple values of the same type (arrays)"""
+    # Apply standard formatting to multiple values of the same type (arrays)
     base_type, length = abi["type"][:-1].rsplit("[", maxsplit=1)
     if not isinstance(values, (list, tuple)):
         raise TypeError(f"Expected sequence, got {type(values)}")
@@ -333,7 +313,7 @@ def _format_array(abi: Any, values: Any) -> "ReturnValue":
 
 
 def _format_single(type_: str, value: Any) -> Any:
-    """Apply standard formatting to a single value"""
+    # Apply standard formatting to a single value
     if "uint" in type_:
         return to_uint(value, type_)
     elif "int" in type_:

@@ -11,12 +11,12 @@ from web3.exceptions import TransactionNotFound
 from eth_abi import decode_abi
 from hexbytes import HexBytes
 
-from .state import TxHistory, find_contract
-from .event import decode_logs, decode_trace
+from .state import TxHistory, _find_contract
+from .event import _decode_logs, _decode_trace
 from pathlib import Path
 from .web3 import Web3
 from brownie.convert import EthAddress, Wei
-from brownie.cli.utils import color
+from brownie.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build
 from brownie.project.sources import highlight_source
@@ -134,7 +134,7 @@ class TransactionReceipt:
             self.revert_msg = revert_msg
         elif revert_type == "revert":
             # check for dev revert string as a comment
-            revert_msg = build.get_dev_revert(self._revert_pc)
+            revert_msg = build._get_dev_revert(self._revert_pc)
             if type(revert_msg) is str:
                 self.revert_msg = revert_msg
 
@@ -150,7 +150,7 @@ class TransactionReceipt:
             # if coverage evaluation is active, evaluate the trace
             if (
                 ARGV["coverage"]
-                and not coverage.check_cached(self.coverage_hash)
+                and not coverage._check_cached(self.coverage_hash)
                 and self.trace
             ):
                 self._expand_trace()
@@ -229,8 +229,8 @@ class TransactionReceipt:
         self.nonce = tx["nonce"]
 
         # if receiver is a known contract, set function name
-        if not self.fn_name and find_contract(tx["to"]) is not None:
-            contract = find_contract(tx["to"])
+        if not self.fn_name and _find_contract(tx["to"]) is not None:
+            contract = _find_contract(tx["to"])
             self.contract_name = contract._name
             self.fn_name = contract.get_method(tx["input"])
 
@@ -250,7 +250,7 @@ class TransactionReceipt:
         self.coverage_hash = sha1(base.encode()).hexdigest()
 
         if self.status:
-            self.events = decode_logs(receipt["logs"])
+            self.events = _decode_logs(receipt["logs"])
         if self.fn_name:
             history._gas(self._full_name(), receipt["gasUsed"])
 
@@ -316,16 +316,16 @@ class TransactionReceipt:
         step = trace[-1]
         if step["op"] != "RETURN":
             return
-        contract = find_contract(self.receiver)
+        contract = _find_contract(self.receiver)
         if contract:
             data = _get_memory(step, -1)
             fn = getattr(contract, self.fn_name)
-            self.return_value = fn.decode_abi(data)
+            self.return_value = fn.decode_output(data)
 
     def _reverted_trace(self, trace: Any) -> None:
         self.modified_state = False
         # get events from trace
-        self.events = decode_trace(trace)
+        self.events = _decode_trace(trace)
         if self.revert_msg is not None:
             return
         # get revert message
@@ -336,13 +336,13 @@ class TransactionReceipt:
             self.revert_msg = decode_abi(["string"], data)[0]
             return
         # check for dev revert string using program counter
-        self.revert_msg = build.get_dev_revert(step["pc"])
+        self.revert_msg = build._get_dev_revert(step["pc"])
         if self.revert_msg is not None:
             return
         # if none is found, expand the trace and get it from the pcMap
         self._expand_trace()
         try:
-            pc_map = find_contract(step["address"])._build["pcMap"]
+            pc_map = _find_contract(step["address"])._build["pcMap"]
             # if this is the function selector revert, check for a jump
             if "first_revert" in pc_map[step["pc"]]:
                 i = trace.index(step) - 4
@@ -371,7 +371,7 @@ class TransactionReceipt:
             self._get_trace()
         self.trace = trace = self._trace
         if not trace or "fn" in trace[0]:
-            coverage.add_transaction(self.coverage_hash, {})
+            coverage._add_transaction(self.coverage_hash, {})
             return
 
         # last_map gives a quick reference of previous values at each depth
@@ -450,7 +450,7 @@ class TransactionReceipt:
             elif last["jumpDepth"] > 0:
                 del last["fn"][-1]
                 last["jumpDepth"] -= 1
-        coverage.add_transaction(
+        coverage._add_transaction(
             self.coverage_hash, dict((k, v) for k, v in coverage_eval.items() if v)
         )
 
@@ -618,7 +618,7 @@ class TransactionReceipt:
 
         # if RPC returned a program counter, try to find source without querying trace
         if self._revert_pc:
-            highlight, linenos, path, fn_name = build.get_error_source_from_pc(
+            highlight, linenos, path, fn_name = build._get_error_source_from_pc(
                 self._revert_pc
             )
             if highlight:
@@ -654,7 +654,7 @@ class TransactionReceipt:
         trace = self.trace[idx]
         if not trace["source"]:
             return ""
-        contract = find_contract(self.trace[idx]["address"])
+        contract = _find_contract(self.trace[idx]["address"])
         source, linenos = highlight_source(
             contract._project._sources.get(trace["source"]["filename"]),
             trace["source"]["offset"],
@@ -730,7 +730,7 @@ def _raise(msg: str, source: Any) -> None:  # source: Union[str, 'Accounts']
 
 
 def _get_last_map(address: Any, sig: str) -> Dict:
-    contract = find_contract(address)
+    contract = _find_contract(address)
     last_map = {"address": EthAddress(address), "jumpDepth": 0, "name": None}
     if contract:
         last_map.update(

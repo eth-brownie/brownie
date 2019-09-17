@@ -11,7 +11,7 @@ For quick reference, the following statements generate an environment and namesp
     from brownie import *
     project.load('my_projects/token', name="TokenProject")
     from brownie.project.TokenProject import *
-    network.conect('development')
+    network.connect('development')
 
 Loading a Project
 =================
@@ -42,7 +42,7 @@ Alternatively, use a ``from`` import statement to import ``ContractContainer`` o
     >>> Token
     <ContractContainer object 'Token'>
 
- Importing with a wildcard will retrieve every available ``ContractContainer``:
+Importing with a wildcard will retrieve every available ``ContractContainer``:
 
 .. code-block:: python
 

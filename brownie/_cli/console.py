@@ -4,9 +4,12 @@ import atexit
 import code
 import sys
 
+from docopt import docopt
+
 import brownie
-from . import color
-from brownie._config import CONFIG
+from brownie.utils import color
+from brownie import network, project
+from brownie._config import ARGV, CONFIG, _update_argv_from_docopt
 
 if sys.platform == "win32":
     from pyreadline import Readline
@@ -14,6 +17,35 @@ if sys.platform == "win32":
     readline = Readline()
 else:
     import readline  # noqa: F401
+
+
+__doc__ = f"""Usage: brownie console [options]
+
+Options:
+  --network <name>        Use a specific network (default {CONFIG['network']['default']})
+  --tb -t                 Show entire python traceback on exceptions
+  --help -h               Display this message
+
+Connects to the network and opens the brownie console.
+"""
+
+
+def main():
+    args = docopt(__doc__)
+    _update_argv_from_docopt(args)
+
+    if project.check_for_project():
+        active_project = project.load()
+        active_project.load_config()
+        print(f"{active_project._name} is the active project.")
+    else:
+        active_project = None
+        print("No project was loaded.")
+
+    network.connect(ARGV["network"])
+
+    shell = Console(active_project)
+    shell.interact(banner="Brownie environment is ready.", exitmsg="")
 
 
 class Console(code.InteractiveConsole):
@@ -54,10 +86,10 @@ class Console(code.InteractiveConsole):
     def _console_write(self, text):
         try:
             obj = eval(text)
-            if obj and type(obj) is dict:
+            if obj and isinstance(obj, dict):
                 text = color.pretty_dict(obj)
-            elif obj and type(obj) in (tuple, list, set):
-                text = color.pretty_list(obj)
+            elif obj and isinstance(obj, (tuple, list, set)):
+                text = color.pretty_sequence(obj)
         except (SyntaxError, NameError):
             pass
         return self._stdout_write(text)

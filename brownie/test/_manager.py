@@ -4,8 +4,8 @@ from hashlib import sha1
 import json
 from pathlib import Path
 
-from brownie.network.state import get_current_dependencies
-from brownie.project.scripts import get_ast_hash
+from brownie.network.state import _get_current_dependencies
+from brownie.project.scripts import _get_ast_hash
 from brownie.test import coverage
 from brownie._config import ARGV
 
@@ -31,7 +31,7 @@ class TestManager:
         self.results = None
         self.isolated = set()
         glob = self.project_path.glob("tests/**/conftest.py")
-        self.conf_hashes = dict((self._path(i.parent), get_ast_hash(i)) for i in glob)
+        self.conf_hashes = dict((self._path(i.parent), _get_ast_hash(i)) for i in glob)
         try:
             with self.project_path.joinpath("build/tests.json").open() as fp:
                 hashes = json.load(fp)
@@ -55,7 +55,7 @@ class TestManager:
         if changed_contracts:
             for txhash, coverage_eval in hashes["tx"].items():
                 if not changed_contracts.intersection(coverage_eval.keys()):
-                    coverage.add_cached_transaction(txhash, coverage_eval)
+                    coverage._add_cached_transaction(txhash, coverage_eval)
             self.tests = dict(
                 (k, v)
                 for k, v in self.tests.items()
@@ -64,7 +64,7 @@ class TestManager:
             )
         else:
             for txhash, coverage_eval in hashes["tx"].items():
-                coverage.add_cached_transaction(txhash, coverage_eval)
+                coverage._add_cached_transaction(txhash, coverage_eval)
 
     def _path(self, path):
         return str(Path(path).absolute().relative_to(self.project_path))
@@ -73,7 +73,7 @@ class TestManager:
         self.isolated = set(self._path(i) for i in paths)
 
     def _get_hash(self, path):
-        hash_ = get_ast_hash(path)
+        hash_ = _get_ast_hash(path)
         for confpath in filter(lambda k: k in path, sorted(self.conf_hashes)):
             hash_ += self.conf_hashes[confpath]
         return sha1(hash_.encode()).hexdigest()
@@ -85,16 +85,16 @@ class TestManager:
         if ARGV["coverage"] and not self.tests[path]["coverage"]:
             return False
         for txhash in self.tests[path]["txhash"]:
-            coverage.check_cached(txhash, False)
+            coverage._check_cached(txhash, False)
         return True
 
     def module_completed(self, path):
         path = self._path(path)
         isolated = False
         if path in self.isolated:
-            isolated = [i for i in get_current_dependencies() if i in self.contracts]
-        txhash = coverage.get_active_txlist()
-        coverage.clear_active_txlist()
+            isolated = [i for i in _get_current_dependencies() if i in self.contracts]
+        txhash = coverage._get_active_txlist()
+        coverage._clear_active_txlist()
         if not ARGV["coverage"] and (
             path in self.tests and self.tests[path]["coverage"]
         ):
