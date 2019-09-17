@@ -3,7 +3,7 @@
 from docopt import docopt
 
 from brownie import project
-from brownie.gui import Gui
+from brownie._gui import Gui
 
 __doc__ = """Usage: brownie gui
 
