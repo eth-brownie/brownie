@@ -1,8 +1,8 @@
 # Based on https://github.com/cclauss/Travis-CI-Python-on-three-OSes
 matrix:
   include:
-    - name: "Python 3.7.1 on Xenial Linux"
-      language: python  
+    - name: "Standard Tests, Parametrized EVM Tests - Python 3.7.1 on Xenial Linux"
+      language: python
       python: 3.7
       dist: xenial
       sudo: true
@@ -13,12 +13,8 @@ matrix:
         - sudo apt-get install -y python3.7-dev python3.7-tk npm solc
         - npm -g install ganache-cli
         - python -m pip install -r requirements-dev.txt
-        - pip install tox tox-travis
-      script:
-        - tox
-      after_success:
-        - python -m coveralls
-    - name: "Python 3.6.8 on Xenial Linux"
+      script: tox -e py37,evmtests
+    - name: "Standard Tests, Linting, Docs - Python 3.6.8 on Xenial Linux"
       language: python
       python: 3.6
       dist: xenial
@@ -30,9 +26,8 @@ matrix:
         - sudo apt-get install -y python3.6-dev python3.6-tk npm solc
         - npm -g install ganache-cli
         - python -m pip install -r requirements-dev.txt
-        - pip install tox tox-travis sphinx flake8
-      script: tox
-    - name: "Python 3.7.3 on Windows"
+      script: tox -e lint,doctest,py36
+    - name: "Standard Tests - Python 3.7.3 on Windows"
       os: windows
       language: node_js
       node_js: '10'
@@ -44,11 +39,23 @@ matrix:
         - python setup.py install
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
       script: python -m pytest tests/ --cov=brownie/ -p no:pytest-brownie
-      after_success: python -m coveralls 
+    - name: "Brownie Mix Tests - Python 3.6.8 on Xenial Linux"
+      language: python
+      python: 3.6
+      dist: xenial
+      sudo: true
+      install:
+        - sudo add-apt-repository -y ppa:ethereum/ethereum
+        - sudo add-apt-repository -y ppa:deadsnakes/ppa
+        - sudo apt-get update
+        - sudo apt-get install -y python3.6-dev python3.6-tk npm solc
+        - npm -g install ganache-cli
+        - python -m pip install -r requirements-dev.txt
+      script: tox -e mixtests
 
 env:
   global: COVERALLS_PARALLEL=true
-
+after_success: python -m coveralls
 notifications:
   email: false
   webhooks: https://coveralls.io/webhook

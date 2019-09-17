@@ -24,6 +24,33 @@ def pytest_sessionstart():
     )
 
 
+def pytest_addoption(parser):
+    parser.addoption("--mix-tests", action="store_true", help="Runs brownie mix tests")
+    parser.addoption(
+        "--evm-tests", action="store_true", help="Runs EVM tests (coverage evaluation)"
+    )
+    parser.addoption("--skip-regular", action="store_true", help="Skips regular tests")
+
+
+def pytest_collection_modifyitems(config, items):
+    if not config.getoption("--evm-tests"):
+        evm_skip = pytest.mark.skip(reason="Use --evm-tests to run")
+        for i in [i for i in items if "evmtester" in i.fixturenames]:
+            i.add_marker(evm_skip)
+    if not config.getoption("--mix-tests"):
+        mix_skip = pytest.mark.skip(reason="Use --evm-tests to run")
+        for i in [i for i in items if "browniemix" in i.fixturenames]:
+            i.add_marker(mix_skip)
+    if config.getoption("--skip-regular"):
+        regular_skip = pytest.mark.skip(reason="--skip-regular")
+        for i in [
+            i
+            for i in items
+            if "browniemix" not in i.fixturenames and "evmtester" not in i.fixturenames
+        ]:
+            i.add_marker(regular_skip)
+
+
 # auto-parametrize the evmtester fixture
 def pytest_generate_tests(metafunc):
     if "evmtester" in metafunc.fixturenames:

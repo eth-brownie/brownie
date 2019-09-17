@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-import sys
-
 import pytest
 
 from brownie.utils import color
@@ -54,7 +52,7 @@ def test_pretty_sequence(colorpatch):
 def test_format_tb():
     try:
         raise NameError("You dun goofed now")
-    except Exception:
-        x = color.format_tb(sys.exc_info())
+    except Exception as exc:
+        x = color.format_tb(exc)
         assert x
-        assert x != color.format_tb(sys.exc_info(), start=1)
+        assert x != color.format_tb(exc, start=1)
