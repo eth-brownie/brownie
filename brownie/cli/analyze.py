@@ -88,8 +88,7 @@ def main():
     if project_path is None:
         raise ProjectNotFound
 
-    project.load()
-    build = project.get_loaded_projects()[0]._build
+    build = project.load()._build
 
     # aggregate main contracts and libraries
     contracts = set([n for n, d in build.items() if d["type"] == "contract"])
