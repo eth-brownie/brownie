@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Union, Dict, Iterable, KeysView, Any, Optional, List, Set
+from typing import Union, Dict, Iterator, KeysView, Any, Optional, List, Set
 from io import BytesIO
 from pathlib import Path
 import requests
@@ -54,7 +54,7 @@ class _ProjectBase:
     def __getitem__(self, key: str) -> ContractContainer:
         return self._containers[key]
 
-    def __iter__(self) -> Iterable:
+    def __iter__(self) -> Iterator[ContractContainer]:
         return iter(self._containers[i] for i in sorted(self._containers))
 
     def __len__(self) -> int:
@@ -133,7 +133,7 @@ class Project(_ProjectBase):
         changed_set: Set = set(self._sources.get_source_path(i) for i in final)
         return dict((i, self._sources.get(i)) for i in changed_set)
 
-    def _compare_build_json(self, contract_name: str) -> Union[Iterable, bool]:
+    def _compare_build_json(self, contract_name: str) -> bool:
         config = self._compiler_config
         try:
             source = self._sources.get(contract_name)

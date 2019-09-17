@@ -99,7 +99,7 @@ class Console(code.InteractiveConsole):
         self.write(tb + "\n")
 
     def showtraceback(self):
-        tb = color.format_tb(sys.exc_info(), start=1)
+        tb = color.format_tb(sys.exc_info()[1], start=1)
         self.write(tb + "\n")
 
     # save user input to readline history file, filter for private keys

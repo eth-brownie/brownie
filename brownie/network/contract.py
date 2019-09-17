@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Iterable, List, Union, Dict, Any, Optional, Tuple, Callable
+from typing import Iterator, List, Union, Dict, Any, Optional, Tuple, Callable
 import re
 
 import eth_abi
@@ -42,7 +42,7 @@ class _ContractBase:
             (i["name"], _signature(i)) for i in abi if i["type"] == "function"
         )
 
-    def get_method(self, calldata: str) -> Optional[Iterable]:
+    def get_method(self, calldata: str) -> Optional[str]:
         sig = calldata[:10].lower()
         return next((k for k, v in self.signatures.items() if v == sig), None)
 
@@ -66,7 +66,7 @@ class ContractContainer(_ContractBase):
         self.deploy = ContractConstructor(self, self._name)
         _revert_register(self)
 
-    def __iter__(self) -> Iterable:
+    def __iter__(self) -> Iterator:
         return iter(self._contracts)
 
     def __getitem__(self, i: Any) -> Any:

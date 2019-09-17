@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Dict, List, Union, Iterable, ValuesView, Tuple, Any
+from typing import Dict, List, Union, Iterator, ValuesView, Tuple, Any
 from collections import OrderedDict
 import json
 
@@ -64,7 +64,7 @@ class EventDict:
             return self._dict[key]
         raise EventLookupError(f"Event '{key}' did not fire.")
 
-    def __iter__(self) -> Iterable:
+    def __iter__(self) -> Iterator:
         return iter(self._ordered)
 
     def __len__(self) -> int:
@@ -144,7 +144,7 @@ class _EventItem:
             return str(self._ordered[0])
         return str([i[0] for i in self._ordered])
 
-    def __iter__(self) -> Iterable:
+    def __iter__(self) -> Iterator:
         return iter(self._ordered)
 
     def __eq__(self, other: object) -> bool:

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Dict, Optional, Any, ItemsView, Union, List, Tuple, Iterable
+from typing import Dict, Optional, Any, ItemsView, Union, List, Tuple, Sequence
 import json
 from pathlib import Path
 
@@ -181,7 +181,7 @@ class Build:
                 )
         return build_json
 
-    def _get_offset(self, offset_map: Dict, name: str, offset: Iterable) -> Tuple:
+    def _get_offset(self, offset_map: Dict, name: str, offset: Sequence[int]) -> Tuple:
         offset = tuple(offset)
         if offset not in offset_map:
             offset_map[offset] = self._sources.expand_offset(name, offset)

@@ -56,5 +56,5 @@ def main():
     except ProjectNotFound:
         notify("ERROR", "Brownie environment has not been initiated for this folder.")
         print("Type 'brownie init' to create the file structure.")
-    except Exception:
-        print(color.format_tb(sys.exc_info()))
+    except Exception as e:
+        print(color.format_tb(e))

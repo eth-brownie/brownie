@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 
+from typing import Dict
+
 from copy import deepcopy
 
-_coverage_eval = {}
-_cached = {}
-_active_txhash = set()
+_coverage_eval: Dict[str, Dict] = {}
+_cached: Dict[str, Dict] = {}
+_active_txhash: set = set()
 
 
 def get_coverage_eval():

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import List, Dict, Any, Union, Iterable, Optional, Tuple
+from typing import List, Dict, Any, Union, Iterator, Optional, Tuple
 from getpass import getpass
 
 from hexbytes import HexBytes
@@ -62,7 +62,7 @@ class Accounts(metaclass=_Singleton):
     def __repr__(self) -> str:
         return str(self._accounts)
 
-    def __iter__(self) -> Iterable:
+    def __iter__(self) -> Iterator:
         return iter(self._accounts)
 
     def __getitem__(self, key: int) -> Any:

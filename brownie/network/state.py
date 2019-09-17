@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import List, Dict, Iterable, Any
+from typing import List, Dict, Iterator, Any
 from .rpc import _revert_register
 from brownie.convert import to_address
 from brownie._singleton import _Singleton
@@ -28,7 +28,7 @@ class TxHistory(metaclass=_Singleton):
     def __contains__(self, item: Any) -> bool:
         return item in self._list
 
-    def __iter__(self) -> Iterable:
+    def __iter__(self) -> Iterator:
         return iter(self._list)
 
     def __getitem__(self, key: Any) -> Any:
