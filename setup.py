@@ -22,7 +22,7 @@ setup(
     keywords=["brownie"],
     install_requires=requirements,
     entry_points={
-        "console_scripts": ["brownie=brownie.cli.__main__:main"],
+        "console_scripts": ["brownie=brownie._cli.__main__:main"],
         "pytest11": ["pytest-brownie=brownie.test.plugin"],
     },
     include_package_data=True,
