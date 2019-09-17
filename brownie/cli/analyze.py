@@ -8,14 +8,13 @@ from docopt import docopt
 from mythx_models.response import Severity
 from pythx import Client
 from pythx.middleware.toolname import ClientToolNameMiddleware
-
+import re
 from brownie import project
 from brownie._config import ARGV, update_argv_from_docopt
 from brownie.cli.__main__ import __version__
 from brownie.gui import Gui
 from brownie.exceptions import ProjectNotFound
 
-# TODO: Refactor core routines into helper functions
 # TODO: testtesttesttesttesttesttesttesttesttesttesttest
 
 __doc__ = f"""Usage: brownie analyze [options] [--async | --interval=<sec>]
@@ -58,6 +57,8 @@ SEVERITY_COLOURS = {
 }
 DASHBOARD_BASE_URL = "https://dashboard.mythx.io/#/console/analyses/"
 TRIAL_PRINTED = False
+BYTECODE_ADDRESS_PATCH = re.compile(r"__\w{38}")
+DEPLOYED_ADDRESS_PATCH = re.compile(r"__\$\w{34}\$__")
 
 
 def construct_source_dict_from_artifact(artifact):
@@ -70,10 +71,16 @@ def construct_source_dict_from_artifact(artifact):
 
 
 def construct_request_from_artifact(artifact):
+    global BYTECODE_ADDRESS_PATCH
+
     bytecode = artifact.get("bytecode")
     deployed_bytecode = artifact.get("deployedBytecode")
     source_map = artifact.get("sourceMap")
     deployed_source_map = artifact.get("deployedSourceMap")
+
+    bytecode = re.sub(BYTECODE_ADDRESS_PATCH, "0" * 40, bytecode)
+    deployed_bytecode = re.sub(DEPLOYED_ADDRESS_PATCH, "0" * 40, deployed_bytecode)
+
     return {
         "contract_name": artifact.get("contractName"),
         "bytecode": bytecode if bytecode else None,
@@ -152,7 +159,6 @@ def update_contract_jobs_with_dependencies(build, contracts, libraries, job_data
 def send_to_mythx(job_data, client, authenticated):
     job_uuids = []
     for contract_name, analysis_request in job_data.items():
-        # print(json.dumps(analysis_request, indent=2, sort_keys=True))
         resp = client.analyze(**analysis_request)
         if ARGV["async"] and authenticated:
             print(
