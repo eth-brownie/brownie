@@ -3,7 +3,7 @@
 from docopt import docopt
 
 from brownie import network, project, run
-from brownie.test.output import print_gas_profile
+from brownie.test.output import _print_gas_profile
 from brownie._config import ARGV, CONFIG, _update_argv_from_docopt
 
 
@@ -43,4 +43,4 @@ def main():
         project=active_project,
     )
     if ARGV["gas"]:
-        print_gas_profile()
+        _print_gas_profile()

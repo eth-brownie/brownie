@@ -165,6 +165,8 @@ Module Methods
 
 The ``build`` module contains classes and methods used internally by Brownie to interact with files in a project's ``build/contracts`` folder.
 
+.. _api-project-build-build:
+
 Build
 -----
 

@@ -96,6 +96,8 @@ Relevant code will be highlighted in different colors:
 .. image:: gui4.png
    :alt: Viewing Coverage Data
 
+.. _gui-report-json:
+
 Report JSON Format
 ==================
 

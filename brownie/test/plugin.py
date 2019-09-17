@@ -4,7 +4,7 @@ import pytest
 
 import brownie
 from brownie.test import output
-from brownie.test.manager import TestManager
+from brownie.test._manager import TestManager
 from brownie._config import CONFIG, ARGV
 
 
@@ -162,12 +162,12 @@ if brownie.project.check_for_project("."):
         manager.save_json()
         if ARGV["coverage"]:
             coverage_eval = brownie.test.coverage.get_merged_coverage_eval()
-            output.print_coverage_totals(project, coverage_eval)
-            output.save_coverage_report(
-                project, coverage_eval, project._project_path.joinpath("reports")
+            output._print_coverage_totals(project._build, coverage_eval)
+            output._save_coverage_report(
+                project._build, coverage_eval, project._project_path.joinpath("reports")
             )
         if ARGV["gas"]:
-            output.print_gas_profile()
+            output._print_gas_profile()
         project.close(False)
 
     def pytest_keyboard_interrupt():
@@ -216,4 +216,5 @@ if brownie.project.check_for_project("."):
 
     @pytest.fixture
     def skip_coverage():
+        # implemented in pytest_collection_modifyitems
         pass

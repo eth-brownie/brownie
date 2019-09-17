@@ -8,7 +8,6 @@ The ``test`` package contains classes and methods for running tests and evaluati
 
 This functionality is typically accessed via `pytest <https://docs.pytest.org/en/latest/>`_.  See :ref:`test`.
 
-
 ``brownie.test.plugin``
 =======================
 
@@ -101,43 +100,111 @@ The ``RevertContextManager`` closely mimics the behaviour of `pytest.raises <htt
             with pytest.reverts():
                 token.transfer(account[2], "10000 ether", {'from': accounts[1]})
 
-``brownie.test.manager``
-========================
-
-The ``manager`` module contains the ``TestManager`` class, used internally by Brownie to determine which tests should run and to load and save the test results.
-
 ``brownie.test.output``
 =======================
 
 The ``output`` module contains methods for formatting and displaying test output.
 
-Module Methods
---------------
+Internal Methods
+----------------
 
-.. py:method:: output.save_coverage_report(coverage_eval, report_path)
+.. py:method:: output._save_coverage_report(build, coverage_eval, report_path)
 
     Generates and saves a test coverage report for viewing in the GUI.
 
+    * ``build``: Project :ref:`api-project-build-build` object
     * ``coverage_eval``: Coverage evaluation dict
-    * ``report_path``: Path to save to. If the path is a folder, the report is saved as ``coverage-%d%m%y.json``.
+    * ``report_path``: Path to save to. If the path is a folder, the report is saved as ``coverage.json``.
 
-.. py:method:: output.print_gas_profile()
+.. py:method:: output._print_gas_profile()
 
     Formats and prints a gas profile report.
 
-.. py:method:: output.print_coverage_totals(coverage_eval)
+.. py:method:: output._print_coverage_totals(build, coverage_eval)
 
     Formats and prints a coverage evaluation report.
 
+    * ``build``: Project :ref:`api-project-build-build` object
     * ``coverage_eval``: Coverage evaluation dict
+
+.. py:method:: output._get_totals(build, coverage_eval)
+
+    Generates an aggregated coverage evaluation dict that holds counts and totals for each contract function.
+
+    * ``build``: Project :ref:`api-project-build-build` object
+    * ``coverage_eval``: Coverage evaluation dict
+
+    Returns:
+
+    .. code-block:: python
+
+        { "ContractName": {
+            "statements": {
+                "path/to/file": {
+                    "ContractName.functionName": (count, total), ..
+                }, ..
+            },
+            "branches" {
+                "path/to/file": {
+                    "ContractName.functionName": (true_count, false_count, total), ..
+                }, ..
+            }
+        }
+
+.. py:method:: output._split_by_fn(build, coverage_eval)
+
+    Splits a coverage eval dict so that coverage indexes are stored by contract function. The returned dict is no longer compatible with other methods in this module.
+
+    * ``build``: Project :ref:`api-project-build-build` object
+    * ``coverage_eval``: Coverage evaluation dict
+
+    * Original format: ``{"path/to/file": [index, ..], .. }``
+    * Returned format: ``{"path/to/file": { "ContractName.functionName": [index, .. ], .. }``
+
+.. py:method:: output._get_highlights(build, coverage_eval)
+
+    Returns a highlight map formatted for display in the GUI.
+
+    * ``build``: Project :ref:`api-project-build-build` object
+    * ``coverage_eval``: Coverage evaluation dict
+
+    Returns:
+
+    .. code-block:: python
+
+        {
+            "statements": {
+                "ContractName": {"path/to/file": [start, stop, color, msg], .. },
+            },
+            "branches": {
+                "ContractName": {"path/to/file": [start, stop, color, msg], .. },
+            }
+        }
+
+    See the :ref:`gui-report-json` for more info on the return format.
 
 ``brownie.test.coverage``
 =========================
 
-The ``coverage`` module is used internally for storing and accessing coverage evaluation data.
+The ``coverage`` module is used storing and accessing coverage evaluation data.
 
 Module Methods
 --------------
+
+.. py:method:: coverage.get_coverage_eval()
+
+    Returns all coverage data, active and cached.
+
+.. py:method:: coverage.get_merged_coverage_eval()
+
+    Merges and returns all active coverage data as a single dict.
+
+.. py:method:: coverage.clear()
+
+    Clears all coverage eval data.
+
+Internal Methods
+----------------
 
 .. py:method:: coverage.add_transaction(txhash, coverage_eval)
 
@@ -159,14 +226,7 @@ Module Methods
 
     Clears the active coverage hash list.
 
-.. py:method:: coverage.get_coverage_eval()
+``brownie.test._manager``
+=========================
 
-    Returns all coverage data, active and cached.
-
-.. py:method:: coverage.get_merged_coverage_eval()
-
-    Merges and returns all active coverage data as a single dict.
-
-.. py:method:: coverage.clear()
-
-    Clears all coverage eval data.
+The ``_manager`` module contains the ``TestManager`` class, used internally by Brownie to determine which tests should run and to load and save the test results.

@@ -55,7 +55,7 @@ class TestManager:
         if changed_contracts:
             for txhash, coverage_eval in hashes["tx"].items():
                 if not changed_contracts.intersection(coverage_eval.keys()):
-                    coverage.add_cached_transaction(txhash, coverage_eval)
+                    coverage._add_cached_transaction(txhash, coverage_eval)
             self.tests = dict(
                 (k, v)
                 for k, v in self.tests.items()
@@ -64,7 +64,7 @@ class TestManager:
             )
         else:
             for txhash, coverage_eval in hashes["tx"].items():
-                coverage.add_cached_transaction(txhash, coverage_eval)
+                coverage._add_cached_transaction(txhash, coverage_eval)
 
     def _path(self, path):
         return str(Path(path).absolute().relative_to(self.project_path))
@@ -85,7 +85,7 @@ class TestManager:
         if ARGV["coverage"] and not self.tests[path]["coverage"]:
             return False
         for txhash in self.tests[path]["txhash"]:
-            coverage.check_cached(txhash, False)
+            coverage._check_cached(txhash, False)
         return True
 
     def module_completed(self, path):
@@ -93,8 +93,8 @@ class TestManager:
         isolated = False
         if path in self.isolated:
             isolated = [i for i in _get_current_dependencies() if i in self.contracts]
-        txhash = coverage.get_active_txlist()
-        coverage.clear_active_txlist()
+        txhash = coverage._get_active_txlist()
+        coverage._clear_active_txlist()
         if not ARGV["coverage"] and (
             path in self.tests and self.tests[path]["coverage"]
         ):

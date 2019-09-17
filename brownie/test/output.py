@@ -9,15 +9,8 @@ from brownie.network.state import TxHistory
 COVERAGE_COLORS = [(0.8, "bright red"), (0.9, "bright yellow"), (1, "bright green")]
 
 
-def save_coverage_report(project, coverage_eval, report_path):
-    """Saves a test coverage report for viewing in the GUI.
-
-    Args:
-        coverage_eval: Coverage evaluation dict
-        report_path: Path to save to. If a folder is given, saves as coverage.json
-
-    Returns: Path object where report file was saved"""
-    build = project._build
+def _save_coverage_report(build, coverage_eval, report_path):
+    # Saves a test coverage report for viewing in the GUI
     report = {
         "highlights": _get_highlights(build, coverage_eval),
         "coverage": _get_totals(build, coverage_eval),
@@ -33,8 +26,8 @@ def save_coverage_report(project, coverage_eval, report_path):
     return report_path
 
 
-def print_gas_profile():
-    """Formats and prints a gas profile report to the console."""
+def _print_gas_profile():
+    # Formats and prints a gas profile report to the console
     print("\n\nGas Profile:")
     gas = TxHistory().gas_profile
     for i in sorted(gas):
@@ -43,14 +36,9 @@ def print_gas_profile():
         )
 
 
-def print_coverage_totals(project, coverage_eval):
-    """Formats and prints a coverage evaluation report to the console.
-
-    Args:
-        coverage_eval: coverage evaluation dict
-
-    Returns: None"""
-    totals = _get_totals(project._build, coverage_eval)
+def _print_coverage_totals(build, coverage_eval):
+    # Formats and prints a coverage evaluation report to the console
+    totals = _get_totals(build, coverage_eval)
     print("\n\nCoverage analysis:")
     for name in sorted(totals):
         pct = _pct(
@@ -80,25 +68,8 @@ def _pct(statement, branch):
 
 
 def _get_totals(build, coverage_eval):
-    """Returns a modified coverage eval dict showing counts and totals for each
-    contract function.
+    # Returns a modified coverage eval dict showing counts and totals for each function.
 
-    Arguments:
-        coverage_eval: Standard coverage evaluation dict
-
-    Returns:
-        { "ContractName": {
-            "statements": {
-                "path/to/file": {
-                    "ContractName.functionName": (count, total), ..
-                }, ..
-            },
-            "branches" {
-                "path/to/file": {
-                    "ContractName.functionName": (true count, false count, total), ..
-                }, ..
-            }
-        }"""
     coverage_eval = _split_by_fn(build, coverage_eval)
     results = dict(
         (
@@ -124,15 +95,7 @@ def _get_totals(build, coverage_eval):
 
 
 def _split_by_fn(build, coverage_eval):
-    """Splits a coverage eval dict so that coverage indexes are stored by contract
-    function. Once done, the dict is no longer compatible with other methods in this module.
-
-    Original format:
-        {"path/to/file": [index, ..], .. }
-
-    New format:
-        {"path/to/file": { "ContractName.functionName": [index, .. ], .. }
-    """
+    # Splits a coverage eval dict so that coverage indexes are stored by function.
     results = dict(
         (i, {"statements": {}, "branches": {"true": {}, "false": {}}})
         for i in coverage_eval
@@ -182,20 +145,7 @@ def _branch_totals(coverage_eval, coverage_map):
 
 
 def _get_highlights(build, coverage_eval):
-    """Returns a highlight map formatted for display in the GUI.
-
-    Arguments:
-        coverage_eval: coverage evaluation dict
-
-    Returns:
-        {
-            "statements": {
-                "ContractName": {"path/to/file": [start, stop, color, msg .. ], .. },
-            },
-            "branches": {
-                "ContractName": {"path/to/file": [start, stop, color, msg .. ], .. },
-            }
-        }"""
+    # Returns a highlight map formatted for display in the GUI.
     results = {"statements": {}, "branches": {}}
     for name, eval_ in coverage_eval.items():
         coverage_map = build.get(name)["coverageMap"]
