@@ -57,7 +57,6 @@ SEVERITY_COLOURS = {
     Severity.HIGH: "red",
 }
 DASHBOARD_BASE_URL = "https://dashboard.mythx.io/#/console/analyses/"
-AUTHENTICATED = False
 
 
 def construct_source_dict_from_artifact(artifact):
@@ -88,8 +87,37 @@ def construct_request_from_artifact(artifact):
     }
 
 
+def get_mythx_client():
+    # if both eth address and username are None,
+    if ARGV["access-token"]:
+        authenticated = True
+        auth_args = {"access_token": ARGV["access-token"]}
+    elif environ.get("MYTHX_ACCESS_TOKEN"):
+        authenticated = True
+        auth_args = {"access_token": environ.get("MYTHX_ACCESS_TOKEN")}
+    elif environ.get("MYTHX_ETH_ADDRESS") and environ.get("MYTHX_PASSWORD"):
+        authenticated = True
+        auth_args = {
+            "eth_address": environ.get("MYTHX_ETH_ADDRESS"),
+            "password": environ.get("MYTHX_PASSWORD"),
+        }
+    elif ARGV["eth-address"] and ARGV["password"]:
+        authenticated = True
+        auth_args = {"eth_address": ARGV["eth-address"], "password": ARGV["password"]}
+    else:
+        authenticated = False
+        auth_args = {
+            "eth_address": "0x0000000000000000000000000000000000000000",
+            "password": "trial",
+        }
+
+    return Client(
+        **auth_args,
+        middlewares=[ClientToolNameMiddleware(name="brownie-{}".format(__version__))],
+    ), authenticated
+
+
 def main():
-    global AUTHENTICATED
 
     args = docopt(__doc__)
     update_argv_from_docopt(args)
@@ -121,37 +149,13 @@ def main():
         for contract in dep_contracts:
             job_data[contract]["sources"].update(source_dict)
 
-    # if both eth address and username are None,
-    if ARGV["access-token"]:
-        AUTHENTICATED = True
-        auth_args = {"access_token": ARGV["access-token"]}
-    elif environ.get("MYTHX_ACCESS_TOKEN"):
-        AUTHENTICATED = True
-        auth_args = {"access_token": environ.get("MYTHX_ACCESS_TOKEN")}
-    elif environ.get("MYTHX_ETH_ADDRESS") and environ.get("MYTHX_PASSWORD"):
-        AUTHENTICATED = True
-        auth_args = {
-            "eth_address": environ.get("MYTHX_ETH_ADDRESS"),
-            "password": environ.get("MYTHX_PASSWORD"),
-        }
-    elif ARGV["eth-address"] and ARGV["password"]:
-        AUTHENTICATED = True
-        auth_args = {"eth_address": ARGV["eth-address"], "password": ARGV["password"]}
-    else:
-        auth_args = {
-            "eth_address": "0x0000000000000000000000000000000000000000",
-            "password": "trial",
-        }
-    client = Client(
-        **auth_args,
-        middlewares=[ClientToolNameMiddleware(name="brownie-{}".format(__version__))],
-    )
+    client, authenticated = get_mythx_client()
 
     # submit to MythX
     job_uuids = []
     for contract_name, analysis_request in job_data.items():
         resp = client.analyze(**analysis_request)
-        if ARGV["async"] and AUTHENTICATED:
+        if ARGV["async"] and authenticated:
             print(
                 "The analysis for {} can be found at {}{}".format(
                     contract_name, DASHBOARD_BASE_URL, resp.uuid
@@ -164,7 +168,7 @@ def main():
         job_uuids.append(resp.uuid)
 
     # exit if user wants an async analysis run
-    if ARGV["async"] and AUTHENTICATED:
+    if ARGV["async"] and authenticated:
         print(
             "\nAll contracts were submitted successfully. Check the dashboard at "
             "https://dashboard.mythx.io/ for the progress and results of your analyses"
@@ -180,7 +184,7 @@ def main():
     printed = False
     for uuid in job_uuids:
         print("Generating report for job {}".format(uuid))
-        if AUTHENTICATED:
+        if authenticated:
             print(
                 "You can also check the results at {}{}\n".format(
                     DASHBOARD_BASE_URL, uuid
