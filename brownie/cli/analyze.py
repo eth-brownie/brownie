@@ -27,6 +27,7 @@ __doc__ = f"""Usage: brownie analyze [options]
 
 Options:
   --gui                   Launch the Brownie GUI after analysis
+  --full                  Perform a full scan (MythX Pro required)
   --eth-address           The address of your MythX account
   --password              The password of your MythX account
   --help -h               Display this message
@@ -77,6 +78,7 @@ def construct_request_from_artifact(artifact):
         "source_list": artifact.get("allSourcePaths"),
         "main_source": artifact.get("sourcePath"),
         "solc_version": artifact["compiler"]["version"].replace("Version:", "").strip(),
+        "analysis_mode": "full" if ARGV["full"] else "quick"
     }
 
 
