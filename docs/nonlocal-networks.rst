@@ -75,10 +75,21 @@ Connecting to a network:
                 print("Successfully connected to " + network.show_active())
             else;
                 print("Did not connect to network")
-        
+
 Disconnecting from a network:
 .. code-block:: python
     from brownie import *
-
         def main():
             network.disconnect()
+
+
+Interacting with non-local networks
+===================================
+
+Accounts
+--------
+
+More to come
+
+Contracts
+---------
