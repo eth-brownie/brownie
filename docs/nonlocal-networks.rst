@@ -47,7 +47,9 @@ If you want to change the default network that brownie connects to, you need to 
 Launching and Connecting
 ========================
 
-By default, Brownie will connect to the local network run by `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__.  To connect to a non-local network, you must specify the `--network` flag when launching Brownie as below:
+Brownie will connect to whichever network is set as "default" in ``brownie-config.json``.  
+
+To connect to any other network that has been defined in ``brownie-config.json``, you must specify the `--network` flag when launching Brownie as below:
 ::
     $ brownie --network ropsten
 
@@ -55,39 +57,4 @@ Brownie will launch or attach to the client when using any network that includes
 
 Each time Brownie is loaded, it will first attempt to connect to the ``host`` address to determine if the RPC client is already active.
 
-Client is Active
-----------------
 
-If able to connect to the ``host`` address, Brownie:
-
-* Checks the current block height and raises an Exception if it is greater than zero
-* Locates the process listening at the address and attaches it to the ``Rpc`` object
-* Takes a snapshot
-
-When Brownie is terminated:
-
-* The RPC client is reverted based on the initial snapshot.
-
-Client is not Active
---------------------
-
-If unable to connect to the ``host`` address, Brownie:
-
-* Launches the client using the ``test-rpc`` command given in the configuration file
-* Waits to see that the process loads successfully
-* Confirms that it can connect to the new process
-* Attaches the process to the ``Rpc`` object
-
-When Brownie is terminated:
-
-* The RPC client and any child processes are also terminated.
-
-Common Interactions
-===================
-
-You can interact with the RPC client using the :ref:`rpc` object, which is automatically instantiated as ``rpc``:
-
-.. code-block:: python
-
-    >>> rpc
-    <brownie.network.rpc.Rpc object at 0x7f720f65fd68>
