@@ -137,10 +137,7 @@ def main():
         }
     elif ARGV["eth-address"] and ARGV["password"]:
         AUTHENTICATED = True
-        auth_args = {
-            "eth_address": ARGV["eth-address"],
-            "password": ARGV["password"],
-        }
+        auth_args = {"eth_address": ARGV["eth-address"], "password": ARGV["password"]}
     else:
         auth_args = {
             "eth_address": "0x0000000000000000000000000000000000000000",
@@ -186,7 +183,9 @@ def main():
         print("Generating report for job {}".format(uuid))
         if AUTHENTICATED:
             print(
-                "You can also check the results at {}{}\n".format(DASHBOARD_BASE_URL, uuid)
+                "You can also check the results at {}{}\n".format(
+                    DASHBOARD_BASE_URL, uuid
+                )
             )
 
         highlight_report = {
