@@ -15,9 +15,7 @@ from brownie.cli.__main__ import __version__
 from brownie.gui import Gui
 from brownie.exceptions import ProjectNotFound
 
-# TODO: --full for full mode analyses
 # TODO: Authentication with direct access token
-# TODO: Display analyses with dashboard links once done
 # TODO: Refactor core routines into helper functions
 # TODO: testtesttesttesttesttesttesttesttesttesttesttest
 
@@ -137,6 +135,7 @@ def main():
             print("Submitted analysis {} for contract {}".format(resp.uuid, contract_name))
         job_uuids.append(resp.uuid)
 
+    # exit if user wants an async analysis run
     if ARGV["async"]:
         print(
             "\nAll contracts were submitted successfully. Check the dashboard at "
@@ -144,7 +143,7 @@ def main():
         )
         return
 
-    # tell user execution in progress and poll (optionally async w/ UUID)
+    # poll in user-specified interval until all results are in
     for uuid in job_uuids:
         while not client.analysis_ready(uuid):
             time.sleep(int(ARGV["interval"]))
@@ -152,13 +151,16 @@ def main():
     # assemble report json
     printed = False
     for uuid in job_uuids:
+        print("Generating report for job {}".format(uuid))
+        print("You can also check the results at {}{}\n".format(DASHBOARD_BASE_URL, uuid))
+
         highlight_report = {
             "highlights": {"MythX": {cn: {cp: []} for cp, cn in source_to_name.items()}}
         }
         resp = client.report(uuid)
         for report in resp.issue_reports:
             for issue in resp:
-                # handle non-code issues
+                # handle non-code issues and print message only once
                 if issue.swc_id == "" or issue.severity in (
                     Severity.UNKNOWN,
                     Severity.NONE,
@@ -199,4 +201,5 @@ def main():
 
     # Launch GUI if user requested it
     if ARGV["gui"]:
+        print("Launching the Brownie GUI")
         Gui().mainloop()
