@@ -24,6 +24,7 @@ The connection settings for non-local networks must be defined in ``brownie-conf
 First, for each network you want to configure, create a new section in the network.networks section as below:
 
 .. code-block:: javascript
+
     "networks": {
         .
         .
@@ -38,6 +39,7 @@ First, for each network you want to configure, create a new section in the netwo
 If you want to change the default network that brownie connects to, you need to update the network.default field as below:
 
 .. code-block:: javascript
+
     "network": {
         "default": "ropsten",
         .
@@ -67,6 +69,7 @@ You can interact with any network defined in ``brownie-config.json`` programatic
 
 Connecting to a network:
 .. code-block:: python
+
     from brownie import *
 
         def main():
