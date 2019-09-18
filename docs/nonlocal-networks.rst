@@ -70,29 +70,39 @@ You can interact with any network defined in ``brownie-config.json`` programatic
 Connecting to a network:
 .. code-block:: python
 
-    from brownie import *
-
-        def main():
-            network.connect(network='ropsten',launch_rpc='false')
-            if network.is_connected():
-                print("Successfully connected to " + network.show_active())
-            else;
-                print("Did not connect to network")
+    >>> network.connect('ropsten')    
+    >>> network.is_connected()
+    True
+    >>> network.show_active()
+    'ropsten'
 
 Disconnecting from a network:
 .. code-block:: python
-    from brownie import *
-        def main():
-            network.disconnect()
 
+    >>> network.disconnect()
+    >>> network.is_connected()
+    False
 
-Interacting with non-local networks
-===================================
+Interacting with  non-local networks
+==============================
 
 Accounts
 --------
 
-More to come
+* Configuring accounts for use with non-local networks
+When loading an account for interacting with a non-local network, you must provide the private key when loading the account in order to be able to sign transactions or deploy contracts
+
+.. code-block:: python
+
+        >>> accounts.add('8fa2fdfb89003176a16b707fc860d0881da0d1d8248af210df12d37860996fb2')
+        <Account object '0xc1826925377b4103cC92DeeCDF6F96A03142F37a'>
+        >>> accounts[0].balance()
+        17722750299000000000
+
+Once an account is added to the account object, the ``accounts.save`` and ``accounts.load`` can be used to save the accounts to an encrypted keystore and then load for later use.
+
+* Unconfirmed transactions
+On non-local networks, blocks are not mined automatically so transaction confirmations will not be immediate.  Transaction receipts are provided immediately can be stored to unique variables.  Individual transaction objects can also be accessed using the ``history`` function.  
 
 Contracts
 ---------
