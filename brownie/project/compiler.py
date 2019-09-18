@@ -484,8 +484,8 @@ def _generate_coverage_data(
 def _expand_source_map(source_map_str: str) -> List:
     # Expands the compressed sourceMap supplied by solc into a list of lists
     source_map: List = [_expand_row(i) if i else None for i in source_map_str.split(";")]
-    for i in range(1, len(source_map)):
-        if not source_map[i]:
+    for i, value in enumerate(source_map[1:], 1):
+        if value is None:
             source_map[i] = source_map[i - 1]
             continue
         for x in range(4):
@@ -494,14 +494,12 @@ def _expand_source_map(source_map_str: str) -> List:
     return source_map
 
 
-def _expand_row(row_str: str) -> Any:
-    row = row_str.split(":")
-    r = (
-        [int(i) if i else None for i in row[:3]]  # type: ignore
-        + row[3:]
-        + [None] * (4 - len(row))
-    )
-    return r
+def _expand_row(row: str) -> List:
+    result: List = [None] * 4
+    for i, value in enumerate(row.split(":")):
+        if value:
+            result[i] = value if i == 3 else int(value)
+    return result
 
 
 def _get_statement_nodes(source_nodes: Dict) -> Dict:
