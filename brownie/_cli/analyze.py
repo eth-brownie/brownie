@@ -81,6 +81,7 @@ def construct_request_from_artifact(artifact):
     bytecode = re.sub(BYTECODE_ADDRESS_PATCH, "0" * 40, bytecode)
     deployed_bytecode = re.sub(DEPLOYED_ADDRESS_PATCH, "0" * 40, deployed_bytecode)
 
+    source_list = artifact.get("allSourcePaths")
     return {
         "contract_name": artifact.get("contractName"),
         "bytecode": bytecode if bytecode else None,
@@ -88,7 +89,7 @@ def construct_request_from_artifact(artifact):
         "source_map": source_map if source_map else None,
         "deployed_source_map": deployed_source_map if deployed_source_map else None,
         "sources": construct_source_dict_from_artifact(artifact),
-        "source_list": artifact.get("allSourcePaths"),
+        "source_list": source_list if source_list else None,
         "main_source": artifact.get("sourcePath"),
         "solc_version": artifact["compiler"]["version"].replace("Version:", "").strip(),
         "analysis_mode": "full" if ARGV["full"] else "quick",
