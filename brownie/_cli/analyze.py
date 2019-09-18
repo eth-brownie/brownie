@@ -10,9 +10,9 @@ from pythx import Client
 from pythx.middleware.toolname import ClientToolNameMiddleware
 import re
 from brownie import project
-from brownie._config import ARGV, _update_argv_from_docopt
-from brownie._cli.__main__ import __version__
-from brownie._gui import Gui
+from brownie._config import ARGV, update_argv_from_docopt
+from brownie.cli.__main__ import __version__
+from brownie.gui import Gui
 from brownie.exceptions import ProjectNotFound
 
 # TODO: testtesttesttesttesttesttesttesttesttesttesttest
@@ -229,7 +229,7 @@ def update_report(client, uuid, highlight_report, source_to_name):
 
 def main():
     args = docopt(__doc__)
-    _update_argv_from_docopt(args)
+    update_argv_from_docopt(args)
 
     project_path = project.check_for_project(".")
     if project_path is None:
