@@ -1,16 +1,15 @@
 #!/usr/bin/python3
 
-from typing import Tuple, Optional, Dict, Any
-from types import ModuleType
-
 import ast
-from hashlib import sha1
 import importlib
-from pathlib import Path
 import sys
+from hashlib import sha1
+from pathlib import Path
+from types import ModuleType
+from typing import Any, Dict, Optional, Tuple
 
-from brownie.utils import color
 from brownie.project.main import check_for_project, get_loaded_projects
+from brownie.utils import color
 
 
 def run(

@@ -1,13 +1,12 @@
 #!/usr/bin/python3
 
-from typing import Dict, Any, Optional
-from collections import defaultdict
 import json
-from pathlib import Path
 import re
+from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 from brownie._singleton import _Singleton
-
 
 REPLACE = ["active_network", "networks"]
 IGNORE = ["active_network", "brownie_folder"]
@@ -118,9 +117,7 @@ def _recursive_update(original: Any, new: Any, base: Any) -> None:
             _recursive_update(original[k], new[k], base + [k])
         else:
             original[k] = new[k]
-    for k in [
-        i for i in original if i not in new and not set(base + [i]).intersection(IGNORE)
-    ]:
+    for k in [i for i in original if i not in new and not set(base + [i]).intersection(IGNORE)]:
         print(
             f"WARNING: '{'.'.join(base+[k])}' not found in the config file for this project."
             " The default setting has been used."

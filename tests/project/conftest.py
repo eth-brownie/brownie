@@ -2,7 +2,6 @@
 
 import pytest
 
-
 test_source = """
 pragma solidity ^0.5.0;
 

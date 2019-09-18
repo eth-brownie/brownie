@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
-from pathlib import Path
 import json
+from pathlib import Path
+
 import pytest
 
 conf_source = """
@@ -49,9 +50,7 @@ def test_update_isolation_coverage(runconf, plugintester):
 
 
 def test_update_isolation_contract_changed(runconf, json_path, plugintester):
-    with Path(plugintester.tmpdir).joinpath("contracts/BrownieTester.sol").open(
-        "a"
-    ) as fp:
+    with Path(plugintester.tmpdir).joinpath("contracts/BrownieTester.sol").open("a") as fp:
         fp.write("\n\ncontract Foo {}")
     result = plugintester.runpytest("-U")
     result.assert_outcomes(passed=1)

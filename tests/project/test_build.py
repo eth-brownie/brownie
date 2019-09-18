@@ -8,9 +8,7 @@ from brownie.project import compiler
 def test_expand_build_offsets(testproject, btsource):
     source = {"contracts/BrownieTester.sol": btsource}
     build_json = compiler.compile_and_format(source, "0.5.7")["BrownieTester"]
-    minified_json = compiler.compile_and_format(source, "0.5.7", minify=True)[
-        "BrownieTester"
-    ]
+    minified_json = compiler.compile_and_format(source, "0.5.7", minify=True)["BrownieTester"]
     expanded_json = testproject._build.expand_build_offsets(deepcopy(minified_json))
     for key in ("coverageMap", "pcMap"):
         assert expanded_json[key] == build_json[key]

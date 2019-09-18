@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-from pathlib import Path
 import sys
-from typing import Dict, Optional, Sequence
 import traceback
+from pathlib import Path
+from typing import Dict, Optional, Sequence
 
 from brownie._config import ARGV, CONFIG
 
@@ -91,9 +91,7 @@ class Color:
         if value and not [i for i in value if not isinstance(i, dict)]:
             # list of dicts
             text += f"\n{' '*(_indent+4)}{{"
-            text += f",\n{' '*(_indent+4)}{{".join(
-                self.pretty_dict(i, _indent + 4) for i in value
-            )
+            text += f",\n{' '*(_indent+4)}{{".join(self.pretty_dict(i, _indent + 4) for i in value)
             text += f"\n{' '*_indent}{brackets[1]}"
         elif value and not [i for i in value if not isinstance(i, str) or len(i) != 64]:
             # list of bytes32 hexstrings (stack trace)
@@ -119,9 +117,9 @@ class Color:
         start: Optional[int] = None,
         stop: Optional[int] = None,
     ) -> str:
-        if exc[0] is SyntaxError:
-            return self.format_syntaxerror(exc[1])
-        tb = [i.replace("./", "") for i in traceback.format_tb(exc[2])]
+        if isinstance(exc, SyntaxError):
+            return self.format_syntaxerror(exc)
+        tb = [i.replace("./", "") for i in traceback.format_tb(exc.__traceback__)]
         if filename and not ARGV["tb"]:
             try:
                 start = tb.index(next(i for i in tb if filename in i))
@@ -132,15 +130,15 @@ class Color:
         for i in range(len(tb)):
             info, code = tb[i].split("\n")[:2]
             info = info.replace(base_path, ".")
-            info = [x.strip(",") for x in info.strip().split(" ")]
-            if "site-packages/" in info[1]:
-                info[1] = '"' + info[1].split("site-packages/")[1]
-            tb[i] = TB_BASE.format(self, info, "\n" + code if code else "")
-        tb.append(f"{self['error']}{exc[0].__name__}{self}: {exc[1]}")
+            info_lines = [x.strip(",") for x in info.strip().split(" ")]
+            if "site-packages/" in info_lines[1]:
+                info_lines[1] = '"' + info_lines[1].split("site-packages/")[1]
+            tb[i] = TB_BASE.format(self, info_lines, "\n" + code if code else "")
+        tb.append(f"{self['error']}{type(exc).__name__}{self}: {exc}")
         return "\n".join(tb)
 
     def format_syntaxerror(self, exc: SyntaxError) -> str:
-        offset = exc.offset + len(exc.text.lstrip()) - len(exc.text) + 3
+        offset = exc.offset + len(exc.text.lstrip()) - len(exc.text) + 3  # type: ignore
         exc.filename = exc.filename.replace(base_path, ".")
         return (
             f"  {self['dull']}File \"{self['string']}{exc.filename}{self['dull']}\", line "

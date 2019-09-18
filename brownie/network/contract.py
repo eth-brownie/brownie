@@ -1,28 +1,27 @@
 #!/usr/bin/python3
 
-from typing import Iterable, List, Union, Dict, Any, Optional, Tuple, Callable
 import re
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import eth_abi
 from eth_hash.auto import keccak
 from hexbytes import HexBytes
 
-from brownie.utils import color
-from .event import _get_topics
-from .state import _add_contract, _find_contract, _remove_contract
-
-from .rpc import Rpc, _revert_register
-from .web3 import Web3
-from brownie.convert import _format_input, _format_output, to_address, Wei
+from brownie._config import ARGV, CONFIG
+from brownie.convert import Wei, _format_input, _format_output, to_address
 from brownie.exceptions import (
     ContractExists,
     ContractNotFound,
     UndeployedLibrary,
     VirtualMachineError,
 )
-from brownie._config import ARGV, CONFIG
+from brownie.typing import AccountsType, TransactionReceiptType
+from brownie.utils import color
 
-from brownie.typing import TransactionReceiptType, AccountsType
+from .event import _get_topics
+from .rpc import Rpc, _revert_register
+from .state import _add_contract, _find_contract, _remove_contract
+from .web3 import Web3
 
 rpc = Rpc()
 web3 = Web3()
@@ -38,11 +37,9 @@ class _ContractBase:
         self._name = name
         self.abi = abi
         self.topics = _get_topics(abi)
-        self.signatures = dict(
-            (i["name"], _signature(i)) for i in abi if i["type"] == "function"
-        )
+        self.signatures = dict((i["name"], _signature(i)) for i in abi if i["type"] == "function")
 
-    def get_method(self, calldata: str) -> Optional[Iterable]:
+    def get_method(self, calldata: str) -> Optional[str]:
         sig = calldata[:10].lower()
         return next((k for k, v in self.signatures.items() if v == sig), None)
 
@@ -66,7 +63,7 @@ class ContractContainer(_ContractBase):
         self.deploy = ContractConstructor(self, self._name)
         _revert_register(self)
 
-    def __iter__(self) -> Iterable:
+    def __iter__(self) -> Iterator:
         return iter(self._contracts)
 
     def __getitem__(self, i: Any) -> Any:
@@ -93,8 +90,7 @@ class ContractContainer(_ContractBase):
         reverted = [
             i
             for i in self._contracts
-            if (i.tx and i.tx.block_number > height)
-            or len(web3.eth.getCode(i.address).hex()) <= 4
+            if (i.tx and i.tx.block_number > height) or len(web3.eth.getCode(i.address).hex()) <= 4
         ]
         for contract in reverted:
             _remove_contract(contract)
@@ -172,11 +168,7 @@ class ContractConstructor:
                 " with a 'from' field as the last argument."
             )
         return tx["from"].deploy(
-            self._parent,
-            *args,
-            amount=tx["value"],
-            gas_limit=tx["gas"],
-            gas_price=tx["gasPrice"],
+            self._parent, *args, amount=tx["value"], gas_limit=tx["gas"], gas_price=tx["gasPrice"]
         )
 
     def encode_input(self, *args: tuple) -> str:
@@ -208,9 +200,7 @@ class _DeployedContractBase(_ContractBase):
 
     _reverted = False
 
-    def __init__(
-        self, address: str, owner: Any = None, tx: TransactionReceiptType = None
-    ) -> None:
+    def __init__(self, address: str, owner: Any = None, tx: TransactionReceiptType = None) -> None:
         address = to_address(address)
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         if not self.bytecode:
@@ -222,16 +212,12 @@ class _DeployedContractBase(_ContractBase):
         for abi in [i for i in self.abi if i["type"] == "function"]:
             name = f"{self._name}.{abi['name']}"
             if fn_names.count(abi["name"]) == 1:
-                self._check_and_set(
-                    abi["name"], _get_method_object(address, abi, name, owner)
-                )
+                self._check_and_set(abi["name"], _get_method_object(address, abi, name, owner))
                 continue
             if not hasattr(self, abi["name"]):
                 self._check_and_set(abi["name"], OverloadedMethod(address, name, owner))
             key = ",".join(i["type"] for i in abi["inputs"]).replace("256", "")
-            getattr(self, abi["name"]).methods[key] = _get_method_object(
-                address, abi, name, owner
-            )
+            getattr(self, abi["name"]).methods[key] = _get_method_object(address, abi, name, owner)
 
     def _check_and_set(self, name: str, obj: Any) -> None:
         if hasattr(self, name):
@@ -245,9 +231,7 @@ class _DeployedContractBase(_ContractBase):
         return self.address
 
     def __repr__(self) -> str:
-        return (
-            f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
-        )
+        return f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, _DeployedContractBase):
@@ -272,9 +256,7 @@ class _DeployedContractBase(_ContractBase):
 
 
 class Contract(_DeployedContractBase):
-    def __init__(
-        self, address: Any, name: str, abi: Any, owner: AccountsType = None
-    ) -> None:
+    def __init__(self, address: Any, name: str, abi: Any, owner: AccountsType = None) -> None:
         _ContractBase.__init__(self, None, None, name, abi)
         _DeployedContractBase.__init__(self, address, owner, None)
         contract = _find_contract(address)
@@ -302,9 +284,7 @@ class ProjectContract(_DeployedContractBase):
         owner: Optional[AccountsType],
         tx: TransactionReceiptType = None,
     ) -> None:
-        _ContractBase.__init__(
-            self, project, build, build["contractName"], build["abi"]
-        )
+        _ContractBase.__init__(self, project, build, build["contractName"], build["abi"])
         _DeployedContractBase.__init__(self, address, owner, tx)
         _add_contract(self)
 
@@ -333,9 +313,7 @@ class _ContractMethod:
 
     _dir_color = "contract_method"
 
-    def __init__(
-        self, address: str, abi: Any, name: str, owner: Optional[AccountsType]
-    ) -> None:
+    def __init__(self, address: str, abi: Any, name: str, owner: Optional[AccountsType]) -> None:
         self._address = address
         self._name = name
         self.abi = abi
@@ -423,13 +401,8 @@ class ContractTx(_ContractMethod):
         abi: Contract ABI specific to this method.
         signature: Bytes4 method signature."""
 
-    def __init__(
-        self, address: str, abi: Any, name: str, owner: Optional[AccountsType]
-    ) -> None:
-        if (
-            ARGV["cli"] == "test"
-            and CONFIG["pytest"]["default_contract_owner"] is False
-        ):
+    def __init__(self, address: str, abi: Any, name: str, owner: Optional[AccountsType]) -> None:
+        if ARGV["cli"] == "test" and CONFIG["pytest"]["default_contract_owner"] is False:
             owner = None
         super().__init__(address, abi, name, owner)
 
@@ -480,11 +453,7 @@ def _get_tx(owner: Optional[AccountsType], args: Any) -> Tuple:
     if args and isinstance(args[-1], dict):
         tx.update(args[-1])
         args = args[:-1]
-        for key, target in [
-            ("amount", "value"),
-            ("gas_limit", "gas"),
-            ("gas_price", "gasPrice"),
-        ]:
+        for key, target in [("amount", "value"), ("gas_limit", "gas"), ("gas_price", "gasPrice")]:
             if key in tx:
                 tx[target] = tx[key]
     return args, tx
@@ -504,9 +473,7 @@ def _params(abi_params: List) -> List:
         if i["type"] != "tuple":
             types.append((i["name"], i["type"]))
             continue
-        types.append(
-            (i["name"], f"({','.join(x[1] for x in _params(i['components']))})")
-        )
+        types.append((i["name"], f"({','.join(x[1] for x in _params(i['components']))})"))
     return types
 
 

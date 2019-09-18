@@ -2,8 +2,8 @@
 
 import tkinter as tk
 
-from .styles import TEXT_STYLE
 from .bases import ToggleButton
+from .styles import TEXT_STYLE
 
 
 class ConsoleButton(ToggleButton):

@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 
 from copy import deepcopy
+from typing import Dict
 
-_coverage_eval = {}
-_cached = {}
-_active_txhash = set()
+_coverage_eval: Dict[str, Dict] = {}
+_cached: Dict[str, Dict] = {}
+_active_txhash: set = set()
 
 
 def get_coverage_eval():
@@ -31,9 +32,7 @@ def get_merged_coverage_eval():
                     merged_eval[name][path] = map_
                     continue
                 for i in range(3):
-                    merged_eval[name][path][i] = set(merged_eval[name][path][i]).union(
-                        map_[i]
-                    )
+                    merged_eval[name][path][i] = set(merged_eval[name][path][i]).union(map_[i])
     return merged_eval
 
 

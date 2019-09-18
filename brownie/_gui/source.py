@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 
-from pathlib import Path
 import re
 import tkinter as tk
 import tkinter.font as tkFont
+from pathlib import Path
 from tkinter import ttk
+
+from brownie.project.sources import is_inside_offset
 
 from .bases import SelectBox
 from .styles import TEXT_COLORS, TEXT_STYLE
-from brownie.project.sources import is_inside_offset
 
 
 class SourceNoteBook(ttk.Notebook):
@@ -113,9 +114,7 @@ class SourceNoteBook(ttk.Notebook):
         if msg:
             bind_tag = f"bind-{self.bind_count}"
             frame.tag_add(bind_tag, start, stop)
-            frame.tag_bind(
-                bind_tag, "<Enter>", lambda e: self.show_msg(frame, bind_tag, msg)
-            )
+            frame.tag_bind(bind_tag, "<Enter>", lambda e: self.show_msg(frame, bind_tag, msg))
             self.bind_count += 1
 
     def unmark(self, label, tag):
@@ -188,17 +187,13 @@ class SourceFrame(tk.Frame):
         for match in re.finditer(pattern, text):
             self.tag_add("comment", match.start(), match.end())
 
-        self._line_no.insert(
-            1.0, "\n".join(str(i) for i in range(1, text.count("\n") + 2))
-        )
+        self._line_no.insert(1.0, "\n".join(str(i) for i in range(1, text.count("\n") + 2)))
         self._line_no.tag_configure("justify", justify="right")
         self._line_no.tag_add("justify", 1.0, "end")
 
         for text in (self._line_no, self._text):
             text.config(**TEXT_STYLE)
-            text.config(
-                tabs=tkFont.Font(font=text["font"]).measure("    "), wrap="none"
-            )
+            text.config(tabs=tkFont.Font(font=text["font"]).measure("    "), wrap="none")
         self._line_no.config(background="#272727")
         self._text.bind("<ButtonRelease-1>", root._search)
 

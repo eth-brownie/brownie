@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
 
 
 class _Singleton(type):

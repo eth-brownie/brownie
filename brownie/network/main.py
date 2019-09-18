@@ -1,11 +1,12 @@
 #!/usr/bin/python3
-from typing import Union, Optional, Tuple
+from typing import Optional, Tuple, Union
 
-from .web3 import Web3
-from .rpc import Rpc
-from .account import Accounts
-from brownie.convert import Wei
 from brownie._config import CONFIG, _modify_network_config
+from brownie.convert import Wei
+
+from .account import Accounts
+from .rpc import Rpc
+from .web3 import Web3
 
 rpc = Rpc()
 web3 = Web3()
@@ -19,15 +20,11 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
 
     Network information is retrieved from brownie-config.json"""
     if is_connected():
-        raise ConnectionError(
-            f"Already connected to network '{CONFIG['active_network']['name']}'"
-        )
+        raise ConnectionError(f"Already connected to network '{CONFIG['active_network']['name']}'")
     try:
         active = _modify_network_config(network or CONFIG["network"]["default"])
         if "host" not in active:
-            raise KeyError(
-                f"No host in brownie-config.json for network '{active['name']}'"
-            )
+            raise KeyError(f"No host in brownie-config.json for network '{active['name']}'")
         host = active["host"]
         if ":" not in host.split("//", maxsplit=1)[-1]:
             try:

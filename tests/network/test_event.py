@@ -2,8 +2,8 @@
 
 import pytest
 
-from brownie.network.event import EventDict, _EventItem
 from brownie.exceptions import EventLookupError
+from brownie.network.event import EventDict, _EventItem
 
 
 @pytest.fixture

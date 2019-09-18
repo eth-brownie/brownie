@@ -1,7 +1,10 @@
 #!/usr/bin/python3
 
 from pathlib import Path
-from web3 import HTTPProvider, IPCProvider, WebsocketProvider, Web3 as _Web3
+
+from web3 import HTTPProvider, IPCProvider
+from web3 import Web3 as _Web3
+from web3 import WebsocketProvider
 
 from brownie._singleton import _Singleton
 

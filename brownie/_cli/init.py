@@ -5,7 +5,6 @@ from docopt import docopt
 from brownie import project
 from brownie.utils import notify
 
-
 __doc__ = """Usage: brownie init [<path>] [options]
 
 Arguments:

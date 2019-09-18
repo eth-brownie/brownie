@@ -1,12 +1,13 @@
 #!/usr/bin/python3
 
 import functools
-import pytest
-from semantic_version import Version
-import solcx
 
-from brownie.project import compiler, build
+import pytest
+import solcx
+from semantic_version import Version
+
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
+from brownie.project import build, compiler
 
 
 @pytest.fixture
@@ -106,13 +107,9 @@ def test_build_json_keys(solc5source):
 
 
 def test_build_json_unlinked_libraries(solc4source, solc5source):
-    build_json = compiler.compile_and_format(
-        {"path": solc5source}, solc_version="0.5.7"
-    )
+    build_json = compiler.compile_and_format({"path": solc5source}, solc_version="0.5.7")
     assert "__Bar__" in build_json["Foo"]["bytecode"]
-    build_json = compiler.compile_and_format(
-        {"path": solc4source}, solc_version="0.4.25"
-    )
+    build_json = compiler.compile_and_format({"path": solc4source}, solc_version="0.4.25")
     assert "__Bar__" in build_json["Foo"]["bytecode"]
 
 

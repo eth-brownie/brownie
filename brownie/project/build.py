@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-from typing import Dict, Optional, Any, ItemsView, Union, List, Tuple, Iterable
 import json
 from pathlib import Path
+from typing import Any, Dict, ItemsView, List, Optional, Sequence, Tuple, Union
 
 from .sources import highlight_source
 
@@ -62,9 +62,7 @@ class Build:
     def _add(self, build_json: Dict) -> None:
         contract_name = build_json["contractName"]
         if "0" in build_json["pcMap"]:
-            build_json["pcMap"] = dict(
-                (int(k), v) for k, v in build_json["pcMap"].items()
-            )
+            build_json["pcMap"] = dict((int(k), v) for k, v in build_json["pcMap"].items())
         if build_json["compiler"]["minify_source"]:
             build_json = self.expand_build_offsets(build_json)
         self._build[contract_name] = build_json
@@ -89,18 +87,10 @@ class Build:
                     data["dev"] = revert_str
             except (KeyError, ValueError):
                 pass
-            revert = (
-                data["path"],
-                tuple(data["offset"]),
-                data["fn"],
-                data["dev"],
-                self._sources,
-            )
+            revert = (data["path"], tuple(data["offset"]), data["fn"], data["dev"], self._sources)
 
             # do not compare the final tuple item in case the same project was loaded twice
-            if pc not in _revert_map or (
-                _revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]
-            ):
+            if pc not in _revert_map or (_revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]):
                 _revert_map[pc] = revert
                 continue
             _revert_map[pc] = False
@@ -181,7 +171,7 @@ class Build:
                 )
         return build_json
 
-    def _get_offset(self, offset_map: Dict, name: str, offset: Iterable) -> Tuple:
+    def _get_offset(self, offset_map: Dict, name: str, offset: Sequence[int]) -> Tuple:
         offset = tuple(offset)
         if offset not in offset_map:
             offset_map[offset] = self._sources.expand_offset(name, offset)

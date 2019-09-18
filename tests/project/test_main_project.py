@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 
-from pathlib import Path
-import pytest
 import sys
+from pathlib import Path
 
-from brownie.project.main import Project, TempProject, _ProjectBase
+import pytest
+
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
+from brownie.project.main import Project, TempProject, _ProjectBase
 
 
 def test_object(testproject):
@@ -27,9 +28,7 @@ def test_namespace(project, testproject):
 
 def test_check_for_project(project, testproject):
     path = project.check_for_project(testproject._project_path)
-    assert path == project.check_for_project(
-        testproject._project_path.joinpath("contracts")
-    )
+    assert path == project.check_for_project(testproject._project_path.joinpath("contracts"))
     assert not project.check_for_project("/")
 
 

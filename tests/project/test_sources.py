@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
-from brownie.project import compile_source
-from brownie.project import sources
+from brownie.project import compile_source, sources
 
 
 def test_minify(btsource):

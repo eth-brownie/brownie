@@ -1,14 +1,13 @@
 #!/usr/bin/python3
 
-from hashlib import sha1
 import json
+from hashlib import sha1
 from pathlib import Path
 
+from brownie._config import ARGV
 from brownie.network.state import _get_current_dependencies
 from brownie.project.scripts import _get_ast_hash
 from brownie.test import coverage
-from brownie._config import ARGV
-
 
 STATUS_SYMBOLS = {"passed": ".", "skipped": "s", "failed": "F"}
 
@@ -44,9 +43,7 @@ class TestManager:
             if Path(k).exists() and self._get_hash(k) == v["sha1"]
         )
         build = self.project._build
-        self.contracts = dict(
-            (k, v["bytecodeSha1"]) for k, v in build.items() if v["bytecode"]
-        )
+        self.contracts = dict((k, v["bytecodeSha1"]) for k, v in build.items() if v["bytecode"])
         changed_contracts = set(
             k
             for k, v in hashes["contracts"].items()
@@ -59,8 +56,7 @@ class TestManager:
             self.tests = dict(
                 (k, v)
                 for k, v in self.tests.items()
-                if v["isolated"] is not False
-                and not changed_contracts.intersection(v["isolated"])
+                if v["isolated"] is not False and not changed_contracts.intersection(v["isolated"])
             )
         else:
             for txhash, coverage_eval in hashes["tx"].items():
@@ -95,24 +91,19 @@ class TestManager:
             isolated = [i for i in _get_current_dependencies() if i in self.contracts]
         txhash = coverage._get_active_txlist()
         coverage._clear_active_txlist()
-        if not ARGV["coverage"] and (
-            path in self.tests and self.tests[path]["coverage"]
-        ):
+        if not ARGV["coverage"] and (path in self.tests and self.tests[path]["coverage"]):
             txhash = self.tests[path]["txhash"]
         self.tests[path] = {
             "sha1": self._get_hash(path),
             "isolated": isolated,
-            "coverage": ARGV["coverage"]
-            or (path in self.tests and self.tests[path]["coverage"]),
+            "coverage": ARGV["coverage"] or (path in self.tests and self.tests[path]["coverage"]),
             "txhash": txhash,
             "results": "".join(self.results),
         }
 
     def save_json(self):
         txhash = set(x for v in self.tests.values() for x in v["txhash"])
-        coverage_eval = dict(
-            (k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash
-        )
+        coverage_eval = dict((k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash)
         report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
         with self.project_path.joinpath("build/tests.json").open("w") as fp:
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)

@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import pytest
-
 from web3 import HTTPProvider, IPCProvider, WebsocketProvider
 
 

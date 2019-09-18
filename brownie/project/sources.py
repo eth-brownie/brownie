@@ -1,14 +1,13 @@
 #!/usr/bin/python3
 
-from typing import Dict, Union, Tuple, Any, List
-from hashlib import sha1
-from pathlib import Path
 import re
 import textwrap
+from hashlib import sha1
+from pathlib import Path
+from typing import Any, Dict, List, Tuple, Union
 
-from brownie.utils import color
 from brownie.exceptions import ContractExists
-
+from brownie.utils import color
 
 MINIFY_REGEX_PATTERNS = [
     r"(?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)",  # comments
@@ -39,15 +38,11 @@ class Sources:
 
     def add(self, path: Union["Path", str], source: Any, replace: bool = False) -> None:
         if path in self._source and not replace:
-            raise ContractExists(
-                f"Contract with path '{path}' already exists in this project."
-            )
+            raise ContractExists(f"Contract with path '{path}' already exists in this project.")
         data = _get_contract_data(source)
         for name, values in data.items():
             if name in self._contracts and not replace:
-                raise ContractExists(
-                    f"Contract '{name}' already exists in this project."
-                )
+                raise ContractExists(f"Contract '{name}' already exists in this project.")
             values["path"] = path
         self._source[path] = source
         self._contracts.update(data)
@@ -91,10 +86,7 @@ def minify(source: str) -> Tuple[str, List]:
     pattern = f"({'|'.join(MINIFY_REGEX_PATTERNS)})"
     for match in re.finditer(pattern, source):
         offsets.append(
-            (
-                match.start() - offsets[-1][1],
-                match.end() - match.start() + offsets[-1][1],
-            )
+            (match.start() - offsets[-1][1], match.end() - match.start() + offsets[-1][1])
         )
     return re.sub(pattern, "", source), offsets[::-1]
 
@@ -180,15 +172,12 @@ def _get_contract_data(full_source: str) -> Dict:
     data = {}
     for source in contracts:
         type_, name, inherited = re.findall(
-            r"\s*(contract|library|interface)\s{1,}(\S*)\s*(?:is\s{1,}(.*?)|)(?:{)",
-            source,
+            r"\s*(contract|library|interface)\s{1,}(\S*)\s*(?:is\s{1,}(.*?)|)(?:{)", source
         )[0]
         idx = minified_source.index(source)
         offset = (
             idx + next(i[1] for i in offset_map if i[0] <= idx),
-            idx
-            + len(source)
-            + next(i[1] for i in offset_map if i[0] <= idx + len(source)),
+            idx + len(source) + next(i[1] for i in offset_map if i[0] <= idx + len(source)),
         )
         data[name] = {"offset_map": offset_map, "offset": offset}
     _contract_data[key] = data

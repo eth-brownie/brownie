@@ -1,27 +1,27 @@
 #!/usr/bin/python3
 
-from typing import Any, Optional, Tuple, Dict, List
-from hashlib import sha1
-
-import requests
 import threading
 import time
-from web3.exceptions import TransactionNotFound
+from hashlib import sha1
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
+import requests
 from eth_abi import decode_abi
 from hexbytes import HexBytes
+from web3.exceptions import TransactionNotFound
 
-from .state import TxHistory, _find_contract
-from .event import _decode_logs, _decode_trace
-from pathlib import Path
-from .web3 import Web3
+from brownie._config import ARGV
 from brownie.convert import EthAddress, Wei
-from brownie.utils import color
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
-from brownie._config import ARGV
+from brownie.utils import color
+
+from .event import _decode_logs, _decode_trace
+from .state import TxHistory, _find_contract
+from .web3 import Web3
 
 history = TxHistory()
 web3 = Web3()
@@ -111,9 +111,7 @@ class TransactionReceipt:
         if type(txid) is not str:
             txid = txid.hex()
         if not silent:
-            print(
-                f"{color['key']}Transaction sent{color}: {color['value']}{txid}{color}"
-            )
+            print(f"{color['key']}Transaction sent{color}: {color['value']}{txid}{color}")
         history._add_tx(self)
 
         self._getattr = False
@@ -148,11 +146,7 @@ class TransactionReceipt:
             if ARGV["cli"] == "console":
                 return
             # if coverage evaluation is active, evaluate the trace
-            if (
-                ARGV["coverage"]
-                and not coverage._check_cached(self.coverage_hash)
-                and self.trace
-            ):
+            if ARGV["coverage"] and not coverage._check_cached(self.coverage_hash) and self.trace:
                 self._expand_trace()
             if not self.status:
                 if revert_msg is None:
@@ -161,9 +155,7 @@ class TransactionReceipt:
                 # raise from a new function to reduce pytest traceback length
                 _raise(
                     f"{revert_type} {self.revert_msg or ''}",
-                    self._traceback_string()
-                    if ARGV["revert"]
-                    else self._error_string(1),
+                    self._traceback_string() if ARGV["revert"] else self._error_string(1),
                 )
         except KeyboardInterrupt:
             if ARGV["cli"] != "console":
@@ -178,9 +170,7 @@ class TransactionReceipt:
 
     def __getattr__(self, attr: Any) -> Any:
         if self._getattr or attr not in self.__slots__:
-            raise AttributeError(
-                f"'TransactionReceipt' object has no attribute '{attr}'"
-            )
+            raise AttributeError(f"'TransactionReceipt' object has no attribute '{attr}'")
         self._getattr = True
         try:
             if self.status == -1:
@@ -290,8 +280,7 @@ class TransactionReceipt:
 
         try:
             trace = web3.provider.make_request(  # type: ignore
-                "debug_traceTransaction",
-                (self.txid, {"disableStorage": ARGV["cli"] != "console"}),
+                "debug_traceTransaction", (self.txid, {"disableStorage": ARGV["cli"] != "console"})
             )
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
             msg = f"Encountered a {type(e).__name__} while requesting "
@@ -385,9 +374,7 @@ class TransactionReceipt:
                 # get call signature
                 stack_idx = -4 if trace[i - 1]["op"] in {"CALL", "CALLCODE"} else -3
                 offset = int(trace[i - 1]["stack"][stack_idx], 16) * 2
-                sig = HexBytes(
-                    "".join(trace[i - 1]["memory"])[offset : offset + 8]
-                ).hex()
+                sig = HexBytes("".join(trace[i - 1]["memory"])[offset : offset + 8]).hex()
 
                 # get contract and method name
                 address = trace[i - 1]["stack"][-2][-40:]
@@ -512,9 +499,7 @@ class TransactionReceipt:
         if not trace:
             if not self.contract_address:
                 return
-            raise NotImplementedError(
-                "Call trace is not available for deployment transactions."
-            )
+            raise NotImplementedError("Call trace is not available for deployment transactions.")
 
         result = f"Call trace for '{color['value']}{self.txid}{color}':"
         result += _step_print(trace[0], trace[-1], None, 0, len(trace))
@@ -533,9 +518,7 @@ class TransactionReceipt:
             if depth > last[1]:
                 # called to a new contract
                 indent[depth] = trace_index[i - 1][2] + indent[depth - 1]
-                end = next(
-                    (x[0] for x in trace_index[i + 1 :] if x[1] < depth), len(trace)
-                )
+                end = next((x[0] for x in trace_index[i + 1 :] if x[1] < depth), len(trace))
                 _depth = depth + indent[depth]
                 symbol, indent_chars[_depth] = _check_last(trace_index[i - 1 :])
                 indent_str = "".join(indent_chars[:_depth]) + symbol
@@ -567,14 +550,10 @@ class TransactionReceipt:
         if not trace:
             if not self.contract_address:
                 return ""
-            raise NotImplementedError(
-                "Traceback is not available for deployment transactions."
-            )
+            raise NotImplementedError("Traceback is not available for deployment transactions.")
 
         try:
-            idx = next(
-                i for i in range(len(trace)) if trace[i]["op"] in ("REVERT", "INVALID")
-            )
+            idx = next(i for i in range(len(trace)) if trace[i]["op"] in ("REVERT", "INVALID"))
             trace_range = range(idx, -1, -1)
         except StopIteration:
             return ""
@@ -588,18 +567,14 @@ class TransactionReceipt:
                     i
                     for i in trace_range
                     if trace[i]["depth"] < depth
-                    or (
-                        trace[i]["depth"] == depth
-                        and trace[i]["jumpDepth"] < jump_depth
-                    )
+                    or (trace[i]["depth"] == depth and trace[i]["jumpDepth"] < jump_depth)
                 )
                 result.append(idx)
                 depth, jump_depth = trace[idx]["depth"], trace[idx]["jumpDepth"]
             except StopIteration:
                 break
-        return (
-            f"{color}Traceback for '{color['value']}{self.txid}{color}':\n"
-            + "\n".join(self._source_string(i, 0) for i in result[::-1])
+        return f"{color}Traceback for '{color['value']}{self.txid}{color}':\n" + "\n".join(
+            self._source_string(i, 0) for i in result[::-1]
         )
 
     def error(self, pad: int = 3) -> None:
@@ -618,22 +593,16 @@ class TransactionReceipt:
 
         # if RPC returned a program counter, try to find source without querying trace
         if self._revert_pc:
-            highlight, linenos, path, fn_name = build._get_error_source_from_pc(
-                self._revert_pc
-            )
+            highlight, linenos, path, fn_name = build._get_error_source_from_pc(self._revert_pc)
             if highlight:
-                return _format_source(
-                    highlight, linenos, path, self._revert_pc, -1, fn_name
-                )
+                return _format_source(highlight, linenos, path, self._revert_pc, -1, fn_name)
             self._revert_pc = None
 
         # iterate backward through the trace until a step has a source offset
         trace = self.trace
         trace_range = range(len(trace) - 1, -1, -1)
         try:
-            idx = next(
-                i for i in trace_range if trace[i]["op"] in {"REVERT", "INVALID"}
-            )
+            idx = next(i for i in trace_range if trace[i]["op"] in {"REVERT", "INVALID"})
             idx = next(i for i in trace_range if trace[i]["source"])
             return self._source_string(idx, pad)
         except StopIteration:
@@ -672,9 +641,7 @@ class TransactionReceipt:
         )
 
 
-def _format_source(
-    source: str, linenos: Any, path: "Path", pc: Any, idx: int, fn_name: str
-) -> str:
+def _format_source(source: str, linenos: Any, path: "Path", pc: Any, idx: int, fn_name: str) -> str:
     ln = f" {color['value']}{linenos[0]}"
     if linenos[1] > linenos[0]:
         ln = f"s{ln}{color['dull']}-{color['value']}{linenos[1]}"
@@ -713,9 +680,7 @@ def _step_print(step: Dict, last_step: Any, indent: Any, start: int, stop: int) 
         contract_color = color("contract_method" if not step["jumpDepth"] else "")
     print_str += f"{contract_color}{step['fn']} {color['dull']}{start}:{stop}{color}"
     if not step["jumpDepth"]:
-        print_str += (
-            f"  {color['dull']}({color}{step['address']}{color['dull']}){color}"
-        )
+        print_str += f"  {color['dull']}({color}{step['address']}{color['dull']}){color}"
     return print_str
 
 

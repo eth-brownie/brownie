@@ -3,8 +3,8 @@
 import json
 from pathlib import Path
 
-from brownie.utils import color
 from brownie.network.state import TxHistory
+from brownie.utils import color
 
 COVERAGE_COLORS = [(0.8, "bright red"), (0.9, "bright yellow"), (1, "bright green")]
 
@@ -31,9 +31,7 @@ def _print_gas_profile():
     print("\n\nGas Profile:")
     gas = TxHistory().gas_profile
     for i in sorted(gas):
-        print(
-            f"{i} -  avg: {gas[i]['avg']:.0f}  low: {gas[i]['low']}  high: {gas[i]['high']}"
-        )
+        print(f"{i} -  avg: {gas[i]['avg']:.0f}  low: {gas[i]['low']}  high: {gas[i]['high']}")
 
 
 def _print_coverage_totals(build, coverage_eval):
@@ -41,17 +39,11 @@ def _print_coverage_totals(build, coverage_eval):
     totals = _get_totals(build, coverage_eval)
     print("\n\nCoverage analysis:")
     for name in sorted(totals):
-        pct = _pct(
-            totals[name]["totals"]["statements"], totals[name]["totals"]["branches"]
-        )
-        print(
-            f"\n  contract: {color['contract']}{name}{color} - {_cov_color(pct)}{pct:.1%}{color}"
-        )
+        pct = _pct(totals[name]["totals"]["statements"], totals[name]["totals"]["branches"])
+        print(f"\n  contract: {color['contract']}{name}{color} - {_cov_color(pct)}{pct:.1%}{color}")
         cov = totals[name]
         for fn_name, count in cov["statements"].items():
-            branch = (
-                cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
-            )
+            branch = cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
             pct = _pct(count, branch)
             print(f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}")
 
@@ -97,14 +89,11 @@ def _get_totals(build, coverage_eval):
 def _split_by_fn(build, coverage_eval):
     # Splits a coverage eval dict so that coverage indexes are stored by function.
     results = dict(
-        (i, {"statements": {}, "branches": {"true": {}, "false": {}}})
-        for i in coverage_eval
+        (i, {"statements": {}, "branches": {"true": {}, "false": {}}}) for i in coverage_eval
     )
     for name in coverage_eval:
         map_ = build.get(name)["coverageMap"]
-        results[name] = dict(
-            (k, _split(v, map_, k)) for k, v in coverage_eval[name].items()
-        )
+        results[name] = dict((k, _split(v, map_, k)) for k, v in coverage_eval[name].items())
     return results
 
 
@@ -149,9 +138,7 @@ def _get_highlights(build, coverage_eval):
     results = {"statements": {}, "branches": {}}
     for name, eval_ in coverage_eval.items():
         coverage_map = build.get(name)["coverageMap"]
-        results["statements"][name] = _statement_highlights(
-            eval_, coverage_map["statements"]
-        )
+        results["statements"][name] = _statement_highlights(eval_, coverage_map["statements"])
         results["branches"][name] = _branch_highlights(eval_, coverage_map["branches"])
     return results
 
@@ -179,8 +166,7 @@ def _branch_highlights(coverage_eval, coverage_map):
     for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
         results[path].extend(
             [
-                list(offset[:2])
-                + [_branch_color(int(i), coverage_eval, path, offset[2]), ""]
+                list(offset[:2]) + [_branch_color(int(i), coverage_eval, path, offset[2]), ""]
                 for i, offset in coverage_map[path][fn].items()
             ]
         )

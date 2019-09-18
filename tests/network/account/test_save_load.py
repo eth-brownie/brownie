@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from pathlib import Path
+
 import pytest
 
 priv_key = "0x416b8a7d9290502f5661da81f0cf43893e3d19cb9aea3c426cfb36e8186e9c09"

@@ -5,9 +5,9 @@ possible. These tests check that it is only being called when absolutely necessa
 
 import pytest
 
+from brownie import Contract
 from brownie.network.transaction import TransactionReceipt
 from brownie.project import build
-from brownie import Contract
 
 
 @pytest.fixture

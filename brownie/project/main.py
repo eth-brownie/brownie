@@ -1,20 +1,21 @@
 #!/usr/bin/python3
 
-from typing import Union, Dict, Iterable, KeysView, Any, Optional, List, Set
-from io import BytesIO
-from pathlib import Path
-import requests
 import shutil
 import sys
 import zipfile
+from io import BytesIO
+from pathlib import Path
+from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Union
 
-from brownie.utils import color
-from brownie.network.contract import ContractContainer
+import requests
+
+from brownie._config import CONFIG, _load_project_compiler_config, _load_project_config
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
+from brownie.network.contract import ContractContainer
 from brownie.project import compiler
-from brownie.project.sources import Sources, get_hash
 from brownie.project.build import Build
-from brownie._config import CONFIG, _load_project_config, _load_project_compiler_config
+from brownie.project.sources import Sources, get_hash
+from brownie.utils import color
 
 FOLDERS = ["contracts", "scripts", "reports", "tests", "build", "build/contracts"]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
@@ -54,7 +55,7 @@ class _ProjectBase:
     def __getitem__(self, key: str) -> ContractContainer:
         return self._containers[key]
 
-    def __iter__(self) -> Iterable:
+    def __iter__(self) -> Iterator[ContractContainer]:
         return iter(self._containers[i] for i in sorted(self._containers))
 
     def __len__(self) -> int:
@@ -94,9 +95,7 @@ class Project(_ProjectBase):
         if self._active:
             raise ProjectAlreadyLoaded("Project is already active")
 
-        self._compiler_config = _load_project_compiler_config(
-            self._project_path, "solc"
-        )
+        self._compiler_config = _load_project_compiler_config(self._project_path, "solc")
         solc_version = self._compiler_config["version"]
         if solc_version:
             self._compiler_config["version"] = compiler.set_solc_version(solc_version)
@@ -122,9 +121,7 @@ class Project(_ProjectBase):
         _loaded_projects.append(self)
 
     def _get_changed_contracts(self) -> Dict:
-        changed = [
-            i for i in self._sources.get_contract_list() if self._compare_build_json(i)
-        ]
+        changed = [i for i in self._sources.get_contract_list() if self._compare_build_json(i)]
         final = set(changed)
         for contract_name in changed:
             final.update(self._build.get_dependents(contract_name))
@@ -133,24 +130,17 @@ class Project(_ProjectBase):
         changed_set: Set = set(self._sources.get_source_path(i) for i in final)
         return dict((i, self._sources.get(i)) for i in changed_set)
 
-    def _compare_build_json(self, contract_name: str) -> Union[Iterable, bool]:
+    def _compare_build_json(self, contract_name: str) -> bool:
         config = self._compiler_config
         try:
             source = self._sources.get(contract_name)
             build_json = self._build.get(contract_name)
         except KeyError:
             return True
-        if build_json["sha1"] != get_hash(
-            source, contract_name, config["minify_source"]
-        ):
+        if build_json["sha1"] != get_hash(source, contract_name, config["minify_source"]):
             return True
         return next(
-            (
-                True
-                for k, v in build_json["compiler"].items()
-                if config[k] and v != config[k]
-            ),
-            False,
+            (True for k, v in build_json["compiler"].items() if config[k] and v != config[k]), False
         )
 
     def _update_and_register(self, dict_: Any) -> None:
@@ -247,9 +237,7 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
 
 
 def pull(
-    project_name: str,
-    project_path: Union["Path", str] = None,
-    ignore_subfolder: bool = False,
+    project_name: str, project_path: Union["Path", str] = None, ignore_subfolder: bool = False
 ) -> str:
     """Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mix
@@ -284,15 +272,11 @@ def pull(
 def _new_checks(project_path: Union["Path", str], ignore_subfolder: bool) -> Path:
     project_path = Path(project_path).resolve()
     if str(CONFIG["brownie_folder"]) in str(project_path):
-        raise SystemError(
-            "Cannot make a new project inside the main brownie installation folder."
-        )
+        raise SystemError("Cannot make a new project inside the main brownie installation folder.")
     if not ignore_subfolder:
         check = check_for_project(project_path)
         if check and check != project_path:
-            raise SystemError(
-                "Cannot make a new project in a subfolder of an existing project."
-            )
+            raise SystemError("Cannot make a new project in a subfolder of an existing project.")
     return project_path
 
 
@@ -316,9 +300,7 @@ def compile_source(
     return TempProject(source, compiler_config)
 
 
-def load(
-    project_path: Union[str, Path, None] = None, name: Optional[str] = None
-) -> "Project":
+def load(project_path: Union[str, Path, None] = None, name: Optional[str] = None) -> "Project":
     """Loads a project and instantiates various related objects.
 
     Args:
@@ -332,10 +314,7 @@ def load(
     # checks
     if project_path is None:
         project_path = check_for_project(".")
-    if (
-        not project_path
-        or not Path(project_path).joinpath("brownie-config.json").exists()
-    ):
+    if not project_path or not Path(project_path).joinpath("brownie-config.json").exists():
         raise ProjectNotFound("Could not find Brownie project")
 
     project_path = Path(project_path).resolve()

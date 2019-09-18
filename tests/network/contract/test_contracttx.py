@@ -7,10 +7,7 @@ from brownie.network.transaction import TransactionReceipt
 
 abi = {
     "constant": False,
-    "inputs": [
-        {"name": "_to", "type": "address"},
-        {"name": "_value", "type": "uint256"},
-    ],
+    "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}],
     "name": "transfer",
     "outputs": [{"name": "", "type": "bool"}],
     "payable": False,
@@ -28,11 +25,7 @@ def test_attributes(tester, accounts):
 
 
 def test_encode_input(tester):
-    inputs = (
-        "hello",
-        "0x66aB6D9362d4F35596279692F0251Db635165871",
-        ("potato", "0x1234"),
-    )
+    inputs = ("hello", "0x66aB6D9362d4F35596279692F0251Db635165871", ("potato", "0x1234"))
     calldata = tester.setTuple.encode_input(inputs)
     assert calldata == (
         "0xad31c804000000000000000000000000000000000000000000000000000000000000002"

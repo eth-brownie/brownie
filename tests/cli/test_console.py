@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
-import pytest
 import sys
+
+import pytest
 
 from brownie._cli.console import Console
 

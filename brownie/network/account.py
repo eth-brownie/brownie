@@ -1,30 +1,26 @@
 #!/usr/bin/python3
 
-from typing import List, Dict, Any, Union, Iterable, Optional, Tuple
-from getpass import getpass
-
-from hexbytes import HexBytes
-import os
-from pathlib import Path
 import json
+import os
 import threading
+from getpass import getpass
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
-from eth_hash.auto import keccak
 import eth_keys
+from eth_hash.auto import keccak
+from hexbytes import HexBytes
 
-from brownie.utils import color
-from brownie.exceptions import (
-    VirtualMachineError,
-    UnknownAccount,
-    IncompatibleEVMVersion,
-)
+from brownie._config import CONFIG
+from brownie._singleton import _Singleton
+from brownie.convert import Wei, to_address
+from brownie.exceptions import IncompatibleEVMVersion, UnknownAccount, VirtualMachineError
+from brownie.network.state import _find_contract
 from brownie.network.transaction import TransactionReceipt
+from brownie.utils import color
+
 from .rpc import Rpc, _revert_register
 from .web3 import Web3
-from brownie.network.state import _find_contract
-from brownie.convert import to_address, Wei
-from brownie._singleton import _Singleton
-from brownie._config import CONFIG
 
 web3 = Web3()
 rpc = Rpc()
@@ -62,7 +58,7 @@ class Accounts(metaclass=_Singleton):
     def __repr__(self) -> str:
         return str(self._accounts)
 
-    def __iter__(self) -> Iterable:
+    def __iter__(self) -> Iterator:
         return iter(self._accounts)
 
     def __getitem__(self, key: int) -> Any:
@@ -177,9 +173,7 @@ class _AccountBase:
                 return False
         return super().__eq__(other)
 
-    def _gas_limit(
-        self, to: Union[str, "Accounts"], amount: Optional[int], data: str = ""
-    ) -> int:
+    def _gas_limit(self, to: Union[str, "Accounts"], amount: Optional[int], data: str = "") -> int:
         if CONFIG["active_network"]["gas_limit"] not in (True, False, None):
             return Wei(CONFIG["active_network"]["gas_limit"])
         return self.estimate_gas(to, amount, data)
@@ -246,9 +240,7 @@ class _AccountBase:
         tx = TransactionReceipt(
             txid, self, name=contract._name + ".constructor", revert_data=revert_data
         )
-        add_thread = threading.Thread(
-            target=contract._add_from_tx, args=(tx,), daemon=True
-        )
+        add_thread = threading.Thread(target=contract._add_from_tx, args=(tx,), daemon=True)
         add_thread.start()
         if tx.status != 1:
             return tx
@@ -270,12 +262,7 @@ class _AccountBase:
             Estimated gas value in wei."""
         try:
             return web3.eth.estimateGas(
-                {
-                    "from": self.address,
-                    "to": str(to),
-                    "value": Wei(amount),
-                    "data": HexBytes(data),
-                }
+                {"from": self.address, "to": str(to), "value": Wei(amount), "data": HexBytes(data)}
             )
         except ValueError:
             if CONFIG["active_network"]["reverting_tx_gas_limit"]:
@@ -310,9 +297,7 @@ class _AccountBase:
                     "to": str(to),
                     "value": Wei(amount),
                     "nonce": self.nonce,
-                    "gasPrice": Wei(gas_price)
-                    if gas_price is not None
-                    else self._gas_price(),
+                    "gasPrice": Wei(gas_price) if gas_price is not None else self._gas_price(),
                     "gas": Wei(gas_limit) or self._gas_limit(to, amount, data),
                     "data": HexBytes(data),
                 }
@@ -350,9 +335,7 @@ class LocalAccount(_AccountBase):
         private_key: Account private key.
         public_key: Account public key."""
 
-    def __init__(
-        self, address: str, account: Account, priv_key: Union[int, bytes, str]
-    ) -> None:
+    def __init__(self, address: str, account: Account, priv_key: Union[int, bytes, str]) -> None:
         self._acct = account
         self.private_key = priv_key
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
@@ -383,8 +366,7 @@ class LocalAccount(_AccountBase):
         if not overwrite and json_file.exists():
             raise FileExistsError("Account with this identifier already exists")
         encrypted = web3.eth.account.encrypt(
-            self.private_key,
-            getpass("Enter the password to encrypt this account with: "),
+            self.private_key, getpass("Enter the password to encrypt this account with: ")
         )
         with json_file.open("w") as fp:
             json.dump(encrypted, fp)

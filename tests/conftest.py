@@ -3,8 +3,9 @@
 import itertools
 import json
 import os
-from pathlib import Path
 import shutil
+from pathlib import Path
+
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -19,16 +20,35 @@ def pytest_sessionstart():
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setattr(
         "solcx.get_available_solc_versions",
-        lambda: [
-            "v0.5.10",
-            "v0.5.9",
-            "v0.5.8",
-            "v0.5.7",
-            "v0.4.25",
-            "v0.4.24",
-            "v0.4.22",
-        ],
+        lambda: ["v0.5.10", "v0.5.9", "v0.5.8", "v0.5.7", "v0.4.25", "v0.4.24", "v0.4.22"],
     )
+
+
+def pytest_addoption(parser):
+    parser.addoption("--mix-tests", action="store_true", help="Runs brownie mix tests")
+    parser.addoption(
+        "--evm-tests", action="store_true", help="Runs EVM tests (coverage evaluation)"
+    )
+    parser.addoption("--skip-regular", action="store_true", help="Skips regular tests")
+
+
+def pytest_collection_modifyitems(config, items):
+    if not config.getoption("--evm-tests"):
+        evm_skip = pytest.mark.skip(reason="Use --evm-tests to run")
+        for i in [i for i in items if "evmtester" in i.fixturenames]:
+            i.add_marker(evm_skip)
+    if not config.getoption("--mix-tests"):
+        mix_skip = pytest.mark.skip(reason="Use --evm-tests to run")
+        for i in [i for i in items if "browniemix" in i.fixturenames]:
+            i.add_marker(mix_skip)
+    if config.getoption("--skip-regular"):
+        regular_skip = pytest.mark.skip(reason="--skip-regular")
+        for i in [
+            i
+            for i in items
+            if "browniemix" not in i.fixturenames and "evmtester" not in i.fixturenames
+        ]:
+            i.add_marker(regular_skip)
 
 
 # auto-parametrize the evmtester fixture
@@ -100,16 +120,9 @@ def evmtester(_project_factory, project, tmp_path, accounts, request):
         _project_factory.joinpath("contracts/EVMTester.sol"),
         tmp_path.joinpath("contracts/EVMTester.sol"),
     )
-    conf_json = brownie._config._load_json(
-        _project_factory.joinpath("brownie-config.json")
-    )
+    conf_json = brownie._config._load_json(_project_factory.joinpath("brownie-config.json"))
     conf_json["compiler"]["solc"].update(
-        {
-            "version": solc_version,
-            "optimize": runs > 0,
-            "runs": runs,
-            "evm_version": evm_version,
-        }
+        {"version": solc_version, "optimize": runs > 0, "runs": runs, "evm_version": evm_version}
     )
     with tmp_path.joinpath("brownie-config.json").open("w") as fp:
         json.dump(conf_json, fp)

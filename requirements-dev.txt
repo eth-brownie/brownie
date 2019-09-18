@@ -1,8 +1,9 @@
+black==19.3b0
 coveralls>=1.7.0
 pytest>=5.0.0
 pytest-cov>=2.7.1
 pytest-mock>=1.10.4
+sphinx==2.0.1
+tox==3.14.0
 twine==1.13.0
 wheel==0.33.4
-black==19.3b0
-tox==3.14.0

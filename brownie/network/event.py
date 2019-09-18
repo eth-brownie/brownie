@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
-from typing import Dict, List, Union, Iterable, ValuesView, Tuple, Any
-from collections import OrderedDict
 import json
+from collections import OrderedDict
+from typing import Any, Dict, Iterator, List, Tuple, Union, ValuesView
 
 import eth_event
 
-from brownie.convert import _format_event
 from brownie._config import CONFIG
+from brownie.convert import _format_event
 from brownie.exceptions import EventLookupError
 
 
@@ -20,11 +20,7 @@ class EventDict:
         Args:
             events: event data as supplied by eth_event.decode_logs or eth_event.decode_trace"""
         self._ordered = [
-            _EventItem(
-                i["name"],
-                [OrderedDict((x["name"], x["value"]) for x in i["data"])],
-                (pos,),
-            )
+            _EventItem(i["name"], [OrderedDict((x["name"], x["value"]) for x in i["data"])], (pos,))
             for pos, i in enumerate(events)
         ]
 
@@ -50,9 +46,7 @@ class EventDict:
         """if key is int: returns the n'th event that was fired
         if key is str: returns a _EventItem dict of all events where name == key"""
         if not isinstance(key, (int, str)):
-            raise TypeError(
-                f"Invalid key type '{type(key)}' - can only use strings or integers"
-            )
+            raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
         if isinstance(key, int):
             try:
                 return self._ordered[key]
@@ -64,7 +58,7 @@ class EventDict:
             return self._dict[key]
         raise EventLookupError(f"Event '{key}' did not fire.")
 
-    def __iter__(self) -> Iterable:
+    def __iter__(self) -> Iterator:
         return iter(self._ordered)
 
     def __len__(self) -> int:
@@ -109,9 +103,7 @@ class _EventItem:
         if key is str: returns the value of data field 'key' from the 1st event
         within the container """
         if not isinstance(key, (int, str)):
-            raise TypeError(
-                f"Invalid key type '{type(key)}' - can only use strings or integers"
-            )
+            raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
         if isinstance(key, int):
             try:
                 return self._ordered[key]
@@ -144,7 +136,7 @@ class _EventItem:
             return str(self._ordered[0])
         return str([i[0] for i in self._ordered])
 
-    def __iter__(self) -> Iterable:
+    def __iter__(self) -> Iterator:
         return iter(self._ordered)
 
     def __eq__(self, other: object) -> bool:

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from pathlib import Path
+
 from brownie.test import output
 
 test_source = """

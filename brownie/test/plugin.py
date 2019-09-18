@@ -3,9 +3,9 @@
 import pytest
 
 import brownie
+from brownie._config import ARGV, CONFIG
 from brownie.test import output
 from brownie.test._manager import TestManager
-from brownie._config import CONFIG, ARGV
 
 
 class RevertContextManager:
@@ -31,9 +31,7 @@ def _generate_fixture(container):
     def _fixture():
         yield container
 
-    _fixture.__doc__ = (
-        f"Provides access to Brownie ContractContainer object '{container._name}'"
-    )
+    _fixture.__doc__ = f"Provides access to Brownie ContractContainer object '{container._name}'"
     return pytest.fixture(scope="session")(_fixture)
 
 
@@ -51,28 +49,16 @@ if brownie.project.check_for_project("."):
     # set commandline options
     def pytest_addoption(parser):
         parser.addoption(
-            "--coverage",
-            "-C",
-            action="store_true",
-            help="Evaluate contract test coverage",
+            "--coverage", "-C", action="store_true", help="Evaluate contract test coverage"
         )
         parser.addoption(
-            "--gas",
-            "-G",
-            action="store_true",
-            help="Display gas profile for function calls",
+            "--gas", "-G", action="store_true", help="Display gas profile for function calls"
         )
         parser.addoption(
-            "--update",
-            "-U",
-            action="store_true",
-            help="Only run tests where changes have occurred",
+            "--update", "-U", action="store_true", help="Only run tests where changes have occurred"
         )
         parser.addoption(
-            "--revert-tb",
-            "-R",
-            action="store_true",
-            help="Show detailed traceback on tx reverts",
+            "--revert-tb", "-R", action="store_true", help="Show detailed traceback on tx reverts"
         )
         parser.addoption(
             "--network",
@@ -86,9 +72,7 @@ if brownie.project.check_for_project("."):
         for key in ("coverage", "always_transact"):
             ARGV[key] = config.getoption("--coverage")
         ARGV["gas"] = config.getoption("--gas")
-        ARGV["revert"] = (
-            config.getoption("--revert-tb") or CONFIG["pytest"]["revert_traceback"]
-        )
+        ARGV["revert"] = config.getoption("--revert-tb") or CONFIG["pytest"]["revert_traceback"]
         ARGV["update"] = config.getoption("--update")
         ARGV["network"] = None
         if config.getoption("--network"):

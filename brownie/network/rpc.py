@@ -1,18 +1,19 @@
 #!/usr/bin/python3
 
-from typing import Dict, Any, List, Union, Tuple, Optional
 import atexit
 import gc
-import psutil
-from subprocess import DEVNULL, PIPE
 import sys
 import time
 import weakref
+from subprocess import DEVNULL, PIPE
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from .web3 import Web3
+import psutil
 
 from brownie._singleton import _Singleton
-from brownie.exceptions import RPCProcessError, RPCConnectionError, RPCRequestError
+from brownie.exceptions import RPCConnectionError, RPCProcessError, RPCRequestError
+
+from .web3 import Web3
 
 web3 = Web3()
 

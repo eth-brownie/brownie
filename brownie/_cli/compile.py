@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
-from docopt import docopt
 import shutil
+
+from docopt import docopt
 
 from brownie import project
 from brownie.exceptions import ProjectNotFound

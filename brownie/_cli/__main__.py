@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 
-from docopt import docopt
 import importlib
-from pathlib import Path
 import sys
+from pathlib import Path
+
+from docopt import docopt
 
 from brownie import network
-from brownie.utils import color, notify
-from brownie.exceptions import ProjectNotFound
 from brownie._config import ARGV
+from brownie.exceptions import ProjectNotFound
+from brownie.utils import color, notify
 
 __version__ = "1.0.0b12"  # did you change this in docs/conf.py as well?
 
@@ -35,9 +36,7 @@ def main():
 
     # remove options before calling docopt
     if len(sys.argv) > 1 and sys.argv[1][0] != "-":
-        idx = next(
-            (sys.argv.index(i) for i in sys.argv if i.startswith("-")), len(sys.argv)
-        )
+        idx = next((sys.argv.index(i) for i in sys.argv if i.startswith("-")), len(sys.argv))
         opts = sys.argv[idx:]
         sys.argv = sys.argv[:idx]
     args = docopt(__doc__)
@@ -56,5 +55,5 @@ def main():
     except ProjectNotFound:
         notify("ERROR", "Brownie environment has not been initiated for this folder.")
         print("Type 'brownie init' to create the file structure.")
-    except Exception:
-        print(color.format_tb(sys.exc_info()))
+    except Exception as e:
+        print(color.format_tb(e))

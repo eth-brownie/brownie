@@ -1,15 +1,14 @@
 #!/usr/bin/python3
 
-from base64 import b64encode
 import os
+import time
+from base64 import b64encode
 from pathlib import Path
+
 import pytest
 import requests
-import time
-
 
 from brownie.project.scripts import run
-
 
 if os.getenv("GITHUB_TOKEN"):
     auth = b64encode(os.getenv("GITHUB_TOKEN").encode()).decode()
@@ -18,9 +17,7 @@ else:
     headers = None
 
 for i in range(10):
-    data = requests.get(
-        "https://api.github.com/orgs/brownie-mix/repos", headers=headers
-    )
+    data = requests.get("https://api.github.com/orgs/brownie-mix/repos", headers=headers)
     if data.status_code == 200:
         break
     time.sleep(30)
