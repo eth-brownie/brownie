@@ -9,7 +9,9 @@ import pytest
 from brownie._cli.analyze import (
     construct_source_dict_from_artifact,
     construct_request_from_artifact,
-    get_mythx_client
+    get_mythx_client,
+    get_contract_locations,
+    get_contract_types,
 )
 
 
@@ -158,3 +160,23 @@ def test_mythx_client_default_no_username_env(monkeypatch):
     monkeypatch.setenv("MYTHX_PASSWORD", "bar")
     assert_trial_client()
     monkeypatch.delenv("MYTHX_PASSWORD")
+
+
+# simulate build.items() method
+BUILD_CONTAINER = {
+    "foo": {"sourcePath": "foo path", "contractName": "foo contract", "type": "contract"},
+    "bar": {"sourcePath": "bar path", "contractName": "bar contract", "type": "contract"},
+    "baz": {"sourcePath": "baz path", "contractName": "baz contract", "type": "library"},
+}
+
+
+def test_contract_locations_from_build():
+    assert get_contract_locations(BUILD_CONTAINER) == {
+        "foo path": "foo contract",
+        "bar path": "bar contract",
+        "baz path": "baz contract",
+    }
+
+
+def test_contract_types_from_build():
+    assert get_contract_types(BUILD_CONTAINER) == ({"foo", "bar"}, {"baz"})
