@@ -8,6 +8,12 @@ repos:
     hooks:
       - id: black
         name: fmt
+-   repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        language: system
+        entry: mypy
 
 default_language_version:
     python: python3.7
