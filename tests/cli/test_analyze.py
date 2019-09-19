@@ -15,11 +15,16 @@ from brownie._cli.analyze import (
     assemble_contract_jobs,
     update_contract_jobs_with_dependencies,
     send_to_mythx,
+    update_report,
 )
+from mythx_models.response import DetectedIssuesResponse
 
 
 with open(str(Path(__file__).parent / "test-artifact.json"), "r") as artifact_f:
     TEST_ARTIFACT = json.load(artifact_f)
+
+with open(str(Path(__file__).parent / "test-report.json"), "r") as artifact_f:
+    TEST_REPORT = json.load(artifact_f)
 
 
 def empty_field(field):
@@ -286,3 +291,24 @@ def test_send_to_mythx_async_auth(monkeypatch):
     uuids = send_to_mythx(JOB_DATA, client, True)
 
     assert uuids == ["foo"]
+
+
+def test_update_report():
+    client = mock.MagicMock()
+    client.report = lambda x: DetectedIssuesResponse.from_dict(TEST_REPORT)
+
+    source_to_name = {"contracts/SafeMath.sol": "SafeMath"}
+    highlight_report = {"highlights": {"MythX": {"SafeMath": {"contracts/SafeMath.sol": []}}}}
+
+    update_report(client, "foo", highlight_report, source_to_name)
+    assert highlight_report == {
+        "highlights": {
+            "MythX": {
+                "SafeMath": {
+                    "contracts/SafeMath.sol": [
+                        [0, 23, "green", "SWC-103: A floating pragma is set."]
+                    ]
+                }
+            }
+        }
+    }
