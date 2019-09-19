@@ -50,11 +50,7 @@ us on the website!
 """
 
 
-SEVERITY_COLOURS = {
-    Severity.LOW: "green",
-    Severity.MEDIUM: "yellow",
-    Severity.HIGH: "red",
-}
+SEVERITY_COLOURS = {Severity.LOW: "green", Severity.MEDIUM: "yellow", Severity.HIGH: "red"}
 DASHBOARD_BASE_URL = "https://dashboard.mythx.io/#/console/analyses/"
 TRIAL_PRINTED = False
 BYTECODE_ADDRESS_PATCH = re.compile(r"__\w{38}")
@@ -120,10 +116,13 @@ def get_mythx_client():
             "password": "trial",
         }
 
-    return Client(
-        **auth_args,
-        middlewares=[ClientToolNameMiddleware(name="brownie-{}".format(__version__))],
-    ), authenticated
+    return (
+        Client(
+            **auth_args,
+            middlewares=[ClientToolNameMiddleware(name="brownie-{}".format(__version__))],
+        ),
+        authenticated,
+    )
 
 
 def get_contract_locations(build):
@@ -168,9 +167,7 @@ def send_to_mythx(job_data, client, authenticated):
                 )
             )
         else:
-            print(
-                "Submitted analysis {} for contract {}".format(resp.uuid, contract_name)
-            )
+            print("Submitted analysis {} for contract {}".format(resp.uuid, contract_name))
         job_uuids.append(resp.uuid)
 
     return job_uuids
@@ -184,10 +181,7 @@ def wait_for_jobs(job_uuids, client):
 
 def print_trial_message(issue):
     global TRIAL_PRINTED
-    if issue.swc_id == "" or issue.severity in (
-            Severity.UNKNOWN,
-            Severity.NONE,
-    ):
+    if issue.swc_id == "" or issue.severity in (Severity.UNKNOWN, Severity.NONE):
         if not TRIAL_PRINTED:
             print(issue.description_short)
             print(issue.description_long)
@@ -214,16 +208,12 @@ def update_report(client, uuid, highlight_report, source_to_name):
                     filename = source_list[comp.file_id]
                     if filename in source_to_name:
                         contract_name = source_to_name[filename]
-                        highlight_report["highlights"]["MythX"][contract_name][
-                            filename
-                        ].append(
+                        highlight_report["highlights"]["MythX"][contract_name][filename].append(
                             [
                                 comp.offset,
                                 comp.offset + comp.length,
                                 SEVERITY_COLOURS[issue.severity],
-                                "{}: {}".format(
-                                    issue.swc_id, issue.description_short
-                                ),
+                                "{}: {}".format(issue.swc_id, issue.description_short),
                             ]
                         )
 
@@ -241,9 +231,7 @@ def main():
     contracts, libraries = get_contract_types(build)
 
     job_data = assemble_contract_jobs(build, contracts)
-    job_data = update_contract_jobs_with_dependencies(
-        build, contracts, libraries, job_data
-    )
+    job_data = update_contract_jobs_with_dependencies(build, contracts, libraries, job_data)
 
     client, authenticated = get_mythx_client()
 
@@ -267,11 +255,7 @@ def main():
     for uuid in job_uuids:
         print("Generating report for job {}".format(uuid))
         if authenticated:
-            print(
-                "You can also check the results at {}{}\n".format(
-                    DASHBOARD_BASE_URL, uuid
-                )
-            )
+            print("You can also check the results at {}{}\n".format(DASHBOARD_BASE_URL, uuid))
 
         update_report(client, uuid, highlight_report, source_to_name)
 
