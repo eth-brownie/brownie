@@ -1,12 +1,23 @@
 #!/usr/bin/python3
 
+import os
 from pathlib import Path
 
 from web3 import HTTPProvider, IPCProvider
 from web3 import Web3 as _Web3
 from web3 import WebsocketProvider
 
+from brownie._config import CONFIG
 from brownie._singleton import _Singleton
+
+
+def _expand_environment_args(uri: str) -> str:
+    if "$" not in uri:
+        return uri
+    expanded = os.path.expandvars(uri)
+    if uri != expanded:
+        return expanded
+    raise ValueError(f"Unable to expand environment variable in host setting: '{uri}'")
 
 
 class Web3(_Web3, metaclass=_Singleton):
@@ -16,9 +27,11 @@ class Web3(_Web3, metaclass=_Singleton):
     def __init__(self) -> None:
         super().__init__(HTTPProvider("null"))
         self.provider = None
+        self._mainnet_w3 = None
 
     def connect(self, uri: str) -> None:
         """Connects to a provider"""
+        uri = _expand_environment_args(uri)
         try:
             if Path(uri).exists():
                 self.provider = IPCProvider(uri)
@@ -44,3 +57,14 @@ class Web3(_Web3, metaclass=_Singleton):
         if not self.provider:
             return False
         return super().isConnected()
+
+    @property
+    def _mainnet(self) -> _Web3:
+        if CONFIG["active_network"]["name"] == "mainnet":
+            return self
+        if "mainnet" not in CONFIG["network"]["networks"]:
+            raise ValueError("No 'mainnet' network defined in brownie-config.json")
+        if not self._mainnet_w3:
+            uri = _expand_environment_args(CONFIG["network"]["networks"]["mainnet"]["host"])
+            self._mainnet_w3 = _Web3(HTTPProvider(uri))
+        return self._mainnet_w3
