@@ -111,7 +111,7 @@ Accounts
 
 .. py:class:: brownie.network.account.Accounts
 
-    List-like :ref:`api-types-singleton` container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects. When printed it will display as a list.
+    List-like :ref:`Singleton<api-types-singleton>` container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects. When printed it will display as a list.
 
     .. code-block:: python
 
@@ -1191,7 +1191,7 @@ TxHistory
 
 .. py:class:: brownie.network.state.TxHistory
 
-    List-like :ref:`api-types-singleton` container that contains :ref:`api-network-tx` objects. Whenever a transaction is broadcast, the ``TransactionReceipt`` is automatically added.
+    List-like :ref:`Singleton<api-types-singleton>` container that contains :ref:`api-network-tx` objects. Whenever a transaction is broadcast, the ``TransactionReceipt`` is automatically added.
 
     .. code-block:: python
 
@@ -1325,7 +1325,7 @@ Rpc
 
 .. py:class:: brownie.network.rpc.Rpc
 
-    :ref:`api-types-singleton` object for interacting with ``ganache-cli`` when running a local RPC environment. When using the console or writing tests, an instance of this class is available as ``rpc``.
+    :ref:`Singleton<api-types-singleton>` object for interacting with ``ganache-cli`` when running a local RPC environment. When using the console or writing tests, an instance of this class is available as ``rpc``.
 
     .. code-block:: python
 
@@ -1944,23 +1944,26 @@ TransactionReceipt Methods
 ``brownie.network.web3``
 ========================
 
-The ``web3`` module contains a slightly modified version of the web3.py `Web3 <https://web3py.readthedocs.io/en/stable/web3.main.html#web3.Web3>`__ class that is used throughout various Brownie modules for RPC communication.
+The ``web3`` module contains a slightly modified version of the web3.py ``Web3`` class that is used throughout various Brownie modules for RPC communication.
 
 .. _web3:
 
 Web3
 ----
 
-The standard ``Web3`` API is available, however it is not documented here.
+See the `Web3 API documentation <https://web3py.readthedocs.io/en/stable/web3.main.html#web3.Web3>`_ for detailed information on all the methods and attributes available here. This document only outlines methods that differ from the normal ``Web3`` public interface.
 
 .. py:class:: brownie.network.web3.Web3
 
-    :ref:`api-types-singleton` variant of ``Web3``.
+    :ref:`Singleton<api-types-singleton>` variant of ``Web3``.
 
     .. code-block:: python
 
         >>> from brownie import web3
         >>>
+
+Web3 Methods
+------------
 
 .. py:classmethod:: Web3.connect(uri)
 
@@ -1979,3 +1982,12 @@ The standard ``Web3`` API is available, however it is not documented here.
 
         >>> web3.disconnect()
         >>>
+
+Web3 Internals
+--------------
+
+.. py:attribute:: Web3._mainnet
+
+    Provides access to a ``Web3`` instance connected to the ``mainnet`` network as defined in the configuration file. Used internally for `ENS <https://ens.domains/>`_ and `ethPM <https://www.ethpm.com/>`_ lookups.
+
+    Raises ``ValueError`` if ``mainnet`` is not defined.
