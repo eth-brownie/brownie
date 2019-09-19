@@ -14,6 +14,7 @@ from brownie._cli.analyze import (
     get_contract_types,
     assemble_contract_jobs,
     update_contract_jobs_with_dependencies,
+    send_to_mythx,
 )
 
 
@@ -214,5 +215,74 @@ def test_contract_job_updates():
     assert "contracts/SafeMath.sol" in job_data["SafeMath"]["sources"]
     assert "contracts/SafeMath2.sol" in job_data["SafeMath"]["sources"]
 
-    assert job_data["SafeMath"]["sources"]["contracts/SafeMath.sol"] == construct_source_dict_from_artifact(TEST_ARTIFACT)["contracts/SafeMath.sol"]
-    assert job_data["SafeMath"]["sources"]["contracts/SafeMath2.sol"] == construct_source_dict_from_artifact(artifact)["contracts/SafeMath2.sol"]
+    assert (
+        job_data["SafeMath"]["sources"]["contracts/SafeMath.sol"]
+        == construct_source_dict_from_artifact(TEST_ARTIFACT)["contracts/SafeMath.sol"]
+    )
+    assert (
+        job_data["SafeMath"]["sources"]["contracts/SafeMath2.sol"]
+        == construct_source_dict_from_artifact(artifact)["contracts/SafeMath2.sol"]
+    )
+
+
+JOB_DATA = {
+    "SafeMath": {
+        "contract_name": "SafeMath",
+        "bytecode": "60556023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea265627a7a72315820893edda58cfc8ab942d57dfc258288727bcaf844e6397a37aefea97a87eee32464736f6c634300050b0032",
+        "deployed_bytecode": "73000000000000000000000000000000000000000030146080604052600080fdfea265627a7a72315820893edda58cfc8ab942d57dfc258288727bcaf844e6397a37aefea97a87eee32464736f6c634300050b0032",
+        "source_map": "25:497:0:-;;132:2:-1;166:7;155:9;146:7;137:37;255:7;249:14;246:1;241:23;235:4;232:33;222:2;;269:9;222:2;293:9;290:1;283:20;323:4;314:7;306:22;347:7;338;331:24",
+        "deployed_source_map": "25:497:0:-;;;;;;;;",
+        "sources": {
+            "contracts/SafeMath.sol": {
+                "source": "pragma solidity ^0.5.0;\n\nlibrary SafeMath {\n    function add(uint a, uint b) internal pure returns (uint c) {\n        c = a + b;\n        require(c >= a);\n    }\n    function sub(uint a, uint b) internal pure returns (uint c) {\n        require(b <= a);\n        c = a - b;\n    }\n    function mul(uint a, uint b) internal pure returns (uint c) {\n        c = a * b;\n        require(a == 0 || c / a == b);\n    }\n    function div(uint a, uint b) internal pure returns (uint c) {\n        require(b > 0);\n        c = a / b;\n    }\n}"
+            }
+        },
+        "source_list": ["contracts/SafeMath.sol"],
+        "main_source": "contracts/SafeMath.sol",
+        "solc_version": "0.5.11+commit.22be8592.Linux.g++",
+        "analysis_mode": "quick",
+    }
+}
+
+
+def test_send_to_mythx_blocking(monkeypatch):
+    client = mock.MagicMock()
+    response = mock.MagicMock()
+    response.uuid = "foo"
+    client.analyze = lambda *args, **kwargs: response
+
+    uuids = send_to_mythx(JOB_DATA, client, False)
+
+    assert uuids == ["foo"]
+
+
+def test_send_to_mythx_async(monkeypatch):
+    client = mock.MagicMock()
+    response = mock.MagicMock()
+    response.uuid = "foo"
+    client.analyze = lambda *args, **kwargs: response
+    ARGV["async"] = True
+    uuids = send_to_mythx(JOB_DATA, client, False)
+
+    assert uuids == ["foo"]
+
+
+def test_send_to_mythx_blocking_auth(monkeypatch):
+    client = mock.MagicMock()
+    response = mock.MagicMock()
+    response.uuid = "foo"
+    client.analyze = lambda *args, **kwargs: response
+    uuids = send_to_mythx(JOB_DATA, client, True)
+
+    assert uuids == ["foo"]
+
+
+def test_send_to_mythx_async_auth(monkeypatch):
+    client = mock.MagicMock()
+    response = mock.MagicMock()
+    response.uuid = "foo"
+    client.analyze = lambda *args, **kwargs: response
+    ARGV["async"] = True
+    uuids = send_to_mythx(JOB_DATA, client, True)
+
+    assert uuids == ["foo"]
