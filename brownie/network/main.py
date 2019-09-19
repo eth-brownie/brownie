@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import os
 from typing import Optional, Tuple, Union
 
 from brownie._config import CONFIG, _modify_network_config
@@ -26,11 +27,21 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
         if "host" not in active:
             raise KeyError(f"No host in brownie-config.json for network '{active['name']}'")
         host = active["host"]
+
+        if "$" in host:
+            host = os.path.expandvars(host)
+            if host == active["host"]:
+                raise ValueError(
+                    f"{network} host setting '{host}' contains an environment "
+                    f"variable, but the variable could not be expanded."
+                )
+
         if ":" not in host.split("//", maxsplit=1)[-1]:
             try:
                 host += f":{active['test_rpc']['port']}"
             except KeyError:
                 pass
+
         web3.connect(host)
         if "test_rpc" in active and launch_rpc and not rpc.is_active():
             if is_connected():
@@ -41,6 +52,7 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
                 rpc.launch(**active["test_rpc"])
         else:
             Accounts()._reset()
+
     except Exception:
         CONFIG["active_network"] = {"name": None}
         web3.disconnect()
