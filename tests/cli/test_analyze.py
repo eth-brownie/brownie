@@ -12,6 +12,8 @@ from brownie._cli.analyze import (
     get_mythx_client,
     get_contract_locations,
     get_contract_types,
+    assemble_contract_jobs,
+    update_contract_jobs_with_dependencies,
 )
 
 
@@ -180,3 +182,37 @@ def test_contract_locations_from_build():
 
 def test_contract_types_from_build():
     assert get_contract_types(BUILD_CONTAINER) == ({"foo", "bar"}, {"baz"})
+
+
+def test_contract_job_assembly():
+    contracts = {"SafeMath"}
+    build = mock.MagicMock()
+    build.get = lambda x: TEST_ARTIFACT
+
+    job_data = assemble_contract_jobs(build, contracts)
+    assert len(job_data) == 1
+    assert job_data["SafeMath"] == construct_request_from_artifact(TEST_ARTIFACT)
+
+
+def test_contract_job_updates():
+    contracts = {"SafeMath"}
+    libraries = {"SafeMath2"}
+
+    build = mock.MagicMock()
+    build.get = lambda x: TEST_ARTIFACT
+
+    job_data = assemble_contract_jobs(build, contracts)
+
+    artifact = deepcopy(TEST_ARTIFACT)
+    artifact["contractName"] = "SafeMath2"
+    artifact["sourcePath"] = "contracts/SafeMath2.sol"
+    build.get = lambda x: artifact
+    build.get_dependents = lambda x: ["SafeMath"]
+    job_data = update_contract_jobs_with_dependencies(build, contracts, libraries, job_data)
+
+    assert len(job_data["SafeMath"]["sources"]) == 2
+    assert "contracts/SafeMath.sol" in job_data["SafeMath"]["sources"]
+    assert "contracts/SafeMath2.sol" in job_data["SafeMath"]["sources"]
+
+    assert job_data["SafeMath"]["sources"]["contracts/SafeMath.sol"] == construct_source_dict_from_artifact(TEST_ARTIFACT)["contracts/SafeMath.sol"]
+    assert job_data["SafeMath"]["sources"]["contracts/SafeMath2.sol"] == construct_source_dict_from_artifact(artifact)["contracts/SafeMath2.sol"]
