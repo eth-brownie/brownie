@@ -59,7 +59,6 @@ To connect to any other network that has been defined in ``brownie-config.json``
 ::
     $ brownie --network ropsten
 
-Brownie will launch or attach to the client when using any network that includes a ``test-rpc`` dictionary in it's settings.
 
 Each time Brownie is loaded, it will first attempt to connect to the ``host`` address to determine if the RPC client is already active.
 
@@ -89,7 +88,7 @@ Disconnecting from a network:
 Interacting with non-local networks
 ==============================
 
-Test-rpc
+``brownie.module.rpc``
 --------
 
 The :ref:`rpc` module is unavailable when working with non-local networks.
@@ -125,9 +124,9 @@ This means that the below ``TransactionReceipt`` attributes and methods are unav
 * ``TransactionReceipt.traceback``
 * ``TransactionReceipt.source``
 
-Contracts
+:ref:`api-network-contract`
 ---------
-On non-local networks, use the :ref:`api-network-contract` class to interact with deployed contracts.  ``ContractContainer`` and ``ProjectContract`` are unavailable as these are only used with the local   
+On non-local networks, use the ``Contract`` class to interact with deployed contracts.  ``ContractContainer`` and ``ProjectContract`` are unavailable as these are only used with the local   
 
 You can instantiate the contract using ``contract.Contract`` method.  You will need to provide an ABI (typically as a JSON file) that is generated from the compiled contract code.  
 
