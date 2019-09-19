@@ -14,6 +14,12 @@ repos:
         name: mypy
         language: system
         entry: mypy
+-   repo: local
+    hooks:
+      - id: isort
+        name: isort
+        language: system
+        entry: isort **/*.py
 
 default_language_version:
     python: python3.7
