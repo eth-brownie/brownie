@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import re
 import time
 from os import environ
 
@@ -8,10 +9,10 @@ from docopt import docopt
 from mythx_models.response import Severity
 from pythx import Client
 from pythx.middleware.toolname import ClientToolNameMiddleware
-import re
+
 from brownie import project
-from brownie._config import ARGV, _update_argv_from_docopt
 from brownie._cli.__main__ import __version__
+from brownie._config import ARGV, _update_argv_from_docopt
 from brownie._gui import Gui
 from brownie.exceptions import ProjectNotFound
 

@@ -2,23 +2,22 @@ import json
 from copy import deepcopy
 from pathlib import Path
 from unittest import mock
-from brownie._config import ARGV
 
 import pytest
-
-from brownie._cli.analyze import (
-    construct_source_dict_from_artifact,
-    construct_request_from_artifact,
-    get_mythx_client,
-    get_contract_locations,
-    get_contract_types,
-    assemble_contract_jobs,
-    update_contract_jobs_with_dependencies,
-    send_to_mythx,
-    update_report,
-)
 from mythx_models.response import DetectedIssuesResponse
 
+from brownie._cli.analyze import (
+    assemble_contract_jobs,
+    construct_request_from_artifact,
+    construct_source_dict_from_artifact,
+    get_contract_locations,
+    get_contract_types,
+    get_mythx_client,
+    send_to_mythx,
+    update_contract_jobs_with_dependencies,
+    update_report,
+)
+from brownie._config import ARGV
 
 with open(str(Path(__file__).parent / "test-artifact.json"), "r") as artifact_f:
     TEST_ARTIFACT = json.load(artifact_f)
