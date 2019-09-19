@@ -41,7 +41,7 @@ The following settings are available:
 
         Additionally, you must include a host setting in order to connect to that network:
 
-        * ``host``: The address and port of the RPC API you wish to connect to. If using `Infura <https://infura.io/>`__, be sure to obtain and include your own network access token in the address.
+        * ``host``: The address of the RPC API you wish to connect to. You can include environment variables, they will be expanded when attempting connect. The default settings use `Infura <https://infura.io/>`_ and look for the project ID token as ``WEB3_INFURA_PROJECT_ID``.
 
         .. py:attribute:: network.networks.test_rpc
 
