@@ -14,7 +14,7 @@ pyreadline==2.1;platform_system=='Windows'
 py-solc-ast>=0.1.4,<0.2.0
 py-solc-x>=0.6.0,<1.0.0
 pytest>=5.0.0,<6.0.0
-pythx==1.2.5
+pythx==1.2.6
 requests>=2.22.0,<3.0.0
 semantic-version>=2.8.1,<3.0.0
 websockets>=7.0.0,<8.0.0
