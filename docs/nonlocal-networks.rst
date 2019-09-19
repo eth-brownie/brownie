@@ -8,7 +8,8 @@ In addition to using `ganache-cli <https://github.com/trufflesuite/ganache-cli>`
 
 Warning
 ========================
-Before you go any farther, consider that connecting to non-local networks can potentially expose your private keys if you aren't careful:
+Before you go any farther, consider that connecting to non-local networks can potentially expose your private keys if you aren't careful.
+
 * When you are interacting with mainnet, make sure you verify all of the details of any transactions you sign/send before you send them. Brownie can't protect you from sending ETH to the wrong address, sending too much, etc. 
 * Always protect your private keys.  Don't leave them lying around unencrypted!
 
@@ -68,6 +69,7 @@ Using the ``brownie.netowrk`` methods
 You can interact with any network defined in ``brownie-config.json`` programatically using the ``brownie.network.main`` methods.
 
 Connecting to a network:
+
 .. code-block:: python
 
     >>> network.connect('ropsten')    
@@ -77,19 +79,24 @@ Connecting to a network:
     'ropsten'
 
 Disconnecting from a network:
+
 .. code-block:: python
 
     >>> network.disconnect()
     >>> network.is_connected()
     False
 
-Interacting with  non-local networks
+Interacting with non-local networks
 ==============================
+
+Test-rpc
+--------
+
+The :ref:`rpc` module is unavailable when working with non-local networks.
 
 Accounts
 --------
 
-* Configuring accounts for use with non-local networks
 When loading an account for interacting with a non-local network, you must provide the private key when loading the account in order to be able to sign transactions or deploy contracts
 
 .. code-block:: python
@@ -101,8 +108,32 @@ When loading an account for interacting with a non-local network, you must provi
 
 Once an account is added to the account object, the ``accounts.save`` and ``accounts.load`` can be used to save the accounts to an encrypted keystore and then load for later use.
 
-* Unconfirmed transactions
-On non-local networks, blocks are not mined automatically so transaction confirmations will not be immediate.  Transaction receipts are provided immediately can be stored to unique variables.  Individual transaction objects can also be accessed using the ``history`` function.  
+Transactions
+------------
+
+* Transaction status
+When submitting a transaction on non-local networks, blocks are not immediately so transactions will likewise not be immediately confirmed. 
+A :ref:`api-network-tx` object is provided immediately and can be stored to unique variables though ``TransactionReceipt.status`` will be ``-1`` until the transaction is mined and either succeeds or reverts.  
+
+* Debugging 
+The Brownie :ref:`debug` tools rely upon `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC method which is not supported by `Infura <https://infura.io>`__. Attempts to call it will result in a ``RPCRequestError``.
+This means that the below ``TransactionReceipt`` attributes and methods are unavailable:
+
+* ``TransactionReceipt.return_value``
+* ``TransactionReceipt.trace``
+* ``TransactionReceipt.call_trace``
+* ``TransactionReceipt.traceback``
+* ``TransactionReceipt.source``
 
 Contracts
 ---------
+On non-local networks, use the :ref:`api-network-contract` class to interact with deployed contracts.  ``ContractContainer`` and ``ProjectContract`` are unavailable as these are only used with the local   
+
+You can instantiate the contract using ``contract.Contract`` method.  You will need to provide an ABI (typically as a JSON file) that is generated from the compiled contract code.  
+
+.. code-block:: python
+
+    >>> Contract('0x79447c97b6543F6eFBC91613C655977806CB18b0', "Token", abi)
+    <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
+
+Once instantiated, any of the ``Contract``, :ref:`api-contract-call`, or :ref:`api-contract-tx` attributes and methods can be used to interact with the contract.
