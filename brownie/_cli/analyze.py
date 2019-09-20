@@ -16,7 +16,6 @@ from brownie._config import ARGV, _update_argv_from_docopt
 from brownie._gui import Gui
 from brownie.exceptions import ProjectNotFound
 
-# TODO: testtesttesttesttesttesttesttesttesttesttesttest
 
 __doc__ = f"""Usage: brownie analyze [options] [--async | --interval=<sec>]
 
