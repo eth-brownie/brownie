@@ -70,6 +70,11 @@ def test_cli_compile(cli_tester, testproject):
     cli_tester.run("compile --all", args=(testproject._project_path,))
 
 
+def test_cli_analyze(cli_tester, testproject):
+    cli_tester.set_target("brownie.project.load")
+    cli_tester.run("analyze")
+
+
 def test_cli_console(cli_tester, testproject):
     testproject.close()
     cli_tester.set_target("brownie._cli.console.Console.interact")
