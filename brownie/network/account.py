@@ -20,9 +20,8 @@ from brownie.network.transaction import TransactionReceipt
 from brownie.utils import color
 
 from .rpc import Rpc, _revert_register
-from .web3 import Web3
+from .web3 import _resolve_address, web3
 
-web3 = Web3()
 rpc = Rpc()
 
 
@@ -128,7 +127,7 @@ class Accounts(metaclass=_Singleton):
         Returns:
             Account instance.
         """
-        address = to_address(address)
+        address = _resolve_address(address)
         try:
             return next(i for i in self._accounts if i == address)
         except StopIteration:
@@ -139,7 +138,7 @@ class Accounts(metaclass=_Singleton):
 
         Args:
             address: Account instance or address string of account to remove."""
-        address = to_address(address)
+        address = _resolve_address(address)
         try:
             self._accounts.remove(address)
         except ValueError:
@@ -167,7 +166,7 @@ class _AccountBase:
     def __eq__(self, other: Union[str, object]) -> bool:
         if isinstance(other, str):
             try:
-                address = to_address(other)
+                address = _resolve_address(other)
                 return address == self.address
             except ValueError:
                 return False
@@ -384,7 +383,7 @@ class PublicKeyAccount:
     the private key. Can only be used to check the balance and to send ether to."""
 
     def __init__(self, addr: str) -> None:
-        self.address = to_address(addr)
+        self.address = _resolve_address(addr)
 
     def __repr__(self) -> str:
         return f"<PublicKeyAccount object '{color['string']}{self.address}{color}'>"
@@ -398,7 +397,7 @@ class PublicKeyAccount:
     def __eq__(self, other: Union[object, str]) -> bool:
         if isinstance(other, str):
             try:
-                address = to_address(other)
+                address = _resolve_address(other)
                 return address == self.address
             except ValueError:
                 return False

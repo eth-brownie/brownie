@@ -8,7 +8,7 @@ from eth_hash.auto import keccak
 from hexbytes import HexBytes
 
 from brownie._config import ARGV, CONFIG
-from brownie.convert import Wei, _format_input, _format_output, to_address
+from brownie.convert import Wei, _format_input, _format_output
 from brownie.exceptions import (
     ContractExists,
     ContractNotFound,
@@ -21,7 +21,7 @@ from brownie.utils import color
 from .event import _get_topics
 from .rpc import Rpc, _revert_register
 from .state import _add_contract, _find_contract, _remove_contract
-from .web3 import web3
+from .web3 import _resolve_address, web3
 
 rpc = Rpc()
 
@@ -205,7 +205,7 @@ class _DeployedContractBase(_ContractBase):
     def __init__(
         self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
     ) -> None:
-        address = to_address(address)
+        address = _resolve_address(address)
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
@@ -242,7 +242,7 @@ class _DeployedContractBase(_ContractBase):
             return self.address == other.address and self.bytecode == other.bytecode
         if isinstance(other, str):
             try:
-                address = to_address(other)
+                address = _resolve_address(other)
                 return address == self.address
             except ValueError:
                 return False
