@@ -8,7 +8,7 @@ In addition to using `ganache-cli <https://github.com/trufflesuite/ganache-cli>`
 
 Warning
 ========================
-Before you go any farther, consider that connecting to non-local networks can potentially expose your private keys if you aren't careful.
+Before you go any further, consider that connecting to non-local networks can potentially expose your private keys if you aren't careful.
 
 * When you are interacting with mainnet, make sure you verify all of the details of any transactions you sign/send before you send them. Brownie can't protect you from sending ETH to the wrong address, sending too much, etc. 
 * Always protect your private keys.  Don't leave them lying around unencrypted!
