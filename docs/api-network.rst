@@ -121,6 +121,9 @@ Accounts
         >>> dir(accounts)
         [add, at, clear, load, remove]
 
+Accounts Methods
+****************
+
 .. py:classmethod:: Accounts.add(priv_key=None)
 
     Creates a new ``LocalAccount`` with private key ``priv_key``, appends it to the container, and returns the new account instance.  If no private key is entered, one is randomly generated via ``os.urandom(8192)``.
@@ -172,6 +175,17 @@ Accounts
     .. code-block:: python
 
         >>> accounts.remove('0xc1826925377b4103cC92DeeCDF6F96A03142F37a')
+
+Accounts Internal Methods
+*************************
+
+.. py:classmethod:: Accounts._reset()
+
+    Called by :ref:`rpc._notify_registry <api-network-rpc-notify-registry>` when the local chain has been reset. All ``Account`` objects are recreated.
+
+.. py:classmethod:: Accounts._revert(height)
+
+    Called by :ref:`rpc._notify_registry <api-network-rpc-notify-registry>` when the local chain has been reverted to a block height greater than zero. Adjusts ``Account`` object nonce values.
 
 .. _api-network-account:
 
@@ -668,8 +682,18 @@ ContractContainer Methods
         >>> Token
         []
 
-.. _api-network-contract:
+ContractContainer Internal Methods
+**********************************
 
+.. py:classmethod:: ContractContainer._reset()
+
+    Called by :ref:`rpc._notify_registry <api-network-rpc-notify-registry>` when the local chain has been reset. All ``Contract`` objects are removed from the container and marked as :ref:`reverted <api-contract-reverted>`.
+
+.. py:classmethod:: ContractContainer._revert(height)
+
+    Called by :ref:`rpc._notify_registry <api-network-rpc-notify-registry>` when the local chain has been reverted to a block height greater than zero. Any ``Contract`` objects that no longer exist are removed from the container and marked as :ref:`reverted <api-contract-reverted>`.
+
+.. _api-network-contract:
 
 Contract and ProjectContract
 ----------------------------
@@ -734,6 +758,15 @@ Contract Methods
 
         >>> Token[0].balance
         0
+
+Contract Internal Attributes
+****************************
+
+.. _api-contract-reverted:
+
+.. py:attribute:: Contract._reverted
+
+    Boolean. Once set to to ``True``, any attempt to interact with the object raises a ``ContractNotFound`` exception. Set as a result of a call to :ref:`rpc._notify_registry <api-network-rpc-notify-registry>`.
 
 .. _api-contract-call:
 
@@ -1241,6 +1274,18 @@ TxHistory Methods
         >>> history.of_address(accounts[1])
         [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
 
+TxHistory Internal Methods
+**************************
+
+.. py:classmethod:: TxHistory._reset()
+
+    Called by :ref:`rpc._notify_registry <api-network-rpc-notify-registry>` when the local chain has been reset. All ``TransactionReceipt`` objects are removed from the container.
+
+.. py:classmethod:: TxHistory._revert(height)
+
+    Called by :ref:`rpc._notify_registry <api-network-rpc-notify-registry>` when the local chain has been reverted to a block height greater than zero. Any ``TransactionReceipt`` objects that no longer exist are removed from the container.
+
+
 Internal Methods
 ----------------
 
@@ -1289,6 +1334,9 @@ Rpc
         <lib.components.eth.Rpc object at 0x7ffb7cbab048>
         >>> dir(rpc)
         [is_active, kill, launch, mine, reset, revert, sleep, snapshot, time]
+
+Rpc Methods
+***********
 
 .. py:classmethod:: Rpc.launch(cmd)
 
@@ -1455,18 +1503,20 @@ Rpc Internal Methods
 
     .. note::
 
-        When calling this method, you must ensure that the user has not had a chance to take their own snapshot since `_internal_snap` was called.
+        When calling this method, you must ensure that the user has not had a chance to take their own snapshot since ``_internal_snap`` was called.
 
 Internal Methods
 ----------------
 
 .. py:class:: brownie.network.rpc._revert_register(obj)
 
-    Registers an object to be called whenever the local RPC is reset or reverted. Objects that register must include `_revert` and `_reset` methods in order to receive these callbacks.
+    Registers an object to be called whenever the local RPC is reset or reverted. Objects that register must include ``_revert`` and ``_reset`` methods in order to receive these callbacks.
+
+.. _api-network-rpc-notify-registry:
 
 .. py:class:: brownie.network.rpc._notify_registry(height)
 
-    Calls each registered object's `_revert` or `_reset` method after the local state has been reverted.
+    Calls each registered object's ``_revert`` or ``_reset`` method after the local state has been reverted.
 
 
 ``brownie.network.transaction``

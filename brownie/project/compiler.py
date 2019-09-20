@@ -5,13 +5,13 @@ import re
 from collections import deque
 from copy import deepcopy
 from hashlib import sha1
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import solcast
 import solcx
 from requests.exceptions import ConnectionError
 from semantic_version import NpmSpec, Version
-from solcast.main import SourceUnit
+from solcast.nodes import NodeBase
 
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 
@@ -277,8 +277,10 @@ def generate_build_json(
         evm = output_json["contracts"][path][contract_name]["evm"]
         bytecode = _format_link_references(evm)
         hash_ = sources.get_hash(input_json["sources"][path]["content"], contract_name, minified)
-        node = next(i[contract_name] for i in source_nodes if i.name == path)
-        paths = sorted(set([node.parent().path] + [i.parent().path for i in node.dependencies]))
+        node = next(i[contract_name] for i in source_nodes if i.absolutePath == path)
+        paths = sorted(
+            set([node.parent().absolutePath] + [i.parent().absolutePath for i in node.dependencies])
+        )
 
         pc_map, statement_map, branch_map = _generate_coverage_data(
             evm["deployedBytecode"]["sourceMap"],
@@ -309,7 +311,7 @@ def generate_build_json(
             "source": input_json["sources"][path]["content"],
             "sourceMap": evm["bytecode"]["sourceMap"],
             "sourcePath": path,
-            "type": node.type,
+            "type": node.contractKind,
         }
 
     if not silent:
@@ -349,7 +351,7 @@ def _generate_coverage_data(
 
     contract_nodes = [contract_node] + contract_node.dependencies
     source_nodes = dict((i.contract_id, i.parent()) for i in contract_nodes)
-    paths = set(v.path for v in source_nodes.values())
+    paths = set(v.absolutePath for v in source_nodes.values())
 
     stmt_nodes = dict((i, stmt_nodes[i].copy()) for i in paths)
     statement_map: Dict = dict((i, {}) for i in paths)
@@ -393,7 +395,7 @@ def _generate_coverage_data(
         # set contract path (-1 means none)
         if source[2] == -1:
             continue
-        path = source_nodes[source[2]].path
+        path = source_nodes[source[2]].absolutePath
         pc_list[-1]["path"] = path
 
         # set source offset (-1 means none)
@@ -420,13 +422,7 @@ def _generate_coverage_data(
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
                 pc_list[-1]["fn"] = pc_list[-2]["fn"]
             else:
-                pc_list[-1]["fn"] = (
-                    source_nodes[source[2]]
-                    .children(
-                        depth=2, inner_offset=offset, filters={"node_type": "FunctionDefinition"}
-                    )[0]
-                    .full_name
-                )
+                pc_list[-1]["fn"] = _get_fn_full_name(source_nodes[source[2]], offset)
                 statement = next(i for i in stmt_nodes[path] if sources.is_inside_offset(offset, i))
                 stmt_nodes[path].discard(statement)
                 statement_map[path].setdefault(pc_list[-1]["fn"], {})[count] = statement
@@ -438,16 +434,21 @@ def _generate_coverage_data(
             continue
         if pc_list[-1]["value"] == fallback and opcodes[0] in {"JUMP", "JUMPI"}:
             # track all jumps to the initial revert
-            revert_map.setdefault((pc_list[-1]["path"], pc_list[-1]["fn"]), []).append(len(pc_list))
+            revert_map.setdefault((pc_list[-1]["path"], pc_list[-1]["offset"]), []).append(
+                len(pc_list)
+            )
 
     # compare revert() statements against the map of revert jumps to find
-    for (path, fn_name), values in revert_map.items():
-        fn_node = next(i for i in source_nodes.values() if i.path == path).children(
+    for (path, fn_offset), values in revert_map.items():
+        fn_node = next(i for i in source_nodes.values() if i.absolutePath == path).children(
             depth=2,
             include_children=False,
-            filters={"node_type": "FunctionDefinition", "full_name": fn_name},
+            required_offset=fn_offset,
+            filters={"nodeType": "FunctionDefinition"},
         )[0]
-        revert_nodes = fn_node.children(filters={"node_type": "FunctionCall", "name": "revert"})
+        revert_nodes = fn_node.children(
+            filters={"nodeType": "FunctionCall", "expression.name": "revert"}
+        )
         # if the node has arguments it will always be included in the source map
         for node in (i for i in revert_nodes if not i.arguments):
             offset = node.offset
@@ -466,13 +467,7 @@ def _generate_coverage_data(
         if "fn" in pc_list[idx[0]]:
             fn = pc_list[idx[0]]["fn"]
         else:
-            fn = (
-                source_nodes[path]
-                .children(
-                    depth=2, inner_offset=offset, filters={"node_type": "FunctionDefinition"}
-                )[0]
-                .full_name
-            )
+            fn = _get_fn_full_name(source_nodes[path], offset)
         node = next(i for i in branch_original[path] if i.offset == offset)
         branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
         count += 1
@@ -481,11 +476,26 @@ def _generate_coverage_data(
     return pc_map, statement_map, branch_map
 
 
+def _get_fn_full_name(source_node: NodeBase, offset: Tuple[int, int]) -> str:
+    node = source_node.children(
+        depth=2, required_offset=offset, filters={"nodeType": "FunctionDefinition"}
+    )[0]
+    name = getattr(node, "name", None)
+    if not name:
+        if getattr(node, "kind", "function") != "function":
+            name = f"<{node.kind}>"
+        elif getattr(node, "isConstructor", False):
+            name = "<constructor>"
+        else:
+            name = "<fallback>"
+    return f"{node.parent().name}.{name}"
+
+
 def _expand_source_map(source_map_str: str) -> List:
     # Expands the compressed sourceMap supplied by solc into a list of lists
     source_map: List = [_expand_row(i) if i else None for i in source_map_str.split(";")]
-    for i in range(1, len(source_map)):
-        if not source_map[i]:
+    for i, value in enumerate(source_map[1:], 1):
+        if value is None:
             source_map[i] = source_map[i - 1]
             continue
         for x in range(4):
@@ -494,26 +504,24 @@ def _expand_source_map(source_map_str: str) -> List:
     return source_map
 
 
-def _expand_row(row_str: str) -> Any:
-    row = row_str.split(":")
-    r = (
-        [int(i) if i else None for i in row[:3]]  # type: ignore
-        + row[3:]
-        + [None] * (4 - len(row))
-    )
-    return r
+def _expand_row(row: str) -> List:
+    result: List = [None] * 4
+    for i, value in enumerate(row.split(":")):
+        if value:
+            result[i] = value if i == 3 else int(value)
+    return result
 
 
 def _get_statement_nodes(source_nodes: Dict) -> Dict:
     # Given a list of source nodes, returns a dict of lists of statement nodes
     statements = {}
     for node in source_nodes:
-        statements[node.path] = set(
+        statements[node.absolutePath] = set(
             i.offset
             for i in node.children(
                 include_parents=False,
-                filters={"node_class": "Statement"},
-                exclude={"name": "<constructor>"},
+                filters={"baseNodeType": "Statement"},
+                exclude_filter={"isConstructor": True},
             )
         )
     return statements
@@ -524,71 +532,83 @@ def _get_branch_nodes(source_nodes: List) -> Dict:
     # to possible branches in the code
     branches: Dict = {}
     for node in source_nodes:
-        branches[node.path] = set()
-        for contract_node in node:
+        branches[node.absolutePath] = set()
+        for contract_node in node.children(depth=1, filters={"nodeType": "ContractDefinition"}):
+            # for contract_node in [i for i in node if i.nodeType == "ContractDefinition"]:
             # only looking at functions for now, not modifiers
+
             for child_node in [
                 x
-                for i in contract_node.functions
+                for i in contract_node
                 for x in i.children(
                     filters=(
-                        {"node_type": "FunctionCall", "name": "require"},
-                        {"node_type": "IfStatement"},
-                        {"node_type": "Conditional"},
+                        {"nodeType": "FunctionCall", "expression.name": "require"},
+                        {"nodeType": "IfStatement"},
+                        {"nodeType": "Conditional"},
                     )
                 )
             ]:
-                branches[node.path] |= _get_recursive_branches(child_node)
+                branches[node.absolutePath] |= _get_recursive_branches(child_node)
     return branches
 
 
 def _get_recursive_branches(base_node: Any) -> Set:
     # if node is IfStatement or Conditional, look only at the condition
-    node = base_node if base_node.node_type == "FunctionCall" else base_node.condition
+    node = base_node if base_node.nodeType == "FunctionCall" else base_node.condition
     # for IfStatement, jumping indicates evaluating false
-    jump_is_truthful = base_node.node_type != "IfStatement"
+    jump_is_truthful = base_node.nodeType != "IfStatement"
 
     filters = (
-        {"node_type": "BinaryOperation", "type": "bool", "operator": "||"},
-        {"node_type": "BinaryOperation", "type": "bool", "operator": "&&"},
+        {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool", "operator": "||"},
+        {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool", "operator": "&&"},
     )
     all_binaries = node.children(include_parents=True, include_self=True, filters=filters)
 
     # if no BinaryOperation nodes are found, this node is the branch
     if not all_binaries:
         # if node is FunctionCall, look at the first argument
-        if base_node.node_type == "FunctionCall":
+        if base_node.nodeType == "FunctionCall":
             node = node.arguments[0]
         # some versions of solc do not map IfStatement unary opertions to bytecode
-        elif node.node_type == "UnaryOperation":
-            node = node.expression
+        elif node.nodeType == "UnaryOperation":
+            node = node.subExpression
         node.jump = jump_is_truthful
         return set([node])
 
     # look at children of BinaryOperation nodes to find all possible branches
     binary_branches = set()
-    for node in (x for i in all_binaries for x in i):
+    for node in (x for i in all_binaries for x in (i.leftExpression, i.rightExpression)):
         if node.children(include_self=True, filters=filters):
             continue
         _jump = jump_is_truthful
         if not _is_rightmost_operation(node, base_node.depth):
             _jump = _check_left_operator(node, base_node.depth)
-        if node.node_type == "UnaryOperation":
-            node = node.expression
+        if node.nodeType == "UnaryOperation":
+            node = node.subExpression
         node.jump = _jump
         binary_branches.add(node)
 
     return binary_branches
 
 
-def _is_rightmost_operation(node: Type[SourceUnit], depth: int) -> bool:
+def _is_rightmost_operation(node: NodeBase, depth: int) -> bool:
     # Check if the node is the final operation within the expression
-    parents = node.parents(depth, {"node_type": "BinaryOperation", "type": "bool"})
-    return not next((i for i in parents if i.left == node or node.is_child_of(i.left)), False)
+    parents = node.parents(
+        depth, {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
+    )
+    return not next(
+        (i for i in parents if i.leftExpression == node or node.is_child_of(i.leftExpression)),
+        False,
+    )
 
 
-def _check_left_operator(node: Type[SourceUnit], depth: int) -> bool:
+def _check_left_operator(node: NodeBase, depth: int) -> bool:
     # Find the nearest parent boolean where this node sits on the left side of
     # the comparison, and return True if that node's operator is ||
-    parents = node.parents(depth, {"node_type": "BinaryOperation", "type": "bool"})
-    return next(i for i in parents if i.left == node or node.is_child_of(i.left)).operator == "||"
+    parents = node.parents(
+        depth, {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
+    )
+    op = next(
+        i for i in parents if i.leftExpression == node or node.is_child_of(i.leftExpression)
+    ).operator
+    return op == "||"
