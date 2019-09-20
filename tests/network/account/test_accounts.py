@@ -15,8 +15,7 @@ def test_repopulate(accounts, network, rpc):
     rpc.reset()
     assert len(accounts) == len(a)
     for i in range(len(a)):
-        assert a[i] != accounts[i]
-        assert str(a[i]) == str(accounts[i])
+        assert a[i] == accounts[i]
     network.disconnect()
     assert len(accounts) == 0
     assert not rpc.is_active()

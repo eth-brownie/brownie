@@ -4,7 +4,7 @@ from .account import Accounts
 from .main import connect, disconnect, gas_limit, gas_price, is_connected, show_active  # NOQA 401
 from .rpc import Rpc
 from .state import TxHistory
-from .web3 import Web3
+from .web3 import web3
 
 __all__ = ["accounts", "history", "rpc", "web3"]
 __console_dir__ = ["connect", "disconnect", "show_active", "is_connected", "gas_limit", "gas_price"]
@@ -12,4 +12,3 @@ __console_dir__ = ["connect", "disconnect", "show_active", "is_connected", "gas_
 accounts = Accounts()
 rpc = Rpc()
 history = TxHistory()
-web3 = Web3()

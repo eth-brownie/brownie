@@ -4,7 +4,7 @@ import json
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from brownie._singleton import _Singleton
 
@@ -20,7 +20,7 @@ class ConfigDict(dict):
         super().__init__()
         self.update(values)
 
-    def __setitem__(self, key: Any, value: Any) -> None:
+    def __setitem__(self, key: str, value: Any) -> None:
         if self._locked and key not in self:
             raise KeyError(f"{key} is not a known config setting")
         if type(value) is dict:
@@ -43,24 +43,32 @@ class ConfigDict(dict):
             v._unlock()
         self._locked = False
 
+    def _copy(self) -> Dict:
+        config_copy = {}
+        for key, value in self.items():
+            if isinstance(value, ConfigDict):
+                value = value._copy()
+            config_copy[key] = value
+        return config_copy
 
-def _load_json(path: "Path") -> Any:
+
+def _load_json(path: "Path") -> Dict:
     with path.open() as fp:
         raw_json = fp.read()
     valid_json = re.sub(r'\/\/[^"]*?(?=\n|$)', "", raw_json)
     return json.loads(valid_json)
 
 
-def _load_default_config() -> Any:
+def _load_default_config() -> "ConfigDict":
     """Loads the default configuration settings from brownie/data/config.json"""
     brownie_path = Path(__file__).parent
     path = brownie_path.joinpath("data/config.json")
-    config = _Singleton("Config", (ConfigDict,), {})(_load_json(path))
+    config = _Singleton("Config", (ConfigDict,), {})(_load_json(path))  # type: ignore
     config.update({"active_network": {"name": None}, "brownie_folder": brownie_path})
     return config
 
 
-def _get_project_config_file(project_path: "Path") -> Any:
+def _get_project_config_file(project_path: "Path") -> Dict:
     project_path = Path(project_path)
     if not project_path.exists():
         raise ValueError("Project does not exist!")
@@ -77,14 +85,14 @@ def _load_project_config(project_path: "Path") -> None:
     CONFIG._lock()
 
 
-def _load_project_compiler_config(project_path: Optional["Path"], compiler: Any) -> Any:
+def _load_project_compiler_config(project_path: Optional["Path"], compiler: str) -> Dict:
     if not project_path:
         return CONFIG["compiler"][compiler]
     config_data = _get_project_config_file(project_path)
     return config_data["compiler"][compiler]
 
 
-def _modify_network_config(network: str = None) -> Any:
+def _modify_network_config(network: str = None) -> Dict:
     """Modifies the 'active_network' configuration settings"""
     CONFIG._unlock()
     try:
@@ -109,7 +117,7 @@ def _modify_network_config(network: str = None) -> Any:
 
 
 # merges project .json with brownie .json
-def _recursive_update(original: Any, new: Any, base: Any) -> None:
+def _recursive_update(original: Dict, new: Dict, base: List) -> None:
     for k in new:
         if type(new[k]) is dict and k in REPLACE:
             original[k] = new[k]
@@ -124,7 +132,7 @@ def _recursive_update(original: Any, new: Any, base: Any) -> None:
         )
 
 
-def _update_argv_from_docopt(args: Any) -> None:
+def _update_argv_from_docopt(args: Dict) -> None:
     ARGV.update(dict((k.lstrip("-"), v) for k, v in args.items()))
 
 

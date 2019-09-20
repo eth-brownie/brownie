@@ -17,6 +17,10 @@ class UndeployedLibrary(Exception):
     pass
 
 
+class UnsetENSName(Exception):
+    pass
+
+
 class IncompatibleEVMVersion(Exception):
     pass
 
@@ -42,6 +46,10 @@ class RPCConnectionError(_RPCBaseException):
 
 
 class RPCRequestError(Exception):
+    pass
+
+
+class MainnetUndefined(Exception):
     pass
 
 

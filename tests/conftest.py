@@ -196,8 +196,13 @@ def web3():
 
 
 @pytest.fixture
-def config(testproject):
-    return brownie.config
+def config():
+    initial = brownie.config._copy()
+    yield brownie.config
+    brownie.config._unlock()
+    brownie.config.clear()
+    brownie.config.update(initial)
+    brownie.config._lock()
 
 
 @pytest.fixture

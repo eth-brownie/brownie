@@ -111,7 +111,7 @@ Accounts
 
 .. py:class:: brownie.network.account.Accounts
 
-    List-like :ref:`api-types-singleton` container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects. When printed it will display as a list.
+    List-like :ref:`Singleton<api-types-singleton>` container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects. When printed it will display as a list.
 
     .. code-block:: python
 
@@ -366,7 +366,7 @@ PublicKeyAccount
 
 .. py:class:: brownie.network.account.PublicKeyAccount
 
-    Simplified ``Account`` object for interacting with an Ethereum account where you do not control the private key. Can be used to check balances or to send ether to that address.
+    Object for interacting with an Ethereum account where you do not control the private key. Can be used to check balances or to send ether to that address.
 
     .. code-block:: python
 
@@ -374,7 +374,14 @@ PublicKeyAccount
         >>> pub = PublicKeyAccount("0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E")
         <PublicKeyAccount object '0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E'>
 
-.. py:class:: brownie.network.account.balance()
+    Along with regular addresses, ``PublicKeyAccount`` objects can be instantiated using `ENS domain names <https://ens.domains/>`_. The returned object will have the resolved address.
+
+    .. code-block:: python
+
+        >>> PublicKeyAccount("ens.snakecharmers.eth")
+        <PublicKeyAccount object '0x808B53bF4D70A24bA5cb720D37A4835621A9df00'>
+
+.. py:classmethod:: PublicKeyAccount.balance()
 
     Returns the current balance at the address, in :ref:`wei<wei>`.
 
@@ -382,6 +389,15 @@ PublicKeyAccount
 
         >>> pub.balance()
         1000000000000000000
+
+.. py:attribute:: PublicKeyAccount.nonce
+
+    The current nonce of the address.
+
+    .. code-block:: python
+
+        >>> accounts[0].nonce
+        0
 
 ``brownie.network.alert``
 =========================
@@ -1191,7 +1207,7 @@ TxHistory
 
 .. py:class:: brownie.network.state.TxHistory
 
-    List-like :ref:`api-types-singleton` container that contains :ref:`api-network-tx` objects. Whenever a transaction is broadcast, the ``TransactionReceipt`` is automatically added.
+    List-like :ref:`Singleton<api-types-singleton>` container that contains :ref:`api-network-tx` objects. Whenever a transaction is broadcast, the ``TransactionReceipt`` is automatically added.
 
     .. code-block:: python
 
@@ -1325,7 +1341,7 @@ Rpc
 
 .. py:class:: brownie.network.rpc.Rpc
 
-    :ref:`api-types-singleton` object for interacting with ``ganache-cli`` when running a local RPC environment. When using the console or writing tests, an instance of this class is available as ``rpc``.
+    :ref:`Singleton<api-types-singleton>` object for interacting with ``ganache-cli`` when running a local RPC environment. When using the console or writing tests, an instance of this class is available as ``rpc``.
 
     .. code-block:: python
 
@@ -1944,23 +1960,26 @@ TransactionReceipt Methods
 ``brownie.network.web3``
 ========================
 
-The ``web3`` module contains a slightly modified version of the web3.py `Web3 <https://web3py.readthedocs.io/en/stable/web3.main.html#web3.Web3>`__ class that is used throughout various Brownie modules for RPC communication.
+The ``web3`` module contains a slightly modified version of the web3.py ``Web3`` class that is used throughout various Brownie modules for RPC communication.
 
 .. _web3:
 
 Web3
 ----
 
-The standard ``Web3`` API is available, however it is not documented here.
+See the `Web3 API documentation <https://web3py.readthedocs.io/en/stable/web3.main.html#web3.Web3>`_ for detailed information on all the methods and attributes available here. This document only outlines methods that differ from the normal ``Web3`` public interface.
 
 .. py:class:: brownie.network.web3.Web3
 
-    :ref:`api-types-singleton` variant of ``Web3``.
+    Brownie subclass of ``Web3``. An instance is created at ``brownie.network.web3.web`` and available for import from the main package.
 
     .. code-block:: python
 
         >>> from brownie import web3
         >>>
+
+Web3 Methods
+************
 
 .. py:classmethod:: Web3.connect(uri)
 
@@ -1979,3 +1998,19 @@ The standard ``Web3`` API is available, however it is not documented here.
 
         >>> web3.disconnect()
         >>>
+
+Web3 Internals
+**************
+
+.. py:attribute:: Web3._mainnet
+
+    Provides access to a ``Web3`` instance connected to the ``mainnet`` network as defined in the configuration file. Used internally for `ENS <https://ens.domains/>`_ and `ethPM <https://www.ethpm.com/>`_ lookups.
+
+    Raises ``MainnetUndefined`` if the ``mainnet`` network is not defined.
+
+Internal Methods
+----------------
+
+.. py:method:: brownie.network.web3._resolve_address(address)
+
+    Used internally for standardizing address inputs. If ``address`` is a string containing a ``.`` Brownie will attempt to resolve an `ENS domain name <https://ens.domains/>`_ address. Otherwise, returns the result of :ref:`brownie.convert.to_address<api-brownie-convert-address>`.

@@ -22,18 +22,21 @@
                 "host": "http://127.0.0.1",
                 "reverting_tx_gas_limit": 6721975
             },
-            // replace INFURA_PROJECT_ID with your personal API token
+            // set your Infura API token to the environment variable WEB3_INFURA_PROJECT_ID
+            "mainnet": {
+                "host": "https://mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID"
+            },
             "goerli": {
-                "host": "https://goerli.infura.io/v3/INFURA_PROJECT_ID"
+                "host": "https://goerli.infura.io/v3/$WEB3_INFURA_PROJECT_ID"
             },
             "kovan": {
-                "host": "https://kovan.infura.io/v3/INFURA_PROJECT_ID"
+                "host": "https://kovan.infura.io/v3/$WEB3_INFURA_PROJECT_ID"
             },
             "rinkeby": {
-                "host": "https://rinkeby.infura.io/v3/INFURA_PROJECT_ID"
+                "host": "https://rinkeby.infura.io/v3/$WEB3_INFURA_PROJECT_ID"
             },
             "ropsten": {
-                "host": "https://ropsten.infura.io/v3/INFURA_PROJECT_ID"
+                "host": "https://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID"
             }
         }
     },

@@ -8,7 +8,7 @@ from eth_hash.auto import keccak
 from hexbytes import HexBytes
 
 from brownie._config import ARGV, CONFIG
-from brownie.convert import Wei, _format_input, _format_output, to_address
+from brownie.convert import Wei, _format_input, _format_output
 from brownie.exceptions import (
     ContractExists,
     ContractNotFound,
@@ -21,17 +21,16 @@ from brownie.utils import color
 from .event import _get_topics
 from .rpc import Rpc, _revert_register
 from .state import _add_contract, _find_contract, _remove_contract
-from .web3 import Web3
+from .web3 import _resolve_address, web3
 
 rpc = Rpc()
-web3 = Web3()
 
 
 class _ContractBase:
 
     _dir_color = "contract"
 
-    def __init__(self, project: Any, build: Any, name: str, abi: Any) -> None:
+    def __init__(self, project: Any, build: Dict, name: str, abi: List) -> None:
         self._project = project
         self._build = build
         self._name = name
@@ -58,7 +57,7 @@ class ContractContainer(_ContractBase):
     def __init__(self, project: Any, build: Dict) -> None:
         self.tx = None
         self.bytecode = build["bytecode"]
-        self._contracts: List = []
+        self._contracts: List["ProjectContract"] = []
         super().__init__(project, build, build["contractName"], build["abi"])
         self.deploy = ContractConstructor(self, self._name)
         _revert_register(self)
@@ -66,7 +65,7 @@ class ContractContainer(_ContractBase):
     def __iter__(self) -> Iterator:
         return iter(self._contracts)
 
-    def __getitem__(self, i: Any) -> Any:
+    def __getitem__(self, i: Any) -> "ProjectContract":
         return self._contracts[i]
 
     def __delitem__(self, key: Any) -> None:
@@ -97,7 +96,7 @@ class ContractContainer(_ContractBase):
             self._contracts.remove(contract)
             contract._reverted = True
 
-    def remove(self, contract: "Contract") -> None:
+    def remove(self, contract: "ProjectContract") -> None:
         """Removes a contract from the container.
 
         Args:
@@ -108,7 +107,10 @@ class ContractContainer(_ContractBase):
         _remove_contract(contract)
 
     def at(
-        self, address: str, owner: Optional[AccountsType] = None, tx: Any = None
+        self,
+        address: str,
+        owner: Optional[AccountsType] = None,
+        tx: Optional[TransactionReceiptType] = None,
     ) -> "ProjectContract":
         """Returns a contract address.
 
@@ -200,8 +202,10 @@ class _DeployedContractBase(_ContractBase):
 
     _reverted = False
 
-    def __init__(self, address: str, owner: Any = None, tx: TransactionReceiptType = None) -> None:
-        address = to_address(address)
+    def __init__(
+        self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
+    ) -> None:
+        address = _resolve_address(address)
         self.bytecode = web3.eth.getCode(address).hex()[2:]
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
@@ -238,7 +242,7 @@ class _DeployedContractBase(_ContractBase):
             return self.address == other.address and self.bytecode == other.bytecode
         if isinstance(other, str):
             try:
-                address = to_address(other)
+                address = _resolve_address(other)
                 return address == self.address
             except ValueError:
                 return False
@@ -256,8 +260,10 @@ class _DeployedContractBase(_ContractBase):
 
 
 class Contract(_DeployedContractBase):
-    def __init__(self, address: Any, name: str, abi: Any, owner: AccountsType = None) -> None:
-        _ContractBase.__init__(self, None, None, name, abi)
+    def __init__(
+        self, address: Any, name: str, abi: List, owner: Optional[AccountsType] = None
+    ) -> None:
+        _ContractBase.__init__(self, None, None, name, abi)  # type: ignore
         _DeployedContractBase.__init__(self, address, owner, None)
         contract = _find_contract(address)
         if not contract:
@@ -277,10 +283,8 @@ class ProjectContract(_DeployedContractBase):
     def __init__(
         self,
         project: "_DeployedContractBase",
-        build: Any,
+        build: Dict,
         address: str,
-        # Not really optional. Helps to satisfy None default in ContractContainer at method
-        # Could use some refactoring
         owner: Optional[AccountsType],
         tx: TransactionReceiptType = None,
     ) -> None:
@@ -290,13 +294,13 @@ class ProjectContract(_DeployedContractBase):
 
 
 class OverloadedMethod:
-    def __init__(self, address: str, name: str, owner: Any):
+    def __init__(self, address: str, name: str, owner: Optional[AccountsType]):
         self._address = address
         self._name = name
         self._owner = owner
         self.methods: Dict = {}
 
-    def __getitem__(self, key: Any) -> Any:
+    def __getitem__(self, key: Union[Tuple, str]) -> "_ContractMethod":
         if isinstance(key, tuple):
             key = ",".join(key)
         key = key.replace("256", "").replace(", ", ",")
@@ -313,7 +317,7 @@ class _ContractMethod:
 
     _dir_color = "contract_method"
 
-    def __init__(self, address: str, abi: Any, name: str, owner: Optional[AccountsType]) -> None:
+    def __init__(self, address: str, abi: Dict, name: str, owner: Optional[AccountsType]) -> None:
         self._address = address
         self._name = name
         self.abi = abi
@@ -401,12 +405,12 @@ class ContractTx(_ContractMethod):
         abi: Contract ABI specific to this method.
         signature: Bytes4 method signature."""
 
-    def __init__(self, address: str, abi: Any, name: str, owner: Optional[AccountsType]) -> None:
+    def __init__(self, address: str, abi: Dict, name: str, owner: Optional[AccountsType]) -> None:
         if ARGV["cli"] == "test" and CONFIG["pytest"]["default_contract_owner"] is False:
             owner = None
         super().__init__(address, abi, name, owner)
 
-    def __call__(self, *args: Tuple) -> Any:
+    def __call__(self, *args: Tuple) -> TransactionReceiptType:
         """Broadcasts a transaction that calls this contract method.
 
         Args:
@@ -447,7 +451,7 @@ class ContractCall(_ContractMethod):
             rpc._internal_revert()
 
 
-def _get_tx(owner: Optional[AccountsType], args: Any) -> Tuple:
+def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
     # seperate contract inputs from tx dict and set default tx values
     tx = {"from": owner, "value": 0, "gas": None, "gasPrice": None}
     if args and isinstance(args[-1], dict):

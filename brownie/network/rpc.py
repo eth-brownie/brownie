@@ -13,9 +13,7 @@ import psutil
 from brownie._singleton import _Singleton
 from brownie.exceptions import RPCConnectionError, RPCProcessError, RPCRequestError
 
-from .web3 import Web3
-
-web3 = Web3()
+from .web3 import web3
 
 CLI_FLAGS = {
     "port": "--port",

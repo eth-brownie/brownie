@@ -14,7 +14,7 @@ __all__ = [
     "history",  # history is a TxHistory singleton
     "network",
     "rpc",  # rpc is a Rpc singleton
-    "web3",  # web3 is a Web3 singleton
+    "web3",  # web3 is a Web3 instance
     "project",
     "compile_source",
     "run",
