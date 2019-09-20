@@ -15,10 +15,13 @@ Before you go any farther, consider that connecting to non-local networks can po
 
 Register with Infura
 ========================
-Before you can connect to a non-local network, you need access to a remote Ethereum node that supports JSON RPC over HTTP.  `Infura <https://infura.io>`__ is one such option.  Once you register and create a project, Infura will provide you URLs with the API key that can be leveraged to access the given network.
+Before you can connect to a non-local network, you need access to an Ethereum node (whether your own local one or hosted) that supports JSON RPC (either HTTP, IPC, or web-sockets).  `Infura <https://infura.io>`__ is a good option for accessing a hosted node.  Once you register and create a project, Infura will provide you URLs with the API key that can be leveraged to access the given network.
 
 Non-local Network Configuration
 ================================
+
+Configuring non-local networks
+------------------------------
 
 The connection settings for non-local networks must be defined in ``brownie-config.json``.
 
@@ -36,6 +39,15 @@ First, for each network you want to configure, create a new section in the netwo
         .
         .
     }
+
+You can also set your Infura API key as an environment variable from the command line as below.  
+::
+    $ export WEB3_INFURA_PROJECT_ID=YourProjectID
+
+Setting the default nerwork
+---------------------------
+
+Brownie''s default configuration uses the environment variable WEB3_INFURA_PROJECT_ID.
 
 If you want to change the default network that brownie connects to, you need to update the network.default field as below:
 
@@ -96,7 +108,9 @@ The :ref:`rpc` module is unavailable when working with non-local networks.
 Accounts
 --------
 
-When loading an account for interacting with a non-local network, you must provide the private key when loading the account in order to be able to sign transactions or deploy contracts
+If you are connected to your own private node, Brownie will automatically load any unlocked accounts returned by your node.  In this case, there is no need to use ``accounts.load``.
+
+When interacting with a non-local network via a hosted node like Infura, you must provide the private key when loading your acccount in order to be able to sign transactions or deploy contracts
 
 .. code-block:: python
 
@@ -111,8 +125,9 @@ Transactions
 ------------
 
 * Transaction status
-When submitting a transaction on non-local networks, blocks are not immediately so transactions will likewise not be immediately confirmed. 
-A :ref:`api-network-tx` object is provided immediately and can be stored to unique variables though ``TransactionReceipt.status`` will be ``-1`` until the transaction is mined and either succeeds or reverts.  
+When submitting transactions on non-local networks, blocks are not immediately so transactions will likewise not be immediately confirmed. 
+Brownie does not provide a transaction receipt by default but will wait until the transaction has been confirmed before continuing execution.  
+Press ``Ctrl-C`` and a :ref:`api-network-tx` object will be returned with the pending transaction hash and can be stored to unique variables. ``TransactionReceipt.status`` will be ``-1`` until the transaction is mined and either succeeds or reverts.  
 
 * Debugging 
 The Brownie :ref:`debug` tools rely upon `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC method which is not supported by `Infura <https://infura.io>`__. Attempts to call it will result in a ``RPCRequestError``.
@@ -126,7 +141,11 @@ This means that the below ``TransactionReceipt`` attributes and methods are unav
 
 :ref:`api-network-contract`
 ---------
-On non-local networks, use the ``Contract`` class to interact with deployed contracts.  ``ContractContainer`` and ``ProjectContract`` are unavailable as these are only used with the local   
+Contracts
+*********
+
+On non-local networks, use the ``Contract`` class to interact with already deployed contracts.  
+
 
 You can instantiate the contract using ``contract.Contract`` method.  You will need to provide an ABI (typically as a JSON file) that is generated from the compiled contract code.  
 
@@ -136,3 +155,7 @@ You can instantiate the contract using ``contract.Contract`` method.  You will n
     <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
 
 Once instantiated, any of the ``Contract``, :ref:`api-contract-call`, or :ref:`api-contract-tx` attributes and methods can be used to interact with the contract.
+
+ProjectContract
+***************
+If you use Brownie to deploy a contract to a non-local network as part of an active project, you can use the :ref:`api-network-contractcontainer`'s ``ContractContainer.at`` method to instantiate a ``ProjectContract`` instance.  Once instantiated, any of the ``Contract`` methods can be used 
