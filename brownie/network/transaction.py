@@ -21,10 +21,9 @@ from brownie.utils import color
 
 from .event import _decode_logs, _decode_trace
 from .state import TxHistory, _find_contract
-from .web3 import Web3
+from .web3 import web3
 
 history = TxHistory()
-web3 = Web3()
 
 
 class TransactionReceipt:

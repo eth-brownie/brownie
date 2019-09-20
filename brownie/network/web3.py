@@ -10,16 +10,15 @@ from web3 import Web3 as _Web3
 from web3 import WebsocketProvider
 
 from brownie._config import CONFIG
-from brownie._singleton import _Singleton
 from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
 
 _ens_cache: Dict = {}
 
 
-class Web3(_Web3, metaclass=_Singleton):
+class Web3(_Web3):
 
-    """Singleton version of web3.py's Web3."""
+    """Brownie Web3 subclass"""
 
     def __init__(self) -> None:
         super().__init__(HTTPProvider("null"))

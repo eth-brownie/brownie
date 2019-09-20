@@ -7,10 +7,9 @@ from brownie.convert import Wei
 
 from .account import Accounts
 from .rpc import Rpc
-from .web3 import Web3
+from .web3 import web3
 
 rpc = Rpc()
-web3 = Web3()
 
 
 def connect(network: str = None, launch_rpc: bool = True) -> None:
