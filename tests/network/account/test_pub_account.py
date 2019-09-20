@@ -18,7 +18,7 @@ def test_eq(accounts):
     assert pub == PublicKeyAccount("0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E")
     assert pub == "0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E"
     assert pub != "potato"
-    assert PublicKeyAccount(accounts[0]) != accounts[0]
+    assert PublicKeyAccount(accounts[0]) == accounts[0]
 
 
 def test_balance(accounts):

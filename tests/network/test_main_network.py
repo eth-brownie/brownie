@@ -26,12 +26,6 @@ def test_connect_ropsten(network):
     assert network.show_active() == "ropsten"
 
 
-def test_connect_bad_env_var(network, config):
-    config["network"]["networks"]["ropsten"]["host"] = "https://$POTATO"
-    with pytest.raises(ValueError):
-        network.connect("ropsten")
-
-
 def test_connect_raises_connected(devnetwork):
     with pytest.raises(ConnectionError):
         devnetwork.connect("development")

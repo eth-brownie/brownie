@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
 import pytest
-from web3 import HTTPProvider, IPCProvider, WebsocketProvider
+from web3 import HTTPProvider, IPCProvider, Web3, WebsocketProvider
+
+from brownie.exceptions import MainnetUndefined
 
 
 def test_connect_http(web3):
@@ -27,6 +29,22 @@ def test_connect_ws(web3):
 def test_connect_raises(web3):
     with pytest.raises(ValueError):
         web3.connect("foo")
+
+
+def test_bad_env_var(web3):
+    with pytest.raises(ValueError):
+        web3.connect("https://$POTATO")
+
+
+def test_mainnet(config, network, web3):
+    assert type(web3._mainnet) == Web3
+    assert web3._mainnet != web3
+    network.connect("mainnet")
+    assert web3._mainnet == web3
+    network.disconnect()
+    del config["network"]["networks"]["mainnet"]
+    with pytest.raises(MainnetUndefined):
+        web3._mainnet
 
 
 def test_disconnect(web3):
