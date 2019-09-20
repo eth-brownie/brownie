@@ -1,14 +1,14 @@
 .. _nonlocal-networks:
 
 ====================
-Non-local Networks
+Using Non-Local Networks
 ====================
 
 In addition to using `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__ as a local development environment, Brownie can also connect to non-local networks (i.e. any testnet/mainnet node that supports JSON RPC).
 
 Warning
 ========================
-Before you go any farther, consider that connecting to non-local networks can potentially expose your private keys if you aren't careful.
+Before you go any further, consider that connecting to non-local networks can potentially expose your private keys if you aren't careful.
 
 * When you are interacting with mainnet, make sure you verify all of the details of any transactions you sign/send before you send them. Brownie can't protect you from sending ETH to the wrong address, sending too much, etc. 
 * Always protect your private keys.  Don't leave them lying around unencrypted!
@@ -158,4 +158,4 @@ Once instantiated, any of the ``Contract``, :ref:`api-contract-call`, or :ref:`a
 
 ProjectContract
 ***************
-If you use Brownie to deploy a contract to a non-local network as part of an active project, you can use the :ref:`api-network-contractcontainer`'s ``ContractContainer.at`` method to instantiate a ``ProjectContract`` instance.  Once instantiated, any of the ``Contract`` methods can be used 
+If you use Brownie to deploy a contract to a non-local network as part of an active project, you can use the :ref:`api-network-contractcontainer`'s ``ContractContainer.at`` method to instantiate a ``ProjectContract`` instance.  Once instantiated, any of the ``Contract`` methods can be used.
