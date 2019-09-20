@@ -363,7 +363,7 @@ The ``_config`` module handles all Brownie configuration settings. It is not des
 ConfigDict
 **********
 
-.. py:class:: brownie.types.types.ConfigDict
+.. py:class:: brownie._config.ConfigDict
 
     Subclass of `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__ that prevents adding new keys when locked. Used to hold config file settings.
 
@@ -373,6 +373,9 @@ ConfigDict
         >>> s = ConfigDict({'test': 123})
         >>> s
         {'test': 123}
+
+ConfigDict Internal Methods
+---------------------------
 
 .. py:classmethod:: ConfigDict._lock
 
@@ -399,11 +402,15 @@ ConfigDict
         >>> s
         {'test': 123, 'other': True}
 
+.. py:classmethod:: ConfigDict._copy
+
+    Returns a copy of the object as a ``dict``.
+
 .. _api-types-singleton:
 
 ``brownie._singleton``
 ======================
 
-.. py:class:: brownie.types.types._Singleton
+.. py:class:: brownie._singleton._Singleton
 
 Internal metaclass used to create `singleton <https://en.wikipedia.org/wiki/Singleton_pattern>`__ objects. Instantiating a class derived from this metaclass will always return the same instance, regardless of how the child class was imported.
