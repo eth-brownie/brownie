@@ -15,7 +15,7 @@ Before you go any further, consider that connecting to non-local networks can po
 
 Register with Infura
 ========================
-Before you can connect to a non-local network, you need access to a remote Ethereum node that supports JSON RPC over HTTP.  `Infura <https://infura.io>`__ is one such option.  Once you register and create a project, Infura will provide you URLs with the API key that can be leveraged to access the given network.
+In order to connect to a non-local network you need access to an Ethereum node that supports the JSON RPC.  `Infura <https://infura.io>`__ is one such option.  Once you register and create a project, Infura will provide you with a project ID that can be leveraged to access the given network.
 
 Non-local Network Configuration
 ================================
