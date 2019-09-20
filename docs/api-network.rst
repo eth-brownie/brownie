@@ -366,7 +366,7 @@ PublicKeyAccount
 
 .. py:class:: brownie.network.account.PublicKeyAccount
 
-    Simplified ``Account`` object for interacting with an Ethereum account where you do not control the private key. Can be used to check balances or to send ether to that address.
+    Object for interacting with an Ethereum account where you do not control the private key. Can be used to check balances or to send ether to that address.
 
     .. code-block:: python
 
@@ -374,7 +374,14 @@ PublicKeyAccount
         >>> pub = PublicKeyAccount("0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E")
         <PublicKeyAccount object '0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E'>
 
-.. py:class:: brownie.network.account.balance()
+    Along with regular addresses, ``PublicKeyAccount`` objects can be instantiated using `ENS domain names <https://ens.domains/>`_. The returned object will have the resolved address.
+
+    .. code-block:: python
+
+        >>> PublicKeyAccount("ens.snakecharmers.eth")
+        <PublicKeyAccount object '0x808B53bF4D70A24bA5cb720D37A4835621A9df00'>
+
+.. py:classmethod:: PublicKeyAccount.balance()
 
     Returns the current balance at the address, in :ref:`wei<wei>`.
 
@@ -382,6 +389,15 @@ PublicKeyAccount
 
         >>> pub.balance()
         1000000000000000000
+
+.. py:attribute:: PublicKeyAccount.nonce
+
+    The current nonce of the address.
+
+    .. code-block:: python
+
+        >>> accounts[0].nonce
+        0
 
 ``brownie.network.alert``
 =========================
@@ -1955,7 +1971,7 @@ See the `Web3 API documentation <https://web3py.readthedocs.io/en/stable/web3.ma
 
 .. py:class:: brownie.network.web3.Web3
 
-    :ref:`Singleton<api-types-singleton>` variant of ``Web3``.
+    Brownie subclass of ``Web3``. An instance is created at ``brownie.network.web3.web`` and available for import from the main package.
 
     .. code-block:: python
 
@@ -1963,7 +1979,7 @@ See the `Web3 API documentation <https://web3py.readthedocs.io/en/stable/web3.ma
         >>>
 
 Web3 Methods
-------------
+************
 
 .. py:classmethod:: Web3.connect(uri)
 
@@ -1984,10 +2000,17 @@ Web3 Methods
         >>>
 
 Web3 Internals
---------------
+**************
 
 .. py:attribute:: Web3._mainnet
 
     Provides access to a ``Web3`` instance connected to the ``mainnet`` network as defined in the configuration file. Used internally for `ENS <https://ens.domains/>`_ and `ethPM <https://www.ethpm.com/>`_ lookups.
 
-    Raises ``ValueError`` if ``mainnet`` is not defined.
+    Raises ``MainnetUndefined`` if the ``mainnet`` network is not defined.
+
+Internal Methods
+----------------
+
+.. py:method:: brownie.network.web3._resolve_address(address)
+
+    Used internally for standardizing address inputs. If ``address`` is a string containing a ``.`` Brownie will attempt to resolve an `ENS domain name <https://ens.domains/>`_ address. Otherwise, returns the result of :ref:`brownie.convert.to_address<api-brownie-convert-address>`.

@@ -42,6 +42,8 @@ The following classes and methods are used to convert arguments supplied to ``Co
 
     Converts a value to a boolean. Raises ``ValueError`` if the given value does not match a value in ``(True, False, 0, 1)``.
 
+.. _api-brownie-convert-address:
+
 .. py:method:: brownie.convert.to_address(value)
 
     Converts a value to a checksummed address. Raises ``ValueError`` if value cannot be converted.
@@ -273,8 +275,9 @@ The following methods are used to convert multiple values based on a contract AB
 
 The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
-network
-*******
+.. py:exception:: brownie.exceptions.CompilerError
+
+    Raised by the compiler when there is an error within a contract's source code.
 
 .. py:exception:: brownie.exceptions.ContractExists
 
@@ -286,17 +289,45 @@ network
 
     Raised when attempting to access a ``Contract`` or ``ContractABI`` object that no longer exists because the local network was reverted.
 
-.. py:exception:: brownie.exceptions.UnknownAccount
+.. py:exception:: brownie.exceptions.EventLookupError
 
-    Raised when the ``Accounts`` container cannot locate a specified ``Account`` object.
+    Raised during lookup errors by ``EventDict`` and ``_EventItem``.
+
+.. py:exception:: brownie.exceptions.IncompatibleEVMVersion
+
+    Raised when attempting to deploy a contract that was compiled to target an EVM version that is imcompatible than the currently active local RPC client.
+
+.. py:exception:: brownie.exceptions.IncompatibleSolcVersion
+
+    Raised when a project requires a version of solc that is not installed or not supported by Brownie.
+
+.. py:exception:: brownie.exceptions.MainnetUndefined
+
+    Raised when an action requires interacting with the main-net, but no ``"mainnet"`` network is defined in ``brownie-config.json``.
+
+.. py:exception:: brownie.exceptions.PragmaError
+
+    Raised when a contract has no pragma directive, or a pragma which requires a version of solc that cannot be installed.
+
+.. py:exception:: brownie.exceptions.ProjectAlreadyLoaded
+
+    Raised by ``project.load_project`` if a project has already been loaded.
+
+.. py:exception:: brownie.exceptions.ProjectNotFound
+
+    Raised by ``project.load_project`` when a project cannot be found at the given path.
 
 .. py:exception:: brownie.exceptions.UndeployedLibrary
 
     Raised when attempting to deploy a contract that requires an unlinked library, but the library has not yet been deployed.
 
-.. py:exception:: brownie.exceptions.IncompatibleEVMVersion
+.. py:exception:: brownie.exceptions.UnknownAccount
 
-    Raised when attempting to deploy a contract that was compiled to target an EVM version that is imcompatible than the currently active local RPC client.
+    Raised when the ``Accounts`` container cannot locate a specified ``Account`` object.
+
+.. py:exception:: brownie.exceptions.UnsetENSName
+
+    Raised when an ENS name is unset (resolves to ``0x00``).
 
 .. py:exception:: brownie.exceptions.RPCConnectionError
 
@@ -313,33 +344,6 @@ network
 .. py:exception:: brownie.exceptions.VirtualMachineError
 
     Raised when a contract call causes the EVM to revert.
-
-.. py:exception:: brownie.exceptions.EventLookupError
-
-    Raised during lookup errors by ``EventDict`` and ``_EventItem``.
-
-project
-*******
-
-.. py:exception:: brownie.exceptions.ProjectAlreadyLoaded
-
-    Raised by ``project.load_project`` if a project has already been loaded.
-
-.. py:exception:: brownie.exceptions.ProjectNotFound
-
-    Raised by ``project.load_project`` when a project cannot be found at the given path.
-
-.. py:exception:: brownie.exceptions.CompilerError
-
-    Raised by the compiler when there is an error within a contract's source code.
-
-.. py:exception:: brownie.exceptions.IncompatibleSolcVersion
-
-    Raised when a project requires a version of solc that is not installed or not supported by Brownie.
-
-.. py:exception:: brownie.exceptions.PragmaError
-
-    Raised when a contract has no pragma directive, or a pragma which requires a version of solc that cannot be installed.
 
 ``brownie._config``
 ===================
