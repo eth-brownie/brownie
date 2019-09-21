@@ -18,6 +18,7 @@ from brownie.exceptions import (
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
+from .ethpm import get_deployed_contract_address, get_manifest
 from .event import _get_topics
 from .rpc import Rpc, _revert_register
 from .state import _add_contract, _find_contract, _remove_contract
@@ -261,8 +262,23 @@ class _DeployedContractBase(_ContractBase):
 
 class Contract(_DeployedContractBase):
     def __init__(
-        self, address: Any, name: str, abi: List, owner: Optional[AccountsType] = None
+        self,
+        name: str,
+        address: Optional[str] = None,
+        abi: Optional[List] = None,
+        manifest_uri: Optional[str] = None,
+        owner: Optional[AccountsType] = None,
     ) -> None:
+        if manifest_uri and abi:
+            raise ValueError("Contract requires either abi or manifest_uri, but not both")
+        if manifest_uri is not None:
+            manifest = get_manifest(manifest_uri)
+            abi = manifest["contract_types"][name]["abi"]
+            if address is None:
+                address = get_deployed_contract_address(manifest, name)
+        elif not address:
+            raise TypeError("Address cannot be None unless creating object from manifest")
+
         _ContractBase.__init__(self, None, None, name, abi)  # type: ignore
         _DeployedContractBase.__init__(self, address, owner, None)
         contract = _find_contract(address)
