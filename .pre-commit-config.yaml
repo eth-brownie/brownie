@@ -12,6 +12,10 @@ repos:
     rev: v0.720
     hooks:
     -   id: mypy
+-   repo: https://github.com/asottile/seed-isort-config
+    rev: v1.9.2
+    hooks:
+    -   id: seed-isort-config
 -   repo: https://github.com/pre-commit/mirrors-isort
     rev: v4.3.21
     hooks:
