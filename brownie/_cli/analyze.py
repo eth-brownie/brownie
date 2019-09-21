@@ -28,8 +28,9 @@ Options:
   --password=<string>       The password of your MythX account
   --help -h                 Display this message
 
-Use analyze to submit your project to the MythX API for smart contract
-security analysis.
+Use the "analyze" command to submit your project to the MythX API for
+smart contract security analysis.
+
 
 To authenticate with the MythX API, it is recommended that you provide
 the MythX JWT access token. It can be obtained on the MythX dashboard
