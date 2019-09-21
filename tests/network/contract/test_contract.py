@@ -44,7 +44,7 @@ def test_namespace_collision(tester, build):
         }
     )
     with pytest.raises(AttributeError):
-        Contract(tester.address, None, build["abi"])
+        Contract(None, tester.address, build["abi"])
 
 
 def test_overloaded(testproject, tester, build):
@@ -64,7 +64,7 @@ def test_overloaded(testproject, tester, build):
         }
     )
     del testproject.BrownieTester[0]
-    c = Contract(tester.address, None, build["abi"])
+    c = Contract(None, tester.address, build["abi"])
     fn = c.revertStrings
     assert type(fn) == OverloadedMethod
     assert len(fn) == 2
@@ -97,7 +97,7 @@ def test_comparison(testproject, tester):
     del testproject.BrownieTester[0]
     assert tester != 123
     assert tester == str(tester.address)
-    assert tester == Contract(tester.address, "BrownieTester", tester.abi)
+    assert tester == Contract("BrownieTester", tester.address, tester.abi)
     repr(tester)
 
 
@@ -109,7 +109,7 @@ def test_revert_not_found(tester, rpc):
 
 def test_contractabi_replace_contract(testproject, tester):
     with pytest.raises(ContractExists):
-        Contract(tester.address, "BrownieTester", tester.abi)
+        Contract("BrownieTester", tester.address, tester.abi)
     del testproject.BrownieTester[0]
-    Contract(tester.address, "BrownieTester", tester.abi)
-    Contract(tester.address, "BrownieTester", tester.abi)
+    Contract("BrownieTester", tester.address, tester.abi)
+    Contract("BrownieTester", tester.address, tester.abi)
