@@ -221,5 +221,5 @@ def test_unknown_contract(ExternalCallTester, accounts, tester, ext_tester):
 def test_contractabi(ExternalCallTester, accounts, tester, ext_tester):
     tx = tester.makeExternalCall(ext_tester, 4)
     del ExternalCallTester[0]
-    ext_tester = Contract(ext_tester.address, "ExternalTesterABI", ext_tester.abi)
+    ext_tester = Contract("ExternalTesterABI", ext_tester.address, ext_tester.abi)
     tx.call_trace()
