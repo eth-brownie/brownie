@@ -97,6 +97,9 @@ def get_mythx_client():
     if ARGV["access-token"]:
         authenticated = True
         auth_args = {"access_token": ARGV["access-token"]}
+    elif ARGV["eth-address"] and ARGV["password"]:
+        authenticated = True
+        auth_args = {"eth_address": ARGV["eth-address"], "password": ARGV["password"]}
     elif environ.get("MYTHX_ACCESS_TOKEN"):
         authenticated = True
         auth_args = {"access_token": environ.get("MYTHX_ACCESS_TOKEN")}
@@ -106,9 +109,6 @@ def get_mythx_client():
             "eth_address": environ.get("MYTHX_ETH_ADDRESS"),
             "password": environ.get("MYTHX_PASSWORD"),
         }
-    elif ARGV["eth-address"] and ARGV["password"]:
-        authenticated = True
-        auth_args = {"eth_address": ARGV["eth-address"], "password": ARGV["password"]}
     else:
         authenticated = False
         auth_args = {
