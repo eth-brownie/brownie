@@ -721,9 +721,15 @@ Contract and ProjectContract
 
 These classes have identical APIs.
 
-.. py:class:: brownie.network.contract.Contract(address, name, abi, owner=None)
+.. py:class:: brownie.network.contract.Contract(name, address=None, abi=None, manifest_uri=None, owner=None)
 
     A deployed contract. This class allows you to call or send transactions to the contract.
+
+    * ``name``: The name of the contract.
+    * ``address``: Address of the contract. Required unless a ``manifest_uri`` is given.
+    * ``abi``: ABI of the contract. Required unless a ``manifest_uri`` is given.
+    * ``manifest_uri``: EthPM registry manifest uri. If given, the ABI (and optionally the contract address) are retrieved from here.
+    * ``owner``: An optional ``Account`` instance. If given, transactions to the contract are sent broadcasted from this account by default.
 
     .. code-block:: python
 
@@ -1998,6 +2004,19 @@ Web3 Methods
 
         >>> web3.disconnect()
         >>>
+
+Web3 Attributes
+***************
+
+.. py:classmethod:: Web3.genesis_hash
+
+    Returns the hash of the genesis block for the active chain, as a string without a `0x` prefix.
+
+    .. code-block:: python
+
+        >>> web3.genesis_hash
+        '41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d'
+
 
 Web3 Internals
 **************
