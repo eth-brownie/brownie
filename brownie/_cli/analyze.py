@@ -19,14 +19,14 @@ from brownie.exceptions import ProjectNotFound
 __doc__ = f"""Usage: brownie analyze [options] [--async | --interval=<sec>]
 
 Options:
-  --gui                   Launch the Brownie GUI after analysis
-  --full                  Perform a full scan (MythX Pro required)
-  --interval=<sec>        Result polling interval in seconds [default: 3]
-  --async                 Do not poll for results, print job IDs and exit
-  --access-token          The JWT access token from the MythX dashboard
-  --eth-address           The address of your MythX account
-  --password              The password of your MythX account
-  --help -h               Display this message
+  --gui                     Launch the Brownie GUI after analysis
+  --full                    Perform a full scan (MythX Pro required)
+  --interval=<sec>          Result polling interval in seconds [default: 3]
+  --async                   Do not poll for results, print job IDs and exit
+  --access-token=<string>   The JWT access token from the MythX dashboard
+  --eth-address=<string>    The address of your MythX account
+  --password=<string>       The password of your MythX account
+  --help -h                 Display this message
 
 Use analyze to submit your project to the MythX API for smart contract
 security analysis.
