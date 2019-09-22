@@ -2,7 +2,11 @@
 
 import json
 import re
+from pathlib import Path
 from typing import Dict
+from urllib.parse import urlparse
+
+from ethpm.package import resolve_uri_contents
 
 from brownie._config import CONFIG
 from brownie.exceptions import ContractNotFound
@@ -30,13 +34,30 @@ def get_manifest(uri: str) -> Dict:
         with path.open("r") as fp:
             return json.load(fp)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
-        pm = _get_pm()
-        pm.set_registry(address)
-        manifest = pm.get_package(package_name, version).manifest
-        # TODO if manifest doesn't include an ABI, generate one
-        with path.open("w") as fp:
-            json.dump(manifest, fp)
-        return manifest
+        pass
+    pm = _get_pm()
+    pm.set_registry(address)
+    manifest = pm.get_package(package_name, version).manifest
+
+    # resolve sources
+    for key in list(manifest.get("sources", {})):
+        content = manifest["sources"].pop(key)
+        if _is_uri(content):
+            content = resolve_uri_contents(content)
+        key = "./" + Path("/").joinpath(key.lstrip("./")).resolve().as_posix().lstrip("/")
+        manifest["sources"][key] = content
+
+    # resolve dependencies
+    for dependency_uri in manifest.pop("build_dependencies", {}).values():
+        dependency_manifest = resolve_uri_contents(dependency_uri)
+        for key in ("sources", "contract_types"):  # TODO deployments? link references?
+            manifest.setdefault(key, {}).update(dependency_manifest.get(key, {}))
+
+    # TODO if manifest doesn't include an ABI, generate one
+
+    with path.open("w") as fp:
+        json.dump(manifest, fp)
+    return manifest
 
 
 def get_deployed_contract_address(manifest: Dict, contract_name: str) -> str:
@@ -51,3 +72,11 @@ def get_deployed_contract_address(manifest: Dict, contract_name: str) -> str:
 
 def _get_pm():  # type: ignore
     return web3._mainnet.pm
+
+
+def _is_uri(uri):
+    try:
+        result = urlparse(uri)
+        return all([result.scheme, result.netloc])
+    except ValueError:
+        return False
