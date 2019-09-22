@@ -33,7 +33,7 @@ First, for each network you want to configure, create a new section in the netwo
         .
         .
         "ropsten": {
-            "host": "http://ropsten.infura.io/v3/[yourInfuraApiKey]"
+            "host": "http://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID"
         }
         "rinkeby":...
         .
