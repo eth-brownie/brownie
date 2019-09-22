@@ -68,7 +68,7 @@ Using the CLI
 
 Brownie will connect to whichever network is set as "default" in ``brownie-config.json``.  
 
-To connect to any other network that has been defined in ``brownie-config.json``, you must specify the `--network` flag when launching Brownie as below:
+To connect to any other network that has been defined in ``brownie-config.json``, you must specify the ``--network`` flag when launching Brownie as below:
 ::
     $ brownie --network ropsten
 
