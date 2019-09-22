@@ -110,7 +110,7 @@ Accounts
 
 If you are connected to your own private node, Brownie will automatically load any unlocked accounts returned by your node.  In this case, there is no need to use ``accounts.load``.
 
-When interacting with a non-local network via a hosted node like Infura, you must provide the private key when loading your acccount in order to be able to sign transactions or deploy contracts
+When interacting with a non-local network via a hosted node such as Infura, you must provide the private key when loading your account in order to be able to sign transactions or deploy contracts.
 
 .. code-block:: python
 
