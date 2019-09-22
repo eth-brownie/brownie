@@ -115,10 +115,10 @@ When interacting with a non-local network via a hosted node such as Infura, you 
 
 .. code-block:: python
 
-        >>> accounts.add('8fa2fdfb89003176a16b707fc860d0881da0d1d8248af210df12d37860996fb2')
-        <Account object '0xc1826925377b4103cC92DeeCDF6F96A03142F37a'>
-        >>> accounts[0].balance()
-        17722750299000000000
+    >>> accounts.add('8fa2fdfb89003176a16b707fc860d0881da0d1d8248af210df12d37860996fb2')
+    <Account object '0xc1826925377b4103cC92DeeCDF6F96A03142F37a'>
+    >>> accounts[0].balance()
+    17722750299000000000
 
 Once an account is added to the account object, the ``accounts.save`` and ``accounts.load`` can be used to save the accounts to an encrypted keystore and then load for later use.
 
@@ -148,7 +148,7 @@ Contracts
 On non-local networks, use the ``Contract`` class to interact with already deployed contracts.  
 
 
-You can instantiate the contract using ``contract.Contract`` method.  You will need to provide an ABI (typically as a JSON file) that is generated from the compiled contract code.  
+You can instantiate the contract using ``contract.Contract`` method.  You will need to provide an ABI that is generated from the compiled contract code.  Note, this ABI must be provided as JSON interface object, not a file object or other structures.
 
 .. code-block:: python
 
