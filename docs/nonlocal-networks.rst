@@ -125,7 +125,7 @@ Transactions
 ------------
 
 * Transaction status
-When submitting transactions on non-local networks, blocks are not immediately so transactions will likewise not be immediately confirmed. 
+When submitting transactions on non-local networks, blocks are not mined immediately so transactions will likewise not be immediately confirmed. 
 Brownie does not provide a transaction receipt by default but will wait until the transaction has been confirmed before continuing execution.  
 Press ``Ctrl-C`` and a :ref:`api-network-tx` object will be returned with the pending transaction hash and can be stored to unique variables. ``TransactionReceipt.status`` will be ``-1`` until the transaction is mined and either succeeds or reverts.  
 
