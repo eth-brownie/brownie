@@ -49,7 +49,6 @@ The environment variable is set to ``WEB3_INFURA_PROJECT_ID`` in the default con
 Setting the default nerwork
 ---------------------------
 
-Brownie''s default configuration uses the environment variable WEB3_INFURA_PROJECT_ID.
 
 If you want to change the default network that brownie connects to, you need to update the network.default field as below:
 
