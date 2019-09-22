@@ -40,7 +40,9 @@ First, for each network you want to configure, create a new section in the netwo
         .
     }
 
-You can also set your Infura API key as an environment variable from the command line as below.  
+If using Infura, you can provide your project ID key as an environment variable or by modifying the ``hosts`` setting in the configuration file.
+
+The environment variable is set to ``WEB3_INFURA_PROJECT_ID`` in the default configuration file.  Use the following command to set the environment variable:
 ::
     $ export WEB3_INFURA_PROJECT_ID=YourProjectID
 
