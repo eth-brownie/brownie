@@ -377,6 +377,7 @@ def _generate_coverage_data(
 
         if (
             has_fallback is False
+            and fallback_hexstr == "unassigned"
             and pc_list[-1]["op"] == "REVERT"
             and [i["op"] for i in pc_list[-4:-1]] == ["JUMPDEST", "PUSH1", "DUP1"]
         ):
