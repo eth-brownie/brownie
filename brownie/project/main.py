@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json
 import shutil
 import sys
 import zipfile
@@ -13,7 +14,7 @@ from brownie._config import CONFIG, _load_project_compiler_config, _load_project
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.network.contract import ContractContainer
 from brownie.project import compiler
-from brownie.project.build import Build
+from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.sources import Sources, get_hash
 from brownie.utils import color
 
@@ -28,7 +29,7 @@ class _ProjectBase:
         self._project_path = project_path
         self._name = name
         self._sources = Sources(contract_sources)
-        self._build = Build(self._sources, project_path)
+        self._build = Build(self._sources)
 
     def _compile(self, sources: Dict, compiler_config: Dict, silent: bool) -> None:
         build_json = compiler.compile_and_format(
@@ -41,7 +42,11 @@ class _ProjectBase:
             silent=silent,
         )
         for data in build_json.values():
-            self._build.add(data)
+            self._build._add(data)
+            if self._project_path is not None:
+                path = self._project_path.joinpath(f"build/contracts/{data['contractName']}.json")
+                with path.open("w") as fp:
+                    json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
 
     def _create_containers(self) -> None:
         # create container objects
@@ -94,6 +99,21 @@ class Project(_ProjectBase):
             path_str: str = path.relative_to(project_path).as_posix()
             contract_sources[path_str] = source
         super().__init__(name, contract_sources, project_path)
+
+        for path in list(project_path.glob("build/contracts/*.json")):
+            try:
+                with path.open() as fp:
+                    build_json = json.load(fp)
+            except json.JSONDecodeError:
+                build_json = {}
+            if (
+                not set(BUILD_KEYS).issubset(build_json)
+                or not project_path.joinpath(build_json["sourcePath"]).exists()
+            ):
+                path.unlink()
+                continue
+            self._build._add(build_json)
+
         self._active = False
         self.load()
 
@@ -134,7 +154,7 @@ class Project(_ProjectBase):
         for contract_name in changed:
             final.update(self._build.get_dependents(contract_name))
         for name in [i for i in final if self._build.contains(i)]:
-            self._build.delete(name)
+            self._build._remove(name)
         changed_set: Set = set(self._sources.get_source_path(i) for i in final)
         return dict((i, self._sources.get(i)) for i in changed_set)
 

@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-import json
-from pathlib import Path
 from typing import Dict, ItemsView, List, Optional, Sequence, Tuple, Union
 
 from .sources import Sources, highlight_source
@@ -28,7 +26,6 @@ BUILD_KEYS = [
     "type",
 ]
 
-
 _revert_map: Dict = {}
 
 
@@ -36,28 +33,9 @@ class Build:
 
     """Methods for accessing and manipulating a project's contract build data."""
 
-    def __init__(self, sources: Sources, project_path: Optional[Path]) -> None:
+    def __init__(self, sources: Sources) -> None:
         self._sources = sources
         self._build: Dict = {}
-
-        if not project_path:
-            self._project_path = None
-            return
-
-        self._project_path = Path(project_path)
-        for path in list(self._project_path.glob("build/contracts/*.json")):
-            try:
-                with path.open() as fp:
-                    build_json = json.load(fp)
-            except json.JSONDecodeError:
-                build_json = {}
-            if (
-                not set(BUILD_KEYS).issubset(build_json)
-                or not project_path.joinpath(build_json["sourcePath"]).exists()
-            ):
-                path.unlink()
-                continue
-            self._add(build_json)
 
     def _add(self, build_json: Dict) -> None:
         contract_name = build_json["contractName"]
@@ -95,16 +73,8 @@ class Build:
                 continue
             _revert_map[pc] = False
 
-    def add(self, build_json: Dict) -> None:
-        """Adds a build json to the active project. The data is saved in the
-        project's build/contracts folder.
-
-        Args:
-            build_json - dictionary of build data to add."""
-        if self._project_path:
-            with self._absolute(build_json["contractName"]).open("w") as fp:
-                json.dump(build_json, fp, sort_keys=True, indent=2, default=sorted)
-        self._add(build_json)
+    def _remove(self, contract_name: str) -> None:
+        del self._build[self._stem(contract_name)]
 
     def get(self, contract_name: str) -> Dict:
         """Returns build data for the given contract name."""
@@ -126,21 +96,6 @@ class Build:
         contract. Used by the compiler when determining which contracts to recompile
         based on a changed source file."""
         return [k for k, v in self._build.items() if contract_name in v["dependencies"]]
-
-    def delete(self, contract_name: str) -> None:
-        """Removes a contract's build data from the active project.
-        The json file in ``build/contracts`` is deleted.
-
-        Args:
-            contract_name: name of the contract to delete."""
-        del self._build[self._stem(contract_name)]
-        self._absolute(contract_name).unlink()
-
-    def _absolute(self, contract_name: str) -> Path:
-        contract_name = self._stem(contract_name)
-        if self._project_path is None:
-            return Path("")
-        return self._project_path.joinpath(f"build/contracts/{contract_name}.json")
 
     def _stem(self, contract_name: str) -> str:
         return contract_name.replace(".json", "")
