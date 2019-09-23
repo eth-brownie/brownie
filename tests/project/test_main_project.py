@@ -37,12 +37,12 @@ def test_new(tmp_path, project):
     assert tmp_path.joinpath("brownie-config.json").exists()
 
 
-def test_pull_raises(project, tmp_path):
+def test_from_brownie_mix_raises(project, tmp_path):
     project.new(tmp_path.joinpath("token"))
     with pytest.raises(FileExistsError):
-        project.pull("token")
+        project.from_brownie_mix("token")
     with pytest.raises(SystemError):
-        project.pull(tmp_path.joinpath("token/contracts"))
+        project.from_brownie_mix(tmp_path.joinpath("token/contracts"))
 
 
 def test_load_raises_already_loaded(project, testproject):

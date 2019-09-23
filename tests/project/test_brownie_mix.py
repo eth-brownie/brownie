@@ -30,7 +30,7 @@ MIXES = [i["name"] for i in data.json()]
 
 @pytest.mark.parametrize("browniemix", MIXES)
 def test_mix(plugintesterbase, project, tmp_path, rpc, browniemix):
-    path = Path(project.pull(browniemix, tmp_path.joinpath("testmix")))
+    path = Path(project.from_brownie_mix(browniemix, tmp_path.joinpath("testmix")))
     os.chdir(path)
 
     # tests should pass without fails or errors

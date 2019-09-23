@@ -103,7 +103,7 @@ Module Methods
         >>> project.new('/my_projects/new_project')
         '/my_projects/new_project'
 
-.. py:method:: main.pull(project_name, project_path=None, ignore_subfolder=False)
+.. py:method:: main.from_brownie_mix(project_name, project_path=None, ignore_subfolder=False)
 
     Initializes a new project via a template. Templates are downloaded from the `Brownie Mix github repo <https://github.com/brownie-mix>`_.
 
@@ -114,7 +114,7 @@ Module Methods
     .. code-block:: python
 
         >>> from brownie import project
-        >>> project.pull('token')
+        >>> project.from_brownie_mix('token')
         Downloading from https://github.com/brownie-mix/token-mix/archive/master.zip...
         'my_projects/token'
 
