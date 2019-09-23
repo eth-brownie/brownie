@@ -36,7 +36,7 @@ class Build:
 
     """Methods for accessing and manipulating a project's contract build data."""
 
-    def __init__(self, project_path: Optional[Path], sources: Sources) -> None:
+    def __init__(self, sources: Sources, project_path: Optional[Path]) -> None:
         self._sources = sources
         self._build: Dict = {}
 

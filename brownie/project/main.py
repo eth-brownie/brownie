@@ -24,11 +24,11 @@ _loaded_projects = []
 
 
 class _ProjectBase:
-    def __init__(self, project_path: Optional[Path], name: str) -> None:
+    def __init__(self, name: str, contract_sources: Dict, project_path: Optional[Path]) -> None:
         self._project_path = project_path
         self._name = name
-        self._sources = Sources(project_path)
-        self._build = Build(project_path, self._sources)
+        self._sources = Sources(contract_sources)
+        self._build = Build(self._sources, project_path)
 
     def _compile(self, sources: Dict, compiler_config: Dict, silent: bool) -> None:
         build_json = compiler.compile_and_format(
@@ -84,8 +84,16 @@ class Project(_ProjectBase):
         _build: project Build object
     """
 
-    def __init__(self, project_path: Path, name: str) -> None:
-        super().__init__(project_path, name)
+    def __init__(self, name: str, project_path: Path) -> None:
+        contract_sources: Dict = {}
+        for path in project_path.glob("contracts/**/*.sol"):
+            if "/_" in path.as_posix():
+                continue
+            with path.open() as fp:
+                source = fp.read()
+            path_str: str = path.relative_to(project_path).as_posix()
+            contract_sources[path_str] = source
+        super().__init__(name, contract_sources, project_path)
         self._active = False
         self.load()
 
@@ -191,14 +199,13 @@ class TempProject(_ProjectBase):
     """Simplified Project class used to hold temporary contracts that are
     compiled via project.compile_source"""
 
-    def __init__(self, source: str, compiler_config: Dict) -> None:
-        super().__init__(None, "TempProject")
-        self._sources.add("<stdin>", source)
-        self._compile({"<stdin>": source}, compiler_config, True)
+    def __init__(self, name: str, contract_sources: Dict, compiler_config: Dict) -> None:
+        super().__init__(name, contract_sources, None)
+        self._compile(contract_sources, compiler_config, True)
         self._create_containers()
 
     def __repr__(self) -> str:
-        return f"<TempProject object>"
+        return f"<TempProject object '{color['string']}{self._name}{color}'>"
 
 
 def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
@@ -297,7 +304,7 @@ def compile_source(
         "evm_version": evm_version,
         "minify_source": False,
     }
-    return TempProject(source, compiler_config)
+    return TempProject("TempProject", {"<stdin>": source}, compiler_config)
 
 
 def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None) -> "Project":
@@ -331,7 +338,7 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
     _add_to_sys_path(project_path)
 
     # load sources and build
-    return Project(project_path, name)
+    return Project(name, project_path)
 
 
 def _create_folders(project_path: Path) -> None:
