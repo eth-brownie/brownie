@@ -2,9 +2,9 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, ItemsView, List, Optional, Sequence, Tuple, Union
+from typing import Dict, ItemsView, List, Optional, Sequence, Tuple, Union
 
-from .sources import highlight_source
+from .sources import Sources, highlight_source
 
 BUILD_KEYS = [
     "abi",
@@ -36,7 +36,7 @@ class Build:
 
     """Methods for accessing and manipulating a project's contract build data."""
 
-    def __init__(self, project_path: Optional["Path"], sources: Any) -> None:
+    def __init__(self, project_path: Optional[Path], sources: Sources) -> None:
         self._sources = sources
         self._build: Dict = {}
 
@@ -136,7 +136,7 @@ class Build:
         del self._build[self._stem(contract_name)]
         self._absolute(contract_name).unlink()
 
-    def _absolute(self, contract_name: str) -> "Path":
+    def _absolute(self, contract_name: str) -> Path:
         contract_name = self._stem(contract_name)
         if self._project_path is None:
             return Path("")

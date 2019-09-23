@@ -24,7 +24,7 @@ _loaded_projects = []
 
 
 class _ProjectBase:
-    def __init__(self, project_path: Optional["Path"], name: str) -> None:
+    def __init__(self, project_path: Optional[Path], name: str) -> None:
         self._project_path = project_path
         self._name = name
         self._sources = Sources(project_path)
@@ -84,7 +84,7 @@ class Project(_ProjectBase):
         _build: project Build object
     """
 
-    def __init__(self, project_path: Optional["Path"], name: str) -> None:
+    def __init__(self, project_path: Path, name: str) -> None:
         super().__init__(project_path, name)
         self._active = False
         self.load()
@@ -191,7 +191,7 @@ class TempProject(_ProjectBase):
     """Simplified Project class used to hold temporary contracts that are
     compiled via project.compile_source"""
 
-    def __init__(self, source: Sources, compiler_config: Dict) -> None:
+    def __init__(self, source: str, compiler_config: Dict) -> None:
         super().__init__(None, "TempProject")
         self._sources.add("<stdin>", source)
         self._compile({"<stdin>": source}, compiler_config, True)
@@ -201,7 +201,7 @@ class TempProject(_ProjectBase):
         return f"<TempProject object>"
 
 
-def check_for_project(path: Union[str, "Path"] = ".") -> Optional["Path"]:
+def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
     """Checks for a Brownie project."""
     path = Path(path).resolve()
     for folder in [path] + list(path.parents):
@@ -237,7 +237,7 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
 
 
 def pull(
-    project_name: str, project_path: Union["Path", str] = None, ignore_subfolder: bool = False
+    project_name: str, project_path: Union[Path, str] = None, ignore_subfolder: bool = False
 ) -> str:
     """Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mix
@@ -269,7 +269,7 @@ def pull(
     return str(project_path)
 
 
-def _new_checks(project_path: Union["Path", str], ignore_subfolder: bool) -> Path:
+def _new_checks(project_path: Union[Path, str], ignore_subfolder: bool) -> Path:
     project_path = Path(project_path).resolve()
     if str(CONFIG["brownie_folder"]) in str(project_path):
         raise SystemError("Cannot make a new project inside the main brownie installation folder.")
@@ -281,11 +281,11 @@ def _new_checks(project_path: Union["Path", str], ignore_subfolder: bool) -> Pat
 
 
 def compile_source(
-    source: Sources,
-    solc_version: str = None,
-    optimize: bool = True,
-    runs: int = 200,
-    evm_version: int = None,
+    source: str,
+    solc_version: Optional[str] = None,
+    optimize: Optional[bool] = True,
+    runs: Optional[int] = 200,
+    evm_version: Optional[int] = None,
 ) -> "TempProject":
     """Compiles the given source code string and returns a TempProject container with
     the ContractContainer instances."""
@@ -300,7 +300,7 @@ def compile_source(
     return TempProject(source, compiler_config)
 
 
-def load(project_path: Union[str, Path, None] = None, name: Optional[str] = None) -> "Project":
+def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None) -> "Project":
     """Loads a project and instantiates various related objects.
 
     Args:

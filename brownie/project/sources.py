@@ -22,7 +22,7 @@ class Sources:
 
     """Methods for accessing and manipulating a project's contract source files."""
 
-    def __init__(self, project_path: Union["Path", str, None]) -> None:
+    def __init__(self, project_path: Union[Path, str, None]) -> None:
         self._source: Dict = {}
         self._contracts: Dict = {}
         if not project_path:
@@ -36,7 +36,7 @@ class Sources:
             path_str: str = path.relative_to(project_path).as_posix()
             self.add(path_str, source)
 
-    def add(self, path: Union["Path", str], source: Any, replace: bool = False) -> None:
+    def add(self, path: Union[Path, str], source: Any, replace: bool = False) -> None:
         if path in self._source and not replace:
             raise ContractExists(f"Contract with path '{path}' already exists in this project.")
         data = _get_contract_data(source)
@@ -66,7 +66,7 @@ class Sources:
         """Returns a list of contract names for the active project."""
         return list(self._contracts.keys())
 
-    def get_source_path(self, contract_name: str) -> "Path":
+    def get_source_path(self, contract_name: str) -> Path:
         """Returns the path to the source file where a contract is located."""
         return self._contracts[contract_name]["path"]
 

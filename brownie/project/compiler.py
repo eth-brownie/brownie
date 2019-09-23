@@ -335,19 +335,19 @@ def _get_bytecode_hash(bytecode: Dict) -> str:
 
 
 def _generate_coverage_data(
-    source_map: Any,
-    opcodes: Any,
+    source_map_str: str,
+    opcodes_str: str,
     contract_node: Any,
-    stmt_nodes: Any,
-    branch_nodes: Any,
-    fallback: Any,
+    stmt_nodes: Dict,
+    branch_nodes: Dict,
+    has_fallback: bool,
 ) -> Tuple:
     # Generates data used by Brownie for debugging and coverage evaluation
-    if not opcodes:
+    if not opcodes_str:
         return {}, {}, {}
 
-    source_map = deque(_expand_source_map(source_map))
-    opcodes = deque(opcodes.split(" "))
+    source_map = deque(_expand_source_map(source_map_str))
+    opcodes = deque(opcodes_str.split(" "))
 
     contract_nodes = [contract_node] + contract_node.dependencies
     source_nodes = dict((i.contract_id, i.parent()) for i in contract_nodes)
@@ -365,8 +365,9 @@ def _generate_coverage_data(
     branch_set: Dict = dict((i, {}) for i in paths)
 
     count, pc = 0, 0
-    pc_list = []
+    pc_list: List = []
     revert_map: Dict = {}
+    fallback_hexstr: str = "unassigned"
 
     while source_map:
 
@@ -375,13 +376,13 @@ def _generate_coverage_data(
         pc_list.append({"op": opcodes.popleft(), "pc": pc})
 
         if (
-            fallback is False
+            has_fallback is False
             and pc_list[-1]["op"] == "REVERT"
             and [i["op"] for i in pc_list[-4:-1]] == ["JUMPDEST", "PUSH1", "DUP1"]
         ):
             # flag the REVERT op at the end of the function selector,
             # later reverts may jump to it instead of having their own REVERT op
-            fallback = "0x" + hex(pc - 4).upper()[2:]
+            fallback_hexstr = "0x" + hex(pc - 4).upper()[2:]
             pc_list[-1]["first_revert"] = True
 
         if source[3] != "-":
@@ -432,7 +433,7 @@ def _generate_coverage_data(
             pass
         if "value" not in pc_list[-1]:
             continue
-        if pc_list[-1]["value"] == fallback and opcodes[0] in {"JUMP", "JUMPI"}:
+        if pc_list[-1]["value"] == fallback_hexstr and opcodes[0] in {"JUMP", "JUMPI"}:
             # track all jumps to the initial revert
             revert_map.setdefault((pc_list[-1]["path"], pc_list[-1]["offset"]), []).append(
                 len(pc_list)
