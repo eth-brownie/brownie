@@ -16,6 +16,7 @@ Brownie
     gui.rst
     deploy.rst
     test-rpc.rst
+    nonlocal-networks.rst
     config.rst
     python-package.rst
     api.rst
