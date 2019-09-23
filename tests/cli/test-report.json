@@ -1,0 +1,61 @@
+[
+  {
+    "issues": [
+      {
+        "description": {
+          "head": "A floating pragma is set.",
+          "tail": "It is recommended to make a conscious choice on what version of Solidity is used for compilation. Currently multiple versions \"^0.5.0\" are allowed."
+        },
+        "extra": {
+          "discoveryTime": 634578903,
+          "toolName": "maru"
+        },
+        "locations": [
+          {
+            "sourceFormat": "text",
+            "sourceList": [
+              "contracts/SafeMath.sol"
+            ],
+            "sourceMap": "0:23:0",
+            "sourceType": "solidity-file"
+          }
+        ],
+        "severity": "Low",
+        "swcID": "SWC-103",
+        "swcTitle": "Floating Pragma"
+      },
+      {
+        "description": {
+          "head": "Upgrade to MythX Pro to unlock the ability to test for even more vulnerabilities, perform deeper security analysis, and more. https://mythx.io/plans",
+          "tail": "Warning: Free mode only detects certain types of smart contract vulnerabilities. Your contract may still be unsafe. Upgrade to MythX Pro to unlock the ability to test for even more vulnerabilities, perform deeper security analysis, and more. https://mythx.io/plans"
+        },
+        "extra": {},
+        "locations": [],
+        "severity": "Low",
+        "swcID": "",
+        "swcTitle": ""
+      },
+      {
+        "description": {
+          "head": "MythX API Trial Mode.",
+          "tail": "You are currently running MythX in Trial mode, which returns a maximum of three vulnerabilities. Sign up for a free account at https://mythx.io to run a complete report."
+        },
+        "extra": {},
+        "locations": [],
+        "severity": "Low",
+        "swcID": "",
+        "swcTitle": ""
+      }
+    ],
+    "meta": {
+      "logs": [],
+      "selectedCompiler": "Unknown",
+      "toolName": "maru"
+    },
+    "sourceFormat": "text",
+    "sourceList": [
+      "contracts/SafeMath.sol"
+    ],
+    "sourceType": "solidity-file"
+  }
+]
