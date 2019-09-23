@@ -464,12 +464,11 @@ def _generate_coverage_data(
     for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
         # for branch to be hit, need an op relating to the source and the next JUMPI
         # this is because of how the compiler optimizes nested BinaryOperations
+        if "fn" not in pc_list[idx[0]]:
+            continue
+        fn = pc_list[idx[0]]["fn"]
         pc_list[idx[0]]["branch"] = count
         pc_list[idx[1]]["branch"] = count
-        if "fn" in pc_list[idx[0]]:
-            fn = pc_list[idx[0]]["fn"]
-        else:
-            fn = _get_fn_full_name(source_nodes[path], offset)
         node = next(i for i in branch_original[path] if i.offset == offset)
         branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
         count += 1
