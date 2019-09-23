@@ -98,6 +98,24 @@ Relevant code will be highlighted in different colors:
 
 .. _gui-report-json:
 
+
+Viewing Security Report Data
+============================
+
+Once the :code:`brownie analyze` command has finished, the GUI will show a new security report.
+Select the :code:`security` report and the :code:`MythX` report type.
+If any vulnerabilities have been found, they will be highlighted based on their severity:
+
+* :green:`Green` Low severity (best practice violations)
+* :yellow:`Yellow` Medium severity (potential vulnerability), needs to be fixed
+* :red:`Red` High severity (critical, immediate danger of exploitation)
+
+The report data can also be directly accessed in :code:`reports/security.json`.
+
+.. image:: gui5.png
+   :alt: Security Report GUI
+
+
 Report JSON Format
 ==================
 
