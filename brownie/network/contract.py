@@ -276,6 +276,11 @@ class Contract(_DeployedContractBase):
             abi = manifest["contract_types"][name]["abi"]
             if address is None:
                 address = get_deployed_contract_address(manifest, name)
+                if address is None:
+                    raise ContractNotFound(
+                        f"'{manifest['package_name']}' manifest does not contain"
+                        f"a deployment of '{name}' on this chain"
+                    )
         elif not address:
             raise TypeError("Address cannot be None unless creating object from manifest")
 

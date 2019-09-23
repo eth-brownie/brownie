@@ -3,13 +3,12 @@
 import json
 import re
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 from urllib.parse import urlparse
 
 from ethpm.package import resolve_uri_contents
 
 from brownie._config import CONFIG
-from brownie.exceptions import ContractNotFound
 
 from .web3 import _resolve_address, web3
 
@@ -54,7 +53,10 @@ def get_manifest(uri: str) -> Dict:
     for dependency_uri in manifest.pop("build_dependencies", {}).values():
         dependency_manifest = resolve_uri_contents(dependency_uri)
         for key in ("sources", "contract_types"):  # TODO deployments? link references?
-            manifest.setdefault(key, {}).update(dependency_manifest.get(key, {}))
+            manifest.setdefault(key, {})
+            if next((i for i in manifest[key] if i in dependency_manifest), None) is not None:
+                raise AttributeError("Namespace collision between package dependencies")
+            manifest[key].update(dependency_manifest.get(key, {}))
 
     # TODO if manifest doesn't include an ABI, generate one
 
@@ -64,14 +66,11 @@ def get_manifest(uri: str) -> Dict:
     return manifest
 
 
-def get_deployed_contract_address(manifest: Dict, contract_name: str) -> str:
+def get_deployed_contract_address(manifest: Dict, contract_name: str) -> Optional[str]:
     for key, value in manifest.get("deployments", {}).items():
         if key.startswith(f"blockchain://{web3.genesis_hash}") and contract_name in value:
             return value[contract_name]["address"]
-    raise ContractNotFound(
-        f"'{manifest['package_name']}' manifest does not contain"
-        f"a deployment of '{contract_name}' on this chain"
-    )
+    return None
 
 
 def _get_pm():  # type: ignore
