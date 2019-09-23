@@ -158,7 +158,7 @@ def update_contract_jobs_with_dependencies(build, contracts, libraries, job_data
 
 def send_to_mythx(job_data, client, authenticated):
     job_uuids = []
-    for contract_name, analysis_request in job_data.items():
+    for c, (contract_name, analysis_request) in enumerate(job_data.items(), start=1):
         resp = client.analyze(**analysis_request)
         if ARGV["async"] and authenticated:
             print(
@@ -167,7 +167,9 @@ def send_to_mythx(job_data, client, authenticated):
                 )
             )
         else:
-            print("Submitted analysis {} for contract {}".format(resp.uuid, contract_name))
+            print(
+                f"Submitted analysis {resp.uuid} for contract {contract_name} ({c}/{len(job_data)})"
+            )
         job_uuids.append(resp.uuid)
 
     return job_uuids
@@ -228,6 +230,7 @@ def main():
 
     build = project.load()._build
 
+    print("Preparing project data for submission to MythX...")
     contracts, libraries = get_contract_types(build)
 
     job_data = assemble_contract_jobs(build, contracts)
@@ -245,6 +248,7 @@ def main():
         )
         return
 
+    print("\nWaiting for results...")
     wait_for_jobs(job_uuids, client)
 
     # assemble report json
@@ -252,8 +256,8 @@ def main():
     highlight_report = {
         "highlights": {"MythX": {cn: {cp: []} for cp, cn in source_to_name.items()}}
     }
-    for uuid in job_uuids:
-        print("Generating report for job {}".format(uuid))
+    for c, uuid in enumerate(job_uuids, start=1):
+        print(f"Generating report for job {uuid} ({c}/{len(job_uuids)})")
         if authenticated:
             print("You can also check the results at {}{}\n".format(DASHBOARD_BASE_URL, uuid))
 
