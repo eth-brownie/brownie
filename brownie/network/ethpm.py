@@ -17,27 +17,30 @@ URI_REGEX = r"^(?:erc1319://|)([^/:]*):(?:[0-9]+)/([a-z][a-z0-9_-]{0,255})\?vers
 
 
 def get_manifest(uri: str) -> Dict:
+    # uri can be a registry uri or a direct link to ipfs
     if not isinstance(uri, str):
         raise TypeError("EthPM manifest uri must be given as a string")
     match = re.match(URI_REGEX, uri)
     if match is None:
-        raise ValueError(f"Invalid EthPM manifest uri: {uri}") from None
-    address, package_name, version = match.groups()
-    # TODO - chain != 1
-    address = _resolve_address(address)
-    path = CONFIG["brownie_folder"].joinpath("data")
-    for item in ("ethpm", address, package_name):
-        path = path.joinpath(item)
-        path.mkdir(exist_ok=True)
-    path = path.joinpath(f"{version.replace('.','-')}.json")
-    try:
-        with path.open("r") as fp:
-            return json.load(fp)
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        pass
-    pm = _get_pm()
-    pm.set_registry(address)
-    manifest = pm.get_package(package_name, version).manifest
+        manifest = resolve_uri_contents(uri)
+        path = None
+    else:
+        address, package_name, version = match.groups()
+        # TODO - chain != 1
+        address = _resolve_address(address)
+        path = CONFIG["brownie_folder"].joinpath("data")
+        for item in ("ethpm", address, package_name):
+            path = path.joinpath(item)
+            path.mkdir(exist_ok=True)
+        path = path.joinpath(f"{version.replace('.','-')}.json")
+        try:
+            with path.open("r") as fp:
+                return json.load(fp)
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
+            pass
+        pm = _get_pm()
+        pm.set_registry(address)
+        manifest = pm.get_package(package_name, version).manifest
 
     # resolve sources
     for key in list(manifest.get("sources", {})):
@@ -55,8 +58,9 @@ def get_manifest(uri: str) -> Dict:
 
     # TODO if manifest doesn't include an ABI, generate one
 
-    with path.open("w") as fp:
-        json.dump(manifest, fp)
+    if path is not None:
+        with path.open("w") as fp:
+            json.dump(manifest, fp)
     return manifest
 
 
