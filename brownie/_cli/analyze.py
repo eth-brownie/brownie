@@ -4,9 +4,9 @@ import json
 import re
 import time
 from os import environ
+from pathlib import Path
 
 from docopt import docopt
-from mythx_models.response import Severity
 from pythx import Client
 from pythx.middleware.toolname import ClientToolNameMiddleware
 
@@ -15,6 +15,7 @@ from brownie._cli.__main__ import __version__
 from brownie._config import ARGV, _update_argv_from_docopt
 from brownie._gui import Gui
 from brownie.exceptions import ProjectNotFound
+from brownie.utils import color, notify
 
 __doc__ = f"""Usage: brownie analyze [options] [--async | --interval=<sec>]
 
@@ -50,7 +51,7 @@ us on the website!
 """
 
 
-SEVERITY_COLOURS = {Severity.LOW: "green", Severity.MEDIUM: "yellow", Severity.HIGH: "red"}
+SEVERITY_COLOURS = {"LOW": "green", "MEDIUM": "yellow", "HIGH": "red"}
 DASHBOARD_BASE_URL = "https://dashboard.mythx.io/#/console/analyses/"
 TRIAL_PRINTED = False
 BYTECODE_ADDRESS_PATCH = re.compile(r"__\w{38}")
@@ -158,7 +159,7 @@ def update_contract_jobs_with_dependencies(build, contracts, libraries, job_data
 
 def send_to_mythx(job_data, client, authenticated):
     job_uuids = []
-    for contract_name, analysis_request in job_data.items():
+    for c, (contract_name, analysis_request) in enumerate(job_data.items(), start=1):
         resp = client.analyze(**analysis_request)
         if ARGV["async"] and authenticated:
             print(
@@ -167,7 +168,10 @@ def send_to_mythx(job_data, client, authenticated):
                 )
             )
         else:
-            print("Submitted analysis {} for contract {}".format(resp.uuid, contract_name))
+            print(
+                f"Submitted analysis {color['value']}{resp.uuid}{color} for "
+                f"contract {color['contract']}{contract_name}{color} ({c}/{len(job_data)})"
+            )
         job_uuids.append(resp.uuid)
 
     return job_uuids
@@ -181,17 +185,16 @@ def wait_for_jobs(job_uuids, client):
 
 def print_trial_message(issue):
     global TRIAL_PRINTED
-    if issue.swc_id == "" or issue.severity in (Severity.UNKNOWN, Severity.NONE):
+    if issue.swc_id == "" or issue.severity.name in ("UNKNOWN", "NONE"):
         if not TRIAL_PRINTED:
-            print(issue.description_short)
-            print(issue.description_long)
-            print()
+            print(f"\n{issue.description_short}")
+            print(f"{issue.description_long}\n")
             TRIAL_PRINTED = True
         return True
     return False
 
 
-def update_report(client, uuid, highlight_report, source_to_name):
+def update_report(client, uuid, highlight_report, stdout_report, source_to_name):
     resp = client.report(uuid)
     for report in resp.issue_reports:
         for issue in resp:
@@ -206,16 +209,23 @@ def update_report(client, uuid, highlight_report, source_to_name):
 
                 if source_list and 0 <= comp.file_id < len(source_list):
                     filename = source_list[comp.file_id]
-                    if filename in source_to_name:
-                        contract_name = source_to_name[filename]
-                        highlight_report["highlights"]["MythX"][contract_name][filename].append(
-                            [
-                                comp.offset,
-                                comp.offset + comp.length,
-                                SEVERITY_COLOURS[issue.severity],
-                                "{}: {}".format(issue.swc_id, issue.description_short),
-                            ]
-                        )
+                    if filename not in source_to_name:
+                        continue
+                    contract_name = source_to_name[filename]
+                    severity = issue.severity.name
+                    stdout_report.setdefault(contract_name, {}).setdefault(severity, 0)
+                    stdout_report[contract_name][severity] += 1
+                    highlight_report["highlights"]["MythX"].setdefault(
+                        contract_name, {filename: []}
+                    )
+                    highlight_report["highlights"]["MythX"][contract_name][filename].append(
+                        [
+                            comp.offset,
+                            comp.offset + comp.length,
+                            SEVERITY_COLOURS[severity],
+                            f"{issue.swc_id}: {issue.description_short}\n{issue.description_long}",
+                        ]
+                    )
 
 
 def main():
@@ -228,6 +238,7 @@ def main():
 
     build = project.load()._build
 
+    print("Preparing project data for submission to MythX...")
     contracts, libraries = get_contract_types(build)
 
     job_data = assemble_contract_jobs(build, contracts)
@@ -245,23 +256,47 @@ def main():
         )
         return
 
+    print("\nWaiting for results...")
     wait_for_jobs(job_uuids, client)
 
     # assemble report json
     source_to_name = get_contract_locations(build)
-    highlight_report = {
-        "highlights": {"MythX": {cn: {cp: []} for cp, cn in source_to_name.items()}}
-    }
-    for uuid in job_uuids:
-        print("Generating report for job {}".format(uuid))
+    highlight_report = {"highlights": {"MythX": {}}}
+    stdout_report = {}
+    for c, uuid in enumerate(job_uuids, start=1):
+        print(f"Generating report for job {color['value']}{uuid}{color} ({c}/{len(job_uuids)})")
         if authenticated:
             print("You can also check the results at {}{}\n".format(DASHBOARD_BASE_URL, uuid))
 
-        update_report(client, uuid, highlight_report, source_to_name)
+        update_report(client, uuid, highlight_report, stdout_report, source_to_name)
+
+    # erase previous report
+    report_path = Path("reports/security.json")
+    if report_path.exists():
+        report_path.unlink()
+
+    total_issues = sum(x for i in stdout_report.values() for x in i.values())
+    if not total_issues:
+        notify("SUCCESS", "No issues found!")
+        return
+
+    # display console report
+    total_high_severity = sum(i.get("HIGH", 0) for i in stdout_report.values())
+    if total_high_severity:
+        notify(
+            "WARNING", f"Found {total_issues} issues including {total_high_severity} high severity!"
+        )
+    else:
+        print("Found {} issues:")
+    for name in sorted(stdout_report):
+        print(f"\n  contract: {color['contract']}{name}{color}")
+        for key in [i for i in ("HIGH", "MEDIUM", "LOW") if i in stdout_report[name]]:
+            c = color("bright " + SEVERITY_COLOURS[key])
+            print(f"    {key.title()}: {c}{stdout_report[name][key]}{color}")
 
     # Write report to Brownie directory
-    with open("reports/security.json", "w+") as report_f:
-        json.dump(highlight_report, report_f, indent=2, sort_keys=True)
+    with report_path.open("w+") as fp:
+        json.dump(highlight_report, fp, indent=2, sort_keys=True)
 
     # Launch GUI if user requested it
     if ARGV["gui"]:
