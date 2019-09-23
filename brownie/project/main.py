@@ -13,7 +13,7 @@ import requests
 from brownie._config import CONFIG, _load_project_compiler_config, _load_project_config
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.network.contract import ContractContainer
-from brownie.network.ethpm import get_manifest
+from brownie.network.ethpm import get_deployed_contract_address, get_manifest
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.sources import Sources, get_hash
@@ -297,7 +297,7 @@ def pull(
     return str(project_path)
 
 
-def from_ethpm(uri):
+def from_ethpm(uri: str):
     manifest = get_manifest(uri)
     compiler_config = {
         "version": None,
@@ -306,8 +306,12 @@ def from_ethpm(uri):
         "evm_version": None,
         "minify_source": False,
     }
-
-    return TempProject(manifest["package_name"], manifest["sources"], compiler_config)
+    project = TempProject(manifest["package_name"], manifest["sources"], compiler_config)
+    for contract_name in project.keys():
+        address = get_deployed_contract_address(manifest, contract_name)
+        if address:
+            project[contract_name].at(address)
+    return project
 
 
 def _new_checks(project_path: Union[Path, str], ignore_subfolder: bool) -> Path:
