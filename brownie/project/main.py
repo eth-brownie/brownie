@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json
 import shutil
 import sys
 import zipfile
@@ -13,7 +14,7 @@ from brownie._config import CONFIG, _load_project_compiler_config, _load_project
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.network.contract import ContractContainer
 from brownie.project import compiler
-from brownie.project.build import Build
+from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.sources import Sources, get_hash
 from brownie.utils import color
 
@@ -24,11 +25,11 @@ _loaded_projects = []
 
 
 class _ProjectBase:
-    def __init__(self, project_path: Optional["Path"], name: str) -> None:
+    def __init__(self, name: str, contract_sources: Dict, project_path: Optional[Path]) -> None:
         self._project_path = project_path
         self._name = name
-        self._sources = Sources(project_path)
-        self._build = Build(project_path, self._sources)
+        self._sources = Sources(contract_sources)
+        self._build = Build(self._sources)
 
     def _compile(self, sources: Dict, compiler_config: Dict, silent: bool) -> None:
         build_json = compiler.compile_and_format(
@@ -41,7 +42,11 @@ class _ProjectBase:
             silent=silent,
         )
         for data in build_json.values():
-            self._build.add(data)
+            self._build._add(data)
+            if self._project_path is not None:
+                path = self._project_path.joinpath(f"build/contracts/{data['contractName']}.json")
+                with path.open("w") as fp:
+                    json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
 
     def _create_containers(self) -> None:
         # create container objects
@@ -84,8 +89,31 @@ class Project(_ProjectBase):
         _build: project Build object
     """
 
-    def __init__(self, project_path: Optional["Path"], name: str) -> None:
-        super().__init__(project_path, name)
+    def __init__(self, name: str, project_path: Path) -> None:
+        contract_sources: Dict = {}
+        for path in project_path.glob("contracts/**/*.sol"):
+            if "/_" in path.as_posix():
+                continue
+            with path.open() as fp:
+                source = fp.read()
+            path_str: str = path.relative_to(project_path).as_posix()
+            contract_sources[path_str] = source
+        super().__init__(name, contract_sources, project_path)
+
+        for path in list(project_path.glob("build/contracts/*.json")):
+            try:
+                with path.open() as fp:
+                    build_json = json.load(fp)
+            except json.JSONDecodeError:
+                build_json = {}
+            if (
+                not set(BUILD_KEYS).issubset(build_json)
+                or not project_path.joinpath(build_json["sourcePath"]).exists()
+            ):
+                path.unlink()
+                continue
+            self._build._add(build_json)
+
         self._active = False
         self.load()
 
@@ -126,7 +154,7 @@ class Project(_ProjectBase):
         for contract_name in changed:
             final.update(self._build.get_dependents(contract_name))
         for name in [i for i in final if self._build.contains(i)]:
-            self._build.delete(name)
+            self._build._remove(name)
         changed_set: Set = set(self._sources.get_source_path(i) for i in final)
         return dict((i, self._sources.get(i)) for i in changed_set)
 
@@ -191,17 +219,16 @@ class TempProject(_ProjectBase):
     """Simplified Project class used to hold temporary contracts that are
     compiled via project.compile_source"""
 
-    def __init__(self, source: Sources, compiler_config: Dict) -> None:
-        super().__init__(None, "TempProject")
-        self._sources.add("<stdin>", source)
-        self._compile({"<stdin>": source}, compiler_config, True)
+    def __init__(self, name: str, contract_sources: Dict, compiler_config: Dict) -> None:
+        super().__init__(name, contract_sources, None)
+        self._compile(contract_sources, compiler_config, True)
         self._create_containers()
 
     def __repr__(self) -> str:
-        return f"<TempProject object>"
+        return f"<TempProject object '{color['string']}{self._name}{color}'>"
 
 
-def check_for_project(path: Union[str, "Path"] = ".") -> Optional["Path"]:
+def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
     """Checks for a Brownie project."""
     path = Path(path).resolve()
     for folder in [path] + list(path.parents):
@@ -237,7 +264,7 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
 
 
 def pull(
-    project_name: str, project_path: Union["Path", str] = None, ignore_subfolder: bool = False
+    project_name: str, project_path: Union[Path, str] = None, ignore_subfolder: bool = False
 ) -> str:
     """Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mix
@@ -269,7 +296,7 @@ def pull(
     return str(project_path)
 
 
-def _new_checks(project_path: Union["Path", str], ignore_subfolder: bool) -> Path:
+def _new_checks(project_path: Union[Path, str], ignore_subfolder: bool) -> Path:
     project_path = Path(project_path).resolve()
     if str(CONFIG["brownie_folder"]) in str(project_path):
         raise SystemError("Cannot make a new project inside the main brownie installation folder.")
@@ -281,11 +308,11 @@ def _new_checks(project_path: Union["Path", str], ignore_subfolder: bool) -> Pat
 
 
 def compile_source(
-    source: Sources,
-    solc_version: str = None,
-    optimize: bool = True,
-    runs: int = 200,
-    evm_version: int = None,
+    source: str,
+    solc_version: Optional[str] = None,
+    optimize: Optional[bool] = True,
+    runs: Optional[int] = 200,
+    evm_version: Optional[int] = None,
 ) -> "TempProject":
     """Compiles the given source code string and returns a TempProject container with
     the ContractContainer instances."""
@@ -297,10 +324,10 @@ def compile_source(
         "evm_version": evm_version,
         "minify_source": False,
     }
-    return TempProject(source, compiler_config)
+    return TempProject("TempProject", {"<stdin>": source}, compiler_config)
 
 
-def load(project_path: Union[str, Path, None] = None, name: Optional[str] = None) -> "Project":
+def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None) -> "Project":
     """Loads a project and instantiates various related objects.
 
     Args:
@@ -331,7 +358,7 @@ def load(project_path: Union[str, Path, None] = None, name: Optional[str] = None
     _add_to_sys_path(project_path)
 
     # load sources and build
-    return Project(project_path, name)
+    return Project(name, project_path)
 
 
 def _create_folders(project_path: Path) -> None:

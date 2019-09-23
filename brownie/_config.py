@@ -52,7 +52,7 @@ class ConfigDict(dict):
         return config_copy
 
 
-def _load_json(path: "Path") -> Dict:
+def _load_json(path: Path) -> Dict:
     with path.open() as fp:
         raw_json = fp.read()
     valid_json = re.sub(r'\/\/[^"]*?(?=\n|$)', "", raw_json)
@@ -68,15 +68,15 @@ def _load_default_config() -> "ConfigDict":
     return config
 
 
-def _get_project_config_file(project_path: "Path") -> Dict:
+def _get_project_config_file(project_path: Path) -> Dict:
     project_path = Path(project_path)
     if not project_path.exists():
         raise ValueError("Project does not exist!")
-    config_path: "Path" = Path(project_path).joinpath("brownie-config.json")
+    config_path: Path = Path(project_path).joinpath("brownie-config.json")
     return _load_json(config_path)
 
 
-def _load_project_config(project_path: "Path") -> None:
+def _load_project_config(project_path: Path) -> None:
     """Loads configuration settings from a project's brownie-config.json"""
     config_data = _get_project_config_file(project_path)
     CONFIG._unlock()
@@ -85,7 +85,7 @@ def _load_project_config(project_path: "Path") -> None:
     CONFIG._lock()
 
 
-def _load_project_compiler_config(project_path: Optional["Path"], compiler: str) -> Dict:
+def _load_project_compiler_config(project_path: Optional[Path], compiler: str) -> Dict:
     if not project_path:
         return CONFIG["compiler"][compiler]
     config_data = _get_project_config_file(project_path)

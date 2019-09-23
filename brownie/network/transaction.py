@@ -640,7 +640,7 @@ class TransactionReceipt:
         )
 
 
-def _format_source(source: str, linenos: Any, path: "Path", pc: Any, idx: int, fn_name: str) -> str:
+def _format_source(source: str, linenos: Any, path: Path, pc: Any, idx: int, fn_name: str) -> str:
     ln = f" {color['value']}{linenos[0]}"
     if linenos[1] > linenos[0]:
         ln = f"s{ln}{color['dull']}-{color['value']}{linenos[1]}"

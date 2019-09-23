@@ -4,7 +4,7 @@ import re
 import textwrap
 from hashlib import sha1
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Dict, List, Tuple
 
 from brownie.exceptions import ContractExists
 from brownie.utils import color
@@ -22,30 +22,17 @@ class Sources:
 
     """Methods for accessing and manipulating a project's contract source files."""
 
-    def __init__(self, project_path: Union["Path", str, None]) -> None:
+    def __init__(self, contract_sources: Dict) -> None:
         self._source: Dict = {}
         self._contracts: Dict = {}
-        if not project_path:
-            return
-        project_path = Path(project_path)
-        for path in project_path.glob("contracts/**/*.sol"):
-            if "/_" in path.as_posix():
-                continue
-            with path.open() as fp:
-                source = fp.read()
-            path_str: str = path.relative_to(project_path).as_posix()
-            self.add(path_str, source)
-
-    def add(self, path: Union["Path", str], source: Any, replace: bool = False) -> None:
-        if path in self._source and not replace:
-            raise ContractExists(f"Contract with path '{path}' already exists in this project.")
-        data = _get_contract_data(source)
-        for name, values in data.items():
-            if name in self._contracts and not replace:
-                raise ContractExists(f"Contract '{name}' already exists in this project.")
-            values["path"] = path
-        self._source[path] = source
-        self._contracts.update(data)
+        for path, source in contract_sources.items():
+            data = _get_contract_data(source)
+            for name, values in data.items():
+                if name in self._contracts:
+                    raise ContractExists(f"Contract '{name}' already exists in this project.")
+                values["path"] = path
+            self._source[path] = source
+            self._contracts.update(data)
 
     def get(self, name: str) -> str:
         """Returns the source code file for the given name.
@@ -66,7 +53,7 @@ class Sources:
         """Returns a list of contract names for the active project."""
         return list(self._contracts.keys())
 
-    def get_source_path(self, contract_name: str) -> "Path":
+    def get_source_path(self, contract_name: str) -> Path:
         """Returns the path to the source file where a contract is located."""
         return self._contracts[contract_name]["path"]
 

@@ -8,6 +8,8 @@ The ``project`` package contains methods for initializing, loading and compiling
 
 When Brownie is loaded from within a project folder, that project is automatically loaded and the ``ContractContainer`` objects are added to the ``__main__`` namespace. Unless you are working with more than one project at the same time, there is likely no need to directly interact with the top-level ``Project`` object or any of the methods within this package.
 
+Only the ``project.main`` module contains methods that directly interact with the filesystem.
+
 ``brownie.project.main``
 ========================
 
@@ -170,7 +172,7 @@ The ``build`` module contains classes and methods used internally by Brownie to 
 Build
 -----
 
-The ``Build`` object provides access to the ``build/contracts/`` files for a specific project. It is instantiated automatically when a project is opened, and available within the :ref:`api-project-project` object as ``Project._build``.
+The ``Build`` object is a container that stores and manipulates build data loaded from the ``build/contracts/`` files of a specific project. It is instantiated automatically when a project is opened, and available within the :ref:`api-project-project` object as ``Project._build``.
 
 .. code-block:: python
 
@@ -180,24 +182,6 @@ The ``Build`` object provides access to the ``build/contracts/`` files for a spe
 
 Build Methods
 *************
-
-.. py:classmethod:: Build.add(build_json)
-
-    Adds a build json to the active project. The data is saved in the ``build/contracts`` folder.
-
-    .. code-block:: python
-
-        >>> from brownie.project import build
-        >>> build.add(build_json)
-
-.. py:classmethod:: Build.delete(contract_name)
-
-    Removes a contract's build data from the active project.  The json file in ``build/contracts`` is deleted.
-
-    .. code-block:: python
-
-        >>> from brownie.project import build
-        >>> build.delete('Token')
 
 .. py:classmethod:: Build.get(contract_name)
 
@@ -247,6 +231,14 @@ Build Methods
 
 Build Internal Methods
 **********************
+
+.. py:classmethod:: Build._add(build_json)
+
+    Adds a contract's build data to the container.
+
+.. py:classmethod:: Build._remove(contract_name)
+
+    Removes a contract's build data from the container.
 
 .. py:classmethod:: Build._generate_revert_map(pcMap)
 
@@ -384,17 +376,18 @@ Internal Methods
         >>> expand_source_map("1:2:1:-;:9;2:1:2;;;")
         [[1, 2, 1, '-'], [1, 9, 1, '-'], [2, 1, 2, '-'], [2, 1, 2, '-'], [2, 1, 2, '-'], [2, 1, 2, '-']]
 
-.. py:method:: compiler._generate_coverage_data(source_map, opcodes, contract_node, statement_nodes, branch_nodes)
+.. py:method:: compiler._generate_coverage_data(source_map_str, opcodes_str, contract_node, stmt_nodes, branch_nodes, has_fallback)
 
     Generates the `program counter <compile-pc-map>`_ and `coverage <compile-coverage-map>`_ maps that are used by Brownie for debugging and test coverage evaluation.
 
     Takes the following arguments:
 
-    * ``source_map``: `deployed source mapping <https://solidity.readthedocs.io/en/latest/miscellaneous.html#source-mappings>`_ as given by the compiler
-    * ``opcodes``: deployed bytecode opcodes string as given by the compiler
+    * ``source_map_str``: `deployed source mapping <https://solidity.readthedocs.io/en/latest/miscellaneous.html#source-mappings>`_ as given by the compiler
+    * ``opcodes_str``: deployed bytecode opcodes string as given by the compiler
     * ``contract_node``: py-solc-ast contract node object
-    * ``statement_nodes``: list of statement node objects from ``compiler.get_statment_nodes``
+    * ``stmt_nodes``: list of statement node objects from ``compiler.get_statment_nodes``
     * ``branch_nodes``: list of branch node objects from ``compiler.get_branch_nodes``
+    * ``has_fallback``: Bool, does this contract contain a fallback method?
 
     Returns:
 
