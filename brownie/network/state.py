@@ -55,15 +55,15 @@ class TxHistory(metaclass=_Singleton):
         """Returns a shallow copy of the object as a list"""
         return self._list.copy()
 
-    def from_sender(self, account: Any) -> List:
+    def from_sender(self, account: str) -> List:
         """Returns a list of transactions where the sender is account"""
         return [i for i in self._list if i.sender == account]
 
-    def to_receiver(self, account: Any) -> List:
+    def to_receiver(self, account: str) -> List:
         """Returns a list of transactions where the receiver is account"""
         return [i for i in self._list if i.receiver == account]
 
-    def of_address(self, account: Any) -> List:
+    def of_address(self, account: str) -> List:
         """Returns a list of transactions where account is the sender or receiver"""
         return [i for i in self._list if i.receiver == account or i.sender == account]
 
