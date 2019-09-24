@@ -83,6 +83,10 @@ class EventLookupError(LookupError):
     pass
 
 
+class NamespaceCollision(AttributeError):
+    pass
+
+
 # project/
 
 

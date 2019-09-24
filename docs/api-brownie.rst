@@ -283,8 +283,6 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
     Raised when attempting to create a new ``Contract`` or ``ContractABI`` object, when one already exists for the given address.
 
-    Raised by ``project.compile_source`` when the source code contains a contract with a name that is the same as another in the same project.
-
 .. py:exception:: brownie.exceptions.ContractNotFound
 
     Raised when attempting to access a ``Contract`` or ``ContractABI`` object that no longer exists because the local network was reverted.
@@ -304,6 +302,10 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 .. py:exception:: brownie.exceptions.MainnetUndefined
 
     Raised when an action requires interacting with the main-net, but no ``"mainnet"`` network is defined in ``brownie-config.json``.
+
+.. py:exception:: brownie.exceptions.NamespaceCollision
+
+    Raised by ``project.sources`` when the multiple source files contain a contract with the same name.
 
 .. py:exception:: brownie.exceptions.PragmaError
 
