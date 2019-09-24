@@ -4,7 +4,7 @@ import threading
 import time
 from hashlib import sha1
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import requests
 from eth_abi import decode_abi
@@ -24,6 +24,18 @@ from .state import TxHistory, _find_contract
 from .web3 import web3
 
 history = TxHistory()
+
+
+def trace_property(fn: Callable) -> Any:
+    # attributes that are only available after querying the tranasaction trace
+
+    @property  # type: ignore
+    def wrapper(self: "TransactionReceipt") -> Any:
+        if self.status == -1:
+            return None
+        return fn(self)
+
+    return wrapper
 
 
 class TransactionReceipt:
@@ -62,29 +74,28 @@ class TransactionReceipt:
         modified_state: Boolean, did this contract write to storage?"""
 
     __slots__ = (
-        "_getattr",
-        "_trace",
-        "_revert_pc",
         "_confirmed",
+        "_events",
+        "_modified_state",
+        "_raw_trace",
+        "_return_value",
+        "_revert_msg",
+        "_revert_pc",
+        "_trace",
         "block_number",
         "contract_address",
         "contract_name",
         "coverage_hash",
-        "events",
         "fn_name",
         "gas_limit",
         "gas_price",
         "gas_used",
         "input",
         "logs",
-        "modified_state",
         "nonce",
         "receiver",
-        "return_value",
-        "revert_msg",
         "sender",
         "status",
-        "trace",
         "txid",
         "txindex",
         "value",
@@ -92,7 +103,7 @@ class TransactionReceipt:
 
     def __init__(
         self,
-        txid: Any,
+        txid: Union[str, bytes],
         sender: Any = None,
         silent: bool = False,
         name: str = "",
@@ -107,15 +118,20 @@ class TransactionReceipt:
             name: contract function being called
             revert_data: (revert string, program counter, revert type)
         """
-        if type(txid) is not str:
+        if isinstance(txid, bytes):
             txid = txid.hex()
         if not silent:
             print(f"{color['key']}Transaction sent{color}: {color['value']}{txid}{color}")
         history._add_tx(self)
 
-        self._getattr = False
+        self._raw_trace = None
         self._trace = None
+        self._events = None
+        self._return_value = None
+        self._revert_msg = None
+        self._modified_state = None
         self._confirmed = threading.Event()
+
         self.sender = sender
         self.status = -1
         self.txid = txid
@@ -128,12 +144,12 @@ class TransactionReceipt:
         revert_msg, self._revert_pc, revert_type = revert_data or (None, None, None)
         if revert_msg:
             # revert message was returned
-            self.revert_msg = revert_msg
+            self._revert_msg = revert_msg
         elif revert_type == "revert":
             # check for dev revert string as a comment
             revert_msg = build._get_dev_revert(self._revert_pc)
-            if type(revert_msg) is str:
-                self.revert_msg = revert_msg
+            if isinstance(revert_msg, str):
+                self._revert_msg = revert_msg
 
         # threaded to allow impatient users to ctrl-c to stop waiting in the console
         confirm_thread = threading.Thread(
@@ -167,20 +183,45 @@ class TransactionReceipt:
     def __hash__(self) -> int:
         return hash(self.txid)
 
-    def __getattr__(self, attr: Any) -> Any:
-        if self._getattr or attr not in self.__slots__:
+    def __getattr__(self, attr: str) -> Any:
+        if attr not in self.__slots__:
             raise AttributeError(f"'TransactionReceipt' object has no attribute '{attr}'")
-        self._getattr = True
-        try:
-            if self.status == -1:
-                return None
-            if attr == "trace":
-                self._expand_trace()
-            elif self._trace is None:
-                self._get_trace()
-            return getattr(self, attr)
-        finally:
-            self._getattr = False
+        if self.status == -1:
+            return None
+
+    @trace_property
+    def events(self) -> Optional[List]:
+        if not self.status:
+            self._get_trace()
+        return self._events
+
+    @trace_property
+    def modified_state(self) -> Optional[bool]:
+        if not self.status:
+            self._modified_state = False
+        elif self._modified_state is None:
+            self._get_trace()
+        return self._modified_state
+
+    @trace_property
+    def return_value(self) -> Optional[str]:
+        if not self.status:
+            return None
+        if self._return_value is None:
+            self._get_trace()
+        return self._return_value
+
+    @trace_property
+    def revert_msg(self) -> Optional[str]:
+        if not self.status and self._revert_msg is None:
+            self._get_trace()
+        return self._revert_msg
+
+    @trace_property
+    def trace(self) -> Optional[List]:
+        if self._trace is None:
+            self._expand_trace()
+        return self._trace
 
     def _await_confirmation(self, silent: bool) -> None:
         # await tx showing in mempool
@@ -239,7 +280,7 @@ class TransactionReceipt:
         self.coverage_hash = sha1(base.encode()).hexdigest()
 
         if self.status:
-            self.events = _decode_logs(receipt["logs"])
+            self._events = _decode_logs(receipt["logs"])
         if self.fn_name:
             history._gas(self._full_name(), receipt["gasUsed"])
 
@@ -266,15 +307,12 @@ class TransactionReceipt:
         """
 
         # check if trace has already been retrieved, or the tx warrants it
-        if self._trace is not None:
+        if self._raw_trace is not None:
             return
-        self.return_value = None
-        if not hasattr(self, "revert_msg"):
-            self.revert_msg = None
-        self._trace = []
+        self._raw_trace = []
         if (self.input == "0x" and self.gas_used == 21000) or self.contract_address:
-            self.modified_state: Optional[bool] = bool(self.contract_address)
-            self.trace: Any = []
+            self._modified_state = bool(self.contract_address)
+            self._trace = []
             return
 
         try:
@@ -291,16 +329,16 @@ class TransactionReceipt:
         if "error" in trace:
             self.modified_state = None
             raise RPCRequestError(trace["error"]["message"])
-        self._trace = trace = trace["result"]["structLogs"]
+        self._raw_trace = trace = trace["result"]["structLogs"]
         if not trace:
-            self.modified_state = False
+            self._modified_state = False
         elif self.status:
             self._confirmed_trace(trace)
         else:
             self._reverted_trace(trace)
 
-    def _confirmed_trace(self, trace: List) -> None:
-        self.modified_state = next((True for i in trace if i["op"] == "SSTORE"), False)
+    def _confirmed_trace(self, trace: Sequence) -> None:
+        self._modified_state = next((True for i in trace if i["op"] == "SSTORE"), False)
         step = trace[-1]
         if step["op"] != "RETURN":
             return
@@ -308,24 +346,24 @@ class TransactionReceipt:
         if contract:
             data = _get_memory(step, -1)
             fn = getattr(contract, self.fn_name)
-            self.return_value = fn.decode_output(data)
+            self._return_value = fn.decode_output(data)
 
-    def _reverted_trace(self, trace: Any) -> None:
-        self.modified_state = False
+    def _reverted_trace(self, trace: Sequence) -> None:
+        self._modified_state = False
         # get events from trace
-        self.events = _decode_trace(trace)
-        if self.revert_msg is not None:
+        self._events = _decode_trace(trace)
+        if self._revert_msg is not None:
             return
         # get revert message
         step = next(i for i in trace if i["op"] in ("REVERT", "INVALID"))
         if step["op"] == "REVERT" and int(step["stack"][-2], 16):
             # get returned error string from stack
             data = _get_memory(step, -1)[4:]
-            self.revert_msg = decode_abi(["string"], data)[0]
+            self._revert_msg = decode_abi(["string"], data)[0]
             return
         # check for dev revert string using program counter
-        self.revert_msg = build._get_dev_revert(step["pc"])
-        if self.revert_msg is not None:
+        self._revert_msg = build._get_dev_revert(step["pc"])
+        if self._revert_msg is not None:
             return
         # if none is found, expand the trace and get it from the pcMap
         self._expand_trace()
@@ -336,9 +374,9 @@ class TransactionReceipt:
                 i = trace.index(step) - 4
                 if trace[i]["pc"] != step["pc"] - 4:
                     step = trace[i]
-            self.revert_msg = pc_map[step["pc"]]["dev"]
+            self._revert_msg = pc_map[step["pc"]]["dev"]
         except KeyError:
-            self.revert_msg = ""
+            self._revert_msg = ""
 
     def _expand_trace(self) -> None:
         """Adds the following attributes to each step of the stack trace:
@@ -353,17 +391,17 @@ class TransactionReceipt:
             offset: Start and end offset associated source code
         }
         """
-        if hasattr(self, "trace"):
+        if self._trace is not None:
             return
-        if self._trace is None:
+        if self._raw_trace is None:
             self._get_trace()
-        self.trace = trace = self._trace
+        self._trace = trace = self._raw_trace
         if not trace or "fn" in trace[0]:
             coverage._add_transaction(self.coverage_hash, {})
             return
 
         # last_map gives a quick reference of previous values at each depth
-        last_map = {0: _get_last_map(self.receiver, self.input[:10])}
+        last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
         coverage_eval: Dict = {last_map[0]["name"]: {}}
         active_branches = set()
 
@@ -640,7 +678,7 @@ class TransactionReceipt:
         )
 
 
-def _format_source(source: str, linenos: Any, path: Path, pc: Any, idx: int, fn_name: str) -> str:
+def _format_source(source: str, linenos: Tuple, path: Path, pc: int, idx: int, fn_name: str) -> str:
     ln = f" {color['value']}{linenos[0]}"
     if linenos[1] > linenos[0]:
         ln = f"s{ln}{color['dull']}-{color['value']}{linenos[1]}"
@@ -652,11 +690,11 @@ def _format_source(source: str, linenos: Any, path: Path, pc: Any, idx: int, fn_
     )
 
 
-def _step_compare(a: Any, b: Any) -> bool:
+def _step_compare(a: Dict, b: Dict) -> bool:
     return a["depth"] == b["depth"] and a["jumpDepth"] == b["jumpDepth"]
 
 
-def _check_last(trace_index: Any) -> Tuple[str, str]:
+def _check_last(trace_index: Sequence[Tuple]) -> Tuple[str, str]:
     initial = trace_index[0][1:]
     try:
         trace = next(i for i in trace_index[1:-1] if i[1:] == initial)
@@ -669,7 +707,13 @@ def _check_last(trace_index: Any) -> Tuple[str, str]:
     return "\u251c", "\u2502 "
 
 
-def _step_print(step: Dict, last_step: Any, indent: Any, start: int, stop: int) -> str:
+def _step_print(
+    step: Dict,
+    last_step: Dict,
+    indent: Optional[str],
+    start: Union[str, int],
+    stop: Union[str, int],
+) -> str:
     print_str = f"\n{color['dull']}"
     if indent is not None:
         print_str += f"{indent}\u2500"
@@ -689,11 +733,11 @@ def _get_memory(step: Dict, idx: int) -> HexBytes:
     return HexBytes("".join(step["memory"])[offset : offset + length])
 
 
-def _raise(msg: str, source: Any) -> None:  # source: Union[str, 'Accounts']
+def _raise(msg: str, source: str) -> None:
     raise VirtualMachineError({"message": msg, "source": source})
 
 
-def _get_last_map(address: Any, sig: str) -> Dict:
+def _get_last_map(address: EthAddress, sig: str) -> Dict:
     contract = _find_contract(address)
     last_map = {"address": EthAddress(address), "jumpDepth": 0, "name": None}
     if contract:

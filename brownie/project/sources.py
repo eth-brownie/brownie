@@ -6,7 +6,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from brownie.exceptions import ContractExists
+from brownie.exceptions import NamespaceCollision
 from brownie.utils import color
 
 MINIFY_REGEX_PATTERNS = [
@@ -29,7 +29,7 @@ class Sources:
             data = _get_contract_data(source)
             for name, values in data.items():
                 if name in self._contracts:
-                    raise ContractExists(f"Contract '{name}' already exists in this project.")
+                    raise NamespaceCollision(f"Project has multiple contracts named '{name}'")
                 values["path"] = path
             self._source[path] = source
             self._contracts.update(data)

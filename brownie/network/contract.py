@@ -261,8 +261,20 @@ class _DeployedContractBase(_ContractBase):
 
 class Contract(_DeployedContractBase):
     def __init__(
-        self, address: Any, name: str, abi: List, owner: Optional[AccountsType] = None
+        self,
+        name: str,
+        address: Optional[str] = None,
+        abi: Optional[List] = None,
+        manifest_uri: Optional[str] = None,
+        owner: Optional[AccountsType] = None,
     ) -> None:
+        if manifest_uri and abi:
+            raise ValueError("Contract requires either abi or manifest_uri, but not both")
+        if manifest_uri is not None:
+            raise NotImplementedError("ethPM manifests are not yet supported")
+        elif not address:
+            raise TypeError("Address cannot be None unless creating object from manifest")
+
         _ContractBase.__init__(self, None, None, name, abi)  # type: ignore
         _DeployedContractBase.__init__(self, address, owner, None)
         contract = _find_contract(address)

@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 from ens import ENS
 from web3 import HTTPProvider, IPCProvider
@@ -22,8 +22,10 @@ class Web3(_Web3):
 
     def __init__(self) -> None:
         super().__init__(HTTPProvider("null"))
+        self.enable_unstable_package_management_api()
         self.provider = None
-        self._mainnet_w3 = None
+        self._mainnet_w3: Optional[_Web3] = None
+        self._genesis_hash: Optional[str] = None
 
     def connect(self, uri: str) -> None:
         """Connects to a provider"""
@@ -48,6 +50,7 @@ class Web3(_Web3):
         """Disconnects from a provider"""
         if self.provider:
             self.provider = None
+            self._genesis_hash = None
 
     def isConnected(self) -> bool:
         if not self.provider:
@@ -63,7 +66,14 @@ class Web3(_Web3):
         if not self._mainnet_w3:
             uri = _expand_environment_vars(CONFIG["network"]["networks"]["mainnet"]["host"])
             self._mainnet_w3 = _Web3(HTTPProvider(uri))
+            self._mainnet_w3.enable_unstable_package_management_api()
         return self._mainnet_w3
+
+    @property
+    def genesis_hash(self) -> str:
+        if self._genesis_hash is None:
+            self._genesis_hash = self.eth.getBlock(0)["hash"].hex()[2:]
+        return self._genesis_hash
 
 
 def _expand_environment_vars(uri: str) -> str:
