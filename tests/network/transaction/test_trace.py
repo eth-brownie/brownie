@@ -28,39 +28,39 @@ def test_revert_msg_get_trace_no_revert_map(console_mode, tester, norevertmap):
     """without the revert map, getting the revert string queries the trace"""
     tx = tester.revertStrings(1)
     tx.revert_msg
-    assert tx._expand_trace.call_count == 1
+    assert tx._expand_trace.call_count
 
 
 def test_revert_msg(console_mode, tester):
     """dev revert string comments should not query the trace"""
     tx = tester.revertStrings(0)
     tx.revert_msg
-    assert tx._get_trace.call_count == 0
-    assert tx._expand_trace.call_count == 0
+    assert not tx._get_trace.call_count
+    assert not tx._expand_trace.call_count
     tx = tester.revertStrings(1)
     tx.revert_msg
-    assert tx._get_trace.call_count == 0
-    assert tx._expand_trace.call_count == 0
+    assert not tx._get_trace.call_count
+    assert not tx._expand_trace.call_count
     tx = tester.revertStrings(2)
     tx.revert_msg
-    assert tx._get_trace.call_count == 0
-    assert tx._expand_trace.call_count == 0
+    assert not tx._get_trace.call_count
+    assert not tx._expand_trace.call_count
     tx = tester.revertStrings(3)
     tx.revert_msg
-    assert tx._get_trace.call_count == 0
-    assert tx._expand_trace.call_count == 0
+    assert not tx._get_trace.call_count
+    assert not tx._expand_trace.call_count
 
 
 def test_error_get_trace(console_mode, tester, capfd):
     """getting the error should not query the trace"""
     tx = tester.doNothing()
     assert not tx._error_string()
-    assert tx._get_trace.call_count == 0
-    assert tx._expand_trace.call_count == 0
+    assert not tx._get_trace.call_count
+    assert not tx._expand_trace.call_count
     tx = tester.revertStrings(1)
     assert tx._error_string()
-    assert tx._get_trace.call_count == 0
-    assert tx._expand_trace.call_count == 0
+    assert not tx._get_trace.call_count
+    assert not tx._expand_trace.call_count
 
 
 def test_revert_events(console_mode, tester):
@@ -68,16 +68,16 @@ def test_revert_events(console_mode, tester):
     tx = tester.revertStrings(1)
     assert len(tx.events) == 1
     assert "Debug" in tx.events
-    assert tx._get_trace.call_count == 1
-    assert tx._expand_trace.call_count == 0
+    assert tx._get_trace.call_count
+    assert not tx._expand_trace.call_count
 
 
 def test_modified_state(console_mode, tester):
     """modified_state queries the trace but does not evaluate"""
     tx = tester.doNothing()
     tx.modified_state
-    assert tx._get_trace.call_count == 1
-    assert tx._expand_trace.call_count == 0
+    assert tx._get_trace.call_count
+    assert not tx._expand_trace.call_count
 
 
 def test_modified_state_revert(console_mode, tester):
@@ -90,43 +90,43 @@ def test_trace(tester):
     """getting the trace also evaluates the trace"""
     tx = tester.doNothing()
     tx.trace
-    assert tx._expand_trace.call_count == 1
+    assert tx._expand_trace.call_count
 
 
 def test_coverage_trace(accounts, tester, coverage_mode):
     """coverage mode always evaluates the trace"""
     tx = tester.doNothing({"from": accounts[0]})
     assert tx.status == 1
-    assert tx._expand_trace.call_count > 0
+    assert tx._expand_trace.call_count
 
 
 def test_source(tester):
     """querying source always evaluates the trace"""
     tx = tester.doNothing()
-    assert tx._get_trace.call_count == 0
-    assert tx._expand_trace.call_count == 0
+    assert not tx._get_trace.call_count
+    assert not tx._expand_trace.call_count
     tx.source(-5)
-    assert tx._expand_trace.call_count == 1
+    assert tx._expand_trace.call_count
 
 
 def test_info(console_mode, tester):
     """calling for info only evaluates the trace on a reverted tx"""
     tx = tester.doNothing()
     tx.info()
-    assert tx._get_trace.call_count == 0
-    assert tx._expand_trace.call_count == 0
+    assert not tx._get_trace.call_count
+    assert not tx._expand_trace.call_count
     tx = tester.revertStrings(1)
     tx.info()
-    assert tx._get_trace.call_count == 1
-    assert tx._expand_trace.call_count == 0
+    assert tx._get_trace.call_count
+    assert not tx._expand_trace.call_count
 
 
 def test_call_trace(console_mode, tester):
     """call_trace always evaluates the trace"""
     tx = tester.doNothing()
     tx.call_trace()
-    assert tx._get_trace.call_count == 1
-    assert tx._expand_trace.call_count == 1
+    assert tx._get_trace.call_count
+    assert tx._expand_trace.call_count
     tx = tester.revertStrings(1)
     tx.call_trace()
     assert tx._get_trace.call_count == 2
@@ -147,10 +147,10 @@ def test_trace_transfer(accounts):
 def test_expand_first(tester):
     """can call _expand_trace without _get_trace first"""
     tx = tester.doNothing()
-    assert tx._get_trace.call_count == 0
-    assert tx._expand_trace.call_count == 0
+    assert not tx._get_trace.call_count
+    assert not tx._expand_trace.call_count
     tx._expand_trace()
-    assert tx._get_trace.call_count == 1
+    assert tx._get_trace.call_count
 
 
 def test_expand_multiple(tester):
@@ -168,7 +168,7 @@ def test_expand_multiple(tester):
 def test_revert_string_from_trace(console_mode, tester):
     tx = tester.revertStrings(0)
     msg = tx.revert_msg
-    tx.revert_msg = None
+    tx._revert_msg = None
     tx._reverted_trace(tx.trace)
     assert tx.revert_msg == msg
 
