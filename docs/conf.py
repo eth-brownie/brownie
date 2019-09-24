@@ -33,7 +33,7 @@ author = "Ben Hauser"
 # The short X.Y version
 version = ""
 # The full version, including alpha/beta/rc tags
-release = "v1.0.0b12"
+release = "v1.0.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -130,9 +130,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-    (master_doc, "Brownie.tex", "Brownie Documentation", "Ben Hauser", "manual")
-]
+latex_documents = [(master_doc, "Brownie.tex", "Brownie Documentation", "Ben Hauser", "manual")]
 
 
 # -- Options for manual page output ------------------------------------------

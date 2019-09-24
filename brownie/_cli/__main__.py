@@ -11,7 +11,7 @@ from brownie._config import ARGV
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
 
-__version__ = "1.0.0b12"  # did you change this in docs/conf.py as well?
+__version__ = "1.0.0"
 
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
