@@ -535,9 +535,6 @@ def _get_branch_nodes(source_nodes: List) -> Dict:
     for node in source_nodes:
         branches[node.absolutePath] = set()
         for contract_node in node.children(depth=1, filters={"nodeType": "ContractDefinition"}):
-            # for contract_node in [i for i in node if i.nodeType == "ContractDefinition"]:
-            # only looking at functions for now, not modifiers
-
             for child_node in [
                 x
                 for i in contract_node
