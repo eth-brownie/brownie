@@ -299,7 +299,8 @@ website and pass your login data via environment variables or command line
 arguments.
 
 ::
-    Brownie v1.0.0b12 - Python development framework for Ethereum
+
+    Brownie v1.0.0 - Python development framework for Ethereum
 
     Usage: brownie analyze [options] [--async | --interval=<sec>]
 
