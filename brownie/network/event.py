@@ -2,7 +2,8 @@
 
 import json
 from collections import OrderedDict
-from typing import Any, Dict, Iterator, List, Tuple, Union, ValuesView
+from pathlib import Path
+from typing import Dict, Iterator, List, Sequence, Tuple, Union, ValuesView
 
 import eth_event
 
@@ -157,7 +158,7 @@ class _EventItem:
         return list(self._ordered[0].values())
 
 
-def __get_path() -> Any:
+def __get_path() -> Path:
     return CONFIG["brownie_folder"].joinpath("data/topics.json")
 
 
@@ -179,7 +180,7 @@ def _decode_logs(logs: List) -> Union["EventDict", List[None]]:
     return EventDict(events)
 
 
-def _decode_trace(trace: List) -> Union["EventDict", List[None]]:
+def _decode_trace(trace: Sequence) -> Union["EventDict", List[None]]:
     if not trace:
         return []
     events = eth_event.decode_trace(trace, _topics)

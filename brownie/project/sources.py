@@ -6,13 +6,13 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from brownie.exceptions import ContractExists
+from brownie.exceptions import NamespaceCollision
 from brownie.utils import color
 
 MINIFY_REGEX_PATTERNS = [
     r"(?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)",  # comments
-    r"(?<=\n)\s{1,}|[ \t]{1,}(?=\n)",  # leading / trailing whitespace
-    r"(?<=[^\w\s])[ \t]{1,}(?=\w)|(?<=\w)[ \t]{1,}(?=[^\w\s])",  # whitespace between expressions
+    r"(?<=\n)\s+|[ \t]+(?=\n)",  # leading / trailing whitespace
+    r"(?<=[^\w\s])[ \t]+(?=\w)|(?<=\w)[ \t]+(?=[^\w\s])",  # whitespace between expressions
 ]
 
 _contract_data: Dict = {}
@@ -29,7 +29,7 @@ class Sources:
             data = _get_contract_data(source)
             for name, values in data.items():
                 if name in self._contracts:
-                    raise ContractExists(f"Contract '{name}' already exists in this project.")
+                    raise NamespaceCollision(f"Project has multiple contracts named '{name}'")
                 values["path"] = path
             self._source[path] = source
             self._contracts.update(data)
@@ -159,7 +159,7 @@ def _get_contract_data(full_source: str) -> Dict:
     data = {}
     for source in contracts:
         type_, name, inherited = re.findall(
-            r"\s*(contract|library|interface)\s{1,}(\S*)\s*(?:is\s{1,}(.*?)|)(?:{)", source
+            r"(contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)", source
         )[0]
         idx = minified_source.index(source)
         offset = (

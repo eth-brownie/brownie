@@ -59,7 +59,7 @@ def test_cli_init(cli_tester):
 
 
 def test_cli_bake(cli_tester):
-    cli_tester.set_target("brownie.project.pull")
+    cli_tester.set_target("brownie.project.from_brownie_mix")
     cli_tester.run("bake token", args=("token", None, False))
     cli_tester.run("bake token test/path --force", args=("token", "test/path", True))
 
