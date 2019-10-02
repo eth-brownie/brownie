@@ -297,7 +297,7 @@ def pull(
     return str(project_path)
 
 
-def from_ethpm(uri: str):
+def from_ethpm(uri: str) -> "TempProject":
     manifest = get_manifest(uri)
     compiler_config = {
         "version": None,
