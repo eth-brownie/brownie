@@ -15,10 +15,10 @@ from brownie.exceptions import (
     UndeployedLibrary,
     VirtualMachineError,
 )
+from brownie.project.ethpm import get_deployed_contract_address, get_manifest
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
-from .ethpm import get_deployed_contract_address, get_manifest
 from .event import _get_topics
 from .rpc import Rpc, _revert_register
 from .state import _add_contract, _find_contract, _remove_contract

@@ -10,9 +10,8 @@ from abi2solc import generate_interface
 from ethpm.package import resolve_uri_contents
 
 from brownie._config import CONFIG
-from brownie.project.compiler import compile_and_format
-
-from .web3 import _resolve_address, web3
+from brownie.network.web3 import _resolve_address, web3
+from brownie.project import compiler
 
 URI_REGEX = (
     r"""^(?:erc1319://|)([^/:\s]*):(?:[0-9]+)/([a-z][a-z0-9_-]{0,255})@[^\s:/'";]*?/([^\s:'";]*)$"""
@@ -70,7 +69,7 @@ def get_manifest(uri: str) -> Dict:
 
     # if manifest doesn't include an ABI, generate one
     if manifest["sources"]:
-        build_json = compile_and_format(manifest["sources"])
+        build_json = compiler.compile_and_format(manifest["sources"])
         for key, build in build_json.items():
             manifest["contract_types"].setdefault(key, {})
             manifest["contract_types"][key].update(
@@ -102,7 +101,7 @@ def get_deployed_contract_address(manifest: Dict, contract_name: str) -> Optiona
     return None
 
 
-def resolve_solc_imports(contract_sources: Dict) -> Tuple[Dict, Dict]:
+def resolve_ethpm_imports(contract_sources: Dict) -> Tuple[Dict, Dict]:
     import_sources = {}
     remappings = {}
     for path in list(contract_sources):

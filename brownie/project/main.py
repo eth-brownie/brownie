@@ -13,9 +13,9 @@ import requests
 from brownie._config import CONFIG, _load_project_compiler_config, _load_project_config
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.network.contract import ContractContainer
-from brownie.network.ethpm import get_deployed_contract_address, get_manifest
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
+from brownie.project.ethpm import get_deployed_contract_address, get_manifest
 from brownie.project.sources import Sources, get_hash
 from brownie.utils import color
 
