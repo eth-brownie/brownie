@@ -3,20 +3,21 @@
 import json
 import re
 from pathlib import Path
-from typing import Dict, Optional
-from urllib.parse import parse_qs, urlparse
+from typing import Dict, Optional, Tuple
+from urllib.parse import urlparse
 
 from abi2solc import generate_interface
 from ethpm.package import resolve_uri_contents
 
 from brownie._config import CONFIG
-from brownie.exceptions import ContractNotFound
 from brownie.project.compiler import compile_and_format
 
 from .web3 import _resolve_address, web3
 
-URI_REGEX = r"^(?:erc1319://|)([^/:\s]*):(?:[0-9]+)/([a-z][a-z0-9_-]{0,255})\?version=(\S*)$"
-IMPORT_REGEX = r"""(?:^|;)\s*import\s*(?:{[a-zA-Z][-a-zA-Z0-9_]{0,255}}\s*from|)\s*("|')(erc1319://[^\s:/'";]*:[0-9]+/[a-z][a-z0-9_-]{0,255}@[^\s:/'";]*?)\?([^\s:/'";]*)(?=\1\s*;)"""  # NOQA: E501
+URI_REGEX = (
+    r"""^(?:erc1319://|)([^/:\s]*):(?:[0-9]+)/([a-z][a-z0-9_-]{0,255})@[^\s:/'";]*?/([^\s:'";]*)$"""
+)
+IMPORT_REGEX = r"""(?:^|;)\s*import\s*(?:{[a-zA-Z][-a-zA-Z0-9_]{0,255}}\s*from|)\s*("|')((erc1319://[^\s:/'";]*:[0-9]+/[a-z][a-z0-9_-]{0,255}@[^\s:/'";]*?)/([^\s:'";]*))(?=\1\s*;)"""  # NOQA: E501
 
 
 def get_manifest(uri: str) -> Dict:
@@ -55,7 +56,7 @@ def get_manifest(uri: str) -> Dict:
         content = manifest["sources"].pop(key)
         if _is_uri(content):
             content = resolve_uri_contents(content)
-        key = "./" + Path("/").joinpath(key.lstrip("./")).resolve().as_posix().lstrip("/")
+        key = "ethpm/" + Path("/").joinpath(key.lstrip("./")).resolve().as_posix().lstrip("/")
         manifest["sources"][key] = content
 
     # resolve package dependencies
@@ -73,7 +74,11 @@ def get_manifest(uri: str) -> Dict:
         for key, build in build_json.items():
             manifest["contract_types"].setdefault(key, {})
             manifest["contract_types"][key].update(
-                {"source_path": build["sourcePath"], "abi": build["abi"]}
+                {
+                    "abi": build["abi"],
+                    "source_path": build["sourcePath"],
+                    "all_source_paths": build["allSourcePaths"],
+                }
             )
         no_source = [i for i in manifest["contract_types"].keys() if i not in build_json]
     else:
@@ -97,36 +102,38 @@ def get_deployed_contract_address(manifest: Dict, contract_name: str) -> Optiona
     return None
 
 
-def resolve_solc_imports(contract_sources: Dict) -> Dict:
+def resolve_solc_imports(contract_sources: Dict) -> Tuple[Dict, Dict]:
     import_sources = {}
+    remappings = {}
     for path in list(contract_sources):
         for match in re.finditer(IMPORT_REGEX, contract_sources[path]):
-            import_str, uri, query_str = match.group(2, 3, 4)
-            query = parse_qs(query_str)
-            # TODO improve these error messages
-            if set(query) != {"name", "type"}:
-                raise ValueError("Invalid registry URI parameters: must contain 'name' and 'type'")
-            name, type_ = query["name"], query["type"]
-            if type_ not in ("abi", "source"):
-                raise ValueError(
-                    "Invalid registry URI parameter: 'type' must be either 'abi' or 'source'"
-                )
-
+            import_str, uri, key_path = match.group(2, 3, 4)
             manifest = get_manifest(uri)
 
-            if name not in manifest["contract_types"]:
-                raise ContractNotFound(f"Contract '{name}' was not found in the registry")
-            if type_ == "abi":
+            type_, target = key_path.split("/", maxsplit=1)
+            if type_ not in ("contract_types", "sources"):
+                raise
+            if type_ == "contract_types":
+                if not target.endswith("/abi"):
+                    raise
+                contract_name = target[:-4]
                 import_sources[import_str] = generate_interface(
-                    manifest["contract_types"][name]["abi"]
+                    manifest["contract_types"][contract_name], contract_name
                 )
-            else:
-                source_path = manifest["contract_types"][name].get("source_path")
-                if source_path is None:
-                    raise ValueError(f"{name} is only available as an ABI")
-                import_sources[import_str] = manifest["sources"][source_path]
-                # TODO - inheritance / dependencies of this contract
-    return import_sources
+                continue
+            target = f"ethpm/{target}"
+            source_paths = set(
+                x
+                for i in manifest["contract_types"].values()
+                for x in i["all_source_paths"]
+                if i["source_path"] == target
+            )
+
+            for source_path in source_paths:
+                import_sources[source_path] = manifest["sources"][source_path]
+
+            remappings[import_str] = target
+    return import_sources, remappings
 
 
 def _get_pm():  # type: ignore
