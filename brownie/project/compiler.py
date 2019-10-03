@@ -15,7 +15,7 @@ from solcast.nodes import NodeBase
 
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 
-from . import sources
+from . import ethpm, sources
 
 solcx_logger = logging.getLogger("solcx")
 solcx_logger.setLevel(10)
@@ -33,6 +33,7 @@ STANDARD_JSON = {
         },
         "optimizer": {"enabled": True, "runs": 200},
         "evmVersion": None,
+        "remappings": [],
     },
 }
 
@@ -56,7 +57,7 @@ def install_solc(*versions: str) -> None:
 
 
 def compile_and_format(
-    contracts: Dict[str, str],
+    contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
     optimize: bool = True,
     runs: int = 200,
@@ -78,29 +79,33 @@ def compile_and_format(
     Returns:
         build data dict
     """
-    if not contracts:
+    if not contract_sources:
         return {}
 
-    build_json: Dict = {}
+    ethpm_sources, remappings = ethpm.resolve_ethpm_imports(contract_sources)
+    contract_sources.update(ethpm_sources)
 
     if solc_version is not None:
-        path_versions = {solc_version: list(contracts)}
+        path_versions = {solc_version: list(contract_sources)}
     else:
-        path_versions = find_solc_versions(contracts, install_needed=True, silent=silent)
+        path_versions = find_solc_versions(contract_sources, install_needed=True, silent=silent)
 
+    build_json: Dict = {}
     for version, path_list in path_versions.items():
         set_solc_version(version)
         compiler_data = {"minify_source": minify, "version": solcx.get_solc_version_string()}
-        to_compile = dict((k, v) for k, v in contracts.items() if k in path_list)
+        to_compile = dict((k, v) for k, v in contract_sources.items() if k in path_list)
 
-        input_json = generate_input_json(to_compile, optimize, runs, evm_version, minify)
+        input_json = generate_input_json(
+            to_compile, optimize, runs, evm_version, minify, remappings
+        )
         output_json = compile_from_input_json(input_json, silent)
         build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
     return build_json
 
 
 def find_solc_versions(
-    contracts: Dict[str, str],
+    contract_sources: Dict[str, str],
     install_needed: bool = False,
     install_latest: bool = False,
     silent: bool = True,
@@ -108,7 +113,7 @@ def find_solc_versions(
     """Analyzes contract pragmas and determines which solc version(s) to use.
 
     Args:
-        contracts: a dictionary in the form of {'path': "source code"}
+        contract_sources: a dictionary in the form of {'path': "source code"}
         install_needed: if True, will install when no installed version matches
                         the contract pragma
         install_latest: if True, will install when a newer version is available
@@ -130,7 +135,7 @@ def find_solc_versions(
     to_install = set()
     new_versions = set()
 
-    for path, source in contracts.items():
+    for path, source in contract_sources.items():
 
         pragma_string = next(pragma_regex.finditer(source), None)
         if pragma_string is None:
@@ -176,20 +181,22 @@ def find_solc_versions(
 
 
 def generate_input_json(
-    contracts: Dict[str, str],
+    contract_sources: Dict[str, str],
     optimize: bool = True,
     runs: int = 200,
     evm_version: Union[int, str, None] = None,
     minify: bool = False,
+    remappings: Optional[List] = None,
 ) -> Dict:
     """Formats contracts to the standard solc input json.
 
     Args:
-        contracts: a dictionary in the form of {path: 'source code'}
+        contract_sources: a dictionary in the form of {path: 'source code'}
         optimize: enable solc optimizer
         runs: optimizer runs
         evm_version: evm version to compile for
         minify: should source code be minified?
+        remappings: list of path remappings
 
     Returns: dict
     """
@@ -199,8 +206,10 @@ def generate_input_json(
     input_json["settings"]["optimizer"]["enabled"] = optimize
     input_json["settings"]["optimizer"]["runs"] = runs if optimize else 0
     input_json["settings"]["evmVersion"] = evm_version
+    if remappings is not None:
+        input_json["settings"]["remappings"] = remappings
     input_json["sources"] = dict(
-        (k, {"content": sources.minify(v)[0] if minify else v}) for k, v in contracts.items()
+        (k, {"content": sources.minify(v)[0] if minify else v}) for k, v in contract_sources.items()
     )
     return input_json
 

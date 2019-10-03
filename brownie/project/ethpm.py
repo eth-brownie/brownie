@@ -3,7 +3,7 @@
 import json
 import re
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from abi2solc import generate_interface
@@ -11,7 +11,8 @@ from ethpm.package import resolve_uri_contents
 
 from brownie._config import CONFIG
 from brownie.network.web3 import _resolve_address, web3
-from brownie.project import compiler
+
+from . import compiler
 
 URI_REGEX = (
     r"""^(?:erc1319://|)([^/:\s]*):(?:[0-9]+)/([a-z][a-z0-9_-]{0,255})@[^\s:/'";]*?/([^\s:'";]*)$"""
@@ -101,8 +102,8 @@ def get_deployed_contract_address(manifest: Dict, contract_name: str) -> Optiona
     return None
 
 
-def resolve_ethpm_imports(contract_sources: Dict) -> Tuple[Dict, Dict]:
-    import_sources = {}
+def resolve_ethpm_imports(contract_sources: Dict[str, str]) -> Tuple[Dict[str, str], List]:
+    ethpm_sources = {}
     remappings = {}
     for path in list(contract_sources):
         for match in re.finditer(IMPORT_REGEX, contract_sources[path]):
@@ -116,7 +117,7 @@ def resolve_ethpm_imports(contract_sources: Dict) -> Tuple[Dict, Dict]:
                 if not target.endswith("/abi"):
                     raise
                 contract_name = target[:-4]
-                import_sources[import_str] = generate_interface(
+                ethpm_sources[import_str] = generate_interface(
                     manifest["contract_types"][contract_name], contract_name
                 )
                 continue
@@ -129,10 +130,10 @@ def resolve_ethpm_imports(contract_sources: Dict) -> Tuple[Dict, Dict]:
             )
 
             for source_path in source_paths:
-                import_sources[source_path] = manifest["sources"][source_path]
+                ethpm_sources[source_path] = manifest["sources"][source_path]
 
             remappings[import_str] = target
-    return import_sources, remappings
+    return ethpm_sources, [f"{k}={v}" for k, v in remappings.items()]
 
 
 def _get_pm():  # type: ignore
