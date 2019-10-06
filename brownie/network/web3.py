@@ -85,19 +85,36 @@ def _expand_environment_vars(uri: str) -> str:
     raise ValueError(f"Unable to expand environment variable in host setting: '{uri}'")
 
 
-def _resolve_address(address: str) -> str:
-    if not isinstance(address, str) or "." not in address:
-        return to_address(address)
-    address = address.lower()
+def _resolve_address(domain: str) -> str:
+    if not isinstance(domain, str) or "." not in domain:
+        return to_address(domain)
+    domain = domain.lower()
+    if domain not in _ens_cache:
+        try:
+            ns = ENS.fromWeb3(web3._mainnet)
+        except MainnetUndefined as e:
+            raise MainnetUndefined(f"Cannot resolve ENS address - {e}") from None
+        address = ns.address(domain)
+        _ens_cache[domain] = address
+    if _ens_cache[domain] is None:
+        raise UnsetENSName(f"ENS domain '{domain}' is not set")
+    _ens_cache[address] = domain
+    return _ens_cache[domain]
+
+
+def _resolve_domain(address: str) -> str:
+    address = to_address(address)
     if address not in _ens_cache:
         try:
             ns = ENS.fromWeb3(web3._mainnet)
         except MainnetUndefined as e:
             raise MainnetUndefined(f"Cannot resolve ENS address - {e}") from None
-        resolved_address = ns.address(address)
-        _ens_cache[address] = resolved_address
+        domain = ns.name(address)
+        _ens_cache[address] = domain
+        if domain is not None:
+            _ens_cache[domain] = address
     if _ens_cache[address] is None:
-        raise UnsetENSName(f"ENS address '{address}' is not set")
+        raise UnsetENSName(f"Address '{address}' does not resolve to an ENS domain")
     return _ens_cache[address]
 
 
