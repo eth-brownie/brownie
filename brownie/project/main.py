@@ -10,7 +10,12 @@ from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Union
 
 import requests
 
-from brownie._config import CONFIG, _load_project_compiler_config, _load_project_config
+from brownie._config import (
+    CONFIG,
+    _get_project_config_path,
+    _load_project_compiler_config,
+    _load_project_config,
+)
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.network.contract import ContractContainer
 from brownie.project import compiler
@@ -232,7 +237,7 @@ def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
     """Checks for a Brownie project."""
     path = Path(path).resolve()
     for folder in [path] + list(path.parents):
-        if folder.joinpath("brownie-config.json").exists():
+        if _get_project_config_path(folder):
             return folder
     return None
 
@@ -254,10 +259,10 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
     project_path = _new_checks(project_path_str, ignore_subfolder)
     project_path.mkdir(exist_ok=True)
     _create_folders(project_path)
-    if not project_path.joinpath("brownie-config.json").exists():
+    if not _get_project_config_path(project_path):
         shutil.copy(
-            CONFIG["brownie_folder"].joinpath("data/config.json"),
-            project_path.joinpath("brownie-config.json"),
+            CONFIG["brownie_folder"].joinpath("data/config.yaml"),
+            project_path.joinpath("brownie-config.yaml"),
         )
     _add_to_sys_path(project_path)
     return str(project_path)
@@ -289,8 +294,8 @@ def from_brownie_mix(
         zf.extractall(str(project_path.parent))
     project_path.parent.joinpath(project_name + "-mix-master").rename(project_path)
     shutil.copy(
-        CONFIG["brownie_folder"].joinpath("data/config.json"),
-        project_path.joinpath("brownie-config.json"),
+        CONFIG["brownie_folder"].joinpath("data/config.yaml"),
+        project_path.joinpath("brownie-config.yaml"),
     )
     _add_to_sys_path(project_path)
     return str(project_path)
@@ -341,7 +346,7 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
     # checks
     if project_path is None:
         project_path = check_for_project(".")
-    if not project_path or not Path(project_path).joinpath("brownie-config.json").exists():
+    if not project_path or not _get_project_config_path(Path(project_path)):
         raise ProjectNotFound("Could not find Brownie project")
 
     project_path = Path(project_path).resolve()
