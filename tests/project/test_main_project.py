@@ -34,7 +34,7 @@ def test_check_for_project(project, testproject):
 
 def test_new(tmp_path, project):
     assert str(tmp_path) == project.new(tmp_path)
-    assert tmp_path.joinpath("brownie-config.json").exists()
+    assert tmp_path.joinpath("brownie-config.yaml").exists()
 
 
 def test_from_brownie_mix_raises(project, tmp_path):

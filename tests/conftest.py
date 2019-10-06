@@ -70,7 +70,7 @@ def _project_factory(tmp_path_factory):
     path = tmp_path_factory.mktemp("base")
     path.rmdir()
     shutil.copytree("tests/brownie-test-project", path)
-    shutil.copyfile("brownie/data/config.json", path.joinpath("brownie-config.json"))
+    shutil.copyfile("brownie/data/config.yaml", path.joinpath("brownie-config.yaml"))
     p = brownie.project.load(path, "TestProject")
     p.close()
     return path
@@ -120,11 +120,11 @@ def evmtester(_project_factory, project, tmp_path, accounts, request):
         _project_factory.joinpath("contracts/EVMTester.sol"),
         tmp_path.joinpath("contracts/EVMTester.sol"),
     )
-    conf_json = brownie._config._load_json(_project_factory.joinpath("brownie-config.json"))
+    conf_json = brownie._config._load_config(_project_factory.joinpath("brownie-config.yaml"))
     conf_json["compiler"]["solc"].update(
         {"version": solc_version, "optimize": runs > 0, "runs": runs, "evm_version": evm_version}
     )
-    with tmp_path.joinpath("brownie-config.json").open("w") as fp:
+    with tmp_path.joinpath("brownie-config.yaml").open("w") as fp:
         json.dump(conf_json, fp)
     p = project.load(tmp_path, "EVMProject")
     return p.EVMTester.deploy({"from": accounts[0]})
