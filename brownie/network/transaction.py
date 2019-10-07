@@ -479,10 +479,9 @@ class TransactionReceipt:
         )
 
     def _full_name(self) -> str:
-        try:
+        if self.contract_name and self.fn_name:
             return f"{self.contract_name}.{self.fn_name}"
-        except AttributeError:
-            return self.fn_name or "Transaction"
+        return self.fn_name or "Transaction"
 
     def info(self) -> None:
         """Displays verbose information about the transaction, including decoded event logs."""
