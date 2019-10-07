@@ -15,7 +15,7 @@ This will create the following project structure within the folder:
 * ``reports/``: JSON report files for use in the :ref:`coverage-gui`
 * ``scripts/``: Scripts for deployment and interaction
 * ``tests/``: Scripts for testing your project
-* ``brownie-config.json``: Configuration file for the project
+* ``brownie-config.yaml``: Configuration file for the project
 
 You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`__", simple templates to build your project upon. For many examples within the Brownie documentation we will use the `token <https://github.com/brownie-mix/token-mix>`__ mix, which is a very basic ERC-20 implementation:
 

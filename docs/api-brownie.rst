@@ -301,7 +301,7 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
 .. py:exception:: brownie.exceptions.MainnetUndefined
 
-    Raised when an action requires interacting with the main-net, but no ``"mainnet"`` network is defined in ``brownie-config.json``.
+    Raised when an action requires interacting with the main-net, but no ``"mainnet"`` network is defined in ``brownie-config.yaml``.
 
 .. py:exception:: brownie.exceptions.NamespaceCollision
 

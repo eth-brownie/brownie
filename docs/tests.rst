@@ -446,18 +446,15 @@ Brownie outputs a % score for each contract method that you can use to quickly g
 Configuration Settings
 ======================
 
-The following test configuration settings are available in ``brownie-config.json``. These settings affect the behaviour of your tests.
+The following test configuration settings are available in ``brownie-config.yaml``. These settings affect the behaviour of your tests.
 
-.. code-block:: javascript
+.. code-block:: yaml
 
-    {
-        "test": {
-            "gas_limit": 6721975,
-            "reverting_tx_gas_limit": 6721975,
-            "default_contract_owner": false,
-            "revert_traceback": false
-        }
-    }
+    pytest:
+        gas_limit: 6721975
+        default_contract_owner: false
+        reverting_tx_gas_limit: 6721975
+        revert_traceback: false
 
 .. py:attribute:: gas_limit
 
