@@ -287,7 +287,7 @@ def main():
             "WARNING", f"Found {total_issues} issues including {total_high_severity} high severity!"
         )
     else:
-        print("Found {} issues:")
+        print(f"Found {total_issues} issues:")
     for name in sorted(stdout_report):
         print(f"\n  contract: {color['contract']}{name}{color}")
         for key in [i for i in ("HIGH", "MEDIUM", "LOW") if i in stdout_report[name]]:
