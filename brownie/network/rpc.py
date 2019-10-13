@@ -7,6 +7,7 @@ import time
 import weakref
 from subprocess import DEVNULL, PIPE
 from typing import Any, Dict, List, Optional, Tuple, Union
+from urllib.parse import urlparse
 
 import psutil
 
@@ -40,7 +41,7 @@ class Rpc(metaclass=_Singleton):
         self._rpc: Any = None
         self._time_offset: int = 0
         self._snapshot_id: Union[int, Optional[bool]] = False
-        self._internal_id: Optional[bool] = False
+        self._internal_id: Optional[int] = False
         self._reset_id: Union[int, bool] = False
         atexit.register(self._at_exit)
 
@@ -99,11 +100,11 @@ class Rpc(metaclass=_Singleton):
                    string "http://127.0.0.1:8545" or tuple ("127.0.0.1", 8545)"""
         if self.is_active():
             raise SystemError("RPC is already active.")
-        if type(laddr) is str:
-            # it's unclear why this typing is having issues.
-            # mypy seems to check this when input is Tuple
-            ip, port = laddr.strip("https://").split(":")  # type: ignore
-            laddr = (ip, int(port))
+        if isinstance(laddr, str):
+            o = urlparse(laddr)
+            if not o.port:
+                raise ValueError("No RPC port given")
+            laddr = (o.hostname, o.port)
         try:
             proc = next(i for i in psutil.net_connections() if i.laddr == laddr)
         except StopIteration:
@@ -139,18 +140,18 @@ class Rpc(metaclass=_Singleton):
         self._rpc = None
         _notify_registry(0)
 
-    def _request(self, *args: Any) -> int:
+    def _request(self, method: str, args: List) -> int:
         if not self.is_active():
             raise SystemError("RPC is not active.")
         try:
-            response = web3.provider.make_request(*args)  # type: ignore
+            response = web3.provider.make_request(method, args)  # type: ignore
             if "result" in response:
                 return response["result"]
         except AttributeError:
             raise RPCRequestError("Web3 is not connected.")
         raise RPCRequestError(response["error"]["message"])
 
-    def _snap(self) -> Any:
+    def _snap(self) -> int:
         return self._request("evm_snapshot", [])
 
     def _revert(self, id_: int) -> int:
@@ -204,7 +205,7 @@ class Rpc(metaclass=_Singleton):
             raise RPCRequestError("RPC is not active")
         try:
             return EVM_VERSIONS.index(version) <= EVM_VERSIONS.index(  # type: ignore
-                self.evm_version()  # type: ignore
+                self.evm_version()
             )
         except ValueError:
             raise ValueError(f"Unknown EVM version: '{version}'") from None
