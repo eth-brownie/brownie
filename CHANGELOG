@@ -1,3 +1,11 @@
+1.0.1
+-----
+
+ - Bugfixes:
+   - regex pattern for finding contracts in source
+   - string formatting in cli
+   - calling rpc.attach with no port set
+
 1.0.0
 -----
 
