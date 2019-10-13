@@ -38,7 +38,7 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
             if is_connected():
                 if web3.eth.blockNumber != 0:
                     raise ValueError("Local RPC Client has a block height > 0")
-                rpc.attach(active["host"])
+                rpc.attach(host)
             else:
                 rpc.launch(**active["test_rpc"])
         else:
