@@ -24,9 +24,13 @@ def test_attach(no_rpc):
     assert rpc.is_active()
 
 
-# coverage doesn't like killing the attached process
 def test_kill(no_rpc):
     rpc.kill()
     with pytest.raises(SystemError):
         rpc.kill()
     rpc.kill(False)
+
+
+def test_no_port(no_rpc):
+    with pytest.raises(ValueError):
+        rpc.attach("http://127.0.0.1")
