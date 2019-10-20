@@ -9,7 +9,8 @@ For quick reference, the following statements generate an environment and namesp
 .. code-block:: python
 
     from brownie import *
-    project.load('my_projects/token', name="TokenProject")
+    p = project.load('my_projects/token', name="TokenProject")
+    p.load_config()
     from brownie.project.TokenProject import *
     network.connect('development')
 
@@ -31,6 +32,8 @@ Once loaded, the ``Project`` object is available within ``brownie.project``. Thi
     >>> p = project.TokenProject
     >>> p
     <Project object 'TokenProject'>
+    >>> dict(p)
+    {'Token': <ContractContainer object 'Token'>, 'SafeMath': <ContractContainer object 'SafeMath'>}
     >>> p.Token
     <ContractContainer object 'Token'>
 
@@ -51,6 +54,16 @@ Importing with a wildcard will retrieve every available ``ContractContainer``:
     <ContractContainer object 'Token'>
     >>> SafeMath
     <ContractContainer object 'SafeMath'>
+
+Loading Project Config Settings
+===============================
+
+When accessing Brownie via the regular Python interpreter, you must explicitely load configuration settings for a project:
+
+.. code-block:: python
+
+    >>> p = project.TokenProject
+    >>> p.load_config()
 
 Accessing the Network
 =====================
