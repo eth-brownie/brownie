@@ -65,7 +65,7 @@ This will create the following project structure within the folder:
 * ``contracts/``: Contract source code
 * ``scripts/``: Scripts for deployment and interaction
 * ``tests/``: Scripts for testing your project
-* ``brownie-config.json``: :ref:`Configuration file <config>` for the project
+* ``brownie-config.yaml``: :ref:`Configuration file <config>` for the project
 
 You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`__", simple templates to build your project upon. For the examples in this document we will use the `token <https://github.com/brownie-mix/token-mix>`__ mix, which is a very basic ERC-20 implementation:
 

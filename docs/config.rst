@@ -4,11 +4,11 @@
 The Configuration File
 ======================
 
-Every project has a file ``brownie-config.json`` that holds all the configuration settings. The defaut configuration is as follows.
+Every project has a file ``brownie-config.yaml`` that holds all the configuration settings. The defaut configuration is as follows.
 
-.. literalinclude:: ../brownie/data/config.json
+.. literalinclude:: ../brownie/data/config.yaml
     :linenos:
-    :language: json
+    :language: yaml
 
 When using the Brownie console or writing scripts, you can view and edit configuration settings through the ``config`` dict. Any changes made in this way are temporary and will be reset when you exit Brownie or reset the network.
 

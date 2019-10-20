@@ -33,7 +33,7 @@ Project Methods
 
 .. py:classmethod:: Project.load_config() -> None
 
-    Updates the configuration settings from the ``brownie-config.json`` file within this project's root folder.
+    Updates the configuration settings from the ``brownie-config.yaml`` file within this project's root folder.
 
 .. py:classmethod:: Project.close(raises: bool = True) -> None
 

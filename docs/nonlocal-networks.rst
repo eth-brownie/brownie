@@ -24,7 +24,7 @@ Network Configuration
 Defining Non-Local Networks
 ---------------------------
 
-The connection settings for non-local networks must be defined in ``brownie-config.json``.
+The connection settings for non-local networks must be defined in ``brownie-config.yaml``.
 
 First, for each network you want to configure, create a new section in the network.networks section as below:
 
@@ -66,7 +66,7 @@ Launching and Connecting to Networks
 Using the CLI
 -------------
 
-By default, Brownie will connect to whichever network is set as "default" in ``brownie-config.json``. To connect to a different network, use the ``--network`` flag:
+By default, Brownie will connect to whichever network is set as "default" in ``brownie-config.yaml``. To connect to a different network, use the ``--network`` flag:
 
 ::
 

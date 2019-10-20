@@ -1,0 +1,56 @@
+# Brownie configuration file
+# https://eth-brownie.readthedocs.io/en/latest/config.html
+network:
+    default: development # the default network that brownie connects to
+    settings:
+        gas_limit: false
+        gas_price: false
+        reverting_tx_gas_limit: false  # if false, reverting tx's will raise without broadcasting
+    networks:
+        # any settings given here will replace the defaults
+        development:
+            host: http://127.0.0.1
+            reverting_tx_gas_limit: 6721975
+            test_rpc:
+                cmd: ganache-cli
+                port: 8545
+                gas_limit: 6721975
+                accounts: 10
+                evm_version: petersburg
+                mnemonic: brownie
+        # set your Infura API token to the environment variable WEB3_INFURA_PROJECT_ID
+        mainnet:
+            host: https://mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        goerli:
+            host: https://goerli.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        kovan:
+            host: https://kovan.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        rinkeby:
+            host: https://rinkeby.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        ropsten:
+            host: https://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+pytest:
+    # these settings replace the defaults when running pytest
+    gas_limit: 6721975
+    default_contract_owner: false
+    reverting_tx_gas_limit: 6721975
+    revert_traceback: false
+compiler:
+    solc:
+        version: null
+        evm_version: null
+        optimize: true
+        runs: 200
+        minify_source: false
+colors:
+    key:
+    value: bright blue
+    callable: bright cyan
+    module: bright blue
+    contract: bright magenta
+    contract_method: bright magenta
+    string: bright magenta
+    dull: dark white
+    error: bright red
+    success: bright green
+    pending: bright yellow
