@@ -39,6 +39,7 @@ if brownie.project.check_for_project("."):
 
     # load project and generate dynamic fixtures
     project = brownie.project.load()
+    project.load_config()
     for container in project:
         globals()[container._name] = _generate_fixture(container)
 
