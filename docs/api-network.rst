@@ -613,11 +613,10 @@ ContractContainer Attributes
 ContractContainer Methods
 *************************
 
-.. py:classmethod:: ContractContainer.deploy(account, *args)
+.. py:classmethod:: ContractContainer.deploy(*args)
 
     Deploys the contract.
 
-    * ``account``: An ``Account`` instance to deploy the contract from.
     * ``*args``: Contract constructor arguments.
 
     You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
@@ -634,7 +633,7 @@ ContractContainer Methods
         []
         >>> Token.deploy
         <ContractConstructor object 'Token.constructor(string,string,uint256,uint256)'>
-        >>> t = Token.deploy(accounts[1], "Test Token", "TST", 18, "1000 ether")
+        >>> t = Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[1]})
 
         Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
         Transaction confirmed - block: 1   gas spent: 594186

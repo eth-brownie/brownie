@@ -98,7 +98,7 @@ To deploy a contract, include the deploying ``Account`` as the first argument fo
     []
     >>> Token.deploy
     <ContractConstructor object 'Token.constructor(string _symbol, string _name, uint256 _decimals, uint256 _totalSupply)'>
-    >>> t = Token.deploy(accounts[1], "Test Token", "TST", 18, "1000 ether")
+    >>> t = Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[1]})
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
     Transaction confirmed - block: 1   gas spent: 594186
