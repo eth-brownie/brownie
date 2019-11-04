@@ -39,6 +39,19 @@ matrix:
         - python setup.py install
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
       script: python -m pytest tests/ --cov=brownie/ -p no:pytest-brownie
+    - name: "Standard Tests - Python 3.8.0 on Xenial Linux"
+      language: python
+      python: 3.8
+      dist: xenial
+      sudo: true
+      install:
+        - sudo add-apt-repository -y ppa:ethereum/ethereum
+        - sudo add-apt-repository -y ppa:deadsnakes/ppa
+        - sudo apt-get update
+        - sudo apt-get install -y python3.8-dev python3.8-tk npm solc
+        - npm -g install ganache-cli
+        - python -m pip install -r requirements-dev.txt
+      script: tox -e py38
     - name: "Brownie Mix Tests - Python 3.6.8 on Xenial Linux"
       language: python
       python: 3.6
