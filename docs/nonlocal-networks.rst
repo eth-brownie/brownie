@@ -28,18 +28,12 @@ The connection settings for non-local networks must be defined in ``brownie-conf
 
 First, for each network you want to configure, create a new section in the network.networks section as below:
 
-.. code-block:: javascript
+.. code-block:: yaml
 
-    "networks": {
-        .
-        .
-        "ropsten": {
-            "host": "http://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID"
-        }
-        "rinkeby":...
-        .
-        .
-    }
+    network:
+        networks:
+            ropsten:
+                host: http://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID
 
 If using Infura, you can provide your project ID key as an environment variable or by modifying the ``hosts`` setting in the configuration file.
 
@@ -52,13 +46,10 @@ Setting the Default Network
 
 To modify the default network that Brownie connects to, update the network.default field as shown below:
 
-.. code-block:: javascript
+.. code-block:: yaml
 
-    "network": {
-        "default": "ropsten",
-        .
-        .
-    }
+    network:
+        default: ropsten
 
 Launching and Connecting to Networks
 ====================================
