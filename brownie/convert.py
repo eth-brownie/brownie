@@ -152,7 +152,7 @@ def _address_compare(a: Any, b: Any) -> bool:
 
 def to_address(value: str) -> str:
     """Convert a value to an address"""
-    if type(value) in (bytes, HexBytes):
+    if isinstance(value, bytes):
         value = HexBytes(value).hex()
     value = eth_utils.add_0x_prefix(str(value))
     try:
@@ -210,24 +210,22 @@ def to_bytes(value: Any, type_: str = "bytes32") -> bytes:
 
 def bytes_to_hex(value: Any) -> str:
     """Convert a bytes value to a hexstring"""
-    if type(value) not in (bytes, HexBytes, HexString, str, int):
-        raise TypeError(f"Cannot convert {type(value)} '{value}' from bytes to hex.")
-    if type(value) in (bytes, HexBytes):
-        value = HexBytes(value).hex()
-    if type(value) is int:
-        value = hex(value)
-    if not eth_utils.is_hex(value):
-        raise ValueError(f"'{value}' is not a valid hex string")
-    return eth_utils.add_0x_prefix(value)
+    if isinstance(value, bytes):
+        return HexBytes(value).hex()
+    if isinstance(value, int):
+        return hex(value)
+    if isinstance(value, str) and eth_utils.is_hex(value):
+        return eth_utils.add_0x_prefix(value)
+    raise ValueError(f"Cannot convert {type(value)} '{value}' to a hex string.")
 
 
 def to_bool(value: Any) -> bool:
     """Convert a value to a boolean"""
-    if type(value) not in (int, float, bool, bytes, HexBytes, str):
+    if not isinstance(value, (int, float, bool, bytes, str)):
         raise TypeError(f"Cannot convert {type(value)} '{value}' to bool")
-    if type(value) in (bytes, HexBytes):
+    if isinstance(value, bytes):
         value = HexBytes(value).hex()
-    if type(value) is str and value[:2] == "0x":
+    if isinstance(value, str) and value.startswith("0x"):
         value = int(value, 16)
     if value not in (0, 1, True, False):
         raise ValueError(f"Cannot convert {type(value)} '{value}' to bool")
@@ -236,7 +234,7 @@ def to_bool(value: Any) -> bool:
 
 def to_string(value: Any) -> str:
     """Convert a value to a string"""
-    if type(value) in (bytes, HexBytes):
+    if isinstance(value, bytes):
         value = HexBytes(value).hex()
     value = str(value)
     if value.startswith("0x") and eth_utils.is_hex(value):
@@ -395,20 +393,20 @@ class ReturnValue(tuple):
 
 
 def _kwargtuple_compare(a: Any, b: Any) -> Any:
-    if type(a) not in (tuple, list, ReturnValue):
+    if not isinstance(a, (tuple, list, ReturnValue)):
         types_ = set([type(a), type(b)])
         if types_.intersection([bool, type(None)]):
             return a is b
         if types_.intersection([dict, EthAddress, HexString]):
             return a == b
         return _convert_str(a) == _convert_str(b)
-    if type(b) not in (tuple, list, ReturnValue) or len(b) != len(a):
+    if not isinstance(b, (tuple, list, ReturnValue)) or len(b) != len(a):
         return False
     return next((False for i in range(len(a)) if not _kwargtuple_compare(a[i], b[i])), True)
 
 
 def _convert_str(value: Any) -> "Wei":
-    if type(value) is not str:
+    if not isinstance(value, str):
         if not hasattr(value, "address"):
             return value
         value = value.address
