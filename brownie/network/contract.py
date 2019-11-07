@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json
 import re
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
@@ -303,6 +304,18 @@ class ProjectContract(_DeployedContractBase):
         _ContractBase.__init__(self, project, build, build["contractName"], build["abi"])
         _DeployedContractBase.__init__(self, address, owner, tx)
         _add_contract(self)
+        self._save_deployment()
+
+    def _save_deployment(self):
+        if not CONFIG["active_network"]["persist"] or not self._project._project_path:
+            return
+        network = CONFIG["active_network"]["name"]
+        path = self._project._project_path.joinpath(f"build/deployments/{network}")
+        path.mkdir(exist_ok=True)
+        path = path.joinpath(f"{self.address}.json")
+        if not path.exists():
+            with path.joinpath(f"{self.address}.json").open("w") as fp:
+                json.dump(self._build, fp)
 
 
 class OverloadedMethod:

@@ -23,7 +23,15 @@ from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.sources import Sources, get_hash
 from brownie.utils import color
 
-FOLDERS = ["contracts", "scripts", "reports", "tests", "build", "build/contracts"]
+FOLDERS = [
+    "contracts",
+    "scripts",
+    "reports",
+    "tests",
+    "build",
+    "build/contracts",
+    "build/deployments",
+]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 
 _loaded_projects = []
