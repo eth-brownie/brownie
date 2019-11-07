@@ -10,6 +10,7 @@ from abi2solc import generate_interface
 from ethpm.package import resolve_uri_contents
 
 from brownie._config import CONFIG
+from brownie.convert import to_address
 from brownie.network.web3 import _resolve_address, web3
 
 from . import compiler
@@ -61,7 +62,7 @@ def get_manifest(uri: str) -> Dict:
 
     # resolve package dependencies
     for dependency_uri in manifest.pop("build_dependencies", {}).values():
-        dependency_manifest = resolve_uri_contents(dependency_uri)
+        dependency_manifest = get_manifest(dependency_uri)
         for key in ("sources", "contract_types"):
             for k in [i for i in manifest[key] if i in dependency_manifest[key]]:
                 if manifest[key][k] != dependency_manifest[key][k]:
@@ -85,9 +86,22 @@ def get_manifest(uri: str) -> Dict:
         no_source = list(manifest["contract_types"].keys())
 
     # delete contracts with no source or ABI, we can't do much with them
-    for contract_name in no_source:
-        if "abi" not in manifest["contract_types"][contract_name]:
-            del manifest["contract_types"][contract_name]
+    for name in no_source:
+        if "abi" not in manifest["contract_types"][name]:
+            del manifest["contract_types"][name]
+
+    # resolve or delete deployments
+    for chain_uri in list(manifest["deployments"]):
+        deployments = manifest["deployments"][chain_uri]
+        for name in list(deployments):
+            deployments[name]["address"] = to_address(deployments[name]["address"])
+            alias = deployments[name]["contract_type"]
+            alias = alias[alias.rfind(":") + 1 :]
+            deployments[name]["contract_type"] = alias
+            if alias not in manifest["contract_types"]:
+                del deployments[name]
+        if not deployments:
+            del manifest["deployments"][chain_uri]
 
     if path is not None:
         with path.open("w") as fp:
@@ -95,11 +109,20 @@ def get_manifest(uri: str) -> Dict:
     return manifest
 
 
-def get_deployed_contract_address(manifest: Dict, contract_name: str) -> Optional[str]:
-    for key, value in manifest["deployments"].items():
-        if key.startswith(f"blockchain://{web3.genesis_hash}") and contract_name in value:
-            return value[contract_name]["address"]
-    return None
+def get_deployment_addresses(
+    manifest: Dict, contract_name: str, genesis_hash: Optional[str] = None
+) -> List:
+    if genesis_hash is None:
+        genesis_hash = web3.genesis_hash
+    chain_uri = f"blockchain://{genesis_hash}"
+    key = next((i for i in manifest["deployments"] if i.startswith(chain_uri)), None)
+    if key is None:
+        return []
+    return [
+        v["address"]
+        for v in manifest["deployments"][key].values()
+        if manifest["contract_types"][v["contract_type"]] == contract_name
+    ]
 
 
 def resolve_ethpm_imports(contract_sources: Dict[str, str]) -> Tuple[Dict[str, str], List]:

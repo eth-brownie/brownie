@@ -15,7 +15,7 @@ from brownie.exceptions import (
     UndeployedLibrary,
     VirtualMachineError,
 )
-from brownie.project.ethpm import get_deployed_contract_address, get_manifest
+from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
@@ -275,12 +275,19 @@ class Contract(_DeployedContractBase):
             manifest = get_manifest(manifest_uri)
             abi = manifest["contract_types"][name]["abi"]
             if address is None:
-                address = get_deployed_contract_address(manifest, name)
-                if address is None:
+                address_list = get_deployment_addresses(manifest, name)
+                if not address_list:
                     raise ContractNotFound(
                         f"'{manifest['package_name']}' manifest does not contain"
-                        f"a deployment of '{name}' on this chain"
+                        f" a deployment of '{name}' on this chain"
                     )
+                if len(address_list) > 1:
+                    raise ValueError(
+                        f"'{manifest['package_name']}' manifest contains more than one "
+                        f"deployment of '{name}' on this chain, you must specify an address:"
+                        f" {', '.join(address_list)}"
+                    )
+                address = address_list[0]
         elif not address:
             raise TypeError("Address cannot be None unless creating object from manifest")
 

@@ -15,7 +15,7 @@ from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.network.contract import ContractContainer
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
-from brownie.project.ethpm import get_deployed_contract_address, get_manifest
+from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_hash
 from brownie.utils import color
 
@@ -308,8 +308,7 @@ def from_ethpm(uri: str) -> "TempProject":
     }
     project = TempProject(manifest["package_name"], manifest["sources"], compiler_config)
     for contract_name in project.keys():
-        address = get_deployed_contract_address(manifest, contract_name)
-        if address:
+        for address in get_deployment_addresses(manifest, contract_name):
             project[contract_name].at(address)
     return project
 
