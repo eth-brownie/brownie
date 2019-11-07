@@ -59,6 +59,7 @@ class Web3(_Web3):
 
     @property
     def _mainnet(self) -> _Web3:
+        # a web3 instance connected to the mainnet
         if CONFIG["active_network"]["name"] == "mainnet":
             return self
         if "mainnet" not in CONFIG["network"]["networks"]:
@@ -71,6 +72,7 @@ class Web3(_Web3):
 
     @property
     def genesis_hash(self) -> str:
+        """The genesis hash of the currently active network."""
         if self._genesis_hash is None:
             self._genesis_hash = self.eth.getBlock(0)["hash"].hex()[2:]
         return self._genesis_hash

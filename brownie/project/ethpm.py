@@ -23,6 +23,15 @@ IMPORT_REGEX = r"""(?:^|;)\s*import\s*(?:{[a-zA-Z][-a-zA-Z0-9_]{0,255}}\s*from|)
 
 
 def get_manifest(uri: str) -> Dict:
+
+    """
+    Fetches an ethPM manifest and processes it for use with Brownie.
+    A local copy is also stored if the given URI follows the ERC1319 spec.
+
+    Args:
+        uri: URI location of the manifest. Can be IPFS or ERC1319.
+    """
+
     # uri can be a registry uri or a direct link to ipfs
     if not isinstance(uri, str):
         raise TypeError("EthPM manifest uri must be given as a string")
@@ -50,6 +59,29 @@ def get_manifest(uri: str) -> Dict:
         pm.set_registry(address)
         manifest = pm.get_package(package_name, version).manifest
 
+    if manifest["manifest_version"] != "2":
+        raise InvalidManifest(
+            f"Brownie only supports v2 ethPM manifests, this "
+            f"manifest is v{manifest['manifest_version']}"
+        )
+    manifest = process_manifest(manifest)
+
+    # save a local copy before returning
+    if path is not None:
+        with path.open("w") as fp:
+            json.dump(manifest, fp)
+    return manifest
+
+
+def process_manifest(manifest: Dict) -> Dict:
+
+    """
+    Processes a manifest for use with Brownie.
+
+    Args:
+        manifest: ethPM manifest
+    """
+
     for key in ("contract_types", "deployments", "sources"):
         manifest.setdefault(key, {})
 
@@ -58,8 +90,8 @@ def get_manifest(uri: str) -> Dict:
         content = manifest["sources"].pop(key)
         if _is_uri(content):
             content = resolve_uri_contents(content)
-        key = "ethpm/" + Path("/").joinpath(key.lstrip("./")).resolve().as_posix().lstrip("/")
-        manifest["sources"][key] = content
+        path = Path("/").joinpath(key.lstrip("./")).resolve().as_posix().lstrip("/")
+        manifest["sources"][f"{manifest['package_name']}/{path}"] = content
 
     # resolve package dependencies
     for dependency_uri in manifest.pop("build_dependencies", {}).values():
@@ -104,17 +136,31 @@ def get_manifest(uri: str) -> Dict:
         if not deployments:
             del manifest["deployments"][chain_uri]
 
-    if path is not None:
-        with path.open("w") as fp:
-            json.dump(manifest, fp)
+    manifest["brownie"] = True
     return manifest
 
 
 def get_deployment_addresses(
     manifest: Dict, contract_name: str, genesis_hash: Optional[str] = None
 ) -> List:
+
+    """
+    Parses a manifest and returns a list of deployment addresses for the given contract
+    and chain.
+
+    Args:
+        manifest: ethPM manifest
+        contract_name: Name of the contract
+        genesis_block: Genesis block hash for the chain to return deployments on. If
+                       None, the currently active chain will be used.
+    """
+
     if genesis_hash is None:
         genesis_hash = web3.genesis_hash
+
+    if "brownie" not in manifest:
+        manifest = process_manifest(manifest)
+
     chain_uri = f"blockchain://{genesis_hash}"
     key = next((i for i in manifest["deployments"] if i.startswith(chain_uri)), None)
     if key is None:
@@ -127,6 +173,16 @@ def get_deployment_addresses(
 
 
 def resolve_ethpm_imports(contract_sources: Dict[str, str]) -> Tuple[Dict[str, str], List]:
+
+    """
+    Parses a dict of contract sources for ethPM import statements.
+
+    Args:
+        contract_sources: A dict in the form of {'path': "source code"}
+
+    Returns: Dict of imported contract sources, List of path remappings
+    """
+
     ethpm_sources = {}
     remappings = {}
     for path in list(contract_sources):
@@ -150,7 +206,7 @@ def resolve_ethpm_imports(contract_sources: Dict[str, str]) -> Tuple[Dict[str, s
                     manifest["contract_types"][contract_name], contract_name
                 )
                 continue
-            target = f"ethpm/{target}"
+            target = f"erc1319/{target}"
             source_paths = set(
                 x
                 for i in manifest["contract_types"].values()
