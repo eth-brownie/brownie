@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
+import json
 import os
+import time
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -12,8 +14,6 @@ from web3 import WebsocketProvider
 from brownie._config import CONFIG
 from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
-
-_ens_cache: Dict = {}
 
 
 class Web3(_Web3):
@@ -85,37 +85,54 @@ def _expand_environment_vars(uri: str) -> str:
     raise ValueError(f"Unable to expand environment variable in host setting: '{uri}'")
 
 
+def _get_path() -> Path:
+    return CONFIG["brownie_folder"].joinpath("data/ens.json")
+
+
 def _resolve_address(domain: str) -> str:
+    # convert ENS domain to address
     if not isinstance(domain, str) or "." not in domain:
         return to_address(domain)
     domain = domain.lower()
-    if domain not in _ens_cache:
+    if domain not in _ens_cache or time.time() - _ens_cache[domain][1] > 86400:
         try:
             ns = ENS.fromWeb3(web3._mainnet)
         except MainnetUndefined as e:
             raise MainnetUndefined(f"Cannot resolve ENS address - {e}") from None
         address = ns.address(domain)
-        _ens_cache[domain] = address
-    if _ens_cache[domain] is None:
+        _ens_cache[domain] = [address, int(time.time())]
+        if address is not None:
+            _ens_cache[address] = [domain, int(time.time())]
+        with _get_path().open("w") as fp:
+            json.dump(_ens_cache, fp)
+    if _ens_cache[domain][0] is None:
         raise UnsetENSName(f"ENS domain '{domain}' is not set")
-    _ens_cache[address] = domain
     return _ens_cache[domain]
 
 
 def _resolve_domain(address: str) -> str:
+    # convert address to ENS domain
     address = to_address(address)
-    if address not in _ens_cache:
+    if address not in _ens_cache or time.time() - _ens_cache[address][1] > 86400:
         try:
             ns = ENS.fromWeb3(web3._mainnet)
         except MainnetUndefined as e:
             raise MainnetUndefined(f"Cannot resolve ENS address - {e}") from None
         domain = ns.name(address)
-        _ens_cache[address] = domain
+        _ens_cache[address] = [domain, int(time.time())]
         if domain is not None:
-            _ens_cache[domain] = address
-    if _ens_cache[address] is None:
+            _ens_cache[domain] = [address, int(time.time())]
+        with _get_path().open("w") as fp:
+            json.dump(_ens_cache, fp)
+    if _ens_cache[address][0] is None:
         raise UnsetENSName(f"Address '{address}' does not resolve to an ENS domain")
     return _ens_cache[address]
 
 
 web3 = Web3()
+
+try:
+    with _get_path().open() as fp:
+        _ens_cache: Dict = json.load(fp)
+except (FileNotFoundError, json.decoder.JSONDecodeError):
+    _ens_cache = {}
