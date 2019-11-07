@@ -118,3 +118,11 @@ class IncompatibleSolcVersion(Exception):
 
 class PragmaError(Exception):
     pass
+
+
+class InvalidManifest(Exception):
+    pass
+
+
+class InvalidErc1319Import(Exception):
+    pass

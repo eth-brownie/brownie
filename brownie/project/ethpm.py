@@ -11,6 +11,7 @@ from ethpm.package import resolve_uri_contents
 
 from brownie._config import CONFIG
 from brownie.convert import to_address
+from brownie.exceptions import InvalidErc1319Import, InvalidManifest
 from brownie.network.web3 import _resolve_address, web3
 
 from . import compiler
@@ -66,7 +67,7 @@ def get_manifest(uri: str) -> Dict:
         for key in ("sources", "contract_types"):
             for k in [i for i in manifest[key] if i in dependency_manifest[key]]:
                 if manifest[key][k] != dependency_manifest[key][k]:
-                    raise AttributeError("Namespace collision between package dependencies")
+                    raise InvalidManifest("Namespace collision between package dependencies")
             manifest[key].update(dependency_manifest.get(key, {}))
 
     # if manifest doesn't include an ABI, generate one
@@ -135,10 +136,15 @@ def resolve_ethpm_imports(contract_sources: Dict[str, str]) -> Tuple[Dict[str, s
 
             type_, target = key_path.split("/", maxsplit=1)
             if type_ not in ("contract_types", "sources"):
-                raise
+                raise InvalidErc1319Import(
+                    f"{import_str} - Path must begin with sources or contract_types, not '{type_}'"
+                )
             if type_ == "contract_types":
                 if not target.endswith("/abi"):
-                    raise
+                    raise InvalidErc1319Import(
+                        f"{import_str} - Path must be in the form of "
+                        "/contract_types/[CONTRACT_NAME]/abi"
+                    )
                 contract_name = target[:-4]
                 ethpm_sources[import_str] = generate_interface(
                     manifest["contract_types"][contract_name], contract_name
@@ -151,6 +157,8 @@ def resolve_ethpm_imports(contract_sources: Dict[str, str]) -> Tuple[Dict[str, s
                 for x in i["all_source_paths"]
                 if i["source_path"] == target
             )
+            if not source_paths:
+                raise InvalidErc1319Import(f"{import_str} - Manifest does not contain {target}")
 
             for source_path in source_paths:
                 ethpm_sources[source_path] = manifest["sources"][source_path]
