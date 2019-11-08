@@ -5,11 +5,13 @@ network:
     settings:
         gas_limit: false
         gas_price: false
+        persist: true
         reverting_tx_gas_limit: false  # if false, reverting tx's will raise without broadcasting
     networks:
         # any settings given here will replace the defaults
         development:
             host: http://127.0.0.1
+            persist: false
             reverting_tx_gas_limit: 6721975
             test_rpc:
                 cmd: ganache-cli

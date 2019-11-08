@@ -6,6 +6,9 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Added
+- `ProjectContract` objects persist between sessions (when enabled in the config file)
+
 ### Fixed
 - use `isinstance` instead of `type` for conversions, fixes hexstring comparison bug
 - pretty printing for more objects in the console

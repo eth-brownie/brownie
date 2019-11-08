@@ -2,11 +2,12 @@
 
 from typing import Optional, Tuple, Union
 
+from brownie import project
 from brownie._config import CONFIG, _modify_network_config
 from brownie.convert import Wei
 
 from .account import Accounts
-from .rpc import Rpc
+from .rpc import Rpc, _notify_registry
 from .web3 import web3
 
 rpc = Rpc()
@@ -43,6 +44,9 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
                 rpc.launch(**active["test_rpc"])
         else:
             Accounts()._reset()
+        if CONFIG["active_network"]["persist"]:
+            for p in project.get_loaded_projects():
+                p._load_deployments()
 
     except Exception:
         CONFIG["active_network"] = {"name": None}
@@ -61,6 +65,7 @@ def disconnect(kill_rpc: bool = True) -> None:
         else:
             rpc.reset()
     web3.disconnect()
+    _notify_registry(0)
 
 
 def show_active() -> Optional[str]:

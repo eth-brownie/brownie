@@ -536,6 +536,10 @@ If you wish to interact with a contract outside of a project where only the ABI 
 
 Arguments supplied to calls or transaction methods are converted using the methods outlined in the :ref:`convert<api-brownie-convert>` module.
 
+.. note::
+
+    On networks where persistence is enabled, ``ProjectContract`` instances will remain between sessions. Use ``ContractContainer.remove`` to delete these objects when they are no longer needed. See :ref:`nonlocal-networks-interacting` for more information.
+
 .. _api-network-contractcontainer:
 
 ContractContainer
@@ -621,7 +625,7 @@ ContractContainer Methods
 
     You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
-    If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``IndexError`` is raised.
+    If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``UndeployedLibrary`` exception is raised.
 
     Returns a ``ProjectContract`` object upon success.
 
