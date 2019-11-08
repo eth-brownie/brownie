@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 ### Fixed
 - use `isinstance` instead of `type` for conversions, fixes hexstring comparison bug
+- pretty printing for more objects in the console
+- properly display `SyntaxError` in console when there is no source highlight
 
 ## [1.1.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.1.0) - 2019-11-04
 ### Added
