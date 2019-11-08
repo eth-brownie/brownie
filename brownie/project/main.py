@@ -19,6 +19,7 @@ from brownie._config import (
 )
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.network.contract import ContractContainer, ProjectContract
+from brownie.network.state import _remove_contract
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.sources import Sources, get_hash
@@ -147,6 +148,7 @@ class Project(_ProjectBase):
         self._compiler_config["version"] = solc_version
         self._compile(changed, self._compiler_config, False)
         self._create_containers()
+        self._load_deployments()
 
         # add project to namespaces, apply import blackmagic
         name = self._name
@@ -186,7 +188,7 @@ class Project(_ProjectBase):
         )
 
     def _load_deployments(self) -> None:
-        if not CONFIG["active_network"]["persist"] or self._project_path is None:
+        if not CONFIG["active_network"].get("persist", None) or self._project_path is None:
             return
         network = CONFIG["active_network"]["name"]
         path = self._project_path.joinpath(f"build/deployments/{network}")
@@ -232,6 +234,13 @@ class Project(_ProjectBase):
                 if v == self or (k in self and v == self[k])  # type: ignore
             ]:
                 del dict_[key]
+
+        # remove contracts
+        for contract in [x for v in self._containers.values() for x in v._contracts]:
+            _remove_contract(contract)
+        for container in self._containers.values():
+            container._contracts.clear()
+        self._containers.clear()
 
         # undo black-magic
         name = self._name
