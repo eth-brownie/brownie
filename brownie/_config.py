@@ -6,6 +6,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import yaml
+
 from brownie._singleton import _Singleton
 
 REPLACE = ["active_network", "networks"]
@@ -52,7 +54,24 @@ class ConfigDict(dict):
         return config_copy
 
 
-def _load_json(path: Path) -> Dict:
+def _get_project_config_path(project_path: Path):
+    if project_path.is_dir():
+        path = project_path.joinpath("brownie-config")
+    else:
+        path = project_path
+    suffix = next((i for i in (".yml", ".yaml", ".json") if path.with_suffix(i).exists()), None)
+    if suffix is not None:
+        return path.with_suffix(suffix)
+    return None
+
+
+def _load_config(project_path: Path) -> Dict:
+    # Loads configuration data from a file, returns as a dict
+    path = _get_project_config_path(project_path)
+    if path is None:
+        raise ValueError("Project does not exist!")
+    if path.suffix in (".yaml", ".yml"):
+        return yaml.safe_load(path.open())
     with path.open() as fp:
         raw_json = fp.read()
     valid_json = re.sub(r'\/\/[^"]*?(?=\n|$)', "", raw_json)
@@ -60,25 +79,17 @@ def _load_json(path: Path) -> Dict:
 
 
 def _load_default_config() -> "ConfigDict":
-    """Loads the default configuration settings from brownie/data/config.json"""
+    # Loads the default configuration settings from brownie/data/config.yaml
     brownie_path = Path(__file__).parent
-    path = brownie_path.joinpath("data/config.json")
-    config = _Singleton("Config", (ConfigDict,), {})(_load_json(path))  # type: ignore
+    path = brownie_path.joinpath("data/config.yaml")
+    config = _Singleton("Config", (ConfigDict,), {})(_load_config(path))  # type: ignore
     config.update({"active_network": {"name": None}, "brownie_folder": brownie_path})
     return config
 
 
-def _get_project_config_file(project_path: Path) -> Dict:
-    project_path = Path(project_path)
-    if not project_path.exists():
-        raise ValueError("Project does not exist!")
-    config_path: Path = Path(project_path).joinpath("brownie-config.json")
-    return _load_json(config_path)
-
-
 def _load_project_config(project_path: Path) -> None:
-    """Loads configuration settings from a project's brownie-config.json"""
-    config_data = _get_project_config_file(project_path)
+    # Loads configuration settings from a project's brownie-config.yaml
+    config_data = _load_config(project_path.joinpath("brownie-config"))
     CONFIG._unlock()
     _recursive_update(CONFIG, config_data, [])
     CONFIG.setdefault("active_network", {"name": None})
@@ -88,7 +99,7 @@ def _load_project_config(project_path: Path) -> None:
 def _load_project_compiler_config(project_path: Optional[Path], compiler: str) -> Dict:
     if not project_path:
         return CONFIG["compiler"][compiler]
-    config_data = _get_project_config_file(project_path)
+    config_data = _load_config(project_path.joinpath("brownie-config"))
     return config_data["compiler"][compiler]
 
 
@@ -116,8 +127,8 @@ def _modify_network_config(network: str = None) -> Dict:
         CONFIG._lock()
 
 
-# merges project .json with brownie .json
 def _recursive_update(original: Dict, new: Dict, base: List) -> None:
+    # merges project config with brownie default config
     for k in new:
         if type(new[k]) is dict and k in REPLACE:
             original[k] = new[k]

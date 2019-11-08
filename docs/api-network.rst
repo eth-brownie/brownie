@@ -13,7 +13,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
 
 .. py:method:: main.connect(network: str = None, launch_rpc: bool = True) -> None
 
-    Connects to the network.  Network settings are retrieved from ``brownie-config.json``
+    Connects to the network.  Network settings are retrieved from ``brownie-config.yaml``
 
     * ``network``: The network to connect to. If ``None``, connects to the default network as specified in the config file.
     * ``launch_rpc``: If ``True`` and the configuration for this network includes ``test_rpc`` settings, attempts to launch or attach to a local RPC client. See :ref:`test-rpc` for detailed information on the sequence of events in this process.
@@ -536,6 +536,10 @@ If you wish to interact with a contract outside of a project where only the ABI 
 
 Arguments supplied to calls or transaction methods are converted using the methods outlined in the :ref:`convert<api-brownie-convert>` module.
 
+.. note::
+
+    On networks where persistence is enabled, ``ProjectContract`` instances will remain between sessions. Use ``ContractContainer.remove`` to delete these objects when they are no longer needed. See :ref:`nonlocal-networks-interacting` for more information.
+
 .. _api-network-contractcontainer:
 
 ContractContainer
@@ -613,16 +617,15 @@ ContractContainer Attributes
 ContractContainer Methods
 *************************
 
-.. py:classmethod:: ContractContainer.deploy(account, *args)
+.. py:classmethod:: ContractContainer.deploy(*args)
 
     Deploys the contract.
 
-    * ``account``: An ``Account`` instance to deploy the contract from.
     * ``*args``: Contract constructor arguments.
 
     You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
-    If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``IndexError`` is raised.
+    If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``UndeployedLibrary`` exception is raised.
 
     Returns a ``ProjectContract`` object upon success.
 
@@ -634,7 +637,7 @@ ContractContainer Methods
         []
         >>> Token.deploy
         <ContractConstructor object 'Token.constructor(string,string,uint256,uint256)'>
-        >>> t = Token.deploy(accounts[1], "Test Token", "TST", 18, "1000 ether")
+        >>> t = Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[1]})
 
         Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
         Transaction confirmed - block: 1   gas spent: 594186

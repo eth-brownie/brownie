@@ -322,7 +322,7 @@ Let's look at the sequence of events, starting from the teardown of ``test_chain
 Coverage Evaluation
 ===================
 
-Test coverage is calculated by generating a map of opcodes associated with each statement and branch of the source code, and then analyzing the stack trace of each transaction to see which opcodes executed.
+Test coverage is calculated by generating a map of opcodes associated with each statement and branch of the source code, and then analyzing the stack trace of each transaction to see which opcodes executed. See `"Evaluating Solidity Code Coverage via Opcode Tracing" <https://medium.com/coinmonks/brownie-evaluating-solidity-code-coverage-via-opcode-tracing-a7cf5a92d28c>`_ for a more detailed explanation of how coverage evaluation works.
 
 During coverage analysis, all contract calls are executed as transactions. This gives a more accurate coverage picture by allowing analysis of methods that are typically non-state changing. A snapshot is taken before each of these calls-as-transactions and the state is reverted immediately after, to ensure that the outcome of the test is not affected. For tests that involve many calls this can result in significantly slower execution time.
 
@@ -446,18 +446,15 @@ Brownie outputs a % score for each contract method that you can use to quickly g
 Configuration Settings
 ======================
 
-The following test configuration settings are available in ``brownie-config.json``. These settings affect the behaviour of your tests.
+The following test configuration settings are available in ``brownie-config.yaml``. These settings affect the behaviour of your tests.
 
-.. code-block:: javascript
+.. code-block:: yaml
 
-    {
-        "test": {
-            "gas_limit": 6721975,
-            "reverting_tx_gas_limit": 6721975,
-            "default_contract_owner": false,
-            "revert_traceback": false
-        }
-    }
+    pytest:
+        gas_limit: 6721975
+        default_contract_owner: false
+        reverting_tx_gas_limit: 6721975
+        revert_traceback: false
 
 .. py:attribute:: gas_limit
 

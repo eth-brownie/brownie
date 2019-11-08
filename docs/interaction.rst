@@ -88,7 +88,9 @@ Deploying
 
 Each deployable contract and library has a :ref:`api-network-contractcontainer` class, used to deploy new contracts and access already existing ones.
 
-To deploy a contract, include the deploying ``Account`` as the first argument followed by the constructor arguments. A :ref:`api-network-contract` object is returned, and also appended to the ``ContractContainer``.
+To deploy a contract, call the ``ContractContainer.deploy`` method with the constructor arguments, with a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. The dictionary must include a ``from`` value that specifies the ``Account`` to deploy the contract from.
+
+A :ref:`Contract <api-network-contract>` object is returned and also appended to the ``ContractContainer``.
 
 .. code-block:: python
 
@@ -98,7 +100,7 @@ To deploy a contract, include the deploying ``Account`` as the first argument fo
     []
     >>> Token.deploy
     <ContractConstructor object 'Token.constructor(string _symbol, string _name, uint256 _decimals, uint256 _totalSupply)'>
-    >>> t = Token.deploy(accounts[1], "Test Token", "TST", 18, "1000 ether")
+    >>> t = Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[1]})
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
     Transaction confirmed - block: 1   gas spent: 594186

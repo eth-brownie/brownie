@@ -65,7 +65,7 @@ This will create the following project structure within the folder:
 * ``contracts/``: Contract source code
 * ``scripts/``: Scripts for deployment and interaction
 * ``tests/``: Scripts for testing your project
-* ``brownie-config.json``: :ref:`Configuration file <config>` for the project
+* ``brownie-config.yaml``: :ref:`Configuration file <config>` for the project
 
 You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`__", simple templates to build your project upon. For the examples in this document we will use the `token <https://github.com/brownie-mix/token-mix>`__ mix, which is a very basic ERC-20 implementation:
 
@@ -153,7 +153,7 @@ Here is an example of deploying a contract:
     []
     >>> Token.deploy
     <ContractConstructor object 'Token.constructor(string _symbol, string _name, uint256 _decimals, uint256 _totalSupply)'>
-    >>> t = Token.deploy(accounts[1], "Test Token", "TST", 18, "1000 ether")
+    >>> t = Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[1]})
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
     Transaction confirmed - block: 1   gas spent: 594186

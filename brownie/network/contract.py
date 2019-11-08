@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
+import json
 import re
+from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import eth_abi
@@ -71,8 +73,7 @@ class ContractContainer(_ContractBase):
 
     def __delitem__(self, key: Any) -> None:
         item = self._contracts[key]
-        _remove_contract(item)
-        self._contracts.remove(item)
+        self.remove(item)
 
     def __len__(self) -> int:
         return len(self._contracts)
@@ -82,6 +83,7 @@ class ContractContainer(_ContractBase):
 
     def _reset(self) -> None:
         for contract in self._contracts:
+            contract._delete_deployment()
             _remove_contract(contract)
             contract._reverted = True
         self._contracts.clear()
@@ -93,8 +95,9 @@ class ContractContainer(_ContractBase):
             if (i.tx and i.tx.block_number > height) or len(web3.eth.getCode(i.address).hex()) <= 4
         ]
         for contract in reverted:
-            _remove_contract(contract)
             self._contracts.remove(contract)
+            contract._delete_deployment()
+            _remove_contract(contract)
             contract._reverted = True
 
     def remove(self, contract: "ProjectContract") -> None:
@@ -105,6 +108,7 @@ class ContractContainer(_ContractBase):
         if contract not in self._contracts:
             raise TypeError("Object is not in container.")
         self._contracts.remove(contract)
+        contract._delete_deployment()
         _remove_contract(contract)
 
     def at(
@@ -310,15 +314,35 @@ class ProjectContract(_DeployedContractBase):
 
     def __init__(
         self,
-        project: "_DeployedContractBase",
+        project: Any,
         build: Dict,
         address: str,
-        owner: Optional[AccountsType],
+        owner: Optional[AccountsType] = None,
         tx: TransactionReceiptType = None,
     ) -> None:
         _ContractBase.__init__(self, project, build, build["contractName"], build["abi"])
         _DeployedContractBase.__init__(self, address, owner, tx)
         _add_contract(self)
+        self._save_deployment()
+
+    def _deployment_path(self) -> Optional[Path]:
+        if not CONFIG["active_network"].get("persist", None) or not self._project._project_path:
+            return None
+        network = CONFIG["active_network"]["name"]
+        path = self._project._project_path.joinpath(f"build/deployments/{network}")
+        path.mkdir(exist_ok=True)
+        return path.joinpath(f"{self.address}.json")
+
+    def _save_deployment(self) -> None:
+        path = self._deployment_path()
+        if path and not path.exists():
+            with path.open("w") as fp:
+                json.dump(self._build, fp)
+
+    def _delete_deployment(self) -> None:
+        path = self._deployment_path()
+        if path and path.exists():
+            path.unlink()
 
 
 class OverloadedMethod:

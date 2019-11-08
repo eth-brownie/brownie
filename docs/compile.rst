@@ -17,19 +17,16 @@ Each time the compiler runs, Brownie compares hashes of the contract source code
 Compiler Settings
 =================
 
-Settings for the compiler are found in ``brownie-config.json``:
+Settings for the compiler are found in ``brownie-config.yaml``:
 
-.. code-block:: javascript
+.. code-block:: yaml
 
-    {
-        "solc":{
-            "version": "0.5.10",
-            "evm_version": null,
-            "optimize": true,
-            "runs": 200,
-            "minify_source": false
-        }
-    }
+    solc:
+        version: 0.5.10
+        evm_version: null
+        optimize: true
+        runs: 200
+        minify_source: false
 
 Modifying any compiler settings will result in a full recompile of the project.
 

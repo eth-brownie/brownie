@@ -24,22 +24,16 @@ Network Configuration
 Defining Non-Local Networks
 ---------------------------
 
-The connection settings for non-local networks must be defined in ``brownie-config.json``.
+The connection settings for non-local networks must be defined in ``brownie-config.yaml``.
 
 First, for each network you want to configure, create a new section in the network.networks section as below:
 
-.. code-block:: javascript
+.. code-block:: yaml
 
-    "networks": {
-        .
-        .
-        "ropsten": {
-            "host": "http://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID"
-        }
-        "rinkeby":...
-        .
-        .
-    }
+    network:
+        networks:
+            ropsten:
+                host: http://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID
 
 If using Infura, you can provide your project ID key as an environment variable or by modifying the ``hosts`` setting in the configuration file.
 
@@ -52,13 +46,10 @@ Setting the Default Network
 
 To modify the default network that Brownie connects to, update the network.default field as shown below:
 
-.. code-block:: javascript
+.. code-block:: yaml
 
-    "network": {
-        "default": "ropsten",
-        .
-        .
-    }
+    network:
+        default: ropsten
 
 Launching and Connecting to Networks
 ====================================
@@ -66,7 +57,7 @@ Launching and Connecting to Networks
 Using the CLI
 -------------
 
-By default, Brownie will connect to whichever network is set as "default" in ``brownie-config.json``. To connect to a different network, use the ``--network`` flag:
+By default, Brownie will connect to whichever network is set as "default" in ``brownie-config.yaml``. To connect to a different network, use the ``--network`` flag:
 
 ::
 
@@ -96,15 +87,46 @@ To disconnect:
     >>> network.is_connected()
     False
 
+.. _nonlocal-networks-interacting:
+
 Interacting with Non-Local Networks
 ===================================
 
 There are several key differences in functionality between using a non-local network as opposed to a local develpment environment.
 
-Rpc
----
+Contracts
+--------
 
-The :ref:`rpc` object is unavailable when working with non-local networks.
+ProjectContract
+***************
+
+By default, Brownie stores information about contract deployments on non-local networks. ``ProjectContract`` instances will persist through the following actions:
+
+* Disconnecting and reconnecting to the same network
+* Closing and reloading a project
+* Exiting and reloading Brownie
+* Modifying a contract's source code - Brownie still retains the source for the deployed version
+
+The following actions will remove locally stored data for a ``ProjectContract``:
+
+* Calling ``ContractContainer.remove`` or ``ContractContainer.clear`` will erase deployment information for the removed ``ProjectContract`` instances.
+* Removing a contract source file from your project (or renaming it) will cause Brownie to delete all deployment information for the removed contract.
+
+You can create a ``ProjectContract`` instance for an already-deployed contract with the :ref:`api-network-contractcontainer`'s ``ContractContainer.at`` method.
+
+See :ref:`config` for information on how to enable or disable persistence.
+
+Contract
+********
+
+The :ref:`Contract<api-network-contract>` class (available as ``brownie.Contract``) is used to interact with already deployed contracts that are not a part of your core project. You will need to provide an ABI as a ``dict`` generated from the compiled contract code.
+
+.. code-block:: python
+
+    >>> Contract('0x79447c97b6543F6eFBC91613C655977806CB18b0', "Token", abi)
+    <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
+
+Once instantiated, all of the usual ``Contract`` attributes and methods can be used to interact with the deployed contract.
 
 Accounts
 --------
@@ -138,19 +160,7 @@ Brownie's :ref:`debugging tools<debug>` rely upon the `debug_traceTransaction <h
 * ``TransactionReceipt.traceback``
 * ``TransactionReceipt.source``
 
-Contracts
----------
+Rpc
+---
 
-The :ref:`Contract<api-network-contract>` class (available as ``brownie.Contract``) is used to interact with already deployed contracts that are not a part of your core project. You will need to provide an ABI as a ``dict`` generated from the compiled contract code.
-
-.. code-block:: python
-
-    >>> Contract('0x79447c97b6543F6eFBC91613C655977806CB18b0', "Token", abi)
-    <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
-
-Once instantiated, all of the usual ``Contract`` attributes and methods can be used to interact with the deployed contract.
-
-ProjectContract
----------------
-
-If you use Brownie to deploy a contract to a non-local network as part of an active project, you can use the :ref:`api-network-contractcontainer`'s ``ContractContainer.at`` method to instantiate a ``ProjectContract`` instance. Once instantiated, any of the ``Contract`` methods can be used.
+The :ref:`rpc` object is unavailable when working with non-local networks.

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import os
 import shutil
 import sys
 import zipfile
@@ -10,16 +11,30 @@ from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Union
 
 import requests
 
-from brownie._config import CONFIG, _load_project_compiler_config, _load_project_config
+from brownie._config import (
+    CONFIG,
+    _get_project_config_path,
+    _load_project_compiler_config,
+    _load_project_config,
+)
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
-from brownie.network.contract import ContractContainer
+from brownie.network.contract import ContractContainer, ProjectContract
+from brownie.network.state import _remove_contract
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_hash
 from brownie.utils import color
 
-FOLDERS = ["contracts", "scripts", "reports", "tests", "build", "build/contracts"]
+FOLDERS = [
+    "contracts",
+    "scripts",
+    "reports",
+    "tests",
+    "build",
+    "build/contracts",
+    "build/deployments",
+]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 
 _loaded_projects = []
@@ -134,6 +149,7 @@ class Project(_ProjectBase):
         self._compiler_config["version"] = solc_version
         self._compile(changed, self._compiler_config, False)
         self._create_containers()
+        self._load_deployments()
 
         # add project to namespaces, apply import blackmagic
         name = self._name
@@ -172,6 +188,26 @@ class Project(_ProjectBase):
             (True for k, v in build_json["compiler"].items() if config[k] and v != config[k]), False
         )
 
+    def _load_deployments(self) -> None:
+        if not CONFIG["active_network"].get("persist", None) or self._project_path is None:
+            return
+        network = CONFIG["active_network"]["name"]
+        path = self._project_path.joinpath(f"build/deployments/{network}")
+        path.mkdir(exist_ok=True)
+        deployments = list(
+            self._project_path.glob(f"build/deployments/{CONFIG['active_network']['name']}/*.json")
+        )
+        deployments.sort(key=os.path.getmtime)
+        for build_json in deployments:
+            with build_json.open() as fp:
+                build = json.load(fp)
+            if build["contractName"] not in self._containers:
+                build_json.unlink()
+            else:
+                container = self._containers[build["contractName"]]
+                contract = ProjectContract(self, build, build_json.stem)
+                container._contracts.append(contract)
+
     def _update_and_register(self, dict_: Any) -> None:
         dict_.update(self)
         self._namespaces.append(dict_)
@@ -199,6 +235,13 @@ class Project(_ProjectBase):
                 if v == self or (k in self and v == self[k])  # type: ignore
             ]:
                 del dict_[key]
+
+        # remove contracts
+        for contract in [x for v in self._containers.values() for x in v._contracts]:
+            _remove_contract(contract)
+        for container in self._containers.values():
+            container._contracts.clear()
+        self._containers.clear()
 
         # undo black-magic
         name = self._name
@@ -233,7 +276,7 @@ def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
     """Checks for a Brownie project."""
     path = Path(path).resolve()
     for folder in [path] + list(path.parents):
-        if folder.joinpath("brownie-config.json").exists():
+        if _get_project_config_path(folder):
             return folder
     return None
 
@@ -255,10 +298,10 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
     project_path = _new_checks(project_path_str, ignore_subfolder)
     project_path.mkdir(exist_ok=True)
     _create_folders(project_path)
-    if not project_path.joinpath("brownie-config.json").exists():
+    if not _get_project_config_path(project_path):
         shutil.copy(
-            CONFIG["brownie_folder"].joinpath("data/config.json"),
-            project_path.joinpath("brownie-config.json"),
+            CONFIG["brownie_folder"].joinpath("data/config.yaml"),
+            project_path.joinpath("brownie-config.yaml"),
         )
     _add_to_sys_path(project_path)
     return str(project_path)
@@ -290,8 +333,8 @@ def from_brownie_mix(
         zf.extractall(str(project_path.parent))
     project_path.parent.joinpath(project_name + "-mix-master").rename(project_path)
     shutil.copy(
-        CONFIG["brownie_folder"].joinpath("data/config.json"),
-        project_path.joinpath("brownie-config.json"),
+        CONFIG["brownie_folder"].joinpath("data/config.yaml"),
+        project_path.joinpath("brownie-config.yaml"),
     )
     _add_to_sys_path(project_path)
     return str(project_path)
@@ -358,7 +401,7 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
     # checks
     if project_path is None:
         project_path = check_for_project(".")
-    if not project_path or not Path(project_path).joinpath("brownie-config.json").exists():
+    if not project_path or not _get_project_config_path(Path(project_path)):
         raise ProjectNotFound("Could not find Brownie project")
 
     project_path = Path(project_path).resolve()

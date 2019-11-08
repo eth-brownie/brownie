@@ -53,9 +53,6 @@ class Console(code.InteractiveConsole):
         locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
         locals_dict["dir"] = self._dir
 
-        self._stdout_write = sys.stdout.write
-        sys.stdout.write = self._console_write
-
         if project:
             project._update_and_register(locals_dict)
             history_file = project._project_path
@@ -81,19 +78,19 @@ class Console(code.InteractiveConsole):
         results = sorted(results, key=lambda k: k[0])
         self.write(f"[{f'{color}, '.join(_dir_color(i[1]) + i[0] for i in results)}{color}]\n")
 
-    def _console_write(self, text):
+    def _console_write(self, obj):
+        text = repr(obj)
         try:
-            obj = eval(text)
             if obj and isinstance(obj, dict):
                 text = color.pretty_dict(obj)
             elif obj and isinstance(obj, (tuple, list, set)):
                 text = color.pretty_sequence(obj)
         except (SyntaxError, NameError):
             pass
-        return self._stdout_write(text)
+        print(text)
 
     def showsyntaxerror(self, filename):
-        tb = color.format_syntaxerror(sys.exc_info()[1])
+        tb = color.format_tb(sys.exc_info()[1])
         self.write(tb + "\n")
 
     def showtraceback(self):
@@ -112,6 +109,27 @@ class Console(code.InteractiveConsole):
         except (ValueError, AttributeError, KeyError):
             pass
         return super().push(line)
+
+    def runsource(self, source, filename="<input>", symbol="single"):
+        try:
+            code = self.compile(source, filename, "single")
+        except (OverflowError, SyntaxError, ValueError):
+            self.showsyntaxerror(filename)
+            return False
+
+        if code is None:
+            return True
+
+        try:
+            self.compile(source, filename, "eval")
+            code = self.compile(f"__ret_value__ = {source}", filename, "exec")
+        except Exception:
+            pass
+        self.runcode(code)
+        if "__ret_value__" in self.locals and self.locals["__ret_value__"] is not None:
+            self._console_write(self.locals["__ret_value__"])
+            del self.locals["__ret_value__"]
+        return False
 
 
 def _dir_color(obj):

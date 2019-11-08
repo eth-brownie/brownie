@@ -27,3 +27,5 @@ def test_evm_compatible(monkeypatch):
     assert rpc.evm_compatible("byzantium")
     assert rpc.evm_compatible("constantinople")
     assert not rpc.evm_compatible("petersburg")
+    with pytest.raises(ValueError):
+        rpc.evm_compatible("potato")
