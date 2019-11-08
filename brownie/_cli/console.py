@@ -126,7 +126,7 @@ class Console(code.InteractiveConsole):
         except Exception:
             pass
         self.runcode(code)
-        if "__ret_value__" in self.locals and self.locals["__ret_value__"]:
+        if "__ret_value__" in self.locals and self.locals["__ret_value__"] is not None:
             self._console_write(self.locals["__ret_value__"])
             del self.locals["__ret_value__"]
         return False
