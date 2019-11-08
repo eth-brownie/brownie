@@ -185,8 +185,8 @@ class Project(_ProjectBase):
             (True for k, v in build_json["compiler"].items() if config[k] and v != config[k]), False
         )
 
-    def _load_deployments(self):
-        if not CONFIG["active_network"]["persist"]:
+    def _load_deployments(self) -> None:
+        if not CONFIG["active_network"]["persist"] or self._project_path is None:
             return
         network = CONFIG["active_network"]["name"]
         path = self._project_path.joinpath(f"build/deployments/{network}")
@@ -201,8 +201,9 @@ class Project(_ProjectBase):
             if build["contractName"] not in self._containers:
                 build_json.unlink()
             else:
+                container = self._containers[build["contractName"]]
                 contract = ProjectContract(self, build, build_json.stem)
-                self._containers[build["contractName"]]._contracts.append(contract)
+                container._contracts.append(contract)
 
     def _update_and_register(self, dict_: Any) -> None:
         dict_.update(self)

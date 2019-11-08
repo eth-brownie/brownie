@@ -295,7 +295,7 @@ class ProjectContract(_DeployedContractBase):
 
     def __init__(
         self,
-        project: "_DeployedContractBase",
+        project: Any,
         build: Dict,
         address: str,
         owner: Optional[AccountsType] = None,
@@ -306,7 +306,7 @@ class ProjectContract(_DeployedContractBase):
         _add_contract(self)
         self._save_deployment()
 
-    def _save_deployment(self):
+    def _save_deployment(self) -> None:
         if not CONFIG["active_network"]["persist"] or not self._project._project_path:
             return
         network = CONFIG["active_network"]["name"]
