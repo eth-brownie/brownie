@@ -15,7 +15,7 @@ from solcast.nodes import NodeBase
 
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 
-from . import ethpm, sources
+from . import sources
 
 solcx_logger = logging.getLogger("solcx")
 solcx_logger.setLevel(10)
@@ -82,9 +82,6 @@ def compile_and_format(
     if not contract_sources:
         return {}
 
-    ethpm_sources, remappings = ethpm.resolve_ethpm_imports(contract_sources)
-    contract_sources.update(ethpm_sources)
-
     if solc_version is not None:
         path_versions = {solc_version: list(contract_sources)}
     else:
@@ -96,9 +93,7 @@ def compile_and_format(
         compiler_data = {"minify_source": minify, "version": solcx.get_solc_version_string()}
         to_compile = dict((k, v) for k, v in contract_sources.items() if k in path_list)
 
-        input_json = generate_input_json(
-            to_compile, optimize, runs, evm_version, minify, remappings
-        )
+        input_json = generate_input_json(to_compile, optimize, runs, evm_version, minify)
         output_json = compile_from_input_json(input_json, silent)
         build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
     return build_json
@@ -186,7 +181,6 @@ def generate_input_json(
     runs: int = 200,
     evm_version: Union[int, str, None] = None,
     minify: bool = False,
-    remappings: Optional[List] = None,
 ) -> Dict:
     """Formats contracts to the standard solc input json.
 
@@ -196,7 +190,6 @@ def generate_input_json(
         runs: optimizer runs
         evm_version: evm version to compile for
         minify: should source code be minified?
-        remappings: list of path remappings
 
     Returns: dict
     """
@@ -206,8 +199,6 @@ def generate_input_json(
     input_json["settings"]["optimizer"]["enabled"] = optimize
     input_json["settings"]["optimizer"]["runs"] = runs if optimize else 0
     input_json["settings"]["evmVersion"] = evm_version
-    if remappings is not None:
-        input_json["settings"]["remappings"] = remappings
     input_json["sources"] = dict(
         (k, {"content": sources.minify(v)[0] if minify else v}) for k, v in contract_sources.items()
     )

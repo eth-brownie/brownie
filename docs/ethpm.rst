@@ -73,24 +73,7 @@ If the package does not include deployment information for the currently active 
 Integrating a Package into your Project
 =======================================
 
-Brownie uses `path remappings <https://solidity.readthedocs.io/en/latest/layout-of-source-files.html#paths>`_ to allow you to import ethPM URIs in Solidity contracts:
-
-.. code-block:: solidity
-
-    pragma solidity ^0.5.7;
-
-    import "erc1319://erc20.snakecharmers.eth:1/dai-dai@1.0.0/sources/DSToken.sol";
-
-    Contract DSExpanded is DSToken {
-        ...
-
-URIs given in import statements must include a path that follows the package version. in the example above, ``/sources/DSToken.sol``. This corresponds to the location of the source file within the ethPM manifest.
-
-You can also import an ABI from ``/contract_types/[CONTRACT_NAME]/abi``, which Brownie converts to an `interface <https://solidity.readthedocs.io/en/latest/contracts.html#interfaces>`_:
-
-.. code-block:: solidity
-
-    import "erc1319://erc20.snakecharmers.eth:1/dai-dai@1.0.0/contract_types/DSToken/abi";
+** TODO **
 
 Publishing an ethPM Package
 ===========================

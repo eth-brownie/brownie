@@ -3,15 +3,14 @@
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
-from abi2solc import generate_interface
 from ethpm.package import resolve_uri_contents
 
 from brownie._config import CONFIG
 from brownie.convert import to_address
-from brownie.exceptions import InvalidErc1319Import, InvalidManifest
+from brownie.exceptions import InvalidManifest
 from brownie.network.web3 import _resolve_address, web3
 
 from . import compiler
@@ -19,7 +18,6 @@ from . import compiler
 URI_REGEX = (
     r"""^(?:erc1319://|)([^/:\s]*):(?:[0-9]+)/([a-z][a-z0-9_-]{0,255})@[^\s:/'";]*?/([^\s:'";]*)$"""
 )
-IMPORT_REGEX = r"""(?:^|;)\s*import\s*(?:{[a-zA-Z][-a-zA-Z0-9_]{0,255}}\s*from|)\s*("|')((erc1319://[^\s:/'";]*:[0-9]+/[a-z][a-z0-9_-]{0,255}@[^\s:/'";]*?)/([^\s:'";]*))(?=\1\s*;)"""  # NOQA: E501
 
 
 def get_manifest(uri: str) -> Dict:
@@ -170,57 +168,6 @@ def get_deployment_addresses(
         for v in manifest["deployments"][key].values()
         if manifest["contract_types"][v["contract_type"]] == contract_name
     ]
-
-
-def resolve_ethpm_imports(contract_sources: Dict[str, str]) -> Tuple[Dict[str, str], List]:
-
-    """
-    Parses a dict of contract sources for ethPM import statements.
-
-    Args:
-        contract_sources: A dict in the form of {'path': "source code"}
-
-    Returns: Dict of imported contract sources, List of path remappings
-    """
-
-    ethpm_sources = {}
-    remappings = {}
-    for path in list(contract_sources):
-        for match in re.finditer(IMPORT_REGEX, contract_sources[path]):
-            import_str, uri, key_path = match.group(2, 3, 4)
-            manifest = get_manifest(uri)
-
-            type_, target = key_path.split("/", maxsplit=1)
-            if type_ not in ("contract_types", "sources"):
-                raise InvalidErc1319Import(
-                    f"{import_str} - Path must begin with sources or contract_types, not '{type_}'"
-                )
-            if type_ == "contract_types":
-                if not target.endswith("/abi"):
-                    raise InvalidErc1319Import(
-                        f"{import_str} - Path must be in the form of "
-                        "/contract_types/[CONTRACT_NAME]/abi"
-                    )
-                contract_name = target[:-4]
-                ethpm_sources[import_str] = generate_interface(
-                    manifest["contract_types"][contract_name], contract_name
-                )
-                continue
-            target = f"erc1319/{target}"
-            source_paths = set(
-                x
-                for i in manifest["contract_types"].values()
-                for x in i["all_source_paths"]
-                if i["source_path"] == target
-            )
-            if not source_paths:
-                raise InvalidErc1319Import(f"{import_str} - Manifest does not contain {target}")
-
-            for source_path in source_paths:
-                ethpm_sources[source_path] = manifest["sources"][source_path]
-
-            remappings[import_str] = target
-    return ethpm_sources, [f"{k}={v}" for k, v in remappings.items()]
 
 
 def _get_pm():  # type: ignore
