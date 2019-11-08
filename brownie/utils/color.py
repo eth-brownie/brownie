@@ -117,7 +117,7 @@ class Color:
         start: Optional[int] = None,
         stop: Optional[int] = None,
     ) -> str:
-        if isinstance(exc, SyntaxError):
+        if isinstance(exc, SyntaxError) and exc.text is not None:
             return self.format_syntaxerror(exc)
         tb = [i.replace("./", "") for i in traceback.format_tb(exc.__traceback__)]
         if filename and not ARGV["tb"]:
