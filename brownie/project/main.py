@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import os
 import shutil
 import sys
 import zipfile
@@ -17,7 +18,7 @@ from brownie._config import (
     _load_project_config,
 )
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
-from brownie.network.contract import ContractContainer
+from brownie.network.contract import ContractContainer, ProjectContract
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.sources import Sources, get_hash
@@ -183,6 +184,25 @@ class Project(_ProjectBase):
         return next(
             (True for k, v in build_json["compiler"].items() if config[k] and v != config[k]), False
         )
+
+    def _load_deployments(self):
+        if not CONFIG["active_network"]["persist"]:
+            return
+        network = CONFIG["active_network"]["name"]
+        path = self._project_path.joinpath(f"build/deployments/{network}")
+        path.mkdir(exist_ok=True)
+        deployments = list(
+            self._project_path.glob(f"build/deployments/{CONFIG['active_network']['name']}/*.json")
+        )
+        deployments.sort(key=os.path.getmtime)
+        for build_json in deployments:
+            with build_json.open() as fp:
+                build = json.load(fp)
+            if build["contractName"] not in self._containers:
+                build_json.unlink()
+            else:
+                contract = ProjectContract(self, build, build_json.stem)
+                self._containers[build["contractName"]]._contracts.append(contract)
 
     def _update_and_register(self, dict_: Any) -> None:
         dict_.update(self)

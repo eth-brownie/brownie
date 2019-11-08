@@ -298,7 +298,7 @@ class ProjectContract(_DeployedContractBase):
         project: "_DeployedContractBase",
         build: Dict,
         address: str,
-        owner: Optional[AccountsType],
+        owner: Optional[AccountsType] = None,
         tx: TransactionReceiptType = None,
     ) -> None:
         _ContractBase.__init__(self, project, build, build["contractName"], build["abi"])
@@ -314,7 +314,7 @@ class ProjectContract(_DeployedContractBase):
         path.mkdir(exist_ok=True)
         path = path.joinpath(f"{self.address}.json")
         if not path.exists():
-            with path.joinpath(f"{self.address}.json").open("w") as fp:
+            with path.open("w") as fp:
                 json.dump(self._build, fp)
 
 
