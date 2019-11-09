@@ -27,8 +27,8 @@ def test_namespace(project, testproject):
 
 
 def test_check_for_project(project, testproject):
-    path = project.check_for_project(testproject._project_path)
-    assert path == project.check_for_project(testproject._project_path.joinpath("contracts"))
+    path = project.check_for_project(testproject._path)
+    assert path == project.check_for_project(testproject._path.joinpath("contracts"))
     assert not project.check_for_project("/")
 
 
@@ -47,7 +47,7 @@ def test_from_brownie_mix_raises(project, tmp_path):
 
 def test_load_raises_already_loaded(project, testproject):
     with pytest.raises(ProjectAlreadyLoaded):
-        project.load(testproject._project_path, "TestProject")
+        project.load(testproject._path, "TestProject")
     with pytest.raises(ProjectAlreadyLoaded):
         testproject.load()
 
@@ -69,7 +69,7 @@ def test_reload_from_project_object(project, testproject):
 
 
 def test_load_multiple(project, testproject):
-    other = project.load(testproject._project_path, "OtherProject")
+    other = project.load(testproject._path, "OtherProject")
     assert hasattr(project, "OtherProject")
     assert len(project.get_loaded_projects()) == 2
     other.close()

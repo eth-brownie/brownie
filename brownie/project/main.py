@@ -42,7 +42,7 @@ _loaded_projects = []
 
 class _ProjectBase:
     def __init__(self, name: str, contract_sources: Dict, project_path: Optional[Path]) -> None:
-        self._project_path = project_path
+        self._path = project_path
         self._name = name
         self._sources = Sources(contract_sources)
         self._build = Build(self._sources)
@@ -59,8 +59,8 @@ class _ProjectBase:
         )
         for data in build_json.values():
             self._build._add(data)
-            if self._project_path is not None:
-                path = self._project_path.joinpath(f"build/contracts/{data['contractName']}.json")
+            if self._path is not None:
+                path = self._path.joinpath(f"build/contracts/{data['contractName']}.json")
                 with path.open("w") as fp:
                     json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
 
@@ -99,7 +99,7 @@ class Project(_ProjectBase):
     a brownie project.
 
     Attributes:
-        _project_path: Path object, absolute path to the project
+        _path: Path object, absolute path to the project
         _name: Name that the project is loaded as
         _sources: project Source object
         _build: project Build object
@@ -139,7 +139,7 @@ class Project(_ProjectBase):
         if self._active:
             raise ProjectAlreadyLoaded("Project is already active")
 
-        self._compiler_config = _load_project_compiler_config(self._project_path, "solc")
+        self._compiler_config = _load_project_compiler_config(self._path, "solc")
         solc_version = self._compiler_config["version"]
         if solc_version:
             self._compiler_config["version"] = compiler.set_solc_version(solc_version)
@@ -189,13 +189,13 @@ class Project(_ProjectBase):
         )
 
     def _load_deployments(self) -> None:
-        if not CONFIG["active_network"].get("persist", None) or self._project_path is None:
+        if not CONFIG["active_network"].get("persist", None) or self._path is None:
             return
         network = CONFIG["active_network"]["name"]
-        path = self._project_path.joinpath(f"build/deployments/{network}")
+        path = self._path.joinpath(f"build/deployments/{network}")
         path.mkdir(exist_ok=True)
         deployments = list(
-            self._project_path.glob(f"build/deployments/{CONFIG['active_network']['name']}/*.json")
+            self._path.glob(f"build/deployments/{CONFIG['active_network']['name']}/*.json")
         )
         deployments.sort(key=os.path.getmtime)
         for build_json in deployments:
@@ -217,8 +217,8 @@ class Project(_ProjectBase):
 
     def load_config(self) -> None:
         """Loads the project config file settings"""
-        if isinstance(self._project_path, Path):
-            _load_project_config(self._project_path)
+        if isinstance(self._path, Path):
+            _load_project_config(self._path)
 
     def close(self, raises: bool = True) -> None:
         """Removes pointers to the project's ContractContainer objects and this object."""
@@ -253,7 +253,7 @@ class Project(_ProjectBase):
 
         # clear paths
         try:
-            sys.path.remove(self._project_path)  # type: ignore
+            sys.path.remove(self._path)  # type: ignore
         except ValueError:
             pass
 

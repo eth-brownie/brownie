@@ -24,7 +24,7 @@ contract Foo {
 
 @pytest.fixture()
 def btsource(testproject):
-    path = testproject._project_path.joinpath("contracts/BrownieTester.sol")
+    path = testproject._path.joinpath("contracts/BrownieTester.sol")
     with path.open() as fs:
         return fs.read()
 

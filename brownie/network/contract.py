@@ -326,10 +326,10 @@ class ProjectContract(_DeployedContractBase):
         self._save_deployment()
 
     def _deployment_path(self) -> Optional[Path]:
-        if not CONFIG["active_network"].get("persist", None) or not self._project._project_path:
+        if not CONFIG["active_network"].get("persist", None) or not self._project._path:
             return None
         network = CONFIG["active_network"]["name"]
-        path = self._project._project_path.joinpath(f"build/deployments/{network}")
+        path = self._project._path.joinpath(f"build/deployments/{network}")
         path.mkdir(exist_ok=True)
         return path.joinpath(f"{self.address}.json")
 

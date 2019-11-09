@@ -35,7 +35,7 @@ class Root(tk.Tk):
         self.report_key = None
         self.highlight_key = None
         self.reports = {}
-        for path in self.active_project._project_path.glob("reports/*.json"):
+        for path in self.active_project._path.glob("reports/*.json"):
             try:
                 with path.open() as fp:
                     self.reports[path.stem] = json.load(fp)

@@ -51,7 +51,7 @@ def test_changed_name(testproject, network):
     network.disconnect(False)
     build_json["contractName"] = "PotatoTester"
 
-    path = testproject._project_path.joinpath(
+    path = testproject._path.joinpath(
         "build/deployments/mainnet/0xdAC17F958D2ee523a2206206994597C13D831ec7.json"
     )
     with path.open("w") as fp:

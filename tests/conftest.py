@@ -107,7 +107,7 @@ def testproject(_project_factory, project, tmp_path):
 
 @pytest.fixture
 def otherproject(testproject):
-    return brownie.project.load(testproject._project_path, "OtherProject")
+    return brownie.project.load(testproject._path, "OtherProject")
 
 
 # yields a deployed EVMTester contract

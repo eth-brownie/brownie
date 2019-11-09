@@ -46,7 +46,7 @@ def run(
         brownie_all = brownie.__all__.copy()
         brownie.__dict__.update(project)
         brownie.__all__.extend(project.__all__)
-        default_path = project._project_path.joinpath("scripts").as_posix()
+        default_path = project._path.joinpath("scripts").as_posix()
 
     try:
         script: Path = _get_path(script_path, default_path)
