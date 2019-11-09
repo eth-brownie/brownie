@@ -40,7 +40,6 @@ def get_manifest(uri: str) -> Dict:
         path = None
     else:
         address, package_name, version = match.groups()
-        # TODO chain != 1
         address = _resolve_address(address)
         path = CONFIG["brownie_folder"].joinpath(
             f"data/ethpm/{address}/{package_name}/{version.replace('.','-')}.json"
@@ -50,15 +49,11 @@ def get_manifest(uri: str) -> Dict:
                 return json.load(fp)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             pass
+        # TODO chain != 1
         pm = _get_pm()
         pm.set_registry(address)
         manifest = pm.get_package(package_name, version).manifest
 
-    if manifest["manifest_version"] != "2":
-        raise InvalidManifest(
-            f"Brownie only supports v2 ethPM manifests, this "
-            f"manifest is v{manifest['manifest_version']}"
-        )
     manifest = process_manifest(manifest)
 
     # save a local copy before returning
@@ -67,6 +62,7 @@ def get_manifest(uri: str) -> Dict:
             subfolder.mkdir(exist_ok=True)
         with path.open("w") as fp:
             json.dump(manifest, fp)
+
     return manifest
 
 
@@ -79,6 +75,12 @@ def process_manifest(manifest: Dict) -> Dict:
         manifest: ethPM manifest
     """
 
+    if manifest["manifest_version"] != "2":
+        raise InvalidManifest(
+            f"Brownie only supports v2 ethPM manifests, this "
+            f"manifest is v{manifest['manifest_version']}"
+        )
+
     package_name = manifest["package_name"]
     for key in ("contract_types", "deployments", "sources"):
         manifest.setdefault(key, {})
@@ -88,12 +90,9 @@ def process_manifest(manifest: Dict) -> Dict:
         content = manifest["sources"].pop(key)
         if _is_uri(content):
             content = _get_uri_contents(content)
-        # convert absolute imports to relative imports
-        content = re.sub(r"import\s+'[/]{0,1}(?=[^./])", "import './", content)
-        content = re.sub(r'import\s+"[/]{0,1}(?=[^./])', 'import "./', content)
+        content = _modify_absolute_imports(content, package_name)
         path = Path("/").joinpath(key.lstrip("./")).resolve().as_posix().lstrip("/")
-        if not path.startswith(f"{package_name}/"):
-            path = f"{package_name}/{path}"
+        path = f"{package_name}/{path}"
         manifest["sources"][path] = content
 
     # set contract_name in contract_types
@@ -106,18 +105,20 @@ def process_manifest(manifest: Dict) -> Dict:
     for dependency_uri in manifest.pop("build_dependencies", {}).values():
         dep_manifest = get_manifest(dependency_uri)
         dep_name = dep_manifest["package_name"]
-        dep_manifest["contract_types"] = dict(
-            (f"{dep_name}:{k}", v) for k, v in dep_manifest["contract_types"].items()
+        manifest["contract_types"].update(
+            dict((f"{dep_name}:{k}", v) for k, v in dep_manifest["contract_types"].items())
         )
         manifest["sources"].update(
-            dict((f"{package_name}/{k}", v) for k, v in dep_manifest["sources"].items())
+            dict(
+                (f"{package_name}/{k}", _modify_absolute_imports(v, package_name))
+                for k, v in dep_manifest["sources"].items()
+            )
         )
-        for key in ("sources", "contract_types"):
-            manifest[key].update(dep_manifest.get(key, {}))
 
-    # if manifest doesn't include an ABI, generate one
+    # compile sources to expand contract_types
     if manifest["sources"]:
         version = compiler.find_best_solc_version(manifest["sources"])
+
         build_json = compiler.compile_and_format(manifest["sources"], version)
         for key, build in build_json.items():
             manifest["contract_types"].setdefault(key, {"contract_name": key})
@@ -216,3 +217,12 @@ def _get_uri_contents(uri: str) -> str:
     with path.open() as fp:
         data = fp.read()
     return data
+
+
+def _modify_absolute_imports(source, package_name):
+    # adds package_name/ to start of any absolute import statements
+    return re.sub(
+        r"""(import((\s*{[^};]*}\s*from)|)\s*)("|')[/]{0,1}(?=[^./])""",
+        lambda k: f"{k.group(1)}{k.group(4)}{package_name}/",
+        source,
+    )
