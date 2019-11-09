@@ -109,7 +109,7 @@ def _resolve_address(domain: str) -> str:
             json.dump(_ens_cache, fp)
     if _ens_cache[domain][0] is None:
         raise UnsetENSName(f"ENS domain '{domain}' is not set")
-    return _ens_cache[domain]
+    return _ens_cache[domain][0]
 
 
 def _resolve_domain(address: str) -> str:
@@ -128,7 +128,7 @@ def _resolve_domain(address: str) -> str:
             json.dump(_ens_cache, fp)
     if _ens_cache[address][0] is None:
         raise UnsetENSName(f"Address '{address}' does not resolve to an ENS domain")
-    return _ens_cache[address]
+    return _ens_cache[address][0]
 
 
 web3 = Web3()
