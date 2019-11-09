@@ -292,6 +292,7 @@ class Contract(_DeployedContractBase):
                         f" {', '.join(address_list)}"
                     )
                 address = address_list[0]
+            name = manifest["contract_types"][name]["contract_name"]
         elif not address:
             raise TypeError("Address cannot be None unless creating object from manifest")
 

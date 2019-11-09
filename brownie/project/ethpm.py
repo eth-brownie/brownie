@@ -36,7 +36,7 @@ def get_manifest(uri: str) -> Dict:
     match = re.match(URI_REGEX, uri)
     if match is None:
         # if a direct link to IPFS was used, we don't save the manifest locally
-        manifest = resolve_uri_contents(uri)
+        manifest = json.loads(_get_uri_contents(uri))
         path = None
     else:
         address, package_name, version = match.groups()
@@ -79,6 +79,7 @@ def process_manifest(manifest: Dict) -> Dict:
         manifest: ethPM manifest
     """
 
+    package_name = manifest["package_name"]
     for key in ("contract_types", "deployments", "sources"):
         manifest.setdefault(key, {})
 
@@ -86,24 +87,40 @@ def process_manifest(manifest: Dict) -> Dict:
     for key in list(manifest["sources"]):
         content = manifest["sources"].pop(key)
         if _is_uri(content):
-            content = resolve_uri_contents(content)
+            content = _get_uri_contents(content)
+        # convert absolute imports to relative imports
+        content = re.sub(r"import\s+'[/]{0,1}(?=[^./])", "import './", content)
+        content = re.sub(r'import\s+"[/]{0,1}(?=[^./])', 'import "./', content)
         path = Path("/").joinpath(key.lstrip("./")).resolve().as_posix().lstrip("/")
-        manifest["sources"][f"{manifest['package_name']}/{path}"] = content
+        if not path.startswith(f"{package_name}/"):
+            path = f"{package_name}/{path}"
+        manifest["sources"][path] = content
+
+    # set contract_name in contract_types
+    contract_types = manifest["contract_types"]
+    for key, value in contract_types.items():
+        if "contract_name" not in value:
+            value["contract_name"] = key
 
     # resolve package dependencies
     for dependency_uri in manifest.pop("build_dependencies", {}).values():
-        dependency_manifest = get_manifest(dependency_uri)
+        dep_manifest = get_manifest(dependency_uri)
+        dep_name = dep_manifest["package_name"]
+        dep_manifest["contract_types"] = dict(
+            (f"{dep_name}:{k}", v) for k, v in dep_manifest["contract_types"].items()
+        )
+        manifest["sources"].update(
+            dict((f"{package_name}/{k}", v) for k, v in dep_manifest["sources"].items())
+        )
         for key in ("sources", "contract_types"):
-            for k in [i for i in manifest[key] if i in dependency_manifest[key]]:
-                if manifest[key][k] != dependency_manifest[key][k]:
-                    raise InvalidManifest("Namespace collision between package dependencies")
-            manifest[key].update(dependency_manifest.get(key, {}))
+            manifest[key].update(dep_manifest.get(key, {}))
 
     # if manifest doesn't include an ABI, generate one
     if manifest["sources"]:
-        build_json = compiler.compile_and_format(manifest["sources"])
+        version = compiler.find_best_solc_version(manifest["sources"])
+        build_json = compiler.compile_and_format(manifest["sources"], version)
         for key, build in build_json.items():
-            manifest["contract_types"].setdefault(key, {})
+            manifest["contract_types"].setdefault(key, {"contract_name": key})
             manifest["contract_types"][key].update(
                 {
                     "abi": build["abi"],
@@ -111,14 +128,11 @@ def process_manifest(manifest: Dict) -> Dict:
                     "all_source_paths": build["allSourcePaths"],
                 }
             )
-        no_source = [i for i in manifest["contract_types"].keys() if i not in build_json]
-    else:
-        no_source = list(manifest["contract_types"].keys())
 
-    # delete contracts with no source or ABI, we can't do much with them
-    for name in no_source:
-        if "abi" not in manifest["contract_types"][name]:
-            del manifest["contract_types"][name]
+    # delete contract_types with no source or ABI, we can't do much with them
+    manifest["contract_types"] = dict(
+        (k, v) for k, v in manifest["contract_types"].items() if "abi" in v
+    )
 
     # resolve or delete deployments
     for chain_uri in list(manifest["deployments"]):
@@ -189,3 +203,16 @@ def _is_uri(uri: str) -> bool:
         return all([result.scheme, result.netloc])
     except ValueError:
         return False
+
+
+def _get_uri_contents(uri: str) -> str:
+    path = CONFIG["brownie_folder"].joinpath(f"data/ipfs_cache/{urlparse(uri).netloc}.ipfs")
+    path.parent.mkdir(exist_ok=True)
+    if not path.exists():
+        data = resolve_uri_contents(uri)
+        with path.open("wb") as fp:
+            fp.write(data)
+        return data.decode()
+    with path.open() as fp:
+        data = fp.read()
+    return data
