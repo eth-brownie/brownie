@@ -42,11 +42,9 @@ def get_manifest(uri: str) -> Dict:
         address, package_name, version = match.groups()
         # TODO chain != 1
         address = _resolve_address(address)
-        path = CONFIG["brownie_folder"].joinpath("data")
-        for item in ("ethpm", address, package_name):
-            path = path.joinpath(item)
-            path.mkdir(exist_ok=True)
-        path = path.joinpath(f"{version.replace('.','-')}.json")
+        path = CONFIG["brownie_folder"].joinpath(
+            f"data/ethpm/{address}/{package_name}/{version.replace('.','-')}.json"
+        )
         try:
             with path.open("r") as fp:
                 return json.load(fp)
@@ -65,6 +63,8 @@ def get_manifest(uri: str) -> Dict:
 
     # save a local copy before returning
     if path is not None:
+        for subfolder in list(path.parents)[2::-1]:
+            subfolder.mkdir(exist_ok=True)
         with path.open("w") as fp:
             json.dump(manifest, fp)
     return manifest
