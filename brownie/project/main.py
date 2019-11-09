@@ -22,7 +22,7 @@ from brownie.network.contract import ContractContainer, ProjectContract
 from brownie.network.state import _remove_contract
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
-from brownie.project.ethpm import get_deployment_addresses, get_manifest
+from brownie.project.ethpm import get_deployment_addresses, get_manifest, get_package_hash
 from brownie.project.sources import Sources, get_hash
 from brownie.utils import color
 
@@ -219,6 +219,26 @@ class Project(_ProjectBase):
         """Loads the project config file settings"""
         if isinstance(self._path, Path):
             _load_project_config(self._path)
+
+    def get_installed_packages(self) -> Dict:
+        path = self._path.joinpath("build/packages.json")
+        try:
+            with path.open() as fp:
+                packages_json = json.load(fp)
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
+            return {}
+        for name in list(packages_json):
+            package_path = Path(packages_json[name]["path"])
+            if not package_path.exists():
+                del packages_json[name]
+                # warn user?
+                continue
+            if packages_json[name]["md5"] != get_package_hash(package_path):
+                # warn user
+                pass
+        with path.open("w") as fp:
+            json.dump(packages_json, fp)
+        return packages_json
 
     def close(self, raises: bool = True) -> None:
         """Removes pointers to the project's ContractContainer objects and this object."""
