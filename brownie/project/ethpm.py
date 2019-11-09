@@ -92,8 +92,7 @@ def process_manifest(manifest: Dict) -> Dict:
             content = _get_uri_contents(content)
         content = _modify_absolute_imports(content, package_name)
         path = Path("/").joinpath(key.lstrip("./")).resolve().as_posix().lstrip("/")
-        path = f"{package_name}/{path}"
-        manifest["sources"][path] = content
+        manifest["sources"][f"contracts/{package_name}/{path}"] = content
 
     # set contract_name in contract_types
     contract_types = manifest["contract_types"]
@@ -110,7 +109,7 @@ def process_manifest(manifest: Dict) -> Dict:
         )
         manifest["sources"].update(
             dict(
-                (f"{package_name}/{k}", _modify_absolute_imports(v, package_name))
+                (f"contracts/{package_name}/{k[10:]}", _modify_absolute_imports(v, package_name))
                 for k, v in dep_manifest["sources"].items()
             )
         )
@@ -220,9 +219,9 @@ def _get_uri_contents(uri: str) -> str:
 
 
 def _modify_absolute_imports(source, package_name):
-    # adds package_name/ to start of any absolute import statements
+    # adds contracts/package_name/ to start of any absolute import statements
     return re.sub(
-        r"""(import((\s*{[^};]*}\s*from)|)\s*)("|')[/]{0,1}(?=[^./])""",
-        lambda k: f"{k.group(1)}{k.group(4)}{package_name}/",
+        r"""(import((\s*{[^};]*}\s*from)|)\s*)("|')(contracts/||/)(?=[^./])""",
+        lambda k: f"{k.group(1)}{k.group(4)}contracts/{package_name}/",
         source,
     )

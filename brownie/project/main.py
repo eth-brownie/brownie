@@ -246,15 +246,15 @@ class Project(_ProjectBase):
         self.remove_package(package_name)
 
         packages = self.get_installed_packages()
-        base_path = self._path.joinpath("contracts")
+
         for path, source in manifest["sources"].items():
-            for folder in list(Path(path).parents)[-2::-1]:
-                base_path.joinpath(folder).mkdir(exist_ok=True)
-            with Path(path).open("w") as fp:
+            for folder in list(Path(path).parents)[::-1]:
+                self._path.joinpath(folder).mkdir(exist_ok=True)
+            with self._path.joinpath(path).open("w") as fp:
                 fp.write(source)
         packages[package_name] = {
             "version": manifest["version"],
-            "md5": get_package_hash(base_path.joinpath(package_name)),
+            "md5": get_package_hash(self._path.joinpath(f"contracts/{package_name}")),
         }
         with self._path.joinpath("build/packages.json").open("w") as fp:
             json.dump(packages, fp)
