@@ -115,6 +115,7 @@ class Project(_ProjectBase):
             path_str: str = path.relative_to(project_path).as_posix()
             contract_sources[path_str] = source
         super().__init__(name, contract_sources, project_path)
+        self._path: Path = project_path
 
         for path in list(project_path.glob("build/contracts/*.json")):
             try:
@@ -189,7 +190,7 @@ class Project(_ProjectBase):
         )
 
     def _load_deployments(self) -> None:
-        if not CONFIG["active_network"].get("persist", None) or self._path is None:
+        if not CONFIG["active_network"].get("persist", None):
             return
         network = CONFIG["active_network"]["name"]
         path = self._path.joinpath(f"build/deployments/{network}")
@@ -273,7 +274,7 @@ class Project(_ProjectBase):
 
         # clear paths
         try:
-            sys.path.remove(self._path)  # type: ignore
+            sys.path.remove(str(self._path))
         except ValueError:
             pass
 
