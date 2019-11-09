@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -168,6 +169,16 @@ def get_deployment_addresses(
         for v in manifest["deployments"][key].values()
         if manifest["contract_types"][v["contract_type"]] == contract_name
     ]
+
+
+def get_package_hash(package_path: Path) -> str:
+    filelist = sorted(i for i in package_path.glob("**/*") if i.is_file())
+    hash_ = b""
+    for path in filelist:
+        with path.open("rb") as fp:
+            data = fp.read()
+        hash_ += hashlib.md5(data).digest()
+    return hashlib.md5(hash_).hexdigest()
 
 
 def _get_pm():  # type: ignore
