@@ -3,8 +3,8 @@ __pycache__
 .history
 .coverage
 build/
-brownie/data/accounts
-brownie/data/topics.json
+brownie/data/**
+brownie/data/*.json
 dist/
 docs/_build
 docs/_static
