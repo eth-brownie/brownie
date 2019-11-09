@@ -36,6 +36,7 @@ STANDARD_JSON = {
         "remappings": [],
     },
 }
+PRAGMA_REGEX = re.compile(r"pragma +solidity([^;]*);")
 
 
 def set_solc_version(version: str) -> str:
@@ -105,7 +106,9 @@ def find_solc_versions(
     install_latest: bool = False,
     silent: bool = True,
 ) -> Dict:
-    """Analyzes contract pragmas and determines which solc version(s) to use.
+
+    """
+    Analyzes contract pragmas and determines which solc version(s) to use.
 
     Args:
         contract_sources: a dictionary in the form of {'path': "source code"}
@@ -117,22 +120,16 @@ def find_solc_versions(
 
     Returns: dictionary of {'version': ['path', 'path', ..]}
     """
-    installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
-    try:
-        available_versions = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
-    except ConnectionError:
-        if not installed_versions:
-            raise ConnectionError("Solc not installed and cannot connect to GitHub")
-        available_versions = installed_versions
 
-    pragma_regex = re.compile(r"pragma +solidity([^;]*);")
+    available_versions, installed_versions = _get_solc_version_list()
+
     pragma_specs: Dict = {}
     to_install = set()
     new_versions = set()
 
     for path, source in contract_sources.items():
 
-        pragma_string = next(pragma_regex.finditer(source), None)
+        pragma_string = next(PRAGMA_REGEX.finditer(source), None)
         if pragma_string is None:
             raise PragmaError(f"No version pragma in '{path}'")
         pragma_specs[path] = NpmSpec(pragma_string.groups()[0])
@@ -147,7 +144,7 @@ def find_solc_versions(
         latest = pragma_specs[path].select(available_versions)
 
         if not version and not latest:
-            raise PragmaError(
+            raise IncompatibleSolcVersion(
                 f"No installable solc version matching '{pragma_string[0]}' in '{path}'"
             )
 
@@ -173,6 +170,65 @@ def find_solc_versions(
         compiler_versions.setdefault(str(version), []).append(path)
 
     return compiler_versions
+
+
+def find_best_solc_version(
+    contract_sources: Dict[str, str],
+    install_needed: bool = False,
+    install_latest: bool = False,
+    silent: bool = True,
+) -> str:
+
+    """
+    Analyzes contract pragmas and finds the best version compatible with all sources.
+
+    Args:
+        contract_sources: a dictionary in the form of {'path': "source code"}
+        install_needed: if True, will install when no installed version matches
+                        the contract pragma
+        install_latest: if True, will install when a newer version is available
+                        than the installed one
+        silent: set to False to enable verbose reporting
+
+    Returns: version string
+    """
+
+    available_versions, installed_versions = _get_solc_version_list()
+
+    for path, source in contract_sources.items():
+
+        pragma_string = next(PRAGMA_REGEX.finditer(source), None)
+        if pragma_string is None:
+            raise PragmaError(f"No version pragma in '{path}'")
+        pragma_spec = NpmSpec(pragma_string.groups()[0])
+        installed_versions = [i for i in installed_versions if i in pragma_spec]
+        available_versions = [i for i in available_versions if i in pragma_spec]
+
+    if not available_versions:
+        raise IncompatibleSolcVersion("No installable solc version compatible across all sources")
+
+    if not installed_versions and not (install_needed or install_latest):
+        raise IncompatibleSolcVersion("No installed solc version compatible across all sources")
+
+    if max(available_versions) > max(installed_versions, default=Version("0.0.0")):
+        if install_latest or (install_needed and not installed_versions):
+            install_solc(max(available_versions))
+            return str(max(available_versions))
+        if not silent:
+            print(f"New compatible solc version available: {max(available_versions)}")
+
+    return str(max(installed_versions))
+
+
+def _get_solc_version_list() -> Tuple[List, List]:
+    installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
+    try:
+        available_versions = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
+    except ConnectionError:
+        if not installed_versions:
+            raise ConnectionError("Solc not installed and cannot connect to GitHub")
+        available_versions = installed_versions
+    return available_versions, installed_versions
 
 
 def generate_input_json(
