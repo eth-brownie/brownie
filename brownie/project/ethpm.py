@@ -179,7 +179,7 @@ def get_deployment_addresses(
     return [
         v["address"]
         for v in manifest["deployments"][key].values()
-        if manifest["contract_types"][v["contract_type"]] == contract_name
+        if manifest["contract_types"][v["contract_type"]]["contract_name"] == contract_name
     ]
 
 
