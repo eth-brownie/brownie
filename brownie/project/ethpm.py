@@ -91,8 +91,9 @@ def process_manifest(manifest: Dict) -> Dict:
         if _is_uri(content):
             content = _get_uri_contents(content)
         content = _modify_absolute_imports(content, package_name)
-        path = Path("/").joinpath(key.lstrip("./")).resolve().as_posix().lstrip("/")
-        manifest["sources"][f"contracts/{package_name}/{path}"] = content
+        path = Path("/").joinpath(key.lstrip("./")).resolve()
+        path_str = path.as_posix()[len(path.anchor) :]
+        manifest["sources"][f"contracts/{package_name}/{path_str}"] = content
 
     # set contract_name in contract_types
     contract_types = manifest["contract_types"]
@@ -218,7 +219,7 @@ def _get_uri_contents(uri: str) -> str:
     return data
 
 
-def _modify_absolute_imports(source, package_name):
+def _modify_absolute_imports(source: str, package_name: str) -> str:
     # adds contracts/package_name/ to start of any absolute import statements
     return re.sub(
         r"""(import((\s*{[^};]*}\s*from)|)\s*)("|')(contracts/||/)(?=[^./])""",
