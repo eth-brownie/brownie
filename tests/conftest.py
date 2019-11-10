@@ -69,7 +69,7 @@ def pytest_generate_tests(metafunc):
 def _project_factory(tmp_path_factory):
     path = tmp_path_factory.mktemp("base")
     path.rmdir()
-    shutil.copytree("tests/brownie-test-project", path)
+    shutil.copytree("tests/data/brownie-test-project", path)
     shutil.copyfile("brownie/data/config.yaml", path.joinpath("brownie-config.yaml"))
     p = brownie.project.load(path, "TestProject")
     p.close()
@@ -255,3 +255,16 @@ def tester(BrownieTester, accounts):
 @pytest.fixture
 def ext_tester(ExternalCallTester, accounts):
     return ExternalCallTester.deploy({"from": accounts[0]})
+
+
+# mock ethPM registries by preloading files into Brownie's IPFS cache
+@pytest.fixture(scope="module")
+def ipfs_mock():
+    ipfs_path = Path("brownie/data/ipfs_cache")
+    temp_path = ipfs_path.parent.joinpath("_ipfs_cache")
+    ipfs_path.mkdir(exist_ok=True)
+    ipfs_path.rename(temp_path)
+    shutil.copytree("tests/data/ipfs-cache-mock", ipfs_path)
+    yield
+    shutil.rmtree(ipfs_path)
+    temp_path.rename(ipfs_path)
