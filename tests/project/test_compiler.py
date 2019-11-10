@@ -143,9 +143,9 @@ def test_find_solc_versions(find_version, msolc):
     with pytest.raises(PragmaError):
         compiler.find_solc_versions({"Foo": "contract Foo {}"})
     with pytest.raises(IncompatibleSolcVersion):
-        find_version("^0.6.0", install_needed=False)
-    with pytest.raises(PragmaError):
-        find_version("^0.6.0", install_needed=True)
+        find_version("^1.0.0", install_needed=False)
+    with pytest.raises(IncompatibleSolcVersion):
+        find_version("^1.0.0", install_needed=True)
 
 
 def test_find_solc_versions_install(find_version, msolc):
