@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import hashlib
 import json
 import os
 import shutil
@@ -7,7 +8,7 @@ import sys
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Union
+from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
 
 import requests
 
@@ -22,7 +23,7 @@ from brownie.network.contract import ContractContainer, ProjectContract
 from brownie.network.state import _remove_contract
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
-from brownie.project.ethpm import get_deployment_addresses, get_manifest, get_package_hash
+from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_hash
 from brownie.utils import color
 
@@ -221,54 +222,92 @@ class Project(_ProjectBase):
         if isinstance(self._path, Path):
             _load_project_config(self._path)
 
-    def get_installed_packages(self) -> Dict:
-        path = self._path.joinpath("build/packages.json")
+    def get_installed_packages(self) -> Tuple[List, List]:
         try:
-            with path.open() as fp:
+            with self._path.joinpath("build/packages.json").open() as fp:
                 packages_json = json.load(fp)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
-            return {}
-        for package_name in list(packages_json):
-            package_path = self._path.joinpath(f"contracts/{package_name}")
-            if not package_path.exists():
-                del packages_json[package_name]
-                # warn user?
+            return list(), list()
+        installed: Set = set()
+        modified: Set = set()
+        for source_path in list(packages_json["sources"]):
+            package_list = packages_json["sources"][source_path]["packages"]
+
+            if not self._path.joinpath(source_path).exists():
+                modified.update(package_list)
                 continue
-            if packages_json[package_name]["md5"] != get_package_hash(package_path):
-                # warn user
-                pass
-        with path.open("w") as fp:
-            json.dump(packages_json, fp)
-        return packages_json
+            with self._path.joinpath(source_path).open("rb") as fp:
+                source = fp.read()
+            if hashlib.md5(source).hexdigest() != packages_json["sources"][source_path]["md5"]:
+                modified.update(package_list)
+            else:
+                installed.update(package_list)
+        installed.symmetric_difference_update(modified)
+        # warn user about modified packages
+        return sorted(installed), sorted(modified)
 
     def install_package(self, uri: str) -> str:
         manifest = get_manifest(uri)
         package_name = manifest["package_name"]
         self.remove_package(package_name)
+        try:
+            with self._path.joinpath("build/packages.json").open() as fp:
+                packages_json = json.load(fp)
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
+            packages_json = {"sources": {}, "packages": {}}
 
-        packages = self.get_installed_packages()
+        for path, source in manifest["sources"].items():
+            source_path = self._path.joinpath(path)
+            if source_path.exists():
+                with source_path.open() as fp:
+                    if fp.read() != source:
+                        # warn of collision
+                        raise
+
         for path, source in manifest["sources"].items():
             for folder in list(Path(path).parents)[::-1]:
                 self._path.joinpath(folder).mkdir(exist_ok=True)
+
             with self._path.joinpath(path).open("w") as fp:
                 fp.write(source)
-        packages[package_name] = {
+
+            packages_json["sources"].setdefault(
+                path, {"md5": hashlib.md5(source.encode()).hexdigest(), "packages": []}
+            )
+            packages_json["sources"][path]["packages"].append(package_name)
+        packages_json["packages"][package_name] = {
             "version": manifest["version"],
-            "md5": get_package_hash(self._path.joinpath(f"contracts/{package_name}")),
             "registry_address": manifest.get("registry_address", None),
         }
+
         with self._path.joinpath("build/packages.json").open("w") as fp:
-            json.dump(packages, fp)
+            json.dump(packages_json, fp)
         return manifest["package_name"]
 
     def remove_package(self, package_name: str) -> None:
-        packages = self.get_installed_packages()
-        if package_name in packages:
-            path = self._path.joinpath(f"contracts/{package_name}")
-            shutil.rmtree(path, ignore_errors=True)
-            del packages[package_name]
+        try:
+            with self._path.joinpath("build/packages.json").open() as fp:
+                packages_json = json.load(fp)
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
+            return
+        for source_path in [
+            k for k, v in packages_json["sources"].items() if package_name in v["packages"]
+        ]:
+            packages_json["sources"][source_path]["packages"].remove(package_name)
+            if not packages_json["sources"][source_path]["packages"]:
+                del packages_json["sources"][source_path]
+                if self._path.joinpath(source_path).exists():
+                    self._path.joinpath(source_path).unlink()
+                for path in list(Path(source_path).parents)[:-1]:
+                    parent_path = self._path.joinpath(path)
+                    if parent_path.exists() and not list(parent_path.glob("*")):
+                        parent_path.rmdir()
+
+        if package_name in packages_json["packages"]:
+            del packages_json["packages"][package_name]
+
         with self._path.joinpath("build/packages.json").open("w") as fp:
-            json.dump(packages, fp)
+            json.dump(packages_json, fp)
 
     def close(self, raises: bool = True) -> None:
         """Removes pointers to the project's ContractContainer objects and this object."""
