@@ -16,7 +16,7 @@ from brownie.network.web3 import _resolve_address, web3
 
 from . import compiler
 
-URI_REGEX = r"""^(?:erc1319://|)([^/:\s]*):(?:[0-9]+)/([a-z][a-z0-9_-]{0,255})@([^\s:/'";]*)$"""
+URI_REGEX = r"""^(?:erc1319://|)([^/:\s]*)(?::[0-9]+|)/([a-z][a-z0-9_-]{0,255})@([^\s:/'";]*)$"""
 
 
 def get_manifest(uri: str) -> Dict:
@@ -53,6 +53,7 @@ def get_manifest(uri: str) -> Dict:
         pm = _get_pm()
         pm.set_registry(address)
         manifest = pm.get_package(package_name, version).manifest
+        manifest["registry_address"] = address
 
     manifest = process_manifest(manifest)
 

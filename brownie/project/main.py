@@ -241,12 +241,12 @@ class Project(_ProjectBase):
             json.dump(packages_json, fp)
         return packages_json
 
-    def install_package(self, manifest: Dict) -> None:
+    def install_package(self, uri: str) -> str:
+        manifest = get_manifest(uri)
         package_name = manifest["package_name"]
         self.remove_package(package_name)
 
         packages = self.get_installed_packages()
-
         for path, source in manifest["sources"].items():
             for folder in list(Path(path).parents)[::-1]:
                 self._path.joinpath(folder).mkdir(exist_ok=True)
@@ -255,9 +255,11 @@ class Project(_ProjectBase):
         packages[package_name] = {
             "version": manifest["version"],
             "md5": get_package_hash(self._path.joinpath(f"contracts/{package_name}")),
+            "registry_address": manifest.get("registry_address", None),
         }
         with self._path.joinpath("build/packages.json").open("w") as fp:
             json.dump(packages, fp)
+        return manifest["package_name"]
 
     def remove_package(self, package_name: str) -> None:
         packages = self.get_installed_packages()
