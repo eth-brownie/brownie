@@ -14,16 +14,16 @@ def test_get_manifests(ipfs_mock):
 
 def test_dependency_paths(ipfs_mock):
     sources = get_manifest("ipfs://testipfs-complex")["sources"]
-    safe_math_a = sources["contracts/complex/math/SafeMath.sol"]
-    safe_math_b = sources["contracts/complex/utils/math/SafeMath.sol"]
-    assert safe_math_a == safe_math_b
+    assert "contracts/Complex.sol" in sources
+    assert "contracts/math/SafeMath.sol" in sources
+    assert "contracts/utils/Arrays.sol" in sources
 
 
 def test_contract_types(ipfs_mock):
     contract_types = get_manifest("ipfs://testipfs-complex")["contract_types"]
     assert "ComplexNothing" in contract_types
     assert "abi" in contract_types["ComplexNothing"]
-    assert contract_types["ComplexNothing"]["source_path"] == "contracts/complex/Complex.sol"
+    assert contract_types["ComplexNothing"]["source_path"] == "contracts/Complex.sol"
 
 
 def test_get_deployment_addresses_active_network(ipfs_mock):

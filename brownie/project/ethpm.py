@@ -82,7 +82,6 @@ def process_manifest(manifest: Dict) -> Dict:
             f"manifest is v{manifest['manifest_version']}"
         )
 
-    package_name = manifest["package_name"]
     for key in ("contract_types", "deployments", "sources"):
         manifest.setdefault(key, {})
 
@@ -91,10 +90,15 @@ def process_manifest(manifest: Dict) -> Dict:
         content = manifest["sources"].pop(key)
         if _is_uri(content):
             content = _get_uri_contents(content)
-        content = _modify_absolute_imports(content, package_name)
+        # ensure all absolute imports begin with contracts/
+        content = re.sub(
+            r"""(import((\s*{[^};]*}\s*from)|)\s*)("|')(contracts/||/)(?=[^./])""",
+            lambda k: f"{k.group(1)}{k.group(4)}contracts/",
+            content,
+        )
         path = Path("/").joinpath(key.lstrip("./")).resolve()
         path_str = path.as_posix()[len(path.anchor) :]
-        manifest["sources"][f"contracts/{package_name}/{path_str}"] = content
+        manifest["sources"][f"contracts/{path_str}"] = content
 
     # set contract_name in contract_types
     contract_types = manifest["contract_types"]
@@ -105,16 +109,11 @@ def process_manifest(manifest: Dict) -> Dict:
     # resolve package dependencies
     for dependency_uri in manifest.pop("build_dependencies", {}).values():
         dep_manifest = get_manifest(dependency_uri)
-        dep_name = dep_manifest["package_name"]
-        manifest["contract_types"].update(
-            dict((f"{dep_name}:{k}", v) for k, v in dep_manifest["contract_types"].items())
-        )
-        manifest["sources"].update(
-            dict(
-                (f"contracts/{package_name}/{k[10:]}", _modify_absolute_imports(v, package_name))
-                for k, v in dep_manifest["sources"].items()
-            )
-        )
+        for key in ("sources", "contract_types"):
+            for k in [i for i in manifest[key] if i in dep_manifest[key]]:
+                if manifest[key][k] != dep_manifest[key][k]:
+                    raise InvalidManifest("Namespace collision between package dependencies")
+            manifest[key].update(dep_manifest[key])
 
     # compile sources to expand contract_types
     if manifest["sources"]:
@@ -224,6 +223,6 @@ def _modify_absolute_imports(source: str, package_name: str) -> str:
     # adds contracts/package_name/ to start of any absolute import statements
     return re.sub(
         r"""(import((\s*{[^};]*}\s*from)|)\s*)("|')(contracts/||/)(?=[^./])""",
-        lambda k: f"{k.group(1)}{k.group(4)}contracts/{package_name}/",
+        lambda k: f"{k.group(1)}{k.group(4)}contracts/",
         source,
     )
