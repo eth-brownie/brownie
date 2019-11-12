@@ -223,30 +223,64 @@ class Project(_ProjectBase):
             _load_project_config(self._path)
 
     def get_installed_packages(self) -> Tuple[List, List]:
+
+        """
+        Returns a list of installed ethPM packages, and a list of packages
+        that are installed and one or more files are modified or deleted.
+        """
+
         try:
             with self._path.joinpath("build/packages.json").open() as fp:
                 packages_json = json.load(fp)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             return list(), list()
-        installed: Set = set()
+
+        # determine if packages are installed, modified, or deleted
+        installed: Set = set(packages_json["packages"])
         modified: Set = set()
+        deleted: Set = set(packages_json["packages"])
         for source_path in list(packages_json["sources"]):
             package_list = packages_json["sources"][source_path]["packages"]
 
+            # source does not exist, package has been modified
             if not self._path.joinpath(source_path).exists():
+                installed.difference_update(package_list)
                 modified.update(package_list)
                 continue
+
+            # source exists, package has NOT been deleted
+            deleted.difference_update(package_list)
             with self._path.joinpath(source_path).open("rb") as fp:
                 source = fp.read()
+
             if hashlib.md5(source).hexdigest() != packages_json["sources"][source_path]["md5"]:
+                # package has been modified
                 modified.update(package_list)
-            else:
-                installed.update(package_list)
-        installed.symmetric_difference_update(modified)
+
+        # deleted packages have not been modified, modified packages have not been deleted
+        modified.difference_update(deleted)
+        installed.difference_update(modified)
+
+        # properly remove deleted packages
+        for package_name in deleted:
+            self.remove_package(package_name)
+
         # warn user about modified packages
         return sorted(installed), sorted(modified)
 
-    def install_package(self, uri: str) -> str:
+    def install_package(self, uri: str, replace_existing: bool = False) -> str:
+
+        """
+        Installs an ethPM package within the project.
+
+        Args:
+            uri: manifest URI, can be erc1319 or ipfs
+            replace_existing: if True, existing files will be overwritten when
+                              installing the package
+
+        Returns: Name of the package
+        """
+
         manifest = get_manifest(uri)
         package_name = manifest["package_name"]
         self.remove_package(package_name)
@@ -258,23 +292,24 @@ class Project(_ProjectBase):
 
         for path, source in manifest["sources"].items():
             source_path = self._path.joinpath(path)
-            if source_path.exists():
+            if not replace_existing and source_path.exists():
                 with source_path.open() as fp:
                     if fp.read() != source:
-                        # warn of collision
-                        raise
+                        raise ValueError(
+                            f"Package and project both contain '{source_path}'"
+                            " but the files do not match"
+                        )
 
         for path, source in manifest["sources"].items():
             for folder in list(Path(path).parents)[::-1]:
                 self._path.joinpath(folder).mkdir(exist_ok=True)
-
             with self._path.joinpath(path).open("w") as fp:
                 fp.write(source)
 
-            packages_json["sources"].setdefault(
-                path, {"md5": hashlib.md5(source.encode()).hexdigest(), "packages": []}
-            )
+            packages_json["sources"].setdefault(path, {"packages": []})
+            packages_json["sources"][path]["md5"] = hashlib.md5(source.encode()).hexdigest()
             packages_json["sources"][path]["packages"].append(package_name)
+
         packages_json["packages"][package_name] = {
             "version": manifest["version"],
             "registry_address": manifest.get("registry_address", None),
@@ -284,7 +319,32 @@ class Project(_ProjectBase):
             json.dump(packages_json, fp)
         return manifest["package_name"]
 
+    def unlink_package(self, package_name: str) -> None:
+
+        """
+        Removes an ethPM package from the list of installed packages,
+        without deleting any of the package source files.
+
+        Args:
+            package_name: name of the package
+        """
+
+        self._remove_package(package_name, False)
+
     def remove_package(self, package_name: str) -> None:
+
+        """
+        Removes an ethPM package and deletes all related source files.
+        Sources that are still required by another installed package are not
+        deleted.
+
+        Args:
+            package_name: name of the package
+        """
+
+        self._remove_package(package_name, True)
+
+    def _remove_package(self, package_name: str, delete_files: bool) -> None:
         try:
             with self._path.joinpath("build/packages.json").open() as fp:
                 packages_json = json.load(fp)
@@ -294,18 +354,20 @@ class Project(_ProjectBase):
             k for k, v in packages_json["sources"].items() if package_name in v["packages"]
         ]:
             packages_json["sources"][source_path]["packages"].remove(package_name)
-            if not packages_json["sources"][source_path]["packages"]:
+            if delete_files and not packages_json["sources"][source_path]["packages"]:
+                # if source file is not associated with any other projects, delete it
                 del packages_json["sources"][source_path]
                 if self._path.joinpath(source_path).exists():
                     self._path.joinpath(source_path).unlink()
-                for path in list(Path(source_path).parents)[:-1]:
+
+                # remove empty folders
+                for path in list(Path(source_path).parents)[:-2]:
                     parent_path = self._path.joinpath(path)
                     if parent_path.exists() and not list(parent_path.glob("*")):
                         parent_path.rmdir()
 
         if package_name in packages_json["packages"]:
             del packages_json["packages"][package_name]
-
         with self._path.joinpath("build/packages.json").open("w") as fp:
             json.dump(packages_json, fp)
 
