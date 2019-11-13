@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 
+import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
 
 from ethpm.package import resolve_uri_contents
@@ -49,9 +50,8 @@ def get_manifest(uri: str) -> Dict:
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             pass
         # TODO chain != 1
-        pm = _get_pm()
-        pm.set_registry(address)
-        manifest = pm.get_package(package_name, version).manifest
+        web3._mainnet.pm.set_registry(address)
+        manifest = web3._mainnet.pm.get_package(package_name, version).manifest
         manifest["registry_address"] = address
 
     manifest = process_manifest(manifest)
@@ -183,8 +183,143 @@ def get_deployment_addresses(
     ]
 
 
-def _get_pm():  # type: ignore
-    return web3._mainnet.pm
+def get_installed_packages(project_path: Path) -> Tuple[Set, Set]:
+
+    """
+    Returns a list of a installed ethPM packages within a project, and a list
+    of packages that are installed and one or more files are modified or deleted.
+
+    Args:
+        project_path: Path to the root folder of the project
+    """
+
+    try:
+        with project_path.joinpath("build/packages.json").open() as fp:
+            packages_json = json.load(fp)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        return set(), set()
+
+    # determine if packages are installed, modified, or deleted
+    installed: Set = set(packages_json["packages"])
+    modified: Set = set()
+    deleted: Set = set(packages_json["packages"])
+    for source_path in list(packages_json["sources"]):
+        package_list = packages_json["sources"][source_path]["packages"]
+
+        # source does not exist, package has been modified
+        if not project_path.joinpath(source_path).exists():
+            installed.difference_update(package_list)
+            modified.update(package_list)
+            continue
+
+        # source exists, package has NOT been deleted
+        deleted.difference_update(package_list)
+        with project_path.joinpath(source_path).open("rb") as fp:
+            source = fp.read()
+
+        if hashlib.md5(source).hexdigest() != packages_json["sources"][source_path]["md5"]:
+            # package has been modified
+            modified.update(package_list)
+
+    # deleted packages have not been modified, modified packages have not been deleted
+    modified.difference_update(deleted)
+    installed.difference_update(modified)
+
+    # properly remove deleted packages
+    for package_name in deleted:
+        remove_package(project_path, package_name, True)
+
+    return installed, modified
+
+
+def install_package(project_path: Path, uri: str, replace_existing: bool = False) -> str:
+
+    """
+    Installs an ethPM package within the project.
+
+    Args:
+        uri: manifest URI, can be erc1319 or ipfs
+        replace_existing: if True, existing files will be overwritten when
+                            installing the package
+
+    Returns: Name of the package
+    """
+
+    manifest = get_manifest(uri)
+    package_name = manifest["package_name"]
+    remove_package(project_path, package_name, True)
+    try:
+        with project_path.joinpath("build/packages.json").open() as fp:
+            packages_json = json.load(fp)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        packages_json = {"sources": {}, "packages": {}}
+
+    for path, source in manifest["sources"].items():
+        source_path = project_path.joinpath(path)
+        if not replace_existing and source_path.exists():
+            with source_path.open() as fp:
+                if fp.read() != source:
+                    raise ValueError(
+                        f"Cannot overwrite existing file with different content: '{source_path}'"
+                    )
+
+    for path, source in manifest["sources"].items():
+        for folder in list(Path(path).parents)[::-1]:
+            project_path.joinpath(folder).mkdir(exist_ok=True)
+        with project_path.joinpath(path).open("w") as fp:
+            fp.write(source)
+
+        packages_json["sources"].setdefault(path, {"packages": []})
+        packages_json["sources"][path]["md5"] = hashlib.md5(source.encode()).hexdigest()
+        packages_json["sources"][path]["packages"].append(package_name)
+
+    packages_json["packages"][package_name] = {
+        "version": manifest["version"],
+        "registry_address": manifest.get("registry_address", None),
+    }
+
+    with project_path.joinpath("build/packages.json").open("w") as fp:
+        json.dump(packages_json, fp)
+    return manifest["package_name"]
+
+
+def remove_package(project_path: Path, package_name: str, delete_files: bool) -> None:
+
+    """
+    Removes an ethPM package from a project.
+
+    Args:
+        package_name: name of the package
+        delete_files: if True, source files related to the package are deleted.
+                      files that are still required by other installed packages
+                      will not be deleted.
+    """
+
+    try:
+        with project_path.joinpath("build/packages.json").open() as fp:
+            packages_json = json.load(fp)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        return
+    for source_path in [
+        k for k, v in packages_json["sources"].items() if package_name in v["packages"]
+    ]:
+        packages_json["sources"][source_path]["packages"].remove(package_name)
+        if delete_files and not packages_json["sources"][source_path]["packages"]:
+            # if source file is not associated with any other projects, delete it
+            del packages_json["sources"][source_path]
+            if project_path.joinpath(source_path).exists():
+                project_path.joinpath(source_path).unlink()
+
+            # remove empty folders
+            for path in list(Path(source_path).parents)[:-2]:
+                parent_path = project_path.joinpath(path)
+                if parent_path.exists() and not list(parent_path.glob("*")):
+                    parent_path.rmdir()
+
+    if package_name in packages_json["packages"]:
+        del packages_json["packages"][package_name]
+    with project_path.joinpath("build/packages.json").open("w") as fp:
+        json.dump(packages_json, fp)
 
 
 def _is_uri(uri: str) -> bool:
@@ -206,12 +341,3 @@ def _get_uri_contents(uri: str) -> str:
     with path.open() as fp:
         data = fp.read()
     return data
-
-
-def _modify_absolute_imports(source: str, package_name: str) -> str:
-    # adds contracts/package_name/ to start of any absolute import statements
-    return re.sub(
-        r"""(import((\s*{[^};]*}\s*from)|)\s*)("|')(contracts/||/)(?=[^./])""",
-        lambda k: f"{k.group(1)}{k.group(4)}contracts/",
-        source,
-    )
