@@ -233,8 +233,8 @@ def get_installed_packages(project_path: Path) -> Tuple[List, List]:
         remove_package(project_path, package_name, True)
 
     return (
-        [(i, packages_json["packages"][i]["version"]) for i in installed],
-        [(i, packages_json["packages"][i]["version"]) for i in modified],
+        [(i, packages_json["packages"][i]["version"]) for i in sorted(installed)],
+        [(i, packages_json["packages"][i]["version"]) for i in sorted(modified)],
     )
 
 
@@ -265,7 +265,7 @@ def install_package(project_path: Path, uri: str, replace_existing: bool = False
         if not replace_existing and source_path.exists():
             with source_path.open() as fp:
                 if fp.read() != source:
-                    raise ValueError(
+                    raise FileExistsError(
                         f"Cannot overwrite existing file with different content: '{source_path}'"
                     )
 
