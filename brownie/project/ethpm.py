@@ -274,9 +274,11 @@ def install_package(project_path: Path, uri: str, replace_existing: bool = False
             project_path.joinpath(folder).mkdir(exist_ok=True)
         with project_path.joinpath(path).open("w") as fp:
             fp.write(source)
+        with project_path.joinpath(path).open("rb") as fp:
+            source_bytes = fp.read()
 
         packages_json["sources"].setdefault(path, {"packages": []})
-        packages_json["sources"][path]["md5"] = hashlib.md5(source.encode()).hexdigest()
+        packages_json["sources"][path]["md5"] = hashlib.md5(source_bytes).hexdigest()
         packages_json["sources"][path]["packages"].append(package_name)
 
     packages_json["packages"][package_name] = {
