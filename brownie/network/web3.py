@@ -103,32 +103,11 @@ def _resolve_address(domain: str) -> str:
             raise MainnetUndefined(f"Cannot resolve ENS address - {e}") from None
         address = ns.address(domain)
         _ens_cache[domain] = [address, int(time.time())]
-        if address is not None:
-            _ens_cache[address] = [domain, int(time.time())]
         with _get_path().open("w") as fp:
             json.dump(_ens_cache, fp)
     if _ens_cache[domain][0] is None:
         raise UnsetENSName(f"ENS domain '{domain}' is not set")
     return _ens_cache[domain][0]
-
-
-def _resolve_domain(address: str) -> str:
-    # convert address to ENS domain
-    address = to_address(address)
-    if address not in _ens_cache or time.time() - _ens_cache[address][1] > 86400:
-        try:
-            ns = ENS.fromWeb3(web3._mainnet)
-        except MainnetUndefined as e:
-            raise MainnetUndefined(f"Cannot resolve ENS address - {e}") from None
-        domain = ns.name(address)
-        _ens_cache[address] = [domain, int(time.time())]
-        if domain is not None:
-            _ens_cache[domain] = [address, int(time.time())]
-        with _get_path().open("w") as fp:
-            json.dump(_ens_cache, fp)
-    if _ens_cache[address][0] is None:
-        raise UnsetENSName(f"Address '{address}' does not resolve to an ENS domain")
-    return _ens_cache[address][0]
 
 
 web3 = Web3()

@@ -4,7 +4,6 @@ from docopt import docopt
 
 from brownie._config import CONFIG
 from brownie.exceptions import ProjectNotFound
-from brownie.network.web3 import _resolve_domain
 from brownie.project import check_for_project, ethpm
 from brownie.utils import color, notify
 
@@ -51,12 +50,7 @@ def _all():
         if not package_list:
             path.unlink()
             continue
-        address = path.stem
-        try:
-            domain = _resolve_domain(address)
-            print(f"{color['bright magenta']}erc1319://{domain}{color}")
-        except Exception:
-            print(address)
+        print(f"{color['bright magenta']}erc1319://{path.name}{color}")
         for package_path in package_list:
             u = "\u2514" if package_path == package_list[-1] else "\u251c"
             versions = sorted(package_path.glob("*.json"))

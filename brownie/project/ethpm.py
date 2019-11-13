@@ -12,7 +12,7 @@ from ethpm.package import resolve_uri_contents
 from brownie._config import CONFIG
 from brownie.convert import to_address
 from brownie.exceptions import InvalidManifest
-from brownie.network.web3 import _resolve_address, web3
+from brownie.network.web3 import web3
 
 from . import compiler
 
@@ -40,7 +40,6 @@ def get_manifest(uri: str) -> Dict:
         path = None
     else:
         address, package_name, version = match.groups()
-        address = _resolve_address(address)
         path = CONFIG["brownie_folder"].joinpath(
             f"data/ethpm/{address}/{package_name}/{version}.json"
         )
