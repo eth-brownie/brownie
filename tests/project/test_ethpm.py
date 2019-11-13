@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+import shutil
+from pathlib import Path
+
 import pytest
 
 from brownie.project import ethpm
@@ -13,7 +16,17 @@ def tp_path(ipfs_mock, testproject):
     yield testproject._path
 
 
-def test_get_manifests(ipfs_mock):
+def test_get_manifest_fromm_ipfs(ipfs_mock):
+    path = Path("brownie/data/ethpm/zeppelin.snakecharmers.eth")
+    if path.exists():
+        shutil.rmtree(path)
+    ethpm.get_manifest("erc1319://zeppelin.snakecharmers.eth:1/access@1.0.0")
+    assert Path("brownie/data/ethpm/zeppelin.snakecharmers.eth").exists()
+    ethpm.get_manifest("erc1319://zeppelin.snakecharmers.eth:1/access@1.0.0")
+    assert Path("brownie/data/ethpm/zeppelin.snakecharmers.eth").exists()
+
+
+def test_get_mock_manifests(ipfs_mock):
     ethpm.get_manifest("ipfs://testipfs-math")
     ethpm.get_manifest("ipfs://testipfs-utils")
     ethpm.get_manifest("ipfs://testipfs-complex")
