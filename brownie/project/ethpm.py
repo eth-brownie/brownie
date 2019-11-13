@@ -42,7 +42,7 @@ def get_manifest(uri: str) -> Dict:
         address, package_name, version = match.groups()
         address = _resolve_address(address)
         path = CONFIG["brownie_folder"].joinpath(
-            f"data/ethpm/{address}/{package_name}/{version.replace('.','-')}.json"
+            f"data/ethpm/{address}/{package_name}/{version}.json"
         )
         try:
             with path.open("r") as fp:
@@ -183,7 +183,7 @@ def get_deployment_addresses(
     ]
 
 
-def get_installed_packages(project_path: Path) -> Tuple[Set, Set]:
+def get_installed_packages(project_path: Path) -> Tuple[List, List]:
 
     """
     Returns a list of a installed ethPM packages within a project, and a list
@@ -191,13 +191,17 @@ def get_installed_packages(project_path: Path) -> Tuple[Set, Set]:
 
     Args:
         project_path: Path to the root folder of the project
+
+    Returns:
+        (project name, version) of installed packages
+        (project name, version) of installed-but-modified packages
     """
 
     try:
         with project_path.joinpath("build/packages.json").open() as fp:
             packages_json = json.load(fp)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
-        return set(), set()
+        return list(), list()
 
     # determine if packages are installed, modified, or deleted
     installed: Set = set(packages_json["packages"])
@@ -229,7 +233,10 @@ def get_installed_packages(project_path: Path) -> Tuple[Set, Set]:
     for package_name in deleted:
         remove_package(project_path, package_name, True)
 
-    return installed, modified
+    return (
+        [(i, packages_json["packages"][i]["version"]) for i in installed],
+        [(i, packages_json["packages"][i]["version"]) for i in modified],
+    )
 
 
 def install_package(project_path: Path, uri: str, replace_existing: bool = False) -> str:
