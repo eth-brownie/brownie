@@ -50,13 +50,15 @@ def get_manifest(uri: str) -> Dict:
             pass
         # TODO chain != 1
         web3._mainnet.pm.set_registry(address)
-        manifest = web3._mainnet.pm.get_package(package_name, version).manifest
-        manifest["registry_address"] = address
+        package = web3._mainnet.pm.get_package(package_name, version)
+        manifest = package.manifest
+        uri = package.uri
 
-    manifest = process_manifest(manifest)
+    manifest = process_manifest(manifest, uri)
 
-    # save a local copy before returning
-    if path is not None:
+    if path:
+        manifest["meta_brownie"]["registry_address"] = address
+        # save a local copy before returning
         for subfolder in list(path.parents)[2::-1]:
             subfolder.mkdir(exist_ok=True)
         with path.open("w") as fp:
@@ -65,13 +67,14 @@ def get_manifest(uri: str) -> Dict:
     return manifest
 
 
-def process_manifest(manifest: Dict) -> Dict:
+def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
 
     """
     Processes a manifest for use with Brownie.
 
     Args:
         manifest: ethPM manifest
+        uri: IPFS uri of the package
     """
 
     if manifest["manifest_version"] != "2":
@@ -146,7 +149,7 @@ def process_manifest(manifest: Dict) -> Dict:
         if not deployments:
             del manifest["deployments"][chain_uri]
 
-    manifest["brownie"] = True
+    manifest["meta_brownie"] = {"manifest_uri": uri, "registry_address": None}
     return manifest
 
 
@@ -168,7 +171,7 @@ def get_deployment_addresses(
     if genesis_hash is None:
         genesis_hash = web3.genesis_hash
 
-    if "brownie" not in manifest:
+    if "meta_brownie" not in manifest:
         manifest = process_manifest(manifest)
 
     chain_uri = f"blockchain://{genesis_hash}"
@@ -282,8 +285,9 @@ def install_package(project_path: Path, uri: str, replace_existing: bool = False
         packages_json["sources"][path]["packages"].append(package_name)
 
     packages_json["packages"][package_name] = {
+        "manifest_uri": manifest["meta_brownie"]["manifest_uri"],
+        "registry_address": manifest["meta_brownie"]["registry_address"],
         "version": manifest["version"],
-        "registry_address": manifest.get("registry_address", None),
     }
 
     with project_path.joinpath("build/packages.json").open("w") as fp:

@@ -16,7 +16,7 @@ def tp_path(ipfs_mock, testproject):
     yield testproject._path
 
 
-def test_get_manifest_fromm_ipfs(ipfs_mock):
+def test_get_manifest_from_ipfs(ipfs_mock):
     path = Path("brownie/data/ethpm/zeppelin.snakecharmers.eth")
     if path.exists():
         shutil.rmtree(path)
@@ -24,6 +24,14 @@ def test_get_manifest_fromm_ipfs(ipfs_mock):
     assert Path("brownie/data/ethpm/zeppelin.snakecharmers.eth").exists()
     ethpm.get_manifest("erc1319://zeppelin.snakecharmers.eth:1/access@1.0.0")
     assert Path("brownie/data/ethpm/zeppelin.snakecharmers.eth").exists()
+
+
+def test_meta_brownie(ipfs_mock):
+    manifest = ethpm.get_manifest("erc1319://zeppelin.snakecharmers.eth:1/access@1.0.0")
+    assert manifest["meta_brownie"] == {
+        "registry_address": "zeppelin.snakecharmers.eth",
+        "manifest_uri": "ipfs://QmWqn5uYx9LvV4aqj2qZ5FiFZykmS3LGdLpod7XLjxPVYr",
+    }
 
 
 def test_get_mock_manifests(ipfs_mock):
