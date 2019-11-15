@@ -26,6 +26,7 @@ class Web3(_Web3):
         self.provider = None
         self._mainnet_w3: Optional[_Web3] = None
         self._genesis_hash: Optional[str] = None
+        self._chain_uri: Optional[str] = None
 
     def connect(self, uri: str) -> None:
         """Connects to a provider"""
@@ -51,6 +52,7 @@ class Web3(_Web3):
         if self.provider:
             self.provider = None
             self._genesis_hash = None
+            self._chain_uri = None
 
     def isConnected(self) -> bool:
         if not self.provider:
@@ -76,6 +78,14 @@ class Web3(_Web3):
         if self._genesis_hash is None:
             self._genesis_hash = self.eth.getBlock(0)["hash"].hex()[2:]
         return self._genesis_hash
+
+    @property
+    def chain_uri(self) -> str:
+        if self._chain_uri is None:
+            block_number = self.eth.blockNumber - 16
+            block_hash = self.eth.getBlock(block_number)["hash"].hex()[2:]
+            self._chain_uri = f"blockchain://{self.genesis_hash}/block/{block_hash}"
+        return self._chain_uri
 
 
 def _expand_environment_vars(uri: str) -> str:
