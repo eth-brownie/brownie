@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import json
-import os
 import shutil
 import sys
 import zipfile
@@ -198,7 +197,7 @@ class Project(_ProjectBase):
         deployments = list(
             self._path.glob(f"build/deployments/{CONFIG['active_network']['name']}/*.json")
         )
-        deployments.sort(key=os.path.getmtime)
+        deployments.sort(key=lambda k: k.stat().st_mtime)
         for build_json in deployments:
             with build_json.open() as fp:
                 build = json.load(fp)

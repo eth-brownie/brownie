@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import hashlib
+import itertools
 import json
 import re
 from pathlib import Path
@@ -9,6 +10,7 @@ from urllib.parse import urlparse
 
 from ethpm.package import resolve_uri_contents
 
+from brownie import network
 from brownie._config import CONFIG
 from brownie.convert import to_address
 from brownie.exceptions import InvalidManifest
@@ -199,11 +201,7 @@ def get_installed_packages(project_path: Path) -> Tuple[List, List]:
         (project name, version) of installed-but-modified packages
     """
 
-    try:
-        with project_path.joinpath("build/packages.json").open() as fp:
-            packages_json = json.load(fp)
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        return list(), list()
+    packages_json = _load_packages_json(project_path)
 
     # determine if packages are installed, modified, or deleted
     installed: Set = set(packages_json["packages"])
@@ -257,11 +255,7 @@ def install_package(project_path: Path, uri: str, replace_existing: bool = False
     manifest = get_manifest(uri)
     package_name = manifest["package_name"]
     remove_package(project_path, package_name, True)
-    try:
-        with project_path.joinpath("build/packages.json").open() as fp:
-            packages_json = json.load(fp)
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        packages_json = {"sources": {}, "packages": {}}
+    packages_json = _load_packages_json(project_path)
 
     for path, source in manifest["sources"].items():
         source_path = project_path.joinpath(path)
@@ -307,11 +301,7 @@ def remove_package(project_path: Path, package_name: str, delete_files: bool) ->
                       will not be deleted.
     """
 
-    try:
-        with project_path.joinpath("build/packages.json").open() as fp:
-            packages_json = json.load(fp)
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        return
+    packages_json = _load_packages_json(project_path)
     for source_path in [
         k for k, v in packages_json["sources"].items() if package_name in v["packages"]
     ]:
@@ -332,6 +322,134 @@ def remove_package(project_path: Path, package_name: str, delete_files: bool) ->
         del packages_json["packages"][package_name]
     with project_path.joinpath("build/packages.json").open("w") as fp:
         json.dump(packages_json, fp)
+
+
+def create_manifest(project_path: Path, package_config: Dict) -> Dict:
+    for key in ("package_name", "version", "settings"):
+        if package_config.get(key, None) is None:
+            raise
+    for key in ("deployment_networks", "include_dependencies"):
+        if package_config["settings"].get(key, None) is None:
+            raise
+
+    manifest = {
+        "manifest_version": "2",
+        "package_name": package_config["package_name"],
+        "version": package_config["version"],
+        "meta": dict((k, v) for k, v in package_config["meta"].items() if v),
+        "sources": {},
+        "contract_types": {},
+    }
+
+    # load packages.json and add build_dependencies
+    packages_json: Dict = {"sources": {}, "packages": {}}
+    if not package_config["settings"]["include_dependencies"]:
+        installed, modified = get_installed_packages(project_path)
+        if modified:
+            raise
+        packages_json = _load_packages_json(project_path)
+        manifest["build_dependencies"] = dict(
+            (k, v["manifest_uri"]) for k, v in packages_json["packages"].items()
+        )
+
+    # add sources
+    for path in project_path.glob("contracts/**/*.sol"):
+        if path.as_posix() in packages_json["sources"]:
+            continue
+        with path.open() as fp:
+            # TODO - upload to IPFS
+            manifest["sources"][f"./{path.as_posix()}"] = fp.read()
+
+    # add contract_types
+    for path in project_path.glob("build/contracts/*.json"):
+        with path.open() as fp:
+            build_json = json.load(fp)
+        if not build_json["bytecode"]:
+            # skip contracts that cannot deploy
+            continue
+        if build_json["sourcePath"] in packages_json["sources"]:
+            # skip dependencies
+            continue
+        manifest["contract_types"][build_json["contractName"]] = _get_contract_type(build_json)
+
+    # add deployments
+    deployment_networks = package_config["settings"]["deployment_networks"]
+    if deployment_networks:
+        active_network = network.show_active()
+        if active_network:
+            network.disconnect()
+        manifest["deployments"] = {}
+        if deployment_networks == "*":
+            deployment_networks = [i.stem for i in project_path.glob("build/deployments/*")]
+        for network_name in deployment_networks:
+            instances = list(project_path.glob(f"build/deployments/{network_name}/*.json"))
+            if not instances:
+                continue
+            instances.sort(key=lambda k: k.stat().st_mtime, reverse=True)
+            network.connect(network_name)
+            manifest["deployments"][web3.chain_uri] = {}
+            for path in instances:
+                with path.open() as fp:
+                    build_json = json.load(fp)
+
+                alias = build_json["contractName"]
+                source_path = build_json["sourcePath"]
+                if source_path in packages_json["sources"]:
+                    alias = f"{packages_json['sources'][source_path]['packages'][0]}:{alias}"
+
+                if alias in manifest["contract_types"]:
+                    # skip deployment if bytecode does not match that of contract_type
+                    bytecode = manifest["contract_types"][alias]["deployment_bytecode"]["bytecode"]
+                    if f"0x{build_json['bytecode']}" != bytecode:
+                        continue
+                else:
+                    # add contract_type for dependency
+                    manifest["contract_types"][alias] = _get_contract_type(build_json)
+
+                key = build_json["contractName"]
+                for i in itertools.count(1):
+                    if key not in manifest["deployments"][web3.chain_uri]:
+                        break
+                    key = f"{build_json['contractName']}-{i}"
+
+                manifest["deployments"][web3.chain_uri][key] = {
+                    "address": path.stem,
+                    "contract_type": alias,
+                }
+            network.disconnect()
+        if active_network:
+            network.connect(active_network)
+
+    return manifest
+
+
+def _get_contract_type(build_json: Dict) -> Dict:
+    return {
+        "contract_name": build_json["contractName"],
+        "source_path": f"./{build_json['sourcePath']}",
+        "deployment_bytecode": {"bytecode": f"0x{build_json['bytecode']}"},
+        "runtime_bytecode": {"bytecode": f"0x{build_json['deployedBytecode']}"},
+        "abi": build_json["abi"],
+        "compiler": {
+            "name": "solc",
+            "version": build_json["compiler"]["version"],
+            "settings": {
+                "optimizer": {
+                    "enabled": build_json["compiler"]["optimize"],
+                    "runs": build_json["compiler"]["runs"],
+                },
+                "evmVersion": build_json["compiler"]["evm_version"],
+            },
+        },
+    }
+
+
+def _load_packages_json(project_path: Path) -> Dict:
+    try:
+        with project_path.joinpath("build/packages.json").open() as fp:
+            return json.load(fp)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        return {"sources": {}, "packages": {}}
 
 
 def _is_uri(uri: str) -> bool:
