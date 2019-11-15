@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import shutil
+
 from docopt import docopt
 
 from brownie._config import CONFIG
@@ -15,6 +17,10 @@ Commands:
   unlink <name>                    Unlink a package in this project
   remove <name>                    Remove an installed package from this project
   all                              List all locally available packages
+  create                           Release a new
+
+brownie ethpm create --name=
+
 
 Options:
   --help -h              Display this message
@@ -31,9 +37,16 @@ def main():
         return
     if command == "all":
         return _all()
+
     project_path = check_for_project(".")
     if project_path is None:
         raise ProjectNotFound
+    if not project_path.joinpath("ethpm-config.yaml").exists():
+        shutil.copy(
+            CONFIG["brownie_folder"].joinpath("data/ethpm.yaml"),
+            project_path.joinpath("ethpm-config.yaml"),
+        )
+
     if command == "list":
         _list(project_path)
     if command == "install":

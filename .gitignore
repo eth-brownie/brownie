@@ -3,7 +3,7 @@ __pycache__
 .history
 .coverage
 build/
-brownie/data/**
+brownie/data/*/
 brownie/data/*.json
 dist/
 docs/_build
