@@ -6,15 +6,22 @@ package_name:
 version:
 settings:
   deployment_networks:
+    -
+    -
   include_dependencies:
 
 # optional fields
 meta:
   description:
   authors:
+    -
+    -
   license:
   keywords:
+    -
+    -
   links:
     website:
     documentation:
     repository:
+    audit:

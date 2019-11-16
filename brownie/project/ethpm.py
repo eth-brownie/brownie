@@ -155,6 +155,27 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
     return manifest
 
 
+def _is_uri(uri: str) -> bool:
+    try:
+        result = urlparse(uri)
+        return all([result.scheme, result.netloc])
+    except ValueError:
+        return False
+
+
+def _get_uri_contents(uri: str) -> str:
+    path = CONFIG["brownie_folder"].joinpath(f"data/ipfs_cache/{urlparse(uri).netloc}.ipfs")
+    path.parent.mkdir(exist_ok=True)
+    if not path.exists():
+        data = resolve_uri_contents(uri)
+        with path.open("wb") as fp:
+            fp.write(data)
+        return data.decode()
+    with path.open() as fp:
+        data = fp.read()
+    return data
+
+
 def get_deployment_addresses(
     manifest: Dict, contract_name: str, genesis_hash: Optional[str] = None
 ) -> List:
@@ -325,12 +346,7 @@ def remove_package(project_path: Path, package_name: str, delete_files: bool) ->
 
 
 def create_manifest(project_path: Path, package_config: Dict) -> Dict:
-    for key in ("package_name", "version", "settings"):
-        if package_config.get(key, None) is None:
-            raise
-    for key in ("deployment_networks", "include_dependencies"):
-        if package_config["settings"].get(key, None) is None:
-            raise
+    package_config = _remove_empty_fields(package_config)
 
     manifest = {
         "manifest_version": "2",
@@ -379,7 +395,7 @@ def create_manifest(project_path: Path, package_config: Dict) -> Dict:
         if active_network:
             network.disconnect()
         manifest["deployments"] = {}
-        if deployment_networks == "*":
+        if deployment_networks in ("*", ["*"]):
             deployment_networks = [i.stem for i in project_path.glob("build/deployments/*")]
         for network_name in deployment_networks:
             instances = list(project_path.glob(f"build/deployments/{network_name}/*.json"))
@@ -452,22 +468,13 @@ def _load_packages_json(project_path: Path) -> Dict:
         return {"sources": {}, "packages": {}}
 
 
-def _is_uri(uri: str) -> bool:
-    try:
-        result = urlparse(uri)
-        return all([result.scheme, result.netloc])
-    except ValueError:
-        return False
-
-
-def _get_uri_contents(uri: str) -> str:
-    path = CONFIG["brownie_folder"].joinpath(f"data/ipfs_cache/{urlparse(uri).netloc}.ipfs")
-    path.parent.mkdir(exist_ok=True)
-    if not path.exists():
-        data = resolve_uri_contents(uri)
-        with path.open("wb") as fp:
-            fp.write(data)
-        return data.decode()
-    with path.open() as fp:
-        data = fp.read()
-    return data
+def _remove_empty_fields(initial: Dict) -> Dict:
+    result = {}
+    for key, value in initial.items():
+        if isinstance(initial[key], dict):
+            value = _remove_empty_fields(value)
+        if isinstance(initial[key], list):
+            value = [i for i in initial[key] if i is not None]
+        if value not in (None, {}, [], ""):
+            result[key] = value
+    return result
