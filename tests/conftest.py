@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
+from ethpm._utils.ipfs import dummy_ipfs_pin
+from ethpm.backends.ipfs import BaseIPFSBackend
 
 import brownie
 from brownie._config import ARGV
@@ -257,14 +259,47 @@ def ext_tester(ExternalCallTester, accounts):
     return ExternalCallTester.deploy({"from": accounts[0]})
 
 
-# mock ethPM registries by preloading files into Brownie's IPFS cache
-@pytest.fixture(scope="module")
-def ipfs_mock():
+# ipfs fixtures
+
+
+class DummyIPFSBackend(BaseIPFSBackend):
+
+    _assets = {}
+    _path = Path("./tests/data/ipfs-cache-mock").resolve()
+
+    def fetch_uri_contents(self, ipfs_uri: str) -> bytes:
+        ipfs_uri = ipfs_uri.replace("ipfs://", "")
+        if ipfs_uri not in self._assets:
+            with self._path.joinpath(ipfs_uri).open("rb") as fp:
+                self._assets[ipfs_uri] = fp.read()
+        return self._assets[ipfs_uri]
+
+    def pin_assets(self, file_or_dir_path: Path):
+        """
+        Return a dict containing the IPFS hash, file name, and size of a file.
+        """
+        if file_or_dir_path.is_dir():
+            for path in file_or_dir_path.glob("*"):
+                with path.open("rb") as fp:
+                    self._assets[path.name] = fp.read()
+            asset_data = [dummy_ipfs_pin(path) for path in file_or_dir_path.glob("*")]
+        elif file_or_dir_path.is_file():
+            with file_or_dir_path.open("rb") as fp:
+                self._assets[path.name] = fp.read()
+            asset_data = [dummy_ipfs_pin(file_or_dir_path)]
+        else:
+            raise FileNotFoundError(f"{file_or_dir_path} is not a valid file or directory path.")
+        return asset_data
+
+
+@pytest.fixture
+def ipfs_mock(monkeypatch):
+    monkeypatch.setattr("brownie.project.ethpm.InfuraIPFSBackend", DummyIPFSBackend)
     ipfs_path = Path("brownie/data/ipfs_cache")
     temp_path = ipfs_path.parent.joinpath("_ipfs_cache")
     ipfs_path.mkdir(exist_ok=True)
     ipfs_path.rename(temp_path)
-    shutil.copytree("tests/data/ipfs-cache-mock", ipfs_path)
     yield
-    shutil.rmtree(ipfs_path)
+    if ipfs_path.exists():
+        shutil.rmtree(ipfs_path)
     temp_path.rename(ipfs_path)
