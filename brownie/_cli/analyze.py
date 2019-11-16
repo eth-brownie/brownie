@@ -88,7 +88,7 @@ def construct_request_from_artifact(artifact):
         "sources": construct_source_dict_from_artifact(artifact),
         "source_list": source_list if source_list else None,
         "main_source": artifact.get("sourcePath"),
-        "solc_version": artifact["compiler"]["version"].replace("Version:", "").strip(),
+        "solc_version": artifact["compiler"]["version"],
         "analysis_mode": "full" if ARGV["full"] else "quick",
     }
 

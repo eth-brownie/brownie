@@ -12,6 +12,10 @@ To compile a project:
 
 Each time the compiler runs, Brownie compares hashes of the contract source code against the existing compiled versions.  If a contract has not changed it will not be recompiled. If you wish to force a recompile of the entire project, use ``brownie compile --all``.
 
+.. note::
+
+    All of a project's contract sources must be placed inside the ``contracts/`` folder. Attempting to import sources from outside this folder will result in a compiler error.
+
 .. _compile_settings:
 
 Compiler Settings

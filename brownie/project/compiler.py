@@ -48,7 +48,7 @@ def set_solc_version(version: str) -> str:
     except solcx.exceptions.SolcNotInstalled:
         install_solc(version)
         solcx.set_solc_version(version, silent=True)
-    return solcx.get_solc_version_string()
+    return str(solcx.get_solc_version())
 
 
 def install_solc(*versions: str) -> None:
@@ -65,6 +65,7 @@ def compile_and_format(
     evm_version: int = None,
     minify: bool = False,
     silent: bool = True,
+    allow_paths: Optional[str] = None,
 ) -> Dict:
     """Compiles contracts and returns build data.
 
@@ -76,6 +77,7 @@ def compile_and_format(
         evm_version: evm version to compile for
         minify: minify source files
         silent: verbose reporting
+        allow_paths: compiler allowed filesystem import path
 
     Returns:
         build data dict
@@ -91,11 +93,11 @@ def compile_and_format(
     build_json: Dict = {}
     for version, path_list in path_versions.items():
         set_solc_version(version)
-        compiler_data = {"minify_source": minify, "version": solcx.get_solc_version_string()}
+        compiler_data = {"minify_source": minify, "version": str(solcx.get_solc_version())}
         to_compile = dict((k, v) for k, v in contract_sources.items() if k in path_list)
 
         input_json = generate_input_json(to_compile, optimize, runs, evm_version, minify)
-        output_json = compile_from_input_json(input_json, silent)
+        output_json = compile_from_input_json(input_json, silent, allow_paths)
         build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
     return build_json
 
@@ -261,19 +263,26 @@ def generate_input_json(
     return input_json
 
 
-def compile_from_input_json(input_json: Dict, silent: bool = True) -> Dict:
-    """Compiles contracts from a standard input json.
+def compile_from_input_json(
+    input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
+) -> Dict:
+
+    """
+    Compiles contracts from a standard input json.
 
     Args:
         input_json: solc input json
         silent: verbose reporting
+        allow_paths: compiler allowed filesystem import path
 
-    Returns: standard compiler output json"""
+    Returns: standard compiler output json
+    """
+
     optimizer = input_json["settings"]["optimizer"]
     input_json["settings"].setdefault("evmVersion", None)
     if not silent:
         print("Compiling contracts...")
-        print(f"  Solc {solcx.get_solc_version_string()}")
+        print(f"  Solc version: {str(solcx.get_solc_version())}")
         print(
             "  Optimizer: "
             + (f"Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled")
@@ -286,7 +295,7 @@ def compile_from_input_json(input_json: Dict, silent: bool = True) -> Dict:
             optimize=optimizer["enabled"],
             optimize_runs=optimizer["runs"],
             evm_version=input_json["settings"]["evmVersion"],
-            allow_paths=".",
+            allow_paths=allow_paths,
         )
     except solcx.exceptions.SolcError as e:
         raise CompilerError(e)

@@ -302,7 +302,7 @@ Module Methods
         >>> from brownie.project import compiler
         >>> compiler.install_solc("0.4.25", "0.5.10")
 
-.. py:method:: compiler.compile_and_format(contracts, solc_version=None, optimize=True, runs=200, evm_version=None, minify=False, silent=True)
+.. py:method:: compiler.compile_and_format(contracts, solc_version=None, optimize=True, runs=200, evm_version=None, minify=False, silent=True, allow_paths=None)
 
     Given a dict in the format ``{'path': "source code"}``, compiles the contracts and returns the formatted `build data <compile-json>`_.
 
@@ -313,6 +313,7 @@ Module Methods
     * ``evm_version``: EVM version to target. If ``None`` the compiler default is used.
     * ``minify``: Should contract sources be `minified <sources-minify>`_?
     * ``silent``: Toggle console verbosity
+    * ``allow_paths``: Import path, passed to `solc` as an additional path that contract files may be imported from
 
     Calling this method is roughly equivalent to the following:
 
@@ -340,7 +341,7 @@ Module Methods
     Generates a `standard solc input JSON <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_ as a dict.
 
 
-.. py:method:: compiler.compile_from_input_json(input_json, silent=True)
+.. py:method:: compiler.compile_from_input_json(input_json, silent=True, allow_paths=None)
 
     Compiles from an input JSON and returns a `standard solc output JSON <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#output-description>`_ as a dict.
 

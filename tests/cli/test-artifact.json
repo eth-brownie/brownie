@@ -1277,7 +1277,7 @@
     "minify_source": false,
     "optimize": true,
     "runs": 200,
-    "version": "Version: 0.5.11+commit.22be8592.Linux.g++"
+    "version": "0.5.11+commit.22be8592.Linux.g++"
   },
   "contractName": "SafeMath",
   "coverageMap": {

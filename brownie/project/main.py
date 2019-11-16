@@ -47,6 +47,9 @@ class _ProjectBase:
         self._build = Build(self._sources)
 
     def _compile(self, sources: Dict, compiler_config: Dict, silent: bool) -> None:
+        allow_paths = None
+        if self._path is not None:
+            allow_paths = self._path.joinpath("contracts").as_posix()
         build_json = compiler.compile_and_format(
             sources,
             solc_version=compiler_config["version"],
@@ -55,6 +58,7 @@ class _ProjectBase:
             evm_version=compiler_config["evm_version"],
             minify=compiler_config["minify_source"],
             silent=silent,
+            allow_paths=allow_paths,
         )
         for data in build_json.values():
             self._build._add(data)
