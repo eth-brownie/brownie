@@ -15,6 +15,8 @@ from brownie._config import CONFIG
 from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
 
+_chain_uri_cache: Dict = {}
+
 
 class Web3(_Web3):
 
@@ -81,11 +83,12 @@ class Web3(_Web3):
 
     @property
     def chain_uri(self) -> str:
-        if self._chain_uri is None:
-            block_number = self.eth.blockNumber - 16
+        if self.genesis_hash not in _chain_uri_cache:
+            block_number = max(self.eth.blockNumber - 16, 1)
             block_hash = self.eth.getBlock(block_number)["hash"].hex()[2:]
-            self._chain_uri = f"blockchain://{self.genesis_hash}/block/{block_hash}"
-        return self._chain_uri
+            chain_uri = f"blockchain://{self.genesis_hash}/block/{block_hash}"
+            _chain_uri_cache[self.genesis_hash] = chain_uri
+        return _chain_uri_cache[self.genesis_hash]
 
 
 def _expand_environment_vars(uri: str) -> str:
