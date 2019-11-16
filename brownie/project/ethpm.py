@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
 
-from ethpm.package import resolve_uri_contents
+from ethpm.backends.ipfs import InfuraIPFSBackend
 
 from brownie import network
 from brownie._config import CONFIG
@@ -167,7 +167,7 @@ def _get_uri_contents(uri: str) -> str:
     path = CONFIG["brownie_folder"].joinpath(f"data/ipfs_cache/{urlparse(uri).netloc}.ipfs")
     path.parent.mkdir(exist_ok=True)
     if not path.exists():
-        data = resolve_uri_contents(uri)
+        data = InfuraIPFSBackend().fetch_uri_contents(uri)
         with path.open("wb") as fp:
             fp.write(data)
         return data.decode()
@@ -306,7 +306,7 @@ def install_package(project_path: Path, uri: str, replace_existing: bool = False
     }
 
     with project_path.joinpath("build/packages.json").open("w") as fp:
-        json.dump(packages_json, fp)
+        json.dump(packages_json, fp, indent=2, sort_keys=True)
     return manifest["package_name"]
 
 
@@ -342,7 +342,7 @@ def remove_package(project_path: Path, package_name: str, delete_files: bool) ->
     if package_name in packages_json["packages"]:
         del packages_json["packages"][package_name]
     with project_path.joinpath("build/packages.json").open("w") as fp:
-        json.dump(packages_json, fp)
+        json.dump(packages_json, fp, indent=2, sort_keys=True)
 
 
 def create_manifest(project_path: Path, package_config: Dict) -> Dict:
@@ -352,10 +352,11 @@ def create_manifest(project_path: Path, package_config: Dict) -> Dict:
         "manifest_version": "2",
         "package_name": package_config["package_name"],
         "version": package_config["version"],
-        "meta": dict((k, v) for k, v in package_config["meta"].items() if v),
         "sources": {},
         "contract_types": {},
     }
+    if "meta" in package_config:
+        manifest["meta"] = package_config["meta"]
 
     # load packages.json and add build_dependencies
     packages_json: Dict = {"sources": {}, "packages": {}}
@@ -372,9 +373,8 @@ def create_manifest(project_path: Path, package_config: Dict) -> Dict:
     for path in project_path.glob("contracts/**/*.sol"):
         if path.as_posix() in packages_json["sources"]:
             continue
-        with path.open() as fp:
-            # TODO - upload to IPFS
-            manifest["sources"][f"./{path.as_posix()}"] = fp.read()
+        uri = f"ipfs://{InfuraIPFSBackend().pin_assets(path)[0]['Hash']}"
+        manifest["sources"][f"./{path.relative_to('contracts').as_posix()}"] = uri
 
     # add contract_types
     for path in project_path.glob("build/contracts/*.json"):
@@ -442,7 +442,7 @@ def create_manifest(project_path: Path, package_config: Dict) -> Dict:
 def _get_contract_type(build_json: Dict) -> Dict:
     return {
         "contract_name": build_json["contractName"],
-        "source_path": f"./{build_json['sourcePath']}",
+        "source_path": f"./{Path(build_json['sourcePath']).relative_to('contracts')}",
         "deployment_bytecode": {"bytecode": f"0x{build_json['bytecode']}"},
         "runtime_bytecode": {"bytecode": f"0x{build_json['deployedBytecode']}"},
         "abi": build_json["abi"],
