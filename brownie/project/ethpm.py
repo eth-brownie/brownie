@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
 
+from ethpm._utils.ipfs import generate_file_hash
 from ethpm.backends.ipfs import InfuraIPFSBackend
 
 from brownie import network
@@ -345,7 +346,7 @@ def remove_package(project_path: Path, package_name: str, delete_files: bool) ->
         json.dump(packages_json, fp, indent=2, sort_keys=True)
 
 
-def create_manifest(project_path: Path, package_config: Dict) -> Dict:
+def create_manifest(project_path: Path, package_config: Dict, pin_sources: bool) -> Dict:
     package_config = _remove_empty_fields(package_config)
 
     manifest = {
@@ -370,11 +371,16 @@ def create_manifest(project_path: Path, package_config: Dict) -> Dict:
         )
 
     # add sources
-    for path in project_path.glob("contracts/**/*.sol"):
-        if path.as_posix() in packages_json["sources"]:
+    contract_path = project_path.joinpath("contracts")
+    for path in contract_path.glob("**/*.sol"):
+        if path.relative_to(project_path).as_posix() in packages_json["sources"]:
             continue
-        uri = f"ipfs://{InfuraIPFSBackend().pin_assets(path)[0]['Hash']}"
-        manifest["sources"][f"./{path.relative_to('contracts').as_posix()}"] = uri
+        if pin_sources:
+            uri = InfuraIPFSBackend().pin_assets(path)[0]["Hash"]
+        else:
+            with path.open("rb") as fp:
+                uri = generate_file_hash(fp.read())
+        manifest["sources"][f"./{path.relative_to(contract_path).as_posix()}"] = f"ipfs://{uri}"
 
     # add contract_types
     for path in project_path.glob("build/contracts/*.json"):
@@ -395,7 +401,9 @@ def create_manifest(project_path: Path, package_config: Dict) -> Dict:
         if active_network:
             network.disconnect()
         manifest["deployments"] = {}
-        if deployment_networks in ("*", ["*"]):
+        if isinstance(deployment_networks, str):
+            deployment_networks = [deployment_networks]
+        if deployment_networks == ["*"]:
             deployment_networks = [i.stem for i in project_path.glob("build/deployments/*")]
         for network_name in deployment_networks:
             instances = list(project_path.glob(f"build/deployments/{network_name}/*.json"))
@@ -435,6 +443,8 @@ def create_manifest(project_path: Path, package_config: Dict) -> Dict:
             network.disconnect()
         if active_network:
             network.connect(active_network)
+        if not manifest["deployments"]:
+            del manifest["deployments"]
 
     return manifest
 
