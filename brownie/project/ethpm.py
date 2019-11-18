@@ -4,6 +4,7 @@ import hashlib
 import itertools
 import json
 import re
+import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
@@ -346,7 +347,9 @@ def remove_package(project_path: Path, package_name: str, delete_files: bool) ->
         json.dump(packages_json, fp, indent=2, sort_keys=True)
 
 
-def create_manifest(project_path: Path, package_config: Dict, pin_sources: bool) -> Dict:
+def create_manifest(
+    project_path: Path, package_config: Dict, pin_assets: bool = False
+) -> Tuple[Dict, str]:
     package_config = _remove_empty_fields(package_config)
 
     manifest = {
@@ -364,18 +367,21 @@ def create_manifest(project_path: Path, package_config: Dict, pin_sources: bool)
     if not package_config["settings"]["include_dependencies"]:
         installed, modified = get_installed_packages(project_path)
         if modified:
-            raise
-        packages_json = _load_packages_json(project_path)
-        manifest["build_dependencies"] = dict(
-            (k, v["manifest_uri"]) for k, v in packages_json["packages"].items()
-        )
+            raise InvalidManifest(
+                f"Dependencies have been modified locally: {', '.join([i[0] for i in modified])}"
+            )
+        if installed:
+            packages_json = _load_packages_json(project_path)
+            manifest["build_dependencies"] = dict(
+                (k, v["manifest_uri"]) for k, v in packages_json["packages"].items()
+            )
 
     # add sources
     contract_path = project_path.joinpath("contracts")
     for path in contract_path.glob("**/*.sol"):
         if path.relative_to(project_path).as_posix() in packages_json["sources"]:
             continue
-        if pin_sources:
+        if pin_assets:
             uri = InfuraIPFSBackend().pin_assets(path)[0]["Hash"]
         else:
             with path.open("rb") as fp:
@@ -446,7 +452,14 @@ def create_manifest(project_path: Path, package_config: Dict, pin_sources: bool)
         if not manifest["deployments"]:
             del manifest["deployments"]
 
-    return manifest
+    uri = None
+    if pin_assets:
+        temp_path = Path(tempfile.gettempdir()).joinpath("manifest.json")
+        with temp_path.open("w") as fp:
+            json.dump(manifest, fp, sort_keys=True, separators=(",", ":"))
+        uri = InfuraIPFSBackend().pin_assets(temp_path)[0]["Hash"]
+
+    return manifest, uri
 
 
 def _get_contract_type(build_json: Dict) -> Dict:

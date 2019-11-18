@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 from pathlib import Path
+from typing import Dict, List
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -264,29 +265,30 @@ def ext_tester(ExternalCallTester, accounts):
 
 class DummyIPFSBackend(BaseIPFSBackend):
 
-    _assets = {}
+    _assets: Dict = {}
     _path = Path("./tests/data/ipfs-cache-mock").resolve()
 
     def fetch_uri_contents(self, ipfs_uri: str) -> bytes:
         ipfs_uri = ipfs_uri.replace("ipfs://", "")
         if ipfs_uri not in self._assets:
-            with self._path.joinpath(ipfs_uri).open("rb") as fp:
+            with self._path.joinpath(ipfs_uri).open() as fp:
                 self._assets[ipfs_uri] = fp.read()
-        return self._assets[ipfs_uri]
+        return self._assets[ipfs_uri].encode()
 
-    def pin_assets(self, file_or_dir_path: Path):
+    def pin_assets(self, file_or_dir_path: Path) -> List:
         """
         Return a dict containing the IPFS hash, file name, and size of a file.
         """
         if file_or_dir_path.is_dir():
             for path in file_or_dir_path.glob("*"):
-                with path.open("rb") as fp:
+                with path.open() as fp:
                     self._assets[path.name] = fp.read()
             asset_data = [dummy_ipfs_pin(path) for path in file_or_dir_path.glob("*")]
         elif file_or_dir_path.is_file():
-            with file_or_dir_path.open("rb") as fp:
-                self._assets[path.name] = fp.read()
             asset_data = [dummy_ipfs_pin(file_or_dir_path)]
+            with file_or_dir_path.open() as fp:
+                self._assets[file_or_dir_path.name] = fp.read()
+            self._assets[asset_data[0]["Hash"]] = self._assets[file_or_dir_path.name]
         else:
             raise FileNotFoundError(f"{file_or_dir_path} is not a valid file or directory path.")
         return asset_data

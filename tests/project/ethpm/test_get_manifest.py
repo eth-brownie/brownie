@@ -36,7 +36,7 @@ def test_get_mock_manifests():
 def test_dependency_paths():
     sources = ethpm.get_manifest("ipfs://testipfs-complex")["sources"]
     assert "contracts/Complex.sol" in sources
-    assert "contracts/math/SafeMath.sol" in sources
+    assert "contracts/math/Math.sol" in sources
     assert "contracts/utils/Arrays.sol" in sources
 
 
@@ -62,11 +62,11 @@ def test_get_deployment_addresses_active_network():
 
 def test_deployment_addresses_from_dependencies():
     math_manifest = ethpm.get_manifest("ipfs://testipfs-math")
-    assert ethpm.get_deployment_addresses(math_manifest, "SafeMath", MAINNET_GENESIS_HASH)
+    assert ethpm.get_deployment_addresses(math_manifest, "Math", MAINNET_GENESIS_HASH)
 
     # math is a dependency of complex, the deployment should not be inherited
     complex_manifest = ethpm.get_manifest("ipfs://testipfs-complex")
-    assert not ethpm.get_deployment_addresses(complex_manifest, "SafeMath", MAINNET_GENESIS_HASH)
+    assert not ethpm.get_deployment_addresses(complex_manifest, "Math", MAINNET_GENESIS_HASH)
 
 
 def test_deployment_addresses_genesis_hash(network):
