@@ -17,6 +17,7 @@ from brownie._config import (
     _load_project_config,
 )
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
+from brownie.network import web3
 from brownie.network.contract import ContractContainer, ProjectContract
 from brownie.network.state import _remove_contract
 from brownie.project import compiler
@@ -359,9 +360,10 @@ def from_ethpm(uri: str) -> "TempProject":
         "minify_source": False,
     }
     project = TempProject(manifest["package_name"], manifest["sources"], compiler_config)
-    for contract_name in project.keys():
-        for address in get_deployment_addresses(manifest, contract_name):
-            project[contract_name].at(address)
+    if web3.isConnected():
+        for contract_name in project.keys():
+            for address in get_deployment_addresses(manifest, contract_name):
+                project[contract_name].at(address)
     return project
 
 

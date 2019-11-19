@@ -55,3 +55,34 @@ def test_disconnect(web3):
     assert web3.provider
     web3.disconnect()
     assert not web3.provider
+
+
+def test_genesis_hash(web3, devnetwork):
+    assert web3.genesis_hash == web3.eth.getBlock(0)["hash"].hex()[2:]
+
+
+def test_genesis_hash_different_networks(devnetwork, web3):
+    ganache_hash = web3.genesis_hash
+    devnetwork.disconnect()
+    devnetwork.connect("ropsten")
+    assert web3.genesis_hash == "41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d"
+    assert web3.genesis_hash != ganache_hash
+
+
+def test_genesis_hash_disconnected(web3):
+    web3.disconnect()
+    with pytest.raises(ConnectionError):
+        web3.genesis_hash
+
+
+def test_chain_uri(web3, network):
+    network.connect("ropsten")
+    assert web3.chain_uri.startswith(
+        "blockchain://41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d/block/"
+    )
+
+
+def test_chain_uri_disconnected(web3):
+    web3.disconnect()
+    with pytest.raises(ConnectionError):
+        web3.chain_uri

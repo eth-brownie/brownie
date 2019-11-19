@@ -113,3 +113,17 @@ def test_create_folders(project, tmp_path):
     project.main._create_folders(Path(tmp_path))
     for path in ("contracts", "scripts", "reports", "tests", "build"):
         assert Path(tmp_path).joinpath(path).exists()
+
+
+def test_from_ethpm(ipfs_mock, project):
+    p = project.from_ethpm("ipfs://testipfs-math")
+    assert type(p) is TempProject
+    assert "Math" in p
+    assert not len(p.Math)
+
+
+def test_from_ethpm_with_deployments(ipfs_mock, project, network):
+    network.connect("mainnet")
+    p = project.from_ethpm("ipfs://testipfs-math")
+    assert len(p.Math) == 1
+    assert p.Math[0].address == "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2"

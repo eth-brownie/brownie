@@ -77,12 +77,16 @@ class Web3(_Web3):
     @property
     def genesis_hash(self) -> str:
         """The genesis hash of the currently active network."""
+        if self.provider is None:
+            raise ConnectionError("web3 is not currently connected")
         if self._genesis_hash is None:
             self._genesis_hash = self.eth.getBlock(0)["hash"].hex()[2:]
         return self._genesis_hash
 
     @property
     def chain_uri(self) -> str:
+        if self.provider is None:
+            raise ConnectionError("web3 is not currently connected")
         if self.genesis_hash not in _chain_uri_cache:
             block_number = max(self.eth.blockNumber - 16, 1)
             block_hash = self.eth.getBlock(block_number)["hash"].hex()[2:]
