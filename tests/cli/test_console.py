@@ -8,7 +8,9 @@ from brownie._cli.console import Console
 
 
 @pytest.fixture
-def console(testproject):
+def console(testproject, monkeypatch):
+    monkeypatch.setattr("brownie._cli.console.Console.showtraceback", _exception)
+    monkeypatch.setattr("brownie._cli.console.Console.showsyntaxerror", _exception)
     argv = sys.argv
     sys.argv = ["brownie", "console"]
     c = Console(testproject)
@@ -89,8 +91,7 @@ def test_fn(accounts, history, console):
     assert accounts[1].balance() == "103 ether"
 
 
-def test_exceptions(console, monkeypatch):
-    monkeypatch.setattr("brownie._cli.console.Console.showtraceback", _exception)
+def test_exceptions(console):
     with pytest.raises(NameError):
         console.push("x += 22")
     with pytest.raises(TypeError):
@@ -99,8 +100,7 @@ def test_exceptions(console, monkeypatch):
         _run_cmd(console, ["x=[]", 'x[11] = "hello"'])
 
 
-def test_syntax(console, monkeypatch):
-    monkeypatch.setattr("brownie._cli.console.Console.showsyntaxerror", _exception)
+def test_syntax(console):
     with pytest.raises(SyntaxError):
         console.push("x = [)")
     with pytest.raises(SyntaxError):
@@ -108,4 +108,4 @@ def test_syntax(console, monkeypatch):
 
 
 def test_dir(console):
-    _run_cmd(console, ["dir()", "dir(check)", "dir(accounts)"])
+    _run_cmd(console, ["dir()", "dir(network)", "dir(accounts)", "dir(project)", "dir(alert)"])
