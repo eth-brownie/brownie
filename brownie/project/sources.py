@@ -153,7 +153,7 @@ def _get_contract_data(full_source: str) -> Dict:
         return _contract_data[minified_key]
 
     contracts = re.findall(
-        r"((?:contract|library|interface)[^;{]*{[\s\S]*?})\s*(?=contract|library|interface|$)",
+        r"((?:contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:contract|library|interface)\s|$)",  # NOQA: E501
         minified_source,
     )
     data = {}
