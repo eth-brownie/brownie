@@ -351,6 +351,11 @@ def from_brownie_mix(
 
 
 def from_ethpm(uri: str) -> "TempProject":
+
+    """
+    Generates a TempProject from an ethPM package.
+    """
+
     manifest = get_manifest(uri)
     compiler_config = {
         "version": None,

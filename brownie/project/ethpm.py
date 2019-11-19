@@ -268,6 +268,7 @@ def install_package(project_path: Path, uri: str, replace_existing: bool = False
     Installs an ethPM package within the project.
 
     Args:
+        project_path: Path to the root folder of the project
         uri: manifest URI, can be erc1319 or ipfs
         replace_existing: if True, existing files will be overwritten when
                             installing the package
@@ -318,6 +319,7 @@ def remove_package(project_path: Path, package_name: str, delete_files: bool) ->
     Removes an ethPM package from a project.
 
     Args:
+        project_path: Path to the root folder of the project
         package_name: name of the package
         delete_files: if True, source files related to the package are deleted.
                       files that are still required by other installed packages
@@ -350,6 +352,19 @@ def remove_package(project_path: Path, package_name: str, delete_files: bool) ->
 def create_manifest(
     project_path: Path, package_config: Dict, pin_assets: bool = False
 ) -> Tuple[Dict, str]:
+
+    """
+    Creates a manifest from a project, and optionally pins it to IPFS.
+
+    Arguments:
+        project_path: Path to the root folder of the project
+        package_config: Configuration settings for the manifest
+        pin_assets: if True, all source files and the manifest will
+                    be uploaded onto IPFS via Infura.
+
+    Returns: generated manifest, ipfs uri of manifest
+    """
+
     package_config = _remove_empty_fields(package_config)
 
     manifest = {
