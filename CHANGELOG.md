@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - use `isinstance` instead of `type` for conversions, fixes hexstring comparison bug
 - pretty printing for more objects in the console
 - properly display `SyntaxError` in console when there is no source highlight
+- improved regex statement for finding individual contracts within source files
+- fixed web3 dependency, removed deps-of-deps to reduce conflicts
 
 ## [1.1.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.1.0) - 2019-11-04
 ### Added
