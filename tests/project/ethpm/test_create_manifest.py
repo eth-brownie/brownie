@@ -81,6 +81,7 @@ def test_sources(tp_path):
     assert sorted(manifest["sources"]) == [
         "./BrownieTester.sol",
         "./EVMTester.sol",
+        "./PackageRegistry.sol",
         "./SafeMath.sol",
         "./Unimplemented.sol",
     ]

@@ -301,7 +301,7 @@ def ipfs_mock(monkeypatch):
     temp_path = ipfs_path.parent.joinpath("_ipfs_cache")
     ipfs_path.mkdir(exist_ok=True)
     ipfs_path.rename(temp_path)
-    yield
+    yield DummyIPFSBackend()
     if ipfs_path.exists():
         shutil.rmtree(ipfs_path)
     temp_path.rename(ipfs_path)
