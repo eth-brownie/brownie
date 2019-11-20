@@ -17,10 +17,27 @@ from brownie._config import CONFIG
 from brownie.convert import to_address
 from brownie.exceptions import InvalidManifest
 from brownie.network.web3 import web3
+from brownie.typing import AccountsType, TransactionReceiptType
 
 from . import compiler
 
 URI_REGEX = r"""^(?:erc1319://|)([^/:\s]*)(?::[0-9]+|)/([a-z][a-z0-9_-]{0,255})@([^\s:/'";]*)$"""
+
+REGISTRY_ABI = [
+    {
+        "constant": False,
+        "inputs": [
+            {"name": "packageName", "type": "string"},
+            {"name": "version", "type": "string"},
+            {"name": "manifestURI", "type": "string"},
+        ],
+        "name": "release",
+        "outputs": [{"name": "releaseId", "type": "bytes32"}],
+        "payable": False,
+        "stateMutability": "nonpayable",
+        "type": "function",
+    }
+]
 
 
 def get_manifest(uri: str) -> Dict:
@@ -172,7 +189,7 @@ def _get_uri_contents(uri: str) -> str:
         data = InfuraIPFSBackend().fetch_uri_contents(uri)
         with path.open("wb") as fp:
             fp.write(data)
-        return data.decode()
+        return data.decode("utf-8")
     with path.open() as fp:
         data = fp.read()
     return data
@@ -475,6 +492,61 @@ def create_manifest(
         uri = InfuraIPFSBackend().pin_assets(temp_path)[0]["Hash"]
 
     return manifest, uri
+
+
+def verify_manifest(package_name: str, version: str, uri: str) -> None:
+
+    """
+    Verifies the validity of a package at a given IPFS URI.
+
+    Arguments:
+        package_name: Package name
+        version: Package version
+        uri: IPFS uri
+
+    Returns None if the package is valid, raises InvalidManifest if not.
+    """
+
+    data = InfuraIPFSBackend().fetch_uri_contents(uri).decode("utf-8")
+    try:
+        manifest = json.loads(data)
+    except Exception:
+        raise InvalidManifest("URI did not return valid JSON encoded data")
+    if json.dumps(manifest, sort_keys=True, separators=(",", ":")) != data:
+        raise InvalidManifest("JSON data is not tightly packed with sorted keys")
+    for key, value in [
+        ("manifest_version", "2"),
+        ("package_name", package_name),
+        ("version", version),
+    ]:
+        if manifest.get(key, None) != value:
+            raise InvalidManifest(f"Missing or invalid field: {key}")
+    try:
+        process_manifest(manifest)
+    except Exception as e:
+        raise InvalidManifest(f"Cannot process manifest - {str(e)}")
+
+
+def release_package(
+    registry_address: str, account: AccountsType, package_name: str, version: str, uri: str
+) -> TransactionReceiptType:
+
+    """
+    Creates a new release of a package at an ERC1319 registry.
+
+    Arguments:
+        registry_address: Address of the registry
+        account: Account object used to broadcast the transaction to the registry
+        package_name: Name of the package
+        version: Package version
+        uri: IPFS uri of the package
+    """
+
+    registry = network.contract.Contract(
+        "ERC1319Registry", registry_address, REGISTRY_ABI, owner=account
+    )
+    verify_manifest(package_name, version, uri)
+    return registry.release(package_name, version, uri)
 
 
 def _get_contract_type(build_json: Dict) -> Dict:
