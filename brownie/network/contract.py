@@ -301,10 +301,6 @@ class Contract(_DeployedContractBase):
         contract = _find_contract(address)
         if not contract:
             return
-        if isinstance(contract, ProjectContract):
-            raise ContractExists(
-                f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
-            )
         if contract.bytecode != self.bytecode:
             contract._reverted = True
 

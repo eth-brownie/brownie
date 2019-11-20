@@ -5,7 +5,7 @@ from copy import deepcopy
 import pytest
 
 from brownie import Wei
-from brownie.exceptions import ContractExists, ContractNotFound
+from brownie.exceptions import ContractNotFound
 from brownie.network.contract import (
     Contract,
     ContractCall,
@@ -108,8 +108,7 @@ def test_revert_not_found(tester, rpc):
 
 
 def test_contractabi_replace_contract(testproject, tester):
-    with pytest.raises(ContractExists):
-        Contract("BrownieTester", tester.address, tester.abi)
+    Contract("BrownieTester", tester.address, tester.abi)
     del testproject.BrownieTester[0]
     Contract("BrownieTester", tester.address, tester.abi)
     Contract("BrownieTester", tester.address, tester.abi)
