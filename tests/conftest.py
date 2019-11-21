@@ -109,6 +109,11 @@ def testproject(_project_factory, project, tmp_path):
 
 
 @pytest.fixture
+def tp_path(testproject):
+    yield testproject._path
+
+
+@pytest.fixture
 def otherproject(testproject):
     return brownie.project.load(testproject._path, "OtherProject")
 

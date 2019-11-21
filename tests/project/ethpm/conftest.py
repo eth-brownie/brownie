@@ -14,11 +14,6 @@ def ipfs_setup(ipfs_mock):
 
 
 @pytest.fixture
-def tp_path(testproject):
-    yield testproject._path
-
-
-@pytest.fixture
 def dep_project(testproject):
     # this bit of hackiness is needed to trigger a recompile of the project
     ethpm.install_package(testproject._path, "ipfs://testipfs-utils")
