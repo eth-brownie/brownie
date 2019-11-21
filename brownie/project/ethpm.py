@@ -330,7 +330,7 @@ def install_package(project_path: Path, uri: str, replace_existing: bool = False
     return manifest["package_name"]
 
 
-def remove_package(project_path: Path, package_name: str, delete_files: bool) -> None:
+def remove_package(project_path: Path, package_name: str, delete_files: bool) -> bool:
 
     """
     Removes an ethPM package from a project.
@@ -341,9 +341,15 @@ def remove_package(project_path: Path, package_name: str, delete_files: bool) ->
         delete_files: if True, source files related to the package are deleted.
                       files that are still required by other installed packages
                       will not be deleted.
+
+    Returns: boolean indicating if package was installed.
     """
 
     packages_json = _load_packages_json(project_path)
+    if package_name not in packages_json["packages"]:
+        return False
+    del packages_json["packages"][package_name]
+
     for source_path in [
         k for k, v in packages_json["sources"].items() if package_name in v["packages"]
     ]:
@@ -360,10 +366,9 @@ def remove_package(project_path: Path, package_name: str, delete_files: bool) ->
                 if parent_path.exists() and not list(parent_path.glob("*")):
                     parent_path.rmdir()
 
-    if package_name in packages_json["packages"]:
-        del packages_json["packages"][package_name]
     with project_path.joinpath("build/packages.json").open("w") as fp:
         json.dump(packages_json, fp, indent=2, sort_keys=True)
+    return True
 
 
 def create_manifest(
