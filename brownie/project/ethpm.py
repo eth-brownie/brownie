@@ -18,6 +18,7 @@ from brownie.convert import to_address
 from brownie.exceptions import InvalidManifest
 from brownie.network.web3 import web3
 from brownie.typing import AccountsType, TransactionReceiptType
+from brownie.utils import color
 
 from . import compiler
 
@@ -372,7 +373,7 @@ def remove_package(project_path: Path, package_name: str, delete_files: bool) ->
 
 
 def create_manifest(
-    project_path: Path, package_config: Dict, pin_assets: bool = False
+    project_path: Path, package_config: Dict, pin_assets: bool = False, silent: bool = True
 ) -> Tuple[Dict, str]:
 
     """
@@ -388,6 +389,9 @@ def create_manifest(
     """
 
     package_config = _remove_empty_fields(package_config)
+
+    if pin_assets:
+        ipfs_backend = InfuraIPFSBackend()
 
     manifest = {
         "manifest_version": "2",
@@ -419,7 +423,9 @@ def create_manifest(
         if path.relative_to(project_path).as_posix() in packages_json["sources"]:
             continue
         if pin_assets:
-            uri = InfuraIPFSBackend().pin_assets(path)[0]["Hash"]
+            if not silent:
+                print(f'Pinning "{color("bright magenta")}{path.name}{color}"...')
+            uri = ipfs_backend.pin_assets(path)[0]["Hash"]
         else:
             with path.open("rb") as fp:
                 uri = generate_file_hash(fp.read())
@@ -491,10 +497,12 @@ def create_manifest(
 
     uri = None
     if pin_assets:
+        if not silent:
+            print("Pinning manifest...")
         temp_path = Path(tempfile.gettempdir()).joinpath("manifest.json")
         with temp_path.open("w") as fp:
             json.dump(manifest, fp, sort_keys=True, separators=(",", ":"))
-        uri = InfuraIPFSBackend().pin_assets(temp_path)[0]["Hash"]
+        uri = ipfs_backend.pin_assets(temp_path)[0]["Hash"]
 
     return manifest, uri
 

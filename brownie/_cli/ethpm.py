@@ -125,7 +125,7 @@ def _release(project_path, registry_address, sender):
     with project_path.joinpath("ethpm-config.yaml").open() as fp:
         project_config = yaml.safe_load(fp)
     print("Generating manifest and pinning assets to IPFS...")
-    manifest, uri = ethpm.create_manifest(project_path, project_config, True)
+    manifest, uri = ethpm.create_manifest(project_path, project_config, True, False)
     if CONFIG["brownie_folder"].joinpath(f"data/accounts/{sender}.json").exists():
         account = accounts.load(sender)
     else:
