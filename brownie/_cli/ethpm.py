@@ -9,7 +9,7 @@ from docopt import docopt
 
 from brownie import accounts, network
 from brownie._config import CONFIG
-from brownie.exceptions import ProjectNotFound
+from brownie.exceptions import ProjectNotFound, UnknownAccount
 from brownie.project import check_for_project, ethpm
 from brownie.utils import color, notify
 
@@ -126,10 +126,13 @@ def _release(project_path, registry_address, sender):
         project_config = yaml.safe_load(fp)
     print("Generating manifest and pinning assets to IPFS...")
     manifest, uri = ethpm.create_manifest(project_path, project_config, True, False)
-    if CONFIG["brownie_folder"].joinpath(f"data/accounts/{sender}.json").exists():
-        account = accounts.load(sender)
-    else:
+    if sender in accounts:
         account = accounts.at(sender)
+    else:
+        try:
+            account = accounts.load(sender)
+        except FileNotFoundError:
+            raise UnknownAccount(f"Unknown account '{sender}'")
     name = f'{manifest["package_name"]}@{manifest["version"]}'
     print(f'Releasing {name} on "{registry_address}"...')
     try:

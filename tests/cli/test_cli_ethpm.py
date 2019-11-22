@@ -65,20 +65,3 @@ def test_create(tp_path, mocker):
     cli_ethpm._create(tp_path)
     assert ethpm.create_manifest.call_count == 1
     assert tp_path.joinpath("manifest.json").exists()
-
-
-def test_release(ipfs_mock, testproject, accounts, mocker, monkeypatch):
-    with testproject._path.joinpath("ethpm-config.yaml").open("w") as fp:
-        json.dump(ETHPM_CONFIG, fp)
-    registry = testproject.PackageRegistry.deploy({"from": accounts[0]})
-
-    monkeypatch.setattr("brownie._cli.ethpm.network.connect", lambda k: True)
-    mocker.spy(ethpm, "create_manifest")
-    mocker.spy(ethpm, "verify_manifest")
-    mocker.spy(ethpm, "release_package")
-    cli_ethpm._release(testproject._path, registry.address, accounts[0].address)
-    assert ethpm.create_manifest.call_count == 1
-    assert ethpm.verify_manifest.call_count == 1
-    assert ethpm.release_package.call_count == 1
-    id_ = registry.getReleaseId("testpackage", "1.0.0")
-    assert registry.getReleaseData(id_)[-1] == ethpm.create_manifest.return_value[1]
