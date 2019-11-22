@@ -18,5 +18,6 @@ Brownie
     test-rpc.rst
     nonlocal-networks.rst
     config.rst
+    build-folder.rst
     python-package.rst
     api.rst

@@ -78,7 +78,7 @@ Events
 
 Brownie provides access to events that fired in reverted transactions. They are viewable via ``TransactionReceipt.events`` in the same way as events for successful transactions. If you cannot determine why a transaction reverted or are getting unexpected results, one approach is to add temporary logging events into your code to see the values of different variables during execution.
 
-See the :ref:`events<event-data>` section of :ref:`interaction` for information on event data is stored.
+See the :ref:`events<event-data>` section of :ref:`interaction` for information on how event data is stored.
 
 The Transaction Trace
 =====================
