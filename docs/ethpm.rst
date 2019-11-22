@@ -9,43 +9,279 @@ The Ethereum Package Manager (ethPM)
 * Easily import and build upon core ideas written by others.
 * Distribute the ideas that you've written and/or deployed, making them easily consumable for tooling and the community at large.
 
-An ethPM package generally contains one or more of the following:
+At its core, an ethPM package is a JSON object containing the ABI, source code, bytecode, deployment data and any other information that combines together to compose the smart contract idea. The `ethPM specification <http://ethpm.github.io/ethpm-spec/>`_ defines a schema to store all of this data in a structured JSON format, enabling quick and efficient transportation of smart contract ideas between tools and frameworks which support the specification.
 
-* **Contract sources**, which can be integrated within your own project
-* **Deployment data** such as the address that a contract exists at on a network, it's external ABI, and the settings used when it was compiled
+Brownie supports ethPM, offering the following functionality:
 
-
-**TODO** ethPM + brownie, isn't it great
+    1. ethPM packages may be used to obtain deployment data, providing easy :ref:`interaction with existing contracts<ethpm-deployments>` on the main-net or testnets.
+    2. Package source files may be :ref:`installed within a Brownie project<ethpm-install>`, to be inherited by existing contracts or used as a starting point when building something new.
+    3. Packages can be generated from Brownie projects and :ref:`released on ethPM registries<ethpm-release>`, for simple and verified distribution.
 
 Registry URIs
 =============
 
-At its core, an ethPM package is a JSON object containing the ABI, source code, bytecode, deployment data and any other information that combines together to compose the smart contract idea. The `ethPM specification <http://ethpm.github.io/ethpm-spec/>`_ defines a schema to store all of this data in a structured JSON format, enabling quick and efficient transportation of smart contract ideas between tools and frameworks which support the specification.
-
-**TODO** explain registry URIs and why this is so simple.
+To obtain an ethPM package, you must know both the package name and the address of the registry where it is available. The simplest way to communicate this information is through a `registry URI <https://docs.ethpm.com/uris#registry-uris>`_. Registry URIs adhere to the following format:
 
 .. code-block::
 
-    erc1319://[CONTRACT_ADDRESS]:[CHAIN_ID]/[PACKAGE_NAME]@[VERSION]/[PATH]
+    erc1319://[CONTRACT_ADDRESS]:[CHAIN_ID]/[PACKAGE_NAME]@[VERSION]
 
-Accessing an ethPM Package
-==========================
+For example, here is a registry URI for the popular OpenZeppelin `Math <https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/math>`_ package, served by the Snake Charmers `Zeppelin registry <http://explorer.ethpm.com/browse/mainnet/zeppelin.snakecharmers.eth>`_:
 
-To intialize a new Brownie project from an ethPM package:
+.. code-block::
+
+    erc1319://zeppelin.snakecharmers.eth:1/math@1.0.0
+
+Working with ethPM Packages
+===========================
+
+The ``brownie ethpm`` command-line interface is used to add and remove packages to a Brownie project, as well as to generate a package from a project.
+
+.. _ethpm-install:
+
+Installing a Package
+--------------------
+
+To install an ethPM package within a Brownie project:
 
 ::
 
-    $ brownie ethpm [uri]
+    $ brownie ethpm install [registry-uri]
 
-This initializes a new project the following structure:
+This will add all of the package sources files into the project ``contracts/`` folder.
 
-* each available source code is saved in the ``contracts/`` folder
-* ABIs that do not have a corresponding source code are converted to `interfaces <https://solidity.readthedocs.io/en/latest/contracts.html#interfaces>`_ and saved in the ``contracts/interfaces/`` folder
+If a package contains a source with an identical filename as one in your project,
 
-Interacting with An Existing Project
+Listing Installed Packages
+--------------------------
+
+To view a list of currently installed packages within a project:
+
+::
+
+    $ brownie ethpm list
+    Brownie v1.2.0 - Python development framework for Ethereum
+
+    Found 2 installed packages:
+     ├─access@1.0.0
+     └─math@1.0.0
+
+Any packages that are installed from a registry are also saved locally. To view a list of all locally available ethPM packages, and the registries they were downloaded from:
+
+::
+
+    $ brownie ethpm all
+    Brownie v1.1.0 - Python development framework for Ethereum
+
+    erc1319://erc20.snakecharmers.eth
+     └─dai-dai@1.0.0
+
+    erc1319://zeppelin.snakecharmers.eth
+     ├─access@1.0.0
+     ├─gns@1.0.0
+     └─math@1.0.0
+
+Removing a Package
+------------------
+
+Removing an installed package from a Brownie project will delete any of that package's sources files, as long as they are not also required by another package.
+
+To remove a package, either delete all of it's source files or use the following command:
+
+::
+
+    $ brownie ethpm remove [package-name]
+
+.. _ethpm-unlink:
+
+Unlinking a Package
+-------------------
+
+You may wish to install a package as a starting point upon which you build your own project, and in doing so make changes to the package sources. This will cause Brownie to flag the package as "modified" and raise warnings when performing certain actions. You can silence these warnings by unlinking the package - deleting Brownie's record that it is an ethPM package without removing the source files.
+
+To unlink a package:
+
+::
+
+    $ brownie ethpm remove [package-name]
+
+.. _ethpm-release:
+
+Creating and Releasing a Package
+================================
+
+Brownie allows you to generate an ethPM package from your project and publish it to a registry. Packages generated by Brownie will **always** include:
+
+    * All contract source files within the project
+    * The name, ABI, bytecode and compiler settings for each contract in the project
+
+Depending upon the configuartion, they may also **optionally** include:
+
+    * Addresses of deployed contracts instances across each network
+    * References to other ethPM packages that this package requires
+
+The process of releasing a package is:
+
+    1. Set all required fields within the ``ethpm-config.yaml`` configuration file.
+    2. Generate the package manifest and verify the contents.
+    3. Pin the manifest and sources to IPFS and publish the manifest URI to an ethPM registry.
+
+.. important::
+
+    Ensure that all import statements within your source files use `relative file paths <https://solidity.readthedocs.io/en/latest/layout-of-source-files.html#paths>`_ (beginning with ``./``). If you use absolute paths, your package is more likely to have namespace collisions when imported into other projects.
+
+Step 1: Package Configuration Settings
+--------------------------------------
+
+To create a package you must first set all required fields within the ``ethpm-config.yaml`` file in the root folder of your project. If this file is not present in your project, the following command will generate it:
+
+::
+
+    $ brownie ethpm all
+
+Required Settings
+*****************
+
+The following settings must have a non-``null`` value in order to generate a package.
+
+.. py:attribute:: package_name
+
+    The ``package_name`` field defines a human readable name for the package. It must begin with a lowercase letter and be comprised of only lowercase letters, numeric characters, dashes and underscores. Package names must not exceed 255 characters in length.
+
+        **Link**: `ethPM specification: package name <https://ethpm.github.io/ethpm-spec/package-spec.html#package-name-package-name>`_
+
+.. py:attribute:: version
+
+    The ``version`` field defines the version number for the package. All versions should conform to the `semver <https://semver.org/>`_ versioning specificaion.
+
+        **Link**: `ethPM specification: version <https://ethpm.github.io/ethpm-spec/package-spec.html#version-version>`_
+
+.. py:attribute:: settings.deployment_networks
+
+    The ``deployment_networks`` field is a list of networks that should be included in the package's ``deployments`` field. The name of each network must correspond to that of a network listed in the :ref:`project configuration file<config-network>`.
+
+    In order for a deployment to be included:
+
+        * :ref:`Persistence<nonlocal-networks-contracts>` must be enabled for that network
+        * The bytecode of the deployed contract must be identical to the bytecode generated from the source code currently present in the project's ``contracts/`` folder
+
+    You can use a wildcard ``*`` to include deployments on all networks, or ``False`` to not include any deployments.
+
+        **Link**: `ethPM specification: deployments <https://ethpm.github.io/ethpm-spec/package-spec.html#deployments-deployments>`_
+
+.. py:attribute:: settings.include_dependencies
+
+    The ``include_dependencies`` field is a boolean to indicate how package dependencies should be handled.
+
+        * if ``True``, Brownie will generate a standalone package without any listed dependencies.
+        * if ``False``, Brownie will list all package dependencies within the manifest, and only include as much data about them as is required by the ``deployments`` field.
+
+    Note that you cannot set ``include_dependencies`` to ``False`` while your package contains dependency source files that have been modified. In this situation you must first :ref:`unlink<ethpm-unlink>` the modified packages.
+
+        **Link**: `ethPM specification: build dependencies <https://ethpm.github.io/ethpm-spec/package-spec.html#build-dependencies-build-dependencies>`_
+
+Optional Settings
+*****************
+
+.. py:attribute:: meta
+
+    The ``meta`` field, and all it's subfields, provides metadata about the package. This data is not integral for package installation, but may be important or convenient to provide.
+
+    Any fields that are left blank will be omitted. You can also add additional fields, they will be included within the package.
+
+        **Link**: `ethPM specification: package meta <https://ethpm.github.io/ethpm-spec/package-spec.html#package-meta-meta>`_
+
+Example Configuration
+*********************
+
+Here is an example configuration for ``ethpm-config.yaml``:
+
+.. code-block:: yaml
+
+    # required fields
+    package_name: nftoken
+    version: 1.0.1
+    settings:
+      deployment_networks:
+        - mainnet
+    include_dependencies: false
+
+    # optional fields
+    meta:
+      description: A non-fungible implementation of the ERC20 standard, allowing scalable NFT transfers with fixed gas costs.
+      authors:
+        - Ben Hauser
+        - Gabriel Shapiro
+      license: MIT
+      keywords:
+        - ERC20
+        - ERC721
+        - NFT
+      links:
+        repository: https://github.com/iamdefinitelyahuman/nftoken
+
+Step 2: Creating the Manifest
+-----------------------------
+
+Once you have set the required fields in the configuration file, you can create a manifest with the following command:
+
+::
+
+    $ brownie ethpm create
+
+The manifest is saved locally as ``manifest.json`` in the project root folder. Note that this saved copy is not tightly packed and so does not strictly adhere the `ethPM specification <https://ethpm.github.io/ethpm-spec/>`_. This is not the final copy to be pinned to IPFS, rather it is a human-readable version that you can use to verify it's contents before releasing.
+
+Once you have confirmed that the included fields are consistent with what you would like to publish, you are ready to release.
+
+Step 3: Releasing the Package
+-----------------------------
+
+There are two steps in releasing a package:
+
+    1. Pinning the manifest and related sources to IPFS.
+
+        Brownie uses `Infura's <https://infura.io/>`_ public IPFS gateway to interact with IPFS. Note that pinning files to IPFS can be a very slow proess. If you receive a timeout error, simply repeat the request. Files that have been successfully pinned will not need to be re-pinned.
+
+    2. Calling the `release <https://eips.ethereum.org/EIPS/eip-1319#write-api-specification>`_ function of an ethPM registry with details of the package.
+
+        Brownie broadcasts this transaction on the "mainnet" network as defined in the :ref:`project configuration file<config-network>`. The account that you send the transaction from must be approved to call ``release`` in the registry, otherwise it will fail. Depending on your use case you may wish to run your own registry, or include your files within an existing one. See the `ethPM documentation <https://docs.ethpm.com/erc1319>`_ for more information.
+
+To release a package:
+
+::
+
+    $ brownie ethpm release [registry] [account]
+
+You must include the following arguments:
+
+    * ``registry``: the address of an ethPM registry on the main-net
+    * ``account``: the address that the transaction is sent from. It can be given as an alias to a `local account <nonlocal-networks-accounts>`_, or as a hex string if the address is unlocked within the connected node.
+
+Once the package is successfully released, Brownie provides you with a registry URI that you can share with others so they can easily access your package:
+
+::
+
+    $ brownie ethpm release erc20.snakecharmers.eth registry_owner
+    Brownie v1.1.0 - Python development framework for Ethereum
+
+    Generating manifest and pinning assets to IPFS...
+    Pinning "NFToken.sol"...
+    Pinning "NFMintable.sol"...
+    Pinning manifest...
+
+    Releasing nftoken@1.0.1 on "erc20.snakecharmers.eth"...
+    Enter the password for this account: *****
+
+    SUCCESS: nftoken@1.0.1 has been released!
+
+    URI: erc1319://erc20.snakecharmers.eth:1/nftoken@1.0.1
+
+.. _ethpm-deployments:
+
+Interacting with Package Deployments
 ====================================
 
-You can load an entire package as a :ref:`Project <api-project-project>` object, which includes :ref:`Contract <api-network-contract>` instances for any deployed contracts on the active network:
+You can load an entire package as a :ref:`Project <api-project-project>` object, which includes :ref:`Contract <api-network-contract>` instances for any contracts deployed on the currently active network:
 
 .. code-block:: python
 
@@ -69,42 +305,3 @@ Or, create a :ref:`Contract <api-network-contract>` object to interact with a de
     <DSToken Contract object '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359'>
 
 If the package does not include deployment information for the currently active network, a ``ContractNotFound`` exception is raised.
-
-Integrating a Package into your Project
-=======================================
-
-** TODO **
-
-Publishing an ethPM Package
-===========================
-
-Brownie allows you to generate an ethPM package from your project, and publish it to a registry. Packages that are generated by Brownie include:
-
-* All contract source files within the project are included in `sources <https://ethpm.github.io/ethpm-spec/package-spec.html#sources-sources>`_
-* The name, ABI, bytecode and compile settings for each contract in the project is included in `contract_types <https://ethpm.github.io/ethpm-spec/package-spec.html#contract-types-contract-types>`_
-* Addresses of all deployed contracts across each network is included in `deployments <https://ethpm.github.io/ethpm-spec/package-spec.html#deployments-deployments>`_
-* External packages that are imported via URI remappings are included in `build_dependencies <https://ethpm.github.io/ethpm-spec/package-spec.html#build-dependencies-build-dependencies>`_
-
-**TODO**
-
-    * warning about how you should measure twice, cut once, this stuff is immutable and all
-    * explain how to choose a registry to publish to, how to promote your URI after you've published, mention the brownie registry and snakecharmer's registry directory
-    * think about how to let the user preview their published package.. maybe a ropsten test-registry where content can be deleted / over-written?
-
-To publish a Brownie project, first open the console from inside your project and connect to the mainnet (or whichever network your target registry is on). Then:
-
-.. code-block:: python
-
-    >>> project.MyProject.publish_package("erc20.snakecharmers.eth", "1.0.0", {'from': accounts[0]})
-    "erc1319://erc20.snakecharmers.eth:1/myProject@1.0.0"
-
-To accomplish the same with a regular python script:
-
-.. code-block:: python
-
-    from brownie import accounts, project, network
-    from brownie.project.ethpm import publish_package
-
-    network.connect('mainnet')
-    my_project = project.load('/path/to/my_project')
-    my_project.publish_package("erc20.snakecharmers.eth", "1.0.0", {'from': accounts[0]})

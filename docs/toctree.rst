@@ -9,6 +9,7 @@ Brownie
     quickstart.rst
     install.rst
     init.rst
+    ethpm.rst
     compile.rst
     interaction.rst
     tests.rst

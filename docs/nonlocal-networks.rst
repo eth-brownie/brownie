@@ -95,7 +95,9 @@ Interacting with Non-Local Networks
 There are several key differences in functionality between using a non-local network as opposed to a local develpment environment.
 
 Contracts
---------
+---------
+
+.. _nonlocal-networks-contracts:
 
 ProjectContract
 ***************
@@ -128,6 +130,8 @@ The :ref:`Contract<api-network-contract>` class (available as ``brownie.Contract
 
 Once instantiated, all of the usual ``Contract`` attributes and methods can be used to interact with the deployed contract.
 
+.. _nonlocal-networks-accounts:
+
 Accounts
 --------
 
@@ -142,7 +146,7 @@ When connected to a hosted node such as Infura, local accounts must be added via
     >>> accounts[0].balance()
     17722750299000000000
 
-Once an account is added to the ``Accounts`` object, use ``Accounts.save`` to save the it to an encrypted keystore, and ``Accounts.load`` to open it for subsequent use.
+Once an account is added to the ``Accounts`` object, use :ref:`Account.save <api-network-accounts-load>` to save the it to an encrypted keystore, and :ref:`Accounts.load <api-network-accounts-load>` to open it for subsequent use.
 
 Transactions
 ------------

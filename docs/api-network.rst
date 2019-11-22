@@ -152,6 +152,8 @@ Accounts Methods
 
         >>> accounts.clear()
 
+.. _api-network-accounts-load:
+
 .. py:classmethod:: Accounts.load(filename=None)
 
     Decrypts a `keystore <https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition>`__ file and returns a ``LocalAccount`` object.
@@ -342,6 +344,8 @@ LocalAccount Attributes
 
 LocalAccount Methods
 ********************
+
+.. _api-network-accounts-save:
 
 .. py:classmethod:: LocalAccount.save(filename, overwrite=False)
 
