@@ -329,7 +329,7 @@ def generate_build_json(
     build_json = {}
     path_list = list(input_json["sources"])
 
-    source_nodes = solcast.from_standard_output(deepcopy(output_json))
+    source_nodes = solcast.from_standard_output(output_json)
     statement_nodes = _get_statement_nodes(source_nodes)
     branch_nodes = _get_branch_nodes(source_nodes)
 
