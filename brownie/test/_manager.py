@@ -24,7 +24,7 @@ STATUS_TYPES = {
 class TestManager:
     def __init__(self, project):
         self.project = project
-        self.project_path = project._project_path
+        self.project_path = project._path
         self.active_path = None
         self.count = 0
         self.results = None

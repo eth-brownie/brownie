@@ -38,7 +38,9 @@ First, for each network you want to configure, create a new section in the netwo
 If using Infura, you can provide your project ID key as an environment variable or by modifying the ``hosts`` setting in the configuration file.
 
 The environment variable is set to ``WEB3_INFURA_PROJECT_ID`` in the default configuration file. Use the following command to set the environment variable:
+
 ::
+
     $ export WEB3_INFURA_PROJECT_ID=YourProjectID
 
 Setting the Default Network
@@ -95,7 +97,9 @@ Interacting with Non-Local Networks
 There are several key differences in functionality between using a non-local network as opposed to a local develpment environment.
 
 Contracts
---------
+---------
+
+.. _nonlocal-networks-contracts:
 
 ProjectContract
 ***************
@@ -128,6 +132,8 @@ The :ref:`Contract<api-network-contract>` class (available as ``brownie.Contract
 
 Once instantiated, all of the usual ``Contract`` attributes and methods can be used to interact with the deployed contract.
 
+.. _nonlocal-networks-accounts:
+
 Accounts
 --------
 
@@ -142,7 +148,7 @@ When connected to a hosted node such as Infura, local accounts must be added via
     >>> accounts[0].balance()
     17722750299000000000
 
-Once an account is added to the ``Accounts`` object, use ``Accounts.save`` to save the it to an encrypted keystore, and ``Accounts.load`` to open it for subsequent use.
+Once an account is added to the ``Accounts`` object, use :ref:`Account.save <api-network-accounts-load>` to save the it to an encrypted keystore, and :ref:`Accounts.load <api-network-accounts-load>` to open it for subsequent use.
 
 Transactions
 ------------

@@ -17,6 +17,7 @@ from brownie.exceptions import (
     UndeployedLibrary,
     VirtualMachineError,
 )
+from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
@@ -275,7 +276,23 @@ class Contract(_DeployedContractBase):
         if manifest_uri and abi:
             raise ValueError("Contract requires either abi or manifest_uri, but not both")
         if manifest_uri is not None:
-            raise NotImplementedError("ethPM manifests are not yet supported")
+            manifest = get_manifest(manifest_uri)
+            abi = manifest["contract_types"][name]["abi"]
+            if address is None:
+                address_list = get_deployment_addresses(manifest, name)
+                if not address_list:
+                    raise ContractNotFound(
+                        f"'{manifest['package_name']}' manifest does not contain"
+                        f" a deployment of '{name}' on this chain"
+                    )
+                if len(address_list) > 1:
+                    raise ValueError(
+                        f"'{manifest['package_name']}' manifest contains more than one "
+                        f"deployment of '{name}' on this chain, you must specify an address:"
+                        f" {', '.join(address_list)}"
+                    )
+                address = address_list[0]
+            name = manifest["contract_types"][name]["contract_name"]
         elif not address:
             raise TypeError("Address cannot be None unless creating object from manifest")
 
@@ -284,10 +301,6 @@ class Contract(_DeployedContractBase):
         contract = _find_contract(address)
         if not contract:
             return
-        if isinstance(contract, ProjectContract):
-            raise ContractExists(
-                f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
-            )
         if contract.bytecode != self.bytecode:
             contract._reverted = True
 
@@ -310,10 +323,10 @@ class ProjectContract(_DeployedContractBase):
         self._save_deployment()
 
     def _deployment_path(self) -> Optional[Path]:
-        if not CONFIG["active_network"].get("persist", None) or not self._project._project_path:
+        if not CONFIG["active_network"].get("persist", None) or not self._project._path:
             return None
         network = CONFIG["active_network"]["name"]
-        path = self._project._project_path.joinpath(f"build/deployments/{network}")
+        path = self._project._path.joinpath(f"build/deployments/{network}")
         path.mkdir(exist_ok=True)
         return path.joinpath(f"{self.address}.json")
 

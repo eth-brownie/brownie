@@ -55,7 +55,7 @@ class Console(code.InteractiveConsole):
 
         if project:
             project._update_and_register(locals_dict)
-            history_file = project._project_path
+            history_file = project._path
         else:
             history_file = CONFIG["brownie_folder"]
 

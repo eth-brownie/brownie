@@ -21,6 +21,8 @@ Settings
 
 The following settings are available:
 
+.. _config-network:
+
 .. py:attribute:: network
 
     Defines the available networks and how Brownie interacts with them.

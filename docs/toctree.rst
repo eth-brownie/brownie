@@ -9,6 +9,7 @@ Brownie
     quickstart.rst
     install.rst
     init.rst
+    ethpm.rst
     compile.rst
     interaction.rst
     tests.rst
@@ -18,5 +19,6 @@ Brownie
     test-rpc.rst
     nonlocal-networks.rst
     config.rst
+    build-folder.rst
     python-package.rst
     api.rst

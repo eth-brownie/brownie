@@ -19,6 +19,7 @@ Commands:
   bake               Initialize from a brownie-mix template
   compile            Compiles the contract source files
   console            Load the console
+  ethpm              Commands related to the ethPM package manager
   gui                Load the GUI to view opcodes and test coverage
   init               Initialize a new brownie project
   run                Run a script in the /scripts folder

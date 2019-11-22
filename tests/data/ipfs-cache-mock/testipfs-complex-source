@@ -1,0 +1,6 @@
+pragma solidity >=0.5.0 <0.5.11;
+
+import "math/Math.sol";
+import "./utils/Arrays.sol";
+
+contract ComplexNothing { }

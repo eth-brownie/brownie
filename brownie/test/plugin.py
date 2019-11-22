@@ -149,7 +149,7 @@ if brownie.project.check_for_project("."):
             coverage_eval = brownie.test.coverage.get_merged_coverage_eval()
             output._print_coverage_totals(project._build, coverage_eval)
             output._save_coverage_report(
-                project._build, coverage_eval, project._project_path.joinpath("reports")
+                project._build, coverage_eval, project._path.joinpath("reports")
             )
         if ARGV["gas"]:
             output._print_gas_profile()

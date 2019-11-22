@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 ### Added
+- [ethPM](https://docs.ethpm.com/) integration
 - `ProjectContract` objects persist between sessions (when enabled in the config file)
 
 ### Fixed

@@ -52,7 +52,7 @@ def test_project_config_overwrites_default(testproject, config):
     assert config["network"]["default"] != "ropsten"
     conf_copy = config._copy()
     conf_copy["network"]["default"] = "ropsten"
-    with testproject._project_path.joinpath("brownie-config.yaml").open("w") as fp:
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
         json.dump(conf_copy, fp, default=str)
     testproject.load_config()
     assert config["network"]["default"] == "ropsten"

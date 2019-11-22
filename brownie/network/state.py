@@ -3,9 +3,9 @@
 from typing import Any, Dict, Iterator, List
 
 from brownie._singleton import _Singleton
-from brownie.convert import to_address
 
 from .rpc import _revert_register
+from .web3 import _resolve_address
 
 _contract_map: Dict = {}
 
@@ -88,7 +88,7 @@ class TxHistory(metaclass=_Singleton):
 
 
 def _find_contract(address: Any) -> Any:
-    address = to_address(address)
+    address = _resolve_address(address)
     if address not in _contract_map:
         return None
     return _contract_map[address]

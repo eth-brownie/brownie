@@ -27,14 +27,15 @@ def test_namespace(project, testproject):
 
 
 def test_check_for_project(project, testproject):
-    path = project.check_for_project(testproject._project_path)
-    assert path == project.check_for_project(testproject._project_path.joinpath("contracts"))
+    path = project.check_for_project(testproject._path)
+    assert path == project.check_for_project(testproject._path.joinpath("contracts"))
     assert not project.check_for_project("/")
 
 
 def test_new(tmp_path, project):
     assert str(tmp_path) == project.new(tmp_path)
     assert tmp_path.joinpath("brownie-config.yaml").exists()
+    assert tmp_path.joinpath("ethpm-config.yaml").exists()
 
 
 def test_from_brownie_mix_raises(project, tmp_path):
@@ -47,7 +48,7 @@ def test_from_brownie_mix_raises(project, tmp_path):
 
 def test_load_raises_already_loaded(project, testproject):
     with pytest.raises(ProjectAlreadyLoaded):
-        project.load(testproject._project_path, "TestProject")
+        project.load(testproject._path, "TestProject")
     with pytest.raises(ProjectAlreadyLoaded):
         testproject.load()
 
@@ -69,7 +70,7 @@ def test_reload_from_project_object(project, testproject):
 
 
 def test_load_multiple(project, testproject):
-    other = project.load(testproject._project_path, "OtherProject")
+    other = project.load(testproject._path, "OtherProject")
     assert hasattr(project, "OtherProject")
     assert len(project.get_loaded_projects()) == 2
     other.close()
@@ -112,3 +113,17 @@ def test_create_folders(project, tmp_path):
     project.main._create_folders(Path(tmp_path))
     for path in ("contracts", "scripts", "reports", "tests", "build"):
         assert Path(tmp_path).joinpath(path).exists()
+
+
+def test_from_ethpm(ipfs_mock, project):
+    p = project.from_ethpm("ipfs://testipfs-math")
+    assert type(p) is TempProject
+    assert "Math" in p
+    assert not len(p.Math)
+
+
+def test_from_ethpm_with_deployments(ipfs_mock, project, network):
+    network.connect("mainnet")
+    p = project.from_ethpm("ipfs://testipfs-math")
+    assert len(p.Math) == 1
+    assert p.Math[0].address == "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2"

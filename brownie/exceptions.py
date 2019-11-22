@@ -118,3 +118,7 @@ class IncompatibleSolcVersion(Exception):
 
 class PragmaError(Exception):
     pass
+
+
+class InvalidManifest(Exception):
+    pass

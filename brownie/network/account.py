@@ -113,7 +113,7 @@ class Accounts(metaclass=_Singleton):
                 raise FileNotFoundError(f"Cannot find {json_file}")
         with json_file.open() as fp:
             priv_key = web3.eth.account.decrypt(
-                json.load(fp), getpass("Enter the password for this account: ")
+                json.load(fp), getpass("Enter the password to unlock this account: ")
             )
         return self.add(priv_key)
 

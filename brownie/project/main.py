@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import json
-import os
 import shutil
 import sys
 import zipfile
@@ -18,10 +17,12 @@ from brownie._config import (
     _load_project_config,
 )
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
+from brownie.network import web3
 from brownie.network.contract import ContractContainer, ProjectContract
 from brownie.network.state import _remove_contract
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
+from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_hash
 from brownie.utils import color
 
@@ -41,12 +42,15 @@ _loaded_projects = []
 
 class _ProjectBase:
     def __init__(self, name: str, contract_sources: Dict, project_path: Optional[Path]) -> None:
-        self._project_path = project_path
+        self._path = project_path
         self._name = name
         self._sources = Sources(contract_sources)
         self._build = Build(self._sources)
 
     def _compile(self, sources: Dict, compiler_config: Dict, silent: bool) -> None:
+        allow_paths = None
+        if self._path is not None:
+            allow_paths = self._path.joinpath("contracts").as_posix()
         build_json = compiler.compile_and_format(
             sources,
             solc_version=compiler_config["version"],
@@ -55,11 +59,12 @@ class _ProjectBase:
             evm_version=compiler_config["evm_version"],
             minify=compiler_config["minify_source"],
             silent=silent,
+            allow_paths=allow_paths,
         )
         for data in build_json.values():
             self._build._add(data)
-            if self._project_path is not None:
-                path = self._project_path.joinpath(f"build/contracts/{data['contractName']}.json")
+            if self._path is not None:
+                path = self._path.joinpath(f"build/contracts/{data['contractName']}.json")
                 with path.open("w") as fp:
                     json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
 
@@ -98,7 +103,7 @@ class Project(_ProjectBase):
     a brownie project.
 
     Attributes:
-        _project_path: Path object, absolute path to the project
+        _path: Path object, absolute path to the project
         _name: Name that the project is loaded as
         _sources: project Source object
         _build: project Build object
@@ -114,6 +119,7 @@ class Project(_ProjectBase):
             path_str: str = path.relative_to(project_path).as_posix()
             contract_sources[path_str] = source
         super().__init__(name, contract_sources, project_path)
+        self._path: Path = project_path
 
         for path in list(project_path.glob("build/contracts/*.json")):
             try:
@@ -138,7 +144,7 @@ class Project(_ProjectBase):
         if self._active:
             raise ProjectAlreadyLoaded("Project is already active")
 
-        self._compiler_config = _load_project_compiler_config(self._project_path, "solc")
+        self._compiler_config = _load_project_compiler_config(self._path, "solc")
         solc_version = self._compiler_config["version"]
         if solc_version:
             self._compiler_config["version"] = compiler.set_solc_version(solc_version)
@@ -188,15 +194,15 @@ class Project(_ProjectBase):
         )
 
     def _load_deployments(self) -> None:
-        if not CONFIG["active_network"].get("persist", None) or self._project_path is None:
+        if not CONFIG["active_network"].get("persist", None):
             return
         network = CONFIG["active_network"]["name"]
-        path = self._project_path.joinpath(f"build/deployments/{network}")
+        path = self._path.joinpath(f"build/deployments/{network}")
         path.mkdir(exist_ok=True)
         deployments = list(
-            self._project_path.glob(f"build/deployments/{CONFIG['active_network']['name']}/*.json")
+            self._path.glob(f"build/deployments/{CONFIG['active_network']['name']}/*.json")
         )
-        deployments.sort(key=os.path.getmtime)
+        deployments.sort(key=lambda k: k.stat().st_mtime)
         for build_json in deployments:
             with build_json.open() as fp:
                 build = json.load(fp)
@@ -216,8 +222,8 @@ class Project(_ProjectBase):
 
     def load_config(self) -> None:
         """Loads the project config file settings"""
-        if isinstance(self._project_path, Path):
-            _load_project_config(self._project_path)
+        if isinstance(self._path, Path):
+            _load_project_config(self._path)
 
     def close(self, raises: bool = True) -> None:
         """Removes pointers to the project's ContractContainer objects and this object."""
@@ -252,7 +258,7 @@ class Project(_ProjectBase):
 
         # clear paths
         try:
-            sys.path.remove(self._project_path)  # type: ignore
+            sys.path.remove(str(self._path))
         except ValueError:
             pass
 
@@ -302,6 +308,11 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
             CONFIG["brownie_folder"].joinpath("data/config.yaml"),
             project_path.joinpath("brownie-config.yaml"),
         )
+    if not project_path.joinpath("ethpm-config.yaml").exists():
+        shutil.copy(
+            CONFIG["brownie_folder"].joinpath("data/ethpm.yaml"),
+            project_path.joinpath("ethpm-config.yaml"),
+        )
     _add_to_sys_path(project_path)
     return str(project_path)
 
@@ -337,6 +348,28 @@ def from_brownie_mix(
     )
     _add_to_sys_path(project_path)
     return str(project_path)
+
+
+def from_ethpm(uri: str) -> "TempProject":
+
+    """
+    Generates a TempProject from an ethPM package.
+    """
+
+    manifest = get_manifest(uri)
+    compiler_config = {
+        "version": None,
+        "optimize": True,
+        "runs": 200,
+        "evm_version": None,
+        "minify_source": False,
+    }
+    project = TempProject(manifest["package_name"], manifest["sources"], compiler_config)
+    if web3.isConnected():
+        for contract_name in project.keys():
+            for address in get_deployment_addresses(manifest, contract_name):
+                project[contract_name].at(address)
+    return project
 
 
 def _new_checks(project_path: Union[Path, str], ignore_subfolder: bool) -> Path:

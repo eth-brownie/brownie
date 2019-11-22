@@ -33,8 +33,10 @@ STANDARD_JSON = {
         },
         "optimizer": {"enabled": True, "runs": 200},
         "evmVersion": None,
+        "remappings": [],
     },
 }
+PRAGMA_REGEX = re.compile(r"pragma +solidity([^;]*);")
 
 
 def set_solc_version(version: str) -> str:
@@ -46,7 +48,7 @@ def set_solc_version(version: str) -> str:
     except solcx.exceptions.SolcNotInstalled:
         install_solc(version)
         solcx.set_solc_version(version, silent=True)
-    return solcx.get_solc_version_string()
+    return str(solcx.get_solc_version())
 
 
 def install_solc(*versions: str) -> None:
@@ -56,13 +58,14 @@ def install_solc(*versions: str) -> None:
 
 
 def compile_and_format(
-    contracts: Dict[str, str],
+    contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
     optimize: bool = True,
     runs: int = 200,
     evm_version: int = None,
     minify: bool = False,
     silent: bool = True,
+    allow_paths: Optional[str] = None,
 ) -> Dict:
     """Compiles contracts and returns build data.
 
@@ -74,41 +77,43 @@ def compile_and_format(
         evm_version: evm version to compile for
         minify: minify source files
         silent: verbose reporting
+        allow_paths: compiler allowed filesystem import path
 
     Returns:
         build data dict
     """
-    if not contracts:
+    if not contract_sources:
         return {}
 
-    build_json: Dict = {}
-
     if solc_version is not None:
-        path_versions = {solc_version: list(contracts)}
+        path_versions = {solc_version: list(contract_sources)}
     else:
-        path_versions = find_solc_versions(contracts, install_needed=True, silent=silent)
+        path_versions = find_solc_versions(contract_sources, install_needed=True, silent=silent)
 
+    build_json: Dict = {}
     for version, path_list in path_versions.items():
         set_solc_version(version)
-        compiler_data = {"minify_source": minify, "version": solcx.get_solc_version_string()}
-        to_compile = dict((k, v) for k, v in contracts.items() if k in path_list)
+        compiler_data = {"minify_source": minify, "version": str(solcx.get_solc_version())}
+        to_compile = dict((k, v) for k, v in contract_sources.items() if k in path_list)
 
         input_json = generate_input_json(to_compile, optimize, runs, evm_version, minify)
-        output_json = compile_from_input_json(input_json, silent)
+        output_json = compile_from_input_json(input_json, silent, allow_paths)
         build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
     return build_json
 
 
 def find_solc_versions(
-    contracts: Dict[str, str],
+    contract_sources: Dict[str, str],
     install_needed: bool = False,
     install_latest: bool = False,
     silent: bool = True,
 ) -> Dict:
-    """Analyzes contract pragmas and determines which solc version(s) to use.
+
+    """
+    Analyzes contract pragmas and determines which solc version(s) to use.
 
     Args:
-        contracts: a dictionary in the form of {'path': "source code"}
+        contract_sources: a dictionary in the form of {'path': "source code"}
         install_needed: if True, will install when no installed version matches
                         the contract pragma
         install_latest: if True, will install when a newer version is available
@@ -117,22 +122,16 @@ def find_solc_versions(
 
     Returns: dictionary of {'version': ['path', 'path', ..]}
     """
-    installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
-    try:
-        available_versions = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
-    except ConnectionError:
-        if not installed_versions:
-            raise ConnectionError("Solc not installed and cannot connect to GitHub")
-        available_versions = installed_versions
 
-    pragma_regex = re.compile(r"pragma +solidity([^;]*);")
+    available_versions, installed_versions = _get_solc_version_list()
+
     pragma_specs: Dict = {}
     to_install = set()
     new_versions = set()
 
-    for path, source in contracts.items():
+    for path, source in contract_sources.items():
 
-        pragma_string = next(pragma_regex.finditer(source), None)
+        pragma_string = next(PRAGMA_REGEX.finditer(source), None)
         if pragma_string is None:
             raise PragmaError(f"No version pragma in '{path}'")
         pragma_specs[path] = NpmSpec(pragma_string.groups()[0])
@@ -147,7 +146,7 @@ def find_solc_versions(
         latest = pragma_specs[path].select(available_versions)
 
         if not version and not latest:
-            raise PragmaError(
+            raise IncompatibleSolcVersion(
                 f"No installable solc version matching '{pragma_string[0]}' in '{path}'"
             )
 
@@ -175,8 +174,67 @@ def find_solc_versions(
     return compiler_versions
 
 
+def find_best_solc_version(
+    contract_sources: Dict[str, str],
+    install_needed: bool = False,
+    install_latest: bool = False,
+    silent: bool = True,
+) -> str:
+
+    """
+    Analyzes contract pragmas and finds the best version compatible with all sources.
+
+    Args:
+        contract_sources: a dictionary in the form of {'path': "source code"}
+        install_needed: if True, will install when no installed version matches
+                        the contract pragma
+        install_latest: if True, will install when a newer version is available
+                        than the installed one
+        silent: set to False to enable verbose reporting
+
+    Returns: version string
+    """
+
+    available_versions, installed_versions = _get_solc_version_list()
+
+    for path, source in contract_sources.items():
+
+        pragma_string = next(PRAGMA_REGEX.finditer(source), None)
+        if pragma_string is None:
+            raise PragmaError(f"No version pragma in '{path}'")
+        pragma_spec = NpmSpec(pragma_string.groups()[0])
+        installed_versions = [i for i in installed_versions if i in pragma_spec]
+        available_versions = [i for i in available_versions if i in pragma_spec]
+
+    if not available_versions:
+        raise IncompatibleSolcVersion("No installable solc version compatible across all sources")
+
+    if not installed_versions and not (install_needed or install_latest):
+        raise IncompatibleSolcVersion("No installed solc version compatible across all sources")
+
+    if max(available_versions) > max(installed_versions, default=Version("0.0.0")):
+        if install_latest or (install_needed and not installed_versions):
+            install_solc(max(available_versions))
+            return str(max(available_versions))
+        if not silent:
+            print(f"New compatible solc version available: {max(available_versions)}")
+
+    return str(max(installed_versions))
+
+
+def _get_solc_version_list() -> Tuple[List, List]:
+    installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
+    try:
+        available_versions = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
+    except ConnectionError:
+        if not installed_versions:
+            raise ConnectionError("Solc not installed and cannot connect to GitHub")
+        available_versions = installed_versions
+    return available_versions, installed_versions
+
+
 def generate_input_json(
-    contracts: Dict[str, str],
+    contract_sources: Dict[str, str],
     optimize: bool = True,
     runs: int = 200,
     evm_version: Union[int, str, None] = None,
@@ -185,7 +243,7 @@ def generate_input_json(
     """Formats contracts to the standard solc input json.
 
     Args:
-        contracts: a dictionary in the form of {path: 'source code'}
+        contract_sources: a dictionary in the form of {path: 'source code'}
         optimize: enable solc optimizer
         runs: optimizer runs
         evm_version: evm version to compile for
@@ -200,24 +258,31 @@ def generate_input_json(
     input_json["settings"]["optimizer"]["runs"] = runs if optimize else 0
     input_json["settings"]["evmVersion"] = evm_version
     input_json["sources"] = dict(
-        (k, {"content": sources.minify(v)[0] if minify else v}) for k, v in contracts.items()
+        (k, {"content": sources.minify(v)[0] if minify else v}) for k, v in contract_sources.items()
     )
     return input_json
 
 
-def compile_from_input_json(input_json: Dict, silent: bool = True) -> Dict:
-    """Compiles contracts from a standard input json.
+def compile_from_input_json(
+    input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
+) -> Dict:
+
+    """
+    Compiles contracts from a standard input json.
 
     Args:
         input_json: solc input json
         silent: verbose reporting
+        allow_paths: compiler allowed filesystem import path
 
-    Returns: standard compiler output json"""
+    Returns: standard compiler output json
+    """
+
     optimizer = input_json["settings"]["optimizer"]
     input_json["settings"].setdefault("evmVersion", None)
     if not silent:
         print("Compiling contracts...")
-        print(f"  Solc {solcx.get_solc_version_string()}")
+        print(f"  Solc version: {str(solcx.get_solc_version())}")
         print(
             "  Optimizer: "
             + (f"Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled")
@@ -230,7 +295,7 @@ def compile_from_input_json(input_json: Dict, silent: bool = True) -> Dict:
             optimize=optimizer["enabled"],
             optimize_runs=optimizer["runs"],
             evm_version=input_json["settings"]["evmVersion"],
-            allow_paths=".",
+            allow_paths=allow_paths,
         )
     except solcx.exceptions.SolcError as e:
         raise CompilerError(e)

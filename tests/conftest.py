@@ -5,9 +5,12 @@ import json
 import os
 import shutil
 from pathlib import Path
+from typing import Dict, List
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
+from ethpm._utils.ipfs import dummy_ipfs_pin
+from ethpm.backends.ipfs import BaseIPFSBackend
 
 import brownie
 from brownie._config import ARGV
@@ -69,7 +72,7 @@ def pytest_generate_tests(metafunc):
 def _project_factory(tmp_path_factory):
     path = tmp_path_factory.mktemp("base")
     path.rmdir()
-    shutil.copytree("tests/brownie-test-project", path)
+    shutil.copytree("tests/data/brownie-test-project", path)
     shutil.copyfile("brownie/data/config.yaml", path.joinpath("brownie-config.yaml"))
     p = brownie.project.load(path, "TestProject")
     p.close()
@@ -106,8 +109,13 @@ def testproject(_project_factory, project, tmp_path):
 
 
 @pytest.fixture
+def tp_path(testproject):
+    yield testproject._path
+
+
+@pytest.fixture
 def otherproject(testproject):
-    return brownie.project.load(testproject._project_path, "OtherProject")
+    return brownie.project.load(testproject._path, "OtherProject")
 
 
 # yields a deployed EVMTester contract
@@ -255,3 +263,50 @@ def tester(BrownieTester, accounts):
 @pytest.fixture
 def ext_tester(ExternalCallTester, accounts):
     return ExternalCallTester.deploy({"from": accounts[0]})
+
+
+# ipfs fixtures
+
+
+class DummyIPFSBackend(BaseIPFSBackend):
+
+    _assets: Dict = {}
+    _path = Path("./tests/data/ipfs-cache-mock").resolve()
+
+    def fetch_uri_contents(self, ipfs_uri: str) -> bytes:
+        ipfs_uri = ipfs_uri.replace("ipfs://", "")
+        if ipfs_uri not in self._assets:
+            with self._path.joinpath(ipfs_uri).open() as fp:
+                self._assets[ipfs_uri] = fp.read()
+        return self._assets[ipfs_uri].encode()
+
+    def pin_assets(self, file_or_dir_path: Path) -> List:
+        """
+        Return a dict containing the IPFS hash, file name, and size of a file.
+        """
+        if file_or_dir_path.is_dir():
+            for path in file_or_dir_path.glob("*"):
+                with path.open() as fp:
+                    self._assets[path.name] = fp.read()
+            asset_data = [dummy_ipfs_pin(path) for path in file_or_dir_path.glob("*")]
+        elif file_or_dir_path.is_file():
+            asset_data = [dummy_ipfs_pin(file_or_dir_path)]
+            with file_or_dir_path.open() as fp:
+                self._assets[file_or_dir_path.name] = fp.read()
+            self._assets[asset_data[0]["Hash"]] = self._assets[file_or_dir_path.name]
+        else:
+            raise FileNotFoundError(f"{file_or_dir_path} is not a valid file or directory path.")
+        return asset_data
+
+
+@pytest.fixture
+def ipfs_mock(monkeypatch):
+    monkeypatch.setattr("brownie.project.ethpm.InfuraIPFSBackend", DummyIPFSBackend)
+    ipfs_path = Path("brownie/data/ipfs_cache")
+    temp_path = ipfs_path.parent.joinpath("_ipfs_cache")
+    ipfs_path.mkdir(exist_ok=True)
+    ipfs_path.rename(temp_path)
+    yield DummyIPFSBackend()
+    if ipfs_path.exists():
+        shutil.rmtree(ipfs_path)
+    temp_path.rename(ipfs_path)

@@ -5,7 +5,7 @@ from copy import deepcopy
 import pytest
 
 from brownie import Wei
-from brownie.exceptions import ContractExists, ContractNotFound
+from brownie.exceptions import ContractNotFound
 from brownie.network.contract import (
     Contract,
     ContractCall,
@@ -108,8 +108,24 @@ def test_revert_not_found(tester, rpc):
 
 
 def test_contractabi_replace_contract(testproject, tester):
-    with pytest.raises(ContractExists):
-        Contract("BrownieTester", tester.address, tester.abi)
+    Contract("BrownieTester", tester.address, tester.abi)
     del testproject.BrownieTester[0]
     Contract("BrownieTester", tester.address, tester.abi)
     Contract("BrownieTester", tester.address, tester.abi)
+
+
+def test_contract_from_ethpm(ipfs_mock, network):
+    network.connect("ropsten")
+    Contract("ComplexNothing", manifest_uri="ipfs://testipfs-complex")
+
+
+def test_contract_from_ethpm_multiple_deployments(ipfs_mock, network):
+    network.connect("mainnet")
+    with pytest.raises(ValueError):
+        Contract("ComplexNothing", manifest_uri="ipfs://testipfs-complex")
+
+
+def test_contract_from_ethpm_no_deployments(ipfs_mock, network):
+    network.connect("kovan")
+    with pytest.raises(ContractNotFound):
+        Contract("ComplexNothing", manifest_uri="ipfs://testipfs-complex")
