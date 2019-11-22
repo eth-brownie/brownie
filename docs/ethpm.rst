@@ -1,10 +1,10 @@
-.. _ethpm:
+.. _eth-pm:
 
-====================================
-The Ethereum Package Manager (ethPM)
-====================================
+============================
+The Ethereum Package Manager
+============================
 
-`ethPM <https://www.ethpm.com/>`_ is a decentralized package manager used to distribute EVM smart contracts and projects. It has similar goals to most package managers found in any given programming language:
+The `Ethereum Package Manager <https://www.ethpm.com/>`_ (ethPM) is a decentralized package manager used to distribute EVM smart contracts and projects. It has similar goals to most package managers found in any given programming language:
 
 * Easily import and build upon core ideas written by others.
 * Distribute the ideas that you've written and/or deployed, making them easily consumable for tooling and the community at large.

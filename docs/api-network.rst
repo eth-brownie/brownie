@@ -2015,6 +2015,15 @@ Web3 Methods
 Web3 Attributes
 ***************
 
+.. py:classmethod:: Web3.chain_uri
+
+    Returns a `BIP122 blockchain URI <https://github.com/bitcoin/bips/blob/master/bip-0122.mediawiki>`_ for the active chain.
+
+    .. code-block:: python
+
+        >>> web3.chain_uri
+        'blockchain://a82ff4a4184a7b9e57aba1ae1ef91214c7d14a1040f4e1df8c0ec95f87a5bb62/block/66760b538b3f02f6fbd4a745b3943af9fda982f2b8b26b502180ed96b2c7f52d'
+
 .. py:classmethod:: Web3.genesis_hash
 
     Returns the hash of the genesis block for the active chain, as a string without a `0x` prefix.
@@ -2023,7 +2032,6 @@ Web3 Attributes
 
         >>> web3.genesis_hash
         '41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d'
-
 
 Web3 Internals
 **************

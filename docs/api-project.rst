@@ -118,6 +118,12 @@ Module Methods
         Downloading from https://github.com/brownie-mix/token-mix/archive/master.zip...
         'my_projects/token'
 
+.. py:method:: main.from_ethpm(uri):
+
+    Generates a ``TempProject`` from an ethPM package.
+
+    * ``uri``: ethPM manifest URI. Format can be ERC1319 or IPFS.
+
 .. py:method:: main.load(project_path=None, name=None)
 
     Loads a Brownie project and instantiates various related objects.
@@ -302,11 +308,11 @@ Module Methods
         >>> from brownie.project import compiler
         >>> compiler.install_solc("0.4.25", "0.5.10")
 
-.. py:method:: compiler.compile_and_format(contracts, solc_version=None, optimize=True, runs=200, evm_version=None, minify=False, silent=True, allow_paths=None)
+.. py:method:: compiler.compile_and_format(contract_sources, solc_version=None, optimize=True, runs=200, evm_version=None, minify=False, silent=True, allow_paths=None)
 
     Given a dict in the format ``{'path': "source code"}``, compiles the contracts and returns the formatted `build data <compile-json>`_.
 
-    * ``contracts``: ``dict`` in the format ``{'path': "source code"}``
+    * ``contract_sources``: ``dict`` in the format ``{'path': "source code"}``
     * ``solc_version``: solc version to compile with. If ``None``, each contract is compiled with the latest installed version that matches the pragma.
     * ``optimize``: Toggle compiler optimization
     * ``runs``: Number of compiler optimization runs
@@ -321,25 +327,35 @@ Module Methods
 
         >>> from brownie.project import compiler
 
-        >>> input_json = compiler.generate_input_json(contracts)
+        >>> input_json = compiler.generate_input_json(contract_sources)
         >>> output_json = compiler.compile_from_input_json(input_json)
         >>> build_json = compiler.generate_build_json(input_json, output_json)
 
-.. py:method:: compiler.find_solc_versions(contracts, install_needed=False, install_latest=False, silent=True)
+.. py:method:: compiler.find_solc_versions(contract_sources, install_needed=False, install_latest=False, silent=True)
 
     Analyzes contract pragmas and determines which solc version(s) to use.
 
-    * ``contracts``: ``dict`` in the format ``{'path': "source code"}``
+    * ``contract_sources``: ``dict`` in the format ``{'path': "source code"}``
     * ``install_needed``: if ``True``, solc is installed when no installed version matches a contract pragma
     * ``install_latest``: if ``True``, solc is installed when a newer version is available than the installed one
     * ``silent``: enables verbose reporting
 
     Returns a ``dict`` of ``{'version': ["path", "path", ..]}``.
 
-.. py:method:: compiler.generate_input_json(contracts, optimize=True, runs=200, evm_version=None, minify=False)
+.. py:method:: compiler.find_best_solc_version(contract_sources, install_needed=False, install_latest=False, silent=True)
+
+    Analyzes contract pragmas and finds the best version compatible with all sources.
+
+    * ``contract_sources``: ``dict`` in the format ``{'path': "source code"}``
+    * ``install_needed``: if ``True``, solc is installed when no installed version matches a contract pragma
+    * ``install_latest``: if ``True``, solc is installed when a newer version is available than the installed one
+    * ``silent``: enables verbose reporting
+
+    Returns a ``dict`` of ``{'version': ["path", "path", ..]}``.
+
+.. py:method:: compiler.generate_input_json(contract_sources, optimize=True, runs=200, evm_version=None, minify=False)
 
     Generates a `standard solc input JSON <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_ as a dict.
-
 
 .. py:method:: compiler.compile_from_input_json(input_json, silent=True, allow_paths=None)
 
@@ -403,6 +419,98 @@ Internal Methods
 .. py:method:: compiler._get_branch_nodes(source_nodes)
 
     Given a list of AST source node objects from `py-solc-ast <https://github.com/iamdefinitelyahuman/py-solc-ast>`_, returns a list of branch nodes.  Used to generate the branch coverage map.
+
+``brownie.project.ethpm``
+=========================
+
+The ``ethpm`` module contains methods for interacting with ethPM manifests and registries. See :ref:`eth-pm` for more detailed information on how to access this functionality.
+
+Module Methods
+--------------
+
+.. py:method:: ethpm.get_manifest(uri)
+
+    Fetches an ethPM manifest and processes it for use with Brownie. A local copy is also stored if the given URI follows the ERC1319 spec.
+
+    * ``uri``: URI location of the manifest. Can be IPFS or ERC1319.
+
+.. py:method:: ethpm.process_manifest(manifest, uri)
+
+    Processes a manifest for use with Brownie.
+
+    * ``manifest``: ethPM manifest
+    * ``uri``: IPFS uri of the package
+
+.. py:method:: ethpm.get_deployment_addresses(manifest, contract_name, genesis_hash)
+
+    Parses a manifest and returns a list of deployment addresses for the given contract and chain.
+
+    * ``manifest``: ethPM manifest
+    * ``contract_name``: Name of the contract
+    * ``genesis_block``: Genesis block hash for the chain to return deployments on. If ``None``, the currently active chain will be used.
+
+.. py:method:: ethpm.get_installed_packages(project_path)
+
+    Returns information on installed ethPM packages within a project.
+
+    * ``project_path``: Path to the root folder of the project
+
+    Returns:
+
+    * ``[(project name, version), ..]`` of installed packages
+    * ``[(project name, version), ..]`` of installed-but-modified packages
+
+.. py:method:: ethpm.install_package(project_path, uri, replace_existing)
+
+    Installs an ethPM package within the project.
+
+    * ``project_path``: Path to the root folder of the project
+    * ``uri``: manifest URI, can be erc1319 or ipfs
+    * ``replace_existing``: if True, existing files will be overwritten when installing the package
+
+    Returns the package name as a string.
+
+.. py:method:: ethpm.remove_package(project_path, package_name, delete_files)
+
+    Removes an ethPM package from a project.
+
+    * ``project_path``: Path to the root folder of the project
+    * ``package_name``: name of the package
+    * ``delete_files``: if ``True``, source files related to the package are deleted. Files that are still required by other installed packages will not be deleted.
+
+    Returns a boolean indicating if the package was installed.
+
+.. py:method:: ethpm.create_manifest(project_path, package_config, pin_assets=False, silent=True)
+
+    Creates a manifest from a project, and optionally pins it to IPFS.
+
+    * ``project_path``: Path to the root folder of the project
+    * ``package_config``: Configuration settings for the manifest
+    * ``pin_assets``: if ``True``, all source files and the manifest will be uploaded onto IPFS via Infura.
+
+    Returns: ``(generated manifest, ipfs uri of manifest)``
+
+.. py:method:: ethpm.verify_manifest(package_name, version, uri)
+
+    Verifies the validity of a package at a given IPFS URI.
+
+    * ``package_name``: Package name
+    * ``version``: Package version
+    * ``uri``: IPFS uri
+
+    Raises ``InvalidManifest`` if the manifest is not valid.
+
+.. py:method:: ethpm.release_package(registry_address, account, package_name, version, uri)
+
+    Creates a new release of a package at an ERC1319 registry.
+
+    * ``registry_address``: Address of the registry
+    * ``account``: ``Account`` object used to broadcast the transaction to the registry
+    * ``package_name``: Name of the package
+    * ``version``: Package version
+    * ``uri``: IPFS uri of the package
+
+    Returns the ``TransactionReceipt`` of the registry call to release the package.
 
 ``brownie.project.scripts``
 ===========================

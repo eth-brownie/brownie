@@ -122,7 +122,3 @@ class PragmaError(Exception):
 
 class InvalidManifest(Exception):
     pass
-
-
-class InvalidErc1319Import(Exception):
-    pass
