@@ -60,6 +60,13 @@ def test_meta(tp_path):
     }
 
 
+def test_invalid_package_name(tp_path):
+    package_config = ETHPM_CONFIG.copy()
+    package_config["package_name"] = "A Very Invalid Name!"
+    with pytest.raises(ValueError):
+        ethpm.create_manifest(tp_path, package_config)
+
+
 def test_missing_fields(tp_path):
     for key in ETHPM_CONFIG:
         package_config = ETHPM_CONFIG.copy()

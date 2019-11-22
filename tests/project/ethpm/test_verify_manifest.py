@@ -24,6 +24,13 @@ def test_packing(ipfs_mock):
         verify_manifest("invalid", "1.0.0", "invalid")
 
 
+def test_invalid_package_name(ipfs_mock):
+    manifest = {"manifest_version": "2", "package_name": "Not a good name!", "version": "1.0.0"}
+    pin(ipfs_mock, manifest)
+    with pytest.raises(ValueError):
+        verify_manifest("Not a good name!", "1.0.0", "invalid")
+
+
 def test_fields(ipfs_mock):
     manifest = {"manifest_version": "2", "package_name": "invalid", "version": "1.0.0"}
     for key, value in manifest.items():

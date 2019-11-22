@@ -389,6 +389,7 @@ def create_manifest(
     """
 
     package_config = _remove_empty_fields(package_config)
+    _verify_package_name(package_config["package_name"])
 
     if pin_assets:
         ipfs_backend = InfuraIPFSBackend()
@@ -520,6 +521,7 @@ def verify_manifest(package_name: str, version: str, uri: str) -> None:
     Returns None if the package is valid, raises InvalidManifest if not.
     """
 
+    _verify_package_name(package_name)
     data = InfuraIPFSBackend().fetch_uri_contents(uri).decode("utf-8")
     try:
         manifest = json.loads(data)
@@ -601,3 +603,8 @@ def _remove_empty_fields(initial: Dict) -> Dict:
         if value not in (None, {}, [], ""):
             result[key] = value
     return result
+
+
+def _verify_package_name(package_name: str) -> None:
+    if re.fullmatch(r"^[a-z][a-z0-9_-]{0,255}$", package_name) is None:
+        raise ValueError(f"Invalid package name '{package_name}'")
