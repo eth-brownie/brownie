@@ -6,6 +6,8 @@ The Build Folder
 
 Each project has a ``build/`` folder that contains various data files. If you are integrating a third party tool or hacking on the Brownie source code, it can be valuable to understand how these files are structured.
 
+.. _build-folder-compiler:
+
 Compiler Artifacts
 ==================
 
@@ -102,10 +104,20 @@ See :ref:`tests-coverage-map-indexes` for more information.
 Deployment Artifacts
 ====================
 
+Each time a contract is deployed to a network where :ref:`persistence<nonlocal-networks-contracts>` is enabled, Brownie saves a copy of the :ref`compiler artifact<build-folder-compiler>`_ used for deployment. In this way accurate deployment data is maintained even if the contract's source code is later modified.
+
+Deployment artifacts are stored at:
+
+::
+
+    build/deployments/[NETWORK_NAME]/[ADDRESS].json
+
+When instantiating :ref:`Contract<api-network-contract>` objects from deployment artifacts, Brownie parses the files in order of creation time. If the ``contractName`` field in an artifact gives a name that longer exists within the project, the file is deleted.
+
 Test Results and Coverage Data
 ==============================
 
-The ``build/test.json`` file holds information about unit tests and coverage evaluation.  It has the following format:
+The ``build/test.json`` file holds information about unit tests and coverage evaluation. It has the following format:
 
 .. code-block:: javascript
 
@@ -187,3 +199,25 @@ From this we know that the branch is within the ``add`` function, and that the r
 
 Installed ethPM Package Data
 ============================
+
+The ``build/packages.json`` file holds information about installed ethPM packages. It has the following format:
+
+.. code-block:: javascript
+
+    {
+        "packages": {
+            "package_name": {
+                "manifest_uri": "ipfs://",  // ipfs URI of the package manifest
+                "registry_address": "",  // ethPM registry address the package was installed from
+                "version": ""  // package version string
+            },
+            ...
+        },
+        "sources": {
+            "path/to/ContractFile.sol": {
+                "md5": "",  // md5 hash of the source file at installation
+                "packages": []  // installed packages that include this source file
+            },
+            ...
+        }
+    }
