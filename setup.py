@@ -17,7 +17,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Ben Hauser",
-    author_email="b.hauser@zerolaw.tech",
+    author_email="ben@hauser.id",
     url="https://github.com/iamdefinitelyahuman/brownie",
     keywords=["brownie"],
     install_requires=requirements,

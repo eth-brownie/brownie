@@ -13,4 +13,4 @@ from .scripts import run
 
 __all__ = ["run"]
 
-__console_dir__ = ["run", "new", "pull", "from_brownie_mix", "from_ethpm", "load", "compile_source"]
+__console_dir__ = ["run", "new", "from_brownie_mix", "from_ethpm", "load", "compile_source"]
