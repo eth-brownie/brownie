@@ -121,16 +121,14 @@ class Project(_ProjectBase):
         super().__init__(name, contract_sources, project_path)
         self._path: Path = project_path
 
+        contract_list = self._sources.get_contract_list()
         for path in list(project_path.glob("build/contracts/*.json")):
             try:
                 with path.open() as fp:
                     build_json = json.load(fp)
             except json.JSONDecodeError:
                 build_json = {}
-            if (
-                not set(BUILD_KEYS).issubset(build_json)
-                or not project_path.joinpath(build_json["sourcePath"]).exists()
-            ):
+            if not set(BUILD_KEYS).issubset(build_json) or path.stem not in contract_list:
                 path.unlink()
                 continue
             self._build._add(build_json)
