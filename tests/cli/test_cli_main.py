@@ -90,15 +90,10 @@ def test_cli_console(cli_tester, testproject):
 #     cli_tester('gui')
 
 
-def test_cli_run(cli_tester, project):
+def test_cli_run(cli_tester, testproject):
     cli_tester.set_target("brownie.run")
     cli_tester.set_subtargets("brownie.network.connect")
-    cli_tester.run(
-        "run testfile", args=("testfile",), kwargs={"method_name": "main", "project": None}
-    )
-    cli_tester.run(
-        "run testfile xx --gas", args=("testfile",), kwargs={"method_name": "xx", "project": None}
-    )
+    cli_tester.run("run testfile", args=("testfile",), kwargs={"method_name": "main"})
 
 
 def test_cli_incorrect(cli_tester):

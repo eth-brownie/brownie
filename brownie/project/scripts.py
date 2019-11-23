@@ -8,8 +8,11 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, Dict, Optional, Tuple
 
-from brownie.project.main import check_for_project, get_loaded_projects
+from brownie.exceptions import ProjectNotFound
+from brownie.project.main import Project, check_for_project, get_loaded_projects
 from brownie.utils import color
+
+_import_cache: Dict = {}
 
 
 def run(
@@ -25,7 +28,7 @@ def run(
     method_name: name of method to run
     args: method args
     kwargs: method kwargs
-    project: project to add to the script namespace
+    project: (deprecated)
 
     Returns: return value from called method
     """
@@ -34,22 +37,20 @@ def run(
     if kwargs is None:
         kwargs = {}
 
-    if not project and len(get_loaded_projects()) == 1:
-        project = get_loaded_projects()[0]
+    if not get_loaded_projects():
+        raise ProjectNotFound("Cannot run a script without an active project")
 
-    default_path: str = "scripts"
-    if project:
-        # if there is an active project, temporarily add all the ContractContainer
-        # instances to the main brownie namespace so they can be imported by the script
-        brownie: Any = sys.modules["brownie"]
-        brownie_dict = brownie.__dict__.copy()
-        brownie_all = brownie.__all__.copy()
-        brownie.__dict__.update(project)
-        brownie.__all__.extend(project.__all__)
-        default_path = project._path.joinpath("scripts").as_posix()
+    script, project = _get_path(script_path)
+
+    # temporarily add project objects to the main namespace, so the script can import them
+    brownie: Any = sys.modules["brownie"]
+    brownie_dict = brownie.__dict__.copy()
+    brownie_all = brownie.__all__.copy()
+    brownie.__dict__.update(project)
+    brownie.__all__.extend(project.__all__)
 
     try:
-        script: Path = _get_path(script_path, default_path)
+        script = script.absolute().relative_to(project._path)
         module = _import_from_path(script)
 
         name = module.__name__
@@ -60,37 +61,44 @@ def run(
         )
         return getattr(module, method_name)(*args, **kwargs)
     finally:
-        if project:
-            # cleanup namespace
-            brownie.__dict__.clear()
-            brownie.__dict__.update(brownie_dict)
-            brownie.__all__ = brownie_all
+        # cleanup namespace
+        brownie.__dict__.clear()
+        brownie.__dict__.update(brownie_dict)
+        brownie.__all__ = brownie_all
 
 
-def _get_path(path_str: str, default_folder: str = "scripts") -> Path:
+def _get_path(path_str: str) -> Tuple[Path, Project]:
     # Returns path to a python module
-    if not path_str.endswith(".py"):
-        path_str += ".py"
-    path = Path(path_str)
-    if not path.exists() and not path.is_absolute():
-        if not path_str.startswith(default_folder + "/"):
-            path = Path(default_folder).joinpath(path_str)
-        if not path.exists() and sys.path[0]:
-            path = Path(sys.path[0]).joinpath(path)
+    path = Path(path_str).with_suffix(".py")
+
+    if not path.is_absolute():
+        if path.parts[0] != "scripts":
+            path = Path("scripts").joinpath(path)
+        for project in get_loaded_projects():
+            if project._path.joinpath(path).exists():
+                path = project._path.joinpath(path)
+                return path, project
+        raise FileNotFoundError(f"Cannot find {path_str}")
+
     if not path.exists():
         raise FileNotFoundError(f"Cannot find {path_str}")
-    if not path.is_file():
-        raise FileNotFoundError(f"{path_str} is not a file")
-    if path.suffix != ".py":
-        raise TypeError(f"'{path_str}' is not a python script")
-    return path
+
+    try:
+        project = next(i for i in get_loaded_projects() if path_str.startswith(i._path.as_posix()))
+    except StopIteration:
+        raise ProjectNotFound(f"{path_str} is not part of an active project")
+
+    return path, project
 
 
 def _import_from_path(path: Path) -> ModuleType:
     # Imports a module from the given path
-    path = Path(path).absolute().relative_to(sys.path[0])
     import_str = ".".join(path.parts[:-1] + (path.stem,))
-    return importlib.import_module(import_str)
+    if import_str in _import_cache:
+        importlib.reload(_import_cache[import_str])
+    else:
+        _import_cache[import_str] = importlib.import_module(import_str)
+    return _import_cache[import_str]
 
 
 def _get_ast_hash(path: str) -> str:
