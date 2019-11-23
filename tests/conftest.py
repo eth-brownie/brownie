@@ -80,6 +80,7 @@ def _project_factory(tmp_path_factory):
 
 
 def _copy_all(src_folder, dest_folder):
+    Path(dest_folder).mkdir(exist_ok=True)
     for path in Path(src_folder).glob("*"):
         dest_path = Path(dest_folder).joinpath(path.name)
         if path.is_dir():
@@ -104,8 +105,10 @@ def project(tmp_path):
 # copies the tester project into a temporary folder, loads it, and yields a Project object
 @pytest.fixture
 def testproject(_project_factory, project, tmp_path):
-    _copy_all(_project_factory, tmp_path)
-    return project.load(tmp_path, "TestProject")
+    path = tmp_path.joinpath("testproject")
+    _copy_all(_project_factory, path)
+    os.chdir(path)
+    return project.load(path, "TestProject")
 
 
 @pytest.fixture
@@ -114,8 +117,9 @@ def tp_path(testproject):
 
 
 @pytest.fixture
-def otherproject(testproject):
-    return brownie.project.load(testproject._path, "OtherProject")
+def otherproject(_project_factory, project, tmp_path):  # testproject):
+    _copy_all(_project_factory, tmp_path.joinpath("otherproject"))
+    return project.load(tmp_path.joinpath("otherproject"), "OtherProject")
 
 
 # yields a deployed EVMTester contract
