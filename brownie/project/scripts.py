@@ -12,6 +12,8 @@ from brownie.exceptions import ProjectNotFound
 from brownie.project.main import Project, check_for_project, get_loaded_projects
 from brownie.utils import color
 
+_import_cache: Dict = {}
+
 
 def run(
     script_path: str,
@@ -92,7 +94,11 @@ def _get_path(path_str: str) -> Tuple[Path, Project]:
 def _import_from_path(path: Path) -> ModuleType:
     # Imports a module from the given path
     import_str = ".".join(path.parts[:-1] + (path.stem,))
-    return importlib.import_module(import_str)
+    if import_str in _import_cache:
+        importlib.reload(_import_cache[import_str])
+    else:
+        _import_cache[import_str] = importlib.import_module(import_str)
+    return _import_cache[import_str]
 
 
 def _get_ast_hash(path: str) -> str:
