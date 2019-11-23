@@ -22,6 +22,7 @@ CLI_FLAGS = {
     "accounts": "--accounts",
     "evm_version": "--hardfork",
     "mnemonic": "--mnemonic",
+    "acctKeys": "--acctKeys",
 }
 
 EVM_VERSIONS = ["byzantium", "constantinople", "petersburg"]
