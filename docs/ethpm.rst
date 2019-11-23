@@ -50,7 +50,7 @@ To install an ethPM package within a Brownie project:
 
 This will add all of the package sources files into the project ``contracts/`` folder.
 
-If a package contains a source with an identical filename as one in your project,
+If a package contains a source with an identical filename to one in your project, Brownie raises a ``FileExistsError`` unless the contents of the two files are identical, or the ``overwrite`` flag is set to ``True``.
 
 Listing Installed Packages
 --------------------------

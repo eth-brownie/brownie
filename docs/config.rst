@@ -56,6 +56,7 @@ The following settings are available:
             * ``accounts``: The number of funded accounts in ``web3.eth.accounts``.
             * ``evm_version``: The EVM version to compile for. If ``null`` the most recent one is used. Possible values are ``byzantium``, ``constantinople`` and ``petersburg``.
             * ``mnemonic``: Local accounts are derived from this mnemonic. If set to ``null``, you will have different local accounts each time Brownie is run.
+            * ``account_keys_path``: Optional path to save generated accounts and private keys as a JSON object
 
 .. _config-solc:
 

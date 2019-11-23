@@ -23,7 +23,6 @@ The connection settings for the local RPC are outlined in ``brownie-config.yaml`
             accounts: 10
             evm_version: petersburg
             mnemonic: brownie
-            acctKeys: ganache-accounts.json
 
 Brownie will launch or attach to the client when using any network that includes a ``test-rpc`` dictionary in it's settings.
 

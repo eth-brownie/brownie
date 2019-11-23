@@ -6,16 +6,22 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.2.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.2.0) - 2019-11-23
 ### Added
 - [ethPM](https://docs.ethpm.com/) integration
 - `ProjectContract` objects persist between sessions (when enabled in the config file)
+
+### Changed
+- `scripts.run` only works when a project is loaded, supports multiple loaded projects
 
 ### Fixed
 - use `isinstance` instead of `type` for conversions, fixes hexstring comparison bug
 - pretty printing for more objects in the console
 - properly display `SyntaxError` in console when there is no source highlight
 - improved regex statement for finding individual contracts within source files
-- fixed web3 dependency, removed deps-of-deps to reduce conflicts
+- favor `==x.x` dependencies over `>=x.x <x.y`, removed deps-of-deps to reduce conflicts
+- delete stale compiler artifacts from `build/contracts/` when contract name has changed within the same source file
 
 ## [1.1.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.1.0) - 2019-11-04
 ### Added
