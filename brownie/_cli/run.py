@@ -4,6 +4,7 @@ from docopt import docopt
 
 from brownie import network, project, run
 from brownie._config import ARGV, CONFIG, _update_argv_from_docopt
+from brownie.exceptions import ProjectNotFound
 from brownie.test.output import _print_gas_profile
 
 __doc__ = f"""Usage: brownie run <filename> [<function>] [options]
@@ -31,11 +32,10 @@ def main():
         active_project.load_config()
         print(f"{active_project._name} is the active project.")
     else:
-        active_project = None
-        print("No project was loaded.")
+        raise ProjectNotFound
 
     network.connect(ARGV["network"])
 
-    run(args["<filename>"], method_name=args["<function>"] or "main", project=active_project)
+    run(args["<filename>"], method_name=args["<function>"] or "main")
     if ARGV["gas"]:
         _print_gas_profile()
