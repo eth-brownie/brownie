@@ -11,6 +11,7 @@ from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Union
 import requests
 
 from brownie._config import (
+    BROWNIE_FOLDER,
     CONFIG,
     _get_project_config_path,
     _load_project_compiler_config,
@@ -303,13 +304,12 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
     _create_folders(project_path)
     if not _get_project_config_path(project_path):
         shutil.copy(
-            CONFIG["brownie_folder"].joinpath("data/config.yaml"),
+            BROWNIE_FOLDER.joinpath("data/config.yaml"),
             project_path.joinpath("brownie-config.yaml"),
         )
     if not project_path.joinpath("ethpm-config.yaml").exists():
         shutil.copy(
-            CONFIG["brownie_folder"].joinpath("data/ethpm.yaml"),
-            project_path.joinpath("ethpm-config.yaml"),
+            BROWNIE_FOLDER.joinpath("data/ethpm.yaml"), project_path.joinpath("ethpm-config.yaml")
         )
     _add_to_sys_path(project_path)
     return str(project_path)
@@ -341,8 +341,7 @@ def from_brownie_mix(
         zf.extractall(str(project_path.parent))
     project_path.parent.joinpath(project_name + "-mix-master").rename(project_path)
     shutil.copy(
-        CONFIG["brownie_folder"].joinpath("data/config.yaml"),
-        project_path.joinpath("brownie-config.yaml"),
+        BROWNIE_FOLDER.joinpath("data/config.yaml"), project_path.joinpath("brownie-config.yaml")
     )
     _add_to_sys_path(project_path)
     return str(project_path)
@@ -372,7 +371,7 @@ def from_ethpm(uri: str) -> "TempProject":
 
 def _new_checks(project_path: Union[Path, str], ignore_subfolder: bool) -> Path:
     project_path = Path(project_path).resolve()
-    if str(CONFIG["brownie_folder"]) in str(project_path):
+    if str(BROWNIE_FOLDER) in str(project_path):
         raise SystemError("Cannot make a new project inside the main brownie installation folder.")
     if not ignore_subfolder:
         check = check_for_project(project_path)

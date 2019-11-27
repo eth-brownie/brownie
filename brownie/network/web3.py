@@ -11,7 +11,7 @@ from web3 import HTTPProvider, IPCProvider
 from web3 import Web3 as _Web3
 from web3 import WebsocketProvider
 
-from brownie._config import CONFIG
+from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
 
@@ -105,7 +105,7 @@ def _expand_environment_vars(uri: str) -> str:
 
 
 def _get_path() -> Path:
-    return CONFIG["brownie_folder"].joinpath("data/ens.json")
+    return BROWNIE_FOLDER.joinpath("data/ens.json")
 
 
 def _resolve_address(domain: str) -> str:

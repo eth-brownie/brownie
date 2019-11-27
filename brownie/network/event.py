@@ -7,7 +7,7 @@ from typing import Dict, Iterator, List, Sequence, Tuple, Union, ValuesView
 
 import eth_event
 
-from brownie._config import CONFIG
+from brownie._config import BROWNIE_FOLDER
 from brownie.convert import _format_event
 from brownie.exceptions import EventLookupError
 
@@ -159,7 +159,7 @@ class _EventItem:
 
 
 def __get_path() -> Path:
-    return CONFIG["brownie_folder"].joinpath("data/topics.json")
+    return BROWNIE_FOLDER.joinpath("data/topics.json")
 
 
 def _get_topics(abi: List) -> Dict:

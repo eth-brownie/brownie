@@ -11,7 +11,8 @@ import yaml
 from brownie._singleton import _Singleton
 
 REPLACE = ["active_network", "networks"]
-IGNORE = ["active_network", "brownie_folder"]
+IGNORE = ["active_network"]
+BROWNIE_FOLDER = Path(__file__).parent
 
 
 class ConfigDict(dict):
@@ -83,7 +84,7 @@ def _load_default_config() -> "ConfigDict":
     brownie_path = Path(__file__).parent
     path = brownie_path.joinpath("data/config.yaml")
     config = _Singleton("Config", (ConfigDict,), {})(_load_config(path))  # type: ignore
-    config.update({"active_network": {"name": None}, "brownie_folder": brownie_path})
+    config["active_network"] = {"name": None}
     return config
 
 

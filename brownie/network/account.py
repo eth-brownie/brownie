@@ -11,7 +11,7 @@ import eth_keys
 from eth_hash.auto import keccak
 from hexbytes import HexBytes
 
-from brownie._config import CONFIG
+from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie._singleton import _Singleton
 from brownie.convert import Wei, to_address
 from brownie.exceptions import IncompatibleEVMVersion, UnknownAccount, VirtualMachineError
@@ -100,7 +100,7 @@ class Accounts(metaclass=_Singleton):
 
         Returns:
             Account instance."""
-        project_path = CONFIG["brownie_folder"].joinpath("data/accounts")
+        project_path = BROWNIE_FOLDER.joinpath("data/accounts")
         if not filename:
             return [i.stem for i in project_path.glob("*.json")]
         filename = str(filename)
@@ -358,7 +358,7 @@ class LocalAccount(_PrivateKeyAccount):
 
         Returns the absolute path to the keystore file as a string.
         """
-        path = CONFIG["brownie_folder"].joinpath("data/accounts")
+        path = BROWNIE_FOLDER.joinpath("data/accounts")
         path.mkdir(exist_ok=True)
         filename = str(filename)
         if not filename.endswith(".json"):
