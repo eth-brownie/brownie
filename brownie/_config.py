@@ -2,6 +2,7 @@
 
 import json
 import re
+import shutil
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -10,9 +11,10 @@ import yaml
 
 from brownie._singleton import _Singleton
 
-REPLACE = ["active_network", "networks"]
-IGNORE = ["active_network"]
 BROWNIE_FOLDER = Path(__file__).parent
+DATA_FOLDER = Path.home().joinpath(".brownie")
+
+REPLACE = ["active_network", "networks"]
 
 
 class ConfigDict(dict):
@@ -81,9 +83,16 @@ def _load_config(project_path: Path) -> Dict:
 
 def _load_default_config() -> "ConfigDict":
     # Loads the default configuration settings from brownie/data/config.yaml
-    brownie_path = Path(__file__).parent
-    path = brownie_path.joinpath("data/config.yaml")
-    config = _Singleton("Config", (ConfigDict,), {})(_load_config(path))  # type: ignore
+    base_config = BROWNIE_FOLDER.joinpath("data/config.yaml")
+    default_config = DATA_FOLDER.joinpath("brownie-config.yaml")
+
+    if not DATA_FOLDER.exists():
+        DATA_FOLDER.mkdir()
+    if not default_config.exists():
+        shutil.copy(base_config, default_config)
+
+    config = _Singleton("Config", (ConfigDict,), {})(_load_config(base_config))  # type: ignore
+    _recursive_update(config, _load_config(default_config), [])
     config["active_network"] = {"name": None}
     return config
 
@@ -137,11 +146,6 @@ def _recursive_update(original: Dict, new: Dict, base: List) -> None:
             _recursive_update(original[k], new[k], base + [k])
         else:
             original[k] = new[k]
-    for k in [i for i in original if i not in new and not set(base + [i]).intersection(IGNORE)]:
-        print(
-            f"WARNING: '{'.'.join(base+[k])}' not found in the config file for this project."
-            " The default setting has been used."
-        )
 
 
 def _update_argv_from_docopt(args: Dict) -> None:

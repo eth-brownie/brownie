@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 ### Added
 - cache available solc compiler versions to avoid repeated calls
+- store data files in `~/.brownie/`
 
 ## [1.2.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.2.0) - 2019-11-23
 ### Added
