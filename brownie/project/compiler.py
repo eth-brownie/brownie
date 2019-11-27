@@ -37,6 +37,7 @@ STANDARD_JSON = {
     },
 }
 PRAGMA_REGEX = re.compile(r"pragma +solidity([^;]*);")
+AVAILABLE_SOLC_VERSIONS = None
 
 
 def set_solc_version(version: str) -> str:
@@ -223,14 +224,16 @@ def find_best_solc_version(
 
 
 def _get_solc_version_list() -> Tuple[List, List]:
+    global AVAILABLE_SOLC_VERSIONS
     installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
-    try:
-        available_versions = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
-    except ConnectionError:
-        if not installed_versions:
-            raise ConnectionError("Solc not installed and cannot connect to GitHub")
-        available_versions = installed_versions
-    return available_versions, installed_versions
+    if AVAILABLE_SOLC_VERSIONS is None:
+        try:
+            AVAILABLE_SOLC_VERSIONS = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
+        except ConnectionError:
+            if not installed_versions:
+                raise ConnectionError("Solc not installed and cannot connect to GitHub")
+            AVAILABLE_SOLC_VERSIONS = installed_versions
+    return AVAILABLE_SOLC_VERSIONS, installed_versions
 
 
 def generate_input_json(
