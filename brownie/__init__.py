@@ -1,12 +1,11 @@
 #!/usr/bin/python3
 
-from brownie._config import CONFIG as config
-from brownie._gui import Gui
-from brownie.convert import Wei
-from brownie.network.contract import Contract  # NOQA: F401
 
-from .network import accounts, alert, history, rpc, web3
-from .project import compile_source, run
+from brownie._config import CONFIG as config
+from brownie.convert import Wei
+from brownie.network import accounts, alert, history, rpc, web3
+from brownie.network.contract import Contract  # NOQA: F401
+from brownie.project import compile_source, run
 
 __all__ = [
     "accounts",  # accounts is an Accounts singleton
@@ -20,5 +19,4 @@ __all__ = [
     "run",
     "Wei",
     "config",
-    "Gui",
 ]

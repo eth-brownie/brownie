@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+from brownie import project  # NOQA F401
+
 from .account import Accounts
 from .main import connect, disconnect, gas_limit, gas_price, is_connected, show_active  # NOQA 401
 from .rpc import Rpc

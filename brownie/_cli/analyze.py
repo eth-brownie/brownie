@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import importlib
 import json
 import re
 import time
@@ -13,7 +14,6 @@ from pythx.middleware.toolname import ClientToolNameMiddleware
 from brownie import project
 from brownie._cli.__main__ import __version__
 from brownie._config import ARGV, _update_argv_from_docopt
-from brownie._gui import Gui
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
 
@@ -301,4 +301,5 @@ def main():
     # Launch GUI if user requested it
     if ARGV["gui"]:
         print("Launching the Brownie GUI")
+        Gui = importlib.import_module("brownie._gui").Gui
         Gui().mainloop()
