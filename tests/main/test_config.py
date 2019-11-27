@@ -8,14 +8,7 @@ from brownie._config import _load_config
 
 
 def test_base_keys(config):
-    assert set(config) == {
-        "network",
-        "pytest",
-        "compiler",
-        "colors",
-        "active_network",
-        "brownie_folder",
-    }
+    assert set(config) == {"network", "pytest", "compiler", "colors", "active_network"}
 
 
 def test_network_keys(config):
