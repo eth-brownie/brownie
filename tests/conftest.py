@@ -13,7 +13,7 @@ from ethpm._utils.ipfs import dummy_ipfs_pin
 from ethpm.backends.ipfs import BaseIPFSBackend
 
 import brownie
-from brownie._config import ARGV
+from brownie._config import ARGV, DATA_FOLDER
 
 pytest_plugins = "pytester"
 
@@ -73,7 +73,9 @@ def _project_factory(tmp_path_factory):
     path = tmp_path_factory.mktemp("base")
     path.rmdir()
     shutil.copytree("tests/data/brownie-test-project", path)
-    shutil.copyfile("brownie/data/config.yaml", path.joinpath("brownie-config.yaml"))
+    shutil.copyfile(
+        DATA_FOLDER.joinpath("brownie-config.yaml"), path.joinpath("brownie-config.yaml")
+    )
     p = brownie.project.load(path, "TestProject")
     p.close()
     return path
@@ -306,7 +308,7 @@ class DummyIPFSBackend(BaseIPFSBackend):
 @pytest.fixture
 def ipfs_mock(monkeypatch):
     monkeypatch.setattr("brownie.project.ethpm.InfuraIPFSBackend", DummyIPFSBackend)
-    ipfs_path = Path("brownie/data/ipfs_cache")
+    ipfs_path = DATA_FOLDER.joinpath("ipfs_cache")
     temp_path = ipfs_path.parent.joinpath("_ipfs_cache")
     ipfs_path.mkdir(exist_ok=True)
     ipfs_path.rename(temp_path)

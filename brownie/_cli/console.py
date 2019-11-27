@@ -8,7 +8,7 @@ from docopt import docopt
 
 import brownie
 from brownie import network, project
-from brownie._config import ARGV, CONFIG, _update_argv_from_docopt
+from brownie._config import ARGV, BROWNIE_FOLDER, CONFIG, _update_argv_from_docopt
 from brownie.utils import color
 
 if sys.platform == "win32":
@@ -57,7 +57,7 @@ class Console(code.InteractiveConsole):
             project._update_and_register(locals_dict)
             history_file = project._path
         else:
-            history_file = CONFIG["brownie_folder"]
+            history_file = BROWNIE_FOLDER
 
         history_file = str(history_file.joinpath(".history").absolute())
         atexit.register(_atexit_readline, history_file)

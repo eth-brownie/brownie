@@ -8,7 +8,7 @@ import yaml
 from docopt import docopt
 
 from brownie import accounts, network
-from brownie._config import CONFIG
+from brownie._config import BROWNIE_FOLDER, DATA_FOLDER
 from brownie.exceptions import ProjectNotFound, UnknownAccount
 from brownie.project import check_for_project, ethpm
 from brownie.utils import color, notify
@@ -45,8 +45,7 @@ def main():
         raise ProjectNotFound
     if not project_path.joinpath("ethpm-config.yaml").exists():
         shutil.copy(
-            CONFIG["brownie_folder"].joinpath("data/ethpm.yaml"),
-            project_path.joinpath("ethpm-config.yaml"),
+            BROWNIE_FOLDER.joinpath("data/ethpm.yaml"), project_path.joinpath("ethpm-config.yaml")
         )
     try:
         fn(project_path, *args["<arguments>"])
@@ -149,7 +148,7 @@ def _release(project_path, registry_address, sender):
 
 
 def _all(project_path):
-    ethpm_folder = CONFIG["brownie_folder"].joinpath("data/ethpm")
+    ethpm_folder = DATA_FOLDER.joinpath("ethpm")
     print(
         f"Visit {color('bright magenta')}https://explorer.ethpm.com/{color}"
         " for a list of ethPM registries and packages.\n"
