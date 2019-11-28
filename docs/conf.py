@@ -1,3 +1,7 @@
+#!/usr/bin/python3
+
+from typing import Dict, List
+
 # -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.
@@ -33,7 +37,7 @@ author = "Ben Hauser"
 # The short X.Y version
 version = ""
 # The full version, including alpha/beta/rc tags
-release = "v1.2.0"
+release = "v1.2.1"
 
 
 # -- General configuration ---------------------------------------------------
@@ -45,7 +49,7 @@ release = "v1.2.0"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = []
+extensions: List = []
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -112,7 +116,7 @@ htmlhelp_basename = "Browniedoc"
 
 # -- Options for LaTeX output ------------------------------------------------
 
-latex_elements = {
+latex_elements: Dict = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
