@@ -17,7 +17,7 @@ from brownie.exceptions import (
     UndeployedLibrary,
     VirtualMachineError,
 )
-from brownie.project.ethpm import get_deployment_addresses, get_manifest
+from brownie.project import ethpm
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
@@ -276,10 +276,10 @@ class Contract(_DeployedContractBase):
         if manifest_uri and abi:
             raise ValueError("Contract requires either abi or manifest_uri, but not both")
         if manifest_uri is not None:
-            manifest = get_manifest(manifest_uri)
+            manifest = ethpm.get_manifest(manifest_uri)
             abi = manifest["contract_types"][name]["abi"]
             if address is None:
-                address_list = get_deployment_addresses(manifest, name)
+                address_list = ethpm.get_deployment_addresses(manifest, name)
                 if not address_list:
                     raise ContractNotFound(
                         f"'{manifest['package_name']}' manifest does not contain"

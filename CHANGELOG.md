@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cache available solc compiler versions to avoid repeated calls
 - store data files in `~/.brownie/`
 
+### Fixed
+- removed Tkinter dependency when not loading the GUI
+
 ## [1.2.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.2.0) - 2019-11-23
 ### Added
 - [ethPM](https://docs.ethpm.com/) integration

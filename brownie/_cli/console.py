@@ -2,6 +2,7 @@
 
 import atexit
 import code
+import importlib
 import sys
 
 from docopt import docopt
@@ -17,7 +18,6 @@ if sys.platform == "win32":
     readline = Readline()
 else:
     import readline  # noqa: F401
-
 
 __doc__ = f"""Usage: brownie console [options]
 
@@ -52,6 +52,13 @@ class Console(code.InteractiveConsole):
     def __init__(self, project=None):
         locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
         locals_dict["dir"] = self._dir
+
+        # only make GUI available if Tkinter is installed
+        try:
+            Gui = importlib.import_module("brownie._gui").Gui
+            locals_dict["Gui"] = Gui
+        except ModuleNotFoundError:
+            pass
 
         if project:
             project._update_and_register(locals_dict)
