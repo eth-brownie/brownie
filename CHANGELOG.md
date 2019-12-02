@@ -6,6 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Fixed
+- GUI properly highlights `JUMPDEST` targets within first 256 bytes
 
 ## [1.2.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.2.1) - 2019-11-28
 ### Added
