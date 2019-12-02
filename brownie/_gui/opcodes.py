@@ -93,20 +93,14 @@ class OpcodeList(ttk.Treeview):
 
         if pcMap["op"] in ("JUMP", "JUMPI"):
             prev = self._get_prev(pc)
-            if self.root.pcMap[prev]["op"] == "PUSH2":
+            if self.root.pcMap[prev]["op"] in ("PUSH1", "PUSH2"):
                 tag = int(self.root.pcMap[prev]["value"], 16)
                 self.tag_configure(tag, foreground="#00ff00")
                 self._last.add(tag)
                 console.append(f"\nTarget: {tag}")
 
         if pcMap["op"] == "JUMPDEST":
-            targets = [
-                str(int(k) + 3)
-                for k, v in self.root.pcMap.items()
-                if v["op"] == "PUSH2"
-                and int(v["value"], 16) == int(pc)
-                and self.root.pcMap[str(int(k) + 3)]["op"] in ("JUMP", "JUMPI")
-            ]
+            targets = _get_targets(self.root.pcMap, pc)
             if targets:
                 console.append(f"\nJumps: {', '.join(targets)}")
             else:
@@ -154,7 +148,7 @@ class OpcodeList(ttk.Treeview):
         if self.root.pcMap[pc]["op"] not in ("JUMP", "JUMPI"):
             return
         prev = self._get_prev(pc)
-        if self.root.pcMap[prev]["op"] == "PUSH2":
+        if self.root.pcMap[prev]["op"] in ("PUSH1", "PUSH2"):
             tag = int(self.root.pcMap[prev]["value"], 16)
             self.see(tag)
             self._select_bind()
@@ -204,3 +198,14 @@ class ScopingButton(ToggleButton):
             self.oplist.move(i, "", i)
         if self.oplist.selection():
             self.oplist.see(self.oplist.selection()[0])
+
+
+def _get_targets(pc_map, pc):
+    targets = []
+    for key, value in pc_map.items():
+        if int(value.get("value", "0"), 16) != int(pc):
+            continue
+        next_pc = str(int(key) + int(value["op"][4:]) + 1)
+        if pc_map[next_pc]["op"] in ("JUMP", "JUMPI"):
+            targets.append(next_pc)
+    return targets
