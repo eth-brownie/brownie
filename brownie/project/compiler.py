@@ -468,7 +468,7 @@ def _generate_coverage_data(
                 pc_list[-1].update(
                     {
                         "dev": "Cannot send ether to nonpayable function",
-                        "fn": pc_list[-8]["fn"],
+                        "fn": pc_list[-8].get("fn", "<unknown>"),
                         "offset": pc_list[-8]["offset"],
                         "path": pc_list[-8]["path"],
                     }
