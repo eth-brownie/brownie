@@ -483,6 +483,12 @@ def _generate_coverage_data(
         offset = (source[0], source[0] + source[1])
         pc_list[-1]["offset"] = offset
 
+        # add error messages for INVALID opcodes
+        if pc_list[-1]["op"] == "INVALID":
+            node = source_nodes[source[2]].children(include_children=False, offset_limits=offset)[0]
+            if node.nodeType == "IndexAccess":
+                pc_list[-1]["dev"] = "Index out of range"
+
         # if op is jumpi, set active branch markers
         if branch_active[path] and pc_list[-1]["op"] == "JUMPI":
             for offset in branch_active[path]:
