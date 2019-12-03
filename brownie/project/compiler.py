@@ -464,6 +464,15 @@ def _generate_coverage_data(
 
         # set contract path (-1 means none)
         if source[2] == -1:
+            if pc_list[-1]["op"] == "REVERT" and pc_list[-8]["op"] == "CALLVALUE":
+                pc_list[-1].update(
+                    {
+                        "dev": "Cannot send ether to nonpayable function",
+                        "fn": pc_list[-8].get("fn", "<unknown>"),
+                        "offset": pc_list[-8]["offset"],
+                        "path": pc_list[-8]["path"],
+                    }
+                )
             continue
         path = source_nodes[source[2]].absolutePath
         pc_list[-1]["path"] = path
@@ -473,6 +482,12 @@ def _generate_coverage_data(
             continue
         offset = (source[0], source[0] + source[1])
         pc_list[-1]["offset"] = offset
+
+        # add error messages for INVALID opcodes
+        if pc_list[-1]["op"] == "INVALID":
+            node = source_nodes[source[2]].children(include_children=False, offset_limits=offset)[0]
+            if node.nodeType == "IndexAccess":
+                pc_list[-1]["dev"] = "Index out of range"
 
         # if op is jumpi, set active branch markers
         if branch_active[path] and pc_list[-1]["op"] == "JUMPI":

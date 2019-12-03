@@ -145,11 +145,11 @@ class TransactionReceipt:
         if revert_msg:
             # revert message was returned
             self._revert_msg = revert_msg
-        elif revert_type == "revert":
+        elif revert_type in ("revert", "invalid opcode"):
             # check for dev revert string as a comment
-            revert_msg = build._get_dev_revert(self._revert_pc)
-            if isinstance(revert_msg, str):
-                self._revert_msg = revert_msg
+            self._revert_msg = build._get_dev_revert(self._revert_pc)
+        else:
+            self._revert_msg = revert_type
 
         # threaded to allow impatient users to ctrl-c to stop waiting in the console
         confirm_thread = threading.Thread(
@@ -164,12 +164,12 @@ class TransactionReceipt:
             if ARGV["coverage"] and not coverage._check_cached(self.coverage_hash) and self.trace:
                 self._expand_trace()
             if not self.status:
-                if revert_msg is None:
+                if self._revert_msg is None:
                     # no revert message and unable to check dev string - have to get trace
                     self._expand_trace()
                 # raise from a new function to reduce pytest traceback length
                 _raise(
-                    f"{revert_type} {self.revert_msg or ''}",
+                    self._revert_msg or "",
                     self._traceback_string() if ARGV["revert"] else self._error_string(1),
                 )
         except KeyboardInterrupt:
@@ -376,7 +376,7 @@ class TransactionReceipt:
                     step = trace[i]
             self._revert_msg = pc_map[step["pc"]]["dev"]
         except KeyError:
-            self._revert_msg = ""
+            self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
 
     def _expand_trace(self) -> None:
         """Adds the following attributes to each step of the stack trace:

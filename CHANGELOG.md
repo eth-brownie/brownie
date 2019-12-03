@@ -6,6 +6,10 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Added
+- allow `dev:` revert comments for `assert` statements
+- better error messages when sending ether to nonpayable function, or trying to access an invalid array index
+
 ### Fixed
 - GUI properly highlights `JUMPDEST` targets within first 256 bytes
 

@@ -115,4 +115,12 @@ contract EVMTester {
         revert(); // dev: great job
     }
 
+    uint256[3] x;
+
+    function invalidOpcodes(uint a, uint b) external returns (uint c) {
+        assert (a > 0);
+        assert (c+b > 2); // dev: foobar
+        c = x[a];
+    }
+
 }

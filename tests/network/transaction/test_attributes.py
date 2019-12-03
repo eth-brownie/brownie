@@ -78,24 +78,6 @@ def test_modified_state(accounts, tester, console_mode):
     assert not tx.modified_state
 
 
-def test_revert_msg(evmtester, console_mode):
-    tx = evmtester.revertStrings(0)
-    assert tx.revert_msg == "zero"
-    tx = evmtester.revertStrings(1)
-    assert tx.revert_msg == "dev: one"
-    tx = evmtester.revertStrings(2)
-    assert tx.revert_msg == "two"
-    tx = evmtester.revertStrings(3)
-    assert tx.revert_msg == ""
-    tx = evmtester.revertStrings(31337)
-    assert tx.revert_msg == "dev: great job"
-
-
-def test_revert_msg_via_jump(ext_tester, console_mode):
-    tx = ext_tester.getCalled(2)
-    assert tx.revert_msg == "dev: should jump to a revert"
-
-
 def test_events(tester, console_mode):
     tx = tester.revertStrings(5)
     assert tx.status == 1
