@@ -150,6 +150,8 @@ class TransactionReceipt:
             revert_msg = build._get_dev_revert(self._revert_pc)
             if isinstance(revert_msg, str):
                 self._revert_msg = revert_msg
+        else:
+            self._revert_msg = revert_type
 
         # threaded to allow impatient users to ctrl-c to stop waiting in the console
         confirm_thread = threading.Thread(
@@ -164,12 +166,12 @@ class TransactionReceipt:
             if ARGV["coverage"] and not coverage._check_cached(self.coverage_hash) and self.trace:
                 self._expand_trace()
             if not self.status:
-                if revert_msg is None:
+                if self._revert_msg is None:
                     # no revert message and unable to check dev string - have to get trace
                     self._expand_trace()
                 # raise from a new function to reduce pytest traceback length
                 _raise(
-                    f"{revert_type} {self.revert_msg or ''}",
+                    self._revert_msg or "",
                     self._traceback_string() if ARGV["revert"] else self._error_string(1),
                 )
         except KeyboardInterrupt:
