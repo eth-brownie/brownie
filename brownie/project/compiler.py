@@ -464,6 +464,15 @@ def _generate_coverage_data(
 
         # set contract path (-1 means none)
         if source[2] == -1:
+            if pc_list[-1]["op"] == "REVERT" and pc_list[-8]["op"] == "CALLVALUE":
+                pc_list[-1].update(
+                    {
+                        "dev": "Cannot send ether to nonpayable function",
+                        "fn": pc_list[-8]["fn"],
+                        "offset": pc_list[-8]["offset"],
+                        "path": pc_list[-8]["path"],
+                    }
+                )
             continue
         path = source_nodes[source[2]].absolutePath
         pc_list[-1]["path"] = path
