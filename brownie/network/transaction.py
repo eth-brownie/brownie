@@ -145,12 +145,12 @@ class TransactionReceipt:
         if revert_msg:
             # revert message was returned
             self._revert_msg = revert_msg
-        elif revert_type == "revert":
+        elif revert_type in ("revert", "invalid opcode"):
             # check for dev revert string as a comment
             revert_msg = build._get_dev_revert(self._revert_pc)
             if isinstance(revert_msg, str):
                 self._revert_msg = revert_msg
-        else:
+        if self._revert_msg is None and revert_type != "revert":
             self._revert_msg = revert_type
 
         # threaded to allow impatient users to ctrl-c to stop waiting in the console

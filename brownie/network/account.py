@@ -387,9 +387,11 @@ def _raise_or_return_tx(exc: ValueError) -> Any:
         data = eval(str(exc))["data"]
         txid = next(i for i in data.keys() if i[:2] == "0x")
         reason = data[txid]["reason"] if "reason" in data[txid] else None
-        pc = data[txid]["program_counter"] - 1
-        error = data[txid]["error"]
-        return txid, [reason, pc, error]
+        pc = data[txid]["program_counter"]
+        revert_type = data[txid]["error"]
+        if revert_type == "revert":
+            pc -= 1
+        return txid, [reason, pc, revert_type]
     except SyntaxError:
         raise exc
     except Exception:
