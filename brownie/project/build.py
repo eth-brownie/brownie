@@ -57,7 +57,6 @@ class Build:
                 if "fn" not in data or "first_revert" in data:
                     _revert_map[pc] = False
                     continue
-                data["dev"] = ""
                 try:
                     revert_str = self._sources.get(data["path"])[data["offset"][1] :]
                     revert_str = revert_str[: revert_str.index("\n")]
@@ -66,7 +65,15 @@ class Build:
                         data["dev"] = revert_str
                 except (KeyError, ValueError):
                     pass
-            revert = (data["path"], tuple(data["offset"]), data["fn"], data["dev"], self._sources)
+
+            msg = "" if data["op"] == "REVERT" else "invalid opcode"
+            revert = (
+                data["path"],
+                tuple(data["offset"]),
+                data["fn"],
+                data.get("dev", msg),
+                self._sources,
+            )
 
             # do not compare the final tuple item in case the same project was loaded twice
             if pc not in _revert_map or (_revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]):

@@ -147,10 +147,8 @@ class TransactionReceipt:
             self._revert_msg = revert_msg
         elif revert_type in ("revert", "invalid opcode"):
             # check for dev revert string as a comment
-            revert_msg = build._get_dev_revert(self._revert_pc)
-            if isinstance(revert_msg, str):
-                self._revert_msg = revert_msg
-        if self._revert_msg is None and revert_type != "revert":
+            self._revert_msg = build._get_dev_revert(self._revert_pc)
+        else:
             self._revert_msg = revert_type
 
         # threaded to allow impatient users to ctrl-c to stop waiting in the console
@@ -378,7 +376,7 @@ class TransactionReceipt:
                     step = trace[i]
             self._revert_msg = pc_map[step["pc"]]["dev"]
         except KeyError:
-            self._revert_msg = ""
+            self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
 
     def _expand_trace(self) -> None:
         """Adds the following attributes to each step of the stack trace:
