@@ -515,7 +515,13 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
 def _get_method_object(
     address: str, abi: Dict, name: str, owner: Optional[AccountsType]
 ) -> Union["ContractCall", "ContractTx"]:
-    if abi["stateMutability"] in ("view", "pure"):
+
+    if "constant" in abi:
+        constant = abi["constant"]
+    else:
+        constant = abi["stateMutability"] in ("view", "pure")
+
+    if constant:
         return ContractCall(address, abi, name, owner)
     return ContractTx(address, abi, name, owner)
 
