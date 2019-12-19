@@ -73,9 +73,9 @@ def _load_config(project_path: Path) -> Dict:
     path = _get_project_config_path(project_path)
     if path is None:
         raise ValueError("Project does not exist!")
-    if path.suffix in (".yaml", ".yml"):
-        return yaml.safe_load(path.open())
     with path.open() as fp:
+        if path.suffix in (".yaml", ".yml"):
+            return yaml.safe_load(fp)
         raw_json = fp.read()
     valid_json = re.sub(r'\/\/[^"]*?(?=\n|$)', "", raw_json)
     return json.loads(valid_json)
