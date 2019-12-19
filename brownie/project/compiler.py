@@ -9,9 +9,11 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import solcast
 import solcx
+import vyper
 from requests.exceptions import ConnectionError
 from semantic_version import NpmSpec, Version
 from solcast.nodes import NodeBase
+from vyper.cli import vyper_json
 
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 
@@ -24,12 +26,12 @@ sh.setLevel(10)
 sh.setFormatter(logging.Formatter("%(message)s"))
 solcx_logger.addHandler(sh)
 
-STANDARD_JSON = {
-    "language": "Solidity",
+STANDARD_JSON: Dict = {
+    "language": None,
     "sources": {},
     "settings": {
         "outputSelection": {
-            "*": {"*": ["abi", "evm.assembly", "evm.bytecode", "evm.deployedBytecode"], "": ["ast"]}
+            "*": {"*": ["abi", "evm.bytecode", "evm.deployedBytecode"], "": ["ast"]}
         },
         "optimizer": {"enabled": True, "runs": 200},
         "evmVersion": None,
@@ -91,18 +93,26 @@ def compile_and_format(
     if not contract_sources:
         return {}
 
-    if solc_version is not None:
+    if list(contract_sources)[0].endswith(".vy"):
+        path_versions = {"vyper": list(contract_sources)}
+    elif solc_version is not None:
         path_versions = {solc_version: list(contract_sources)}
     else:
         path_versions = find_solc_versions(contract_sources, install_needed=True, silent=silent)
 
     build_json: Dict = {}
     for version, path_list in path_versions.items():
-        set_solc_version(version)
-        compiler_data = {"minify_source": minify, "version": str(solcx.get_solc_version())}
+        if version == "vyper":
+            language = "Vyper"
+            compiler_data = {"minify_source": False, "version": vyper.__version__}
+        else:
+            set_solc_version(version)
+            language = "Solidity"
+            compiler_data = {"minify_source": minify, "version": str(solcx.get_solc_version())}
+
         to_compile = dict((k, v) for k, v in contract_sources.items() if k in path_list)
 
-        input_json = generate_input_json(to_compile, optimize, runs, evm_version, minify)
+        input_json = generate_input_json(to_compile, optimize, runs, evm_version, minify, language)
         output_json = compile_from_input_json(input_json, silent, allow_paths)
         build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
     return build_json
@@ -247,6 +257,7 @@ def generate_input_json(
     runs: int = 200,
     evm_version: Union[int, str, None] = None,
     minify: bool = False,
+    language: str = "Solidity",
 ) -> Dict:
     """Formats contracts to the standard solc input json.
 
@@ -259,12 +270,20 @@ def generate_input_json(
 
     Returns: dict
     """
+
     if evm_version is None:
-        evm_version = next(i[0] for i in EVM_SOLC_VERSIONS if solcx.get_solc_version() >= i[1])
+        if language == "Solidity":
+            evm_version = next(i[0] for i in EVM_SOLC_VERSIONS if solcx.get_solc_version() >= i[1])
+        else:
+            evm_version = "byzantium"
+
     input_json: Dict = deepcopy(STANDARD_JSON)
+    input_json["language"] = language
     input_json["settings"]["optimizer"]["enabled"] = optimize
     input_json["settings"]["optimizer"]["runs"] = runs if optimize else 0
     input_json["settings"]["evmVersion"] = evm_version
+    if language == "Vyper":
+        input_json["outputSelection"] = input_json["settings"].pop("outputSelection")
     input_json["sources"] = dict(
         (k, {"content": sources.minify(v)[0] if minify else v}) for k, v in contract_sources.items()
     )
@@ -288,15 +307,24 @@ def compile_from_input_json(
 
     optimizer = input_json["settings"]["optimizer"]
     input_json["settings"].setdefault("evmVersion", None)
+
     if not silent:
         print("Compiling contracts...")
-        print(f"  Solc version: {str(solcx.get_solc_version())}")
-        print(
-            "  Optimizer: "
-            + (f"Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled")
-        )
+        if input_json["language"] == "Vyper":
+            print(f"  Vyper version: {vyper.__version__}")
+        else:
+            print(f"  Solc version: {str(solcx.get_solc_version())}")
+
+            print(
+                "  Optimizer: "
+                + (f"Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled")
+            )
         if input_json["settings"]["evmVersion"]:
             print(f"  EVM Version: {input_json['settings']['evmVersion'].capitalize()}")
+
+    if input_json["language"] == "Vyper":
+        return vyper_json.compile_json(input_json, root_path=allow_paths)
+
     try:
         return solcx.compile_standard(
             input_json,
@@ -337,9 +365,10 @@ def generate_build_json(
     build_json = {}
     path_list = list(input_json["sources"])
 
-    source_nodes = solcast.from_standard_output(output_json)
-    statement_nodes = _get_statement_nodes(source_nodes)
-    branch_nodes = _get_branch_nodes(source_nodes)
+    if input_json["language"] == "Solidity":
+        source_nodes = solcast.from_standard_output(output_json)
+        statement_nodes = _get_statement_nodes(source_nodes)
+        branch_nodes = _get_branch_nodes(source_nodes)
 
     for path, contract_name in [(k, v) for k in path_list for v in output_json["contracts"][k]]:
 
@@ -350,42 +379,63 @@ def generate_build_json(
         evm = output_json["contracts"][path][contract_name]["evm"]
         bytecode = _format_link_references(evm)
         hash_ = sources.get_hash(input_json["sources"][path]["content"], contract_name, minified)
-        node = next(i[contract_name] for i in source_nodes if i.absolutePath == path)
-        paths = sorted(
-            set([node.parent().absolutePath] + [i.parent().absolutePath for i in node.dependencies])
-        )
 
-        pc_map, statement_map, branch_map = _generate_coverage_data(
-            evm["deployedBytecode"]["sourceMap"],
-            evm["deployedBytecode"]["opcodes"],
-            node,
-            statement_nodes,
-            branch_nodes,
-            next((True for i in abi if i["type"] == "fallback"), False),
-        )
+        if input_json["language"] == "Solidity":
+            node = next(i[contract_name] for i in source_nodes if i.absolutePath == path)
+            paths = sorted(
+                set(
+                    [node.parent().absolutePath]
+                    + [i.parent().absolutePath for i in node.dependencies]
+                )
+            )
+            pc_map, statement_map, branch_map = _generate_solc_coverage_data(
+                evm["deployedBytecode"]["sourceMap"],
+                evm["deployedBytecode"]["opcodes"],
+                node,
+                statement_nodes,
+                branch_nodes,
+                next((True for i in abi if i["type"] == "fallback"), False),
+            )
+            build_json[contract_name] = {
+                "allSourcePaths": paths,
+                "coverageMap": {"statements": statement_map, "branches": branch_map},
+                "dependencies": [i.name for i in node.dependencies],
+                "offset": node.offset,
+                "pcMap": pc_map,
+                "type": node.contractKind,
+            }
 
-        build_json[contract_name] = {
-            "abi": abi,
-            "allSourcePaths": paths,
-            "ast": output_json["sources"][path]["ast"],
-            "bytecode": bytecode,
-            "bytecodeSha1": _get_bytecode_hash(bytecode),
-            "compiler": compiler_data,
-            "contractName": contract_name,
-            "coverageMap": {"statements": statement_map, "branches": branch_map},
-            "deployedBytecode": evm["deployedBytecode"]["object"],
-            "deployedSourceMap": evm["deployedBytecode"]["sourceMap"],
-            "dependencies": [i.name for i in node.dependencies],
-            # 'networks': {},
-            "offset": node.offset,
-            "opcodes": evm["deployedBytecode"]["opcodes"],
-            "pcMap": pc_map,
-            "sha1": hash_,
-            "source": input_json["sources"][path]["content"],
-            "sourceMap": evm["bytecode"]["sourceMap"],
-            "sourcePath": path,
-            "type": node.contractKind,
-        }
+        else:
+            pc_map = _generate_vyper_coverage_data(
+                evm["deployedBytecode"]["sourceMap"], evm["deployedBytecode"]["opcodes"], path
+            )
+            build_json[contract_name] = {
+                "allSourcePaths": [path],
+                "coverageMap": {"statements": {}, "branches": {}},
+                "dependencies": [],
+                "offset": [0, -1],
+                "pcMap": pc_map,
+                "type": "contract",
+            }
+
+        build_json[contract_name].update(
+            {
+                "abi": abi,
+                "ast": output_json["sources"][path]["ast"],
+                "bytecode": bytecode,
+                "bytecodeSha1": _get_bytecode_hash(bytecode),
+                "compiler": compiler_data,
+                "contractName": contract_name,
+                "deployedBytecode": evm["deployedBytecode"]["object"],
+                "deployedSourceMap": evm["deployedBytecode"]["sourceMap"],
+                # 'networks': {},
+                "opcodes": evm["deployedBytecode"]["opcodes"],
+                "sha1": hash_,
+                "source": input_json["sources"][path]["content"],
+                "sourceMap": evm["bytecode"].get("sourceMap", ""),
+                "sourcePath": path,
+            }
+        )
 
     if not silent:
         print("")
@@ -396,7 +446,9 @@ def generate_build_json(
 def _format_link_references(evm: Dict) -> Dict:
     # Standardizes formatting for unlinked libraries within bytecode
     bytecode = evm["bytecode"]["object"]
-    references = [(k, x) for v in evm["bytecode"]["linkReferences"].values() for k, x in v.items()]
+    references = [
+        (k, x) for v in evm["bytecode"].get("linkReferences", {}).values() for k, x in v.items()
+    ]
     for n, loc in [(i[0], x["start"] * 2) for i in references for x in i[1]]:
         bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"
     return bytecode
@@ -407,7 +459,7 @@ def _get_bytecode_hash(bytecode: Dict) -> str:
     return sha1(bytecode[:-68].encode()).hexdigest()
 
 
-def _generate_coverage_data(
+def _generate_solc_coverage_data(
     source_map_str: str,
     opcodes_str: str,
     contract_node: Any,
@@ -699,3 +751,43 @@ def _check_left_operator(node: NodeBase, depth: int) -> bool:
         i for i in parents if i.leftExpression == node or node.is_child_of(i.leftExpression)
     ).operator
     return op == "||"
+
+
+def _generate_vyper_coverage_data(source_map_str: str, opcodes_str: str, source_path: str):
+    if not opcodes_str:
+        return {}
+
+    source_map = deque(_expand_source_map(source_map_str))
+    opcodes = deque(opcodes_str.split(" "))
+
+    pc_list: List = []
+    pc = 0
+
+    while opcodes:
+
+        # format of source is [start, stop, contract_id, jump code]
+        source = source_map.popleft()
+        pc_list.append({"op": opcodes.popleft(), "pc": pc, "path": source_path})
+
+        if source[3] != "-":
+            pc_list[-1]["jump"] = source[3]
+
+        pc += 1
+        if opcodes and opcodes[0][:2] == "0x":
+            pc_list[-1]["value"] = opcodes.popleft()
+            pc += int(pc_list[-1]["op"][4:])
+
+        # set source offset (-1 means none)
+        if source[0] == -1:
+            continue
+        offset = (source[0], source[0] + source[1])
+        pc_list[-1]["offset"] = offset
+
+        # TODO invalid reason
+        # TODO nonpayable
+        # TODO fn name
+        # TODO dev revert strings
+
+    pc_map = dict((i.pop("pc"), i) for i in pc_list)
+
+    return pc_map
