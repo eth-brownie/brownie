@@ -26,7 +26,11 @@ class Sources:
         self._source: Dict = {}
         self._contracts: Dict = {}
         for path, source in contract_sources.items():
-            data = _get_contract_data(source)
+            if path.endswith(".vy"):
+                # TODO minify vyper contracts
+                data = {path: {"offsets": [(0, 0)], "offset_map": [(0, 0)]}}
+            else:
+                data = _get_contract_data(source)
             for name, values in data.items():
                 if name in self._contracts:
                     raise NamespaceCollision(f"Project has multiple contracts named '{name}'")

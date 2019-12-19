@@ -113,8 +113,8 @@ class Project(_ProjectBase):
 
     def __init__(self, name: str, project_path: Path) -> None:
         contract_sources: Dict = {}
-        for path in project_path.glob("contracts/**/*.sol"):
-            if "/_" in path.as_posix():
+        for path in project_path.glob("contracts/**/*"):
+            if "/_" in path.as_posix() or path.suffix not in (".sol", ".vy"):
                 continue
             with path.open() as fp:
                 source = fp.read()
