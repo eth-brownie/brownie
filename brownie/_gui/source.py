@@ -23,8 +23,9 @@ class SourceNoteBook(ttk.Notebook):
         self.root.bind("<Left>", self.key_left)
         self.root.bind("<Right>", self.key_right)
         base_path = self.root.active_project._path.joinpath("contracts")
-        for path in base_path.glob("**/*.sol"):
-            self.add(path)
+        for path in base_path.glob("**/*"):
+            if path.suffix in (".sol", ".vy"):
+                self.add(path)
         self.set_visible([])
 
     def add(self, path):
@@ -33,7 +34,7 @@ class SourceNoteBook(ttk.Notebook):
         if label in [i._label for i in self._frames]:
             return
         with path.open() as fp:
-            frame = SourceFrame(self, fp.read())
+            frame = SourceFrame(self, fp.read(), path.suffix)
         super().add(frame, text=f"   {label}   ")
         frame._id = len(self._frames)
         frame._label = label
@@ -168,7 +169,7 @@ class SourceNoteBook(ttk.Notebook):
 
 
 class SourceFrame(tk.Frame):
-    def __init__(self, root, text):
+    def __init__(self, root, text, suffix):
         super().__init__(root)
         self._text = tk.Text(self, width=90, yscrollcommand=self._text_scroll)
         self._scroll = ttk.Scrollbar(self)
@@ -183,7 +184,10 @@ class SourceFrame(tk.Frame):
         for k, v in TEXT_COLORS.items():
             self._text.tag_config(k, **v)
 
-        pattern = r"((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))"
+        if suffix == ".sol":
+            pattern = r"((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))"
+        else:
+            pattern = r"((#[^\n]*\n)|(\"\"\"[\s\S]*?\"\"\")|('''[\s\S]*?'''))"
         for match in re.finditer(pattern, text):
             self.tag_add("comment", match.start(), match.end())
 
