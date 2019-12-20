@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - GUI properly highlights `JUMPDEST` targets within first 256 bytes
+- Close IO objects to avoid warnings on exit
 
 ## [1.2.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.2.1) - 2019-11-28
 ### Added
