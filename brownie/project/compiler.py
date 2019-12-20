@@ -590,7 +590,8 @@ def _expand_source_map(source_map_str: str) -> List:
 
 def _expand_row(row: str) -> List:
     result: List = [None] * 4
-    for i, value in enumerate(row.split(":")):
+    # ignore the new "modifier depth" value in solidity 0.6.0
+    for i, value in enumerate(row.split(":")[:4]):
         if value:
             result[i] = value if i == 3 else int(value)
     return result
