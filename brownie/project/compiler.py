@@ -38,6 +38,11 @@ STANDARD_JSON = {
 }
 PRAGMA_REGEX = re.compile(r"pragma +solidity([^;]*);")
 AVAILABLE_SOLC_VERSIONS = None
+EVM_SOLC_VERSIONS = [
+    # ("istanbul", Version("0.5.13")),  # TODO enable when ganache istanbul support is out of beta
+    ("petersburg", Version("0.5.5")),
+    ("byzantium", Version("0.4.0")),
+]
 
 
 def set_solc_version(version: str) -> str:
@@ -255,7 +260,7 @@ def generate_input_json(
     Returns: dict
     """
     if evm_version is None:
-        evm_version = "petersburg" if solcx.get_solc_version() >= Version("0.5.5") else "byzantium"
+        evm_version = next(i[0] for i in EVM_SOLC_VERSIONS if solcx.get_solc_version() >= i[1])
     input_json: Dict = deepcopy(STANDARD_JSON)
     input_json["settings"]["optimizer"]["enabled"] = optimize
     input_json["settings"]["optimizer"]["runs"] = runs if optimize else 0

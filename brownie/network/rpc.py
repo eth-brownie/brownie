@@ -25,7 +25,8 @@ CLI_FLAGS = {
     "account_keys_path": "--acctKeys",
 }
 
-EVM_VERSIONS = ["byzantium", "constantinople", "petersburg"]
+EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
+EVM_DEFAULT = "petersburg"
 
 _revert_refs: List = []
 
@@ -70,6 +71,7 @@ class Rpc(metaclass=_Singleton):
                 cmd = cmd.replace(" ", ".cmd ", 1)
             else:
                 cmd += ".cmd"
+        kwargs.setdefault("evm_version", EVM_DEFAULT)  # type: ignore
         for key, value in [(k, v) for k, v in kwargs.items() if v]:
             cmd += f" {CLI_FLAGS[key]} {value}"
         print(f"Launching '{cmd}'...")
@@ -202,7 +204,7 @@ class Rpc(metaclass=_Singleton):
         try:
             return cmd[cmd.index(key) + 1]
         except (ValueError, IndexError):
-            return EVM_VERSIONS[-1]
+            return EVM_DEFAULT
 
     def evm_compatible(self, version: str) -> bool:
         """Returns a boolean indicating if the given version is compatible with
