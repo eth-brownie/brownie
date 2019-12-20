@@ -50,6 +50,10 @@ class Rpc(metaclass=_Singleton):
         if not self.is_active():
             return
         if self._rpc.parent() == psutil.Process():
+            if getattr(self._rpc, "stdout", None) is not None:
+                self._rpc.stdout.close()
+            if getattr(self._rpc, "stderr", None) is not None:
+                self._rpc.stderr.close()
             self.kill(False)
         else:
             self._request("evm_revert", [self._reset_id])
@@ -135,6 +139,7 @@ class Rpc(metaclass=_Singleton):
             except psutil.NoSuchProcess:
                 pass
         self._rpc.kill()
+        self._rpc.wait()
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
