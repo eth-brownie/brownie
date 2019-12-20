@@ -12,7 +12,7 @@ import solcx
 import vyper
 from requests.exceptions import ConnectionError
 from semantic_version import NpmSpec, Version
-from solcast.nodes import NodeBase
+from solcast.nodes import NodeBase, is_inside_offset
 from vyper.cli import vyper_json
 
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
@@ -407,13 +407,17 @@ def generate_build_json(
 
         else:
             pc_map = _generate_vyper_coverage_data(
-                evm["deployedBytecode"]["sourceMap"], evm["deployedBytecode"]["opcodes"], path
+                evm["deployedBytecode"]["sourceMap"],
+                evm["deployedBytecode"]["opcodes"],
+                path,
+                contract_name,
+                output_json["sources"][path]["ast"],
             )
             build_json[contract_name] = {
                 "allSourcePaths": [path],
                 "coverageMap": {"statements": {}, "branches": {}},
                 "dependencies": [],
-                "offset": [0, -1],
+                "offset": [0, len(input_json["sources"][path]["content"])],
                 "pcMap": pc_map,
                 "type": "contract",
             }
@@ -753,12 +757,22 @@ def _check_left_operator(node: NodeBase, depth: int) -> bool:
     return op == "||"
 
 
-def _generate_vyper_coverage_data(source_map_str: str, opcodes_str: str, source_path: str):
+def _convert_src(src):
+    src = [int(i) for i in src.split(":")[:2]]
+    return src[0], src[0] + src[1]
+
+
+def _generate_vyper_coverage_data(
+    source_map_str: str, opcodes_str: str, source_str: str, contract_name: str, ast_json: Dict
+):
     if not opcodes_str:
         return {}
 
     source_map = deque(_expand_source_map(source_map_str))
     opcodes = deque(opcodes_str.split(" "))
+    fn_offsets = dict(
+        (i["name"], _convert_src(i["src"])) for i in ast_json if i["ast_type"] == "FunctionDef"
+    )
 
     pc_list: List = []
     pc = 0
@@ -767,7 +781,7 @@ def _generate_vyper_coverage_data(source_map_str: str, opcodes_str: str, source_
 
         # format of source is [start, stop, contract_id, jump code]
         source = source_map.popleft()
-        pc_list.append({"op": opcodes.popleft(), "pc": pc, "path": source_path})
+        pc_list.append({"op": opcodes.popleft(), "pc": pc})
 
         if source[3] != "-":
             pc_list[-1]["jump"] = source[3]
@@ -781,13 +795,19 @@ def _generate_vyper_coverage_data(source_map_str: str, opcodes_str: str, source_
         if source[0] == -1:
             continue
         offset = (source[0], source[0] + source[1])
+        pc_list[-1]["path"] = source_str
         pc_list[-1]["offset"] = offset
+
+        fn = next((k for k, v in fn_offsets.items() if is_inside_offset(offset, v)), None)
+        if fn:
+            pc_list[-1]["fn"] = f"{contract_name}.{fn}"
 
         # TODO invalid reason
         # TODO nonpayable
-        # TODO fn name
         # TODO dev revert strings
 
+    pc_list[0]["path"] = source_str
+    pc_list[0]["offset"] = [0, _convert_src(ast_json[-1]["src"])[1]]
     pc_map = dict((i.pop("pc"), i) for i in pc_list)
 
     return pc_map
