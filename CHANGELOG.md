@@ -6,7 +6,11 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.3.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.3.0) - 2019-12-20
 ### Added
+- support for [Solidity v0.6.0](https://github.com/ethereum/solidity/releases/tag/v0.6.0)
+- allow `istanbul` as choice for EVM ruleset (default is still `petersburg`)
 - allow `dev:` revert comments for `assert` statements
 - better error messages when sending ether to nonpayable function, or trying to access an invalid array index
 
