@@ -12,7 +12,7 @@ import solcx
 import vyper
 from requests.exceptions import ConnectionError
 from semantic_version import NpmSpec, Version
-from solcast.nodes import NodeBase, is_inside_offset
+from solcast.nodes import NodeBase
 from vyper.cli import vyper_json
 
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
@@ -398,15 +398,13 @@ def generate_build_json(
             )
             build_json[contract_name] = {
                 "allSourcePaths": paths,
-                "coverageMap": {"statements": statement_map, "branches": branch_map},
                 "dependencies": [i.name for i in node.dependencies],
                 "offset": node.offset,
-                "pcMap": pc_map,
                 "type": node.contractKind,
             }
 
         else:
-            pc_map = _generate_vyper_coverage_data(
+            pc_map, statement_map, branch_map = _generate_vyper_coverage_data(
                 evm["deployedBytecode"]["sourceMap"],
                 evm["deployedBytecode"]["opcodes"],
                 path,
@@ -415,10 +413,8 @@ def generate_build_json(
             )
             build_json[contract_name] = {
                 "allSourcePaths": [path],
-                "coverageMap": {"statements": {}, "branches": {}},
                 "dependencies": [],
                 "offset": [0, len(input_json["sources"][path]["content"])],
-                "pcMap": pc_map,
                 "type": "contract",
             }
 
@@ -430,10 +426,11 @@ def generate_build_json(
                 "bytecodeSha1": _get_bytecode_hash(bytecode),
                 "compiler": compiler_data,
                 "contractName": contract_name,
+                "coverageMap": {"statements": statement_map, "branches": branch_map},
                 "deployedBytecode": evm["deployedBytecode"]["object"],
                 "deployedSourceMap": evm["deployedBytecode"]["sourceMap"],
-                # 'networks': {},
                 "opcodes": evm["deployedBytecode"]["opcodes"],
+                "pcMap": pc_map,
                 "sha1": hash_,
                 "source": input_json["sources"][path]["content"],
                 "sourceMap": evm["bytecode"].get("sourceMap", ""),
@@ -569,9 +566,11 @@ def _generate_solc_coverage_data(
                 pc_list[-1]["fn"] = pc_list[-2]["fn"]
             else:
                 pc_list[-1]["fn"] = _get_fn_full_name(source_nodes[source[2]], offset)
-                statement = next(i for i in stmt_nodes[path] if sources.is_inside_offset(offset, i))
-                stmt_nodes[path].discard(statement)
-                statement_map[path].setdefault(pc_list[-1]["fn"], {})[count] = statement
+                stmt_offset = next(
+                    i for i in stmt_nodes[path] if sources.is_inside_offset(offset, i)
+                )
+                stmt_nodes[path].discard(stmt_offset)
+                statement_map[path].setdefault(pc_list[-1]["fn"], {})[count] = stmt_offset
                 pc_list[-1]["statement"] = count
                 count += 1
         except (KeyError, IndexError, StopIteration):
@@ -757,16 +756,16 @@ def _check_left_operator(node: NodeBase, depth: int) -> bool:
     return op == "||"
 
 
-def _convert_src(src):
-    src = [int(i) for i in src.split(":")[:2]]
-    return src[0], src[0] + src[1]
+def _convert_src(src: str) -> Tuple[int, int]:
+    src_int = [int(i) for i in src.split(":")[:2]]
+    return src_int[0], src_int[0] + src_int[1]
 
 
 def _generate_vyper_coverage_data(
     source_map_str: str, opcodes_str: str, source_str: str, contract_name: str, ast_json: Dict
-):
+) -> Tuple:
     if not opcodes_str:
-        return {}
+        return {}, {}, {}
 
     source_map = deque(_expand_source_map(source_map_str))
     opcodes = deque(opcodes_str.split(" "))
@@ -774,8 +773,17 @@ def _generate_vyper_coverage_data(
         (i["name"], _convert_src(i["src"])) for i in ast_json if i["ast_type"] == "FunctionDef"
     )
 
+    stmt_nodes = set(
+        _convert_src(x["src"])
+        for i in ast_json
+        if i["ast_type"] == "FunctionDef"
+        for x in i["body"]
+    )
+
+    statement_map: Dict = {}
+
     pc_list: List = []
-    pc = 0
+    count, pc = 0, 0
 
     while opcodes:
 
@@ -798,10 +806,23 @@ def _generate_vyper_coverage_data(
         pc_list[-1]["path"] = source_str
         pc_list[-1]["offset"] = offset
 
-        fn = next((k for k, v in fn_offsets.items() if is_inside_offset(offset, v)), None)
-        if fn:
-            pc_list[-1]["fn"] = f"{contract_name}.{fn}"
+        try:
+            if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
+                pc_list[-1]["fn"] = pc_list[-2]["fn"]
+                continue
+            fn = next(k for k, v in fn_offsets.items() if sources.is_inside_offset(offset, v))
 
+            pc_list[-1]["fn"] = f"{contract_name}.{fn}"
+            stmt_offset = next(i for i in stmt_nodes if sources.is_inside_offset(offset, i))
+            stmt_nodes.remove(stmt_offset)
+            statement_map.setdefault(pc_list[-1]["fn"], {})[count] = stmt_offset
+            pc_list[-1]["statement"] = count
+            count += 1
+        except (KeyError, IndexError, StopIteration):
+            pass
+
+        # TODO statement converage for public storage vars
+        # TODO branch coverage
         # TODO invalid reason
         # TODO nonpayable
         # TODO dev revert strings
@@ -810,4 +831,4 @@ def _generate_vyper_coverage_data(
     pc_list[0]["offset"] = [0, _convert_src(ast_json[-1]["src"])[1]]
     pc_map = dict((i.pop("pc"), i) for i in pc_list)
 
-    return pc_map
+    return pc_map, {source_str: statement_map}, {source_str: {}}
