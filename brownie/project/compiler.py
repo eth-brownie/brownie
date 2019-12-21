@@ -809,6 +809,12 @@ def _generate_vyper_coverage_data(
         try:
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
                 pc_list[-1]["fn"] = pc_list[-2]["fn"]
+                if (
+                    pc_list[-1]["op"] == "REVERT"
+                    and pc_list[-7]["op"] == "CALLVALUE"
+                    and offset in fn_offsets.values()
+                ):
+                    pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
                 continue
             fn = next(k for k, v in fn_offsets.items() if sources.is_inside_offset(offset, v))
 
@@ -821,10 +827,8 @@ def _generate_vyper_coverage_data(
         except (KeyError, IndexError, StopIteration):
             pass
 
-        # TODO statement converage for public storage vars
         # TODO branch coverage
         # TODO invalid reason
-        # TODO nonpayable
         # TODO dev revert strings
 
     pc_list[0]["path"] = source_str
