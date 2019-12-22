@@ -777,6 +777,7 @@ def _generate_vyper_coverage_data(
     )
 
     statement_map: Dict = {}
+    branch_map: Dict = {}
 
     pc_list: List = []
     count, pc = 0, 0
@@ -805,37 +806,58 @@ def _generate_vyper_coverage_data(
         try:
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
                 pc_list[-1]["fn"] = pc_list[-2]["fn"]
-                if pc_list[-1]["op"] == "REVERT":
-                    node = _find_node_by_offset(ast_json, offset)
-                    if node["ast_type"] == "FunctionDef" and pc_list[-7]["op"] == "CALLVALUE":
-                        pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
-                    elif node["ast_type"] == "Subscript":
-                        pc_list[-1]["dev"] = "Index out of range"
-                    elif node["ast_type"] in ("AugAssign", "BinOp"):
-                        if node["op"]["ast_type"] == "Sub":
-                            pc_list[-1]["dev"] = "Integer underflow"
-                        else:
-                            pc_list[-1]["dev"] = "Integer overflow"
-                continue
-
-            fn = next(k for k, v in fn_offsets.items() if sources.is_inside_offset(offset, v))
-            pc_list[-1]["fn"] = f"{contract_name}.{fn}"
-            stmt_offset = next(i for i in stmt_nodes if sources.is_inside_offset(offset, i))
-            stmt_nodes.remove(stmt_offset)
-            statement_map.setdefault(pc_list[-1]["fn"], {})[count] = stmt_offset
-            pc_list[-1]["statement"] = count
-            count += 1
+            else:
+                # statement coverage
+                fn = next(k for k, v in fn_offsets.items() if sources.is_inside_offset(offset, v))
+                pc_list[-1]["fn"] = f"{contract_name}.{fn}"
+                stmt_offset = next(i for i in stmt_nodes if sources.is_inside_offset(offset, i))
+                stmt_nodes.remove(stmt_offset)
+                statement_map.setdefault(pc_list[-1]["fn"], {})[count] = stmt_offset
+                pc_list[-1]["statement"] = count
+                count += 1
         except (KeyError, IndexError, StopIteration):
             pass
+
+        if pc_list[-1]["op"] not in ("JUMPI", "REVERT"):
+            continue
+
+        node = _find_node_by_offset(ast_json, offset)
+        if pc_list[-1]["op"] == "REVERT":
+            # custom revert error strings
+            if node["ast_type"] == "FunctionDef" and pc_list[-7]["op"] == "CALLVALUE":
+                pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
+            elif node["ast_type"] == "Subscript":
+                pc_list[-1]["dev"] = "Index out of range"
+            elif node["ast_type"] in ("AugAssign", "BinOp"):
+                if node["op"]["ast_type"] == "Sub":
+                    pc_list[-1]["dev"] = "Integer underflow"
+                else:
+                    pc_list[-1]["dev"] = "Integer overflow"
+            continue
+
+        if node["ast_type"] in ("Assert", "If") or (
+            node["ast_type"] == "Expr" and node["value"]["func"]["id"] == "assert_modifiable"
+        ):
+            # branch coverage
+            pc_list[-1]["branch"] = count
+            pc_list[-2]["branch"] = count
+            branch_map.setdefault(pc_list[-1]["fn"], {})
+            if node["ast_type"] == "If":
+                branch_map[pc_list[-1]["fn"]][count] = _convert_src(node["test"]["src"]) + (False,)
+            else:
+                branch_map[pc_list[-1]["fn"]][count] = offset + (True,)
+            count += 1
 
     pc_list[0]["path"] = source_str
     pc_list[0]["offset"] = [0, _convert_src(ast_json[-1]["src"])[1]]
     pc_map = dict((i.pop("pc"), i) for i in pc_list)
 
-    return pc_map, {source_str: statement_map}, {source_str: {}}
+    return pc_map, {source_str: statement_map}, {source_str: branch_map}
 
 
 def _convert_src(src: str) -> Tuple[int, int]:
+    if src is None:
+        return -1, -1
     src_int = [int(i) for i in src.split(":")[:2]]
     return src_int[0], src_int[0] + src_int[1]
 
