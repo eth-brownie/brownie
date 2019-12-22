@@ -429,6 +429,7 @@ def generate_build_json(
                 "coverageMap": {"statements": statement_map, "branches": branch_map},
                 "deployedBytecode": evm["deployedBytecode"]["object"],
                 "deployedSourceMap": evm["deployedBytecode"]["sourceMap"],
+                "language": input_json["language"],
                 "opcodes": evm["deployedBytecode"]["opcodes"],
                 "pcMap": pc_map,
                 "sha1": hash_,
@@ -826,10 +827,6 @@ def _generate_vyper_coverage_data(
             count += 1
         except (KeyError, IndexError, StopIteration):
             pass
-
-        # TODO branch coverage
-        # TODO invalid reason
-        # TODO dev revert strings
 
     pc_list[0]["path"] = source_str
     pc_list[0]["offset"] = [0, _convert_src(ast_json[-1]["src"])[1]]

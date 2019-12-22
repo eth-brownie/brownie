@@ -16,6 +16,7 @@ BUILD_KEYS = [
     "deployedBytecode",
     "deployedSourceMap",
     "dependencies",
+    "language",
     "offset",
     "opcodes",
     "pcMap",
@@ -44,14 +45,15 @@ class Build:
         if build_json["compiler"]["minify_source"]:
             build_json = self.expand_build_offsets(build_json)
         self._build[contract_name] = build_json
-        self._generate_revert_map(build_json["pcMap"])
+        self._generate_revert_map(build_json["pcMap"], build_json["language"])
 
-    def _generate_revert_map(self, pcMap: Dict) -> None:
+    def _generate_revert_map(self, pcMap: Dict, language: str) -> None:
         # Adds a contract's dev revert strings to the revert map and it's pcMap
+        marker = "//" if language == "Solidity" else "#"
         for pc, data in (
             (k, v)
             for k, v in pcMap.items()
-            if v["op"] in {"REVERT", "INVALID"} or "jump_revert" in v
+            if v["op"] in ("REVERT", "INVALID") or "jump_revert" in v
         ):
             if "dev" not in data:
                 if "fn" not in data or "first_revert" in data:
@@ -60,7 +62,7 @@ class Build:
                 try:
                     revert_str = self._sources.get(data["path"])[data["offset"][1] :]
                     revert_str = revert_str[: revert_str.index("\n")]
-                    revert_str = revert_str[revert_str.index("//") + 2 :].strip()
+                    revert_str = revert_str[revert_str.index(marker) + len(marker) :].strip()
                     if revert_str.startswith("dev:"):
                         data["dev"] = revert_str
                 except (KeyError, ValueError):
