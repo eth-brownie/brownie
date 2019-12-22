@@ -121,9 +121,9 @@ def test_build_json_unlinked_libraries(solc4source, solc5source):
 
 def test_format_link_references(solc4json, solc5json):
     evm = solc5json["contracts"]["path"]["Foo"]["evm"]
-    assert "__Bar__" in compiler._format_link_references(evm)
+    assert "__Bar__" in compiler.solidity._format_link_references(evm)
     evm = solc4json["contracts"]["path"]["Foo"]["evm"]
-    assert "__Bar__" in compiler._format_link_references(evm)
+    assert "__Bar__" in compiler.solidity._format_link_references(evm)
 
 
 def test_compiler_errors(solc4source, solc5source):
