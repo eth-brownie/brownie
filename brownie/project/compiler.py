@@ -757,13 +757,8 @@ def _check_left_operator(node: NodeBase, depth: int) -> bool:
     return op == "||"
 
 
-def _convert_src(src: str) -> Tuple[int, int]:
-    src_int = [int(i) for i in src.split(":")[:2]]
-    return src_int[0], src_int[0] + src_int[1]
-
-
 def _generate_vyper_coverage_data(
-    source_map_str: str, opcodes_str: str, source_str: str, contract_name: str, ast_json: Dict
+    source_map_str: str, opcodes_str: str, source_str: str, contract_name: str, ast_json: List
 ) -> Tuple:
     if not opcodes_str:
         return {}, {}, {}
@@ -810,15 +805,20 @@ def _generate_vyper_coverage_data(
         try:
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
                 pc_list[-1]["fn"] = pc_list[-2]["fn"]
-                if (
-                    pc_list[-1]["op"] == "REVERT"
-                    and pc_list[-7]["op"] == "CALLVALUE"
-                    and offset in fn_offsets.values()
-                ):
-                    pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
+                if pc_list[-1]["op"] == "REVERT":
+                    node = _find_node_by_offset(ast_json, offset)
+                    if node["ast_type"] == "FunctionDef" and pc_list[-7]["op"] == "CALLVALUE":
+                        pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
+                    elif node["ast_type"] == "Subscript":
+                        pc_list[-1]["dev"] = "Index out of range"
+                    elif node["ast_type"] in ("AugAssign", "BinOp"):
+                        if node["op"]["ast_type"] == "Sub":
+                            pc_list[-1]["dev"] = "Integer underflow"
+                        else:
+                            pc_list[-1]["dev"] = "Integer overflow"
                 continue
-            fn = next(k for k, v in fn_offsets.items() if sources.is_inside_offset(offset, v))
 
+            fn = next(k for k, v in fn_offsets.items() if sources.is_inside_offset(offset, v))
             pc_list[-1]["fn"] = f"{contract_name}.{fn}"
             stmt_offset = next(i for i in stmt_nodes if sources.is_inside_offset(offset, i))
             stmt_nodes.remove(stmt_offset)
@@ -833,3 +833,17 @@ def _generate_vyper_coverage_data(
     pc_map = dict((i.pop("pc"), i) for i in pc_list)
 
     return pc_map, {source_str: statement_map}, {source_str: {}}
+
+
+def _convert_src(src: str) -> Tuple[int, int]:
+    src_int = [int(i) for i in src.split(":")[:2]]
+    return src_int[0], src_int[0] + src_int[1]
+
+
+def _find_node_by_offset(ast_json: List, offset: Tuple) -> Dict:
+    node = next(i for i in ast_json if sources.is_inside_offset(offset, _convert_src(i["src"])))
+    if _convert_src(node["src"]) == offset:
+        return node
+    node_list = [i for i in node.values() if isinstance(i, dict) and "ast_type" in i]
+    node_list.extend([x for i in node.values() if isinstance(i, list) for x in i])
+    return _find_node_by_offset(node_list, offset)
