@@ -62,15 +62,23 @@ def compile_and_format(
     if not contract_sources:
         return {}
 
-    if list(contract_sources)[0].endswith(".vy"):
-        path_versions = {"vyper": list(contract_sources)}
-    elif solc_version is not None:
-        path_versions = {solc_version: list(contract_sources)}
-    else:
-        path_versions = find_solc_versions(contract_sources, install_needed=True, silent=silent)
-
     build_json: Dict = {}
-    for version, path_list in path_versions.items():
+    compiler_targets = {}
+
+    vyper_paths = [i for i in contract_sources if i.endswith(".vy")]
+    if vyper_paths:
+        compiler_targets["vyper"] = vyper_paths
+
+    solc_sources = dict((k, v) for k, v in contract_sources.items() if k.endswith(".sol"))
+    if solc_sources:
+        if solc_version is None:
+            compiler_targets.update(
+                find_solc_versions(solc_sources, install_needed=True, silent=silent)
+            )
+        else:
+            compiler_targets[solc_version] = list(solc_sources)
+
+    for version, path_list in compiler_targets.items():
         if version == "vyper":
             language = "Vyper"
             compiler_data = {"minify_source": False, "version": str(vyper.get_version())}
