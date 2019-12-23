@@ -25,6 +25,13 @@ def solc5json(solc5source):
 
 
 @pytest.fixture
+def solc6json(solc6source):
+    compiler.set_solc_version("0.6.0")
+    input_json = compiler.generate_input_json({"path.sol": solc6source}, True, 200)
+    yield compiler.compile_from_input_json(input_json)
+
+
+@pytest.fixture
 def find_version():
     source = """pragma solidity{};contract Foo {{}}"""
 
@@ -44,9 +51,11 @@ def msolc(monkeypatch):
 
 def test_set_solc_version():
     compiler.set_solc_version("0.5.7")
-    assert "0.5.7" in solcx.get_solc_version_string()
+    assert solcx.get_solc_version() == compiler.solidity.get_version()
+    assert solcx.get_solc_version().truncate() == Version("0.5.7")
     compiler.set_solc_version("0.4.25")
-    assert "0.4.25" in solcx.get_solc_version_string()
+    assert solcx.get_solc_version() == compiler.solidity.get_version()
+    assert solcx.get_solc_version().truncate() == Version("0.4.25")
 
 
 def test_generate_input_json(solc5source):
@@ -112,17 +121,21 @@ def test_build_json_keys(solc5source):
     assert set(build.BUILD_KEYS) == set(build_json["Foo"])
 
 
-def test_build_json_unlinked_libraries(solc4source, solc5source):
-    build_json = compiler.compile_and_format({"path.sol": solc5source}, solc_version="0.5.7")
-    assert "__Bar__" in build_json["Foo"]["bytecode"]
+def test_build_json_unlinked_libraries(solc4source, solc5source, solc6source):
     build_json = compiler.compile_and_format({"path.sol": solc4source}, solc_version="0.4.25")
     assert "__Bar__" in build_json["Foo"]["bytecode"]
+    build_json = compiler.compile_and_format({"path.sol": solc5source}, solc_version="0.5.7")
+    assert "__Bar__" in build_json["Foo"]["bytecode"]
+    build_json = compiler.compile_and_format({"path.sol": solc6source}, solc_version="0.6.0")
+    assert "__Bar__" in build_json["Foo"]["bytecode"]
 
 
-def test_format_link_references(solc4json, solc5json):
+def test_format_link_references(solc4json, solc5json, solc6json):
+    evm = solc4json["contracts"]["path.sol"]["Foo"]["evm"]
+    assert "__Bar__" in compiler.solidity._format_link_references(evm)
     evm = solc5json["contracts"]["path.sol"]["Foo"]["evm"]
     assert "__Bar__" in compiler.solidity._format_link_references(evm)
-    evm = solc4json["contracts"]["path.sol"]["Foo"]["evm"]
+    evm = solc6json["contracts"]["path.sol"]["Foo"]["evm"]
     assert "__Bar__" in compiler.solidity._format_link_references(evm)
 
 
@@ -180,3 +193,7 @@ def test_first_revert(BrownieTester, ExternalCallTester):
     assert next((i for i in pc_map.values() if "first_revert" in i), False)
     pc_map = BrownieTester._build["pcMap"]
     assert not next((i for i in pc_map.values() if "first_revert" in i), False)
+
+
+def test_compile_empty():
+    compiler.compile_and_format({"empty.sol": ""}, solc_version="0.4.25")

@@ -3,7 +3,7 @@
 import pytest
 
 test_source = """
-pragma solidity ^0.5.0;
+pragma solidity [VERSION];
 
 library Bar {
     function baz(uint a, uint b) external pure returns (uint) {
@@ -30,12 +30,17 @@ def btsource(testproject):
 
 
 @pytest.fixture
+def solc6source():
+    return test_source.replace("[VERSION]", "^0.6.0")
+
+
+@pytest.fixture
 def solc5source():
-    return test_source
+    return test_source.replace("[VERSION]", "^0.5.0")
 
 
 @pytest.fixture
 def solc4source():
     source = test_source.replace("payable ", "")
-    source = source.replace("^0.5.0", "^0.4.25")
+    source = source.replace("[VERSION]", "^0.4.25")
     return source
