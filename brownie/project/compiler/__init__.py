@@ -22,7 +22,6 @@ STANDARD_JSON: Dict = {
         "outputSelection": {
             "*": {"*": ["abi", "evm.bytecode", "evm.deployedBytecode"], "": ["ast"]}
         },
-        "optimizer": {"enabled": True, "runs": 200},
         "evmVersion": None,
         "remappings": [],
     },
@@ -132,10 +131,10 @@ def generate_input_json(
 
     input_json: Dict = deepcopy(STANDARD_JSON)
     input_json["language"] = language
-    input_json["settings"]["optimizer"]["enabled"] = optimize
-    input_json["settings"]["optimizer"]["runs"] = runs if optimize else 0
     input_json["settings"]["evmVersion"] = evm_version
-    if language == "Vyper":
+    if language == "Solidity":
+        input_json["settings"]["optimizer"] = {"enabled": optimize, "runs": runs if optimize else 0}
+    elif language == "Vyper":
         input_json["outputSelection"] = input_json["settings"].pop("outputSelection")
     input_json["sources"] = dict(
         (k, {"content": sources.minify(v, language)[0] if minify else v})
@@ -183,33 +182,40 @@ def generate_build_json(
 
     if compiler_data is None:
         compiler_data = {}
-    compiler_data.update(
-        {
-            "optimize": input_json["settings"]["optimizer"]["enabled"],
-            "runs": input_json["settings"]["optimizer"]["runs"],
-            "evm_version": input_json["settings"]["evmVersion"],
-        }
-    )
-    minified = "minify_source" in compiler_data and compiler_data["minify_source"]
+    compiler_data["evm_version"] = input_json["settings"]["evmVersion"]
+    minified = compiler_data.get("minify_source", False)
     build_json = {}
     path_list = list(input_json["sources"])
 
     if input_json["language"] == "Solidity":
+        compiler_data.update(
+            {
+                "optimize": input_json["settings"]["optimizer"]["enabled"],
+                "runs": input_json["settings"]["optimizer"]["runs"],
+            }
+        )
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
-    for path, contract_name in [(k, v) for k in path_list for v in output_json["contracts"][k]]:
+    for path_str, contract_name in [
+        (k, v) for k in path_list for v in output_json["contracts"].get(k, {})
+    ]:
 
         if not silent:
             print(f" - {contract_name}...")
 
-        abi = output_json["contracts"][path][contract_name]["abi"]
-        output_evm = output_json["contracts"][path][contract_name]["evm"]
+        abi = output_json["contracts"][path_str][contract_name]["abi"]
+        output_evm = output_json["contracts"][path_str][contract_name]["evm"]
         hash_ = sources.get_hash(
-            input_json["sources"][path]["content"], contract_name, minified, input_json["language"]
+            input_json["sources"][path_str]["content"],
+            contract_name,
+            minified,
+            input_json["language"],
         )
 
         if input_json["language"] == "Solidity":
-            contract_node = next(i[contract_name] for i in source_nodes if i.absolutePath == path)
+            contract_node = next(
+                i[contract_name] for i in source_nodes if i.absolutePath == path_str
+            )
             build_json[contract_name] = solidity._get_unique_build_json(
                 output_evm,
                 contract_node,
@@ -220,13 +226,17 @@ def generate_build_json(
 
         else:
             build_json[contract_name] = vyper._get_unique_build_json(
-                output_evm, path, contract_name, output_json["sources"][path]["ast"]
+                output_evm,
+                path_str,
+                contract_name,
+                output_json["sources"][path_str]["ast"],
+                (0, len(input_json["sources"][path_str]["content"])),
             )
 
         build_json[contract_name].update(
             {
                 "abi": abi,
-                "ast": output_json["sources"][path]["ast"],
+                "ast": output_json["sources"][path_str]["ast"],
                 "compiler": compiler_data,
                 "contractName": contract_name,
                 "deployedBytecode": output_evm["deployedBytecode"]["object"],
@@ -234,9 +244,9 @@ def generate_build_json(
                 "language": input_json["language"],
                 "opcodes": output_evm["deployedBytecode"]["opcodes"],
                 "sha1": hash_,
-                "source": input_json["sources"][path]["content"],
+                "source": input_json["sources"][path_str]["content"],
                 "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
-                "sourcePath": path,
+                "sourcePath": path_str,
             }
         )
 

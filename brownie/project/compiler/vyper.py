@@ -38,22 +38,22 @@ def compile_from_input_json(
 
 
 def _get_unique_build_json(
-    output_evm: Dict, source_str: str, contract_name: str, ast_json: List
+    output_evm: Dict, path_str: str, contract_name: str, ast_json: List, offset: Tuple
 ) -> Dict:
     pc_map, statement_map, branch_map = _generate_coverage_data(
         output_evm["deployedBytecode"]["sourceMap"],
         output_evm["deployedBytecode"]["opcodes"],
-        source_str,
+        path_str,
         contract_name,
         ast_json,
     )
     return {
-        "allSourcePaths": [source_str],
+        "allSourcePaths": [path_str],
         "bytecode": output_evm["bytecode"]["object"],
         "bytecodeSha1": sha1(output_evm["bytecode"]["object"].encode()).hexdigest(),
         "coverageMap": {"statements": statement_map, "branches": branch_map},
         "dependencies": _get_dependencies(ast_json),
-        "offset": pc_map[0]["offset"],
+        "offset": offset,
         "pcMap": pc_map,
         "type": "contract",
     }
