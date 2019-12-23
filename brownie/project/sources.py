@@ -26,11 +26,7 @@ class Sources:
         self._source: Dict = {}
         self._contracts: Dict = {}
         for path, source in contract_sources.items():
-            if path.endswith(".vy"):
-                # TODO minify vyper contracts
-                data = {path: {"offsets": [(0, 0)], "offset_map": [(0, 0)]}}
-            else:
-                data = _get_contract_data(source)
+            data = _get_contract_data(source, path)
             for name, values in data.items():
                 if name in self._contracts:
                     raise NamespaceCollision(f"Project has multiple contracts named '{name}'")
@@ -98,7 +94,7 @@ def get_hash(source: str, contract_name: str, minified: bool) -> str:
     if minified:
         source = minify(source)[0]
     try:
-        data = _get_contract_data(source)[contract_name]
+        data = _get_contract_data(source, "")[contract_name]
         offset = slice(*data["offset"])
         return sha1(source[offset].encode()).hexdigest()
     except KeyError:
@@ -147,10 +143,16 @@ def highlight_source(source: str, offset: Tuple, pad: int = 3) -> Tuple:
     return final, ln
 
 
-def _get_contract_data(full_source: str) -> Dict:
+def _get_contract_data(full_source: str, path_str: str) -> Dict:
     key = sha1(full_source.encode()).hexdigest()
     if key in _contract_data:
         return _contract_data[key]
+
+    path = Path(path_str)
+    if path.suffix == ".vy":
+        _contract_data[key] = {path.stem: {"offset": (0, len(full_source)), "offset_map": []}}
+        return _contract_data[key]
+
     minified_source, offset_map = minify(full_source)
     minified_key = sha1(minified_source.encode()).hexdigest()
     if minified_key in _contract_data:
