@@ -34,7 +34,7 @@ def compile_from_input_json(
     if not silent:
         print("Compiling contracts...")
         print(f"  Vyper version: {get_version()}")
-    return vyper_json.compile_json(input_json, allow_paths)
+    return vyper_json.compile_json(input_json, root_path=allow_paths)
 
 
 def _get_unique_build_json(
@@ -52,11 +52,19 @@ def _get_unique_build_json(
         "bytecode": output_evm["bytecode"]["object"],
         "bytecodeSha1": sha1(output_evm["bytecode"]["object"].encode()).hexdigest(),
         "coverageMap": {"statements": statement_map, "branches": branch_map},
-        "dependencies": [],
+        "dependencies": _get_dependencies(ast_json),
         "offset": pc_map[0]["offset"],
         "pcMap": pc_map,
         "type": "contract",
     }
+
+
+def _get_dependencies(ast_json: List) -> List:
+    import_nodes = [i for i in ast_json if i["ast_type"] == "Import"]
+    import_nodes += [
+        i for i in ast_json if i["ast_type"] == "ImportFrom" if i["module"] != "vyper.interfaces"
+    ]
+    return sorted(set([i["names"][0]["name"].split(".")[-1] for i in import_nodes]))
 
 
 def _generate_coverage_data(
