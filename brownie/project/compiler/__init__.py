@@ -62,6 +62,9 @@ def compile_and_format(
     if not contract_sources:
         return {}
 
+    if [i for i in contract_sources if not i.endswith(".sol") and not i.endswith(".vy")]:
+        raise ValueError("Source filenames must end in .sol or .vy")
+
     build_json: Dict = {}
     compiler_targets = {}
 

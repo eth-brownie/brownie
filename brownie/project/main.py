@@ -398,7 +398,7 @@ def compile_source(
         "evm_version": evm_version,
         "minify_source": False,
     }
-    return TempProject("TempProject", {"<stdin>": source}, compiler_config)
+    return TempProject("TempProject", {"<stdin>.sol": source}, compiler_config)
 
 
 def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None) -> "Project":

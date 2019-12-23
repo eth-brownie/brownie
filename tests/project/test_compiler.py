@@ -13,14 +13,14 @@ from brownie.project import build, compiler
 @pytest.fixture
 def solc4json(solc4source):
     compiler.set_solc_version("0.4.25")
-    input_json = compiler.generate_input_json({"path": solc4source}, True, 200)
+    input_json = compiler.generate_input_json({"path.sol": solc4source}, True, 200)
     yield compiler.compile_from_input_json(input_json)
 
 
 @pytest.fixture
 def solc5json(solc5source):
     compiler.set_solc_version("0.5.7")
-    input_json = compiler.generate_input_json({"path": solc5source}, True, 200)
+    input_json = compiler.generate_input_json({"path.sol": solc5source}, True, 200)
     yield compiler.compile_from_input_json(input_json)
 
 
@@ -50,21 +50,21 @@ def test_set_solc_version():
 
 
 def test_generate_input_json(solc5source):
-    input_json = compiler.generate_input_json({"path": solc5source}, True, 200)
+    input_json = compiler.generate_input_json({"path.sol": solc5source}, True, 200)
     assert input_json["settings"]["optimizer"]["enabled"] is True
     assert input_json["settings"]["optimizer"]["runs"] == 200
-    assert input_json["sources"]["path"]["content"] == solc5source
+    assert input_json["sources"]["path.sol"]["content"] == solc5source
     input_json = compiler.generate_input_json(
-        {"path": solc5source}, optimize=False, runs=0, minify=True
+        {"path.sol": solc5source}, optimize=False, runs=0, minify=True
     )
     assert input_json["settings"]["optimizer"]["enabled"] is False
     assert input_json["settings"]["optimizer"]["runs"] == 0
-    assert input_json["sources"]["path"]["content"] != solc5source
+    assert input_json["sources"]["path.sol"]["content"] != solc5source
 
 
 def test_generate_input_json_evm(solc5source, monkeypatch):
     monkeypatch.setattr("solcx.get_solc_version", lambda: Version("0.5.5"))
-    fn = functools.partial(compiler.generate_input_json, {"path": solc5source})
+    fn = functools.partial(compiler.generate_input_json, {"path.sol": solc5source})
     assert fn()["settings"]["evmVersion"] == "petersburg"
     assert fn(evm_version="byzantium")["settings"]["evmVersion"] == "byzantium"
     assert fn(evm_version="petersburg")["settings"]["evmVersion"] == "petersburg"
@@ -75,12 +75,12 @@ def test_generate_input_json_evm(solc5source, monkeypatch):
 
 
 def test_compile_input_json(solc5json):
-    assert "Foo" in solc5json["contracts"]["path"]
-    assert "Bar" in solc5json["contracts"]["path"]
+    assert "Foo" in solc5json["contracts"]["path.sol"]
+    assert "Bar" in solc5json["contracts"]["path.sol"]
 
 
 def test_compile_input_json_raises():
-    input_json = compiler.generate_input_json({"path": "potato"}, True, 200)
+    input_json = compiler.generate_input_json({"path.sol": "potato"}, True, 200)
     with pytest.raises(CompilerError):
         compiler.compile_from_input_json(input_json)
 
@@ -108,29 +108,29 @@ def test_compile_optimizer(monkeypatch):
 
 
 def test_build_json_keys(solc5source):
-    build_json = compiler.compile_and_format({"path": solc5source})
+    build_json = compiler.compile_and_format({"path.sol": solc5source})
     assert set(build.BUILD_KEYS) == set(build_json["Foo"])
 
 
 def test_build_json_unlinked_libraries(solc4source, solc5source):
-    build_json = compiler.compile_and_format({"path": solc5source}, solc_version="0.5.7")
+    build_json = compiler.compile_and_format({"path.sol": solc5source}, solc_version="0.5.7")
     assert "__Bar__" in build_json["Foo"]["bytecode"]
-    build_json = compiler.compile_and_format({"path": solc4source}, solc_version="0.4.25")
+    build_json = compiler.compile_and_format({"path.sol": solc4source}, solc_version="0.4.25")
     assert "__Bar__" in build_json["Foo"]["bytecode"]
 
 
 def test_format_link_references(solc4json, solc5json):
-    evm = solc5json["contracts"]["path"]["Foo"]["evm"]
+    evm = solc5json["contracts"]["path.sol"]["Foo"]["evm"]
     assert "__Bar__" in compiler.solidity._format_link_references(evm)
-    evm = solc4json["contracts"]["path"]["Foo"]["evm"]
+    evm = solc4json["contracts"]["path.sol"]["Foo"]["evm"]
     assert "__Bar__" in compiler.solidity._format_link_references(evm)
 
 
 def test_compiler_errors(solc4source, solc5source):
     with pytest.raises(CompilerError):
-        compiler.compile_and_format({"path": solc4source}, solc_version="0.5.7")
+        compiler.compile_and_format({"path.sol": solc4source}, solc_version="0.5.7")
     with pytest.raises(CompilerError):
-        compiler.compile_and_format({"path": solc5source}, solc_version="0.4.25")
+        compiler.compile_and_format({"path.sol": solc5source}, solc_version="0.4.25")
 
 
 def test_min_version():
@@ -147,7 +147,7 @@ def test_find_solc_versions(find_version, msolc):
     assert "0.5.7" in find_version(">0.4.8 <0.5.8 || 0.5.11")
     assert "0.4.22" in find_version("0.5.9 || 0.4.22")
     with pytest.raises(PragmaError):
-        compiler.find_solc_versions({"Foo": "contract Foo {}"})
+        compiler.find_solc_versions({"Foo.sol": "contract Foo {}"})
     with pytest.raises(IncompatibleSolcVersion):
         find_version("^1.0.0", install_needed=False)
     with pytest.raises(IncompatibleSolcVersion):
