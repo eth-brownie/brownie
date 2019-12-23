@@ -81,14 +81,15 @@ def compile_and_format(
         else:
             compiler_targets[solc_version] = list(solc_sources)
 
+    compiler_data: Dict = {"minify_source": minify}
     for version, path_list in compiler_targets.items():
         if version == "vyper":
             language = "Vyper"
-            compiler_data = {"minify_source": False, "version": str(vyper.get_version())}
+            compiler_data["version"] = str(vyper.get_version())
         else:
             set_solc_version(version)
             language = "Solidity"
-            compiler_data = {"minify_source": minify, "version": str(solidity.get_version())}
+            compiler_data["version"] = str(solidity.get_version())
 
         to_compile = dict((k, v) for k, v in contract_sources.items() if k in path_list)
 
@@ -137,7 +138,8 @@ def generate_input_json(
     if language == "Vyper":
         input_json["outputSelection"] = input_json["settings"].pop("outputSelection")
     input_json["sources"] = dict(
-        (k, {"content": sources.minify(v)[0] if minify else v}) for k, v in contract_sources.items()
+        (k, {"content": sources.minify(v, language)[0] if minify else v})
+        for k, v in contract_sources.items()
     )
     return input_json
 
@@ -202,7 +204,9 @@ def generate_build_json(
 
         abi = output_json["contracts"][path][contract_name]["abi"]
         output_evm = output_json["contracts"][path][contract_name]["evm"]
-        hash_ = sources.get_hash(input_json["sources"][path]["content"], contract_name, minified)
+        hash_ = sources.get_hash(
+            input_json["sources"][path]["content"], contract_name, minified, input_json["language"]
+        )
 
         if input_json["language"] == "Solidity":
             contract_node = next(i[contract_name] for i in source_nodes if i.absolutePath == path)

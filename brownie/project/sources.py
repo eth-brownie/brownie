@@ -9,10 +9,17 @@ from typing import Dict, List, Tuple
 from brownie.exceptions import NamespaceCollision
 from brownie.utils import color
 
-MINIFY_REGEX_PATTERNS = [
+SOLIDITY_MINIFY_REGEX = [
     r"(?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)",  # comments
     r"(?<=\n)\s+|[ \t]+(?=\n)",  # leading / trailing whitespace
     r"(?<=[^\w\s])[ \t]+(?=\w)|(?<=\w)[ \t]+(?=[^\w\s])",  # whitespace between expressions
+]
+
+VYPER_MINIFY_REGEX = [
+    r"((\n|^)[\s]*?#[\s\S]*?)(?=\n[^#])",
+    r'([\s]*?"""[\s\S]*?""")(?=\n)',
+    r"([\s]*?'''[\s\S]*?''')(?=\n)",
+    r"(\n)(?=\n)",
 ]
 
 _contract_data: Dict = {}
@@ -67,10 +74,13 @@ class Sources:
         )
 
 
-def minify(source: str) -> Tuple[str, List]:
+def minify(source: str, language: str = "Solidity") -> Tuple[str, List]:
     """Given contract source as a string, returns a minified version and an offset map."""
     offsets = [(0, 0)]
-    pattern = f"({'|'.join(MINIFY_REGEX_PATTERNS)})"
+    if language == "Solidity":
+        pattern = f"({'|'.join(SOLIDITY_MINIFY_REGEX)})"
+    else:
+        pattern = f"({'|'.join(VYPER_MINIFY_REGEX)})"
     for match in re.finditer(pattern, source):
         offsets.append(
             (match.start() - offsets[-1][1], match.end() - match.start() + offsets[-1][1])
@@ -89,10 +99,10 @@ def is_inside_offset(inner: Tuple, outer: Tuple) -> bool:
     return outer[0] <= inner[0] <= inner[1] <= outer[1]
 
 
-def get_hash(source: str, contract_name: str, minified: bool) -> str:
+def get_hash(source: str, contract_name: str, minified: bool, language: str) -> str:
     """Returns a hash of the contract source code."""
     if minified:
-        source = minify(source)[0]
+        source = minify(source, language)[0]
     try:
         data = _get_contract_data(source, "")[contract_name]
         offset = slice(*data["offset"])
@@ -149,30 +159,31 @@ def _get_contract_data(full_source: str, path_str: str) -> Dict:
         return _contract_data[key]
 
     path = Path(path_str)
-    if path.suffix == ".vy":
-        _contract_data[key] = {path.stem: {"offset": (0, len(full_source)), "offset_map": []}}
-        return _contract_data[key]
+    language = "Vyper" if path.suffix == ".vy" else "Solidity"
 
-    minified_source, offset_map = minify(full_source)
+    minified_source, offset_map = minify(full_source, language)
     minified_key = sha1(minified_source.encode()).hexdigest()
     if minified_key in _contract_data:
         return _contract_data[minified_key]
 
-    contracts = re.findall(
-        r"((?:contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:contract|library|interface)\s|$)",  # NOQA: E501
-        minified_source,
-    )
-    data = {}
-    for source in contracts:
-        type_, name, inherited = re.findall(
-            r"(contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)", source
-        )[0]
-        idx = minified_source.index(source)
-        offset = (
-            idx + next(i[1] for i in offset_map if i[0] <= idx),
-            idx + len(source) + next(i[1] for i in offset_map if i[0] <= idx + len(source)),
+    if language == "Vyper":
+        data = {path.stem: {"offset": (0, len(full_source)), "offset_map": offset_map}}
+    else:
+        contracts = re.findall(
+            r"((?:contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:contract|library|interface)\s|$)",  # NOQA: E501
+            minified_source,
         )
-        data[name] = {"offset_map": offset_map, "offset": offset}
+        data = {}
+        for source in contracts:
+            type_, name, inherited = re.findall(
+                r"(contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)", source
+            )[0]
+            idx = minified_source.index(source)
+            offset = (
+                idx + next(i[1] for i in offset_map if i[0] <= idx),
+                idx + len(source) + next(i[1] for i in offset_map if i[0] <= idx + len(source)),
+            )
+            data[name] = {"offset_map": offset_map, "offset": offset}
     _contract_data[key] = data
     _contract_data[minified_key] = data
     return data

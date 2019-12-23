@@ -187,7 +187,9 @@ class Project(_ProjectBase):
             build_json = self._build.get(contract_name)
         except KeyError:
             return True
-        if build_json["sha1"] != get_hash(source, contract_name, config["minify_source"]):
+        if build_json["sha1"] != get_hash(
+            source, contract_name, config["minify_source"], build_json["language"]
+        ):
             return True
         return next(
             (True for k, v in build_json["compiler"].items() if config[k] and v != config[k]), False
