@@ -10,9 +10,9 @@ matrix:
         - sudo add-apt-repository -y ppa:ethereum/ethereum
         - sudo add-apt-repository -y ppa:deadsnakes/ppa
         - sudo apt-get update
-        - sudo apt-get install -y python3.7-dev python3.7-tk npm solc
-        - npm -g install ganache-cli
-        - python -m pip install -r requirements-dev.txt
+        - sudo apt-get install -y python3.7-dev npm solc
+        - npm -g install ganache-cli@6.7.0
+        - python -m pip install coveralls==1.9.2 tox==3.14.0
       script: tox -e py37,evmtests
     - name: "Standard Tests, Linting, Docs - Python 3.6.8 on Xenial Linux"
       language: python
@@ -23,17 +23,17 @@ matrix:
         - sudo add-apt-repository -y ppa:ethereum/ethereum
         - sudo add-apt-repository -y ppa:deadsnakes/ppa
         - sudo apt-get update
-        - sudo apt-get install -y python3.6-dev python3.6-tk npm solc
-        - npm -g install ganache-cli
-        - python -m pip install -r requirements-dev.txt
+        - sudo apt-get install -y python3.6-dev npm solc
+        - npm -g install ganache-cli@6.7.0
+        - python -m pip install coveralls==1.9.2 tox==3.14.0
       script: tox -e lint,doctest,py36
     - name: "Standard Tests - Python 3.7.4 on Windows"
       os: windows
       language: node_js
       node_js: '10'
       install:
-        - npm -g install ganache-cli
-        - choco install python  --version=3.7.4
+        - npm -g install ganache-cli@6.7.0
+        - choco install python --version=3.7.4
         - python -m pip install --upgrade pip
         - python -m pip install -r requirements-dev.txt
         - python setup.py install
@@ -48,9 +48,9 @@ matrix:
         - sudo add-apt-repository -y ppa:ethereum/ethereum
         - sudo add-apt-repository -y ppa:deadsnakes/ppa
         - sudo apt-get update
-        - sudo apt-get install -y python3.8-dev python3.8-tk npm solc
-        - npm -g install ganache-cli
-        - python -m pip install -r requirements-dev.txt
+        - sudo apt-get install -y python3.8-dev npm solc
+        - npm -g install ganache-cli@6.7.0
+        - python -m pip install coveralls==1.9.2 tox==3.14.0
       script: tox -e py38
     - name: "Brownie Mix Tests - Python 3.6.8 on Xenial Linux"
       language: python
@@ -61,9 +61,9 @@ matrix:
         - sudo add-apt-repository -y ppa:ethereum/ethereum
         - sudo add-apt-repository -y ppa:deadsnakes/ppa
         - sudo apt-get update
-        - sudo apt-get install -y python3.6-dev python3.6-tk npm solc
-        - npm -g install ganache-cli
-        - python -m pip install -r requirements-dev.txt
+        - sudo apt-get install -y python3.6-dev npm solc
+        - npm -g install ganache-cli@6.7.0
+        - python -m pip install coveralls==1.9.2 tox==3.14.0
       script: tox -e mixtests
 
 env:
