@@ -44,3 +44,13 @@ def solc4source():
     source = test_source.replace("payable ", "")
     source = source.replace("[VERSION]", "^0.4.25")
     return source
+
+
+@pytest.fixture
+def vysource():
+    return """
+# comments are totally kickass
+@public
+def test() -> bool:
+    return True
+"""

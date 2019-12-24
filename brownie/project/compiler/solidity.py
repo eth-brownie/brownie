@@ -141,7 +141,7 @@ def find_solc_versions(
 
         if not version or (install_latest and latest > version):
             to_install.add(latest)
-        elif latest > version:
+        elif latest and latest > version:
             new_versions.add(str(version))
 
     # install new versions if needed

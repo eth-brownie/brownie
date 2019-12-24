@@ -11,16 +11,6 @@ from brownie.project import build, compiler
 
 
 @pytest.fixture
-def vysource():
-    return """
-# comments are totally kickass
-@public
-def test() -> bool:
-    return True
-"""
-
-
-@pytest.fixture
 def vyjson(vysource):
     input_json = compiler.generate_input_json({"path.vy": vysource}, language="Vyper")
     yield compiler.compile_from_input_json(input_json)
