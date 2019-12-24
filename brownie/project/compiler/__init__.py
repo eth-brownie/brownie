@@ -230,6 +230,8 @@ def generate_build_json(
             )
 
         else:
+            if contract_name == "<stdin>":
+                contract_name = "Vyper"
             build_json[contract_name] = vyper._get_unique_build_json(
                 output_evm,
                 path_str,

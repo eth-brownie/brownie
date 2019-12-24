@@ -271,6 +271,11 @@ def ext_tester(ExternalCallTester, accounts):
     return ExternalCallTester.deploy({"from": accounts[0]})
 
 
+@pytest.fixture
+def vypertester(testproject, devnetwork, accounts):
+    return testproject.VyperTester.deploy({"from": accounts[0]})
+
+
 # ipfs fixtures
 
 

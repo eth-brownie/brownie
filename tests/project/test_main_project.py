@@ -87,13 +87,23 @@ def test_close(project, testproject):
         testproject.close()
 
 
-def test_compile_object(project, solc5source):
+def test_compile_solc_object(project, solc5source):
     temp = project.compile_source(solc5source)
     assert type(temp) is TempProject
     assert isinstance(temp, _ProjectBase)
     assert len(temp) == 2
+    assert temp._name == "TempSolcProject"
     assert "Foo" in temp
     assert "Bar" in temp
+
+
+def test_compile_vyper_object(project):
+    temp = project.compile_source("@public\ndef x() -> bool: return True")
+    assert type(temp) is TempProject
+    assert isinstance(temp, _ProjectBase)
+    assert len(temp) == 1
+    assert temp._name == "TempVyperProject"
+    assert "Vyper" in temp
 
 
 def test_compile_namespace(project, solc5source):
