@@ -140,6 +140,8 @@ def _generate_coverage_data(
             elif node["ast_type"] in ("AugAssign", "BinOp"):
                 if node["op"]["ast_type"] == "Sub":
                     pc_list[-1]["dev"] = "Integer underflow"
+                elif node["op"]["ast_type"] == "Div":
+                    pc_list[-1]["dev"] = "Division by zero"
                 else:
                     pc_list[-1]["dev"] = "Integer overflow"
             continue
