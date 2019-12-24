@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - better error message for division by zero
 
+### Fixed
+- Correctly save minified source offsets in build artifacts
+
 ## [1.3.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.3.0) - 2019-12-20
 ### Added
 - support for [Solidity v0.6.0](https://github.com/ethereum/solidity/releases/tag/v0.6.0)

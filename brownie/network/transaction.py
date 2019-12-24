@@ -403,7 +403,6 @@ class TransactionReceipt:
         # last_map gives a quick reference of previous values at each depth
         last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
         coverage_eval: Dict = {last_map[0]["name"]: {}}
-        active_branches = set()
 
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
@@ -422,13 +421,11 @@ class TransactionReceipt:
             # update trace from last_map
             last = last_map[trace[i]["depth"]]
             trace[i].update(
-                {
-                    "address": last["address"],
-                    "contractName": last["name"],
-                    "fn": last["fn"][-1],
-                    "jumpDepth": last["jumpDepth"],
-                    "source": False,
-                }
+                address=last["address"],
+                contractName=last["name"],
+                fn=last["fn"][-1],
+                jumpDepth=last["jumpDepth"],
+                source=False,
             )
 
             if "pc_map" not in last:
@@ -443,37 +440,35 @@ class TransactionReceipt:
                 continue
 
             # calculate coverage
-            if pc["path"] != "<stdin>":
+            if "active_branches" in last:
                 if pc["path"] not in coverage_eval[last["name"]]:
                     coverage_eval[last["name"]][pc["path"]] = [set(), set(), set()]
                 if "statement" in pc:
                     coverage_eval[last["name"]][pc["path"]][0].add(pc["statement"])
                 if "branch" in pc:
                     if pc["op"] != "JUMPI":
-                        active_branches.add(pc["branch"])
-                    elif pc["branch"] in active_branches:
+                        last["active_branches"].add(pc["branch"])
+                    elif pc["branch"] in last["active_branches"]:
                         # false, true
                         key = 1 if trace[i + 1]["pc"] == trace[i]["pc"] + 1 else 2
                         coverage_eval[last["name"]][pc["path"]][key].add(pc["branch"])
-                        active_branches.remove(pc["branch"])
+                        last["active_branches"].remove(pc["branch"])
 
             # ignore jumps with no function - they are compiler optimizations
-            if "jump" not in pc:
-                continue
-
-            # jump 'i' is calling into an internal function
-            if pc["jump"] == "i":
-                try:
-                    fn = last["pc_map"][trace[i + 1]["pc"]]["fn"]
-                except (KeyError, IndexError):
-                    continue
-                if fn != last["fn"][-1]:
-                    last["fn"].append(fn)
-                    last["jumpDepth"] += 1
-            # jump 'o' is returning from an internal function
-            elif last["jumpDepth"] > 0:
-                del last["fn"][-1]
-                last["jumpDepth"] -= 1
+            if "jump" in pc:
+                # jump 'i' is calling into an internal function
+                if pc["jump"] == "i":
+                    try:
+                        fn = last["pc_map"][trace[i + 1]["pc"]]["fn"]
+                    except (KeyError, IndexError):
+                        continue
+                    if fn != last["fn"][-1]:
+                        last["fn"].append(fn)
+                        last["jumpDepth"] += 1
+                # jump 'o' is returning from an internal function
+                elif last["jumpDepth"] > 0:
+                    del last["fn"][-1]
+                    last["jumpDepth"] -= 1
         coverage._add_transaction(
             self.coverage_hash, dict((k, v) for k, v in coverage_eval.items() if v)
         )
@@ -741,14 +736,12 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
     last_map = {"address": EthAddress(address), "jumpDepth": 0, "name": None}
     if contract:
         last_map.update(
-            {
-                "contract": contract,
-                "name": contract._name,
-                "fn": [f"{contract._name}.{contract.get_method(sig)}"],
-            }
+            contract=contract,
+            name=contract._name,
+            fn=[f"{contract._name}.{contract.get_method(sig)}"],
         )
         if contract._build:
-            last_map["pc_map"] = contract._build["pcMap"]
+            last_map.update(pc_map=contract._build["pcMap"], active_branches=set())
     else:
-        last_map.update({"contract": None, "fn": [f"<UnknownContract>.{sig}"]})
+        last_map.update(contract=None, fn=[f"<UnknownContract>.{sig}"])
     return last_map
