@@ -75,16 +75,10 @@ def _generate_coverage_data(
 
     source_map = deque(expand_source_map(source_map_str))
     opcodes = deque(opcodes_str.split(" "))
-    fn_offsets = dict(
-        (i["name"], _convert_src(i["src"])) for i in ast_json if i["ast_type"] == "FunctionDef"
-    )
 
-    stmt_nodes = set(
-        _convert_src(x["src"])
-        for i in ast_json
-        if i["ast_type"] == "FunctionDef"
-        for x in i["body"]
-    )
+    fn_nodes = [i for i in ast_json if i["ast_type"] == "FunctionDef"]
+    fn_offsets = dict((i["name"], _convert_src(i["src"])) for i in fn_nodes)
+    stmt_nodes = set(_convert_src(i["src"]) for i in _get_statement_nodes(fn_nodes))
 
     statement_map: Dict = {}
     branch_map: Dict = {}
@@ -180,3 +174,14 @@ def _find_node_by_offset(ast_json: List, offset: Tuple) -> Dict:
     node_list = [i for i in node.values() if isinstance(i, dict) and "ast_type" in i]
     node_list.extend([x for i in node.values() if isinstance(i, list) for x in i])
     return _find_node_by_offset(node_list, offset)
+
+
+def _get_statement_nodes(ast_json: List) -> List:
+    stmt_nodes: List = []
+    for node in ast_json:
+        children = [x for v in node.values() if isinstance(v, list) for x in v]
+        if children:
+            stmt_nodes += _get_statement_nodes(children)
+        else:
+            stmt_nodes.append(node)
+    return stmt_nodes
