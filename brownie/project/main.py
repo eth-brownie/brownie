@@ -64,11 +64,11 @@ class _ProjectBase:
             allow_paths=allow_paths,
         )
         for data in build_json.values():
-            self._build._add(data)
             if self._path is not None:
                 path = self._path.joinpath(f"build/contracts/{data['contractName']}.json")
                 with path.open("w") as fp:
                     json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
+            self._build._add(data)
 
     def _create_containers(self) -> None:
         # create container objects
