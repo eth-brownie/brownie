@@ -5,6 +5,7 @@ from typing import Dict, Optional, Union
 
 from semantic_version import Version
 
+from brownie.exceptions import UnsupportedLanguage
 from brownie.project import sources
 from brownie.project.compiler.solidity import (  # NOQA: F401
     find_best_solc_version,
@@ -62,7 +63,7 @@ def compile_and_format(
         return {}
 
     if [i for i in contract_sources if not i.endswith(".sol") and not i.endswith(".vy")]:
-        raise ValueError("Source filenames must end in .sol or .vy")
+        raise UnsupportedLanguage("Source filenames must end in .sol or .vy")
 
     build_json: Dict = {}
     compiler_targets = {}
@@ -121,7 +122,7 @@ def generate_input_json(
     """
 
     if language not in ("Solidity", "Vyper"):
-        raise ValueError(f"Unsupported language: {language}")
+        raise UnsupportedLanguage(f"{language}")
 
     if evm_version is None:
         if language == "Solidity":
@@ -134,7 +135,7 @@ def generate_input_json(
     input_json["settings"]["evmVersion"] = evm_version
     if language == "Solidity":
         input_json["settings"]["optimizer"] = {"enabled": optimize, "runs": runs if optimize else 0}
-    elif language == "Vyper":
+    else:
         input_json["outputSelection"] = input_json["settings"].pop("outputSelection")
     input_json["sources"] = dict(
         (k, {"content": sources.minify(v, language)[0] if minify else v})
@@ -162,7 +163,7 @@ def compile_from_input_json(
         return vyper.compile_from_input_json(input_json, silent, allow_paths)
     if input_json["language"] == "Solidity":
         return solidity.compile_from_input_json(input_json, silent, allow_paths)
-    raise ValueError(f"Unsupported language: {input_json['language']}")
+    raise UnsupportedLanguage(f"{input_json['language']}")
 
 
 def generate_build_json(
@@ -177,6 +178,10 @@ def generate_build_json(
         silent: verbose reporting
 
     Returns: build json dict"""
+
+    if input_json["language"] not in ("Solidity", "Vyper"):
+        raise UnsupportedLanguage(f"{input_json['language']}")
+
     if not silent:
         print("Generating build data...")
 
