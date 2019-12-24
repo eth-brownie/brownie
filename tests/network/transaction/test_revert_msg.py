@@ -50,11 +50,14 @@ def test_solidity_invalid_opcodes(evmtester):
         evmtester.invalidOpcodes(0, 0)
     assert exc.value.revert_msg == "invalid opcode"
     with pytest.raises(VirtualMachineError) as exc:
-        evmtester.invalidOpcodes(1, 1)
+        evmtester.invalidOpcodes(1, 0)
     assert exc.value.revert_msg == "dev: foobar"
     with pytest.raises(VirtualMachineError) as exc:
         evmtester.invalidOpcodes(3, 3)
     assert exc.value.revert_msg == "Index out of range"
+    with pytest.raises(VirtualMachineError) as exc:
+        evmtester.invalidOpcodes(2, 0)
+    assert exc.value.revert_msg == "Division by zero"
 
 
 def test_vyper_revert_reasons(vypertester, console_mode):

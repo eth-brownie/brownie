@@ -119,8 +119,9 @@ contract EVMTester {
 
     function invalidOpcodes(uint a, uint b) external returns (uint c) {
         assert (a > 0);
-        assert (c+b > 2); // dev: foobar
+        assert (a + b > 1); // dev: foobar
         c = x[a];
+        c = a / b;
     }
 
 }

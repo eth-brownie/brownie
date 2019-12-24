@@ -351,6 +351,8 @@ def _generate_coverage_data(
             node = source_nodes[source[2]].children(include_children=False, offset_limits=offset)[0]
             if node.nodeType == "IndexAccess":
                 pc_list[-1]["dev"] = "Index out of range"
+            elif node.nodeType == "BinaryOperation" and node.operator == "/":
+                pc_list[-1]["dev"] = "Division by zero"
 
         # if op is jumpi, set active branch markers
         if branch_active[path] and pc_list[-1]["op"] == "JUMPI":
