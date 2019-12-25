@@ -145,7 +145,6 @@ def _generate_coverage_data(
         ):
             # branch coverage
             pc_list[-1]["branch"] = count
-            pc_list[-2]["branch"] = count
             branch_map.setdefault(pc_list[-1]["fn"], {})
             if node["ast_type"] == "If":
                 branch_map[pc_list[-1]["fn"]][count] = _convert_src(node["test"]["src"]) + (False,)
