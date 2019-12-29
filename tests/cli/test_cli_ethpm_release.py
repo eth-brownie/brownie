@@ -59,3 +59,20 @@ def test_release_account(registry, accounts, tp_path):
 def test_release_unknown_account(registry, accounts, tp_path):
     with pytest.raises(UnknownAccount):
         cli_ethpm._release(tp_path, registry.address, "0x2a8638962741B4fA728983A6C0F57080522aa73a")
+
+
+def raise_exception(e):
+    raise e
+
+
+def test_exceptions(registry, accounts, tp_path, monkeypatch):
+    monkeypatch.setattr(
+        "brownie.project.ethpm.release_package",
+        lambda registry_address, account, package_name, version, uri: raise_exception(
+            Exception("foobar")
+        ),
+    )
+
+    cli_ethpm._release(tp_path, registry.address, accounts[0].address)
+    assert ethpm.create_manifest.call_count == 1
+    assert ethpm.verify_manifest.call_count == 0
