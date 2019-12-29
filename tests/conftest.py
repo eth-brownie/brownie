@@ -35,28 +35,10 @@ def pytest_addoption(parser):
     parser.addoption("--skip-regular", action="store_true", help="Skips regular tests")
 
 
+# ignore mix tests if not selected via config flags
 def pytest_ignore_collect(path, config):
     if path.basename == "test_brownie_mix.py" and not config.getoption("--mix-tests"):
         return True
-
-
-def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--evm-tests"):
-        evm_skip = pytest.mark.skip(reason="Use --evm-tests to run")
-        for i in [i for i in items if "evmtester" in i.fixturenames]:
-            i.add_marker(evm_skip)
-    if not config.getoption("--mix-tests"):
-        mix_skip = pytest.mark.skip(reason="Use --mix-tests to run")
-        for i in [i for i in items if "browniemix" in i.fixturenames]:
-            i.add_marker(mix_skip)
-    if config.getoption("--skip-regular"):
-        regular_skip = pytest.mark.skip(reason="--skip-regular")
-        for i in [
-            i
-            for i in items
-            if "browniemix" not in i.fixturenames and "evmtester" not in i.fixturenames
-        ]:
-            i.add_marker(regular_skip)
 
 
 # auto-parametrize the evmtester fixture
@@ -71,6 +53,20 @@ def pytest_generate_tests(metafunc):
             ),
             indirect=True,
         )
+
+
+# remove tests based on config flags and fixture names
+def pytest_collection_modifyitems(config, items):
+    if not config.getoption("--evm-tests"):
+        for test in [i for i in items if "evmtester" in i.fixturenames]:
+            items.remove(test)
+    if not config.getoption("--mix-tests"):
+        for test in [i for i in items if "browniemix" in i.fixturenames]:
+            items.remove(test)
+    if config.getoption("--skip-regular"):
+        fixtures = set("browniemix", "evmtester")
+        for test in [i for i in items if not fixtures.intersection(i.fixturenames)]:
+            items.remove(test)
 
 
 @pytest.fixture(scope="session")
