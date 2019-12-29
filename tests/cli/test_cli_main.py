@@ -31,6 +31,9 @@ class CliTester:
         cli_main()
         assert self.mock_subroutines.call_args == parameters
 
+    def raise_type_error_exception(self, e):
+        raise TypeError(e)
+
     def close(self):
         sys.argv = self.argv
 
@@ -81,6 +84,23 @@ def test_cli_compile(cli_tester, testproject):
 
 
 def test_cli_analyze(cli_tester, testproject):
+    cli_tester.monkeypatch.setattr(
+        "brownie._cli.analyze.send_to_mythx", lambda job_data, client, authenticated: ["UUID_1"]
+    )
+    cli_tester.monkeypatch.setattr("pythx.Client.analysis_ready", lambda client, uuid: True)
+    cli_tester.monkeypatch.setattr(
+        "brownie._cli.analyze.update_report",
+        lambda client, uuid, hl_report, stdout_report, name: stdout_report.setdefault(
+            "x", {}
+        ).setdefault("HIGH", 1),
+    )
+    cli_tester.run_and_test_parameters("analyze", parameters=None)
+
+    assert cli_tester.mock_subroutines.called is False
+    assert cli_tester.mock_subroutines.call_count == 0
+
+
+def test_cli_analyze_with_mocked_project(cli_tester, testproject):
     cli_tester.monkeypatch.setattr("brownie.project.load", cli_tester.mock_subroutines)
     cli_tester.run_and_test_parameters("analyze")
 
@@ -88,8 +108,17 @@ def test_cli_analyze(cli_tester, testproject):
     assert cli_tester.mock_subroutines.call_count == 1
 
 
-def test_cli_console(cli_tester, testproject):
-    testproject.close()
+def test_cli_compile_and_analyze_projectnotfound_exception(cli_tester):
+    cli_tester.monkeypatch.setattr("brownie.project.load", cli_tester.mock_subroutines)
+
+    cli_tester.run_and_test_parameters("compile", parameters=None)
+    cli_tester.run_and_test_parameters("analyze", parameters=None)
+
+    assert cli_tester.mock_subroutines.called is False
+    assert cli_tester.mock_subroutines.call_count == 0
+
+
+def test_cli_console(cli_tester, testproject=None):
     console = cli_console(testproject)
 
     cli_tester.monkeypatch.setattr(
@@ -108,6 +137,10 @@ def test_cli_console(cli_tester, testproject):
 
     assert cli_tester.mock_subroutines.called is True
     assert cli_tester.mock_subroutines.call_count == (len(subtargets) + 1)
+
+
+def test_cli_console_with_testproject(cli_tester, testproject):
+    test_cli_console(cli_tester, testproject)
 
 
 # travis doesn't like this
@@ -132,6 +165,53 @@ def test_cli_run(cli_tester, testproject):
 
     assert cli_tester.mock_subroutines.called is True
     assert cli_tester.mock_subroutines.call_count == (len(subtargets) + 1)
+
+
+def test_cli_run_with_projectnotfound_exception(cli_tester):
+    cli_tester.monkeypatch.setattr("brownie.run", cli_tester.mock_subroutines)
+
+    subtargets = ("brownie.network.connect",)
+    for target in subtargets:
+        cli_tester.monkeypatch.setattr(target, cli_tester.mock_subroutines)
+
+    cli_tester.run_and_test_parameters("run testfile", parameters=None)
+
+    assert cli_tester.mock_subroutines.called is False
+    assert cli_tester.mock_subroutines.call_count == 0
+
+
+def test_cli_ethpm(cli_tester, testproject):
+    cli_tester.monkeypatch.setattr("brownie._cli.ethpm._list", cli_tester.mock_subroutines)
+
+    args = (testproject._path,)
+    kwargs = {}
+    parameters = (args, kwargs)
+    cli_tester.run_and_test_parameters("ethpm list", parameters)
+    cli_tester.run_and_test_parameters("ethpm foo", parameters)
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == 1
+
+
+def test_cli_ethpm_with_projectnotfound_exception(cli_tester):
+    cli_tester.monkeypatch.setattr("brownie._cli.ethpm._list", cli_tester.mock_subroutines)
+
+    cli_tester.run_and_test_parameters("ethpm list", parameters=None)
+
+    assert cli_tester.mock_subroutines.called is False
+    assert cli_tester.mock_subroutines.call_count == 0
+
+
+def test_cli_ethpm_with_type_error_exception(cli_tester, testproject):
+    cli_tester.monkeypatch.setattr(
+        "brownie._cli.ethpm._list",
+        lambda project_path: cli_tester.raise_type_error_exception("foobar"),
+    )
+
+    cli_tester.run_and_test_parameters("ethpm list", parameters=None)
+
+    assert cli_tester.mock_subroutines.called is False
+    assert cli_tester.mock_subroutines.call_count == 0
 
 
 def test_cli_incorrect(cli_tester):
