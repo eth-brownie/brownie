@@ -8,12 +8,13 @@ from pathlib import Path
 from typing import Dict, List
 
 import pytest
+import yaml
 from _pytest.monkeypatch import MonkeyPatch
 from ethpm._utils.ipfs import dummy_ipfs_pin
 from ethpm.backends.ipfs import BaseIPFSBackend
 
 import brownie
-from brownie._config import ARGV, DATA_FOLDER
+from brownie._config import ARGV
 
 pytest_plugins = "pytester"
 
@@ -69,13 +70,43 @@ def pytest_collection_modifyitems(config, items):
             items.remove(test)
 
 
+# worker ID for xdist process, as an integer
 @pytest.fixture(scope="session")
-def _project_factory(tmp_path_factory):
+def xdist_id(worker_id):
+    if worker_id == "master":
+        return 0
+    return int(worker_id.lstrip("gw"))
+
+
+# ensure a clean data folder, and set unique ganache ports for each xdist worker
+@pytest.fixture(scope="session", autouse=True)
+def _data_folder_setup(tmp_path_factory, xdist_id):
+    data_path = brownie._config.DATA_FOLDER = tmp_path_factory.mktemp(f"data-{xdist_id}")
+    shutil.copy(
+        brownie._config.BROWNIE_FOLDER.joinpath("data/config.yaml"),
+        data_path.joinpath("brownie-config.yaml"),
+    )
+
+    if xdist_id:
+        port = 8545 + xdist_id
+        with data_path.joinpath("brownie-config.yaml").open() as fp:
+            config = yaml.safe_load(fp)
+        config["network"]["networks"]["development"]["test_rpc"]["port"] = port
+        with data_path.joinpath("brownie-config.yaml").open("w") as fp:
+            yaml.dump(config, fp)
+        brownie._config.CONFIG._unlock()
+        brownie._config.CONFIG.update(config)
+        brownie._config.CONFIG._lock()
+
+
+@pytest.fixture(scope="session")
+def _project_factory(_data_folder_setup, tmp_path_factory):
     path = tmp_path_factory.mktemp("base")
     path.rmdir()
     shutil.copytree("tests/data/brownie-test-project", path)
     shutil.copyfile(
-        DATA_FOLDER.joinpath("brownie-config.yaml"), path.joinpath("brownie-config.yaml")
+        brownie._config.DATA_FOLDER.joinpath("brownie-config.yaml"),
+        path.joinpath("brownie-config.yaml"),
     )
     p = brownie.project.load(path, "TestProject")
     p.close()
@@ -184,7 +215,7 @@ def accounts(devnetwork):
     return brownie.network.accounts
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def history():
     return brownie.network.history
 
@@ -196,12 +227,12 @@ def network():
         brownie.network.disconnect(False)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def rpc():
     return brownie.network.rpc
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def web3():
     return brownie.network.web3
 
@@ -309,7 +340,7 @@ class DummyIPFSBackend(BaseIPFSBackend):
 @pytest.fixture
 def ipfs_mock(monkeypatch):
     monkeypatch.setattr("brownie.project.ethpm.InfuraIPFSBackend", DummyIPFSBackend)
-    ipfs_path = DATA_FOLDER.joinpath("ipfs_cache")
+    ipfs_path = brownie._config.DATA_FOLDER.joinpath("ipfs_cache")
     temp_path = ipfs_path.parent.joinpath("_ipfs_cache")
     ipfs_path.mkdir(exist_ok=True)
     ipfs_path.rename(temp_path)
