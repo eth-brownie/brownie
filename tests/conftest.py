@@ -35,13 +35,18 @@ def pytest_addoption(parser):
     parser.addoption("--skip-regular", action="store_true", help="Skips regular tests")
 
 
+def pytest_ignore_collect(path, config):
+    if path.basename == "test_brownie_mix.py" and not config.getoption("--mix-tests"):
+        return True
+
+
 def pytest_collection_modifyitems(config, items):
     if not config.getoption("--evm-tests"):
         evm_skip = pytest.mark.skip(reason="Use --evm-tests to run")
         for i in [i for i in items if "evmtester" in i.fixturenames]:
             i.add_marker(evm_skip)
     if not config.getoption("--mix-tests"):
-        mix_skip = pytest.mark.skip(reason="Use --evm-tests to run")
+        mix_skip = pytest.mark.skip(reason="Use --mix-tests to run")
         for i in [i for i in items if "browniemix" in i.fixturenames]:
             i.add_marker(mix_skip)
     if config.getoption("--skip-regular"):
