@@ -13,7 +13,7 @@ from ethpm._utils.ipfs import generate_file_hash
 from ethpm.backends.ipfs import InfuraIPFSBackend
 
 from brownie import network
-from brownie._config import DATA_FOLDER
+from brownie._config import _get_data_folder
 from brownie.convert import to_address
 from brownie.exceptions import InvalidManifest
 from brownie.network.web3 import web3
@@ -62,7 +62,7 @@ def get_manifest(uri: str) -> Dict:
         path = None
     else:
         address, package_name, version = match.groups()
-        path = DATA_FOLDER.joinpath(f"ethpm/{address}/{package_name}/{version}.json")
+        path = _get_data_folder().joinpath(f"ethpm/{address}/{package_name}/{version}.json")
         try:
             with path.open("r") as fp:
                 return json.load(fp)
@@ -148,6 +148,7 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
                     "abi": build["abi"],
                     "source_path": build["sourcePath"],
                     "all_source_paths": build["allSourcePaths"],
+                    "compiler": build["compiler"],
                 }
             )
 
@@ -182,7 +183,7 @@ def _is_uri(uri: str) -> bool:
 
 
 def _get_uri_contents(uri: str) -> str:
-    path = DATA_FOLDER.joinpath(f"ipfs_cache/{urlparse(uri).netloc}.ipfs")
+    path = _get_data_folder().joinpath(f"ipfs_cache/{urlparse(uri).netloc}.ipfs")
     path.parent.mkdir(exist_ok=True)
     if not path.exists():
         data = InfuraIPFSBackend().fetch_uri_contents(uri)

@@ -1,8 +1,7 @@
 include LICENSE
 include README.md
 include requirements.txt
-include brownie/data/config.yaml
-include brownie/data/ethpm.yaml
+include brownie/data/*.yaml
 
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
