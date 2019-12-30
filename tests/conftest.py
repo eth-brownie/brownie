@@ -65,7 +65,7 @@ def pytest_collection_modifyitems(config, items):
         for test in [i for i in items if "browniemix" in i.fixturenames]:
             items.remove(test)
     if config.getoption("--skip-regular"):
-        fixtures = set("browniemix", "evmtester")
+        fixtures = set(["browniemix", "evmtester"])
         for test in [i for i in items if not fixtures.intersection(i.fixturenames)]:
             items.remove(test)
 
@@ -83,7 +83,7 @@ def xdist_id(worker_id):
 def _data_folder_setup(tmp_path_factory, xdist_id):
     data_path = brownie._config.DATA_FOLDER = tmp_path_factory.mktemp(f"data-{xdist_id}")
     shutil.copy(
-        brownie._config.BROWNIE_FOLDER.joinpath("data/config.yaml"),
+        brownie._config.BROWNIE_FOLDER.joinpath("data/brownie-config.yaml"),
         data_path.joinpath("brownie-config.yaml"),
     )
 
@@ -199,8 +199,6 @@ def plugintester(_project_factory, plugintesterbase, request):
 # launches and connects to ganache, yields the brownie.network module
 @pytest.fixture
 def devnetwork(network, rpc):
-    if brownie.network.is_connected():
-        brownie.network.disconnect(False)
     brownie.network.connect("development")
     yield brownie.network
     if rpc.is_active():
@@ -222,6 +220,8 @@ def history():
 
 @pytest.fixture
 def network():
+    if brownie.network.is_connected():
+        brownie.network.disconnect(False)
     yield brownie.network
     if brownie.network.is_connected():
         brownie.network.disconnect(False)
