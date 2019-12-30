@@ -48,9 +48,9 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize(
             "evmtester",
             itertools.product(
-                ["0.4.22", "0.4.25", "0.5.0", "0.5.15", "0.6.0"],
-                [0, 200, 10000],
                 ["byzantium", "constantinople"],
+                [0, 200, 10000],
+                ["0.4.22", "0.4.25", "0.5.0", "0.5.15", "0.6.0"],
             ),
             indirect=True,
         )
@@ -160,7 +160,7 @@ def otherproject(_project_factory, project, tmp_path):  # testproject):
 # automatically parametrized with multiple compiler versions and settings
 @pytest.fixture
 def evmtester(_project_factory, project, tmp_path, accounts, request):
-    solc_version, runs, evm_version = request.param
+    evm_version, runs, solc_version = request.param
     tmp_path.joinpath("contracts").mkdir()
     shutil.copyfile(
         _project_factory.joinpath("contracts/EVMTester.sol"),
