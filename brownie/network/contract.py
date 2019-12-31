@@ -530,18 +530,21 @@ def _get_method_object(
     return ContractTx(address, abi, name, owner)
 
 
-def _params(abi_params: List) -> List:
+def _params(abi_params: List, substitutions: Optional[Dict] = None) -> List:
     types = []
+    if substitutions is None:
+        substitutions = {}
     for i in abi_params:
         if i["type"] != "tuple":
-            types.append((i["name"], i["type"]))
+            types.append((i["name"], substitutions.get(i["type"], i["type"])))
             continue
-        types.append((i["name"], f"({','.join(x[1] for x in _params(i['components']))})"))
+        params = [i[1] for i in _params(i["components"], substitutions)]
+        types.append((i["name"], f"({','.join(params)})"))
     return types
 
 
 def _inputs(abi: Dict) -> str:
-    params = _params(abi["inputs"])
+    params = _params(abi["inputs"], {"fixed168x10": "decimal"})
     return ", ".join(f"{i[1]}{' '+i[0] if i[0] else ''}" for i in params)
 
 
