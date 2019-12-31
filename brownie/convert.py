@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from copy import deepcopy
+from decimal import Decimal
 from typing import Any, Dict, ItemsView, KeysView, List, Tuple, TypeVar, Union
 
 import eth_utils
@@ -101,7 +102,7 @@ def _return_int(original: Any, value: Any) -> int:
     try:
         return int(value)
     except ValueError:
-        raise TypeError(f"Could not convert {type(original)} '{original}' to wei.")
+        raise TypeError(f"Cannot convert {type(original)} '{original}' to wei.")
 
 
 def to_uint(value: Any, type_: str = "uint256") -> "Wei":
@@ -127,6 +128,19 @@ def _check_int_size(type_: Any) -> int:
     if size < 8 or size > 256 or size // 8 != size / 8:
         raise ValueError(f"Invalid type: {type_}")
     return size
+
+
+def to_decimal(value: Any) -> Decimal:
+    if isinstance(value, float):
+        raise TypeError("Cannot cast float to decimal")
+    if not isinstance(value, (Decimal, int, str)):
+        raise TypeError(f"Cannot convert {type(value)} '{value}' to decimal.")
+    d: Decimal = Decimal(value)
+    if d < -2 ** 127 or d >= 2 ** 127:
+        raise OverflowError(f"{value} is outside allowable range for decimal")
+    if d.quantize(Decimal("1.0000000000")) != d:
+        raise ValueError("Maximum of 10 decimal points allowed")
+    return d
 
 
 class EthAddress(str):
@@ -313,6 +327,8 @@ def _format_single(type_: str, value: Any) -> Any:
         return to_uint(value, type_)
     elif "int" in type_:
         return to_int(value, type_)
+    elif type_ == "fixed168x10":
+        return to_decimal(value)
     elif type_ == "bool":
         return to_bool(value)
     elif type_ == "address":

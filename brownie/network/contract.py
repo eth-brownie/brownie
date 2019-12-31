@@ -374,7 +374,11 @@ class _ContractMethod:
         self.signature = _signature(abi)
 
     def __repr__(self) -> str:
-        pay = "payable " if self.abi["stateMutability"] == "payable" else ""
+        if "payable" in self.abi:
+            pay_bool = self.abi["payable"]
+        else:
+            pay_bool = self.abi["stateMutability"] == "payable"
+        pay = "payable " if pay_bool else ""
         return f"<{type(self).__name__} {pay}object '{self.abi['name']}({_inputs(self.abi)})'>"
 
     def call(self, *args: Tuple) -> Any:
