@@ -136,6 +136,8 @@ def _generate_coverage_data(
                     pc_list[-1]["dev"] = "Integer underflow"
                 elif node["op"]["ast_type"] == "Div":
                     pc_list[-1]["dev"] = "Division by zero"
+                elif node["op"]["ast_type"] == "Mod":
+                    pc_list[-1]["dev"] = "Modulo by zero"
                 else:
                     pc_list[-1]["dev"] = "Integer overflow"
             continue

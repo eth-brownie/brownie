@@ -69,5 +69,7 @@ def test_vyper_revert_reasons(vypertester, console_mode):
     assert tx.revert_msg == "Integer underflow"
     tx = vypertester.zeroDivision(6, 0)
     assert tx.revert_msg == "Division by zero"
+    tx = vypertester.zeroModulo(6, 0)
+    assert tx.revert_msg == "Modulo by zero"
     tx = vypertester.overflow(0, 0, {"value": 31337})
     assert tx.revert_msg == "Cannot send ether to nonpayable function"
