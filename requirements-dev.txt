@@ -8,6 +8,7 @@ mypy==0.720
 pytest==5.3.2
 pytest-cov==2.8.1
 pytest-mock==1.12.0
+pytest-xdist==1.31.0
 sphinx==2.0.1
 tox==3.14.0
 twine==1.13.0

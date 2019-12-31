@@ -13,7 +13,7 @@ import requests
 from brownie._config import (
     BROWNIE_FOLDER,
     CONFIG,
-    DATA_FOLDER,
+    _get_data_folder,
     _get_project_config_path,
     _load_project_compiler_config,
     _load_project_config,
@@ -307,12 +307,13 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
     _create_folders(project_path)
     if not _get_project_config_path(project_path):
         shutil.copy(
-            DATA_FOLDER.joinpath("brownie-config.yaml"),
+            _get_data_folder().joinpath("brownie-config.yaml"),
             project_path.joinpath("brownie-config.yaml"),
         )
     if not project_path.joinpath("ethpm-config.yaml").exists():
         shutil.copy(
-            BROWNIE_FOLDER.joinpath("data/ethpm.yaml"), project_path.joinpath("ethpm-config.yaml")
+            BROWNIE_FOLDER.joinpath("data/ethpm-config.yaml"),
+            project_path.joinpath("ethpm-config.yaml"),
         )
     _add_to_sys_path(project_path)
     return str(project_path)
@@ -344,7 +345,8 @@ def from_brownie_mix(
         zf.extractall(str(project_path.parent))
     project_path.parent.joinpath(project_name + "-mix-master").rename(project_path)
     shutil.copy(
-        DATA_FOLDER.joinpath("brownie-config.yaml"), project_path.joinpath("brownie-config.yaml")
+        _get_data_folder().joinpath("brownie-config.yaml"),
+        project_path.joinpath("brownie-config.yaml"),
     )
     _add_to_sys_path(project_path)
     return str(project_path)

@@ -1,6 +1,6 @@
 # Brownie
 
-[![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg)](https://pypi.org/project/eth-brownie/) [![Build Status](https://img.shields.io/travis/com/iamdefinitelyahuman/brownie.svg)](https://travis-ci.com/iamdefinitelyahuman/brownie) [![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)](https://eth-brownie.readthedocs.io/en/latest/) [![Coverage Status](https://coveralls.io/repos/github/iamdefinitelyahuman/brownie/badge.svg?branch=master)](https://coveralls.io/github/iamdefinitelyahuman/brownie?branch=master)
+[![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg)](https://pypi.org/project/eth-brownie/) [![Build Status](https://travis-ci.com/iamdefinitelyahuman/brownie.svg?branch=master)](https://travis-ci.com/iamdefinitelyahuman/brownie) [![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)](https://eth-brownie.readthedocs.io/en/latest/) [![Coverage Status](https://coveralls.io/repos/github/iamdefinitelyahuman/brownie/badge.svg?branch=master)](https://coveralls.io/github/iamdefinitelyahuman/brownie?branch=master)
 
 Brownie is a Python framework for deploying, testing and interacting with Ethereum smart contracts.
 
@@ -17,13 +17,13 @@ As Brownie relies on [py-solc-x](https://github.com/iamdefinitelyahuman/py-solc-
 You can install the latest release via ``pip``:
 
 ```bash
-$ pip install eth-brownie
+pip install eth-brownie
 ```
 
 Or clone the repository and use ``setuptools`` for the most up-to-date version:
 
 ```bash
-$ python3 setup.py install
+python3 setup.py install
 ```
 
 ## Quick Usage
@@ -31,7 +31,7 @@ $ python3 setup.py install
 To set up the default folder and file structure for Brownie use:
 
 ```bash
-$ brownie init
+brownie init
 ```
 
 Next, type ``brownie --help`` for basic usage information.
@@ -45,7 +45,7 @@ Brownie documentation is hosted at [Read the Docs](https://eth-brownie.readthedo
 To run the tests, first install the developer dependencies:
 
 ```bash
-$ pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt
 ```
 
 Then use ``tox`` to run the complete suite against the full set of build targets, or ``pytest`` to run tests against a specific version of Python. If you are using ``pytest`` you must include the ``-p no:pytest-brownie`` flag to prevent it from loading the Brownie plugin.
@@ -63,16 +63,19 @@ docker-compose up -d
 ```
 
 To open a session to the container:
+
 ```bash
 docker-compose exec sandbox bash
 ```
 
 To run arbitrary commands, use the `bash -c` prefix.
+
 ```bash
 docker-compose exec sandbox bash -c ''
 ```
 
 For example, to run the tests in `brownie/tests/test_format_input.py`:
+
 ```bash
 docker-compose exec sandbox bash -c 'python -m pytest tests/convert/test_format_input.py'
 ```
@@ -98,6 +101,7 @@ pre-commit install
 Commiting will now automatically run the local pre-commit hooks.
 
 If, for some reason, you need to force the commit without running the pre-commit hooks, you can manually disable the pre-commit.
+
 ```bash
 git commit -m "commit message" --no-verify
 ```

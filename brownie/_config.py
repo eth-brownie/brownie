@@ -83,7 +83,7 @@ def _load_config(project_path: Path) -> Dict:
 
 def _load_default_config() -> "ConfigDict":
     # Loads the default configuration settings from brownie/data/config.yaml
-    base_config = BROWNIE_FOLDER.joinpath("data/config.yaml")
+    base_config = BROWNIE_FOLDER.joinpath("data/brownie-config.yaml")
     default_config = DATA_FOLDER.joinpath("brownie-config.yaml")
 
     if not DATA_FOLDER.exists():
@@ -150,6 +150,10 @@ def _recursive_update(original: Dict, new: Dict, base: List) -> None:
 
 def _update_argv_from_docopt(args: Dict) -> None:
     ARGV.update(dict((k.lstrip("-"), v) for k, v in args.items()))
+
+
+def _get_data_folder() -> Path:
+    return DATA_FOLDER
 
 
 # create argv object

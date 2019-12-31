@@ -4,8 +4,6 @@ import time
 
 import pytest
 
-from brownie.exceptions import RPCRequestError
-
 
 @pytest.fixture
 def noweb3(config, web3):
@@ -80,11 +78,3 @@ def test_reset(BrownieTester, accounts, rpc, web3):
     assert web3.eth.blockNumber == 0
     assert accounts[0].balance() == 100000000000000000000
     assert len(BrownieTester) == 0
-
-
-def test_request_exceptions(devnetwork, rpc, noweb3, monkeypatch):
-    with pytest.raises(RPCRequestError):
-        rpc.mine()
-    monkeypatch.setattr("brownie.rpc.is_active", lambda: False)
-    with pytest.raises(SystemError):
-        rpc.mine()

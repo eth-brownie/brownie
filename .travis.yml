@@ -38,7 +38,7 @@ matrix:
         - python -m pip install -r requirements-dev.txt
         - python setup.py install
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
-      script: python -m pytest tests/ --cov=brownie/ -p no:pytest-brownie
+      script: python -m pytest tests/ --cov=brownie/ -p no:pytest-brownie -n auto --dist=loadscope
     - name: "Standard Tests - Python 3.8.0 on Xenial Linux"
       language: python
       python: 3.8

@@ -5,81 +5,142 @@ import sys
 import pytest
 
 from brownie._cli.__main__ import main as cli_main
+from brownie._cli.console import Console as cli_console
 
 
 @pytest.fixture
-def cli_tester(monkeypatch):
-    c = CliTester(monkeypatch)
-    yield c
-    c.close()
+def cli_tester(monkeypatch, mocker):
+    tester = CliTester(monkeypatch, mocker)
+    tester.mocker.spy(tester, "mock_subroutines")
+
+    yield tester
+    tester.close()
 
 
 class CliTester:
-    def __init__(self, monkeypatch):
+    def __init__(self, monkeypatch, mocker):
         self.argv = sys.argv.copy()
         self.monkeypatch = monkeypatch
-        self.called = False
-        self.total = 0
-        self.count = 0
+        self.mocker = mocker
 
-    def set_target(self, target):
-        self.monkeypatch.setattr(target, self.catch)
+    def mock_subroutines(self, *args, **kwargs):
+        return True
 
-    def set_subtargets(self, *targets):
-        for item in targets:
-            self.monkeypatch.setattr(item, self.incremental_catch)
-            self.total += 1
-
-    def run(self, argv, args=(), kwargs={}):
+    def run_and_test_parameters(self, argv, parameters={}):
         sys.argv = ["brownie"] + argv.split(" ")
-        self.args = args
-        self.kwargs = kwargs
         cli_main()
-        assert self.called is True
-        assert self.count == self.total
-        self.called = False
-        self.count = 0
+        assert self.mock_subroutines.call_args == parameters
 
-    def catch(self, *args, **kwargs):
-        assert self.args == args
-        assert self.kwargs == kwargs
-        self.called = True
-
-    def incremental_catch(self, *args, **kwargs):
-        self.count += 1
+    def raise_type_error_exception(self, e):
+        raise TypeError(e)
 
     def close(self):
         sys.argv = self.argv
 
 
 def test_cli_init(cli_tester):
-    cli_tester.set_target("brownie.project.new")
-    cli_tester.run("init", args=(".", False))
-    cli_tester.run("init test/path --force", args=("test/path", True))
+    cli_tester.monkeypatch.setattr("brownie.project.new", cli_tester.mock_subroutines)
+
+    args = (".", False)
+    kwargs = {}
+    parameters = (args, kwargs)
+    cli_tester.run_and_test_parameters("init", parameters)
+
+    args = ("test/path", True)
+    parameters = (args, kwargs)
+    cli_tester.run_and_test_parameters("init test/path --force", parameters)
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == 2
 
 
 def test_cli_bake(cli_tester):
-    cli_tester.set_target("brownie.project.from_brownie_mix")
-    cli_tester.run("bake token", args=("token", None, False))
-    cli_tester.run("bake token test/path --force", args=("token", "test/path", True))
+    cli_tester.monkeypatch.setattr("brownie.project.from_brownie_mix", cli_tester.mock_subroutines)
+
+    args = ("token", None, False)
+    kwargs = {}
+    parameters = (args, kwargs)
+    cli_tester.run_and_test_parameters("bake token", parameters)
+
+    args = ("token", "test/path", True)
+    parameters = (args, kwargs)
+    cli_tester.run_and_test_parameters("bake token test/path --force", parameters)
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == 2
 
 
 def test_cli_compile(cli_tester, testproject):
-    cli_tester.set_target("brownie.project.load")
-    cli_tester.run("compile", args=(testproject._path,))
-    cli_tester.run("compile --all", args=(testproject._path,))
+    cli_tester.monkeypatch.setattr("brownie.project.load", cli_tester.mock_subroutines)
+
+    args = (testproject._path,)
+    kwargs = {}
+    parameters = (args, kwargs)
+    cli_tester.run_and_test_parameters("compile", parameters)
+    cli_tester.run_and_test_parameters("compile --all", parameters)
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == 2
 
 
 def test_cli_analyze(cli_tester, testproject):
-    cli_tester.set_target("brownie.project.load")
-    cli_tester.run("analyze")
+    cli_tester.monkeypatch.setattr(
+        "brownie._cli.analyze.send_to_mythx", lambda job_data, client, authenticated: ["UUID_1"]
+    )
+    cli_tester.monkeypatch.setattr("pythx.Client.analysis_ready", lambda client, uuid: True)
+    cli_tester.monkeypatch.setattr(
+        "brownie._cli.analyze.update_report",
+        lambda client, uuid, hl_report, stdout_report, name: stdout_report.setdefault(
+            "x", {}
+        ).setdefault("HIGH", 1),
+    )
+    cli_tester.run_and_test_parameters("analyze", parameters=None)
+
+    assert cli_tester.mock_subroutines.called is False
+    assert cli_tester.mock_subroutines.call_count == 0
 
 
-def test_cli_console(cli_tester, testproject):
-    testproject.close()
-    cli_tester.set_target("brownie._cli.console.Console.interact")
-    cli_tester.set_subtargets("brownie.network.connect")
-    cli_tester.run("console", kwargs={"banner": "Brownie environment is ready.", "exitmsg": ""})
+def test_cli_analyze_with_mocked_project(cli_tester, testproject):
+    cli_tester.monkeypatch.setattr("brownie.project.load", cli_tester.mock_subroutines)
+    cli_tester.run_and_test_parameters("analyze")
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == 1
+
+
+def test_cli_compile_and_analyze_projectnotfound_exception(cli_tester):
+    cli_tester.monkeypatch.setattr("brownie.project.load", cli_tester.mock_subroutines)
+
+    cli_tester.run_and_test_parameters("compile", parameters=None)
+    cli_tester.run_and_test_parameters("analyze", parameters=None)
+
+    assert cli_tester.mock_subroutines.called is False
+    assert cli_tester.mock_subroutines.call_count == 0
+
+
+def test_cli_console(cli_tester, testproject=None):
+    console = cli_console(testproject)
+
+    cli_tester.monkeypatch.setattr(
+        "brownie._cli.console.Console.interact", cli_tester.mock_subroutines
+    )
+    cli_tester.monkeypatch.setattr("brownie._cli.console.Console", lambda console_object: console)
+
+    subtargets = ("brownie.network.connect",)
+    for target in subtargets:
+        cli_tester.monkeypatch.setattr(target, cli_tester.mock_subroutines)
+
+    args = (console,)
+    kwargs = {"banner": "Brownie environment is ready.", "exitmsg": ""}
+    parameters = (args, kwargs)
+    cli_tester.run_and_test_parameters("console", parameters)
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == (len(subtargets) + 1)
+
+
+def test_cli_console_with_testproject(cli_tester, testproject):
+    test_cli_console(cli_tester, testproject)
 
 
 # travis doesn't like this
@@ -91,11 +152,68 @@ def test_cli_console(cli_tester, testproject):
 
 
 def test_cli_run(cli_tester, testproject):
-    cli_tester.set_target("brownie.run")
-    cli_tester.set_subtargets("brownie.network.connect")
-    cli_tester.run("run testfile", args=("testfile",), kwargs={"method_name": "main"})
+    cli_tester.monkeypatch.setattr("brownie.run", cli_tester.mock_subroutines)
+
+    subtargets = ("brownie.network.connect",)
+    for target in subtargets:
+        cli_tester.monkeypatch.setattr(target, cli_tester.mock_subroutines)
+
+    args = ("testfile",)
+    kwargs = {"method_name": "main"}
+    parameters = (args, kwargs)
+    cli_tester.run_and_test_parameters("run testfile", parameters)
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == (len(subtargets) + 1)
+
+
+def test_cli_run_with_projectnotfound_exception(cli_tester):
+    cli_tester.monkeypatch.setattr("brownie.run", cli_tester.mock_subroutines)
+
+    subtargets = ("brownie.network.connect",)
+    for target in subtargets:
+        cli_tester.monkeypatch.setattr(target, cli_tester.mock_subroutines)
+
+    cli_tester.run_and_test_parameters("run testfile", parameters=None)
+
+    assert cli_tester.mock_subroutines.called is False
+    assert cli_tester.mock_subroutines.call_count == 0
+
+
+def test_cli_ethpm(cli_tester, testproject):
+    cli_tester.monkeypatch.setattr("brownie._cli.ethpm._list", cli_tester.mock_subroutines)
+
+    args = (testproject._path,)
+    kwargs = {}
+    parameters = (args, kwargs)
+    cli_tester.run_and_test_parameters("ethpm list", parameters)
+    cli_tester.run_and_test_parameters("ethpm foo", parameters)
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == 1
+
+
+def test_cli_ethpm_with_projectnotfound_exception(cli_tester):
+    cli_tester.monkeypatch.setattr("brownie._cli.ethpm._list", cli_tester.mock_subroutines)
+
+    cli_tester.run_and_test_parameters("ethpm list", parameters=None)
+
+    assert cli_tester.mock_subroutines.called is False
+    assert cli_tester.mock_subroutines.call_count == 0
+
+
+def test_cli_ethpm_with_type_error_exception(cli_tester, testproject):
+    cli_tester.monkeypatch.setattr(
+        "brownie._cli.ethpm._list",
+        lambda project_path: cli_tester.raise_type_error_exception("foobar"),
+    )
+
+    cli_tester.run_and_test_parameters("ethpm list", parameters=None)
+
+    assert cli_tester.mock_subroutines.called is False
+    assert cli_tester.mock_subroutines.call_count == 0
 
 
 def test_cli_incorrect(cli_tester):
     with pytest.raises(SystemExit):
-        cli_tester.run("foo")
+        cli_tester.run_and_test_parameters("foo")
