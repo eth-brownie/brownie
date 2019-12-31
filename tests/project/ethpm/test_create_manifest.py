@@ -236,4 +236,13 @@ def test_pin_and_get(dep_project):
     package_config = ETHPM_CONFIG.copy()
     package_config["settings"]["include_dependencies"] = False
     manifest, uri = ethpm.create_manifest(dep_project._path, package_config, True)
-    assert ethpm.process_manifest(manifest, uri) == ethpm.get_manifest(uri)
+
+    process = ethpm.process_manifest(manifest, uri)
+    get = ethpm.get_manifest(uri)
+
+    for key in list(process) + list(get):
+        if type(process[key]) is str:
+            assert process[key] == get[key]
+            continue
+        for k in list(process[key]) + list(get[key]):
+            assert process[key][k] == get[key][k]

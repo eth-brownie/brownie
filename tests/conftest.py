@@ -8,12 +8,13 @@ from pathlib import Path
 from typing import Dict, List
 
 import pytest
+import yaml
 from _pytest.monkeypatch import MonkeyPatch
 from ethpm._utils.ipfs import dummy_ipfs_pin
 from ethpm.backends.ipfs import BaseIPFSBackend
 
 import brownie
-from brownie._config import ARGV, DATA_FOLDER
+from brownie._config import ARGV
 
 pytest_plugins = "pytester"
 
@@ -35,23 +36,10 @@ def pytest_addoption(parser):
     parser.addoption("--skip-regular", action="store_true", help="Skips regular tests")
 
 
-def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--evm-tests"):
-        evm_skip = pytest.mark.skip(reason="Use --evm-tests to run")
-        for i in [i for i in items if "evmtester" in i.fixturenames]:
-            i.add_marker(evm_skip)
-    if not config.getoption("--mix-tests"):
-        mix_skip = pytest.mark.skip(reason="Use --evm-tests to run")
-        for i in [i for i in items if "browniemix" in i.fixturenames]:
-            i.add_marker(mix_skip)
-    if config.getoption("--skip-regular"):
-        regular_skip = pytest.mark.skip(reason="--skip-regular")
-        for i in [
-            i
-            for i in items
-            if "browniemix" not in i.fixturenames and "evmtester" not in i.fixturenames
-        ]:
-            i.add_marker(regular_skip)
+# ignore mix tests if not selected via config flags
+def pytest_ignore_collect(path, config):
+    if path.basename == "test_brownie_mix.py" and not config.getoption("--mix-tests"):
+        return True
 
 
 # auto-parametrize the evmtester fixture
@@ -60,21 +48,65 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize(
             "evmtester",
             itertools.product(
-                ["0.4.22", "0.4.25", "0.5.0", "0.5.15", "0.6.0"],
-                [0, 200, 10000],
                 ["byzantium", "constantinople"],
+                [0, 200, 10000],
+                ["0.4.22", "0.4.25", "0.5.0", "0.5.15", "0.6.0"],
             ),
             indirect=True,
         )
 
 
+# remove tests based on config flags and fixture names
+def pytest_collection_modifyitems(config, items):
+    if not config.getoption("--evm-tests"):
+        for test in [i for i in items if "evmtester" in i.fixturenames]:
+            items.remove(test)
+    if not config.getoption("--mix-tests"):
+        for test in [i for i in items if "browniemix" in i.fixturenames]:
+            items.remove(test)
+    if config.getoption("--skip-regular"):
+        fixtures = set(["browniemix", "evmtester"])
+        for test in [i for i in items if not fixtures.intersection(i.fixturenames)]:
+            items.remove(test)
+
+
+# worker ID for xdist process, as an integer
 @pytest.fixture(scope="session")
-def _project_factory(tmp_path_factory):
+def xdist_id(worker_id):
+    if worker_id == "master":
+        return 0
+    return int(worker_id.lstrip("gw"))
+
+
+# ensure a clean data folder, and set unique ganache ports for each xdist worker
+@pytest.fixture(scope="session", autouse=True)
+def _data_folder_setup(tmp_path_factory, xdist_id):
+    data_path = brownie._config.DATA_FOLDER = tmp_path_factory.mktemp(f"data-{xdist_id}")
+    shutil.copy(
+        brownie._config.BROWNIE_FOLDER.joinpath("data/brownie-config.yaml"),
+        data_path.joinpath("brownie-config.yaml"),
+    )
+
+    if xdist_id:
+        port = 8545 + xdist_id
+        with data_path.joinpath("brownie-config.yaml").open() as fp:
+            config = yaml.safe_load(fp)
+        config["network"]["networks"]["development"]["test_rpc"]["port"] = port
+        with data_path.joinpath("brownie-config.yaml").open("w") as fp:
+            yaml.dump(config, fp)
+        brownie._config.CONFIG._unlock()
+        brownie._config.CONFIG.update(config)
+        brownie._config.CONFIG._lock()
+
+
+@pytest.fixture(scope="session")
+def _project_factory(_data_folder_setup, tmp_path_factory):
     path = tmp_path_factory.mktemp("base")
     path.rmdir()
     shutil.copytree("tests/data/brownie-test-project", path)
     shutil.copyfile(
-        DATA_FOLDER.joinpath("brownie-config.yaml"), path.joinpath("brownie-config.yaml")
+        brownie._config.DATA_FOLDER.joinpath("brownie-config.yaml"),
+        path.joinpath("brownie-config.yaml"),
     )
     p = brownie.project.load(path, "TestProject")
     p.close()
@@ -128,7 +160,7 @@ def otherproject(_project_factory, project, tmp_path):  # testproject):
 # automatically parametrized with multiple compiler versions and settings
 @pytest.fixture
 def evmtester(_project_factory, project, tmp_path, accounts, request):
-    solc_version, runs, evm_version = request.param
+    evm_version, runs, solc_version = request.param
     tmp_path.joinpath("contracts").mkdir()
     shutil.copyfile(
         _project_factory.joinpath("contracts/EVMTester.sol"),
@@ -167,8 +199,6 @@ def plugintester(_project_factory, plugintesterbase, request):
 # launches and connects to ganache, yields the brownie.network module
 @pytest.fixture
 def devnetwork(network, rpc):
-    if brownie.network.is_connected():
-        brownie.network.disconnect(False)
     brownie.network.connect("development")
     yield brownie.network
     if rpc.is_active():
@@ -183,24 +213,26 @@ def accounts(devnetwork):
     return brownie.network.accounts
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def history():
     return brownie.network.history
 
 
 @pytest.fixture
 def network():
+    if brownie.network.is_connected():
+        brownie.network.disconnect(False)
     yield brownie.network
     if brownie.network.is_connected():
         brownie.network.disconnect(False)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def rpc():
     return brownie.network.rpc
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def web3():
     return brownie.network.web3
 
@@ -308,7 +340,7 @@ class DummyIPFSBackend(BaseIPFSBackend):
 @pytest.fixture
 def ipfs_mock(monkeypatch):
     monkeypatch.setattr("brownie.project.ethpm.InfuraIPFSBackend", DummyIPFSBackend)
-    ipfs_path = DATA_FOLDER.joinpath("ipfs_cache")
+    ipfs_path = brownie._config.DATA_FOLDER.joinpath("ipfs_cache")
     temp_path = ipfs_path.parent.joinpath("_ipfs_cache")
     ipfs_path.mkdir(exist_ok=True)
     ipfs_path.rename(temp_path)
