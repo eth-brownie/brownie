@@ -124,4 +124,8 @@ contract EVMTester {
         c = a / b;
     }
 
+    function modulusByZero(uint a, uint b) external returns (uint) {
+        return a % b;
+    }
+
 }

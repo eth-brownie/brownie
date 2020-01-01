@@ -43,3 +43,6 @@ def test_invalid_opcodes(evmtester):
     with pytest.raises(VirtualMachineError) as exc:
         evmtester.invalidOpcodes(2, 0)
     assert exc.value.revert_msg == "Division by zero"
+    with pytest.raises(VirtualMachineError) as exc:
+        evmtester.modulusByZero(2, 0)
+    assert exc.value.revert_msg == "Modulus by zero"

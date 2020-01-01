@@ -6,6 +6,9 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Added
+- error message for modulus by zero
+- progress bar when installing new version of solc
 
 ## [1.3.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.3.1) - 2019-12-25
 ### Added

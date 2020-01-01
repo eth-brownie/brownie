@@ -60,7 +60,7 @@ def set_solc_version(version: str) -> str:
 def install_solc(*versions: str) -> None:
     """Installs solc versions."""
     for version in versions:
-        solcx.install_solc(str(version))
+        solcx.install_solc(str(version), show_progress=True)
 
 
 def compile_and_format(
@@ -493,8 +493,11 @@ def _generate_coverage_data(
             node = source_nodes[source[2]].children(include_children=False, offset_limits=offset)[0]
             if node.nodeType == "IndexAccess":
                 pc_list[-1]["dev"] = "Index out of range"
-            elif node.nodeType == "BinaryOperation" and node.operator == "/":
-                pc_list[-1]["dev"] = "Division by zero"
+            elif node.nodeType == "BinaryOperation":
+                if node.operator == "/":
+                    pc_list[-1]["dev"] = "Division by zero"
+                elif node.operator == "%":
+                    pc_list[-1]["dev"] = "Modulus by zero"
 
         # if op is jumpi, set active branch markers
         if branch_active[path] and pc_list[-1]["op"] == "JUMPI":
