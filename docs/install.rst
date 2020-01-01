@@ -32,6 +32,26 @@ Brownie has the following dependencies:
 
 * `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__
 * `pip <https://pypi.org/project/pip/>`__
-* `python3 <https://www.python.org/downloads/release/python-368/>`__ version 3.6 or greater, python3-dev, python3-tk
+* `python3 <https://www.python.org/downloads/release/python-368/>`__ version 3.6 or greater, python3-dev
 
 As brownie relies on `py-solc-x <https://github.com/iamdefinitelyahuman/py-solc-x>`__, you do not need solc installed locally but you must install all required `solc dependencies <https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages>`__.
+
+
+.. _install-tk:
+
+Tkinter
+-------
+
+:ref:`The Brownie GUI<gui>` is built using the `Tk GUI toolkit <https://tcl.tk/>`_. Both Tk and `tkinter <https://docs.python.org/3.8/library/tkinter.html>`_ are available on most Unix platforms, as well as on Windows systems.
+
+Tk is not a strict dependency for Brownie. However, if it is not installed on your system you will receive an error when attempting to load the GUI.
+
+You can use the following command to check that Tk has been correctly installed:
+
+::
+
+    $ python -m tkinter
+
+This should open a simple window and display the installed version number.
+
+For installation instructions read `Installing TK <https://tkdocs.com/tutorial/install.html>`_ within the TK Documentation.
