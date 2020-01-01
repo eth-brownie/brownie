@@ -23,6 +23,10 @@ Brownie includes a GUI for viewing test coverage data and analyzing the compiled
 
 Parts of this section assume a level of familiarity with EVM bytecode. If you are looking to learn more about the subject, Alejandro Santander from `OpenZeppelin <https://openzeppelin.com/>`_ has written an excellent guide - `Deconstructing a Solidity Contract <https://blog.openzeppelin.com/deconstructing-a-solidity-contract-part-i-introduction-832efd2d7737/>`_.
 
+.. note::
+
+    If you receive an error when attempting to load the GUI, you probably do not have Tk installed on your system. See the :ref:`Tk installation instrucions<install-tk>` for more detailed information.
+
 Getting Started
 ===============
 

@@ -158,7 +158,7 @@ Each revert string adds a minimum 20000 gas to your contract deployment cost, an
 
 For this reason, Brownie allows you to include revert strings as source code comments that are not included in the bytecode but still accessible via ``TransactionReceipt.revert_msg``. You write tests that target a specific ``require`` or ``revert`` statement without increasing gas costs.
 
-Revert string comments must begin with ``// dev:`` in order for Brownie to recognize them. Priority is always given to compiled revert strings. Some examples:
+Revert string comments must begin with ``// dev:`` in Solidity, or ``# dev:`` in Vyper. Priority is always given to compiled revert strings. Some examples:
 
 .. code-block:: solidity
     :linenos:

@@ -2,7 +2,15 @@
 
 [![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg)](https://pypi.org/project/eth-brownie/) [![Build Status](https://travis-ci.com/iamdefinitelyahuman/brownie.svg?branch=master)](https://travis-ci.com/iamdefinitelyahuman/brownie) [![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)](https://eth-brownie.readthedocs.io/en/latest/) [![Coverage Status](https://coveralls.io/repos/github/iamdefinitelyahuman/brownie/badge.svg?branch=master)](https://coveralls.io/github/iamdefinitelyahuman/brownie?branch=master)
 
-Brownie is a Python framework for deploying, testing and interacting with Ethereum smart contracts.
+Brownie is a Python-based development and testing framework for smart contracts targeting the [Ethereum Virtual Machine](https://solidity.readthedocs.io/en/v0.6.0/introduction-to-smart-contracts.html#the-ethereum-virtual-machine).
+
+## Features
+
+* Full support for [Solidity](https://github.com/ethereum/solidity) (`>=0.4.22`) and [Vyper](https://github.com/vyperlang/vyper) (`0.1.0b-15`)
+* Contract testing via [pytest](https://github.com/pytest-dev/pytest), including trace-based coverage evaluation
+* Powerful debugging tools, including python-style tracebacks and custom error strings
+* Built-in console for quick project interaction
+* Support for [ethPM](https://www.ethpm.com) packages
 
 ## Dependencies
 
