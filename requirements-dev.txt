@@ -10,6 +10,8 @@ pytest-cov==2.8.1
 pytest-mock==1.12.0
 pytest-xdist==1.31.0
 sphinx==2.0.1
+sphinx_rtd_theme==0.4.3
+pygments_lexer_solidity==0.4.0
 tox==3.14.0
 twine==1.13.0
 wheel==0.33.4

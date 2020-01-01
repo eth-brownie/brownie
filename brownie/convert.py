@@ -191,11 +191,6 @@ def _to_fixed(value: Any) -> Decimal:
             value = Wei(value)
         except TypeError:
             pass
-
-    # elif not isinstance(value, (Decimal, int, str)):
-    #     raise TypeError(f"Cannot convert {type(value)} '{value}' to decimal.")
-    # if isinstance(value, str) and " " in value:
-    #     value = Wei(value)
     try:
         return Decimal(value)
     except Exception:
@@ -203,6 +198,7 @@ def _to_fixed(value: Any) -> Decimal:
 
 
 def to_decimal(value: Any) -> Fixed:
+    """Convert a value to a fixed point decimal"""
     d: Fixed = Fixed(value)
     if d < -2 ** 127 or d >= 2 ** 127:
         raise OverflowError(f"{value} is outside allowable range for decimal")
