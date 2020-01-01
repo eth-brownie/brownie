@@ -536,7 +536,11 @@ def _params(abi_params: List, substitutions: Optional[Dict] = None) -> List:
         substitutions = {}
     for i in abi_params:
         if i["type"] != "tuple":
-            types.append((i["name"], substitutions.get(i["type"], i["type"])))
+            type_ = i["type"]
+            for orig, sub in substitutions.items():
+                if type_.startswith(orig):
+                    type_ = type_.replace(orig, sub)
+            types.append((i["name"], type_))
             continue
         params = [i[1] for i in _params(i["components"], substitutions)]
         types.append((i["name"], f"({','.join(params)})"))
