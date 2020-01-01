@@ -30,7 +30,7 @@ Before installing Brownie, make sure you have the following dependencies:
 
 * `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__
 * `pip <https://pypi.org/project/pip/>`__
-* `python3 <https://www.python.org/downloads/release/python-368/>`__ version 3.6 or greater, python3-dev, python3-tk
+* `python3 <https://www.python.org/downloads/release/python-368/>`__ version 3.6 or greater, python3-dev
 
 As brownie relies on `py-solc-x <https://github.com/iamdefinitelyahuman/py-solc-x>`__, you do not need solc installed locally but you must install all required `solc dependencies <https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages>`__.
 

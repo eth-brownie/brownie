@@ -2,13 +2,20 @@
 
 [![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg)](https://pypi.org/project/eth-brownie/) [![Build Status](https://travis-ci.com/iamdefinitelyahuman/brownie.svg?branch=master)](https://travis-ci.com/iamdefinitelyahuman/brownie) [![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)](https://eth-brownie.readthedocs.io/en/latest/) [![Coverage Status](https://coveralls.io/repos/github/iamdefinitelyahuman/brownie/badge.svg?branch=master)](https://coveralls.io/github/iamdefinitelyahuman/brownie?branch=master)
 
-Brownie is a Python framework for deploying, testing and interacting with Ethereum smart contracts.
+Brownie is a Python-based development and testing framework for smart contracts targeting the [Ethereum Virtual Machine](https://solidity.readthedocs.io/en/v0.6.0/introduction-to-smart-contracts.html#the-ethereum-virtual-machine).
+
+## Features
+
+* Contract testing via [pytest](https://github.com/pytest-dev/pytest), including trace-based coverage evaluation
+* Powerful debugging tools, including python-style tracebacks and custom error strings
+* Built-in console for quick project interaction
+* Support for [ethPM](https://www.ethpm.com) packages
 
 ## Dependencies
 
 * [ganache-cli](https://github.com/trufflesuite/ganache-cli) - tested with version [6.7.0](https://github.com/trufflesuite/ganache-cli/releases/tag/v6.7.0)
 * [pip](https://pypi.org/project/pip/)
-* [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3-dev, python3-tk
+* [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3-dev
 
 As Brownie relies on [py-solc-x](https://github.com/iamdefinitelyahuman/py-solc-x), you do not need solc installed locally but you must install all required [solc dependencies](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages).
 

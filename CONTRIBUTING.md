@@ -3,7 +3,7 @@
 To start development for Brownie you should begin by cloning the repo.
 
 ```bash
-$ git clone https://github.com/HyperLink-Technology/brownie.git
+$ git clone https://github.com/iamdefinitelyahuman/brownie.git
 ```
 
 ## Pull Requests
