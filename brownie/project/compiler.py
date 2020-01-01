@@ -60,7 +60,7 @@ def set_solc_version(version: str) -> str:
 def install_solc(*versions: str) -> None:
     """Installs solc versions."""
     for version in versions:
-        solcx.install_solc(str(version))
+        solcx.install_solc(str(version), show_progress=True)
 
 
 def compile_and_format(

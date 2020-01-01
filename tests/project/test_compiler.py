@@ -38,7 +38,7 @@ def find_version():
 def msolc(monkeypatch):
     installed = ["v0.5.8", "v0.5.7", "v0.4.23", "v0.4.22", "v0.4.6"]
     monkeypatch.setattr("solcx.get_installed_solc_versions", lambda: installed)
-    monkeypatch.setattr("solcx.install_solc", lambda k: installed.append("v" + k))
+    monkeypatch.setattr("solcx.install_solc", lambda k, **z: installed.append("v" + k))
     yield installed
 
 
