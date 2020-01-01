@@ -4,7 +4,6 @@ import atexit
 import code
 import importlib
 import sys
-from decimal import Decimal
 
 from docopt import docopt
 
@@ -58,7 +57,6 @@ class Console(code.InteractiveConsole):
         try:
             Gui = importlib.import_module("brownie._gui").Gui
             locals_dict["Gui"] = Gui
-            locals_dict["Decimal"] = Decimal
         except ModuleNotFoundError:
             pass
 

@@ -130,12 +130,80 @@ def _check_int_size(type_: Any) -> int:
     return size
 
 
-def to_decimal(value: Any) -> Decimal:
+class Fixed(Decimal):
+
+    """
+    Decimal subclass that allows comparison against strings, integers and Wei.
+
+    Raises TypeError when operations are attempted against floats.
+    """
+
+    # Known typing error: https://github.com/python/mypy/issues/4290
+    def __new__(cls, value: Any) -> Any:  # type: ignore
+        return super().__new__(cls, _to_fixed(value))  # type: ignore
+
+    def __repr__(self):
+        return f"Fixed('{str(self)}')"
+
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+    def __lt__(self, other: Any) -> bool:  # type: ignore
+        return super().__lt__(_to_fixed(other))
+
+    def __le__(self, other: Any) -> bool:  # type: ignore
+        return super().__le__(_to_fixed(other))
+
+    def __eq__(self, other: Any) -> bool:  # type: ignore
+        if isinstance(other, float):
+            raise TypeError("Cannot compare to floating point - use a string instead")
+        try:
+            return super().__eq__(_to_fixed(other))
+        except TypeError:
+            return False
+
+    def __ne__(self, other: Any) -> bool:
+        if isinstance(other, float):
+            raise TypeError("Cannot compare to floating point - use a string instead")
+        try:
+            return super().__ne__(_to_fixed(other))
+        except TypeError:
+            return True
+
+    def __ge__(self, other: Any) -> bool:  # type: ignore
+        return super().__ge__(_to_fixed(other))
+
+    def __gt__(self, other: Any) -> bool:  # type: ignore
+        return super().__gt__(_to_fixed(other))
+
+    def __add__(self, other: Any) -> "Fixed":  # type: ignore
+        return Fixed(super().__add__(_to_fixed(other)))
+
+    def __sub__(self, other: Any) -> "Fixed":  # type: ignore
+        return Fixed(super().__sub__(_to_fixed(other)))
+
+
+def _to_fixed(value: Any) -> Decimal:
     if isinstance(value, float):
-        raise TypeError("Cannot cast float to decimal")
-    if not isinstance(value, (Decimal, int, str)):
+        raise TypeError("Cannot convert float to decimal - use a string instead")
+    elif isinstance(value, (str, bytes)):
+        try:
+            value = Wei(value)
+        except TypeError:
+            pass
+
+    # elif not isinstance(value, (Decimal, int, str)):
+    #     raise TypeError(f"Cannot convert {type(value)} '{value}' to decimal.")
+    # if isinstance(value, str) and " " in value:
+    #     value = Wei(value)
+    try:
+        return Decimal(value)
+    except Exception:
         raise TypeError(f"Cannot convert {type(value)} '{value}' to decimal.")
-    d: Decimal = Decimal(value)
+
+
+def to_decimal(value: Any) -> Fixed:
+    d: Fixed = Fixed(value)
     if d < -2 ** 127 or d >= 2 ** 127:
         raise OverflowError(f"{value} is outside allowable range for decimal")
     if d.quantize(Decimal("1.0000000000")) != d:
