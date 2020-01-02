@@ -135,8 +135,6 @@ def generate_input_json(
     input_json["settings"]["evmVersion"] = evm_version
     if language == "Solidity":
         input_json["settings"]["optimizer"] = {"enabled": optimize, "runs": runs if optimize else 0}
-    else:
-        input_json["outputSelection"] = input_json["settings"].pop("outputSelection")
     input_json["sources"] = dict(
         (k, {"content": sources.minify(v, language)[0] if minify else v})
         for k, v in contract_sources.items()
