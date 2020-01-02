@@ -104,7 +104,7 @@ See :ref:`tests-coverage-map-indexes` for more information.
 Deployment Artifacts
 ====================
 
-Each time a contract is deployed to a network where :ref:`persistence<nonlocal-networks-contracts>` is enabled, Brownie saves a copy of the :ref`compiler artifact<build-folder-compiler>`_ used for deployment. In this way accurate deployment data is maintained even if the contract's source code is later modified.
+Each time a contract is deployed to a network where :ref:`persistence<nonlocal-networks-contracts>` is enabled, Brownie saves a copy of the :ref:`compiler artifact<build-folder-compiler>`_ used for deployment. In this way accurate deployment data is maintained even if the contract's source code is later modified.
 
 Deployment artifacts are stored at:
 
