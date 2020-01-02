@@ -139,16 +139,25 @@ Accounts
 
 Brownie will automatically load any unlocked accounts returned by a node. If you are using your own private node, you will be able to access your accounts in the same way you would in a local environment.
 
-When connected to a hosted node such as Infura, local accounts must be added via the ``Accounts.add`` method:
+In order to use accounts when connected to a hosted node, you must make them available locally.  This is done via ``brownie accounts`` in the command line:
 
-.. code-block:: python
+::
 
-    >>> accounts.add('8fa2fdfb89003176a16b707fc860d0881da0d1d8248af210df12d37860996fb2')
-    <Account object '0xc1826925377b4103cC92DeeCDF6F96A03142F37a'>
-    >>> accounts[0].balance()
-    17722750299000000000
+    $ brownie accounts --help
+    Brownie v1.3.2 - Python development framework for Ethereum
 
-Once an account is added to the ``Accounts`` object, use :ref:`Account.save <api-network-accounts-load>` to save the it to an encrypted keystore, and :ref:`Accounts.load <api-network-accounts-load>` to open it for subsequent use.
+    Usage: brownie accounts <command> [<arguments> ...] [options]
+
+    Commands:
+    list                             List available accounts
+    new <id>                         Add a new account by entering a private key
+    generate <id>                    Add a new account with a random private key
+    import <id> <path>               Import a new account via a keystore file
+    export <id> <path>               Export an existing account keystore file
+    password <id>                    Change the password for an account
+    delete <id>                      Delete an account
+
+After an account has been added, it can be accessed in the console or a script through :ref:`Accounts.load <api-network-accounts-load>`.
 
 Transactions
 ------------
