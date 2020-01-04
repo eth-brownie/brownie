@@ -4,10 +4,14 @@ import json
 from hashlib import sha1
 from pathlib import Path
 
-from brownie._config import ARGV
+import pytest
+from xdist.scheduler import LoadFileScheduling
+
+import brownie
+from brownie._config import ARGV, CONFIG
 from brownie.network.state import _get_current_dependencies
 from brownie.project.scripts import _get_ast_hash
-from brownie.test import coverage
+from brownie.test import coverage, output
 
 STATUS_SYMBOLS = {"passed": ".", "skipped": "s", "failed": "F"}
 
@@ -21,8 +25,41 @@ STATUS_TYPES = {
 }
 
 
+def _make_fixture_execute_first(metafunc, name, scope):
+    fixtures = metafunc.fixturenames
+    if name in fixtures:
+        fixtures.remove(name)
+        defs = metafunc._arg2fixturedefs
+        idx = next(
+            (fixtures.index(i) for i in fixtures if i in defs and defs[i][0].scope == scope),
+            len(fixtures),
+        )
+        fixtures.insert(idx, name)
+
+
+class RevertContextManager:
+    def __init__(self, revert_msg=None):
+        self.revert_msg = revert_msg
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is None:
+            raise AssertionError("Transaction did not revert") from None
+        if exc_type is not brownie.exceptions.VirtualMachineError:
+            raise exc_type(exc_value).with_traceback(traceback)
+        if self.revert_msg is None or self.revert_msg == exc_value.revert_msg:
+            return True
+        raise AssertionError(
+            f"Unexpected revert string '{exc_value.revert_msg}'\n{exc_value.source}"
+        ) from None
+
+
 class TestManager:
     def __init__(self, project):
+        pytest.reverts = RevertContextManager
+
         self.project = project
         self.project_path = project._path
         self.active_path = None
@@ -65,16 +102,64 @@ class TestManager:
     def _path(self, path):
         return str(Path(path).absolute().relative_to(self.project_path))
 
-    def set_isolated_modules(self, paths):
-        self.isolated = set(self._path(i) for i in paths)
-
     def _get_hash(self, path):
         hash_ = _get_ast_hash(path)
         for confpath in filter(lambda k: k in path, sorted(self.conf_hashes)):
             hash_ += self.conf_hashes[confpath]
         return sha1(hash_.encode()).hexdigest()
 
-    def check_updated(self, path):
+    def pytest_configure(self, config):
+        for key in ("coverage", "always_transact"):
+            ARGV[key] = config.getoption("--coverage")
+        ARGV["gas"] = config.getoption("--gas")
+        ARGV["revert"] = config.getoption("--revert-tb") or CONFIG["pytest"]["revert_traceback"]
+        ARGV["update"] = config.getoption("--update")
+        ARGV["network"] = None
+        if config.getoption("--network"):
+            ARGV["network"] = config.getoption("--network")[0]
+
+    # plugin hooks
+
+    def pytest_generate_tests(self, metafunc):
+        # _session_isolation must always run first
+        _make_fixture_execute_first(metafunc, "_session_isolation", "session")
+        # module_isolation always runs before other module scoped functions
+        _make_fixture_execute_first(metafunc, "module_isolation", "module")
+        # fn_isolation always runs before other function scoped fixtures
+        _make_fixture_execute_first(metafunc, "fn_isolation", "function")
+
+    def pytest_collection_modifyitems(self, config, items):
+        # if using xdist, clear collection if isolation is not active
+        if hasattr(config, "workerinput"):
+            if next((i for i in items if "module_isolation" not in i.fixturenames), False):
+                items.clear()
+                return True
+
+        # determine which modules are properly isolated
+        tests = {}
+        for i in items:
+            if "skip_coverage" in i.fixturenames and ARGV["coverage"]:
+                i.add_marker("skip")
+            path = i.parent.fspath
+            if "module_isolation" not in i.fixturenames:
+                tests[path] = None
+                continue
+            if path in tests and tests[path] is None:
+                continue
+            tests.setdefault(i.parent.fspath, []).append(i)
+        isolated_tests = sorted(k for k, v in tests.items() if v)
+        self.isolated = set(self._path(i) for i in isolated_tests)
+
+        if ARGV["update"]:
+            isolated_tests = sorted(filter(self._check_updated, tests))
+            # if all tests will be skipped, do not launch the rpc client
+            if sorted(tests) == isolated_tests:
+                ARGV["norpc"] = True
+            # if update flag is active, add skip marker to unchanged tests
+            for path in isolated_tests:
+                tests[path][0].parent.add_marker("skip")
+
+    def _check_updated(self, path):
         path = self._path(path)
         if path not in self.tests or not self.tests[path]["isolated"]:
             return False
@@ -84,32 +169,20 @@ class TestManager:
             coverage._check_cached(txhash, False)
         return True
 
-    def module_completed(self, path):
-        path = self._path(path)
-        isolated = False
-        if path in self.isolated:
-            isolated = [i for i in _get_current_dependencies() if i in self.contracts]
-        txhash = coverage._get_active_txlist()
-        coverage._clear_active_txlist()
-        if not ARGV["coverage"] and (path in self.tests and self.tests[path]["coverage"]):
-            txhash = self.tests[path]["txhash"]
-        self.tests[path] = {
-            "sha1": self._get_hash(path),
-            "isolated": isolated,
-            "coverage": ARGV["coverage"] or (path in self.tests and self.tests[path]["coverage"]),
-            "txhash": txhash,
-            "results": "".join(self.results),
-        }
+    def pytest_xdist_make_scheduler(self, config, log):
+        # if using xdist, schedule according to file
+        return LoadFileScheduling(config, log)
 
-    def save_json(self):
-        txhash = set(x for v in self.tests.values() for x in v["txhash"])
-        coverage_eval = dict((k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash)
-        report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
-        with self.project_path.joinpath("build/tests.json").open("w") as fp:
-            json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
+    # ensure each copy of ganache runs on a different port
+    @pytest.fixture(scope="session", autouse=True)
+    def _session_isolation(self, worker_id):
+        key = ARGV["network"] or CONFIG["network"]["default"]
+        if worker_id != "master":
+            CONFIG["network"]["networks"][key]["test_rpc"]["port"] += int(worker_id[-1])
+        brownie.network.connect(key)
 
-    def set_active(self, path):
-        path = self._path(path)
+    def pytest_runtest_protocol(self, item):
+        path = self._path(item.parent.fspath)
         if path == self.active_path:
             self.count += 1
             return
@@ -120,7 +193,7 @@ class TestManager:
         else:
             self.results = []
 
-    def check_status(self, report):
+    def pytest_report_teststatus(self, report):
         if self.results is None:
             return
         if report.when == "setup":
@@ -147,3 +220,50 @@ class TestManager:
                 return "xpassed", "X", "XPASS"
         self.results[self.count] = STATUS_SYMBOLS[report.outcome]
         return report.outcome, STATUS_SYMBOLS[report.outcome], report.outcome.upper()
+
+    def pytest_runtest_teardown(self, item, nextitem):
+        if list(item.parent.iter_markers("skip")):
+            return
+        # if this is the last test in a module, record the results
+        if nextitem and item.parent.fspath == nextitem.parent.fspath:
+            return
+        path = self._path(item.parent.fspath)
+        isolated = False
+        if path in self.isolated:
+            isolated = [i for i in _get_current_dependencies() if i in self.contracts]
+        txhash = coverage._get_active_txlist()
+        coverage._clear_active_txlist()
+        if not ARGV["coverage"] and (path in self.tests and self.tests[path]["coverage"]):
+            txhash = self.tests[path]["txhash"]
+        self.tests[path] = {
+            "sha1": self._get_hash(path),
+            "isolated": isolated,
+            "coverage": ARGV["coverage"] or (path in self.tests and self.tests[path]["coverage"]),
+            "txhash": txhash,
+            "results": "".join(self.results),
+        }
+
+    def pytest_sessionfinish(self, session):
+        txhash = set(x for v in self.tests.values() for x in v["txhash"])
+        coverage_eval = dict((k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash)
+        report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
+        with self.project_path.joinpath("build/tests.json").open("w") as fp:
+            json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
+        if ARGV["coverage"]:
+            coverage_eval = brownie.test.coverage.get_merged_coverage_eval()
+            output._print_coverage_totals(self.project._build, coverage_eval)
+            output._save_coverage_report(
+                self.project._build, coverage_eval, self.project._path.joinpath("reports")
+            )
+        if ARGV["gas"]:
+            output._print_gas_profile()
+        self.project.close(False)
+        if session.testscollected == 0 and session.config.pluginmanager.get_plugin("dsession"):
+            raise pytest.UsageError(
+                "xdist workers failed to collect tests. Ensure all test cases are "
+                "isolated with the module_isolation or fn_isolation fixtures.\n\n"
+                "https://eth-brownie.readthedocs.io/en/stable/tests.html#isolating-tests"
+            )
+
+    def pytest_keyboard_interrupt(self):
+        ARGV["interrupt"] = True
