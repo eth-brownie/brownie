@@ -121,6 +121,8 @@ class TestManager:
             self.results = []
 
     def check_status(self, report):
+        if self.results is None:
+            return
         if report.when == "setup":
             self._skip = report.skipped
             if len(self.results) < self.count + 1:

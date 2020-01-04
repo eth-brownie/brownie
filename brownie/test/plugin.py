@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import pytest
+from xdist.scheduler import LoadFileScheduling
 
 import brownie
 from brownie._config import ARGV, CONFIG
@@ -33,6 +34,17 @@ def _generate_fixture(container):
 
     _fixture.__doc__ = f"Provides access to Brownie ContractContainer object '{container._name}'"
     return pytest.fixture(scope="session")(_fixture)
+
+
+def _make_fixture_execute_first(metafunc, name, scope):
+    fixtures = metafunc.fixturenames
+    fixtures.remove(name)
+    defs = metafunc._arg2fixturedefs
+    idx = next(
+        (fixtures.index(i) for i in fixtures if i in defs and defs[i][0].scope == scope),
+        len(fixtures),
+    )
+    fixtures.insert(idx, name)
 
 
 if brownie.project.check_for_project("."):
@@ -82,26 +94,21 @@ if brownie.project.check_for_project("."):
     # plugin hooks
 
     def pytest_generate_tests(metafunc):
-        # module_isolation always runs first
-        fixtures = metafunc.fixturenames
-        if "module_isolation" in fixtures:
-            fixtures.remove("module_isolation")
-            fixtures.insert(0, "module_isolation")
+        _make_fixture_execute_first(metafunc, "__xdist_isolation", "session")
+        # module_isolation always runs before other module scoped functions
+        if "module_isolation" in metafunc.fixturenames:
+            _make_fixture_execute_first(metafunc, "module_isolation", "module")
         # fn_isolation always runs before other function scoped fixtures
-        if "fn_isolation" in fixtures:
-            fixtures.remove("fn_isolation")
-            defs = metafunc._arg2fixturedefs
-            idx = next(
-                (
-                    fixtures.index(i)
-                    for i in fixtures
-                    if i in defs and defs[i][0].scope == "function"
-                ),
-                len(fixtures),
-            )
-            fixtures.insert(idx, "fn_isolation")
+        if "fn_isolation" in metafunc.fixturenames:
+            _make_fixture_execute_first(metafunc, "fn_isolation", "function")
 
-    def pytest_collection_modifyitems(items):
+    def pytest_collection_modifyitems(config, items):
+        # if using xdist, clear collection if isolation is not active
+        if hasattr(config, "workerinput"):
+            if next((i for i in items if "module_isolation" not in i.fixturenames), False):
+                items.clear()
+                return True
+
         # determine which modules are properly isolated
         tests = {}
         for i in items:
@@ -126,8 +133,12 @@ if brownie.project.check_for_project("."):
             for path in isolated_tests:
                 tests[path][0].parent.add_marker("skip")
 
-    def pytest_runtestloop():
-        if not ARGV["norpc"]:
+    def pytest_xdist_make_scheduler(config, log):
+        # if using xdist, schedule according to file
+        return LoadFileScheduling(config, log)
+
+    def pytest_runtestloop(session):
+        if not ARGV["norpc"] and session.testscollected:
             brownie.network.connect(ARGV["network"])
 
     def pytest_runtest_protocol(item):
@@ -143,7 +154,7 @@ if brownie.project.check_for_project("."):
         if not nextitem or item.parent.fspath != nextitem.parent.fspath:
             manager.module_completed(item.parent.fspath)
 
-    def pytest_sessionfinish():
+    def pytest_sessionfinish(session):
         manager.save_json()
         if ARGV["coverage"]:
             coverage_eval = brownie.test.coverage.get_merged_coverage_eval()
@@ -154,9 +165,23 @@ if brownie.project.check_for_project("."):
         if ARGV["gas"]:
             output._print_gas_profile()
         project.close(False)
+        if session.testscollected == 0 and session.config.pluginmanager.get_plugin("dsession"):
+            raise pytest.UsageError(
+                "xdist workers failed to collect tests. Ensure all test cases are "
+                "isolated with the module_isolation or fn_isolation fixtures.\n\n"
+                "https://eth-brownie.readthedocs.io/en/stable/tests.html#isolating-tests"
+            )
 
     def pytest_keyboard_interrupt():
         ARGV["interrupt"] = True
+
+    # ensure each copy of ganache runs on a different port
+    @pytest.fixture(scope="session", autouse=True)
+    def __xdist_isolation(worker_id):
+        if worker_id != "master":
+            key = ARGV["network"] or CONFIG["network"]["default"]
+            CONFIG["network"]["networks"][key]["test_rpc"]["port"] += int(worker_id[-1])
+            brownie.network.connect(key)
 
     # fixtures
     @pytest.fixture(scope="module")
