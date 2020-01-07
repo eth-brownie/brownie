@@ -58,6 +58,9 @@ def test_solidity_invalid_opcodes(evmtester):
     with pytest.raises(VirtualMachineError) as exc:
         evmtester.invalidOpcodes(2, 0)
     assert exc.value.revert_msg == "Division by zero"
+    with pytest.raises(VirtualMachineError) as exc:
+        evmtester.modulusByZero(2, 0)
+    assert exc.value.revert_msg == "Modulus by zero"
 
 
 def test_vyper_revert_reasons(vypertester, console_mode):

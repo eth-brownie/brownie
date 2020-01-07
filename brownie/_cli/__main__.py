@@ -11,18 +11,19 @@ from brownie._config import ARGV
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
 
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
 Commands:
+  init               Initialize a new brownie project
   bake               Initialize from a brownie-mix template
+  ethpm              Commands related to the ethPM package manager
   compile            Compiles the contract source files
   console            Load the console
-  ethpm              Commands related to the ethPM package manager
-  gui                Load the GUI to view opcodes and test coverage
-  init               Initialize a new brownie project
   run                Run a script in the /scripts folder
+  accounts           Manage local accounts
+  gui                Load the GUI to view opcodes and test coverage
   analyze            Find security vulnerabilities using the MythX API
 
 Options:

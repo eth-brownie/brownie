@@ -16,7 +16,7 @@ Brownie is a Python-based development and testing framework for smart contracts 
 
 * [ganache-cli](https://github.com/trufflesuite/ganache-cli) - tested with version [6.7.0](https://github.com/trufflesuite/ganache-cli/releases/tag/v6.7.0)
 * [pip](https://pypi.org/project/pip/)
-* [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3-dev, python3-tk
+* [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3-dev
 
 As Brownie relies on [py-solc-x](https://github.com/iamdefinitelyahuman/py-solc-x), you do not need solc installed locally but you must install all required [solc dependencies](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages).
 
