@@ -12,6 +12,11 @@ To compile a project:
 
 Each time the compiler runs, Brownie compares hashes of the contract source code against the existing compiled versions.  If a contract has not changed it will not be recompiled. If you wish to force a recompile of the entire project, use ``brownie compile --all``.
 
+Brownie supports both Solidity and Vyper. Which compiler to use is determined based on the suffix of the file:
+
+  * Solidity: ``.sol``
+  * Vyper: ``.vy``
+
 .. note::
 
     All of a project's contract sources must be placed inside the ``contracts/`` folder. Attempting to import sources from outside this folder will result in a compiler error.
@@ -39,7 +44,7 @@ Setting the Compiler Version
 
 .. note::
 
-    Brownie supports Solidity versions ``>=0.4.22``.
+    Brownie supports Solidity versions ``>=0.4.22`` and Vyper version ``0.1.0-b15``.
 
 If a compiler version is set in the configuration file, all contracts in the project are compiled using that version. It is installed automatically if not already present. The version should be given as a string in the format ``0.x.x``.
 

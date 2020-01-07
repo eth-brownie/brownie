@@ -38,6 +38,10 @@ The following classes and methods are used to convert arguments supplied to ``Co
 
     Converts a value to a signed integer. This is equivalent to calling ``Wei`` and then applying checks for over/underflows.
 
+.. py:method:: brownie.convert.to_decimal(value)
+
+    Converts a value to a decimal fixed point and applies bounds according to Vyper's `decimal <https://vyper.readthedocs.io/en/latest/types.html#decimals>`_ type.
+
 .. py:method:: brownie.convert.to_bool(value)
 
     Converts a value to a boolean. Raises ``ValueError`` if the given value does not match a value in ``(True, False, 0, 1)``.
@@ -117,6 +121,32 @@ For certain types of contract data, Brownie uses subclasses to assist with conve
         True
         >>> Wei("1 ether") - "0.75 ether"
         250000000000000000
+
+.. _fixed:
+
+.. py:class:: brownie.convert.Fixed(value)
+
+    `Decimal <https://docs.python.org/3.8/library/decimal.html#decimal.Decimal>`_ subclass that allows comparisons, addition and subtraction against strings, integers and :ref:`wei`.
+
+    ``Fixed`` is used for inputs and outputs to Vyper contracts that use the `decimal <https://vyper.readthedocs.io/en/latest/types.html#decimals>`_ type.
+
+    Attempting comparisons or arithmetic against a float raises a ``TypeError``.
+
+    .. code-block:: python
+
+        >>> from brownie import Fixed
+        >>> Fixed(1)
+        Fixed('1')
+        >>> Fixed(3.1337)
+        TypeError: Cannot convert float to decimal - use a string instead
+        >>> Fixed("3.1337")
+        Fixed('3.1337')
+        >>> Fixed("12.49 gwei")
+        Fixed('12490000000')
+        >>> Fixed("-1.23") == -1.2300
+        TypeError: Cannot compare to floating point - use a string instead
+        >>> Fixed("-1.23") == "-1.2300"
+        True
 
 .. py:class:: brownie.convert.EthAddress(value)
 
@@ -334,6 +364,10 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 .. py:exception:: brownie.exceptions.UnsetENSName
 
     Raised when an ENS name is unset (resolves to ``0x00``).
+
+.. py:exception:: brownie.exceptions.UnsupportedLanguage
+
+    Raised when attempting to compile a language that Brownie does not support.
 
 .. py:exception:: brownie.exceptions.RPCConnectionError
 

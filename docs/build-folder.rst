@@ -27,6 +27,7 @@ Brownie generates compiler artifacts for each contract within a project, which a
         'deployedBytecode': "0x00", // bytecode as hex string after deployment
         'deployedSourceMap': "", // source mapping of the deployed bytecode
         'dependencies': [], // contracts and libraries that this contract inherits from or is linked to
+        'language': "", // source code language (Solidity or Vyper)
         'offset': [], // source code offsets for this contract
         'opcodes': "", // deployed contract opcodes list
         'pcMap': [], // program counter map

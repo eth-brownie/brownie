@@ -108,12 +108,17 @@ def test_hexstring_typeerror():
     assert str(b) != "potato"
 
 
-def test_hexstring_length(return_value):
+def test_hexstring_length():
     b = HexString("0x1234", "bytes32")
     assert b == "0x1234"
     assert b == "0x000000000000001234"
 
 
-def test_hashable(return_value):
+def test_hashable():
     assert hash(ReturnValue([1, 2])) == hash(tuple([1, 2]))
     assert set(ReturnValue([3, 1, 3, 3, 7])) == set([3, 1, 3, 3, 7])
+
+
+def test_decimals(vypertester):
+    ret = vypertester.fixedType("1.234", ["-42", "3.1337"])
+    assert ret == ["1.234", "-42", "3.1337"]

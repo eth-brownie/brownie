@@ -164,6 +164,12 @@ def test_repr(tester):
     repr(tester.revertStrings)
 
 
+def test_repr_fixedtype(vypertester):
+    r = repr(vypertester.fixedType)
+    assert "decimal" in r
+    assert "fixed168x10" not in r
+
+
 def test_tuples(tester, accounts):
     value = ["blahblah", accounts[1], ["yesyesyes", "0x1234"]]
     tx = tester.setTuple(value)

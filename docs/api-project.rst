@@ -145,7 +145,9 @@ Module Methods
 
 .. py:method:: main.compile_source(source, solc_version=None, optimize=True, runs=200, evm_version=None)
 
-    Compiles the given Solidity source code string and returns a ``TempProject`` object.
+    Compiles the given source code string and returns a ``TempProject`` object.
+
+    If Vyper source code is given, the contract name will be ``Vyper``.
 
     .. code-block:: python
 
@@ -353,7 +355,7 @@ Module Methods
 
     Returns a ``dict`` of ``{'version': ["path", "path", ..]}``.
 
-.. py:method:: compiler.generate_input_json(contract_sources, optimize=True, runs=200, evm_version=None, minify=False)
+.. py:method:: compiler.generate_input_json(contract_sources, optimize=True, runs=200, evm_version=None, minify=False, language="Solidity")
 
     Generates a `standard solc input JSON <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_ as a dict.
 
@@ -369,56 +371,6 @@ Module Methods
     * ``output_json``: Computer output JSON dict
     * ``compiler_data``: Additional compiler data to include
     * ``silent``: Toggles console verbosity
-
-Internal Methods
-----------------
-
-.. py:method:: compiler._format_link_references(evm)
-
-    Standardizes formatting for unlinked library placeholders within bytecode. Used internally to ensure that unlinked libraries are represented uniformly regardless of the compiler version used.
-
-    * ``evm``: The ``'evm'`` object from a compiler output JSON.
-
-.. py:method:: compiler._get_bytecode_hash(bytecode)
-
-    Removes the final metadata from a bytecode hex string and returns a hash of the result. Used to check if a contract has changed when the source code is modified.
-
-.. py:method:: compiler._expand_source_map(source_map)
-
-    Returns an uncompressed source mapping as a list of lists where no values are omitted.
-
-    .. code-block:: python
-
-        >>> from brownie.project.compiler import expand_source_map
-        >>> expand_source_map("1:2:1:-;:9;2:1:2;;;")
-        [[1, 2, 1, '-'], [1, 9, 1, '-'], [2, 1, 2, '-'], [2, 1, 2, '-'], [2, 1, 2, '-'], [2, 1, 2, '-']]
-
-.. py:method:: compiler._generate_coverage_data(source_map_str, opcodes_str, contract_node, stmt_nodes, branch_nodes, has_fallback)
-
-    Generates the `program counter <compile-pc-map>`_ and `coverage <compile-coverage-map>`_ maps that are used by Brownie for debugging and test coverage evaluation.
-
-    Takes the following arguments:
-
-    * ``source_map_str``: `deployed source mapping <https://solidity.readthedocs.io/en/latest/miscellaneous.html#source-mappings>`_ as given by the compiler
-    * ``opcodes_str``: deployed bytecode opcodes string as given by the compiler
-    * ``contract_node``: py-solc-ast contract node object
-    * ``stmt_nodes``: list of statement node objects from ``compiler.get_statment_nodes``
-    * ``branch_nodes``: list of branch node objects from ``compiler.get_branch_nodes``
-    * ``has_fallback``: Bool, does this contract contain a fallback method?
-
-    Returns:
-
-    * ``pc_list``: program counter map
-    * ``statement_map``: statement coverage map
-    * ``branch_map``: branch coverage map
-
-.. py:method:: compiler._get_statement_nodes(source_nodes)
-
-    Given a list of AST source node objects from `py-solc-ast <https://github.com/iamdefinitelyahuman/py-solc-ast>`_, returns a list of statement nodes.  Used to generate the statement coverage map.
-
-.. py:method:: compiler._get_branch_nodes(source_nodes)
-
-    Given a list of AST source node objects from `py-solc-ast <https://github.com/iamdefinitelyahuman/py-solc-ast>`_, returns a list of branch nodes.  Used to generate the branch coverage map.
 
 ``brownie.project.ethpm``
 =========================
@@ -624,7 +576,7 @@ Module Methods
 
 .. _sources-minify:
 
-.. py:method:: sources.minify(source)
+.. py:method:: sources.minify(source, language="Solidity")
 
     Given contract source as a string, returns a minified version and an offset map used internally to translate minified offsets to the original ones.
 
@@ -650,6 +602,6 @@ Module Methods
 
     Given a path, start and stop offset, returns highlighted source code. Called internally by ``TransactionReceipt.source``.
 
-.. py:method:: sources.get_hash(source, contract_name, minified)
+.. py:method:: sources.get_hash(source, contract_name, minified, language)
 
     Returns a sha1 hash generated from a contract's source code.

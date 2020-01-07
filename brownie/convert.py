@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from copy import deepcopy
+from decimal import Decimal
 from typing import Any, Dict, ItemsView, KeysView, List, Tuple, TypeVar, Union
 
 import eth_utils
@@ -101,7 +102,7 @@ def _return_int(original: Any, value: Any) -> int:
     try:
         return int(value)
     except ValueError:
-        raise TypeError(f"Could not convert {type(original)} '{original}' to wei.")
+        raise TypeError(f"Cannot convert {type(original)} '{original}' to wei.")
 
 
 def to_uint(value: Any, type_: str = "uint256") -> "Wei":
@@ -127,6 +128,83 @@ def _check_int_size(type_: Any) -> int:
     if size < 8 or size > 256 or size // 8 != size / 8:
         raise ValueError(f"Invalid type: {type_}")
     return size
+
+
+class Fixed(Decimal):
+
+    """
+    Decimal subclass that allows comparison against strings, integers and Wei.
+
+    Raises TypeError when operations are attempted against floats.
+    """
+
+    # Known typing error: https://github.com/python/mypy/issues/4290
+    def __new__(cls, value: Any) -> Any:  # type: ignore
+        return super().__new__(cls, _to_fixed(value))  # type: ignore
+
+    def __repr__(self):
+        return f"Fixed('{str(self)}')"
+
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+    def __lt__(self, other: Any) -> bool:  # type: ignore
+        return super().__lt__(_to_fixed(other))
+
+    def __le__(self, other: Any) -> bool:  # type: ignore
+        return super().__le__(_to_fixed(other))
+
+    def __eq__(self, other: Any) -> bool:  # type: ignore
+        if isinstance(other, float):
+            raise TypeError("Cannot compare to floating point - use a string instead")
+        try:
+            return super().__eq__(_to_fixed(other))
+        except TypeError:
+            return False
+
+    def __ne__(self, other: Any) -> bool:
+        if isinstance(other, float):
+            raise TypeError("Cannot compare to floating point - use a string instead")
+        try:
+            return super().__ne__(_to_fixed(other))
+        except TypeError:
+            return True
+
+    def __ge__(self, other: Any) -> bool:  # type: ignore
+        return super().__ge__(_to_fixed(other))
+
+    def __gt__(self, other: Any) -> bool:  # type: ignore
+        return super().__gt__(_to_fixed(other))
+
+    def __add__(self, other: Any) -> "Fixed":  # type: ignore
+        return Fixed(super().__add__(_to_fixed(other)))
+
+    def __sub__(self, other: Any) -> "Fixed":  # type: ignore
+        return Fixed(super().__sub__(_to_fixed(other)))
+
+
+def _to_fixed(value: Any) -> Decimal:
+    if isinstance(value, float):
+        raise TypeError("Cannot convert float to decimal - use a string instead")
+    elif isinstance(value, (str, bytes)):
+        try:
+            value = Wei(value)
+        except TypeError:
+            pass
+    try:
+        return Decimal(value)
+    except Exception:
+        raise TypeError(f"Cannot convert {type(value)} '{value}' to decimal.")
+
+
+def to_decimal(value: Any) -> Fixed:
+    """Convert a value to a fixed point decimal"""
+    d: Fixed = Fixed(value)
+    if d < -2 ** 127 or d >= 2 ** 127:
+        raise OverflowError(f"{value} is outside allowable range for decimal")
+    if d.quantize(Decimal("1.0000000000")) != d:
+        raise ValueError("Maximum of 10 decimal points allowed")
+    return d
 
 
 class EthAddress(str):
@@ -313,6 +391,8 @@ def _format_single(type_: str, value: Any) -> Any:
         return to_uint(value, type_)
     elif "int" in type_:
         return to_int(value, type_)
+    elif type_ == "fixed168x10":
+        return to_decimal(value)
     elif type_ == "bool":
         return to_bool(value)
     elif type_ == "address":

@@ -84,10 +84,10 @@ def test_stop():
 
 def test_fire_msg(capfd):
     t = AlertTest(False)
-    alert.new(t, delay=0.02, msg="Fired")
+    alert.new(t, delay=0.03, msg="Fired")
     assert not capfd.readouterr()[0].strip()
     t.set_value(True)
-    time.sleep(0.04)
+    time.sleep(0.08)
     assert capfd.readouterr()[0].strip()[-5:] == "Fired"
     assert len(alert.show()) == 0
 

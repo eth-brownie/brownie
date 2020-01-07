@@ -117,3 +117,7 @@ class PragmaError(Exception):
 
 class InvalidManifest(Exception):
     pass
+
+
+class UnsupportedLanguage(Exception):
+    pass

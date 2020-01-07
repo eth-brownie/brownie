@@ -440,7 +440,7 @@ class TransactionReceipt:
                 continue
 
             # calculate coverage
-            if "active_branches" in last:
+            if last["coverage"]:
                 if pc["path"] not in coverage_eval[last["name"]]:
                     coverage_eval[last["name"]][pc["path"]] = [set(), set(), set()]
                 if "statement" in pc:
@@ -448,11 +448,12 @@ class TransactionReceipt:
                 if "branch" in pc:
                     if pc["op"] != "JUMPI":
                         last["active_branches"].add(pc["branch"])
-                    elif pc["branch"] in last["active_branches"]:
+                    elif "active_branches" not in last or pc["branch"] in last["active_branches"]:
                         # false, true
                         key = 1 if trace[i + 1]["pc"] == trace[i]["pc"] + 1 else 2
                         coverage_eval[last["name"]][pc["path"]][key].add(pc["branch"])
-                        last["active_branches"].remove(pc["branch"])
+                        if "active_branches" in last:
+                            last["active_branches"].remove(pc["branch"])
 
             # ignore jumps with no function - they are compiler optimizations
             if "jump" in pc:
@@ -733,7 +734,7 @@ def _raise(msg: str, source: str) -> None:
 
 def _get_last_map(address: EthAddress, sig: str) -> Dict:
     contract = _find_contract(address)
-    last_map = {"address": EthAddress(address), "jumpDepth": 0, "name": None}
+    last_map = {"address": EthAddress(address), "jumpDepth": 0, "name": None, "coverage": False}
     if contract:
         last_map.update(
             contract=contract,
@@ -741,7 +742,9 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
             fn=[f"{contract._name}.{contract.get_method(sig)}"],
         )
         if contract._build:
-            last_map.update(pc_map=contract._build["pcMap"], active_branches=set())
+            last_map.update(pc_map=contract._build["pcMap"], coverage=True)
+            if contract._build["language"] == "Solidity":
+                last_map["active_branches"] = set()
     else:
         last_map.update(contract=None, fn=[f"<UnknownContract>.{sig}"])
     return last_map

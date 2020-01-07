@@ -374,7 +374,11 @@ class _ContractMethod:
         self.signature = _signature(abi)
 
     def __repr__(self) -> str:
-        pay = "payable " if self.abi["stateMutability"] == "payable" else ""
+        if "payable" in self.abi:
+            pay_bool = self.abi["payable"]
+        else:
+            pay_bool = self.abi["stateMutability"] == "payable"
+        pay = "payable " if pay_bool else ""
         return f"<{type(self).__name__} {pay}object '{self.abi['name']}({_inputs(self.abi)})'>"
 
     def call(self, *args: Tuple) -> Any:
@@ -515,23 +519,36 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
 def _get_method_object(
     address: str, abi: Dict, name: str, owner: Optional[AccountsType]
 ) -> Union["ContractCall", "ContractTx"]:
-    if abi["stateMutability"] in ("view", "pure"):
+
+    if "constant" in abi:
+        constant = abi["constant"]
+    else:
+        constant = abi["stateMutability"] in ("view", "pure")
+
+    if constant:
         return ContractCall(address, abi, name, owner)
     return ContractTx(address, abi, name, owner)
 
 
-def _params(abi_params: List) -> List:
+def _params(abi_params: List, substitutions: Optional[Dict] = None) -> List:
     types = []
+    if substitutions is None:
+        substitutions = {}
     for i in abi_params:
         if i["type"] != "tuple":
-            types.append((i["name"], i["type"]))
+            type_ = i["type"]
+            for orig, sub in substitutions.items():
+                if type_.startswith(orig):
+                    type_ = type_.replace(orig, sub)
+            types.append((i["name"], type_))
             continue
-        types.append((i["name"], f"({','.join(x[1] for x in _params(i['components']))})"))
+        params = [i[1] for i in _params(i["components"], substitutions)]
+        types.append((i["name"], f"({','.join(params)})"))
     return types
 
 
 def _inputs(abi: Dict) -> str:
-    params = _params(abi["inputs"])
+    params = _params(abi["inputs"], {"fixed168x10": "decimal"})
     return ", ".join(f"{i[1]}{' '+i[0] if i[0] else ''}" for i in params)
 
 

@@ -10,7 +10,7 @@ def test_revert_msg_via_jump(ext_tester, console_mode):
     assert tx.revert_msg == "dev: should jump to a revert"
 
 
-def test_revert_msg(evmtester, console_mode):
+def test_solidity_revert_msg(evmtester, console_mode):
     tx = evmtester.revertStrings(0)
     assert tx.revert_msg == "zero"
     tx = evmtester.revertStrings(1)
@@ -23,6 +23,21 @@ def test_revert_msg(evmtester, console_mode):
     assert tx.revert_msg == "dev: great job"
 
 
+def test_vyper_revert_msg(vypertester, console_mode):
+    tx = vypertester.revertStrings(0)
+    assert tx.revert_msg == "zero"
+    tx = vypertester.revertStrings(1)
+    assert tx.revert_msg == "dev: one"
+    tx = vypertester.revertStrings(2)
+    assert tx.revert_msg == "two"
+    tx = vypertester.revertStrings(3)
+    assert tx.revert_msg == ""
+    tx = vypertester.revertStrings(4)
+    assert tx.revert_msg == "dev: such modifiable, wow"
+    tx = vypertester.revertStrings(31337)
+    assert tx.revert_msg == "awesome show"
+
+
 def test_nonpayable(tester, evmtester, console_mode):
     tx = evmtester.revertStrings(0, {"value": 100})
     assert tx.revert_msg == "Cannot send ether to nonpayable function"
@@ -30,7 +45,7 @@ def test_nonpayable(tester, evmtester, console_mode):
     assert tx.revert_msg == "Cannot send ether to nonpayable function"
 
 
-def test_invalid_opcodes(evmtester):
+def test_solidity_invalid_opcodes(evmtester):
     with pytest.raises(VirtualMachineError) as exc:
         evmtester.invalidOpcodes(0, 0)
     assert exc.value.revert_msg == "invalid opcode"
@@ -46,3 +61,18 @@ def test_invalid_opcodes(evmtester):
     with pytest.raises(VirtualMachineError) as exc:
         evmtester.modulusByZero(2, 0)
     assert exc.value.revert_msg == "Modulus by zero"
+
+
+def test_vyper_revert_reasons(vypertester, console_mode):
+    tx = vypertester.outOfBounds(6, 31337)
+    assert tx.revert_msg == "Index out of range"
+    tx = vypertester.overflow(6, 2 ** 255)
+    assert tx.revert_msg == "Integer overflow"
+    tx = vypertester.underflow(6, 8)
+    assert tx.revert_msg == "Integer underflow"
+    tx = vypertester.zeroDivision(6, 0)
+    assert tx.revert_msg == "Division by zero"
+    tx = vypertester.zeroModulo(6, 0)
+    assert tx.revert_msg == "Modulo by zero"
+    tx = vypertester.overflow(0, 0, {"value": 31337})
+    assert tx.revert_msg == "Cannot send ether to nonpayable function"

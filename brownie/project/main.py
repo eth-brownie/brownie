@@ -113,8 +113,8 @@ class Project(_ProjectBase):
 
     def __init__(self, name: str, project_path: Path) -> None:
         contract_sources: Dict = {}
-        for path in project_path.glob("contracts/**/*.sol"):
-            if "/_" in path.as_posix():
+        for path in project_path.glob("contracts/**/*"):
+            if "/_" in path.as_posix() or path.suffix not in (".sol", ".vy"):
                 continue
             with path.open() as fp:
                 source = fp.read()
@@ -187,7 +187,9 @@ class Project(_ProjectBase):
             build_json = self._build.get(contract_name)
         except KeyError:
             return True
-        if build_json["sha1"] != get_hash(source, contract_name, config["minify_source"]):
+        if build_json["sha1"] != get_hash(
+            source, contract_name, config["minify_source"], build_json["language"]
+        ):
             return True
         return next(
             (True for k, v in build_json["compiler"].items() if config[k] and v != config[k]), False
@@ -400,7 +402,11 @@ def compile_source(
         "evm_version": evm_version,
         "minify_source": False,
     }
-    return TempProject("TempProject", {"<stdin>": source}, compiler_config)
+
+    if solc_version is not None or source.lstrip().startswith("pragma"):
+        return TempProject("TempSolcProject", {"<stdin>.sol": source}, compiler_config)
+
+    return TempProject("TempVyperProject", {"<stdin>.vy": source}, compiler_config)
 
 
 def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None) -> "Project":

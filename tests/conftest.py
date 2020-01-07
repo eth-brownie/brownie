@@ -24,7 +24,7 @@ def pytest_sessionstart():
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setattr(
         "solcx.get_available_solc_versions",
-        lambda: ["v0.5.10", "v0.5.9", "v0.5.8", "v0.5.7", "v0.4.25", "v0.4.24", "v0.4.22"],
+        lambda: ["v0.6.0", "v0.5.10", "v0.5.8", "v0.5.7", "v0.4.25", "v0.4.24", "v0.4.22"],
     )
 
 
@@ -301,6 +301,11 @@ def tester(BrownieTester, accounts):
 @pytest.fixture
 def ext_tester(ExternalCallTester, accounts):
     return ExternalCallTester.deploy({"from": accounts[0]})
+
+
+@pytest.fixture
+def vypertester(testproject, devnetwork, accounts):
+    return testproject.VyperTester.deploy({"from": accounts[0]})
 
 
 # ipfs fixtures

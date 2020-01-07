@@ -1,7 +1,7 @@
 # Based on https://github.com/cclauss/Travis-CI-Python-on-three-OSes
 matrix:
   include:
-    - name: "Standard Tests, Parametrized EVM Tests - Python 3.7.1 on Xenial Linux"
+    - name: "EVM Tests - Python 3.7 on Xenial Linux"
       language: python
       python: 3.7
       dist: xenial
@@ -13,8 +13,20 @@ matrix:
         - sudo apt-get install -y python3.7-dev npm solc
         - npm -g install ganache-cli@6.7.0
         - python -m pip install coveralls==1.9.2 tox==3.14.0
-      script: tox -e py37,evmtests
-    - name: "Standard Tests, Linting, Docs - Python 3.6.8 on Xenial Linux"
+      script: tox -e evmtests
+    - name: "Standard Tests - Python 3.7 on Windows"
+      os: windows
+      language: node_js
+      node_js: '10'
+      install:
+        - npm -g install ganache-cli@6.7.0
+        - choco install python --version=3.7.4
+        - python -m pip install --upgrade pip
+        - python -m pip install -r requirements-dev.txt
+        - python setup.py install
+      env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
+      script: python -m pytest tests/ --cov=brownie/ -p no:pytest-brownie -n auto --dist=loadscope
+    - name: "Standard Tests, Linting, Docs - Python 3.6 on Xenial Linux"
       language: python
       python: 3.6
       dist: xenial
@@ -27,19 +39,20 @@ matrix:
         - npm -g install ganache-cli@6.7.0
         - python -m pip install coveralls==1.9.2 tox==3.14.0
       script: tox -e lint,doctest,py36
-    - name: "Standard Tests - Python 3.7.4 on Windows"
-      os: windows
-      language: node_js
-      node_js: '10'
+    - name: "Standard Tests, Brownie Mix Tests - Python 3.7 on Xenial Linux"
+      language: python
+      python: 3.7
+      dist: xenial
+      sudo: true
       install:
+        - sudo add-apt-repository -y ppa:ethereum/ethereum
+        - sudo add-apt-repository -y ppa:deadsnakes/ppa
+        - sudo apt-get update
+        - sudo apt-get install -y python3.6-dev npm solc
         - npm -g install ganache-cli@6.7.0
-        - choco install python --version=3.7.4
-        - python -m pip install --upgrade pip
-        - python -m pip install -r requirements-dev.txt
-        - python setup.py install
-      env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
-      script: python -m pytest tests/ --cov=brownie/ -p no:pytest-brownie -n auto --dist=loadscope
-    - name: "Standard Tests - Python 3.8.0 on Xenial Linux"
+        - python -m pip install coveralls==1.9.2 tox==3.14.0
+      script: tox -e py37,mixtests
+    - name: "Standard Tests - Python 3.8 on Xenial Linux"
       language: python
       python: 3.8
       dist: xenial
@@ -52,19 +65,6 @@ matrix:
         - npm -g install ganache-cli@6.7.0
         - python -m pip install coveralls==1.9.2 tox==3.14.0
       script: tox -e py38
-    - name: "Brownie Mix Tests - Python 3.6.8 on Xenial Linux"
-      language: python
-      python: 3.6
-      dist: xenial
-      sudo: true
-      install:
-        - sudo add-apt-repository -y ppa:ethereum/ethereum
-        - sudo add-apt-repository -y ppa:deadsnakes/ppa
-        - sudo apt-get update
-        - sudo apt-get install -y python3.6-dev npm solc
-        - npm -g install ganache-cli@6.7.0
-        - python -m pip install coveralls==1.9.2 tox==3.14.0
-      script: tox -e mixtests
 
 env:
   global: COVERALLS_PARALLEL=true

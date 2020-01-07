@@ -6,7 +6,10 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.4.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.4.0) - 2020-01-07
 ### Added
+- support for Vyper smart contracts ([v0.1.0-beta15](https://github.com/vyperlang/vyper/releases/tag/v0.1.0-beta.15))
 - `brownie accounts` commandline interface
 
 ## [1.3.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.3.2) - 2020-01-01
