@@ -1,3 +1,4 @@
+from vyper.interfaces import ERC721
 
 stuff: public(uint256[4])
 
@@ -55,3 +56,8 @@ def zeroDivision(a: uint256, b: uint256) -> uint256:
 @public
 def zeroModulo(a: uint256, b: uint256) -> uint256:
     return a % b
+
+
+@public
+def interfaceTest():
+    ERC721(msg.sender).safeTransferFrom(msg.sender, self, 1, b"")
