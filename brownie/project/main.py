@@ -361,11 +361,9 @@ def from_ethpm(uri: str) -> "TempProject":
 
     manifest = get_manifest(uri)
     compiler_config = {
-        "version": None,
-        "optimize": True,
-        "runs": 200,
         "evm_version": None,
         "minify_source": False,
+        "solc": {"version": None, "optimize": True, "runs": 200},
     }
     project = TempProject(manifest["package_name"], manifest["sources"], compiler_config)
     if web3.isConnected():
@@ -389,22 +387,17 @@ def _new_checks(project_path: Union[Path, str], ignore_subfolder: bool) -> Path:
 def compile_source(
     source: str,
     solc_version: Optional[str] = None,
-    optimize: Optional[bool] = True,
+    optimize: bool = True,
     runs: Optional[int] = 200,
-    evm_version: Optional[int] = None,
+    evm_version: Optional[str] = None,
 ) -> "TempProject":
     """Compiles the given source code string and returns a TempProject container with
     the ContractContainer instances."""
 
-    compiler_config = {
-        "version": solc_version,
-        "optimize": optimize,
-        "runs": runs,
-        "evm_version": evm_version,
-        "minify_source": False,
-    }
+    compiler_config: Dict = {"evm_version": evm_version, "minify_source": False}
 
     if solc_version is not None or source.lstrip().startswith("pragma"):
+        compiler_config["solc"] = {"version": solc_version, "optimize": optimize, "runs": runs}
         return TempProject("TempSolcProject", {"<stdin>.sol": source}, compiler_config)
 
     return TempProject("TempVyperProject", {"<stdin>.vy": source}, compiler_config)

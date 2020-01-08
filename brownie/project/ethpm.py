@@ -564,24 +564,24 @@ def release_package(
 
 
 def _get_contract_type(build_json: Dict) -> Dict:
-    return {
+    contract_type = {
         "contract_name": build_json["contractName"],
         "source_path": f"./{Path(build_json['sourcePath']).relative_to('contracts')}",
         "deployment_bytecode": {"bytecode": f"0x{build_json['bytecode']}"},
         "runtime_bytecode": {"bytecode": f"0x{build_json['deployedBytecode']}"},
         "abi": build_json["abi"],
         "compiler": {
-            "name": "solc",
+            "name": "solc" if build_json["language"] == "Solidity" else "vyper",
             "version": build_json["compiler"]["version"],
-            "settings": {
-                "optimizer": {
-                    "enabled": build_json["compiler"]["optimize"],
-                    "runs": build_json["compiler"]["runs"],
-                },
-                "evmVersion": build_json["compiler"]["evm_version"],
-            },
+            "settings": {"evmVersion": build_json["compiler"]["evm_version"]},
         },
     }
+    if build_json["language"] == "Solidity":
+        contract_type["compiler"]["settings"]["optimizer"] = {
+            "enabled": build_json["compiler"]["optimize"],
+            "runs": build_json["compiler"]["runs"],
+        }
+    return contract_type
 
 
 def _load_packages_json(project_path: Path) -> Dict:
