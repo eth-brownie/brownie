@@ -81,8 +81,8 @@ def compile_and_format(
         else:
             compiler_targets[solc_version] = list(solc_sources)
 
-    compiler_data: Dict = {"minify_source": minify}
     for version, path_list in compiler_targets.items():
+        compiler_data: Dict = {"minify_source": minify}
         if version == "vyper":
             language = "Vyper"
             compiler_data["version"] = str(vyper.get_version())
