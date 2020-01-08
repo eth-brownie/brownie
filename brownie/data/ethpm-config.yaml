@@ -1,27 +1,33 @@
 # Brownie ethPM package configuration file
-# https://eth-brownie.readthedocs.io/en/stable/ethpm.html
+# Read more here: https://eth-brownie.readthedocs.io/en/stable/ethpm.html
 
-# required fields
-package_name:
-version:
-settings:
-  deployment_networks:
-    -
-    -
-  include_dependencies:
+# Required Fields
+package_name: demo-project  # Your project's name goes here (hint: no spaces)
+version: 0.1.0a1  # Your project's version goes here (hint: use semver)
 
-# optional fields
-meta:
-  description:
-  authors:
-    -
-    -
-  license:
-  keywords:
-    -
-    -
-  links:
-    website:
-    documentation:
-    repository:
-    audit:
+# Optional Fields (uncomment to use)
+#
+#meta:
+#  description:
+#  authors:
+#    -
+#    -
+#  license:
+#  keywords:
+#    -
+#    -
+#  links:
+#    website:
+#    documentation:
+#    repository:
+#    audit:
+#
+# Brownie can manage these
+#
+#settings:
+#  deployment_networks:
+#    -
+#    -
+#  include_dependencies:
+#    -
+#    -
