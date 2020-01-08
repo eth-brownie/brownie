@@ -51,10 +51,10 @@ def msolc(monkeypatch):
 
 def test_set_solc_version():
     compiler.set_solc_version("0.5.7")
-    assert solcx.get_solc_version() == compiler.solidity.get_version()
+    assert solcx.get_solc_version().truncate() == compiler.solidity.get_version()
     assert solcx.get_solc_version().truncate() == Version("0.5.7")
     compiler.set_solc_version("0.4.25")
-    assert solcx.get_solc_version() == compiler.solidity.get_version()
+    assert solcx.get_solc_version().truncate() == compiler.solidity.get_version()
     assert solcx.get_solc_version().truncate() == Version("0.4.25")
 
 
