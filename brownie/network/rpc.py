@@ -113,9 +113,10 @@ class Rpc(metaclass=_Singleton):
                 raise ValueError("No RPC port given")
             laddr = (o.hostname, o.port)
         try:
-            proc = next(i for i in psutil.net_connections() if i.laddr == laddr)
+            proc = next(i for i in psutil.process_iter() if _check_connections(i, laddr))
         except StopIteration:
             raise ProcessLookupError("Could not find RPC process.")
+        print(f"Attached to local RPC client listening at '{laddr[0]}:{laddr[1]}'...")
         self._rpc = psutil.Process(proc.pid)
         if web3.provider:
             self._reset_id = self._snap()
@@ -284,3 +285,10 @@ def _notify_registry(height: int = None) -> None:
             obj._revert(height)
         else:
             obj._reset()
+
+
+def _check_connections(proc: psutil.Process, laddr: Tuple) -> bool:
+    try:
+        return laddr in [i.laddr for i in proc.connections()]
+    except psutil.AccessDenied:
+        return False
