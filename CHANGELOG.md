@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.4.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.4.0) - 2020-01-09
+### Changed
+- Do not install solc until required for compilation
+- Adjust compiler config settings to be less Solidity-centric
+
+### Fixed
+- Compiler bug when generating Vyper branch paths
+- Permission error when launching Brownie with Ganache already running on OSX
+
 ## [1.4.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.4.0) - 2020-01-07
 ### Added
 - support for Vyper smart contracts ([v0.1.0-beta15](https://github.com/vyperlang/vyper/releases/tag/v0.1.0-beta.15))
