@@ -64,15 +64,16 @@ The following settings are available:
 
     Compiler settings. See :ref:`compiler settings<compile_settings>` for more information.
 
+    * ``evm_version``: The EVM version to compile for. If ``null`` the most recent one is used. Possible values are ``byzantium``, ``constantinople`` and ``petersburg``.
+    * ``minify_source``: If ``true``, contract source is minified before compiling.
+
     .. py:attribute:: compiler.solc
 
-        Settings specific to the Solidity compiler. At present this is the only compiler supported by Brownie.
+        Settings specific to the Solidity compiler.
 
         * ``version``: The version of solc to use. Should be given as a string in the format ``0.x.x``. If set to ``null``, the version is set based on the contract pragma. Brownie supports solc versions ``>=0.4.22``.
-        * ``evm_version``: The EVM version to compile for. If ``null`` the most recent one is used. Possible values are ``byzantium``, ``constantinople`` and ``petersburg``.
         * ``optimize``: Set to ``true`` if you wish to enable compiler optimization.
         * ``runs``: The number of times the optimizer should run.
-        * ``minify_source``: If ``true``, contract source is minified before compiling.
 
 .. py:attribute:: pytest
 

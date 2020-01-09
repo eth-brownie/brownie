@@ -38,12 +38,12 @@ pytest:
     reverting_tx_gas_limit: 6721975
     revert_traceback: false
 compiler:
+    evm_version: null
+    minify_source: false
     solc:
         version: null
-        evm_version: null
         optimize: true
         runs: 200
-        minify_source: false
 colors:
     key:
     value: bright blue

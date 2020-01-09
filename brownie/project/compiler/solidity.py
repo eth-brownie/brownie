@@ -29,7 +29,7 @@ AVAILABLE_SOLC_VERSIONS = None
 
 
 def get_version() -> Version:
-    return solcx.get_solc_version()
+    return solcx.get_solc_version().truncate()
 
 
 def compile_from_input_json(

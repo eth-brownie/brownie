@@ -81,8 +81,8 @@ def compile_and_format(
         else:
             compiler_targets[solc_version] = list(solc_sources)
 
-    compiler_data: Dict = {"minify_source": minify}
     for version, path_list in compiler_targets.items():
+        compiler_data: Dict = {"minify_source": minify}
         if version == "vyper":
             language = "Vyper"
             compiler_data["version"] = str(vyper.get_version())
@@ -128,7 +128,7 @@ def generate_input_json(
         if language == "Solidity":
             evm_version = next(i[0] for i in EVM_SOLC_VERSIONS if solidity.get_version() >= i[1])
         else:
-            evm_version = "byzantium"
+            evm_version = "petersburg"
 
     input_json: Dict = deepcopy(STANDARD_JSON)
     input_json["language"] = language

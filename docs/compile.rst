@@ -30,12 +30,12 @@ Settings for the compiler are found in ``brownie-config.yaml``:
 
 .. code-block:: yaml
 
+    evm_version: null
+    minify_source: false
     solc:
-        version: 0.5.10
-        evm_version: null
+        version: 0.6.0
         optimize: true
         runs: 200
-        minify_source: false
 
 Modifying any compiler settings will result in a full recompile of the project.
 
@@ -55,11 +55,11 @@ Setting the version via pragma allows you to use multiple versions in a single p
 The EVM Version
 ---------------
 
-By default, ``evm_version`` is set to ``null``. Brownie uses ``byzantium`` when compiling versions ``<=0.5.4`` and ``petersburg`` for ``>=0.5.5``.
+By default, ``evm_version`` is set to ``null``. Brownie uses ``byzantium`` when compiling Solidity versions ``<=0.5.4``, ``petersburg`` for Solidity ``>=0.5.5`` and Vyper.
 
-If you wish to use a newer compiler version on a network that has not yet forked you can set the EVM version manually. Valid options are ``byzantium``, ``constantinople`` and ``petersburg``.
+If you wish to use a specific compiler version you can set the EVM version manually. Valid options are ``byzantium``, ``constantinople``, ``petersburg`` and ``istanbul``.
 
-See the `Solidity documentation <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#setting-the-evm-version-to-target>`_ for more info on the different EVM versions.
+See the `Solidity <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#setting-the-evm-version-to-target>`_ and `Vyper <https://vyper.readthedocs.io/en/latest/compiling-a-contract.html#setting-the-target-evm-version>`_ documentation for more info on the different EVM versions.
 
 Compiler Optimization
 ---------------------

@@ -53,11 +53,12 @@ class _ProjectBase:
         allow_paths = None
         if self._path is not None:
             allow_paths = self._path.joinpath("contracts").as_posix()
+        compiler_config.setdefault("solc", {})
         build_json = compiler.compile_and_format(
             sources,
-            solc_version=compiler_config["version"],
-            optimize=compiler_config["optimize"],
-            runs=compiler_config["runs"],
+            solc_version=compiler_config["solc"].get("version", None),
+            optimize=compiler_config["solc"].get("optimize", None),
+            runs=compiler_config["solc"].get("runs", None),
             evm_version=compiler_config["evm_version"],
             minify=compiler_config["minify_source"],
             silent=silent,
@@ -144,14 +145,10 @@ class Project(_ProjectBase):
         if self._active:
             raise ProjectAlreadyLoaded("Project is already active")
 
-        self._compiler_config = _load_project_compiler_config(self._path, "solc")
-        solc_version = self._compiler_config["version"]
-        if solc_version:
-            self._compiler_config["version"] = compiler.set_solc_version(solc_version)
+        self._compiler_config = _load_project_compiler_config(self._path)
 
         # compile updated sources, update build
         changed = self._get_changed_contracts()
-        self._compiler_config["version"] = solc_version
         self._compile(changed, self._compiler_config, False)
         self._create_containers()
         self._load_deployments()
@@ -191,9 +188,13 @@ class Project(_ProjectBase):
             source, contract_name, config["minify_source"], build_json["language"]
         ):
             return True
-        return next(
-            (True for k, v in build_json["compiler"].items() if config[k] and v != config[k]), False
-        )
+        if _compare_settings(config, build_json["compiler"]):
+            return True
+        if build_json["language"] == "Solidity" and _compare_settings(
+            config["solc"], build_json["compiler"]
+        ):
+            return True
+        return False
 
     def _load_deployments(self) -> None:
         if not CONFIG["active_network"].get("persist", None):
@@ -360,11 +361,9 @@ def from_ethpm(uri: str) -> "TempProject":
 
     manifest = get_manifest(uri)
     compiler_config = {
-        "version": None,
-        "optimize": True,
-        "runs": 200,
         "evm_version": None,
         "minify_source": False,
+        "solc": {"version": None, "optimize": True, "runs": 200},
     }
     project = TempProject(manifest["package_name"], manifest["sources"], compiler_config)
     if web3.isConnected():
@@ -388,22 +387,17 @@ def _new_checks(project_path: Union[Path, str], ignore_subfolder: bool) -> Path:
 def compile_source(
     source: str,
     solc_version: Optional[str] = None,
-    optimize: Optional[bool] = True,
+    optimize: bool = True,
     runs: Optional[int] = 200,
-    evm_version: Optional[int] = None,
+    evm_version: Optional[str] = None,
 ) -> "TempProject":
     """Compiles the given source code string and returns a TempProject container with
     the ContractContainer instances."""
 
-    compiler_config = {
-        "version": solc_version,
-        "optimize": optimize,
-        "runs": runs,
-        "evm_version": evm_version,
-        "minify_source": False,
-    }
+    compiler_config: Dict = {"evm_version": evm_version, "minify_source": False}
 
     if solc_version is not None or source.lstrip().startswith("pragma"):
+        compiler_config["solc"] = {"version": solc_version, "optimize": optimize, "runs": runs}
         return TempProject("TempSolcProject", {"<stdin>.sol": source}, compiler_config)
 
     return TempProject("TempVyperProject", {"<stdin>.vy": source}, compiler_config)
@@ -453,3 +447,9 @@ def _add_to_sys_path(project_path: Path) -> None:
     if project_path_string in sys.path:
         return
     sys.path.insert(0, project_path_string)
+
+
+def _compare_settings(left: Dict, right: Dict) -> bool:
+    return next(
+        (True for k, v in left.items() if v and not isinstance(v, dict) and v != right[k]), False
+    )
