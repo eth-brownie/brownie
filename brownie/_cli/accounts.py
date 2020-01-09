@@ -33,6 +33,7 @@ scripts or the console using the Accounts.load method.
 
 def main():
     args = docopt(__doc__)
+    _get_data_folder().joinpath("accounts").mkdir(exist_ok=True)
     try:
         fn = getattr(sys.modules[__name__], f"_{args['<command>']}")
     except AttributeError:
