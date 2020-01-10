@@ -20,6 +20,8 @@ def test_network_keys(config):
         "kovan",
         "rinkeby",
         "ropsten",
+        "classic",
+        "kotti",
     }
 
 
