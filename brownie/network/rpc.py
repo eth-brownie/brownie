@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 import psutil
 
+from brownie._config import EVM_EQUIVALENTS
 from brownie._singleton import _Singleton
 from brownie.exceptions import RPCConnectionError, RPCProcessError, RPCRequestError
 
@@ -72,6 +73,8 @@ class Rpc(metaclass=_Singleton):
             else:
                 cmd += ".cmd"
         kwargs.setdefault("evm_version", EVM_DEFAULT)  # type: ignore
+        if kwargs["evm_version"] in EVM_EQUIVALENTS:
+            kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]  # type: ignore
         for key, value in [(k, v) for k, v in kwargs.items() if v]:
             cmd += f" {CLI_FLAGS[key]} {value}"
         print(f"Launching '{cmd}'...")
@@ -212,6 +215,7 @@ class Rpc(metaclass=_Singleton):
         the currently active EVM version."""
         if not self.is_active():
             raise RPCRequestError("RPC is not active")
+        version = EVM_EQUIVALENTS.get(version, version)
         try:
             return EVM_VERSIONS.index(version) <= EVM_VERSIONS.index(  # type: ignore
                 self.evm_version()
