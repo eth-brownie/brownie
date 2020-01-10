@@ -12,6 +12,7 @@ from requests.exceptions import ConnectionError
 from semantic_version import NpmSpec, Version
 from solcast.nodes import NodeBase
 
+from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 from brownie.project.compiler.utils import expand_source_map
 
@@ -49,6 +50,8 @@ def compile_from_input_json(
 
     optimizer = input_json["settings"]["optimizer"]
     input_json["settings"].setdefault("evmVersion", None)
+    if input_json["settings"]["evmVersion"] in EVM_EQUIVALENTS:
+        input_json["settings"]["evmVersion"] = EVM_EQUIVALENTS[input_json["settings"]["evmVersion"]]
 
     if not silent:
         print("Compiling contracts...")

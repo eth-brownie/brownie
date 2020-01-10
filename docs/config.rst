@@ -64,7 +64,7 @@ The following settings are available:
 
     Compiler settings. See :ref:`compiler settings<compile_settings>` for more information.
 
-    * ``evm_version``: The EVM version to compile for. If ``null`` the most recent one is used. Possible values are ``byzantium``, ``constantinople`` and ``petersburg``.
+    * ``evm_version``: The EVM version to compile for. If ``null`` the most recent one is used. Possible values are ``byzantium``, ``constantinople``, ``petersburg``, ``istanbul``, ``atlantis`` and ``agharta``.
     * ``minify_source``: If ``true``, contract source is minified before compiling.
 
     .. py:attribute:: compiler.solc

@@ -16,6 +16,8 @@ DATA_FOLDER = Path.home().joinpath(".brownie")
 
 REPLACE = ["active_network", "networks"]
 
+EVM_EQUIVALENTS = {"atlantis": "byzantium", "agharta": "petersburg"}
+
 
 class ConfigDict(dict):
     """Dict subclass that prevents adding new keys when locked"""
