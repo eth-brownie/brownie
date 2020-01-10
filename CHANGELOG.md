@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Ethereum Classic networks in `brownie-config.yaml`
 - Accept `atlantis` and `agharta` as EVM ruleset options in `brownie-config.yaml`
 
+### Changed
+- Use Vyper version 0.1.0b16
+
 ### Fixed
 - Create `~/.brownie/accounts` when `accounts` commandline interface is called
 
