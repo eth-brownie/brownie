@@ -21,7 +21,7 @@ def test_network_keys(config):
         "rinkeby",
         "ropsten",
         "classic",
-        "kotti"
+        "kotti",
     }
 
 
