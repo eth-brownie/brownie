@@ -31,6 +31,10 @@ network:
             host: https://rinkeby.infura.io/v3/$WEB3_INFURA_PROJECT_ID
         ropsten:
             host: https://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        classic:
+            host: https://www.ethercluster.com/etc
+        kotti:
+            host: https://www.ethercluster.com/kotti
 pytest:
     # these settings replace the defaults when running pytest
     gas_limit: 6721975
