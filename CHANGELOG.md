@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
-## [1.4.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.4.0) - 2020-01-09
+## [1.4.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.4.2) - 2020-01-10
+### Added
+- Add Ethereum Classic networks in `brownie-config.yaml`
+- Accept `atlantis` and `agharta` as EVM ruleset options in `brownie-config.yaml`
+
+### Changed
+- Use Vyper version 0.1.0b16
+
+### Fixed
+- Create `~/.brownie/accounts` when `accounts` commandline interface is called
+
+## [1.4.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.4.1) - 2020-01-09
 ### Changed
 - Do not install solc until required for compilation
 - Adjust compiler config settings to be less Solidity-centric

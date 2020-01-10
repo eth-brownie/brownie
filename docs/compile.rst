@@ -44,7 +44,7 @@ Setting the Compiler Version
 
 .. note::
 
-    Brownie supports Solidity versions ``>=0.4.22`` and Vyper version ``0.1.0-b15``.
+    Brownie supports Solidity versions ``>=0.4.22`` and Vyper version ``0.1.0-b16``.
 
 If a compiler version is set in the configuration file, all contracts in the project are compiled using that version. It is installed automatically if not already present. The version should be given as a string in the format ``0.x.x``.
 
