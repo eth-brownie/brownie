@@ -6,6 +6,7 @@ import pytest
 import solcx
 from semantic_version import Version
 
+from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 from brownie.project import build, compiler
 
@@ -92,6 +93,13 @@ def test_compile_input_json_raises():
     input_json = compiler.generate_input_json({"path.sol": "potato"}, True, 200)
     with pytest.raises(CompilerError):
         compiler.compile_from_input_json(input_json)
+
+
+@pytest.mark.parametrize("original,translated", EVM_EQUIVALENTS.items())
+def test_compile_input_json_evm_translates(solc5source, original, translated):
+    compiler.set_solc_version("0.5.7")
+    input_json = compiler.generate_input_json({"path.sol": solc5source}, True, 200, original)
+    compiler.compile_from_input_json(input_json)
 
 
 def test_compile_optimizer(monkeypatch):
