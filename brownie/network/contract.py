@@ -26,6 +26,7 @@ from .rpc import Rpc, _revert_register
 from .state import _add_contract, _find_contract, _remove_contract
 from .web3 import _resolve_address, web3
 
+__tracebackhide__ = True
 rpc = Rpc()
 
 
@@ -390,6 +391,7 @@ class _ContractMethod:
 
         Returns:
             Contract method return value(s)."""
+
         args, tx = _get_tx(self._owner, args)
         if tx["from"]:
             tx["from"] = str(tx["from"])
@@ -409,6 +411,7 @@ class _ContractMethod:
 
         Returns:
             TransactionReceipt instance."""
+
         args, tx = _get_tx(self._owner, args)
         if not tx["from"]:
             raise AttributeError(
@@ -472,6 +475,7 @@ class ContractTx(_ContractMethod):
 
         Returns:
             TransactionReceipt instance."""
+
         return self.transact(*args)
 
 
@@ -492,6 +496,7 @@ class ContractCall(_ContractMethod):
 
         Returns:
             Contract method return value(s)."""
+
         if not ARGV["always_transact"]:
             return self.call(*args)
         rpc._internal_snap()

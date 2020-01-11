@@ -23,6 +23,7 @@ from .event import _decode_logs, _decode_trace
 from .state import TxHistory, _find_contract
 from .web3 import web3
 
+__tracebackhide__ = True
 history = TxHistory()
 
 
@@ -118,6 +119,7 @@ class TransactionReceipt:
             name: contract function being called
             revert_data: (revert string, program counter, revert type)
         """
+
         if isinstance(txid, bytes):
             txid = txid.hex()
         if not silent:
@@ -167,11 +169,8 @@ class TransactionReceipt:
                 if self._revert_msg is None:
                     # no revert message and unable to check dev string - have to get trace
                     self._expand_trace()
-                # raise from a new function to reduce pytest traceback length
-                _raise(
-                    self._revert_msg or "",
-                    self._traceback_string() if ARGV["revert"] else self._error_string(1),
-                )
+                source = self._traceback_string() if ARGV["revert"] else self._error_string(1)
+                raise VirtualMachineError({"message": self._revert_msg or "", "source": source})
         except KeyboardInterrupt:
             if ARGV["cli"] != "console":
                 raise
@@ -726,10 +725,6 @@ def _get_memory(step: Dict, idx: int) -> HexBytes:
     offset = int(step["stack"][idx], 16) * 2
     length = int(step["stack"][idx - 1], 16) * 2
     return HexBytes("".join(step["memory"])[offset : offset + length])
-
-
-def _raise(msg: str, source: str) -> None:
-    raise VirtualMachineError({"message": msg, "source": source})
 
 
 def _get_last_map(address: EthAddress, sig: str) -> Dict:

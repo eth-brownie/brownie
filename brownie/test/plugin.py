@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import sys
+
 import brownie
 from brownie._config import CONFIG
 from brownie.test._manager import TestManager
@@ -41,3 +43,7 @@ def pytest_configure(config):
         config.pluginmanager.register(session, "brownie-core")
         fixtures = TestFixtures(config, project)
         config.pluginmanager.register(fixtures, "brownie-fixtures")
+
+        # by default, suppress stdout on failed tests
+        if not next((i for i in sys.argv if i.startswith("--show-capture=")), False):
+            config.option.showcapture = "no"

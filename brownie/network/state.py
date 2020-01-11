@@ -7,6 +7,7 @@ from brownie._singleton import _Singleton
 from .rpc import _revert_register
 from .web3 import _resolve_address
 
+__tracebackhide__ = True
 _contract_map: Dict = {}
 
 

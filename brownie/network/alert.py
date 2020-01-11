@@ -7,6 +7,7 @@ from typing import Callable, Dict, List, Tuple, Union
 from brownie.utils import color
 
 __console_dir__ = ["Alert", "new", "show", "stop_all"]
+__tracebackhide__ = True
 
 _instances = set()
 

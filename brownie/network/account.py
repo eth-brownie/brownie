@@ -22,6 +22,7 @@ from brownie.utils import color
 from .rpc import Rpc, _revert_register
 from .web3 import _resolve_address, web3
 
+__tracebackhide__ = True
 rpc = Rpc()
 
 
@@ -228,6 +229,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         Returns:
             * Contract instance if the transaction confirms
             * TransactionReceipt if the transaction is pending or reverts"""
+
         evm = contract._build["compiler"]["evm_version"]
         if rpc.is_active() and not rpc.evm_compatible(evm):
             raise IncompatibleEVMVersion(
@@ -301,6 +303,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         Returns:
             TransactionReceipt object"""
+
         try:
             txid = self._transact(  # type: ignore
                 {

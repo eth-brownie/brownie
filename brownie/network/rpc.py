@@ -28,6 +28,7 @@ CLI_FLAGS = {
 EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
 EVM_DEFAULT = "petersburg"
 
+__tracebackhide__ = True
 _revert_refs: List = []
 
 

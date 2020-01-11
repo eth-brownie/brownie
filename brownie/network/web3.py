@@ -15,6 +15,7 @@ from brownie._config import CONFIG, _get_data_folder
 from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
 
+__tracebackhide__ = True
 _chain_uri_cache: Dict = {}
 
 
