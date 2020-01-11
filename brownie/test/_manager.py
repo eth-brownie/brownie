@@ -102,6 +102,18 @@ class TestManager:
             for txhash, coverage_eval in hashes["tx"].items():
                 coverage._add_cached_transaction(txhash, coverage_eval)
 
+    @property
+    def is_worker(self):
+        return hasattr(self.config, "workerinput")
+
+    @property
+    def is_master(self):
+        return self.is_xdist and not self.is_worker
+
+    @property
+    def is_xdist(self):
+        return bool(self.config.pluginmanager.hasplugin("dsession"))
+
     def _path(self, path):
         return Path(path).absolute().relative_to(self.project_path).as_posix()
 
@@ -136,9 +148,8 @@ class TestManager:
         _make_fixture_execute_first(metafunc, "fn_isolation", "function")
 
     def pytest_collection_modifyitems(self, items):
-        # does not run on master
         # if using xdist, clear collection if isolation is not active
-        if hasattr(self.config, "workerinput"):
+        if self.is_worker:
             if next((i for i in items if "module_isolation" not in i.fixturenames), False):
                 items.clear()
                 return True
@@ -238,6 +249,9 @@ class TestManager:
         return report.outcome, STATUS_SYMBOLS[report.outcome], report.outcome.upper()
 
     def pytest_runtest_logreport(self, report):
+        if self.is_master:
+            return
+
         path, test_id = self._test_id(report.nodeid)
         if path in self.isolated:
             self.isolated[path].update(
@@ -257,7 +271,6 @@ class TestManager:
         if report.when != "teardown" or idx < len(self.node_map[path]) - 1:
             return
 
-        # TODO how to handle isolation data on xdist
         isolated = False
         if path in self.isolated:
             isolated = sorted(self.isolated[path])
@@ -275,26 +288,45 @@ class TestManager:
         }
 
     def pytest_sessionfinish(self, session):
-        txhash = set(x for v in self.tests.values() for x in v["txhash"])
-        coverage_eval = dict((k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash)
-        report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
-        with self.project_path.joinpath("build/tests.json").open("w") as fp:
-            json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
-        if ARGV["coverage"]:
+        if not self.is_master:
+            txhash = set(x for v in self.tests.values() for x in v["txhash"])
+            coverage_eval = dict(
+                (k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash
+            )
+            report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
+            if self.is_worker:
+                path = f"build/tests-{self.config.workerinput['workerid']}.json"
+            else:
+                path = "build/tests.json"
+            with self.project_path.joinpath(path).open("w") as fp:
+                json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
             coverage_eval = brownie.test.coverage.get_merged_coverage_eval()
+        else:
+            if session.testscollected == 0:
+                raise pytest.UsageError(
+                    "xdist workers failed to collect tests. Ensure all test cases are "
+                    "isolated with the module_isolation or fn_isolation fixtures.\n\n"
+                    "https://eth-brownie.readthedocs.io/en/stable/tests.html#isolating-tests"
+                )
+            report = {"tests": {}, "contracts": self.contracts, "tx": {}}
+            for path in list(self.project_path.glob("build/tests-*.json")):
+                with path.open() as fp:
+                    data = json.load(fp)
+                assert data["contracts"] == report["contracts"]
+                report["tests"].update(data["tests"])
+                report["tx"].update(data["tx"])
+                path.unlink()
+            with self.project_path.joinpath("build/tests.json").open("w") as fp:
+                json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
+            coverage_eval = coverage.get_merged_coverage_eval(report["tx"])
+        if not self.is_xdist and ARGV["gas"]:
+            output._print_gas_profile()
+        if ARGV["coverage"]:
             output._print_coverage_totals(self.project._build, coverage_eval)
             output._save_coverage_report(
                 self.project._build, coverage_eval, self.project._path.joinpath("reports")
             )
-        if ARGV["gas"]:
-            output._print_gas_profile()
-        self.project.close(False)
-        if session.testscollected == 0 and self.config.pluginmanager.get_plugin("dsession"):
-            raise pytest.UsageError(
-                "xdist workers failed to collect tests. Ensure all test cases are "
-                "isolated with the module_isolation or fn_isolation fixtures.\n\n"
-                "https://eth-brownie.readthedocs.io/en/stable/tests.html#isolating-tests"
-            )
+        self.project.close()
 
     def pytest_keyboard_interrupt(self):
         ARGV["interrupt"] = True
