@@ -57,9 +57,10 @@ class RevertContextManager:
 
 
 class TestManager:
-    def __init__(self, project):
+    def __init__(self, config, project):
         pytest.reverts = RevertContextManager
 
+        self.config = config
         self.project = project
         self.project_path = project._path
         self.active_path = None
@@ -258,7 +259,7 @@ class TestManager:
         if ARGV["gas"]:
             output._print_gas_profile()
         self.project.close(False)
-        if session.testscollected == 0 and session.config.pluginmanager.get_plugin("dsession"):
+        if session.testscollected == 0 and self.config.pluginmanager.get_plugin("dsession"):
             raise pytest.UsageError(
                 "xdist workers failed to collect tests. Ensure all test cases are "
                 "isolated with the module_isolation or fn_isolation fixtures.\n\n"

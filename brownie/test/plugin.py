@@ -37,7 +37,7 @@ def pytest_configure(config):
         project = brownie.project.load()
         project.load_config()
 
-        session = TestManager(project)
+        session = TestManager(config, project)
         config.pluginmanager.register(session, "brownie-core")
-        fixtures = TestFixtures(project)
+        fixtures = TestFixtures(config, project)
         config.pluginmanager.register(fixtures, "brownie-fixtures")

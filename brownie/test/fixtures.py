@@ -15,7 +15,8 @@ def _generate_fixture(container):
 
 
 class TestFixtures:
-    def __init__(self, project):
+    def __init__(self, config, project):
+        self.config = config
         for container in project:
             setattr(self, container._name, _generate_fixture(container))
 
