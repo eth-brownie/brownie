@@ -68,6 +68,12 @@ class TestManager:
         self.node_map = {}
         self.isolated = {}
         self._skip = {}
+        build = self.project._build
+        self.contracts = dict((k, v["bytecodeSha1"]) for k, v in build.items() if v["bytecode"])
+
+        if self.is_master:
+            return
+
         glob = self.project_path.glob("tests/**/conftest.py")
         self.conf_hashes = dict((self._path(i.parent), _get_ast_hash(i)) for i in glob)
         try:
@@ -81,8 +87,6 @@ class TestManager:
             for k, v in hashes["tests"].items()
             if Path(k).exists() and self._get_hash(k) == v["sha1"]
         )
-        build = self.project._build
-        self.contracts = dict((k, v["bytecodeSha1"]) for k, v in build.items() if v["bytecode"])
 
         changed_contracts = set(
             k
@@ -161,13 +165,13 @@ class TestManager:
         for i in items:
             if "skip_coverage" in i.fixturenames and ARGV["coverage"]:
                 i.add_marker("skip")
-            path = i.parent.fspath
+            path = self._path(i.parent.fspath)
             if "module_isolation" not in i.fixturenames:
                 tests[path] = None
                 continue
             if path in tests and tests[path] is None:
                 continue
-            tests.setdefault(i.parent.fspath, []).append(i)
+            tests.setdefault(path, []).append(i)
         isolated_tests = sorted(k for k, v in tests.items() if v)
         self.isolated = dict((self._path(i), set()) for i in isolated_tests)
 
@@ -176,6 +180,7 @@ class TestManager:
             # if update flag is active, add skip marker to unchanged tests
             for path in isolated_tests:
                 tests[path][0].parent.add_marker("skip")
+                self.isolated[path] = set(self.tests[path]["isolated"])
 
     def _check_updated(self, path):
         path = self._path(path)
@@ -201,11 +206,13 @@ class TestManager:
             path, test = self._test_id(item)
             self.node_map.setdefault(path, []).append(test)
 
-        for path in self.node_map:
-            if path in self.tests and ARGV["update"]:
-                self.results[path] = list(self.tests[path]["results"])
-            else:
-                self.results[path] = []
+        if self.is_master:
+            # master loads previous results because it does not run runtest_protocol
+            for path in self.node_map:
+                if path in self.tests and ARGV["update"]:
+                    self.results[path] = list(self.tests[path]["results"])
+                else:
+                    self.results[path] = []
 
     def pytest_sessionstart(self):
         # remove PytestAssertRewriteWarning from terminalreporter warnings
@@ -225,6 +232,15 @@ class TestManager:
         if worker_id != "master":
             CONFIG["network"]["networks"][key]["test_rpc"]["port"] += int(worker_id[-1])
         brownie.network.connect(key)
+
+    def pytest_runtest_protocol(self, item):
+        # does not run on master
+        path, test = self._test_id(item.nodeid)
+        if path not in self.results:
+            if path in self.tests and ARGV["update"]:
+                self.results[path] = list(self.tests[path]["results"])
+            else:
+                self.results[path] = []
 
     def pytest_report_teststatus(self, report):
         if report.when == "setup":
@@ -271,11 +287,13 @@ class TestManager:
         if report.when != "teardown" or idx < len(self.node_map[path]) - 1:
             return
 
+        txhash = coverage._get_active_txlist()
         isolated = False
         if path in self.isolated:
             isolated = sorted(self.isolated[path])
+            if ARGV["update"]:
+                txhash = self.tests[path]["txhash"]
 
-        txhash = coverage._get_active_txlist()
         coverage._clear_active_txlist()
         if not ARGV["coverage"] and (path in self.tests and self.tests[path]["coverage"]):
             txhash = self.tests[path]["txhash"]
@@ -288,6 +306,8 @@ class TestManager:
         }
 
     def pytest_sessionfinish(self, session):
+        if self.is_worker:
+            self.tests = dict((k, v) for k, v in self.tests.items() if k in self.results)
         if not self.is_master:
             txhash = set(x for v in self.tests.values() for x in v["txhash"])
             coverage_eval = dict(
