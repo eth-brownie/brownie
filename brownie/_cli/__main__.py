@@ -21,6 +21,7 @@ Commands:
   ethpm              Commands related to the ethPM package manager
   compile            Compiles the contract source files
   console            Load the console
+  test               Run test cases in the /tests folder
   run                Run a script in the /scripts folder
   accounts           Manage local accounts
   gui                Load the GUI to view opcodes and test coverage

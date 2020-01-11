@@ -174,6 +174,17 @@ class TestManager:
         # if using xdist, schedule according to file
         return LoadFileScheduling(config, log)
 
+    def pytest_sessionstart(self):
+        # remove PytestAssertRewriteWarning from terminalreporter warnings
+        reporter = self.config.pluginmanager.get_plugin("terminalreporter")
+        if "warnings" in reporter.stats:
+            warnings = reporter.stats["warnings"]
+            warnings = [i for i in warnings if "PytestAssertRewriteWarning" not in i.message]
+            if not warnings:
+                del reporter.stats["warnings"]
+            else:
+                reporter.stats["warnings"] = warnings
+
     # ensure each copy of ganache runs on a different port
     @pytest.fixture(scope="session", autouse=True)
     def _session_isolation(self, worker_id):
