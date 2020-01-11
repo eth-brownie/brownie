@@ -31,7 +31,7 @@ pip install eth-brownie
 Or clone the repository and use ``setuptools`` for the most up-to-date version:
 
 ```bash
-python3 setup.py install
+python setup.py install
 ```
 
 ## Quick Usage
@@ -44,9 +44,11 @@ brownie init
 
 Next, type ``brownie --help`` for basic usage information.
 
-## Documentation
+## Documentation and Support
 
 Brownie documentation is hosted at [Read the Docs](https://eth-brownie.readthedocs.io/en/latest/).
+
+If you have any questions about how to use Brownie, feel free to ask on [Ethereum StackExchange](https://ethereum.stackexchange.com/) or join us on [Gitter](https://gitter.im/eth-brownie/community).
 
 ## Testing
 
@@ -60,7 +62,7 @@ Then use ``tox`` to run the complete suite against the full set of build targets
 
 ### Using Docker
 
-You can use a sandbox container provided in the docker-compose.yml file for testing inside a Docker environment.
+You can use a sandbox container provided in the `docker-compose.yml` file for testing inside a Docker environment.
 
 This container provides everything you need to test using a Python 3.6 interpreter.
 
@@ -92,27 +94,7 @@ docker-compose exec sandbox bash -c 'python -m pytest tests/convert/test_format_
 
 Help is always appreciated! Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.
 
-Join the Brownie [Gitter channel](https://gitter.im/eth-brownie/community) if you have any questions.
-
-### Pre-Commit Hooks
-
-We use [pre-commit](https://pre-commit.com/) hooks, primarily to ensure consistent formatting among contributors.
-
-If you haven't already, install all dev dependencies in `requirements-dev.txt` to enable pre-commit hooks.
-
-Install pre-commit locally from the brownie root folder:
-
-```bash
-pre-commit install
-```
-
-Commiting will now automatically run the local pre-commit hooks.
-
-If, for some reason, you need to force the commit without running the pre-commit hooks, you can manually disable the pre-commit.
-
-```bash
-git commit -m "commit message" --no-verify
-```
+Please check out our [Contribution Guide](CONTRIBUTING.md) prior to opening a pull request, and join the Brownie [Gitter channel](https://gitter.im/eth-brownie/community) if you have any questions.
 
 ## License
 
