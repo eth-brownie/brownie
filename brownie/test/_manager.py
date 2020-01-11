@@ -64,10 +64,10 @@ class TestManager:
         self.config = config
         self.project = project
         self.project_path = project._path
-        self.active_path = None
-        self.count = 0
-        self.results = None
-        self.isolated = set()
+        self.results = {}
+        self.node_map = {}
+        self.isolated = {}
+        self._skip = {}
         glob = self.project_path.glob("tests/**/conftest.py")
         self.conf_hashes = dict((self._path(i.parent), _get_ast_hash(i)) for i in glob)
         try:
@@ -83,6 +83,7 @@ class TestManager:
         )
         build = self.project._build
         self.contracts = dict((k, v["bytecodeSha1"]) for k, v in build.items() if v["bytecode"])
+
         changed_contracts = set(
             k
             for k, v in hashes["contracts"].items()
@@ -102,7 +103,11 @@ class TestManager:
                 coverage._add_cached_transaction(txhash, coverage_eval)
 
     def _path(self, path):
-        return str(Path(path).absolute().relative_to(self.project_path))
+        return Path(path).absolute().relative_to(self.project_path).as_posix()
+
+    def _test_id(self, nodeid):
+        path, test_id = nodeid.split("::")
+        return self._path(path), test_id
 
     def _get_hash(self, path):
         hash_ = _get_ast_hash(path)
@@ -130,12 +135,15 @@ class TestManager:
         # fn_isolation always runs before other function scoped fixtures
         _make_fixture_execute_first(metafunc, "fn_isolation", "function")
 
-    def pytest_collection_modifyitems(self, config, items):
+    def pytest_collection_modifyitems(self, items):
+        # does not run on master
         # if using xdist, clear collection if isolation is not active
-        if hasattr(config, "workerinput"):
+        if hasattr(self.config, "workerinput"):
             if next((i for i in items if "module_isolation" not in i.fixturenames), False):
                 items.clear()
                 return True
+
+        self._make_nodemap([i.nodeid for i in items])
 
         # determine which modules are properly isolated
         tests = {}
@@ -150,13 +158,10 @@ class TestManager:
                 continue
             tests.setdefault(i.parent.fspath, []).append(i)
         isolated_tests = sorted(k for k, v in tests.items() if v)
-        self.isolated = set(self._path(i) for i in isolated_tests)
+        self.isolated = dict((self._path(i), set()) for i in isolated_tests)
 
         if ARGV["update"]:
             isolated_tests = sorted(filter(self._check_updated, tests))
-            # if all tests will be skipped, do not launch the rpc client
-            if sorted(tests) == isolated_tests:
-                ARGV["norpc"] = True
             # if update flag is active, add skip marker to unchanged tests
             for path in isolated_tests:
                 tests[path][0].parent.add_marker("skip")
@@ -174,6 +179,22 @@ class TestManager:
     def pytest_xdist_make_scheduler(self, config, log):
         # if using xdist, schedule according to file
         return LoadFileScheduling(config, log)
+
+    def pytest_xdist_node_collection_finished(self, ids):
+        # required because pytest_collection_modifyitems is not called by master
+        self._make_nodemap(ids)
+
+    def _make_nodemap(self, ids):
+        self.node_map.clear()
+        for item in ids:
+            path, test = self._test_id(item)
+            self.node_map.setdefault(path, []).append(test)
+
+        for path in self.node_map:
+            if path in self.tests and ARGV["update"]:
+                self.results[path] = list(self.tests[path]["results"])
+            else:
+                self.results[path] = []
 
     def pytest_sessionstart(self):
         # remove PytestAssertRewriteWarning from terminalreporter warnings
@@ -194,56 +215,53 @@ class TestManager:
             CONFIG["network"]["networks"][key]["test_rpc"]["port"] += int(worker_id[-1])
         brownie.network.connect(key)
 
-    def pytest_runtest_protocol(self, item):
-        path = self._path(item.parent.fspath)
-        if path == self.active_path:
-            self.count += 1
-            return
-        self.active_path = path
-        self.count = 0
-        if path in self.tests and ARGV["update"]:
-            self.results = list(self.tests[path]["results"])
-        else:
-            self.results = []
-
     def pytest_report_teststatus(self, report):
-        if self.results is None:
-            return
         if report.when == "setup":
-            self._skip = report.skipped
-            if len(self.results) < self.count + 1:
-                self.results.append("s" if report.skipped else None)
+            self._skip[report.nodeid] = report.skipped
             if report.failed:
-                self.results[self.count] = "E"
                 return "error", "E", "ERROR"
             return "", "", ""
         if report.when == "teardown":
             if report.failed:
-                self.results[self.count] = "E"
                 return "error", "E", "ERROR"
-            elif self._skip:
-                report.outcome = STATUS_TYPES[self.results[self.count]]
+            elif self._skip[report.nodeid]:
+                path, test_id = self._test_id(report.nodeid)
+                idx = self.node_map[path].index(test_id)
+                report.outcome = STATUS_TYPES[self.results[path][idx]]
                 return "skipped", "s", "SKIPPED"
             return "", "", ""
         if hasattr(report, "wasxfail"):
-            self.results[self.count] = "x" if report.skipped else "X"
             if report.skipped:
                 return "xfailed", "x", "XFAIL"
             elif report.passed:
                 return "xpassed", "X", "XPASS"
-        self.results[self.count] = STATUS_SYMBOLS[report.outcome]
         return report.outcome, STATUS_SYMBOLS[report.outcome], report.outcome.upper()
 
-    def pytest_runtest_teardown(self, item, nextitem):
-        if list(item.parent.iter_markers("skip")):
+    def pytest_runtest_logreport(self, report):
+        path, test_id = self._test_id(report.nodeid)
+        if path in self.isolated:
+            self.isolated[path].update(
+                [i for i in _get_current_dependencies() if i in self.contracts]
+            )
+        idx = self.node_map[path].index(test_id)
+
+        results = self.results[path]
+        if report.when == "setup" and len(results) < idx + 1:
+            results.append("s" if report.skipped else None)
+        if report.when == "call":
+            results[idx] = STATUS_SYMBOLS[report.outcome]
+            if hasattr(report, "wasxfail"):
+                results[idx] = "x" if report.skipped else "X"
+        elif report.failed:
+            results[idx] = "E"
+        if report.when != "teardown" or idx < len(self.node_map[path]) - 1:
             return
-        # if this is the last test in a module, record the results
-        if nextitem and item.parent.fspath == nextitem.parent.fspath:
-            return
-        path = self._path(item.parent.fspath)
+
+        # TODO how to handle isolation data on xdist
         isolated = False
         if path in self.isolated:
-            isolated = [i for i in _get_current_dependencies() if i in self.contracts]
+            isolated = sorted(self.isolated[path])
+
         txhash = coverage._get_active_txlist()
         coverage._clear_active_txlist()
         if not ARGV["coverage"] and (path in self.tests and self.tests[path]["coverage"]):
@@ -253,7 +271,7 @@ class TestManager:
             "isolated": isolated,
             "coverage": ARGV["coverage"] or (path in self.tests and self.tests[path]["coverage"]),
             "txhash": txhash,
-            "results": "".join(self.results),
+            "results": "".join(self.results[path]),
         }
 
     def pytest_sessionfinish(self, session):
