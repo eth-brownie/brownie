@@ -178,7 +178,7 @@ class TransactionReceipt:
 
     def __repr__(self) -> str:
         c = {-1: "pending", 0: "error", 1: None}
-        return f"<Transaction object '{color[c[self.status]]}{self.txid}{color}'>"
+        return f"<Transaction '{color[c[self.status]]}{self.txid}{color}'>"
 
     def __hash__(self) -> int:
         return hash(self.txid)
