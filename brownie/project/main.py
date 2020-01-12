@@ -31,9 +31,10 @@ from brownie.utils import color
 
 FOLDERS = [
     "contracts",
+    "interfaces",
     "scripts",
-    "reports",
     "tests",
+    "reports",
     "build",
     "build/contracts",
     "build/deployments",
@@ -50,13 +51,15 @@ class _ProjectBase:
         self._sources = Sources(contract_sources)
         self._build = Build(self._sources)
 
-    def _compile(self, sources: Dict, compiler_config: Dict, silent: bool) -> None:
+    def _compile(
+        self, contract_sources: Dict, compiler_config: Dict, silent: bool, interface_sources: Dict
+    ) -> None:
         allow_paths = None
         if self._path is not None:
             allow_paths = self._path.joinpath("contracts").as_posix()
         compiler_config.setdefault("solc", {})
         build_json = compiler.compile_and_format(
-            sources,
+            contract_sources,
             solc_version=compiler_config["solc"].get("version", None),
             optimize=compiler_config["solc"].get("optimize", None),
             runs=compiler_config["solc"].get("runs", None),
@@ -64,6 +67,7 @@ class _ProjectBase:
             minify=compiler_config["minify_source"],
             silent=silent,
             allow_paths=allow_paths,
+            interface_sources=interface_sources,
         )
         for data in build_json.values():
             if self._path is not None:
@@ -150,7 +154,19 @@ class Project(_ProjectBase):
 
         # compile updated sources, update build
         changed = self._get_changed_contracts()
-        self._compile(changed, self._compiler_config, False)
+
+        interface_sources: Dict = {}
+        for path in self._path.glob("interfaces/**/*"):
+            if "/_" in path.as_posix() or path.suffix not in (".sol", ".vy", ".json"):
+                continue
+            with path.open() as fp:
+                if path.suffix == ".json":
+                    source = json.load(fp)
+                else:
+                    source = fp.read()
+            path_str: str = path.relative_to(self._path).as_posix()
+            interface_sources[path_str] = source
+        self._compile(changed, self._compiler_config, False, interface_sources)
         self._create_containers()
         self._load_deployments()
 
@@ -274,7 +290,7 @@ class TempProject(_ProjectBase):
 
     def __init__(self, name: str, contract_sources: Dict, compiler_config: Dict) -> None:
         super().__init__(name, contract_sources, None)
-        self._compile(contract_sources, compiler_config, True)
+        self._compile(contract_sources, compiler_config, True, {})
         self._create_containers()
 
     def __repr__(self) -> str:
