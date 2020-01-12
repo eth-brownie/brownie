@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Union
 
 import requests
+from tqdm import tqdm
 
 from brownie._config import (
     BROWNIE_FOLDER,
@@ -341,8 +342,17 @@ def from_brownie_mix(
         raise FileExistsError(f"Folder already exists - {project_path}")
 
     print(f"Downloading from {url}...")
-    request = requests.get(url)
-    with zipfile.ZipFile(BytesIO(request.content)) as zf:
+    response = requests.get(url, stream=True)
+    total_size = int(response.headers.get("content-length", 0))
+    progress_bar = tqdm(total=total_size, unit="iB", unit_scale=True)
+    content = bytes()
+
+    for data in response.iter_content(1024, decode_unicode=True):
+        progress_bar.update(len(data))
+        content += data
+    progress_bar.close()
+
+    with zipfile.ZipFile(BytesIO(content)) as zf:
         zf.extractall(str(project_path.parent))
     project_path.parent.joinpath(project_name + "-mix-master").rename(project_path)
     shutil.copy(
