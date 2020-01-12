@@ -14,7 +14,7 @@ def _generate_fixture(container):
     return pytest.fixture(scope="session")(_fixture)
 
 
-class TestFixtures:
+class PytestBrownieFixtures:
     def __init__(self, config, project):
         self.config = config
         for container in project:

@@ -2,15 +2,15 @@
 
 import sys
 
-import brownie
+from brownie import project
 from brownie._config import CONFIG
-from brownie.test._manager import TestManager
-from brownie.test.fixtures import TestFixtures
+from brownie.test.fixtures import PytestBrownieFixtures
+from brownie.test.managers import PytestBrownieMaster, PytestBrownieRunner, PytestBrownieXdistRunner
 
 
 # set commandline options
 def pytest_addoption(parser):
-    if brownie.project.check_for_project("."):
+    if project.check_for_project("."):
         parser.addoption(
             "--coverage", "-C", action="store_true", help="Evaluate contract test coverage"
         )
@@ -33,16 +33,24 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    if brownie.project.check_for_project("."):
+    if project.check_for_project("."):
 
-        # load project and generate dynamic fixtures
-        project = brownie.project.load()
-        project.load_config()
+        active_project = project.load()
+        active_project.load_config()
 
-        session = TestManager(config, project)
+        if config.getoption("numprocesses"):
+            Plugin = PytestBrownieMaster
+        elif hasattr(config, "workerinput"):
+            Plugin = PytestBrownieXdistRunner
+        else:
+            Plugin = PytestBrownieRunner
+
+        session = Plugin(config, active_project)
         config.pluginmanager.register(session, "brownie-core")
-        fixtures = TestFixtures(config, project)
-        config.pluginmanager.register(fixtures, "brownie-fixtures")
+
+        if not config.getoption("numprocesses"):
+            fixtures = PytestBrownieFixtures(config, active_project)
+            config.pluginmanager.register(fixtures, "brownie-fixtures")
 
         # by default, suppress stdout on failed tests
         if not next((i for i in sys.argv if i.startswith("--show-capture=")), False):
