@@ -157,7 +157,7 @@ class PublicKeyAccount:
         self.address = _resolve_address(addr)
 
     def __repr__(self) -> str:
-        return f"<{type(self).__name__} object '{color['string']}{self.address}{color}'>"
+        return f"<{type(self).__name__} '{color['string']}{self.address}{color}'>"
 
     def __hash__(self) -> int:
         return hash(self.address)

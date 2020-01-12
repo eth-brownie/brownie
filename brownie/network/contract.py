@@ -155,7 +155,7 @@ class ContractConstructor:
         self._name = name
 
     def __repr__(self) -> str:
-        return f"<{type(self).__name__} object '{self._name}.constructor({_inputs(self.abi)})'>"
+        return f"<{type(self).__name__} '{self._name}.constructor({_inputs(self.abi)})'>"
 
     def __call__(self, *args: Tuple) -> Union["Contract", TransactionReceiptType]:
         """Deploys a contract.
@@ -240,7 +240,7 @@ class _DeployedContractBase(_ContractBase):
         return self.address
 
     def __repr__(self) -> str:
-        return f"<{self._name} Contract object '{color['string']}{self.address}{color}'>"
+        return f"<{self._name} Contract '{color['string']}{self.address}{color}'>"
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, _DeployedContractBase):
@@ -356,7 +356,7 @@ class OverloadedMethod:
         return self.methods[key]
 
     def __repr__(self) -> str:
-        return f"<OverloadedMethod object '{self._name}'>"
+        return f"<OverloadedMethod '{self._name}'>"
 
     def __len__(self) -> int:
         return len(self.methods)
@@ -379,7 +379,7 @@ class _ContractMethod:
         else:
             pay_bool = self.abi["stateMutability"] == "payable"
         pay = "payable " if pay_bool else ""
-        return f"<{type(self).__name__} {pay}object '{self.abi['name']}({_inputs(self.abi)})'>"
+        return f"<{type(self).__name__} {pay}'{self.abi['name']}({_inputs(self.abi)})'>"
 
     def call(self, *args: Tuple) -> Any:
         """Calls the contract method without broadcasting a transaction.
