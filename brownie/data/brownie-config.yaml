@@ -3,14 +3,15 @@
 network:
     default: development # the default network that brownie connects to
     settings:
-        gas_limit: false
-        gas_price: false
+        gas_limit: "auto"
+        gas_price: "auto"
         persist: true
         reverting_tx_gas_limit: false  # if false, reverting tx's will raise without broadcasting
     networks:
         # any settings given here will replace the defaults
         development:
             host: http://127.0.0.1
+            gas_price: 0
             persist: false
             reverting_tx_gas_limit: 6721975
             test_rpc:
