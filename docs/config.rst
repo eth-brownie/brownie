@@ -33,8 +33,8 @@ The following settings are available:
 
         Default settings for every network. The following properties can be set:
 
-        * ``gas_price``: The default gas price for all transactions. If left as ``false`` the gas price will be determined using ``web3.eth.gasPrice``.
-        * ``gas_limit``: The default gas limit for all transactions. If left as ``false`` the gas limit will be determined using ``web3.eth.estimateGas``.
+        * ``gas_price``: The default gas price for all transactions. If set to ``auto`` the gas price will be determined using ``web3.eth.gasPrice``.
+        * ``gas_limit``: The default gas limit for all transactions. If set to ``auto`` the gas limit will be determined using ``web3.eth.estimateGas``.
         * ``persist``: If ``True``, Brownie will remember information about deployed contracts in between sessions. This is enabled by default for all non-local networks.
         * ``reverting_tx_gas_limit``: The gas limit to use when a transaction would revert. If set to ``false``, transactions that would revert will instead raise a ``VirtualMachineError``.
 

@@ -62,7 +62,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
 
     * If no argument is given, the current default is displayed.
     * If an integer value is given, this will be the default gas limit.
-    * If set to ``None``, ``True`` or ``False``, the gas limit is determined automatically via ``web3.eth.estimateGas``.
+    * If set to ``auto``, the gas limit is determined automatically via ``web3.eth.estimateGas``.
 
     Returns ``False`` if the gas limit is set automatically, or an ``int`` if it is set to a fixed value.
 
@@ -73,7 +73,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         False
         >>> network.gas_limit(6700000)
         6700000
-        >>> network.gas_limit(None)
+        >>> network.gas_limit("auto")
         False
 
 .. py:method:: main.gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]
@@ -81,7 +81,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
     Gets and optionally sets the default gas price.
 
     * If an integer value is given, this will be the default gas price.
-    * If set to ``None``, ``True`` or ``False``, the gas price is determined automatically via ``web3.eth.getPrice``.
+    * If set to ``auto``, the gas price is determined automatically via ``web3.eth.getPrice``.
 
     Returns ``False`` if the gas price is set automatically, or an ``int`` if it is set to a fixed value.
 
@@ -94,7 +94,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         10000000000
         >>> network.gas_price("1.2 gwei")
         1200000000
-        >>> network.gas_price(False)
+        >>> network.gas_price("auto")
         False
 
 ``brownie.network.account``
