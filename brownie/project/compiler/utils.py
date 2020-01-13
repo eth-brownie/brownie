@@ -1,6 +1,11 @@
 #!/usr/bin/python3
 
-from typing import List
+import re
+from typing import List, Optional
+
+from semantic_version import NpmSpec
+
+from brownie.exceptions import PragmaError
 
 
 def expand_source_map(source_map_str: str) -> List:
@@ -23,3 +28,12 @@ def _expand_row(row: str) -> List:
         if value:
             result[i] = value if i == 3 else int(value)
     return result
+
+
+def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
+    pragma_string = next(re.finditer(r"pragma +solidity([^;]*);", source), None)
+    if pragma_string is not None:
+        return NpmSpec(pragma_string.groups()[0])
+    if path:
+        raise PragmaError(f"No version pragma in '{path}'")
+    raise PragmaError(f"String does not contain a version pragma")
