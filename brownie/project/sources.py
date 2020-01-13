@@ -6,7 +6,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from brownie.exceptions import NamespaceCollision
+from brownie.exceptions import NamespaceCollision, UnsupportedLanguage
 from brownie.utils import color
 
 SOLIDITY_MINIFY_REGEX = [
@@ -77,10 +77,12 @@ class Sources:
 def minify(source: str, language: str = "Solidity") -> Tuple[str, List]:
     """Given contract source as a string, returns a minified version and an offset map."""
     offsets = [(0, 0)]
-    if language == "Solidity":
+    if language.lower() in ("solidity", ".sol"):
         pattern = f"({'|'.join(SOLIDITY_MINIFY_REGEX)})"
-    else:
+    elif language.lower() in ("vyper", ".vy"):
         pattern = f"({'|'.join(VYPER_MINIFY_REGEX)})"
+    else:
+        raise UnsupportedLanguage(language)
     for match in re.finditer(pattern, source):
         offsets.append(
             (match.start() - offsets[-1][1], match.end() - match.start() + offsets[-1][1])
@@ -159,14 +161,12 @@ def _get_contract_data(full_source: str, path_str: str) -> Dict:
         return _contract_data[key]
 
     path = Path(path_str)
-    language = "Vyper" if path.suffix == ".vy" else "Solidity"
-
-    minified_source, offset_map = minify(full_source, language)
+    minified_source, offset_map = minify(full_source, path.suffix)
     minified_key = sha1(minified_source.encode()).hexdigest()
     if minified_key in _contract_data:
         return _contract_data[minified_key]
 
-    if language == "Vyper":
+    if path.suffix == ".vy":
         data = {path.stem: {"offset": (0, len(full_source)), "offset_map": offset_map}}
     else:
         contracts = re.findall(
