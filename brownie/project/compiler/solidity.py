@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import logging
-import re
 from collections import deque
 from hashlib import sha1
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -9,12 +8,12 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import solcast
 import solcx
 from requests.exceptions import ConnectionError
-from semantic_version import NpmSpec, Version
+from semantic_version import Version
 from solcast.nodes import NodeBase
 
 from brownie._config import EVM_EQUIVALENTS
-from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
-from brownie.project.compiler.utils import expand_source_map
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion
+from brownie.project.compiler.utils import expand_source_map, get_pragma_spec
 
 from . import sources
 
@@ -25,7 +24,6 @@ sh.setLevel(10)
 sh.setFormatter(logging.Formatter("%(message)s"))
 solcx_logger.addHandler(sh)
 
-PRAGMA_REGEX = re.compile(r"pragma +solidity([^;]*);")
 AVAILABLE_SOLC_VERSIONS = None
 
 
@@ -122,16 +120,12 @@ def find_solc_versions(
     new_versions = set()
 
     for path, source in contract_sources.items():
-
-        pragma_string = next(PRAGMA_REGEX.finditer(source), None)
-        if pragma_string is None:
-            raise PragmaError(f"No version pragma in '{path}'")
-        pragma_specs[path] = NpmSpec(pragma_string.groups()[0])
+        pragma_specs[path] = get_pragma_spec(source, path)
         version = pragma_specs[path].select(installed_versions)
 
         if not version and not (install_needed or install_latest):
             raise IncompatibleSolcVersion(
-                f"No installed solc version matching '{pragma_string[0]}' in '{path}'"
+                f"No installed solc version matching '{pragma_specs[path]}' in '{path}'"
             )
 
         # if no installed version of solc matches the pragma, find the latest available version
@@ -139,7 +133,7 @@ def find_solc_versions(
 
         if not version and not latest:
             raise IncompatibleSolcVersion(
-                f"No installable solc version matching '{pragma_string[0]}' in '{path}'"
+                f"No installable solc version matching '{pragma_specs[path]}' in '{path}'"
             )
 
         if not version or (install_latest and latest > version):
@@ -191,10 +185,7 @@ def find_best_solc_version(
 
     for path, source in contract_sources.items():
 
-        pragma_string = next(PRAGMA_REGEX.finditer(source), None)
-        if pragma_string is None:
-            raise PragmaError(f"No version pragma in '{path}'")
-        pragma_spec = NpmSpec(pragma_string.groups()[0])
+        pragma_spec = get_pragma_spec(source, path)
         installed_versions = [i for i in installed_versions if i in pragma_spec]
         available_versions = [i for i in available_versions if i in pragma_spec]
 
