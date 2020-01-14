@@ -92,6 +92,14 @@ def install_solc(*versions: str) -> None:
         solcx.install_solc(str(version), show_progress=True)
 
 
+def get_abi(contract_source: str) -> Dict:
+    """Given a contract source, returns a dict of {name: abi}"""
+    version = find_best_solc_version({"<stdin>": contract_source})
+    set_solc_version(version)
+    compiled = solcx.compile_source(contract_source, allow_empty=True, output_values=["abi"])
+    return {k.rsplit(":")[-1]: v["abi"] for k, v in compiled.items()}
+
+
 def find_solc_versions(
     contract_sources: Dict[str, str],
     install_needed: bool = False,
