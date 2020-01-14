@@ -111,15 +111,17 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
         content = manifest["sources"].pop(key)
         if _is_uri(content):
             content = _get_uri_contents(content)
-        # ensure all absolute imports begin with contracts/
+        # ensure all absolute imports begin with contracts/ or interfaces/
         content = re.sub(
-            r"""(import((\s*{[^};]*}\s*from)|)\s*)("|')(contracts/||/)(?=[^./])""",
+            r"""(import((\s*{[^};]*}\s*from)|)\s*)("|')(?!\.|contracts\/|interfaces\/)""",
             lambda k: f"{k.group(1)}{k.group(4)}contracts/",
             content,
         )
         path = Path("/").joinpath(key.lstrip("./")).resolve()
         path_str = path.as_posix()[len(path.anchor) :]
-        manifest["sources"][f"contracts/{path_str}"] = content
+        if path.parts[1] not in ("contracts", "interfaces"):
+            path_str = f"contracts/{path_str}"
+        manifest["sources"][path_str] = content
 
     # set contract_name in contract_types
     contract_types = manifest["contract_types"]
@@ -403,6 +405,12 @@ def create_manifest(
     if "meta" in package_config:
         manifest["meta"] = package_config["meta"]
 
+    # determine base path
+    if list(project_path.glob("interfaces/**/*.sol")):
+        base_path = project_path
+    else:
+        base_path = project_path.joinpath("contracts")
+
     # load packages.json and add build_dependencies
     packages_json: Dict = {"sources": {}, "packages": {}}
     if not package_config["settings"]["include_dependencies"]:
@@ -418,8 +426,10 @@ def create_manifest(
             )
 
     # add sources
-    contract_path = project_path.joinpath("contracts")
-    for path in contract_path.glob("**/*.sol"):
+    path_list = list(project_path.glob("contracts/**/*.sol"))
+    if project_path == base_path:
+        path_list += list(project_path.glob("interfaces/**/*.sol"))
+    for path in path_list:
         if path.relative_to(project_path).as_posix() in packages_json["sources"]:
             continue
         if pin_assets:
@@ -429,9 +439,10 @@ def create_manifest(
         else:
             with path.open("rb") as fp:
                 uri = generate_file_hash(fp.read())
-        manifest["sources"][f"./{path.relative_to(contract_path).as_posix()}"] = f"ipfs://{uri}"
+        manifest["sources"][f"./{path.relative_to(base_path).as_posix()}"] = f"ipfs://{uri}"
 
     # add contract_types
+    relative_to = "" if project_path == base_path else "contracts"
     for path in project_path.glob("build/contracts/*.json"):
         with path.open() as fp:
             build_json = json.load(fp)
@@ -441,7 +452,9 @@ def create_manifest(
         if build_json["sourcePath"] in packages_json["sources"]:
             # skip dependencies
             continue
-        manifest["contract_types"][build_json["contractName"]] = _get_contract_type(build_json)
+        manifest["contract_types"][build_json["contractName"]] = _get_contract_type(
+            build_json, relative_to
+        )
 
     # add deployments
     deployment_networks = package_config["settings"]["deployment_networks"]
@@ -477,7 +490,7 @@ def create_manifest(
                         continue
                 else:
                     # add contract_type for dependency
-                    manifest["contract_types"][alias] = _get_contract_type(build_json)
+                    manifest["contract_types"][alias] = _get_contract_type(build_json, relative_to)
 
                 key = build_json["contractName"]
                 for i in itertools.count(1):
@@ -563,10 +576,10 @@ def release_package(
     return registry.release(package_name, version, uri)
 
 
-def _get_contract_type(build_json: Dict) -> Dict:
+def _get_contract_type(build_json: Dict, relative_to: str) -> Dict:
     contract_type = {
         "contract_name": build_json["contractName"],
-        "source_path": f"./{Path(build_json['sourcePath']).relative_to('contracts')}",
+        "source_path": f"./{Path(build_json['sourcePath']).relative_to(relative_to)}",
         "deployment_bytecode": {"bytecode": f"0x{build_json['bytecode']}"},
         "runtime_bytecode": {"bytecode": f"0x{build_json['deployedBytecode']}"},
         "abi": build_json["abi"],
