@@ -300,27 +300,51 @@ def install_package(project_path: Path, uri: str, replace_existing: bool = False
     remove_package(project_path, package_name, True)
     packages_json = _load_packages_json(project_path)
 
-    for path, source in manifest["sources"].items():
-        source_path = project_path.joinpath(path)
-        if not replace_existing and source_path.exists():
+    # check for differences with existing source files
+    if not replace_existing:
+        for path, new_source in manifest["sources"].items():
+            source_path = project_path.joinpath(path)
+            if not source_path.exists():
+                continue
             with source_path.open() as fp:
-                if fp.read() != source:
-                    raise FileExistsError(
-                        f"Cannot overwrite existing file with different content: '{source_path}'"
-                    )
+                existing_source = fp.read()
+            if existing_source != new_source:
+                raise FileExistsError(
+                    f"Cannot overwrite existing file with different content: '{source_path}'"
+                )
 
+    # install source files
     for path, source in manifest["sources"].items():
         for folder in list(Path(path).parents)[::-1]:
             project_path.joinpath(folder).mkdir(exist_ok=True)
         with project_path.joinpath(path).open("w") as fp:
             fp.write(source)
+
         with project_path.joinpath(path).open("rb") as fp:
             source_bytes = fp.read()
-
         packages_json["sources"].setdefault(path, {"packages": []})
         packages_json["sources"][path]["md5"] = hashlib.md5(source_bytes).hexdigest()
         packages_json["sources"][path]["packages"].append(package_name)
 
+    # install contract_types JSON interfaces
+    # this relies on non-standard ethPM fields, manifests created by tooling other
+    # than Brownie may not support this
+    for name, data in manifest["contract_types"].items():
+        if "source_path" not in data or "abi" not in data:
+            continue
+        path = Path(data["source_path"])
+        if path.parts[0] != "interfaces" or path.suffix != ".json":
+            continue
+        with project_path.joinpath(path).open("w") as fp:
+            json.dump(data["abi"], fp, indent=2, sort_keys=True)
+
+        with project_path.joinpath(path).open("rb") as fp:
+            source_bytes = fp.read()
+        packages_json["sources"].setdefault(path, {"packages": []})
+        packages_json["sources"][path]["md5"] = hashlib.md5(source_bytes).hexdigest()
+        packages_json["sources"][path]["packages"].append(package_name)
+
+    # update project packages.json
     packages_json["packages"][package_name] = {
         "manifest_uri": manifest["meta_brownie"]["manifest_uri"],
         "registry_address": manifest["meta_brownie"]["registry_address"],
