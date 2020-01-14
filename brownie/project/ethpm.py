@@ -446,15 +446,14 @@ def create_manifest(
     for path in project_path.glob("build/contracts/*.json"):
         with path.open() as fp:
             build_json = json.load(fp)
-        if not build_json["bytecode"]:
-            # skip contracts that cannot deploy
-            continue
         if build_json["sourcePath"] in packages_json["sources"]:
             # skip dependencies
             continue
-        manifest["contract_types"][build_json["contractName"]] = _get_contract_type(
-            build_json, relative_to
-        )
+        if not build_json["bytecode"] and build_json["type"] != "interface":
+            # skip contracts that cannot deploy
+            continue
+        contract_name = build_json["contractName"]
+        manifest["contract_types"][contract_name] = _get_contract_type(build_json, relative_to)
 
     # add deployments
     deployment_networks = package_config["settings"]["deployment_networks"]
@@ -578,22 +577,25 @@ def release_package(
 
 def _get_contract_type(build_json: Dict, relative_to: str) -> Dict:
     contract_type = {
+        "abi": build_json["abi"],
         "contract_name": build_json["contractName"],
         "source_path": f"./{Path(build_json['sourcePath']).relative_to(relative_to)}",
-        "deployment_bytecode": {"bytecode": f"0x{build_json['bytecode']}"},
-        "runtime_bytecode": {"bytecode": f"0x{build_json['deployedBytecode']}"},
-        "abi": build_json["abi"],
-        "compiler": {
-            "name": "solc" if build_json["language"] == "Solidity" else "vyper",
-            "version": build_json["compiler"]["version"],
-            "settings": {"evmVersion": build_json["compiler"]["evm_version"]},
-        },
     }
-    if build_json["language"] == "Solidity":
-        contract_type["compiler"]["settings"]["optimizer"] = {
-            "enabled": build_json["compiler"]["optimize"],
-            "runs": build_json["compiler"]["runs"],
-        }
+    if build_json["bytecode"]:
+        contract_type.update(
+            compiler={
+                "name": "solc" if build_json["language"] == "Solidity" else "vyper",
+                "version": build_json["compiler"]["version"],
+                "settings": {"evmVersion": build_json["compiler"]["evm_version"]},
+            },
+            deployment_bytecode={"bytecode": f"0x{build_json['bytecode']}"},
+            runtime_bytecode={"bytecode": f"0x{build_json['deployedBytecode']}"},
+        )
+        if build_json["language"] == "Solidity":
+            contract_type["compiler"]["settings"]["optimizer"] = {
+                "enabled": build_json["compiler"]["optimize"],
+                "runs": build_json["compiler"]["runs"],
+            }
     return contract_type
 
 
