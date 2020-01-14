@@ -671,7 +671,7 @@ def _verify_package_name(package_name: str) -> None:
         raise ValueError(f"Invalid package name '{package_name}'")
 
 
-def _get_path_list(project_path: Path, subfolder: str, allow_json: bool):
+def _get_path_list(project_path: Path, subfolder: str, allow_json: bool) -> List:
     path_iter = project_path.glob(f"{subfolder}/**/*")
     suffixes: Tuple = (".sol", ".vy")
     if allow_json:

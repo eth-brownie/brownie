@@ -91,6 +91,7 @@ def test_sources(tp_path):
         "./PackageRegistry.sol",
         "./SafeMath.sol",
         "./Unimplemented.sol",
+        "./VyperTester.vy",
     ]
 
 
