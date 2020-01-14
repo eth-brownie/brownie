@@ -140,7 +140,10 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
 
     # compile sources to expand contract_types
     if manifest["sources"]:
-        version = compiler.find_best_solc_version(manifest["sources"], install_needed=True)
+        version: Optional[str] = None
+        solc_sources = {k: v for k, v in manifest["sources"].items() if Path(k).suffix == ".sol"}
+        if solc_sources:
+            version = compiler.find_best_solc_version(solc_sources, install_needed=True)
 
         build_json = compiler.compile_and_format(manifest["sources"], version)
         for key, build in build_json.items():
