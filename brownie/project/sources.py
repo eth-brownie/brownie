@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json
 import re
 import textwrap
 from hashlib import sha1
@@ -29,17 +30,30 @@ class Sources:
 
     """Methods for accessing and manipulating a project's contract source files."""
 
-    def __init__(self, contract_sources: Dict) -> None:
+    def __init__(self, contract_sources: Dict, interface_sources: Dict) -> None:
         self._source: Dict = {}
         self._contracts: Dict = {}
+        self._interfaces: Dict = {}
+
         for path, source in contract_sources.items():
+            self._source[path] = source
             data = _get_contract_data(source, path)
             for name, values in data.items():
-                if name in self._contracts:
-                    raise NamespaceCollision(f"Project has multiple contracts named '{name}'")
+                if name in self._contracts or name in self._interfaces:
+                    raise NamespaceCollision(f"Multiple contracts or interfaces named '{name}'")
                 values["path"] = path
-            self._source[path] = source
             self._contracts.update(data)
+
+        for path, source in interface_sources.items():
+            self._source[path] = source
+            if Path(path).suffix != ".sol":
+                data = {Path(path).stem: minify(source, Path(path).suffix)[0]}
+            else:
+                data = _get_contracts(minify(source, "Solidity")[0])
+            for name, source in data.items():
+                if name in self._contracts or name in self._interfaces:
+                    raise NamespaceCollision(f"Multiple contracts or interfaces named '{name}'")
+                self._interfaces[name] = {"path": path, "hash": sha1(source.encode()).hexdigest()}
 
     def get(self, name: str) -> str:
         """Returns the source code file for the given name.
@@ -60,9 +74,25 @@ class Sources:
         """Returns a list of contract names for the active project."""
         return list(self._contracts.keys())
 
+    def get_interface_list(self) -> List:
+        """Returns a list of interface names for the active project."""
+        return list(self._interfaces.keys())
+
+    def get_interface_hashes(self) -> Dict:
+        """Returns a dict of interface hashes in the form of {name: hash}"""
+        return {k: v["hash"] for k, v in self._interfaces.items()}
+
+    def get_interface_sources(self) -> Dict:
+        """Returns a dict of interfaces sources in the form {path: source}"""
+        return {v["path"]: self._source[v["path"]] for v in self._interfaces.values()}
+
     def get_source_path(self, contract_name: str) -> Path:
         """Returns the path to the source file where a contract is located."""
-        return self._contracts[contract_name]["path"]
+        if contract_name in self._contracts:
+            return self._contracts[contract_name]["path"]
+        if contract_name in self._interfaces:
+            return self._interfaces[contract_name]["path"]
+        raise KeyError(contract_name)
 
     def expand_offset(self, contract_name: str, offset: Tuple) -> Tuple:
         """Converts an offset from source with comments removed, to one from the original source."""
@@ -75,8 +105,11 @@ class Sources:
 
 
 def minify(source: str, language: str = "Solidity") -> Tuple[str, List]:
-    """Given contract source as a string, returns a minified version and an offset map."""
+    """Given source as a string, returns a minified version and an offset map."""
     offsets = [(0, 0)]
+    if language.lower() in ("json", ".json"):
+        abi = json.loads(source)
+        return json.dumps(abi, sort_keys=True, separators=(",", ":"), default=str), []
     if language.lower() in ("solidity", ".sol"):
         pattern = f"({'|'.join(SOLIDITY_MINIFY_REGEX)})"
     elif language.lower() in ("vyper", ".vy"):
@@ -105,12 +138,12 @@ def get_hash(source: str, contract_name: str, minified: bool, language: str) -> 
     """Returns a hash of the contract source code."""
     if minified:
         source = minify(source, language)[0]
-    try:
-        data = _get_contract_data(source, "")[contract_name]
-        offset = slice(*data["offset"])
-        return sha1(source[offset].encode()).hexdigest()
-    except KeyError:
-        return ""
+    if language.lower() == "solidity":
+        try:
+            source = _get_contracts(source)[contract_name]
+        except KeyError:
+            return ""
+    return sha1(source.encode()).hexdigest()
 
 
 def highlight_source(source: str, offset: Tuple, pad: int = 3) -> Tuple:
@@ -169,15 +202,8 @@ def _get_contract_data(full_source: str, path_str: str) -> Dict:
     if path.suffix == ".vy":
         data = {path.stem: {"offset": (0, len(full_source)), "offset_map": offset_map}}
     else:
-        contracts = re.findall(
-            r"((?:contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:contract|library|interface)\s|$)",  # NOQA: E501
-            minified_source,
-        )
         data = {}
-        for source in contracts:
-            type_, name, inherited = re.findall(
-                r"(contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)", source
-            )[0]
+        for name, source in _get_contracts(minified_source).items():
             idx = minified_source.index(source)
             offset = (
                 idx + next(i[1] for i in offset_map if i[0] <= idx),
@@ -186,4 +212,18 @@ def _get_contract_data(full_source: str, path_str: str) -> Dict:
             data[name] = {"offset_map": offset_map, "offset": offset}
     _contract_data[key] = data
     _contract_data[minified_key] = data
+    return data
+
+
+def _get_contracts(full_source: str) -> Dict:
+    data = {}
+    contracts = re.findall(
+        r"((?:contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:contract|library|interface)\s|$)",  # NOQA: E501
+        full_source,
+    )
+    for source in contracts:
+        type_, name, inherited = re.findall(
+            r"(contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)", source
+        )[0]
+        data[name] = source
     return data

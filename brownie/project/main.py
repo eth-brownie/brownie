@@ -45,15 +45,15 @@ _loaded_projects = []
 
 
 class _ProjectBase:
-    def __init__(self, name: str, contract_sources: Dict, project_path: Optional[Path]) -> None:
-        self._path = project_path
+    def __init__(
+        self, name: str, path: Optional[Path], contract_sources: Dict, interface_sources: Dict
+    ) -> None:
+        self._path = path
         self._name = name
-        self._sources = Sources(contract_sources)
+        self._sources = Sources(contract_sources, interface_sources)
         self._build = Build(self._sources)
 
-    def _compile(
-        self, contract_sources: Dict, compiler_config: Dict, silent: bool, interface_sources: Dict
-    ) -> None:
+    def _compile(self, contract_sources: Dict, compiler_config: Dict, silent: bool) -> None:
         allow_paths = None
         if self._path is not None:
             allow_paths = self._path.joinpath("contracts").as_posix()
@@ -67,7 +67,7 @@ class _ProjectBase:
             minify=compiler_config["minify_source"],
             silent=silent,
             allow_paths=allow_paths,
-            interface_sources=interface_sources,
+            interface_sources=self._sources.get_interface_sources(),
         )
         for data in build_json.values():
             if self._path is not None:
@@ -118,16 +118,10 @@ class Project(_ProjectBase):
     """
 
     def __init__(self, name: str, project_path: Path) -> None:
-        contract_sources: Dict = {}
-        for path in project_path.glob("contracts/**/*"):
-            if "/_" in path.as_posix() or path.suffix not in (".sol", ".vy"):
-                continue
-            with path.open() as fp:
-                source = fp.read()
-            path_str: str = path.relative_to(project_path).as_posix()
-            contract_sources[path_str] = source
-        super().__init__(name, contract_sources, project_path)
         self._path: Path = project_path
+        contract_sources = _load_sources(project_path, "contracts", False)
+        interface_sources = _load_sources(project_path, "interfaces", True)
+        super().__init__(name, project_path, contract_sources, interface_sources)
 
         contract_list = self._sources.get_contract_list()
         for path in list(project_path.glob("build/contracts/*.json")):
@@ -154,19 +148,8 @@ class Project(_ProjectBase):
 
         # compile updated sources, update build
         changed = self._get_changed_contracts()
-
-        interface_sources: Dict = {}
-        for path in self._path.glob("interfaces/**/*"):
-            if "/_" in path.as_posix() or path.suffix not in (".sol", ".vy", ".json"):
-                continue
-            with path.open() as fp:
-                if path.suffix == ".json":
-                    source = json.load(fp)
-                else:
-                    source = fp.read()
-            path_str: str = path.relative_to(self._path).as_posix()
-            interface_sources[path_str] = source
-        self._compile(changed, self._compiler_config, False, interface_sources)
+        self._compile(changed, self._compiler_config, False)
+        self._save_interface_hashes()
         self._create_containers()
         self._load_deployments()
 
@@ -185,14 +168,37 @@ class Project(_ProjectBase):
         _loaded_projects.append(self)
 
     def _get_changed_contracts(self) -> Dict:
-        changed = [i for i in self._sources.get_contract_list() if self._compare_build_json(i)]
-        final = set(changed)
-        for contract_name in changed:
+        # get list of changed interfaces and contracts
+        old_hashes = self._load_interface_hashes()
+        new_hashes = self._sources.get_interface_hashes()
+        interfaces = [k for k, v in new_hashes.items() if old_hashes.get(k, None) != v]
+        contracts = [i for i in self._sources.get_contract_list() if self._compare_build_json(i)]
+
+        # get dependents of changed sources
+        final = set(contracts + interfaces)
+        for contract_name in list(final):
             final.update(self._build.get_dependents(contract_name))
+
+        # remove outdated build artifacts
         for name in [i for i in final if self._build.contains(i)]:
             self._build._remove(name)
+
+        # get final list of changed source paths
+        final.difference_update(interfaces)
         changed_set: Set = set(self._sources.get_source_path(i) for i in final)
-        return dict((i, self._sources.get(i)) for i in changed_set)
+        return {i: self._sources.get(i) for i in changed_set}
+
+    def _load_interface_hashes(self) -> Dict:
+        try:
+            with self._path.joinpath("build/interfaces.json").open() as fp:
+                return json.load(fp)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
+
+    def _save_interface_hashes(self) -> None:
+        interface_hashes = self._sources.get_interface_hashes()
+        with self._path.joinpath("build/interfaces.json").open("w") as fp:
+            json.dump(interface_hashes, fp, sort_keys=True, indent=2)
 
     def _compare_build_json(self, contract_name: str) -> bool:
         config = self._compiler_config
@@ -289,8 +295,8 @@ class TempProject(_ProjectBase):
     compiled via project.compile_source"""
 
     def __init__(self, name: str, contract_sources: Dict, compiler_config: Dict) -> None:
-        super().__init__(name, contract_sources, None)
-        self._compile(contract_sources, compiler_config, True, {})
+        super().__init__(name, None, contract_sources, {})
+        self._compile(contract_sources, compiler_config, True)
         self._create_containers()
 
     def __repr__(self) -> str:
@@ -479,3 +485,15 @@ def _compare_settings(left: Dict, right: Dict) -> bool:
     return next(
         (True for k, v in left.items() if v and not isinstance(v, dict) and v != right[k]), False
     )
+
+
+def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
+    contract_sources: Dict = {}
+    for path in project_path.glob(f"{subfolder}/**/*"):
+        if "/_" in path.as_posix() or path.suffix not in (".sol", ".vy", ".json"):
+            continue
+        with path.open() as fp:
+            source = fp.read()
+        path_str: str = path.relative_to(project_path).as_posix()
+        contract_sources[path_str] = source
+    return contract_sources

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json
 from copy import deepcopy
 from pathlib import Path
 from typing import Dict, Optional, Union
@@ -289,8 +290,10 @@ def generate_build_json(
 def _sources_dict(original: Dict, minify: bool, language: str) -> Dict:
     result: Dict = {}
     for key, value in original.items():
-        if isinstance(value, str):
-            result[key] = {"content": sources.minify(value, language)[0] if minify else value}
-        else:
+        if Path(key).suffix == ".json":
+            if isinstance(value, str):
+                value = json.loads(value)
             result[key] = {"abi": value}
+        else:
+            result[key] = {"content": sources.minify(value, language)[0] if minify else value}
     return result
