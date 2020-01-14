@@ -406,7 +406,7 @@ def create_manifest(
         manifest["meta"] = package_config["meta"]
 
     # determine base path
-    if list(project_path.glob("interfaces/**/*.sol")):
+    if _get_path_list(project_path, "interfaces", True):
         base_path = project_path
     else:
         base_path = project_path.joinpath("contracts")
@@ -426,9 +426,9 @@ def create_manifest(
             )
 
     # add sources
-    path_list = list(project_path.glob("contracts/**/*.sol"))
+    path_list = _get_path_list(project_path, "contracts", False)
     if project_path == base_path:
-        path_list += list(project_path.glob("interfaces/**/*.sol"))
+        path_list += _get_path_list(project_path, "interfaces", False)
     for path in path_list:
         if path.relative_to(project_path).as_posix() in packages_json["sources"]:
             continue
@@ -441,7 +441,7 @@ def create_manifest(
                 uri = generate_file_hash(fp.read())
         manifest["sources"][f"./{path.relative_to(base_path).as_posix()}"] = f"ipfs://{uri}"
 
-    # add contract_types
+    # add contract_types from contracts/
     relative_to = "" if project_path == base_path else "contracts"
     for path in project_path.glob("build/contracts/*.json"):
         with path.open() as fp:
@@ -454,6 +454,26 @@ def create_manifest(
             continue
         contract_name = build_json["contractName"]
         manifest["contract_types"][contract_name] = _get_contract_type(build_json, relative_to)
+
+    # add contract_types from interfaces/
+    for path in _get_path_list(project_path, "interfaces", True):
+        if path.suffix == ".json":
+            with path.open() as fp:
+                data = {path.stem: json.load(fp)}
+        else:
+            with path.open() as fp:
+                source = fp.read()
+            if path.suffix == ".sol":
+                data = compiler.solidity.get_abi(source)
+            else:
+                data = compiler.vyper.get_abi(source, path.stem)
+        for name, abi in data.items():
+            build_json = {
+                "abi": abi,
+                "contractName": name,
+                "sourcePath": path.relative_to(project_path).as_posix(),
+            }
+            manifest["contract_types"][name] = _get_contract_type(build_json, "")
 
     # add deployments
     deployment_networks = package_config["settings"]["deployment_networks"]
@@ -581,7 +601,7 @@ def _get_contract_type(build_json: Dict, relative_to: str) -> Dict:
         "contract_name": build_json["contractName"],
         "source_path": f"./{Path(build_json['sourcePath']).relative_to(relative_to)}",
     }
-    if build_json["bytecode"]:
+    if build_json.get("bytecode", None):
         contract_type.update(
             compiler={
                 "name": "solc" if build_json["language"] == "Solidity" else "vyper",
@@ -622,3 +642,11 @@ def _remove_empty_fields(initial: Dict) -> Dict:
 def _verify_package_name(package_name: str) -> None:
     if re.fullmatch(r"^[a-z][a-z0-9_-]{0,255}$", package_name) is None:
         raise ValueError(f"Invalid package name '{package_name}'")
+
+
+def _get_path_list(project_path: Path, subfolder: str, allow_json: bool):
+    path_iter = project_path.glob(f"{subfolder}/**/*")
+    suffixes: Tuple = (".sol", ".vy")
+    if allow_json:
+        suffixes += (".json",)
+    return [i for i in path_iter if "/_" not in i.as_posix() and i.suffix in suffixes]
