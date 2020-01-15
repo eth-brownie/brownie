@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Progress bar when downloading a Brownie mix
 
+### Changed
+- Move check for new contract sources from `Project.__init__` to `Project.load`
+
 ## [1.4.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.4.2) - 2020-01-10
 ### Added
 - Add Ethereum Classic networks in `brownie-config.yaml`

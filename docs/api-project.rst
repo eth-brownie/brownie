@@ -27,7 +27,7 @@ Project Methods
 
 .. py:classmethod:: Project.load() -> None
 
-    Compiles the project source codes, instantiates ``ContractContainer`` objects, and populates the namespace.
+    Collects project source files, compiles new or updated contracts, instantiates ``ContractContainer`` objects, and populates the namespace.
 
     Projects are typically loaded via ``brownie.project.load()``, but if you have a ``Project`` object that was previously closed you can reload it using this method.
 

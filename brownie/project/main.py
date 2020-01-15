@@ -45,13 +45,10 @@ _loaded_projects = []
 
 
 class _ProjectBase:
-    def __init__(
-        self, name: str, path: Optional[Path], contract_sources: Dict, interface_sources: Dict
-    ) -> None:
-        self._path = path
-        self._name = name
-        self._sources = Sources(contract_sources, interface_sources)
-        self._build = Build(self._sources)
+
+    _path: Optional[Path]
+    _sources: Sources
+    _build: Build
 
     def _compile(self, contract_sources: Dict, compiler_config: Dict, silent: bool) -> None:
         allow_paths = None
@@ -119,12 +116,23 @@ class Project(_ProjectBase):
 
     def __init__(self, name: str, project_path: Path) -> None:
         self._path: Path = project_path
-        contract_sources = _load_sources(project_path, "contracts", False)
-        interface_sources = _load_sources(project_path, "interfaces", True)
-        super().__init__(name, project_path, contract_sources, interface_sources)
+        self._name = name
+        self._active = False
+        self.load()
+
+    def load(self) -> None:
+        """Compiles the project contracts, creates ContractContainer objects and
+        populates the namespace."""
+        if self._active:
+            raise ProjectAlreadyLoaded("Project is already active")
+
+        contract_sources = _load_sources(self._path, "contracts", False)
+        interface_sources = _load_sources(self._path, "interfaces", True)
+        self._sources = Sources(contract_sources, interface_sources)
+        self._build = Build(self._sources)
 
         contract_list = self._sources.get_contract_list()
-        for path in list(project_path.glob("build/contracts/*.json")):
+        for path in list(self._path.glob("build/contracts/*.json")):
             try:
                 with path.open() as fp:
                     build_json = json.load(fp)
@@ -134,15 +142,6 @@ class Project(_ProjectBase):
                 path.unlink()
                 continue
             self._build._add(build_json)
-
-        self._active = False
-        self.load()
-
-    def load(self) -> None:
-        """Compiles the project contracts, creates ContractContainer objects and
-        populates the namespace."""
-        if self._active:
-            raise ProjectAlreadyLoaded("Project is already active")
 
         self._compiler_config = _load_project_compiler_config(self._path)
 
@@ -295,7 +294,10 @@ class TempProject(_ProjectBase):
     compiled via project.compile_source"""
 
     def __init__(self, name: str, contract_sources: Dict, compiler_config: Dict) -> None:
-        super().__init__(name, None, contract_sources, {})
+        self._path = None
+        self._name = name
+        self._sources = Sources(contract_sources, {})
+        self._build = Build(self._sources)
         self._compile(contract_sources, compiler_config, True)
         self._create_containers()
 
