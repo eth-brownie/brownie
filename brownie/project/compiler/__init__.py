@@ -15,7 +15,6 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
     install_solc,
     set_solc_version,
 )
-from brownie.project.compiler.utils import get_pragma_spec
 
 from . import solidity, vyper
 
@@ -102,7 +101,7 @@ def compile_and_format(
             interfaces = {
                 k: v
                 for k, v in interface_sources.items()
-                if Path(k).suffix == ".sol" and Version(version) in get_pragma_spec(v, k)
+                if Path(k).suffix == ".sol" and Version(version) in sources.get_pragma_spec(v, k)
             }
 
         to_compile = {k: v for k, v in contract_sources.items() if k in path_list}

@@ -5,9 +5,11 @@ import re
 import textwrap
 from hashlib import sha1
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from brownie.exceptions import NamespaceCollision, UnsupportedLanguage
+from semantic_version import NpmSpec
+
+from brownie.exceptions import NamespaceCollision, PragmaError, UnsupportedLanguage
 from brownie.utils import color
 
 SOLIDITY_MINIFY_REGEX = [
@@ -49,7 +51,7 @@ class Sources:
             if Path(path).suffix != ".sol":
                 data = {Path(path).stem: minify(source, Path(path).suffix)[0]}
             else:
-                data = _get_contracts(minify(source, "Solidity")[0])
+                data = get_contracts(minify(source, "Solidity")[0])
             for name, source in data.items():
                 if name in self._contracts or name in self._interfaces:
                     raise NamespaceCollision(f"Multiple contracts or interfaces named '{name}'")
@@ -140,7 +142,7 @@ def get_hash(source: str, contract_name: str, minified: bool, language: str) -> 
         source = minify(source, language)[0]
     if language.lower() == "solidity":
         try:
-            source = _get_contracts(source)[contract_name]
+            source = get_contracts(source)[contract_name]
         except KeyError:
             return ""
     return sha1(source.encode()).hexdigest()
@@ -203,7 +205,7 @@ def _get_contract_data(full_source: str, path_str: str) -> Dict:
         data = {path.stem: {"offset": (0, len(full_source)), "offset_map": offset_map}}
     else:
         data = {}
-        for name, source in _get_contracts(minified_source).items():
+        for name, source in get_contracts(minified_source).items():
             idx = minified_source.index(source)
             offset = (
                 idx + next(i[1] for i in offset_map if i[0] <= idx),
@@ -215,7 +217,17 @@ def _get_contract_data(full_source: str, path_str: str) -> Dict:
     return data
 
 
-def _get_contracts(full_source: str) -> Dict:
+def get_contracts(full_source: str) -> Dict:
+
+    """
+    Extracts code for individual contracts from a complete Solidity source
+
+    Args:
+        full_source: Solidity source code
+
+    Returns: dict of {"ContractName": "source"}
+    """
+
     data = {}
     contracts = re.findall(
         r"((?:contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:contract|library|interface)\s|$)",  # NOQA: E501
@@ -227,3 +239,23 @@ def _get_contracts(full_source: str) -> Dict:
         )[0]
         data[name] = source
     return data
+
+
+def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
+
+    """
+    Extracts pragma information from Solidity source code.
+
+    Args:
+        source: Solidity source code
+        path: Optional path to the source (only used for error reporting)
+
+    Returns: NpmSpec object
+    """
+
+    pragma_string = next(re.finditer(r"pragma +solidity([^;]*);", source), None)
+    if pragma_string is not None:
+        return NpmSpec(pragma_string.groups()[0])
+    if path:
+        raise PragmaError(f"No version pragma in '{path}'")
+    raise PragmaError(f"String does not contain a version pragma")

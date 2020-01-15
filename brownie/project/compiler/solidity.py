@@ -13,7 +13,7 @@ from solcast.nodes import NodeBase
 
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion
-from brownie.project.compiler.utils import expand_source_map, get_pragma_spec
+from brownie.project.compiler.utils import expand_source_map
 
 from . import sources
 
@@ -128,7 +128,7 @@ def find_solc_versions(
     new_versions = set()
 
     for path, source in contract_sources.items():
-        pragma_specs[path] = get_pragma_spec(source, path)
+        pragma_specs[path] = sources.get_pragma_spec(source, path)
         version = pragma_specs[path].select(installed_versions)
 
         if not version and not (install_needed or install_latest):
@@ -193,7 +193,7 @@ def find_best_solc_version(
 
     for path, source in contract_sources.items():
 
-        pragma_spec = get_pragma_spec(source, path)
+        pragma_spec = sources.get_pragma_spec(source, path)
         installed_versions = [i for i in installed_versions if i in pragma_spec]
         available_versions = [i for i in available_versions if i in pragma_spec]
 
