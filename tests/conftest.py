@@ -4,10 +4,13 @@ import itertools
 import json
 import os
 import shutil
+import time
+from base64 import b64encode
 from pathlib import Path
 from typing import Dict, List
 
 import pytest
+import requests
 import yaml
 from _pytest.monkeypatch import MonkeyPatch
 from ethpm._utils.ipfs import dummy_ipfs_pin
@@ -36,15 +39,9 @@ def pytest_addoption(parser):
     parser.addoption("--skip-regular", action="store_true", help="Skips regular tests")
 
 
-# ignore mix tests if not selected via config flags
-def pytest_ignore_collect(path, config):
-    if path.basename == "test_brownie_mix.py" and not config.getoption("--mix-tests"):
-        return True
-
-
-# auto-parametrize the evmtester fixture
 def pytest_generate_tests(metafunc):
-    if "evmtester" in metafunc.fixturenames:
+    # parametrize the evmtester fixture
+    if "evmtester" in metafunc.fixturenames and metafunc.config.getoption("--evm-tests"):
         metafunc.parametrize(
             "evmtester",
             itertools.product(
@@ -54,6 +51,25 @@ def pytest_generate_tests(metafunc):
             ),
             indirect=True,
         )
+
+    # parametrize the browniemix fixture
+    if "browniemix" in metafunc.fixturenames and metafunc.config.getoption("--mix-tests"):
+        if os.getenv("GITHUB_TOKEN"):
+            auth = b64encode(os.getenv("GITHUB_TOKEN").encode()).decode()
+            headers = {"Authorization": "Basic {}".format(auth)}
+        else:
+            headers = None
+
+        for i in range(10):
+            data = requests.get("https://api.github.com/orgs/brownie-mix/repos", headers=headers)
+            if data.status_code == 200:
+                break
+            time.sleep(30)
+
+        if data.status_code != 200:
+            raise ConnectionError("Cannot connect to Github API")
+
+        metafunc.parametrize("browniemix", [i["name"] for i in data.json()])
 
 
 # remove tests based on config flags and fixture names
