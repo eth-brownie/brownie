@@ -230,12 +230,13 @@ def get_contracts(full_source: str) -> Dict:
 
     data = {}
     contracts = re.findall(
-        r"((?:contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:contract|library|interface)\s|$)",  # NOQA: E501
+        r"((?:abstract contract|contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:abstract contract|contract|library|interface)\s|$)",  # NOQA: E501
         full_source,
     )
     for source in contracts:
         type_, name, inherited = re.findall(
-            r"(contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)", source
+            r"(abstract contract|contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)",
+            source,
         )[0]
         data[name] = source
     return data
