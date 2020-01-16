@@ -161,6 +161,11 @@ def newproject(project, tmp_path):
     yield p
 
 
+@pytest.fixture
+def np_path(newproject):
+    yield newproject._path
+
+
 # copies the tester project into a temporary folder, loads it, and yields a Project object
 @pytest.fixture
 def testproject(_project_factory, project, tmp_path):

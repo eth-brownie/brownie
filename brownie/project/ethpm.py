@@ -97,6 +97,8 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
         uri: IPFS uri of the package
     """
 
+    if "manifest_version" not in manifest:
+        raise InvalidManifest("Manifest does not specify a version")
     if manifest["manifest_version"] != "2":
         raise InvalidManifest(
             f"Brownie only supports v2 ethPM manifests, this "
@@ -145,7 +147,11 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
         if solc_sources:
             version = compiler.find_best_solc_version(solc_sources, install_needed=True)
 
-        build_json = compiler.compile_and_format(manifest["sources"], version)
+        build_json = compiler.compile_and_format(
+            manifest["sources"],
+            solc_version=version,
+            interface_sources=_get_json_interfaces(manifest["contract_types"]),
+        )
         for key, build in build_json.items():
             manifest["contract_types"].setdefault(key, {"contract_name": key})
             manifest["contract_types"][key].update(
@@ -332,14 +338,9 @@ def install_package(project_path: Path, uri: str, replace_existing: bool = False
     # install contract_types JSON interfaces
     # this relies on non-standard ethPM fields, manifests created by tooling other
     # than Brownie may not support this
-    for name, data in manifest["contract_types"].items():
-        if "source_path" not in data or "abi" not in data:
-            continue
-        path = Path(data["source_path"])
-        if path.parts[0] != "interfaces" or path.suffix != ".json":
-            continue
+    for path, abi in _get_json_interfaces(manifest["contract_types"]).items():
         with project_path.joinpath(path).open("w") as fp:
-            json.dump(data["abi"], fp, indent=2, sort_keys=True)
+            json.dump(abi, fp, indent=2, sort_keys=True)
 
         with project_path.joinpath(path).open("rb") as fp:
             source_bytes = fp.read()
@@ -677,3 +678,15 @@ def _get_path_list(project_path: Path, subfolder: str, allow_json: bool) -> List
     if allow_json:
         suffixes += (".json",)
     return [i for i in path_iter if "/_" not in i.as_posix() and i.suffix in suffixes]
+
+
+def _get_json_interfaces(contract_types: Dict) -> Dict:
+    interfaces = {}
+    for data in contract_types.values():
+        if "source_path" not in data or "abi" not in data:
+            continue
+        path = Path(data["source_path"])
+        if path.parts[0] != "interfaces" or path.suffix != ".json":
+            continue
+        interfaces[data["source_path"]] = data["abi"]
+    return interfaces

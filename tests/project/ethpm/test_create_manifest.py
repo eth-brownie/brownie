@@ -41,7 +41,7 @@ def test_standard_fields(tp_path):
     assert "build_dependencies" not in manifest
 
 
-def test_meta(tp_path):
+def test_meta(np_path):
     package_config = ETHPM_CONFIG.copy()
     package_config["meta"] = {
         "description": "blahblahblah",
@@ -51,7 +51,7 @@ def test_meta(tp_path):
         "links": {"website": "www.potato.com", "documentation": None},
         "foo": "bar",
     }
-    manifest, _ = ethpm.create_manifest(tp_path, package_config)
+    manifest, _ = ethpm.create_manifest(np_path, package_config)
     assert manifest["meta"] == {
         "description": "blahblahblah",
         "authors": ["foo"],
@@ -60,27 +60,43 @@ def test_meta(tp_path):
     }
 
 
-def test_invalid_package_name(tp_path):
+def test_invalid_package_name(np_path):
     package_config = ETHPM_CONFIG.copy()
     package_config["package_name"] = "A Very Invalid Name!"
     with pytest.raises(ValueError):
-        ethpm.create_manifest(tp_path, package_config)
+        ethpm.create_manifest(np_path, package_config)
 
 
-def test_missing_fields(tp_path):
+def test_missing_fields(np_path):
     for key in ETHPM_CONFIG:
         package_config = ETHPM_CONFIG.copy()
         del package_config[key]
         with pytest.raises(KeyError):
-            ethpm.create_manifest(tp_path, package_config)
+            ethpm.create_manifest(np_path, package_config)
 
 
-def test_field_as_none(tp_path):
+def test_field_as_none(np_path):
     for key in ETHPM_CONFIG:
         package_config = ETHPM_CONFIG.copy()
         package_config[key] = None
         with pytest.raises(KeyError):
-            ethpm.create_manifest(tp_path, package_config)
+            ethpm.create_manifest(np_path, package_config)
+
+
+def test_base_path(newproject, solc5source):
+    with newproject._path.joinpath("contracts/Foo.sol").open("w") as fp:
+        fp.write(solc5source)
+    newproject.load()
+    manifest, _ = ethpm.create_manifest(newproject._path, ETHPM_CONFIG)
+    assert sorted(manifest["sources"]) == ["./Foo.sol"]
+    newproject.close()
+
+    # adding an interface should change the base path
+    with newproject._path.joinpath("interfaces/Baz.sol").open("w") as fp:
+        fp.write("pragma solidity ^0.5.0; interface Baz {}")
+    newproject.load()
+    manifest, _ = ethpm.create_manifest(newproject._path, ETHPM_CONFIG)
+    assert sorted(manifest["sources"]) == ["./contracts/Foo.sol", "./interfaces/Baz.sol"]
 
 
 def test_sources(tp_path):
@@ -117,6 +133,34 @@ def test_contract_types(tp_path):
             },
         },
     }
+
+
+def test_contract_types_unimplemented(newproject):
+    code = """
+pragma solidity ^0.5.0;
+contract A { function bar() external returns (bool); }
+interface B { function bar() external returns (bool); }
+contract C { function bar() external returns (bool) { return true; } }
+"""
+
+    with newproject._path.joinpath("contracts/Foo.sol").open("w") as fp:
+        fp.write(code)
+    newproject.load()
+    manifest, _ = ethpm.create_manifest(newproject._path, ETHPM_CONFIG)
+
+    # base contracts are not included
+    assert "A" not in manifest["contract_types"]
+    # interfaces are included
+    assert "B" in manifest["contract_types"]
+    # compilable contracts are included
+    assert "C" in manifest["contract_types"]
+
+
+def test_contract_types_json_interface(np_path):
+    with np_path.joinpath("interfaces/Bar.json").open("w") as fp:
+        json.dump([{"inputs": [], "name": "baz", "outputs": []}], fp)
+    manifest, _ = ethpm.create_manifest(np_path, ETHPM_CONFIG)
+    assert "Bar" in manifest["contract_types"]
 
 
 def test_dependencies_include(dep_project):

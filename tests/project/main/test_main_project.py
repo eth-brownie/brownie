@@ -9,9 +9,9 @@ from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.project.main import Project, TempProject, _ProjectBase
 
 
-def test_object(testproject):
-    assert type(testproject) is Project
-    assert isinstance(testproject, _ProjectBase)
+def test_object(newproject):
+    assert type(newproject) is Project
+    assert isinstance(newproject, _ProjectBase)
 
 
 def test_namespace(project, testproject):
@@ -24,9 +24,9 @@ def test_namespace(project, testproject):
     assert "brownie.project.TestProject" not in sys.modules
 
 
-def test_check_for_project(project, testproject):
-    path = project.check_for_project(testproject._path)
-    assert path == project.check_for_project(testproject._path.joinpath("contracts"))
+def test_check_for_project(project, newproject):
+    path = project.check_for_project(newproject._path)
+    assert path == project.check_for_project(newproject._path.joinpath("contracts"))
     assert not project.check_for_project("/")
 
 
@@ -36,11 +36,12 @@ def test_new(tmp_path, project):
     assert tmp_path.joinpath("ethpm-config.yaml").exists()
 
 
-def test_load_raises_already_loaded(project, testproject):
+def test_load_raises_already_loaded(project, newproject):
+    newproject.load()
     with pytest.raises(ProjectAlreadyLoaded):
-        project.load(testproject._path, "TestProject")
+        project.load(newproject._path, "NewProject")
     with pytest.raises(ProjectAlreadyLoaded):
-        testproject.load()
+        newproject.load()
 
 
 def test_load_raises_cannot_find(project, tmp_path):
@@ -48,33 +49,40 @@ def test_load_raises_cannot_find(project, tmp_path):
         project.load(tmp_path)
 
 
-def test_reload_from_project_object(project, testproject):
-    assert hasattr(project, "TestProject")
-    assert len(project.get_loaded_projects()) == 1
-    testproject.close()
-    assert not hasattr(project, "TestProject")
+def test_reload_from_project_object(project, newproject):
+    assert not hasattr(project, "NewProject")
     assert len(project.get_loaded_projects()) == 0
-    testproject.load()
-    assert hasattr(project, "TestProject")
+    newproject.load()
+    assert hasattr(project, "NewProject")
+    assert len(project.get_loaded_projects()) == 1
+    newproject.close()
+    assert not hasattr(project, "NewProject")
+    assert len(project.get_loaded_projects()) == 0
+    newproject.load()
+    assert hasattr(project, "NewProject")
     assert len(project.get_loaded_projects()) == 1
 
 
-def test_load_multiple(project, testproject):
-    other = project.load(testproject._path, "OtherProject")
+def test_load_multiple(project, newproject):
+    newproject.load()
+    other = project.load(newproject._path, "OtherProject")
     assert hasattr(project, "OtherProject")
     assert len(project.get_loaded_projects()) == 2
     other.close()
     assert not hasattr(project, "OtherProject")
-    assert hasattr(project, "TestProject")
+    assert hasattr(project, "NewProject")
     assert len(project.get_loaded_projects()) == 1
 
 
-def test_close(project, testproject):
-    testproject.close()
+def test_close(project, newproject):
     assert len(project.get_loaded_projects()) == 0
-    testproject.close(False)
+    newproject.load()
+    assert len(project.get_loaded_projects()) == 1
+    newproject.close()
+    assert len(project.get_loaded_projects()) == 0
+    newproject.close(False)
     with pytest.raises(ProjectNotFound):
-        testproject.close()
+        newproject.close()
 
 
 def test_compile_solc_object(project, solc5source):
