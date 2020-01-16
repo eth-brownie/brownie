@@ -152,6 +152,15 @@ def project(tmp_path):
         p.close(False)
 
 
+# yields a newly initialized Project that is not loaded
+@pytest.fixture
+def newproject(project, tmp_path):
+    path = project.new(tmp_path)
+    p = project.load(path, "NewProject")
+    p.close()
+    yield p
+
+
 # copies the tester project into a temporary folder, loads it, and yields a Project object
 @pytest.fixture
 def testproject(_project_factory, project, tmp_path):

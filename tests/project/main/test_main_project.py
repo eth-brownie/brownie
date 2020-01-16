@@ -18,8 +18,6 @@ def test_namespace(project, testproject):
     assert hasattr(project, "TestProject")
     assert hasattr(testproject, "BrownieTester")
     assert hasattr(testproject, "SafeMath")
-    assert not hasattr(testproject, "TokenABC")
-    assert not hasattr(testproject, "TokenInterface")
     assert "brownie.project.TestProject" in sys.modules
     testproject.close()
     assert not hasattr(project, "TestProject")
@@ -36,14 +34,6 @@ def test_new(tmp_path, project):
     assert str(tmp_path) == project.new(tmp_path)
     assert tmp_path.joinpath("brownie-config.yaml").exists()
     assert tmp_path.joinpath("ethpm-config.yaml").exists()
-
-
-def test_from_brownie_mix_raises(project, tmp_path):
-    project.new(tmp_path.joinpath("token"))
-    with pytest.raises(FileExistsError):
-        project.from_brownie_mix("token")
-    with pytest.raises(SystemError):
-        project.from_brownie_mix(tmp_path.joinpath("token/contracts"))
 
 
 def test_load_raises_already_loaded(project, testproject):
@@ -121,7 +111,7 @@ def test_compile_multiple(project, solc5source):
 
 def test_create_folders(project, tmp_path):
     project.main._create_folders(Path(tmp_path))
-    for path in ("contracts", "scripts", "reports", "tests", "build"):
+    for path in ("contracts", "interfaces", "scripts", "reports", "tests", "build"):
         assert Path(tmp_path).joinpath(path).exists()
 
 
