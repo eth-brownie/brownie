@@ -258,7 +258,6 @@ Build Internal Methods
 
     When two contracts have differing values for the same program counter, the value in the revert map is set to ``False``. If a transaction reverts with this pc, the entire trace must be queried to determine which contract reverted and get the dev string from it's ``pcMap``.
 
-
 Internal Methods
 ----------------
 
@@ -513,7 +512,7 @@ The ``sources`` module contains classes and methods to access project source cod
 Sources
 -------
 
-The ``Sources`` object provides access to the ``contracts/`` files for a specific project. It is instantiated automatically when a project is opened, and available within the :ref:`api-project-project` object as ``Project._sources``.
+The ``Sources`` object provides access to the ``contracts/`` and ``interfaces/`` files for a specific project. It is instantiated automatically when a project is loaded, and available within the :ref:`api-project-project` object as ``Project._sources``.
 
 .. code-block:: python
 
@@ -533,27 +532,45 @@ The ``Sources`` object provides access to the ``contracts/`` files for a specifi
 
 .. py:classmethod:: Sources.get_path_list()
 
-    Returns a list of contract source paths for the active project.
+    Returns a sorted list of contract source paths for the project.
 
     .. code-block:: python
 
         >>> from brownie.project import sources
         >>> sources.get_path_list()
-        ['contracts/Token.sol', 'contracts/SafeMath.sol']
+        ['contracts/SafeMath.sol', 'contracts/Token.sol', 'interfaces/IToken.sol']
 
 .. py:classmethod:: Sources.get_contract_list()
 
-    Returns a list of contract names for the active project.
+    Returns a sorted list of contract names for the project.
 
     .. code-block:: python
 
         >>> from brownie.project import sources
         >>> sources.get_contract_list()
-        ['Token', 'SafeMath']
+        ['SafeMath', 'Token']
+
+.. py:classmethod:: Sources.get_interface_list()
+
+    Returns a sorted list of interface names for the project.
+
+    .. code-block:: python
+
+        >>> from brownie.project import sources
+        >>> sources.get_interface_list()
+        ['IToken']
+
+.. py:classmethod:: Sources.get_interface_hashes
+
+    Returns a dict of interface hashes in the form of ``{'interfaceName': "hash"}``
+
+.. py:classmethod:: Sources.get_interface_sources
+
+    Returns a dict of interfaces sources in the form ``{'path/to/interface': "source code"}``
 
 .. py:classmethod:: Sources.get_source_path(contract_name)
 
-    Returns the path to the file where a contract is located.
+    Returns the path to the file where a contract or interface is located.
 
     .. code-block:: python
 
@@ -605,3 +622,35 @@ Module Methods
 .. py:method:: sources.get_hash(source, contract_name, minified, language)
 
     Returns a sha1 hash generated from a contract's source code.
+
+.. py:method:: sources.get_contracts(full_source)
+
+    Given a Solidity contract source as a string, returns a ``dict`` of source code for individual contracts.
+
+    .. code-block:: python
+
+        >>> from brownie.project.sources import get_contracts
+        >>> get_contracts('''
+        ... pragma solidity 0.5.0;
+        ...
+        ... contract Foo {
+        ...     function bar() external returns (bool) {
+        ...         return true;
+        ...     }
+        ... }
+        ...
+        ... library Bar {
+        ...     function baz(uint a, uint b) external pure returns (uint) {
+        ...         return a + b;
+        ...     }
+        ... }''')
+        {
+            'Foo': 'contract Foo {\n    function bar() external returns (bool) {\n        return true;\n    }\n}',
+            'Bar': 'library Bar {\n    function baz(uint a, uint b) external pure returns (uint) {\n        return a + b;\n    }\n}'
+        }
+
+.. py:method:: sources.get_pragma_spec(source, path=None)
+
+    Returns an `NpmSpec <https://python-semanticversion.readthedocs.io/en/latest/#npm-based-ranges>`_ object representing the first pragma statement found within a source file.
+
+    Raises ``PragmaError`` on failure. If ``path`` is not ``None``, it will be included in the error string.

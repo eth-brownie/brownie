@@ -69,16 +69,16 @@ class Sources:
         return self._source[str(name)]
 
     def get_path_list(self) -> List:
-        """Returns a list of source code file paths for the active project."""
-        return list(self._source.keys())
+        """Returns a sorted list of source code file paths for the active project."""
+        return sorted(self._source.keys())
 
     def get_contract_list(self) -> List:
-        """Returns a list of contract names for the active project."""
-        return list(self._contracts.keys())
+        """Returns a sorted list of contract names for the active project."""
+        return sorted(self._contracts.keys())
 
     def get_interface_list(self) -> List:
-        """Returns a list of interface names for the active project."""
-        return list(self._interfaces.keys())
+        """Returns a sorted list of interface names for the active project."""
+        return sorted(self._interfaces.keys())
 
     def get_interface_hashes(self) -> Dict:
         """Returns a dict of interface hashes in the form of {name: hash}"""
@@ -88,7 +88,7 @@ class Sources:
         """Returns a dict of interfaces sources in the form {path: source}"""
         return {v["path"]: self._source[v["path"]] for v in self._interfaces.values()}
 
-    def get_source_path(self, contract_name: str) -> Path:
+    def get_source_path(self, contract_name: str) -> str:
         """Returns the path to the source file where a contract is located."""
         if contract_name in self._contracts:
             return self._contracts[contract_name]["path"]
@@ -197,9 +197,6 @@ def _get_contract_data(full_source: str, path_str: str) -> Dict:
 
     path = Path(path_str)
     minified_source, offset_map = minify(full_source, path.suffix)
-    minified_key = sha1(minified_source.encode()).hexdigest()
-    if minified_key in _contract_data:
-        return _contract_data[minified_key]
 
     if path.suffix == ".vy":
         data = {path.stem: {"offset": (0, len(full_source)), "offset_map": offset_map}}
@@ -213,7 +210,6 @@ def _get_contract_data(full_source: str, path_str: str) -> Dict:
             )
             data[name] = {"offset_map": offset_map, "offset": offset}
     _contract_data[key] = data
-    _contract_data[minified_key] = data
     return data
 
 
@@ -254,9 +250,11 @@ def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     Returns: NpmSpec object
     """
 
-    pragma_string = next(re.finditer(r"pragma +solidity([^;]*);", source), None)
-    if pragma_string is not None:
-        return NpmSpec(pragma_string.groups()[0])
+    pragma_match = next(re.finditer(r"pragma +solidity([^;]*);", source), None)
+    if pragma_match is not None:
+        pragma_string = pragma_match.groups()[0]
+        pragma_string = " ".join(pragma_string.split())
+        return NpmSpec(pragma_string)
     if path:
         raise PragmaError(f"No version pragma in '{path}'")
     raise PragmaError(f"String does not contain a version pragma")
