@@ -248,7 +248,7 @@ def _get_unique_build_json(
     return {
         "allSourcePaths": paths,
         "bytecode": bytecode,
-        "bytecodeSha1": sha1(bytecode[:-68].encode()).hexdigest(),
+        "bytecodeSha1": sha1(_remove_metadata(bytecode).encode()).hexdigest(),
         "coverageMap": {"statements": statement_map, "branches": branch_map},
         "dependencies": [i.name for i in contract_node.dependencies],
         "offset": contract_node.offset,
@@ -257,7 +257,7 @@ def _get_unique_build_json(
     }
 
 
-def _format_link_references(evm: Dict) -> Dict:
+def _format_link_references(evm: Dict) -> str:
     # Standardizes formatting for unlinked libraries within bytecode
     bytecode = evm["bytecode"]["object"]
     references = [
@@ -266,6 +266,13 @@ def _format_link_references(evm: Dict) -> Dict:
     for n, loc in [(i[0], x["start"] * 2) for i in references for x in i[1]]:
         bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"
     return bytecode
+
+
+def _remove_metadata(bytecode: str) -> str:
+    if not bytecode:
+        return ""
+    idx = -(int(bytecode[-4:], 16) + 2) * 2
+    return bytecode[:idx]
 
 
 def _generate_coverage_data(

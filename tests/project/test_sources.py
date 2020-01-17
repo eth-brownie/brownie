@@ -13,6 +13,28 @@ MESSY_SOURCE = """
 abstract contract Baz is Foo {}
  library   Potato{}"""
 
+MINIFY_SOURCE = """
+pragma solidity >=0.4.11;
+
+contract Foo {
+    /**
+        this comment takes up space
+     */
+    function return13() public returns (uint  a) {
+        return 13;
+    }
+}
+
+contract Bar  is Foo {
+    // look at this big ol' comment
+    function getFunky( )  public returns    (bytes4) {
+        return 0x420Faded;
+    }
+
+}
+
+"""
+
 
 @pytest.fixture(scope="module")
 def sourceobj(solc5source):
@@ -65,10 +87,11 @@ def test_expand_offset(btsource, BrownieTester):
     assert btsource.index("contract"), btsource.index("contract") + 7 == expanded
 
 
-def test_minify_solc(solc5source):
-    foo = compile_source(solc5source, solc_version="0.5.7")["Foo"]
-    minified, _ = sources.minify(solc5source)
-    minifoo = compile_source(minified, solc_version="0.5.7")["Foo"]
+@pytest.mark.parametrize("version", ["0.4.22", "0.4.25", "0.5.0", "0.5.9", "0.5.15", "0.6.0"])
+def test_minify_solc(version):
+    foo = compile_source(MINIFY_SOURCE, solc_version=version)["Foo"]
+    minified, _ = sources.minify(MINIFY_SOURCE)
+    minifoo = compile_source(minified, solc_version=version)["Foo"]
     assert foo._build["bytecodeSha1"] == minifoo._build["bytecodeSha1"]
     assert foo._build["source"] != minifoo._build["source"]
 
