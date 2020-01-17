@@ -205,3 +205,20 @@ def test_first_revert(BrownieTester, ExternalCallTester):
 
 def test_compile_empty():
     compiler.compile_and_format({"empty.sol": ""}, solc_version="0.4.25")
+
+
+def test_get_abi():
+    code = "pragma solidity 0.5.7; contract Foo { function baz() external returns (bool); }"
+    abi = compiler.solidity.get_abi(code)
+    assert len(abi) == 1
+    assert abi["Foo"] == [
+        {
+            "constant": False,
+            "inputs": [],
+            "name": "baz",
+            "outputs": [{"name": "", "type": "bool"}],
+            "payable": False,
+            "stateMutability": "nonpayable",
+            "type": "function",
+        }
+    ]

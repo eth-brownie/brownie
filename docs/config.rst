@@ -6,7 +6,7 @@ The Configuration File
 
 Every project has a file ``brownie-config.yaml`` that holds all the configuration settings. The defaut configuration is as follows.
 
-.. literalinclude:: ../brownie/data/config.yaml
+.. literalinclude:: ../brownie/data/brownie-config.yaml
     :linenos:
     :language: yaml
 

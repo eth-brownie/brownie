@@ -16,6 +16,18 @@ def get_version() -> Version:
     return Version.coerce(vyper.__version__)
 
 
+def get_abi(contract_source: str, name: str) -> Dict:
+    """Given a contract source and name, returns a dict of {name: abi}"""
+    compiled = vyper_json.compile_json(
+        {
+            "language": "Vyper",
+            "sources": {name: {"content": contract_source}},
+            "settings": {"outputSelection": {"*": {"*": ["abi"]}}},
+        }
+    )
+    return {name: compiled["contracts"][name][name]["abi"]}
+
+
 def compile_from_input_json(
     input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
 ) -> Dict:

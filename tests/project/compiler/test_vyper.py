@@ -66,3 +66,20 @@ from foo import bar
 
 def test_compile_empty():
     compiler.compile_and_format({"empty.vy": ""})
+
+
+def test_get_abi():
+    code = "@public\ndef baz() -> bool: return True"
+    abi = compiler.vyper.get_abi(code, "Foo")
+    assert len(abi) == 1
+    assert abi["Foo"] == [
+        {
+            "name": "baz",
+            "outputs": [{"type": "bool", "name": "out"}],
+            "inputs": [],
+            "constant": False,
+            "payable": False,
+            "type": "function",
+            "gas": 351,
+        }
+    ]

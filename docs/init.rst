@@ -1,23 +1,31 @@
-==========================
-Initializing a New Project
-==========================
+.. _init:
 
-The first step to using Brownie is to initialize a new project. To do this, create a new empty folder and then type:
+======================
+Creating a New Project
+======================
+
+The first step to using Brownie is to initialize a new project. This can be done in two ways:
+
+1. Create an empty project using ``brownie init``.
+2. Create a project from an existing template using ``brownie bake``.
+
+Creating an Empty Project
+=========================
+
+To initialize an empty project, start by creating a new folder. From within that folder, type:
 
 ::
 
     $ brownie init
 
-This will create the following project structure within the folder:
+An empty :ref:`project structure<structure>` is created within the folder.
 
-* ``build/``: Compiled contracts and test data
-* ``contracts/``: Contract source code
-* ``reports/``: JSON report files
-* ``scripts/``: Scripts for deployment and interaction
-* ``tests/``: Scripts for testing your project
-* ``brownie-config.yaml``: Configuration file for the project
+Creating a Project from a Template
+==================================
 
-You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`__", simple templates to build your project upon. For many examples within the Brownie documentation we will use the `token <https://github.com/brownie-mix/token-mix>`__ mix, which is a very basic ERC-20 implementation:
+You can initialize "`Brownie mixes <https://github.com/brownie-mix>`__", simple templates to build your project upon. For many examples within the Brownie documentation we will use the `token <https://github.com/brownie-mix/token-mix>`__ mix, which is a very basic ERC-20 implementation.
+
+Mixes are automatically created within a subfolder of their name. To initialize the ``token`` mix:
 
 ::
 

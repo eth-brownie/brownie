@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+from pathlib import Path
+
 import pytest
 
 test_source = """
@@ -22,31 +24,33 @@ contract Foo {
 """
 
 
-@pytest.fixture()
-def btsource(testproject):
-    path = testproject._path.joinpath("contracts/BrownieTester.sol")
+@pytest.fixture(scope="session")
+def btsource():
+    path = Path(__file__).parent.joinpath(
+        "../data/brownie-test-project/contracts/BrownieTester.sol"
+    )
     with path.open() as fs:
         return fs.read()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def solc6source():
     return test_source.replace("[VERSION]", "^0.6.0")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def solc5source():
     return test_source.replace("[VERSION]", "^0.5.0")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def solc4source():
     source = test_source.replace("payable ", "")
     source = source.replace("[VERSION]", "^0.4.25")
     return source
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def vysource():
     return """
 # comments are totally kickass

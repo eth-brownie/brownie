@@ -1,35 +1,15 @@
 #!/usr/bin/python3
 
 import os
-import time
-from base64 import b64encode
 from pathlib import Path
 
 import pytest
-import requests
 
 from brownie.project.scripts import run
 
-if os.getenv("GITHUB_TOKEN"):
-    auth = b64encode(os.getenv("GITHUB_TOKEN").encode()).decode()
-    headers = {"Authorization": "Basic {}".format(auth)}
-else:
-    headers = None
 
-for i in range(10):
-    data = requests.get("https://api.github.com/orgs/brownie-mix/repos", headers=headers)
-    if data.status_code == 200:
-        break
-    time.sleep(30)
-
-if data.status_code != 200:
-    raise ConnectionError("Cannot connect to Github API")
-
-MIXES = [i["name"] for i in data.json()]
-
-
-@pytest.mark.parametrize("browniemix", MIXES)
-def test_mix(plugintesterbase, project, tmp_path, rpc, browniemix):
+# browniemix is parametrized with every mix repo from https://www.github.com/brownie-mix/
+def test_mixes(plugintesterbase, project, tmp_path, rpc, browniemix):
     path = Path(project.from_brownie_mix(browniemix, tmp_path.joinpath("testmix")))
     os.chdir(path)
 
@@ -47,3 +27,11 @@ def test_mix(plugintesterbase, project, tmp_path, rpc, browniemix):
             rpc.reset()
     finally:
         mix_project.close()
+
+
+def test_from_brownie_mix_raises(project, tmp_path):
+    project.new(tmp_path.joinpath("token"))
+    with pytest.raises(FileExistsError):
+        project.from_brownie_mix("token")
+    with pytest.raises(SystemError):
+        project.from_brownie_mix(tmp_path.joinpath("token/contracts"))
