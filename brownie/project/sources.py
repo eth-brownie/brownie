@@ -37,12 +37,13 @@ class Sources:
         self._contracts: Dict = {}
         self._interfaces: Dict = {}
 
+        collisions: Dict = {}
         for path, source in contract_sources.items():
             self._source[path] = source
             data = _get_contract_data(source, path)
             for name, values in data.items():
-                if name in self._contracts or name in self._interfaces:
-                    raise NamespaceCollision(f"Multiple contracts or interfaces named '{name}'")
+                if name in self._contracts:
+                    collisions.setdefault(name, set()).update([path, self._contracts[name]["path"]])
                 values["path"] = path
             self._contracts.update(data)
 
@@ -53,9 +54,19 @@ class Sources:
             else:
                 data = get_contracts(minify(source, "Solidity")[0])
             for name, source in data.items():
-                if name in self._contracts or name in self._interfaces:
-                    raise NamespaceCollision(f"Multiple contracts or interfaces named '{name}'")
+                if name in self._contracts:
+                    collisions.setdefault(name, set()).update([path, self._contracts[name]["path"]])
+                if name in self._interfaces:
+                    collisions.setdefault(name, set()).update(
+                        [path, self._interfaces[name]["path"]]
+                    )
                 self._interfaces[name] = {"path": path, "hash": sha1(source.encode()).hexdigest()}
+
+        if collisions:
+            raise NamespaceCollision(
+                f"Multiple contracts or interfaces with the same name\n  "
+                + "\n  ".join(f"{k}: {', '.join(sorted(v))}" for k, v in collisions.items())
+            )
 
     def get(self, name: str) -> str:
         """Returns the source code file for the given name.
