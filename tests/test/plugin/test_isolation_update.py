@@ -50,8 +50,12 @@ def test_update_isolation_coverage(runconf, plugintester):
 
 
 def test_update_isolation_contract_changed(runconf, json_path, plugintester):
-    with Path(plugintester.tmpdir).joinpath("contracts/BrownieTester.sol").open("a") as fp:
-        fp.write("\n\ncontract Foo {}")
+    path = Path(plugintester.tmpdir).joinpath("contracts/BrownieTester.sol")
+    with path.open() as fp:
+        source = fp.read()
+    source = source.replace("two", "tree fiddy")
+    with path.open("w") as fp:
+        fp.write(source)
     result = plugintester.runpytest("-U")
     result.assert_outcomes(passed=1)
 

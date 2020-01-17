@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Union
 
 import requests
+from semantic_version import Version
 from tqdm import tqdm
 
 from brownie._config import (
@@ -26,7 +27,7 @@ from brownie.network.state import _remove_contract
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.ethpm import get_deployment_addresses, get_manifest
-from brownie.project.sources import Sources, get_hash
+from brownie.project.sources import Sources, get_hash, get_pragma_spec
 from brownie.utils import color
 
 FOLDERS = [
@@ -201,21 +202,26 @@ class Project(_ProjectBase):
 
     def _compare_build_json(self, contract_name: str) -> bool:
         config = self._compiler_config
+        # confirm that this contract was previously compiled
         try:
             source = self._sources.get(contract_name)
             build_json = self._build.get(contract_name)
         except KeyError:
             return True
-        if build_json["sha1"] != get_hash(
-            source, contract_name, config["minify_source"], build_json["language"]
-        ):
+        # compare source hashes
+        hash_ = get_hash(source, contract_name, config["minify_source"], build_json["language"])
+        if build_json["sha1"] != hash_:
             return True
+        # compare compiler settings
         if _compare_settings(config, build_json["compiler"]):
             return True
-        if build_json["language"] == "Solidity" and _compare_settings(
-            config["solc"], build_json["compiler"]
-        ):
-            return True
+        if build_json["language"] == "Solidity":
+            # compare solc-specific compiler settings
+            if _compare_settings(config["solc"], build_json["compiler"]):
+                return True
+            # compare solc pragma against compiled version
+            if Version(build_json["compiler"]["version"]) not in get_pragma_spec(source):
+                return True
         return False
 
     def _load_deployments(self) -> None:
