@@ -22,40 +22,43 @@ from brownie._config import ARGV
 pytest_plugins = "pytester"
 
 
-# cli flag, target fixture, help description
-CONFIG_OPTS = [
-    ("--evm-tests", "evmtester", "Run parametrized EVM tests"),
-    ("--mix-tests", "browniemix", "Run brownie mix tests"),
-    ("--plugin-tests", "plugintester", "Run brownie-pytest plugin tests"),
-]
+TARGET_OPTS = {"evm": "evmtester", "mixes": "browniemix", "plugin": "plugintester"}
 
 
 def pytest_addoption(parser):
-    for flag, _, long_description in CONFIG_OPTS:
-        parser.addoption(flag, action="store_true", help=long_description)
-    parser.addoption("--skip-regular", action="store_true", help="Skip regular tests")
+    parser.addoption(
+        "--target",
+        choices=["all", "core"] + list(TARGET_OPTS),
+        default="core",
+        help="Target a specific component of the tests. Use 'all' to run the full suite.",
+    )
 
 
 # remove tests based on config flags and fixture names
 def pytest_collection_modifyitems(config, items):
-    for flag, fixture, _ in CONFIG_OPTS:
-        if not config.getoption(flag):
-            for test in [i for i in items if fixture in i.fixturenames]:
-                items.remove(test)
-    if config.getoption("--skip-regular"):
-        fixtures = set(i[1] for i in CONFIG_OPTS)
+    target = config.getoption("--target")
+    if target == "all":
+        return
+    for flag, fixture in TARGET_OPTS.items():
+        if target == flag:
+            continue
+        for test in [i for i in items if fixture in i.fixturenames]:
+            items.remove(test)
+    if target != "core":
+        fixtures = set(TARGET_OPTS.values())
         for test in [i for i in items if not fixtures.intersection(i.fixturenames)]:
             items.remove(test)
 
 
 def pytest_configure(config):
-    if config.getoption("numprocesses") and config.getoption("--plugin-tests"):
-        raise pytest.UsageError("Cannot use xdist when running plugin tests")
+    if config.getoption("--target") in ("all", "plugin") and config.getoption("numprocesses"):
+        raise pytest.UsageError("Cannot use xdist with plugin tests, try adding the '-n 0' flag")
 
 
 def pytest_generate_tests(metafunc):
     # parametrize the evmtester fixture
-    if "evmtester" in metafunc.fixturenames and metafunc.config.getoption("--evm-tests"):
+    target = metafunc.config.getoption("--target")
+    if "evmtester" in metafunc.fixturenames and target in ("all", "evm"):
         metafunc.parametrize(
             "evmtester",
             itertools.product(
@@ -67,7 +70,7 @@ def pytest_generate_tests(metafunc):
         )
 
     # parametrize the browniemix fixture
-    if "browniemix" in metafunc.fixturenames and metafunc.config.getoption("--mix-tests"):
+    if "browniemix" in metafunc.fixturenames and target in ("all", "mixes"):
         if os.getenv("GITHUB_TOKEN"):
             auth = b64encode(os.getenv("GITHUB_TOKEN").encode()).decode()
             headers = {"Authorization": "Basic {}".format(auth)}
