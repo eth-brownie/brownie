@@ -22,21 +22,35 @@ from brownie._config import ARGV
 pytest_plugins = "pytester"
 
 
-# travis cannot call github ethereum/solidity API, so this method is patched
-def pytest_sessionstart():
-    monkeypatch_session = MonkeyPatch()
-    monkeypatch_session.setattr(
-        "solcx.get_available_solc_versions",
-        lambda: ["v0.6.0", "v0.5.10", "v0.5.8", "v0.5.7", "v0.4.25", "v0.4.24", "v0.4.22"],
-    )
+# cli flag, target fixture, help description
+CONFIG_OPTS = [
+    ("--evm-tests", "evmtester", "Run parametrized EVM tests"),
+    ("--mix-tests", "browniemix", "Run brownie mix tests"),
+    ("--plugin-tests", "plugintester", "Run brownie-pytest plugin tests"),
+]
 
 
 def pytest_addoption(parser):
-    parser.addoption("--mix-tests", action="store_true", help="Runs brownie mix tests")
-    parser.addoption(
-        "--evm-tests", action="store_true", help="Runs EVM tests (coverage evaluation)"
-    )
-    parser.addoption("--skip-regular", action="store_true", help="Skips regular tests")
+    for flag, _, long_description in CONFIG_OPTS:
+        parser.addoption(flag, action="store_true", help=long_description)
+    parser.addoption("--skip-regular", action="store_true", help="Skip regular tests")
+
+
+# remove tests based on config flags and fixture names
+def pytest_collection_modifyitems(config, items):
+    for flag, fixture, _ in CONFIG_OPTS:
+        if not config.getoption(flag):
+            for test in [i for i in items if fixture in i.fixturenames]:
+                items.remove(test)
+    if config.getoption("--skip-regular"):
+        fixtures = set(i[1] for i in CONFIG_OPTS)
+        for test in [i for i in items if not fixtures.intersection(i.fixturenames)]:
+            items.remove(test)
+
+
+def pytest_configure(config):
+    if config.getoption("numprocesses") and config.getoption("--plugin-tests"):
+        raise pytest.UsageError("Cannot use xdist when running plugin tests")
 
 
 def pytest_generate_tests(metafunc):
@@ -72,18 +86,13 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("browniemix", [i["name"] for i in data.json()])
 
 
-# remove tests based on config flags and fixture names
-def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--evm-tests"):
-        for test in [i for i in items if "evmtester" in i.fixturenames]:
-            items.remove(test)
-    if not config.getoption("--mix-tests"):
-        for test in [i for i in items if "browniemix" in i.fixturenames]:
-            items.remove(test)
-    if config.getoption("--skip-regular"):
-        fixtures = set(["browniemix", "evmtester"])
-        for test in [i for i in items if not fixtures.intersection(i.fixturenames)]:
-            items.remove(test)
+# travis cannot call github ethereum/solidity API, so this method is patched
+def pytest_sessionstart():
+    monkeypatch_session = MonkeyPatch()
+    monkeypatch_session.setattr(
+        "solcx.get_available_solc_versions",
+        lambda: ["v0.6.0", "v0.5.10", "v0.5.8", "v0.5.7", "v0.4.25", "v0.4.24", "v0.4.22"],
+    )
 
 
 # worker ID for xdist process, as an integer
@@ -221,8 +230,11 @@ def plugintesterbase(project, testdir, monkeypatch):
 def plugintester(_project_factory, plugintesterbase, request):
     _copy_all(_project_factory, plugintesterbase.tmpdir)
     test_source = getattr(request.module, "test_source", None)
-    if test_source:
-        plugintesterbase.makepyfile(test_source)
+    if test_source is not None:
+        if isinstance(test_source, str):
+            test_source = [test_source]
+        test_source = {f"tests/test_{i}.py": test_source[i] for i in range(len(test_source))}
+        plugintesterbase.makepyfile(**test_source)
     yield plugintesterbase
 
 
