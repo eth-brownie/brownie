@@ -6,6 +6,38 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Added
+- `interfaces/` folder for interface sources
+- tested support for Vyper with ethPM
+- Progress bar when downloading a Brownie mix
+- `get_abi` method for Solidity and Vyper compilers
+
+### Changed
+- Move check for new contract sources from `Project.__init__` to `Project.load`
+
+### Fixed
+- Check pragma statements when determining if a contract should be recompiled
+- Understand `abstract contract` when regexing contract source
+
+## [1.4.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.4.2) - 2020-01-10
+### Added
+- Add Ethereum Classic networks in `brownie-config.yaml`
+- Accept `atlantis` and `agharta` as EVM ruleset options in `brownie-config.yaml`
+
+### Changed
+- Use Vyper version 0.1.0b16
+
+### Fixed
+- Create `~/.brownie/accounts` when `accounts` commandline interface is called
+
+## [1.4.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.4.1) - 2020-01-09
+### Changed
+- Do not install solc until required for compilation
+- Adjust compiler config settings to be less Solidity-centric
+
+### Fixed
+- Compiler bug when generating Vyper branch paths
+- Permission error when launching Brownie with Ganache already running on OSX
 
 ## [1.4.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.4.0) - 2020-01-07
 ### Added

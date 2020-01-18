@@ -1,0 +1,7 @@
+pragma solidity >=0.5.0 <0.5.11;
+
+contract Foo {
+    function bar() public returns (bool) {
+        return true;
+    }
+}

@@ -6,6 +6,7 @@ import pytest
 import solcx
 from semantic_version import Version
 
+from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 from brownie.project import build, compiler
 
@@ -51,10 +52,10 @@ def msolc(monkeypatch):
 
 def test_set_solc_version():
     compiler.set_solc_version("0.5.7")
-    assert solcx.get_solc_version() == compiler.solidity.get_version()
+    assert solcx.get_solc_version().truncate() == compiler.solidity.get_version()
     assert solcx.get_solc_version().truncate() == Version("0.5.7")
     compiler.set_solc_version("0.4.25")
-    assert solcx.get_solc_version() == compiler.solidity.get_version()
+    assert solcx.get_solc_version().truncate() == compiler.solidity.get_version()
     assert solcx.get_solc_version().truncate() == Version("0.4.25")
 
 
@@ -92,6 +93,13 @@ def test_compile_input_json_raises():
     input_json = compiler.generate_input_json({"path.sol": "potato"}, True, 200)
     with pytest.raises(CompilerError):
         compiler.compile_from_input_json(input_json)
+
+
+@pytest.mark.parametrize("original,translated", EVM_EQUIVALENTS.items())
+def test_compile_input_json_evm_translates(solc5source, original, translated):
+    compiler.set_solc_version("0.5.7")
+    input_json = compiler.generate_input_json({"path.sol": solc5source}, True, 200, original)
+    compiler.compile_from_input_json(input_json)
 
 
 def test_compile_optimizer(monkeypatch):
@@ -197,3 +205,20 @@ def test_first_revert(BrownieTester, ExternalCallTester):
 
 def test_compile_empty():
     compiler.compile_and_format({"empty.sol": ""}, solc_version="0.4.25")
+
+
+def test_get_abi():
+    code = "pragma solidity 0.5.7; contract Foo { function baz() external returns (bool); }"
+    abi = compiler.solidity.get_abi(code)
+    assert len(abi) == 1
+    assert abi["Foo"] == [
+        {
+            "constant": False,
+            "inputs": [],
+            "name": "baz",
+            "outputs": [{"name": "", "type": "bool"}],
+            "payable": False,
+            "stateMutability": "nonpayable",
+            "type": "function",
+        }
+    ]

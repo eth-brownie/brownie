@@ -128,6 +128,8 @@ class Build:
             value["offset"] = self._get_offset(offset_map, name, value["offset"])
 
         for key in ("branches", "statements"):
+            if source_path not in build_json["coverageMap"][key]:
+                continue
             coverage_map = build_json["coverageMap"][key][source_path]
             for fn, value in coverage_map.items():
                 coverage_map[fn] = dict(

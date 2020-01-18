@@ -97,6 +97,8 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
         uri: IPFS uri of the package
     """
 
+    if "manifest_version" not in manifest:
+        raise InvalidManifest("Manifest does not specify a version")
     if manifest["manifest_version"] != "2":
         raise InvalidManifest(
             f"Brownie only supports v2 ethPM manifests, this "
@@ -111,15 +113,17 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
         content = manifest["sources"].pop(key)
         if _is_uri(content):
             content = _get_uri_contents(content)
-        # ensure all absolute imports begin with contracts/
+        # ensure all absolute imports begin with contracts/ or interfaces/
         content = re.sub(
-            r"""(import((\s*{[^};]*}\s*from)|)\s*)("|')(contracts/||/)(?=[^./])""",
+            r"""(import((\s*{[^};]*}\s*from)|)\s*)("|')(?!\.|contracts\/|interfaces\/)""",
             lambda k: f"{k.group(1)}{k.group(4)}contracts/",
             content,
         )
         path = Path("/").joinpath(key.lstrip("./")).resolve()
         path_str = path.as_posix()[len(path.anchor) :]
-        manifest["sources"][f"contracts/{path_str}"] = content
+        if path.parts[1] not in ("contracts", "interfaces"):
+            path_str = f"contracts/{path_str}"
+        manifest["sources"][path_str] = content
 
     # set contract_name in contract_types
     contract_types = manifest["contract_types"]
@@ -138,9 +142,16 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
 
     # compile sources to expand contract_types
     if manifest["sources"]:
-        version = compiler.find_best_solc_version(manifest["sources"], install_needed=True)
+        version: Optional[str] = None
+        solc_sources = {k: v for k, v in manifest["sources"].items() if Path(k).suffix == ".sol"}
+        if solc_sources:
+            version = compiler.find_best_solc_version(solc_sources, install_needed=True)
 
-        build_json = compiler.compile_and_format(manifest["sources"], version)
+        build_json = compiler.compile_and_format(
+            manifest["sources"],
+            solc_version=version,
+            interface_sources=_get_json_interfaces(manifest["contract_types"]),
+        )
         for key, build in build_json.items():
             manifest["contract_types"].setdefault(key, {"contract_name": key})
             manifest["contract_types"][key].update(
@@ -298,27 +309,46 @@ def install_package(project_path: Path, uri: str, replace_existing: bool = False
     remove_package(project_path, package_name, True)
     packages_json = _load_packages_json(project_path)
 
-    for path, source in manifest["sources"].items():
-        source_path = project_path.joinpath(path)
-        if not replace_existing and source_path.exists():
+    # check for differences with existing source files
+    if not replace_existing:
+        for path, new_source in manifest["sources"].items():
+            source_path = project_path.joinpath(path)
+            if not source_path.exists():
+                continue
             with source_path.open() as fp:
-                if fp.read() != source:
-                    raise FileExistsError(
-                        f"Cannot overwrite existing file with different content: '{source_path}'"
-                    )
+                existing_source = fp.read()
+            if existing_source != new_source:
+                raise FileExistsError(
+                    f"Cannot overwrite existing file with different content: '{source_path}'"
+                )
 
+    # install source files
     for path, source in manifest["sources"].items():
         for folder in list(Path(path).parents)[::-1]:
             project_path.joinpath(folder).mkdir(exist_ok=True)
         with project_path.joinpath(path).open("w") as fp:
             fp.write(source)
+
         with project_path.joinpath(path).open("rb") as fp:
             source_bytes = fp.read()
-
         packages_json["sources"].setdefault(path, {"packages": []})
         packages_json["sources"][path]["md5"] = hashlib.md5(source_bytes).hexdigest()
         packages_json["sources"][path]["packages"].append(package_name)
 
+    # install contract_types JSON interfaces
+    # this relies on non-standard ethPM fields, manifests created by tooling other
+    # than Brownie may not support this
+    for path, abi in _get_json_interfaces(manifest["contract_types"]).items():
+        with project_path.joinpath(path).open("w") as fp:
+            json.dump(abi, fp, indent=2, sort_keys=True)
+
+        with project_path.joinpath(path).open("rb") as fp:
+            source_bytes = fp.read()
+        packages_json["sources"].setdefault(path, {"packages": []})
+        packages_json["sources"][path]["md5"] = hashlib.md5(source_bytes).hexdigest()
+        packages_json["sources"][path]["packages"].append(package_name)
+
+    # update project packages.json
     packages_json["packages"][package_name] = {
         "manifest_uri": manifest["meta_brownie"]["manifest_uri"],
         "registry_address": manifest["meta_brownie"]["registry_address"],
@@ -403,6 +433,12 @@ def create_manifest(
     if "meta" in package_config:
         manifest["meta"] = package_config["meta"]
 
+    # determine base path
+    if _get_path_list(project_path, "interfaces", True):
+        base_path = project_path
+    else:
+        base_path = project_path.joinpath("contracts")
+
     # load packages.json and add build_dependencies
     packages_json: Dict = {"sources": {}, "packages": {}}
     if not package_config["settings"]["include_dependencies"]:
@@ -418,8 +454,10 @@ def create_manifest(
             )
 
     # add sources
-    contract_path = project_path.joinpath("contracts")
-    for path in contract_path.glob("**/*.sol"):
+    path_list = _get_path_list(project_path, "contracts", False)
+    if project_path == base_path:
+        path_list += _get_path_list(project_path, "interfaces", False)
+    for path in path_list:
         if path.relative_to(project_path).as_posix() in packages_json["sources"]:
             continue
         if pin_assets:
@@ -429,19 +467,41 @@ def create_manifest(
         else:
             with path.open("rb") as fp:
                 uri = generate_file_hash(fp.read())
-        manifest["sources"][f"./{path.relative_to(contract_path).as_posix()}"] = f"ipfs://{uri}"
+        manifest["sources"][f"./{path.relative_to(base_path).as_posix()}"] = f"ipfs://{uri}"
 
-    # add contract_types
+    # add contract_types from contracts/
+    relative_to = "" if project_path == base_path else "contracts"
     for path in project_path.glob("build/contracts/*.json"):
         with path.open() as fp:
             build_json = json.load(fp)
-        if not build_json["bytecode"]:
-            # skip contracts that cannot deploy
-            continue
         if build_json["sourcePath"] in packages_json["sources"]:
             # skip dependencies
             continue
-        manifest["contract_types"][build_json["contractName"]] = _get_contract_type(build_json)
+        if not build_json["bytecode"] and build_json["type"] != "interface":
+            # skip contracts that cannot deploy
+            continue
+        contract_name = build_json["contractName"]
+        manifest["contract_types"][contract_name] = _get_contract_type(build_json, relative_to)
+
+    # add contract_types from interfaces/
+    for path in _get_path_list(project_path, "interfaces", True):
+        if path.suffix == ".json":
+            with path.open() as fp:
+                data = {path.stem: json.load(fp)}
+        else:
+            with path.open() as fp:
+                source = fp.read()
+            if path.suffix == ".sol":
+                data = compiler.solidity.get_abi(source)
+            else:
+                data = compiler.vyper.get_abi(source, path.stem)
+        for name, abi in data.items():
+            build_json = {
+                "abi": abi,
+                "contractName": name,
+                "sourcePath": path.relative_to(project_path).as_posix(),
+            }
+            manifest["contract_types"][name] = _get_contract_type(build_json, "")
 
     # add deployments
     deployment_networks = package_config["settings"]["deployment_networks"]
@@ -477,7 +537,7 @@ def create_manifest(
                         continue
                 else:
                     # add contract_type for dependency
-                    manifest["contract_types"][alias] = _get_contract_type(build_json)
+                    manifest["contract_types"][alias] = _get_contract_type(build_json, relative_to)
 
                 key = build_json["contractName"]
                 for i in itertools.count(1):
@@ -563,25 +623,28 @@ def release_package(
     return registry.release(package_name, version, uri)
 
 
-def _get_contract_type(build_json: Dict) -> Dict:
-    return {
-        "contract_name": build_json["contractName"],
-        "source_path": f"./{Path(build_json['sourcePath']).relative_to('contracts')}",
-        "deployment_bytecode": {"bytecode": f"0x{build_json['bytecode']}"},
-        "runtime_bytecode": {"bytecode": f"0x{build_json['deployedBytecode']}"},
+def _get_contract_type(build_json: Dict, relative_to: str) -> Dict:
+    contract_type = {
         "abi": build_json["abi"],
-        "compiler": {
-            "name": "solc",
-            "version": build_json["compiler"]["version"],
-            "settings": {
-                "optimizer": {
-                    "enabled": build_json["compiler"]["optimize"],
-                    "runs": build_json["compiler"]["runs"],
-                },
-                "evmVersion": build_json["compiler"]["evm_version"],
-            },
-        },
+        "contract_name": build_json["contractName"],
+        "source_path": f"./{Path(build_json['sourcePath']).relative_to(relative_to)}",
     }
+    if build_json.get("bytecode", None):
+        contract_type.update(
+            compiler={
+                "name": "solc" if build_json["language"] == "Solidity" else "vyper",
+                "version": build_json["compiler"]["version"],
+                "settings": {"evmVersion": build_json["compiler"]["evm_version"]},
+            },
+            deployment_bytecode={"bytecode": f"0x{build_json['bytecode']}"},
+            runtime_bytecode={"bytecode": f"0x{build_json['deployedBytecode']}"},
+        )
+        if build_json["language"] == "Solidity":
+            contract_type["compiler"]["settings"]["optimizer"] = {
+                "enabled": build_json["compiler"]["optimize"],
+                "runs": build_json["compiler"]["runs"],
+            }
+    return contract_type
 
 
 def _load_packages_json(project_path: Path) -> Dict:
@@ -607,3 +670,23 @@ def _remove_empty_fields(initial: Dict) -> Dict:
 def _verify_package_name(package_name: str) -> None:
     if re.fullmatch(r"^[a-z][a-z0-9_-]{0,255}$", package_name) is None:
         raise ValueError(f"Invalid package name '{package_name}'")
+
+
+def _get_path_list(project_path: Path, subfolder: str, allow_json: bool) -> List:
+    path_iter = project_path.glob(f"{subfolder}/**/*")
+    suffixes: Tuple = (".sol", ".vy")
+    if allow_json:
+        suffixes += (".json",)
+    return [i for i in path_iter if "/_" not in i.as_posix() and i.suffix in suffixes]
+
+
+def _get_json_interfaces(contract_types: Dict) -> Dict:
+    interfaces = {}
+    for data in contract_types.values():
+        if "source_path" not in data or "abi" not in data:
+            continue
+        path = Path(data["source_path"])
+        if path.parts[0] != "interfaces" or path.suffix != ".json":
+            continue
+        interfaces[data["source_path"]] = data["abi"]
+    return interfaces

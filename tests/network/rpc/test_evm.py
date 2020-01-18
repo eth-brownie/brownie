@@ -2,6 +2,7 @@
 
 import pytest
 
+from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import RPCRequestError
 
 
@@ -28,3 +29,12 @@ def test_evm_compatible(monkeypatch, rpc):
     assert not rpc.evm_compatible("petersburg")
     with pytest.raises(ValueError):
         rpc.evm_compatible("potato")
+
+
+@pytest.mark.parametrize("original,translated", EVM_EQUIVALENTS.items())
+def test_evm_equivalents(no_rpc, temp_port, original, translated):
+    assert not no_rpc.is_active()
+    no_rpc.launch("ganache-cli", port=temp_port, evm_version=original)
+    assert no_rpc.is_active()
+    assert no_rpc.evm_version() == translated
+    no_rpc.kill()

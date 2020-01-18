@@ -6,7 +6,7 @@ The Configuration File
 
 Every project has a file ``brownie-config.yaml`` that holds all the configuration settings. The defaut configuration is as follows.
 
-.. literalinclude:: ../brownie/data/config.yaml
+.. literalinclude:: ../brownie/data/brownie-config.yaml
     :linenos:
     :language: yaml
 
@@ -33,8 +33,8 @@ The following settings are available:
 
         Default settings for every network. The following properties can be set:
 
-        * ``gas_price``: The default gas price for all transactions. If left as ``false`` the gas price will be determined using ``web3.eth.gasPrice``.
-        * ``gas_limit``: The default gas limit for all transactions. If left as ``false`` the gas limit will be determined using ``web3.eth.estimateGas``.
+        * ``gas_price``: The default gas price for all transactions. If set to ``auto`` the gas price will be determined using ``web3.eth.gasPrice``.
+        * ``gas_limit``: The default gas limit for all transactions. If set to ``auto`` the gas limit will be determined using ``web3.eth.estimateGas``.
         * ``persist``: If ``True``, Brownie will remember information about deployed contracts in between sessions. This is enabled by default for all non-local networks.
         * ``reverting_tx_gas_limit``: The gas limit to use when a transaction would revert. If set to ``false``, transactions that would revert will instead raise a ``VirtualMachineError``.
 
@@ -64,15 +64,16 @@ The following settings are available:
 
     Compiler settings. See :ref:`compiler settings<compile_settings>` for more information.
 
+    * ``evm_version``: The EVM version to compile for. If ``null`` the most recent one is used. Possible values are ``byzantium``, ``constantinople``, ``petersburg``, ``istanbul``, ``atlantis`` and ``agharta``.
+    * ``minify_source``: If ``true``, contract source is minified before compiling.
+
     .. py:attribute:: compiler.solc
 
-        Settings specific to the Solidity compiler. At present this is the only compiler supported by Brownie.
+        Settings specific to the Solidity compiler.
 
         * ``version``: The version of solc to use. Should be given as a string in the format ``0.x.x``. If set to ``null``, the version is set based on the contract pragma. Brownie supports solc versions ``>=0.4.22``.
-        * ``evm_version``: The EVM version to compile for. If ``null`` the most recent one is used. Possible values are ``byzantium``, ``constantinople`` and ``petersburg``.
         * ``optimize``: Set to ``true`` if you wish to enable compiler optimization.
         * ``runs``: The number of times the optimizer should run.
-        * ``minify_source``: If ``true``, contract source is minified before compiling.
 
 .. py:attribute:: pytest
 

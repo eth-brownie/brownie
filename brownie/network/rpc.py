@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 import psutil
 
+from brownie._config import EVM_EQUIVALENTS
 from brownie._singleton import _Singleton
 from brownie.exceptions import RPCConnectionError, RPCProcessError, RPCRequestError
 
@@ -73,6 +74,8 @@ class Rpc(metaclass=_Singleton):
             else:
                 cmd += ".cmd"
         kwargs.setdefault("evm_version", EVM_DEFAULT)  # type: ignore
+        if kwargs["evm_version"] in EVM_EQUIVALENTS:
+            kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]  # type: ignore
         for key, value in [(k, v) for k, v in kwargs.items() if v]:
             cmd += f" {CLI_FLAGS[key]} {value}"
         print(f"Launching '{cmd}'...")
@@ -114,9 +117,10 @@ class Rpc(metaclass=_Singleton):
                 raise ValueError("No RPC port given")
             laddr = (o.hostname, o.port)
         try:
-            proc = next(i for i in psutil.net_connections() if i.laddr == laddr)
+            proc = next(i for i in psutil.process_iter() if _check_connections(i, laddr))
         except StopIteration:
             raise ProcessLookupError("Could not find RPC process.")
+        print(f"Attached to local RPC client listening at '{laddr[0]}:{laddr[1]}'...")
         self._rpc = psutil.Process(proc.pid)
         if web3.provider:
             self._reset_id = self._snap()
@@ -212,6 +216,7 @@ class Rpc(metaclass=_Singleton):
         the currently active EVM version."""
         if not self.is_active():
             raise RPCRequestError("RPC is not active")
+        version = EVM_EQUIVALENTS.get(version, version)
         try:
             return EVM_VERSIONS.index(version) <= EVM_VERSIONS.index(  # type: ignore
                 self.evm_version()
@@ -285,3 +290,10 @@ def _notify_registry(height: int = None) -> None:
             obj._revert(height)
         else:
             obj._reset()
+
+
+def _check_connections(proc: psutil.Process, laddr: Tuple) -> bool:
+    try:
+        return laddr in [i.laddr for i in proc.connections()]
+    except psutil.AccessDenied:
+        return False

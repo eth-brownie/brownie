@@ -16,6 +16,8 @@ DATA_FOLDER = Path.home().joinpath(".brownie")
 
 REPLACE = ["active_network", "networks"]
 
+EVM_EQUIVALENTS = {"atlantis": "byzantium", "agharta": "petersburg"}
+
 
 class ConfigDict(dict):
     """Dict subclass that prevents adding new keys when locked"""
@@ -106,11 +108,13 @@ def _load_project_config(project_path: Path) -> None:
     CONFIG._lock()
 
 
-def _load_project_compiler_config(project_path: Optional[Path], compiler: str) -> Dict:
+def _load_project_compiler_config(project_path: Optional[Path]) -> Dict:
     if not project_path:
-        return CONFIG["compiler"][compiler]
-    config_data = _load_config(project_path.joinpath("brownie-config"))
-    return config_data["compiler"][compiler]
+        return CONFIG["compiler"]
+    compiler_data = _load_config(project_path.joinpath("brownie-config"))["compiler"]
+    for key in [i for i in ("evm_version", "minify_source") if i not in compiler_data]:
+        compiler_data[key] = compiler_data["solc"].pop(key)
+    return compiler_data
 
 
 def _modify_network_config(network: str = None) -> Dict:

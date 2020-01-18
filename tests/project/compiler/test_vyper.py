@@ -31,7 +31,7 @@ def test_generate_input_json(vysource):
 
 def test_generate_input_json_evm(vysource):
     fn = functools.partial(compiler.generate_input_json, {"path.vy": vysource}, language="Vyper")
-    assert fn()["settings"]["evmVersion"] == "byzantium"
+    assert fn()["settings"]["evmVersion"] == "petersburg"
     assert fn(evm_version="byzantium")["settings"]["evmVersion"] == "byzantium"
     assert fn(evm_version="petersburg")["settings"]["evmVersion"] == "petersburg"
 
@@ -66,3 +66,20 @@ from foo import bar
 
 def test_compile_empty():
     compiler.compile_and_format({"empty.vy": ""})
+
+
+def test_get_abi():
+    code = "@public\ndef baz() -> bool: return True"
+    abi = compiler.vyper.get_abi(code, "Foo")
+    assert len(abi) == 1
+    assert abi["Foo"] == [
+        {
+            "name": "baz",
+            "outputs": [{"type": "bool", "name": "out"}],
+            "inputs": [],
+            "constant": False,
+            "payable": False,
+            "type": "function",
+            "gas": 351,
+        }
+    ]

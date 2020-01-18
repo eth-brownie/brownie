@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
+import json
 from copy import deepcopy
+from pathlib import Path
 from typing import Dict, Optional, Union
 
 from semantic_version import Version
@@ -43,6 +45,7 @@ def compile_and_format(
     minify: bool = False,
     silent: bool = True,
     allow_paths: Optional[str] = None,
+    interface_sources: Optional[Dict[str, str]] = None,
 ) -> Dict:
     """Compiles contracts and returns build data.
 
@@ -61,18 +64,22 @@ def compile_and_format(
     """
     if not contract_sources:
         return {}
+    if interface_sources is None:
+        interface_sources = {}
 
-    if [i for i in contract_sources if not i.endswith(".sol") and not i.endswith(".vy")]:
-        raise UnsupportedLanguage("Source filenames must end in .sol or .vy")
+    if [i for i in contract_sources if Path(i).suffix not in (".sol", ".vy")]:
+        raise UnsupportedLanguage("Source suffixes must be one of ('.sol', '.vy')")
+    if [i for i in interface_sources if Path(i).suffix not in (".sol", ".vy", ".json")]:
+        raise UnsupportedLanguage("Interface suffixes must be one of ('.sol', '.vy', '.json')")
 
     build_json: Dict = {}
     compiler_targets = {}
 
-    vyper_paths = [i for i in contract_sources if i.endswith(".vy")]
+    vyper_paths = [i for i in contract_sources if Path(i).suffix == ".vy"]
     if vyper_paths:
         compiler_targets["vyper"] = vyper_paths
 
-    solc_sources = dict((k, v) for k, v in contract_sources.items() if k.endswith(".sol"))
+    solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
     if solc_sources:
         if solc_version is None:
             compiler_targets.update(
@@ -81,20 +88,33 @@ def compile_and_format(
         else:
             compiler_targets[solc_version] = list(solc_sources)
 
-    compiler_data: Dict = {"minify_source": minify}
     for version, path_list in compiler_targets.items():
+        compiler_data: Dict = {"minify_source": minify}
         if version == "vyper":
             language = "Vyper"
             compiler_data["version"] = str(vyper.get_version())
+            interfaces = {k: v for k, v in interface_sources.items() if Path(k).suffix != ".sol"}
         else:
             set_solc_version(version)
             language = "Solidity"
             compiler_data["version"] = str(solidity.get_version())
+            interfaces = {
+                k: v
+                for k, v in interface_sources.items()
+                if Path(k).suffix == ".sol" and Version(version) in sources.get_pragma_spec(v, k)
+            }
 
-        to_compile = dict((k, v) for k, v in contract_sources.items() if k in path_list)
+        to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
 
-        input_json = generate_input_json(to_compile, optimize, runs, evm_version, minify, language)
+        input_json = generate_input_json(
+            to_compile, optimize, runs, evm_version, minify, language, interfaces
+        )
         output_json = compile_from_input_json(input_json, silent, allow_paths)
+
+        output_json["contracts"] = {
+            k: v for k, v in output_json["contracts"].items() if k in path_list
+        }
+
         build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
     return build_json
 
@@ -106,6 +126,7 @@ def generate_input_json(
     evm_version: Union[int, str, None] = None,
     minify: bool = False,
     language: str = "Solidity",
+    interface_sources: Optional[Dict[str, str]] = None,
 ) -> Dict:
 
     """Formats contracts to the standard solc input json.
@@ -128,17 +149,21 @@ def generate_input_json(
         if language == "Solidity":
             evm_version = next(i[0] for i in EVM_SOLC_VERSIONS if solidity.get_version() >= i[1])
         else:
-            evm_version = "byzantium"
+            evm_version = "petersburg"
 
     input_json: Dict = deepcopy(STANDARD_JSON)
     input_json["language"] = language
     input_json["settings"]["evmVersion"] = evm_version
     if language == "Solidity":
         input_json["settings"]["optimizer"] = {"enabled": optimize, "runs": runs if optimize else 0}
-    input_json["sources"] = dict(
-        (k, {"content": sources.minify(v, language)[0] if minify else v})
-        for k, v in contract_sources.items()
-    )
+    input_json["sources"] = _sources_dict(contract_sources, minify, language)
+
+    if interface_sources:
+        if language == "Solidity":
+            input_json["sources"].update(_sources_dict(interface_sources, False, language))
+        else:
+            input_json["interfaces"] = _sources_dict(interface_sources, False, language)
+
     return input_json
 
 
@@ -259,3 +284,15 @@ def generate_build_json(
         print("")
 
     return build_json
+
+
+def _sources_dict(original: Dict, minify: bool, language: str) -> Dict:
+    result: Dict = {}
+    for key, value in original.items():
+        if Path(key).suffix == ".json":
+            if isinstance(value, str):
+                value = json.loads(value)
+            result[key] = {"abi": value}
+        else:
+            result[key] = {"content": sources.minify(value, language)[0] if minify else value}
+    return result

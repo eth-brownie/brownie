@@ -158,7 +158,7 @@ class PublicKeyAccount:
         self.address = _resolve_address(addr)
 
     def __repr__(self) -> str:
-        return f"<{type(self).__name__} object '{color['string']}{self.address}{color}'>"
+        return f"<{type(self).__name__} '{color['string']}{self.address}{color}'>"
 
     def __hash__(self) -> int:
         return hash(self.address)
@@ -192,12 +192,16 @@ class _PrivateKeyAccount(PublicKeyAccount):
     """Base class for Account and LocalAccount"""
 
     def _gas_limit(self, to: Union[str, "Accounts"], amount: Optional[int], data: str = "") -> int:
-        if CONFIG["active_network"]["gas_limit"] not in (True, False, None):
-            return Wei(CONFIG["active_network"]["gas_limit"])
-        return self.estimate_gas(to, amount, data)
+        gas_limit = CONFIG["active_network"]["gas_limit"]
+        if isinstance(gas_limit, bool) or gas_limit in (None, "auto"):
+            return self.estimate_gas(to, amount, data)
+        return Wei(gas_limit)
 
     def _gas_price(self) -> Wei:
-        return Wei(CONFIG["active_network"]["gas_price"] or web3.eth.gasPrice)
+        gas_price = CONFIG["active_network"]["gas_price"]
+        if isinstance(gas_price, bool) or gas_price in (None, "auto"):
+            return web3.eth.gasPrice
+        return Wei(gas_price)
 
     def _check_for_revert(self, tx: Dict) -> None:
         if not CONFIG["active_network"]["reverting_tx_gas_limit"]:
@@ -286,8 +290,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
         self,
         to: "Accounts",
         amount: int,
-        gas_limit: float = None,
-        gas_price: float = None,
+        gas_limit: int = None,
+        gas_price: int = None,
         data: str = "",
     ) -> "TransactionReceipt":
         """Transfers ether from this account.

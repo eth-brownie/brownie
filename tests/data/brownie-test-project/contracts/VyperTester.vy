@@ -1,4 +1,3 @@
-
 stuff: public(uint256[4])
 
 

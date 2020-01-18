@@ -115,20 +115,20 @@ def test_args_kwargs():
 def test_repeat():
     t = AlertTest("foo")
     a = alert.new(t, delay=0.01, callback=t.callback, repeat=2)
-    time.sleep(0.03)
+    time.sleep(0.05)
     assert not t.raised
     assert len(alert.show()) == 1
     t.set_value("bar")
-    time.sleep(0.03)
+    time.sleep(0.05)
     assert not t.raised
     assert len(alert.show()) == 1
     t.set_value("foo")
-    time.sleep(0.03)
+    time.sleep(0.05)
     assert not t.raised
     assert a.is_alive()
     assert len(alert.show()) == 1
     t.set_value("potato")
-    time.sleep(0.03)
+    time.sleep(0.05)
     assert not t.raised
     assert not a.is_alive()
     assert len(alert.show()) == 0
