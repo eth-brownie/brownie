@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 
+import pytest
+
 test_source = """
+import brownie
+
 def test_call_and_transact(BrownieTester, accounts, skip_coverage):
     c = accounts[0].deploy(BrownieTester, True)
     c.doNothing({'from': accounts[0]})
@@ -10,11 +14,13 @@ def test_normal():
 """
 
 
-def test_no_skip(plugintester):
-    result = plugintester.runpytest()
+@pytest.mark.parametrize("arg", ["", "-n 2"])
+def test_no_skip(isolatedtester, arg):
+    result = isolatedtester.runpytest(arg)
     result.assert_outcomes(passed=2)
 
 
-def test_no_skip_coverage(plugintester):
-    result = plugintester.runpytest("-C")
+@pytest.mark.parametrize("arg", ["", "-n 1"])
+def test_no_skip_coverage(isolatedtester, arg):
+    result = isolatedtester.runpytest("-C", arg)
     result.assert_outcomes(skipped=1, passed=1)

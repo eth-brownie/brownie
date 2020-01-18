@@ -23,7 +23,7 @@ class PytestBrownieMaster(PytestBrownieBase):
             if path in self.tests and ARGV["update"]:
                 self.results[path] = list(self.tests[path]["results"])
             else:
-                self.results[path] = []
+                self.results[path] = ["s"] * len(self.node_map[path])
 
     def pytest_sessionfinish(self, session):
         if session.testscollected == 0:
