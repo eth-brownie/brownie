@@ -19,7 +19,7 @@ def test_evm_version_default(monkeypatch, rpc):
     monkeypatch.setattr("psutil.Popen.cmdline", lambda s: ["--hardfork", "otatop"])
     assert rpc.evm_version() == "otatop"
     monkeypatch.setattr("psutil.Popen.cmdline", lambda s: ["--hardfork"])
-    assert rpc.evm_version() == "petersburg"
+    assert rpc.evm_version() == "istanbul"
 
 
 def test_evm_compatible(monkeypatch, rpc):
