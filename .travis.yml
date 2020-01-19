@@ -11,14 +11,14 @@ jobs:
         - sudo apt-get update
         - sudo apt-get install -y python3.7-dev npm solc
       script: tox -e evmtest
-    - name: "Standard Tests, Plugin Tests - Python 3.8 on Windows"
+    - name: "Standard Tests - Python 3.8 on Windows"
       os: windows
       language: node_js
       node_js: '10'
       before_install:
         - choco install python --version=3.8.0
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
-      script: tox -e py38,plugintest
+      script: tox -e py38
     - name: "Standard Tests, Linting, Docs - Python 3.6 on Xenial Linux"
       language: python
       python: 3.6
@@ -54,7 +54,7 @@ env:
   global: COVERALLS_PARALLEL=true
 install:
   - python -m pip install --upgrade pip setuptools
-  - npm -g install ganache-cli@6.7.0
+  - npm -g install ganache-cli@6.8.2
   - python -m pip install coveralls==1.9.2 tox==3.14.0
 after_script: python -m coveralls
 notifications:
