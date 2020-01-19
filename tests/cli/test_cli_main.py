@@ -214,6 +214,24 @@ def test_cli_ethpm_with_type_error_exception(cli_tester, testproject):
     assert cli_tester.mock_subroutines.call_count == 0
 
 
+def test_test_no_args(cli_tester, testproject):
+    cli_tester.monkeypatch.setattr("pytest.main", cli_tester.mock_subroutines)
+    params = ([testproject._path.joinpath("tests").as_posix()], ["pytest-brownie"])
+    cli_tester.run_and_test_parameters("test", (params, {}))
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == 1
+
+
+def test_test_args(cli_tester, testproject):
+    cli_tester.monkeypatch.setattr("pytest.main", cli_tester.mock_subroutines)
+    params = (["tests/test_foo.py", "--gas", "-n", "1"], ["pytest-brownie"])
+    cli_tester.run_and_test_parameters("test tests/test_foo.py --gas -n 1", (params, {}))
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == 1
+
+
 def test_cli_incorrect(cli_tester):
     with pytest.raises(SystemExit):
         cli_tester.run_and_test_parameters("foo")

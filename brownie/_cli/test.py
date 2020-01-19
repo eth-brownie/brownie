@@ -44,11 +44,10 @@ def main():
         args["<path>"] = project_path.joinpath("tests").as_posix()
 
     pytest_args = [args["<path>"]]
-    for opt, value in [(k, v) for k, v in args.items() if k.startswith("-") and v]:
+    for opt, value in [(i, args[i]) for i in sorted(args) if i.startswith("-") and args[i]]:
         if value is True:
             pytest_args.append(opt)
         elif isinstance(value, str):
             pytest_args.extend([opt, value])
 
-    pytest_args += ["-p", "no:pytest-cov"]
     pytest.main(pytest_args, ["pytest-brownie"])
