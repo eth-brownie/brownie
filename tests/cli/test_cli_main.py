@@ -9,7 +9,7 @@ from brownie._cli.console import Console as cli_console
 
 
 @pytest.fixture
-def cli_tester(monkeypatch, mocker):
+def cli_tester(monkeypatch, mocker, argv, config):
     tester = CliTester(monkeypatch, mocker)
     tester.mocker.spy(tester, "mock_subroutines")
 
