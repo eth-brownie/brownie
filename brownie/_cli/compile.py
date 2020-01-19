@@ -14,7 +14,7 @@ Options:
   --help -h             Display this message
 
 Compiles the contract source files for this project and saves the results
-in the build/contracts folder.
+in the build/contracts/ folder.
 
 Note that Brownie automatically recompiles any changed contracts each time
 a project is loaded. You do not have to manually trigger a recompile."""
