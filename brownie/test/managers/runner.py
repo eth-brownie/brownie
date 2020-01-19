@@ -94,7 +94,8 @@ class PytestBrownieRunner(PytestBrownieBase):
                 self.isolated[path] = set(self.tests[path]["isolated"])
 
         # only connect to network if there are tests to run
-        if any(i for i in items if not i.get_closest_marker("skip")):
+        to_run = any(i for i in items if not i.get_closest_marker("skip"))
+        if to_run and not self.config.getoption("--fixtures"):
             brownie.network.connect(ARGV["network"] or CONFIG["network"]["default"])
 
     def _check_updated(self, path):
