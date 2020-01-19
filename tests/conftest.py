@@ -59,15 +59,17 @@ def pytest_generate_tests(metafunc):
     # parametrize the evmtester fixture
     target = metafunc.config.getoption("--target")
     if "evmtester" in metafunc.fixturenames and target in ("all", "evm"):
-        metafunc.parametrize(
-            "evmtester",
+        params = list(
             itertools.product(
-                ["byzantium", "constantinople"],
-                [0, 200, 10000],
-                ["0.4.22", "0.4.25", "0.5.0", "0.5.15", "0.6.0"],
-            ),
-            indirect=True,
+                ["byzantium", "constantinople"], [0, 10000], ["0.4.22", "0.4.25", "0.5.0"]
+            )
         )
+        params += list(
+            itertools.product(
+                ["byzantium", "petersburg", "istanbul"], [0, 10000], ["0.5.15", "0.6.0"]
+            )
+        )
+        metafunc.parametrize("evmtester", params, indirect=True)
 
     # parametrize the browniemix fixture
     if "browniemix" in metafunc.fixturenames and target in ("all", "mixes"):

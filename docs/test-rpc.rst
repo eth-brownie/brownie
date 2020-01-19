@@ -21,7 +21,7 @@ The connection settings for the local RPC are outlined in ``brownie-config.yaml`
             port: 8545
             gas_limit: 6721975
             accounts: 10
-            evm_version: petersburg
+            evm_version: istanbul
             mnemonic: brownie
 
 Brownie will launch or attach to the client when using any network that includes a ``test-rpc`` dictionary in it's settings.

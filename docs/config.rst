@@ -54,7 +54,7 @@ The following settings are available:
             * ``port``: Port the client should listen on.
             * ``gas_limit``: Block gas limit.
             * ``accounts``: The number of funded accounts in ``web3.eth.accounts``.
-            * ``evm_version``: The EVM version to compile for. If ``null`` the most recent one is used. Possible values are ``byzantium``, ``constantinople`` and ``petersburg``.
+            * ``evm_version``: The EVM version to compile for. If ``null`` the most recent one is used. Possible values are ``byzantium``, ``constantinople``, ``petersburg`` and ``istanbul``.
             * ``mnemonic``: Local accounts are derived from this mnemonic. If set to ``null``, you will have different local accounts each time Brownie is run.
             * ``account_keys_path``: Optional path to save generated accounts and private keys as a JSON object
 

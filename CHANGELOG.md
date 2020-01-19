@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Move check for new contract sources from `Project.__init__` to `Project.load`
+- Set `istanbul` as default EVM ruleset, run tests against `ganache-cli` [v6.8.2](https://github.com/trufflesuite/ganache-cli/releases/tag/v6.8.2)
 
 ### Deprecated
 - `pytest.reverts` is deprecated in favor of `brownie.reverts`
@@ -28,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Accept `atlantis` and `agharta` as EVM ruleset options in `brownie-config.yaml`
 
 ### Changed
-- Use Vyper version 0.1.0b16
+- Use Vyper [v0.1.0-beta16](https://github.com/vyperlang/vyper/releases/tag/v0.1.0-beta.16)
 
 ### Fixed
 - Create `~/.brownie/accounts` when `accounts` commandline interface is called
@@ -62,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.3.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.3.0) - 2019-12-20
 ### Added
-- support for [Solidity v0.6.0](https://github.com/ethereum/solidity/releases/tag/v0.6.0)
+- support for Solidity [v0.6.0](https://github.com/ethereum/solidity/releases/tag/v0.6.0)
 - allow `istanbul` as choice for EVM ruleset (default is still `petersburg`)
 - allow `dev:` revert comments for `assert` statements
 - better error messages when sending ether to nonpayable function, or trying to access an invalid array index

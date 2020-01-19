@@ -68,7 +68,11 @@ Setting the version via pragma allows you to use multiple versions in a single p
 The EVM Version
 ---------------
 
-By default, ``evm_version`` is set to ``null``. Brownie uses ``byzantium`` when compiling Solidity versions ``<=0.5.4``, ``petersburg`` for Solidity ``>=0.5.5`` and Vyper.
+By default ``evm_version`` is set to ``null``. Brownie sets the ruleset based on the compiler:
+
+* **byzantium**: Solidity ``<=0.5.4``
+* **petersburg**: Solidity ``>=0.5.5 <=0.5.12``
+* **istanbul**: Solidity ``>=0.5.13``, Vyper
 
 You can also set the EVM version manually. Valid options are ``byzantium``, ``constantinople``, ``petersburg`` and ``istanbul``. You can also use the Ethereum Classic rulesets ``atlantis`` and ``agharta``, which are converted to their Ethereum equivalents prior to being passed to the compiler.
 

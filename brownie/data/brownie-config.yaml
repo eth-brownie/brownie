@@ -19,7 +19,7 @@ network:
                 port: 8545
                 gas_limit: 6721975
                 accounts: 10
-                evm_version: petersburg
+                evm_version: istanbul
                 mnemonic: brownie
         # set your Infura API token to the environment variable WEB3_INFURA_PROJECT_ID
         mainnet:
