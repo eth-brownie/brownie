@@ -42,6 +42,16 @@ FOLDERS = [
 ]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 
+GITIGNORE = """__pycache__
+.history
+build/
+reports/
+"""
+
+GITATTRIBUTES = """*.sol linguist-language=Solidity
+*.vy linguist-language=Python
+"""
+
 _loaded_projects = []
 
 
@@ -337,6 +347,7 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
     project_path = _new_checks(project_path_str, ignore_subfolder)
     project_path.mkdir(exist_ok=True)
     _create_folders(project_path)
+    _create_gitfiles(project_path)
     if not _get_project_config_path(project_path):
         shutil.copy(
             _get_data_folder().joinpath("brownie-config.yaml"),
@@ -385,6 +396,8 @@ def from_brownie_mix(
     with zipfile.ZipFile(BytesIO(content)) as zf:
         zf.extractall(str(project_path.parent))
     project_path.parent.joinpath(project_name + "-mix-master").rename(project_path)
+    _create_folders(project_path)
+    _create_gitfiles(project_path)
     shutil.copy(
         _get_data_folder().joinpath("brownie-config.yaml"),
         project_path.joinpath("brownie-config.yaml"),
@@ -475,6 +488,17 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
 
     # load sources and build
     return Project(name, project_path)
+
+
+def _create_gitfiles(project_path: Path) -> None:
+    gitignore = project_path.joinpath(".gitignore")
+    if not gitignore.exists():
+        with gitignore.open("w") as fp:
+            fp.write(GITIGNORE)
+    gitattributes = project_path.joinpath(".gitattributes")
+    if not gitattributes.exists():
+        with gitattributes.open("w") as fp:
+            fp.write(GITATTRIBUTES)
 
 
 def _create_folders(project_path: Path) -> None:

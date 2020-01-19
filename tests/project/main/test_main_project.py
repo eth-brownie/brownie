@@ -34,6 +34,8 @@ def test_new(tmp_path, project):
     assert str(tmp_path) == project.new(tmp_path)
     assert tmp_path.joinpath("brownie-config.yaml").exists()
     assert tmp_path.joinpath("ethpm-config.yaml").exists()
+    assert tmp_path.joinpath(".gitattributes").exists()
+    assert tmp_path.joinpath(".gitignore").exists()
 
 
 def test_load_raises_already_loaded(project, newproject):
