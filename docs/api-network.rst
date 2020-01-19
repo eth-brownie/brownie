@@ -1439,7 +1439,7 @@ Rpc Methods
     .. code-block:: python
 
         >>> rpc.evm_version()
-        'petersburg'
+        'istanbul'
 
 .. py:classmethod:: Rpc.evm_compatible(version)
 
