@@ -63,8 +63,6 @@ class PytestBrownieRunner(PytestBrownieBase):
         pytest.reverts = revert_deprecation
 
     def pytest_generate_tests(self, metafunc):
-        # _session_isolation must always run first
-        _make_fixture_execute_first(metafunc, "_session_isolation", "session")
         # module_isolation always runs before other module scoped functions
         _make_fixture_execute_first(metafunc, "module_isolation", "module")
         # fn_isolation always runs before other function scoped fixtures
@@ -95,6 +93,10 @@ class PytestBrownieRunner(PytestBrownieBase):
                 tests[path][0].parent.add_marker("skip")
                 self.isolated[path] = set(self.tests[path]["isolated"])
 
+        # only connect to network if there are tests to run
+        if any(i for i in items if not i.get_closest_marker("skip")):
+            brownie.network.connect(ARGV["network"] or CONFIG["network"]["default"])
+
     def _check_updated(self, path):
         path = self._path(path)
         if path not in self.tests or not self.tests[path]["isolated"]:
@@ -121,14 +123,6 @@ class PytestBrownieRunner(PytestBrownieBase):
                 del reporter.stats["warnings"]
             else:
                 reporter.stats["warnings"] = warnings
-
-    # ensure each copy of ganache runs on a different port
-    @pytest.fixture(scope="session", autouse=True)
-    def _session_isolation(self, worker_id):
-        key = ARGV["network"] or CONFIG["network"]["default"]
-        if worker_id != "master":
-            CONFIG["network"]["networks"][key]["test_rpc"]["port"] += int(worker_id[-1])
-        brownie.network.connect(key)
 
     def pytest_runtest_protocol(self, item):
         # does not run on master
@@ -193,6 +187,12 @@ class PytestBrownieRunner(PytestBrownieBase):
 
 
 class PytestBrownieXdistRunner(PytestBrownieRunner):
+    def __init__(self, config, project):
+        self.workerid = int("".join(i for i in config.workerinput["workerid"] if i.isdigit()))
+        key = ARGV["network"] or CONFIG["network"]["default"]
+        CONFIG["network"]["networks"][key]["test_rpc"]["port"] += self.workerid
+        super().__init__(config, project)
+
     def pytest_collection_modifyitems(self, items):
         # clear collection if isolation is not active
         if next((i for i in items if "module_isolation" not in i.fixturenames), False):
@@ -202,4 +202,4 @@ class PytestBrownieXdistRunner(PytestBrownieRunner):
 
     def pytest_sessionfinish(self):
         self.tests = dict((k, v) for k, v in self.tests.items() if k in self.results)
-        self._sessionfinish(f"build/tests-{self.config.workerinput['workerid']}.json")
+        self._sessionfinish(f"build/tests-{self.workerid}.json")
