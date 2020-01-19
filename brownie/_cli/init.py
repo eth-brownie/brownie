@@ -19,10 +19,11 @@ structure for the brownie environment:
 
 build/                  Compiled contracts and test data
 contracts/              Contract source code
+interfaces/             Interface source code
 reports/                Report files for contract analysis
 scripts/                Scripts for deployment and interaction
 tests/                  Scripts for project testing
-brownie-config.json     Project configuration file"""
+brownie-config.yaml     Project configuration file"""
 
 
 def main():

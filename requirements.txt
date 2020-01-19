@@ -9,7 +9,8 @@ psutil>=5.6.2,<6.0.0
 pyreadline==2.1;platform_system=='Windows'
 py-solc-ast>=1.1.0,<2.0.0
 py-solc-x>=0.7.1,<1.0.0
-pytest>=5.0.0,<6.0.0
+pytest==5.3.2
+pytest-xdist==1.31.0
 pythx==1.4.1
 pyyaml>=5.1.0,<6.0.0
 requests>=2.22.0,<3.0.0

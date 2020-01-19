@@ -5,24 +5,10 @@ from pathlib import Path
 
 import pytest
 
-conf_source = """
-import pytest
-
-@pytest.fixture(autouse=True)
-def isolation(module_isolation):
-    pass"""
-
 test_source = """
 def test_stuff(BrownieTester, accounts):
     c = accounts[0].deploy(BrownieTester, True)
     c.doNothing({'from': accounts[0]})"""
-
-
-@pytest.fixture
-def runconf(plugintester):
-    plugintester.makeconftest(conf_source)
-    result = plugintester.runpytest("-U")
-    result.assert_outcomes(passed=1)
 
 
 def test_update_no_isolation(plugintester):
@@ -32,40 +18,52 @@ def test_update_no_isolation(plugintester):
     result.assert_outcomes(passed=1)
 
 
-def test_update_isolation(runconf, plugintester):
-    result = plugintester.runpytest("-U")
-    result.assert_outcomes(skipped=1)
-
-
-def test_update_isolation_coverage(runconf, plugintester):
-    result = plugintester.runpytest("-C", "-U")
+@pytest.mark.parametrize("arg", ["", "-n 2"])
+def test_update_isolation(isolatedtester, arg):
+    result = isolatedtester.runpytest(arg)
     result.assert_outcomes(passed=1)
-    result = plugintester.runpytest("-C", "-U")
-    result.assert_outcomes(skipped=1)
-    result = plugintester.runpytest("-U")
-    result.assert_outcomes(skipped=1)
-    plugintester.runpytest()
-    result = plugintester.runpytest("-C", "-U")
+    result = isolatedtester.runpytest("-U", arg)
     result.assert_outcomes(skipped=1)
 
 
-def test_update_isolation_contract_changed(runconf, json_path, plugintester):
-    path = Path(plugintester.tmpdir).joinpath("contracts/BrownieTester.sol")
+@pytest.mark.parametrize("arg", ["", "-n 2"])
+def test_update_isolation_coverage(isolatedtester, arg):
+    result = isolatedtester.runpytest("-U", arg)
+    result.assert_outcomes(passed=1)
+    result = isolatedtester.runpytest("-C", "-U", arg)
+    result.assert_outcomes(passed=1)
+    result = isolatedtester.runpytest("-C", "-U", arg)
+    result.assert_outcomes(skipped=1)
+    result = isolatedtester.runpytest("-U", arg)
+    result.assert_outcomes(skipped=1)
+    isolatedtester.runpytest(arg)
+    result = isolatedtester.runpytest("-C", "-U", arg)
+    result.assert_outcomes(skipped=1)
+
+
+@pytest.mark.parametrize("arg", ["", "-n 2"])
+def test_update_isolation_contract_changed(isolatedtester, arg):
+    isolatedtester.runpytest()
+
+    path = Path(isolatedtester.tmpdir).joinpath("contracts/BrownieTester.sol")
     with path.open() as fp:
         source = fp.read()
     source = source.replace("two", "tree fiddy")
     with path.open("w") as fp:
         fp.write(source)
-    result = plugintester.runpytest("-U")
+    result = isolatedtester.runpytest("-U", arg)
     result.assert_outcomes(passed=1)
 
 
-def test_update_isolation_testfile_changed(runconf, json_path, plugintester):
+@pytest.mark.parametrize("arg", ["", "-n 2"])
+def test_update_isolation_testfile_changed(json_path, isolatedtester, arg):
+    isolatedtester.runpytest()
+
     with json_path.open() as fp:
         build = json.load(fp)
-    build["tests"]["test_update_isolation_testfile_changed.py"]["sha1"] = "potato"
+    build["tests"]["tests/test_0.py"]["sha1"] = "potato"
     with json_path.open("w") as fp:
         build = json.dump(build, fp)
 
-    result = plugintester.runpytest("-U")
+    result = isolatedtester.runpytest("-U", arg)
     result.assert_outcomes(passed=1)

@@ -22,26 +22,43 @@ from brownie._config import ARGV
 pytest_plugins = "pytester"
 
 
-# travis cannot call github ethereum/solidity API, so this method is patched
-def pytest_sessionstart():
-    monkeypatch_session = MonkeyPatch()
-    monkeypatch_session.setattr(
-        "solcx.get_available_solc_versions",
-        lambda: ["v0.6.0", "v0.5.10", "v0.5.8", "v0.5.7", "v0.4.25", "v0.4.24", "v0.4.22"],
-    )
+TARGET_OPTS = {"evm": "evmtester", "mixes": "browniemix", "plugin": "plugintester"}
 
 
 def pytest_addoption(parser):
-    parser.addoption("--mix-tests", action="store_true", help="Runs brownie mix tests")
     parser.addoption(
-        "--evm-tests", action="store_true", help="Runs EVM tests (coverage evaluation)"
+        "--target",
+        choices=["all", "core"] + list(TARGET_OPTS),
+        default="core",
+        help="Target a specific component of the tests. Use 'all' to run the full suite.",
     )
-    parser.addoption("--skip-regular", action="store_true", help="Skips regular tests")
+
+
+# remove tests based on config flags and fixture names
+def pytest_collection_modifyitems(config, items):
+    target = config.getoption("--target")
+    if target == "all":
+        return
+    for flag, fixture in TARGET_OPTS.items():
+        if target == flag:
+            continue
+        for test in [i for i in items if fixture in i.fixturenames]:
+            items.remove(test)
+    if target != "core":
+        fixtures = set(TARGET_OPTS.values())
+        for test in [i for i in items if not fixtures.intersection(i.fixturenames)]:
+            items.remove(test)
+
+
+def pytest_configure(config):
+    if config.getoption("--target") in ("all", "plugin") and config.getoption("numprocesses"):
+        raise pytest.UsageError("Cannot use xdist with plugin tests, try adding the '-n 0' flag")
 
 
 def pytest_generate_tests(metafunc):
     # parametrize the evmtester fixture
-    if "evmtester" in metafunc.fixturenames and metafunc.config.getoption("--evm-tests"):
+    target = metafunc.config.getoption("--target")
+    if "evmtester" in metafunc.fixturenames and target in ("all", "evm"):
         metafunc.parametrize(
             "evmtester",
             itertools.product(
@@ -53,7 +70,7 @@ def pytest_generate_tests(metafunc):
         )
 
     # parametrize the browniemix fixture
-    if "browniemix" in metafunc.fixturenames and metafunc.config.getoption("--mix-tests"):
+    if "browniemix" in metafunc.fixturenames and target in ("all", "mixes"):
         if os.getenv("GITHUB_TOKEN"):
             auth = b64encode(os.getenv("GITHUB_TOKEN").encode()).decode()
             headers = {"Authorization": "Basic {}".format(auth)}
@@ -72,18 +89,13 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("browniemix", [i["name"] for i in data.json()])
 
 
-# remove tests based on config flags and fixture names
-def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--evm-tests"):
-        for test in [i for i in items if "evmtester" in i.fixturenames]:
-            items.remove(test)
-    if not config.getoption("--mix-tests"):
-        for test in [i for i in items if "browniemix" in i.fixturenames]:
-            items.remove(test)
-    if config.getoption("--skip-regular"):
-        fixtures = set(["browniemix", "evmtester"])
-        for test in [i for i in items if not fixtures.intersection(i.fixturenames)]:
-            items.remove(test)
+# travis cannot call github ethereum/solidity API, so this method is patched
+def pytest_sessionstart():
+    monkeypatch_session = MonkeyPatch()
+    monkeypatch_session.setattr(
+        "solcx.get_available_solc_versions",
+        lambda: ["v0.6.0", "v0.5.10", "v0.5.8", "v0.5.7", "v0.4.25", "v0.4.24", "v0.4.22"],
+    )
 
 
 # worker ID for xdist process, as an integer
@@ -221,8 +233,11 @@ def plugintesterbase(project, testdir, monkeypatch):
 def plugintester(_project_factory, plugintesterbase, request):
     _copy_all(_project_factory, plugintesterbase.tmpdir)
     test_source = getattr(request.module, "test_source", None)
-    if test_source:
-        plugintesterbase.makepyfile(test_source)
+    if test_source is not None:
+        if isinstance(test_source, str):
+            test_source = [test_source]
+        test_source = {f"tests/test_{i}.py": test_source[i] for i in range(len(test_source))}
+        plugintesterbase.makepyfile(**test_source)
     yield plugintesterbase
 
 

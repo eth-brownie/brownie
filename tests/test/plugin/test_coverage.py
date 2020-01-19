@@ -42,12 +42,11 @@ def test_always_transact(plugintester, mocker, rpc):
 
 
 def test_coverage_tx(json_path, plugintester):
-    plugintester.runpytest()
+    plugintester.runpytest("-n 2")
     with json_path.open() as fp:
         build = json.load(fp)
     assert not len(build["tx"])
-    plugintester.runpytest("-C")
+    plugintester.runpytest("--numprocesses=2", "--coverage")
     with json_path.open() as fp:
         build = json.load(fp)
-        print(build)
     assert len(build["tx"]) == 3

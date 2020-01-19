@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Move check for new contract sources from `Project.__init__` to `Project.load`
 
+### Deprecated
+- `pytest.reverts` is deprecated in favor of `brownie.reverts`
+
 ### Fixed
 - Check pragma statements when determining if a contract should be recompiled
 - Understand `abstract contract` when regexing contract source
