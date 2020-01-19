@@ -87,17 +87,16 @@ The ``RevertContextManager`` closely mimics the behaviour of `pytest.raises <htt
 
     * ``revert_msg``: Optional. Raises an ``AssertionError`` if the transaction does not revert with this error string.
 
-    Available as ``pytest.reverts``.
+    This class is available as ``brownie.reverts`` when ``pytest`` is active.
 
     .. code-block:: python
         :linenos:
 
-        import pytest
-        from brownie import accounts
+        import brownie
 
         def test_transfer_reverts(Token, accounts):
             token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
-            with pytest.reverts():
+            with brownie.reverts():
                 token.transfer(account[2], "10000 ether", {'from': accounts[1]})
 
 ``brownie.test.output``

@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 
 import json
+import warnings
 
 import pytest
 
-from brownie import network
+import brownie
 from brownie._config import ARGV, CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
@@ -24,6 +25,15 @@ def _make_fixture_execute_first(metafunc, name, scope):
             len(fixtures),
         )
         fixtures.insert(idx, name)
+
+
+def revert_deprecation(revert_msg=None):
+    warnings.warn(
+        "pytest.reverts has been deprecated, use brownie.reverts instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return RevertContextManager(revert_msg)
 
 
 class RevertContextManager:
@@ -49,7 +59,8 @@ class RevertContextManager:
 class PytestBrownieRunner(PytestBrownieBase):
     def __init__(self, config, project):
         super().__init__(config, project)
-        pytest.reverts = RevertContextManager
+        brownie.reverts = RevertContextManager
+        pytest.reverts = revert_deprecation
 
     def pytest_generate_tests(self, metafunc):
         # _session_isolation must always run first
@@ -117,7 +128,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         key = ARGV["network"] or CONFIG["network"]["default"]
         if worker_id != "master":
             CONFIG["network"]["networks"][key]["test_rpc"]["port"] += int(worker_id[-1])
-        network.connect(key)
+        brownie.network.connect(key)
 
     def pytest_runtest_protocol(self, item):
         # does not run on master

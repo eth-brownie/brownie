@@ -124,17 +124,17 @@ For example - if your project contains a contract named ``Token``, there will be
 Handling Reverted Transactions
 ==============================
 
-When running tests, transactions that revert raise a ``VirtualMachineError`` exception. To write assertions around this you can use ``pytest.reverts`` as a context manager. It functions very similarly to `pytest.raises <https://docs.pytest.org/en/latest/assert.html#assertraises>`_.
+When running tests, transactions that revert raise a ``VirtualMachineError`` exception. To write assertions around this you can use ``brownie.reverts`` as a context manager. It functions very similarly to `pytest.raises <https://docs.pytest.org/en/latest/assert.html#assertraises>`_.
 
 
 .. code-block:: python
     :linenos:
 
-    import pytest
+    import brownie
 
-    def test_transfer_reverts(Token):
+    def test_transfer_reverts(accounts, Token):
         token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
-        with pytest.reverts():
+        with brownie.reverts():
             token.transfer(accounts[1], "2000 ether", {'from': accounts[0]})
 
 You may optionally supply a string as an argument. If given, the error string returned by the transaction must match it in order for the test to pass.
@@ -142,11 +142,11 @@ You may optionally supply a string as an argument. If given, the error string re
 .. code-block:: python
     :linenos:
 
-    import pytest
+    import brownie
 
-    def test_transfer_reverts(Token):
+    def test_transfer_reverts(accounts, Token):
         token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
-        with pytest.reverts("Insufficient Balance"):
+        with brownie.reverts("Insufficient Balance"):
             token.transfer(accounts[1], "9001 ether", {'from': accounts[0]})
 
 .. _dev-revert:

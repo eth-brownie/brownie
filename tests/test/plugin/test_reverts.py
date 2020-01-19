@@ -2,6 +2,7 @@
 
 test_source = [
     """
+import brownie
 import pytest
 
 @pytest.fixture(scope="module")
@@ -10,27 +11,28 @@ def tester(BrownieTester, accounts):
     yield tester
 
 def test_reverts_success(tester):
-    with pytest.reverts("zero"):
+    with brownie.reverts("zero"):
         tester.revertStrings(0)
-    with pytest.reverts("dev: one"):
+    with brownie.reverts("dev: one"):
         tester.revertStrings(1)
 
 @pytest.mark.xfail(condition=True, reason="", raises=AssertionError, strict=True)
 def test_reverts_incorrect_msg(tester):
-    with pytest.reverts("potato"):
+    with brownie.reverts("potato"):
         tester.revertStrings(0)
     """,
     """
+import brownie
 import pytest
 
 @pytest.mark.xfail(condition=True, reason="", raises=TypeError, strict=True)
 def test_reverts_wrong_excetion():
-    with pytest.reverts("potato"):
+    with brownie.reverts("potato"):
         12 + "horse"
 
 @pytest.mark.xfail(condition=True, reason="", raises=AssertionError, strict=True)
 def test_does_not_revert():
-    with pytest.reverts():
+    with brownie.reverts():
         1 + 2
     """,
 ]

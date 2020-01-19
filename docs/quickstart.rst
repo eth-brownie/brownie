@@ -235,16 +235,16 @@ Here is an example test function using Brownie fixtures:
         assert token.balanceOf(accounts[1]) == "0.1 ether"
         assert token.balanceOf(accounts[0]) == "999.9 ether"
 
-Transactions that revert raise a ``VirtualMachineError`` exception. To write assertions around this you can use ``pytest.reverts`` as a context manager, which functions very similarly to ``pytest.raises``:
+Transactions that revert raise a ``VirtualMachineError`` exception. To write assertions around this you can use ``brownie.reverts`` as a context manager, which functions very similarly to ``pytest.raises``:
 
 .. code-block:: python
     :linenos:
 
-    import pytest
+    import brownie
 
     def test_transferFrom_reverts(Token, accounts):
         token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
-        with pytest.reverts():
+        with brownie.reverts():
             token.transferFrom(accounts[0], accounts[3], "10 ether", {'from': accounts[1]})
 
 Test isolation is handled through the ``module_isolation`` and ``fn_isolation`` fixtures:
