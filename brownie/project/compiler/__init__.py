@@ -30,7 +30,7 @@ STANDARD_JSON: Dict = {
     },
 }
 EVM_SOLC_VERSIONS = [
-    # ("istanbul", Version("0.5.13")),  # TODO enable when ganache istanbul support is out of beta
+    ("istanbul", Version("0.5.13")),
     ("petersburg", Version("0.5.5")),
     ("byzantium", Version("0.4.0")),
 ]
@@ -149,7 +149,7 @@ def generate_input_json(
         if language == "Solidity":
             evm_version = next(i[0] for i in EVM_SOLC_VERSIONS if solidity.get_version() >= i[1])
         else:
-            evm_version = "petersburg"
+            evm_version = "istanbul"
 
     input_json: Dict = deepcopy(STANDARD_JSON)
     input_json["language"] = language
