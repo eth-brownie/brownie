@@ -12,8 +12,7 @@ Test scripts are stored in the ``tests/`` folder of your project. To run the com
 
 ::
 
-    $ pytest tests
-
+    $ brownie test
 
 Brownie Pytest Fixtures
 =======================
@@ -186,6 +185,8 @@ If the above function is executed in the console:
 
     >>> tx.revert_msg
     'dev: is three'
+
+.. _test-isolation:
 
 Isolating Tests
 ===============
@@ -373,17 +374,13 @@ To run the complete test suite:
 
 ::
 
-    $ pytest tests
+    $ brownie test
 
 Or to run a specific test:
 
 ::
 
-    $ pytest tests/test_transfer.py
-
-.. note::
-
-    Because of Brownie's dynamically named contract fixtures, you cannot run ``pytest`` outside of the Brownie project folder.
+    $ brownie test tests/test_transfer.py
 
 Test results are saved at ``build/tests.json``. This file holds the results of each test, coverage analysis data, and hashes that are used to determine if any related files have changed since the tests last ran. If you abort test execution early via a ``KeyboardInterrupt``, results are only be saved for modules that fully completed.
 
@@ -394,7 +391,7 @@ After the test suite has been run once, you can use the ``--update`` flag to onl
 
 ::
 
-    $ pytest tests --update
+    $ brownie test --update
 
 A module must use the ``module_isolation`` or ``fn_isolation`` fixture in every test function in order to be skipped in this way.
 
@@ -415,7 +412,7 @@ To check your unit test coverage, add the ``--coverage`` flag when running pytes
 
 ::
 
-    $ pytest tests/ --coverage
+    $ brownie test --coverage
 
 When the tests complete, a report will display:
 
@@ -440,6 +437,21 @@ When the tests complete, a report will display:
     Coverage report saved at reports/coverage.json
 
 Brownie outputs a % score for each contract method that you can use to quickly gauge your overall coverage level. A detailed coverage report is also saved in the project's ``reports`` folder, that can be viewed via the Brownie GUI. See :ref:`coverage-gui` for more information.
+
+Using ``xdist`` for Distributed Testing
+---------------------------------------
+
+Brownie is compatible with the `pytest-xdist <https://github.com/pytest-dev/pytest-xdist>`_ plugin, allowing you to parallelize test execution. In large test suites this can greatly reduce the total runtime.
+
+You may wish to read an overview of `how xdist works <https://github.com/pytest-dev/pytest-xdist/blob/master/OVERVIEW.md>`_ if you are unfamiliar with the plugin.
+
+To run your tests in parralel, include the ``-n`` flag:
+
+::
+
+    $ brownie test -n auto
+
+Tests are distributed to workers on a per-module basis. An :ref:`isolation fixture<test-isolation>` must be applied to every test being executed, or ``xdist`` will fail after collection. This is because without proper isolation it is impossible to ensure consistent behaviour between test runs.
 
 .. _test_settings:
 

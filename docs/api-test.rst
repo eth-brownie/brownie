@@ -8,41 +8,38 @@ The ``test`` package contains classes and methods for running tests and evaluati
 
 This functionality is typically accessed via `pytest <https://docs.pytest.org/en/latest/>`_.  See :ref:`test`.
 
-``brownie.test.plugin``
-=======================
+``brownie.test.fixtures``
+=========================
 
-The ``plugin`` module contains classes and methods used in the Brownie Pytest plugin.  It defines custom fixtures and handles integration into the Pytest workflow.
+The ``fixtures`` module contains custom fixtures provided by the Brownie Pytest plugin.
 
 Pytest Fixtures
 ---------------
 
-Brownie includes the following fixtures for use with ``pytest``.
-
-.. note:: These fixtures are only available when pytest is run from inside a Brownie project folder.
-
+.. note:: These fixtures are only available when ``pytest`` is run from inside a Brownie project folder.
 
 Session Fixtures
 ****************
 
 These fixtures provide access to objects related to the project being tested.
 
-.. py:attribute:: plugin.accounts
+.. py:attribute:: fixtures.accounts
 
     Session scope. Yields an instantiated :ref:`Accounts<api-network-accounts>` container for the active project.
 
-.. py:attribute:: plugin.a
+.. py:attribute:: fixtures.a
 
     Session scope. Short form of the ``accounts`` fixture.
 
-.. py:attribute:: plugin.history
+.. py:attribute:: fixtures.history
 
     Session scope. Yields an instantiated :ref:`TxHistory<api-network-history>` object for the active project.
 
-.. py:attribute:: plugin.rpc
+.. py:attribute:: fixtures.rpc
 
     Session scope. Yields an instantiated :ref:`Rpc<rpc>` object.
 
-.. py:attribute:: plugin.web3
+.. py:attribute:: fixtures.web3
 
     Session scope. Yields an instantiated :ref:`Web3<web3>` object.
 
@@ -51,13 +48,13 @@ Isolation Fixtures
 
 These fixtures are used to effectively isolate tests. If included on every test within a module, that module may now be skipped via the ``--update`` flag when none of the related files have changed since it was last run.
 
-.. py:attribute:: plugin.module_isolation
+.. py:attribute:: fixtures.module_isolation
 
     Module scope. When used, this fixture is always applied before any other module-scoped fixtures.
 
     Resets the local environment before starting the first test and again after completing the final test.
 
-.. py:method:: plugin.fn_isolation(module_isolation)
+.. py:method:: fixtures.fn_isolation(module_isolation)
 
     Function scope. When used, this fixture is always applied before any other function-scoped fixtures.
 
@@ -68,13 +65,46 @@ Coverage Fixtures
 
 These fixtures alter the behaviour of tests when coverage evaluation is active.
 
-.. py:attribute:: plugin.no_call_coverage
+.. py:attribute:: fixtures.no_call_coverage
 
     Function scope. Coverage evaluation will not be performed on called contact methods during this test.
 
-.. py:attribute:: plugin.skip_coverage
+.. py:attribute:: fixtures.skip_coverage
 
     Function scope. If coverage evaluation is active, this test will be skipped.
+
+``brownie.test.plugin``
+=======================
+
+The ``plugin`` module is the entry point for the Brownie pytest plugin. It contains two ``pytest`` hook point methods that are used for setting up the plugin. The majority of the plugin functionality is handled by a :ref:`plugin manager<api-test-plugin-manager>` which is instantiated in the ``pytest_configure`` method.
+
+``brownie.test.manager``
+========================
+
+The ``manager`` module contains Brownie classes used internally to manage the Brownie pytest plugin.
+
+.. _api-test-plugin-manager:
+
+Plugin Managers
+---------------
+
+One of these classes is instantiated in the ``pytest_configure`` method of ``brownie.test.plugin``. Which is used depends on whether or not `pytest-xdist <https://github.com/pytest-dev/pytest-xdist>`_ is active.
+
+.. py:class:: manager.base.PytestBrownieBase
+
+    Base class that is inherited by all Brownie plugin managers.
+
+.. py:class:: manager.runner.PytestBrownieRunner
+
+    Runner plugin manager, used when ``xdist`` is not active.
+
+.. py:class:: manager.runner.PytestBrownieXdistRunner
+
+    ``xdist`` runner plugin manager. Inherits from ``PytestBrownieRunner``.
+
+.. py:class:: manager.master.PytestBrownieMaster
+
+    ``xdist`` master plugin manager.
 
 RevertContextManager
 --------------------
@@ -224,8 +254,3 @@ Internal Methods
 .. py:method:: coverage.clear_active_txlist()
 
     Clears the active coverage hash list.
-
-``brownie.test._manager``
-=========================
-
-The ``_manager`` module contains the ``TestManager`` class, used internally by Brownie to determine which tests should run and to load and save the test results.

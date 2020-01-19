@@ -219,9 +219,9 @@ Tests should be stored in the ``tests/`` folder.  To run the full suite:
 
 ::
 
-    $ pytest tests/
+    $ brownie test
 
-Brownie provides pytest fixtures to allow you to interact with your project and to aid in testing. To use a fixture, add an argument with the same name to the inputs of your test function.
+Brownie provides ``pytest`` fixtures to allow you to interact with your project and to aid in testing. To use a fixture, add an argument with the same name to the inputs of your test function.
 
 Here is an example test function using Brownie fixtures:
 
@@ -276,7 +276,7 @@ This example uses isolation and a shared setup fixture:
         assert token.balanceOf(accounts[0]) == "1000 ether"
         assert token.allowance(accounts[0], accounts[1]) == 0
 
-Brownie monitors which files have changed since the test suite was last executed. Tests that are properly isolated can be skipped if none of the contracts or related test files have changed. To enable this, include the ``--update`` flag when running ``pytest``.
+Brownie monitors which files have changed since the test suite was last executed. Tests that are properly isolated can be skipped if none of the contracts or related test files have changed. To enable this, include the ``--update`` flag.
 
 See :ref:`test` for more information on available fixtures, and other features and options related to unit testing.
 
@@ -289,7 +289,7 @@ To check test coverage:
 
 ::
 
-    $ pytest tests/ --coverage
+    $ brownie test --coverage
 
 To view detailed results, first load the Brownie GUI:
 
