@@ -6,11 +6,14 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.5.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.5.0) - 2020-01-20
 ### Added
 - `interfaces/` folder for interface sources
-- tested support for Vyper with ethPM
+- Tested support for Vyper with ethPM
 - Progress bar when downloading a Brownie mix
 - `get_abi` method for Solidity and Vyper compilers
+- Create `.gitignore` and `.gitattributes` when initializing new project
 
 ### Changed
 - Move check for new contract sources from `Project.__init__` to `Project.load`
