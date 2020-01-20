@@ -172,7 +172,7 @@ class ContractConstructor:
         args, tx = _get_tx(None, args)
         if not tx["from"]:
             raise AttributeError(
-                "Contract has no owner, you must supply a tx dict"
+                "No deployer address given. You must supply a tx dict"
                 " with a 'from' field as the last argument."
             )
         return tx["from"].deploy(
@@ -415,7 +415,7 @@ class _ContractMethod:
         args, tx = _get_tx(self._owner, args)
         if not tx["from"]:
             raise AttributeError(
-                "No deployer address given. You must supply a tx dict"
+                "Contract has no owner, you must supply a tx dict"
                 " with a 'from' field as the last argument."
             )
         return tx["from"].transfer(
