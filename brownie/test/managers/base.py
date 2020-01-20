@@ -60,7 +60,7 @@ class PytestBrownieBase:
         return Path(path).absolute().relative_to(self.project_path).as_posix()
 
     def _test_id(self, nodeid):
-        path, test_id = nodeid.split("::")
+        path, test_id = nodeid.split("::", maxsplit=1)
         return self._path(path), test_id
 
     def _get_hash(self, path):
