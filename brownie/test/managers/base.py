@@ -3,6 +3,8 @@
 import json
 from hashlib import sha1
 
+from py.path import local
+
 from brownie._config import ARGV, CONFIG
 from brownie.project.scripts import _get_ast_hash
 from brownie.test import coverage, output
@@ -14,8 +16,12 @@ class PytestBrownieBase:
     def __init__(self, config, project):
 
         self.config = config
+        # required when brownie project is in a subfolder of another project
+        config.rootdir = local(project._path)
+
         self.project = project
         self.project_path = project._path
+
         self.results = {}
         self.node_map = {}
         self.isolated = {}
