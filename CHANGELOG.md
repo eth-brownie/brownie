@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Correctly isolate path and nodeid from test cases inside classes
+- Allow `""` and `"0x"` when converting to bytes, disallow booleans
 
 ## [1.5.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.5.0) - 2020-01-20
 ### Added
