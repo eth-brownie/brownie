@@ -2,7 +2,6 @@
 
 import json
 from hashlib import sha1
-from pathlib import Path
 
 from brownie._config import ARGV, CONFIG
 from brownie.project.scripts import _get_ast_hash
@@ -21,8 +20,9 @@ class PytestBrownieBase:
         self.node_map = {}
         self.isolated = {}
         self.skip = {}
-        build = self.project._build
-        self.contracts = dict((k, v["bytecodeSha1"]) for k, v in build.items() if v["bytecode"])
+        self.contracts = dict(
+            (k, v["bytecodeSha1"]) for k, v in project._build.items() if v["bytecode"]
+        )
 
         glob = self.project_path.glob("tests/**/conftest.py")
         self.conf_hashes = dict((self._path(i.parent), _get_ast_hash(i)) for i in glob)
@@ -35,7 +35,7 @@ class PytestBrownieBase:
         self.tests = dict(
             (k, v)
             for k, v in hashes["tests"].items()
-            if Path(k).exists() and self._get_hash(k) == v["sha1"]
+            if self.project_path.joinpath(k).exists() and self._get_hash(k) == v["sha1"]
         )
 
         changed_contracts = set(
@@ -57,14 +57,14 @@ class PytestBrownieBase:
                 coverage._add_cached_transaction(txhash, coverage_eval)
 
     def _path(self, path):
-        return Path(path).absolute().relative_to(self.project_path).as_posix()
+        return self.project_path.joinpath(path).relative_to(self.project_path).as_posix()
 
     def _test_id(self, nodeid):
         path, test_id = nodeid.split("::", maxsplit=1)
         return self._path(path), test_id
 
     def _get_hash(self, path):
-        hash_ = _get_ast_hash(path)
+        hash_ = _get_ast_hash(self.project_path.joinpath(path))
         for confpath in filter(lambda k: k in path, sorted(self.conf_hashes)):
             hash_ += self.conf_hashes[confpath]
         return sha1(hash_.encode()).hexdigest()
