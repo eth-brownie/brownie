@@ -17,3 +17,4 @@ env/
 .mypy_cache/
 .idea/
 .DS_Store
+.hypothesis/

@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.5.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.5.1) - 2020-01-21
 ### Fixed
 - Correctly isolate path and nodeid from test cases inside classes
 - Allow `""` and `"0x"` when converting to bytes, disallow booleans
+- Tests can run from inside a project subfolder
+- Preserve pytest `rootdir` when a Brownie project is in a subfolder of a Python project
 
 ## [1.5.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.5.0) - 2020-01-20
 ### Added
