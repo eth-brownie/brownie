@@ -194,7 +194,7 @@ def _to_fixed(value: Any) -> Decimal:
     try:
         return Decimal(value)
     except Exception:
-        raise TypeError(f"Cannot convert {type(value)} '{value}' to decimal.")
+        raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to decimal.")
 
 
 def to_decimal(value: Any) -> Fixed:
@@ -270,8 +270,8 @@ def _hex_compare(a: Any, b: Any) -> bool:
 
 def to_bytes(value: Any, type_: str = "bytes32") -> bytes:
     """Convert a value to bytes"""
-    if not isinstance(value, (bytes, str, int)):
-        raise TypeError(f"'{value}', type {type(value)}, cannot convert to {type_}")
+    if isinstance(value, bool) or not isinstance(value, (bytes, str, int)):
+        raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to {type_}")
     value = bytes_to_hex(value)
     if type_ == "bytes":
         return eth_utils.to_bytes(hexstr=value)
@@ -292,21 +292,24 @@ def bytes_to_hex(value: Any) -> str:
         return HexBytes(value).hex()
     if isinstance(value, int):
         return hex(value)
-    if isinstance(value, str) and eth_utils.is_hex(value):
-        return eth_utils.add_0x_prefix(value)
-    raise ValueError(f"Cannot convert {type(value)} '{value}' to a hex string.")
+    if isinstance(value, str):
+        if value in ("", "0x"):
+            return "0x00"
+        if eth_utils.is_hex(value):
+            return eth_utils.add_0x_prefix(value)
+    raise ValueError(f"Cannot convert {type(value).__name__} '{value}' to a hex string")
 
 
 def to_bool(value: Any) -> bool:
     """Convert a value to a boolean"""
     if not isinstance(value, (int, float, bool, bytes, str)):
-        raise TypeError(f"Cannot convert {type(value)} '{value}' to bool")
+        raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to bool")
     if isinstance(value, bytes):
         value = HexBytes(value).hex()
     if isinstance(value, str) and value.startswith("0x"):
         value = int(value, 16)
     if value not in (0, 1, True, False):
-        raise ValueError(f"Cannot convert {type(value)} '{value}' to bool")
+        raise ValueError(f"Cannot convert {type(value).__name__} '{value}' to bool")
     return bool(value)
 
 
