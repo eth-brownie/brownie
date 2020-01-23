@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
-from eth_abi.grammar import TupleType, parse
+from eth_abi.grammar import ABIType, TupleType, parse
 
 from .convert import to_bool, to_decimal, to_int, to_string, to_uint
 from .datatypes import EthAddress, HexString, ReturnValue
@@ -19,7 +19,7 @@ def format_input(abi: Dict, inputs: Union[List, Tuple]) -> List:
         raise type(e)(f"{abi['name']} {e}")
 
 
-def format_output(abi: Dict, outputs: Tuple) -> ReturnValue:
+def format_output(abi: Dict, outputs: Union[List, Tuple]) -> ReturnValue:
     # Format contract outputs based on ABI types
     abi_types = _get_abi_types(abi["outputs"])
     result = _format_tuple(abi_types, outputs)
@@ -40,11 +40,9 @@ def format_event(event: Dict) -> Any:
     return event
 
 
-def _format_tuple(abi_types, values: Any) -> List:
+def _format_tuple(abi_types: Sequence[ABIType], values: Union[List, Tuple]) -> List:
     result = []
-    values = list(values)
-    if len(values) != len(abi_types):
-        raise TypeError(f"Expected {len(abi_types)} arguments, got {len(values)}")
+    _check_array(values, len(abi_types))
     for type_, value in zip(abi_types, values):
         try:
             if type_.is_array:
@@ -58,13 +56,8 @@ def _format_tuple(abi_types, values: Any) -> List:
     return result
 
 
-def _format_array(abi_type, values):
-    if not isinstance(values, (list, tuple)):
-        raise TypeError(f"Expected sequence, got {type(values).__name__}")
-    if not abi_type.is_dynamic and len(values) != abi_type.arrlist[-1][0]:
-        raise ValueError(
-            f"Expected {abi_type.to_type_str()} but sequence has length of {len(values)}"
-        )
+def _format_array(abi_type: ABIType, values: Union[List, Tuple]) -> List:
+    _check_array(values, None if abi_type.is_dynamic else abi_type.arrlist[-1][0])
     item_type = abi_type.item_type
     if item_type.is_array:
         return [_format_array(item_type, i) for i in values]
@@ -92,6 +85,13 @@ def _format_single(type_str: str, value: Any) -> Any:
     raise TypeError(f"Unknown type: {type_str}")
 
 
+def _check_array(values: Union[List, Tuple], length: Optional[int]) -> None:
+    if not isinstance(values, (list, tuple)):
+        raise TypeError(f"Expected list or tuple, got {type(values).__name__}")
+    if length is not None and len(values) != length:
+        raise ValueError(f"Sequence has incorrect length, expected {length} but got {len(values)}")
+
+
 def _params(abi_params: List, substitutions: Optional[Dict] = None) -> List:
     types = []
     if substitutions is None:
@@ -109,7 +109,7 @@ def _params(abi_params: List, substitutions: Optional[Dict] = None) -> List:
     return types
 
 
-def _get_abi_types(abi_params: List) -> Tuple:
+def _get_abi_types(abi_params: List) -> Sequence[ABIType]:
     type_str = f"({','.join(i[1] for i in _params(abi_params))})"
     tuple_type = parse(type_str)
     return tuple_type.components

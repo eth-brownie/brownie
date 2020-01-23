@@ -179,3 +179,4 @@ def test_tuples(tester, accounts):
     tx = tester.getTuple.transact(accounts[1], {"from": accounts[0]})
     assert tx.status == 1
     assert tx.return_value == value
+    assert tx.return_value["nested"]["a"] == "yesyesyes"
