@@ -117,7 +117,7 @@ class Fixed(Decimal):
     def __new__(cls, value: Any) -> Any:  # type: ignore
         return super().__new__(cls, _to_fixed(value))  # type: ignore
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Fixed('{str(self)}')"
 
     def __hash__(self) -> int:

@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie.convert import _format_input
+from brownie.convert.normalize import format_input
 
 abi = {
     "inputs": [
@@ -17,30 +17,30 @@ abi = {
 
 def test_empty():
     with pytest.raises(TypeError):
-        _format_input({"inputs": [], "name": "empty"}, [1])
+        format_input({"inputs": [], "name": "empty"}, [1])
 
 
 def test_success():
-    assert _format_input(abi, [(1, 2, 3), (1,), ([1, 1], [2, 2]), "0xff"])
+    assert format_input(abi, [(1, 2, 3), (1,), ([1, 1], [2, 2]), "0xff"])
 
 
 def test_wrong_length_initial():
-    with pytest.raises(TypeError):
-        _format_input(abi, [(1, 2, 3), (1,), ([1, 1], [2, 2])])
-    with pytest.raises(TypeError):
-        _format_input(abi, [(1, 2, 3), (1,), ([1, 1], [2, 2]), "0xff", "0xff"])
+    with pytest.raises(ValueError):
+        format_input(abi, [(1, 2, 3), (1,), ([1, 1], [2, 2])])
+    with pytest.raises(ValueError):
+        format_input(abi, [(1, 2, 3), (1,), ([1, 1], [2, 2]), "0xff", "0xff"])
 
 
 def test_wrong_length_fixed_array():
     with pytest.raises(ValueError):
-        _format_input(abi, [(1, 2), (2,), ([2, 2], [2, 2]), "0xff"])
+        format_input(abi, [(1, 2), (2,), ([2, 2], [2, 2]), "0xff"])
 
 
 def test_wrong_length_nested_array():
     with pytest.raises(ValueError):
-        _format_input(abi, [(1, 2, 3), (2,), ([2, 2, 2], [2, 2, 2]), "0xff"])
+        format_input(abi, [(1, 2, 3), (2,), ([2, 2, 2], [2, 2, 2]), "0xff"])
 
 
 def test_non_sequence():
     with pytest.raises(TypeError):
-        _format_input(abi, ["123", (1,), ([1, 1], [2, 2]), "0xff"])
+        format_input(abi, ["123", (1,), ([1, 1], [2, 2]), "0xff"])
