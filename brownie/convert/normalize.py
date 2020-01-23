@@ -4,8 +4,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from eth_abi.grammar import ABIType, TupleType, parse
 
-from .convert import to_bool, to_decimal, to_int, to_string, to_uint
 from .datatypes import EthAddress, HexString, ReturnValue
+from .main import to_bool, to_decimal, to_int, to_string, to_uint
 from .utils import get_type_strings
 
 
