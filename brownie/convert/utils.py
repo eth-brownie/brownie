@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple
 
 
 def get_int_bounds(type_str: str) -> Tuple[int, int]:
+    """Returns the lower and upper bound for an integer type."""
     size = int(type_str.strip("uint") or 256)
     if size < 8 or size > 256 or size % 8:
         raise ValueError(f"Invalid type: {type_str}")
@@ -13,6 +14,7 @@ def get_int_bounds(type_str: str) -> Tuple[int, int]:
 
 
 def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> List:
+    """Converts a list of parameters from an ABI into a list of type strings."""
     types_list = []
     if substitutions is None:
         substitutions = {}
