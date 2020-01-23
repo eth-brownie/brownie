@@ -14,6 +14,7 @@ The following classes and methods are available when writing brownie scripts or 
     :maxdepth: 2
 
     brownie <api-brownie.rst>
+    brownie.convert <api-convert.rst>
     brownie.network <api-network.rst>
     brownie.project <api-project.rst>
     brownie.test <api-test.rst>
