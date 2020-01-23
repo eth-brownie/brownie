@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
 from eth_abi.grammar import parse
-from eth_utils import to_checksum_address
 from hypothesis import strategies as st
 
 from brownie.convert.utils import get_int_bounds
+from brownie.network import accounts
 
 TYPE_STR_TRANSLATIONS = {"byte": "bytes1", "decimal": "fixed168x10"}
 
@@ -41,7 +41,7 @@ def _decimal_strategy(min_value=None, max_value=None, places=10):
 
 @exclude_filter
 def _address_strategy():
-    return st.binary(min_size=20, max_size=20).map(to_checksum_address)
+    return st.sampled_from(list(accounts))
 
 
 @exclude_filter
