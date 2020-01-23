@@ -8,7 +8,7 @@ from typing import Dict, Iterator, List, Sequence, Tuple, Union, ValuesView
 import eth_event
 
 from brownie._config import _get_data_folder
-from brownie.convert import _format_event
+from brownie.convert.normalize import format_event
 from brownie.exceptions import EventLookupError
 
 __tracebackhide__ = True
@@ -178,7 +178,7 @@ def _decode_logs(logs: List) -> Union["EventDict", List[None]]:
     if not logs:
         return []
     events = eth_event.decode_logs(logs, _topics)
-    events = [_format_event(i) for i in events]
+    events = [format_event(i) for i in events]
     return EventDict(events)
 
 
@@ -186,7 +186,7 @@ def _decode_trace(trace: Sequence) -> Union["EventDict", List[None]]:
     if not trace:
         return []
     events = eth_event.decode_trace(trace, _topics)
-    events = [_format_event(i) for i in events]
+    events = [format_event(i) for i in events]
     return EventDict(events)
 
 
