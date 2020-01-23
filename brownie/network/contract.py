@@ -12,6 +12,7 @@ from hexbytes import HexBytes
 from brownie._config import ARGV, CONFIG
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
+from brownie.convert.utils import get_type_strings
 from brownie.exceptions import (
     ContractExists,
     ContractNotFound,
@@ -193,8 +194,8 @@ class ContractConstructor:
             bytecode = bytecode.replace(marker, address)
 
         data = format_input(self.abi, args)
-        types = [i[1] for i in _params(self.abi["inputs"])]
-        return bytecode + eth_abi.encode_abi(types, data).hex()
+        types_list = get_type_strings(self.abi["inputs"])
+        return bytecode + eth_abi.encode_abi(types_list, data).hex()
 
 
 class _DeployedContractBase(_ContractBase):
@@ -436,8 +437,8 @@ class _ContractMethod:
         Returns:
             Hexstring of encoded ABI data."""
         data = format_input(self.abi, args)
-        types = [i[1] for i in _params(self.abi["inputs"])]
-        return self.signature + eth_abi.encode_abi(types, data).hex()
+        types_list = get_type_strings(self.abi["inputs"])
+        return self.signature + eth_abi.encode_abi(types_list, data).hex()
 
     def decode_output(self, hexstr: str) -> Tuple:
         """Decodes hexstring data returned by this method.
@@ -446,8 +447,8 @@ class _ContractMethod:
             hexstr: Hexstring of returned call data
 
         Returns: Decoded values."""
-        types = [i[1] for i in _params(self.abi["outputs"])]
-        result = eth_abi.decode_abi(types, HexBytes(hexstr))
+        types_list = get_type_strings(self.abi["outputs"])
+        result = eth_abi.decode_abi(types_list, HexBytes(hexstr))
         result = format_output(self.abi, result)
         if len(result) == 1:
             result = result[0]
@@ -536,29 +537,13 @@ def _get_method_object(
     return ContractTx(address, abi, name, owner)
 
 
-def _params(abi_params: List, substitutions: Optional[Dict] = None) -> List:
-    types = []
-    if substitutions is None:
-        substitutions = {}
-    for i in abi_params:
-        if i["type"] != "tuple":
-            type_ = i["type"]
-            for orig, sub in substitutions.items():
-                if type_.startswith(orig):
-                    type_ = type_.replace(orig, sub)
-            types.append((i["name"], type_))
-            continue
-        params = [i[1] for i in _params(i["components"], substitutions)]
-        types.append((i["name"], f"({','.join(params)})"))
-    return types
-
-
 def _inputs(abi: Dict) -> str:
-    params = _params(abi["inputs"], {"fixed168x10": "decimal"})
+    types_list = get_type_strings(abi["inputs"], {"fixed168x10": "decimal"})
+    params = zip([i["name"] for i in abi["inputs"]], types_list)
     return ", ".join(f"{i[1]}{' '+i[0] if i[0] else ''}" for i in params)
 
 
 def _signature(abi: Dict) -> str:
-    types = [i[1] for i in _params(abi["inputs"])]
-    key = f"{abi['name']}({','.join(types)})".encode()
+    types_list = get_type_strings(abi["inputs"])
+    key = f"{abi['name']}({','.join(types_list)})".encode()
     return "0x" + keccak(key).hex()[:8]

@@ -6,6 +6,7 @@ from eth_abi.grammar import ABIType, TupleType, parse
 
 from .convert import to_bool, to_decimal, to_int, to_string, to_uint
 from .datatypes import EthAddress, HexString, ReturnValue
+from .utils import get_type_strings
 
 
 def format_input(abi: Dict, inputs: Union[List, Tuple]) -> List:
@@ -92,24 +93,7 @@ def _check_array(values: Union[List, Tuple], length: Optional[int]) -> None:
         raise ValueError(f"Sequence has incorrect length, expected {length} but got {len(values)}")
 
 
-def _params(abi_params: List, substitutions: Optional[Dict] = None) -> List:
-    types = []
-    if substitutions is None:
-        substitutions = {}
-    for i in abi_params:
-        if i["type"] != "tuple":
-            type_str = i["type"]
-            for orig, sub in substitutions.items():
-                if type_str.startswith(orig):
-                    type_str = type_str.replace(orig, sub)
-            types.append((i["name"], type_str))
-            continue
-        params = [i[1] for i in _params(i["components"], substitutions)]
-        types.append((i["name"], f"({','.join(params)})"))
-    return types
-
-
 def _get_abi_types(abi_params: List) -> Sequence[ABIType]:
-    type_str = f"({','.join(i[1] for i in _params(abi_params))})"
+    type_str = f"({','.join(get_type_strings(abi_params))})"
     tuple_type = parse(type_str)
     return tuple_type.components
