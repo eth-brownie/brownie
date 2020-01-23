@@ -10,7 +10,8 @@ from eth_hash.auto import keccak
 from hexbytes import HexBytes
 
 from brownie._config import ARGV, CONFIG
-from brownie.convert import Wei, _format_input, _format_output
+from brownie.convert.datatypes import Wei
+from brownie.convert.normalize import format_input, format_output
 from brownie.exceptions import (
     ContractExists,
     ContractNotFound,
@@ -191,7 +192,7 @@ class ContractConstructor:
             address = self._parent._project[library][-1].address[-40:]
             bytecode = bytecode.replace(marker, address)
 
-        data = _format_input(self.abi, args)
+        data = format_input(self.abi, args)
         types = [i[1] for i in _params(self.abi["inputs"])]
         return bytecode + eth_abi.encode_abi(types, data).hex()
 
@@ -434,7 +435,7 @@ class _ContractMethod:
 
         Returns:
             Hexstring of encoded ABI data."""
-        data = _format_input(self.abi, args)
+        data = format_input(self.abi, args)
         types = [i[1] for i in _params(self.abi["inputs"])]
         return self.signature + eth_abi.encode_abi(types, data).hex()
 
@@ -447,7 +448,7 @@ class _ContractMethod:
         Returns: Decoded values."""
         types = [i[1] for i in _params(self.abi["outputs"])]
         result = eth_abi.decode_abi(types, HexBytes(hexstr))
-        result = _format_output(self.abi, result)
+        result = format_output(self.abi, result)
         if len(result) == 1:
             result = result[0]
         return result
