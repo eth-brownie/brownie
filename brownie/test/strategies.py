@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from eth_abi.grammar import parse
+from eth_abi.grammar import TupleType, parse
 from hypothesis import strategies as st
 
 from brownie.convert.utils import get_int_bounds
@@ -73,6 +73,12 @@ def _array_strategy(type_str, min_length=1, max_length=8, unique=False, **kwargs
     return st.lists(base_strategy, min_len, max_len, unique=unique)
 
 
+def _tuple_strategy(type_str):
+    abi_type = parse(type_str)
+    strategies = [strategy(i.to_type_str()) for i in abi_type.components]
+    return st.tuples(*strategies)
+
+
 def strategy(type_str, **kwargs):
     type_str = TYPE_STR_TRANSLATIONS.get(type_str, type_str)
     if type_str == "fixed168x10":
@@ -87,6 +93,8 @@ def strategy(type_str, **kwargs):
     abi_type = parse(type_str)
     if abi_type.is_array:
         return _array_strategy(type_str, **kwargs)
+    if isinstance(abi_type, TupleType):
+        return _tuple_strategy(type_str, **kwargs)
 
     base = abi_type.base
     if base in ("int", "uint"):
