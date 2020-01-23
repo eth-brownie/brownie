@@ -1,12 +1,13 @@
 #!/usr/bin/python3
 
 from decimal import Decimal
-from typing import Any, Tuple
+from typing import Any
 
 import eth_utils
 from hexbytes import HexBytes
 
 from .datatypes import EthAddress, Fixed, HexString, Wei
+from .utils import get_int_bounds
 
 
 def to_uint(value: Any, type_str: str = "uint256") -> Wei:
@@ -25,15 +26,6 @@ def to_int(value: Any, type_str: str = "int256") -> Wei:
     if wei < lower or wei > upper:
         raise OverflowError(f"{value} is outside allowable range for {type_str}")
     return wei
-
-
-def get_int_bounds(type_str: str) -> Tuple[int, int]:
-    size = int(type_str.strip("uint") or 256)
-    if size < 8 or size > 256 or size % 8:
-        raise ValueError(f"Invalid type: {type_str}")
-    if type_str.startswith("u"):
-        return 0, 2 ** size - 1
-    return -2 ** (size - 1), 2 ** (size - 1) - 1
 
 
 def to_decimal(value: Any) -> Fixed:
