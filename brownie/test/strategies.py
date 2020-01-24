@@ -6,8 +6,8 @@ from eth_abi.grammar import BasicType, TupleType, parse
 from hypothesis import strategies as st
 from hypothesis.strategies import SearchStrategy
 
+from brownie import network
 from brownie.convert.utils import get_int_bounds
-from brownie.network import accounts
 
 TYPE_STR_TRANSLATIONS = {"byte": "bytes1", "decimal": "fixed168x10"}
 
@@ -46,7 +46,7 @@ def _decimal_strategy(
 
 @exclude_filter
 def _address_strategy() -> SearchStrategy:
-    return st.sampled_from(list(accounts))
+    return st.sampled_from(list(network.accounts))
 
 
 @exclude_filter
