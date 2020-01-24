@@ -9,6 +9,9 @@ from hypothesis.strategies import SearchStrategy
 
 import brownie
 
+__tracebackhide__ = True
+sf.__tracebackhide__ = True
+
 
 class _BrownieStateMachine:
     def __init__(self):

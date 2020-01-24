@@ -120,6 +120,8 @@ class TransactionReceipt:
             revert_data: (revert string, program counter, revert type)
         """
 
+        if ARGV["cli"] == "test":
+            silent = True
         if isinstance(txid, bytes):
             txid = txid.hex()
         if not silent:
