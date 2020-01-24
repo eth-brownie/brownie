@@ -1,28 +1,27 @@
 #!/usr/bin/python3
 
 from inspect import getmembers
+from types import FunctionType
 
 from hypothesis import settings
 from hypothesis import stateful as sf
 from hypothesis.strategies import SearchStrategy
 
-from brownie import rpc
+import brownie
 
 
 class _BrownieStateMachine:
     def __init__(self):
-        rpc.revert()
+        brownie.rpc.revert()
         sf.RuleBasedStateMachine.__init__(self)
 
 
 def _member_filter(member):
     attr, fn = member
-    return all(
-        (
-            callable(fn),
-            not hasattr(sf.RuleBasedStateMachine, attr),
-            not isinstance(fn, SearchStrategy),
-        )
+    return (
+        type(fn) is FunctionType
+        and not hasattr(sf.RuleBasedStateMachine, attr)
+        and not next((i for i in fn.__dict__.keys() if i.startswith("hypothesis_stateful")), False)
     )
 
 
@@ -46,7 +45,7 @@ def _generate_state_machine(rules_object):
     return machine
 
 
-def _run_state_machine_test(rules_object, *args, **kwargs):
+def state_machine(rules_object, *args, **kwargs):
 
     settings_dict = {"deadline": None}
     settings_dict.update(kwargs.pop("settings", {}))
@@ -55,6 +54,6 @@ def _run_state_machine_test(rules_object, *args, **kwargs):
     if hasattr(rules_object, "__init__"):
         # __init__ is applied to the object, not the instance
         rules_object.__init__(machine, *args, **kwargs)
-    rpc.snapshot()
+    brownie.rpc.snapshot()
 
     sf.run_state_machine_as_test(lambda: machine(), settings(**settings_dict))

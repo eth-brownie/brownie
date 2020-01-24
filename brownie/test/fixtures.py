@@ -5,7 +5,7 @@ import pytest
 import brownie
 from brownie._config import ARGV
 
-from .statemachine import _run_state_machine_test
+from .statemachine import state_machine
 
 
 def _generate_fixture(container):
@@ -92,4 +92,4 @@ class PytestBrownieFixtures:
     @pytest.fixture
     def state_machine(self):
         """Yields a rule-based state machine factory method."""
-        yield _run_state_machine_test
+        yield state_machine
