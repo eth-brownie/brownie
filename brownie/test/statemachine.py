@@ -2,6 +2,7 @@
 
 from inspect import getmembers
 from types import FunctionType
+from typing import Any
 
 from hypothesis import settings
 from hypothesis import stateful as sf
@@ -14,12 +15,12 @@ sf.__tracebackhide__ = True
 
 
 class _BrownieStateMachine:
-    def __init__(self):
+    def __init__(self) -> None:
         brownie.rpc.revert()
         sf.RuleBasedStateMachine.__init__(self)
 
 
-def _member_filter(member):
+def _member_filter(member: tuple) -> bool:
     attr, fn = member
     return (
         type(fn) is FunctionType
@@ -28,7 +29,7 @@ def _member_filter(member):
     )
 
 
-def _generate_state_machine(rules_object):
+def _generate_state_machine(rules_object: type) -> type:
 
     bases = (_BrownieStateMachine, rules_object, sf.RuleBasedStateMachine)
     machine = type("BrownieStateMachine", bases, {})
@@ -48,15 +49,15 @@ def _generate_state_machine(rules_object):
     return machine
 
 
-def state_machine(rules_object, *args, **kwargs):
+def state_machine(rules_object: type, *args: Any, **kwargs: str) -> None:
 
     settings_dict = {"deadline": None}
-    settings_dict.update(kwargs.pop("settings", {}))
+    settings_dict.update(kwargs.pop("settings", {}))  # type: ignore
 
     machine = _generate_state_machine(rules_object)
     if hasattr(rules_object, "__init__"):
         # __init__ is applied to the object, not the instance
-        rules_object.__init__(machine, *args, **kwargs)
+        rules_object.__init__(machine, *args, **kwargs)  # type: ignore
     brownie.rpc.snapshot()
 
     sf.run_state_machine_as_test(lambda: machine(), settings(**settings_dict))

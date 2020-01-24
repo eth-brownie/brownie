@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactor `brownie.convert` into sub-modules
 - Use `eth_abi.grammar.parse` when formatting contract inputs and outputs
 
+### Fixed
+- bug preventing `pytest.default_contract_owner` config setting from having any effect
+
 ## [1.5.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.5.1) - 2020-01-21
 ### Fixed
 - Correctly isolate path and nodeid from test cases inside classes

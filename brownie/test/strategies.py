@@ -102,7 +102,7 @@ def strategy(type_str: str, **kwargs: int) -> SearchStrategy:
     if type_str == "address":
         return _address_strategy(**kwargs)
     if type_str == "bool":
-        return st.booleans(**kwargs)
+        return st.booleans(**kwargs)  # type: ignore
     if type_str == "string":
         return _string_strategy(**kwargs)
 
