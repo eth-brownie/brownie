@@ -86,6 +86,8 @@ The ``strategies`` module contains the ``strategy`` method, and related internal
 
     Returns a Hypothesis ``SearchStrategy`` based on the value of ``type_str``. Depending on the type of strategy, different ``kwargs`` are available.
 
+    See the :ref:`hypothesis-strategies` section for information on how to use this method.
+
 ``brownie.test.stateful``
 =========================
 
@@ -101,6 +103,8 @@ The ``stateful`` module contains the ``state_machine`` method, and related inter
     * ``settings``: Optional dictionary of values used to create a Hypothesis `settings <https://hypothesis.readthedocs.io/en/latest/settings.html#available-settings>`_ object.
 
     ``args`` and ``kwargs`` are passed to the ``__init__`` method of ``rules_object`` during the setup phase of the test.
+
+    See the :ref:`hypothesis-stateful` section for information on how to use this method.
 
 ``brownie.test.plugin``
 =======================

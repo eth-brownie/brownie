@@ -41,6 +41,8 @@ By seperating the ``require`` expressions, unique revert strings are possible an
         require (allowed[_from][msg.sender] >= _amount, "Insufficient allowance");
         require (balance[_from][] >= _amount, "Insufficient Balance");
 
+All of the above functionality will also work using :ref:`dev-revert`.
+
 Contract Source Code
 ====================
 

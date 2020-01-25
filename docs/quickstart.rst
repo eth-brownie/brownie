@@ -314,19 +314,12 @@ Relevant code will be highlighted in different colors:
 
 See :ref:`test-coverage` for more information.
 
-
 Scanning for Security Vulnerabilities
 =====================================
 
-To prevent vulnerabilities from being introduced to the code base, Brownie a
-includes plugin that integrates automated security scans using the
-`MythX <https://mythx.io/>`_ analysis API.
-Simply run :code:`brownie analyze` on your compiled project directory.
-This will send the compiled build artifacts to MythX for analysis. By default
-no login is required and the analysis is going to be executed as a trial user.
-To access more vulnerability information, register for free on the MythX
-website and pass your login data via environment variables or command line
-arguments.
+To prevent vulnerabilities from being introduced to the code base, Brownie includes a plugin that integrates automated security scans using the `MythX <https://mythx.io/>`_ analysis API. Simply run ``brownie analyze`` on your compiled project directory. This will send the compiled build artifacts to MythX for analysis. By default no login is required and the analysis is going to be executed as a trial user.
+
+To access more vulnerability information, register for free on the MythX website and pass your login data via environment variables or command line arguments.
 
 ::
 
@@ -363,9 +356,7 @@ arguments.
     https://mythx.io/. Any questions? Hit up dominik.muhs@consensys.net or contact
     us on the website!
 
-Once the analysis is done, the vulnerabilities are stored in the
-:code:`reports/` directory. With :code:`brownie analyze --gui` the GUI can be
-started automatically once the analysis has finished.
+Once the analysis is done, the vulnerabilities are stored in the ``reports/`` directory. With ``brownie analyze --gui`` the GUI can be started automatically once the analysis has finished.
 
 .. image:: gui5.png
    :alt: Security Report GUI

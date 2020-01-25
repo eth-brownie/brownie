@@ -1,8 +1,10 @@
 .. _deploy:
 
-=================
-Deployment Basics
-=================
+======================================
+Using Scripts to Automate Interactions
+======================================
+
+TODO
 
 Brownie lets you run scripts to interact with your project. Scripting is especially useful for deploying your contracts to a persistent network, or for automating processes that you perform regularly.
 
