@@ -5,7 +5,7 @@ import pytest
 import brownie
 from brownie._config import ARGV
 
-from .statemachine import state_machine
+from .stateful import state_machine
 
 
 def _generate_fixture(container):
