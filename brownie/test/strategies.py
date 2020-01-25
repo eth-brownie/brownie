@@ -27,9 +27,7 @@ def exclude_filter(fn: Callable) -> Callable:
     return wrapper
 
 
-def _check_numeric_bounds(
-    type_str: str, min_value: NumberType, max_value: NumberType
-) -> Tuple[NumberType, NumberType]:
+def _check_numeric_bounds(type_str: str, min_value: NumberType, max_value: NumberType) -> Tuple:
     lower, upper = get_int_bounds(type_str)
     if min_value is None:
         min_value = lower
@@ -46,7 +44,7 @@ def _check_numeric_bounds(
 
 @exclude_filter
 def _integer_strategy(
-    type_str: str, min_value: NumberType = None, max_value: NumberType = None
+    type_str: str, min_value: Optional[int] = None, max_value: Optional[int] = None
 ) -> SearchStrategy:
     min_value, max_value = _check_numeric_bounds(type_str, min_value, max_value)
     return st.integers(min_value=min_value, max_value=max_value)
