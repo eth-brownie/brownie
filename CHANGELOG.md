@@ -6,6 +6,9 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Added
+- [Hypothesis](https://github.com/HypothesisWorks/hypothesis/tree/master/hypothesis-python) integration for property-based and stateful testing
+
 ### Changed
 - Refactor `brownie.convert` into sub-modules
 - Use `eth_abi.grammar.parse` when formatting contract inputs and outputs
