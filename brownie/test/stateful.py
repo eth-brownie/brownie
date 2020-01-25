@@ -2,9 +2,9 @@
 
 from inspect import getmembers
 from types import FunctionType
-from typing import Any
+from typing import Any, Optional
 
-from hypothesis import settings
+from hypothesis import settings as hp_settings
 from hypothesis import stateful as sf
 from hypothesis.strategies import SearchStrategy
 
@@ -49,10 +49,13 @@ def _generate_state_machine(rules_object: type) -> type:
     return machine
 
 
-def state_machine(rules_object: type, *args: Any, **kwargs: str) -> None:
+def state_machine(
+    rules_object: type, *args: Any, settings: Optional[dict] = None, **kwargs: Any
+) -> None:
 
-    settings_dict = {"deadline": None}
-    settings_dict.update(kwargs.pop("settings", {}))  # type: ignore
+    if settings is None:
+        settings = {}
+    settings.setdefault("deadline", None)
 
     machine = _generate_state_machine(rules_object)
     if hasattr(rules_object, "__init__"):
@@ -60,4 +63,4 @@ def state_machine(rules_object: type, *args: Any, **kwargs: str) -> None:
         rules_object.__init__(machine, *args, **kwargs)  # type: ignore
     brownie.rpc.snapshot()
 
-    sf.run_state_machine_as_test(lambda: machine(), settings(**settings_dict))
+    sf.run_state_machine_as_test(lambda: machine(), hp_settings(**settings))

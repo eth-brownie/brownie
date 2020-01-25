@@ -25,14 +25,20 @@ def test_contract_container(BrownieTester, EVMTester):
     assert type(BrownieTester) is ContractContainer
     assert type(EVMTester) is ContractContainer
     """,
+    """
+from brownie.test import state_machine as sf
+
+def test_state_machine(state_machine):
+    assert state_machine == sf
+    """,
 ]
 
 
 def test_fixtures(plugintester):
     result = plugintester.runpytest()
-    result.assert_outcomes(passed=5)
+    result.assert_outcomes(passed=6)
 
 
 def test_fixtures_xdist(isolatedtester):
     result = isolatedtester.runpytest("-n 2")
-    result.assert_outcomes(passed=5)
+    result.assert_outcomes(passed=6)
