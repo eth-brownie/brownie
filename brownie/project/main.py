@@ -44,6 +44,7 @@ MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 
 GITIGNORE = """__pycache__
 .history
+.hypothesis/
 build/
 reports/
 """
