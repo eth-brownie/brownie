@@ -28,7 +28,8 @@ Brownie
 
     Getting Started <tests-intro.rst>
     tests-pytest.rst
-    tests-hypothesis.rst
+    tests-hypothesis-property.rst
+    tests-hypothesis-stateful.rst
     tests-static-analysis.rst
 
 

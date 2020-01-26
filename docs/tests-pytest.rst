@@ -24,6 +24,8 @@ Session Fixtures
 
 These fixtures provide quick access to Brownie objects that are frequently used during testing. If you are unfamiliar with these objects, you may wish to read :ref:`interaction`.
 
+.. _test-fixtures-accounts:
+
 .. py:attribute:: accounts
 
     Yields an :ref:`Accounts<api-network-accounts>` container for the active project, used to interact with your local Eth accounts.
