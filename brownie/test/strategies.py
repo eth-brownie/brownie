@@ -119,7 +119,7 @@ def _array_strategy(
     strat = st.lists(base_strategy, min_len, max_len, unique=unique)
     # swap 'size' for 'length' in the repr
     repr_ = "length".join(strat.__repr__().rsplit("size", maxsplit=2))
-    strat._LazyStrategy__representation = repr_
+    strat._LazyStrategy__representation = repr_  # type: ignore
     return strat
 
 
@@ -128,7 +128,7 @@ def _tuple_strategy(abi_type: TupleType) -> SearchStrategy:
     return st.tuples(*strategies)
 
 
-def strategy(type_str: str, **kwargs: int) -> SearchStrategy:
+def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
     type_str = TYPE_STR_TRANSLATIONS.get(type_str, type_str)
     if type_str == "fixed168x10":
         return _decimal_strategy(**kwargs)
@@ -141,7 +141,7 @@ def strategy(type_str: str, **kwargs: int) -> SearchStrategy:
 
     abi_type = parse(type_str)
     if abi_type.is_array:
-        return _array_strategy(abi_type, **kwargs)  # type: ignore
+        return _array_strategy(abi_type, **kwargs)
     if isinstance(abi_type, TupleType):
         return _tuple_strategy(abi_type, **kwargs)  # type: ignore
 
