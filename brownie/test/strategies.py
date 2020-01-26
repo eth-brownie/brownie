@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Any, Callable, Iterable, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Iterable, Optional, Tuple, Union
 
 from eth_abi.grammar import BasicType, TupleType, parse
 from hypothesis import strategies as st
@@ -15,14 +15,19 @@ ArrayLengthType = Union[int, list, None]
 NumberType = Union[float, int, None]
 
 
-def exclude_filter(fn: Callable) -> Callable:
-    def wrapper(*args: Tuple, exclude: Optional[Sequence] = None, **kwargs: int) -> SearchStrategy:
+def _exclude_filter(fn: Callable) -> Callable:
+    def wrapper(*args: Tuple, exclude: Any = None, **kwargs: int) -> SearchStrategy:
         strat = fn(*args, **kwargs)
         if exclude is None:
             return strat
+        if callable(exclude):
+            return strat.filter(exclude)
         if not isinstance(exclude, Iterable) or isinstance(exclude, str):
             exclude = (exclude,)
-        return strat.filter(lambda k: k not in exclude)
+        strat = strat.filter(lambda k: k not in exclude)
+        # make the filter repr more readable
+        strat._cached_repr = f"{strat.__repr__()[:-8]}{exclude})"
+        return strat
 
     return wrapper
 
@@ -42,7 +47,7 @@ def _check_numeric_bounds(type_str: str, min_value: NumberType, max_value: Numbe
     return min_value, max_value
 
 
-@exclude_filter
+@_exclude_filter
 def _integer_strategy(
     type_str: str, min_value: Optional[int] = None, max_value: Optional[int] = None
 ) -> SearchStrategy:
@@ -50,7 +55,7 @@ def _integer_strategy(
     return st.integers(min_value=min_value, max_value=max_value)
 
 
-@exclude_filter
+@_exclude_filter
 def _decimal_strategy(
     min_value: NumberType = None, max_value: NumberType = None, places: int = 10
 ) -> SearchStrategy:
@@ -58,12 +63,12 @@ def _decimal_strategy(
     return st.decimals(min_value=min_value, max_value=max_value, places=places)
 
 
-@exclude_filter
+@_exclude_filter
 def _address_strategy() -> SearchStrategy:
     return st.sampled_from(list(network.accounts))
 
 
-@exclude_filter
+@_exclude_filter
 def _bytes_strategy(
     abi_type: BasicType, min_size: Optional[int] = None, max_size: Optional[int] = None
 ) -> SearchStrategy:
@@ -77,7 +82,7 @@ def _bytes_strategy(
     return st.binary(min_size=size, max_size=size)
 
 
-@exclude_filter
+@_exclude_filter
 def _string_strategy(min_size: int = 0, max_size: int = 64) -> SearchStrategy:
     return st.text(min_size=min_size, max_size=max_size)
 
@@ -111,7 +116,11 @@ def _array_strategy(
     if abi_type.item_type.is_array:
         kwargs.update(min_length=min_length, max_length=max_length, unique=unique)
     base_strategy = strategy(abi_type.item_type.to_type_str(), **kwargs)
-    return st.lists(base_strategy, min_len, max_len, unique=unique)
+    strat = st.lists(base_strategy, min_len, max_len, unique=unique)
+    # swap 'size' for 'length' in the repr
+    repr_ = "length".join(strat.__repr__().rsplit("size", maxsplit=2))
+    strat._LazyStrategy__representation = repr_
+    return strat
 
 
 def _tuple_strategy(abi_type: TupleType) -> SearchStrategy:
