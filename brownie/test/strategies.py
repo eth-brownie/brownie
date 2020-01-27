@@ -5,6 +5,7 @@ from typing import Any, Callable, Iterable, Optional, Tuple, Union
 from eth_abi.grammar import BasicType, TupleType, parse
 from hypothesis import strategies as st
 from hypothesis.strategies import SearchStrategy
+from hypothesis.strategies._internal.deferred import DeferredStrategy
 
 from brownie import network
 from brownie.convert import Fixed, Wei
@@ -14,6 +15,11 @@ TYPE_STR_TRANSLATIONS = {"byte": "bytes1", "decimal": "fixed168x10"}
 
 ArrayLengthType = Union[int, list, None]
 NumberType = Union[float, int, None]
+
+
+class _DeferredStrategyRepr(DeferredStrategy):
+    def __repr__(self):
+        return "sampled_from(accounts)"
 
 
 def _exclude_filter(fn: Callable) -> Callable:
@@ -27,7 +33,8 @@ def _exclude_filter(fn: Callable) -> Callable:
             exclude = (exclude,)
         strat = strat.filter(lambda k: k not in exclude)
         # make the filter repr more readable
-        strat._cached_repr = f"{strat.__repr__()[:-8]}{exclude})"
+        repr_ = strat.__repr__().rsplit(").filter", maxsplit=1)[0]
+        strat._cached_repr = f"{repr_}, exclude={exclude})"
         return strat
 
     return wrapper
@@ -66,7 +73,7 @@ def _decimal_strategy(
 
 @_exclude_filter
 def _address_strategy() -> SearchStrategy:
-    return st.sampled_from(list(network.accounts))
+    return _DeferredStrategyRepr(lambda: st.sampled_from(list(network.accounts)))
 
 
 @_exclude_filter

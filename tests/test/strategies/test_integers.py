@@ -81,3 +81,8 @@ def test_uint_min_max(value):
 @given(value=strategy("uint8", exclude=[4, 8, 15, 16, 23, 42]))
 def test_exclude(value):
     assert value not in [4, 8, 15, 16, 23, 42]
+
+
+def test_exclude_repr():
+    st = strategy("uint8", exclude=42)
+    assert repr(st) == "integers(min_value=0, max_value=255, exclude=(42,))"
