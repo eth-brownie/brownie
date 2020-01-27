@@ -31,6 +31,10 @@ def _member_filter(member: tuple) -> bool:
     )
 
 
+def _attr_filter(attr: str, pattern: str) -> bool:
+    return attr == pattern or attr.startswith(f"{pattern}_")
+
+
 def _generate_state_machine(rules_object: type) -> type:
 
     bases = (_BrownieStateMachine, rules_object, sf.RuleBasedStateMachine)
@@ -39,12 +43,12 @@ def _generate_state_machine(rules_object: type) -> type:
 
     for attr, fn in filter(_member_filter, getmembers(machine)):
         varnames = fn.__code__.co_varnames[1 : fn.__code__.co_argcount]
-        if attr.startswith("initialize_"):
+        if _attr_filter(attr, "initialize"):
             wrapped = sf.initialize(**{key: strategies[key] for key in varnames})
             setattr(machine, attr, wrapped(fn))
-        elif attr.startswith("invariant_"):
+        elif _attr_filter(attr, "invariant"):
             setattr(machine, attr, sf.invariant()(fn))
-        elif attr.startswith("rule_"):
+        elif _attr_filter(attr, "rule"):
             wrapped = sf.rule(**{key: strategies[key] for key in varnames})
             setattr(machine, attr, wrapped(fn))
 

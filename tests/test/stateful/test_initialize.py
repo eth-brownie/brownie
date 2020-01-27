@@ -60,3 +60,12 @@ def test_existing_decorators(SMTestBase):
             pass
 
     state_machine(StateMachine, settings={"max_examples": 5})
+
+
+def test_single_initialize(SMTestBase):
+    class StateMachine(SMTestBase):
+        def initialize(self):
+            assert False
+
+    with pytest.raises(AssertionError):
+        state_machine(StateMachine, settings={"max_examples": 5})

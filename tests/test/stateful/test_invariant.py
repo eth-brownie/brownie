@@ -72,3 +72,16 @@ def test_existing_decorators(SMTestBase):
             pass
 
     state_machine(StateMachine, settings={"max_examples": 5})
+
+
+def test_single_invariant(SMTestBase):
+    class StateMachine(SMTestBase):
+        foo = "foo"
+
+    def invariant(self):
+        self.foo = "bar"
+
+    def teardown(self):
+        assert self.foo == "bar"
+
+    state_machine(StateMachine, settings={"max_examples": 5})
