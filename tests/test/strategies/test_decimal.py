@@ -33,11 +33,11 @@ def test_given(value):
     assert -2 ** 127 <= value <= 2 ** 127 - 1
 
 
-@given(value=strategy("decimal", min_value=1, max_value=1.5))
+@given(value=strategy("decimal", min_value=1, max_value="1.5"))
 def test_min_max(value):
     assert 1 <= value <= 1.5
 
 
-@given(value=strategy("decimal", min_value=1.23, max_value=1.35, exclude=[1.337, 1.2345]))
+@given(value=strategy("decimal", min_value="1.23", max_value="1.35", exclude=[1.337, 1.2345]))
 def test_exclude(value):
     assert value not in [1.337, 1.2345]

@@ -7,6 +7,7 @@ from hypothesis import strategies as st
 from hypothesis.strategies import SearchStrategy
 
 from brownie import network
+from brownie.convert import Fixed, Wei
 from brownie.convert.utils import get_int_bounds
 
 TYPE_STR_TRANSLATIONS = {"byte": "bytes1", "decimal": "fixed168x10"}
@@ -32,26 +33,26 @@ def _exclude_filter(fn: Callable) -> Callable:
     return wrapper
 
 
-def _check_numeric_bounds(type_str: str, min_value: NumberType, max_value: NumberType) -> Tuple:
+def _check_numeric_bounds(
+    type_str: str, min_value: NumberType, max_value: NumberType, num_class: type
+) -> Tuple:
     lower, upper = get_int_bounds(type_str)
-    if min_value is None:
-        min_value = lower
-    if max_value is None:
-        max_value = upper
-    if min_value < lower:
+    min_final = lower if min_value is None else num_class(min_value)
+    max_final = upper if max_value is None else num_class(max_value)
+    if min_final < lower:
         raise ValueError(f"min_value '{min_value}' is outside allowable range for {type_str}")
-    if max_value > upper:
+    if max_final > upper:
         raise ValueError(f"max_value '{max_value}' is outside allowable range for {type_str}")
-    if min_value > max_value:
-        raise ValueError(f"min_value '{min_value}' is greater than max_value '{max_value}'")
-    return min_value, max_value
+    if min_final > max_final:
+        raise ValueError(f"min_value '{min_final}' is greater than max_value '{max_final}'")
+    return min_final, max_final
 
 
 @_exclude_filter
 def _integer_strategy(
     type_str: str, min_value: Optional[int] = None, max_value: Optional[int] = None
 ) -> SearchStrategy:
-    min_value, max_value = _check_numeric_bounds(type_str, min_value, max_value)
+    min_value, max_value = _check_numeric_bounds(type_str, min_value, max_value, Wei)
     return st.integers(min_value=min_value, max_value=max_value)
 
 
@@ -59,7 +60,7 @@ def _integer_strategy(
 def _decimal_strategy(
     min_value: NumberType = None, max_value: NumberType = None, places: int = 10
 ) -> SearchStrategy:
-    min_value, max_value = _check_numeric_bounds("int128", min_value, max_value)
+    min_value, max_value = _check_numeric_bounds("int128", min_value, max_value, Fixed)
     return st.decimals(min_value=min_value, max_value=max_value, places=places)
 
 
