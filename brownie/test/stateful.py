@@ -18,6 +18,8 @@ class _BrownieStateMachine:
     def __init__(self) -> None:
         brownie.rpc.revert()
         sf.RuleBasedStateMachine.__init__(self)
+        if hasattr(self, "setup"):
+            self.setup()  # type: ignore
 
 
 def _member_filter(member: tuple) -> bool:
@@ -53,14 +55,10 @@ def state_machine(
     rules_object: type, *args: Any, settings: Optional[dict] = None, **kwargs: Any
 ) -> None:
 
-    if settings is None:
-        settings = {}
-    settings.setdefault("deadline", None)
-
     machine = _generate_state_machine(rules_object)
     if hasattr(rules_object, "__init__"):
         # __init__ is applied to the object, not the instance
         rules_object.__init__(machine, *args, **kwargs)  # type: ignore
     brownie.rpc.snapshot()
 
-    sf.run_state_machine_as_test(lambda: machine(), hp_settings(**settings))
+    sf.run_state_machine_as_test(lambda: machine(), hp_settings(**settings or {}))

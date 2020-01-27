@@ -81,3 +81,17 @@ def test_misc_methods(SMTestBase):
             pass
 
     state_machine(StateMachine, settings={"max_examples": 5})
+
+
+def test_setup_called_on_each_run(SMTestBase):
+    class StateMachine(SMTestBase):
+        foo = "foo"
+
+        def setup(self):
+            assert self.foo == "foo"
+            self.foo = "bar"
+
+        def teardown(self):
+            assert self.foo == "bar"
+
+    state_machine(StateMachine, settings={"max_examples": 5})
