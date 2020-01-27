@@ -38,6 +38,9 @@ def test_strategy_injection(SMTestBase):
             assert type(st_bool) is bool
             assert type(foobar) is bytes
 
+        def rule_three(self, foo="st_bool"):
+            assert type(foo) is bool
+
     state_machine(StateMachine, settings={"max_examples": 5})
 
 

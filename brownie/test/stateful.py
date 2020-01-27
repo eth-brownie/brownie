@@ -42,14 +42,18 @@ def _generate_state_machine(rules_object: type) -> type:
     strategies = {k: v for k, v in getmembers(rules_object) if isinstance(v, SearchStrategy)}
 
     for attr, fn in filter(_member_filter, getmembers(machine)):
-        varnames = fn.__code__.co_varnames[1 : fn.__code__.co_argcount]
+        varnames = [[i] for i in fn.__code__.co_varnames[1 : fn.__code__.co_argcount]]
+        if fn.__defaults__:
+            for i in range(-1, -1 - len(fn.__defaults__), -1):
+                varnames[i].append(fn.__defaults__[i])
+
         if _attr_filter(attr, "initialize"):
-            wrapped = sf.initialize(**{key: strategies[key] for key in varnames})
+            wrapped = sf.initialize(**{key[0]: strategies[key[-1]] for key in varnames})
             setattr(machine, attr, wrapped(fn))
         elif _attr_filter(attr, "invariant"):
             setattr(machine, attr, sf.invariant()(fn))
         elif _attr_filter(attr, "rule"):
-            wrapped = sf.rule(**{key: strategies[key] for key in varnames})
+            wrapped = sf.rule(**{key[0]: strategies[key[-1]] for key in varnames})
             setattr(machine, attr, wrapped(fn))
 
     return machine
