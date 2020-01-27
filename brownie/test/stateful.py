@@ -61,8 +61,13 @@ def state_machine(
 
     machine = _generate_state_machine(rules_object)
     if hasattr(rules_object, "__init__"):
-        # __init__ is applied to the object, not the instance
+        # __init__ is treated as a class method
         rules_object.__init__(machine, *args, **kwargs)  # type: ignore
     brownie.rpc.snapshot()
 
-    sf.run_state_machine_as_test(lambda: machine(), hp_settings(**settings or {}))
+    try:
+        sf.run_state_machine_as_test(lambda: machine(), hp_settings(**settings or {}))
+    finally:
+        if hasattr(machine, "teardown_final"):
+            # teardown_final is also a class method
+            machine.teardown_final(machine)  # type: ignore
