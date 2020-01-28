@@ -31,7 +31,3 @@ def given(*given_args, **given_kwargs):
         return hy_wrapped
 
     return outer_wrapper
-
-
-hypothesis.settings.register_profile("brownie", max_examples=50, deadline=None)
-hypothesis.settings.load_profile("brownie")
