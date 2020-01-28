@@ -67,7 +67,7 @@ You can import accounts with ``accounts.add``, which takes a private key as the 
     >>> len(accounts)
     12
 
-Imported accounts may be saved with an identifier and then loaded again at a later date. Account data is saved in a standard json `keystore <https://goethereumbook.org/keystore/>`__ file that is compatible with most wallets.
+Imported accounts may be saved with an identifier and then loaded again at a later date. Account data is saved in a standard json `keystore <https://medium.com/@julien.maffre/what-is-an-ethereum-keystore-file-86c8c5917b97>`_ file that is compatible with most wallets.
 
 .. code-block:: python
 

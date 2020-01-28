@@ -4,26 +4,73 @@
 Managing Local Accounts
 =======================
 
-TODO
+When connecting to a remote network via a hosted node such as `Infura <https://infura.io/>`_, the :ref:`Accounts<api-network-accounts>` container will be empty. Before you can perform any transactions you must add a local account to Brownie.
 
-Brownie will automatically load any unlocked accounts returned by a node. If you are using your own private node, you will be able to access your accounts in the same way you would in a local environment.
+When we use the term `local` it implies that the account exists locally on your system, as opposed to being available directly in the node. Local accounts are stored in encrypted JSON files known as `keystores`. If you want to learn more about keystore files, you can read If you want to understand the contents of your json file you can read `"What is an Ethereum keystore file?" <https://medium.com/@julien.maffre/what-is-an-ethereum-keystore-file-86c8c5917b97>`_ by Julien Maffre.
 
-In order to use accounts when connected to a hosted node, you must make them available locally.  This is done via ``brownie accounts`` in the command line:
+Account Management
+==================
+
+You can manage your locally available accounts via the ``brownie accounts`` commandline.
+
+Generating a New Account
+------------------------
+
+To generate a new account using the command line:
 
 ::
 
-    $ brownie accounts --help
-    Brownie v1.3.2 - Python development framework for Ethereum
+    $ brownie accounts generate <id>
 
-    Usage: brownie accounts <command> [<arguments> ...] [options]
+You will be asked to choose a password for the account. Brownie will then generate a random private key, and make the account available as ``<id>``.
 
-    Commands:
-    list                             List available accounts
-    new <id>                         Add a new account by entering a private key
-    generate <id>                    Add a new account with a random private key
-    import <id> <path>               Import a new account via a keystore file
-    export <id> <path>               Export an existing account keystore file
-    password <id>                    Change the password for an account
-    delete <id>                      Delete an account
+Importing from a Private Key
+----------------------------
 
-After an account has been added, it can be accessed in the console or a script through :ref:`Accounts.load <api-network-accounts-load>`.
+To add a new account via private key:
+
+::
+
+    $ brownie accounts new <id>
+
+You will be asked to input the private key, and to choose a password. The account will then be available as ``<id>``.
+
+Importing from a Keystore
+-------------------------
+
+You can import an existing JSON keystore into Brownie using the commandline:
+
+::
+
+    $ brownie accounts import <id> <path>
+
+Once imported the account is available as ``<id>``.
+
+Exporting a Keystore
+--------------------
+
+To export an existing account as a JSON keystore file:
+
+::
+
+    $ brownie accounts export <id> <path>
+
+The exported account will be saved at ``<path>``.
+
+Unlocking Accounts
+==================
+
+In order to access a local account from a script or console, you must first unlock it. This is done via the ``Accounts.load`` method:
+
+.. code-block::
+
+    >>> accounts
+    []
+    >>> accounts.load(id)
+    >>> accounts.load('my_account')
+    Enter the password for this account:
+    <LocalAccount object '0xa9c2DD830DfFE8934fEb0A93BAbcb6e823e1FF05'>
+    >>> accounts
+    [<LocalAccount object '0xa9c2DD830DfFE8934fEb0A93BAbcb6e823e1FF05'>]
+
+Once the account is unlocked it will be available for use within the ``Accounts`` container.
