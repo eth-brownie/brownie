@@ -26,7 +26,6 @@ Brownie
     :caption: Testing
     :maxdepth: 2
 
-    Getting Started <tests-intro.rst>
     tests-pytest.rst
     tests-hypothesis-property.rst
     tests-hypothesis-stateful.rst
