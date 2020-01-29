@@ -162,7 +162,7 @@ The following settings must have a non-``null`` value in order to generate a pac
 
     In order for a deployment to be included:
 
-        * :ref:`Persistence<nonlocal-networks-contracts>` must be enabled for that network
+        * :ref:`Persistence<persistence>` must be enabled for that network
         * The bytecode of the deployed contract must be identical to the bytecode generated from the source code currently present in the project's ``contracts/`` folder
 
     You can use a wildcard ``*`` to include deployments on all networks, or ``False`` to not include any deployments.
@@ -229,7 +229,7 @@ Once you have set the required fields in the configuration file, you can create 
 
     $ brownie ethpm create
 
-The manifest is saved locally as ``manifest.json`` in the project root folder. Note that this saved copy is not tightly packed and so does not strictly adhere the `ethPM specification <https://ethpm.github.io/ethpm-spec/>`_. This is not the final copy to be pinned to IPFS, rather it is a human-readable version that you can use to verify it's contents before releasing.
+The manifest is saved locally as ``manifest.json`` in the project root folder. Note that this saved copy is not tightly packed and so does not strictly adhere the ethPM `specification <https://ethpm.github.io/ethpm-spec/>`_. This is not the final copy to be pinned to IPFS, rather it is a human-readable version that you can use to verify it's contents before releasing.
 
 Once you have confirmed that the included fields are consistent with what you would like to publish, you are ready to release.
 
@@ -255,7 +255,7 @@ To release a package:
 You must include the following arguments:
 
     * ``registry``: the address of an ethPM registry on the main-net
-    * ``account``: the address that the transaction is sent from. It can be given as an alias to a `local account <nonlocal-networks-accounts>`_, or as a hex string if the address is unlocked within the connected node.
+    * ``account``: the address that the transaction is sent from. It can be given as an alias to a `local account <local-accounts>`_, or as a hex string if the address is unlocked within the connected node.
 
 Once the package is successfully released, Brownie provides you with a registry URI that you can share with others so they can easily access your package:
 

@@ -278,7 +278,7 @@ This example uses isolation and a shared setup fixture:
 
 Brownie monitors which files have changed since the test suite was last executed. Tests that are properly isolated can be skipped if none of the contracts or related test files have changed. To enable this, include the ``--update`` flag.
 
-See :ref:`test` for more information on available fixtures, and other features and options related to unit testing.
+See :ref:`pytest` for more information on available fixtures, and other features and options related to unit testing.
 
 Analyzing Test Coverage
 =======================

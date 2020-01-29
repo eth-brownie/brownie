@@ -38,14 +38,14 @@ Interfaces may be written in `Solidity <https://solidity.readthedocs.io/en/lates
 
 The ``scripts`` folder holds Python scripts used for deploying contracts, or to automate common tasks and interactions. These scripts are executed via the ``brownie run`` command.
 
-See the :ref:`deploy` section for more information on Brownie scripts.
+See the :ref:`Brownie Scripts<scripts>` documentation for more information on Brownie scripts.
 
 ``tests/``
 ==========
 
 The ``tests`` folder holds Python scripts used for testing a project. Brownie uses the `pytest <https://docs.pytest.org/en/latest/>`_ framework for unit testing.
 
-See :ref:`test` for more information on testing a project.
+See :ref:`Brownie Pytest<pytest>` documentation for more information on testing a project.
 
 ``brownie-config.yaml``
 =======================

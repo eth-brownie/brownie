@@ -1,5 +1,5 @@
 
-.. _test:
+.. _pytest:
 
 ========================
 Unit Testing with Pytest

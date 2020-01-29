@@ -16,7 +16,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
     Connects to the network.  Network settings are retrieved from ``brownie-config.yaml``
 
     * ``network``: The network to connect to. If ``None``, connects to the default network as specified in the config file.
-    * ``launch_rpc``: If ``True`` and the configuration for this network includes ``test_rpc`` settings, attempts to launch or attach to a local RPC client. See :ref:`test-rpc` for detailed information on the sequence of events in this process.
+    * ``launch_rpc``: If ``True`` and the configuration for this network includes ``test_rpc`` settings, attempts to launch or attach to a local RPC client.
 
     Calling this method is favored over calling ``web3.connect`` and ``rpc.launch`` or ``rpc.attach`` individually.
 
@@ -542,7 +542,7 @@ Arguments supplied to calls or transaction methods are converted using the metho
 
 .. note::
 
-    On networks where persistence is enabled, ``ProjectContract`` instances will remain between sessions. Use ``ContractContainer.remove`` to delete these objects when they are no longer needed. See :ref:`nonlocal-networks-interacting` for more information.
+    On networks where persistence is enabled, ``ProjectContract`` instances will remain between sessions. Use ``ContractContainer.remove`` to delete these objects when they are no longer needed. See the documentation on :ref:`persistence<persistence>` for more information.
 
 .. _api-network-contractcontainer:
 
@@ -997,7 +997,7 @@ Brownie stores encrypted event topics in ``brownie/data/topics.json``. The JSON 
 EventDict
 ---------
 
-.. py:class:: brownie.types.types.EventDict
+.. py:class:: brownie.network.event.EventDict
 
     Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`__. Base class, used to hold all events that are fired in a transaction.
 

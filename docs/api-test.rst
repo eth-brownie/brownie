@@ -6,7 +6,7 @@ Test API
 
 The ``test`` package contains classes and methods for running tests and evaluating test coverage.
 
-This functionality is typically accessed via `pytest <https://docs.pytest.org/en/latest/>`_.  See :ref:`test`.
+This functionality is typically accessed via `pytest <https://docs.pytest.org/en/latest/>`_.  See :ref:`pytest`.
 
 ``brownie.test.fixtures``
 =========================

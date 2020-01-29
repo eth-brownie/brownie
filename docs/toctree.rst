@@ -10,7 +10,7 @@ Brownie
 
 
 .. toctree::
-    :caption: Brownie Basics
+    :caption: Getting Started
     :maxdepth: 2
 
     install.rst
@@ -18,8 +18,18 @@ Brownie
     structure.rst
     compile.rst
     interaction.rst
-    scripts.rst
-    local-rpc.rst
+    gui.rst
+
+
+.. toctree::
+    :caption: Core Functionality
+    :maxdepth: 2
+
+    core-accounts.rst
+    core-contracts.rst
+    core-transactions.rst
+    core-rpc.rst
+    core-types.rst
 
 
 .. toctree::
@@ -30,14 +40,6 @@ Brownie
     tests-hypothesis-property.rst
     tests-hypothesis-stateful.rst
     tests-security-analysis.rst
-
-
-.. toctree::
-    :caption: Debugging
-    :maxdepth: 2
-
-    debug.rst
-    gui.rst
 
 
 .. toctree::

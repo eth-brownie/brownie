@@ -46,10 +46,12 @@ Remember that transactions are not confirmed immediately on non-local networks. 
 
 See the documentation on :ref:`using non-local networks<nonlocal-networks>` for more information on how to define and connect to other networks.
 
+.. _persistence:
+
 Interacting with Deployed Contracts
 ===================================
 
-Brownie saves information about contract deployments on non-local networks. Once a contract has been deployed, the generated :func:`Contract <brownie.network.contract.Contract>` instance will still be available the next time you load Brownie.
+Brownie saves information about contract deployments on non-local networks. Once a contract has been deployed, the generated :func:`Contract <brownie.network.contract.ProjectContract>` instance will still be available the next time you load Brownie.
 
 The following actions will NOT remove locally stored deployment data:
 
@@ -60,8 +62,8 @@ The following actions will NOT remove locally stored deployment data:
 
 The following actions WILL remove locally stored deployment data:
 
-    * Calling :func:`ContractContainer.remove <ContractContainer.remove>` will erase deployment information for the removed :func:`Contract <brownie.network.contract.Contract>` instances.
+    * Calling :func:`ContractContainer.remove <ContractContainer.remove>` will erase deployment information for the removed :func:`Contract <brownie.network.contract.ProjectContract>` instances.
     * Removing or renaming a contract source file within your project will cause Brownie to delete all deployment information for the removed contract.
     * Deleting the ``build/deployments/`` directory will erase all information about deployed contracts.
 
-To restore a deleted :func:`Contract <brownie.network.contract.Contract>` instance, or generate one for a deployment that was handled outside of Brownie, use the :func:`ContractContainer.at <ContractContainer.at>` method.
+To restore a deleted :func:`Contract <brownie.network.contract.ProjectContract>` instance, or generate one for a deployment that was handled outside of Brownie, use the :func:`ContractContainer.at <ContractContainer.at>` method.
