@@ -6,9 +6,15 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Added
+- [Hypothesis](https://github.com/HypothesisWorks/hypothesis/tree/master/hypothesis-python) integration for property-based and stateful testing
+
 ### Changed
 - Refactor `brownie.convert` into sub-modules
 - Use `eth_abi.grammar.parse` when formatting contract inputs and outputs
+
+### Fixed
+- bug preventing `pytest.default_contract_owner` config setting from having any effect
 
 ## [1.5.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.5.1) - 2020-01-21
 ### Fixed

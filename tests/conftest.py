@@ -135,7 +135,7 @@ def _project_factory(_data_folder_setup, tmp_path_factory):
     path.rmdir()
     shutil.copytree("tests/data/brownie-test-project", path)
     shutil.copyfile(
-        brownie._config.DATA_FOLDER.joinpath("brownie-config.yaml"),
+        brownie._config._get_data_folder().joinpath("brownie-config.yaml"),
         path.joinpath("brownie-config.yaml"),
     )
     p = brownie.project.load(path, "TestProject")
@@ -392,7 +392,7 @@ class DummyIPFSBackend(BaseIPFSBackend):
 @pytest.fixture
 def ipfs_mock(monkeypatch):
     monkeypatch.setattr("brownie.project.ethpm.InfuraIPFSBackend", DummyIPFSBackend)
-    ipfs_path = brownie._config.DATA_FOLDER.joinpath("ipfs_cache")
+    ipfs_path = brownie._config._get_data_folder().joinpath("ipfs_cache")
     temp_path = ipfs_path.parent.joinpath("_ipfs_cache")
     ipfs_path.mkdir(exist_ok=True)
     ipfs_path.rename(temp_path)

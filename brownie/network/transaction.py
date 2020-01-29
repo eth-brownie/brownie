@@ -120,6 +120,8 @@ class TransactionReceipt:
             revert_data: (revert string, program counter, revert type)
         """
 
+        if ARGV["cli"] == "test":
+            silent = True
         if isinstance(txid, bytes):
             txid = txid.hex()
         if not silent:
@@ -395,8 +397,10 @@ class TransactionReceipt:
         if self._raw_trace is None:
             self._get_trace()
         self._trace = trace = self._raw_trace
-        if not trace or "fn" in trace[0]:
+        if not trace:
             coverage._add_transaction(self.coverage_hash, {})
+            return
+        if "fn" in trace[0]:
             return
 
         # last_map gives a quick reference of previous values at each depth

@@ -206,8 +206,8 @@ class HexString(bytes):
     a non-hexstring. Evaluates True for hexstrings with the same value but differing
     leading zeros or capitalization."""
 
-    def __new__(cls, value, type_):  # type: ignore
-        return super().__new__(cls, _to_bytes(value, type_))  # type: ignore
+    def __new__(cls, value, type_str):  # type: ignore
+        return super().__new__(cls, _to_bytes(value, type_str))  # type: ignore
 
     def __eq__(self, other: Any) -> bool:
         return _hex_compare(self.hex(), other)
@@ -229,22 +229,22 @@ def _hex_compare(a: Any, b: Any) -> bool:
     return a.lstrip("0x").lower() == b.lstrip("0x").lower()
 
 
-def _to_bytes(value: Any, type_: str = "bytes32") -> bytes:
+def _to_bytes(value: Any, type_str: str = "bytes32") -> bytes:
     """Convert a value to bytes"""
     if isinstance(value, bool) or not isinstance(value, (bytes, str, int)):
-        raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to {type_}")
+        raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to {type_str}")
     value = _to_hex(value)
-    if type_ == "bytes":
+    if type_str == "bytes":
         return eth_utils.to_bytes(hexstr=value)
-    if type_ == "byte":
-        type_ = "bytes1"
-    size = int(type_.strip("bytes"))
+    if type_str == "byte":
+        type_str = "bytes1"
+    size = int(type_str.strip("bytes"))
     if size < 1 or size > 32:
-        raise ValueError(f"Invalid type: {type_}")
+        raise ValueError(f"Invalid type: {type_str}")
     try:
         return int(value, 16).to_bytes(size, "big")
     except OverflowError:
-        raise OverflowError(f"'{value}' exceeds maximum length for {type_}")
+        raise OverflowError(f"'{value}' exceeds maximum length for {type_str}")
 
 
 def _to_hex(value: Any) -> str:

@@ -5,6 +5,8 @@ import pytest
 import brownie
 from brownie._config import ARGV
 
+from .stateful import state_machine
+
 
 def _generate_fixture(container):
     def _fixture():
@@ -81,8 +83,13 @@ class PytestBrownieFixtures:
         yield
         ARGV["always_transact"] = ARGV["coverage"]
 
-    @pytest.fixture
+    @pytest.fixture(scope="session")
     def skip_coverage(self):
         """Skips a test when coverage evaluation is active."""
         # implemented in pytest_collection_modifyitems
         pass
+
+    @pytest.fixture(scope="session")
+    def state_machine(self):
+        """Yields a rule-based state machine factory method."""
+        yield state_machine

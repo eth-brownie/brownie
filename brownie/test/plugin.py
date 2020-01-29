@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-import sys
-
 from brownie import project
 from brownie._config import CONFIG
 from brownie.test.fixtures import PytestBrownieFixtures
@@ -51,7 +49,3 @@ def pytest_configure(config):
         if not config.getoption("numprocesses"):
             fixtures = PytestBrownieFixtures(config, active_project)
             config.pluginmanager.register(fixtures, "brownie-fixtures")
-
-        # by default, suppress stdout on failed tests
-        if not next((i for i in sys.argv if i.startswith("--show-capture=")), False):
-            config.option.showcapture = "no"

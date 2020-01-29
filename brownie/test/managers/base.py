@@ -78,6 +78,7 @@ class PytestBrownieBase:
     def pytest_configure(self, config):
         for key in ("coverage", "always_transact"):
             ARGV[key] = config.getoption("--coverage")
+        ARGV["cli"] = "test"
         ARGV["gas"] = config.getoption("--gas")
         ARGV["revert"] = config.getoption("--revert-tb") or CONFIG["pytest"]["revert_traceback"]
         ARGV["update"] = config.getoption("--update")

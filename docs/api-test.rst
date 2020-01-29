@@ -39,6 +39,10 @@ These fixtures provide access to objects related to the project being tested.
 
     Session scope. Yields an instantiated :ref:`Rpc<rpc>` object.
 
+.. py:attribute:: fixtures.state_machine
+
+    Session scope. Yields the :ref:`state_machine<api-test-state_machine>` method, used to launc rule-based state machine tests.
+
 .. py:attribute:: fixtures.web3
 
     Session scope. Yields an instantiated :ref:`Web3<web3>` object.
@@ -72,6 +76,31 @@ These fixtures alter the behaviour of tests when coverage evaluation is active.
 .. py:attribute:: fixtures.skip_coverage
 
     Function scope. If coverage evaluation is active, this test will be skipped.
+
+``brownie.test.strategies``
+===========================
+
+The ``strategies`` module contains the ``strategy`` method, and related internal methods for generating Hypothesis `search strategies <https://hypothesis.readthedocs.io/en/latest/details.html#defining-strategies>`_.
+
+.. py:method:: strategies.strategy(type_str, **kwargs)
+
+    Returns a Hypothesis ``SearchStrategy`` based on the value of ``type_str``. Depending on the type of strategy, different ``kwargs`` are available.
+
+``brownie.test.stateful``
+=========================
+
+The ``stateful`` module contains the ``state_machine`` method, and related internal classes and methods for performing `stateful testing <https://hypothesis.readthedocs.io/en/latest/stateful.html>`_.
+
+.. _api-test-state_machine:
+
+.. py:method:: stateful.state_machine(rules_object, *args, settings=None, **kwargs)
+
+    Run a state machine definition as a test.
+
+    * ``rules_object``: An uninitialized state machine class.
+    * ``settings``: Optional dictionary of values used to create a Hypothesis `settings <https://hypothesis.readthedocs.io/en/latest/settings.html#available-settings>`_ object.
+
+    ``args`` and ``kwargs`` are passed to the ``__init__`` method of ``rules_object`` during the setup phase of the test.
 
 ``brownie.test.plugin``
 =======================
@@ -210,7 +239,7 @@ Internal Methods
             }
         }
 
-    See the :ref:`gui-report-json` for more info on the return format.
+    See :ref:`gui-report-json` for more info on the return format.
 
 ``brownie.test.coverage``
 =========================

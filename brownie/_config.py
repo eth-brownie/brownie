@@ -7,6 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import hypothesis
 import yaml
 
 from brownie._singleton import _Singleton
@@ -96,6 +97,7 @@ def _load_default_config() -> "ConfigDict":
     config = _Singleton("Config", (ConfigDict,), {})(_load_config(base_config))  # type: ignore
     _recursive_update(config, _load_config(default_config), [])
     config["active_network"] = {"name": None}
+    _modify_hypothesis_settings(config)
     return config
 
 
@@ -106,6 +108,7 @@ def _load_project_config(project_path: Path) -> None:
     _recursive_update(CONFIG, config_data, [])
     CONFIG.setdefault("active_network", {"name": None})
     CONFIG._lock()
+    _modify_hypothesis_settings(CONFIG)
 
 
 def _load_project_compiler_config(project_path: Optional[Path]) -> Dict:
@@ -139,6 +142,14 @@ def _modify_network_config(network: str = None) -> Dict:
         raise KeyError(f"Network '{network}' is not defined in config.json")
     finally:
         CONFIG._lock()
+
+
+def _modify_hypothesis_settings(config):
+    hypothesis_defaults = {"max_examples": 50, "deadline": None, "stateful_step_count": 10}
+    hypothesis_defaults.update(config.get("hypothesis", {}))
+
+    hypothesis.settings.register_profile("brownie", **hypothesis_defaults)
+    hypothesis.settings.load_profile("brownie")
 
 
 def _recursive_update(original: Dict, new: Dict, base: List) -> None:

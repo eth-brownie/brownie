@@ -39,9 +39,9 @@ network:
 pytest:
     # these settings replace the defaults when running pytest
     gas_limit: 6721975
-    default_contract_owner: false
+    default_contract_owner: true
     reverting_tx_gas_limit: 6721975
-    revert_traceback: false
+    revert_traceback: true
 compiler:
     evm_version: null
     minify_source: false

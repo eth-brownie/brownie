@@ -58,7 +58,7 @@ def _format_tuple(abi_types: Sequence[ABIType], values: Union[List, Tuple]) -> L
 
 
 def _format_array(abi_type: ABIType, values: Union[List, Tuple]) -> List:
-    _check_array(values, None if abi_type.is_dynamic else abi_type.arrlist[-1][0])
+    _check_array(values, None if not len(abi_type.arrlist[-1]) else abi_type.arrlist[-1][0])
     item_type = abi_type.item_type
     if item_type.is_array:
         return [_format_array(item_type, i) for i in values]
