@@ -1,4 +1,4 @@
-.. _eth-pm:
+.. _ethpm:
 
 ============================
 The Ethereum Package Manager

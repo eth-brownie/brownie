@@ -30,7 +30,7 @@ The ``main`` module contains methods for data conversion. Methods within this mo
 
     Converts a value to a boolean. Raises ``ValueError`` if the given value does not match a value in ``(True, False, 0, 1)``.
 
-.. _api-brownie-convert-address:
+.. _api-convert-address:
 
 .. py:method:: brownie.convert.to_address(value)
 

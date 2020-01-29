@@ -374,7 +374,7 @@ Module Methods
 ``brownie.project.ethpm``
 =========================
 
-The ``ethpm`` module contains methods for interacting with ethPM manifests and registries. See :ref:`eth-pm` for more detailed information on how to access this functionality.
+The ``ethpm`` module contains methods for interacting with ethPM manifests and registries. See the :ref:`ethpm` for more detailed information on how to access this functionality.
 
 Module Methods
 --------------

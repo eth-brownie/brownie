@@ -1,4 +1,4 @@
-.. _hypothesis:
+.. _local-accounts:
 
 =======================
 Managing Local Accounts

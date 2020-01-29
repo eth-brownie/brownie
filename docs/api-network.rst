@@ -538,7 +538,7 @@ When a project is loaded, Brownie automatically creates ``ContractContainer`` in
 
 If you wish to interact with a contract outside of a project where only the ABI is available, use the ``Contract`` class.
 
-Arguments supplied to calls or transaction methods are converted using the methods outlined in the :ref:`convert<api-brownie-convert>` module.
+Arguments supplied to calls or transaction methods are converted using the methods outlined in the :ref:`convert<api-convert>` module.
 
 .. note::
 
@@ -808,7 +808,7 @@ ContractCall
 
     The expected inputs are shown in the method's ``__repr__`` value.
 
-    Inputs and return values are formatted via methods in the :ref:`convert<api-brownie-convert>` module. Multiple values are returned inside a :ref:`ReturnValue<return_value>`.
+    Inputs and return values are formatted via methods in the :ref:`convert<api-convert>` module. Multiple values are returned inside a :ref:`ReturnValue<return_value>`.
 
     .. code-block:: python
 
@@ -874,7 +874,7 @@ ContractTx
 
     The given ``args`` must match the required inputs for the method. The expected inputs are shown in the method's ``__repr__`` value.
 
-    Inputs are formatted via methods in the :ref:`convert<api-brownie-convert>` module.
+    Inputs are formatted via methods in the :ref:`convert<api-convert>` module.
 
     You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
@@ -924,7 +924,7 @@ ContractTx Methods
 
     Calls the contract method without broadcasting a transaction, and returns the result.
 
-    Inputs and return values are formatted via methods in the :ref:`convert<api-brownie-convert>` module. Multiple values are returned inside a :ref:`ReturnValue<return_value>`.
+    Inputs and return values are formatted via methods in the :ref:`convert<api-convert>` module. Multiple values are returned inside a :ref:`ReturnValue<return_value>`.
 
     .. code-block:: python
 
@@ -1084,7 +1084,7 @@ _EventItem
     * If the key is given as an integer, events are handled as a list in the order that they fired. An ``_EventItem`` is returned for the specific event that fired at the given position.
     * If the key is given as a string, ``_EventItem`` assumes that you wish to access the first event contained within the object. ``event['value']`` is equivalent to ``event[0]['value']``.
 
-    All values within the object are formatted by methods outlined in the :ref:`convert<api-brownie-convert>` module.
+    All values within the object are formatted by methods outlined in the :ref:`convert<api-convert>` module.
 
     .. code-block:: python
 
@@ -2047,4 +2047,4 @@ Internal Methods
 
 .. py:method:: brownie.network.web3._resolve_address(address)
 
-    Used internally for standardizing address inputs. If ``address`` is a string containing a ``.`` Brownie will attempt to resolve an `ENS domain name <https://ens.domains/>`_ address. Otherwise, returns the result of :ref:`brownie.convert.to_address<api-brownie-convert-address>`.
+    Used internally for standardizing address inputs. If ``address`` is a string containing a ``.`` Brownie will attempt to resolve an `ENS domain name <https://ens.domains/>`_ address. Otherwise, returns the result of :ref:`brownie.convert.to_address<api-convert-address>`.
