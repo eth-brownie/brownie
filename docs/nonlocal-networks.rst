@@ -13,22 +13,36 @@ In addition to using `ganache-cli <https://github.com/trufflesuite/ganache-cli>`
     * When interacting with the mainnet, make sure you verify all of the details of any transactions before signing or sending. Brownie cannot protect you from sending ETH to the wrong address, sending too much, etc.
     * Always protect your private keys. Don't leave them lying around unencrypted!
 
-Local and Hosted Nodes
-======================
+Personal Node vs Hosted Node
+============================
 
-TODO
+In order to interact with a non-local network you must connect to a node. You can either run your own node, or connect to a hosted node.
 
-Limitations of Hosted Nodes
----------------------------
+Running your Own Node
+---------------------
 
-When using a hosted node some RPC endpoints may be unavailable. In particular, Infura does not provide access to the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ method. For this reason, Brownie's :ref:`debugging tools<debug>` will not work when connected via Infura.
+Clients such as `Geth <https://geth.ethereum.org/>`_ or `Parity <https://www.parity.io/ethereum/>`_ can be used to run your own Ethereum node, that Brownie can then connect to. Having your node gives you complete control over which RPC endpoints are available and ensures you have a private and dedicated connection to the network. Unfortunately, keeping a node operating and synced can be a challenging task.
 
-TODO no unlocked accounts
+If you wish to learn more about running a node, ethereum.org provides a `list of resources <https://ethereum.org/developers/#testnets-and-faucets>`_ that you can use to get started.
 
-Registering with Infura
-=======================
+Using a Hosted Node
+-------------------
 
-Before you can connect to a non-local network, you need access to an Ethereum node (whether your own local one or hosted) that supports JSON RPC (either HTTP, IPC, or web-sockets). `Infura <https://infura.io>`_ is a good option for accessing a hosted node. Once you register and create a project, Infura will provide you with a project ID as well as API URLs that can be leveraged to access the given network.
+Services such as `Infura <https://infura.io>`_ provide public access to Ethereum nodes. This is a much simpler option than running your own, but it is not without limitations:
+
+    1. Some RPC endpoints may be unavailable. In particular, Infura does not provide access to the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ method. For this reason, Brownie's :ref:`debugging tools<debug>` will not work when connected via Infura.
+    2. Hosted nodes do not provide access to accounts - this would be a major security hazard! You will have to manually unlock your own :ref:`local account<local-accounts>` before you can make a transaction.
+
+Using Infura
+************
+
+Before you can onnect to Infura you need to `register for an account <https://infura.io/register>`_. After you have signed up, login and create a new project. You will be provided with a project ID, as well as API URLs that can be leveraged to access the network.
+
+To connect to Infura using Brownie, store your project ID as an environment variable named ``WEB3_INFURA_PROJECT_ID``. You can do so with the following command:
+
+::
+
+    $ export WEB3_INFURA_PROJECT_ID=YourProjectID
 
 Network Configuration
 =====================

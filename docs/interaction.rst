@@ -4,10 +4,10 @@
 Interacting with your Contracts
 ===============================
 
-Brownie provides various objects and methods to simplify interacting with your project. These objects are accessed via three methods:
+Brownie has three main components that you can use while developing your project:
 
-1. The :ref:`console<console>` is useful for quick testing and debugging as you develop.
-2. :ref:`Scripts<scripts>` are useful for automating common interactions and handling deployments.
+1. The :ref:`console<console>` is useful for quick testing and debugging.
+2. :ref:`Scripts<scripts>` allow you to automate common tasks and handle deployments.
 3. :ref:`Tests<tests-intro>` help to ensure that your contracts are executing as intended and do not contain any bugs.
 
 .. _console:
@@ -29,7 +29,7 @@ Brownie will compile the contracts, launch or attach to the :ref:`local test env
 
     You can call the builtin ``dir`` method to see available methods and attributes for any class. Classes, methods and attributes are highlighted in different colors.
 
-    You can also call ``help`` on most classes and methods to get detailed information on how they work.
+    You can also call ``help`` on any class or method to view information on it's functionality.
 
 .. _scripts:
 
