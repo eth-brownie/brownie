@@ -13,6 +13,18 @@ In addition to using `ganache-cli <https://github.com/trufflesuite/ganache-cli>`
     * When interacting with the mainnet, make sure you verify all of the details of any transactions before signing or sending. Brownie cannot protect you from sending ETH to the wrong address, sending too much, etc.
     * Always protect your private keys. Don't leave them lying around unencrypted!
 
+Local and Hosted Nodes
+======================
+
+TODO
+
+Limitations of Hosted Nodes
+---------------------------
+
+When using a hosted node some RPC endpoints may be unavailable. In particular, Infura does not provide access to the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ method. For this reason, Brownie's :ref:`debugging tools<debug>` will not work when connected via Infura.
+
+TODO no unlocked accounts
+
 Registering with Infura
 =======================
 
@@ -65,11 +77,10 @@ By default, Brownie will connect to whichever network is set as "default" in ``b
 
     $ brownie --network ropsten
 
-
 Using brownie.network
 ---------------------
 
-The ``brownie.network`` module conains methods that allow you to connect or disconnect from any network defined within the configuration file.
+The :func:`brownie.network <main.connect>` module conains methods that allow you to connect or disconnect from any network defined within the configuration file.
 
 To connect to a network:
 
@@ -93,6 +104,8 @@ To disconnect:
 
 Interacting with Non-Local Networks
 ===================================
+
+TODO scrap all this
 
 There are several key differences in functionality between using a non-local network as opposed to a local develpment environment.
 
@@ -134,48 +147,7 @@ Once instantiated, all of the usual ``Contract`` attributes and methods can be u
 
 .. _nonlocal-networks-accounts:
 
-Accounts
---------
-
-Brownie will automatically load any unlocked accounts returned by a node. If you are using your own private node, you will be able to access your accounts in the same way you would in a local environment.
-
-In order to use accounts when connected to a hosted node, you must make them available locally.  This is done via ``brownie accounts`` in the command line:
-
-::
-
-    $ brownie accounts --help
-    Brownie v1.3.2 - Python development framework for Ethereum
-
-    Usage: brownie accounts <command> [<arguments> ...] [options]
-
-    Commands:
-    list                             List available accounts
-    new <id>                         Add a new account by entering a private key
-    generate <id>                    Add a new account with a random private key
-    import <id> <path>               Import a new account via a keystore file
-    export <id> <path>               Export an existing account keystore file
-    password <id>                    Change the password for an account
-    delete <id>                      Delete an account
-
-After an account has been added, it can be accessed in the console or a script through :ref:`Accounts.load <api-network-accounts-load>`.
-
 Transactions
 ------------
 
 After broadcasting a transaction, Brownie will pause and wait until it confirms. If you are using the console you can press ``Ctrl-C`` to immediately receive the :ref:`api-network-tx` object. Note that ``TransactionReceipt.status`` will be ``-1`` until the transaction is mined, and many attributes and methods will not yet be available.
-
-Debugging
-*********
-
-Brownie's :ref:`debugging tools<debug>` rely upon the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC method which is not supported by Infura. Attempts to call it will result in a ``RPCRequestError``. This means that the following ``TransactionReceipt`` attributes and methods are unavailable:
-
-* ``TransactionReceipt.return_value``
-* ``TransactionReceipt.trace``
-* ``TransactionReceipt.call_trace``
-* ``TransactionReceipt.traceback``
-* ``TransactionReceipt.source``
-
-Rpc
----
-
-The :ref:`rpc` object is unavailable when working with non-local networks.

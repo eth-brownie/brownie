@@ -1,14 +1,44 @@
-.. _deploy:
+.. _scripts:
 
-======================================
-Using Scripts to Automate Interactions
-======================================
+=======================
+Writing Brownie Scripts
+=======================
 
-TODO
+Along with the console, you can write scripts for quick testing or to automate common processes. Scripting is also useful when deploying your contracts to a non-local network.
 
-Brownie lets you run scripts to interact with your project. Scripting is especially useful for deploying your contracts to a persistent network, or for automating processes that you perform regularly.
+Scripts are stored in the ``scripts/`` directory within your project.
 
-Every script should begin with ``from brownie import *``. This imports the instantiated project classes into the local namespace and gives access to the :ref:`api` in exactly the same way as if you were using the console.
+Layout of a Script
+==================
+
+Brownie scripts use standard Python syntax, but there are a few things to keep in mind in order for them to execute properly.
+
+Import Statements
+-----------------
+
+Unlike the console where all of Brownie's objects are already available, in a script you must first import them. The simplest way to do this is via a wildcard import:
+
+.. code-block:: python
+
+    from brownie import *
+
+This imports the instantiated project classes into the local namespace and gives access to the :ref:`Brownie API <api>` in exactly the same way as if you were using the console.
+
+Alternatively you may wish to only import exactly the classes and methods required by the script. For example:
+
+.. code-block:: python
+
+    from brownie import Token, accounts
+
+This makes available the ``accounts`` and ``Token`` containers, which is enough to deploy a contract.
+
+Functions
+---------
+
+Each script can contain as many functions as you'd like. When executing a script, brownie attempts to run the ``main`` function if no other function name is given.
+
+Running Scripts
+===============
 
 To execute a script from the command line:
 
@@ -16,58 +46,44 @@ To execute a script from the command line:
 
     $ brownie run <script> [function]
 
-Or from the console, use the ``run`` method:
+From the console, you can use the ``run`` method:
 
 .. code-block:: python
 
     >>> run('token') # executes the main() function within scripts/token.py
 
-Or the import statement:
+You can also import and call the script directly:
 
 .. code-block:: python
 
     >>> from scripts.token import main
     >>> main()
 
-Scripts are stored in the ``scripts/`` folder. Each script can contain as many functions as you'd like. If no function name is given, brownie will attempt to run ``main``.
+Examples
+========
 
 Here is a simple example script from the ``token`` project, used to deploy the ``Token`` contract from ``contracts/Token.sol`` using ``web3.eth.accounts[0]``.
 
 .. code-block:: python
     :linenos:
 
-    from brownie import *
+    from brownie import Token, accounts
 
     def main():
         accounts[0].deploy(Token, "Test Token", "TEST", 18, "1000 ether")
 
-See the :ref:`api` documentation for available classes and methods when writing scripts.
-
-Persistence
-===========
-
-TODO
-
-Unlinked Libraries
-==================
-
-If a contract requires a library, the most recently deployed one will be used automatically. If the required library has not been deployed yet an ``UndeployedLibrary`` exception is raised.
+And here is an expanded version of the same script, that includes a simple method for distributing tokens.
 
 .. code-block:: python
+    :linenos:
 
-    >>> accounts[0].deploy(MetaCoin)
-      File "brownie/network/contract.py", line 167, in __call__
-        f"Contract requires '{library}' library but it has not been deployed yet"
-    UndeployedLibrary: Contract requires 'ConvertLib' library but it has not been deployed yet
+    from brownie import Token, accounts
 
-    >>> accounts[0].deploy(ConvertLib)
-    Transaction sent: 0xff3f5cff35c68a73658ad367850b6fa34783b4d59026520bd61b72b6613d871c
-    ConvertLib.constructor confirmed - block: 1   gas used: 95101 (48.74%)
-    ConvertLib deployed at: 0x08c4C7F19200d5636A1665f6048105b0686DFf01
-    <ConvertLib Contract object '0x08c4C7F19200d5636A1665f6048105b0686DFf01'>
+    def main():
+        token = accounts[0].deploy(Token, "Test Token", "TEST", 18, "1000 ether")
+        return token
 
-    >>> accounts[0].deploy(MetaCoin)
-    Transaction sent: 0xd0969b36819337fc3bac27194c1ff0294dd65da8f57c729b5efd7d256b9ecfb3
-    MetaCoin.constructor confirmed - block: 2   gas used: 231857 (69.87%)
-    MetaCoin deployed at: 0x8954d0c17F3056A6C98c7A6056C63aBFD3e8FA6f
-    <MetaCoin Contract object '0x8954d0c17F3056A6C98c7A6056C63aBFD3e8FA6f'>
+    def distribute_tokens(sender=accounts[0], receiver_list=accounts[1:]):
+        token = main()
+        for receiver in receiver_list:
+            token.transfer(receiver, "1 ether", {'from': sender})

@@ -659,8 +659,12 @@ ContractContainer Methods
 
     Returns a ``ProjectContract`` instance.
 
-    * ``address``: Address where the contract is deployed. Raises a ValueError if there is no bytecode at the address.
+    * ``address``: Address where the contract is deployed. Raises a ``ValueError`` if there is no bytecode at the address.
     * ``owner``: ``Account`` instance to set as the contract owner. If transactions to the contract do not specify a ``'from'`` value, they will be sent from this account.
+
+    .. note::
+
+        This method checks for the existence of bytecode at the given address, but does not check if the bytecode matches that of the ``ContractContainer``.
 
     .. code-block:: python
 
