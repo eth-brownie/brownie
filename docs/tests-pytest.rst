@@ -5,7 +5,6 @@
 Unit Testing with Pytest
 ========================
 
-
 Brownie utilizes the ``pytest`` framework for unit testing. You may wish to view the `pytest documentation <https://docs.pytest.org/en/latest/>`_ if you have not used it previously.
 
 Test scripts are stored in the ``tests/`` folder of your project. To run the complete test suite:
@@ -82,28 +81,6 @@ These fixtures provide quick access to Brownie objects that are frequently used 
             height = web3.eth.blockNumber
             accounts[0].transfer(accounts[1], "10 ether")
             assert web3.eth.blockNumber == height + 1
-
-If you are accessing the same object across many tests in the same module, you may prefer to import it from the ``brownie`` package instead of accessing it via fixtures. The following two examples will work identically:
-
-.. code-block:: python
-    :linenos:
-
-    def test_account_balance(accounts):
-        assert accounts[0].balance() == "100 ether"
-
-    def test_account_nonce(accounts):
-        assert accounts[0].nonce == 0
-
-.. code-block:: python
-    :linenos:
-
-    from brownie import accounts
-
-    def test_account_balance():
-        assert accounts[0].balance() == "100 ether"
-
-    def test_account_nonce():
-        assert accounts[0].nonce == 0
 
 Contract Fixtures
 -----------------
