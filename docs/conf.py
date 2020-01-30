@@ -31,7 +31,7 @@ def setup(sphinx):
 
 
 project = "Brownie"
-copyright = "2019"
+copyright = "2020"
 author = "Ben Hauser"
 
 # The short X.Y version

@@ -6,9 +6,9 @@ Interacting with your Contracts
 
 Brownie has three main components that you can use while developing your project:
 
-1. The :ref:`console<console>` is useful for quick testing and debugging.
-2. :ref:`Scripts<scripts>` allow you to automate common tasks and handle deployments.
-3. :ref:`Tests<tests-intro>` help to ensure that your contracts are executing as intended and do not contain any bugs.
+    1. The :ref:`console<console>` is useful for quick testing and debugging.
+    2. :ref:`Scripts<scripts>` allow you to automate common tasks and handle deployments.
+    3. :ref:`Tests<tests-intro>` help to ensure that your contracts are executing as intended and do not contain any bugs.
 
 .. _console:
 

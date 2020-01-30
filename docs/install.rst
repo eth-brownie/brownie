@@ -21,7 +21,7 @@ Once you have installed, type ``brownie`` to verify that it worked:
 ::
 
     $ brownie
-    Brownie v1.0.0 - Python development framework for Ethereum
+    Brownie - Python development framework for Ethereum
 
     Usage:  brownie <command> [<args>...] [options <args>]
 

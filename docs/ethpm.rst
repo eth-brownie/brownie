@@ -60,7 +60,7 @@ To view a list of currently installed packages within a project:
 ::
 
     $ brownie ethpm list
-    Brownie v1.2.0 - Python development framework for Ethereum
+    Brownie - Python development framework for Ethereum
 
     Found 2 installed packages:
      ├─access@1.0.0
@@ -71,7 +71,7 @@ Any packages that are installed from a registry are also saved locally. To view 
 ::
 
     $ brownie ethpm all
-    Brownie v1.1.0 - Python development framework for Ethereum
+    Brownie - Python development framework for Ethereum
 
     erc1319://erc20.snakecharmers.eth
      └─dai-dai@1.0.0
@@ -262,7 +262,7 @@ Once the package is successfully released, Brownie provides you with a registry 
 ::
 
     $ brownie ethpm release erc20.snakecharmers.eth registry_owner
-    Brownie v1.1.0 - Python development framework for Ethereum
+    Brownie - Python development framework for Ethereum
 
     Generating manifest and pinning assets to IPFS...
     Pinning "NFToken.sol"...

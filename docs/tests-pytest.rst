@@ -125,7 +125,7 @@ For example - if your project contains a contract named ``Token``, there will be
 Handling Reverted Transactions
 ==============================
 
-When running tests, transactions that revert raise a :func:`VirtualMachineError <brownie.exceptions.VirtualMachineError>` exception. To write assertions around this you can use ``brownie.reverts`` as a context manager. It functions very similarly to `pytest.raises <https://docs.pytest.org/en/latest/assert.html#assertraises>`_.
+When running tests, transactions that revert raise a :func:`VirtualMachineError <brownie.exceptions.VirtualMachineError>` exception. To write assertions around this you can use :func:`brownie.reverts <brownie.test.plugin.RevertContextManager>` as a context manager. It functions very similarly to `pytest.raises <https://docs.pytest.org/en/latest/assert.html#assertraises>`_.
 
 
 .. code-block:: python
