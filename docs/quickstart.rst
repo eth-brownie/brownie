@@ -28,11 +28,11 @@ Dependencies
 
 Before installing Brownie, make sure you have the following dependencies:
 
-* `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__
-* `pip <https://pypi.org/project/pip/>`__
-* `python3 <https://www.python.org/downloads/release/python-368/>`__ version 3.6 or greater, python3-dev
+* `ganache-cli <https://github.com/trufflesuite/ganache-cli>`_
+* `pip <https://pypi.org/project/pip/>`_
+* `python3 <https://www.python.org/downloads/release/python-368/>`_ version 3.6 or greater, python3-dev
 
-As brownie relies on `py-solc-x <https://github.com/iamdefinitelyahuman/py-solc-x>`__, you do not need solc installed locally but you must install all required `solc dependencies <https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages>`__.
+As brownie relies on `py-solc-x <https://github.com/iamdefinitelyahuman/py-solc-x>`_, you do not need solc installed locally but you must install all required `solc dependencies <https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages>`_.
 
 Installation
 ------------
@@ -43,7 +43,7 @@ The easiest way to install Brownie is via pip.
 
     $ pip install eth-brownie
 
-You can also clone the `github repository <https://github.com/iamdefinitelyahuman/brownie>`__ and use setuptools for the most up-to-date version.
+You can also clone the `github repository <https://github.com/iamdefinitelyahuman/brownie>`_ and use setuptools for the most up-to-date version.
 
 ::
 
@@ -67,7 +67,7 @@ This will create the following :ref:`project structure<structure>` within the fo
 * ``tests/``: Scripts for testing your project
 * ``brownie-config.yaml``: Configuration file for the project
 
-You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`__", simple templates to build your project upon. For the examples in this document we will use the `token <https://github.com/brownie-mix/token-mix>`__ mix, which is a very basic ERC-20 implementation:
+You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`_", simple templates to build your project upon. For the examples in this document we will use the `token <https://github.com/brownie-mix/token-mix>`_ mix, which is a very basic ERC-20 implementation:
 
 ::
 
@@ -200,7 +200,7 @@ To execute the ``main`` function in a script, store it in the ``scripts/`` folde
 
     $ brownie run [script name]
 
-Within the token project, you will find an example script at `scripts/token.py <https://github.com/brownie-mix/token-mix/blob/master/scripts/token.py>`__ that is used for deployment:
+Within the token project, you will find an example script at `scripts/token.py <https://github.com/brownie-mix/token-mix/blob/master/scripts/token.py>`_ that is used for deployment:
 
 .. code-block:: python
     :linenos:

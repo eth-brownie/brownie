@@ -266,7 +266,7 @@ The ``normalize`` module contains methods used to convert multiple values based 
 
     Standardizes outputs from an event fired by a contract.
 
-    * ``event``: Decoded event data as given by the ``decode_event`` or ``decode_trace`` methods of the `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`__ package.
+    * ``event``: Decoded event data as given by the ``decode_event`` or ``decode_trace`` methods of the `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`_ package.
 
     The given event data is mutated in-place and returned. If an event topic is indexed, the type is changed to ``bytes32`` and ``" (indexed)"`` is appended to the name.
 

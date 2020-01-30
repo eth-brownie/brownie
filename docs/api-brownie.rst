@@ -118,7 +118,7 @@ ConfigDict
 
 .. py:class:: brownie._config.ConfigDict
 
-    Subclass of `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__ that prevents adding new keys when locked. Used to hold config file settings.
+    Subclass of `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`_ that prevents adding new keys when locked. Used to hold config file settings.
 
     .. code-block:: python
 
@@ -162,4 +162,4 @@ ConfigDict Internal Methods
 
 .. py:class:: brownie._singleton._Singleton
 
-Internal metaclass used to create `singleton <https://en.wikipedia.org/wiki/Singleton_pattern>`__ objects. Instantiating a class derived from this metaclass will always return the same instance, regardless of how the child class was imported.
+Internal metaclass used to create `singleton <https://en.wikipedia.org/wiki/Singleton_pattern>`_ objects. Instantiating a class derived from this metaclass will always return the same instance, regardless of how the child class was imported.

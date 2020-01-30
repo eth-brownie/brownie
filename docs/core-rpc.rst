@@ -4,7 +4,7 @@
 The Local Test Environment
 ==========================
 
-Brownie is designed to use `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__ as a local development environment. Functionality such as snapshotting and time travel is accessible via the :func:`Rpc <brownie.network.rpc.Rpc>` object, available as ``rpc``:
+Brownie is designed to use `ganache-cli <https://github.com/trufflesuite/ganache-cli>`_ as a local development environment. Functionality such as snapshotting and time travel is accessible via the :func:`Rpc <brownie.network.rpc.Rpc>` object, available as ``rpc``:
 
 .. code-block:: python
 

@@ -4,7 +4,7 @@
 Inspecting and Debugging Transactions
 =====================================
 
-Transactions are represented via the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` object. This object contains all relevant information about the transaction, as well as various methods to aid in debugging.
+Each time your perform a transaction you are returned a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`. This object contains all relevant information about the transaction, as well as various methods to aid in debugging.
 
 .. code-block:: python
 
@@ -117,7 +117,7 @@ Debugging Failed Transactions
 
 .. note::
 
-    Debugging functionality relies on the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC method. If you are using Infura this endpoint is unavailable. Attempts to access this functionality will raise an ``RPCRequestError``.
+    Debugging functionality relies on the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ RPC method. If you are using Infura this endpoint is unavailable. Attempts to access this functionality will raise an ``RPCRequestError``.
 
 When a transaction reverts in the console you are still returned a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, but it will show as reverted. If an error string is given, it will be displayed in brackets and highlighted in red.
 

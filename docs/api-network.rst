@@ -152,7 +152,7 @@ Accounts Methods
 
 .. py:classmethod:: Accounts.load(filename=None)
 
-    Decrypts a `keystore <https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition>`__ file and returns a :func:`LocalAccount <brownie.network.account.LocalAccount>` object.
+    Decrypts a `keystore <https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition>`_ file and returns a :func:`LocalAccount <brownie.network.account.LocalAccount>` object.
 
     Brownie will first attempt to find the keystore file as a path relative to the loaded project. If not found, it will look in the ``brownie/data/accounts`` folder within the Brownie package.
 
@@ -341,7 +341,7 @@ LocalAccount Methods
 
 .. py:classmethod:: LocalAccount.save(filename, overwrite=False)
 
-    Saves the account's private key in an encrypto `keystore <https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition>`__ file.
+    Saves the account's private key in an encrypto `keystore <https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition>`_ file.
 
     If the filename does not include a folder, the keystore is saved in the ``brownie/data/accounts`` folder within the Brownie package.
 
@@ -617,7 +617,7 @@ ContractContainer Methods
 
     * ``*args``: Contract constructor arguments.
 
-    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
+    You can optionally include a dictionary of :ref:`transaction parameters<transaction-parameters>` as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
     If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an `UndeployedLibrary <brownie.exceptions.UndeployedLibrary>` exception is raised.
 
@@ -862,7 +862,7 @@ ContractTx
 
     Inputs are formatted via methods in the :ref:`convert<api-convert>` module.
 
-    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
+    You can optionally include a dictionary of :ref:`transaction parameters<transaction-parameters>` as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
     .. code-block:: python
 
@@ -970,7 +970,7 @@ OverloadedMethod
 ``brownie.network.event``
 =========================
 
-The ``event`` module contains classes and methods related to decoding transaction event logs. It is largely a wrapper around `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`__.
+The ``event`` module contains classes and methods related to decoding transaction event logs. It is largely a wrapper around `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`_.
 
 Brownie stores encrypted event topics in ``brownie/data/topics.json``. The JSON file is loaded when this module is imported.
 
@@ -979,7 +979,7 @@ EventDict
 
 .. py:class:: brownie.network.event.EventDict
 
-    Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`__. Base class, used to hold all events that are fired in a transaction.
+    Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`_ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`_. Base class, used to hold all events that are fired in a transaction.
 
     When accessing events inside the object:
 
@@ -1059,7 +1059,7 @@ _EventItem
 
 .. py:class:: brownie.network.event._EventItem
 
-    Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`__. Represents one or more events with the same name that were fired in a transaction.
+    Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`_ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`_. Represents one or more events with the same name that were fired in a transaction.
 
     Instances of this class are created by :func:`EventDict <brownie.network.event.EventDict>`, it is not intended to be instantiated directly.
 
@@ -1755,7 +1755,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.trace
 
-    An expanded `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#user-content-basic-traces>`_ structLog, returned from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC endpoint. If you are using Infura this attribute is not available.
+    An expanded `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#user-content-basic-traces>`_ structLog, returned from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ RPC endpoint. If you are using Infura this attribute is not available.
 
     Along with the standard data, the structLog also contains the following additional information:
 

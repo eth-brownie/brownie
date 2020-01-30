@@ -4,7 +4,7 @@
 Using Non-Local Networks
 ========================
 
-In addition to using `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__ as a local development environment, Brownie can connect to non-local networks (i.e. any testnet/mainnet node that supports JSON RPC).
+In addition to using `ganache-cli <https://github.com/trufflesuite/ganache-cli>`_ as a local development environment, Brownie can connect to non-local networks (i.e. any testnet/mainnet node that supports JSON RPC).
 
 .. warning::
 

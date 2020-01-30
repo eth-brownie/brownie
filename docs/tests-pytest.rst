@@ -482,7 +482,7 @@ The following test configuration settings are available in ``brownie-config.yaml
 
     If ``True``, calls to contract transactions that do not specify a sender are broadcast from the same address that deployed the contract.
 
-    If ``False``, contracts will not remember which account they were created by. You must explicitely declare the sender of every transaction with a `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ dictionary as the last method argument.
+    If ``False``, contracts will not remember which account they were created by. You must explicitely declare the sender of every transaction with a `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`_ dictionary as the last method argument.
 
 .. py:attribute:: revert_traceback
 
