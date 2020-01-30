@@ -170,8 +170,8 @@ Writing Stateful Tests
 To write a stateful test:
 
 1. Create a state machine class.
-2. Create a regular pytest-style test that includes the ``state_machine`` fixture.
-3. Within the test, call ``state_machine`` with the state machine as the first argument.
+2. Create a regular pytest-style test that includes the :func:`state_machine <fixtures.state_machine>` fixture.
+3. Within the test, call :func:`state_machine <stateful.state_machine>` with the state machine as the first argument.
 
 .. py:method:: brownie.test.stateful.state_machine(state_machine_class, *args, settings=None)
 
@@ -181,7 +181,7 @@ To write a stateful test:
     * ``*args``: Any arguments given here will be passed to the state machine's ``__init__`` method.
     * ``settings``: An optional dictionary of :ref:`Hypothesis settings<hypothesis-settings>` that will replace the defaults for this test only.
 
-    This method is available as a pytest fixture ``state_machine``.
+    This method is available as a pytest fixture :func:`state_machine <fixtures.state_machine>`.
 
 Basic Example
 -------------

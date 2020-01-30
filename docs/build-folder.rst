@@ -113,7 +113,7 @@ Deployment artifacts are stored at:
 
     build/deployments/[NETWORK_NAME]/[ADDRESS].json
 
-When instantiating :ref:`Contract<api-network-contract>` objects from deployment artifacts, Brownie parses the files in order of creation time. If the ``contractName`` field in an artifact gives a name that longer exists within the project, the file is deleted.
+When instantiating :func:`Contract <brownie.network.contract.Contract>` objects from deployment artifacts, Brownie parses the files in order of creation time. If the ``contractName`` field in an artifact gives a name that longer exists within the project, the file is deleted.
 
 Test Results and Coverage Data
 ==============================

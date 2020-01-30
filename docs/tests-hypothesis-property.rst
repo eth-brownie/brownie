@@ -115,7 +115,7 @@ Address
 
     `Base strategy:` `hypothesis.strategies.sampled_from <https://hypothesis.readthedocs.io/en/latest/data.html#hypothesis.strategies.sampled_from>`_
 
-``address`` strategies yield :ref:`api-network-account` objects from the :ref:`api-network-accounts` container.
+``address`` strategies yield :func:`Account <brownie.network.account.Account>` objects from the :func:`Accounts <brownie.network.account.Accounts>` container.
 
 Optional keyword arguments:
 
@@ -181,8 +181,8 @@ Decimal
 
 Optional keyword arguments:
 
-    * ``min_value``: The maximum value to return. The default is ``-2**127`` (the lower bound of Vyper's ``decimal`` type). The given value is converted to :ref:`fixed`.
-    * ``max_value``: The maximum value to return. The default is ``2**127-1`` (the upper bound of Vyper's ``decimal`` type). The given value is converted to :ref:`fixed`.
+    * ``min_value``: The maximum value to return. The default is ``-2**127`` (the lower bound of Vyper's ``decimal`` type). The given value is converted to :func:`Fixed <brownie.convert.datatypes.Fixed>`.
+    * ``max_value``: The maximum value to return. The default is ``2**127-1`` (the upper bound of Vyper's ``decimal`` type). The given value is converted to :func:`Fixed <brownie.convert.datatypes.Fixed>`.
     * ``places``: The number of decimal points to include. The default value is ``10``.
     * ``excludes``: An object, iterable or callable used to filter strategy results.
 
@@ -204,8 +204,8 @@ Integer
 
 Optional keyword arguments:
 
-    * ``min_value``: The maximum value to return. The default is the lower bound for the given type. The given value is converted to :ref:`wei`.
-    * ``max_value``: The maximum value to return. The default is the upper bound for the given type. The given value is converted to :ref:`wei`.
+    * ``min_value``: The maximum value to return. The default is the lower bound for the given type. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`.
+    * ``max_value``: The maximum value to return. The default is the upper bound for the given type. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`.
     * ``excludes``: An object, iterable or callable used to filter strategy results.
 
 .. code-block:: python

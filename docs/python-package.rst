@@ -25,7 +25,7 @@ The ``brownie.project`` module is used to load a Brownie project.
     >>> project.load('myprojects/token')
     <Project object 'TokenProject'>
 
-Once loaded, the ``Project`` object is available within ``brownie.project``. This container holds all of the related ``ContractContainer`` objects.
+Once loaded, the :func:`Project <brownie.project.main.Project>` object is available within ``brownie.project``. This container holds all of the related :func:`ContractContainer <brownie.network.contract.ContractContainer>` objects.
 
 .. code-block:: python
 
@@ -37,7 +37,7 @@ Once loaded, the ``Project`` object is available within ``brownie.project``. Thi
     >>> p.Token
     <ContractContainer object 'Token'>
 
-Alternatively, use a ``from`` import statement to import ``ContractContainer`` objects to the local namespace:
+Alternatively, use a ``from`` import statement to import :func:`ContractContainer <brownie.network.contract.ContractContainer>` objects to the local namespace:
 
 .. code-block:: python
 
@@ -45,7 +45,7 @@ Alternatively, use a ``from`` import statement to import ``ContractContainer`` o
     >>> Token
     <ContractContainer object 'Token'>
 
-Importing with a wildcard will retrieve every available ``ContractContainer``:
+Importing with a wildcard will retrieve every available :func:`ContractContainer <brownie.network.contract.ContractContainer>`:
 
 .. code-block:: python
 
@@ -68,14 +68,14 @@ When accessing Brownie via the regular Python interpreter, you must explicitely 
 Accessing the Network
 =====================
 
-The ``brownie.network`` module contains methods for network interaction. The simplest way to connect is with the ``network.connect`` method:
+The ``brownie.network`` module contains methods for network interaction. The simplest way to connect is with the :func:`network.connect <main.connect>` method:
 
 .. code-block:: python
 
     >>> from brownie import network
     >>> network.connect('development')
 
-This method queries the network settings from the configuration file, launches the local RPC, and connects to it with a ``Web3`` instance. Alternatively, you can accomplish the same with these commands:
+This method queries the network settings from the configuration file, launches the local RPC, and connects to it with a :func:`Web3 <brownie.network.web3.Web3>` instance. Alternatively, you can accomplish the same with these commands:
 
 .. code-block:: python
 
@@ -83,7 +83,7 @@ This method queries the network settings from the configuration file, launches t
     >>> rpc.launch('ganache-cli')
     >>> web3.connect('http://127.0.0.1:8545')
 
-Once connected, the ``accounts`` container is automatically populated with local accounts.
+Once connected, the :func:`accounts <brownie.network.account.Accounts>` container is automatically populated with local accounts.
 
 .. code-block:: python
 

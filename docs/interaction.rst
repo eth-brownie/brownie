@@ -62,7 +62,7 @@ Alternatively you may wish to only import exactly the classes and methods requir
 
     from brownie import Token, accounts
 
-This makes available the ``accounts`` and ``Token`` containers, which is enough to deploy a contract.
+This makes available the :func:`accounts <brownie.network.account.Accounts>` and :func:`Token <brownie.network.contract.ContractContainer>` containers, which is enough to deploy a contract.
 
 Functions
 *********

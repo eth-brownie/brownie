@@ -281,7 +281,7 @@ Once the package is successfully released, Brownie provides you with a registry 
 Interacting with Package Deployments
 ====================================
 
-You can load an entire package as a :ref:`Project <api-project-project>` object, which includes :ref:`Contract <api-network-contract>` instances for any contracts deployed on the currently active network:
+You can load an entire package as a :func:`Project <brownie.project.main.Project>` object, which includes :func:`Contract <brownie.network.contract.ProjectContract>` instances for any contracts deployed on the currently active network:
 
 .. code-block:: python
 
@@ -294,7 +294,7 @@ You can load an entire package as a :ref:`Project <api-project-project>` object,
         'DSToken': [<DSToken Contract object '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359'>]
     }
 
-Or, create a :ref:`Contract <api-network-contract>` object to interact with a deployed instance of a specific contract within a package:
+Or, create a :func:`Contract <brownie.network.contract.ProjectContract>` object to interact with a deployed instance of a specific contract within a package:
 
 .. code-block:: python
 

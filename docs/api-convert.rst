@@ -19,7 +19,7 @@ The ``main`` module contains methods for data conversion. Methods within this mo
 
 .. py:method:: brownie.convert.to_int(value, type_str="int256")
 
-    Converts a value to a signed integer. This is equivalent to calling ``Wei`` and then applying checks for over/underflows.
+    Converts a value to a signed integer. This is equivalent to calling :func:`Wei <brownie.convert.datatypes.Wei>` and then applying checks for over/underflows.
 
 .. py:method:: brownie.convert.to_decimal(value)
 
@@ -28,8 +28,6 @@ The ``main`` module contains methods for data conversion. Methods within this mo
 .. py:method:: brownie.convert.to_bool(value)
 
     Converts a value to a boolean. Raises ``ValueError`` if the given value does not match a value in ``(True, False, 0, 1)``.
-
-.. _api-convert-address:
 
 .. py:method:: brownie.convert.to_address(value)
 
@@ -93,14 +91,12 @@ EthAddress
         >>> type(e)
         <class 'brownie.convert.EthAddress'>
 
-.. _fixed:
-
 Fixed
 -----
 
 .. py:class:: brownie.convert.datatypes.Fixed(value)
 
-    `Decimal <https://docs.python.org/3.8/library/decimal.html#decimal.Decimal>`_ subclass that allows comparisons, addition and subtraction against strings, integers and :ref:`wei`.
+    `Decimal <https://docs.python.org/3.8/library/decimal.html#decimal.Decimal>`_ subclass that allows comparisons, addition and subtraction against strings, integers and :func:`Wei <brownie.convert.datatypes.Wei>`.
 
     ``Fixed`` is used for inputs and outputs to Vyper contracts that use the `decimal type <https://vyper.readthedocs.io/en/latest/types.html#decimals>`_.
 
@@ -151,8 +147,6 @@ HexString
           File "<console>", line 1, in <module>
         TypeError: Invalid type for comparison: 'potato' is not a valid hex string
 
-.. _return_value:
-
 ReturnValue
 -----------
 
@@ -176,7 +170,7 @@ ReturnValue
         >>> result['_minRating']
         1
 
-    When checking equality, ``ReturnValue`` objects ignore the type of container compared against. Tuples and lists will both return ``True`` so long as they contain the same values.
+    When checking equality, :func:`ReturnValue <brownie.convert.datatypes.ReturnValue>` objects ignore the type of container compared against. Tuples and lists will both return ``True`` so long as they contain the same values.
 
     .. code-block:: python
 
@@ -199,9 +193,6 @@ ReturnValue
 .. py:classmethod:: ReturnValue.keys
 
     Returns a set-like object providing a view on the object's keys.
-
-
-.. _wei:
 
 Wei
 ---
@@ -260,7 +251,7 @@ The ``normalize`` module contains methods used to convert multiple values based 
     * ``abi``: A contract method ABI as a dict.
     * ``outputs``: List or tuple of values to format.
 
-    Returns a :ref:`return_value` container where each value has been formatted using the one of the methods outlined in :ref:`type-conversions`.
+    Returns a :func:`ReturnValue <brownie.convert.datatypes.ReturnValue>` container where each value has been formatted using the one of the methods outlined in :ref:`type-conversions`.
 
     This method is used internally by ``ContractCall`` to ensure that contract output formats remain consistent, regardless of the RPC client being used.
 

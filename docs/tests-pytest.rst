@@ -28,7 +28,7 @@ These fixtures provide quick access to Brownie objects that are frequently used 
 
 .. py:attribute:: accounts
 
-    Yields an :ref:`Accounts<api-network-accounts>` container for the active project, used to interact with your local Eth accounts.
+    Yields an :func:`Accounts <brownie.network.account.Accounts>` container for the active project, used to interact with your local Eth accounts.
 
     .. code-block:: python
         :linenos:
@@ -48,7 +48,7 @@ These fixtures provide quick access to Brownie objects that are frequently used 
 
 .. py:attribute:: history
 
-    Yields a :ref:`TxHistory<api-network-history>` container for the active project, used to access transaction data.
+    Yields a :func:`TxHistory <brownie.network.state.TxHistory>` container for the active project, used to access transaction data.
 
     .. code-block:: python
         :linenos:
@@ -59,7 +59,7 @@ These fixtures provide quick access to Brownie objects that are frequently used 
 
 .. py:attribute:: rpc
 
-    Yields an :ref:`Rpc<rpc>` object, used for interacting with the local test chain.
+    Yields an :func:`Rpc <brownie.network.rpc.Rpc>` object, used for interacting with the local test chain.
 
     .. code-block:: python
         :linenos:
@@ -73,7 +73,7 @@ These fixtures provide quick access to Brownie objects that are frequently used 
 
 .. py:attribute:: web3
 
-    Yields a :ref:`Web3<web3>` object.
+    Yields a :func:`Web3 <brownie.network.web3.Web3>` object.
 
     .. code-block:: python
         :linenos:
@@ -108,7 +108,7 @@ If you are accessing the same object across many tests in the same module, you m
 Contract Fixtures
 -----------------
 
-Brownie creates dynamically named fixtures to access each :ref:`api-network-contractcontainer` object within a project. Fixtures are generated for all deployable contracts and libraries.
+Brownie creates dynamically named fixtures to access each :func:`ContractContainer <brownie.network.contract.ContractContainer>` object within a project. Fixtures are generated for all deployable contracts and libraries.
 
 For example - if your project contains a contract named ``Token``, there will be a ``Token`` fixture available.
 
@@ -125,7 +125,7 @@ For example - if your project contains a contract named ``Token``, there will be
 Handling Reverted Transactions
 ==============================
 
-When running tests, transactions that revert raise a ``VirtualMachineError`` exception. To write assertions around this you can use ``brownie.reverts`` as a context manager. It functions very similarly to `pytest.raises <https://docs.pytest.org/en/latest/assert.html#assertraises>`_.
+When running tests, transactions that revert raise a :func:`VirtualMachineError <brownie.exceptions.VirtualMachineError>` exception. To write assertions around this you can use ``brownie.reverts`` as a context manager. It functions very similarly to `pytest.raises <https://docs.pytest.org/en/latest/assert.html#assertraises>`_.
 
 
 .. code-block:: python
