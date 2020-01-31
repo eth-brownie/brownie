@@ -6,7 +6,7 @@ Project API
 
 The ``project`` package contains methods for initializing, loading and compiling Brownie projects, and container classes to hold the data.
 
-When Brownie is loaded from within a project folder, that project is automatically loaded and the ``ContractContainer`` objects are added to the ``__main__`` namespace. Unless you are working with more than one project at the same time, there is likely no need to directly interact with the top-level ``Project`` object or any of the methods within this package.
+When Brownie is loaded from within a project folder, that project is automatically loaded and the :func:`ContractContainer <brownie.network.contract.ContractContainer>` objects are added to the ``__main__`` namespace. Unless you are working with more than one project at the same time, there is likely no need to directly interact with the top-level :func:`Project <brownie.project.main.Project>` object or any of the methods within this package.
 
 Only the ``project.main`` module contains methods that directly interact with the filesystem.
 
@@ -15,21 +15,21 @@ Only the ``project.main`` module contains methods that directly interact with th
 
 The ``main`` module contains the high-level methods and classes used to create, load, and close projects. All of these methods are available directly from ``brownie.project``.
 
-.. _api-project-project:
-
 Project
 -------
 
-The ``Project`` class is the top level container that holds all objects related to a Brownie project.
+.. py:class:: brownie.project.main.Project
+
+    Top level container that holds all objects related to a Brownie project.
 
 Project Methods
 ***************
 
 .. py:classmethod:: Project.load() -> None
 
-    Collects project source files, compiles new or updated contracts, instantiates ``ContractContainer`` objects, and populates the namespace.
+    Collects project source files, compiles new or updated contracts, instantiates :func:`ContractContainer <brownie.network.contract.ContractContainer>` objects, and populates the namespace.
 
-    Projects are typically loaded via ``brownie.project.load()``, but if you have a ``Project`` object that was previously closed you can reload it using this method.
+    Projects are typically loaded via :func:`project.load <main.load>`, but if you have a :func:`Project <brownie.project.main.Project>` object that was previously closed you can reload it using this method.
 
 .. py:classmethod:: Project.load_config() -> None
 
@@ -37,7 +37,7 @@ Project Methods
 
 .. py:classmethod:: Project.close(raises: bool = True) -> None
 
-    Removes this object and the related ``ContractContainer`` objects from the namespace.
+    Removes this object and the related :func:`ContractContainer <brownie.network.contract.ContractContainer>` objects from the namespace.
 
     .. code-block:: python
 
@@ -48,7 +48,7 @@ Project Methods
 
 .. py:classmethod:: Project.dict()
 
-    Returns a dictionary of ``ContractContainer`` objects.
+    Returns a dictionary of :func:`ContractContainer <brownie.network.contract.ContractContainer>` objects.
 
     .. code-block:: python
 
@@ -62,7 +62,9 @@ Project Methods
 TempProject
 -----------
 
-``TempProject`` is a simplified version of ``Project``, used to hold contracts that are compiled via ``main.compile_sources``. Instances of this class are not included in the list of active projects or automatically placed anywhere within the namespace.
+.. py:class:: brownie.project.main.TempProject
+
+    Simplified version of :func:`Project <brownie.project.main.Project>`, used to hold contracts that are compiled via :func:`project.compile_source <main.compile_source>`. Instances of this class are not included in the list of active projects or automatically placed anywhere within the namespace.
 
 Module Methods
 --------------
@@ -83,7 +85,7 @@ Module Methods
 
 .. py:method:: main.get_loaded_projects() -> List
 
-    Returns a list of currently loaded ``Project`` objects.
+    Returns a list of currently loaded :func:`Project <brownie.project.main.Project>` objects.
 
     .. code-block:: python
 
@@ -120,7 +122,7 @@ Module Methods
 
 .. py:method:: main.from_ethpm(uri):
 
-    Generates a ``TempProject`` from an ethPM package.
+    Generates a :func:`TempProject <brownie.project.main.TempProject>` from an ethPM package.
 
     * ``uri``: ethPM manifest URI. Format can be ERC1319 or IPFS.
 
@@ -131,7 +133,7 @@ Module Methods
     * ``project_path``: Path to the project. If ``None``, attempts to find one using ``check_for_project('.')``.
     * ``name``: Name to assign to the project. If None, the name is generated from the name of the project folder.
 
-    Returns a ``Project`` object. The same object is also available from within the ``project`` module namespce.
+    Returns a :func:`Project <brownie.project.main.Project>` object. The same object is also available from within the ``project`` module namespce.
 
     .. code-block:: python
 
@@ -145,7 +147,7 @@ Module Methods
 
 .. py:method:: main.compile_source(source, solc_version=None, optimize=True, runs=200, evm_version=None)
 
-    Compiles the given source code string and returns a ``TempProject`` object.
+    Compiles the given source code string and returns a :func:`TempProject <brownie.project.main.TempProject>` object.
 
     If Vyper source code is given, the contract name will be ``Vyper``.
 
@@ -168,19 +170,17 @@ Module Methods
         >>> container.SimpleTest
         <ContractContainer object 'SimpleTest'>
 
-.. _api-project-build:
-
 ``brownie.project.build``
 =========================
 
 The ``build`` module contains classes and methods used internally by Brownie to interact with files in a project's ``build/contracts`` folder.
 
-.. _api-project-build-build:
-
 Build
 -----
 
-The ``Build`` object is a container that stores and manipulates build data loaded from the ``build/contracts/`` files of a specific project. It is instantiated automatically when a project is opened, and available within the :ref:`api-project-project` object as ``Project._build``.
+.. py:class:: brownie.project.build.Build
+
+    Container that stores and manipulates build data loaded from the ``build/contracts/`` files of a specific project. It is instantiated automatically when a project is opened, and available within the :func:`Project <brownie.project.main.Project>` object as ``Project._build``.
 
 .. code-block:: python
 
@@ -265,7 +265,7 @@ The following methods exist outside the scope of individually loaded projects.
 
 .. py:method:: build._get_dev_revert(pc)
 
-    Given the program counter from a stack trace that caused a transaction to revert, returns the :ref:`commented dev string <dev-revert>` (if any). Used by ``TransactionReceipt``.
+    Given the program counter from a stack trace that caused a transaction to revert, returns the :ref:`commented dev string <dev-revert>` (if any). Used by :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`.
 
     .. code-block:: python
 
@@ -277,14 +277,14 @@ The following methods exist outside the scope of individually loaded projects.
 
     Given the program counter from a stack trace that caused a transaction to revert, returns the highlighted relevent source code and the name of the method that reverted.
 
-    Used by ``TransactionReceipt`` when generating a ``VirtualMachineError``.
+    Used by :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` when generating a :func:`VirtualMachineError <brownie.exceptions.VirtualMachineError>`.
 
 ``brownie.project.compiler``
 ============================
 
 The ``compiler`` module contains methods for compiling contracts, and formatting the compiled data. This module is used internally whenever a Brownie project is loaded.
 
-In most cases you will not need to call methods in this module directly. Instead you should use ``project.load`` to compile your project initially and ``project.compile_source`` for adding individual, temporary contracts. Along with compiling, these methods also add the returned data to ``project.build`` and return ``ContractContainer`` objects.
+In most cases you will not need to call methods in this module directly. Instead you should use :func:`project.load <main.load>` to compile your project initially and :func:`project.compile_source <main.compile_source>` for adding individual, temporary contracts. Along with compiling, these methods also add the returned data to :func:`Project._build <brownie.project.build.Build>` and return :func:`ContractContainer <brownie.network.contract.ContractContainer>` objects.
 
 Module Methods
 --------------
@@ -374,7 +374,7 @@ Module Methods
 ``brownie.project.ethpm``
 =========================
 
-The ``ethpm`` module contains methods for interacting with ethPM manifests and registries. See :ref:`eth-pm` for more detailed information on how to access this functionality.
+The ``ethpm`` module contains methods for interacting with ethPM manifests and registries. See the :ref:`ethpm` for more detailed information on how to access this functionality.
 
 Module Methods
 --------------
@@ -449,7 +449,7 @@ Module Methods
     * ``version``: Package version
     * ``uri``: IPFS uri
 
-    Raises ``InvalidManifest`` if the manifest is not valid.
+    Raises :func:`InvalidManifest <brownie.exceptions.InvalidManifest>` if the manifest is not valid.
 
 .. py:method:: ethpm.release_package(registry_address, account, package_name, version, uri)
 
@@ -461,7 +461,7 @@ Module Methods
     * ``version``: Package version
     * ``uri``: IPFS uri of the package
 
-    Returns the ``TransactionReceipt`` of the registry call to release the package.
+    Returns the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` of the registry call to release the package.
 
 ``brownie.project.scripts``
 ===========================
@@ -476,7 +476,7 @@ The ``scripts`` module contains methods for comparing, importing and executing p
     ``method_name``: name of method in the script to run
     ``args``: method args
     ``kwargs``: method kwargs
-    ``project``: ``Project`` object that should available for import into the script namespace
+    ``project``: :func:`Project <brownie.project.main.Project>` object that should available for import into the script namespace
 
     .. code-block:: python
 
@@ -512,13 +512,15 @@ The ``sources`` module contains classes and methods to access project source cod
 Sources
 -------
 
-The ``Sources`` object provides access to the ``contracts/`` and ``interfaces/`` files for a specific project. It is instantiated automatically when a project is loaded, and available within the :ref:`api-project-project` object as ``Project._sources``.
+.. py:class:: brownie.project.sources.Sources
 
-.. code-block:: python
+    The ``Sources`` object provides access to the ``contracts/`` and ``interfaces/`` files for a specific project. It is instantiated automatically when a project is loaded, and available within the :func:`Project <brownie.project.main.Project>` object as ``Project._sources``.
 
-    >>> from brownie.project import TokenProject
-    >>> TokenProject._sources
-    <brownie.project.sources.Sources object at 0x7fb74cb1bb70>
+    .. code-block:: python
+
+        >>> from brownie.project import TokenProject
+        >>> TokenProject._sources
+        <brownie.project.sources.Sources object at 0x7fb74cb1bb70>
 
 .. py:classmethod:: Sources.get(name)
 
@@ -591,8 +593,6 @@ The ``Sources`` object provides access to the ``contracts/`` and ``interfaces/``
 Module Methods
 --------------
 
-.. _sources-minify:
-
 .. py:method:: sources.minify(source, language="Solidity")
 
     Given contract source as a string, returns a minified version and an offset map used internally to translate minified offsets to the original ones.
@@ -617,7 +617,7 @@ Module Methods
 
 .. py:method: sources.highlighted_source(path, offset, pad=3)
 
-    Given a path, start and stop offset, returns highlighted source code. Called internally by ``TransactionReceipt.source``.
+    Given a path, start and stop offset, returns highlighted source code. Called internally by :func:`TransactionReceipt.source <TransactionReceipt.source>`.
 
 .. py:method:: sources.get_hash(source, contract_name, minified, language)
 
@@ -653,4 +653,4 @@ Module Methods
 
     Returns an `NpmSpec <https://python-semanticversion.readthedocs.io/en/latest/#npm-based-ranges>`_ object representing the first pragma statement found within a source file.
 
-    Raises ``PragmaError`` on failure. If ``path`` is not ``None``, it will be included in the error string.
+    Raises :func:`PragmaError <brownie.exceptions.PragmaError>` on failure. If ``path`` is not ``None``, it will be included in the error string.

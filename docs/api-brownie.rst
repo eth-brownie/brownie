@@ -26,15 +26,15 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
 .. py:exception:: brownie.exceptions.ContractExists
 
-    Raised when attempting to create a new ``Contract`` or ``ContractABI`` object, when one already exists for the given address.
+    Raised when attempting to create a new :func:`Contract <brownie.network.contract.Contract>` object, when one already exists for the given address.
 
 .. py:exception:: brownie.exceptions.ContractNotFound
 
-    Raised when attempting to access a ``Contract`` or ``ContractABI`` object that no longer exists because the local network was reverted.
+    Raised when attempting to access a :func:`Contract <brownie.network.contract.Contract>` object that no longer exists because the local network was reverted.
 
 .. py:exception:: brownie.exceptions.EventLookupError
 
-    Raised during lookup errors by ``EventDict`` and ``_EventItem``.
+    Raised during lookup errors by :func:`EventDict <brownie.network.event.EventDict>` and :func:`_EventItem <brownie.network.event._EventItem>`.
 
 .. py:exception:: brownie.exceptions.IncompatibleEVMVersion
 
@@ -54,7 +54,7 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
 .. py:exception:: brownie.exceptions.NamespaceCollision
 
-    Raised by ``project.sources`` when the multiple source files contain a contract with the same name.
+    Raised by :func:`Sources <brownie.project.sources.Sources>` when the multiple source files contain a contract with the same name.
 
 .. py:exception:: brownie.exceptions.PragmaError
 
@@ -62,11 +62,11 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
 .. py:exception:: brownie.exceptions.ProjectAlreadyLoaded
 
-    Raised by ``project.load_project`` if a project has already been loaded.
+    Raised by :func:`project.load <main.load>` if a project has already been loaded.
 
 .. py:exception:: brownie.exceptions.ProjectNotFound
 
-    Raised by ``project.load_project`` when a project cannot be found at the given path.
+    Raised by :func:`project.load <main.load>` when a project cannot be found at the given path.
 
 .. py:exception:: brownie.exceptions.UndeployedLibrary
 
@@ -74,7 +74,7 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
 .. py:exception:: brownie.exceptions.UnknownAccount
 
-    Raised when the ``Accounts`` container cannot locate a specified ``Account`` object.
+    Raised when the :func:`Accounts <brownie.network.account.Accounts>` container cannot locate a specified `Account <brownie.network.account.Account>` object.
 
 .. py:exception:: brownie.exceptions.UnsetENSName
 
@@ -86,7 +86,7 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
 .. py:exception:: brownie.exceptions.RPCConnectionError
 
-    Raised when the RPC process is active and ``web3`` is connected, but Brownie is unable to communicate with it.
+    Raised when the RPC process is active and `web3 <brownie.network.web3.Web3>` is connected, but Brownie is unable to communicate with it.
 
 .. py:exception:: brownie.exceptions.RPCProcessError
 
@@ -103,7 +103,7 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 ``brownie._config``
 ===================
 
-The ``_config`` module handles all Brownie configuration settings. It is not designed to be accessed directly. If you wish to view or modify config settings while Brownie is running, import ``brownie.config`` which will return a ``ConfigDict`` with the active settings:
+The ``_config`` module handles all Brownie configuration settings. It is not designed to be accessed directly. If you wish to view or modify config settings while Brownie is running, import ``brownie.config`` which will return a :func:`ConfigDict <brownie._config.ConfigDict>` with the active settings:
 
 .. code-block:: python
 
@@ -113,14 +113,12 @@ The ``_config`` module handles all Brownie configuration settings. It is not des
     >>> config['network_defaults']
     {'name': 'development', 'gas_limit': False, 'gas_price': False}
 
-.. _api-types-configdict:
-
 ConfigDict
 **********
 
 .. py:class:: brownie._config.ConfigDict
 
-    Subclass of `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__ that prevents adding new keys when locked. Used to hold config file settings.
+    Subclass of `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`_ that prevents adding new keys when locked. Used to hold config file settings.
 
     .. code-block:: python
 
@@ -134,7 +132,7 @@ ConfigDict Internal Methods
 
 .. py:classmethod:: ConfigDict._lock
 
-    Locks the ``ConfigDict``. When locked, attempts to add a new key will raise a ``KeyError``.
+    Locks the :func:`ConfigDict <brownie._config.ConfigDict>`. When locked, attempts to add a new key will raise a ``KeyError``.
 
     .. code-block:: python
 
@@ -146,7 +144,7 @@ ConfigDict Internal Methods
 
 .. py:classmethod:: ConfigDict._unlock
 
-    Unlocks the ``ConfigDict``. When unlocked, new keys can be added.
+    Unlocks the :func:`ConfigDict <brownie._config.ConfigDict>`. When unlocked, new keys can be added.
 
     .. code-block:: python
 
@@ -159,11 +157,9 @@ ConfigDict Internal Methods
 
     Returns a copy of the object as a ``dict``.
 
-.. _api-types-singleton:
-
 ``brownie._singleton``
 ======================
 
 .. py:class:: brownie._singleton._Singleton
 
-Internal metaclass used to create `singleton <https://en.wikipedia.org/wiki/Singleton_pattern>`__ objects. Instantiating a class derived from this metaclass will always return the same instance, regardless of how the child class was imported.
+Internal metaclass used to create `singleton <https://en.wikipedia.org/wiki/Singleton_pattern>`_ objects. Instantiating a class derived from this metaclass will always return the same instance, regardless of how the child class was imported.

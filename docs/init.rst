@@ -23,7 +23,7 @@ An empty :ref:`project structure<structure>` is created within the folder.
 Creating a Project from a Template
 ==================================
 
-You can initialize "`Brownie mixes <https://github.com/brownie-mix>`__", simple templates to build your project upon. For many examples within the Brownie documentation we will use the `token <https://github.com/brownie-mix/token-mix>`__ mix, which is a very basic ERC-20 implementation.
+You can initialize "`Brownie mixes <https://github.com/brownie-mix>`_", simple templates to build your project upon. For many examples within the Brownie documentation we will use the `token <https://github.com/brownie-mix/token-mix>`_ mix, which is a very basic ERC-20 implementation.
 
 Mixes are automatically created within a subfolder of their name. To initialize the ``token`` mix:
 

@@ -105,7 +105,7 @@ See :ref:`tests-coverage-map-indexes` for more information.
 Deployment Artifacts
 ====================
 
-Each time a contract is deployed to a network where :ref:`persistence<nonlocal-networks-contracts>` is enabled, Brownie saves a copy of the :ref:`compiler artifact<build-folder-compiler>`_ used for deployment. In this way accurate deployment data is maintained even if the contract's source code is later modified.
+Each time a contract is deployed to a network where :ref:`persistence<persistence>` is enabled, Brownie saves a copy of the :ref:`compiler artifact<build-folder-compiler>` used for deployment. In this way accurate deployment data is maintained even if the contract's source code is later modified.
 
 Deployment artifacts are stored at:
 
@@ -113,7 +113,7 @@ Deployment artifacts are stored at:
 
     build/deployments/[NETWORK_NAME]/[ADDRESS].json
 
-When instantiating :ref:`Contract<api-network-contract>` objects from deployment artifacts, Brownie parses the files in order of creation time. If the ``contractName`` field in an artifact gives a name that longer exists within the project, the file is deleted.
+When instantiating :func:`Contract <brownie.network.contract.Contract>` objects from deployment artifacts, Brownie parses the files in order of creation time. If the ``contractName`` field in an artifact gives a name that longer exists within the project, the file is deleted.
 
 Test Results and Coverage Data
 ==============================

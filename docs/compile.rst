@@ -76,7 +76,7 @@ By default ``evm_version`` is set to ``null``. Brownie sets the ruleset based on
 
 You can also set the EVM version manually. Valid options are ``byzantium``, ``constantinople``, ``petersburg`` and ``istanbul``. You can also use the Ethereum Classic rulesets ``atlantis`` and ``agharta``, which are converted to their Ethereum equivalents prior to being passed to the compiler.
 
-See the `Solidity <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#setting-the-evm-version-to-target>`_ and `Vyper <https://vyper.readthedocs.io/en/latest/compiling-a-contract.html#setting-the-target-evm-version>`_ documentation for more info on the different EVM versions.
+See the `Solidity EVM documentation <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#setting-the-evm-version-to-target>`_ or `Vyper EVM documentation <https://vyper.readthedocs.io/en/latest/compiling-a-contract.html#setting-the-target-evm-version>`_ for more info on the different EVM versions and how they affect compilation.
 
 Compiler Optimization
 ---------------------

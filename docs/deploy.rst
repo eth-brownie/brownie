@@ -1,66 +1,69 @@
 .. _deploy:
 
-===================
-Deploying Contracts
-===================
+=================
+Deployment Basics
+=================
 
-Brownie lets you write scripts to interact with your project. Scripting is especially useful for deploying your contracts to the main-net, or for automating processes that you perform regularly.
+Once your project is ready to be deployed to a persistent chain (such as the Etherem mainnet or a testnet), Brownie can be used to handle the deployments.
 
-Every script should begin with ``from brownie import *``. This imports the instantiated project classes into the local namespace and gives access to the Brownie :ref:`api` in exactly the same way as if you were using the console.
+It is important to remember that blockchains are `permanent` and `immutable`. Once your project has been deployed there is no going back. For this reason, we highly recommend the following process when deploying to the mainnet:
 
-To execute a script from the command line:
+    1. Create a deployment script
+    2. Test the script on your local development environment
+    3. Test the script again on one of the `public test networks <https://medium.com/compound-finance/the-beginners-guide-to-using-an-ethereum-test-network-95bbbc85fc1d>`_ and verify that it executed as intended
+    4. Use the script to deploy your project to the mainnet
+
+Once deployment is complete you may also :ref:`create an ethPM package<ethpm>` to simplify the process for other developers who wish to interact with your project.
+
+Writing a Deployment Script
+===========================
+
+Deployment scripts function in the same way as any other :ref:`Brownie script<scripts>`, but there are a couple of things to keep in mind when writing one for a non-local network:
+
+    1. Unless you are using your own node you will have to unlock a local account prior to deploying. This is handled within the script by calling :func:`Accounts.load <Accounts.load>`. If you have not yet added a local account to Brownie, read the documentation on :ref:`local account management<local-accounts>`.
+    2. Most networks require that you to pay gas to miners. If no values are specified Brownie will calculate the gas price and limit automatically, but in some cases you may wish to manually declare these values.
+
+Here is an small example script that unlocks a local account and uses it to deploy a ``Token`` contract.
+
+.. code-block:: python
+
+    from brownie import Token, accounts
+
+    def main():
+        acct = accounts.load('deployment_account')
+        Token.deploy("My Real Token", "RLT", 18, "1000 ether", {'from': acct})
+
+Running your Deployment Script
+==============================
+
+In order to execute your script on a non-local network, you must include the ``--network`` flag in the command line. For example, to connect to the ropsten network and run ``scripts/deploy.py``:
 
 ::
 
-    $ brownie run <script> [function]
+    $ brownie run deploy.py --network ropsten
 
-Or from the console, use the ``run`` method:
+Remember that transactions are not confirmed immediately on non-local networks. You will see a notification on the status of each transaction, however the script will take some time to complete.
 
-.. code-block:: python
+See the documentation on :ref:`using non-local networks<nonlocal-networks>` for more information on how to define and connect to other networks.
 
-    >>> run('token') # executes the main() function within scripts/token.py
+.. _persistence:
 
-Or the import statement:
+Interacting with Deployed Contracts
+===================================
 
-.. code-block:: python
+Brownie saves information about contract deployments on non-local networks. Once a contract has been deployed, the generated :func:`Contract <brownie.network.contract.ProjectContract>` instance will still be available the next time you load Brownie.
 
-    >>> from scripts.token import main
-    >>> main()
+The following actions will NOT remove locally stored deployment data:
 
-Scripts are stored in the ``scripts/`` folder. Each script can contain as many functions as you'd like. If no function name is given, brownie will attempt to run ``main``.
+    * Disconnecting and reconnecting to the same network
+    * Closing and reloading a project
+    * Exiting and reloading Brownie
+    * Modifying a contract's source code - Brownie still retains the source for the deployed version
 
-Here is a simple example script from the ``token`` project, used to deploy the ``Token`` contract from ``contracts/Token.sol`` using ``web3.eth.accounts[0]``.
+The following actions WILL remove locally stored deployment data:
 
-.. code-block:: python
-    :linenos:
+    * Calling :func:`ContractContainer.remove <ContractContainer.remove>` will erase deployment information for the removed :func:`Contract <brownie.network.contract.ProjectContract>` instances.
+    * Removing or renaming a contract source file within your project will cause Brownie to delete all deployment information for the removed contract.
+    * Deleting the ``build/deployments/`` directory will erase all information about deployed contracts.
 
-    from brownie import *
-
-    def main():
-        accounts[0].deploy(Token, "Test Token", "TEST", 18, "1000 ether")
-
-See the :ref:`api` documentation for available classes and methods when writing scripts.
-
-Unlinked Libraries
-==================
-
-If a contract requires a library, the most recently deployed one will be used automatically. If the required library has not been deployed yet an ``UndeployedLibrary`` exception is raised.
-
-.. code-block:: python
-
-    >>> accounts[0].deploy(MetaCoin)
-      File "brownie/network/contract.py", line 167, in __call__
-        f"Contract requires '{library}' library but it has not been deployed yet"
-    UndeployedLibrary: Contract requires 'ConvertLib' library but it has not been deployed yet
-
-    >>> accounts[0].deploy(ConvertLib)
-    Transaction sent: 0xff3f5cff35c68a73658ad367850b6fa34783b4d59026520bd61b72b6613d871c
-    ConvertLib.constructor confirmed - block: 1   gas used: 95101 (48.74%)
-    ConvertLib deployed at: 0x08c4C7F19200d5636A1665f6048105b0686DFf01
-    <ConvertLib Contract object '0x08c4C7F19200d5636A1665f6048105b0686DFf01'>
-
-    >>> accounts[0].deploy(MetaCoin)
-    Transaction sent: 0xd0969b36819337fc3bac27194c1ff0294dd65da8f57c729b5efd7d256b9ecfb3
-    MetaCoin.constructor confirmed - block: 2   gas used: 231857 (69.87%)
-    MetaCoin deployed at: 0x8954d0c17F3056A6C98c7A6056C63aBFD3e8FA6f
-    <MetaCoin Contract object '0x8954d0c17F3056A6C98c7A6056C63aBFD3e8FA6f'>
+To restore a deleted :func:`Contract <brownie.network.contract.ProjectContract>` instance, or generate one for a deployment that was handled outside of Brownie, use the :func:`ContractContainer.at <ContractContainer.at>` method.

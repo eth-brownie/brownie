@@ -1,57 +1,17 @@
 .. _quickstart:
 
-.. raw:: html
-
-    <style>
-    .green {background:#228822; color: #ffffff; padding: 2px 5px;}
-    .yellow {background:#ff9933; color: #ffffff; padding: 2px 5px;}
-    .orange {background:#ff3300; color: #ffffff; padding: 2px 5px;}
-    .red {background:#882222; color: #ffffff; padding: 2px 5px;}
-    </style>
-
-.. role:: green
-.. role:: yellow
-.. role:: orange
-.. role:: red
-
 ==========
 Quickstart
 ==========
 
-This page will walk you through the basics of using Brownie. Please review the rest of the documentation to learn more about specific functionality.
+This page provides a quick overview of how to use Brownie. It relies mostly on examples and assumes a level of familiarity with Python and smart contract dvelopment. For more in-depth content, you should read the documentation sections under "Getting Started" in the table of contents.
 
-Installing Brownie
-==================
+If you have any questions about how to use Brownie, feel free to ask on `Ethereum StackExchange <https://ethereum.stackexchange.com/>`_ or join us on `Gitter <https://gitter.im/eth-brownie/community>`_.
 
-Dependencies
-------------
+Creating a New Project
+======================
 
-Before installing Brownie, make sure you have the following dependencies:
-
-* `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__
-* `pip <https://pypi.org/project/pip/>`__
-* `python3 <https://www.python.org/downloads/release/python-368/>`__ version 3.6 or greater, python3-dev
-
-As brownie relies on `py-solc-x <https://github.com/iamdefinitelyahuman/py-solc-x>`__, you do not need solc installed locally but you must install all required `solc dependencies <https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages>`__.
-
-Installation
-------------
-
-The easiest way to install Brownie is via pip.
-
-::
-
-    $ pip install eth-brownie
-
-You can also clone the `github repository <https://github.com/iamdefinitelyahuman/brownie>`__ and use setuptools for the most up-to-date version.
-
-::
-
-    $ python3 setup.py install
-
-
-Initializing a New Project
-==========================
+    `Main article:` :ref:`init`
 
 The first step to using Brownie is to initialize a new project. To do this, create an empty folder and then type:
 
@@ -59,24 +19,36 @@ The first step to using Brownie is to initialize a new project. To do this, crea
 
     $ brownie init
 
-This will create the following :ref:`project structure<structure>` within the folder:
-
-* ``contracts/``: Contract sources
-* ``interfaces/``: Interface sources
-* ``scripts/``: Scripts for deployment and interaction
-* ``tests/``: Scripts for testing your project
-* ``brownie-config.yaml``: Configuration file for the project
-
-You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`__", simple templates to build your project upon. For the examples in this document we will use the `token <https://github.com/brownie-mix/token-mix>`__ mix, which is a very basic ERC-20 implementation:
+You can also initialize "`Brownie mixes <https://github.com/brownie-mix>`_", simple templates to build your project upon. For the examples in this document we will use the `token <https://github.com/brownie-mix/token-mix>`_ mix, which is a very basic ERC-20 implementation:
 
 ::
 
     $ brownie bake token
 
-This creates a new folder ``token/`` and deploys the project inside it.
+This will create a ``token/`` subdirectory, and download the template project within it.
+
+Exploring the Project
+=====================
+
+    `Main article:` :ref:`structure`
+
+Each Brownie project uses the following structure:
+
+    * ``contracts/``: Contract sources
+    * ``interfaces/``: Interface sources
+    * ``scripts/``: Scripts for deployment and interaction
+    * ``tests/``: Scripts for testing the project
+    * ``brownie-config.yaml``: Configuration file for the project
+
+The following directories are also created, and used internally by Brownie for managing the project. You should not edit or delete files within these folders.
+
+    * ``build/``: Project data such as compiler artifacts and unit test results
+    * ``reports/``: JSON report files for use in the GUI
 
 Compiling your Contracts
 ========================
+
+    `Main article:` :ref:`compile`
 
 To compile your project:
 
@@ -88,7 +60,7 @@ You will see the following output:
 
 ::
 
-    Brownie v1.0.0 - Python development framework for Ethereum
+    Brownie - Python development framework for Ethereum
 
     Compiling contracts...
     Optimizer: Enabled  Runs: 200
@@ -96,22 +68,18 @@ You will see the following output:
     - SafeMath.sol...
     Brownie project has been compiled at token/build/contracts
 
-Once a contract has been complied, it will only be recompiled if the source file has changed.
-
 You can change the compiler version and optimization settings by editting the :ref:`config file <config-solc>`.
 
-Interacting with your Project
-=============================
+.. note::
 
-Brownie provides two ways to interact with your project:
+    Brownie automatically compiles any new or changed source files each time it is loaded. You do not need to manually run the compiler.
 
-* The **console** is useful for quick testing and debugging as you develop
-* Via **scripts** that handle deployments and to automate common tasks
+Core Functionality
+==================
 
-The Console
------------
+The console is useful when you want to interact directly with contracts deployed on a non-local chain, or for quick testing as you develop. It's also a great starting point to familiarize yourself with Brownie's functionality.
 
-The console is an easy to use command-line environment for debugging and testing as you develop. It is almost identical the standard python interpreter. To open it:
+The console feels very similar to a regular python interpreter. From inside a project directory, load it by typing:
 
 ::
 
@@ -121,11 +89,16 @@ Brownie will compile your contracts, start the local RPC client, and give you a 
 
 .. hint::
 
-    Within the console, the builtin ``dir`` is modified to only display public methods and attributes. It is a valuable tool for exploring Brownie's functionality as you are getting started.
+    You can call the builtin ``dir`` method to see available methods and attributes for any class. Classes, methods and attributes are highlighted in different colors.
 
-    You can also call ``help`` for detailed information on most objects.
+    You can also call ``help`` on any class or method to view information on it's functionality.
 
-Access to local accounts is through ``accounts``, a list-like object that contains ``Account`` objects capable of making transactions.
+Accounts
+--------
+
+    `Main article:` :ref:`core-accounts`
+
+Access to local accounts is through :func:`accounts <brownie.network.account.Accounts>`, a list-like object that contains :func:`Account <brownie.network.account.Account>` objects capable of making transactions.
 
 Here is an example of checking a balance and transfering some ether:
 
@@ -143,9 +116,12 @@ Here is an example of checking a balance and transfering some ether:
     >>> accounts[1].balance()
     110000000000000000000
 
-Brownie creates a ``ContractContainer`` object for each contract in your project. They are list-like objects used to deploy new contracts.
+Contracts
+---------
 
-Here is an example of deploying a contract:
+    `Main article:` :ref:`core-contracts`
+
+Brownie provides a :func:`ContractContainer <brownie.network.contract.ContractContainer>` object for each deployable contract in your project. They are list-like objects used to deploy new contracts.
 
 .. code-block:: python
 
@@ -163,9 +139,9 @@ Here is an example of deploying a contract:
     >>> t
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
-When a contact is deployed you are returned a ``Contract`` object that can be used to interact with it. This object is also added to the ``ContractContainer``.
+When a contact is deployed you are returned a :func:`Contract <brownie.network.contract.ProjectContract>` object that can be used to interact with it. This object is also added to the :func:`ContractContainer <brownie.network.contract.ContractContainer>`.
 
-``Contract`` objects contain class methods for performing calls and transactions. In this example we are checking a token balance and transfering tokens:
+:func:`Contract <brownie.network.contract.ProjectContract>` objects contain class methods for performing calls and transactions. In this example we are checking a token balance and transfering tokens:
 
 .. code-block:: python
 
@@ -187,12 +163,76 @@ When a contact is deployed you are returned a ``Contract`` object that can be us
     >>> t.balanceOf(accounts[2])
     100000000000000000000
 
-See :ref:`interaction` for more information on available objects and how they function.
+Transactions
+------------
+
+    `Main article:` :ref:`core-transactions`
+
+The :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` object contains all relevant information about a transaction, as well as various methods to aid in debugging.
+
+.. code-block:: python
+
+    >>> tx = Token[0].transfer(accounts[1], "1 ether", {'from': accounts[0]})
+
+    Transaction sent: 0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753
+    Token.transfer confirmed - block: 2   gas used: 51019 (33.78%)
+
+    >>> tx
+    <Transaction object '0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753'>
+
+To examine the events that fired:
+
+.. code-block:: python
+
+    >>> tx.events()
+
+    >>> len(tx.events)
+
+    >>> 'Transfer' in tx.events
+    True
+    >>> tx.events['Transfer']
+    {
+        'from': "0x4fe357adbdb4c6c37164c54640851d6bff9296c8",
+        'to': "0xfae9bc8a468ee0d8c84ec00c8345377710e0f0bb",
+        'value': "1000000000000000000",
+    }
+
+To inspect the transaction trace:
+
+.. code-block:: python
+
+    >>> tx.call_trace()
+    Call trace for '0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753':
+    Token.transfer 0:244  (0x4A32104371b05837F2A36dF6D850FA33A92a178D)
+      ∟ Token.transfer 72:226
+      ∟ SafeMath.sub 100:114
+      ∟ SafeMath.add 149:165
+
+For information on why a transaction reverted:
+
+.. code-block:: python
+
+    >>> tx = Token[0].transfer(accounts[1], "1 ether", {'from': accounts[3]})
+
+    Transaction sent: 0x5ff198f3a52250856f24792889b5251c120a9ecfb8d224549cb97c465c04262a
+    Token.transfer confirmed (reverted) - block: 2   gas used: 23858 (19.26%)
+    <Transaction object '0x5ff198f3a52250856f24792889b5251c120a9ecfb8d224549cb97c465c04262a'>
+
+    >>> tx.traceback()
+    Traceback for '0x5ff198f3a52250856f24792889b5251c120a9ecfb8d224549cb97c465c04262a':
+    Trace step 99, program counter 1699:
+      File "contracts/Token.sol", line 67, in Token.transfer:
+        balances[msg.sender] = balances[msg.sender].sub(_value);
+    Trace step 110, program counter 1909:
+      File "contracts/SafeMath.sol", line 9, in SafeMath.sub:
+        require(b <= a);
 
 Writing Scripts
----------------
+===============
 
-You can write scripts to automate contract deployment and interaction. By placing ``from brownie import *`` at the beginning of your script, you can access objects identically to the way you would in the console.
+    `Main article:` :ref:`scripts`
+
+You can write scripts to automate contract deployment and interaction. By placing ``from brownie import *`` at the beginning of your script, you can access objects identically to how you would in the console.
 
 To execute the ``main`` function in a script, store it in the ``scripts/`` folder and type:
 
@@ -200,7 +240,7 @@ To execute the ``main`` function in a script, store it in the ``scripts/`` folde
 
     $ brownie run [script name]
 
-Within the token project, you will find an example script at `scripts/token.py <https://github.com/brownie-mix/token-mix/blob/master/scripts/token.py>`__ that is used for deployment:
+Within the token project, you will find an example script at `scripts/token.py <https://github.com/brownie-mix/token-mix/blob/master/scripts/token.py>`_ that is used for deployment:
 
 .. code-block:: python
     :linenos:
@@ -208,10 +248,12 @@ Within the token project, you will find an example script at `scripts/token.py <
     from brownie import *
 
     def main():
-        accounts[0].deploy(Token, "Test Token", "TEST", 18, "1000 ether")
+        Token.deploy("Test Token", "TEST", 18, "1000 ether", {'from': accounts[0]})
 
 Testing your Project
 ====================
+
+    `Main article:` :ref:`pytest`
 
 Brownie uses the ``pytest`` framework for contract testing.
 
@@ -221,6 +263,9 @@ Tests should be stored in the ``tests/`` folder.  To run the full suite:
 
     $ brownie test
 
+Fixtures
+--------
+
 Brownie provides ``pytest`` fixtures to allow you to interact with your project and to aid in testing. To use a fixture, add an argument with the same name to the inputs of your test function.
 
 Here is an example test function using Brownie fixtures:
@@ -229,13 +274,17 @@ Here is an example test function using Brownie fixtures:
     :linenos:
 
     def test_transfer(Token, accounts):
-        token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
+        token = Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[0]})
         assert token.totalSupply() == "1000 ether"
+
         token.transfer(accounts[1], "0.1 ether", {'from': accounts[0]})
         assert token.balanceOf(accounts[1]) == "0.1 ether"
         assert token.balanceOf(accounts[0]) == "999.9 ether"
 
-Transactions that revert raise a ``VirtualMachineError`` exception. To write assertions around this you can use ``brownie.reverts`` as a context manager, which functions very similarly to ``pytest.raises``:
+Handling Reverted Transactions
+------------------------------
+
+Transactions that revert raise a :func:`VirtualMachineError <brownie.exceptions.VirtualMachineError>` exception. To write assertions around this you can use :func:`brownie.reverts <brownie.test.plugin.RevertContextManager>` as a context manager, which functions very similarly to ``pytest.raises``:
 
 .. code-block:: python
     :linenos:
@@ -243,16 +292,19 @@ Transactions that revert raise a ``VirtualMachineError`` exception. To write ass
     import brownie
 
     def test_transferFrom_reverts(Token, accounts):
-        token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
-        with brownie.reverts():
+        Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[0]})
+        with brownie.reverts("Insufficient allowance"):
             token.transferFrom(accounts[0], accounts[3], "10 ether", {'from': accounts[1]})
 
-Test isolation is handled through the ``module_isolation`` and ``fn_isolation`` fixtures:
+Isolating Tests
+---------------
 
-* ``module_isolation`` resets the local chain before and after completion of the module, ensuring a clean environment for this module and that the results of it will not affect subsequent modules.
-* ``fn_isolation`` additionally takes a snapshot of the chain before running each test, and reverts to it when the test completes. This allows you to define a common state for each test, reducing repetitive transactions.
+Test isolation is handled through the :func:`module_isolation <fixtures.module_isolation>` and :func:`fn_isolation <fixtures.fn_isolation>` fixtures:
 
-This example uses isolation and a shared setup fixture:
+* :func:`module_isolation <fixtures.module_isolation>` resets the local chain before and after completion of the module, ensuring a clean environment for this module and that the results of it will not affect subsequent modules.
+* :func:`fn_isolation <fixtures.fn_isolation>` additionally takes a snapshot of the chain before running each test, and reverts to it when the test completes. This allows you to define a common state for each test, reducing repetitive transactions.
+
+This example uses isolation and a shared setup fixture. Because the ``token`` fixture uses a session scope, the transaction to deploy the contract is only executed once.
 
 .. code-block:: python
     :linenos:
@@ -260,112 +312,21 @@ This example uses isolation and a shared setup fixture:
     import pytest
     from brownie import accounts
 
+
     @pytest.fixture(scope="module")
     def token(Token):
-        t = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
-        yield t
+        yield Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[0]})
+
 
     def test_transferFrom(fn_isolation, token):
         token.approve(accounts[1], "6 ether", {'from': accounts[0]})
         token.transferFrom(accounts[0], accounts[2], "5 ether", {'from': accounts[1]})
+
         assert token.balanceOf(accounts[2]) == "5 ether"
         assert token.balanceOf(accounts[0]) == "995 ether"
         assert token.allowance(accounts[0], accounts[1]) == "1 ether"
 
+
     def test_balance_allowance(fn_isolation, token):
         assert token.balanceOf(accounts[0]) == "1000 ether"
         assert token.allowance(accounts[0], accounts[1]) == 0
-
-Brownie monitors which files have changed since the test suite was last executed. Tests that are properly isolated can be skipped if none of the contracts or related test files have changed. To enable this, include the ``--update`` flag.
-
-See :ref:`test` for more information on available fixtures, and other features and options related to unit testing.
-
-Analyzing Test Coverage
-=======================
-
-Test coverage is calculated by generating a map of opcodes associated with each statement and branch of the source code, and then analyzing the stack trace of each transaction to see which opcodes executed.
-
-To check test coverage:
-
-::
-
-    $ brownie test --coverage
-
-To view detailed results, first load the Brownie GUI:
-
-::
-
-    $ brownie gui
-
-Next:
-
-    * In the upper-right drop box, select a contract to view.
-    * In the drop box immediately left of the contract selection, select "coverage". Then left of that, choose to view either the "statement" or "branch" coverage report.
-
-Relevant code will be highlighted in different colors:
-
-* :green:`Green` code was executed during the tests
-* :yellow:`Yellow` branch code executed, but only evaluated truthfully
-* :orange:`Orange` branch code executed, but only evaluated falsely
-* :red:`Red` code did not execute during the tests
-
-.. image:: gui4.png
-   :alt: Viewing Coverage Data
-
-See :ref:`test-coverage` for more information.
-
-
-Scanning for Security Vulnerabilities
-=====================================
-
-To prevent vulnerabilities from being introduced to the code base, Brownie a
-includes plugin that integrates automated security scans using the
-`MythX <https://mythx.io/>`_ analysis API.
-Simply run :code:`brownie analyze` on your compiled project directory.
-This will send the compiled build artifacts to MythX for analysis. By default
-no login is required and the analysis is going to be executed as a trial user.
-To access more vulnerability information, register for free on the MythX
-website and pass your login data via environment variables or command line
-arguments.
-
-::
-
-    Brownie v1.0.0 - Python development framework for Ethereum
-
-    Usage: brownie analyze [options] [--async | --interval=<sec>]
-
-    Options:
-    --gui                     Launch the Brownie GUI after analysis
-    --full                    Perform a full scan (MythX Pro required)
-    --interval=<sec>          Result polling interval in seconds [default: 3]
-    --async                   Do not poll for results, print job IDs and exit
-    --access-token=<string>   The JWT access token from the MythX dashboard
-    --eth-address=<string>    The address of your MythX account
-    --password=<string>       The password of your MythX account
-    --help -h                 Display this message
-
-    Use the "analyze" command to submit your project to the MythX API for
-    smart contract security analysis.
-
-    To authenticate with the MythX API, it is recommended that you provide
-    the MythX JWT access token. It can be obtained on the MythX dashboard
-    site in the profile section. They should be passed through the environment
-    variable "MYTHX_ACCESS_TOKEN". If that is not possible, it can also be
-    passed explicitly with the respective command line option.
-
-    Alternatively, you have to provide a username/password combination. It
-    is recommended to pass them through the environment variables as
-    "MYTHX_ETH_ADDRESS" and "MYTHX_PASSWORD".
-
-    You can also choose to not authenticate and submit your analyses as a free
-    trial user. No registration required! To see your past analyses, get access
-    to deeper vulnerability detection, and a neat dashboard, register at
-    https://mythx.io/. Any questions? Hit up dominik.muhs@consensys.net or contact
-    us on the website!
-
-Once the analysis is done, the vulnerabilities are stored in the
-:code:`reports/` directory. With :code:`brownie analyze --gui` the GUI can be
-started automatically once the analysis has finished.
-
-.. image:: gui5.png
-   :alt: Security Report GUI

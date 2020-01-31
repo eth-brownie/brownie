@@ -6,16 +6,16 @@ Structure of a Project
 
 Every Brownie project includes the following folders:
 
-* ``contracts/``: Contract sources
-* ``interfaces/``: Interface sources
-* ``scripts/``: Scripts for deployment and interaction
-* ``tests/``: Scripts for testing the project
-* ``brownie-config.yaml``: Configuration file for the project
+    * ``contracts/``: Contract sources
+    * ``interfaces/``: Interface sources
+    * ``scripts/``: Scripts for deployment and interaction
+    * ``tests/``: Scripts for testing the project
+    * ``brownie-config.yaml``: Configuration file for the project
 
 The following folders are also created, and used internally by Brownie for managing the project. You should not edit or delete files within these folders.
 
-* ``build/``: Project data such as compiler artifacts and unit test results
-* ``reports/``: JSON report files for use in the GUI
+    * ``build/``: Project data such as compiler artifacts and unit test results
+    * ``reports/``: JSON report files for use in the GUI
 
 See :ref:`build-folder` for more information about Brownie internal project folders.
 
@@ -38,14 +38,14 @@ Interfaces may be written in `Solidity <https://solidity.readthedocs.io/en/lates
 
 The ``scripts`` folder holds Python scripts used for deploying contracts, or to automate common tasks and interactions. These scripts are executed via the ``brownie run`` command.
 
-See the :ref:`deploy` section for more information on Brownie scripts.
+See the :ref:`Brownie Scripts<scripts>` documentation for more information on Brownie scripts.
 
 ``tests/``
 ==========
 
 The ``tests`` folder holds Python scripts used for testing a project. Brownie uses the `pytest <https://docs.pytest.org/en/latest/>`_ framework for unit testing.
 
-See :ref:`test` for more information on testing a project.
+See :ref:`Brownie Pytest<pytest>` documentation for more information on testing a project.
 
 ``brownie-config.yaml``
 =======================

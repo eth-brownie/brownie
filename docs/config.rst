@@ -48,7 +48,7 @@ The following settings are available:
 
         .. py:attribute:: network.networks.test_rpc
 
-            An optional dictionary outlining settings for how the local RPC client is loaded. If not included, Brownie will not attempt to launch or attach to the process. See :ref:`test-rpc` for more details. ``test-rpc`` properties include:
+            An optional dictionary outlining settings for how the local RPC client is loaded. If not included, Brownie will not attempt to launch or attach to the process. ``test-rpc`` properties include:
 
             * ``cmd``: The command-line argument used to load the client. You can add any extra flags here as needed.
             * ``port``: Port the client should listen on.
@@ -77,7 +77,7 @@ The following settings are available:
 
 .. py:attribute:: pytest
 
-    Properties that only affect Brownie's configuration when running tests. See :ref:`test configuration settings<test_settings>` for more information.
+    Properties that only affect Brownie's configuration when running tests.
 
     * ``gas_limit``: Replaces the default network gas limit.
     * ``default_contract_owner``: If ``false``, deployed contracts will not remember the account that they were created by and you will have to supply a ``from`` kwarg for every contract transaction.

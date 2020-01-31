@@ -16,9 +16,9 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
     Connects to the network.  Network settings are retrieved from ``brownie-config.yaml``
 
     * ``network``: The network to connect to. If ``None``, connects to the default network as specified in the config file.
-    * ``launch_rpc``: If ``True`` and the configuration for this network includes ``test_rpc`` settings, attempts to launch or attach to a local RPC client. See :ref:`test-rpc` for detailed information on the sequence of events in this process.
+    * ``launch_rpc``: If ``True`` and the configuration for this network includes ``test_rpc`` settings, attempts to launch or attach to a local RPC client.
 
-    Calling this method is favored over calling ``web3.connect`` and ``rpc.launch`` or ``rpc.attach`` individually.
+    Calling this method is favored over calling :func:`web3.connect <Web3.connect>` and :func:`rpc.launch <Rpc.launch>` or :func:`rpc.attach <Rpc.attach>` individually.
 
     .. code-block:: python
 
@@ -29,7 +29,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
 
     Disconnects from the network.
 
-    The ``Web3`` provider is cleared, the active network is set to ``None`` and the local RPC client is terminated if it was launched as a child process.
+    The :func:`Web3 <brownie.network.web3.Web3>` provider is cleared, the active network is set to ``None`` and the local RPC client is terminated if it was launched as a child process.
 
     .. code-block:: python
 
@@ -38,7 +38,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
 
 .. py:method:: main.is_connected() -> bool
 
-    Returns ``True`` if the ``Web3`` object is connected to the network.
+    Returns ``True`` if the :func:`Web3 <brownie.network.web3.Web3>` object is connected to the network.
 
     .. code-block:: python
 
@@ -100,18 +100,16 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
 ``brownie.network.account``
 ===========================
 
-The ``account`` module holds classes for interacting with Ethereum accounts for which you control the private key.
+The :func:`Account <brownie.network.account.Account>` module holds classes for interacting with Ethereum accounts for which you control the private key.
 
-Classes in this module are not meant to be instantiated directly. The ``Accounts`` container is available as ``accounts`` (or just ``a``) and will create each ``Account`` automatically during initialization. Add more accounts using ``Accounts.add``.
-
-.. _api-network-accounts:
+Classes in this module are not meant to be instantiated directly. The :func:`Accounts <brownie.network.account.Accounts>` container is available as :func:`Account <brownie.network.account.Accounts>` (or just ``a``) and will create each :func:`Account <brownie.network.account.Account>` automatically during initialization. Add more accounts using :func:`Accounts.add <Accounts.add>`.
 
 Accounts
 --------
 
 .. py:class:: brownie.network.account.Accounts
 
-    List-like :ref:`Singleton<api-types-singleton>` container that holds all of the available accounts as ``Account`` or ``LocalAccount`` objects. When printed it will display as a list.
+    List-like :func:`Singleton <brownie._singleton._Singleton>` container that holds all of the available accounts as :func:`Account <brownie.network.account.Account>` or :func:`LocalAccount <brownie.network.account.LocalAccount>` objects. When printed it will display as a list.
 
     .. code-block:: python
 
@@ -126,7 +124,7 @@ Accounts Methods
 
 .. py:classmethod:: Accounts.add(priv_key=None)
 
-    Creates a new ``LocalAccount`` with private key ``priv_key``, appends it to the container, and returns the new account instance.  If no private key is entered, one is randomly generated via ``os.urandom(8192)``.
+    Creates a new :func:`LocalAccount <brownie.network.account.LocalAccount>` with private key ``priv_key``, appends it to the container, and returns the new account instance.  If no private key is entered, one is randomly generated via ``os.urandom(8192)``.
 
     .. code-block:: python
 
@@ -137,7 +135,7 @@ Accounts Methods
 
 .. py:classmethod:: Accounts.at(address)
 
-    Given an address as a string, returns the corresponding ``Account`` or ``LocalAccount`` from the container.
+    Given an address as a string, returns the corresponding :func:`Account <brownie.network.account.Account>` or :func:`LocalAccount <brownie.network.account.LocalAccount>` from the container.
 
     .. code-block:: python
 
@@ -152,11 +150,9 @@ Accounts Methods
 
         >>> accounts.clear()
 
-.. _api-network-accounts-load:
-
 .. py:classmethod:: Accounts.load(filename=None)
 
-    Decrypts a `keystore <https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition>`__ file and returns a ``LocalAccount`` object.
+    Decrypts a `keystore <https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition>`_ file and returns a :func:`LocalAccount <brownie.network.account.LocalAccount>` object.
 
     Brownie will first attempt to find the keystore file as a path relative to the loaded project. If not found, it will look in the ``brownie/data/accounts`` folder within the Brownie package.
 
@@ -172,7 +168,7 @@ Accounts Methods
 
 .. py:classmethod:: Accounts.remove(address)
 
-    Removes an address from the container. The address may be given as a string or an ``Account`` instance.
+    Removes an address from the container. The address may be given as a string or an :func:`Account <brownie.network.account.Account>` instance.
 
     .. code-block:: python
 
@@ -183,20 +179,18 @@ Accounts Internal Methods
 
 .. py:classmethod:: Accounts._reset()
 
-    Called by :ref:`rpc._notify_registry <api-network-rpc-notify-registry>` when the local chain has been reset. All ``Account`` objects are recreated.
+    Called by :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>` when the local chain has been reset. All :func:`Account <brownie.network.account.Account>` objects are recreated.
 
 .. py:classmethod:: Accounts._revert(height)
 
-    Called by :ref:`rpc._notify_registry <api-network-rpc-notify-registry>` when the local chain has been reverted to a block height greater than zero. Adjusts ``Account`` object nonce values.
-
-.. _api-network-account:
+    Called by :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>` when the local chain has been reverted to a block height greater than zero. Adjusts :func:`Account <brownie.network.account.Account>` object nonce values.
 
 Account
 -------
 
 .. py:class:: brownie.network.account.Account
 
-    An ethereum address that you control the private key for, and so can send transactions from. Generated automatically from ``web3.eth.accounts`` and stored in the ``Accounts`` container.
+    An ethereum address that you control the private key for, and so can send transactions from. Generated automatically from ``web3.eth.accounts`` and stored in the :func:`Accounts <brownie.network.account.Accounts>` container.
 
     .. code-block:: python
 
@@ -231,7 +225,7 @@ Account Methods
 
 .. py:classmethod:: Account.balance()
 
-    Returns the current balance at the address, in :ref:`wei<wei>`.
+    Returns the current balance at the address, in :func:`Wei <brownie.convert.datatypes.Wei>`.
 
     .. code-block:: python
 
@@ -244,13 +238,13 @@ Account Methods
 
     Deploys a contract.
 
-    * ``contract``: A ``ContractContainer`` instance of the contract to be deployed.
+    * ``contract``: A :func:`ContractContainer <brownie.network.contract.ContractContainer>` instance of the contract to be deployed.
     * ``*args``: Contract constructor arguments.
-    * ``amount``: Amount of ether to send with the transaction. The given value is converted to :ref:`wei <wei>`.
-    * ``gas_limit``: Gas limit for the transaction. The given value is converted to :ref:`wei <wei>`. If none is given, the price is set using ``eth_estimateGas``.
-    * ``gas_price``: Gas price for the transaction. The given value is converted to :ref:`wei <wei>`. If none is given, the price is set using ``eth_gasPrice``.
+    * ``amount``: Amount of ether to send with the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`.
+    * ``gas_limit``: Gas limit for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using ``eth_estimateGas``.
+    * ``gas_price``: Gas price for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using ``eth_gasPrice``.
 
-    Returns a ``Contract`` instance upon success. If the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
+    Returns a :func:`Contract <brownie.network.contract.Contract>` instance upon success. If the transaction reverts or you do not wait for a confirmation, a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is returned instead.
 
     .. code-block:: python
 
@@ -272,12 +266,12 @@ Account Methods
 
 .. py:classmethod:: Account.estimate_gas(to, amount, data="")
 
-    Estimates the gas required to perform a transaction. Raises a ``VirtualMachineError`` if the transaction would revert.
+    Estimates the gas required to perform a transaction. Raises a func:`VirtualMachineError <brownie.exceptions.VirtualMachineError>` if the transaction would revert.
 
     The returned value is given as an ``int`` denominated in wei.
 
-    * ``to``: Recipient address. Can be an ``Account`` instance or string.
-    * ``amount``: Amount of ether to send. The given value is converted to :ref:`wei <wei>`.
+    * ``to``: Recipient address. Can be an :func:`Account <brownie.network.account.Account>` instance or string.
+    * ``amount``: Amount of ether to send. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`.
     * ``data``: Transaction data hexstring.
 
     .. code-block:: python
@@ -289,13 +283,13 @@ Account Methods
 
     Broadcasts a transaction from this account.
 
-    * ``to``: Recipient address. Can be an ``Account`` instance or string.
-    * ``amount``: Amount of ether to send. The given value is converted to :ref:`wei <wei>`.
-    * ``gas_limit``: Gas limit for the transaction. The given value is converted to :ref:`wei <wei>`. If none is given, the price is set using ``eth_estimateGas``.
-    * ``gas_price``: Gas price for the transaction. The given value is converted to :ref:`wei <wei>`. If none is given, the price is set using ``eth_gasPrice``.
+    * ``to``: Recipient address. Can be an :func:`Account <brownie.network.account.Account>` instance or string.
+    * ``amount``: Amount of ether to send. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`.
+    * ``gas_limit``: Gas limit for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using ``eth_estimateGas``.
+    * ``gas_price``: Gas price for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using ``eth_gasPrice``.
     * ``data``: Transaction data hexstring.
 
-    Returns a ``TransactionReceipt`` instance.
+    Returns a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` instance.
 
     .. code-block:: python
 
@@ -310,9 +304,9 @@ LocalAccount
 
 .. py:class:: brownie.network.account.LocalAccount
 
-    Functionally identical to ``Account``. The only difference is that a ``LocalAccount`` is one where the private key was directly inputted, and so is not found in ``web3.eth.accounts``.
+    Functionally identical to :func:`Account <brownie.network.account.Account>`. The only difference is that a ``LocalAccount`` is one where the private key was directly inputted, and so is not found in ``web3.eth.accounts``.
 
-    .. note:: Resetting the RPC client will delete all ``LocalAccount`` objects from the ``Accounts`` container.
+    .. note:: Resetting the RPC client will delete all ``LocalAccount`` objects from the :func:`Account <brownie.network.account.Accounts>` container.
 
     .. code-block:: python
 
@@ -345,11 +339,9 @@ LocalAccount Attributes
 LocalAccount Methods
 ********************
 
-.. _api-network-accounts-save:
-
 .. py:classmethod:: LocalAccount.save(filename, overwrite=False)
 
-    Saves the account's private key in an encrypto `keystore <https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition>`__ file.
+    Saves the account's private key in an encrypto `keystore <https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition>`_ file.
 
     If the filename does not include a folder, the keystore is saved in the ``brownie/data/accounts`` folder within the Brownie package.
 
@@ -387,7 +379,7 @@ PublicKeyAccount
 
 .. py:classmethod:: PublicKeyAccount.balance()
 
-    Returns the current balance at the address, in :ref:`wei<wei>`.
+    Returns the current balance at the address, in :func:`Wei <brownie.convert.datatypes.Wei>`.
 
     .. code-block:: python
 
@@ -500,7 +492,7 @@ Module Methods
 
 .. py:method:: alert.new(fn, args=[], kwargs={}, delay=0.5, msg=None, callback=None, repeat=False)
 
-    Alias for creating a new ``Alert`` instance.
+    Alias for creating a new :func:`Alert <brownie.network.alert.Alert>` instance.
 
     .. code-block:: python
 
@@ -534,24 +526,22 @@ Module Methods
 
 The ``contract`` module contains classes for deploying and interacting with smart contracts.
 
-When a project is loaded, Brownie automatically creates ``ContractContainer`` instances from on the files in the ``contracts/`` folder. New ``ProjectContract`` instances are created via methods in the container.
+When a project is loaded, Brownie automatically creates :func:`ContractContainer <brownie.network.contract.ContractContainer>` instances from on the files in the ``contracts/`` folder. New :func:`ProjectContract <brownie.network.contract.ProjectContract>` instances are created via methods in the container.
 
-If you wish to interact with a contract outside of a project where only the ABI is available, use the ``Contract`` class.
+If you wish to interact with a contract outside of a project where only the ABI is available, use the :func:`Contract <brownie.network.contract.Contract>` class.
 
-Arguments supplied to calls or transaction methods are converted using the methods outlined in the :ref:`convert<api-brownie-convert>` module.
+Arguments supplied to calls or transaction methods are converted using the methods outlined in the :ref:`convert<api-convert>` module.
 
 .. note::
 
-    On networks where persistence is enabled, ``ProjectContract`` instances will remain between sessions. Use ``ContractContainer.remove`` to delete these objects when they are no longer needed. See :ref:`nonlocal-networks-interacting` for more information.
-
-.. _api-network-contractcontainer:
+    On networks where persistence is enabled, :func:`ProjectContract <brownie.network.contract.ProjectContract>` instances will remain between sessions. Use :func:`ContractContainer.remove <ContractContainer.remove>` to delete these objects when they are no longer needed. See the documentation on :ref:`persistence<persistence>` for more information.
 
 ContractContainer
 -----------------
 
 .. py:class:: brownie.network.contract.ContractContainer
 
-    A list-like container class that holds all ``ProjectContract`` instances of the same type, and is used to deploy new instances of that contract.
+    A list-like container class that holds all :func:`ProjectContract <brownie.network.contract.ProjectContract>` instances of the same type, and is used to deploy new instances of that contract.
 
     .. code-block:: python
 
@@ -581,7 +571,7 @@ ContractContainer Attributes
 
     A dictionary of bytes4 signatures for each contract method.
 
-    If you have a signature and need to find the method name, use ``ContractContainer.get_method``.
+    If you have a signature and need to find the method name, use :func:`ContractContainer.get_method <ContractContainer.get_method>`.
 
     .. code-block:: python
 
@@ -627,13 +617,13 @@ ContractContainer Methods
 
     * ``*args``: Contract constructor arguments.
 
-    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
+    You can optionally include a dictionary of :ref:`transaction parameters<transaction-parameters>` as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
-    If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an ``UndeployedLibrary`` exception is raised.
+    If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an `UndeployedLibrary <brownie.exceptions.UndeployedLibrary>` exception is raised.
 
-    Returns a ``ProjectContract`` object upon success.
+    Returns a :func:`ProjectContract <brownie.network.contract.ProjectContract>` object upon success.
 
-    In the console if the transaction reverts or you do not wait for a confirmation, a ``TransactionReceipt`` is returned instead.
+    In the console if the transaction reverts or you do not wait for a confirmation, a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is returned instead.
 
     .. code-block:: python
 
@@ -657,10 +647,14 @@ ContractContainer Methods
 
 .. py:classmethod:: ContractContainer.at(address, owner=None)
 
-    Returns a ``ProjectContract`` instance.
+    Returns a :func:`ProjectContract <brownie.network.contract.ProjectContract>` instance.
 
-    * ``address``: Address where the contract is deployed. Raises a ValueError if there is no bytecode at the address.
-    * ``owner``: ``Account`` instance to set as the contract owner. If transactions to the contract do not specify a ``'from'`` value, they will be sent from this account.
+    * ``address``: Address where the contract is deployed. Raises a ``ValueError`` if there is no bytecode at the address.
+    * ``owner``: :func:`Account <brownie.network.account.Account>` instance to set as the contract owner. If transactions to the contract do not specify a ``'from'`` value, they will be sent from this account.
+
+    .. note::
+
+        This method checks for the existence of bytecode at the given address, but does not check if the bytecode matches that of the :func:`ContractContainer <brownie.network.contract.ContractContainer>`.
 
     .. code-block:: python
 
@@ -710,21 +704,19 @@ ContractContainer Internal Methods
 
 .. py:classmethod:: ContractContainer._reset()
 
-    Called by :ref:`rpc._notify_registry <api-network-rpc-notify-registry>` when the local chain has been reset. All ``Contract`` objects are removed from the container and marked as :ref:`reverted <api-contract-reverted>`.
+    Called by :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>` when the local chain has been reset. All :func:`Contract <brownie.network.contract.Contract>` objects are removed from the container and marked as :func:`reverted <Contract._reverted>`.
 
 .. py:classmethod:: ContractContainer._revert(height)
 
-    Called by :ref:`rpc._notify_registry <api-network-rpc-notify-registry>` when the local chain has been reverted to a block height greater than zero. Any ``Contract`` objects that no longer exist are removed from the container and marked as :ref:`reverted <api-contract-reverted>`.
-
-.. _api-network-contract:
+    Called by :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>` when the local chain has been reverted to a block height greater than zero. Any :func:`Contract <brownie.network.contract.Contract>` objects that no longer exist are removed from the container and marked as :func:`reverted <Contract._reverted>`.
 
 Contract and ProjectContract
 ----------------------------
 
-``Contract`` and ``ProjectContract`` are both used to call or send transactions to smart contracts.
+:func:`Contract <brownie.network.contract.Contract>` and :func:`ProjectContract <brownie.network.contract.ProjectContract>` are both used to call or send transactions to smart contracts.
 
-* ``Contract`` objects are instantiated directly and only require an ABI. They are used for calls to existing contracts that exist outside of a project.
-* ``ProjectContract`` objects are created by calls to ``ContractContainer.deploy``. Because they are compiled and deployed directly by Brownie, they provide much greater debugging capability.
+* :func:`Contract <brownie.network.contract.Contract>` objects are instantiated directly and only require an ABI. They are used for calls to existing contracts that exist outside of a project.
+* :func:`ProjectContract <brownie.network.contract.ProjectContract>` objects are created by calls to :func:`ContractContainer.deploy <ContractContainer.deploy>`. Because they are compiled and deployed directly by Brownie, they provide much greater debugging capability.
 
 These classes have identical APIs.
 
@@ -736,7 +728,7 @@ These classes have identical APIs.
     * ``address``: Address of the contract. Required unless a ``manifest_uri`` is given.
     * ``abi``: ABI of the contract. Required unless a ``manifest_uri`` is given.
     * ``manifest_uri``: EthPM registry manifest uri. If given, the ABI (and optionally the contract address) are retrieved from here.
-    * ``owner``: An optional ``Account`` instance. If given, transactions to the contract are sent broadcasted from this account by default.
+    * ``owner``: An optional :func:`Account <brownie.network.account.Account>` instance. If given, transactions to the contract are sent broadcasted from this account by default.
 
     .. code-block:: python
 
@@ -769,7 +761,7 @@ Contract Attributes
 
 .. py:attribute:: Contract.tx
 
-    The ``TransactionReceipt`` of the transaction that deployed the contract. If the contract was not deployed during this instance of brownie, it will be ``None``.
+    The :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` of the transaction that deployed the contract. If the contract was not deployed during this instance of brownie, it will be ``None``.
 
     .. code-block:: python
 
@@ -781,7 +773,7 @@ Contract Methods
 
 .. py:classmethod:: Contract.balance()
 
-    Returns the current balance at the contract address, in :ref:`wei<wei>`.
+    Returns the current balance at the contract address, in :func:`Wei <brownie.convert.datatypes.Wei>`.
 
     .. code-block:: python
 
@@ -791,13 +783,9 @@ Contract Methods
 Contract Internal Attributes
 ****************************
 
-.. _api-contract-reverted:
-
 .. py:attribute:: Contract._reverted
 
-    Boolean. Once set to to ``True``, any attempt to interact with the object raises a ``ContractNotFound`` exception. Set as a result of a call to :ref:`rpc._notify_registry <api-network-rpc-notify-registry>`.
-
-.. _api-contract-call:
+    Boolean. Once set to to ``True``, any attempt to interact with the object raises a :func:`ContractNotFound <brownie.exceptions.ContractNotFound>` exception. Set as a result of a call to :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>`.
 
 ContractCall
 ------------
@@ -808,7 +796,7 @@ ContractCall
 
     The expected inputs are shown in the method's ``__repr__`` value.
 
-    Inputs and return values are formatted via methods in the :ref:`convert<api-brownie-convert>` module. Multiple values are returned inside a :ref:`ReturnValue<return_value>`.
+    Inputs and return values are formatted via methods in the :ref:`convert<api-convert>` module. Multiple values are returned inside a :func:`ReturnValue <brownie.convert.datatypes.ReturnValue>`.
 
     .. code-block:: python
 
@@ -851,7 +839,7 @@ ContractCall Methods
 
 .. py:classmethod:: ContractCall.transact(*args)
 
-    Sends a transaction to the method and returns a ``TransactionReceipt``.
+    Sends a transaction to the method and returns a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`.
 
     .. code-block:: python
 
@@ -863,20 +851,18 @@ ContractCall Methods
         >>> tx.return_value
         0
 
-.. _api-contract-tx:
-
 ContractTx
 ----------
 
 .. py:class:: brownie.network.contract.ContractTx(*args)
 
-    Broadcasts a transaction to a potentially state-changing contract method. Returns a ``TransactionReceipt``.
+    Broadcasts a transaction to a potentially state-changing contract method. Returns a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`.
 
     The given ``args`` must match the required inputs for the method. The expected inputs are shown in the method's ``__repr__`` value.
 
-    Inputs are formatted via methods in the :ref:`convert<api-brownie-convert>` module.
+    Inputs are formatted via methods in the :ref:`convert<api-convert>` module.
 
-    You can optionally include a dictionary of `transaction parameters <https://web3py.readthedocs.io/en/stable/web3.eth.html#web3.eth.Eth.sendTransaction>`__ as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
+    You can optionally include a dictionary of :ref:`transaction parameters<transaction-parameters>` as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
     .. code-block:: python
 
@@ -924,7 +910,7 @@ ContractTx Methods
 
     Calls the contract method without broadcasting a transaction, and returns the result.
 
-    Inputs and return values are formatted via methods in the :ref:`convert<api-brownie-convert>` module. Multiple values are returned inside a :ref:`ReturnValue<return_value>`.
+    Inputs and return values are formatted via methods in the :ref:`convert<api-convert>` module. Multiple values are returned inside a :func:`ReturnValue <brownie.convert.datatypes.ReturnValue>`.
 
     .. code-block:: python
 
@@ -961,7 +947,7 @@ OverloadedMethod
 
 .. py:class:: brownie.network.contract.OverloadedMethod(address, name, owner)
 
-    When a contract uses `overloaded function names <https://solidity.readthedocs.io/en/latest/contracts.html#function-overloading>`_, the ``ContractTx`` or ``ContractCall`` objects are stored inside a dict-like ``OverloadedMethod`` container.
+    When a contract uses `overloaded function names <https://solidity.readthedocs.io/en/latest/contracts.html#function-overloading>`_, the :func:`ContractTx <brownie.network.contract.ContractTx>` or :func:`ContractCall <brownie.network.contract.ContractCall>` objects are stored inside a dict-like ``OverloadedMethod`` container.
 
     .. code-block:: python
 
@@ -984,23 +970,21 @@ OverloadedMethod
 ``brownie.network.event``
 =========================
 
-The ``event`` module contains classes and methods related to decoding transaction event logs. It is largely a wrapper around `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`__.
+The ``event`` module contains classes and methods related to decoding transaction event logs. It is largely a wrapper around `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`_.
 
 Brownie stores encrypted event topics in ``brownie/data/topics.json``. The JSON file is loaded when this module is imported.
-
-.. _api-network-eventdict:
 
 EventDict
 ---------
 
-.. py:class:: brownie.types.types.EventDict
+.. py:class:: brownie.network.event.EventDict
 
-    Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`__. Base class, used to hold all events that are fired in a transaction.
+    Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`_ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`_. Base class, used to hold all events that are fired in a transaction.
 
     When accessing events inside the object:
 
-    * If the key is given as an integer, events are handled as a list in the order that they fired. An ``_EventItem`` is returned for the specific event that fired at the given position.
-    * If the key is given as a string, a ``_EventItem`` is returned that contains all the events with the given name.
+    * If the key is given as an integer, events are handled as a list in the order that they fired. An :func:`_EventItem <brownie.network.event._EventItem>` is returned for the specific event that fired at the given position.
+    * If the key is given as a string, an :func:`_EventItem <brownie.network.event._EventItem>` is returned that contains all the events with the given name.
 
     .. code-block:: python
 
@@ -1073,18 +1057,18 @@ Internal Classes and Methods
 _EventItem
 **********
 
-.. py:class:: brownie.types.types._EventItem
+.. py:class:: brownie.network.event._EventItem
 
-    Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`__ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`__. Represents one or more events with the same name that were fired in a transaction.
+    Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`_ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`_. Represents one or more events with the same name that were fired in a transaction.
 
-    Instances of this class are created by ``EventDict``, it is not intended to be instantiated directly.
+    Instances of this class are created by :func:`EventDict <brownie.network.event.EventDict>`, it is not intended to be instantiated directly.
 
     When accessing events inside the object:
 
-    * If the key is given as an integer, events are handled as a list in the order that they fired. An ``_EventItem`` is returned for the specific event that fired at the given position.
-    * If the key is given as a string, ``_EventItem`` assumes that you wish to access the first event contained within the object. ``event['value']`` is equivalent to ``event[0]['value']``.
+    * If the key is given as an integer, events are handled as a list in the order that they fired. An :func:`_EventItem <brownie.network.event._EventItem>` is returned for the specific event that fired at the given position.
+    * If the key is given as a string, :func:`_EventItem <brownie.network.event._EventItem>` assumes that you wish to access the first event contained within the object. ``event['value']`` is equivalent to ``event[0]['value']``.
 
-    All values within the object are formatted by methods outlined in the :ref:`convert<api-brownie-convert>` module.
+    All values within the object are formatted by methods outlined in the :ref:`convert<api-convert>` module.
 
     .. code-block:: python
 
@@ -1168,7 +1152,7 @@ Internal Methods
 
 .. py:method:: brownie.network.event._decode_logs(logs)
 
-    Given an array of logs as returned by ``eth_getLogs`` or ``eth_getTransactionReceipt`` RPC calls, returns an :ref:`api-network-eventdict`.
+    Given an array of logs as returned by ``eth_getLogs`` or ``eth_getTransactionReceipt`` RPC calls, returns an :func:`EventDict <brownie.network.event.EventDict>`.
 
     .. code-block:: python
 
@@ -1192,7 +1176,7 @@ Internal Methods
 
 .. py:method:: brownie.network.event._decode_trace(trace)
 
-    Given the ``structLog`` from a ``debug_traceTransaction`` RPC call, returns an :ref:`api-network-eventdict`.
+    Given the ``structLog`` from a ``debug_traceTransaction`` RPC call, returns an :func:`EventDict <brownie.network.event.EventDict>`.
 
     .. code-block:: python
 
@@ -1208,8 +1192,6 @@ Internal Methods
         >>> e
         {}
 
-.. _api-network-history:
-
 ``brownie.network.state``
 =========================
 
@@ -1220,7 +1202,7 @@ TxHistory
 
 .. py:class:: brownie.network.state.TxHistory
 
-    List-like :ref:`Singleton<api-types-singleton>` container that contains :ref:`api-network-tx` objects. Whenever a transaction is broadcast, the ``TransactionReceipt`` is automatically added.
+    List-like :func:`Singleton <brownie._singleton._Singleton>` container that contains :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` objects. Whenever a transaction is broadcast, the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is automatically added.
 
     .. code-block:: python
 
@@ -1234,8 +1216,6 @@ TxHistory
 
 TxHistory Attributes
 ********************
-
-.. _api-network-history-gas-profile:
 
 .. py:attribute:: TxHistory.gas_profile
 
@@ -1278,7 +1258,7 @@ TxHistory Methods
 
 .. py:classmethod:: TxHistory.from_sender(account)
 
-    Returns a list of transactions where the sender is ``account``.
+    Returns a list of transactions where the sender is :func:`Account <brownie.network.account.Account>`.
 
     .. code-block:: python
 
@@ -1287,7 +1267,7 @@ TxHistory Methods
 
 .. py:classmethod:: TxHistory.to_receiver(account)
 
-    Returns a list of transactions where the receiver is ``account``.
+    Returns a list of transactions where the receiver is :func:`Account <brownie.network.account.Account>`.
 
     .. code-block:: python
 
@@ -1296,7 +1276,7 @@ TxHistory Methods
 
 .. py:classmethod:: TxHistory.of_address(account)
 
-    Returns a list of transactions where ``account`` is the sender or receiver.
+    Returns a list of transactions where :func:`Account <brownie.network.account.Account>` is the sender or receiver.
 
     .. code-block:: python
 
@@ -1308,31 +1288,31 @@ TxHistory Internal Methods
 
 .. py:classmethod:: TxHistory._reset()
 
-    Called by :ref:`rpc._notify_registry <api-network-rpc-notify-registry>` when the local chain has been reset. All ``TransactionReceipt`` objects are removed from the container.
+    Called by :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>` when the local chain has been reset. All :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` objects are removed from the container.
 
 .. py:classmethod:: TxHistory._revert(height)
 
-    Called by :ref:`rpc._notify_registry <api-network-rpc-notify-registry>` when the local chain has been reverted to a block height greater than zero. Any ``TransactionReceipt`` objects that no longer exist are removed from the container.
+    Called by :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>` when the local chain has been reverted to a block height greater than zero. Any :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` objects that no longer exist are removed from the container.
 
 
 Internal Methods
 ----------------
 
-The internal methods in the ``state`` module are primarily used for tracking and adjusting ``Contract`` instances whenever the local RPC network is reverted or reset.
+The internal methods in the ``state`` module are primarily used for tracking and adjusting :func:`Contract <brownie.network.contract.Contract>` instances whenever the local RPC network is reverted or reset.
 
 .. py:method:: brownie.network.state._add_contract(contract)
 
-    Adds a ``Contract`` or ``ProjectContract`` object to the global contract record.
+    Adds a :func:`Contract <brownie.network.contract.Contract>` or :func:`ProjectContract <brownie.network.contract.ProjectContract>` object to the global contract record.
 
 .. py:method:: brownie.network.state._find_contract(address)
 
-    Given an address, returns the related ``Contract`` or ``ProjectContract`` object. If none exists, returns ``None``.
+    Given an address, returns the related :func:`Contract <brownie.network.contract.Contract>` or :func:`ProjectContract <brownie.network.contract.ProjectContract>` object. If none exists, returns ``None``.
 
-    This method is used internally by Brownie to locate a ``ProjectContract`` when the project it belongs to is unknown.
+    This method is used internally by Brownie to locate a :func:`ProjectContract <brownie.network.contract.ProjectContract>` when the project it belongs to is unknown.
 
 .. py:method:: brownie.network.state._remove_contract(contract)
 
-    Removes a ``Contract`` or ``ProjectContract`` object to the global contract record.
+    Removes a :func:`Contract <brownie.network.contract.Contract>` or :func:`ProjectContract <brownie.network.contract.ProjectContract>` object to the global contract record.
 
 .. py:method:: brownie.network.state._get_current_dependencies()
 
@@ -1343,18 +1323,16 @@ The internal methods in the ``state`` module are primarily used for tracking and
 ``brownie.network.rpc``
 =======================
 
-The ``rpc`` module contains the ``Rpc`` class, which is used to interact with ``ganache-cli`` when running a local RPC environment.
+The ``rpc`` module contains the :func:`Rpc <brownie.network.rpc.Rpc>` class, which is used to interact with ``ganache-cli`` when running a local RPC environment.
 
 .. note:: Account balances, contract containers and transaction history are automatically modified when the local RPC is terminated, reset or reverted.
-
-.. _rpc:
 
 Rpc
 ---
 
 .. py:class:: brownie.network.rpc.Rpc
 
-    :ref:`Singleton<api-types-singleton>` object for interacting with ``ganache-cli`` when running a local RPC environment. When using the console or writing tests, an instance of this class is available as ``rpc``.
+    :func:`Singleton <brownie._singleton._Singleton>` object for interacting with ``ganache-cli`` when running a local RPC environment. When using the console or writing tests, an instance of this class is available as ``rpc``.
 
     .. code-block:: python
 
@@ -1373,7 +1351,7 @@ Rpc Methods
 
     If the process cannot load successfully, raises ``brownie.RPCProcessError``.
 
-    If a provider has been set in ``Web3`` but is unable to connect after launching, raises a ``brownie.RPCConnectionError``.
+    If a provider has been set in :func:`Web3 <brownie.network.web3.Web3>` but is unable to connect after launching, raises :func:`RPCConnectionError <brownie.exceptions.RPCConnectionError>`.
 
     .. code-block:: python
 
@@ -1401,11 +1379,11 @@ Rpc Methods
         >>> rpc.kill()
         Terminating local RPC client...
 
-    .. note:: Brownie registers this method with the `atexit <https://docs.python.org/3/library/atexit.html>`_ module. It is not necessary to explicitly kill ``Rpc`` before terminating a script or console session.
+    .. note:: Brownie registers this method with the `atexit <https://docs.python.org/3/library/atexit.html>`_ module. It is not necessary to explicitly kill :func:`Rpc <brownie.network.rpc.Rpc>` before terminating a script or console session.
 
 .. py:classmethod:: Rpc.reset()
 
-    Resets the RPC to the genesis state by loading a snapshot. This is NOT equivalent to calling ``rpc.kill`` and then ``rpc.launch``.
+    Resets the RPC to the genesis state by loading a snapshot. This is NOT equivalent to calling :func:`rpc.kill <Rpc.kill>` and then :func:`rpc.launch <Rpc.launch>`.
 
     .. code-block:: python
 
@@ -1532,7 +1510,7 @@ Rpc Internal Methods
 
     .. note::
 
-        When calling this method, you must ensure that the user has not had a chance to take their own snapshot since ``_internal_snap`` was called.
+        When calling this method, you must ensure that the user has not had a chance to take their own snapshot since :func:`_internal_snap <Rpc._internal_snap>` was called.
 
 Internal Methods
 ----------------
@@ -1540,8 +1518,6 @@ Internal Methods
 .. py:class:: brownie.network.rpc._revert_register(obj)
 
     Registers an object to be called whenever the local RPC is reset or reverted. Objects that register must include ``_revert`` and ``_reset`` methods in order to receive these callbacks.
-
-.. _api-network-rpc-notify-registry:
 
 .. py:class:: brownie.network.rpc._notify_registry(height)
 
@@ -1551,9 +1527,7 @@ Internal Methods
 ``brownie.network.transaction``
 ===============================
 
-The ``transaction`` module contains the ``TransactionReceipt`` class and related internal methods.
-
-.. _api-network-tx:
+The ``transaction`` module contains the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` class and related internal methods.
 
 TransactionReceipt
 ------------------
@@ -1616,7 +1590,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.events
 
-    An :ref:`api-network-eventdict` of decoded event logs for this transaction.
+    An :func:`EventDict <brownie.network.event.EventDict>` of decoded event logs for this transaction.
 
     .. note:: If you are connected to an RPC client that allows for ``debug_traceTransaction``, event data is still available when the transaction reverts.
 
@@ -1748,7 +1722,7 @@ TransactionReceipt Attributes
 
     The value returned from the called function, if any. Only available if the RPC client allows ``debug_traceTransaction``.
 
-    If more then one value is returned, they are stored in a :ref:`ReturnValue<return_value>`.
+    If more then one value is returned, they are stored in a :func:`ReturnValue <brownie.convert.datatypes.ReturnValue>`.
 
     .. code-block:: python
 
@@ -1781,7 +1755,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.trace
 
-    An expanded `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#user-content-basic-traces>`_ structLog, returned from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC endpoint. If you are using Infura this attribute is not available.
+    An expanded `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#user-content-basic-traces>`_ structLog, returned from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ RPC endpoint. If you are using Infura this attribute is not available.
 
     Along with the standard data, the structLog also contains the following additional information:
 
@@ -1843,7 +1817,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.value
 
-    The value of the transaction, in  :ref:`wei<wei>`.
+    The value of the transaction, in :func:`Wei <brownie.convert.datatypes.Wei>`.
 
     .. code-block:: python
 
@@ -1975,8 +1949,6 @@ TransactionReceipt Methods
 
 The ``web3`` module contains a slightly modified version of the web3.py ``Web3`` class that is used throughout various Brownie modules for RPC communication.
 
-.. _web3:
-
 Web3
 ----
 
@@ -2040,11 +2012,11 @@ Web3 Internals
 
     Provides access to a ``Web3`` instance connected to the ``mainnet`` network as defined in the configuration file. Used internally for `ENS <https://ens.domains/>`_ and `ethPM <https://www.ethpm.com/>`_ lookups.
 
-    Raises ``MainnetUndefined`` if the ``mainnet`` network is not defined.
+    Raises :func:`MainnetUndefined <brownie.exceptions.MainnetUndefined>` if the ``mainnet`` network is not defined.
 
 Internal Methods
 ----------------
 
 .. py:method:: brownie.network.web3._resolve_address(address)
 
-    Used internally for standardizing address inputs. If ``address`` is a string containing a ``.`` Brownie will attempt to resolve an `ENS domain name <https://ens.domains/>`_ address. Otherwise, returns the result of :ref:`brownie.convert.to_address<api-brownie-convert-address>`.
+    Used internally for standardizing address inputs. If ``address`` is a string containing a ``.`` Brownie will attempt to resolve an `ENS domain name <https://ens.domains/>`_ address. Otherwise, returns the result of :func:`convert.to_address <brownie.convert.to_address>`.

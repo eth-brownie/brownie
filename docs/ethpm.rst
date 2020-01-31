@@ -1,4 +1,4 @@
-.. _eth-pm:
+.. _ethpm:
 
 ============================
 The Ethereum Package Manager
@@ -60,7 +60,7 @@ To view a list of currently installed packages within a project:
 ::
 
     $ brownie ethpm list
-    Brownie v1.2.0 - Python development framework for Ethereum
+    Brownie - Python development framework for Ethereum
 
     Found 2 installed packages:
      ├─access@1.0.0
@@ -71,7 +71,7 @@ Any packages that are installed from a registry are also saved locally. To view 
 ::
 
     $ brownie ethpm all
-    Brownie v1.1.0 - Python development framework for Ethereum
+    Brownie - Python development framework for Ethereum
 
     erc1319://erc20.snakecharmers.eth
      └─dai-dai@1.0.0
@@ -162,7 +162,7 @@ The following settings must have a non-``null`` value in order to generate a pac
 
     In order for a deployment to be included:
 
-        * :ref:`Persistence<nonlocal-networks-contracts>` must be enabled for that network
+        * :ref:`Persistence<persistence>` must be enabled for that network
         * The bytecode of the deployed contract must be identical to the bytecode generated from the source code currently present in the project's ``contracts/`` folder
 
     You can use a wildcard ``*`` to include deployments on all networks, or ``False`` to not include any deployments.
@@ -229,7 +229,7 @@ Once you have set the required fields in the configuration file, you can create 
 
     $ brownie ethpm create
 
-The manifest is saved locally as ``manifest.json`` in the project root folder. Note that this saved copy is not tightly packed and so does not strictly adhere the `ethPM specification <https://ethpm.github.io/ethpm-spec/>`_. This is not the final copy to be pinned to IPFS, rather it is a human-readable version that you can use to verify it's contents before releasing.
+The manifest is saved locally as ``manifest.json`` in the project root folder. Note that this saved copy is not tightly packed and so does not strictly adhere the ethPM `specification <https://ethpm.github.io/ethpm-spec/>`_. This is not the final copy to be pinned to IPFS, rather it is a human-readable version that you can use to verify it's contents before releasing.
 
 Once you have confirmed that the included fields are consistent with what you would like to publish, you are ready to release.
 
@@ -255,14 +255,14 @@ To release a package:
 You must include the following arguments:
 
     * ``registry``: the address of an ethPM registry on the main-net
-    * ``account``: the address that the transaction is sent from. It can be given as an alias to a `local account <nonlocal-networks-accounts>`_, or as a hex string if the address is unlocked within the connected node.
+    * ``account``: the address that the transaction is sent from. It can be given as an alias to a `local account <local-accounts>`_, or as a hex string if the address is unlocked within the connected node.
 
 Once the package is successfully released, Brownie provides you with a registry URI that you can share with others so they can easily access your package:
 
 ::
 
     $ brownie ethpm release erc20.snakecharmers.eth registry_owner
-    Brownie v1.1.0 - Python development framework for Ethereum
+    Brownie - Python development framework for Ethereum
 
     Generating manifest and pinning assets to IPFS...
     Pinning "NFToken.sol"...
@@ -281,7 +281,7 @@ Once the package is successfully released, Brownie provides you with a registry 
 Interacting with Package Deployments
 ====================================
 
-You can load an entire package as a :ref:`Project <api-project-project>` object, which includes :ref:`Contract <api-network-contract>` instances for any contracts deployed on the currently active network:
+You can load an entire package as a :func:`Project <brownie.project.main.Project>` object, which includes :func:`Contract <brownie.network.contract.ProjectContract>` instances for any contracts deployed on the currently active network:
 
 .. code-block:: python
 
@@ -294,7 +294,7 @@ You can load an entire package as a :ref:`Project <api-project-project>` object,
         'DSToken': [<DSToken Contract object '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359'>]
     }
 
-Or, create a :ref:`Contract <api-network-contract>` object to interact with a deployed instance of a specific contract within a package:
+Or, create a :func:`Contract <brownie.network.contract.ProjectContract>` object to interact with a deployed instance of a specific contract within a package:
 
 .. code-block:: python
 

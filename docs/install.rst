@@ -10,7 +10,7 @@ The easiest way to install Brownie is via pip.
 
     $ pip install eth-brownie
 
-You can also clone the `github repository <https://github.com/iamdefinitelyahuman/brownie>`__ and use setuptools for the most up-to-date version.
+You can also clone the `github repository <https://github.com/iamdefinitelyahuman/brownie>`_ and use setuptools for the most up-to-date version.
 
 ::
 
@@ -21,7 +21,7 @@ Once you have installed, type ``brownie`` to verify that it worked:
 ::
 
     $ brownie
-    Brownie v1.0.0 - Python development framework for Ethereum
+    Brownie - Python development framework for Ethereum
 
     Usage:  brownie <command> [<args>...] [options <args>]
 

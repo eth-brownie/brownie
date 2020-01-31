@@ -6,7 +6,7 @@ Test API
 
 The ``test`` package contains classes and methods for running tests and evaluating test coverage.
 
-This functionality is typically accessed via `pytest <https://docs.pytest.org/en/latest/>`_.  See :ref:`test`.
+This functionality is typically accessed via `pytest <https://docs.pytest.org/en/latest/>`_.  See :ref:`pytest`.
 
 ``brownie.test.fixtures``
 =========================
@@ -25,27 +25,27 @@ These fixtures provide access to objects related to the project being tested.
 
 .. py:attribute:: fixtures.accounts
 
-    Session scope. Yields an instantiated :ref:`Accounts<api-network-accounts>` container for the active project.
+    Session scope. Yields an instantiated :func:`Accounts <brownie.network.account.Accounts>` container for the active project.
 
 .. py:attribute:: fixtures.a
 
-    Session scope. Short form of the ``accounts`` fixture.
+    Session scope. Short form of the :func:`accounts <fixtures.accounts>` fixture.
 
 .. py:attribute:: fixtures.history
 
-    Session scope. Yields an instantiated :ref:`TxHistory<api-network-history>` object for the active project.
+    Session scope. Yields an instantiated :func:`TxHistory <brownie.network.state.TxHistory>` object for the active project.
 
 .. py:attribute:: fixtures.rpc
 
-    Session scope. Yields an instantiated :ref:`Rpc<rpc>` object.
+    Session scope. Yields an instantiated :func:`Rpc <brownie.network.rpc.Rpc>` object.
 
 .. py:attribute:: fixtures.state_machine
 
-    Session scope. Yields the :ref:`state_machine<api-test-state_machine>` method, used to launc rule-based state machine tests.
+    Session scope. Yields the :func:`state_machine <stateful.state_machine>` method, used to launc rule-based state machine tests.
 
 .. py:attribute:: fixtures.web3
 
-    Session scope. Yields an instantiated :ref:`Web3<web3>` object.
+    Session scope. Yields an instantiated :func:`Web3 <brownie.network.web3.Web3>` object.
 
 Isolation Fixtures
 ******************
@@ -62,7 +62,7 @@ These fixtures are used to effectively isolate tests. If included on every test 
 
     Function scope. When used, this fixture is always applied before any other function-scoped fixtures.
 
-    Applies the ``module_isolation`` fixture, and additionally takes a snapshot prior to running each test which is then reverted to after the test completes. The snapshot is taken immediately after any module-scoped fixtures are applied, and before all function-scoped ones.
+    Applies the :func:`module_isolation <fixtures.module_isolation>` fixture, and additionally takes a snapshot prior to running each test which is then reverted to after the test completes. The snapshot is taken immediately after any module-scoped fixtures are applied, and before all function-scoped ones.
 
 Coverage Fixtures
 *****************
@@ -80,27 +80,28 @@ These fixtures alter the behaviour of tests when coverage evaluation is active.
 ``brownie.test.strategies``
 ===========================
 
-The ``strategies`` module contains the ``strategy`` method, and related internal methods for generating Hypothesis `search strategies <https://hypothesis.readthedocs.io/en/latest/details.html#defining-strategies>`_.
+The ``strategies`` module contains the :func:`strategy <strategies.strategy>` method, and related internal methods for generating Hypothesis `search strategies <https://hypothesis.readthedocs.io/en/latest/details.html#defining-strategies>`_.
 
 .. py:method:: strategies.strategy(type_str, **kwargs)
 
     Returns a Hypothesis ``SearchStrategy`` based on the value of ``type_str``. Depending on the type of strategy, different ``kwargs`` are available.
 
+    See the :ref:`hypothesis-strategies` section for information on how to use this method.
+
 ``brownie.test.stateful``
 =========================
 
-The ``stateful`` module contains the ``state_machine`` method, and related internal classes and methods for performing `stateful testing <https://hypothesis.readthedocs.io/en/latest/stateful.html>`_.
+The ``stateful`` module contains the :func:`state_machine <stateful.state_machine>` method, and related internal classes and methods for performing `stateful testing <https://hypothesis.readthedocs.io/en/latest/stateful.html>`_.
 
-.. _api-test-state_machine:
+.. py:method:: stateful.state_machine(state_machine_class, *args, settings=None, **kwargs)
 
-.. py:method:: stateful.state_machine(rules_object, *args, settings=None, **kwargs)
+    Executes a stateful test.
 
-    Run a state machine definition as a test.
+    * ``state_machine_class``: A state machine class to be used in the test. Be sure to pass the class itself, not an instance of the class.
+    * ``*args``: Any arguments given here will be passed to the state machine's ``__init__`` method.
+    * ``settings``: An optional dictionary of :ref:`Hypothesis settings<hypothesis-settings>` that will replace the defaults for this test only.
 
-    * ``rules_object``: An uninitialized state machine class.
-    * ``settings``: Optional dictionary of values used to create a Hypothesis `settings <https://hypothesis.readthedocs.io/en/latest/settings.html#available-settings>`_ object.
-
-    ``args`` and ``kwargs`` are passed to the ``__init__`` method of ``rules_object`` during the setup phase of the test.
+    See the :ref:`hypothesis-stateful` section for information on how to use this method.
 
 ``brownie.test.plugin``
 =======================
@@ -129,7 +130,7 @@ One of these classes is instantiated in the ``pytest_configure`` method of ``bro
 
 .. py:class:: manager.runner.PytestBrownieXdistRunner
 
-    ``xdist`` runner plugin manager. Inherits from ``PytestBrownieRunner``.
+    ``xdist`` runner plugin manager. Inherits from :func:`PytestBrownieRunner <manager.runner.PytestBrownieRunner>`.
 
 .. py:class:: manager.master.PytestBrownieMaster
 
@@ -140,9 +141,9 @@ RevertContextManager
 
 The ``RevertContextManager`` closely mimics the behaviour of `pytest.raises <https://docs.pytest.org/en/latest/reference.html#pytest-raises>`_.
 
-.. py:class:: plugin.RevertContextManager(revert_msg=None)
+.. py:class:: brownie.test.plugin.RevertContextManager(revert_msg=None)
 
-    Context manager used to handle ``VirtualMachineError`` exceptions. Raises ``AssertionError`` if no transaction has reverted when the context closes.
+    Context manager used to handle :func:`VirtualMachineError <brownie.exceptions.VirtualMachineError>` exceptions. Raises ``AssertionError`` if no transaction has reverted when the context closes.
 
     * ``revert_msg``: Optional. Raises an ``AssertionError`` if the transaction does not revert with this error string.
 
@@ -170,7 +171,7 @@ Internal Methods
 
     Generates and saves a test coverage report for viewing in the GUI.
 
-    * ``build``: Project :ref:`api-project-build-build` object
+    * ``build``: Project :func:`Build <brownie.project.build.Build>` object
     * ``coverage_eval``: Coverage evaluation dict
     * ``report_path``: Path to save to. If the path is a folder, the report is saved as ``coverage.json``.
 
@@ -182,14 +183,14 @@ Internal Methods
 
     Formats and prints a coverage evaluation report.
 
-    * ``build``: Project :ref:`api-project-build-build` object
+    * ``build``: Project :func:`Build <brownie.project.build.Build>` object
     * ``coverage_eval``: Coverage evaluation dict
 
 .. py:method:: output._get_totals(build, coverage_eval)
 
     Generates an aggregated coverage evaluation dict that holds counts and totals for each contract function.
 
-    * ``build``: Project :ref:`api-project-build-build` object
+    * ``build``: Project :func:`Build <brownie.project.build.Build>` object
     * ``coverage_eval``: Coverage evaluation dict
 
     Returns:
@@ -213,7 +214,7 @@ Internal Methods
 
     Splits a coverage eval dict so that coverage indexes are stored by contract function. The returned dict is no longer compatible with other methods in this module.
 
-    * ``build``: Project :ref:`api-project-build-build` object
+    * ``build``: Project :func:`Build <brownie.project.build.Build>` object
     * ``coverage_eval``: Coverage evaluation dict
 
     * Original format: ``{"path/to/file": [index, ..], .. }``
@@ -223,7 +224,7 @@ Internal Methods
 
     Returns a highlight map formatted for display in the GUI.
 
-    * ``build``: Project :ref:`api-project-build-build` object
+    * ``build``: Project :func:`Build <brownie.project.build.Build>` object
     * ``coverage_eval``: Coverage evaluation dict
 
     Returns:

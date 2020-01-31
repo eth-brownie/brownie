@@ -8,7 +8,6 @@ The ``convert`` package contains methods and classes for representing and conver
 
 .. _type-conversions:
 
-
 ``brownie.convert.main``
 ========================
 
@@ -20,17 +19,15 @@ The ``main`` module contains methods for data conversion. Methods within this mo
 
 .. py:method:: brownie.convert.to_int(value, type_str="int256")
 
-    Converts a value to a signed integer. This is equivalent to calling ``Wei`` and then applying checks for over/underflows.
+    Converts a value to a signed integer. This is equivalent to calling :func:`Wei <brownie.convert.datatypes.Wei>` and then applying checks for over/underflows.
 
 .. py:method:: brownie.convert.to_decimal(value)
 
-    Converts a value to a decimal fixed point and applies bounds according to Vyper's `decimal <https://vyper.readthedocs.io/en/latest/types.html#decimals>`_ type.
+    Converts a value to a decimal fixed point and applies bounds according to `Vyper's decimal type <https://vyper.readthedocs.io/en/latest/types.html#decimals>`_.
 
 .. py:method:: brownie.convert.to_bool(value)
 
     Converts a value to a boolean. Raises ``ValueError`` if the given value does not match a value in ``(True, False, 0, 1)``.
-
-.. _api-brownie-convert-address:
 
 .. py:method:: brownie.convert.to_address(value)
 
@@ -66,7 +63,7 @@ The ``datatypes`` module contains subclasses that Brownie uses to assist with co
 EthAddress
 ----------
 
-.. py:class:: brownie.convert.EthAddress(value)
+.. py:class:: brownie.convert.datatypes.EthAddress(value)
 
     String subclass for address comparisons. Raises a ``TypeError`` when compared to a non-address.
 
@@ -94,16 +91,14 @@ EthAddress
         >>> type(e)
         <class 'brownie.convert.EthAddress'>
 
-.. _fixed:
-
 Fixed
 -----
 
-.. py:class:: brownie.convert.Fixed(value)
+.. py:class:: brownie.convert.datatypes.Fixed(value)
 
-    `Decimal <https://docs.python.org/3.8/library/decimal.html#decimal.Decimal>`_ subclass that allows comparisons, addition and subtraction against strings, integers and :ref:`wei`.
+    `Decimal <https://docs.python.org/3.8/library/decimal.html#decimal.Decimal>`_ subclass that allows comparisons, addition and subtraction against strings, integers and :func:`Wei <brownie.convert.datatypes.Wei>`.
 
-    ``Fixed`` is used for inputs and outputs to Vyper contracts that use the `decimal <https://vyper.readthedocs.io/en/latest/types.html#decimals>`_ type.
+    ``Fixed`` is used for inputs and outputs to Vyper contracts that use the `decimal type <https://vyper.readthedocs.io/en/latest/types.html#decimals>`_.
 
     Attempting comparisons or arithmetic against a float raises a ``TypeError``.
 
@@ -132,7 +127,7 @@ Fixed
 HexString
 ---------
 
-.. py:class:: brownie.convert.HexString(value, type_)
+.. py:class:: brownie.convert.datatypes.HexString(value, type_)
 
     Bytes subclass for hexstring comparisons. Raises ``TypeError`` if compared to a non-hexstring. Evaluates ``True`` for hex strings with the same value but differing leading zeros or capitalization.
 
@@ -152,12 +147,10 @@ HexString
           File "<console>", line 1, in <module>
         TypeError: Invalid type for comparison: 'potato' is not a valid hex string
 
-.. _return_value:
-
 ReturnValue
 -----------
 
-.. py:class:: brownie.network.return_value.ReturnValue
+.. py:class:: brownie.convert.datatypes.ReturnValue
 
     Tuple subclass with limited `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`_-like functionality. Used for iterable return values from contract calls or event logs.
 
@@ -177,7 +170,7 @@ ReturnValue
         >>> result['_minRating']
         1
 
-    When checking equality, ``ReturnValue`` objects ignore the type of container compared against. Tuples and lists will both return ``True`` so long as they contain the same values.
+    When checking equality, :func:`ReturnValue <brownie.convert.datatypes.ReturnValue>` objects ignore the type of container compared against. Tuples and lists will both return ``True`` so long as they contain the same values.
 
     .. code-block:: python
 
@@ -201,15 +194,12 @@ ReturnValue
 
     Returns a set-like object providing a view on the object's keys.
 
-
-.. _wei:
-
 Wei
 ---
 
-.. py:class:: brownie.convert.Wei(value)
+.. py:class:: brownie.convert.datatypes.Wei(value)
 
-    Integer subclass that converts a value to wei and allows comparisons, addition and subtraction using the same conversion.
+    Integer subclass that converts a value to wei (the smallest unit of Ether, equivalent to 10\ :superscript:`-18` Ether) and allows comparisons, addition and subtraction using the same conversion.
 
     ``Wei`` is useful for strings where you specify the unit, for large floats given in scientific notation, or where a direct conversion to ``int`` would cause inaccuracy from floating point errors.
 
@@ -261,7 +251,7 @@ The ``normalize`` module contains methods used to convert multiple values based 
     * ``abi``: A contract method ABI as a dict.
     * ``outputs``: List or tuple of values to format.
 
-    Returns a :ref:`return_value` container where each value has been formatted using the one of the methods outlined in :ref:`type-conversions`.
+    Returns a :func:`ReturnValue <brownie.convert.datatypes.ReturnValue>` container where each value has been formatted using the one of the methods outlined in :ref:`type-conversions`.
 
     This method is used internally by ``ContractCall`` to ensure that contract output formats remain consistent, regardless of the RPC client being used.
 
@@ -276,7 +266,7 @@ The ``normalize`` module contains methods used to convert multiple values based 
 
     Standardizes outputs from an event fired by a contract.
 
-    * ``event``: Decoded event data as given by the ``decode_event`` or ``decode_trace`` methods of the `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`__ package.
+    * ``event``: Decoded event data as given by the ``decode_event`` or ``decode_trace`` methods of the `eth-event <https://github.com/iamdefinitelyahuman/eth-event>`_ package.
 
     The given event data is mutated in-place and returned. If an event topic is indexed, the type is changed to ``bytes32`` and ``" (indexed)"`` is appended to the name.
 

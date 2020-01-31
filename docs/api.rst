@@ -4,11 +4,15 @@
 Brownie API
 ===========
 
-The following classes and methods are available when writing brownie scripts or using the console.
+This section provides a complete overview of the Brownie API. It includes all public classes and methods as well as limited internal documentation.
+
+If you have not yet viewed the documentation under "Core Functionality" within the table of contents, you may wish to start there before exploring the API docs.
 
 .. hint::
 
-    From the console you can call ``dir`` to see available methods and attributes for any class. By default, callables are highlighed in cyan and attributes in blue. You can also call ``help`` on any class or method to view information on it's functionality.
+    From the console you can call the builtin ``dir`` method to see available methods and attributes for any class. Classes, methods and attributes are highlighted in different colors.
+
+     You can also call ``help`` on any class or method to view information on it's functionality.
 
 .. toctree::
     :maxdepth: 2

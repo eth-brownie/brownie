@@ -4,7 +4,7 @@
 Using Non-Local Networks
 ========================
 
-In addition to using `ganache-cli <https://github.com/trufflesuite/ganache-cli>`__ as a local development environment, Brownie can connect to non-local networks (i.e. any testnet/mainnet node that supports JSON RPC).
+In addition to using `ganache-cli <https://github.com/trufflesuite/ganache-cli>`_ as a local development environment, Brownie can connect to non-local networks (i.e. any testnet/mainnet node that supports JSON RPC).
 
 .. warning::
 
@@ -13,10 +13,36 @@ In addition to using `ganache-cli <https://github.com/trufflesuite/ganache-cli>`
     * When interacting with the mainnet, make sure you verify all of the details of any transactions before signing or sending. Brownie cannot protect you from sending ETH to the wrong address, sending too much, etc.
     * Always protect your private keys. Don't leave them lying around unencrypted!
 
-Registering with Infura
-=======================
+Personal Node vs Hosted Node
+============================
 
-Before you can connect to a non-local network, you need access to an Ethereum node (whether your own local one or hosted) that supports JSON RPC (either HTTP, IPC, or web-sockets). `Infura <https://infura.io>`_ is a good option for accessing a hosted node. Once you register and create a project, Infura will provide you with a project ID as well as API URLs that can be leveraged to access the given network.
+In order to interact with a non-local network you must connect to a node. You can either run your own node, or connect to a hosted node.
+
+Running your Own Node
+---------------------
+
+Clients such as `Geth <https://geth.ethereum.org/>`_ or `Parity <https://www.parity.io/ethereum/>`_ can be used to run your own Ethereum node, that Brownie can then connect to. Having your node gives you complete control over which RPC endpoints are available and ensures you have a private and dedicated connection to the network. Unfortunately, keeping a node operating and synced can be a challenging task.
+
+If you wish to learn more about running a node, ethereum.org provides a `list of resources <https://ethereum.org/developers/#testnets-and-faucets>`_ that you can use to get started.
+
+Using a Hosted Node
+-------------------
+
+Services such as `Infura <https://infura.io>`_ provide public access to Ethereum nodes. This is a much simpler option than running your own, but it is not without limitations:
+
+    1. Some RPC endpoints may be unavailable. In particular, Infura does not provide access to the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ method. For this reason, Brownie's :ref:`debugging tools<debug>` will not work when connected via Infura.
+    2. Hosted nodes do not provide access to accounts - this would be a major security hazard! You will have to manually unlock your own :ref:`local account<local-accounts>` before you can make a transaction.
+
+Using Infura
+************
+
+Before you can onnect to Infura you need to `register for an account <https://infura.io/register>`_. After you have signed up, login and create a new project. You will be provided with a project ID, as well as API URLs that can be leveraged to access the network.
+
+To connect to Infura using Brownie, store your project ID as an environment variable named ``WEB3_INFURA_PROJECT_ID``. You can do so with the following command:
+
+::
+
+    $ export WEB3_INFURA_PROJECT_ID=YourProjectID
 
 Network Configuration
 =====================
@@ -65,11 +91,10 @@ By default, Brownie will connect to whichever network is set as "default" in ``b
 
     $ brownie --network ropsten
 
-
 Using brownie.network
 ---------------------
 
-The ``brownie.network`` module conains methods that allow you to connect or disconnect from any network defined within the configuration file.
+The :func:`brownie.network <main.connect>` module conains methods that allow you to connect or disconnect from any network defined within the configuration file.
 
 To connect to a network:
 
@@ -88,94 +113,3 @@ To disconnect:
     >>> network.disconnect()
     >>> network.is_connected()
     False
-
-.. _nonlocal-networks-interacting:
-
-Interacting with Non-Local Networks
-===================================
-
-There are several key differences in functionality between using a non-local network as opposed to a local develpment environment.
-
-Contracts
----------
-
-.. _nonlocal-networks-contracts:
-
-ProjectContract
-***************
-
-By default, Brownie stores information about contract deployments on non-local networks. ``ProjectContract`` instances will persist through the following actions:
-
-* Disconnecting and reconnecting to the same network
-* Closing and reloading a project
-* Exiting and reloading Brownie
-* Modifying a contract's source code - Brownie still retains the source for the deployed version
-
-The following actions will remove locally stored data for a ``ProjectContract``:
-
-* Calling ``ContractContainer.remove`` or ``ContractContainer.clear`` will erase deployment information for the removed ``ProjectContract`` instances.
-* Removing a contract source file from your project (or renaming it) will cause Brownie to delete all deployment information for the removed contract.
-
-You can create a ``ProjectContract`` instance for an already-deployed contract with the :ref:`api-network-contractcontainer`'s ``ContractContainer.at`` method.
-
-See :ref:`config` for information on how to enable or disable persistence.
-
-Contract
-********
-
-The :ref:`Contract<api-network-contract>` class (available as ``brownie.Contract``) is used to interact with already deployed contracts that are not a part of your core project. You will need to provide an ABI as a ``dict`` generated from the compiled contract code.
-
-.. code-block:: python
-
-    >>> Contract('0x79447c97b6543F6eFBC91613C655977806CB18b0', "Token", abi)
-    <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
-
-Once instantiated, all of the usual ``Contract`` attributes and methods can be used to interact with the deployed contract.
-
-.. _nonlocal-networks-accounts:
-
-Accounts
---------
-
-Brownie will automatically load any unlocked accounts returned by a node. If you are using your own private node, you will be able to access your accounts in the same way you would in a local environment.
-
-In order to use accounts when connected to a hosted node, you must make them available locally.  This is done via ``brownie accounts`` in the command line:
-
-::
-
-    $ brownie accounts --help
-    Brownie v1.3.2 - Python development framework for Ethereum
-
-    Usage: brownie accounts <command> [<arguments> ...] [options]
-
-    Commands:
-    list                             List available accounts
-    new <id>                         Add a new account by entering a private key
-    generate <id>                    Add a new account with a random private key
-    import <id> <path>               Import a new account via a keystore file
-    export <id> <path>               Export an existing account keystore file
-    password <id>                    Change the password for an account
-    delete <id>                      Delete an account
-
-After an account has been added, it can be accessed in the console or a script through :ref:`Accounts.load <api-network-accounts-load>`.
-
-Transactions
-------------
-
-After broadcasting a transaction, Brownie will pause and wait until it confirms. If you are using the console you can press ``Ctrl-C`` to immediately receive the :ref:`api-network-tx` object. Note that ``TransactionReceipt.status`` will be ``-1`` until the transaction is mined, and many attributes and methods will not yet be available.
-
-Debugging
-*********
-
-Brownie's :ref:`debugging tools<debug>` rely upon the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`__ RPC method which is not supported by Infura. Attempts to call it will result in a ``RPCRequestError``. This means that the following ``TransactionReceipt`` attributes and methods are unavailable:
-
-* ``TransactionReceipt.return_value``
-* ``TransactionReceipt.trace``
-* ``TransactionReceipt.call_trace``
-* ``TransactionReceipt.traceback``
-* ``TransactionReceipt.source``
-
-Rpc
----
-
-The :ref:`rpc` object is unavailable when working with non-local networks.
