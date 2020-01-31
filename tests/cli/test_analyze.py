@@ -308,7 +308,7 @@ def test_update_report():
                         [
                             0,
                             23,
-                            "green",
+                            "yellow",
                             'SWC-103: A floating pragma is set.\nIt is recommended to make a conscious choice on what version of Solidity is used for compilation. Currently multiple versions "^0.5.0" are allowed.',  # NOQA: E501
                         ]
                     ]
