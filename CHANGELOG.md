@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Refactor `brownie.convert` into sub-modules
 - Use `eth_abi.grammar.parse` when formatting contract inputs and outputs
+- Replace [`docopt`](https://github.com/docopt/docopt) with [`docopt-ng`](https://github.com/bazaar-projects/docopt-ng) (fixes deprecation warnings)
 
 ### Fixed
 - bug preventing `pytest.default_contract_owner` config setting from having any effect

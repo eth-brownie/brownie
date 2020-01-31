@@ -1,5 +1,4 @@
 colorama>=0.4.1;platform_system=='Windows'
-docopt==0.6.2
 eth-abi==2.0.0
 eth-event>=0.2.1,<1.0.0
 eth-hash[pycryptodome]==0.2.0
