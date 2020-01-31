@@ -77,7 +77,7 @@ The following settings are available:
 
 .. py:attribute:: pytest
 
-    Properties that only affect Brownie's configuration when running tests. See :ref:`test configuration settings<test_settings>` for more information.
+    Properties that only affect Brownie's configuration when running tests.
 
     * ``gas_limit``: Replaces the default network gas limit.
     * ``default_contract_owner``: If ``false``, deployed contracts will not remember the account that they were created by and you will have to supply a ``from`` kwarg for every contract transaction.

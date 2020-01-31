@@ -36,9 +36,11 @@ Brownie
     :caption: Testing
     :maxdepth: 2
 
-    tests-pytest.rst
+    tests-pytest-intro.rst
+    tests-pytest-fixtures.rst
     tests-hypothesis-property.rst
     tests-hypothesis-stateful.rst
+    tests-coverage.rst
     tests-security-analysis.rst
 
 

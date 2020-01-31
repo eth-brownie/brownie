@@ -1,5 +1,19 @@
 .. _security-analysis:
 
+.. raw:: html
+
+    <style>
+    .green {background:#228822; color: #ffffff; padding: 2px 5px;}
+    .yellow {background:#ff9933; color: #ffffff; padding: 2px 5px;}
+    .orange {background:#ff3300; color: #ffffff; padding: 2px 5px;}
+    .red {background:#882222; color: #ffffff; padding: 2px 5px;}
+    </style>
+
+.. role:: green
+.. role:: yellow
+.. role:: orange
+.. role:: red
+
 ============================
 Security Analysis with MythX
 ============================
@@ -8,10 +22,12 @@ Brownie is integrated with the `MythX <https://mythx.io/>`_ analysis API to allo
 
 MythX is a smart contract security service that scans your project for vulnerabilities using static analysis, dynamic analysis, and symbolic execution. It runs in two modes:
 
-* **Quick mode** which is effective at finding bad coding patterns and low complexity-bugs
-* **Full mode** which takes longer to run, but can locate complex security issues
+    1. **Quick mode** which is effective at finding bad coding patterns and low complexity-bugs
+    2. **Full mode** which takes longer to run, but can locate complex security issues
 
 MythX offers both free and paid services. To learn more about how it works you may wish to read `MythX Pro Security Analysis Explained <https://blog.mythx.io/features/mythx-full-mode-security-analysis-explained/#more-37>`_ by Bernhard Mueller.
+
+
 
 Scanning for Vulnerabilities
 ============================
@@ -76,7 +92,22 @@ Viewing Analysis Results
 Once analysis is finished, data about any vulnerabilities is stored in the
 :code:`reports/` directory within your project. The report can be viewed using the :ref:`Brownie GUI<gui>`, or by logging into the `MythX dashboard <https://dashboard.mythx.io/>`_.
 
-Vulneratilities are categorized according to the `SWC registry <https://swcregistry.io/>`_.
+To view your report in the GUI, first open the GUI:
+
+::
+
+    brownie gui
+
+Click on the drop-down list in the upper right that says "Select Report" and choose "security". Then choose ``MythX`` in the new dropdown that appears.
+
+If any vulnerabilities have been found, they will be highlighted based on their severity:
+
+    * :green:`Green` Low severity (best practice violations)
+    * :yellow:`Yellow` Medium severity (potential vulnerability), needs to be fixed
+    * :red:`Red` High severity (critical, immediate danger of exploitation)
+
+You can expand the console by clicking the ``Console`` button in the top left (or pressing the ``C`` key). Hovering the mouse over a vulnerability will displayed a more detailed explanation from the `SWC registry <https://swcregistry.io/>`_.
 
 .. image:: gui5.png
    :alt: Security Report GUI
+

@@ -1,8 +1,8 @@
 .. _hypothesis:
 
-======================================
-Property-Based Testing with Hypothesis
-======================================
+======================
+Property-Based Testing
+======================
 
 Brownie utilizes the ``hypothesis`` framework to allow for property-based testing.
 

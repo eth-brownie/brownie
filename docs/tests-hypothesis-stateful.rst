@@ -1,8 +1,8 @@
 .. _hypothesis-stateful:
 
-================================
-Stateful Testing with Hypothesis
-================================
+================
+Stateful Testing
+================
 
 `Stateful testing` is a more advanced method of :ref:`propery-based testing<hypothesis>` used to test complex systems. In a stateful test you define a number of actions that can be combined together in different ways, and Hypothesis attempts to find a sequence of those actions that results in a failure. This is useful for testing complex contracts or contract-to-contract interactions where there are many possible states.
 

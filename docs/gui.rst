@@ -1,20 +1,6 @@
 
 .. _gui:
 
-.. raw:: html
-
-    <style>
-    .green {background:#228822; color: #ffffff; padding: 2px 5px;}
-    .yellow {background:#ff9933; color: #ffffff; padding: 2px 5px;}
-    .orange {background:#ff3300; color: #ffffff; padding: 2px 5px;}
-    .red {background:#882222; color: #ffffff; padding: 2px 5px;}
-    </style>
-
-.. role:: green
-.. role:: yellow
-.. role:: orange
-.. role:: red
-
 ===============
 The Brownie GUI
 ===============
@@ -69,10 +55,10 @@ Click the ``Scope`` button in the top left (or the ``S`` key) to filter the list
 Jump Instructions
 -----------------
 
-Click the ``Console`` button in the top left (or the ``C`` key) to expand the console. It shows more detailed information about the highlighted instruction.
+Click the ``Console`` button in the top left (or press the ``C`` key) to expand the console. It shows more detailed information about the highlighted instruction.
 
-* When you select a ``JUMP`` or ``JUMPI`` instruction, the console includes a "Target:" field that gives the program counter for the related ``JUMPDEST``, where possible. The related ``JUMPDEST`` is also highlighted in green. Press the ``J`` key to show the instruction.
-* When you select a ``JUMPDEST`` instruction, the console includes a "Jumps:" field that gives a list of program counters that point at the highlighted instruction.  Each related ``JUMP``/``JUMPI`` is also highlighted in green.
+    * When you select a ``JUMP`` or ``JUMPI`` instruction, the console includes a "Target:" field that gives the program counter for the related ``JUMPDEST``, where possible. The related ``JUMPDEST`` is also highlighted in green. Press the ``J`` key to show the instruction.
+    * When you select a ``JUMPDEST`` instruction, the console includes a "Jumps:" field that gives a list of program counters that point at the highlighted instruction.  Each related ``JUMP``/``JUMPI`` is also highlighted in green.
 
 .. image:: gui3.png
    :alt: Jump Instructions
@@ -80,52 +66,33 @@ Click the ``Console`` button in the top left (or the ``C`` key) to expand the co
 Miscellaneous
 -------------
 
-* Right clicking on an instruction will apply a yellow highlight to all instructions of the same opcode type.
-* Press the ``R`` key to toggle highlight on all ``REVERT`` opcodes.
+    * Right clicking on an instruction will apply a yellow highlight to all instructions of the same opcode type.
+    * Press the ``R`` key to toggle highlight on all ``REVERT`` opcodes.
 
 .. _coverage-gui:
 
-Viewing Coverage Data
-=====================
+Viewing Reports
+===============
 
-For an in-depth look at your test coverage, click on the drop-down list in the upper right that says "Select Report" and choose "coverage". A new drop-down list will appear where you can select which type of coverage data to view (branches or statements).
+Actions such as coverage evaluation and security analysis produce report files within the ``reports/`` directory of your project. To examine a report:
 
-Relevant code will be highlighted in different colors:
+    1. click on the drop-down list in the upper right that says "Select Report"
+    2. Select the report file you wish to view.
+    3. A new drop-down list will appear where you can select which report to display.
 
-* :green:`Green` code was executed during the tests
-* :yellow:`Yellow` branch code executed, but only evaluated truthfully
-* :orange:`Orange` branch code executed, but only evaluated falsely
-* :red:`Red` code did not execute during the tests
+Some reports will include additional information that is displayed in the GUI console when you hover the mouse over a related section.
+
+Here is an example of a coverage analysis report:
 
 .. image:: gui4.png
    :alt: Viewing Coverage Data
 
 .. _gui-report-json:
 
-
-Viewing Security Report Data
-============================
-
-Once the :code:`brownie analyze` command has finished, the GUI will show a new security report.
-Select the :code:`security` report and the :code:`MythX` report type.
-If any vulnerabilities have been found, they will be highlighted based on their severity:
-
-* :green:`Green` Low severity (best practice violations)
-* :yellow:`Yellow` Medium severity (potential vulnerability), needs to be fixed
-* :red:`Red` High severity (critical, immediate danger of exploitation)
-
-The report data can also be directly accessed in :code:`reports/security.json`.
-
-.. image:: gui5.png
-   :alt: Security Report GUI
-
-
 Report JSON Format
 ==================
 
-Project coverage data is saved to ``reports/coverage.json`` using Brownie's standard report format. Third party tools wishing to display information in the Brownie GUI can also save JSON files within the ``reports/`` folder.
-
-Brownie expects JSON reports to use the following structure:
+Third party tools can generate reports for display in the Brownie GUI. Reports must be saved in the ``reports/`` directory of a project. Brownie expects reports to be JSON encoded and use the following structure:
 
 .. code-block:: javascript
 
