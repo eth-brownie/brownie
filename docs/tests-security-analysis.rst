@@ -102,8 +102,8 @@ Click on the drop-down list in the upper right that says "Select Report" and cho
 
 If any vulnerabilities have been found, they will be highlighted based on their severity:
 
-    * :green:`Green` Low severity (best practice violations)
-    * :yellow:`Yellow` Medium severity (potential vulnerability), needs to be fixed
+    * :yellow:`Yellow` Low severity (best practice violations)
+    * :orange:`Orange` Medium severity (potential vulnerability), needs to be fixed
     * :red:`Red` High severity (critical, immediate danger of exploitation)
 
 You can expand the console by clicking the ``Console`` button in the top left (or pressing the ``C`` key). Hovering the mouse over a vulnerability will displayed a more detailed explanation from the `SWC registry <https://swcregistry.io/>`_.

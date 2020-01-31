@@ -279,7 +279,7 @@ Here is an example test function using Brownie's automatically generated fixture
 
         token.transfer(accounts[1], 1e19, {'from': accounts[0]})
         assert token.balanceOf(accounts[1]) == 1e19
-        assert token.balanceOf(accounts[0]) == 9.9e19
+        assert token.balanceOf(accounts[0]) == 9e19
 
 A complete list of Brownie fixtures is available here.
 
