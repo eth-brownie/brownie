@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-from brownie._cli.__main__ import main as cli_main
+from brownie._cli import __main__ as cli_main
 from brownie._cli.console import Console as cli_console
 
 
@@ -26,9 +26,11 @@ class CliTester:
     def mock_subroutines(self, *args, **kwargs):
         return True
 
-    def run_and_test_parameters(self, argv, parameters={}):
-        sys.argv = ["brownie"] + argv.split(" ")
-        cli_main()
+    def run_and_test_parameters(self, argv=None, parameters={}):
+        sys.argv = ["brownie"]
+        if argv:
+            sys.argv += argv.split(" ")
+        cli_main.main()
         assert self.mock_subroutines.call_args == parameters
 
     def raise_type_error_exception(self, e):
@@ -235,3 +237,14 @@ def test_test_args(cli_tester, testproject):
 def test_cli_incorrect(cli_tester):
     with pytest.raises(SystemExit):
         cli_tester.run_and_test_parameters("foo")
+
+
+def test_levenshtein(cli_tester):
+    with pytest.raises(SystemExit, match="Did you mean 'brownie accounts'"):
+        cli_tester.run_and_test_parameters("account")
+
+
+def test_no_args_shows_help(cli_tester, capfd):
+    with pytest.raises(SystemExit):
+        cli_tester.run_and_test_parameters()
+    assert cli_main.__doc__ in capfd.readouterr()[0].strip()

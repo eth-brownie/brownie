@@ -2,10 +2,9 @@
 
 import shutil
 
-from docopt import docopt
-
 from brownie import project
 from brownie.exceptions import ProjectNotFound
+from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie compile [options]
 

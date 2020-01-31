@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
-from docopt import docopt
-
 from brownie import network, project, run
 from brownie._config import ARGV, CONFIG, _update_argv_from_docopt
 from brownie.exceptions import ProjectNotFound
 from brownie.test.output import _print_gas_profile
+from brownie.utils.docopt import docopt
 
 __doc__ = f"""Usage: brownie run <filename> [<function>] [options]
 

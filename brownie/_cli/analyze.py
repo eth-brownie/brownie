@@ -7,7 +7,6 @@ import time
 from os import environ
 from pathlib import Path
 
-from docopt import docopt
 from pythx import Client
 from pythx.middleware.toolname import ClientToolNameMiddleware
 
@@ -16,6 +15,7 @@ from brownie._cli.__main__ import __version__
 from brownie._config import ARGV, _update_argv_from_docopt
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
+from brownie.utils.docopt import docopt
 
 __doc__ = f"""Usage: brownie analyze [options] [--async | --interval=<sec>]
 
