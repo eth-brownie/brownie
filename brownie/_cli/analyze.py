@@ -51,7 +51,7 @@ us on the website!
 """
 
 
-SEVERITY_COLOURS = {"LOW": "green", "MEDIUM": "yellow", "HIGH": "red"}
+SEVERITY_COLOURS = {"LOW": "yellow", "MEDIUM": "orange", "HIGH": "red"}
 DASHBOARD_BASE_URL = "https://dashboard.mythx.io/#/console/analyses/"
 TRIAL_PRINTED = False
 BYTECODE_ADDRESS_PATCH = re.compile(r"__\w{38}")
