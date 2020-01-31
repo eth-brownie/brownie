@@ -68,7 +68,7 @@ These fixtures provide quick access to Brownie objects that are frequently used 
         :linenos:
 
         def test_stateful(Token, accounts, state_machine):
-            token = Token.deploy("Test Token", "TST", 18, "100 ether", {'from': accounts[0]})
+            token = Token.deploy("Test Token", "TST", 18, 1e23, {'from': accounts[0]})
 
             state_machine(StateMachine, accounts, token)
 
@@ -95,7 +95,7 @@ For example - if your project contains a contract named ``Token``, there will be
     :linenos:
 
     def test_token_deploys(Token, accounts):
-        token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
+        token = accounts[0].deploy(Token, "Test Token", "TST", 18, 1e24)
         assert token.name() == "Test Token"
 
 

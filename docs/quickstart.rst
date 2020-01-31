@@ -129,7 +129,7 @@ Brownie provides a :func:`ContractContainer <brownie.network.contract.ContractCo
     []
     >>> Token.deploy
     <ContractConstructor object 'Token.constructor(string _symbol, string _name, uint256 _decimals, uint256 _totalSupply)'>
-    >>> t = Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[1]})
+    >>> t = Token.deploy("Test Token", "TST", 18, 1e20, {'from': accounts[1]})
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
     Transaction confirmed - block: 1   gas spent: 594186
@@ -152,7 +152,7 @@ When a contact is deployed you are returned a :func:`Contract <brownie.network.c
 
     >>> t.transfer
     <ContractTx object 'transfer(address _to, uint256 _value)'>
-    >>> t.transfer(accounts[2], "100 ether", {'from': accounts[1]})
+    >>> t.transfer(accounts[2], 1e20, {'from': accounts[1]})
 
     Transaction sent: 0xcd98225a77409b8d81023a3a4be15832e763cd09c74ff431236bfc6d56a74532
     Transaction confirmed - block: 2   gas spent: 51241
@@ -172,7 +172,7 @@ The :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` 
 
 .. code-block:: python
 
-    >>> tx = Token[0].transfer(accounts[1], "1 ether", {'from': accounts[0]})
+    >>> tx = Token[0].transfer(accounts[1], 1e18, {'from': accounts[0]})
 
     Transaction sent: 0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753
     Token.transfer confirmed - block: 2   gas used: 51019 (33.78%)
@@ -212,7 +212,7 @@ For information on why a transaction reverted:
 
 .. code-block:: python
 
-    >>> tx = Token[0].transfer(accounts[1], "1 ether", {'from': accounts[3]})
+    >>> tx = Token[0].transfer(accounts[1], 1e18, {'from': accounts[3]})
 
     Transaction sent: 0x5ff198f3a52250856f24792889b5251c120a9ecfb8d224549cb97c465c04262a
     Token.transfer confirmed (reverted) - block: 2   gas used: 23858 (19.26%)
@@ -248,7 +248,7 @@ Within the token project, you will find an example script at `scripts/token.py <
     from brownie import *
 
     def main():
-        Token.deploy("Test Token", "TEST", 18, "1000 ether", {'from': accounts[0]})
+        Token.deploy("Test Token", "TEST", 18, 1e23, {'from': accounts[0]})
 
 Testing your Project
 ====================
@@ -268,18 +268,20 @@ Fixtures
 
 Brownie provides ``pytest`` fixtures to allow you to interact with your project and to aid in testing. To use a fixture, add an argument with the same name to the inputs of your test function.
 
-Here is an example test function using Brownie fixtures:
+Here is an example test function using Brownie's automatically generated fixtures:
 
 .. code-block:: python
     :linenos:
 
     def test_transfer(Token, accounts):
-        token = Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[0]})
-        assert token.totalSupply() == "1000 ether"
+        token = Token.deploy("Test Token", "TST", 18, 1e20, {'from': accounts[0]})
+        assert token.totalSupply() == 1e20
 
-        token.transfer(accounts[1], "0.1 ether", {'from': accounts[0]})
-        assert token.balanceOf(accounts[1]) == "0.1 ether"
-        assert token.balanceOf(accounts[0]) == "999.9 ether"
+        token.transfer(accounts[1], 1e19, {'from': accounts[0]})
+        assert token.balanceOf(accounts[1]) == 1e19
+        assert token.balanceOf(accounts[0]) == 9.9e19
+
+A complete list of Brownie fixtures is available here.
 
 Handling Reverted Transactions
 ------------------------------
@@ -291,10 +293,22 @@ Transactions that revert raise a :func:`VirtualMachineError <brownie.exceptions.
 
     import brownie
 
-    def test_transferFrom_reverts(Token, accounts):
-        Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[0]})
-        with brownie.reverts("Insufficient allowance"):
-            token.transferFrom(accounts[0], accounts[3], "10 ether", {'from': accounts[1]})
+    def test_transfer_reverts(accounts, Token):
+        token = accounts[0].deploy(Token, "Test Token", "TST", 18, 1e23)
+        with brownie.reverts():
+            token.transfer(accounts[1], 1e24, {'from': accounts[0]})
+
+You may optionally include a string as an argument. If given, the error string returned by the transaction must match it in order for the test to pass.
+
+.. code-block:: python
+    :linenos:
+
+    import brownie
+
+    def test_transfer_reverts(accounts, Token):
+        token = accounts[0].deploy(Token, "Test Token", "TST", 18, 1e23)
+        with brownie.reverts("Insufficient Balance"):
+            token.transfer(accounts[1], 1e24, {'from': accounts[0]})
 
 Isolating Tests
 ---------------
@@ -315,18 +329,18 @@ This example uses isolation and a shared setup fixture. Because the ``token`` fi
 
     @pytest.fixture(scope="module")
     def token(Token):
-        yield Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[0]})
+        yield Token.deploy("Test Token", "TST", 18, 1e20, {'from': accounts[0]})
 
 
     def test_transferFrom(fn_isolation, token):
-        token.approve(accounts[1], "6 ether", {'from': accounts[0]})
-        token.transferFrom(accounts[0], accounts[2], "5 ether", {'from': accounts[1]})
+        token.approve(accounts[1], 6e18, {'from': accounts[0]})
+        token.transferFrom(accounts[0], accounts[2], 5e18, {'from': accounts[1]})
 
-        assert token.balanceOf(accounts[2]) == "5 ether"
-        assert token.balanceOf(accounts[0]) == "995 ether"
-        assert token.allowance(accounts[0], accounts[1]) == "1 ether"
+        assert token.balanceOf(accounts[2]) == 5e18
+        assert token.balanceOf(accounts[0]) == 9.5e19
+        assert token.allowance(accounts[0], accounts[1]) == 1e18
 
 
     def test_balance_allowance(fn_isolation, token):
-        assert token.balanceOf(accounts[0]) == "1000 ether"
+        assert token.balanceOf(accounts[0]) == 1e20
         assert token.allowance(accounts[0], accounts[1]) == 0

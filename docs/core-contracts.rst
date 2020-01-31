@@ -29,7 +29,7 @@ It must be called with the contract constructor arguments, and a dictionary of :
 
 .. code-block:: python
 
-    >>> Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[1]})
+    >>> Token.deploy("Test Token", "TST", 18, 1e23, {'from': accounts[1]})
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
     Transaction confirmed - block: 1   gas spent: 594186
@@ -41,7 +41,7 @@ Calling :func:`ContractContainer.deploy <ContractContainer.deploy>` returns a :f
 
 .. code-block:: python
 
-    >>> t = Token.deploy("Test Token", "TST", 18, "1000 ether", {'from': accounts[1]})
+    >>> t = Token.deploy("Test Token", "TST", 18, 1e23 {'from': accounts[1]})
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
     Transaction confirmed - block: 1   gas spent: 594186
@@ -108,7 +108,7 @@ You may optionally include a dictionary of :ref:`transaction parameters <transac
 
 .. code-block:: python
 
-    >>> Token[0].transfer(accounts[1], "1 ether", {'from': accounts[0]})
+    >>> Token[0].transfer(accounts[1], 1e18, {'from': accounts[0]})
 
     Transaction sent: 0x6e557594e657faf1270235bf4b3f27be7f5a3cb8a9c981cfffb12133cbaa165e
     Token.transfer confirmed - block: 4   gas used: 51019 (33.78%)
@@ -118,7 +118,7 @@ If you wish to call the contract method without a transaction, use the :func:`Co
 
 .. code-block:: python
 
-    >>> Token[0].transfer.call(accounts[1], "1 ether", {'from': accounts[0]})
+    >>> Token[0].transfer.call(accounts[1], 1e18, {'from': accounts[0]})
     True
 
 .. _transaction-parameters:

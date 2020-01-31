@@ -155,9 +155,9 @@ The ``RevertContextManager`` closely mimics the behaviour of `pytest.raises <htt
         import brownie
 
         def test_transfer_reverts(Token, accounts):
-            token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
+            token = accounts[0].deploy(Token, "Test Token", "TST", 18, 1e23)
             with brownie.reverts():
-                token.transfer(account[2], "10000 ether", {'from': accounts[1]})
+                token.transfer(account[2], 1e24, {'from': accounts[1]})
 
 ``brownie.test.output``
 =======================

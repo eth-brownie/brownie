@@ -103,7 +103,7 @@ To unlink a package:
 
 ::
 
-    $ brownie ethpm remove [package-name]
+    $ brownie ethpm unlink [package-name]
 
 .. _ethpm-release:
 
@@ -133,11 +133,7 @@ The process of releasing a package is:
 Step 1: Package Configuration Settings
 --------------------------------------
 
-To create a package you must first set all required fields within the ``ethpm-config.yaml`` file in the root folder of your project. If this file is not present in your project, the following command will generate it:
-
-::
-
-    $ brownie ethpm all
+To create a package you must first set all required fields within the ``ethpm-config.yaml`` file in the root folder of your project.
 
 Required Settings
 *****************

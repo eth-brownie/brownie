@@ -31,7 +31,7 @@ Here is an small example script that unlocks a local account and uses it to depl
 
     def main():
         acct = accounts.load('deployment_account')
-        Token.deploy("My Real Token", "RLT", 18, "1000 ether", {'from': acct})
+        Token.deploy("My Real Token", "RLT", 18, 1e28, {'from': acct})
 
 Running your Deployment Script
 ==============================

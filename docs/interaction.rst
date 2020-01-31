@@ -8,7 +8,7 @@ Brownie has three main components that you can use while developing your project
 
     1. The :ref:`console<console>` is useful for quick testing and debugging.
     2. :ref:`Scripts<scripts>` allow you to automate common tasks and handle deployments.
-    3. :ref:`Tests<tests-intro>` help to ensure that your contracts are executing as intended and do not contain any bugs.
+    3. :ref:`Tests<tests-intro>` help to ensure that your contracts are executing as intended.
 
 .. _console:
 
@@ -102,7 +102,7 @@ Here is a simple example script from the ``token`` project, used to deploy the `
     from brownie import Token, accounts
 
     def main():
-        accounts[0].deploy(Token, "Test Token", "TEST", 18, "1000 ether")
+        Token.deploy("Test Token", "TST", 18, 1e23, {'from': accounts[0]})
 
 And here is an expanded version of the same script, that includes a simple method for distributing tokens.
 
@@ -112,13 +112,13 @@ And here is an expanded version of the same script, that includes a simple metho
     from brownie import Token, accounts
 
     def main():
-        token = accounts[0].deploy(Token, "Test Token", "TEST", 18, "1000 ether")
+        token = Token.deploy("Test Token", "TST", 18, 1e23, {'from': accounts[0]})
         return token
 
     def distribute_tokens(sender=accounts[0], receiver_list=accounts[1:]):
         token = main()
         for receiver in receiver_list:
-            token.transfer(receiver, "1 ether", {'from': sender})
+            token.transfer(receiver, 1e18, {'from': sender})
 
 .. _tests-intro:
 

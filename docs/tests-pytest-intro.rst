@@ -216,9 +216,9 @@ When running tests, transactions that revert raise a :func:`VirtualMachineError 
     import brownie
 
     def test_transfer_reverts(accounts, Token):
-        token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
+        token = accounts[0].deploy(Token, "Test Token", "TST", 18, 1e23)
         with brownie.reverts():
-            token.transfer(accounts[1], "2000 ether", {'from': accounts[0]})
+            token.transfer(accounts[1], 1e24, {'from': accounts[0]})
 
 You may optionally include a string as an argument. If given, the error string returned by the transaction must match it in order for the test to pass.
 
@@ -228,9 +228,9 @@ You may optionally include a string as an argument. If given, the error string r
     import brownie
 
     def test_transfer_reverts(accounts, Token):
-        token = accounts[0].deploy(Token, "Test Token", "TST", 18, "1000 ether")
+        token = accounts[0].deploy(Token, "Test Token", "TST", 18, 1e23)
         with brownie.reverts("Insufficient Balance"):
-            token.transfer(accounts[1], "9001 ether", {'from': accounts[0]})
+            token.transfer(accounts[1], 1e24, {'from': accounts[0]})
 
 .. _dev-revert:
 

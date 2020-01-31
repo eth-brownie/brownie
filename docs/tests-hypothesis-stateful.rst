@@ -129,7 +129,7 @@ A state machine may optionally include setup and teardown procedures. Similar to
 
 
         def test_stateful(Token, accounts, state_machine):
-            token = Token.deploy("Test Token", "TST", 18, "100 ether", {'from': accounts[0]})
+            token = Token.deploy("Test Token", "TST", 18, 1e23, {'from': accounts[0]})
 
             # state_machine forwards all the arguments to StateMachine.__init__
             state_machine(StateMachine, accounts, token)
@@ -201,10 +201,8 @@ As a basic example, we will create a state machine to test the following Vyper `
     @public
     def withdraw_from(value: uint256(wei)) -> bool:
         assert self.deposited[msg.sender] >= value, "Insufficient balance"
-        amount: uint256(wei) = self.deposited[msg.sender]
-        send(msg.sender, value)
-        amount -= value
         self.deposited[msg.sender] = value
+        send(msg.sender, value)
         return True
 
 If you looked closely you may have noticed a major issue in the contract code. If not, don't worry! We're going to find it using our test.

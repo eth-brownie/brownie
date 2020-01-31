@@ -8,7 +8,7 @@ Each time your perform a transaction you are returned a :func:`TransactionReceip
 
 .. code-block:: python
 
-    >>> tx = Token[0].transfer(accounts[1], "1 ether", {'from': accounts[0]})
+    >>> tx = Token[0].transfer(accounts[1], 1e18, {'from': accounts[0]})
 
     Transaction sent: 0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b
     Token.transfer confirmed - block: 2   gas used: 51019 (33.78%)
@@ -123,7 +123,7 @@ When a transaction reverts in the console you are still returned a :func:`Transa
 
 .. code-block:: python
 
-    >>> tx = Token[0].transfer(accounts[1], "1 ether", {'from': accounts[3]})
+    >>> tx = Token[0].transfer(accounts[1], 1e18, {'from': accounts[3]})
 
     Transaction sent: 0x5ff198f3a52250856f24792889b5251c120a9ecfb8d224549cb97c465c04262a
     Token.transfer confirmed (Insufficient Balance) - block: 2   gas used: 23858 (19.26%)
