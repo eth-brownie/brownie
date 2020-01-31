@@ -4,12 +4,11 @@ import importlib
 import sys
 from pathlib import Path
 
-from docopt import docopt
-
 from brownie import network
 from brownie._config import ARGV
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
+from brownie.utils.docopt import docopt, levenshtein_norm
 
 __version__ = "1.5.1"
 
@@ -38,24 +37,24 @@ def main():
 
     print(f"Brownie v{__version__} - Python development framework for Ethereum\n")
 
-    # remove options before calling docopt
-    if len(sys.argv) > 1 and sys.argv[1][0] != "-":
-        idx = next((sys.argv.index(i) for i in sys.argv if i.startswith("-")), len(sys.argv))
-        opts = sys.argv[idx:]
-        sys.argv = sys.argv[:idx]
-    args = docopt(__doc__)
-    sys.argv += opts
+    if len(sys.argv) < 2 or sys.argv[1].startswith("-"):
+        # this call triggers a SystemExit
+        docopt(__doc__, ["brownie", "-h"])
 
+    cmd = sys.argv[1]
     cmd_list = [i.stem for i in Path(__file__).parent.glob("[!_]*.py")]
-    if args["<command>"] not in cmd_list:
+    if cmd not in cmd_list:
+        distances = sorted([(i, levenshtein_norm(cmd, i)) for i in cmd_list], key=lambda k: k[1])
+        if distances[0][1] <= 0.2:
+            sys.exit(f"Invalid command. Did you mean 'brownie {distances[0][0]}'?")
         sys.exit("Invalid command. Try 'brownie --help' for available commands.")
 
-    ARGV["cli"] = args["<command>"]
+    ARGV["cli"] = cmd
     sys.modules["brownie"].a = network.accounts
     sys.modules["brownie"].__all__.append("a")
 
     try:
-        importlib.import_module(f"brownie._cli.{args['<command>']}").main()
+        importlib.import_module(f"brownie._cli.{cmd}").main()
     except ProjectNotFound:
         notify("ERROR", "Brownie environment has not been initiated for this folder.")
         print("Type 'brownie init' to create the file structure.")
