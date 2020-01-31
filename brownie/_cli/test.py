@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
 import pytest
-from docopt import docopt
 
 from brownie import project
 from brownie._config import CONFIG
 from brownie.exceptions import ProjectNotFound
+from brownie.utils.docopt import docopt
 
 __doc__ = f"""Usage: brownie test [<path>] [options]
 

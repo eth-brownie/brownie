@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 
-from docopt import docopt
-
 from brownie import project
 from brownie._gui import Gui
+from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie gui
 

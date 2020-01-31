@@ -5,13 +5,13 @@ import shutil
 import sys
 
 import yaml
-from docopt import docopt
 
 from brownie import accounts, network
 from brownie._config import BROWNIE_FOLDER, _get_data_folder
 from brownie.exceptions import ProjectNotFound, UnknownAccount
 from brownie.project import check_for_project, ethpm
 from brownie.utils import color, notify
+from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie ethpm <command> [<arguments> ...] [options]
 
