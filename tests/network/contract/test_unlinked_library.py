@@ -3,6 +3,12 @@
 import pytest
 
 from brownie.exceptions import UndeployedLibrary
+from brownie.network.contract import ProjectContract
+
+
+def test_library_is_project_contract(accounts, librarytester):
+    lib = accounts[0].deploy(librarytester["TestLib"])
+    assert type(lib) is ProjectContract
 
 
 def test_unlinked_library(accounts, librarytester):

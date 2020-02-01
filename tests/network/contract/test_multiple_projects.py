@@ -19,9 +19,9 @@ def test_deploy(BrownieTester, otherproject, accounts):
 def test_at_remove(BrownieTester, otherproject, accounts):
     t = otherproject.BrownieTester.deploy(True, {"from": accounts[0]})
     with pytest.raises(ContractExists):
-        BrownieTester.at(t)
+        BrownieTester.at(t.address)
     otherproject.BrownieTester.remove(t)
-    BrownieTester.at(t)
+    BrownieTester.at(t.address)
 
 
 def test_interaction(tester, otherproject, accounts):
