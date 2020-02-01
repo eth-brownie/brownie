@@ -86,6 +86,18 @@ def test_modified_state_revert(console_mode, tester):
     assert tx.modified_state is False
 
 
+def test_new_contracts(console_mode, tester):
+    tx = tester.doNothing()
+    assert tx.new_contracts == []
+    assert tx._expand_trace.call_count
+
+
+def test_new_contracts_reverts(console_mode, tester):
+    tx = tester.revertStrings(1)
+    assert tx.new_contracts == []
+    assert not tx._trace
+
+
 def test_trace(tester):
     """getting the trace also evaluates the trace"""
     tx = tester.doNothing()

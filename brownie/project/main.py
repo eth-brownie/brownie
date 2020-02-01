@@ -22,8 +22,8 @@ from brownie._config import (
 )
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.network import web3
-from brownie.network.contract import ContractContainer, ProjectContract
-from brownie.network.state import _remove_contract
+from brownie.network.contract import Contract, ContractContainer, ProjectContract
+from brownie.network.state import _add_contract, _remove_contract
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.ethpm import get_deployment_addresses, get_manifest
@@ -250,10 +250,17 @@ class Project(_ProjectBase):
                 build = json.load(fp)
             if build["contractName"] not in self._containers:
                 build_json.unlink()
-            else:
-                container = self._containers[build["contractName"]]
+                continue
+            if "pcMap" in build:
                 contract = ProjectContract(self, build, build_json.stem)
-                container._contracts.append(contract)
+            else:
+                contract = Contract(  # type: ignore
+                    build["contractName"], build_json.stem, build["abi"]
+                )
+                contract._project = self
+            container = self._containers[build["contractName"]]
+            _add_contract(contract)
+            container._contracts.append(contract)
 
     def _update_and_register(self, dict_: Any) -> None:
         dict_.update(self)

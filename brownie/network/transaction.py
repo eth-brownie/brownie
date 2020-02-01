@@ -78,6 +78,7 @@ class TransactionReceipt:
         "_confirmed",
         "_events",
         "_modified_state",
+        "_new_contracts",
         "_raw_trace",
         "_return_value",
         "_revert_msg",
@@ -134,6 +135,7 @@ class TransactionReceipt:
         self._return_value = None
         self._revert_msg = None
         self._modified_state = None
+        self._new_contracts = None
         self._confirmed = threading.Event()
 
         self.sender = sender
@@ -203,6 +205,14 @@ class TransactionReceipt:
         elif self._modified_state is None:
             self._get_trace()
         return self._modified_state
+
+    @trace_property
+    def new_contracts(self) -> Optional[List]:
+        if not self.status:
+            return []
+        if self._new_contracts is None:
+            self._expand_trace()
+        return self._new_contracts
 
     @trace_property
     def return_value(self) -> Optional[str]:
@@ -295,7 +305,7 @@ class TransactionReceipt:
             f"{color['key']}Gas used{color}: {color['value']}{self.gas_used}{color} "
             f"({color['value']}{self.gas_used / self.gas_limit:.2%}{color})"
         )
-        if self.contract_address:
+        if self.status and self.contract_address:
             result += (
                 f"\n  {self.contract_name} deployed at: "
                 f"{color['value']}{self.contract_address}{color}"
@@ -376,7 +386,7 @@ class TransactionReceipt:
                 if trace[i]["pc"] != step["pc"] - 4:
                     step = trace[i]
             self._revert_msg = pc_map[step["pc"]]["dev"]
-        except KeyError:
+        except (KeyError, AttributeError):
             self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
 
     def _expand_trace(self) -> None:
@@ -397,6 +407,7 @@ class TransactionReceipt:
         if self._raw_trace is None:
             self._get_trace()
         self._trace = trace = self._raw_trace
+        self._new_contracts = []
         if not trace:
             coverage._add_transaction(self.coverage_hash, {})
             return
@@ -410,13 +421,18 @@ class TransactionReceipt:
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
             if trace[i]["depth"] > trace[i - 1]["depth"]:
-                # get call signature
-                stack_idx = -4 if trace[i - 1]["op"] in {"CALL", "CALLCODE"} else -3
-                offset = int(trace[i - 1]["stack"][stack_idx], 16) * 2
-                sig = HexBytes("".join(trace[i - 1]["memory"])[offset : offset + 8]).hex()
-
-                # get contract and method name
-                address = trace[i - 1]["stack"][-2][-40:]
+                if trace[i - 1]["op"] in ("CREATE", "CREATE2"):
+                    # creating a new contract
+                    step = next(x for x in trace[i:] if x["depth"] == trace[i - 1]["depth"])
+                    address = step["stack"][-1][-40:]
+                    sig = f"<{trace[i-1]['op']}>"
+                    self._new_contracts.append(EthAddress(address))
+                else:
+                    # calling an existing contract
+                    stack_idx = -4 if trace[i - 1]["op"] in ("CALL", "CALLCODE") else -3
+                    offset = int(trace[i - 1]["stack"][stack_idx], 16) * 2
+                    sig = HexBytes("".join(trace[i - 1]["memory"])[offset : offset + 8]).hex()
+                    address = trace[i - 1]["stack"][-2][-40:]
 
                 last_map[trace[i]["depth"]] = _get_last_map(address, sig)
                 coverage_eval.setdefault(last_map[trace[i]["depth"]]["name"], {})

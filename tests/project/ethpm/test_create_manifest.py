@@ -251,27 +251,23 @@ def test_deployments_changed_source(tp_path, deployments, mainnet_uri):
     assert address not in [i["address"] for i in manifest["deployments"][mainnet_uri].values()]
 
 
-def test_deployments_of_dependencies(dep_project, network, mainnet_uri):
-    network.connect("mainnet")
-    dep_project.Math.at("0xE41d2489571d322189246DaFA5ebDe1F4699F498")
+def test_deployments_of_dependencies(dep_project, config, accounts):
+    config["active_network"]["persist"] = True
+    address = dep_project.Math.deploy({"from": accounts[0]}).address
 
     package_config = ETHPM_CONFIG.copy()
     package_config["settings"]["include_dependencies"] = False
-    package_config["settings"]["deployment_networks"] = ["mainnet"]
+    package_config["settings"]["deployment_networks"] = ["development"]
 
     manifest, uri = ethpm.create_manifest(dep_project._path, package_config)
 
     assert "./math/Math.sol" not in manifest["sources"]
     assert "Math" not in manifest["contract_types"]
 
-    assert "utils:Math" in manifest["contract_types"]
-    assert manifest["deployments"] == {
-        mainnet_uri: {
-            "Math": {
-                "address": "0xE41d2489571d322189246DaFA5ebDe1F4699F498",
-                "contract_type": "utils:Math",
-            }
-        }
+    assert "utils:Math" in list(manifest["contract_types"])
+    assert len(manifest["deployments"]) == 1
+    assert list(manifest["deployments"].values())[0] == {
+        "Math": {"address": address, "contract_type": "utils:Math"}
     }
     assert manifest["build_dependencies"] == {"utils": "ipfs://testipfs-utils"}
 

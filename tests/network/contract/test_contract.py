@@ -22,9 +22,14 @@ def build(testproject):
     yield deepcopy(build)
 
 
-def test_type(tester):
+def test_type_solidity(tester):
     assert type(tester) is ProjectContract
     assert isinstance(tester, _DeployedContractBase)
+
+
+def test_type_vyper(vypertester):
+    assert type(vypertester) is ProjectContract
+    assert isinstance(vypertester, _DeployedContractBase)
 
 
 def test_namespace_collision(tester, build):

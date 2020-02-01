@@ -2,6 +2,8 @@
 
 import pytest
 
+from brownie.network.contract import Contract, ProjectContract
+
 
 def test_get_method(BrownieTester):
     calldata = "0x2e27149600000000000000000000000066ab6d9362d4f35596279692f0251db635165871"
@@ -54,6 +56,14 @@ def test_remove_at(BrownieTester, accounts):
         BrownieTester.remove(t2)
     with pytest.raises(TypeError):
         BrownieTester.remove(123)
+
+
+def test_at_checks_bytecode(BrownieTester, ExternalCallTester, accounts):
+    t = BrownieTester.deploy(True, {"from": accounts[0]})
+    del BrownieTester[0]
+    assert type(BrownieTester.at(t.address)) is ProjectContract
+    del BrownieTester[0]
+    assert type(ExternalCallTester.at(t.address)) is Contract
 
 
 def test_load_unload_project(BrownieTester, testproject, rpc, accounts):

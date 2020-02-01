@@ -89,7 +89,7 @@ class Web3(_Web3):
         if self.provider is None:
             raise ConnectionError("web3 is not currently connected")
         if self.genesis_hash not in _chain_uri_cache:
-            block_number = max(self.eth.blockNumber - 16, 1)
+            block_number = max(self.eth.blockNumber - 16, 0)
             block_hash = self.eth.getBlock(block_number)["hash"].hex()[2:]
             chain_uri = f"blockchain://{self.genesis_hash}/block/{block_hash}"
             _chain_uri_cache[self.genesis_hash] = chain_uri
