@@ -77,6 +77,7 @@ class TransactionReceipt:
     __slots__ = (
         "_confirmed",
         "_events",
+        "_internal_transfers",
         "_modified_state",
         "_new_contracts",
         "_raw_trace",
@@ -136,6 +137,7 @@ class TransactionReceipt:
         self._revert_msg = None
         self._modified_state = None
         self._new_contracts = None
+        self._internal_transfers = None
         self._confirmed = threading.Event()
 
         self.sender = sender
@@ -197,6 +199,14 @@ class TransactionReceipt:
         if not self.status:
             self._get_trace()
         return self._events
+
+    @trace_property
+    def internal_transfers(self) -> Optional[List]:
+        if not self.status:
+            return []
+        if self._internal_transfers is None:
+            self._expand_trace()
+        return self._internal_transfers
 
     @trace_property
     def modified_state(self) -> Optional[bool]:
@@ -350,12 +360,12 @@ class TransactionReceipt:
 
     def _confirmed_trace(self, trace: Sequence) -> None:
         self._modified_state = next((True for i in trace if i["op"] == "SSTORE"), False)
-        step = trace[-1]
-        if step["op"] != "RETURN":
+
+        if trace[-1]["op"] != "RETURN":
             return
         contract = _find_contract(self.receiver)
         if contract:
-            data = _get_memory(step, -1)
+            data = _get_memory(trace[-1], -1)
             fn = getattr(contract, self.fn_name)
             self._return_value = fn.decode_output(data)
 
@@ -408,6 +418,7 @@ class TransactionReceipt:
             self._get_trace()
         self._trace = trace = self._raw_trace
         self._new_contracts = []
+        self._internal_transfers = []
         if not trace:
             coverage._add_transaction(self.coverage_hash, {})
             return
@@ -446,6 +457,15 @@ class TransactionReceipt:
                 jumpDepth=last["jumpDepth"],
                 source=False,
             )
+
+            if trace[i]["op"] == "CALL" and int(trace[i]["stack"][-3], 16):
+                self._internal_transfers.append(
+                    {
+                        "from": EthAddress(last["address"]),
+                        "to": EthAddress(trace[i]["stack"][-2][-40:]),
+                        "value": Wei(f"0x{trace[i]['stack'][-3]}"),
+                    }
+                )
 
             if "pc_map" not in last:
                 continue
