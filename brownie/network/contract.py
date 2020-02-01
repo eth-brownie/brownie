@@ -134,11 +134,12 @@ class ContractContainer(_ContractBase):
                 f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
             )
 
-        if web3.eth.getCode(address).hex()[2:] == self._build["deployedBytecode"]:
+        if _verify_deployed_code(address, self._build["deployedBytecode"]):
             contract = ProjectContract(self._project, self._build, address, owner, tx)
-            contract._save_deployment()
         else:
             contract = Contract(self._name, address, self.abi, owner=owner)
+            contract._project = self._project
+        contract._save_deployment()
         _add_contract(contract)
         self._contracts.append(contract)
         return contract
@@ -270,6 +271,25 @@ class _DeployedContractBase(_ContractBase):
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
 
+    def _deployment_path(self) -> Optional[Path]:
+        if not CONFIG["active_network"].get("persist", None) or not self._project._path:
+            return None
+        network = CONFIG["active_network"]["name"]
+        path = self._project._path.joinpath(f"build/deployments/{network}")
+        path.mkdir(exist_ok=True)
+        return path.joinpath(f"{self.address}.json")
+
+    def _save_deployment(self) -> None:
+        path = self._deployment_path()
+        if path and not path.exists():
+            with path.open("w") as fp:
+                json.dump(self._build, fp)
+
+    def _delete_deployment(self) -> None:
+        path = self._deployment_path()
+        if path and path.exists():
+            path.unlink()
+
 
 class Contract(_DeployedContractBase):
     def __init__(
@@ -303,16 +323,14 @@ class Contract(_DeployedContractBase):
         elif not address:
             raise TypeError("Address cannot be None unless creating object from manifest")
 
-        _ContractBase.__init__(self, None, None, name, abi)  # type: ignore
+        build = {"abi": abi, "contractName": name, "type": "contract"}
+        _ContractBase.__init__(self, None, build, name, abi)  # type: ignore
         _DeployedContractBase.__init__(self, address, owner, None)
         contract = _find_contract(address)
         if not contract:
             return
         if contract.bytecode != self.bytecode:
             contract._reverted = True
-
-    def _delete_deployment(self) -> None:
-        pass
 
 
 class ProjectContract(_DeployedContractBase):
@@ -329,25 +347,6 @@ class ProjectContract(_DeployedContractBase):
     ) -> None:
         _ContractBase.__init__(self, project, build, build["contractName"], build["abi"])
         _DeployedContractBase.__init__(self, address, owner, tx)
-
-    def _deployment_path(self) -> Optional[Path]:
-        if not CONFIG["active_network"].get("persist", None) or not self._project._path:
-            return None
-        network = CONFIG["active_network"]["name"]
-        path = self._project._path.joinpath(f"build/deployments/{network}")
-        path.mkdir(exist_ok=True)
-        return path.joinpath(f"{self.address}.json")
-
-    def _save_deployment(self) -> None:
-        path = self._deployment_path()
-        if path and not path.exists():
-            with path.open("w") as fp:
-                json.dump(self._build, fp)
-
-    def _delete_deployment(self) -> None:
-        path = self._deployment_path()
-        if path and path.exists():
-            path.unlink()
 
 
 class OverloadedMethod:
@@ -552,3 +551,22 @@ def _signature(abi: Dict) -> str:
     types_list = get_type_strings(abi["inputs"])
     key = f"{abi['name']}({','.join(types_list)})".encode()
     return "0x" + keccak(key).hex()[:8]
+
+
+def _verify_deployed_code(address: str, expected_bytecode: str) -> bool:
+    actual_bytecode = web3.eth.getCode(address).hex()[2:]
+
+    if expected_bytecode.startswith("730000000000000000000000000000000000000000"):
+        # special case for Solidity libraries
+        return (
+            actual_bytecode.startswith(f"73{address[2:].lower()}")
+            and actual_bytecode[42:] == expected_bytecode[42:]
+        )
+
+    if "_" in expected_bytecode:
+        for marker in re.findall("_{1,}[^_]*_{1,}", expected_bytecode):
+            idx = expected_bytecode.index(marker)
+            actual_bytecode = actual_bytecode[:idx] + actual_bytecode[idx + 40 :]
+            expected_bytecode = expected_bytecode[:idx] + expected_bytecode[idx + 40 :]
+
+    return actual_bytecode == expected_bytecode
