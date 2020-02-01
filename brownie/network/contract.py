@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import eth_abi
 from eth_hash.auto import keccak
+from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
 
 from brownie._config import ARGV, CONFIG
@@ -146,7 +147,8 @@ class ContractContainer(_ContractBase):
 
     def _add_from_tx(self, tx: TransactionReceiptType) -> None:
         tx._confirmed.wait()
-        self.at(tx.contract_address, tx.sender, tx)
+        if tx.status:
+            self.at(tx.contract_address, tx.sender, tx)
 
 
 class ContractConstructor:
@@ -555,6 +557,7 @@ def _signature(abi: Dict) -> str:
 
 def _verify_deployed_code(address: str, expected_bytecode: str) -> bool:
     actual_bytecode = web3.eth.getCode(address).hex()[2:]
+    expected_bytecode = remove_0x_prefix(expected_bytecode)
 
     if expected_bytecode.startswith("730000000000000000000000000000000000000000"):
         # special case for Solidity libraries

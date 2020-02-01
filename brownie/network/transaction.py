@@ -305,7 +305,7 @@ class TransactionReceipt:
             f"{color['key']}Gas used{color}: {color['value']}{self.gas_used}{color} "
             f"({color['value']}{self.gas_used / self.gas_limit:.2%}{color})"
         )
-        if self.contract_address:
+        if self.status and self.contract_address:
             result += (
                 f"\n  {self.contract_name} deployed at: "
                 f"{color['value']}{self.contract_address}{color}"
@@ -386,7 +386,7 @@ class TransactionReceipt:
                 if trace[i]["pc"] != step["pc"] - 4:
                     step = trace[i]
             self._revert_msg = pc_map[step["pc"]]["dev"]
-        except KeyError:
+        except (KeyError, AttributeError):
             self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
 
     def _expand_trace(self) -> None:
