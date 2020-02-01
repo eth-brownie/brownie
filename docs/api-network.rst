@@ -647,14 +647,14 @@ ContractContainer Methods
 
 .. py:classmethod:: ContractContainer.at(address, owner=None)
 
-    Returns a :func:`ProjectContract <brownie.network.contract.ProjectContract>` instance.
+    Returns a new :func:`Contract <brownie.network.contract.ProjectContract>` or :func:`ProjectContract <brownie.network.contract.ProjectContract>` object. The object is also appended to the container.
 
-    * ``address``: Address where the contract is deployed. Raises a ``ValueError`` if there is no bytecode at the address.
+    * ``address``: Address where the contract is deployed.
     * ``owner``: :func:`Account <brownie.network.account.Account>` instance to set as the contract owner. If transactions to the contract do not specify a ``'from'`` value, they will be sent from this account.
 
-    .. note::
+    This method compares the bytecode at the given address with the deployment bytecode for the given :func:`ContractContainer <brownie.network.contract.ContractContainer>`. A :func:`ProjectContract <brownie.network.contract.ProjectContract>` is returned if the bytecodes match, a :func:`Contract <brownie.network.contract.ProjectContract>` otherwise.
 
-        This method checks for the existence of bytecode at the given address, but does not check if the bytecode matches that of the :func:`ContractContainer <brownie.network.contract.ContractContainer>`.
+    Raises :func:`ContractNotFound <brownie.exceptions.ContractNotFound>` if there is no code at the given address.
 
     .. code-block:: python
 
@@ -1568,7 +1568,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.contract_address
 
-    The address of the contract deployed as a result of this transaction, if any.
+    The address of the contract deployed in this transaction, if the transaction was a deployment.
 
     .. code-block:: python
 
@@ -1576,6 +1576,8 @@ TransactionReceipt Attributes
         <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.contract_address
         None
+
+    For contracts deployed as the result of calling another contract, see :func:`TransactionReceipt.new_contracts <TransactionReceipt.new_contracts>`.
 
 .. py:attribute:: TransactionReceipt.contract_name
 
@@ -1684,6 +1686,21 @@ TransactionReceipt Attributes
         <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
         >>> tx.modified_state
         True
+
+.. py:attribute:: TransactionReceipt.new_contracts
+
+    A list of new contract addresses that were deployed during this transaction, as the result of contract call.
+
+    .. code-block:: python
+
+        >>> tx = Deployer.deploy_new_contract()
+        Transaction sent: 0x6c3183e41670101c4ab5d732bfe385844815f67ae26d251c3bd175a28604da92
+          Gas price: 0.0 gwei   Gas limit: 79781
+          Deployer.deploy_new_contract confirmed - Block: 4   Gas used: 79489 (99.63%)
+
+        >>> tx.new_contracts
+        ["0x1262567B3e2e03f918875370636dE250f01C528c"]
+
 
 .. py:attribute:: TransactionReceipt.nonce
 

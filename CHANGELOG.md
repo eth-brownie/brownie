@@ -8,14 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 ### Added
 - [Hypothesis](https://github.com/HypothesisWorks/hypothesis/tree/master/hypothesis-python) integration for property-based and stateful testing
+- `TransactionReceipt.new_contracts` - list of contracts deployed during a contract call
 
 ### Changed
 - Refactor `brownie.convert` into sub-modules
 - Use `eth_abi.grammar.parse` when formatting contract inputs and outputs
 - Replace [`docopt`](https://github.com/docopt/docopt) with [`docopt-ng`](https://github.com/bazaar-projects/docopt-ng) (fixes deprecation warnings)
+- `ContractContainer.at` compares actual bytecode to expected, returns `Contract` object if they do not match
 
 ### Fixed
 - bug preventing `pytest.default_contract_owner` config setting from having any effect
+- threading exception when contract deployment fails
 
 ## [1.5.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.5.1) - 2020-01-21
 ### Fixed

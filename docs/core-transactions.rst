@@ -41,8 +41,8 @@ To view human-readable information on a transaction, call the :func:`Transaction
 
 .. _event-data:
 
-Accessing Event Data
-====================
+Event Data
+==========
 
 Data about events is available as :func:`TransactionReceipt.events <TransactionReceipt.events>`. It is stored in an :func:`EventDict <brownie.network.event.EventDict>` object; a hybrid container with both dict-like and list-like properties.
 
@@ -110,6 +110,30 @@ Or as a list when the sequence is important, or more than one event of the same 
         'permitted': True
     }
 
+Deployment Data
+===============
+
+:func:`TransactionReceipt.new_contracts <TransactionReceipt.new_contracts>` provides a list of addresses for any new contracts that were created during a transaction. This is useful when you are using a factory pattern.
+
+.. code-block:: python
+
+    >>> tx = Deployer.deploy_new_token()
+    Transaction sent: 0x6c3183e41670101c4ab5d732bfe385844815f67ae26d251c3bd175a28604da92
+      Gas price: 0.0 gwei   Gas limit: 79781
+      Deployer.deploy_new_contract confirmed - Block: 4   Gas used: 79489 (99.63%)
+
+    >>> tx.new_contracts
+    ["0x1262567B3e2e03f918875370636dE250f01C528c"]
+
+To generate :func:`Contract <brownie.network.contract.ProjectContract>` objects from this list, use :func:`ContractContainer.at <ContractContainer.at>`:
+
+.. code-block:: python
+
+    >>> tx.new_contracts
+    ["0x1262567B3e2e03f918875370636dE250f01C528c"]
+    >>> Token.at(tx.new_contracts[0])
+    <Token Contract object '0x1262567B3e2e03f918875370636dE250f01C528c'>
+
 .. _debug:
 
 Debugging Failed Transactions
@@ -156,8 +180,8 @@ You can also call :func:`TransactionReceipt.traceback <TransactionReceipt.traceb
         File "contracts/SecurityToken.sol", line 136, in SecurityToken._checkTransfer:
         require(balances[_addr[SENDER]] >= _value, "Insufficient Balance");
 
-Inspecting the Transaction Trace
-================================
+Inspecting the Trace
+====================
 
 The Trace Object
 ----------------
