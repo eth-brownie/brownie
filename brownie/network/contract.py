@@ -98,9 +98,7 @@ class ContractContainer(_ContractBase):
             if (i.tx and i.tx.block_number > height) or len(web3.eth.getCode(i.address).hex()) <= 4
         ]
         for contract in reverted:
-            self._contracts.remove(contract)
-            contract._delete_deployment()
-            _remove_contract(contract)
+            self.remove(contract)
             contract._reverted = True
 
     def remove(self, contract: "ProjectContract") -> None:
@@ -135,7 +133,13 @@ class ContractContainer(_ContractBase):
             raise ContractExists(
                 f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
             )
-        contract = ProjectContract(self._project, self._build, address, owner, tx)
+
+        if web3.eth.getCode(address).hex()[2:] == self._build["deployedBytecode"]:
+            contract = ProjectContract(self._project, self._build, address, owner, tx)
+            contract._save_deployment()
+        else:
+            contract = Contract(self._name, address, self.abi, owner=owner)
+        _add_contract(contract)
         self._contracts.append(contract)
         return contract
 
@@ -307,6 +311,9 @@ class Contract(_DeployedContractBase):
         if contract.bytecode != self.bytecode:
             contract._reverted = True
 
+    def _delete_deployment(self) -> None:
+        pass
+
 
 class ProjectContract(_DeployedContractBase):
 
@@ -322,8 +329,6 @@ class ProjectContract(_DeployedContractBase):
     ) -> None:
         _ContractBase.__init__(self, project, build, build["contractName"], build["abi"])
         _DeployedContractBase.__init__(self, address, owner, tx)
-        _add_contract(self)
-        self._save_deployment()
 
     def _deployment_path(self) -> Optional[Path]:
         if not CONFIG["active_network"].get("persist", None) or not self._project._path:

@@ -23,7 +23,7 @@ from brownie._config import (
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
 from brownie.network import web3
 from brownie.network.contract import ContractContainer, ProjectContract
-from brownie.network.state import _remove_contract
+from brownie.network.state import _add_contract, _remove_contract
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.ethpm import get_deployment_addresses, get_manifest
@@ -253,6 +253,7 @@ class Project(_ProjectBase):
             else:
                 container = self._containers[build["contractName"]]
                 contract = ProjectContract(self, build, build_json.stem)
+                _add_contract(contract)
                 container._contracts.append(contract)
 
     def _update_and_register(self, dict_: Any) -> None:
