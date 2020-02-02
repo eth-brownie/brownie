@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [Hypothesis](https://github.com/HypothesisWorks/hypothesis/tree/master/hypothesis-python) integration for property-based and stateful testing
 - `TransactionReceipt.new_contracts` - list of contracts deployed during a contract call
+- `TransactionReceipt.internal_transfers` - information on internal ether transfers during a transaction
 
 ### Changed
 - Refactor `brownie.convert` into sub-modules

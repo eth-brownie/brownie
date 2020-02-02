@@ -77,6 +77,7 @@ class TransactionReceipt:
     __slots__ = (
         "_confirmed",
         "_events",
+        "_internal_transfers",
         "_modified_state",
         "_new_contracts",
         "_raw_trace",
@@ -136,6 +137,7 @@ class TransactionReceipt:
         self._revert_msg = None
         self._modified_state = None
         self._new_contracts = None
+        self._internal_transfers = None
         self._confirmed = threading.Event()
 
         self.sender = sender
@@ -197,6 +199,14 @@ class TransactionReceipt:
         if not self.status:
             self._get_trace()
         return self._events
+
+    @trace_property
+    def internal_transfers(self) -> Optional[List]:
+        if not self.status:
+            return []
+        if self._internal_transfers is None:
+            self._expand_trace()
+        return self._internal_transfers
 
     @trace_property
     def modified_state(self) -> Optional[bool]:
@@ -350,12 +360,12 @@ class TransactionReceipt:
 
     def _confirmed_trace(self, trace: Sequence) -> None:
         self._modified_state = next((True for i in trace if i["op"] == "SSTORE"), False)
-        step = trace[-1]
-        if step["op"] != "RETURN":
+
+        if trace[-1]["op"] != "RETURN":
             return
         contract = _find_contract(self.receiver)
         if contract:
-            data = _get_memory(step, -1)
+            data = _get_memory(trace[-1], -1)
             fn = getattr(contract, self.fn_name)
             self._return_value = fn.decode_output(data)
 
@@ -408,6 +418,7 @@ class TransactionReceipt:
             self._get_trace()
         self._trace = trace = self._raw_trace
         self._new_contracts = []
+        self._internal_transfers = []
         if not trace:
             coverage._add_transaction(self.coverage_hash, {})
             return
@@ -421,18 +432,21 @@ class TransactionReceipt:
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
             if trace[i]["depth"] > trace[i - 1]["depth"]:
-                if trace[i - 1]["op"] in ("CREATE", "CREATE2"):
+                step = trace[i - 1]
+                if step["op"] in ("CREATE", "CREATE2"):
                     # creating a new contract
-                    step = next(x for x in trace[i:] if x["depth"] == trace[i - 1]["depth"])
-                    address = step["stack"][-1][-40:]
-                    sig = f"<{trace[i-1]['op']}>"
+                    out = next(x for x in trace[i:] if x["depth"] == step["depth"])
+                    address = out["stack"][-1][-40:]
+                    sig = f"<{step['op']}>"
                     self._new_contracts.append(EthAddress(address))
+                    if int(step["stack"][-1], 16):
+                        self._add_internal_xfer(step["address"], address, step["stack"][-1])
                 else:
                     # calling an existing contract
-                    stack_idx = -4 if trace[i - 1]["op"] in ("CALL", "CALLCODE") else -3
-                    offset = int(trace[i - 1]["stack"][stack_idx], 16) * 2
-                    sig = HexBytes("".join(trace[i - 1]["memory"])[offset : offset + 8]).hex()
-                    address = trace[i - 1]["stack"][-2][-40:]
+                    stack_idx = -4 if step["op"] in ("CALL", "CALLCODE") else -3
+                    offset = int(step["stack"][stack_idx], 16) * 2
+                    sig = HexBytes("".join(step["memory"])[offset : offset + 8]).hex()
+                    address = step["stack"][-2][-40:]
 
                 last_map[trace[i]["depth"]] = _get_last_map(address, sig)
                 coverage_eval.setdefault(last_map[trace[i]["depth"]]["name"], {})
@@ -446,6 +460,11 @@ class TransactionReceipt:
                 jumpDepth=last["jumpDepth"],
                 source=False,
             )
+
+            if trace[i]["op"] == "CALL" and int(trace[i]["stack"][-3], 16):
+                self._add_internal_xfer(
+                    last["address"], trace[i]["stack"][-2][-40:], trace[i]["stack"][-3]
+                )
 
             if "pc_map" not in last:
                 continue
@@ -493,6 +512,11 @@ class TransactionReceipt:
             self.coverage_hash, dict((k, v) for k, v in coverage_eval.items() if v)
         )
 
+    def _add_internal_xfer(self, from_: str, to: str, value: str) -> None:
+        self._internal_transfers.append(  # type: ignore
+            {"from": EthAddress(from_), "to": EthAddress(to), "value": Wei(f"0x{value}")}
+        )
+
     def _full_name(self) -> str:
         if self.contract_name and self.fn_name:
             return f"{self.contract_name}.{self.fn_name}"
@@ -510,7 +534,7 @@ class TransactionReceipt:
             f"{color['key']}From{color}: {color['value']}{self.sender}\n"
         )
 
-        if self.contract_address:
+        if self.contract_address and self.status:
             result += (
                 f"{color['key']}New {self.contract_name} address{color}: "
                 f"{color['value']}{self.contract_address}\n"
@@ -520,7 +544,7 @@ class TransactionReceipt:
                 f"{color['key']}To{color}: {color['value']}{self.receiver}{color}\n"
                 f"{color['key']}Value{color}: {color['value']}{self.value}\n"
             )
-            if int(self.input, 16):
+            if self.input != "0x" and int(self.input, 16):
                 result += f"{color['key']}Function{color}: {color['value']}{self._full_name()}\n"
 
         result += (

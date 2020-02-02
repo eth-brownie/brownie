@@ -110,8 +110,21 @@ Or as a list when the sequence is important, or more than one event of the same 
         'permitted': True
     }
 
-Deployment Data
-===============
+Internal Transactions and Deployments
+=====================================
+
+:func:`TransactionReceipt.internal_transfers <TransactionReceipt.new_contracts>` provides a list of internal ether transfers that occurred during the transaction.
+
+.. code-block:: python
+
+        >>> tx.internal_transfers
+        [
+            {
+                "from": "0x79447c97b6543F6eFBC91613C655977806CB18b0",
+                "to": "0x21b42413bA931038f35e7A5224FaDb065d297Ba3",
+                "value": 100
+            }
+        ]
 
 :func:`TransactionReceipt.new_contracts <TransactionReceipt.new_contracts>` provides a list of addresses for any new contracts that were created during a transaction. This is useful when you are using a factory pattern.
 
