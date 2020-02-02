@@ -6,6 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.6.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.0) - 2020-02-02
 ### Added
 - [Hypothesis](https://github.com/HypothesisWorks/hypothesis/tree/master/hypothesis-python) integration for property-based and stateful testing
 - `TransactionReceipt.new_contracts` - list of contracts deployed during a contract call
