@@ -1664,6 +1664,26 @@ TransactionReceipt Attributes
         >>> tx.input
         '0xa9059cbb00000000000000000000000031d504908351d2d87f3d6111f491f0b52757b592000000000000000000000000000000000000000000000000000000000000000a'
 
+.. py:attribute:: TransactionReceipt.internal_transfers
+
+    A list of all internal ether transfers that occurred during the transaction. Transfers are sequenced in the order they took place, and represented as dictionaries containing the following fields:
+
+    * ``from``: Sender address
+    * ``to``: Receiver address
+    * ``value``: Amount of ether that was transferred in :func:`Wei <brownie.convert.datatypes.Wei>`
+
+    .. code-block:: python
+
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
+        >>> tx.internal_transfers
+        [
+            {
+                "from": "0x79447c97b6543F6eFBC91613C655977806CB18b0",
+                "to": "0x21b42413bA931038f35e7A5224FaDb065d297Ba3",
+                "value": 100
+            }
+        ]
 
 .. py:attribute:: TransactionReceipt.logs
 
