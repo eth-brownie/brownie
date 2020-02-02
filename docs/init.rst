@@ -32,3 +32,16 @@ Mixes are automatically created within a subfolder of their name. To initialize 
     $ brownie bake token
 
 This creates a new folder ``token/`` and deploys the project inside it.
+
+The Continuous Integration Template
+-----------------------------------
+
+`Travis-Mix <https://github.com/brownie-mix/travis-mix>`_ is a template preconfigured for use with `Travis-CI <https://travis-ci.com/>`_ continuous integration, as well as other useful tools.
+
+To initialize from this mix:
+
+::
+
+    $ brownie bake travis
+
+See the `Travis-Mix Github repo <https://github.com/brownie-mix/travis-mix>`_ for a detailed explanation of how to configure and use the tools within this template.
