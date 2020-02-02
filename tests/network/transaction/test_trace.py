@@ -98,6 +98,18 @@ def test_new_contracts_reverts(console_mode, tester):
     assert not tx._trace
 
 
+def test_internal_xfers(tester):
+    tx = tester.doNothing()
+    assert tx.internal_transfers == []
+    assert tx._expand_trace.call_count
+
+
+def test_internal_xfers_reverts(console_mode, tester):
+    tx = tester.revertStrings(1)
+    assert tx.internal_transfers == []
+    assert not tx._trace
+
+
 def test_trace(tester):
     """getting the trace also evaluates the trace"""
     tx = tester.doNothing()

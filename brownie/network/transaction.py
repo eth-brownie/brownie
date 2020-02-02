@@ -534,7 +534,7 @@ class TransactionReceipt:
             f"{color['key']}From{color}: {color['value']}{self.sender}\n"
         )
 
-        if self.contract_address:
+        if self.contract_address and self.status:
             result += (
                 f"{color['key']}New {self.contract_name} address{color}: "
                 f"{color['value']}{self.contract_address}\n"
@@ -544,7 +544,7 @@ class TransactionReceipt:
                 f"{color['key']}To{color}: {color['value']}{self.receiver}{color}\n"
                 f"{color['key']}Value{color}: {color['value']}{self.value}\n"
             )
-            if int(self.input, 16):
+            if self.input != "0x" and int(self.input, 16):
                 result += f"{color['key']}Function{color}: {color['value']}{self._full_name()}\n"
 
         result += (
