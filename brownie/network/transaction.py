@@ -432,18 +432,21 @@ class TransactionReceipt:
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
             if trace[i]["depth"] > trace[i - 1]["depth"]:
-                if trace[i - 1]["op"] in ("CREATE", "CREATE2"):
+                step = trace[i - 1]
+                if step["op"] in ("CREATE", "CREATE2"):
                     # creating a new contract
-                    step = next(x for x in trace[i:] if x["depth"] == trace[i - 1]["depth"])
-                    address = step["stack"][-1][-40:]
-                    sig = f"<{trace[i-1]['op']}>"
+                    out = next(x for x in trace[i:] if x["depth"] == step["depth"])
+                    address = out["stack"][-1][-40:]
+                    sig = f"<{step['op']}>"
                     self._new_contracts.append(EthAddress(address))
+                    if int(step["stack"][-1], 16):
+                        self._add_internal_xfer(step["address"], address, step["stack"][-1])
                 else:
                     # calling an existing contract
-                    stack_idx = -4 if trace[i - 1]["op"] in ("CALL", "CALLCODE") else -3
-                    offset = int(trace[i - 1]["stack"][stack_idx], 16) * 2
-                    sig = HexBytes("".join(trace[i - 1]["memory"])[offset : offset + 8]).hex()
-                    address = trace[i - 1]["stack"][-2][-40:]
+                    stack_idx = -4 if step["op"] in ("CALL", "CALLCODE") else -3
+                    offset = int(step["stack"][stack_idx], 16) * 2
+                    sig = HexBytes("".join(step["memory"])[offset : offset + 8]).hex()
+                    address = step["stack"][-2][-40:]
 
                 last_map[trace[i]["depth"]] = _get_last_map(address, sig)
                 coverage_eval.setdefault(last_map[trace[i]["depth"]]["name"], {})
@@ -459,12 +462,8 @@ class TransactionReceipt:
             )
 
             if trace[i]["op"] == "CALL" and int(trace[i]["stack"][-3], 16):
-                self._internal_transfers.append(
-                    {
-                        "from": EthAddress(last["address"]),
-                        "to": EthAddress(trace[i]["stack"][-2][-40:]),
-                        "value": Wei(f"0x{trace[i]['stack'][-3]}"),
-                    }
+                self._add_internal_xfer(
+                    last["address"], trace[i]["stack"][-2][-40:], trace[i]["stack"][-3]
                 )
 
             if "pc_map" not in last:
@@ -511,6 +510,11 @@ class TransactionReceipt:
                     last["jumpDepth"] -= 1
         coverage._add_transaction(
             self.coverage_hash, dict((k, v) for k, v in coverage_eval.items() if v)
+        )
+
+    def _add_internal_xfer(self, from_: str, to: str, value: str) -> None:
+        self._internal_transfers.append(  # type: ignore
+            {"from": EthAddress(from_), "to": EthAddress(to), "value": Wei(f"0x{value}")}
         )
 
     def _full_name(self) -> str:
