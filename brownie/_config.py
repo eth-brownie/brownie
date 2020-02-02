@@ -2,7 +2,6 @@
 
 import json
 import re
-import shutil
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -87,15 +86,11 @@ def _load_config(project_path: Path) -> Dict:
 def _load_default_config() -> "ConfigDict":
     # Loads the default configuration settings from brownie/data/config.yaml
     base_config = BROWNIE_FOLDER.joinpath("data/brownie-config.yaml")
-    default_config = DATA_FOLDER.joinpath("brownie-config.yaml")
 
     if not DATA_FOLDER.exists():
         DATA_FOLDER.mkdir()
-    if not default_config.exists():
-        shutil.copy(base_config, default_config)
 
     config = _Singleton("Config", (ConfigDict,), {})(_load_config(base_config))  # type: ignore
-    _recursive_update(config, _load_config(default_config), [])
     config["active_network"] = {"name": None}
     _modify_hypothesis_settings(config)
     return config

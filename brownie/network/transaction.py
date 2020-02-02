@@ -548,8 +548,8 @@ class TransactionReceipt:
 
         result += (
             f"Block: {color('bright blue')}{self.block_number}{color}\nGas Used: "
-            f"{color('bright blue')}{self.gas_used}{color} / {color('bright blue')}{self.gas_limit}{color} "
-            f"({color('bright blue')}{self.gas_used / self.gas_limit:.1%}{color})\n"
+            f"{color('bright blue')}{self.gas_used}{color} / {color('bright blue')}{self.gas_limit}"
+            f"{color} ({color('bright blue')}{self.gas_used / self.gas_limit:.1%}{color})\n"
         )
 
         if self.events:
@@ -721,8 +721,8 @@ def _format_source(source: str, linenos: Tuple, path: Path, pc: int, idx: int, f
     return (
         f"{color('dark white')}Trace step {color('bright blue')}{idx}{color('dark white')}, "
         f"program counter {color('bright blue')}{pc}{color('dark white')}:\n  {color('dark white')}"
-        f"File {color('bright magenta')}\"{path}\"{color('dark white')}, line{ln}{color('dark white')},"
-        f" in {color('bright cyan')}{fn_name}{color('dark white')}:{source}"
+        f"File {color('bright magenta')}\"{path}\"{color('dark white')}, line{ln}"
+        f"{color('dark white')}, in {color('bright cyan')}{fn_name}{color('dark white')}:{source}"
     )
 
 
