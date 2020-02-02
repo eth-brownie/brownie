@@ -24,13 +24,11 @@ Color
         >>> color
         <brownie.utils.color.Color object at 0x7fa9ec851ba8>
 
-    ``Color`` is designed for use in `formatted string literals <https://docs.python.org/3.6/reference/lexical_analysis.html#f-strings>`_. When called or accessed like a list, it returns an `ANSI escape code <https://en.wikipedia.org/wiki/ANSI_escape_code#Colors>`_ for the given color:
+    ``Color`` is designed for use in `formatted string literals <https://docs.python.org/3.6/reference/lexical_analysis.html#f-strings>`_. When called it returns an `ANSI escape code <https://en.wikipedia.org/wiki/ANSI_escape_code#Colors>`_ for the given color:
 
     .. code-block:: python
 
         >>> color('red')
-        '\x1b[0;31m'
-        >>> color['red']
         '\x1b[0;31m'
 
     You can also prefix any color with "bright" or "dark":

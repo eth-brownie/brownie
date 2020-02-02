@@ -5,7 +5,7 @@ import traceback
 from pathlib import Path
 from typing import Dict, Optional, Sequence
 
-from brownie._config import ARGV, CONFIG
+from brownie._config import ARGV
 
 if sys.platform == "win32":
     import colorama
@@ -28,47 +28,37 @@ COLORS = {
     "white": "37",
 }
 
-TB_BASE = (
-    "  {0[dull]}File {0[string]}{1[1]}{0[dull]}, line "
-    "{0[value]}{1[3]}{0[dull]}, in {0[callable]}{1[5]}{0}{2}"
-)
-
-NOTIFY_COLORS = {"WARNING": "error", "ERROR": "error", "SUCCESS": "success"}
+NOTIFY_COLORS = {"WARNING": "bright red", "ERROR": "bright red", "SUCCESS": "bright green"}
 
 base_path = str(Path(".").absolute())
 
 
 class Color:
-    def __call__(self, color=None):
-        if color in CONFIG["colors"]:
-            color = CONFIG["colors"][color]
-        if not color:
+    def __call__(self, color_str=None):
+        if not color_str:
             return BASE + "m"
-        color = color.split()
+        color_str = color_str.split()
         try:
-            if len(color) == 2:
-                return f"{BASE}{MODIFIERS[color[0]]}{COLORS[color[1]]}m"
-            return f"{BASE}{COLORS[color[0]]}m"
+            if len(color_str) == 2:
+                return f"{BASE}{MODIFIERS[color_str[0]]}{COLORS[color_str[1]]}m"
+            return f"{BASE}{COLORS[color_str[0]]}m"
         except KeyError:
             return BASE + "m"
 
     def __str__(self):
         return BASE + "m"
 
-    def __getitem__(self, color):
-        return self(color)
-
     # format dicts for console printing
     def pretty_dict(self, value: Dict, _indent: int = 0) -> str:
         text = ""
         if not _indent:
-            text = f"{self['dull']}{{"
+            text = f"{self('dark white')}{{"
         _indent += 4
         for c, k in enumerate(sorted(value.keys(), key=lambda k: str(k))):
             if c:
                 text += ","
             s = "'" if isinstance(k, str) else ""
-            text += f"\n{' '*_indent}{s}{self['key']}{k}{self['dull']}{s}: "
+            text += f"\n{' '*_indent}{s}{self}{k}{self('dark white')}{s}: "
             if isinstance(value[k], dict):
                 text += "{" + self.pretty_dict(value[k], _indent)
                 continue
@@ -87,7 +77,7 @@ class Color:
         text = ""
         brackets = str(value)[0], str(value)[-1]
         if not _indent:
-            text += f"{self['dull']}{brackets[0]}"
+            text += f"{self('dark white')}{brackets[0]}"
         if value and not [i for i in value if not isinstance(i, dict)]:
             # list of dicts
             text += f"\n{' '*(_indent+4)}{{"
@@ -107,8 +97,8 @@ class Color:
 
     def _write(self, value):
         s = '"' if isinstance(value, str) else ""
-        key = "string" if isinstance(value, str) else "value"
-        return f"{s}{self[key]}{value}{self['dull']}{s}"
+        key = "bright magenta" if isinstance(value, str) else "bright blue"
+        return f"{s}{self(key)}{value}{self('dark white')}{s}"
 
     def format_tb(
         self,
@@ -133,17 +123,24 @@ class Color:
             info_lines = [x.strip(",") for x in info.strip().split(" ")]
             if "site-packages/" in info_lines[1]:
                 info_lines[1] = '"' + info_lines[1].split("site-packages/")[1]
-            tb[i] = TB_BASE.format(self, info_lines, "\n" + code if code else "")
-        tb.append(f"{self['error']}{type(exc).__name__}{self}: {exc}")
+            tb[i] = (
+                f"  {self('dark white')}File {self('bright magenta')}{info_lines[1]}"
+                f"{self('dark white')}, line {self('bright blue')}{info_lines[3]}"
+                f"{self('dark white')}, in {self('bright cyan')}{info_lines[5]}{self}"
+            )
+            if code:
+                tb[i] += f"\n{code}"
+        tb.append(f"{self('bright red')}{type(exc).__name__}{self}: {exc}")
         return "\n".join(tb)
 
     def format_syntaxerror(self, exc: SyntaxError) -> str:
         offset = exc.offset + len(exc.text.lstrip()) - len(exc.text) + 3  # type: ignore
         exc.filename = exc.filename.replace(base_path, ".")
         return (
-            f"  {self['dull']}File \"{self['string']}{exc.filename}{self['dull']}\", line "
-            f"{self['value']}{exc.lineno}{self['dull']},\n{self}    {exc.text.strip()}\n"
-            f"{' '*offset}^\n{self['error']}SyntaxError{self}: {exc.msg}"
+            f"  {self('dark white')}File \"{self('bright magenta')}{exc.filename}"
+            f"{self('dark white')}\", line {self('bright blue')}{exc.lineno}"
+            f"{self('dark white')},\n{self}    {exc.text.strip()}\n"
+            f"{' '*offset}^\n{self('bright red')}SyntaxError{self}: {exc.msg}"
         )
 
 

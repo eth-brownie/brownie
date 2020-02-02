@@ -183,20 +183,20 @@ def highlight_source(source: str, offset: Tuple, pad: int = 3) -> Tuple:
     pad_stop = newlines[min(pad_stop + pad, len(newlines) - 1)]
 
     final = textwrap.indent(
-        f"{color['dull']}"
+        f"{color('dark white')}"
         + textwrap.dedent(
             f"{source[pad_start:offset[0]]}{color}"
-            f"{source[offset[0]:offset[1]]}{color['dull']}{source[offset[1]:pad_stop]}{color}"
+            f"{source[offset[0]:offset[1]]}{color('dark white')}{source[offset[1]:pad_stop]}{color}"
         ),
         "    ",
     )
 
     count = source[pad_start : offset[0]].count("\n")
-    final = final.replace("\n ", f"\n{color['dull']} ", count)
+    final = final.replace("\n ", f"\n{color('dark white')} ", count)
     count = source[offset[0] : offset[1]].count("\n")
     final = final.replace("\n ", f"\n{color} ", count)
     count = source[offset[1] : pad_stop].count("\n")
-    final = final.replace("\n ", f"\n{color['dull']} ", count)
+    final = final.replace("\n ", f"\n{color('dark white')} ", count)
 
     return final, ln
 

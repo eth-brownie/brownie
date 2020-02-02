@@ -127,7 +127,7 @@ class TransactionReceipt:
         if isinstance(txid, bytes):
             txid = txid.hex()
         if not silent:
-            print(f"{color['key']}Transaction sent{color}: {color['value']}{txid}{color}")
+            print(f"Transaction sent: {color('bright blue')}{txid}{color}")
         history._add_tx(self)
 
         self._raw_trace = None
@@ -183,7 +183,7 @@ class TransactionReceipt:
 
     def __repr__(self) -> str:
         c = {-1: "pending", 0: "error", 1: None}
-        return f"<Transaction '{color[c[self.status]]}{self.txid}{color}'>"
+        return f"<Transaction '{color(c[self.status])}{self.txid}{color}'>"
 
     def __hash__(self) -> int:
         return hash(self.txid)
@@ -256,8 +256,8 @@ class TransactionReceipt:
 
         if not silent:
             print(
-                f"  Gas price: {color['value']}{self.gas_price/10**9}{color} gwei"
-                f"   Gas limit: {color['value']}{self.gas_limit}{color}"
+                f"  Gas price: {color('bright blue')}{self.gas_price/10**9}{color} gwei"
+                f"   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
             )
         if not tx["blockNumber"] and not silent:
             print("Waiting for confirmation...")
@@ -308,17 +308,17 @@ class TransactionReceipt:
     def _confirm_output(self) -> str:
         status = ""
         if not self.status:
-            status = f"({color['error']}{self.revert_msg or 'reverted'}{color}) "
+            status = f"({color('bright red')}{self.revert_msg or 'reverted'}{color}) "
         result = (
             f"  {self._full_name()} confirmed {status}- "
-            f"{color['key']}Block{color}: {color['value']}{self.block_number}{color}   "
-            f"{color['key']}Gas used{color}: {color['value']}{self.gas_used}{color} "
-            f"({color['value']}{self.gas_used / self.gas_limit:.2%}{color})"
+            f"Block: {color('bright blue')}{self.block_number}{color}   "
+            f"Gas used: {color('bright blue')}{self.gas_used}{color} "
+            f"({color('bright blue')}{self.gas_used / self.gas_limit:.2%}{color})"
         )
         if self.status and self.contract_address:
             result += (
                 f"\n  {self.contract_name} deployed at: "
-                f"{color['value']}{self.contract_address}{color}"
+                f"{color('bright blue')}{self.contract_address}{color}"
             )
         return result + "\n"
 
@@ -526,42 +526,40 @@ class TransactionReceipt:
         """Displays verbose information about the transaction, including decoded event logs."""
         status = ""
         if not self.status:
-            status = f"({color['error']}{self.revert_msg or 'reverted'}{color})"
+            status = f"({color('bright red')}{self.revert_msg or 'reverted'}{color})"
 
         result = (
             f"Transaction was Mined {status}\n---------------------\n"
-            f"{color['key']}Tx Hash{color}: {color['value']}{self.txid}\n"
-            f"{color['key']}From{color}: {color['value']}{self.sender}\n"
+            f"Tx Hash: {color('bright blue')}{self.txid}\n"
+            f"From: {color('bright blue')}{self.sender}\n"
         )
 
         if self.contract_address and self.status:
             result += (
-                f"{color['key']}New {self.contract_name} address{color}: "
-                f"{color['value']}{self.contract_address}\n"
+                f"New {self.contract_name} address: {color('bright blue')}{self.contract_address}\n"
             )
         else:
             result += (
-                f"{color['key']}To{color}: {color['value']}{self.receiver}{color}\n"
-                f"{color['key']}Value{color}: {color['value']}{self.value}\n"
+                f"To: {color('bright blue')}{self.receiver}{color}\n"
+                f"Value: {color('bright blue')}{self.value}\n"
             )
             if self.input != "0x" and int(self.input, 16):
-                result += f"{color['key']}Function{color}: {color['value']}{self._full_name()}\n"
+                result += f"Function: {color('bright blue')}{self._full_name()}\n"
 
         result += (
-            f"{color['key']}Block{color}: {color['value']}{self.block_number}{color}\n"
-            f"{color['key']}Gas Used{color}: "
-            f"{color['value']}{self.gas_used}{color} / {color['value']}{self.gas_limit}{color} "
-            f"({color['value']}{self.gas_used / self.gas_limit:.1%}{color})\n"
+            f"Block: {color('bright blue')}{self.block_number}{color}\nGas Used: "
+            f"{color('bright blue')}{self.gas_used}{color} / {color('bright blue')}{self.gas_limit}{color} "
+            f"({color('bright blue')}{self.gas_used / self.gas_limit:.1%}{color})\n"
         )
 
         if self.events:
             result += "\n   Events In This Transaction\n   --------------------------"
             for event in self.events:  # type: ignore
                 result += (
-                    f"\n   {color['bright yellow']}{event.name}{color}"  # type: ignore
+                    f"\n   {color('bright yellow')}{event.name}{color}"  # type: ignore
                 )
                 for key, value in event.items():  # type: ignore
-                    result += f"\n      {color['key']}{key}{color}: {color['value']}{value}{color}"
+                    result += f"\n      {key}: {color('bright blue')}{value}{color}"
         print(result)
 
     def call_trace(self) -> None:
@@ -576,7 +574,7 @@ class TransactionReceipt:
                 return
             raise NotImplementedError("Call trace is not available for deployment transactions.")
 
-        result = f"Call trace for '{color['value']}{self.txid}{color}':"
+        result = f"Call trace for '{color('bright blue')}{self.txid}{color}':"
         result += _step_print(trace[0], trace[-1], None, 0, len(trace))
         indent = {0: 0}
         indent_chars = [""] * 1000
@@ -648,7 +646,7 @@ class TransactionReceipt:
                 depth, jump_depth = trace[idx]["depth"], trace[idx]["jumpDepth"]
             except StopIteration:
                 break
-        return f"{color}Traceback for '{color['value']}{self.txid}{color}':\n" + "\n".join(
+        return f"{color}Traceback for '{color('bright blue')}{self.txid}{color}':\n" + "\n".join(
             self._source_string(i, 0) for i in result[::-1]
         )
 
@@ -717,14 +715,14 @@ class TransactionReceipt:
 
 
 def _format_source(source: str, linenos: Tuple, path: Path, pc: int, idx: int, fn_name: str) -> str:
-    ln = f" {color['value']}{linenos[0]}"
+    ln = f" {color('bright blue')}{linenos[0]}"
     if linenos[1] > linenos[0]:
-        ln = f"s{ln}{color['dull']}-{color['value']}{linenos[1]}"
+        ln = f"s{ln}{color('dark white')}-{color('bright blue')}{linenos[1]}"
     return (
-        f"{color['dull']}Trace step {color['value']}{idx}{color['dull']}, "
-        f"program counter {color['value']}{pc}{color['dull']}:\n  {color['dull']}"
-        f"File {color['string']}\"{path}\"{color['dull']}, line{ln}{color['dull']},"
-        f" in {color['callable']}{fn_name}{color['dull']}:{source}"
+        f"{color('dark white')}Trace step {color('bright blue')}{idx}{color('dark white')}, "
+        f"program counter {color('bright blue')}{pc}{color('dark white')}:\n  {color('dark white')}"
+        f"File {color('bright magenta')}\"{path}\"{color('dark white')}, line{ln}{color('dark white')},"
+        f" in {color('bright cyan')}{fn_name}{color('dark white')}:{source}"
     )
 
 
@@ -752,16 +750,18 @@ def _step_print(
     start: Union[str, int],
     stop: Union[str, int],
 ) -> str:
-    print_str = f"\n{color['dull']}"
+    print_str = f"\n{color('dark white')}"
     if indent is not None:
         print_str += f"{indent}\u2500"
     if last_step["op"] in {"REVERT", "INVALID"} and _step_compare(step, last_step):
-        contract_color = color("error")
+        contract_color = color("bright red")
     else:
-        contract_color = color("contract_method" if not step["jumpDepth"] else "")
-    print_str += f"{contract_color}{step['fn']} {color['dull']}{start}:{stop}{color}"
+        contract_color = color("bright magenta" if not step["jumpDepth"] else "")
+    print_str += f"{contract_color}{step['fn']} {color('dark white')}{start}:{stop}{color}"
     if not step["jumpDepth"]:
-        print_str += f"  {color['dull']}({color}{step['address']}{color['dull']}){color}"
+        print_str += (
+            f"  {color('dark white')}({color}{step['address']}{color('dark white')}){color}"
+        )
     return print_str
 
 

@@ -267,7 +267,7 @@ class Project(_ProjectBase):
         self._namespaces.append(dict_)
 
     def __repr__(self) -> str:
-        return f"<Project '{color['string']}{self._name}{color}'>"
+        return f"<Project '{color('bright magenta')}{self._name}{color}'>"
 
     def load_config(self) -> None:
         """Loads the project config file settings"""
@@ -326,7 +326,7 @@ class TempProject(_ProjectBase):
         self._create_containers()
 
     def __repr__(self) -> str:
-        return f"<TempProject '{color['string']}{self._name}{color}'>"
+        return f"<TempProject '{color('bright magenta')}{self._name}{color}'>"
 
 
 def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:

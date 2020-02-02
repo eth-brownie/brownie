@@ -11,14 +11,17 @@ def colorpatch(monkeypatch):
         return ""
 
     monkeypatch.setattr("brownie.utils.Color.__call__", patched)
-    monkeypatch.setattr("brownie.utils.Color.__getitem__", patched)
     monkeypatch.setattr("brownie.utils.Color.__str__", patched)
     yield
 
 
-def test_call_getitem():
-    assert color("success") == color["success"] != ""
+def test_call():
+    assert color("red") != ""
     assert str(color) == "\x1b[0;m"
+
+
+def test_unknown():
+    assert color("potato") == color()
 
 
 def test_bright_dark():
