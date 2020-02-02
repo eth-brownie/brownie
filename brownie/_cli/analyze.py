@@ -169,8 +169,8 @@ def send_to_mythx(job_data, client, authenticated):
             )
         else:
             print(
-                f"Submitted analysis {color['value']}{resp.uuid}{color} for "
-                f"contract {color['contract']}{contract_name}{color} ({c}/{len(job_data)})"
+                f"Submitted analysis {color('bright blue')}{resp.uuid}{color} for "
+                f"contract {color('bright magenta')}{contract_name}{color} ({c}/{len(job_data)})"
             )
         job_uuids.append(resp.uuid)
 
@@ -264,7 +264,9 @@ def main():
     highlight_report = {"highlights": {"MythX": {}}}
     stdout_report = {}
     for c, uuid in enumerate(job_uuids, start=1):
-        print(f"Generating report for job {color['value']}{uuid}{color} ({c}/{len(job_uuids)})")
+        print(
+            f"Generating report for job {color('bright blue')}{uuid}{color} ({c}/{len(job_uuids)})"
+        )
         if authenticated:
             print("You can also check the results at {}{}\n".format(DASHBOARD_BASE_URL, uuid))
 
@@ -289,7 +291,7 @@ def main():
     else:
         print(f"Found {total_issues} issues:")
     for name in sorted(stdout_report):
-        print(f"\n  contract: {color['contract']}{name}{color}")
+        print(f"\n  contract: {color('bright magenta')}{name}{color}")
         for key in [i for i in ("HIGH", "MEDIUM", "LOW") if i in stdout_report[name]]:
             c = color("bright " + SEVERITY_COLOURS[key])
             print(f"    {key.title()}: {c}{stdout_report[name][key]}{color}")

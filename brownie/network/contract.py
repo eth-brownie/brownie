@@ -35,7 +35,7 @@ rpc = Rpc()
 
 class _ContractBase:
 
-    _dir_color = "contract"
+    _dir_color = "bright magenta"
 
     def __init__(self, project: Any, build: Dict, name: str, abi: List) -> None:
         self._project = project
@@ -153,7 +153,7 @@ class ContractContainer(_ContractBase):
 
 class ContractConstructor:
 
-    _dir_color = "contract_method"
+    _dir_color = "bright magenta"
 
     def __init__(self, parent: "ContractContainer", name: str) -> None:
         self._parent = parent
@@ -250,7 +250,7 @@ class _DeployedContractBase(_ContractBase):
         return self.address
 
     def __repr__(self) -> str:
-        return f"<{self._name} Contract '{color['string']}{self.address}{color}'>"
+        return f"<{self._name} Contract '{color('bright magenta')}{self.address}{color}'>"
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, _DeployedContractBase):
@@ -373,7 +373,7 @@ class OverloadedMethod:
 
 class _ContractMethod:
 
-    _dir_color = "contract_method"
+    _dir_color = "bright magenta"
 
     def __init__(self, address: str, abi: Dict, name: str, owner: Optional[AccountsType]) -> None:
         self._address = address

@@ -83,7 +83,3 @@ The following settings are available:
     * ``default_contract_owner``: If ``false``, deployed contracts will not remember the account that they were created by and you will have to supply a ``from`` kwarg for every contract transaction.
     * ``reverting_tx_gas_limit``: Replaces the default network setting for the gas limit on a tx that will revert.
     * ``revert_traceback``: if ``true``, unhandled ``VirtualMachineError`` exceptions will include a full traceback for the reverted transaction.
-
-.. py:attribute:: colors
-
-    Defines the colors associated with specific data types when using Brownie. Setting a value as an empty string will use the terminal's default color.

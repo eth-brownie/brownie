@@ -67,7 +67,7 @@ def _list(project_path):
             f"One or more files in {len(modified)} packages have been modified since installation.",
         )
         print("Unlink or reinstall them to silence this warning.")
-        print(f"Modified packages name are highlighted in {color['bright blue']}blue{color}.\n")
+        print(f"Modified packages name are highlighted in {color('bright blue')}blue{color}.\n")
     print(f"Found {color('bright magenta')}{len(package_list)}{color} installed packages:")
     for name in package_list:
         u = "\u2514" if name == package_list[-1] else "\u251c"
@@ -161,20 +161,20 @@ def _all(project_path):
         if not package_list:
             path.unlink()
             continue
-        print(f"{color['bright magenta']}erc1319://{path.name}{color}")
+        print(f"{color('bright magenta')}erc1319://{path.name}{color}")
         for package_path in package_list:
             u = "\u2514" if package_path == package_list[-1] else "\u251c"
             versions = sorted(package_path.glob("*.json"))
             if len(versions) == 1:
                 print(
-                    f" {color['bright black']}{u}\u2500{color['bright white']}{package_path.stem}"
-                    f"{color}@{color['bright white']}{versions[0].stem}{color}"
+                    f" {color('bright black')}{u}\u2500{color('bright white')}{package_path.stem}"
+                    f"{color}@{color('bright white')}{versions[0].stem}{color}"
                 )
                 continue
             print(
-                f" {color['bright black']}{u}\u2500{color['bright white']}"
+                f" {color('bright black')}{u}\u2500{color('bright white')}"
                 f"{package_path.stem}{color}"
             )
             for v in versions:
                 u = "\u2514" if v == versions[-1] else "\u251c"
-                print(f"   {color['bright black']}{u}\u2500{color['bright white']}{v.stem}{color}")
+                print(f"   {color('bright black')}{u}\u2500{color('bright white')}{v.stem}{color}")

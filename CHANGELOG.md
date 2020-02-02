@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace [`docopt`](https://github.com/docopt/docopt) with [`docopt-ng`](https://github.com/bazaar-projects/docopt-ng) (fixes deprecation warnings)
 - `ContractContainer.at` compares actual bytecode to expected, returns `Contract` object if they do not match
 
+### Removed
+- Custom color settings in the project config file
+
 ### Fixed
 - bug preventing `pytest.default_contract_owner` config setting from having any effect
 - threading exception when contract deployment fails

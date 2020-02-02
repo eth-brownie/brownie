@@ -57,7 +57,8 @@ def run(
         if not hasattr(module, method_name):
             raise AttributeError(f"Module '{name}' has no method '{method_name}'")
         print(
-            f"\nRunning '{color['module']}{name}{color}.{color['callable']}{method_name}{color}'..."
+            f"\nRunning '{color('bright blue')}{name}{color}."
+            f"{color('bright cyan')}{method_name}{color}'..."
         )
         return getattr(module, method_name)(*args, **kwargs)
     finally:

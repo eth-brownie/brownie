@@ -23,6 +23,7 @@ def _save_coverage_report(build, coverage_eval, report_path):
     with report_path.open("w") as fp:
         json.dump(report, fp, sort_keys=True, indent=2)
     print(f"\nCoverage report saved at {report_path}")
+    print("View the report using the Brownie GUI")
     return report_path
 
 
@@ -40,7 +41,10 @@ def _print_coverage_totals(build, coverage_eval):
     print("\n\nCoverage analysis:")
     for name in sorted(totals):
         pct = _pct(totals[name]["totals"]["statements"], totals[name]["totals"]["branches"])
-        print(f"\n  contract: {color['contract']}{name}{color} - {_cov_color(pct)}{pct:.1%}{color}")
+        print(
+            f"\n  contract: {color('bright magenta')}{name}{color}"
+            f" - {_cov_color(pct)}{pct:.1%}{color}"
+        )
         cov = totals[name]
         for fn_name, count in cov["statements"].items():
             branch = cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
