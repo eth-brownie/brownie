@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from decimal import Decimal
-from typing import Any, Dict, ItemsView, KeysView, List, Optional, Sequence, TypeVar
+from typing import Any, Dict, ItemsView, KeysView, List, Optional, Sequence, TypeVar, Union
 
 import eth_utils
 from hexbytes import HexBytes
@@ -176,10 +176,10 @@ class EthAddress(str):
 
     """String subclass that raises TypeError when compared to a non-address."""
 
-    def __new__(cls, value: Any) -> str:  # type: ignore
+    def __new__(cls, value: Union[bytes, str]) -> str:
         if isinstance(value, bytes):
             value = HexBytes(value).hex()
-        value = eth_utils.add_0x_prefix(str(value))
+        value = eth_utils.add_0x_prefix(str(value))  # type: ignore
         try:
             value = eth_utils.to_checksum_address(value)
         except ValueError:
@@ -257,7 +257,7 @@ def _to_hex(value: Any) -> str:
         if value in ("", "0x"):
             return "0x00"
         if eth_utils.is_hex(value):
-            return eth_utils.add_0x_prefix(value)
+            return eth_utils.add_0x_prefix(value)  # type: ignore
     raise ValueError(f"Cannot convert {type(value).__name__} '{value}' to a hex string")
 
 
@@ -280,10 +280,10 @@ class ReturnValue(tuple):
         self._dict = {i["name"]: values[c] for c, i in enumerate(self._abi) if i["name"]}
         return self
 
-    def __hash__(self) -> Any:
+    def __hash__(self) -> int:
         return super().__hash__()
 
-    def __eq__(self, other: Any) -> Any:
+    def __eq__(self, other: Any) -> bool:
         return _kwargtuple_compare(self, other)
 
     def __getitem__(self, key: Any) -> Any:

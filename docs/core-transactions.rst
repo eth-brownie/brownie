@@ -130,10 +130,13 @@ Internal Transactions and Deployments
 
 .. code-block:: python
 
-    >>> tx = Deployer.deploy_new_token()
+    >>> deployer
+    <Deployer Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+
+    >>> tx = deployer.deployNewContract()
     Transaction sent: 0x6c3183e41670101c4ab5d732bfe385844815f67ae26d251c3bd175a28604da92
       Gas price: 0.0 gwei   Gas limit: 79781
-      Deployer.deploy_new_contract confirmed - Block: 4   Gas used: 79489 (99.63%)
+      Deployer.deployNewContract confirmed - Block: 4   Gas used: 79489 (99.63%)
 
     >>> tx.new_contracts
     ["0x1262567B3e2e03f918875370636dE250f01C528c"]
