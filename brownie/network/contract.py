@@ -557,7 +557,7 @@ def _signature(abi: Dict) -> str:
 
 def _verify_deployed_code(address: str, expected_bytecode: str) -> bool:
     actual_bytecode = web3.eth.getCode(address).hex()[2:]
-    expected_bytecode = remove_0x_prefix(expected_bytecode)
+    expected_bytecode = remove_0x_prefix(expected_bytecode)  # type: ignore
 
     if expected_bytecode.startswith("730000000000000000000000000000000000000000"):
         # special case for Solidity libraries
