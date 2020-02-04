@@ -27,7 +27,7 @@ def solc5json(solc5source):
 
 @pytest.fixture
 def solc6json(solc6source):
-    compiler.set_solc_version("0.6.0")
+    compiler.set_solc_version("0.6.2")
     input_json = compiler.generate_input_json({"path.sol": solc6source}, True, 200)
     yield compiler.compile_from_input_json(input_json)
 
@@ -134,7 +134,7 @@ def test_build_json_unlinked_libraries(solc4source, solc5source, solc6source):
     assert "__Bar__" in build_json["Foo"]["bytecode"]
     build_json = compiler.compile_and_format({"path.sol": solc5source}, solc_version="0.5.7")
     assert "__Bar__" in build_json["Foo"]["bytecode"]
-    build_json = compiler.compile_and_format({"path.sol": solc6source}, solc_version="0.6.0")
+    build_json = compiler.compile_and_format({"path.sol": solc6source}, solc_version="0.6.2")
     assert "__Bar__" in build_json["Foo"]["bytecode"]
 
 
