@@ -22,13 +22,13 @@ Registry URIs
 
 To obtain an ethPM package, you must know both the package name and the address of the registry where it is available. The simplest way to communicate this information is through a `registry URI <https://docs.ethpm.com/uris#registry-uris>`_. Registry URIs adhere to the following format:
 
-.. code-block::
+::
 
     erc1319://[CONTRACT_ADDRESS]:[CHAIN_ID]/[PACKAGE_NAME]@[VERSION]
 
 For example, here is a registry URI for the popular OpenZeppelin `Math <https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/math>`_ package, served by the Snake Charmers `Zeppelin registry <http://explorer.ethpm.com/browse/mainnet/zeppelin.snakecharmers.eth>`_:
 
-.. code-block::
+::
 
     erc1319://zeppelin.snakecharmers.eth:1/math@1.0.0
 
