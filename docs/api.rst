@@ -10,9 +10,9 @@ If you have not yet viewed the documentation under "Core Functionality" within t
 
 .. hint::
 
-    From the console you can call the builtin ``dir`` method to see available methods and attributes for any class. Classes, methods and attributes are highlighted in different colors.
+    From the console you can call the builtin :func:`dir <dir>` method to see available methods and attributes for any class. Classes, methods and attributes are highlighted in different colors.
 
-     You can also call ``help`` on any class or method to view information on it's functionality.
+     You can also call :func:`help <help>` on any class or method to view information on it's functionality.
 
 .. toctree::
     :maxdepth: 2

@@ -8,7 +8,7 @@ Pytest Fixtures Reference
 Brownie provides :ref:`fixtures <pytest-fixtures-docs>` to allow you to interact with your project during tests. To use a fixture, add an argument with the same name to the inputs of your test function.
 
 Session Fixtures
-----------------
+================
 
 These fixtures provide quick access to Brownie objects that are frequently used during testing. If you are unfamiliar with these objects, you may wish to read the documentation liested under "Core Functionality" in the table of contents.
 

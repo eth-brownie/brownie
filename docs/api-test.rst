@@ -139,7 +139,7 @@ One of these classes is instantiated in the ``pytest_configure`` method of ``bro
 RevertContextManager
 --------------------
 
-The ``RevertContextManager`` closely mimics the behaviour of `pytest.raises <https://docs.pytest.org/en/latest/reference.html#pytest-raises>`_.
+The ``RevertContextManager`` closely mimics the behaviour of :func:`pytest.raises <pytest.raises>`.
 
 .. py:class:: brownie.test.plugin.RevertContextManager(revert_msg=None)
 

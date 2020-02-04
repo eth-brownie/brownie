@@ -33,7 +33,7 @@ To begin writing property-based tests, import the following two methods:
 
     from brownie.test import given, strategy
 
-* ``given`` is a decorator that converts a test function that accepts arguments into a randomized test. This is a thin wrapper around `hypothesis.given <https://hypothesis.readthedocs.io/en/latest/details.html#hypothesis.given>`_, the API is identical.
+* ``given`` is a decorator that converts a test function that accepts arguments into a randomized test. This is a thin wrapper around :func:`hypothesis.given <hypothesis.given>`, the API is identical.
 * ``strategy`` is a method for creating :ref:`test strategies<hypothesis-strategies>` based on ABI types.
 
 A test using Hypothesis consists of two parts: A function that looks like a normal pytest test with some additional arguments, and a ``@given`` decorator that specifies how to those arguments are provided.
@@ -113,7 +113,7 @@ The following strategies correspond to types within `Solidity <https://solidity.
 Address
 *******
 
-    `Base strategy:` `hypothesis.strategies.sampled_from <https://hypothesis.readthedocs.io/en/latest/data.html#hypothesis.strategies.sampled_from>`_
+    `Base strategy:` :func:`hypothesis.strategies.sampled_from <hypothesis.strategies.sampled_from>`
 
 ``address`` strategies yield :func:`Account <brownie.network.account.Account>` objects from the :func:`Accounts <brownie.network.account.Accounts>` container.
 
@@ -132,7 +132,7 @@ Optional keyword arguments:
 Bool
 ****
 
-    `Base strategy:` `hypothesis.strategies.booleans <https://hypothesis.readthedocs.io/en/latest/data.html#hypothesis.strategies.booleans>`_
+    `Base strategy:` :func:`hypothesis.strategies.booleans <hypothesis.strategies.booleans>`
 
 ``bool`` strategies yield ``True`` or ``False``.
 
@@ -149,7 +149,7 @@ This strategy does not accept any keyword arguments.
 Bytes
 *****
 
-    `Base strategy:` `hypothesis.strategies.binary <https://hypothesis.readthedocs.io/en/latest/data.html#hypothesis.strategies.binary>`_
+    `Base strategy:` :func:`hypothesis.strategies.binary <hypothesis.strategies.binary>`
 
 ``bytes`` strategies yield byte strings.
 
@@ -175,7 +175,7 @@ For `fixed length values <https://solidity.readthedocs.io/en/latest/types.html#f
 Decimal
 *******
 
-    `Base strategy:` `hypothesis.strategies.decimals <https://hypothesis.readthedocs.io/en/latest/data.html#hypothesis.strategies.decimals>`_
+    `Base strategy:` :func:`hypothesis.strategies.decimals <hypothesis.strategies.decimals>`
 
 ``decimal`` strategies yield ``decimal.Decimal`` instances.
 
@@ -198,7 +198,7 @@ Optional keyword arguments:
 Integer
 *******
 
-    `Base strategy:` `hypothesis.strategies.integers <https://hypothesis.readthedocs.io/en/latest/data.html#hypothesis.strategies.integers>`_
+    `Base strategy:` :func:`hypothesis.strategies.integers <hypothesis.strategies.integers>`
 
 ``int`` and ``uint`` strategies yield integer values.
 
@@ -223,7 +223,7 @@ Optional keyword arguments:
 String
 ******
 
-    `Base strategy:` `hypothesis.strategies.text <https://hypothesis.readthedocs.io/en/latest/data.html#hypothesis.strategies.text>`_
+    `Base strategy:` :func:`hypothesis.strategies.text <hypothesis.strategies.text>`
 
 ``string`` strategies yield unicode text strings.
 
@@ -251,7 +251,7 @@ Along with the core strategies, Brownie also offers strategies for generating ar
 Array
 *****
 
-    `Base strategy:` `hypothesis.strategies.lists <https://hypothesis.readthedocs.io/en/latest/data.html#hypothesis.strategies.lists>`_
+    `Base strategy:` :func:`hypothesis.strategies.lists <hypothesis.strategies.lists>`
 
 Array strategies yield lists of strategies for the base array type. It is possible to generate arrays of both fixed and dynamic length, as well as multidimensional arrays.
 
@@ -278,7 +278,7 @@ You can also include keyword arguments for the base type of the array. They will
 Tuple
 *****
 
-    `Base strategy:` `hypothesis.strategies.tuples <https://hypothesis.readthedocs.io/en/latest/data.html#hypothesis.strategies.tuples>`_
+    `Base strategy:` :func:`hypothesis.strategies.tuples <hypothesis.strategies.tuples>`
 
 Tuple strategies yield tuples of mixed strategies according to the given type string.
 
@@ -308,7 +308,7 @@ Settings
 
 Depending on the scope and complexity of your tests, it may be necessary to modify the default settings for how property-based tests are run.
 
-The mechanism for doing this is the ``hypothesis.settings`` object. You can set up a ``@given`` based test to use this using a settings decorator:
+The mechanism for doing this is the :py:class:`hypothesis.settings <hypothesis.settings>` object. You can set up a ``@given`` based test to use this using a settings decorator:
 
 
 .. code-block:: python

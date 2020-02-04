@@ -49,7 +49,7 @@ release = "v1.6.1"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions: List = []
+extensions: List = ["sphinx.ext.intersphinx"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -179,3 +179,9 @@ epub_title = project
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ["search.html"]
+
+intersphinx_mapping = {
+    "hypothesis": ("https://hypothesis.readthedocs.io/en/latest", None),
+    "pytest": ("https://docs.pytest.org/en/latest/", None),
+    "python": ("https://docs.python.org/3.8/", None),
+}
