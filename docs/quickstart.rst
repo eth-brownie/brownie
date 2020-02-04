@@ -89,9 +89,9 @@ Brownie will compile your contracts, start the local RPC client, and give you a 
 
 .. hint::
 
-    You can call the builtin ``dir`` method to see available methods and attributes for any class. Classes, methods and attributes are highlighted in different colors.
+    You can call the builtin :func:`dir <dir>` method to see available methods and attributes for any class. Classes, methods and attributes are highlighted in different colors.
 
-    You can also call ``help`` on any class or method to view information on it's functionality.
+    You can also call :func:`help <help>` on any class or method to view information on it's functionality.
 
 Accounts
 --------
@@ -286,7 +286,7 @@ A complete list of Brownie fixtures is available here.
 Handling Reverted Transactions
 ------------------------------
 
-Transactions that revert raise a :func:`VirtualMachineError <brownie.exceptions.VirtualMachineError>` exception. To write assertions around this you can use :func:`brownie.reverts <brownie.test.plugin.RevertContextManager>` as a context manager, which functions very similarly to ``pytest.raises``:
+Transactions that revert raise a :func:`VirtualMachineError <brownie.exceptions.VirtualMachineError>` exception. To write assertions around this you can use :func:`brownie.reverts <brownie.test.plugin.RevertContextManager>` as a context manager, which functions very similarly to :func:`pytest.raises <pytest.raises>`:
 
 .. code-block:: python
     :linenos:

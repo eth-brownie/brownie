@@ -24,11 +24,14 @@ Each individual account is represented by an :func:`Account <brownie.network.acc
 
 The :func:`Account.balance <Account.balance>` method is used to check the balance of an account. The value returned is denominated in :func:`wei <brownie.convert.datatypes.Wei>`.
 
+.. code-block:: python
 
     >>> accounts[1].balance()
     100000000000000000000
 
 The :func:`Account.transfer <Account.transfer>` method is used to send ether between accounts and perform other simple transactions. As shown in the example below, the amount to transfer may be specified as a string that is converted by :func:`Wei <brownie.convert.datatypes.Wei>`.
+
+.. code-block:: python
 
     >>> accounts[0].transfer(accounts[1], "10 ether")
 
