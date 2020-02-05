@@ -6,6 +6,11 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.6.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.2) - 2020-02-05
+### Fixed
+- Retrieve config file from brownie/data when generating new project
+
 ## [1.6.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.1) - 2020-02-03
 ### Changed
 - Bump dependency versions, notably [web3.py](https://github.com/ethereum/web3.py) [v5.5.0](https://web3py.readthedocs.io/en/stable/releases.html#v5-5-0-2020-02-03) to support the new [ENS registry](https://medium.com/the-ethereum-name-service/ens-registry-migration-bug-fix-new-features-64379193a5a)
