@@ -15,7 +15,6 @@ from tqdm import tqdm
 from brownie._config import (
     BROWNIE_FOLDER,
     CONFIG,
-    _get_data_folder,
     _get_project_config_path,
     _load_project_compiler_config,
     _load_project_config,
@@ -358,7 +357,7 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
     _create_gitfiles(project_path)
     if not _get_project_config_path(project_path):
         shutil.copy(
-            _get_data_folder().joinpath("brownie-config.yaml"),
+            BROWNIE_FOLDER.joinpath("data/brownie-config.yaml"),
             project_path.joinpath("brownie-config.yaml"),
         )
     if not project_path.joinpath("ethpm-config.yaml").exists():
@@ -407,7 +406,7 @@ def from_brownie_mix(
     _create_folders(project_path)
     _create_gitfiles(project_path)
     shutil.copy(
-        _get_data_folder().joinpath("brownie-config.yaml"),
+        BROWNIE_FOLDER.joinpath("data/brownie-config.yaml"),
         project_path.joinpath("brownie-config.yaml"),
     )
     _add_to_sys_path(project_path)
