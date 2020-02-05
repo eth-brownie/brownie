@@ -110,34 +110,28 @@ def xdist_id(worker_id):
 
 # ensure a clean data folder, and set unique ganache ports for each xdist worker
 @pytest.fixture(scope="session", autouse=True)
-def _data_folder_setup(tmp_path_factory, xdist_id):
-    data_path = brownie._config.DATA_FOLDER = tmp_path_factory.mktemp(f"data-{xdist_id}")
-    shutil.copy(
-        brownie._config.BROWNIE_FOLDER.joinpath("data/brownie-config.yaml"),
-        data_path.joinpath("brownie-config.yaml"),
-    )
-
+def _base_config(tmp_path_factory, xdist_id):
+    brownie._config.DATA_FOLDER = tmp_path_factory.mktemp(f"data-{xdist_id}")
+    with brownie._config.BROWNIE_FOLDER.joinpath("data/brownie-config.yaml").open() as fp:
+        config = yaml.safe_load(fp)
     if xdist_id:
         port = 8545 + xdist_id
-        with data_path.joinpath("brownie-config.yaml").open() as fp:
-            config = yaml.safe_load(fp)
         config["network"]["networks"]["development"]["test_rpc"]["port"] = port
-        with data_path.joinpath("brownie-config.yaml").open("w") as fp:
-            yaml.dump(config, fp)
         brownie._config.CONFIG._unlock()
         brownie._config.CONFIG.update(config)
         brownie._config.CONFIG._lock()
+    yield config
 
 
 @pytest.fixture(scope="session")
-def _project_factory(_data_folder_setup, tmp_path_factory):
+def _project_factory(tmp_path_factory, _base_config):
     path = tmp_path_factory.mktemp("base")
     path.rmdir()
     shutil.copytree("tests/data/brownie-test-project", path)
-    shutil.copyfile(
-        brownie._config._get_data_folder().joinpath("brownie-config.yaml"),
-        path.joinpath("brownie-config.yaml"),
-    )
+
+    with path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(_base_config, fp)
+
     p = brownie.project.load(path, "TestProject")
     p.close()
     return path
@@ -168,8 +162,10 @@ def project(tmp_path):
 
 # yields a newly initialized Project that is not loaded
 @pytest.fixture
-def newproject(project, tmp_path):
+def newproject(project, tmp_path, _base_config):
     path = project.new(tmp_path)
+    with tmp_path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(_base_config, fp)
     p = project.load(path, "NewProject")
     p.close()
     yield p
