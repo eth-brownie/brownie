@@ -22,6 +22,12 @@ def pytest_addoption(parser):
             "--revert-tb", "-R", action="store_true", help="Show detailed traceback on tx reverts"
         )
         parser.addoption(
+            "--stateful",
+            choices=["true", "false"],
+            default=None,
+            help="Only run or skip stateful tests (default: run all tests)",
+        )
+        parser.addoption(
             "--network",
             "-N",
             default=False,
