@@ -72,7 +72,7 @@ class Build:
             revert = (
                 data["path"],
                 tuple(data["offset"]),
-                data["fn"],
+                data.get("fn", "<None>"),
                 data.get("dev", msg),
                 self._sources,
             )
