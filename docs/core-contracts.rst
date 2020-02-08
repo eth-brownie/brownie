@@ -126,7 +126,7 @@ If you wish to call the contract method without a transaction, use the :func:`Co
 Transaction Parameters
 **********************
 
-When executing a transaction to a contract, you can optionally include an dictionary of transaction parameters as the final input. It may contain the following values:
+When executing a transaction to a contract, you can optionally include a :py:class:`dict <dict>` of transaction parameters as the final input. It may contain the following values:
 
     * ``from``: the :func:`Account <brownie.network.account.Account>` that the transaction it sent from. If not given, the transaction is sent from the account that deployed the contract.
     * ``gas_limit``: The amount of gas provided for transaction execution, in wei. If not given, the gas limit is determined using ``web3.eth.estimateGas``.

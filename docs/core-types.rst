@@ -9,7 +9,7 @@ Brownie uses custom data types to simplify working with common represented value
 Wei
 ===
 
-The :func:`Wei <brownie.convert.datatypes.Wei>` class is used when a value is meant to represent an amount of Ether. It is a subclass of ``int`` capable of converting strings, scientific notation and hex strings into wei denominated integers:
+The :func:`Wei <brownie.convert.datatypes.Wei>` class is used when a value is meant to represent an amount of Ether. It is a subclass of :py:class:`int <int>` capable of converting strings, scientific notation and hex strings into wei denominated integers:
 
 .. code-block:: python
 
@@ -43,7 +43,7 @@ Whenever a Brownie method takes an input referring to an amount of ether, the gi
 Fixed
 =====
 
-The :func:`Fixed <brownie.convert.datatypes.Fixed>` class is used to handle Vyper `decimal values <https://vyper.readthedocs.io/en/latest/types.html#decimals>`_. It is a subclass of `Decimal <https://docs.python.org/3.8/library/decimal.html#decimal.Decimal>`_ that allows comparisons, addition and subtraction against strings, integers and :func:`Wei <brownie.convert.datatypes.Wei>`.
+The :func:`Fixed <brownie.convert.datatypes.Fixed>` class is used to handle Vyper `decimal values <https://vyper.readthedocs.io/en/latest/types.html#decimals>`_. It is a subclass of :py:class:`decimal.Decimal <decimal.Decimal>` that allows comparisons, addition and subtraction against strings, integers and :func:`Wei <brownie.convert.datatypes.Wei>`.
 
 .. code-block:: python
 

@@ -96,7 +96,7 @@ Fixed
 
 .. py:class:: brownie.convert.datatypes.Fixed(value)
 
-    `Decimal <https://docs.python.org/3.8/library/decimal.html#decimal.Decimal>`_ subclass that allows comparisons, addition and subtraction against strings, integers and :func:`Wei <brownie.convert.datatypes.Wei>`.
+    :py:class:`decimal.Decimal <decimal.Decimal>` subclass that allows comparisons, addition and subtraction against strings, integers and :func:`Wei <brownie.convert.datatypes.Wei>`.
 
     ``Fixed`` is used for inputs and outputs to Vyper contracts that use the `decimal type <https://vyper.readthedocs.io/en/latest/types.html#decimals>`_.
 

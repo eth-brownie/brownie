@@ -177,7 +177,7 @@ Decimal
 
     `Base strategy:` :func:`hypothesis.strategies.decimals <hypothesis.strategies.decimals>`
 
-``decimal`` strategies yield ``decimal.Decimal`` instances.
+``decimal`` strategies yield :py:class:`decimal.Decimal <decimal.Decimal>` instances.
 
 Optional keyword arguments:
 

@@ -179,7 +179,7 @@ To write a stateful test:
 
     * ``state_machine_class``: A state machine class to be used in the test. Be sure to pass the class itself, not an instance of the class.
     * ``*args``: Any arguments given here will be passed to the state machine's ``__init__`` method.
-    * ``settings``: An optional dictionary of :ref:`Hypothesis settings<hypothesis-settings>` that will replace the defaults for this test only.
+    * ``settings``: An optional :py:class:`dict <dict>` of :ref:`Hypothesis settings<hypothesis-settings>` that will replace the defaults for this test only.
 
     This method is available as a pytest fixture :func:`state_machine <fixtures.state_machine>`.
 
@@ -189,6 +189,7 @@ Basic Example
 As a basic example, we will create a state machine to test the following Vyper ``Depositer`` contract. This is very simple contract with two functions and a public mapping. Anyone can deposit ether for another account using the ``deposit_for`` method, or withdraw deposited ether using ``withdraw_from``.
 
 .. code-block:: python
+    :linenos:
 
     deposited: public(map(address, uint256(wei)))
 
@@ -267,4 +268,24 @@ When this test is executed, it will call ``rule_deposit`` and ``rule_withdraw`` 
     state.rule_withdraw(address=<Account '0x33A4622B82D4c04a53e170c638B944ce27cffce3'>, value=0)
     state.teardown()
 
-From this we can see the sequence of calls leading up to the error, and that the failed assertion is that ``self.contract.deposited(address)`` is zero, when we expected it to be one. There is clearly an issue in how the contract adjusts balances within the withdraw function.
+From this we can see the sequence of calls leading up to the error, and that the failed assertion is that ``self.contract.deposited(address)`` is zero, when we expected it to be one. We can infer that the contract is incorrectly adjusting balances within the withdraw function. Looking at that function:
+
+.. code-block:: python
+    :lineno-start: 9
+
+    @public
+    def withdraw_from(value: uint256(wei)) -> bool:
+        assert self.deposited[msg.sender] >= value, "Insufficient balance"
+        self.deposited[msg.sender] = value
+        send(msg.sender, value)
+        return True
+
+On line 12, rather than subtracting ``value``, the balance is being `set` to ``value``. We found the bug!
+
+More Examples
+-------------
+
+Here are some links to repositories that make use of stateful testing. If you have a project that you would like included here, feel free to `edit this document <https://github.com/iamdefinitelyahuman/brownie/edit/master/docs/tests-hypothesis-stateful.rst>`_ and open a pull request, or let us know about it on Gitter.
+
+    * `iamdefinitelyahuman/NFToken <https://github.com/iamdefinitelyahuman/nftoken/tree/master/tests/stateful>`_: A non-fungible implementation of the ERC20 standard.
+
