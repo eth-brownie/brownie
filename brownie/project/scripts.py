@@ -3,6 +3,7 @@
 import ast
 import importlib
 import sys
+import warnings
 from hashlib import sha1
 from pathlib import Path
 from types import ModuleType
@@ -114,8 +115,13 @@ def _get_ast_hash(path: str) -> str:
             name = obj.module  # type: ignore
         try:
             origin = importlib.util.find_spec(name).origin
-        except Exception as e:
-            raise type(e)(f"in {path} - {e}") from None
+        except Exception:
+            warnings.warn(
+                f"{Path(path).name}, unable to determine import spec for '{name}',"
+                " the --update flag may not work correctly with this test file",
+                ImportWarning,
+            )
+            continue
         if base_path in origin:
             with open(origin) as fp:
                 ast_list.append(ast.parse(fp.read(), origin))

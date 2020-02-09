@@ -10,21 +10,22 @@ from brownie.utils.docopt import docopt
 __doc__ = f"""Usage: brownie test [<path>] [options]
 
 Arguments:
-  [<path>]              Path to the test(s) to run
+  [<path>]                 Path to the test(s) to run
 
 Brownie Options:
-  --update -U           Only run tests where changes have occurred
-  --coverage -C         Evaluate contract test coverage
-  --revert-tb -R        Show detailed traceback on unhandled transaction reverts
-  --gas -G              Display gas profile for function calls
-  --network [name]      Use a specific network (default {CONFIG['network']['default']})
+  --update -U              Only run tests where changes have occurred
+  --coverage -C            Evaluate contract test coverage
+  --stateful [true,false]  Only run stateful tests, or skip them
+  --revert-tb -R           Show detailed traceback on unhandled transaction reverts
+  --gas -G                 Display gas profile for function calls
+  --network [name]         Use a specific network (default {CONFIG['network']['default']})
 
 Pytest Options:
-  -n [numprocesses]     Number of workers to use for xdist distributed testing,
-                        set to 'auto' for automatic detection of number of CPUs
-  --durations [num]     show slowest setup/test durations (num=0 for all)
-  --exitfirst -x        Exit instantly on first error or failed test
-  --verbose -v          Increase verbosity
+  -n [numprocesses]        Number of workers to use for xdist distributed testing,
+                           set to 'auto' for automatic detection of number of CPUs
+  --durations [num]        show slowest setup/test durations (num=0 for all)
+  --exitfirst -x           Exit instantly on first error or failed test
+  --verbose -v             Increase verbosity
 
 Help Options:
   --fixtures            Show a list of available fixtures

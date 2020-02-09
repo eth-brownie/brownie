@@ -69,6 +69,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         _make_fixture_execute_first(metafunc, "fn_isolation", "function")
 
     def pytest_collection_modifyitems(self, items):
+        stateful = self.config.getoption("--stateful")
         self._make_nodemap([i.nodeid for i in items])
 
         # determine which modules are properly isolated
@@ -76,6 +77,11 @@ class PytestBrownieRunner(PytestBrownieBase):
         for i in items:
             if "skip_coverage" in i.fixturenames and ARGV["coverage"]:
                 i.add_marker("skip")
+            if stateful is not None:
+                if stateful == "true" and "state_machine" not in i.fixturenames:
+                    i.add_marker("skip")
+                elif stateful == "false" and "state_machine" in i.fixturenames:
+                    i.add_marker("skip")
             path = self._path(i.parent.fspath)
             if "module_isolation" not in i.fixturenames:
                 tests[path] = None

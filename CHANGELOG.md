@@ -6,6 +6,11 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Added
+- `--stateful` flag to only run or skip stateful test cases
+
+### Fixed
+- Warn instead of raising when an import spec cannot be found
 
 ## [1.6.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.2) - 2020-02-05
 ### Fixed
