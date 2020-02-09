@@ -20,8 +20,9 @@ def test_web3(web3):
     """,
     """
 from brownie.network.contract import ContractContainer
+from brownie import EVMTester
 
-def test_contract_container(BrownieTester, EVMTester):
+def test_contract_container(BrownieTester):
     assert type(BrownieTester) is ContractContainer
     assert type(EVMTester) is ContractContainer
     """,

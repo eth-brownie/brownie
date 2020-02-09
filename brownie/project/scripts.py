@@ -2,7 +2,6 @@
 
 import ast
 import importlib
-import sys
 import warnings
 from hashlib import sha1
 from pathlib import Path
@@ -44,11 +43,7 @@ def run(
     script, project = _get_path(script_path)
 
     # temporarily add project objects to the main namespace, so the script can import them
-    brownie: Any = sys.modules["brownie"]
-    brownie_dict = brownie.__dict__.copy()
-    brownie_all = brownie.__all__.copy()
-    brownie.__dict__.update(project)
-    brownie.__all__.extend(project.__all__)
+    project._add_to_main_namespace()
 
     try:
         script = script.absolute().relative_to(project._path)
@@ -64,9 +59,7 @@ def run(
         return getattr(module, method_name)(*args, **kwargs)
     finally:
         # cleanup namespace
-        brownie.__dict__.clear()
-        brownie.__dict__.update(brownie_dict)
-        brownie.__all__ = brownie_all
+        project._remove_from_main_namespace()
 
 
 def _get_path(path_str: str) -> Tuple[Path, Project]:

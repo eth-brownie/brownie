@@ -265,6 +265,21 @@ class Project(_ProjectBase):
         dict_.update(self)
         self._namespaces.append(dict_)
 
+    def _add_to_main_namespace(self) -> None:
+        # temporarily adds project objects to the main namespace
+        brownie: Any = sys.modules["brownie"]
+        brownie.__dict__.update(self._containers)
+        brownie.__all__.extend(self.__all__)
+
+    def _remove_from_main_namespace(self) -> None:
+        # removes project objects from the main namespace
+        brownie: Any = sys.modules["brownie"]
+        for key in self._containers:
+            brownie.__dict__.pop(key, None)
+        for key in self.__all__:
+            if key in brownie.__all__:
+                brownie.__all__.remove(key)
+
     def __repr__(self) -> str:
         return f"<Project '{color('bright magenta')}{self._name}{color}'>"
 
@@ -297,6 +312,7 @@ class Project(_ProjectBase):
         self._containers.clear()
 
         # undo black-magic
+        self._remove_from_main_namespace()
         name = self._name
         del sys.modules[f"brownie.project.{name}"]
         sys.modules["brownie.project"].__all__.remove(name)  # type: ignore
