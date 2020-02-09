@@ -222,3 +222,13 @@ def test_get_abi():
             "type": "function",
         }
     ]
+
+
+def test_size_limit(capfd):
+    code = f"""
+pragma solidity 0.6.2;
+contract Foo {{ function foo() external returns (bool) {{
+    require(msg.sender != address(0), "{"blah"*10000}"); }}
+}}"""
+    compiler.compile_and_format({"foo.sol": code})
+    assert "exceeds EIP-170 limit of 24577" in capfd.readouterr()[0]

@@ -50,9 +50,11 @@ def test_error(tx, reverted_tx, capfd):
 
 def test_deploy_reverts(BrownieTester, accounts, console_mode):
     tx = BrownieTester.deploy(True, {"from": accounts[0]}).tx
-    tx.traceback()
+    with pytest.raises(NotImplementedError):
+        tx.traceback()
     with pytest.raises(NotImplementedError):
         tx.call_trace()
+
     revertingtx = BrownieTester.deploy(False, {"from": accounts[0]})
     with pytest.raises(NotImplementedError):
         revertingtx.call_trace()

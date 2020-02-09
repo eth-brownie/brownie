@@ -158,8 +158,9 @@ def test_call_trace(console_mode, tester):
 
 
 def test_trace_deploy(tester):
-    """trace is not calculated for deploying contracts"""
-    assert not tester.tx.trace
+    """trace is calculated for deploying contracts but not expanded"""
+    assert tester.tx.trace
+    assert "fn" not in tester.tx.trace[0]
 
 
 def test_trace_transfer(accounts):
