@@ -41,6 +41,7 @@ def pytest_configure(config):
 
         active_project = project.load()
         active_project.load_config()
+        active_project._add_to_main_namespace()
 
         if config.getoption("numprocesses"):
             Plugin = PytestBrownieMaster
