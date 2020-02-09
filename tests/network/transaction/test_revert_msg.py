@@ -3,6 +3,7 @@
 import pytest
 
 from brownie.exceptions import VirtualMachineError
+from brownie.project import compile_source
 
 
 def test_revert_msg_via_jump(ext_tester, console_mode):
@@ -76,3 +77,9 @@ def test_vyper_revert_reasons(vypertester, console_mode):
     assert tx.revert_msg == "Modulo by zero"
     tx = vypertester.overflow(0, 0, {"value": 31337})
     assert tx.revert_msg == "Cannot send ether to nonpayable function"
+
+
+def test_deployment_size_limit(accounts, console_mode):
+    code = f"@public\ndef baz():\n    assert msg.sender != ZERO_ADDRESS, '{'blah'*10000}'"
+    tx = compile_source(code).Vyper.deploy({"from": accounts[0]})
+    assert tx.revert_msg == "exceeds EIP-170 size limit"

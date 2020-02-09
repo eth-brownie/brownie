@@ -5,6 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Dict, Optional, Union
 
+from eth_utils import remove_0x_prefix
 from semantic_version import Version
 
 from brownie.exceptions import UnsupportedLanguage
@@ -15,6 +16,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
     install_solc,
     set_solc_version,
 )
+from brownie.utils import notify
 
 from . import solidity, vyper
 
@@ -279,6 +281,12 @@ def generate_build_json(
                 "sourcePath": path_str,
             }
         )
+        size = len(remove_0x_prefix(output_evm["deployedBytecode"]["object"])) / 2  # type: ignore
+        if size > 24577:
+            notify(
+                "WARNING",
+                f"deployed size of {contract_name} is {size} bytes, exceeds EIP-170 limit of 24577",
+            )
 
     if not silent:
         print("")

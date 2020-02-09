@@ -6,11 +6,18 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.6.3](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.3) - 2020-02-09
 ### Added
 - `--stateful` flag to only run or skip stateful test cases
+- [EIP-170](https://github.com/ethereum/EIPs/issues/170) size limits: warn on compile, give useful error message on failed deployment
+
+### Changed
+- unexpanded transaction trace is available for deployment transactions
 
 ### Fixed
 - Warn instead of raising when an import spec cannot be found
+- Handle `REVERT` outside of function when generating revert map
 
 ## [1.6.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.2) - 2020-02-05
 ### Fixed

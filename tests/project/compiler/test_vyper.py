@@ -83,3 +83,9 @@ def test_get_abi():
             "gas": 351,
         }
     ]
+
+
+def test_size_limit(capfd):
+    code = f"@public\ndef baz():\n    assert msg.sender != ZERO_ADDRESS, '{'blah'*10000}'"
+    compiler.compile_and_format({"foo.vy": code})
+    assert "exceeds EIP-170 limit of 24577" in capfd.readouterr()[0]

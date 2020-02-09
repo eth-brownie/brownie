@@ -39,6 +39,19 @@ def trace_property(fn: Callable) -> Any:
     return wrapper
 
 
+def trace_inspection(fn: Callable) -> Any:
+    def wrapper(self: "TransactionReceipt", *args: Any, **kwargs: Any) -> Any:
+        if self.contract_address:
+            raise NotImplementedError(
+                "Trace inspection methods are not available for deployment transactions."
+            )
+        if self.input == "0x" and self.gas_used == 21000:
+            return None
+        return fn(self, *args, **kwargs)
+
+    return wrapper
+
+
 class TransactionReceipt:
 
     """Attributes and methods relating to a broadcasted transaction.
@@ -175,14 +188,17 @@ class TransactionReceipt:
                 if self._revert_msg is None:
                     # no revert message and unable to check dev string - have to get trace
                     self._expand_trace()
-                source = self._traceback_string() if ARGV["revert"] else self._error_string(1)
+                if self.contract_address:
+                    source = ""
+                else:
+                    source = self._traceback_string() if ARGV["revert"] else self._error_string(1)
                 raise VirtualMachineError({"message": self._revert_msg or "", "source": source})
         except KeyboardInterrupt:
             if ARGV["cli"] != "console":
                 raise
 
     def __repr__(self) -> str:
-        c = {-1: "pending", 0: "error", 1: None}
+        c = {-1: "bright yellow", 0: "bright red", 1: None}
         return f"<Transaction '{color(c[self.status])}{self.txid}{color}'>"
 
     def __hash__(self) -> int:
@@ -234,7 +250,11 @@ class TransactionReceipt:
 
     @trace_property
     def revert_msg(self) -> Optional[str]:
-        if not self.status and self._revert_msg is None:
+        if self.status:
+            return None
+        if self._revert_msg is None:
+            self._get_trace()
+        elif self.contract_address and self._revert_msg == "out of gas":
             self._get_trace()
         return self._revert_msg
 
@@ -331,8 +351,8 @@ class TransactionReceipt:
         if self._raw_trace is not None:
             return
         self._raw_trace = []
-        if (self.input == "0x" and self.gas_used == 21000) or self.contract_address:
-            self._modified_state = bool(self.contract_address)
+        if self.input == "0x" and self.gas_used == 21000:
+            self._modified_state = False
             self._trace = []
             return
 
@@ -361,7 +381,7 @@ class TransactionReceipt:
     def _confirmed_trace(self, trace: Sequence) -> None:
         self._modified_state = next((True for i in trace if i["op"] == "SSTORE"), False)
 
-        if trace[-1]["op"] != "RETURN":
+        if trace[-1]["op"] != "RETURN" or self.contract_address:
             return
         contract = _find_contract(self.receiver)
         if contract:
@@ -373,6 +393,10 @@ class TransactionReceipt:
         self._modified_state = False
         # get events from trace
         self._events = _decode_trace(trace)
+        if self.contract_address:
+            step = next((i for i in trace if i["op"] == "CODECOPY"), None)
+            if step is not None and int(step["stack"][-3], 16) > 24577:
+                self._revert_msg = "exceeds EIP-170 size limit"
         if self._revert_msg is not None:
             return
         # get revert message
@@ -381,6 +405,9 @@ class TransactionReceipt:
             # get returned error string from stack
             data = _get_memory(step, -1)[4:]
             self._revert_msg = decode_abi(["string"], data)[0]
+            return
+        if self.contract_address:
+            self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
             return
         # check for dev revert string using program counter
         self._revert_msg = build._get_dev_revert(step["pc"])
@@ -419,7 +446,7 @@ class TransactionReceipt:
         self._trace = trace = self._raw_trace
         self._new_contracts = []
         self._internal_transfers = []
-        if not trace:
+        if self.contract_address or not trace:
             coverage._add_transaction(self.coverage_hash, {})
             return
         if "fn" in trace[0]:
@@ -562,18 +589,15 @@ class TransactionReceipt:
                     result += f"\n      {key}: {color('bright blue')}{value}{color}"
         print(result)
 
+    @trace_inspection
     def call_trace(self) -> None:
         """Displays the complete sequence of contracts and methods called during
         the transaction, and the range of trace step indexes for each method.
 
         Lines highlighed in red ended with a revert.
         """
-        trace = self.trace
-        if not trace:
-            if not self.contract_address:
-                return
-            raise NotImplementedError("Call trace is not available for deployment transactions.")
 
+        trace = self.trace
         result = f"Call trace for '{color('bright blue')}{self.txid}{color}':"
         result += _step_print(trace[0], trace[-1], None, 0, len(trace))
         indent = {0: 0}
@@ -613,17 +637,14 @@ class TransactionReceipt:
         print(result)
 
     def traceback(self) -> None:
-        print(self._traceback_string())
+        print(self._traceback_string() or "")
 
+    @trace_inspection
     def _traceback_string(self) -> str:
         """Returns an error traceback for the transaction."""
         if self.status == 1:
             return ""
         trace = self.trace
-        if not trace:
-            if not self.contract_address:
-                return ""
-            raise NotImplementedError("Traceback is not available for deployment transactions.")
 
         try:
             idx = next(i for i in range(len(trace)) if trace[i]["op"] in ("REVERT", "INVALID"))
@@ -651,8 +672,9 @@ class TransactionReceipt:
         )
 
     def error(self, pad: int = 3) -> None:
-        print(self._error_string(pad))
+        print(self._error_string(pad) or "")
 
+    @trace_inspection
     def _error_string(self, pad: int = 3) -> str:
         """Returns the source code that caused the transaction to revert.
 
@@ -682,8 +704,9 @@ class TransactionReceipt:
             return ""
 
     def source(self, idx: int, pad: int = 3) -> None:
-        print(self._source_string(idx, pad))
+        print(self._source_string(idx, pad) or "")
 
+    @trace_inspection
     def _source_string(self, idx: int, pad: int) -> str:
         """Displays the associated source code for a given stack trace step.
 
@@ -694,7 +717,7 @@ class TransactionReceipt:
         Returns: source code string
         """
         trace = self.trace[idx]
-        if not trace["source"]:
+        if not trace.get("source", None):
             return ""
         contract = _find_contract(self.trace[idx]["address"])
         source, linenos = highlight_source(
