@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import sys
+from collections import deque
 from inspect import getmembers
 from types import FunctionType
 from typing import Any, Optional
@@ -9,15 +11,26 @@ from hypothesis import stateful as sf
 from hypothesis.strategies import SearchStrategy
 
 import brownie
+from brownie.utils import color
 
 __tracebackhide__ = True
 sf.__tracebackhide__ = True
+
+marker = deque("-/|\\-/|\\")
 
 
 class _BrownieStateMachine:
     def __init__(self) -> None:
         brownie.rpc.revert()
         sf.RuleBasedStateMachine.__init__(self)
+
+        capman = getattr(self, "_capman", None)
+        if capman:
+            with capman.global_and_fixture_disabled():
+                sys.stdout.write(f"{color('yellow')}{marker[0]}\033[1D")
+                sys.stdout.flush()
+            marker.rotate(1)
+
         if hasattr(self, "setup"):
             self.setup()  # type: ignore
 

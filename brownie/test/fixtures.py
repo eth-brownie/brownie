@@ -1,11 +1,13 @@
 #!/usr/bin/python3
 
+import sys
+
 import pytest
 
 import brownie
 from brownie._config import ARGV
 
-from .stateful import state_machine
+from .stateful import _BrownieStateMachine, state_machine
 
 
 def _generate_fixture(container):
@@ -92,4 +94,20 @@ class PytestBrownieFixtures:
     @pytest.fixture(scope="session")
     def state_machine(self):
         """Yields a rule-based state machine factory method."""
+
+        # allows the state machine to disable pytest capturing
+        capman = self.config.pluginmanager.get_plugin("capturemanager")
+        _BrownieStateMachine._capman = capman
+
+        # for posix systems we disable the cursor to make the progress spinner prettier
+        if sys.platform != "win32":
+            with capman.global_and_fixture_disabled():
+                sys.stdout.write("\033[?25l")
+                sys.stdout.flush()
+
         yield state_machine
+
+        if sys.platform != "win32":
+            with capman.global_and_fixture_disabled():
+                sys.stdout.write("\033[?25h")
+                sys.stdout.flush()
