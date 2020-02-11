@@ -5,6 +5,7 @@ from unittest import mock
 
 import pytest
 from mythx_models.response import DetectedIssuesResponse
+from pythx import ValidationError
 
 from brownie._cli.analyze import (
     assemble_contract_jobs,
@@ -87,86 +88,28 @@ def test_request_from_artifact(artifact_file, key, value):
 
 
 def assert_client_access_token():
-    client, authenticated = get_mythx_client()
+    client = get_mythx_client()
     assert client is not None
-    assert client.access_token == "foo"
-    assert client.eth_address is None
+    assert client.api_key == "foo"
+    assert client.username is None
     assert client.password is None
-    assert authenticated
 
 
 def test_mythx_client_from_access_token_env(monkeypatch):
-    monkeypatch.setenv("MYTHX_ACCESS_TOKEN", "foo")
+    monkeypatch.setenv("MYTHX_API_KEY", "foo")
     assert_client_access_token()
-    monkeypatch.delenv("MYTHX_ACCESS_TOKEN")
+    monkeypatch.delenv("MYTHX_API_KEY")
 
 
 def test_mythx_client_from_access_token_arg():
-    ARGV["access-token"] = "foo"
+    ARGV["api-key"] = "foo"
     assert_client_access_token()
-    del ARGV["access-token"]
+    del ARGV["api-key"]
 
 
-def assert_client_username_password():
-    client, authenticated = get_mythx_client()
-    assert client is not None
-    assert client.eth_address == "foo"
-    assert client.password == "bar"
-    assert client.access_token is None
-    assert authenticated
-
-
-def test_mythx_client_from_username_password_env(monkeypatch):
-    monkeypatch.setenv("MYTHX_ETH_ADDRESS", "foo")
-    monkeypatch.setenv("MYTHX_PASSWORD", "bar")
-    assert_client_username_password()
-    monkeypatch.delenv("MYTHX_ETH_ADDRESS")
-    monkeypatch.delenv("MYTHX_PASSWORD")
-
-
-def test_mythx_client_from_username_password_arg():
-    ARGV["eth-address"] = "foo"
-    ARGV["password"] = "bar"
-    assert_client_username_password()
-    del ARGV["eth-address"]
-    del ARGV["password"]
-
-
-def assert_trial_client():
-    client, authenticated = get_mythx_client()
-    assert client is not None
-    assert client.eth_address == "0x0000000000000000000000000000000000000000"
-    assert client.password == "trial"
-    assert client.access_token is None
-    assert client.refresh_token is None
-
-
-def test_mythx_client_default():
-    assert_trial_client()
-
-
-def test_mythx_client_default_no_password_arg():
-    ARGV["eth-address"] = "foo"
-    assert_trial_client()
-    del ARGV["eth-address"]
-
-
-def test_mythx_client_default_no_username_arg():
-    ARGV["password"] = "bar"
-    assert_trial_client()
-    del ARGV["password"]
-
-
-def test_mythx_client_default_no_password_env(monkeypatch):
-    monkeypatch.setenv("MYTHX_ETH_ADDRESS", "foo")
-    assert_trial_client()
-    monkeypatch.delenv("MYTHX_ETH_ADDRESS")
-
-
-def test_mythx_client_default_no_username_env(monkeypatch):
-    monkeypatch.setenv("MYTHX_PASSWORD", "bar")
-    assert_trial_client()
-    monkeypatch.delenv("MYTHX_PASSWORD")
+def test_without_api_key():
+    with pytest.raises(ValidationError):
+        get_mythx_client()
 
 
 # simulate build.items() method
@@ -255,7 +198,7 @@ def test_send_to_mythx_blocking(monkeypatch):
     response.uuid = "foo"
     client.analyze = lambda *args, **kwargs: response
 
-    uuids = send_to_mythx(JOB_DATA, client, False)
+    uuids = send_to_mythx(JOB_DATA, client)
 
     assert uuids == ["foo"]
 
@@ -266,7 +209,7 @@ def test_send_to_mythx_async(monkeypatch):
     response.uuid = "foo"
     client.analyze = lambda *args, **kwargs: response
     ARGV["async"] = True
-    uuids = send_to_mythx(JOB_DATA, client, False)
+    uuids = send_to_mythx(JOB_DATA, client)
 
     assert uuids == ["foo"]
 
@@ -276,7 +219,7 @@ def test_send_to_mythx_blocking_auth(monkeypatch):
     response = mock.MagicMock()
     response.uuid = "foo"
     client.analyze = lambda *args, **kwargs: response
-    uuids = send_to_mythx(JOB_DATA, client, True)
+    uuids = send_to_mythx(JOB_DATA, client)
 
     assert uuids == ["foo"]
 
@@ -287,7 +230,7 @@ def test_send_to_mythx_async_auth(monkeypatch):
     response.uuid = "foo"
     client.analyze = lambda *args, **kwargs: response
     ARGV["async"] = True
-    uuids = send_to_mythx(JOB_DATA, client, True)
+    uuids = send_to_mythx(JOB_DATA, client)
 
     assert uuids == ["foo"]
 
