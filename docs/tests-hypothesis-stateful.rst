@@ -26,7 +26,7 @@ A state machine is a class used within stateful testing. It defines the initial 
 
 .. note::
 
-    Unlike regular Hypothesis state machines, Brownie state machines should not subclass ``RuleBasedStateMachine``.
+    Unlike regular Hypothesis state machines, Brownie state machines should not subclass :py:class:`RuleBasedStateMachine <hypothesis.stateful.RuleBasedStateMachine>`.
 
 Rules
 -----
@@ -65,7 +65,7 @@ Any state machine method named ``initialize`` or beginning with ``initialize_`` 
 Strategies
 ----------
 
-A state machine should contain one or more :ref:`hypothesis-strategies`, in order to provide data to it's rules.
+A state machine should contain one or more :ref:`strategies <hypothesis-strategies>`, in order to provide data to it's rules.
 
 Strategies must be defined at the class level, typically before the first function. They can be given any name.
 
@@ -285,7 +285,27 @@ On line 12, rather than subtracting ``value``, the balance is being `set` to ``v
 More Examples
 -------------
 
-Here are some links to repositories that make use of stateful testing. If you have a project that you would like included here, feel free to `edit this document <https://github.com/iamdefinitelyahuman/brownie/edit/master/docs/tests-hypothesis-stateful.rst>`_ and open a pull request, or let us know about it on Gitter.
+Here are some links to repositories that make use of stateful testing. If you have a project that you would like included here, feel free to `edit this document <https://github.com/iamdefinitelyahuman/brownie/edit/master/docs/tests-hypothesis-stateful.rst>`_ and open a pull request, or let us know about it on `Gitter <https://gitter.im/eth-brownie/community>`_.
 
     * `iamdefinitelyahuman/NFToken <https://github.com/iamdefinitelyahuman/nftoken/tree/master/tests/stateful>`_: A non-fungible implementation of the ERC20 standard.
 
+Running Stateful Tests
+======================
+
+By default, stateful tests are included when you run your test suite. There is no special action required to invoke them.
+
+You can choose to exclude stateful tests, or to *only* run stateful tests, with the ``--stateful`` flag. This can be useful to split the test suite when setting up `continuous integration <https://github.com/brownie-mix/travis-mix>`_.
+
+To only run stateful tests:
+
+::
+
+    $ brownie test --stateful true
+
+To skip stateful tests:
+
+::
+
+    $ brownie test --stateful false
+
+When a stateful test is active the console shows a spinner that rotates each time a run of the test has finished. If the color changes from yellow to red, it means the test has failed and hypothesis is now searching for the shortest path to the failure.
