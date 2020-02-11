@@ -55,7 +55,7 @@ env:
 install:
   - python -m pip install --upgrade pip setuptools
   - npm -g install ganache-cli@6.8.2
-  - python -m pip install coveralls==1.9.2 tox==3.14.0
+  - python -m pip install coveralls==1.9.2 tox==3.14.3
 after_script: python -m coveralls
 notifications:
   email: false
