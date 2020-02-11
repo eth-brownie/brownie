@@ -43,7 +43,7 @@ def test_release_localaccount(registry, accounts, tp_path, monkeypatch, tmpdir):
     assert ethpm.verify_manifest.call_count == 1
     assert ethpm.release_package.call_count == 1
     id_ = registry.getReleaseId("testpackage", "1.0.0")
-    assert registry.getReleaseData(id_)[-1] == ethpm.create_manifest.return_value[1]
+    assert registry.getReleaseData(id_)[-1] == ethpm.create_manifest.spy_return[1]
 
 
 def test_release_account(registry, accounts, tp_path):
@@ -53,7 +53,7 @@ def test_release_account(registry, accounts, tp_path):
     assert ethpm.verify_manifest.call_count == 1
     assert ethpm.release_package.call_count == 1
     id_ = registry.getReleaseId("testpackage", "1.0.0")
-    assert registry.getReleaseData(id_)[-1] == ethpm.create_manifest.return_value[1]
+    assert registry.getReleaseData(id_)[-1] == ethpm.create_manifest.spy_return[1]
 
 
 def test_release_unknown_account(registry, accounts, tp_path):
