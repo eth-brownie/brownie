@@ -7,7 +7,8 @@ Brownie is a Python-based development and testing framework for smart contracts 
 ## Features
 
 * Full support for [Solidity](https://github.com/ethereum/solidity) (`>=0.4.22`) and [Vyper](https://github.com/vyperlang/vyper) (`0.1.0-b16`)
-* Contract testing via [pytest](https://github.com/pytest-dev/pytest), including trace-based coverage evaluation
+* Contract testing via [`pytest`](https://github.com/pytest-dev/pytest), including trace-based coverage evaluation
+* Property-based and stateful testing via [`hypothesis`](https://github.com/HypothesisWorks/hypothesis/tree/master/hypothesis-python)
 * Powerful debugging tools, including python-style tracebacks and custom error strings
 * Built-in console for quick project interaction
 * Support for [ethPM](https://www.ethpm.com) packages
@@ -18,17 +19,17 @@ Brownie is a Python-based development and testing framework for smart contracts 
 * [pip](https://pypi.org/project/pip/)
 * [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3-dev
 
-As Brownie relies on [py-solc-x](https://github.com/iamdefinitelyahuman/py-solc-x), you do not need solc installed locally but you must install all required [solc dependencies](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages).
+As Brownie relies on [`py-solc-x`](https://github.com/iamdefinitelyahuman/py-solc-x), you do not need solc installed locally but you must install all required [solc dependencies](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages).
 
 ## Installation
 
-You can install the latest release via ``pip``:
+You can install the latest release via [`pip`](https://pypi.org/project/pip/):
 
 ```bash
 pip install eth-brownie
 ```
 
-Or clone the repository and use ``setuptools`` for the most up-to-date version:
+Or clone the repository and use [`setuptools`](https://github.com/pypa/setuptools) for the most up-to-date version:
 
 ```bash
 python setup.py install
@@ -42,7 +43,7 @@ To set up the default folder and file structure for Brownie use:
 brownie init
 ```
 
-Next, type ``brownie --help`` for basic usage information.
+Next, type `brownie --help` for basic usage information.
 
 ## Documentation and Support
 
@@ -58,11 +59,11 @@ To run the tests, first install the developer dependencies:
 pip install -r requirements-dev.txt
 ```
 
-Then use ``tox`` to run the complete suite against the full set of build targets, or ``pytest`` to run tests against a specific version of Python. If you are using ``pytest`` you must include the ``-p no:pytest-brownie`` flag to prevent it from loading the Brownie plugin.
+Then use [`tox`](https://github.com/tox-dev/tox) to run the complete suite against the full set of build targets, or [`pytest`](https://github.com/pytest-dev/pytest) to run tests against a specific version of Python. If you are using [`pytest`](https://github.com/pytest-dev/pytest) you must include the `-p no:pytest-brownie` flag to prevent it from loading the Brownie plugin.
 
 ### Using Docker
 
-You can use a sandbox container provided in the `docker-compose.yml` file for testing inside a Docker environment.
+You can use a sandbox container provided in the [`docker-compose.yml`](docker-compose.yml) file for testing inside a Docker environment.
 
 This container provides everything you need to test using a Python 3.6 interpreter.
 
