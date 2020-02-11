@@ -91,7 +91,7 @@ class PytestBrownieFixtures:
         # implemented in pytest_collection_modifyitems
         pass
 
-    @pytest.fixture(scope="session")
+    @pytest.fixture
     def state_machine(self):
         """Yields a rule-based state machine factory method."""
 

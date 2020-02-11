@@ -20,19 +20,38 @@ marker = deque("-/|\\-/|\\")
 
 
 class _BrownieStateMachine:
+
+    _failed = False
+
     def __init__(self) -> None:
         brownie.rpc.revert()
         sf.RuleBasedStateMachine.__init__(self)
 
+        # pytest capturemanager plugin, added when accessed via the state_manager fixture
         capman = getattr(self, "_capman", None)
         if capman:
             with capman.global_and_fixture_disabled():
-                sys.stdout.write(f"{color('yellow')}{marker[0]}\033[1D")
+                c = color("red" if self._failed else "yellow")
+                sys.stdout.write(f"{c}{marker[0]}\033[1D")
                 sys.stdout.flush()
             marker.rotate(1)
 
         if hasattr(self, "setup"):
             self.setup()  # type: ignore
+
+    def execute_step(self, step):
+        try:
+            super().execute_step(step)
+        except Exception:
+            type(self)._failed = True
+            raise
+
+    def check_invariants(self):
+        try:
+            super().check_invariants()
+        except Exception:
+            type(self)._failed = True
+            raise
 
 
 def _member_filter(member: tuple) -> bool:
