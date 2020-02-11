@@ -6,8 +6,16 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.6.4](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.4) - 2020-02-11
+### Added
+- Show progress spinner when running stateful tests
+
+### Changed
+- Update `brownie analyze` based on updates to [MythX](https://www.mythx.io/) API
+
 ### Fixed
-- allow import of project `ContractContainer` instances from `brownie` when running tests
+- Allow import of project `ContractContainer` instances from `brownie` when running tests
 
 ## [1.6.3](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.3) - 2020-02-09
 ### Added
@@ -15,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [EIP-170](https://github.com/ethereum/EIPs/issues/170) size limits: warn on compile, give useful error message on failed deployment
 
 ### Changed
-- unexpanded transaction trace is available for deployment transactions
+- Unexpanded transaction trace is available for deployment transactions
 
 ### Fixed
 - Warn instead of raising when an import spec cannot be found
