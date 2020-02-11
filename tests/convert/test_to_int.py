@@ -31,9 +31,9 @@ def test_overflow_uint():
 def test_underflow():
     for i in range(8, 264, 8):
         type_ = "int" + str(i)
-        assert to_int((-2 ** i // 2), type_) == (-2 ** i // 2)
+        assert to_int((-(2 ** i) // 2), type_) == (-(2 ** i) // 2)
         with pytest.raises(OverflowError):
-            to_int(-2 ** i // 2 - 1, type_)
+            to_int(-(2 ** i) // 2 - 1, type_)
 
 
 def test_type():

@@ -17,7 +17,7 @@ def test_strategy():
 def test_invalid_min_max():
     # min too low
     with pytest.raises(ValueError):
-        strategy("decimal", min_value=-2 ** 128)
+        strategy("decimal", min_value=-(2 ** 128))
     # max too high
     with pytest.raises(ValueError):
         strategy("decimal", max_value=2 ** 128)
@@ -30,7 +30,7 @@ def test_invalid_min_max():
 def test_given(value):
     assert type(value) is Decimal
     assert value.quantize(Decimal("1.0000000000")) == value
-    assert -2 ** 127 <= value <= 2 ** 127 - 1
+    assert -(2 ** 127) <= value <= 2 ** 127 - 1
 
 
 @given(value=strategy("decimal", min_value=1, max_value="1.5"))
