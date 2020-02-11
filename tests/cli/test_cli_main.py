@@ -85,23 +85,6 @@ def test_cli_compile(cli_tester, testproject):
     assert cli_tester.mock_subroutines.call_count == 2
 
 
-def test_cli_analyze(cli_tester, testproject):
-    cli_tester.monkeypatch.setattr(
-        "brownie._cli.analyze.send_to_mythx", lambda job_data, client, authenticated: ["UUID_1"]
-    )
-    cli_tester.monkeypatch.setattr("pythx.Client.analysis_ready", lambda client, uuid: True)
-    cli_tester.monkeypatch.setattr(
-        "brownie._cli.analyze.update_report",
-        lambda client, uuid, hl_report, stdout_report, name: stdout_report.setdefault(
-            "x", {}
-        ).setdefault("HIGH", 1),
-    )
-    cli_tester.run_and_test_parameters("analyze", parameters=None)
-
-    assert cli_tester.mock_subroutines.called is False
-    assert cli_tester.mock_subroutines.call_count == 0
-
-
 def test_cli_analyze_with_mocked_project(cli_tester, testproject):
     cli_tester.monkeypatch.setattr("brownie.project.load", cli_tester.mock_subroutines)
     cli_tester.run_and_test_parameters("analyze")
