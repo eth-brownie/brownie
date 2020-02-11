@@ -124,7 +124,7 @@ def _array_strategy(
     if abi_type.item_type.is_array:
         kwargs.update(min_length=min_length, max_length=max_length, unique=unique)
     base_strategy = strategy(abi_type.item_type.to_type_str(), **kwargs)
-    strat = st.lists(base_strategy, min_len, max_len, unique=unique)
+    strat = st.lists(base_strategy, min_size=min_len, max_size=max_len, unique=unique)
     # swap 'size' for 'length' in the repr
     repr_ = "length".join(strat.__repr__().rsplit("size", maxsplit=2))
     strat._LazyStrategy__representation = repr_  # type: ignore

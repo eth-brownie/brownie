@@ -31,7 +31,7 @@ def to_int(value: Any, type_str: str = "int256") -> Wei:
 def to_decimal(value: Any) -> Fixed:
     """Convert a value to a fixed point decimal"""
     d: Fixed = Fixed(value)
-    if d < -2 ** 127 or d >= 2 ** 127:
+    if d < -(2 ** 127) or d >= 2 ** 127:
         raise OverflowError(f"{value} is outside allowable range for decimal")
     if d.quantize(Decimal("1.0000000000")) != d:
         raise ValueError("Maximum of 10 decimal points allowed")

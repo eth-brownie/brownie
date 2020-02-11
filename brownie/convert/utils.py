@@ -10,7 +10,7 @@ def get_int_bounds(type_str: str) -> Tuple[int, int]:
         raise ValueError(f"Invalid type: {type_str}")
     if type_str.startswith("u"):
         return 0, 2 ** size - 1
-    return -2 ** (size - 1), 2 ** (size - 1) - 1
+    return -(2 ** (size - 1)), 2 ** (size - 1) - 1
 
 
 def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> List:

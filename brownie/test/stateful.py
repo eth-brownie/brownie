@@ -102,7 +102,7 @@ def state_machine(
     brownie.rpc.snapshot()
 
     try:
-        sf.run_state_machine_as_test(lambda: machine(), hp_settings(**settings or {}))
+        sf.run_state_machine_as_test(lambda: machine(), settings=hp_settings(**settings or {}))
     finally:
         if hasattr(machine, "teardown_final"):
             # teardown_final is also a class method
