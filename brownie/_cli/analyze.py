@@ -7,7 +7,7 @@ import time
 from os import environ
 from pathlib import Path
 
-from pythx import Client
+from pythx import Client, ValidationError
 from pythx.middleware.toolname import ClientToolNameMiddleware
 
 from brownie import project
@@ -17,37 +17,23 @@ from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
 from brownie.utils.docopt import docopt
 
-__doc__ = f"""Usage: brownie analyze [options] [--async | --interval=<sec>]
+__doc__ = """Usage: brownie analyze [options] [--async | --interval=<sec>]
 
 Options:
   --gui                     Launch the Brownie GUI after analysis
   --full                    Perform a full scan (MythX Pro required)
   --interval=<sec>          Result polling interval in seconds [default: 3]
   --async                   Do not poll for results, print job IDs and exit
-  --access-token=<string>   The JWT access token from the MythX dashboard
-  --eth-address=<string>    The address of your MythX account
-  --password=<string>       The password of your MythX account
+  --api-key=<string>        The JWT access token from the MythX dashboard
   --help -h                 Display this message
 
-Use the "analyze" command to submit your project to the MythX API for
-smart contract security analysis.
+Submits your project to the MythX API for smart contract security analysis.
 
+In order to perform an analysis you must register for a MythX account and
+generate a JWT access token. This access token may be passed through an
+environment variable "MYTHX_API_KEY", or given via a command line option.
 
-To authenticate with the MythX API, it is recommended that you provide
-the MythX JWT access token. It can be obtained on the MythX dashboard
-site in the profile section. They should be passed through the environment
-variable "MYTHX_ACCESS_TOKEN". If that is not possible, it can also be
-passed explicitly with the respective command line option.
-
-Alternatively, you have to provide a username/password combination. It
-is recommended to pass them through the environment variables as
-"MYTHX_ETH_ADDRESS" and "MYTHX_PASSWORD".
-
-You can also choose to not authenticate and submit your analyses as a free
-trial user. No registration required! To see your past analyses, get access
-to deeper vulnerability detection, and a neat dashboard, register at
-https://mythx.io/. Any questions? Hit up dominik.muhs@consensys.net or contact
-us on the website!
+Visit https://mythx.io/ to learn more about MythX and sign up for an account.
 """
 
 
@@ -94,35 +80,17 @@ def construct_request_from_artifact(artifact):
 
 
 def get_mythx_client():
-    # if both eth address and username are None,
-    if ARGV["access-token"]:
-        authenticated = True
-        auth_args = {"access_token": ARGV["access-token"]}
-    elif ARGV["eth-address"] and ARGV["password"]:
-        authenticated = True
-        auth_args = {"eth_address": ARGV["eth-address"], "password": ARGV["password"]}
-    elif environ.get("MYTHX_ACCESS_TOKEN"):
-        authenticated = True
-        auth_args = {"access_token": environ.get("MYTHX_ACCESS_TOKEN")}
-    elif environ.get("MYTHX_ETH_ADDRESS") and environ.get("MYTHX_PASSWORD"):
-        authenticated = True
-        auth_args = {
-            "eth_address": environ.get("MYTHX_ETH_ADDRESS"),
-            "password": environ.get("MYTHX_PASSWORD"),
-        }
+    if ARGV["api-key"]:
+        auth_args = {"api_key": ARGV["api-key"]}
+    elif environ.get("MYTHX_API_KEY"):
+        auth_args = {"api_key": environ.get("MYTHX_API_KEY")}
     else:
-        authenticated = False
-        auth_args = {
-            "eth_address": "0x0000000000000000000000000000000000000000",
-            "password": "trial",
-        }
+        raise ValidationError(
+            "You must provide a MythX API key via environment variable or the commandline"
+        )
 
-    return (
-        Client(
-            **auth_args,
-            middlewares=[ClientToolNameMiddleware(name="brownie-{}".format(__version__))],
-        ),
-        authenticated,
+    return Client(
+        **auth_args, middlewares=[ClientToolNameMiddleware(name=f"brownie-{__version__}")]
     )
 
 
@@ -157,16 +125,12 @@ def update_contract_jobs_with_dependencies(build, contracts, libraries, job_data
     return job_data
 
 
-def send_to_mythx(job_data, client, authenticated):
+def send_to_mythx(job_data, client):
     job_uuids = []
     for c, (contract_name, analysis_request) in enumerate(job_data.items(), start=1):
         resp = client.analyze(**analysis_request)
-        if ARGV["async"] and authenticated:
-            print(
-                "The analysis for {} can be found at {}{}".format(
-                    contract_name, DASHBOARD_BASE_URL, resp.uuid
-                )
-            )
+        if ARGV["async"]:
+            print(f"Analysis for {contract_name} can be found at {DASHBOARD_BASE_URL}{resp.uuid}")
         else:
             print(
                 f"Submitted analysis {color('bright blue')}{resp.uuid}{color} for "
@@ -187,7 +151,6 @@ def print_trial_message(issue):
     global TRIAL_PRINTED
     if issue.swc_id == "" or issue.severity.name in ("UNKNOWN", "NONE"):
         if not TRIAL_PRINTED:
-            print(f"\n{issue.description_short}")
             print(f"{issue.description_long}\n")
             TRIAL_PRINTED = True
         return True
@@ -244,12 +207,12 @@ def main():
     job_data = assemble_contract_jobs(build, contracts)
     job_data = update_contract_jobs_with_dependencies(build, contracts, libraries, job_data)
 
-    client, authenticated = get_mythx_client()
+    client = get_mythx_client()
 
-    job_uuids = send_to_mythx(job_data, client, authenticated)
+    job_uuids = send_to_mythx(job_data, client)
 
     # exit if user wants an async analysis run
-    if ARGV["async"] and authenticated:
+    if ARGV["async"]:
         print(
             "\nAll contracts were submitted successfully. Check the dashboard at "
             "https://dashboard.mythx.io/ for the progress and results of your analyses"
@@ -267,8 +230,7 @@ def main():
         print(
             f"Generating report for job {color('bright blue')}{uuid}{color} ({c}/{len(job_uuids)})"
         )
-        if authenticated:
-            print("You can also check the results at {}{}\n".format(DASHBOARD_BASE_URL, uuid))
+        print(f"You can also check the results at {DASHBOARD_BASE_URL}{uuid}\n")
 
         update_report(client, uuid, highlight_report, stdout_report, source_to_name)
 
@@ -293,7 +255,7 @@ def main():
     for name in sorted(stdout_report):
         print(f"\n  contract: {color('bright magenta')}{name}{color}")
         for key in [i for i in ("HIGH", "MEDIUM", "LOW") if i in stdout_report[name]]:
-            c = color("bright " + SEVERITY_COLOURS[key])
+            c = color("bright red" if key == "HIGH" else "bright yellow")
             print(f"    {key.title()}: {c}{stdout_report[name][key]}{color}")
 
     # Write report to Brownie directory
