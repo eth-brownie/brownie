@@ -9,7 +9,7 @@ import solcast
 import solcx
 from requests.exceptions import ConnectionError
 from semantic_version import Version
-from solcast.nodes import NodeBase
+from solcast.nodes import NodeBase, is_inside_offset
 
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion
@@ -310,6 +310,9 @@ def _generate_coverage_data(
     revert_map: Dict = {}
     fallback_hexstr: str = "unassigned"
 
+    active_source_node = None
+    active_fn_node = None
+    active_fn_name = None
     while source_map:
         # format of source is [start, stop, contract_id, jump code]
         source = source_map.popleft()
@@ -336,21 +339,44 @@ def _generate_coverage_data(
 
         # set contract path (-1 means none)
         if source[2] == -1:
-            if (
-                len(pc_list) >= 8
-                and pc_list[-1]["op"] == "REVERT"
-                and pc_list[-8]["op"] == "CALLVALUE"
-            ):
-                pc_list[-1].update(
-                    {
-                        "dev": "Cannot send ether to nonpayable function",
-                        "fn": pc_list[-8].get("fn", "<unknown>"),
-                        "offset": pc_list[-8]["offset"],
-                        "path": pc_list[-8]["path"],
-                    }
-                )
+            if pc_list[-1]["op"] != "REVERT":
+                continue
+            if source_map and source_map[0][2] == -1:
+                if len(pc_list) >= 8 and pc_list[-8]["op"] == "CALLVALUE":
+                    pc_list[-1].update(
+                        dev="Cannot send ether to nonpayable function",
+                        fn=pc_list[-8].get("fn", "<unknown>"),
+                        offset=pc_list[-8]["offset"],
+                        path=pc_list[-8]["path"],
+                    )
+                continue
+
+            if not active_fn_node:
+                continue
+
+            next_offset = None
+            if source_map and source_map[0][2] != -1:
+                next_offset = (source_map[0][0], source_map[0][0] + source_map[0][1])
+
+                if next_offset != active_fn_node.offset and is_inside_offset(
+                    next_offset, active_fn_node.offset
+                ):
+                    pc_list[-1].update(
+                        path=active_source_node.absolutePath, fn=active_fn_name, offset=next_offset
+                    )
+                    continue
+            if active_fn_node[-1].nodeType == "ExpressionStatement":
+                expr = active_fn_node[-1].expression
+                if expr.nodeType == "FunctionCall" and expr.expression.name == "revert":
+                    pc_list[-1].update(
+                        path=active_source_node.absolutePath,
+                        fn=active_fn_name,
+                        offset=active_fn_node[-1].expression.expression.offset,
+                    )
             continue
-        path = source_nodes[source[2]].absolutePath
+
+        active_source_node = source_nodes[source[2]]
+        path = active_source_node.absolutePath
         pc_list[-1]["path"] = path
 
         # set source offset (-1 means none)
@@ -361,7 +387,7 @@ def _generate_coverage_data(
 
         # add error messages for INVALID opcodes
         if pc_list[-1]["op"] == "INVALID":
-            node = source_nodes[source[2]].children(include_children=False, offset_limits=offset)[0]
+            node = active_source_node.children(include_children=False, offset_limits=offset)[0]
             if node.nodeType == "IndexAccess":
                 pc_list[-1]["dev"] = "Index out of range"
             elif node.nodeType == "BinaryOperation":
@@ -386,14 +412,15 @@ def _generate_coverage_data(
         try:
             # set fn name and statement coverage marker
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
-                pc_list[-1]["fn"] = pc_list[-2]["fn"]
+                pc_list[-1]["fn"] = active_fn_name
             else:
-                pc_list[-1]["fn"] = _get_fn_full_name(source_nodes[source[2]], offset)
+                active_fn_name, active_fn_node = _get_fn_full_name(active_source_node, offset)
+                pc_list[-1]["fn"] = active_fn_name
                 stmt_offset = next(
                     i for i in stmt_nodes[path] if sources.is_inside_offset(offset, i)
                 )
                 stmt_nodes[path].discard(stmt_offset)
-                statement_map[path].setdefault(pc_list[-1]["fn"], {})[count] = stmt_offset
+                statement_map[path].setdefault(active_fn_name, {})[count] = stmt_offset
                 pc_list[-1]["statement"] = count
                 count += 1
         except (KeyError, IndexError, StopIteration):
@@ -407,6 +434,7 @@ def _generate_coverage_data(
             )
 
     # compare revert() statements against the map of revert jumps to find
+
     for (path, fn_offset), values in revert_map.items():
         fn_node = next(i for i in source_nodes.values() if i.absolutePath == path).children(
             depth=2,
@@ -443,7 +471,7 @@ def _generate_coverage_data(
     return pc_map, statement_map, branch_map
 
 
-def _get_fn_full_name(source_node: NodeBase, offset: Tuple[int, int]) -> str:
+def _get_fn_full_name(source_node: NodeBase, offset: Tuple[int, int]) -> Tuple:
     node = source_node.children(
         depth=2, required_offset=offset, filters={"nodeType": "FunctionDefinition"}
     )[0]
@@ -455,7 +483,7 @@ def _get_fn_full_name(source_node: NodeBase, offset: Tuple[int, int]) -> str:
             name = "<constructor>"
         else:
             name = "<fallback>"
-    return f"{node.parent().name}.{name}"
+    return f"{node.parent().name}.{name}", node
 
 
 def _get_nodes(output_json: Dict) -> Tuple[Dict, Dict, Dict]:
