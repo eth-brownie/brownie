@@ -52,13 +52,11 @@ def compile_from_input_json(
         input_json["settings"]["evmVersion"] = EVM_EQUIVALENTS[input_json["settings"]["evmVersion"]]
 
     if not silent:
-        print("Compiling contracts...")
-        print(f"  Solc version: {str(solcx.get_solc_version())}")
+        print("Compiling contracts...\n  Solc version: {str(solcx.get_solc_version())}")
 
-        print(
-            "  Optimizer: "
-            + (f"Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled")
-        )
+        opt = "Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled"
+        print(f"  Optimizer: {opt}")
+
         if input_json["settings"]["evmVersion"]:
             print(f"  EVM Version: {input_json['settings']['evmVersion'].capitalize()}")
 
@@ -310,11 +308,12 @@ def _generate_coverage_data(
     revert_map: Dict = {}
     fallback_hexstr: str = "unassigned"
 
-    active_source_node = None
-    active_fn_node = None
-    active_fn_name = None
+    active_source_node: Optional[NodeBase] = None
+    active_fn_node: Optional[NodeBase] = None
+    active_fn_name: Optional[str] = None
+
     while source_map:
-        # format of source is [start, stop, contract_id, jump code]
+        # format of source_map is [start, stop, contract_id, jump code]
         source = source_map.popleft()
         pc_list.append({"op": opcodes.popleft(), "pc": pc})
 
@@ -326,7 +325,7 @@ def _generate_coverage_data(
         ):
             # flag the REVERT op at the end of the function selector,
             # later reverts may jump to it instead of having their own REVERT op
-            fallback_hexstr = "0x" + hex(pc - 4).upper()[2:]
+            fallback_hexstr = f"0x{hex(pc - 4).upper()[2:]}"
             pc_list[-1]["first_revert"] = True
 
         if source[3] != "-":
@@ -337,44 +336,15 @@ def _generate_coverage_data(
             pc_list[-1]["value"] = opcodes.popleft()
             pc += int(pc_list[-1]["op"][4:])
 
-        # set contract path (-1 means none)
+        # for REVERT opcodes without an source offset, try to infer one
         if source[2] == -1:
-            if pc_list[-1]["op"] != "REVERT":
-                continue
-            if source_map and source_map[0][2] == -1:
-                if len(pc_list) >= 8 and pc_list[-8]["op"] == "CALLVALUE":
-                    pc_list[-1].update(
-                        dev="Cannot send ether to nonpayable function",
-                        fn=pc_list[-8].get("fn", "<unknown>"),
-                        offset=pc_list[-8]["offset"],
-                        path=pc_list[-8]["path"],
-                    )
-                continue
-
-            if not active_fn_node:
-                continue
-
-            next_offset = None
-            if source_map and source_map[0][2] != -1:
-                next_offset = (source_map[0][0], source_map[0][0] + source_map[0][1])
-
-                if next_offset != active_fn_node.offset and is_inside_offset(
-                    next_offset, active_fn_node.offset
-                ):
-                    pc_list[-1].update(
-                        path=active_source_node.absolutePath, fn=active_fn_name, offset=next_offset
-                    )
-                    continue
-            if active_fn_node[-1].nodeType == "ExpressionStatement":
-                expr = active_fn_node[-1].expression
-                if expr.nodeType == "FunctionCall" and expr.expression.name == "revert":
-                    pc_list[-1].update(
-                        path=active_source_node.absolutePath,
-                        fn=active_fn_name,
-                        offset=active_fn_node[-1].expression.expression.offset,
-                    )
+            if pc_list[-1]["op"] == "REVERT":
+                _find_revert_offset(
+                    pc_list, source_map, active_source_node, active_fn_node, active_fn_name
+                )
             continue
 
+        # set contract path (-1 means none)
         active_source_node = source_nodes[source[2]]
         path = active_source_node.absolutePath
         pc_list[-1]["path"] = path
@@ -387,16 +357,9 @@ def _generate_coverage_data(
 
         # add error messages for INVALID opcodes
         if pc_list[-1]["op"] == "INVALID":
-            node = active_source_node.children(include_children=False, offset_limits=offset)[0]
-            if node.nodeType == "IndexAccess":
-                pc_list[-1]["dev"] = "Index out of range"
-            elif node.nodeType == "BinaryOperation":
-                if node.operator == "/":
-                    pc_list[-1]["dev"] = "Division by zero"
-                elif node.operator == "%":
-                    pc_list[-1]["dev"] = "Modulus by zero"
+            _set_invalid_error_string(active_source_node, pc_list[-1])
 
-        # if op is jumpi, set active branch markers
+        # for JUMPI instructions, set active branch markers
         if branch_active[path] and pc_list[-1]["op"] == "JUMPI":
             for offset in branch_active[path]:
                 # ( program counter index, JUMPI index)
@@ -414,7 +377,7 @@ def _generate_coverage_data(
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
                 pc_list[-1]["fn"] = active_fn_name
             else:
-                active_fn_name, active_fn_node = _get_fn_full_name(active_source_node, offset)
+                active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)
                 pc_list[-1]["fn"] = active_fn_name
                 stmt_offset = next(
                     i for i in stmt_nodes[path] if sources.is_inside_offset(offset, i)
@@ -425,16 +388,13 @@ def _generate_coverage_data(
                 count += 1
         except (KeyError, IndexError, StopIteration):
             pass
-        if "value" not in pc_list[-1]:
-            continue
-        if pc_list[-1]["value"] == fallback_hexstr and opcodes[0] in {"JUMP", "JUMPI"}:
+
+        if pc_list[-1].get("value", None) == fallback_hexstr and opcodes[0] in ("JUMP", "JUMPI"):
             # track all jumps to the initial revert
-            revert_map.setdefault((pc_list[-1]["path"], pc_list[-1]["offset"]), []).append(
-                len(pc_list)
-            )
+            key = (pc_list[-1]["path"], pc_list[-1]["offset"])
+            revert_map.setdefault(key, []).append(len(pc_list))
 
     # compare revert() statements against the map of revert jumps to find
-
     for (path, fn_offset), values in revert_map.items():
         fn_node = next(i for i in source_nodes.values() if i.absolutePath == path).children(
             depth=2,
@@ -450,7 +410,7 @@ def _generate_coverage_data(
             offset = node.offset
             # if the node offset is not in the source map, apply it's offset to the JUMPI op
             if not next((x for x in pc_list if "offset" in x and x["offset"] == offset), False):
-                pc_list[values[0]].update({"offset": offset, "jump_revert": True})
+                pc_list[values[0]].update(offset=offset, jump_revert=True)
                 del values[0]
 
     # set branch index markers and build final branch map
@@ -458,32 +418,97 @@ def _generate_coverage_data(
     for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
         # for branch to be hit, need an op relating to the source and the next JUMPI
         # this is because of how the compiler optimizes nested BinaryOperations
-        if "fn" not in pc_list[idx[0]]:
-            continue
-        fn = pc_list[idx[0]]["fn"]
-        pc_list[idx[0]]["branch"] = count
-        pc_list[idx[1]]["branch"] = count
-        node = next(i for i in branch_original[path] if i.offset == offset)
-        branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
-        count += 1
+        if "fn" in pc_list[idx[0]]:
+            fn = pc_list[idx[0]]["fn"]
+            pc_list[idx[0]]["branch"] = count
+            pc_list[idx[1]]["branch"] = count
+            node = next(i for i in branch_original[path] if i.offset == offset)
+            branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
+            count += 1
 
     pc_map = dict((i.pop("pc"), i) for i in pc_list)
     return pc_map, statement_map, branch_map
 
 
-def _get_fn_full_name(source_node: NodeBase, offset: Tuple[int, int]) -> Tuple:
-    node = source_node.children(
+def _find_revert_offset(
+    pc_list: List,
+    source_map: deque,
+    source_node: NodeBase,
+    fn_node: NodeBase,
+    fn_name: Optional[str],
+) -> None:
+
+    # attempt to infer a source offset for reverts that do not have one
+
+    if source_map and source_map[0][2] == -1:
+        # this is not the last instruction and the following instruction also has no source
+        if len(pc_list) >= 8 and pc_list[-8]["op"] == "CALLVALUE":
+            # reference to CALLVALUE 8 instructions previous is a nonpayable function check
+            pc_list[-1].update(
+                dev="Cannot send ether to nonpayable function",
+                fn=pc_list[-8].get("fn", "<unknown>"),
+                offset=pc_list[-8]["offset"],
+                path=pc_list[-8]["path"],
+            )
+        return
+
+    # if there is active function, we are still in the function selector table
+    if not fn_node:
+        return
+
+    # get the offset of the next instruction
+    next_offset = None
+    if source_map and source_map[0][2] != -1:
+
+        next_offset = (source_map[0][0], source_map[0][0] + source_map[0][1])
+
+    # if the next instruction offset is not equal to the offset of the active function,
+    # but IS contained within the active function, apply this offset to the current
+    # instruction
+
+    if (
+        next_offset
+        and next_offset != fn_node.offset
+        and is_inside_offset(next_offset, fn_node.offset)
+    ):
+        pc_list[-1].update(path=source_node.absolutePath, fn=fn_name, offset=next_offset)
+        return
+
+    # if any of the previous conditions are not satisfied, this is the final revert
+    # statement within a function
+    if fn_node[-1].nodeType == "ExpressionStatement":
+        expr = fn_node[-1].expression
+        if expr.nodeType == "FunctionCall" and expr.expression.name == "revert":
+            pc_list[-1].update(
+                path=source_node.absolutePath, fn=fn_name, offset=expr.expression.offset
+            )
+
+
+def _set_invalid_error_string(source_node: NodeBase, pc_map: Dict) -> None:
+    # set custom error string for INVALID opcodes
+    node = source_node.children(include_children=False, offset_limits=pc_map["offset"])[0]
+    if node.nodeType == "IndexAccess":
+        pc_map["dev"] = "Index out of range"
+    elif node.nodeType == "BinaryOperation":
+        if node.operator == "/":
+            pc_map["dev"] = "Division by zero"
+        elif node.operator == "%":
+            pc_map["dev"] = "Modulus by zero"
+
+
+def _get_active_fn(source_node: NodeBase, offset: Tuple[int, int]) -> Tuple[NodeBase, str]:
+    fn_node = source_node.children(
         depth=2, required_offset=offset, filters={"nodeType": "FunctionDefinition"}
     )[0]
-    name = getattr(node, "name", None)
+    name = getattr(fn_node, "name", None)
     if not name:
-        if getattr(node, "kind", "function") != "function":
-            name = f"<{node.kind}>"
-        elif getattr(node, "isConstructor", False):
+        if getattr(fn_node, "kind", "function") != "function":
+            name = f"<{fn_node.kind}>"
+        elif getattr(fn_node, "isConstructor", False):
             name = "<constructor>"
         else:
             name = "<fallback>"
-    return f"{node.parent().name}.{name}", node
+    return fn_node, f"{fn_node.parent().name}.{name}"
 
 
 def _get_nodes(output_json: Dict) -> Tuple[Dict, Dict, Dict]:
