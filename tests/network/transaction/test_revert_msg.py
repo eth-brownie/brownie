@@ -6,6 +6,52 @@ from brownie.exceptions import VirtualMachineError
 from brownie.project import compile_source
 
 
+def test_dev_revert_on_final_statement(console_mode, evmtester, accounts):
+
+    code = """pragma solidity >=0.4.22;
+
+contract foo {
+
+    function foo1 () external returns (bool) {
+        revert(); // dev: yuss
+    }
+
+    function foo2 () external returns (bool) {
+        uint b = 33;
+        revert(); // dev: yuss
+    }
+
+    function foo3 (uint a) external returns (bool) {
+        if (a < 3) {
+            return true;
+        }
+        revert(); // dev: yuss
+    }
+
+    function foo4 (uint a) external returns (bool) {
+        require(a >= 3);
+        revert(); // dev: yuss
+    }
+
+    function foo5 (uint a) external {
+        require(a >= 3);
+        revert(); // dev: yuss
+    }
+}"""
+
+    contract = compile_source(code).foo.deploy({"from": accounts[0]})
+    tx = contract.foo1()
+    assert tx.revert_msg == "dev: yuss"
+    tx = contract.foo2()
+    assert tx.revert_msg == "dev: yuss"
+    tx = contract.foo3(4)
+    assert tx.revert_msg == "dev: yuss"
+    tx = contract.foo4(4)
+    assert tx.revert_msg == "dev: yuss"
+    tx = contract.foo5(4)
+    assert tx.revert_msg == "dev: yuss"
+
+
 def test_revert_msg_via_jump(ext_tester, console_mode):
     tx = ext_tester.getCalled(2)
     assert tx.revert_msg == "dev: should jump to a revert"
