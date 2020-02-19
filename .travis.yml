@@ -1,10 +1,10 @@
 # Based on https://github.com/cclauss/Travis-CI-Python-on-three-OSes
 jobs:
   include:
-    - name: "EVM Tests - Python 3.7 on Xenial Linux"
+    - name: "EVM Tests - Python 3.7 on Bionic Linux"
       language: python
       python: 3.7
-      dist: xenial
+      dist: bionic
       before_install:
         - sudo add-apt-repository -y ppa:ethereum/ethereum
         - sudo add-apt-repository -y ppa:deadsnakes/ppa
@@ -19,30 +19,30 @@ jobs:
         - choco install python --version=3.8.0
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
       script: tox -e py38
-    - name: "Standard Tests, Linting, Docs - Python 3.6 on Xenial Linux"
+    - name: "Standard Tests, Linting, Docs - Python 3.6 on Bionic Linux"
       language: python
       python: 3.6
-      dist: xenial
+      dist: bionic
       before_install:
         - sudo add-apt-repository -y ppa:ethereum/ethereum
         - sudo add-apt-repository -y ppa:deadsnakes/ppa
         - sudo apt-get update
         - sudo apt-get install -y python3.6-dev npm solc
       script: tox -e lint,doctest,py36
-    - name: "Standard Tests, Brownie Mix Tests - Python 3.7 on Xenial Linux"
+    - name: "Standard Tests, Brownie Mix Tests - Python 3.7 on Bionic Linux"
       language: python
       python: 3.7
-      dist: xenial
+      dist: bionic
       before_install:
         - sudo add-apt-repository -y ppa:ethereum/ethereum
         - sudo add-apt-repository -y ppa:deadsnakes/ppa
         - sudo apt-get update
         - sudo apt-get install -y python3.6-dev npm solc
       script: tox -e py37,mixtest
-    - name: "Standard Tests, Plugin Tests - Python 3.8 on Xenial Linux"
+    - name: "Standard Tests, Plugin Tests - Python 3.8 on Bionic Linux"
       language: python
       python: 3.8
-      dist: xenial
+      dist: bionic
       before_install:
         - sudo add-apt-repository -y ppa:ethereum/ethereum
         - sudo add-apt-repository -y ppa:deadsnakes/ppa
