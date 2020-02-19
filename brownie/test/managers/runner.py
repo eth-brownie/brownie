@@ -138,7 +138,8 @@ class PytestBrownieRunner(PytestBrownieBase):
             if path in self.tests and ARGV["update"]:
                 self.results[path] = list(self.tests[path]["results"])
             else:
-                self.results[path] = []
+                # all tests are initially marked as skipped
+                self.results[path] = ["s"] * len(self.node_map[path])
 
     def pytest_runtest_logreport(self, report):
         path, test_id = self._test_id(report.nodeid)
@@ -149,8 +150,6 @@ class PytestBrownieRunner(PytestBrownieBase):
         idx = self.node_map[path].index(test_id)
 
         results = self.results[path]
-        if report.when == "setup" and len(results) < idx + 1:
-            results.append("s" if report.skipped else None)
         if report.when == "call":
             results[idx] = convert_outcome(report.outcome)
             if hasattr(report, "wasxfail"):
