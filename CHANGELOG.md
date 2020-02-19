@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.6.5](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.5) - 2020-02-19
+
+### Fixed
+- Fix issues from missing source offsets in Solidity [v0.6.3](https://github.com/ethereum/solidity/releases/tag/v0.6.3)
+- Do not assume pytest will run test functions sequentially (adds support for `-k` flag)
+
 ## [1.6.4](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.4) - 2020-02-11
 ### Added
 - Show progress spinner when running stateful tests
