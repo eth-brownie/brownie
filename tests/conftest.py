@@ -66,7 +66,7 @@ def pytest_generate_tests(metafunc):
         )
         params += list(
             itertools.product(
-                ["byzantium", "petersburg", "istanbul"], [0, 10000], ["0.5.15", "0.6.0"]
+                ["byzantium", "petersburg", "istanbul"], [0, 10000], ["0.5.15", "0.6.3"]
             )
         )
         metafunc.parametrize("evmtester", params, indirect=True)
