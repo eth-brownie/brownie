@@ -39,7 +39,6 @@ Visit https://mythx.io/ to learn more about MythX and sign up for an account.
 
 SEVERITY_COLOURS = {"LOW": "yellow", "MEDIUM": "orange", "HIGH": "red"}
 DASHBOARD_BASE_URL = "https://dashboard.mythx.io/#/console/analyses/"
-TRIAL_PRINTED = False
 BYTECODE_ADDRESS_PATCH = re.compile(r"__\w{38}")
 DEPLOYED_ADDRESS_PATCH = re.compile(r"__\$\w{34}\$__")
 
@@ -86,7 +85,7 @@ def get_mythx_client():
         auth_args = {"api_key": environ.get("MYTHX_API_KEY")}
     else:
         raise ValidationError(
-            "You must provide a MythX API key via environment variable or the commandline"
+            "You must provide a MythX API key via environment variable or the command line"
         )
 
     return Client(
@@ -147,22 +146,10 @@ def wait_for_jobs(job_uuids, client):
             time.sleep(int(ARGV["interval"]))
 
 
-def print_trial_message(issue):
-    global TRIAL_PRINTED
-    if issue.swc_id == "" or issue.severity.name in ("UNKNOWN", "NONE"):
-        if not TRIAL_PRINTED:
-            print(f"{issue.description_long}\n")
-            TRIAL_PRINTED = True
-        return True
-    return False
-
-
 def update_report(client, uuid, highlight_report, stdout_report, source_to_name):
     resp = client.report(uuid)
     for report in resp.issue_reports:
         for issue in resp:
-            if print_trial_message(issue):
-                continue
 
             # convert issue locations to report locations
             # severities are highlighted according to SEVERITY_COLOURS
