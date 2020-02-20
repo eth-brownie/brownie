@@ -12,7 +12,7 @@ py-solc-ast>=1.1.0,<2.0.0
 py-solc-x>=0.8.0,<1.0.0
 pytest==5.3.5
 pytest-xdist==1.31.0
-pythx==1.5.3
+pythx==1.5.4
 pyyaml>=5.3.0,<6.0.0
 requests>=2.22.0,<3.0.0
 semantic-version>=2.8.4,<3.0.0
