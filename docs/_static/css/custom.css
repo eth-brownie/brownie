@@ -13,6 +13,8 @@ a:visited {
 .data dt,
 .attribute dt,
 .function dt,
+.classmethod dt,
+.exception dt,
 .descclassname,
 .descname {
     background-color: #2d2d2d !important;
