@@ -15,7 +15,7 @@ The ``main`` module contains methods for data conversion. Methods within this mo
 
 .. py:method:: brownie.convert.to_uint(value, type_str="uint256")
 
-    Converts a value to an unsigned integer. This is equivalent to calling ``Wei`` and then applying checks for over/underflows.
+    Converts a value to an unsigned integer. This is equivalent to calling :func:`Wei <brownie.convert.datatypes.Wei>` and then applying checks for over/underflows.
 
 .. py:method:: brownie.convert.to_int(value, type_str="int256")
 
@@ -201,9 +201,9 @@ Wei
 
     Integer subclass that converts a value to wei (the smallest unit of Ether, equivalent to 10\ :superscript:`-18` Ether) and allows comparisons, addition and subtraction using the same conversion.
 
-    ``Wei`` is useful for strings where you specify the unit, for large floats given in scientific notation, or where a direct conversion to ``int`` would cause inaccuracy from floating point errors.
+    :func:`Wei <brownie.convert.datatypes.Wei>` is useful for strings where you specify the unit, for large floats given in scientific notation, or where a direct conversion to ``int`` would cause inaccuracy from floating point errors.
 
-    Whenever a Brownie method takes an input referring to an amount of ether, the given value is converted to ``Wei``. Balances and ``uint``/``int`` values returned in contract calls and events are given in ``Wei``.
+    Whenever a Brownie method takes an input referring to an amount of ether, the given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. Balances and ``uint``/``int`` values returned in contract calls and events are given in :func:`Wei <brownie.convert.datatypes.Wei>`.
 
     .. code-block:: python
 
