@@ -21,7 +21,7 @@ __doc__ = """Usage: brownie analyze [options] [--async | --interval=<sec>]
 
 Options:
   --gui                     Launch the Brownie GUI after analysis
-  --full                    Perform a full scan (MythX Pro required)
+  --mode=<string>           The analysis mode (quick, standard, full) [default: quick]
   --interval=<sec>          Result polling interval in seconds [default: 3]
   --async                   Do not poll for results, print job IDs and exit
   --api-key=<string>        The JWT access token from the MythX dashboard
@@ -41,13 +41,14 @@ SEVERITY_COLOURS = {"LOW": "yellow", "MEDIUM": "orange", "HIGH": "red"}
 DASHBOARD_BASE_URL = "https://dashboard.mythx.io/#/console/analyses/"
 BYTECODE_ADDRESS_PATCH = re.compile(r"__\w{38}")
 DEPLOYED_ADDRESS_PATCH = re.compile(r"__\$\w{34}\$__")
+ANALYSIS_MODES = ("quick", "standard", "deep")
 
 
 def construct_source_dict_from_artifact(artifact):
     return {
         artifact.get("sourcePath"): {
             "source": artifact.get("source"),
-            # "ast": artifact.get("ast"),  # NOTE: Reenable once container issue fixed
+            "ast": artifact.get("ast"),
         }
     }
 
@@ -74,7 +75,7 @@ def construct_request_from_artifact(artifact):
         "source_list": source_list if source_list else None,
         "main_source": artifact.get("sourcePath"),
         "solc_version": artifact["compiler"]["version"],
-        "analysis_mode": "full" if ARGV["full"] else "quick",
+        "analysis_mode": ARGV["mode"],
     }
 
 
@@ -181,6 +182,13 @@ def update_report(client, uuid, highlight_report, stdout_report, source_to_name)
 def main():
     args = docopt(__doc__)
     _update_argv_from_docopt(args)
+
+    if ARGV["mode"] not in ANALYSIS_MODES:
+        raise ValidationError(
+            "Invalid analysis mode: Must be one of [{}]".format(
+                ", ".join(ANALYSIS_MODES)
+            )
+        )
 
     project_path = project.check_for_project(".")
     if project_path is None:
