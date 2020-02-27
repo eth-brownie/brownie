@@ -4,20 +4,11 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-from mythx_models.response import DetectedIssuesResponse
+from mythx_models.response import DetectedIssuesResponse, AnalysisSubmissionResponse, Analysis
+from mythx_models.request import AnalysisSubmissionRequest
 from pythx import ValidationError
 
-from brownie._cli.analyze import (
-    assemble_contract_jobs,
-    construct_request_from_artifact,
-    construct_source_dict_from_artifact,
-    get_contract_locations,
-    get_contract_types,
-    get_mythx_client,
-    send_to_mythx,
-    update_contract_jobs_with_dependencies,
-    update_report,
-)
+from brownie._cli.analyze import SubmissionPipeline
 from brownie._config import ARGV
 
 with open(str(Path(__file__).parent / "test-artifact.json"), "r") as artifact_f:
@@ -34,8 +25,11 @@ def empty_field(field):
 
 
 def test_source_dict_from_artifact():
-    assert construct_source_dict_from_artifact(TEST_ARTIFACT) == {
-        TEST_ARTIFACT["sourcePath"]: {"source": TEST_ARTIFACT["source"]}
+    assert SubmissionPipeline.construct_request_from_artifact(TEST_ARTIFACT).sources == {
+        TEST_ARTIFACT["sourcePath"]: {
+            "source": TEST_ARTIFACT["source"],
+            "ast": TEST_ARTIFACT["ast"],
+        }
     }
 
 
@@ -44,7 +38,7 @@ def test_request_bytecode_patch():
     artifact["bytecode"] = "0x00000000__MyLibrary_____________________________00"
 
     assert (
-        construct_request_from_artifact(artifact)["bytecode"]
+        SubmissionPipeline.construct_request_from_artifact(artifact).bytecode
         == "0x00000000000000000000000000000000000000000000000000"
     )
 
@@ -56,7 +50,7 @@ def test_request_deployed_bytecode_patch():
     ] = "0x00000000__$aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa$__00000000000000000000"
 
     assert (
-        construct_request_from_artifact(artifact)["deployed_bytecode"]
+        SubmissionPipeline.construct_request_from_artifact(artifact).deployed_bytecode
         == "0x00000000000000000000000000000000000000000000000000000000000000000000"
     )
 
@@ -83,12 +77,12 @@ def test_request_deployed_bytecode_patch():
     ),
 )
 def test_request_from_artifact(artifact_file, key, value):
-    request_dict = construct_request_from_artifact(artifact_file)
-    assert request_dict[key] == value
+    request_dict = SubmissionPipeline.construct_request_from_artifact(artifact_file)
+    assert getattr(request_dict, key) == value
 
 
 def assert_client_access_token():
-    client = get_mythx_client()
+    client = SubmissionPipeline.get_mythx_client()
     assert client is not None
     assert client.api_key == "foo"
     assert client.username is None
@@ -109,141 +103,17 @@ def test_mythx_client_from_access_token_arg():
 
 def test_without_api_key():
     with pytest.raises(ValidationError):
-        get_mythx_client()
+        SubmissionPipeline.get_mythx_client()
 
 
-# simulate build.items() method
-BUILD_CONTAINER = {
-    "foo": {"sourcePath": "foo path", "contractName": "foo contract", "type": "contract"},
-    "bar": {"sourcePath": "bar path", "contractName": "bar contract", "type": "contract"},
-    "baz": {"sourcePath": "baz path", "contractName": "baz contract", "type": "library"},
-}
-
-
-def test_contract_locations_from_build():
-    assert get_contract_locations(BUILD_CONTAINER) == {
-        "foo path": "foo contract",
-        "bar path": "bar contract",
-        "baz path": "baz contract",
-    }
-
-
-def test_contract_types_from_build():
-    assert get_contract_types(BUILD_CONTAINER) == ({"foo", "bar"}, {"baz"})
-
-
-def test_contract_job_assembly():
-    contracts = {"SafeMath"}
-    build = mock.MagicMock()
-    build.get = lambda x: TEST_ARTIFACT
-
-    job_data = assemble_contract_jobs(build, contracts)
-    assert len(job_data) == 1
-    assert job_data["SafeMath"] == construct_request_from_artifact(TEST_ARTIFACT)
-
-
-def test_contract_job_updates():
-    contracts = {"SafeMath"}
-    libraries = {"SafeMath2"}
-
-    build = mock.MagicMock()
-    build.get = lambda x: TEST_ARTIFACT
-
-    job_data = assemble_contract_jobs(build, contracts)
-
-    artifact = deepcopy(TEST_ARTIFACT)
-    artifact["contractName"] = "SafeMath2"
-    artifact["sourcePath"] = "contracts/SafeMath2.sol"
-    build.get = lambda x: artifact
-    build.get_dependents = lambda x: ["SafeMath"]
-    job_data = update_contract_jobs_with_dependencies(build, contracts, libraries, job_data)
-
-    assert len(job_data["SafeMath"]["sources"]) == 2
-    assert "contracts/SafeMath.sol" in job_data["SafeMath"]["sources"]
-    assert "contracts/SafeMath2.sol" in job_data["SafeMath"]["sources"]
-
-    assert (
-        job_data["SafeMath"]["sources"]["contracts/SafeMath.sol"]
-        == construct_source_dict_from_artifact(TEST_ARTIFACT)["contracts/SafeMath.sol"]
+def test_highlighting_report(monkeypatch):
+    monkeypatch.setenv("MYTHX_API_KEY", "foo")
+    submission = SubmissionPipeline(
+        {"test": {"sourcePath": "contracts/SafeMath.sol", "contractName": "SafeMath"}}
     )
-    assert (
-        job_data["SafeMath"]["sources"]["contracts/SafeMath2.sol"]
-        == construct_source_dict_from_artifact(artifact)["contracts/SafeMath2.sol"]
-    )
-
-
-JOB_DATA = {
-    "SafeMath": {
-        "contract_name": "SafeMath",
-        "bytecode": "60556023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea265627a7a72315820893edda58cfc8ab942d57dfc258288727bcaf844e6397a37aefea97a87eee32464736f6c634300050b0032",  # NOQA: E501
-        "deployed_bytecode": "73000000000000000000000000000000000000000030146080604052600080fdfea265627a7a72315820893edda58cfc8ab942d57dfc258288727bcaf844e6397a37aefea97a87eee32464736f6c634300050b0032",  # NOQA: E501
-        "source_map": "25:497:0:-;;132:2:-1;166:7;155:9;146:7;137:37;255:7;249:14;246:1;241:23;235:4;232:33;222:2;;269:9;222:2;293:9;290:1;283:20;323:4;314:7;306:22;347:7;338;331:24",  # NOQA: E501
-        "deployed_source_map": "25:497:0:-;;;;;;;;",
-        "sources": {
-            "contracts/SafeMath.sol": {
-                "source": "pragma solidity ^0.5.0;\n\nlibrary SafeMath {\n    function add(uint a, uint b) internal pure returns (uint c) {\n        c = a + b;\n        require(c >= a);\n    }\n    function sub(uint a, uint b) internal pure returns (uint c) {\n        require(b <= a);\n        c = a - b;\n    }\n    function mul(uint a, uint b) internal pure returns (uint c) {\n        c = a * b;\n        require(a == 0 || c / a == b);\n    }\n    function div(uint a, uint b) internal pure returns (uint c) {\n        require(b > 0);\n        c = a / b;\n    }\n}"  # NOQA: E501
-            }
-        },
-        "source_list": ["contracts/SafeMath.sol"],
-        "main_source": "contracts/SafeMath.sol",
-        "solc_version": "0.5.11+commit.22be8592.Linux.g++",
-        "analysis_mode": "quick",
-    }
-}
-
-
-def test_send_to_mythx_blocking(monkeypatch):
-    client = mock.MagicMock()
-    response = mock.MagicMock()
-    response.uuid = "foo"
-    client.analyze = lambda *args, **kwargs: response
-
-    uuids = send_to_mythx(JOB_DATA, client)
-
-    assert uuids == ["foo"]
-
-
-def test_send_to_mythx_async(monkeypatch):
-    client = mock.MagicMock()
-    response = mock.MagicMock()
-    response.uuid = "foo"
-    client.analyze = lambda *args, **kwargs: response
-    ARGV["async"] = True
-    uuids = send_to_mythx(JOB_DATA, client)
-
-    assert uuids == ["foo"]
-
-
-def test_send_to_mythx_blocking_auth(monkeypatch):
-    client = mock.MagicMock()
-    response = mock.MagicMock()
-    response.uuid = "foo"
-    client.analyze = lambda *args, **kwargs: response
-    uuids = send_to_mythx(JOB_DATA, client)
-
-    assert uuids == ["foo"]
-
-
-def test_send_to_mythx_async_auth(monkeypatch):
-    client = mock.MagicMock()
-    response = mock.MagicMock()
-    response.uuid = "foo"
-    client.analyze = lambda *args, **kwargs: response
-    ARGV["async"] = True
-    uuids = send_to_mythx(JOB_DATA, client)
-
-    assert uuids == ["foo"]
-
-
-def test_update_report():
-    client = mock.MagicMock()
-    client.report = lambda x: DetectedIssuesResponse.from_dict(TEST_REPORT)
-
-    source_to_name = {"contracts/SafeMath.sol": "SafeMath"}
-    highlight_report = {"highlights": {"MythX": {"SafeMath": {"contracts/SafeMath.sol": []}}}}
-
-    update_report(client, "foo", highlight_report, {}, source_to_name)
-    assert highlight_report == {
+    submission.reports = {"contracts/SafeMath.sol": DetectedIssuesResponse.from_dict(TEST_REPORT)}
+    submission.generate_highlighting_report()
+    assert submission.highlight_report == {
         "highlights": {
             "MythX": {
                 "SafeMath": {
@@ -252,10 +122,26 @@ def test_update_report():
                             0,
                             23,
                             "yellow",
-                            'SWC-103: A floating pragma is set.\nIt is recommended to make a conscious choice on what version of Solidity is used for compilation. Currently multiple versions "^0.5.0" are allowed.',  # NOQA: E501
+                            (
+                                "SWC-103: A floating pragma is set.\nIt is recommended to make a conscious "
+                                "choice on what version of Solidity is used for compilation. Currently multiple "
+                                'versions "^0.5.0" are allowed.'
+                            ),
                         ]
                     ]
                 }
             }
         }
     }
+    monkeypatch.delenv("MYTHX_API_KEY")
+
+
+def test_stdout_report(monkeypatch):
+    monkeypatch.setenv("MYTHX_API_KEY", "foo")
+    submission = SubmissionPipeline(
+        {"test": {"sourcePath": "contracts/SafeMath.sol", "contractName": "SafeMath"}}
+    )
+    submission.reports = {"contracts/SafeMath.sol": DetectedIssuesResponse.from_dict(TEST_REPORT)}
+    submission.generate_stdout_report()
+    assert submission.stdout_report == {"contracts/SafeMath.sol": {"LOW": 3}}
+    monkeypatch.delenv("MYTHX_API_KEY")
