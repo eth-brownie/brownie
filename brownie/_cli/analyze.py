@@ -182,6 +182,27 @@ class SubmissionPipeline:
                 self.stdout_report[contract_name][severity] += 1
 
 
+def print_console_report(stdout_report):
+    total_issues = sum(x for i in stdout_report.values() for x in i.values())
+    if not total_issues:
+        notify("SUCCESS", "No issues found!")
+        return
+
+    # display console report
+    total_high_severity = sum(i.get("HIGH", 0) for i in stdout_report.values())
+    if total_high_severity:
+        notify(
+            "WARNING", f"Found {total_issues} issues including {total_high_severity} high severity!"
+        )
+    else:
+        print(f"Found {total_issues} issues:")
+    for name in sorted(stdout_report):
+        print(f"\n  contract: {color('bright magenta')}{name}{color}")
+        for key in [i for i in ("HIGH", "MEDIUM", "LOW") if i in stdout_report[name]]:
+            c = color("bright red" if key == "HIGH" else "bright yellow")
+            print(f"    {key.title()}: {c}{stdout_report[name][key]}{color}")
+
+
 def main():
     args = docopt(__doc__)
     _update_argv_from_docopt(args)
@@ -225,24 +246,7 @@ def main():
     if report_path.exists():
         report_path.unlink()
 
-    total_issues = sum(x for i in submission.stdout_report.values() for x in i.values())
-    if not total_issues:
-        notify("SUCCESS", "No issues found!")
-        return
-
-    # display console report
-    total_high_severity = sum(i.get("HIGH", 0) for i in submission.stdout_report.values())
-    if total_high_severity:
-        notify(
-            "WARNING", f"Found {total_issues} issues including {total_high_severity} high severity!"
-        )
-    else:
-        print(f"Found {total_issues} issues:")
-    for name in sorted(submission.stdout_report):
-        print(f"\n  contract: {color('bright magenta')}{name}{color}")
-        for key in [i for i in ("HIGH", "MEDIUM", "LOW") if i in submission.stdout_report[name]]:
-            c = color("bright red" if key == "HIGH" else "bright yellow")
-            print(f"    {key.title()}: {c}{submission.stdout_report[name][key]}{color}")
+    print_console_report(submission.stdout_report)
 
     # Write report to Brownie directory
     with report_path.open("w+") as fp:
