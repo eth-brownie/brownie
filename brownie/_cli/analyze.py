@@ -59,6 +59,8 @@ class SubmissionPipeline:
 
     @staticmethod
     def get_mythx_client():
+        """Generate a MythX client instance."""
+
         if ARGV["api-key"]:
             auth_args = {"api_key": ARGV["api-key"]}
         elif environ.get("MYTHX_API_KEY"):
@@ -73,6 +75,8 @@ class SubmissionPipeline:
         )
 
     def prepare_requests(self):
+        """Transform an artifact into a MythX payload."""
+
         contracts = {n: d for n, d in self.build.items() if d["type"] == "contract"}
         libraries = {n: d for n, d in self.build.items() if d["type"] == "library"}
 
@@ -96,6 +100,8 @@ class SubmissionPipeline:
 
     @classmethod
     def construct_request_from_artifact(cls, artifact) -> AnalysisSubmissionRequest:
+        """Construct a raw submission request from an artifact JSON file."""
+
         bytecode = artifact.get("bytecode")
         deployed_bytecode = artifact.get("deployedBytecode")
         source_map = artifact.get("sourceMap")
@@ -124,6 +130,8 @@ class SubmissionPipeline:
         )
 
     def send_requests(self):
+        """Send the prepared requests to MythX."""
+
         for contract_name, request in self.requests.items():
             response = self.client.analyze(payload=request)
             self.responses[contract_name] = response
@@ -134,6 +142,8 @@ class SubmissionPipeline:
             print(f"You can also check the results at {DASHBOARD_BASE_URL}{response.uuid}\n")
 
     def wait_for_jobs(self):
+        """Poll the MythX API and returns once all requests have been processed."""
+
         if not self.responses:
             raise ValidationError("No requests given")
         for contract_name, response in self.responses.items():
@@ -143,6 +153,8 @@ class SubmissionPipeline:
             # TODO: log message
 
     def generate_highlighting_report(self):
+        """Generate a Brownie highlighting report from a MythX issue report."""
+
         source_to_name = {d["sourcePath"]: d["contractName"] for _, d in self.build.items()}
         for idx, (contract_name, issue_report) in enumerate(self.reports.items()):
             print(
@@ -175,6 +187,8 @@ class SubmissionPipeline:
                             )
 
     def generate_stdout_report(self):
+        """Generated a stdout report overview from a MythX issue report."""
+
         for contract_name, issue_report in self.reports.items():
             for issue in issue_report:
                 severity = issue.severity.name
@@ -183,6 +197,8 @@ class SubmissionPipeline:
 
 
 def print_console_report(stdout_report):
+    """Highlight and print a given stdout report to the console."""
+
     total_issues = sum(x for i in stdout_report.values() for x in i.values())
     if not total_issues:
         notify("SUCCESS", "No issues found!")
