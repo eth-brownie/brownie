@@ -8,10 +8,11 @@ from os import environ
 from pathlib import Path
 from typing import Dict
 
-from pythx import Client, ValidationError
-from pythx.middleware.toolname import ClientToolNameMiddleware
 from mythx_models.request import AnalysisSubmissionRequest
 from mythx_models.response import AnalysisSubmissionResponse, DetectedIssuesResponse
+from pythx import Client, ValidationError
+from pythx.middleware.toolname import ClientToolNameMiddleware
+
 from brownie import project
 from brownie._cli.__main__ import __version__
 from brownie._config import ARGV, _update_argv_from_docopt
@@ -89,12 +90,14 @@ class SubmissionPipeline:
             library_dependents = set(self.build.get_dependents(library))
             contract_dependencies = set(contracts.keys()).intersection(library_dependents)
             for contract in contract_dependencies:
-                requests[contract].sources.update({
-                    artifact.get("sourcePath"): {
-                        "source": artifact.get("source"),
-                        "ast": artifact.get("ast"),
+                requests[contract].sources.update(
+                    {
+                        artifact.get("sourcePath"): {
+                            "source": artifact.get("source"),
+                            "ast": artifact.get("ast"),
+                        }
                     }
-                })
+                )
 
         self.requests = requests
 
@@ -177,7 +180,9 @@ class SubmissionPipeline:
                             self.highlight_report["highlights"]["MythX"].setdefault(
                                 contract_name, {filename: []}
                             )
-                            self.highlight_report["highlights"]["MythX"][contract_name][filename].append(
+                            self.highlight_report["highlights"]["MythX"][contract_name][
+                                filename
+                            ].append(
                                 [
                                     comp.offset,
                                     comp.offset + comp.length,
@@ -225,9 +230,7 @@ def main():
 
     if ARGV["mode"] not in ANALYSIS_MODES:
         raise ValidationError(
-            "Invalid analysis mode: Must be one of [{}]".format(
-                ", ".join(ANALYSIS_MODES)
-            )
+            "Invalid analysis mode: Must be one of [{}]".format(", ".join(ANALYSIS_MODES))
         )
 
     project_path = project.check_for_project(".")

@@ -1,15 +1,13 @@
 import json
 from copy import deepcopy
 from pathlib import Path
-from unittest import mock
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-from mythx_models.response import DetectedIssuesResponse, AnalysisSubmissionResponse, Analysis
-from mythx_models.request import AnalysisSubmissionRequest
+from mythx_models.response import DetectedIssuesResponse
 from pythx import ValidationError
 
-from brownie._cli.analyze import SubmissionPipeline
+from brownie._cli.analyze import SubmissionPipeline, print_console_report
 from brownie._config import ARGV
 
 with open(str(Path(__file__).parent / "test-artifact.json"), "r") as artifact_f:
@@ -222,3 +220,21 @@ def test_prepare_requests(monkeypatch):
     assert "contracts/Token.sol" in token_request.sources.keys()
     assert "contracts/SafeMath.sol" in token_request.sources.keys()
     monkeypatch.delenv("MYTHX_API_KEY")
+
+
+def test_console_notify_high():
+    with patch("brownie._cli.analyze.notify") as notify_patch:
+        print_console_report({"Token": {"HIGH": 2}})
+        assert notify_patch.called
+
+
+def test_console_notify_low():
+    with patch("brownie._cli.analyze.notify") as notify_patch:
+        print_console_report({"Token": {"LOW": 2}})
+        assert not notify_patch.called
+
+
+def test_console_notify_none():
+    with patch("brownie._cli.analyze.notify") as notify_patch:
+        print_console_report({"Token": {}})
+        assert notify_patch.called
