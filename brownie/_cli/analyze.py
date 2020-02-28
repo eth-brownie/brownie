@@ -161,7 +161,9 @@ class SubmissionPipeline:
         source_to_name = {d["sourcePath"]: d["contractName"] for _, d in self.build.items()}
         for idx, (contract_name, issue_report) in enumerate(self.reports.items()):
             print(
-                f"Generating report for {color('bright blue')}{contract_name}{color} ({idx}/{len(self.reports)})"
+                "Generating report for {}{}{} ({}/{})".format(
+                    color("bright blue"), contract_name, color, idx, len(self.reports)
+                )
             )
             for report in issue_report.issue_reports:
                 for issue in report:
@@ -187,7 +189,11 @@ class SubmissionPipeline:
                                     comp.offset,
                                     comp.offset + comp.length,
                                     SEVERITY_COLOURS[severity],
-                                    f"{issue.swc_id}: {issue.description_short}\n{issue.description_long}",
+                                    "{}: {}\n{}".format(
+                                        issue.swc_id,
+                                        issue.description_short,
+                                        issue.description_long,
+                                    ),
                                 ]
                             )
 
