@@ -102,10 +102,10 @@ class SubmissionPipeline:
     def construct_request_from_artifact(cls, artifact) -> AnalysisSubmissionRequest:
         """Construct a raw submission request from an artifact JSON file."""
 
-        bytecode = artifact.get("bytecode")
-        deployed_bytecode = artifact.get("deployedBytecode")
-        source_map = artifact.get("sourceMap")
-        deployed_source_map = artifact.get("deployedSourceMap")
+        bytecode = artifact.get("bytecode", "")
+        deployed_bytecode = artifact.get("deployedBytecode", "")
+        source_map = artifact.get("sourceMap", "")
+        deployed_source_map = artifact.get("deployedSourceMap", "")
 
         bytecode = re.sub(cls.BYTECODE_ADDRESS_PATCH, "0" * 40, bytecode)
         deployed_bytecode = re.sub(cls.DEPLOYED_ADDRESS_PATCH, "0" * 40, deployed_bytecode)
@@ -125,7 +125,7 @@ class SubmissionPipeline:
             },
             source_list=source_list if source_list else None,
             main_source=artifact.get("sourcePath"),
-            solc_version=artifact["compiler"]["version"],
+            solc_version=artifact.get("compiler", {}).get("version"),
             analysis_mode=ARGV["mode"] or ANALYSIS_MODES[0],
         )
 

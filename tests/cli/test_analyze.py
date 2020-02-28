@@ -178,3 +178,47 @@ def test_wait_with_responses(monkeypatch):
     assert submission.reports == {"test": "test-report"}
 
     monkeypatch.delenv("MYTHX_API_KEY")
+
+
+def test_send_requests(monkeypatch):
+    monkeypatch.setenv("MYTHX_API_KEY", "foo")
+    submission = SubmissionPipeline(
+        {"test": {"sourcePath": "contracts/SafeMath.sol", "contractName": "SafeMath"}}
+    )
+    submission.requests = {"test": MagicMock()}
+    analyze_mock = MagicMock()
+    response_mock = MagicMock()
+    response_mock.uuid = "test-uuid"
+    analyze_mock.return_value = response_mock
+    submission.client.analyze = analyze_mock
+
+    submission.send_requests()
+
+    assert submission.responses == {"test": response_mock}
+    monkeypatch.delenv("MYTHX_API_KEY")
+
+
+def test_prepare_requests(monkeypatch):
+    monkeypatch.setenv("MYTHX_API_KEY", "foo")
+    build_mock = MagicMock()
+    build_mock.items = {
+        "SafeMath": {
+            "sourcePath": "contracts/SafeMath.sol",
+            "contractName": "SafeMath",
+            "type": "library",
+        },
+        "Token": {
+            "sourcePath": "contracts/Token.sol",
+            "contractName": "Token",
+            "type": "contract",
+        },
+    }.items
+    build_mock.get_dependents.return_value = ["Token"]
+    submission = SubmissionPipeline(build_mock)
+    submission.prepare_requests()
+    assert list(submission.requests.keys()) == ["Token"]
+    token_request = submission.requests["Token"]
+    assert token_request.contract_name == "Token"
+    assert "contracts/Token.sol" in token_request.sources.keys()
+    assert "contracts/SafeMath.sol" in token_request.sources.keys()
+    monkeypatch.delenv("MYTHX_API_KEY")
