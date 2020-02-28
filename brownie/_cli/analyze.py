@@ -55,8 +55,8 @@ class SubmissionPipeline:
         self.reports: Dict[str, DetectedIssuesResponse] = {}
         self.build = build
         self.client = client or self.get_mythx_client()
-        self.highlight_report = {"highlights": {"MythX": {}}}
-        self.stdout_report = {}
+        self.highlight_report: Dict[str, dict] = {"highlights": {"MythX": {}}}
+        self.stdout_report: Dict[str, dict] = {}
 
     @staticmethod
     def get_mythx_client():
