@@ -2,6 +2,7 @@ import json
 from copy import deepcopy
 from pathlib import Path
 from unittest import mock
+from unittest.mock import MagicMock
 
 import pytest
 from mythx_models.response import DetectedIssuesResponse, AnalysisSubmissionResponse, Analysis
@@ -144,4 +145,36 @@ def test_stdout_report(monkeypatch):
     submission.reports = {"contracts/SafeMath.sol": DetectedIssuesResponse.from_dict(TEST_REPORT)}
     submission.generate_stdout_report()
     assert submission.stdout_report == {"contracts/SafeMath.sol": {"LOW": 3}}
+    monkeypatch.delenv("MYTHX_API_KEY")
+
+
+def test_wait_without_responses(monkeypatch):
+    monkeypatch.setenv("MYTHX_API_KEY", "foo")
+    submission = SubmissionPipeline(
+        {"test": {"sourcePath": "contracts/SafeMath.sol", "contractName": "SafeMath"}}
+    )
+    with pytest.raises(ValidationError):
+        submission.wait_for_jobs()
+    monkeypatch.delenv("MYTHX_API_KEY")
+
+
+def test_wait_with_responses(monkeypatch):
+    monkeypatch.setenv("MYTHX_API_KEY", "foo")
+    submission = SubmissionPipeline(
+        {"test": {"sourcePath": "contracts/SafeMath.sol", "contractName": "SafeMath"}}
+    )
+    response_mock = MagicMock()
+    response_mock.uuid = "test-uuid"
+    ready_mock = MagicMock()
+    ready_mock.return_value = True
+    report_mock = MagicMock()
+    report_mock.return_value = "test-report"
+    submission.responses = {"test": response_mock}
+    submission.client.analysis_ready = ready_mock
+    submission.client.report = report_mock
+
+    submission.wait_for_jobs()
+
+    assert submission.reports == {"test": "test-report"}
+
     monkeypatch.delenv("MYTHX_API_KEY")
