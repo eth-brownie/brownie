@@ -116,17 +116,17 @@ class SubmissionPipeline:
         source_list = artifact.get("allSourcePaths")
         return AnalysisSubmissionRequest(
             contract_name=artifact.get("contractName"),
-            bytecode=bytecode if bytecode else None,
-            deployed_bytecode=deployed_bytecode if deployed_bytecode else None,
-            source_map=source_map if source_map else None,
-            deployed_source_map=deployed_source_map if deployed_source_map else None,
+            bytecode=bytecode or None,
+            deployed_bytecode=deployed_bytecode or None,
+            source_map=source_map or None,
+            deployed_source_map=deployed_source_map or None,
             sources={
                 artifact.get("sourcePath"): {
                     "source": artifact.get("source"),
                     "ast": artifact.get("ast"),
                 }
             },
-            source_list=source_list if source_list else None,
+            source_list=source_list or None,
             main_source=artifact.get("sourcePath"),
             solc_version=artifact.get("compiler", {}).get("version"),
             analysis_mode=ARGV["mode"] or ANALYSIS_MODES[0],
