@@ -18,10 +18,11 @@ Security Analysis with MythX
 
 Brownie is integrated with the `MythX <https://mythx.io/>`_ analysis API to allow automated security scans of your project.
 
-MythX is a smart contract security service that scans your project for vulnerabilities using static analysis, dynamic analysis, and symbolic execution. It runs in two modes:
+MythX is a smart contract security service that scans your project for vulnerabilities using static analysis, dynamic analysis, and symbolic execution. It runs in three modes:
 
-    1. **Quick mode** which is effective at finding bad coding patterns and low complexity-bugs
-    2. **Full mode** which takes longer to run, but can locate complex security issues
+    1. **Quick mode** which is effective at finding bad coding patterns and low complexity-bugs (available to free users)
+    2. **Standard mode** which takes longer to run, but can locate complex security issues (available to Dev users)
+    3. **Deep mode** which takes even longer to run, but is able to find deep, hidden vulnerabilities (available to Pro users)
 
 MythX offers both free and paid services. To learn more about how it works you may wish to read `MythX Pro Security Analysis Explained <https://blog.mythx.io/features/mythx-full-mode-security-analysis-explained/#more-37>`_ by Bernhard Mueller.
 
@@ -53,13 +54,13 @@ To quickly scan your project for vulnerabilities:
 
 This will send the compiled build artifacts to MythX for analysis. You will receive updates on the status of the scan; the entire process should take around three minutes.
 
-To perform a full scan:
+To perform a standard scan:
 
 ::
 
-    $ brownie analyze --full
+    $ brownie analyze --mode=standard
 
-Note that a full scan requires authentication and takes approximately half an hour to complete.
+Note that a deep scan requires authentication and takes approximately half an hour to complete.
 
 If you include the ``--async`` flag Brownie will submit the job, output the pending ID and exit. You can view the finished report later through the MythX dashboard.
 
@@ -74,6 +75,12 @@ To view your report in the GUI, first open the GUI:
 ::
 
     brownie gui
+
+Alternatively, the :code:`--gui` flag can be passed to the :code:`analyze` subcommand to open the Brownie GUI right away after the analysis results have been received.
+
+::
+
+    brownie analyze --gui
 
 Click on the drop-down list in the upper right that says "Select Report" and choose "security". Then choose ``MythX`` in the new dropdown that appears.
 
