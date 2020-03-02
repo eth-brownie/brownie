@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - MythX plugin update (PR)[https://github.com/iamdefinitelyahuman/brownie/pull/365]
+- MythX plugin documentation update (PR)[https://github.com/iamdefinitelyahuman/brownie/pull/366]
 
 ## [1.6.5](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.5) - 2020-02-19
 
