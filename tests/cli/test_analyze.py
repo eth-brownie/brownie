@@ -185,10 +185,14 @@ def test_send_requests(monkeypatch):
     )
     submission.requests = {"test": MagicMock()}
     analyze_mock = MagicMock()
+    group_mock = MagicMock()
+    group_mock.group.identifier = "test-gid"
     response_mock = MagicMock()
     response_mock.uuid = "test-uuid"
     analyze_mock.return_value = response_mock
     submission.client.analyze = analyze_mock
+    submission.client.create_group = group_mock
+    submission.client.seal_group = group_mock
 
     submission.send_requests()
 
