@@ -6,7 +6,10 @@ import re
 import time
 from os import environ
 from pathlib import Path
+from typing import Dict
 
+from mythx_models.request import AnalysisSubmissionRequest
+from mythx_models.response import AnalysisSubmissionResponse, DetectedIssuesResponse
 from pythx import Client, ValidationError
 from pythx.middleware.toolname import ClientToolNameMiddleware
 
@@ -21,7 +24,7 @@ __doc__ = """Usage: brownie analyze [options] [--async | --interval=<sec>]
 
 Options:
   --gui                     Launch the Brownie GUI after analysis
-  --full                    Perform a full scan (MythX Pro required)
+  --mode=<string>           The analysis mode (quick, standard, deep) [default: quick]
   --interval=<sec>          Result polling interval in seconds [default: 3]
   --async                   Do not poll for results, print job IDs and exit
   --api-key=<string>        The JWT access token from the MythX dashboard
@@ -37,207 +40,175 @@ Visit https://mythx.io/ to learn more about MythX and sign up for an account.
 """
 
 
+ANALYSIS_MODES = ("quick", "standard", "deep")
 SEVERITY_COLOURS = {"LOW": "yellow", "MEDIUM": "orange", "HIGH": "red"}
 DASHBOARD_BASE_URL = "https://dashboard.mythx.io/#/console/analyses/"
-TRIAL_PRINTED = False
-BYTECODE_ADDRESS_PATCH = re.compile(r"__\w{38}")
-DEPLOYED_ADDRESS_PATCH = re.compile(r"__\$\w{34}\$__")
 
 
-def construct_source_dict_from_artifact(artifact):
-    return {
-        artifact.get("sourcePath"): {
-            "source": artifact.get("source"),
-            # "ast": artifact.get("ast"),  # NOTE: Reenable once container issue fixed
-        }
-    }
+class SubmissionPipeline:
+    BYTECODE_ADDRESS_PATCH = re.compile(r"__\w{38}")
+    DEPLOYED_ADDRESS_PATCH = re.compile(r"__\$\w{34}\$__")
 
+    def __init__(self, build, client: Client = None):
+        self.requests: Dict[str, AnalysisSubmissionRequest] = {}
+        self.responses: Dict[str, AnalysisSubmissionResponse] = {}
+        self.reports: Dict[str, DetectedIssuesResponse] = {}
+        self.build = build
+        self.client = client or self.get_mythx_client()
+        self.highlight_report: Dict[str, dict] = {"highlights": {"MythX": {}}}
+        self.stdout_report: Dict[str, dict] = {}
 
-def construct_request_from_artifact(artifact):
-    global BYTECODE_ADDRESS_PATCH
+    @staticmethod
+    def get_mythx_client():
+        """Generate a MythX client instance."""
 
-    bytecode = artifact.get("bytecode")
-    deployed_bytecode = artifact.get("deployedBytecode")
-    source_map = artifact.get("sourceMap")
-    deployed_source_map = artifact.get("deployedSourceMap")
-
-    bytecode = re.sub(BYTECODE_ADDRESS_PATCH, "0" * 40, bytecode)
-    deployed_bytecode = re.sub(DEPLOYED_ADDRESS_PATCH, "0" * 40, deployed_bytecode)
-
-    source_list = artifact.get("allSourcePaths")
-    return {
-        "contract_name": artifact.get("contractName"),
-        "bytecode": bytecode if bytecode else None,
-        "deployed_bytecode": deployed_bytecode if deployed_bytecode else None,
-        "source_map": source_map if source_map else None,
-        "deployed_source_map": deployed_source_map if deployed_source_map else None,
-        "sources": construct_source_dict_from_artifact(artifact),
-        "source_list": source_list if source_list else None,
-        "main_source": artifact.get("sourcePath"),
-        "solc_version": artifact["compiler"]["version"],
-        "analysis_mode": "full" if ARGV["full"] else "quick",
-    }
-
-
-def get_mythx_client():
-    if ARGV["api-key"]:
-        auth_args = {"api_key": ARGV["api-key"]}
-    elif environ.get("MYTHX_API_KEY"):
-        auth_args = {"api_key": environ.get("MYTHX_API_KEY")}
-    else:
-        raise ValidationError(
-            "You must provide a MythX API key via environment variable or the commandline"
-        )
-
-    return Client(
-        **auth_args, middlewares=[ClientToolNameMiddleware(name=f"brownie-{__version__}")]
-    )
-
-
-def get_contract_locations(build):
-    return {d["sourcePath"]: d["contractName"] for _, d in build.items()}
-
-
-def get_contract_types(build):
-    contracts = set([n for n, d in build.items() if d["type"] == "contract"])
-    libraries = set([n for n, d in build.items() if d["type"] == "library"])
-
-    return contracts, libraries
-
-
-def assemble_contract_jobs(build, contracts):
-    job_data = {}
-    for contract in contracts:
-        artifact = build.get(contract)
-        job_data[contract] = construct_request_from_artifact(artifact)
-    return job_data
-
-
-def update_contract_jobs_with_dependencies(build, contracts, libraries, job_data):
-    for lib in libraries:
-        artifact = build.get(lib)
-        source_dict = construct_source_dict_from_artifact(artifact)
-        deps = set(build.get_dependents(lib))
-        dep_contracts = contracts.intersection(deps)
-        for contract in dep_contracts:
-            job_data[contract]["sources"].update(source_dict)
-
-    return job_data
-
-
-def send_to_mythx(job_data, client):
-    job_uuids = []
-    for c, (contract_name, analysis_request) in enumerate(job_data.items(), start=1):
-        resp = client.analyze(**analysis_request)
-        if ARGV["async"]:
-            print(f"Analysis for {contract_name} can be found at {DASHBOARD_BASE_URL}{resp.uuid}")
+        if ARGV["api-key"]:
+            auth_args = {"api_key": ARGV["api-key"]}
+        elif environ.get("MYTHX_API_KEY"):
+            auth_args = {"api_key": environ.get("MYTHX_API_KEY")}
         else:
-            print(
-                f"Submitted analysis {color('bright blue')}{resp.uuid}{color} for "
-                f"contract {color('bright magenta')}{contract_name}{color} ({c}/{len(job_data)})"
+            raise ValidationError(
+                "You must provide a MythX API key via environment variable or the command line"
             )
-        job_uuids.append(resp.uuid)
 
-    return job_uuids
-
-
-def wait_for_jobs(job_uuids, client):
-    for uuid in job_uuids:
-        while not client.analysis_ready(uuid):
-            time.sleep(int(ARGV["interval"]))
-
-
-def print_trial_message(issue):
-    global TRIAL_PRINTED
-    if issue.swc_id == "" or issue.severity.name in ("UNKNOWN", "NONE"):
-        if not TRIAL_PRINTED:
-            print(f"{issue.description_long}\n")
-            TRIAL_PRINTED = True
-        return True
-    return False
-
-
-def update_report(client, uuid, highlight_report, stdout_report, source_to_name):
-    resp = client.report(uuid)
-    for report in resp.issue_reports:
-        for issue in resp:
-            if print_trial_message(issue):
-                continue
-
-            # convert issue locations to report locations
-            # severities are highlighted according to SEVERITY_COLOURS
-            for loc in issue.locations:
-                comp = loc.source_map.components[0]
-                source_list = loc.source_list or report.source_list
-
-                if source_list and 0 <= comp.file_id < len(source_list):
-                    filename = source_list[comp.file_id]
-                    if filename not in source_to_name:
-                        continue
-                    contract_name = source_to_name[filename]
-                    severity = issue.severity.name
-                    stdout_report.setdefault(contract_name, {}).setdefault(severity, 0)
-                    stdout_report[contract_name][severity] += 1
-                    highlight_report["highlights"]["MythX"].setdefault(
-                        contract_name, {filename: []}
-                    )
-                    highlight_report["highlights"]["MythX"][contract_name][filename].append(
-                        [
-                            comp.offset,
-                            comp.offset + comp.length,
-                            SEVERITY_COLOURS[severity],
-                            f"{issue.swc_id}: {issue.description_short}\n{issue.description_long}",
-                        ]
-                    )
-
-
-def main():
-    args = docopt(__doc__)
-    _update_argv_from_docopt(args)
-
-    project_path = project.check_for_project(".")
-    if project_path is None:
-        raise ProjectNotFound
-
-    build = project.load()._build
-
-    print("Preparing project data for submission to MythX...")
-    contracts, libraries = get_contract_types(build)
-
-    job_data = assemble_contract_jobs(build, contracts)
-    job_data = update_contract_jobs_with_dependencies(build, contracts, libraries, job_data)
-
-    client = get_mythx_client()
-
-    job_uuids = send_to_mythx(job_data, client)
-
-    # exit if user wants an async analysis run
-    if ARGV["async"]:
-        print(
-            "\nAll contracts were submitted successfully. Check the dashboard at "
-            "https://dashboard.mythx.io/ for the progress and results of your analyses"
+        return Client(
+            **auth_args, middlewares=[ClientToolNameMiddleware(name=f"brownie-{__version__}")]
         )
-        return
 
-    print("\nWaiting for results...")
-    wait_for_jobs(job_uuids, client)
+    def prepare_requests(self):
+        """Transform an artifact into a MythX payload."""
 
-    # assemble report json
-    source_to_name = get_contract_locations(build)
-    highlight_report = {"highlights": {"MythX": {}}}
-    stdout_report = {}
-    for c, uuid in enumerate(job_uuids, start=1):
-        print(
-            f"Generating report for job {color('bright blue')}{uuid}{color} ({c}/{len(job_uuids)})"
+        contracts = {n: d for n, d in self.build.items() if d["type"] == "contract"}
+        libraries = {n: d for n, d in self.build.items() if d["type"] == "library"}
+
+        requests = {}
+        for contract, artifact in contracts.items():
+            requests[contract] = self.construct_request_from_artifact(artifact)
+
+        # update requests with library dependencies
+        for library, artifact in libraries.items():
+            library_dependents = set(self.build.get_dependents(library))
+            contract_dependencies = set(contracts.keys()).intersection(library_dependents)
+            for contract in contract_dependencies:
+                requests[contract].sources.update(
+                    {
+                        artifact.get("sourcePath"): {
+                            "source": artifact.get("source"),
+                            "ast": artifact.get("ast"),
+                        }
+                    }
+                )
+
+        self.requests = requests
+
+    @classmethod
+    def construct_request_from_artifact(cls, artifact) -> AnalysisSubmissionRequest:
+        """Construct a raw submission request from an artifact JSON file."""
+
+        bytecode = artifact.get("bytecode", "")
+        deployed_bytecode = artifact.get("deployedBytecode", "")
+        source_map = artifact.get("sourceMap", "")
+        deployed_source_map = artifact.get("deployedSourceMap", "")
+
+        bytecode = re.sub(cls.BYTECODE_ADDRESS_PATCH, "0" * 40, bytecode)
+        deployed_bytecode = re.sub(cls.DEPLOYED_ADDRESS_PATCH, "0" * 40, deployed_bytecode)
+
+        source_list = artifact.get("allSourcePaths")
+        return AnalysisSubmissionRequest(
+            contract_name=artifact.get("contractName"),
+            bytecode=bytecode or None,
+            deployed_bytecode=deployed_bytecode or None,
+            source_map=source_map or None,
+            deployed_source_map=deployed_source_map or None,
+            sources={
+                artifact.get("sourcePath"): {
+                    "source": artifact.get("source"),
+                    "ast": artifact.get("ast"),
+                }
+            },
+            source_list=source_list or None,
+            main_source=artifact.get("sourcePath"),
+            solc_version=artifact.get("compiler", {}).get("version"),
+            analysis_mode=ARGV["mode"] or ANALYSIS_MODES[0],
         )
-        print(f"You can also check the results at {DASHBOARD_BASE_URL}{uuid}\n")
 
-        update_report(client, uuid, highlight_report, stdout_report, source_to_name)
+    def send_requests(self):
+        """Send the prepared requests to MythX."""
 
-    # erase previous report
-    report_path = Path("reports/security.json")
-    if report_path.exists():
-        report_path.unlink()
+        for contract_name, request in self.requests.items():
+            response = self.client.analyze(payload=request)
+            self.responses[contract_name] = response
+            print(
+                f"Submitted analysis {color('bright blue')}{response.uuid}{color} for "
+                f"contract {color('bright magenta')}{request.contract_name}{color})"
+            )
+            print(f"You can also check the results at {DASHBOARD_BASE_URL}{response.uuid}\n")
+
+    def wait_for_jobs(self):
+        """Poll the MythX API and returns once all requests have been processed."""
+
+        if not self.responses:
+            raise ValidationError("No requests given")
+        for contract_name, response in self.responses.items():
+            while not self.client.analysis_ready(response.uuid):
+                time.sleep(int(ARGV["interval"]))
+            self.reports[contract_name] = self.client.report(response.uuid)
+            # TODO: log message
+
+    def generate_highlighting_report(self):
+        """Generate a Brownie highlighting report from a MythX issue report."""
+
+        source_to_name = {d["sourcePath"]: d["contractName"] for _, d in self.build.items()}
+        for idx, (contract_name, issue_report) in enumerate(self.reports.items()):
+            print(
+                "Generating report for {}{}{} ({}/{})".format(
+                    color("bright blue"), contract_name, color, idx, len(self.reports)
+                )
+            )
+            for report in issue_report.issue_reports:
+                for issue in report:
+                    # convert issue locations to report locations
+                    # severities are highlighted according to SEVERITY_COLOURS
+                    for loc in issue.locations:
+                        comp = loc.source_map.components[0]
+                        source_list = loc.source_list or report.source_list
+
+                        if source_list and 0 <= comp.file_id < len(source_list):
+                            filename = source_list[comp.file_id]
+                            if filename not in source_to_name:
+                                continue
+                            contract_name = source_to_name[filename]
+                            severity = issue.severity.name
+                            self.highlight_report["highlights"]["MythX"].setdefault(
+                                contract_name, {filename: []}
+                            )
+                            self.highlight_report["highlights"]["MythX"][contract_name][
+                                filename
+                            ].append(
+                                [
+                                    comp.offset,
+                                    comp.offset + comp.length,
+                                    SEVERITY_COLOURS[severity],
+                                    "{}: {}\n{}".format(
+                                        issue.swc_id,
+                                        issue.description_short,
+                                        issue.description_long,
+                                    ),
+                                ]
+                            )
+
+    def generate_stdout_report(self):
+        """Generated a stdout report overview from a MythX issue report."""
+
+        for contract_name, issue_report in self.reports.items():
+            for issue in issue_report:
+                severity = issue.severity.name
+                self.stdout_report.setdefault(contract_name, {}).setdefault(severity, 0)
+                self.stdout_report[contract_name][severity] += 1
+
+
+def print_console_report(stdout_report):
+    """Highlight and print a given stdout report to the console."""
 
     total_issues = sum(x for i in stdout_report.values() for x in i.values())
     if not total_issues:
@@ -258,12 +229,56 @@ def main():
             c = color("bright red" if key == "HIGH" else "bright yellow")
             print(f"    {key.title()}: {c}{stdout_report[name][key]}{color}")
 
+
+def main():
+    args = docopt(__doc__)
+    _update_argv_from_docopt(args)
+
+    if ARGV["mode"] not in ANALYSIS_MODES:
+        raise ValidationError(
+            "Invalid analysis mode: Must be one of [{}]".format(", ".join(ANALYSIS_MODES))
+        )
+
+    project_path = project.check_for_project(".")
+    if project_path is None:
+        raise ProjectNotFound
+
+    build = project.load()._build
+    submission = SubmissionPipeline(build)
+
+    print("Preparing project data for submission to MythX...")
+    submission.prepare_requests()
+
+    print("Sending analysis requests to MythX...")
+    submission.send_requests()
+
+    # exit if user wants an async analysis run
+    if ARGV["async"]:
+        print(
+            "\nAll contracts were submitted successfully. Check the dashboard at "
+            "https://dashboard.mythx.io/ for the progress and results of your analyses"
+        )
+        return
+
+    print("\nWaiting for results...")
+
+    submission.wait_for_jobs()
+    submission.generate_stdout_report()
+    submission.generate_highlighting_report()
+
+    # erase previous report
+    report_path = Path("reports/security.json")
+    if report_path.exists():
+        report_path.unlink()
+
+    print_console_report(submission.stdout_report)
+
     # Write report to Brownie directory
     with report_path.open("w+") as fp:
-        json.dump(highlight_report, fp, indent=2, sort_keys=True)
+        json.dump(submission.highlight_report, fp, indent=2, sort_keys=True)
 
     # Launch GUI if user requested it
     if ARGV["gui"]:
         print("Launching the Brownie GUI")
-        Gui = importlib.import_module("brownie._gui").Gui
-        Gui().mainloop()
+        gui = importlib.import_module("brownie._gui").Gui
+        gui().mainloop()
