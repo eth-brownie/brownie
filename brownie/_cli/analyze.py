@@ -46,6 +46,8 @@ DASHBOARD_BASE_URL = "https://dashboard.mythx.io/#/console/analyses/"
 
 
 class SubmissionPipeline:
+    """A helper class to submit MythX analysis requests and retrieve reports."""
+
     BYTECODE_ADDRESS_PATCH = re.compile(r"__\w{38}")
     DEPLOYED_ADDRESS_PATCH = re.compile(r"__\$\w{34}\$__")
 
@@ -59,8 +61,17 @@ class SubmissionPipeline:
         self.stdout_report: Dict[str, dict] = {}
 
     @staticmethod
-    def get_mythx_client():
-        """Generate a MythX client instance."""
+    def get_mythx_client() -> Client:
+        """Generate a MythX client instance.
+
+        This method will look for an API key passed as a parameter, and if none
+        is found, look for a key in the environment variable :code:`MYTHX_API_KEY`.
+        If a key is detected, a PythX client instance is returned, otherwise a
+        :code:`ValidationError` is raised.
+
+        :raises: ValidationError if no valid API key is provided
+        :return: A PythX client instance
+        """
 
         if ARGV["api-key"]:
             auth_args = {"api_key": ARGV["api-key"]}
@@ -75,8 +86,16 @@ class SubmissionPipeline:
             **auth_args, middlewares=[ClientToolNameMiddleware(name=f"brownie-{__version__}")]
         )
 
-    def prepare_requests(self):
-        """Transform an artifact into a MythX payload."""
+    def prepare_requests(self) -> None:
+        """Transform an artifact into a MythX payload.
+
+        This will enumerate all the contracts and libraries across the Brownie
+        artifacts. For each contract, the dependencies are recursively listed and
+        attached to the contract's MythX payload to paint the most precise picture
+        possible.
+
+        :return: None
+        """
 
         contracts = {n: d for n, d in self.build.items() if d["type"] == "contract"}
         libraries = {n: d for n, d in self.build.items() if d["type"] == "library"}
@@ -103,7 +122,15 @@ class SubmissionPipeline:
 
     @classmethod
     def construct_request_from_artifact(cls, artifact) -> AnalysisSubmissionRequest:
-        """Construct a raw submission request from an artifact JSON file."""
+        """Construct a raw submission request from an artifact JSON file.
+
+        This will transform a Brownie contract JSON artifact into a MythX payload
+        object. Additionally, bytecode-level placeholders will be patched to provide
+        valid bytecode to the MythX analysis API.
+
+        :param artifact: The Brownie JSON artifact
+        :return: :code:`AnalysisSubmissionRequest` for the artifact
+        """
 
         bytecode = artifact.get("bytecode", "")
         deployed_bytecode = artifact.get("deployedBytecode", "")
@@ -132,8 +159,15 @@ class SubmissionPipeline:
             analysis_mode=ARGV["mode"] or ANALYSIS_MODES[0],
         )
 
-    def send_requests(self):
-        """Send the prepared requests to MythX."""
+    def send_requests(self) -> None:
+        """Send the prepared requests to MythX.
+
+        This will send the requests in the class' requests dict to MythX for
+        analysis. The API's response is parsed and added to the internal
+        :code:`responses` dict.
+
+        :return: None
+        """
 
         for contract_name, request in self.requests.items():
             response = self.client.analyze(payload=request)
@@ -144,8 +178,19 @@ class SubmissionPipeline:
             )
             print(f"You can also check the results at {DASHBOARD_BASE_URL}{response.uuid}\n")
 
-    def wait_for_jobs(self):
-        """Poll the MythX API and returns once all requests have been processed."""
+    def wait_for_jobs(self) -> None:
+        """Poll the MythX API and returns once all requests have been processed.
+
+        This will wait for all analysis requests in the internal :code:`responses`
+        dict to finish. If a user passes the :code:`--interval` option, the plugin
+        will poll the MythX API in the user-specified interval (in seconds) to see
+        whether the analysis request is done processing.
+
+        If the internal responses dict is empty, a :code:`ValidationError` is raised.
+
+        :raise: :code:`ValidationError`
+        :return: None
+        """
 
         if not self.responses:
             raise ValidationError("No requests given")
@@ -153,10 +198,17 @@ class SubmissionPipeline:
             while not self.client.analysis_ready(response.uuid):
                 time.sleep(int(ARGV["interval"]))
             self.reports[contract_name] = self.client.report(response.uuid)
-            # TODO: log message
 
-    def generate_highlighting_report(self):
-        """Generate a Brownie highlighting report from a MythX issue report."""
+    def generate_highlighting_report(self) -> None:
+        """Generate a Brownie highlighting report from a MythX issue report.
+
+        This will convert a MythX issue report into a Brownie report that allows
+        issues to be highlighted in the native Brownie GUI. It iterates over the
+        internal :code:`reports` dictionary and fills the :code:`highlight_report`
+        instance variable.
+
+        :return: None
+        """
 
         source_to_name = {d["sourcePath"]: d["contractName"] for _, d in self.build.items()}
         for idx, (contract_name, issue_report) in enumerate(self.reports.items()):
@@ -197,8 +249,16 @@ class SubmissionPipeline:
                                 ]
                             )
 
-    def generate_stdout_report(self):
-        """Generated a stdout report overview from a MythX issue report."""
+    def generate_stdout_report(self) -> None:
+        """Generated a stdout report overview from a MythX issue report.
+
+        This will convert a MythX issue report into a Brownie report that is
+        printed on stdout when analysis results have been received. It iterates
+        over the internal :code:`reports` dictionary and fills the
+        :code:`highlight_report` instance variable.
+
+        :return: None
+        """
 
         for contract_name, issue_report in self.reports.items():
             for issue in issue_report:
@@ -207,8 +267,14 @@ class SubmissionPipeline:
                 self.stdout_report[contract_name][severity] += 1
 
 
-def print_console_report(stdout_report):
-    """Highlight and print a given stdout report to the console."""
+def print_console_report(stdout_report) -> None:
+    """Highlight and print a given stdout report to the console.
+
+    This adds color formatting to the given stdout report and prints
+    a summary of the vulnerabilities MythX has detected.
+
+    :return: None
+    """
 
     total_issues = sum(x for i in stdout_report.values() for x in i.values())
     if not total_issues:
@@ -231,6 +297,8 @@ def print_console_report(stdout_report):
 
 
 def main():
+    """The main entry point of the MythX plugin for Brownie."""
+
     args = docopt(__doc__)
     _update_argv_from_docopt(args)
 

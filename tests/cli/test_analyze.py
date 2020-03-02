@@ -205,11 +205,7 @@ def test_prepare_requests(monkeypatch):
             "contractName": "SafeMath",
             "type": "library",
         },
-        "Token": {
-            "sourcePath": "contracts/Token.sol",
-            "contractName": "Token",
-            "type": "contract",
-        },
+        "Token": {"sourcePath": "contracts/Token.sol", "contractName": "Token", "type": "contract"},
     }.items
     build_mock.get_dependents.return_value = ["Token"]
     submission = SubmissionPipeline(build_mock)
