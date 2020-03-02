@@ -11,7 +11,7 @@ from typing import Dict
 from mythx_models.request import AnalysisSubmissionRequest
 from mythx_models.response import AnalysisSubmissionResponse, DetectedIssuesResponse
 from pythx import Client, ValidationError
-from pythx.middleware.toolname import ClientToolNameMiddleware
+from pythx.middleware import ClientToolNameMiddleware, GroupDataMiddleware
 
 from brownie import project
 from brownie._cli.__main__ import __version__
@@ -169,6 +169,10 @@ class SubmissionPipeline:
         :return: None
         """
 
+        group_resp = self.client.create_group()
+        self.client.handler.middlewares.append(
+            GroupDataMiddleware(group_id=group_resp.group.identifier)
+        )
         for contract_name, request in self.requests.items():
             response = self.client.analyze(payload=request)
             self.responses[contract_name] = response
@@ -177,6 +181,8 @@ class SubmissionPipeline:
                 f"contract {color('bright magenta')}{request.contract_name}{color})"
             )
             print(f"You can also check the results at {DASHBOARD_BASE_URL}{response.uuid}\n")
+        self.client.seal_group(group_id=group_resp.group.identifier)
+        self.client.handler.middlewares.pop(-1)
 
     def wait_for_jobs(self) -> None:
         """Poll the MythX API and returns once all requests have been processed.
