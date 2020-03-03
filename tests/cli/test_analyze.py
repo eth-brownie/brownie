@@ -185,10 +185,14 @@ def test_send_requests(monkeypatch):
     )
     submission.requests = {"test": MagicMock()}
     analyze_mock = MagicMock()
+    group_mock = MagicMock()
+    group_mock.group.identifier = "test-gid"
     response_mock = MagicMock()
     response_mock.uuid = "test-uuid"
     analyze_mock.return_value = response_mock
     submission.client.analyze = analyze_mock
+    submission.client.create_group = group_mock
+    submission.client.seal_group = group_mock
 
     submission.send_requests()
 
@@ -205,11 +209,7 @@ def test_prepare_requests(monkeypatch):
             "contractName": "SafeMath",
             "type": "library",
         },
-        "Token": {
-            "sourcePath": "contracts/Token.sol",
-            "contractName": "Token",
-            "type": "contract",
-        },
+        "Token": {"sourcePath": "contracts/Token.sol", "contractName": "Token", "type": "contract"},
     }.items
     build_mock.get_dependents.return_value = ["Token"]
     submission = SubmissionPipeline(build_mock)
