@@ -486,7 +486,10 @@ def _find_revert_offset(
 
 def _set_invalid_error_string(source_node: NodeBase, pc_map: Dict) -> None:
     # set custom error string for INVALID opcodes
-    node = source_node.children(include_children=False, offset_limits=pc_map["offset"])[0]
+    try:
+        node = source_node.children(include_children=False, offset_limits=pc_map["offset"])[0]
+    except IndexError:
+        return
     if node.nodeType == "IndexAccess":
         pc_map["dev"] = "Index out of range"
     elif node.nodeType == "BinaryOperation":
