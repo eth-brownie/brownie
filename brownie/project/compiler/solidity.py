@@ -478,7 +478,8 @@ def _find_revert_offset(
     # statement within a function
     if fn_node[-1].nodeType == "ExpressionStatement":
         expr = fn_node[-1].expression
-        if expr.nodeType == "FunctionCall" and expr.expression.name == "revert":
+
+        if expr.nodeType == "FunctionCall" and expr.get("expression.name") == "revert":
             pc_list[-1].update(
                 path=source_node.absolutePath, fn=fn_name, offset=expr.expression.offset
             )
