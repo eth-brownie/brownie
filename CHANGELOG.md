@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.6.7](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.7) - 2020-03-09
+
+### Fixed
+- INVALID instructions with no related ast node (assembly)
+- Missing f-strings in compiler output
+
 ## [1.6.6](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.6) - 2020-03-03
 
 ### Changed
