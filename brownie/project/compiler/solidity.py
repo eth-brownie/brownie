@@ -52,9 +52,9 @@ def compile_from_input_json(
         input_json["settings"]["evmVersion"] = EVM_EQUIVALENTS[input_json["settings"]["evmVersion"]]
 
     if not silent:
-        print("Compiling contracts...\n  Solc version: {str(solcx.get_solc_version())}")
+        print(f"Compiling contracts...\n  Solc version: {str(solcx.get_solc_version())}")
 
-        opt = "Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled"
+        opt = f"Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled"
         print(f"  Optimizer: {opt}")
 
         if input_json["settings"]["evmVersion"]:
@@ -478,7 +478,8 @@ def _find_revert_offset(
     # statement within a function
     if fn_node[-1].nodeType == "ExpressionStatement":
         expr = fn_node[-1].expression
-        if expr.nodeType == "FunctionCall" and expr.expression.name == "revert":
+
+        if expr.nodeType == "FunctionCall" and expr.get("expression.name") == "revert":
             pc_list[-1].update(
                 path=source_node.absolutePath, fn=fn_name, offset=expr.expression.offset
             )
@@ -486,7 +487,10 @@ def _find_revert_offset(
 
 def _set_invalid_error_string(source_node: NodeBase, pc_map: Dict) -> None:
     # set custom error string for INVALID opcodes
-    node = source_node.children(include_children=False, offset_limits=pc_map["offset"])[0]
+    try:
+        node = source_node.children(include_children=False, offset_limits=pc_map["offset"])[0]
+    except IndexError:
+        return
     if node.nodeType == "IndexAccess":
         pc_map["dev"] = "Index out of range"
     elif node.nodeType == "BinaryOperation":
