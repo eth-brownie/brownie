@@ -52,9 +52,9 @@ def compile_from_input_json(
         input_json["settings"]["evmVersion"] = EVM_EQUIVALENTS[input_json["settings"]["evmVersion"]]
 
     if not silent:
-        print("Compiling contracts...\n  Solc version: {str(solcx.get_solc_version())}")
+        print(f"Compiling contracts...\n  Solc version: {str(solcx.get_solc_version())}")
 
-        opt = "Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled"
+        opt = f"Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled"
         print(f"  Optimizer: {opt}")
 
         if input_json["settings"]["evmVersion"]:
