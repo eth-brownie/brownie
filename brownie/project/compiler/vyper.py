@@ -50,21 +50,21 @@ def compile_from_input_json(
 
 
 def _get_unique_build_json(
-    output_evm: Dict, path_str: str, contract_name: str, ast_json: List, offset: Tuple
+    output_evm: Dict, path_str: str, contract_name: str, ast_json: Dict, offset: Tuple
 ) -> Dict:
     pc_map, statement_map, branch_map = _generate_coverage_data(
         output_evm["deployedBytecode"]["sourceMap"],
         output_evm["deployedBytecode"]["opcodes"],
         path_str,
         contract_name,
-        ast_json,
+        ast_json["body"],
     )
     return {
         "allSourcePaths": [path_str],
         "bytecode": output_evm["bytecode"]["object"],
         "bytecodeSha1": sha1(output_evm["bytecode"]["object"].encode()).hexdigest(),
         "coverageMap": {"statements": statement_map, "branches": branch_map},
-        "dependencies": _get_dependencies(ast_json),
+        "dependencies": _get_dependencies(ast_json["body"]),
         "offset": offset,
         "pcMap": pc_map,
         "type": "contract",
@@ -187,7 +187,9 @@ def _find_node_by_offset(ast_json: List, offset: Tuple) -> Dict:
         return node
     node_list = [i for i in node.values() if isinstance(i, dict) and "ast_type" in i]
     node_list.extend([x for i in node.values() if isinstance(i, list) for x in i])
-    return _find_node_by_offset(node_list, offset)
+    if node_list:
+        return _find_node_by_offset(node_list, offset)
+    return _find_node_by_offset(ast_json[ast_json.index(node) + 1 :], offset)
 
 
 def _get_statement_nodes(ast_json: List) -> List:
