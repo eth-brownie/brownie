@@ -98,7 +98,7 @@ def _find_contract(address: Any) -> Any:
 def _get_current_dependencies() -> List:
     dependencies = set(v._name for v in _contract_map.values())
     for contract in _contract_map.values():
-        dependencies.update(contract._build["dependencies"])
+        dependencies.update(contract._build.get("dependencies", []))
     return sorted(dependencies)
 
 
