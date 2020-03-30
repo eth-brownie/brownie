@@ -75,7 +75,7 @@ def test_get_abi():
     assert abi["Foo"] == [
         {
             "name": "baz",
-            "outputs": [{"type": "bool", "name": "out"}],
+            "outputs": [{"type": "bool", "name": ""}],
             "inputs": [],
             "constant": False,
             "payable": False,
