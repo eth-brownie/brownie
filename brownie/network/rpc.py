@@ -22,6 +22,7 @@ CLI_FLAGS = {
     "gas_limit": "--gasLimit",
     "accounts": "--accounts",
     "evm_version": "--hardfork",
+    "fork": "--fork",
     "mnemonic": "--mnemonic",
     "account_keys_path": "--acctKeys",
 }
