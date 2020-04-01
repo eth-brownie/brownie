@@ -19,13 +19,16 @@ def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> 
     if substitutions is None:
         substitutions = {}
     for i in abi_params:
-        if i["type"] != "tuple":
+        if i["type"] == "tuple":
+            params = get_type_strings(i["components"], substitutions)
+            types_list.append(f"({','.join(params)})")
+        elif i["type"] == "tuple[]":
+            params = get_type_strings(i["components"], substitutions)
+            types_list.append(f"({','.join(params)})[]")
+        else:
             type_str = i["type"]
             for orig, sub in substitutions.items():
                 if type_str.startswith(orig):
                     type_str = type_str.replace(orig, sub)
             types_list.append(type_str)
-            continue
-        params = get_type_strings(i["components"], substitutions)
-        types_list.append(f"({','.join(params)})")
     return types_list
