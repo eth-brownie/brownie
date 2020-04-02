@@ -171,5 +171,5 @@ To create a :func:`Contract <brownie.network.contract.Contract>` from an ABI:
 .. code-block:: python
 
     >>> from brownie import Contract
-    >>> Contract('0x79447c97b6543F6eFBC91613C655977806CB18b0', "Token", abi)
+    >>> Contract("Token", "0x79447c97b6543F6eFBC91613C655977806CB18b0", abi)
     <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
