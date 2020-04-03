@@ -6,7 +6,7 @@ import sys
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Union
+from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
 
 import requests
 from semantic_version import Version
@@ -544,8 +544,12 @@ def _compare_settings(left: Dict, right: Dict) -> bool:
 
 def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
     contract_sources: Dict = {}
+    suffixes: Tuple = (".sol", ".vy")
+    if allow_json:
+        suffixes = suffixes + (".json",)
+
     for path in project_path.glob(f"{subfolder}/**/*"):
-        if "/_" in path.as_posix() or path.suffix not in (".sol", ".vy", ".json"):
+        if "/_" in path.as_posix() or path.suffix not in suffixes:
             continue
         with path.open() as fp:
             source = fp.read()
