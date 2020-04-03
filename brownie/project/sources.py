@@ -149,8 +149,7 @@ def is_inside_offset(inner: Tuple, outer: Tuple) -> bool:
 
 def get_hash(source: str, contract_name: str, minified: bool, language: str) -> str:
     """Returns a hash of the contract source code."""
-    if minified:
-        source = minify(source, language)[0]
+    source = minify(source, language)[0]
     if language.lower() == "solidity":
         try:
             source = get_contracts(source)[contract_name]
