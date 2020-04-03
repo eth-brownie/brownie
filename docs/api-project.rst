@@ -318,7 +318,7 @@ Module Methods
     * ``optimize``: Toggle compiler optimization
     * ``runs``: Number of compiler optimization runs
     * ``evm_version``: EVM version to target. If ``None`` the compiler default is used.
-    * ``minify``: Should contract sources be `minified <sources-minify>`_?
+    * ``minify``: (deprecated, does nothing)
     * ``silent``: Toggle console verbosity
     * ``allow_paths``: Import path, passed to `solc` as an additional path that contract files may be imported from
 

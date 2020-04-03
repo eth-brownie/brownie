@@ -6,6 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Changed
+- Always minify contract sources
 
 ## [1.6.9](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.9) - 2020-04-03
 ### Fixed

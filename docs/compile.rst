@@ -44,7 +44,6 @@ Settings for the compiler are found in ``brownie-config.yaml``:
 .. code-block:: yaml
 
     evm_version: null
-    minify_source: false
     solc:
         version: 0.6.0
         optimize: true
@@ -88,7 +87,7 @@ See the `Solidity documentation <https://solidity.readthedocs.io/en/latest/misce
 Source Minification
 -------------------
 
-If ``minify_source`` is ``true``, the contract source is minified before compiling. Each time Brownie is loaded it will then minify the current source code before checking the hashes to determine if a recompile is necessary. This allows you to modify code formatting and comments without triggering a recompile, at the cost of increased load times from recalculating source offsets.
+Contract sources are minified before compiling. Each time Brownie is loaded it will minifies the current sources before checking the hashes to determine if a recompile is necessary. This allows you to modify formatting and comments without triggering a recompile.
 
 .. _compile-json:
 
