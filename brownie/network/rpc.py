@@ -100,7 +100,7 @@ class Rpc(metaclass=_Singleton):
                 self._rpc.poll()
             if not self._rpc.is_running():
                 self.kill(False)
-                raise RPCProcessError(cmd, self._rpc, uri)
+                raise RPCProcessError(cmd, uri)
         self.kill(False)
         raise RPCConnectionError(cmd, self._rpc, uri)
 
@@ -120,7 +120,10 @@ class Rpc(metaclass=_Singleton):
         try:
             proc = next(i for i in psutil.process_iter() if _check_connections(i, laddr))
         except StopIteration:
-            raise ProcessLookupError("Could not find RPC process.")
+            raise ProcessLookupError(
+                "Could not attach to RPC process. If this issue persists, try killing "
+                "the RPC and let Brownie launch it as a child process."
+            ) from None
         print(f"Attached to local RPC client listening at '{laddr[0]}:{laddr[1]}'...")
         self._rpc = psutil.Process(proc.pid)
         if web3.provider:

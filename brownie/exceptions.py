@@ -25,24 +25,22 @@ class IncompatibleEVMVersion(Exception):
     pass
 
 
-class _RPCBaseException(Exception):
-    def __init__(self, msg: str, cmd: str, proc: Type[psutil.Popen], uri: str) -> None:
-        msg = f"{msg}\n\nCommand: {cmd}\nURI: {uri}\nExit Code: {proc.poll()}"
+class RPCProcessError(Exception):
+    def __init__(self, cmd: str, uri: str) -> None:
+        super().__init__(f"Unable to launch local RPC client.\nCommand: {cmd}\nURI: {uri}")
+
+
+class RPCConnectionError(Exception):
+    def __init__(self, cmd: str, proc: psutil.Popen, uri: str) -> None:
+        msg = (
+            "Able to launch RPC client, but unable to connect."
+            f"\n\nCommand: {cmd}\nURI: {uri}\nExit Code: {proc.poll()}"
+        )
         if sys.platform != "win32":
             out = proc.stdout.read().decode().strip() or "  (Empty)"
             err = proc.stderr.read().decode().strip() or "  (Empty)"
-            msg += f"\n\nStdout:\n{out}\n\nStderr:\n{err}"
+            msg = f"{msg}\n\nStdout:\n{out}\n\nStderr:\n{err}"
         super().__init__(msg)
-
-
-class RPCProcessError(_RPCBaseException):
-    def __init__(self, cmd: str, proc: Type[psutil.Popen], uri: str) -> None:
-        super().__init__("Unable to launch local RPC client.", cmd, proc, uri)
-
-
-class RPCConnectionError(_RPCBaseException):
-    def __init__(self, cmd: str, proc: Type[psutil.Popen], uri: str) -> None:
-        super().__init__("Able to launch RPC client, but unable to connect.", cmd, proc, uri)
 
 
 class RPCRequestError(Exception):
