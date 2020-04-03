@@ -144,7 +144,7 @@ The following settings must have a non-``null`` value in order to generate a pac
 
     The ``package_name`` field defines a human readable name for the package. It must begin with a lowercase letter and be comprised of only lowercase letters, numeric characters, dashes and underscores. Package names must not exceed 255 characters in length.
 
-        **Link**: `ethPM specification: package name <https://ethpm.github.io/ethpm-spec/package-spec.html#package-name-package-name>`_
+        **Link**: `ethPM specification: package name <https://ethpm.github.io/ethpm-spec/package-spec.html#package-name-name>`_
 
 .. py:attribute:: version
 
@@ -174,7 +174,7 @@ The following settings must have a non-``null`` value in order to generate a pac
 
     Note that you cannot set ``include_dependencies`` to ``False`` while your package contains dependency source files that have been modified. In this situation you must first :ref:`unlink<ethpm-unlink>` the modified packages.
 
-        **Link**: `ethPM specification: build dependencies <https://ethpm.github.io/ethpm-spec/package-spec.html#build-dependencies-build-dependencies>`_
+        **Link**: `ethPM specification: build dependencies <https://ethpm.github.io/ethpm-spec/package-spec.html#build-dependencies-builddependencies>`_
 
 Optional Settings
 *****************
@@ -185,7 +185,7 @@ Optional Settings
 
     Any fields that are left blank will be omitted. You can also add additional fields, they will be included within the package.
 
-        **Link**: `ethPM specification: package meta <https://ethpm.github.io/ethpm-spec/package-spec.html#package-meta-meta>`_
+        **Link**: `ethPM specification: package metadata <https://ethpm.github.io/ethpm-spec/package-spec.html#package-metadata-meta>`_
 
 Example Configuration
 *********************
