@@ -57,7 +57,7 @@ def _cov_color(pct):
 
 
 def _pct(statement, branch):
-    pct = statement[0] / statement[1]
+    pct = statement[0] / (statement[1] or 1)
     if branch[-1]:
         pct = (pct + (branch[0] + branch[1]) / (branch[2] * 2)) / 2
     return pct
