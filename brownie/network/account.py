@@ -312,7 +312,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             txid = self._transact(  # type: ignore
                 {
                     "from": self.address,
-                    "to": str(to),
+                    "to": to_address(str(to)),
                     "value": Wei(amount),
                     "nonce": self.nonce,
                     "gasPrice": Wei(gas_price) if gas_price is not None else self._gas_price(),
