@@ -140,12 +140,12 @@ class Console(code.InteractiveConsole):
 
 def _dir_color(obj):
     if type(obj).__name__ == "module":
-        return color("module")
+        return color("brownie blue")
     if hasattr(obj, "_dir_color"):
         return color(obj._dir_color)
     if not callable(obj):
-        return color("value")
-    return color("callable")
+        return color("bright blue")
+    return color("bright cyan")
 
 
 def _atexit_readline(history_file):
