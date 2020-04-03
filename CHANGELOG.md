@@ -6,9 +6,14 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Fixed
+- Encoding bug for lists of tuples
+- Allow transfer to unchecksummed hexstring address
+- Color output for `dir` in console
+- Ignore json files in contracts folder
+- `ZeroDivisionError` during coverage evaluation when nothing has changed
 
 ## [1.6.8](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.8) - 2020-03-30
-
 ### Changed
 - Use Vyper [v0.1.0-beta17](https://github.com/vyperlang/vyper/releases/tag/v0.1.0-beta.17)
 
@@ -16,19 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bug when determining dependencies of a `Contract` object
 
 ## [1.6.7](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.7) - 2020-03-09
-
 ### Fixed
 - `INVALID` instructions with no related ast node (assembly)
 - Missing f-strings in compiler output
 
 ## [1.6.6](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.6) - 2020-03-03
-
 ### Changed
 - MythX plugin update (PR)[https://github.com/iamdefinitelyahuman/brownie/pull/365]
 - MythX plugin documentation update (PR)[https://github.com/iamdefinitelyahuman/brownie/pull/366]
 
 ## [1.6.5](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.5) - 2020-02-19
-
 ### Fixed
 - Fix issues from missing source offsets in Solidity [v0.6.3](https://github.com/ethereum/solidity/releases/tag/v0.6.3)
 - Do not assume pytest will run test functions sequentially (adds support for `-k` flag)
