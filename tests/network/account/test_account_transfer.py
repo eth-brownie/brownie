@@ -13,6 +13,12 @@ def test_to_string(accounts):
     assert tx.receiver == "0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E"
 
 
+def test_to_string_without_checksum(accounts):
+    to = "0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E".lower()
+    tx = accounts[0].transfer(to, 10000)
+    assert tx.receiver.lower() == to
+
+
 def test_to_account(accounts):
     """Can send to an Account object"""
     tx = accounts[0].transfer(accounts[1], 10000)
