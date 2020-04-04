@@ -38,7 +38,7 @@ Brownie generates compiler artifacts for each contract within a project, which a
         'type': "" // contract, library, interface
     }
 
-This raw data is available within Brownie through the `build <api-project-build>`_ module. If the contract was minified before compiling, Brownie will automatically adjust the source map offsets in ``pcMap`` and ``coverageMap`` to fit the current source.
+This raw data is available within Brownie through the `build <api-project-build>`_ module.
 
 .. code-block:: python
 

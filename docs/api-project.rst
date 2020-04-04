@@ -233,10 +233,6 @@ Build Methods
         >>> build.get_dependents('Token')
         ['SafeMath']
 
-.. py:classmethod:: Build.expand_build_offsets(build_json)
-
-    Given a build json as a dict, expands the minified offsets to match the original source code.
-
 Build Internal Methods
 **********************
 
@@ -309,7 +305,7 @@ Module Methods
         >>> from brownie.project import compiler
         >>> compiler.install_solc("0.4.25", "0.5.10")
 
-.. py:method:: compiler.compile_and_format(contract_sources, solc_version=None, optimize=True, runs=200, evm_version=None, minify=False, silent=True, allow_paths=None)
+.. py:method:: compiler.compile_and_format(contract_sources, solc_version=None, optimize=True, runs=200, evm_version=None, silent=True, allow_paths=None)
 
     Given a dict in the format ``{'path': "source code"}``, compiles the contracts and returns the formatted `build data <compile-json>`_.
 
@@ -318,7 +314,6 @@ Module Methods
     * ``optimize``: Toggle compiler optimization
     * ``runs``: Number of compiler optimization runs
     * ``evm_version``: EVM version to target. If ``None`` the compiler default is used.
-    * ``minify``: Should contract sources be `minified <sources-minify>`_?
     * ``silent``: Toggle console verbosity
     * ``allow_paths``: Import path, passed to `solc` as an additional path that contract files may be imported from
 
@@ -354,7 +349,7 @@ Module Methods
 
     Returns a ``dict`` of ``{'version': ["path", "path", ..]}``.
 
-.. py:method:: compiler.generate_input_json(contract_sources, optimize=True, runs=200, evm_version=None, minify=False, language="Solidity")
+.. py:method:: compiler.generate_input_json(contract_sources, optimize=True, runs=200, evm_version=None, language="Solidity")
 
     Generates a `standard solc input JSON <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_ as a dict.
 
@@ -580,30 +575,9 @@ Sources
         >>> sources.get_source_path('Token')
         'contracts/Token.sol'
 
-.. py:classmethod:: Sources.expand_offset(contract_name, offset)
-
-    Converts a minified offset to one that matches the current source code.
-
-    .. code-block:: python
-
-        >>> from brownie.project import sources
-        >>> sources.expand_offset("Token", [1258, 1466])
-        (2344, 2839)
 
 Module Methods
 --------------
-
-.. py:method:: sources.minify(source, language="Solidity")
-
-    Given contract source as a string, returns a minified version and an offset map used internally to translate minified offsets to the original ones.
-
-    .. code-block:: python
-
-        >>> from brownie.project import sources
-        >>> token_source = sources.get('Token')
-        >>> source.minify(token_source)
-        "pragma solidity^0.5.0;\nimport"./SafeMath.sol";\ncontract Token{\nusing SafeMath for uint256; ..."
-
 
 .. py:method:: sources.is_inside_offset(inner, outer)
 
@@ -618,10 +592,6 @@ Module Methods
 .. py:method: sources.highlighted_source(path, offset, pad=3)
 
     Given a path, start and stop offset, returns highlighted source code. Called internally by :func:`TransactionReceipt.source <TransactionReceipt.source>`.
-
-.. py:method:: sources.get_hash(source, contract_name, minified, language)
-
-    Returns a sha1 hash generated from a contract's source code.
 
 .. py:method:: sources.get_contracts(full_source)
 
