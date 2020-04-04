@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Dict, ItemsView, List, Optional, Sequence, Tuple, Union
+from typing import Dict, ItemsView, List, Optional, Tuple, Union
 
 from .sources import Sources, highlight_source
 
@@ -42,8 +42,6 @@ class Build:
         contract_name = build_json["contractName"]
         if "0" in build_json["pcMap"]:
             build_json["pcMap"] = dict((int(k), v) for k, v in build_json["pcMap"].items())
-        if build_json["compiler"]["minify_source"]:
-            build_json = self.expand_build_offsets(build_json)
         self._build[contract_name] = build_json
         self._generate_revert_map(build_json["pcMap"], build_json["language"])
 
@@ -109,40 +107,6 @@ class Build:
 
     def _stem(self, contract_name: str) -> str:
         return contract_name.replace(".json", "")
-
-    def expand_build_offsets(self, build_json: Dict) -> Dict:
-        """Expands minified source offsets in a build json dict."""
-
-        offset_map: Dict = {}
-        name = build_json["contractName"]
-
-        # minification only happens to the target contract that was compiled,
-        # so we ignore any import sources
-        source_path = build_json["sourcePath"]
-
-        for value in (
-            v
-            for v in build_json["pcMap"].values()
-            if "offset" in v and "path" in v and v["path"] == source_path
-        ):
-            value["offset"] = self._get_offset(offset_map, name, value["offset"])
-
-        for key in ("branches", "statements"):
-            if source_path not in build_json["coverageMap"][key]:
-                continue
-            coverage_map = build_json["coverageMap"][key][source_path]
-            for fn, value in coverage_map.items():
-                coverage_map[fn] = dict(
-                    (k, self._get_offset(offset_map, name, v[:2]) + tuple(v[2:]))
-                    for k, v in value.items()
-                )
-        return build_json
-
-    def _get_offset(self, offset_map: Dict, name: str, offset: Sequence[int]) -> Tuple:
-        offset = tuple(offset)
-        if offset not in offset_map:
-            offset_map[offset] = self._sources.expand_offset(name, offset)
-        return offset_map[offset]
 
 
 def _get_dev_revert(pc: int) -> Optional[str]:

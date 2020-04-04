@@ -2,6 +2,7 @@
 
 import json
 from copy import deepcopy
+from hashlib import sha1
 from pathlib import Path
 from typing import Dict, Optional, Union
 
@@ -91,7 +92,7 @@ def compile_and_format(
             compiler_targets[solc_version] = list(solc_sources)
 
     for version, path_list in compiler_targets.items():
-        compiler_data: Dict = {"minify_source": minify}
+        compiler_data: Dict = {}
         if version == "vyper":
             language = "Vyper"
             compiler_data["version"] = str(vyper.get_version())
@@ -213,7 +214,6 @@ def generate_build_json(
     if compiler_data is None:
         compiler_data = {}
     compiler_data["evm_version"] = input_json["settings"]["evmVersion"]
-    minified = compiler_data.get("minify_source", False)
     build_json = {}
     path_list = list(input_json["sources"])
 
@@ -235,12 +235,6 @@ def generate_build_json(
 
         abi = output_json["contracts"][path_str][contract_name]["abi"]
         output_evm = output_json["contracts"][path_str][contract_name]["evm"]
-        hash_ = sources.get_hash(
-            input_json["sources"][path_str]["content"],
-            contract_name,
-            minified,
-            input_json["language"],
-        )
 
         if input_json["language"] == "Solidity":
             contract_node = next(
@@ -275,7 +269,7 @@ def generate_build_json(
                 "deployedSourceMap": output_evm["deployedBytecode"]["sourceMap"],
                 "language": input_json["language"],
                 "opcodes": output_evm["deployedBytecode"]["opcodes"],
-                "sha1": hash_,
+                "sha1": sha1(input_json["sources"][path_str]["content"].encode()).hexdigest(),
                 "source": input_json["sources"][path_str]["content"],
                 "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
                 "sourcePath": path_str,
@@ -302,5 +296,5 @@ def _sources_dict(original: Dict, minify: bool, language: str) -> Dict:
                 value = json.loads(value)
             result[key] = {"abi": value}
         else:
-            result[key] = {"content": sources.minify(value, language)[0] if minify else value}
+            result[key] = {"content": value}
     return result
