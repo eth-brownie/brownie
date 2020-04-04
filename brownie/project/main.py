@@ -73,7 +73,6 @@ class _ProjectBase:
             optimize=compiler_config["solc"].get("optimize", None),
             runs=compiler_config["solc"].get("runs", None),
             evm_version=compiler_config["evm_version"],
-            minify=compiler_config["minify_source"],
             silent=silent,
             allow_paths=allow_paths,
             interface_sources=self._sources.get_interface_sources(),
@@ -438,7 +437,6 @@ def from_ethpm(uri: str) -> "TempProject":
     manifest = get_manifest(uri)
     compiler_config = {
         "evm_version": None,
-        "minify_source": False,
         "solc": {"version": None, "optimize": True, "runs": 200},
     }
     project = TempProject(manifest["package_name"], manifest["sources"], compiler_config)
@@ -470,7 +468,7 @@ def compile_source(
     """Compiles the given source code string and returns a TempProject container with
     the ContractContainer instances."""
 
-    compiler_config: Dict = {"evm_version": evm_version, "minify_source": False}
+    compiler_config: Dict = {"evm_version": evm_version}
 
     if solc_version is not None or source.lstrip().startswith("pragma"):
         compiler_config["solc"] = {"version": solc_version, "optimize": optimize, "runs": runs}

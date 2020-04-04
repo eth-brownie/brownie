@@ -45,7 +45,6 @@ def compile_and_format(
     optimize: bool = True,
     runs: int = 200,
     evm_version: int = None,
-    minify: bool = False,
     silent: bool = True,
     allow_paths: Optional[str] = None,
     interface_sources: Optional[Dict[str, str]] = None,
@@ -58,7 +57,6 @@ def compile_and_format(
         optimize: enable solc optimizer
         runs: optimizer runs
         evm_version: evm version to compile for
-        minify: minify source files
         silent: verbose reporting
         allow_paths: compiler allowed filesystem import path
 
@@ -110,7 +108,7 @@ def compile_and_format(
         to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
 
         input_json = generate_input_json(
-            to_compile, optimize, runs, evm_version, minify, language, interfaces
+            to_compile, optimize, runs, evm_version, language, interfaces
         )
         output_json = compile_from_input_json(input_json, silent, allow_paths)
 
@@ -127,7 +125,6 @@ def generate_input_json(
     optimize: bool = True,
     runs: int = 200,
     evm_version: Union[int, str, None] = None,
-    minify: bool = False,
     language: str = "Solidity",
     interface_sources: Optional[Dict[str, str]] = None,
 ) -> Dict:
@@ -139,7 +136,6 @@ def generate_input_json(
         optimize: enable solc optimizer
         runs: optimizer runs
         evm_version: evm version to compile for
-        minify: should source code be minified?
         language: source language (Solidity or Vyper)
 
     Returns: dict
@@ -159,13 +155,13 @@ def generate_input_json(
     input_json["settings"]["evmVersion"] = evm_version
     if language == "Solidity":
         input_json["settings"]["optimizer"] = {"enabled": optimize, "runs": runs if optimize else 0}
-    input_json["sources"] = _sources_dict(contract_sources, minify, language)
+    input_json["sources"] = _sources_dict(contract_sources, language)
 
     if interface_sources:
         if language == "Solidity":
-            input_json["sources"].update(_sources_dict(interface_sources, False, language))
+            input_json["sources"].update(_sources_dict(interface_sources, language))
         else:
-            input_json["interfaces"] = _sources_dict(interface_sources, False, language)
+            input_json["interfaces"] = _sources_dict(interface_sources, language)
 
     return input_json
 
@@ -288,7 +284,7 @@ def generate_build_json(
     return build_json
 
 
-def _sources_dict(original: Dict, minify: bool, language: str) -> Dict:
+def _sources_dict(original: Dict, language: str) -> Dict:
     result: Dict = {}
     for key, value in original.items():
         if Path(key).suffix == ".json":
