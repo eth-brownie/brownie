@@ -42,11 +42,13 @@ def test_encode_input(tester):
 
 def test_cli_no_owner(BrownieTester, accounts, test_mode, config):
     try:
-        config["pytest"]["default_contract_owner"] = False
+        config._unlock()
+        config["active_network"]["default_contract_owner"] = False
         tester = BrownieTester.deploy(True, {"from": accounts[0]})
         assert tester.revertStrings._owner is None
     finally:
-        config["pytest"]["default_contract_owner"] = True
+        del config["active_network"]["default_contract_owner"]
+        config._lock()
 
 
 def test_no_from(tester, accounts):

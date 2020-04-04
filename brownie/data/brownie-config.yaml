@@ -1,5 +1,11 @@
 # Brownie configuration file
 # https://eth-brownie.readthedocs.io/en/stable/config.html
+compiler:
+    evm_version: null
+    solc:
+        version: null
+        optimize: true
+        runs: 200
 network:
     default: development # the default network that brownie connects to
     settings:
@@ -36,15 +42,3 @@ network:
             host: https://www.ethercluster.com/etc
         kotti:
             host: https://www.ethercluster.com/kotti
-pytest:
-    # these settings replace the defaults when running pytest
-    gas_limit: 6721975
-    default_contract_owner: true
-    reverting_tx_gas_limit: 6721975
-    revert_traceback: true
-compiler:
-    evm_version: null
-    solc:
-        version: null
-        optimize: true
-        runs: 200

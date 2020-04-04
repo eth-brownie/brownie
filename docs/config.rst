@@ -74,6 +74,11 @@ The following settings are available:
         * ``optimize``: Set to ``true`` if you wish to enable compiler optimization.
         * ``runs``: The number of times the optimizer should run.
 
+Optional Settings
+=================
+
+These settings may be added to your project configuration file, but are not required.
+
 .. py:attribute:: pytest
 
     Properties that only affect Brownie's configuration when running tests.

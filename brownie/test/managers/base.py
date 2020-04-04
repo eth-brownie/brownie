@@ -80,7 +80,10 @@ class PytestBrownieBase:
             ARGV[key] = config.getoption("--coverage")
         ARGV["cli"] = "test"
         ARGV["gas"] = config.getoption("--gas")
-        ARGV["revert"] = config.getoption("--revert-tb") or CONFIG["pytest"]["revert_traceback"]
+        if config.getoption("--revert-tb"):
+            ARGV["revert"] = config.getoption("--revert-tb")
+        else:
+            ARGV["revert"] = CONFIG["active_network"].get("revert_traceback", True)
         ARGV["update"] = config.getoption("--update")
         ARGV["network"] = None
         if config.getoption("--network"):
