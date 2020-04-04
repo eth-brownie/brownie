@@ -41,7 +41,7 @@ def main():
     try:
         fn(*args["<arguments>"])
     except TypeError:
-        print(f"Invalid arguments for command '{args['<command>']}'. Try brownie ethpm --help")
+        print(f"Invalid arguments for command '{args['<command>']}'. Try brownie accounts --help")
         return
 
 
