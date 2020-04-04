@@ -128,7 +128,7 @@ def _modify_network_config(network: str = None) -> Dict:
         }
         CONFIG["active_network"]["name"] = network
 
-        if ARGV["cli"] == "test":
+        if ARGV["cli"] == "test" and "pytest" in CONFIG:
             CONFIG["active_network"].update(CONFIG["pytest"])
             if not CONFIG["active_network"]["reverting_tx_gas_limit"]:
                 print("WARNING: Reverting transactions will NOT be broadcasted.")
