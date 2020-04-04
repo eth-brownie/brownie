@@ -4,6 +4,7 @@ import json
 import shutil
 import sys
 import zipfile
+from hashlib import sha1
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
@@ -26,7 +27,7 @@ from brownie.network.state import _add_contract, _remove_contract
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.ethpm import get_deployment_addresses, get_manifest
-from brownie.project.sources import Sources, get_hash, get_pragma_spec
+from brownie.project.sources import Sources, get_pragma_spec
 from brownie.utils import color
 
 FOLDERS = [
@@ -219,8 +220,7 @@ class Project(_ProjectBase):
         except KeyError:
             return True
         # compare source hashes
-        hash_ = get_hash(source, contract_name, config["minify_source"], build_json["language"])
-        if build_json["sha1"] != hash_:
+        if build_json["sha1"] != sha1(source.encode()).hexdigest():
             return True
         # compare compiler settings
         if _compare_settings(config, build_json["compiler"]):

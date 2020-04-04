@@ -40,27 +40,28 @@ class Sources:
         collisions: Dict = {}
         for path, source in contract_sources.items():
             self._source[path] = source
-            data = _get_contract_data(source, path)
-            for name, values in data.items():
+            if Path(path).suffix != ".sol":
+                contract_names = [Path(path).stem]
+            else:
+                contract_names = get_contract_names(source)
+            for name in contract_names:
                 if name in self._contracts:
-                    collisions.setdefault(name, set()).update([path, self._contracts[name]["path"]])
-                values["path"] = path
-            self._contracts.update(data)
+                    collisions.setdefault(name, set()).update([path, self._contracts[name]])
+                self._contracts[name] = path
 
         for path, source in interface_sources.items():
             self._source[path] = source
+
             if Path(path).suffix != ".sol":
-                data = {Path(path).stem: minify(source, Path(path).suffix)[0]}
+                interface_names = [Path(path).stem]
             else:
-                data = get_contracts(minify(source, "Solidity")[0])
-            for name, source in data.items():
+                interface_names = get_contract_names(source)
+            for name in interface_names:
                 if name in self._contracts:
-                    collisions.setdefault(name, set()).update([path, self._contracts[name]["path"]])
+                    collisions.setdefault(name, set()).update([path, self._contracts[name]])
                 if name in self._interfaces:
-                    collisions.setdefault(name, set()).update(
-                        [path, self._interfaces[name]["path"]]
-                    )
-                self._interfaces[name] = {"path": path, "hash": sha1(source.encode()).hexdigest()}
+                    collisions.setdefault(name, set()).update([path, self._interfaces[name]])
+                self._interfaces[name] = path
 
         if collisions:
             raise NamespaceCollision(
@@ -76,7 +77,7 @@ class Sources:
 
         Returns: source code as a string."""
         if name in self._contracts:
-            return self._source[self._contracts[name]["path"]]
+            return self._source[self._contracts[name]]
         return self._source[str(name)]
 
     def get_path_list(self) -> List:
@@ -93,28 +94,19 @@ class Sources:
 
     def get_interface_hashes(self) -> Dict:
         """Returns a dict of interface hashes in the form of {name: hash}"""
-        return {k: v["hash"] for k, v in self._interfaces.items()}
+        return {k: sha1(self._source[v].encode()).hexdigest() for k, v in self._interfaces.items()}
 
     def get_interface_sources(self) -> Dict:
         """Returns a dict of interfaces sources in the form {path: source}"""
-        return {v["path"]: self._source[v["path"]] for v in self._interfaces.values()}
+        return {v: self._source[v] for v in self._interfaces.values()}
 
     def get_source_path(self, contract_name: str) -> str:
         """Returns the path to the source file where a contract is located."""
         if contract_name in self._contracts:
-            return self._contracts[contract_name]["path"]
+            return self._contracts[contract_name]
         if contract_name in self._interfaces:
-            return self._interfaces[contract_name]["path"]
+            return self._interfaces[contract_name]
         raise KeyError(contract_name)
-
-    def expand_offset(self, contract_name: str, offset: Tuple) -> Tuple:
-        """Converts an offset from source with comments removed, to one from the original source."""
-        offset_map = self._contracts[contract_name]["offset_map"]
-
-        return (
-            offset[0] + next(i[1] for i in offset_map if i[0] <= offset[0]),
-            offset[1] + next(i[1] for i in offset_map if i[0] < offset[1]),
-        )
 
 
 def minify(source: str, language: str = "Solidity") -> Tuple[str, List]:
@@ -145,18 +137,6 @@ def is_inside_offset(inner: Tuple, outer: Tuple) -> bool:
 
     Returns: bool"""
     return outer[0] <= inner[0] <= inner[1] <= outer[1]
-
-
-def get_hash(source: str, contract_name: str, minified: bool, language: str) -> str:
-    """Returns a hash of the contract source code."""
-    if minified:
-        source = minify(source, language)[0]
-    if language.lower() == "solidity":
-        try:
-            source = get_contracts(source)[contract_name]
-        except KeyError:
-            return ""
-    return sha1(source.encode()).hexdigest()
 
 
 def highlight_source(source: str, offset: Tuple, pad: int = 3) -> Tuple:
@@ -201,52 +181,31 @@ def highlight_source(source: str, offset: Tuple, pad: int = 3) -> Tuple:
     return final, ln
 
 
-def _get_contract_data(full_source: str, path_str: str) -> Dict:
-    key = sha1(full_source.encode()).hexdigest()
-    if key in _contract_data:
-        return _contract_data[key]
-
-    path = Path(path_str)
-    minified_source, offset_map = minify(full_source, path.suffix)
-
-    if path.suffix == ".vy":
-        data = {path.stem: {"offset": (0, len(full_source)), "offset_map": offset_map}}
-    else:
-        data = {}
-        for name, source in get_contracts(minified_source).items():
-            idx = minified_source.index(source)
-            offset = (
-                idx + next(i[1] for i in offset_map if i[0] <= idx),
-                idx + len(source) + next(i[1] for i in offset_map if i[0] <= idx + len(source)),
-            )
-            data[name] = {"offset_map": offset_map, "offset": offset}
-    _contract_data[key] = data
-    return data
-
-
-def get_contracts(full_source: str) -> Dict:
-
+def get_contract_names(full_source: str) -> List:
     """
-    Extracts code for individual contracts from a complete Solidity source
+    Get contract names from Solidity source code.
 
     Args:
         full_source: Solidity source code
 
-    Returns: dict of {"ContractName": "source"}
+    Returns: list of contract names
     """
-
-    data = {}
+    # remove comments in case they contain code snippets that could fail the regex
+    comment_regex = r"(?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)"
+    uncommented_source = re.sub(comment_regex, "", full_source)
     contracts = re.findall(
         r"((?:abstract contract|contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:abstract contract|contract|library|interface)\s|$)",  # NOQA: E501
-        full_source,
+        uncommented_source,
     )
+
+    contract_names = []
     for source in contracts:
-        type_, name, inherited = re.findall(
+        _, name, _ = re.findall(
             r"(abstract contract|contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)",
             source,
         )[0]
-        data[name] = source
-    return data
+        contract_names.append(name)
+    return contract_names
 
 
 def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
