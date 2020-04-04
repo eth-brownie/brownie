@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import json
 import re
 import textwrap
 from hashlib import sha1
@@ -9,23 +8,8 @@ from typing import Dict, List, Optional, Tuple
 
 from semantic_version import NpmSpec
 
-from brownie.exceptions import NamespaceCollision, PragmaError, UnsupportedLanguage
+from brownie.exceptions import NamespaceCollision, PragmaError
 from brownie.utils import color
-
-SOLIDITY_MINIFY_REGEX = [
-    r"(?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)",  # comments
-    r"(?<=\n)\s+|[ \t]+(?=\n)",  # leading / trailing whitespace
-    r"(?<=[^\w\s])[ \t]+(?=\w)|(?<=\w)[ \t]+(?=[^\w\s])",  # whitespace between expressions
-]
-
-VYPER_MINIFY_REGEX = [
-    r"((\n|^)[\s]*?#[\s\S]*?)(?=\n[^#])",
-    r'([\s]*?"""[\s\S]*?""")(?=\n)',
-    r"([\s]*?'''[\s\S]*?''')(?=\n)",
-    r"(\n)(?=\n)",
-]
-
-_contract_data: Dict = {}
 
 
 class Sources:
@@ -107,25 +91,6 @@ class Sources:
         if contract_name in self._interfaces:
             return self._interfaces[contract_name]
         raise KeyError(contract_name)
-
-
-def minify(source: str, language: str = "Solidity") -> Tuple[str, List]:
-    """Given source as a string, returns a minified version and an offset map."""
-    offsets = [(0, 0)]
-    if language.lower() in ("json", ".json"):
-        abi = json.loads(source)
-        return json.dumps(abi, sort_keys=True, separators=(",", ":"), default=str), []
-    if language.lower() in ("solidity", ".sol"):
-        pattern = f"({'|'.join(SOLIDITY_MINIFY_REGEX)})"
-    elif language.lower() in ("vyper", ".vy"):
-        pattern = f"({'|'.join(VYPER_MINIFY_REGEX)})"
-    else:
-        raise UnsupportedLanguage(language)
-    for match in re.finditer(pattern, source):
-        offsets.append(
-            (match.start() - offsets[-1][1], match.end() - match.start() + offsets[-1][1])
-        )
-    return re.sub(pattern, "", source), offsets[::-1]
 
 
 def is_inside_offset(inner: Tuple, outer: Tuple) -> bool:

@@ -44,7 +44,6 @@ pytest:
     revert_traceback: true
 compiler:
     evm_version: null
-    minify_source: false
     solc:
         version: null
         optimize: true
