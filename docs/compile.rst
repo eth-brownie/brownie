@@ -17,7 +17,7 @@ If one or more contracts are unable to compile, Brownie raises an exception with
 Supported Languages
 ===================
 
-Brownie supports Solidity (``>=0.4.22``) and Vyper (``0.1.0-b16``). The file extension determines which compiler is used:
+Brownie supports Solidity (``>=0.4.22``) and Vyper (``0.1.0-b17``). The file extension determines which compiler is used:
 
 * Solidity: ``.sol``
 * Vyper: ``.vy``
@@ -44,7 +44,6 @@ Settings for the compiler are found in ``brownie-config.yaml``:
 .. code-block:: yaml
 
     evm_version: null
-    minify_source: false
     solc:
         version: 0.6.0
         optimize: true
@@ -57,7 +56,7 @@ Setting the Compiler Version
 
 .. note::
 
-    Brownie supports Solidity versions ``>=0.4.22`` and Vyper version ``0.1.0-b16``.
+    Brownie supports Solidity versions ``>=0.4.22`` and Vyper version ``0.1.0-b17``.
 
 If a compiler version is set in the configuration file, all contracts in the project are compiled using that version. It is installed automatically if not already present. The version should be given as a string in the format ``0.x.x``.
 
@@ -84,11 +83,6 @@ Compiler Optimization
 Compiler optimization is enabled by default. Coverage evaluation was designed using optimized contracts, there is no need to disable it during testing.
 
 See the `Solidity documentation <https://solidity.readthedocs.io/en/latest/miscellaneous.html#internals-the-optimiser>`_ for more info on the ``solc`` optimizer.
-
-Source Minification
--------------------
-
-If ``minify_source`` is ``true``, the contract source is minified before compiling. Each time Brownie is loaded it will then minify the current source code before checking the hashes to determine if a recompile is necessary. This allows you to modify code formatting and comments without triggering a recompile, at the cost of increased load times from recalculating source offsets.
 
 .. _compile-json:
 
