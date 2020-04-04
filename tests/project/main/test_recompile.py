@@ -83,18 +83,6 @@ def test_new_interface(mockproject):
     assert not mockproject._compile.call_args[0][0]
 
 
-# modifying the source file outside of a contract should not trigger a recompile
-def test_modified_source_outside_contract(mockproject):
-    code = CONTRACT.split("\n")
-    code[2] += " // a comment that exists outside the contract"
-    code = "\n".join(code)
-    with mockproject._path.joinpath("contracts/Foo.sol").open("w") as fp:
-        fp.write(code)
-
-    mockproject.load()
-    assert not mockproject._compile.call_args[0][0]
-
-
 # modifying a contract should trigger a recompile
 # base contracts, interfaces, and libraries that are inherited should not recompile
 def test_modified_contract(mockproject):
@@ -106,24 +94,6 @@ def test_modified_contract(mockproject):
 
     mockproject.load()
     assert sorted(mockproject._compile.call_args[0][0]) == ["contracts/Foo.sol"]
-
-
-# an incompatible pragma statement should trigger a recompile
-def test_incompatible_pragma(mockproject):
-    with mockproject._path.joinpath("contracts/Foo.sol").open("w") as fp:
-        fp.write(CONTRACT.replace("0.5.0", "0.5.7"))
-
-    mockproject.load()
-    assert sorted(mockproject._compile.call_args[0][0]) == ["contracts/Foo.sol"]
-
-
-# a compatible pragma statement should not recompile
-def test_compatible_pragma(mockproject):
-    with mockproject._path.joinpath("contracts/Foo.sol").open("w") as fp:
-        fp.write(CONTRACT.replace("0.5.0", ">0.4.25"))
-
-    mockproject.load()
-    assert not mockproject._compile.call_args[0][0]
 
 
 # modifying a library should recompile a dependent contract

@@ -1274,7 +1274,6 @@
   "bytecodeSha1": "ec6eada4b5f576d6f29c7111e6143834af33fa3a",
   "compiler": {
     "evm_version": "petersburg",
-    "minify_source": false,
     "optimize": true,
     "runs": 200,
     "version": "0.5.11+commit.22be8592.Linux.g++"

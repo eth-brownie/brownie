@@ -1,39 +1,15 @@
 #!/usr/bin/python3
 
-import json
-
 import pytest
 from semantic_version import NpmSpec
 
 from brownie.exceptions import NamespaceCollision
-from brownie.project import compile_source, sources
+from brownie.project import sources
 
 MESSY_SOURCE = """
   pragma  solidity>=0.4.22    <0.7.0  ;contract Foo{} interface Bar {}
 abstract contract Baz is Foo {}
  library   Potato{}"""
-
-MINIFY_SOURCE = """
-pragma solidity >=0.4.11;
-
-contract Foo {
-    /**
-        this comment takes up space
-     */
-    function return13() public returns (uint  a) {
-        return 13;
-    }
-}
-
-contract Bar  is Foo {
-    // look at this big ol' comment
-    function getFunky( )  public returns    (bytes4) {
-        return 0x420Faded;
-    }
-
-}
-
-"""
 
 
 @pytest.fixture(scope="module")
@@ -79,47 +55,9 @@ def test_get_source_path(sourceobj):
         sourceobj.get_source_path("fooboo")
 
 
-def test_expand_offset(btsource, BrownieTester):
-    minified, _ = sources.minify(btsource)
-    expanded = BrownieTester._project._sources.expand_offset(
-        "BrownieTester", (minified.index("contract"), minified.index("contract") + 7)
-    )
-    assert btsource.index("contract"), btsource.index("contract") + 7 == expanded
-
-
-@pytest.mark.parametrize("version", ["0.4.22", "0.4.25", "0.5.0", "0.5.9", "0.5.15", "0.6.0"])
-def test_minify_solc(version):
-    foo = compile_source(MINIFY_SOURCE, solc_version=version)["Foo"]
-    minified, _ = sources.minify(MINIFY_SOURCE)
-    minifoo = compile_source(minified, solc_version=version)["Foo"]
-    assert foo._build["bytecodeSha1"] == minifoo._build["bytecodeSha1"]
-    assert foo._build["source"] != minifoo._build["source"]
-
-
-def test_minify_vyper():
-    code = "@public\ndef foo(a: address) -> bool:    return True\n\n"
-    foo = compile_source(code)["Vyper"]
-    minified, _ = sources.minify(code, "Vyper")
-    minifoo = compile_source(minified)["Vyper"]
-    assert foo._build["bytecodeSha1"] == minifoo._build["bytecodeSha1"]
-    assert foo._build["source"] != minifoo._build["source"]
-
-
-def test_minify_json():
-    foo_list = [{"foo": "bar"}, {"baz": "potato"}]
-    foo = json.dumps(foo_list)
-    minifoo, _ = sources.minify(foo, "json")
-    assert foo != minifoo
-    assert json.loads(minifoo) == foo_list
-
-
-def test_get_contracts():
-    contracts = sources.get_contracts(MESSY_SOURCE)
-    assert len(contracts) == 4
-    assert contracts["Foo"] == "contract Foo{}"
-    assert contracts["Bar"] == "interface Bar {}"
-    assert contracts["Baz"] == "abstract contract Baz is Foo {}"
-    assert contracts["Potato"] == "library   Potato{}"
+def test_get_contract_names():
+    names = sources.get_contract_names(MESSY_SOURCE)
+    assert names == ["Foo", "Bar", "Baz", "Potato"]
 
 
 def test_get_pragma_spec():

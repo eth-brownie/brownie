@@ -21,12 +21,9 @@ def test_version():
 
 
 def test_generate_input_json(vysource):
-    input_json = compiler.generate_input_json({"path.vy": vysource}, minify=False, language="Vyper")
+    input_json = compiler.generate_input_json({"path.vy": vysource}, language="Vyper")
     assert "optimizer" not in input_json["settings"]
     assert input_json["sources"]["path.vy"]["content"] == vysource
-    input_json = compiler.generate_input_json({"path.vy": vysource}, minify=True, language="Vyper")
-    assert "optimizer" not in input_json["settings"]
-    assert input_json["sources"]["path.vy"]["content"] != vysource
 
 
 def test_generate_input_json_evm(vysource):

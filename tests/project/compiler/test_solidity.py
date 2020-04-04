@@ -64,12 +64,6 @@ def test_generate_input_json(solc5source):
     assert input_json["settings"]["optimizer"]["enabled"] is True
     assert input_json["settings"]["optimizer"]["runs"] == 200
     assert input_json["sources"]["path.sol"]["content"] == solc5source
-    input_json = compiler.generate_input_json(
-        {"path.sol": solc5source}, optimize=False, runs=0, minify=True
-    )
-    assert input_json["settings"]["optimizer"]["enabled"] is False
-    assert input_json["settings"]["optimizer"]["runs"] == 0
-    assert input_json["sources"]["path.sol"]["content"] != solc5source
 
 
 def test_generate_input_json_evm(solc5source, monkeypatch):
