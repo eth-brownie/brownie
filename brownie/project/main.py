@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import os
 import shutil
 import sys
 import zipfile
@@ -67,16 +68,22 @@ class _ProjectBase:
         if self._path is not None:
             allow_paths = self._path.joinpath("contracts").as_posix()
         compiler_config.setdefault("solc", {})
-        build_json = compiler.compile_and_format(
-            contract_sources,
-            solc_version=compiler_config["solc"].get("version", None),
-            optimize=compiler_config["solc"].get("optimize", None),
-            runs=compiler_config["solc"].get("runs", None),
-            evm_version=compiler_config["evm_version"],
-            silent=silent,
-            allow_paths=allow_paths,
-            interface_sources=self._sources.get_interface_sources(),
-        )
+        cwd = os.getcwd()
+        if self._path is not None:
+            os.chdir(self._path)
+        try:
+            build_json = compiler.compile_and_format(
+                contract_sources,
+                solc_version=compiler_config["solc"].get("version", None),
+                optimize=compiler_config["solc"].get("optimize", None),
+                runs=compiler_config["solc"].get("runs", None),
+                evm_version=compiler_config["evm_version"],
+                silent=silent,
+                allow_paths=allow_paths,
+                interface_sources=self._sources.get_interface_sources(),
+            )
+        finally:
+            os.chdir(cwd)
         for data in build_json.values():
             if self._path is not None:
                 path = self._path.joinpath(f"build/contracts/{data['contractName']}.json")
