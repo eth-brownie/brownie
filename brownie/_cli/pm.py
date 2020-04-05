@@ -28,9 +28,10 @@ Commands:
 Options:
   --help -h                     Display this message
 
-Package manager for ethPM or Github packages which can be imported into your own
-projects. See https://eth-brownie.readthedocs.io/en/stable/pm.html for more
-information.
+Manager for ethPM or Github packages. Installed packages can be added
+as dependencies and imported into your own projects.
+
+See https://eth-brownie.readthedocs.io/en/stable/pm.html for more information.
 """
 
 

@@ -382,11 +382,6 @@ def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
             BROWNIE_FOLDER.joinpath("data/brownie-config.yaml"),
             project_path.joinpath("brownie-config.yaml"),
         )
-    if not project_path.joinpath("ethpm-config.yaml").exists():
-        shutil.copy(
-            BROWNIE_FOLDER.joinpath("data/ethpm-config.yaml"),
-            project_path.joinpath("ethpm-config.yaml"),
-        )
     _add_to_sys_path(project_path)
     return str(project_path)
 
