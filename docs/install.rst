@@ -4,37 +4,67 @@
 Installing Brownie
 ==================
 
-The easiest way to install Brownie is via pip.
+The recommended way to install Brownie is via `pipx <https://github.com/pipxproject/pipx>`_. Pipx is a tool to help you install and run end-user applications written in Python. It's roughly similar to macOS's ``brew``, JavaScript's ``npx``, and Linux's ``apt``.
 
-::
+``pipx`` installs Brownie into a virtual environment and makes it available directly from the commandline. Once installed, you will never have to activate a virtual environment prior to using Brownie.
 
-    $ pip install eth-brownie
+``pipx`` does not ship with Python. If you have not used it before you will probably need to install it.
 
-You can also clone the `github repository <https://github.com/iamdefinitelyahuman/brownie>`_ and use setuptools for the most up-to-date version.
+To install ``pipx``:
 
-::
+.. code-block:: bash
 
-    $ python3 setup.py install
+    python3 -m pip install --user pipx
+    python3 -m pipx ensurepath
 
-Once you have installed, type ``brownie`` to verify that it worked:
+.. note::
 
-::
+    You may need to restart your terminal after installing ``pipx``.
+
+To install Brownie using ``pipx``:
+
+.. code-block:: bash
+
+    pipx install eth-brownie
+
+Once installation is complete, type ``brownie`` to verify that it worked:
+
+.. code-block:: bash
 
     $ brownie
     Brownie - Python development framework for Ethereum
 
     Usage:  brownie <command> [<args>...] [options <args>]
 
+
+Other Installation Methods
+==========================
+
+You can also install Brownie via ``pip``, or clone the repository and use ``setuptools``. If you install via one of these methods, we highly recommend using ``venv`` and installing into a `virtual environment <https://docs.python.org/3/library/venv.html>`_.
+
+To install via ``pip``:
+
+.. code-block:: bash
+
+    pip install eth-brownie
+
+To clone the `github repository <https://github.com/iamdefinitelyahuman/brownie>`_ and install via ``setuptools``:
+
+.. code-block:: bash
+
+    git clone https://github.com/iamdefinitelyahuman/brownie.git
+    cd brownie
+    python3 setup.py install
+
 Dependencies
 ============
 
 Brownie has the following dependencies:
 
-* `ganache-cli <https://github.com/trufflesuite/ganache-cli>`_ - tested with version `6.8.2 <https://github.com/trufflesuite/ganache-cli/releases/tag/v6.8.2>`_
-* `pip <https://pypi.org/project/pip/>`_
 * `python3 <https://www.python.org/downloads/release/python-368/>`_ version 3.6 or greater, python3-dev
+* `ganache-cli <https://github.com/trufflesuite/ganache-cli>`_ - tested with version `6.8.2 <https://github.com/trufflesuite/ganache-cli/releases/tag/v6.8.2>`_
 
-As brownie relies on `py-solc-x <https://github.com/iamdefinitelyahuman/py-solc-x>`_, you do not need solc installed locally but you must install all required `solc dependencies <https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages>`_.
+Brownie uses `py-solc-x <https://github.com/iamdefinitelyahuman/py-solc-x>`_ for solc version management. You do not need solc installed locally, but you must install all required `solc dependencies <https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages>`_.
 
 
 .. _install-tk:
@@ -48,9 +78,9 @@ Tk is not a strict dependency for Brownie. However, if it is not installed on yo
 
 You can use the following command to check that Tk has been correctly installed:
 
-::
+.. code-block:: bash
 
-    $ python -m tkinter
+    python -m tkinter
 
 This should open a simple window and display the installed version number.
 
