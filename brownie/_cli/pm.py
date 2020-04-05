@@ -13,6 +13,7 @@ from tqdm import tqdm
 from brownie import project
 from brownie._config import _get_data_folder
 from brownie.exceptions import InvalidPackage
+from brownie.project.ethpm import get_manifest, install_package
 from brownie.utils import color, notify
 from brownie.utils.docopt import docopt
 
@@ -27,7 +28,9 @@ Commands:
 Options:
   --help -h                     Display this message
 
-TODO
+Package manager for ethPM or Github packages which can be imported into your own
+projects. See https://eth-brownie.readthedocs.io/en/stable/pm.html for more
+information.
 """
 
 
@@ -63,58 +66,73 @@ def _list():
 
     for org_path in org_names:
         packages = list(org_path.iterdir())
-        print(f"\n{color('bright blue')}{org_path.name}{color}")
+        print(f"\n{color('bright magenta')}{org_path.name}{color}")
         for path in packages:
             u = "\u2514" if path == packages[-1] else "\u251c"
             try:
                 name, version = path.name.rsplit("@", maxsplit=1)
             except ValueError:
                 continue
-            print(
-                f" {color('bright black')}{u}\u2500{color}{org_path.name}/"
-                f"{color('bright white')}{name}{color}@{color('bright white')}{version}{color}"
-            )
+            print(f" {color('bright black')}{u}\u2500{_format_pkg(org_path.name, name, version)}")
 
 
-def _export(id_, path_str="."):
-    source_path = _get_data_folder().joinpath(f"packages/{id_}")
+def _export(package_id, path_str="."):
+    org, repo, version = _split_id(package_id)
+    source_path = _get_data_folder().joinpath(f"packages/{org}/{repo}@{version}")
     if not source_path.exists():
-        raise FileNotFoundError(f"Package '{color('bright blue')}{id_}{color}' is not installed")
+        raise FileNotFoundError(f"Package '{_format_pkg(org, repo, version)}' is not installed")
     dest_path = Path(path_str)
     if dest_path.exists():
         if not dest_path.is_dir():
             raise FileExistsError(f"Destination path already exists")
-        dest_path = dest_path.joinpath(id_)
+        dest_path = dest_path.joinpath(package_id)
     shutil.copytree(source_path, dest_path)
-    notify(
-        "SUCCESS", f"Package '{color('bright blue')}{id_}{color}' has been exported to {dest_path}"
-    )
+    notify("SUCCESS", f"Package '{_format_pkg(org, repo, version)}' was exported to {dest_path}")
 
 
-def _delete(id_):
-    source_path = _get_data_folder().joinpath(f"packages/{id_}")
+def _delete(package_id):
+    org, repo, version = _split_id(package_id)
+    source_path = _get_data_folder().joinpath(f"packages/{org}/{repo}@{version}")
     if not source_path.exists():
-        raise FileNotFoundError(f"Package '{color('bright blue')}{id_}{color}' is not installed")
+        raise FileNotFoundError(f"Package '{_format_pkg(org, repo, version)}' is not installed")
     shutil.rmtree(source_path)
-    notify("SUCCESS", f"Package '{color('bright blue')}{id_}{color}' has been deleted")
+    notify("SUCCESS", f"Package '{_format_pkg(org, repo, version)}' has been deleted")
 
 
 def _install(uri):
-    if urlparse(uri).scheme in ("erc1319", "ethpm", "ipfs"):
-        # TODO
-        return
-    _install_from_github(uri)
+    if urlparse(uri).scheme in ("erc1319", "ethpm"):
+        org, repo, version = _install_from_ethpm(uri)
+    else:
+        org, repo, version = _install_from_github(uri)
+
+    notify("SUCCESS", f"Package '{_format_pkg(org, repo, version)}' has been installed")
+
+
+def _install_from_ethpm(uri):
+    manifest = get_manifest(uri)
+    org = manifest["meta_brownie"]["registry_address"]
+    repo = manifest["package_name"]
+    version = manifest["version"]
+
+    install_path = _get_data_folder().joinpath(f"packages/{org}")
+    install_path.mkdir(exist_ok=True)
+    install_path = install_path.joinpath(f"{repo}@{version}")
+    if install_path.exists():
+        raise FileExistsError("Package is aleady installed")
+
+    try:
+        project.new(install_path)
+        install_package(install_path, uri)
+        project.load(install_path)
+    except Exception as e:
+        shutil.rmtree(install_path)
+        raise e
+
+    return org, repo, version
 
 
 def _install_from_github(package_id):
-    try:
-        path, version = package_id.split("@")
-        org, repo = path.split("/")
-    except ValueError:
-        raise ValueError(
-            "Invalid package ID. Must be given as [ORG]/[REPO]@[VERSION]"
-            "\ne.g. openzeppelin/openzeppelin-contracts@v2.5.0"
-        ) from None
+    org, repo, version = _split_id(package_id)
 
     data = requests.get(f"https://api.github.com/repos/{org}/{repo}/releases?per_page=100").json()
     org, repo = data[0]["html_url"].split("/")[3:5]
@@ -156,7 +174,23 @@ def _install_from_github(package_id):
         shutil.rmtree(install_path)
         raise InvalidPackage(f"{package_id} cannot be interpreted as a Brownie project")
 
-    notify(
-        "SUCCESS",
-        f"Package '{color('bright blue')}{org}/{repo}@{version}{color}' has been installed",
+    return org, repo, version
+
+
+def _split_id(package_id):
+    try:
+        path, version = package_id.split("@")
+        org, repo = path.split("/")
+        return org, repo, version
+    except ValueError:
+        raise ValueError(
+            "Invalid package ID. Must be given as [ORG]/[REPO]@[VERSION]"
+            f"\ne.g. {_format_pkg('openzeppelin', 'openzeppelin-contracts', 'v2.5.0')}"
+        ) from None
+
+
+def _format_pkg(org, repo, version):
+    return (
+        f"{color('blue')}{org}/{color('bright blue')}{repo}"
+        f"{color('blue')}@{color('bright blue')}{version}{color}"
     )
