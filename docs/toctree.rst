@@ -18,6 +18,7 @@ Brownie
     structure.rst
     compile.rst
     interaction.rst
+    package-manager.rst
     gui.rst
 
 
@@ -51,7 +52,6 @@ Brownie
     deploy.rst
     nonlocal-networks.rst
     accounts.rst
-    ethpm.rst
 
 
 .. toctree::

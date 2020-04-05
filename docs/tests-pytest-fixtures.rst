@@ -10,7 +10,7 @@ Brownie provides :ref:`fixtures <pytest-fixtures-docs>` to allow you to interact
 Session Fixtures
 ================
 
-These fixtures provide quick access to Brownie objects that are frequently used during testing. If you are unfamiliar with these objects, you may wish to read the documentation liested under "Core Functionality" in the table of contents.
+These fixtures provide quick access to Brownie objects that are frequently used during testing. If you are unfamiliar with these objects, you may wish to read the documentation listed under "Core Functionality" in the table of contents.
 
 .. _test-fixtures-accounts:
 
@@ -44,6 +44,19 @@ These fixtures provide quick access to Brownie objects that are frequently used 
         def test_account_balance(accounts, history):
             accounts[0].transfer(accounts[1], "10 ether")
             assert len(history) == 1
+
+.. py:attribute:: pm
+
+    Callable fixture that provides access to :func:`Project <brownie.project.main.Project>` objects, used for testing against installed packages.
+
+    .. code-block:: python
+        :linenos:
+
+        @pytest.fixture(scope="module")
+        def compound(pm, accounts):
+            ctoken = pm('defi.snakecharmers.eth/compound@1.1.0').CToken
+            yield ctoken.deploy({'from': accounts[0]})
+
 
 .. py:attribute:: rpc
 

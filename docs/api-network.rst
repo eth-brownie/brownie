@@ -11,7 +11,7 @@ The ``network`` package holds classes for interacting with the Ethereum blockcha
 
 The ``main`` module contains methods for conncting to or disconnecting from the network. All of these methods are available directly from ``brownie.network``.
 
-.. py:method:: main.connect(network: str = None, launch_rpc: bool = True) -> None
+.. py:method:: main.connect(network = None, launch_rpc = True)
 
     Connects to the network.  Network settings are retrieved from ``brownie-config.yaml``
 
@@ -25,7 +25,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         >>> from brownie import network
         >>> network.connect('development')
 
-.. py:method:: main.disconnect(kill_rpc: bool = True) -> None
+.. py:method:: main.disconnect(kill_rpc = True)
 
     Disconnects from the network.
 
@@ -46,7 +46,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         >>> network.is_connected()
         True
 
-.. py:method:: main.show_active() -> Optional[str]
+.. py:method:: main.show_active()
 
     Returns the name of the network that is currently active, or ``None`` if not connected.
 
@@ -56,7 +56,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         >>> network.show_active()
         'development'
 
-.. py:method:: main.gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]
+.. py:method:: main.gas_limit(*args)
 
     Gets and optionally sets the default gas limit.
 
@@ -76,7 +76,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         >>> network.gas_limit("auto")
         False
 
-.. py:method:: main.gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]
+.. py:method:: main.gas_price(*args)
 
     Gets and optionally sets the default gas price.
 
