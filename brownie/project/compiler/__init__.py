@@ -9,6 +9,7 @@ from typing import Dict, Optional, Union
 from eth_utils import remove_0x_prefix
 from semantic_version import Version
 
+from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
 from brownie.project import sources
 from brownie.project.compiler.solidity import (  # NOQA: F401
@@ -21,6 +22,11 @@ from brownie.utils import notify
 
 from . import solidity, vyper
 
+remappings = []
+for path in _get_data_folder().joinpath("packages").iterdir():
+    remappings.append(f"{path.name}={path.as_posix()}")
+
+
 STANDARD_JSON: Dict = {
     "language": None,
     "sources": {},
@@ -29,7 +35,7 @@ STANDARD_JSON: Dict = {
             "*": {"*": ["abi", "evm.bytecode", "evm.deployedBytecode"], "": ["ast"]}
         },
         "evmVersion": None,
-        "remappings": [],
+        "remappings": remappings,
     },
 }
 EVM_SOLC_VERSIONS = [
@@ -183,8 +189,15 @@ def compile_from_input_json(
 
     if input_json["language"] == "Vyper":
         return vyper.compile_from_input_json(input_json, silent, allow_paths)
+
     if input_json["language"] == "Solidity":
+        if allow_paths:
+            allow_paths = f"{allow_paths},{ _get_data_folder().joinpath('packages').as_posix()}"
+        else:
+            allow_paths = _get_data_folder().joinpath("packages").as_posix()
+
         return solidity.compile_from_input_json(input_json, silent, allow_paths)
+
     raise UnsupportedLanguage(f"{input_json['language']}")
 
 
