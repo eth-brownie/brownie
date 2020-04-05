@@ -115,6 +115,11 @@ def _load_project_compiler_config(project_path: Optional[Path]) -> Dict:
     return compiler_data
 
 
+def _load_project_dependencies(project_path: Path) -> Dict:
+    compiler_data = _load_config(project_path.joinpath("brownie-config"))
+    return compiler_data.get("dependencies", [])
+
+
 def _modify_network_config(network: str = None) -> Dict:
     """Modifies the 'active_network' configuration settings"""
     CONFIG._unlock()

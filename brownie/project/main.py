@@ -9,6 +9,7 @@ from hashlib import sha1
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
+from urllib.parse import urlparse
 
 import requests
 from semantic_version import Version
@@ -17,15 +18,17 @@ from tqdm import tqdm
 from brownie._config import (
     BROWNIE_FOLDER,
     CONFIG,
+    _get_data_folder,
     _get_project_config_path,
     _load_project_compiler_config,
     _load_project_config,
+    _load_project_dependencies,
 )
-from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
+from brownie.exceptions import InvalidPackage, ProjectAlreadyLoaded, ProjectNotFound
 from brownie.network import web3
 from brownie.network.contract import Contract, ContractContainer, ProjectContract
 from brownie.network.state import _add_contract, _remove_contract
-from brownie.project import compiler
+from brownie.project import compiler, ethpm
 from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_pragma_spec
@@ -64,13 +67,15 @@ class _ProjectBase:
     _build: Build
 
     def _compile(self, contract_sources: Dict, compiler_config: Dict, silent: bool) -> None:
-        allow_paths = None
-        if self._path is not None:
-            allow_paths = self._path.joinpath("contracts").as_posix()
         compiler_config.setdefault("solc", {})
+
+        allow_paths = None
         cwd = os.getcwd()
         if self._path is not None:
+            _install_dependencies(self._path)
+            allow_paths = self._path.joinpath("contracts").as_posix()
             os.chdir(self._path)
+
         try:
             build_json = compiler.compile_and_format(
                 contract_sources,
@@ -84,6 +89,7 @@ class _ProjectBase:
             )
         finally:
             os.chdir(cwd)
+
         for data in build_json.values():
             if self._path is not None:
                 path = self._path.joinpath(f"build/contracts/{data['contractName']}.json")
@@ -407,18 +413,7 @@ def from_brownie_mix(
         raise FileExistsError(f"Folder already exists - {project_path}")
 
     print(f"Downloading from {url}...")
-    response = requests.get(url, stream=True)
-    total_size = int(response.headers.get("content-length", 0))
-    progress_bar = tqdm(total=total_size, unit="iB", unit_scale=True)
-    content = bytes()
-
-    for data in response.iter_content(1024, decode_unicode=True):
-        progress_bar.update(len(data))
-        content += data
-    progress_bar.close()
-
-    with zipfile.ZipFile(BytesIO(content)) as zf:
-        zf.extractall(str(project_path.parent))
+    _stream_download(url, str(project_path.parent))
     project_path.parent.joinpath(project_name + "-mix-master").rename(project_path)
     _create_folders(project_path)
     _create_gitfiles(project_path)
@@ -513,6 +508,92 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
     return Project(name, project_path)
 
 
+def _install_dependencies(path: Path) -> None:
+    for package_id in _load_project_dependencies(path):
+        try:
+            install_package(package_id)
+        except FileExistsError:
+            pass
+
+
+def install_package(package_id: str) -> str:
+    if urlparse(package_id).scheme in ("erc1319", "ethpm"):
+        return _install_from_ethpm(package_id)
+    else:
+        return _install_from_github(package_id)
+
+
+def _install_from_ethpm(uri: str) -> str:
+    manifest = get_manifest(uri)
+    org = manifest["meta_brownie"]["registry_address"]
+    repo = manifest["package_name"]
+    version = manifest["version"]
+
+    install_path = _get_data_folder().joinpath(f"packages/{org}")
+    install_path.mkdir(exist_ok=True)
+    install_path = install_path.joinpath(f"{repo}@{version}")
+    if install_path.exists():
+        raise FileExistsError("Package is aleady installed")
+
+    try:
+        new(str(install_path))
+        ethpm.install_package(install_path, uri)
+        project = load(install_path)
+        project.close()
+    except Exception as e:
+        shutil.rmtree(install_path)
+        raise e
+
+    return f"{org}/{repo}@{version}"
+
+
+def _install_from_github(package_id: str) -> str:
+    try:
+        path, version = package_id.split("@")
+        org, repo = path.split("/")
+    except ValueError:
+        raise ValueError(
+            "Invalid package ID. Must be given as [ORG]/[REPO]@[VERSION]"
+            "\ne.g. 'OpenZeppelin/openzeppelin-contracts@v2.5.0'"
+        ) from None
+
+    install_path = _get_data_folder().joinpath(f"packages/{org}")
+    install_path.mkdir(exist_ok=True)
+    install_path = install_path.joinpath(f"{repo}@{version}")
+    if install_path.exists():
+        raise FileExistsError("Package is aleady installed")
+
+    data = requests.get(f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100").json()
+    if not data:
+        raise ValueError("Github repository has no tags set")
+    org, repo = data[0]["zipball_url"].split("/")[3:5]
+    tags = [i["name"].lstrip("v") for i in data]
+    if version not in tags:
+        raise ValueError(
+            "Invalid version for this package. Available versions are:\n" + ", ".join(tags)
+        ) from None
+
+    download_url = next(i["zipball_url"] for i in data if i["name"].lstrip("v") == version)
+
+    existing = list(install_path.parent.iterdir())
+    _stream_download(download_url, str(install_path.parent))
+
+    installed = next(i for i in install_path.parent.iterdir() if i not in existing)
+    shutil.move(installed, install_path)
+
+    try:
+        if not install_path.joinpath("contracts").exists():
+            raise Exception
+        new(str(install_path))
+        project = load(install_path)
+        project.close()
+    except Exception:
+        shutil.rmtree(install_path)
+        raise InvalidPackage(f"{package_id} cannot be interpreted as a Brownie project")
+
+    return f"{org}/{repo}@{version}"
+
+
 def _create_gitfiles(project_path: Path) -> None:
     gitignore = project_path.joinpath(".gitignore")
     if not gitignore.exists():
@@ -556,3 +637,18 @@ def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
         path_str: str = path.relative_to(project_path).as_posix()
         contract_sources[path_str] = source
     return contract_sources
+
+
+def _stream_download(download_url: str, target_path: str) -> None:
+    response = requests.get(download_url, stream=True)
+    total_size = int(response.headers.get("content-length", 0))
+    progress_bar = tqdm(total=total_size, unit="iB", unit_scale=True)
+    content = bytes()
+
+    for data in response.iter_content(1024, decode_unicode=True):
+        progress_bar.update(len(data))
+        content += data
+    progress_bar.close()
+
+    with zipfile.ZipFile(BytesIO(content)) as zf:
+        zf.extractall(target_path)

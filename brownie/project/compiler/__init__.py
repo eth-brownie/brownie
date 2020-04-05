@@ -22,11 +22,6 @@ from brownie.utils import notify
 
 from . import solidity, vyper
 
-remappings = []
-for path in _get_data_folder().joinpath("packages").iterdir():
-    remappings.append(f"{path.name}={path.as_posix()}")
-
-
 STANDARD_JSON: Dict = {
     "language": None,
     "sources": {},
@@ -35,7 +30,7 @@ STANDARD_JSON: Dict = {
             "*": {"*": ["abi", "evm.bytecode", "evm.deployedBytecode"], "": ["ast"]}
         },
         "evmVersion": None,
-        "remappings": remappings,
+        "remappings": [],
     },
 }
 EVM_SOLC_VERSIONS = [
@@ -161,6 +156,8 @@ def generate_input_json(
     input_json["settings"]["evmVersion"] = evm_version
     if language == "Solidity":
         input_json["settings"]["optimizer"] = {"enabled": optimize, "runs": runs if optimize else 0}
+        for path in _get_data_folder().joinpath("packages").iterdir():
+            input_json["settings"]["remappings"].append(f"{path.name}={path.as_posix()}")
     input_json["sources"] = _sources_dict(contract_sources, language)
 
     if interface_sources:
