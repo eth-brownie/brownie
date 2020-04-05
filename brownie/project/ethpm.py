@@ -22,7 +22,9 @@ from brownie.utils import color
 
 from . import compiler
 
-URI_REGEX = r"""^(?:erc1319://|)([^/:\s]*)(?::[0-9]+|)/([a-z][a-z0-9_-]{0,255})@([^\s:/'";]*)$"""
+URI_REGEX = (
+    r"""^(?:erc1319://|ethpm://|)([^/:\s]*)(?::[0-9]+|)/([a-z][a-z0-9_-]{0,255})@([^\s:/'";]*)$"""
+)
 
 REGISTRY_ABI = [
     {
@@ -297,7 +299,7 @@ def install_package(project_path: Path, uri: str, replace_existing: bool = False
 
     Args:
         project_path: Path to the root folder of the project
-        uri: manifest URI, can be erc1319 or ipfs
+        uri: manifest URI, can be erc1319, ethpm or ipfs
         replace_existing: if True, existing files will be overwritten when
                             installing the package
 

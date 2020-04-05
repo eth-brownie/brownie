@@ -13,7 +13,7 @@ ETHPM_CONFIG = {
     "settings": {"deployment_networks": False, "include_dependencies": False},
 }
 
-ERC1319_URI = "erc1319://zeppelin.snakecharmers.eth:1/access@1.0.0"
+ERC1319_URI = "ethpm://zeppelin.snakecharmers.eth:1/access@1.0.0"
 
 
 def test_all(np_path):

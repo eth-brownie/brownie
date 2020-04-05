@@ -13,14 +13,14 @@ def test_get_manifest_from_ipfs():
     path = _get_data_folder().joinpath("ethpm/zeppelin.snakecharmers.eth")
     if path.exists():
         shutil.rmtree(path)
-    ethpm.get_manifest("erc1319://zeppelin.snakecharmers.eth:1/access@1.0.0")
+    ethpm.get_manifest("ethpm://zeppelin.snakecharmers.eth:1/access@1.0.0")
     assert _get_data_folder().joinpath("ethpm/zeppelin.snakecharmers.eth").exists()
-    ethpm.get_manifest("erc1319://zeppelin.snakecharmers.eth:1/access@1.0.0")
+    ethpm.get_manifest("ethpm://zeppelin.snakecharmers.eth:1/access@1.0.0")
     assert _get_data_folder().joinpath("ethpm/zeppelin.snakecharmers.eth").exists()
 
 
 def test_meta_brownie():
-    manifest = ethpm.get_manifest("erc1319://zeppelin.snakecharmers.eth:1/access@1.0.0")
+    manifest = ethpm.get_manifest("ethpm://zeppelin.snakecharmers.eth:1/access@1.0.0")
     assert manifest["meta_brownie"] == {
         "registry_address": "zeppelin.snakecharmers.eth",
         "manifest_uri": "ipfs://QmWqn5uYx9LvV4aqj2qZ5FiFZykmS3LGdLpod7XLjxPVYr",

@@ -411,7 +411,7 @@ Module Methods
     Installs an ethPM package within the project.
 
     * ``project_path``: Path to the root folder of the project
-    * ``uri``: manifest URI, can be erc1319 or ipfs
+    * ``uri``: manifest URI, can be ethpm, erc1319 or ipfs
     * ``replace_existing``: if True, existing files will be overwritten when installing the package
 
     Returns the package name as a string.

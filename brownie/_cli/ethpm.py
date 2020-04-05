@@ -141,7 +141,7 @@ def _release(project_path, registry_address, sender):
         )
         if tx.status == 1:
             notify("SUCCESS", f"{name} has been released!")
-            print(f"\nURI: {color('bright magenta')}erc1319://{registry_address}:1/{name}{color}")
+            print(f"\nURI: {color('bright magenta')}ethpm://{registry_address}:1/{name}{color}")
             return
     except Exception:
         pass
@@ -161,7 +161,7 @@ def _all(project_path):
         if not package_list:
             path.unlink()
             continue
-        print(f"{color('bright magenta')}erc1319://{path.name}{color}")
+        print(f"{color('bright magenta')}ethpm://{path.name}{color}")
         for package_path in package_list:
             u = "\u2514" if package_path == package_list[-1] else "\u251c"
             versions = sorted(package_path.glob("*.json"))
