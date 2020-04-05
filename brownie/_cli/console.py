@@ -7,7 +7,7 @@ import sys
 
 import brownie
 from brownie import network, project
-from brownie._config import ARGV, BROWNIE_FOLDER, CONFIG, _update_argv_from_docopt
+from brownie._config import ARGV, CONFIG, _get_data_folder, _update_argv_from_docopt
 from brownie.utils import color
 from brownie.utils.docopt import docopt
 
@@ -61,11 +61,8 @@ class Console(code.InteractiveConsole):
 
         if project:
             project._update_and_register(locals_dict)
-            history_file = project._path
-        else:
-            history_file = BROWNIE_FOLDER
 
-        history_file = str(history_file.joinpath(".history").absolute())
+        history_file = str(_get_data_folder().joinpath(".history").absolute())
         atexit.register(_atexit_readline, history_file)
         try:
             readline.read_history_file(history_file)
