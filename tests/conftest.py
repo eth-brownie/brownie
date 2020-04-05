@@ -121,6 +121,7 @@ def xdist_id(worker_id):
 @pytest.fixture(scope="session", autouse=True)
 def _base_config(tmp_path_factory, xdist_id):
     brownie._config.DATA_FOLDER = tmp_path_factory.mktemp(f"data-{xdist_id}")
+    brownie._config._make_data_folders(brownie._config.DATA_FOLDER)
     with brownie._config.BROWNIE_FOLDER.joinpath("data/brownie-config.yaml").open() as fp:
         config = yaml.safe_load(fp)
     if xdist_id:
