@@ -6,8 +6,9 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import hypothesis
 import yaml
+from hypothesis import settings as hp_settings
+from hypothesis.database import DirectoryBasedExampleDatabase
 
 from brownie._singleton import _Singleton
 
@@ -140,11 +141,10 @@ def _modify_network_config(network: str = None) -> Dict:
 
 
 def _modify_hypothesis_settings(config):
-    hypothesis_defaults = {"max_examples": 50, "deadline": None, "stateful_step_count": 10}
-    hypothesis_defaults.update(config.get("hypothesis", {}))
-
-    hypothesis.settings.register_profile("brownie", **hypothesis_defaults)
-    hypothesis.settings.load_profile("brownie")
+    hp_settings.register_profile(
+        "brownie", parent=hp_settings.get_profile("brownie-base"), **config.get("hypothesis", {})
+    )
+    hp_settings.load_profile("brownie")
 
 
 def _recursive_update(original: Dict, new: Dict, base: List) -> None:
@@ -168,6 +168,16 @@ def _get_data_folder() -> Path:
 
 # create argv object
 ARGV = _Singleton("Argv", (defaultdict,), {})(lambda: None)  # type: ignore
+
+# load default hypothesis settings
+hp_settings.register_profile(
+    "brownie-base",
+    max_examples=50,
+    deadline=None,
+    stateful_step_count=10,
+    database=DirectoryBasedExampleDatabase(_get_data_folder().joinpath("hypothesis")),
+)
+hp_settings.load_profile("brownie-base")
 
 # load config
 CONFIG = _load_default_config()
