@@ -44,13 +44,13 @@ To install `OpenZeppelin contracts <https://github.com/OpenZeppelin/openzeppelin
 
 .. code-block:: bash
 
-    $ brownie pm install OpenZeppelin/openzeppelin-contracts@v2.5.0
+    $ brownie pm install OpenZeppelin/openzeppelin-contracts@2.5.0
 
 To install `AragonOS <https://github.com/aragon/aragonOS>`_ version ``4.0.0``:
 
 .. code-block:: bash
 
-    $ brownie pm install aragon/aragonos@v4.0.0
+    $ brownie pm install aragon/aragonos@4.0.0
 
 Installing from ethPM
 ---------------------
@@ -100,10 +100,10 @@ Use ``brownie pm list`` to view currently installed packages. After installing a
     The following packages are currently installed:
 
     OpenZeppelin
-    └─OpenZeppelin/openzeppelin-contracts@v2.5.0
+    └─OpenZeppelin/openzeppelin-contracts@2.5.0
 
     aragon
-    └─aragon/aragonOS@v4.0.0
+    └─aragon/aragonOS@4.0.0
 
     zeppelin.snakecharmers.eth
     └─zeppelin.snakecharmers.eth/access@1.0.0
@@ -120,7 +120,7 @@ To copy the Aragon package to the current folder:
 
 .. code-block:: bash
 
-    $ brownie pm export aragon/aragonOS@v4.0.0
+    $ brownie pm export aragon/aragonOS@4.0.0
 
 Using Packages in your Project
 ==============================
@@ -134,7 +134,7 @@ For example, to import ``SafeMath`` from OpenZeppelin contracts:
 
 .. code-block:: solidity
 
-    import "OpenZeppelin/openzeppelin-contracts@v2.5.0/contracts/math/SafeMath.sol";
+    import "OpenZeppelin/openzeppelin-contracts@2.5.0/contracts/math/SafeMath.sol";
 
 Using Packages in Tests
 -----------------------
@@ -158,7 +158,7 @@ Project dependencies are declared by adding a ``dependencies`` field to ``browni
 .. code-block:: yaml
 
     dependencies:
-        - aragon/aragonOS@v4.0.0
+        - aragon/aragonOS@4.0.0
         - defi.snakecharmers.eth/compound@1.1.0
 
 Brownie attempts to install any listed dependencies prior to compiling a project. This is useful when your project may be used outside of your local environment.

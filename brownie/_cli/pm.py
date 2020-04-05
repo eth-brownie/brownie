@@ -38,7 +38,6 @@ more information on how to install and use packages.
 
 def main():
     args = docopt(__doc__)
-    _get_data_folder().joinpath("packages").mkdir(exist_ok=True)
     try:
         fn = getattr(sys.modules[__name__], f"_{args['<command>']}")
     except AttributeError:
@@ -138,7 +137,7 @@ def _install_from_github(package_id):
 
     data = requests.get(f"https://api.github.com/repos/{org}/{repo}/releases?per_page=100").json()
     org, repo = data[0]["html_url"].split("/")[3:5]
-    releases = [i["tag_name"] for i in data]
+    releases = [i["tag_name"].lstrip("v") for i in data]
     if version not in releases:
         raise ValueError(
             "Invalid version for this package. Available versions are:\n" + ", ".join(releases)
@@ -150,7 +149,7 @@ def _install_from_github(package_id):
     if install_path.exists():
         raise FileExistsError("Package is aleady installed")
 
-    download_url = next(i["zipball_url"] for i in data if i["tag_name"] == version)
+    download_url = next(i["zipball_url"] for i in data if i["tag_name"].lstrip("v") == version)
     response = requests.get(download_url, stream=True)
     total_size = int(response.headers.get("content-length", 0))
     progress_bar = tqdm(total=total_size, unit="iB", unit_scale=True)
