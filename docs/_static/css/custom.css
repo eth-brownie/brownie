@@ -31,17 +31,33 @@ em.property {
 }
 
 
+/* tables */
+
+.rst-content table.docutils thead {
+    color: #ddd;
+}
+
+.rst-content table.docutils td {
+    border: 0px;
+}
+
+.rst-content table.docutils:not(.field-list) tr:nth-child(2n-1) td {
+    background-color: #5a5a5a;
+}
+
+
 /* inlined code highlights */
 
 .xref,
 .py-meth,
 .rst-content a code {
     color: #aaddff !important;
+    font-weight: normal !important;
 }
 
 .rst-content code {
     color: #eee !important;
-    font-weight: bold !important;
+    font-weight: normal !important;
 }
 
 code.literal {
@@ -68,25 +84,61 @@ pre {
     border-color: #333 !important;
 }
 
-.highlight .go {
-    /*output*/
+.highlight .go,
+.highlight .nb,
+.highlight .kn {
+    /* text */
     color: #ddd;
+    font-weight: normal;
+}
+
+.highlight .o,
+.highlight .p {
+    /* comparators, parentheses */
+    color: #bbb;
+}
+
+.highlight .c1 {
+    /* comments */
+    color: #888;
+}
+
+.highlight .bp {
+    /* self */
+    color: #fc3;
+}
+
+.highlight .mf,
+.highlight .mi,
+.highlight .kc {
+    /* numbers, booleans */
+    color: #c90;
 }
 
 .highlight .gt,
-.highlight .nf {
-    /*tracebacks*/
-    color: #4772D1;
+.highlight .nf,
+.highlight .fm {
+    /* functions */
+    color: #7cf;
 }
 
 .highlight .nd {
-    color: #aaa;
+    /* decorators */
+    color: #f66;
+}
+
+.highlight .k,
+.highlight .ow {
+    /* statements */
+    color: #A7F;
+    font-weight: normal;
 }
 
 .highlight .s2,
 .highlight .s1,
 .highlight .nt {
-    color: #6090b0;
+    /* strings */
+    color: #5d6;
 }
 
 
