@@ -15,13 +15,37 @@ Brownie is a Python-based development and testing framework for smart contracts 
 
 ## Dependencies
 
-* [ganache-cli](https://github.com/trufflesuite/ganache-cli) - tested with version [6.8.2](https://github.com/trufflesuite/ganache-cli/releases/tag/v6.8.2)
-* [pip](https://pypi.org/project/pip/)
 * [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3-dev
+* [ganache-cli](https://github.com/trufflesuite/ganache-cli) - tested with version [6.8.2](https://github.com/trufflesuite/ganache-cli/releases/tag/v6.8.2)
 
-As Brownie relies on [`py-solc-x`](https://github.com/iamdefinitelyahuman/py-solc-x), you do not need solc installed locally but you must install all required [solc dependencies](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages).
+Brownie uses [`py-solc-x`](https://github.com/iamdefinitelyahuman/py-solc-x) for solc version management. You do not need solc installed locally, but you must install all required [solc dependencies](https://solidity.readthedocs.io/en/latest/installing-solidity.html#binary-packages).
 
 ## Installation
+
+### via `pipx`
+
+The recommended way to install Brownie is via [`pipx`](https://github.com/pipxproject/pipx). pipx installs Brownie into a virtual environment and makes it available directly from the commandline. Once installed, you will never have to activate a virtual environment prior to using Brownie.
+
+To install `pipx`:
+
+```bash
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+```
+
+To install Brownie using `pipx`:
+
+```bash
+pipx install eth-brownie
+```
+
+To upgrade to the latest version:
+
+```bash
+pipx upgrade eth-brownie
+```
+
+### via `pip`
 
 You can install the latest release via [`pip`](https://pypi.org/project/pip/):
 
@@ -29,7 +53,9 @@ You can install the latest release via [`pip`](https://pypi.org/project/pip/):
 pip install eth-brownie
 ```
 
-Or clone the repository and use [`setuptools`](https://github.com/pypa/setuptools) for the most up-to-date version:
+### via `setuptools`
+
+You can clone the repository and use [`setuptools`](https://github.com/pypa/setuptools) for the most up-to-date version:
 
 ```bash
 python setup.py install
