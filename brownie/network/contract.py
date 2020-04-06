@@ -24,13 +24,13 @@ from brownie.project import ethpm
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
+from . import accounts, rpc
 from .event import _get_topics
-from .rpc import Rpc, _revert_register
+from .rpc import _revert_register
 from .state import _add_contract, _find_contract, _remove_contract
 from .web3 import _resolve_address, web3
 
 __tracebackhide__ = True
-rpc = Rpc()
 
 
 class _ContractBase:
@@ -469,12 +469,6 @@ class ContractTx(_ContractMethod):
         abi: Contract ABI specific to this method.
         signature: Bytes4 method signature."""
 
-    def __init__(self, address: str, abi: Dict, name: str, owner: Optional[AccountsType]) -> None:
-        default_owner = CONFIG["active_network"].get("default_contract_owner", True)
-        if ARGV["cli"] == "test" and default_owner is False:
-            owner = None
-        super().__init__(address, abi, name, owner)
-
     def __call__(self, *args: Tuple) -> TransactionReceiptType:
         """Broadcasts a transaction that calls this contract method.
 
@@ -519,6 +513,13 @@ class ContractCall(_ContractMethod):
 
 
 def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
+    # set / remove default sender
+    if owner is None:
+        owner = accounts.default
+    default_owner = CONFIG["active_network"].get("default_contract_owner", True)
+    if ARGV["cli"] == "test" and default_owner is False:
+        owner = None
+
     # seperate contract inputs from tx dict and set default tx values
     tx = {"from": owner, "value": 0, "gas": None, "gasPrice": None}
     if args and isinstance(args[-1], dict):

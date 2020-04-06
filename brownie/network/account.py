@@ -27,12 +27,19 @@ rpc = Rpc()
 
 
 class Accounts(metaclass=_Singleton):
+    """
+    List-like container that holds all available `Account` objects.
 
-    """List-like container that holds all of the available Account instances."""
+    Attributes
+    ----------
+    default : Account, optional
+        Default account to broadcast transactions from.
+    """
 
     def __init__(self) -> None:
+        self.default = None
         self._accounts: List = []
-        # prevent private keys from being stored in read history
+        # prevent private keys from being stored in readline history
         self.add.__dict__["_private"] = True
         _revert_register(self)
         self._reset()
@@ -43,6 +50,8 @@ class Accounts(metaclass=_Singleton):
             self._accounts = [Account(i) for i in web3.eth.accounts]
         except Exception:
             pass
+        if self.default not in self._accounts:
+            self.default = None
 
     def _revert(self, height: int) -> None:
         # must exist for rpc registry callback
