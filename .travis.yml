@@ -29,7 +29,7 @@ jobs:
         - sudo apt-get update
         - sudo apt-get install -y python3.6-dev npm solc
       script: tox -e lint,doctest,py36
-    - name: "Standard Tests, Brownie Mix Tests - Python 3.7 on Bionic Linux"
+    - name: "Standard Tests, Package Tests - Python 3.7 on Bionic Linux"
       language: python
       python: 3.7
       dist: bionic
@@ -38,7 +38,7 @@ jobs:
         - sudo add-apt-repository -y ppa:deadsnakes/ppa
         - sudo apt-get update
         - sudo apt-get install -y python3.6-dev npm solc
-      script: tox -e py37,mixtest
+      script: tox -e py37,pmtest
     - name: "Standard Tests, Plugin Tests - Python 3.8 on Bionic Linux"
       language: python
       python: 3.8
