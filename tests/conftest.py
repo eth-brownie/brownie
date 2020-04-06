@@ -22,7 +22,7 @@ from brownie._config import ARGV
 pytest_plugins = "pytester"
 
 
-TARGET_OPTS = {"evm": "evmtester", "mixes": "browniemix", "plugin": "plugintester"}
+TARGET_OPTS = {"evm": "evmtester", "pm": "package_test", "plugin": "plugintester"}
 
 
 def pytest_addoption(parser):
@@ -72,7 +72,7 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("evmtester", params, indirect=True)
 
     # parametrize the browniemix fixture
-    if "browniemix" in metafunc.fixturenames and target in ("all", "mixes"):
+    if "browniemix" in metafunc.fixturenames and target in ("all", "pm"):
         if os.getenv("GITHUB_TOKEN"):
             auth = b64encode(os.getenv("GITHUB_TOKEN").encode()).decode()
             headers = {"Authorization": "Basic {}".format(auth)}
@@ -408,3 +408,8 @@ def ipfs_mock(monkeypatch):
     if ipfs_path.exists():
         shutil.rmtree(ipfs_path)
     temp_path.rename(ipfs_path)
+
+
+@pytest.fixture
+def package_test():
+    pass
