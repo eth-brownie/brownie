@@ -22,7 +22,7 @@ from brownie._config import ARGV
 pytest_plugins = "pytester"
 
 
-TARGET_OPTS = {"evm": "evmtester", "mixes": "browniemix", "plugin": "plugintester"}
+TARGET_OPTS = {"evm": "evmtester", "pm": "package_test", "plugin": "plugintester"}
 
 
 def pytest_addoption(parser):
@@ -72,7 +72,7 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("evmtester", params, indirect=True)
 
     # parametrize the browniemix fixture
-    if "browniemix" in metafunc.fixturenames and target in ("all", "mixes"):
+    if "browniemix" in metafunc.fixturenames and target in ("all", "pm"):
         if os.getenv("GITHUB_TOKEN"):
             auth = b64encode(os.getenv("GITHUB_TOKEN").encode()).decode()
             headers = {"Authorization": "Basic {}".format(auth)}
@@ -121,6 +121,7 @@ def xdist_id(worker_id):
 @pytest.fixture(scope="session", autouse=True)
 def _base_config(tmp_path_factory, xdist_id):
     brownie._config.DATA_FOLDER = tmp_path_factory.mktemp(f"data-{xdist_id}")
+    brownie._config._make_data_folders(brownie._config.DATA_FOLDER)
     with brownie._config.BROWNIE_FOLDER.joinpath("data/brownie-config.yaml").open() as fp:
         config = yaml.safe_load(fp)
     if xdist_id:
@@ -407,3 +408,8 @@ def ipfs_mock(monkeypatch):
     if ipfs_path.exists():
         shutil.rmtree(ipfs_path)
     temp_path.rename(ipfs_path)
+
+
+@pytest.fixture
+def package_test():
+    pass

@@ -17,8 +17,8 @@ __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 Commands:
   init               Initialize a new brownie project
   bake               Initialize from a brownie-mix template
-  ethpm              Commands related to the ethPM package manager
-  compile            Compiles the contract source files
+  pm                 Install and manage external packages
+  compile            Compile the contract source files
   console            Load the console
   test               Run test cases in the tests/ folder
   run                Run a script in the scripts/ folder

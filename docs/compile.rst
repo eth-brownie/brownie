@@ -43,11 +43,12 @@ Settings for the compiler are found in ``brownie-config.yaml``:
 
 .. code-block:: yaml
 
-    evm_version: null
-    solc:
-        version: 0.6.0
-        optimize: true
-        runs: 200
+    compiler:
+        evm_version: null
+        solc:
+            version: 0.6.0
+            optimize: true
+            runs: 200
 
 Modifying any compiler settings will result in a full recompile of the project.
 
@@ -84,7 +85,57 @@ Compiler optimization is enabled by default. Coverage evaluation was designed us
 
 See the `Solidity documentation <https://solidity.readthedocs.io/en/latest/miscellaneous.html#internals-the-optimiser>`_ for more info on the ``solc`` optimizer.
 
-.. _compile-json:
+.. _compile-remap:
+
+Path Remappings
+---------------
+
+The Solidity compiler allows path remappings. Brownie exposes this functionality via the ``compiler.solc.remappings`` field in the configuration file:
+
+.. code-block:: yaml
+
+    compiler:
+        solc:
+            remappings:
+              - zeppelin=/usr/local/lib/open-zeppelin/contracts/
+              - github.com/ethereum/dapp-bin/=/usr/local/lib/dapp-bin/
+
+Each value under ``remappings`` is a string in the format ``prefix=path``. A remapping instructs the compiler to search for a given prefix at a specific path. For example:
+
+::
+
+    github.com/ethereum/dapp-bin/=/usr/local/lib/dapp-bin/
+
+This remapping instructs the compiler to search for anything starting with ``github.com/ethereum/dapp-bin/`` under ``/usr/local/lib/dapp-bin``.
+
+Brownie automatically ensures that all remapped paths are allowed. You do not have to declare ``allow_paths``.
+
+.. warning::
+
+    Brownie does not detect modifications to files that are imported from outside the root folder of your project. You must manually recompile your project when an external source file changes.
+
+.. _compile-remap-packages:
+
+Remapping Installed Packages
+****************************
+
+Remappings can be applied to installed packages. For example:
+
+::
+
+    oz=OpenZeppelin/openzeppelin-contracts@2.5.0/contracts
+
+With the ``OpenZeppelin/openzeppelin-contracts@2.5.0`` package installed, and the above remapping added to the configuration file, both of the following import statements point to the same location:
+
+::
+
+    import "OpenZeppelin/openzeppelin-contracts@2.5.0/contracts/math/SafeMath.sol";
+
+::
+
+    import "oz/math/SafeMath.sol";
+
+
 
 Installing the Compiler
 =======================

@@ -301,6 +301,25 @@ You can achieve a similar effect with the ``@given`` decorator to automatically 
 
 This technique is known as `property-based testing`. To learn more, read :ref:`hypothesis`.
 
+.. _pytest-other-projects:
+
+Testing against Other Projects
+==============================
+
+The ``pm`` fixture provides access to packages that have been installed with the :ref:`Brownie package manager<package-manager>`. Using this fixture, you can write test cases that verify interactions between your project and another project.
+
+``pm`` is a function that accepts a project ID as an argument and returns a :func:`Project <brownie.project.main.Project>` object. This way you can deploy contracts from the package and deliver them as fixtures to be used in your tests:
+
+.. code-block:: python
+    :linenos:
+
+    @pytest.fixture(scope="module")
+    def compound(pm, accounts):
+        ctoken = pm('defi.snakecharmers.eth/compound@1.1.0').CToken
+        yield ctoken.deploy({'from': accounts[0]})
+
+Be sure to add required testing packages to your project :ref:`dependency list<package-manager-deps>`.
+
 Running Tests
 =============
 

@@ -231,3 +231,7 @@ def test_no_args_shows_help(cli_tester, capfd):
     with pytest.raises(SystemExit):
         cli_tester.run_and_test_parameters()
     assert cli_main.__doc__ in capfd.readouterr()[0].strip()
+
+
+def test_cli_pm(cli_tester):
+    cli_tester.run_and_test_parameters("pm list", None)

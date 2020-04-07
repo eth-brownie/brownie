@@ -24,13 +24,13 @@ To obtain an ethPM package, you must know both the package name and the address 
 
 ::
 
-    erc1319://[CONTRACT_ADDRESS]:[CHAIN_ID]/[PACKAGE_NAME]@[VERSION]
+    ethpm://[CONTRACT_ADDRESS]:[CHAIN_ID]/[PACKAGE_NAME]@[VERSION]
 
 For example, here is a registry URI for the popular OpenZeppelin `Math <https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/math>`_ package, served by the Snake Charmers `Zeppelin registry <http://explorer.ethpm.com/browse/mainnet/zeppelin.snakecharmers.eth>`_:
 
 ::
 
-    erc1319://zeppelin.snakecharmers.eth:1/math@1.0.0
+    ethpm://zeppelin.snakecharmers.eth:1/math@1.0.0
 
 Working with ethPM Packages
 ===========================
@@ -73,10 +73,10 @@ Any packages that are installed from a registry are also saved locally. To view 
     $ brownie ethpm all
     Brownie - Python development framework for Ethereum
 
-    erc1319://erc20.snakecharmers.eth
+    ethpm://erc20.snakecharmers.eth
      └─dai-dai@1.0.0
 
-    erc1319://zeppelin.snakecharmers.eth
+    ethpm://zeppelin.snakecharmers.eth
      ├─access@1.0.0
      ├─gns@1.0.0
      └─math@1.0.0
@@ -270,7 +270,7 @@ Once the package is successfully released, Brownie provides you with a registry 
 
     SUCCESS: nftoken@1.0.1 has been released!
 
-    URI: erc1319://erc20.snakecharmers.eth:1/nftoken@1.0.1
+    URI: ethpm://erc20.snakecharmers.eth:1/nftoken@1.0.1
 
 .. _ethpm-deployments:
 
@@ -282,7 +282,7 @@ You can load an entire package as a :func:`Project <brownie.project.main.Project
 .. code-block:: python
 
     >>> from brownie.project import from_ethpm
-    >>> maker = from_ethpm("erc1319://erc20.snakecharmers.eth:1/dai-dai@1.0.0")
+    >>> maker = from_ethpm("ethpm://erc20.snakecharmers.eth:1/dai-dai@1.0.0")
     >>> maker
     <TempProject object 'dai-dai'>
     >>> maker.dict()
@@ -296,7 +296,7 @@ Or, create a :func:`Contract <brownie.network.contract.ProjectContract>` object 
 
     >>> from brownie import network, Contract
     >>> network.connect('mainnet')
-    >>> ds = Contract("DSToken", manifest_uri="erc1319://erc20.snakecharmers.eth:1/dai-dai@1.0.0")
+    >>> ds = Contract("DSToken", manifest_uri="ethpm://erc20.snakecharmers.eth:1/dai-dai@1.0.0")
     >>> ds
     <DSToken Contract object '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359'>
 

@@ -73,6 +73,7 @@ The following settings are available:
         * ``version``: The version of solc to use. Should be given as a string in the format ``0.x.x``. If set to ``null``, the version is set based on the contract pragma. Brownie supports solc versions ``>=0.4.22``.
         * ``optimize``: Set to ``true`` if you wish to enable compiler optimization.
         * ``runs``: The number of times the optimizer should run.
+        * ``remappings``: Optional field used to supply :ref:`path remappings <compile-remap>`.
 
 Optional Settings
 =================

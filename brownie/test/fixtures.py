@@ -5,7 +5,7 @@ import sys
 import pytest
 
 import brownie
-from brownie._config import ARGV
+from brownie._config import ARGV, _get_data_folder
 
 from .stateful import _BrownieStateMachine, state_machine
 
@@ -74,6 +74,25 @@ class PytestBrownieFixtures:
     def web3(self):
         """Yields an instantiated Web3 object, connected to the active network."""
         yield brownie.web3
+
+    @pytest.fixture(scope="session")
+    def pm(self):
+        """
+        Yields a function for accessing installed packages.
+        """
+        _open_projects = {}
+
+        def package_loader(project_id):
+            if project_id not in _open_projects:
+                path = _get_data_folder().joinpath(f"packages/{project_id}")
+                _open_projects[project_id] = brownie.project.load(path, project_id)
+
+            return _open_projects[project_id]
+
+        yield package_loader
+
+        for project in _open_projects.values():
+            project.close(raises=False)
 
     @pytest.fixture
     def no_call_coverage(self):

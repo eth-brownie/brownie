@@ -119,3 +119,7 @@ class InvalidManifest(Exception):
 
 class UnsupportedLanguage(Exception):
     pass
+
+
+class InvalidPackage(Exception):
+    pass

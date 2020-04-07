@@ -15,6 +15,8 @@ from brownie._singleton import _Singleton
 BROWNIE_FOLDER = Path(__file__).parent
 DATA_FOLDER = Path.home().joinpath(".brownie")
 
+DATA_SUBFOLDERS = ("accounts", "ethpm", "packages")
+
 REPLACE = ["active_network", "networks"]
 
 EVM_EQUIVALENTS = {"atlantis": "byzantium", "agharta": "petersburg"}
@@ -88,9 +90,6 @@ def _load_default_config() -> "ConfigDict":
     # Loads the default configuration settings from brownie/data/config.yaml
     base_config = BROWNIE_FOLDER.joinpath("data/brownie-config.yaml")
 
-    if not DATA_FOLDER.exists():
-        DATA_FOLDER.mkdir()
-
     config = _Singleton("Config", (ConfigDict,), {})(_load_config(base_config))  # type: ignore
     config["active_network"] = {"name": None}
     _modify_hypothesis_settings(config)
@@ -114,6 +113,14 @@ def _load_project_compiler_config(project_path: Optional[Path]) -> Dict:
     if "evm_version" not in compiler_data:
         compiler_data["evm_version"] = compiler_data["solc"].pop("evm_version")
     return compiler_data
+
+
+def _load_project_dependencies(project_path: Path) -> Dict:
+    compiler_data = _load_config(project_path.joinpath("brownie-config"))
+    dependencies = compiler_data.get("dependencies", [])
+    if isinstance(dependencies, str):
+        dependencies = [dependencies]
+    return dependencies
 
 
 def _modify_network_config(network: str = None) -> Dict:
@@ -164,6 +171,17 @@ def _update_argv_from_docopt(args: Dict) -> None:
 
 def _get_data_folder() -> Path:
     return DATA_FOLDER
+
+
+def _make_data_folders(data_folder: Path) -> None:
+    # create data folder structure
+    data_folder.mkdir(exist_ok=True)
+    for folder in DATA_SUBFOLDERS:
+        data_folder.joinpath(folder).mkdir(exist_ok=True)
+
+
+# create data folders
+_make_data_folders(DATA_FOLDER)
 
 
 # create argv object

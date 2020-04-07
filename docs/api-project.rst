@@ -25,17 +25,17 @@ Project
 Project Methods
 ***************
 
-.. py:classmethod:: Project.load() -> None
+.. py:classmethod:: Project.load()
 
     Collects project source files, compiles new or updated contracts, instantiates :func:`ContractContainer <brownie.network.contract.ContractContainer>` objects, and populates the namespace.
 
     Projects are typically loaded via :func:`project.load <main.load>`, but if you have a :func:`Project <brownie.project.main.Project>` object that was previously closed you can reload it using this method.
 
-.. py:classmethod:: Project.load_config() -> None
+.. py:classmethod:: Project.load_config()
 
     Updates the configuration settings from the ``brownie-config.yaml`` file within this project's root folder.
 
-.. py:classmethod:: Project.close(raises: bool = True) -> None
+.. py:classmethod:: Project.close(raises = True)
 
     Removes this object and the related :func:`ContractContainer <brownie.network.contract.ContractContainer>` objects from the namespace.
 
@@ -69,7 +69,7 @@ TempProject
 Module Methods
 --------------
 
-.. py:method:: main.check_for_project(path: Union[str, 'Path']) -> Optional[Path]
+.. py:method:: main.check_for_project(path)
 
     Checks for an existing Brownie project within a folder and it's parent folders, and returns the base path to the project as a ``Path`` object.  Returns ``None`` if no project is found.
 
@@ -83,7 +83,7 @@ Module Methods
         >>> project.check_for_project('.')
         PosixPath('/my_projects/token')
 
-.. py:method:: main.get_loaded_projects() -> List
+.. py:method:: main.get_loaded_projects()
 
     Returns a list of currently loaded :func:`Project <brownie.project.main.Project>` objects.
 
@@ -169,6 +169,14 @@ Module Methods
         <TempProject object>
         >>> container.SimpleTest
         <ContractContainer object 'SimpleTest'>
+
+.. py:method:: main.install_package(package_id)
+
+    Install a package.
+
+    See the :ref:`Brownie Package Manager <package-manager>` documentation for more information on packages.
+
+    * ``package_id``: Package identifier or ethPM URI
 
 ``brownie.project.build``
 =========================
@@ -411,7 +419,7 @@ Module Methods
     Installs an ethPM package within the project.
 
     * ``project_path``: Path to the root folder of the project
-    * ``uri``: manifest URI, can be erc1319 or ipfs
+    * ``uri``: manifest URI, can be ethpm, erc1319 or ipfs
     * ``replace_existing``: if True, existing files will be overwritten when installing the package
 
     Returns the package name as a string.
