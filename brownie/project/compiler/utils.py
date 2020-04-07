@@ -43,9 +43,12 @@ def merge_natspec(devdoc: Dict, userdoc: Dict) -> Dict:
     """
     natspec = {**userdoc, **devdoc}
     for key in set(list(userdoc["methods"]) + list(devdoc["methods"])):
-        natspec["methods"][key] = {
-            **userdoc["methods"].get(key, {}),
-            **devdoc["methods"].get(key, {}),
-        }
-
+        try:
+            natspec["methods"][key] = {
+                **userdoc["methods"].get(key, {}),
+                **devdoc["methods"].get(key, {}),
+            }
+        except TypeError:
+            # sometimes Solidity has inconsistent NatSpec formatting ¯\_(ツ)_/¯
+            pass
     return natspec
