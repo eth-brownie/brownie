@@ -136,6 +136,10 @@ For example, to import ``SafeMath`` from OpenZeppelin contracts:
 
     import "OpenZeppelin/openzeppelin-contracts@2.5.0/contracts/math/SafeMath.sol";
 
+
+You can modify the import path with the ``remappings`` field in your project configuration file. See :ref:`Remapping Installed Packages <compile-remap-packages>` for more information.
+
+
 Using Packages in Tests
 -----------------------
 
