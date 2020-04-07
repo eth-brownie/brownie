@@ -87,6 +87,7 @@ class _ProjectBase:
                 silent=silent,
                 allow_paths=allow_paths,
                 interface_sources=self._sources.get_interface_sources(),
+                remappings=compiler_config["solc"].get("remappings", []),
             )
         finally:
             os.chdir(cwd)
@@ -240,7 +241,9 @@ class Project(_ProjectBase):
             return True
         if build_json["language"] == "Solidity":
             # compare solc-specific compiler settings
-            if _compare_settings(config["solc"], build_json["compiler"]):
+            solc_config = config["solc"].copy()
+            solc_config["remappings"] = None
+            if _compare_settings(solc_config, build_json["compiler"]):
                 return True
             # compare solc pragma against compiled version
             if Version(build_json["compiler"]["version"]) not in get_pragma_spec(source):
@@ -653,7 +656,8 @@ def _add_to_sys_path(project_path: Path) -> None:
 
 def _compare_settings(left: Dict, right: Dict) -> bool:
     return next(
-        (True for k, v in left.items() if v and not isinstance(v, dict) and v != right[k]), False
+        (True for k, v in left.items() if v and not isinstance(v, dict) and v != right.get(k)),
+        False,
     )
 
 

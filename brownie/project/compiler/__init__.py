@@ -49,17 +49,21 @@ def compile_and_format(
     silent: bool = True,
     allow_paths: Optional[str] = None,
     interface_sources: Optional[Dict[str, str]] = None,
+    remappings: Optional[list] = None,
 ) -> Dict:
     """Compiles contracts and returns build data.
 
     Args:
-        contracts: a dictionary in the form of {'path': "source code"}
+        contract_sources: a dictionary in the form of {'path': "source code"}
         solc_version: solc version to compile with (use None to set via pragmas)
         optimize: enable solc optimizer
         runs: optimizer runs
         evm_version: evm version to compile for
         silent: verbose reporting
         allow_paths: compiler allowed filesystem import path
+        interface_sources: dictionary of interfaces as {'path': "source code"}
+        remappings: list of solidity path remappings
+
 
     Returns:
         build data dict
@@ -109,8 +113,9 @@ def compile_and_format(
         to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
 
         input_json = generate_input_json(
-            to_compile, optimize, runs, evm_version, language, interfaces
+            to_compile, optimize, runs, evm_version, language, interfaces, remappings
         )
+
         output_json = compile_from_input_json(input_json, silent, allow_paths)
 
         output_json["contracts"] = {
@@ -128,6 +133,7 @@ def generate_input_json(
     evm_version: Union[int, str, None] = None,
     language: str = "Solidity",
     interface_sources: Optional[Dict[str, str]] = None,
+    remappings: Optional[list] = None,
 ) -> Dict:
 
     """Formats contracts to the standard solc input json.
@@ -138,6 +144,8 @@ def generate_input_json(
         runs: optimizer runs
         evm_version: evm version to compile for
         language: source language (Solidity or Vyper)
+        interface_sources: dictionary of interfaces as {'path': "source code"}
+        remappings: list of solidity path remappings
 
     Returns: dict
     """
@@ -156,8 +164,7 @@ def generate_input_json(
     input_json["settings"]["evmVersion"] = evm_version
     if language == "Solidity":
         input_json["settings"]["optimizer"] = {"enabled": optimize, "runs": runs if optimize else 0}
-        for path in _get_data_folder().joinpath("packages").iterdir():
-            input_json["settings"]["remappings"].append(f"{path.name}={path.as_posix()}")
+        input_json["settings"]["remappings"] = _get_solc_remappings(remappings)
     input_json["sources"] = _sources_dict(contract_sources, language)
 
     if interface_sources:
@@ -167,6 +174,36 @@ def generate_input_json(
             input_json["interfaces"] = _sources_dict(interface_sources, language)
 
     return input_json
+
+
+def _get_solc_remappings(remappings: Optional[list]) -> list:
+    if remappings is None:
+        remap_dict: Dict = {}
+    elif isinstance(remappings, str):
+        remap_dict = dict([remappings.split("=")])
+    else:
+        remap_dict = dict(i.split("=") for i in remappings)
+
+    for path in _get_data_folder().joinpath("packages").iterdir():
+        key = next((k for k, v in remap_dict.items() if v.startswith(path.name)), None)
+        if key:
+            remap_dict[key] = path.parent.joinpath(remap_dict[key]).as_posix()
+        else:
+            remap_dict[path.name] = path.as_posix()
+
+    return [f"{k}={v}" for k, v in remap_dict.items()]
+
+
+def _get_allow_paths(allow_paths: Optional[str], remappings: list) -> str:
+    # generate the final allow_paths field based on path remappings
+    path_list = [] if allow_paths is None else [allow_paths]
+
+    remapping_paths = [i[i.index("=") + 1 :] for i in remappings]
+    data_path = _get_data_folder().joinpath("packages").as_posix()
+    remapping_paths = [i for i in remapping_paths if not i.startswith(data_path)]
+
+    path_list = path_list + [data_path] + remapping_paths
+    return ",".join(path_list)
 
 
 def compile_from_input_json(
@@ -188,11 +225,7 @@ def compile_from_input_json(
         return vyper.compile_from_input_json(input_json, silent, allow_paths)
 
     if input_json["language"] == "Solidity":
-        if allow_paths:
-            allow_paths = f"{allow_paths},{ _get_data_folder().joinpath('packages').as_posix()}"
-        else:
-            allow_paths = _get_data_folder().joinpath("packages").as_posix()
-
+        allow_paths = _get_allow_paths(allow_paths, input_json["settings"]["remappings"])
         return solidity.compile_from_input_json(input_json, silent, allow_paths)
 
     raise UnsupportedLanguage(f"{input_json['language']}")
