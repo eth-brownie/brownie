@@ -170,6 +170,14 @@ Module Methods
         >>> container.SimpleTest
         <ContractContainer object 'SimpleTest'>
 
+.. py:method:: main.install_package(package_id)
+
+    Install a package.
+
+    See the :ref:`Brownie Package Manager <package-manager>` documentation for more information on packages.
+
+    * ``package_id``: Package identifier or ethPM URI
+
 ``brownie.project.build``
 =========================
 

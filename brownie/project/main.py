@@ -518,6 +518,19 @@ def _install_dependencies(path: Path) -> None:
 
 
 def install_package(package_id: str) -> str:
+    """
+    Install a package.
+
+    Arguments
+    ---------
+    package_id : str
+        Package ID or ethPM URI.
+
+    Returns
+    -------
+    str
+        ID of the installed package.
+    """
     if urlparse(package_id).scheme in ("erc1319", "ethpm"):
         return _install_from_ethpm(package_id)
     else:
