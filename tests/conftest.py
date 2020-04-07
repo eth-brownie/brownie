@@ -262,7 +262,8 @@ def devnetwork(network, rpc):
 
 @pytest.fixture
 def accounts(devnetwork):
-    return brownie.network.accounts
+    yield brownie.network.accounts
+    brownie.network.accounts.default = None
 
 
 @pytest.fixture(scope="session")
@@ -296,6 +297,7 @@ def web3():
 @pytest.fixture
 def config():
     initial = brownie.config._copy()
+    brownie.config._unlock()
     yield brownie.config
     brownie.config._unlock()
     brownie.config.clear()

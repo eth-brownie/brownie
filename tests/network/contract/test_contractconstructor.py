@@ -84,11 +84,6 @@ def test_gas_limit_config(BrownieTester, accounts, config):
     config["active_network"]["gas_limit"] = False
 
 
-def test_no_from(BrownieTester):
-    with pytest.raises(AttributeError):
-        BrownieTester.deploy(True)
-
-
 def test_repr(BrownieTester, accounts):
     repr(BrownieTester)
     repr(BrownieTester.deploy)

@@ -40,28 +40,6 @@ def test_encode_input(tester):
     )
 
 
-def test_cli_no_owner(BrownieTester, accounts, test_mode, config):
-    try:
-        config._unlock()
-        config["active_network"]["default_contract_owner"] = False
-        tester = BrownieTester.deploy(True, {"from": accounts[0]})
-        assert tester.revertStrings._owner is None
-    finally:
-        del config["active_network"]["default_contract_owner"]
-        config._lock()
-
-
-def test_no_from(tester, accounts):
-    nonce = accounts[0].nonce
-    tx = tester.revertStrings(5)
-    assert tx.sender == accounts[0]
-    assert accounts[0].nonce == nonce + 1
-    tester.revertStrings._owner = None
-    with pytest.raises(AttributeError):
-        tester.revertStrings(5)
-    tester.revertStrings._owner = accounts[0]
-
-
 def test_call(tester, accounts):
     nonce = accounts[0].nonce
     result = tester.revertStrings.call(5, {"from": accounts[0]})

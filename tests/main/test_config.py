@@ -26,6 +26,7 @@ def test_network_keys(config):
 
 
 def test_setitem(config):
+    config._lock()
     with pytest.raises(KeyError):
         config["foo"] = "bar"
     config._unlock()
