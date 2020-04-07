@@ -100,9 +100,9 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
 ``brownie.network.account``
 ===========================
 
-The :func:`Account <brownie.network.account.Account>` module holds classes for interacting with Ethereum accounts for which you control the private key.
+The ``account`` module holds classes for interacting with Ethereum accounts for which you control the private key.
 
-Classes in this module are not meant to be instantiated directly. The :func:`Accounts <brownie.network.account.Accounts>` container is available as :func:`Account <brownie.network.account.Accounts>` (or just ``a``) and will create each :func:`Account <brownie.network.account.Account>` automatically during initialization. Add more accounts using :func:`Accounts.add <Accounts.add>`.
+Classes in this module are not meant to be instantiated directly. The :func:`Accounts <brownie.network.account.Accounts>` container is available as ``accounts`` (or just ``a``) and will create each :func:`Account <brownie.network.account.Account>` automatically during initialization. Add more accounts using :func:`Accounts.add <Accounts.add>`.
 
 Accounts
 --------
@@ -118,6 +118,20 @@ Accounts
         [<Account object '0x7Ebaa12c5d1EE7fD498b51d4F9278DC45f8D627A'>, <Account object '0x186f79d227f5D819ACAB0C529031036D11E0a000'>, <Account object '0xC53c27492193518FE9eBff00fd3CBEB6c434Cf8b'>, <Account object '0x2929AF7BBCde235035ED72029c81b71935c49e94'>, <Account object '0xb93538FEb07b3B8433BD394594cA3744f7ee2dF1'>, <Account object '0x1E563DBB05A10367c51A751DF61167dE99A4d0A7'>, <Account object '0xa0942deAc0885096D8400D3369dc4a2dde12875b'>, <Account object '0xf427a9eC1d510D77f4cEe4CF352545071387B2e6'>, <Account object '0x2308D528e4930EFB4aF30793A3F17295a0EFa886'>, <Account object '0x2fb37EB570B1eE8Eda736c1BD1E82748Ec3d0Bf1'>]
         >>> dir(accounts)
         [add, at, clear, load, remove]
+
+Accounts Attributes
+*******************
+
+.. py:attribute:: Accounts.default
+
+    Default account that is used for deploying contracts.  Initially set to ``None``.
+
+    Note that the default account used to send contract transactions is the one that deployed the contract, not ``accounts.default``.
+
+    .. code-block:: python
+
+        >>> accounts.default = accounts[1]
+
 
 Accounts Methods
 ****************
