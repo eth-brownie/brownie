@@ -81,3 +81,15 @@ def test_delete(accounts):
     del accounts[-1]
     assert len(accounts) == 9
     assert a not in accounts
+
+
+def test_default_remains_after_reset(accounts):
+    accounts.default = accounts[0]
+    accounts._reset()
+    assert accounts.default == accounts[0]
+
+
+def test_default_cleared_on_disconnect(accounts, network):
+    accounts.default = accounts[0]
+    network.disconnect()
+    assert accounts.default is None
