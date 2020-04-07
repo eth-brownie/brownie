@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import List
+from typing import Dict, List
 
 
 def expand_source_map(source_map_str: str) -> List:
@@ -23,3 +23,29 @@ def _expand_row(row: str) -> List:
         if value:
             result[i] = value if i == 3 else int(value)
     return result
+
+
+def merge_natspec(devdoc: Dict, userdoc: Dict) -> Dict:
+    """
+    Merge devdoc and userdoc compiler output to a single dict.
+
+    Arguments
+    ---------
+    devdoc: dict
+        Devdoc compiler output.
+    userdoc : dict
+        Userdoc compiler output.
+
+    Returns
+    -------
+    dict
+        Combined natspec.
+    """
+    natspec = {**userdoc, **devdoc}
+    for key in set(list(userdoc["methods"]) + list(devdoc["methods"])):
+        natspec["methods"][key] = {
+            **userdoc["methods"].get(key, {}),
+            **devdoc["methods"].get(key, {}),
+        }
+
+    return natspec
