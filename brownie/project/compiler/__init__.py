@@ -18,6 +18,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
     install_solc,
     set_solc_version,
 )
+from brownie.project.compiler.utils import merge_natspec
 from brownie.utils import notify
 
 from . import solidity, vyper
@@ -27,7 +28,10 @@ STANDARD_JSON: Dict = {
     "sources": {},
     "settings": {
         "outputSelection": {
-            "*": {"*": ["abi", "evm.bytecode", "evm.deployedBytecode"], "": ["ast"]}
+            "*": {
+                "*": ["abi", "devdoc", "evm.bytecode", "evm.deployedBytecode", "userdoc"],
+                "": ["ast"],
+            }
         },
         "evmVersion": None,
         "remappings": [],
@@ -273,6 +277,10 @@ def generate_build_json(
             print(f" - {contract_name}...")
 
         abi = output_json["contracts"][path_str][contract_name]["abi"]
+        natspec = merge_natspec(
+            output_json["contracts"][path_str][contract_name]["devdoc"],
+            output_json["contracts"][path_str][contract_name]["userdoc"],
+        )
         output_evm = output_json["contracts"][path_str][contract_name]["evm"]
 
         if input_json["language"] == "Solidity":
@@ -307,6 +315,7 @@ def generate_build_json(
                 "deployedBytecode": output_evm["deployedBytecode"]["object"],
                 "deployedSourceMap": output_evm["deployedBytecode"]["sourceMap"],
                 "language": input_json["language"],
+                "natspec": natspec,
                 "opcodes": output_evm["deployedBytecode"]["opcodes"],
                 "sha1": sha1(input_json["sources"][path_str]["content"].encode()).hexdigest(),
                 "source": input_json["sources"][path_str]["content"],

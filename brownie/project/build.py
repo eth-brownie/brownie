@@ -17,6 +17,7 @@ BUILD_KEYS = [
     "deployedSourceMap",
     "dependencies",
     "language",
+    "natspec",
     "offset",
     "opcodes",
     "pcMap",
