@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 import zipfile
+from base64 import b64encode
 from hashlib import sha1
 from io import BytesIO
 from pathlib import Path
@@ -563,7 +564,27 @@ def _install_from_github(package_id: str) -> str:
     if install_path.exists():
         raise FileExistsError("Package is aleady installed")
 
-    data = requests.get(f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100").json()
+    headers: Dict = {}
+    if os.getenv("GITHUB_TOKEN"):
+        auth = b64encode(os.environ["GITHUB_TOKEN"].encode()).decode()
+        headers = {"Authorization": "Basic {}".format(auth)}
+
+    response = requests.get(
+        f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100", headers=headers
+    )
+    if response.status_code != 200:
+        msg = "Status {} when getting package versions from Github: '{}'".format(
+            response.status_code, response.json()["message"]
+        )
+        if response.status_code == 403:
+            msg += (
+                "\n\nIf this issue persists, generate a Github API token and store"
+                " it as the environment variable `GITHUB_TOKEN`:\n"
+                "https://github.blog/2013-05-16-personal-api-tokens/"
+            )
+        raise ConnectionError(msg)
+
+    data = response.json()
     if not data:
         raise ValueError("Github repository has no tags set")
     org, repo = data[0]["zipball_url"].split("/")[3:5]
