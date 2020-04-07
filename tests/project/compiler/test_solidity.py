@@ -102,17 +102,20 @@ def test_compile_optimizer(monkeypatch):
         assert kwargs["optimize_runs"] == 666
 
     monkeypatch.setattr("solcx.compile_standard", _test_compiler)
-    input_json = {"language": "Solidity", "settings": {"optimizer": {"enabled": True, "runs": 666}}}
+    input_json = {
+        "language": "Solidity",
+        "settings": {"optimizer": {"enabled": True, "runs": 666}, "remappings": []},
+    }
     compiler.compile_from_input_json(input_json)
     input_json = {
         "language": "Solidity",
-        "settings": {"optimizer": {"enabled": True, "runs": 31337}},
+        "settings": {"optimizer": {"enabled": True, "runs": 31337}, "remappings": []},
     }
     with pytest.raises(AssertionError):
         compiler.compile_from_input_json(input_json)
     input_json = {
         "language": "Solidity",
-        "settings": {"optimizer": {"enabled": False, "runs": 666}},
+        "settings": {"optimizer": {"enabled": False, "runs": 666}, "remappings": []},
     }
     with pytest.raises(AssertionError):
         compiler.compile_from_input_json(input_json)
