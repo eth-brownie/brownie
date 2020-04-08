@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from hypothesis.stateful import GenericStateMachineMeta
+from hypothesis.stateful import StateMachineMeta
 
 from brownie.test import state_machine
 
@@ -47,7 +47,7 @@ def test_without_init(SMTestBase):
 def test_init_runs_on_class(SMTestBase):
     class StateMachine(SMTestBase):
         def __init__(self):
-            assert type(self) is GenericStateMachineMeta
+            assert type(self) is StateMachineMeta
 
     state_machine(StateMachine, settings={"max_examples": 2})
 
