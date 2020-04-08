@@ -1,11 +1,18 @@
 #!/usr/bin/python3
 
+import warnings
+
 import hypothesis
+from hypothesis.errors import HypothesisDeprecationWarning
 
 from brownie import network
 
 from .stateful import state_machine  # NOQA: F401
 from .strategies import strategy  # NOQA: F401
+
+# hypothesis warns against combining function-scoped fixtures with @given
+# but in brownie this is a documented and useful behaviour
+warnings.filterwarnings("ignore", category=HypothesisDeprecationWarning)
 
 
 def given(*given_args, **given_kwargs):
