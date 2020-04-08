@@ -21,6 +21,7 @@ Brownie Options:
   --network [name]         Use a specific network (default {CONFIG['network']['default']})
 
 Pytest Options:
+  -s                       Disable stdout capture when running tests
   -n [numprocesses]        Number of workers to use for xdist distributed testing,
                            set to 'auto' for automatic detection of number of CPUs
   --durations [num]        show slowest setup/test durations (num=0 for all)
