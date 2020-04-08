@@ -2,6 +2,8 @@
 
 import json
 import re
+import shutil
+import warnings
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -88,9 +90,11 @@ def _load_config(project_path: Path) -> Dict:
 
 def _load_default_config() -> "ConfigDict":
     # Loads the default configuration settings from brownie/data/config.yaml
-    base_config = BROWNIE_FOLDER.joinpath("data/brownie-config.yaml")
+    base_config = _load_config(BROWNIE_FOLDER.joinpath("data/brownie-config.yaml"))
+    network_config = _load_config(BROWNIE_FOLDER.joinpath("data/network-config.yaml"))
+    base_config["networks"] = network_config
 
-    config = _Singleton("Config", (ConfigDict,), {})(_load_config(base_config))  # type: ignore
+    config = _Singleton("Config", (ConfigDict,), {})(base_config)  # type: ignore
     config["active_network"] = {"name": None}
     _modify_hypothesis_settings(config)
     return config
@@ -98,7 +102,18 @@ def _load_default_config() -> "ConfigDict":
 
 def _load_project_config(project_path: Path) -> None:
     # Loads configuration settings from a project's brownie-config.yaml
-    config_data = _load_config(project_path.joinpath("brownie-config"))
+    config_path = project_path.joinpath("brownie-config")
+    config_data = _load_config(config_path)
+
+    if "network" in config_data:
+        warnings.warn(
+            "The `network` field in `brownie-config.yaml` has been deprecated. "
+            "Network settings are now handled via `brownie network` in the CLI. "
+            f"Remove `network` from {config_path} to silence this warning.",
+            DeprecationWarning,
+        )
+        del config_data["network"]
+
     CONFIG._unlock()
     _recursive_update(CONFIG, config_data, [])
     CONFIG.setdefault("active_network", {"name": None})
@@ -178,6 +193,12 @@ def _make_data_folders(data_folder: Path) -> None:
     data_folder.mkdir(exist_ok=True)
     for folder in DATA_SUBFOLDERS:
         data_folder.joinpath(folder).mkdir(exist_ok=True)
+
+    if not data_folder.joinpath("network-config.yaml").exists():
+        shutil.copyfile(
+            BROWNIE_FOLDER.joinpath("data/network-config.yaml"),
+            data_folder.joinpath("network-config.yaml"),
+        )
 
 
 # create data folders
