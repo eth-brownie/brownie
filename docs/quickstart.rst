@@ -106,13 +106,16 @@ Here is an example of checking a balance and transfering some ether:
 
     >>> accounts[0]
     <Account object '0xC0BcE0346d4d93e30008A1FE83a2Cf8CfB9Ed301'>
+
     >>> accounts[1].balance()
     100000000000000000000
+
     >>> accounts[0].transfer(accounts[1], "10 ether")
 
     Transaction sent: 0x124ba3f9f9e5a8c5e7e559390bebf8dfca998ef32130ddd114b7858f255f6369
     Transaction confirmed - block: 1   gas spent: 21000
     <Transaction object '0x124ba3f9f9e5a8c5e7e559390bebf8dfca998ef32130ddd114b7858f255f6369'>
+
     >>> accounts[1].balance()
     110000000000000000000
 
@@ -127,15 +130,17 @@ Brownie provides a :func:`ContractContainer <brownie.network.contract.ContractCo
 
     >>> Token
     []
+
     >>> Token.deploy
     <ContractConstructor object 'Token.constructor(string _symbol, string _name, uint256 _decimals, uint256 _totalSupply)'>
+
     >>> t = Token.deploy("Test Token", "TST", 18, 1e20, {'from': accounts[1]})
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
     Transaction confirmed - block: 1   gas spent: 594186
     Contract deployed at: 0x5419710735c2D6c3e4db8F30EF2d361F70a4b380
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
-    >>>
+
     >>> t
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
@@ -147,21 +152,34 @@ When a contact is deployed you are returned a :func:`Contract <brownie.network.c
 
     >>> t
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
+
     >>> t.balanceOf(accounts[1])
     1000000000000000000000
 
     >>> t.transfer
     <ContractTx object 'transfer(address _to, uint256 _value)'>
+
     >>> t.transfer(accounts[2], 1e20, {'from': accounts[1]})
 
     Transaction sent: 0xcd98225a77409b8d81023a3a4be15832e763cd09c74ff431236bfc6d56a74532
     Transaction confirmed - block: 2   gas spent: 51241
     <Transaction object '0xcd98225a77409b8d81023a3a4be15832e763cd09c74ff431236bfc6d56a74532'>
-    >>>
+
     >>> t.balanceOf(accounts[1])
     900000000000000000000
+
     >>> t.balanceOf(accounts[2])
     100000000000000000000
+
+When a contract source includes `NatSpec documentation <https://solidity.readthedocs.io/en/latest/natspec-format.html>`_, you can view it via the :func:`ContractCall.info <ContractCall.info>` method:
+
+.. code-block:: python
+
+    >>> t.transfer.info()
+    transfer(address _to, uint256 _value)
+      @dev transfer token for a specified address
+      @param _to The address to transfer to.
+      @param _value The amount to be transferred.
 
 Transactions
 ------------
@@ -180,16 +198,16 @@ The :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` 
     >>> tx
     <Transaction object '0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753'>
 
-To examine the events that fired:
+Use :func:`TransactionReceipt.events <TransactionReceipt.events>` to examine the events that fired:
 
 .. code-block:: python
 
-    >>> tx.events()
-
     >>> len(tx.events)
+    1
 
     >>> 'Transfer' in tx.events
     True
+
     >>> tx.events['Transfer']
     {
         'from': "0x4fe357adbdb4c6c37164c54640851d6bff9296c8",
@@ -204,9 +222,9 @@ To inspect the transaction trace:
     >>> tx.call_trace()
     Call trace for '0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753':
     Token.transfer 0:244  (0x4A32104371b05837F2A36dF6D850FA33A92a178D)
-      ∟ Token.transfer 72:226
-      ∟ SafeMath.sub 100:114
-      ∟ SafeMath.add 149:165
+      ├─Token.transfer 72:226
+      ├─SafeMath.sub 100:114
+      └─SafeMath.add 149:165
 
 For information on why a transaction reverted:
 
@@ -281,7 +299,7 @@ Here is an example test function using Brownie's automatically generated fixture
         assert token.balanceOf(accounts[1]) == 1e19
         assert token.balanceOf(accounts[0]) == 9e19
 
-A complete list of Brownie fixtures is available here.
+See the :ref:`Pytest Fixtures <pytest-fixtures-reference>` section for a complete list of fixtures.
 
 Handling Reverted Transactions
 ------------------------------

@@ -851,6 +851,21 @@ ContractCall Attributes
 ContractCall Methods
 ********************
 
+.. py:classmethod:: ContractCall.info()
+
+    Display `NatSpec documentation <https://solidity.readthedocs.io/en/latest/natspec-format.html>`_ documentation for the given method.
+
+    .. code-block:: python
+
+        >>> Token[0].allowance.info()
+        allowance(address _owner, address _spender)
+          @dev Function to check the amount of tokens than an owner
+               allowed to a spender.
+          @param _owner address The address which owns the funds.
+          @param _spender address The address which will spend the funds.
+          @return A uint specifying the amount of tokens still available
+                  for the spender.
+
 .. py:classmethod:: ContractCall.transact(*args)
 
     Sends a transaction to the method and returns a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`.
@@ -931,6 +946,15 @@ ContractTx Methods
         >>> Token[0].transfer.call(accounts[2], 10000, {'from': accounts[0]})
         True
 
+.. py:classmethod:: ContractTx.decode_output(hexstr)
+
+    Decodes raw hexstring data returned by this method.
+
+    .. code-block:: python
+
+        >>>  Token[0].balanceOf.decode_output("0x00000000000000000000000000000000000000000000003635c9adc5dea00000")
+        1000000000000000000000
+
 .. py:classmethod:: ContractTx.encode_input(*args)
 
     Returns a hexstring of ABI calldata that can be used to call the method with the given arguments.
@@ -945,16 +969,17 @@ ContractTx Methods
         Token.transfer confirmed - block: 2   gas used: 50985 (100.00%)
         <Transaction object '0x8dbf15878104571669f9843c18afc40529305ddb842f94522094454dcde22186'>
 
+.. py:classmethod:: ContractTx.info()
 
-.. py:classmethod:: ContractTx.decode_output(hexstr)
-
-    Decodes raw hexstring data returned by this method.
+    Display `NatSpec documentation <https://solidity.readthedocs.io/en/latest/natspec-format.html>`_ documentation for the given method.
 
     .. code-block:: python
 
-        >>>  Token[0].balanceOf.decode_output("0x00000000000000000000000000000000000000000000003635c9adc5dea00000")
-        1000000000000000000000
-
+        >>> Token[0].transfer.info()
+        transfer(address _to, uint256 _value)
+          @dev transfer token for a specified address
+          @param _to The address to transfer to.
+          @param _value The amount to be transferred.
 
 OverloadedMethod
 ----------------

@@ -99,6 +99,17 @@ All public contract methods are available from the :func:`Contract <brownie.netw
     >>> Token[0].balanceOf
     <ContractCall object 'balanceOf(address _owner)'>
 
+When a contract source includes `NatSpec documentation <https://solidity.readthedocs.io/en/latest/natspec-format.html>`_, you can view it via the :func:`ContractCall.info <ContractCall.info>` method:
+
+.. code-block:: python
+
+    >>> Token[0].transfer.info()
+    transfer(address _to, uint256 _value)
+      @dev transfer token for a specified address
+      @param _to The address to transfer to.
+      @param _value The amount to be transferred.
+
+
 Transactions
 ------------
 
