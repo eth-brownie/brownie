@@ -120,17 +120,6 @@ class PytestBrownieRunner(PytestBrownieBase):
             path, test = self._test_id(item)
             self.node_map.setdefault(path, []).append(test)
 
-    def pytest_sessionstart(self):
-        # remove PytestAssertRewriteWarning from terminalreporter warnings
-        reporter = self.config.pluginmanager.get_plugin("terminalreporter")
-        if "warnings" in reporter.stats:
-            warnings = reporter.stats["warnings"]
-            warnings = [i for i in warnings if "PytestAssertRewriteWarning" not in i.message]
-            if not warnings:
-                del reporter.stats["warnings"]
-            else:
-                reporter.stats["warnings"] = warnings
-
     def pytest_runtest_protocol(self, item):
         # does not run on master
         path, test = self._test_id(item.nodeid)
