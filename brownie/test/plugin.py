@@ -43,6 +43,10 @@ def pytest_configure(config):
         active_project.load_config()
         active_project._add_to_main_namespace()
 
+        # enable verbose output if stdout capture is disabled
+        if config.getoption("capture") == "no":
+            config.option.verbose = True
+
         if config.getoption("numprocesses"):
             Plugin = PytestBrownieMaster
         elif hasattr(config, "workerinput"):

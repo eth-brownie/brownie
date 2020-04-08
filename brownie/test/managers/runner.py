@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
+import builtins
 import json
+import sys
 import warnings
 
 import pytest
@@ -10,6 +12,7 @@ from brownie._config import ARGV, CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
 from brownie.test import coverage, output
+from brownie.utils import color
 
 from .base import PytestBrownieBase
 from .utils import convert_outcome
@@ -56,11 +59,41 @@ class RevertContextManager:
         ) from None
 
 
+class PytestPrinter:
+    """
+    Custom printer for test execution.
+
+    Produces more-readable output when stdout capture is disabled.
+    """
+
+    _builtins_print = builtins.print
+
+    def start(self):
+        self.first_line = True
+        builtins.print = self
+
+    def __call__(self, text):
+        if self.first_line:
+            self.first_line = False
+            sys.stdout.write(f"{color('yellow')}RUNNING{color}\n")
+        sys.stdout.write(f"{text}\n")
+        sys.stdout.flush()
+
+    def finish(self, nodeid):
+        if not self.first_line:
+            sys.stdout.write(f"{nodeid} ")
+            sys.stdout.flush()
+        builtins.print = self._builtins_print
+
+
 class PytestBrownieRunner(PytestBrownieBase):
     def __init__(self, config, project):
         super().__init__(config, project)
         brownie.reverts = RevertContextManager
         pytest.reverts = revert_deprecation
+        self.printer = None
+        if config.getoption("capture") == "no":
+            self.printer = PytestPrinter()
 
     def pytest_generate_tests(self, metafunc):
         # module_isolation always runs before other module scoped functions
@@ -122,6 +155,9 @@ class PytestBrownieRunner(PytestBrownieBase):
 
     def pytest_runtest_protocol(self, item):
         # does not run on master
+        if self.printer:
+            self.printer.start()
+
         path, test = self._test_id(item.nodeid)
         if path not in self.results:
             if path in self.tests and ARGV["update"]:
@@ -163,6 +199,10 @@ class PytestBrownieRunner(PytestBrownieBase):
             "txhash": txhash,
             "results": "".join(self.results[path]),
         }
+
+    def pytest_report_teststatus(self, report):
+        if self.printer and report.when == "call":
+            self.printer.finish(report.nodeid)
 
     def pytest_sessionfinish(self):
         self._sessionfinish("build/tests.json")
