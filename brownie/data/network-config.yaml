@@ -1,0 +1,38 @@
+production:
+  - name: Ethereum
+    networks:
+      - name: Mainnet (Infura)
+        id: mainnet
+        host: https://mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+      - name: Goerli (Infura)
+        id: goerli
+        host: https://goerli.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+      - name: Kovan (Infura)
+        id: kovan
+        host: https://kovan.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+      - name: Rinkeby (Infura)
+        id: rinkeby
+        host: https://rinkeby.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+      - name: Ropsten (Infura)
+        id: ropsten
+        host: https://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+  - name: ETC
+    networks:
+      - name: mainnet
+        id: etc
+        host: https://www.ethercluster.com/etc
+      - name: Kotti
+        id: kotti
+        host: https://www.ethercluster.com/kotti
+
+development:
+  - name: Ganache-CLI
+    id: development
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    cmd_settings:
+      port: 8545
+      gas_limit: 6721975
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
