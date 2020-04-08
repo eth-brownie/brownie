@@ -3,6 +3,7 @@
 import json
 import re
 from pathlib import Path
+from textwrap import TextWrapper
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import eth_abi
@@ -43,7 +44,13 @@ class _ContractBase:
         self._name = name
         self.abi = abi
         self.topics = _get_topics(abi)
-        self.signatures = dict((i["name"], _signature(i)) for i in abi if i["type"] == "function")
+        self.signatures = dict((i["name"], _selector(i)) for i in abi if i["type"] == "function")
+
+    def info(self) -> None:
+        """
+        Display NatSpec documentation for this contract.
+        """
+        _print_natspec(self._build["natspec"])
 
     def get_method(self, calldata: str) -> Optional[str]:
         sig = calldata[:10].lower()
@@ -227,16 +234,27 @@ class _DeployedContractBase(_ContractBase):
         self._owner = owner
         self.tx = tx
         self.address = address
+
         fn_names = [i["name"] for i in self.abi if i["type"] == "function"]
         for abi in [i for i in self.abi if i["type"] == "function"]:
             name = f"{self._name}.{abi['name']}"
+            sig = _signature(abi)
+            natspec: Dict = {}
+            if "natspec" in self._build:
+                natspec = self._build["natspec"]["methods"].get(sig, {})
+
             if fn_names.count(abi["name"]) == 1:
-                self._check_and_set(abi["name"], _get_method_object(address, abi, name, owner))
+                fn = _get_method_object(address, abi, name, owner, natspec)
+                self._check_and_set(abi["name"], fn)
                 continue
+
             if not hasattr(self, abi["name"]):
-                self._check_and_set(abi["name"], OverloadedMethod(address, name, owner))
+                overloaded = OverloadedMethod(address, name, owner)
+                self._check_and_set(abi["name"], overloaded)
+
             key = ",".join(i["type"] for i in abi["inputs"]).replace("256", "")
-            getattr(self, abi["name"]).methods[key] = _get_method_object(address, abi, name, owner)
+            fn = _get_method_object(address, abi, name, owner, natspec)
+            getattr(self, abi["name"]).methods[key] = fn
 
     def _check_and_set(self, name: str, obj: Any) -> None:
         if hasattr(self, name):
@@ -375,12 +393,20 @@ class _ContractMethod:
 
     _dir_color = "bright magenta"
 
-    def __init__(self, address: str, abi: Dict, name: str, owner: Optional[AccountsType]) -> None:
+    def __init__(
+        self,
+        address: str,
+        abi: Dict,
+        name: str,
+        owner: Optional[AccountsType],
+        natspec: Optional[Dict] = None,
+    ) -> None:
         self._address = address
         self._name = name
         self.abi = abi
         self._owner = owner
-        self.signature = _signature(abi)
+        self.signature = _selector(abi)
+        self.natspec = natspec or {}
 
     def __repr__(self) -> str:
         if "payable" in self.abi:
@@ -389,6 +415,13 @@ class _ContractMethod:
             pay_bool = self.abi["stateMutability"] == "payable"
         pay = "payable " if pay_bool else ""
         return f"<{type(self).__name__} {pay}'{self.abi['name']}({_inputs(self.abi)})'>"
+
+    def info(self) -> None:
+        """
+        Display NatSpec documentation for this method.
+        """
+        print(f"{self.abi['name']}({_inputs(self.abi)})")
+        _print_natspec(self.natspec)
 
     def call(self, *args: Tuple) -> Any:
         """Calls the contract method without broadcasting a transaction.
@@ -532,7 +565,7 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
 
 
 def _get_method_object(
-    address: str, abi: Dict, name: str, owner: Optional[AccountsType]
+    address: str, abi: Dict, name: str, owner: Optional[AccountsType], natspec: Dict
 ) -> Union["ContractCall", "ContractTx"]:
 
     if "constant" in abi:
@@ -541,20 +574,26 @@ def _get_method_object(
         constant = abi["stateMutability"] in ("view", "pure")
 
     if constant:
-        return ContractCall(address, abi, name, owner)
-    return ContractTx(address, abi, name, owner)
+        return ContractCall(address, abi, name, owner, natspec)
+    return ContractTx(address, abi, name, owner, natspec)
 
 
 def _inputs(abi: Dict) -> str:
     types_list = get_type_strings(abi["inputs"], {"fixed168x10": "decimal"})
     params = zip([i["name"] for i in abi["inputs"]], types_list)
-    return ", ".join(f"{i[1]}{' '+i[0] if i[0] else ''}" for i in params)
+    return ", ".join(
+        f"{i[1]}{color('bright blue')}{' '+i[0] if i[0] else ''}{color}" for i in params
+    )
 
 
 def _signature(abi: Dict) -> str:
     types_list = get_type_strings(abi["inputs"])
-    key = f"{abi['name']}({','.join(types_list)})".encode()
-    return "0x" + keccak(key).hex()[:8]
+    return f"{abi['name']}({','.join(types_list)})"
+
+
+def _selector(abi: Dict) -> str:
+    sig = _signature(abi)
+    return "0x" + keccak(sig.encode()).hex()[:8]
 
 
 def _verify_deployed_code(address: str, expected_bytecode: str) -> bool:
@@ -575,3 +614,21 @@ def _verify_deployed_code(address: str, expected_bytecode: str) -> bool:
             expected_bytecode = expected_bytecode[:idx] + expected_bytecode[idx + 40 :]
 
     return actual_bytecode == expected_bytecode
+
+
+def _print_natspec(natspec: Dict) -> None:
+    wrapper = TextWrapper(initial_indent=f"  {color('bright magenta')}")
+    for key in [i for i in ("title", "notice", "author", "details") if i in natspec]:
+        wrapper.subsequent_indent = " " * (len(key) + 4)
+        print(wrapper.fill(f"@{key} {color}{natspec[key]}"))
+
+    for key, value in natspec.get("params", {}).items():
+        print(wrapper.fill(f"@param {color('bright blue')}{key}{color} {value}"))
+
+    if "return" in natspec:
+        print(wrapper.fill(f"@return {color}{natspec['return']}"))
+
+    for key in sorted(natspec.get("returns", [])):
+        print(wrapper.fill(f"@return {color}{natspec['returns'][key]}"))
+
+    print()
