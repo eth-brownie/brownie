@@ -1,0 +1,36 @@
+# default configuration settings
+
+# DO NOT MODIFY THIS FILE DIRECTLY!
+# Custom configuration settings are given through `brownie-config.yaml` within
+# a project. Missing or malformed fields in this file could break Brownie.
+# https://eth-brownie.readthedocs.io/en/stable/config.html
+
+networks:
+    default: development
+    development:
+        gas_limit: auto
+        gas_price: auto
+        reverting_tx_gas_limit: false
+        default_contract_owner: false
+    production:
+        gas_limit: 6721975
+        gas_price: 0
+        reverting_tx_gas_limit: 6721975
+        default_contract_owner: true
+
+compiler:
+    evm_version: null
+    solc:
+        version: null
+        optimize: true
+        runs: 200
+        remappings: null
+
+hypothesis:
+    deadline: null
+    max_examples: 50
+    stateful_step_count: 10
+
+show_colors: true
+
+dependencies: null
