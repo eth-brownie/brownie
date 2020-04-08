@@ -7,6 +7,7 @@ from brownie.test import output
 test_source = """
 def test_stuff(BrownieTester, accounts):
     c = accounts[0].deploy(BrownieTester, True)
+    print('oh hai mark')
     c.doNothing({'from': accounts[0]})"""
 
 
@@ -41,3 +42,11 @@ def test_coverage_save_report(plugintester):
     next(path.glob("*")).open("w").write("this isn't json, is it?")
     plugintester.runpytest("-C")
     assert [i.name for i in path.glob("*")] == ["coverage.json"]
+
+
+def test_stdout_capture(plugintester):
+    result = plugintester.runpytest("-s")
+    output = result.stdout.str()
+
+    assert output.count("::test_stuff") == 2
+    assert "oh hai mark" in output
