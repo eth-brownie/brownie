@@ -18,7 +18,7 @@ def Foo():
 
 
 def test_cli_no_owner(Foo, accounts, test_mode, config):
-    config["active_network"]["default_contract_owner"] = False
+    config.active_network["settings"]["default_contract_owner"] = False
     foo = Foo.deploy({"from": accounts[0]})
 
     with pytest.raises(AttributeError):

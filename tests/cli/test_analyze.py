@@ -8,7 +8,6 @@ from mythx_models.response import DetectedIssuesResponse
 from pythx import ValidationError
 
 from brownie._cli.analyze import SubmissionPipeline, print_console_report
-from brownie._config import ARGV
 
 with open(str(Path(__file__).parent / "test-artifact.json"), "r") as artifact_f:
     TEST_ARTIFACT = json.load(artifact_f)
@@ -93,10 +92,9 @@ def test_mythx_client_from_access_token_env(monkeypatch):
     monkeypatch.delenv("MYTHX_API_KEY")
 
 
-def test_mythx_client_from_access_token_arg():
-    ARGV["api-key"] = "foo"
+def test_mythx_client_from_access_token_arg(argv):
+    argv["api-key"] = "foo"
     assert_client_access_token()
-    del ARGV["api-key"]
 
 
 def test_without_api_key():

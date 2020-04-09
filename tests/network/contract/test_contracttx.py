@@ -104,7 +104,7 @@ def test_gas_price_manual(tester, accounts):
 @pytest.mark.parametrize("auto", (True, False, None, "auto"))
 def test_gas_price_automatic(tester, accounts, config, web3, auto):
     """gas price is set correctly using web3.eth.gasPrice"""
-    config["active_network"]["gas_price"] = auto
+    config.active_network["settings"]["gas_price"] = auto
     balance = accounts[0].balance()
     tx = tester.doNothing({"from": accounts[0]})
     assert tx.gas_price == web3.eth.gasPrice
@@ -113,7 +113,7 @@ def test_gas_price_automatic(tester, accounts, config, web3, auto):
 
 def test_gas_price_config(tester, accounts, config):
     """gas price is set correctly from the config"""
-    config["active_network"]["gas_price"] = 50
+    config.active_network["settings"]["gas_price"] = 50
     balance = accounts[0].balance()
     tx = tester.doNothing({"from": accounts[0]})
     assert tx.gas_price == 50
@@ -129,17 +129,17 @@ def test_gas_limit_manual(tester, accounts):
 @pytest.mark.parametrize("auto", (True, False, None, "auto"))
 def test_gas_limit_automatic(tester, accounts, config, auto):
     """gas limit is set correctly using web3.eth.estimateGas"""
-    config["active_network"]["gas_limit"] = auto
+    config.active_network["settings"]["gas_limit"] = auto
     tx = tester.doNothing({"from": accounts[0]})
     assert tx.gas_limit == tx.gas_used
 
 
 def test_gas_limit_config(tester, accounts, config):
     """gas limit is set correctly from the config"""
-    config["active_network"]["gas_limit"] = 50000
+    config.active_network["settings"]["gas_limit"] = 50000
     tx = tester.doNothing({"from": accounts[0]})
     assert tx.gas_limit == 50000
-    config["active_network"]["gas_limit"] = False
+    config.active_network["settings"]["gas_limit"] = False
 
 
 def test_repr(tester):

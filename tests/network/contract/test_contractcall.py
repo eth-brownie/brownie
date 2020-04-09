@@ -43,5 +43,5 @@ def test_tuples(tester, accounts):
 
 
 def test_default_owner_with_coverage(tester, coverage_mode, accounts, config):
-    config["active_network"]["default_contract_owner"] = False
+    config.active_network["settings"]["default_contract_owner"] = False
     tester.getTuple(accounts[0])

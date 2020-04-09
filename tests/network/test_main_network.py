@@ -36,19 +36,6 @@ def test_connect_raises_unknown(network):
         network.connect("thisnetworkdoesntexist")
 
 
-def test_connect_raises_missing_host(network, config):
-    del config["network"]["networks"]["ropsten"]["host"]
-    with pytest.raises(KeyError):
-        network.connect("ropsten")
-
-
-def test_connect_raises_block_height(network, monkeypatch):
-    monkeypatch.setattr("brownie.network.main.is_connected", lambda: True)
-    monkeypatch.setattr("brownie.network.web3.manager.request_blocking", lambda *x: 1)
-    with pytest.raises(ConnectionError):
-        network.connect()
-
-
 def test_gas_limit_raises_not_connected(network):
     with pytest.raises(ConnectionError):
         network.gas_limit()
@@ -58,18 +45,16 @@ def test_gas_limit_raises_not_connected(network):
         network.gas_limit(100000)
 
 
-def test_gas_limit_manual(devnetwork, config):
-    devnetwork.gas_limit(21000)
-    assert config["active_network"]["gas_limit"] == 21000
+def test_gas_limit_manual(devnetwork, accounts):
     devnetwork.gas_limit(100000)
-    assert config["active_network"]["gas_limit"] == 100000
+    tx = accounts[0].transfer(accounts[1], 0)
+    assert tx.gas_limit == 100000
 
 
-def test_gas_limit_auto(devnetwork, config):
-    devnetwork.gas_limit(True)
-    assert not config["active_network"]["gas_limit"]
-    devnetwork.gas_limit(False)
-    assert not config["active_network"]["gas_limit"]
+def test_gas_limit_auto(devnetwork, accounts):
+    devnetwork.gas_limit("auto")
+    tx = accounts[0].transfer(accounts[1], 0)
+    assert tx.gas_limit == 21000
 
 
 def test_gas_limit_raises(devnetwork):
@@ -88,18 +73,16 @@ def test_gas_price_raises_not_connected(network):
         network.gas_price(100000)
 
 
-def test_gas_price_manual(devnetwork, config):
-    devnetwork.gas_price("1 gwei")
-    assert config["active_network"]["gas_price"] == 1000000000
-    devnetwork.gas_price(100000)
-    assert config["active_network"]["gas_price"] == 100000
+def test_gas_price_manual(devnetwork, accounts):
+    devnetwork.gas_price(1000000)
+    tx = accounts[0].transfer(accounts[1], 0)
+    assert tx.gas_price == 1000000
 
 
-def test_gas_price_auto(devnetwork, config):
+def test_gas_price_auto(devnetwork, accounts, web3):
     devnetwork.gas_price(None)
-    assert not config["active_network"]["gas_price"]
-    devnetwork.gas_price(False)
-    assert not config["active_network"]["gas_price"]
+    tx = accounts[0].transfer(accounts[1], 0)
+    assert tx.gas_price == web3.eth.gasPrice
 
 
 def test_gas_price_raises(devnetwork):

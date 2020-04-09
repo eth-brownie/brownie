@@ -42,9 +42,12 @@ def test_mainnet(config, network, web3):
     network.connect("mainnet")
     assert web3._mainnet == web3
     network.disconnect()
-    del config["network"]["networks"]["mainnet"]
+    del config.networks["mainnet"]
     with pytest.raises(MainnetUndefined):
         web3._mainnet
+
+
+# TODO mainnet undefined
 
 
 def test_disconnect(web3):
