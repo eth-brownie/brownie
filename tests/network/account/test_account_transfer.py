@@ -58,12 +58,12 @@ def test_returns_tx_on_revert_in_console(accounts, tester, console_mode):
 
 
 def test_broadcast_revert(accounts, tester, config):
-    config["active_network"]["reverting_tx_gas_limit"] = False
+    config.active_network["settings"]["reverting_tx_gas_limit"] = False
     assert accounts[1].nonce == 0
     with pytest.raises(VirtualMachineError):
         accounts[1].transfer(tester, 0)
     assert accounts[1].nonce == 0
-    config["active_network"]["reverting_tx_gas_limit"] = 1000000
+    config.active_network["settings"]["reverting_tx_gas_limit"] = 1000000
     with pytest.raises(VirtualMachineError):
         accounts[1].transfer(tester, 0)
     assert accounts[1].nonce == 1
@@ -108,7 +108,7 @@ def test_gas_price_manual(accounts):
 @pytest.mark.parametrize("auto", (True, False, None, "auto"))
 def test_gas_price_automatic(accounts, config, web3, auto):
     """gas price is set correctly using web3.eth.gasPrice"""
-    config["active_network"]["gas_price"] = auto
+    config.active_network["settings"]["gas_price"] = auto
     balance = accounts[0].balance()
     tx = accounts[0].transfer(accounts[1], 0)
     assert tx.gas_price == web3.eth.gasPrice
@@ -117,7 +117,7 @@ def test_gas_price_automatic(accounts, config, web3, auto):
 
 def test_gas_price_config(accounts, config):
     """gas price is set correctly from the config"""
-    config["active_network"]["gas_price"] = 50
+    config.active_network["settings"]["gas_price"] = 50
     balance = accounts[0].balance()
     tx = accounts[0].transfer(accounts[1], 0)
     assert tx.gas_price == 50
@@ -125,7 +125,7 @@ def test_gas_price_config(accounts, config):
 
 
 def test_gas_price_zero(accounts, config):
-    config["active_network"]["gas_price"] = 0
+    config.active_network["settings"]["gas_price"] = 0
     balance = accounts[0].balance()
     tx = accounts[0].transfer(accounts[1], 1337)
     assert tx.gas_price == 0
@@ -142,18 +142,18 @@ def test_gas_limit_manual(accounts):
 @pytest.mark.parametrize("auto", (True, False, None, "auto"))
 def test_gas_limit_automatic(accounts, config, auto):
     """gas limit is set correctly using web3.eth.estimateGas"""
-    config["active_network"]["gas_limit"] = auto
+    config.active_network["settings"]["gas_limit"] = auto
     tx = accounts[0].transfer(accounts[1], 1000)
     assert tx.gas_limit == 21000
 
 
 def test_gas_limit_config(accounts, config):
     """gas limit is set correctly from the config"""
-    config["active_network"]["gas_limit"] = 50000
+    config.active_network["settings"]["gas_limit"] = 50000
     tx = accounts[0].transfer(accounts[1], 1000)
     assert tx.gas_limit == 50000
     assert tx.gas_used == 21000
-    config["active_network"]["gas_limit"] = False
+    config.active_network["settings"]["gas_limit"] = False
 
 
 def test_data(accounts):

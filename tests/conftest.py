@@ -6,6 +6,7 @@ import os
 import shutil
 import time
 from base64 import b64encode
+from copy import deepcopy
 from pathlib import Path
 from typing import Dict, List
 
@@ -17,7 +18,6 @@ from ethpm._utils.ipfs import dummy_ipfs_pin
 from ethpm.backends.ipfs import BaseIPFSBackend
 
 import brownie
-from brownie._config import ARGV
 
 pytest_plugins = "pytester"
 
@@ -122,14 +122,12 @@ def xdist_id(worker_id):
 def _base_config(tmp_path_factory, xdist_id):
     brownie._config.DATA_FOLDER = tmp_path_factory.mktemp(f"data-{xdist_id}")
     brownie._config._make_data_folders(brownie._config.DATA_FOLDER)
-    with brownie._config.BROWNIE_FOLDER.joinpath("data/brownie-config.yaml").open() as fp:
-        config = yaml.safe_load(fp)
     if xdist_id:
         port = 8545 + xdist_id
-        config["network"]["networks"]["development"]["test_rpc"]["port"] = port
-        brownie._config.CONFIG._unlock()
-        brownie._config.CONFIG.update(config)
-        brownie._config.CONFIG._lock()
+        brownie._config.CONFIG.networks["development"]["cmd_settings"]["port"] = port
+
+    with brownie._config.BROWNIE_FOLDER.joinpath("data/brownie-config.yaml").open() as fp:
+        config = yaml.safe_load(fp)
     yield config
 
 
@@ -297,22 +295,33 @@ def web3():
 
 @pytest.fixture
 def config():
-    initial = brownie.config._copy()
-    brownie.config._unlock()
-    yield brownie.config
-    brownie.config._unlock()
-    brownie.config.clear()
-    brownie.config.update(initial)
-    brownie.config._lock()
+
+    conf = brownie._config.CONFIG
+    argv = deepcopy(conf.argv)
+    networks = deepcopy(conf.networks)
+    settings = conf.settings._copy()
+
+    yield conf
+
+    conf.argv.clear()
+    conf.argv.update(argv)
+
+    conf.networks.clear()
+    conf.networks.update(networks)
+
+    conf.settings._unlock()
+    conf.settings.clear()
+    conf.settings.update(settings)
+    conf.settings._lock()
 
 
 @pytest.fixture
 def argv():
     initial = {}
-    initial.update(ARGV)
-    yield ARGV
-    ARGV.clear()
-    ARGV.update(initial)
+    initial.update(brownie._config.CONFIG.argv)
+    yield brownie._config.CONFIG.argv
+    brownie._config.CONFIG.argv.clear()
+    brownie._config.CONFIG.argv.update(initial)
 
 
 # cli mode fixtures
