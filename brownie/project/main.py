@@ -255,13 +255,13 @@ class Project(_ProjectBase):
         return False
 
     def _load_deployments(self) -> None:
-        if not CONFIG["active_network"].get("persist", None):
+        if CONFIG.network_type != "production":
             return
-        network = CONFIG["active_network"]["name"]
+        network = CONFIG.active_network["id"]
         path = self._path.joinpath(f"build/deployments/{network}")
         path.mkdir(exist_ok=True)
         deployments = list(
-            self._path.glob(f"build/deployments/{CONFIG['active_network']['name']}/*.json")
+            self._path.glob(f"build/deployments/{CONFIG.active_network['id']}/*.json")
         )
         deployments.sort(key=lambda k: k.stat().st_mtime)
         for build_json in deployments:

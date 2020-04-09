@@ -5,7 +5,7 @@ import traceback
 from pathlib import Path
 from typing import Dict, Optional, Sequence
 
-from brownie._config import ARGV
+from brownie._config import CONFIG
 
 if sys.platform == "win32":
     import colorama
@@ -110,7 +110,7 @@ class Color:
         if isinstance(exc, SyntaxError) and exc.text is not None:
             return self.format_syntaxerror(exc)
         tb = [i.replace("./", "") for i in traceback.format_tb(exc.__traceback__)]
-        if filename and not ARGV["tb"]:
+        if filename and not CONFIG.argv["tb"]:
             try:
                 start = tb.index(next(i for i in tb if filename in i))
                 stop = tb.index(next(i for i in tb[::-1] if filename in i)) + 1
