@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from brownie import network, project, run
-from brownie._config import ARGV, CONFIG, _update_argv_from_docopt
+from brownie._config import CONFIG, _update_argv_from_docopt
 from brownie.exceptions import ProjectNotFound
 from brownie.test.output import _print_gas_profile
 from brownie.utils.docopt import docopt
@@ -13,7 +13,7 @@ Arguments:
   [<function>]            The function to call (default is main)
 
 Options:
-  --network [name]        Use a specific network (default {CONFIG['network']['default']})
+  --network [name]        Use a specific network (default {CONFIG.settings['networks']['default']})
   --gas -g                Display gas profile for function calls
   --tb -t                 Show entire python traceback on exceptions
   --help -h               Display this message
@@ -33,8 +33,8 @@ def main():
     else:
         raise ProjectNotFound
 
-    network.connect(ARGV["network"])
+    network.connect(CONFIG.argv["network"])
 
     run(args["<filename>"], method_name=args["<function>"] or "main")
-    if ARGV["gas"]:
+    if CONFIG.argv["gas"]:
         _print_gas_profile()

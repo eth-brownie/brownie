@@ -15,7 +15,7 @@ from pythx.middleware import ClientToolNameMiddleware, GroupDataMiddleware
 
 from brownie import project
 from brownie._cli.__main__ import __version__
-from brownie._config import ARGV, _update_argv_from_docopt
+from brownie._config import CONFIG, _update_argv_from_docopt
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
 from brownie.utils.docopt import docopt
@@ -73,8 +73,8 @@ class SubmissionPipeline:
         :return: A PythX client instance
         """
 
-        if ARGV["api-key"]:
-            auth_args = {"api_key": ARGV["api-key"]}
+        if CONFIG.argv["api-key"]:
+            auth_args = {"api_key": CONFIG.argv["api-key"]}
         elif environ.get("MYTHX_API_KEY"):
             auth_args = {"api_key": environ.get("MYTHX_API_KEY")}
         else:
@@ -156,7 +156,7 @@ class SubmissionPipeline:
             source_list=source_list or None,
             main_source=artifact.get("sourcePath"),
             solc_version=artifact.get("compiler", {}).get("version"),
-            analysis_mode=ARGV["mode"] or ANALYSIS_MODES[0],
+            analysis_mode=CONFIG.argv["mode"] or ANALYSIS_MODES[0],
         )
 
     def send_requests(self) -> None:
@@ -202,7 +202,7 @@ class SubmissionPipeline:
             raise ValidationError("No requests given")
         for contract_name, response in self.responses.items():
             while not self.client.analysis_ready(response.uuid):
-                time.sleep(int(ARGV["interval"]))
+                time.sleep(int(CONFIG.argv["interval"]))
             self.reports[contract_name] = self.client.report(response.uuid)
 
     def generate_highlighting_report(self) -> None:
@@ -308,7 +308,7 @@ def main():
     args = docopt(__doc__)
     _update_argv_from_docopt(args)
 
-    if ARGV["mode"] not in ANALYSIS_MODES:
+    if CONFIG.argv["mode"] not in ANALYSIS_MODES:
         raise ValidationError(
             "Invalid analysis mode: Must be one of [{}]".format(", ".join(ANALYSIS_MODES))
         )
@@ -327,7 +327,7 @@ def main():
     submission.send_requests()
 
     # exit if user wants an async analysis run
-    if ARGV["async"]:
+    if CONFIG.argv["async"]:
         print(
             "\nAll contracts were submitted successfully. Check the dashboard at "
             "https://dashboard.mythx.io/ for the progress and results of your analyses"
@@ -352,7 +352,7 @@ def main():
         json.dump(submission.highlight_report, fp, indent=2, sort_keys=True)
 
     # Launch GUI if user requested it
-    if ARGV["gui"]:
+    if CONFIG.argv["gui"]:
         print("Launching the Brownie GUI")
         gui = importlib.import_module("brownie._gui").Gui
         gui().mainloop()

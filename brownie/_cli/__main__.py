@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from brownie import network
-from brownie._config import ARGV
+from brownie._config import CONFIG
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
 from brownie.utils.docopt import docopt, levenshtein_norm
@@ -49,7 +49,7 @@ def main():
             sys.exit(f"Invalid command. Did you mean 'brownie {distances[0][0]}'?")
         sys.exit("Invalid command. Try 'brownie --help' for available commands.")
 
-    ARGV["cli"] = cmd
+    CONFIG.argv["cli"] = cmd
     sys.modules["brownie"].a = network.accounts
     sys.modules["brownie"].__all__.append("a")
 
