@@ -32,7 +32,7 @@ def pytest_addoption(parser):
             "-N",
             default=False,
             nargs=1,
-            help=f"Use a specific network (default {CONFIG['network']['default']})",
+            help=f"Use a specific network (default {CONFIG.settings['networks']['default']})",
         )
 
 

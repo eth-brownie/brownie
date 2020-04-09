@@ -8,7 +8,7 @@ import warnings
 import pytest
 
 import brownie
-from brownie._config import ARGV, CONFIG
+from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
 from brownie.test import coverage, output
@@ -108,7 +108,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         # determine which modules are properly isolated
         tests = {}
         for i in items:
-            if "skip_coverage" in i.fixturenames and ARGV["coverage"]:
+            if "skip_coverage" in i.fixturenames and CONFIG.argv["coverage"]:
                 i.add_marker("skip")
             if stateful is not None:
                 if stateful == "true" and "state_machine" not in i.fixturenames:
@@ -125,7 +125,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         isolated_tests = sorted(k for k, v in tests.items() if v)
         self.isolated = dict((self._path(i), set()) for i in isolated_tests)
 
-        if ARGV["update"]:
+        if CONFIG.argv["update"]:
             isolated_tests = sorted(filter(self._check_updated, tests))
             # if update flag is active, add skip marker to unchanged tests
             for path in isolated_tests:
@@ -135,13 +135,13 @@ class PytestBrownieRunner(PytestBrownieBase):
         # only connect to network if there are tests to run
         to_run = any(i for i in items if not i.get_closest_marker("skip"))
         if to_run and not self.config.getoption("--fixtures"):
-            brownie.network.connect(ARGV["network"] or CONFIG["network"]["default"])
+            brownie.network.connect(CONFIG.argv["network"])
 
     def _check_updated(self, path):
         path = self._path(path)
         if path not in self.tests or not self.tests[path]["isolated"]:
             return False
-        if ARGV["coverage"] and not self.tests[path]["coverage"]:
+        if CONFIG.argv["coverage"] and not self.tests[path]["coverage"]:
             return False
         for txhash in self.tests[path]["txhash"]:
             coverage._check_cached(txhash, False)
@@ -160,7 +160,7 @@ class PytestBrownieRunner(PytestBrownieBase):
 
         path, test = self._test_id(item.nodeid)
         if path not in self.results:
-            if path in self.tests and ARGV["update"]:
+            if path in self.tests and CONFIG.argv["update"]:
                 self.results[path] = list(self.tests[path]["results"])
             else:
                 # all tests are initially marked as skipped
@@ -190,12 +190,13 @@ class PytestBrownieRunner(PytestBrownieBase):
 
         txhash = coverage._get_active_txlist()
         coverage._clear_active_txlist()
-        if not ARGV["coverage"] and (path in self.tests and self.tests[path]["coverage"]):
+        if not CONFIG.argv["coverage"] and (path in self.tests and self.tests[path]["coverage"]):
             txhash = self.tests[path]["txhash"]
         self.tests[path] = {
             "sha1": self._get_hash(path),
             "isolated": isolated,
-            "coverage": ARGV["coverage"] or (path in self.tests and self.tests[path]["coverage"]),
+            "coverage": CONFIG.argv["coverage"]
+            or (path in self.tests and self.tests[path]["coverage"]),
             "txhash": txhash,
             "results": "".join(self.results[path]),
         }
@@ -206,7 +207,7 @@ class PytestBrownieRunner(PytestBrownieBase):
 
     def pytest_sessionfinish(self):
         self._sessionfinish("build/tests.json")
-        if ARGV["gas"]:
+        if CONFIG.argv["gas"]:
             output._print_gas_profile()
 
     def _sessionfinish(self, path):
@@ -224,8 +225,9 @@ class PytestBrownieRunner(PytestBrownieBase):
 class PytestBrownieXdistRunner(PytestBrownieRunner):
     def __init__(self, config, project):
         self.workerid = int("".join(i for i in config.workerinput["workerid"] if i.isdigit()))
-        key = ARGV["network"] or CONFIG["network"]["default"]
-        CONFIG["network"]["networks"][key]["test_rpc"]["port"] += self.workerid
+        # TODO fix me
+        key = CONFIG.argv["network"] or CONFIG.settings["networks"]["default"]
+        CONFIG.networks[key]["cmd_settings"]["port"] += self.workerid
         super().__init__(config, project)
 
     def pytest_collection_modifyitems(self, items):
