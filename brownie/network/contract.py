@@ -11,7 +11,7 @@ from eth_hash.auto import keccak
 from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
 
-from brownie._config import ARGV, CONFIG
+from brownie._config import CONFIG
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
 from brownie.convert.utils import get_type_strings
@@ -292,9 +292,9 @@ class _DeployedContractBase(_ContractBase):
         return Wei(balance)
 
     def _deployment_path(self) -> Optional[Path]:
-        if not CONFIG["active_network"].get("persist", None) or not self._project._path:
+        if CONFIG.network_type != "production" or not self._project._path:
             return None
-        network = CONFIG["active_network"]["name"]
+        network = CONFIG.active_network["id"]
         path = self._project._path.joinpath(f"build/deployments/{network}")
         path.mkdir(exist_ok=True)
         return path.joinpath(f"{self.address}.json")
@@ -533,7 +533,7 @@ class ContractCall(_ContractMethod):
         Returns:
             Contract method return value(s)."""
 
-        if not ARGV["always_transact"]:
+        if not CONFIG.argv["always_transact"]:
             return self.call(*args)
         rpc._internal_snap()
         args, tx = _get_tx(self._owner, args)
@@ -549,8 +549,8 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
     # set / remove default sender
     if owner is None:
         owner = accounts.default
-    default_owner = CONFIG["active_network"].get("default_contract_owner", True)
-    if ARGV["cli"] == "test" and default_owner is False:
+    default_owner = CONFIG.active_network["settings"]["default_contract_owner"]
+    if CONFIG.mode == "test" and default_owner is False:
         owner = None
 
     # seperate contract inputs from tx dict and set default tx values

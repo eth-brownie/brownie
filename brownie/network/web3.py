@@ -65,12 +65,14 @@ class Web3(_Web3):
     @property
     def _mainnet(self) -> _Web3:
         # a web3 instance connected to the mainnet
-        if CONFIG["active_network"]["name"] == "mainnet":
+        if self.isConnected() and CONFIG.active_network["id"] == "mainnet":
             return self
-        if "mainnet" not in CONFIG["network"]["networks"]:
-            raise MainnetUndefined("No 'mainnet' network defined in brownie-config.json")
+        try:
+            mainnet = CONFIG.networks["mainnet"]
+        except KeyError:
+            raise MainnetUndefined("No 'mainnet' network defined") from None
         if not self._mainnet_w3:
-            uri = _expand_environment_vars(CONFIG["network"]["networks"]["mainnet"]["host"])
+            uri = _expand_environment_vars(mainnet["host"])
             self._mainnet_w3 = _Web3(HTTPProvider(uri))
             self._mainnet_w3.enable_unstable_package_management_api()
         return self._mainnet_w3
