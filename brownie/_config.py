@@ -19,8 +19,6 @@ DATA_FOLDER = Path.home().joinpath(".brownie")
 
 DATA_SUBFOLDERS = ("accounts", "ethpm", "packages")
 
-REPLACE = ["active_network", "networks"]
-
 EVM_EQUIVALENTS = {"atlantis": "byzantium", "agharta": "petersburg"}
 
 
@@ -138,7 +136,8 @@ def _load_config(project_path: Path) -> Dict:
     # Loads configuration data from a file, returns as a dict
     path = _get_project_config_path(project_path)
     if path is None:
-        raise ValueError("Project does not exist!")
+        return {}
+
     with path.open() as fp:
         if path.suffix in (".yaml", ".yml"):
             return yaml.safe_load(fp)
@@ -151,6 +150,8 @@ def _load_project_config(project_path: Path) -> None:
     # Loads configuration settings from a project's brownie-config.yaml
     config_path = project_path.joinpath("brownie-config")
     config_data = _load_config(config_path)
+    if not config_data:
+        return
 
     if "network" in config_data:
         warnings.warn(
@@ -162,8 +163,7 @@ def _load_project_config(project_path: Path) -> None:
         del config_data["network"]
 
     CONFIG.settings._unlock()
-    _recursive_update(CONFIG.settings, config_data, [])
-    # CONFIG.settings.setdefault("active_network", {"name": None})
+    _recursive_update(CONFIG.settings, config_data)
     CONFIG.settings._lock()
     if "hypothesis" in config_data:
         _modify_hypothesis_settings(config_data["hypothesis"], "brownie", "brownie-base")
@@ -172,15 +172,17 @@ def _load_project_config(project_path: Path) -> None:
 def _load_project_compiler_config(project_path: Optional[Path]) -> Dict:
     if not project_path:
         return CONFIG.settings["compiler"]
-    compiler_data = _load_config(project_path.joinpath("brownie-config"))["compiler"]
-    if "evm_version" not in compiler_data:
-        compiler_data["evm_version"] = compiler_data["solc"].pop("evm_version")
+
+    compiler_data = CONFIG.settings["compiler"]._copy()
+    project_data = _load_config(project_path.joinpath("brownie-config")).get("compiler", {})
+    _recursive_update(compiler_data, project_data)
+
     return compiler_data
 
 
-def _load_project_dependencies(project_path: Path) -> Dict:
-    compiler_data = _load_config(project_path.joinpath("brownie-config"))
-    dependencies = compiler_data.get("dependencies", [])
+def _load_project_dependencies(project_path: Path) -> List:
+    data = _load_config(project_path.joinpath("brownie-config"))
+    dependencies = data.get("dependencies", []) or []
     if isinstance(dependencies, str):
         dependencies = [dependencies]
     return dependencies
@@ -196,13 +198,11 @@ def _modify_hypothesis_settings(settings, name, parent):
     hp_settings.load_profile(name)
 
 
-def _recursive_update(original: Dict, new: Dict, base: List) -> None:
+def _recursive_update(original: Dict, new: Dict) -> None:
     # merges project config with brownie default config
     for k in new:
-        if type(new[k]) is dict and k in REPLACE:
-            original[k] = new[k]
-        elif type(new[k]) is dict and k in original:
-            _recursive_update(original[k], new[k], base + [k])
+        if k in original and isinstance(new[k], dict):
+            _recursive_update(original[k], new[k])
         else:
             original[k] = new[k]
 
