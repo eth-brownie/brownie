@@ -5,7 +5,7 @@ import json
 import pytest
 from xdist.scheduler import LoadFileScheduling
 
-from brownie._config import ARGV
+from brownie._config import CONFIG
 from brownie.test import coverage
 
 from .base import PytestBrownieBase
@@ -20,7 +20,7 @@ class PytestBrownieMaster(PytestBrownieBase):
         # required because pytest_collection_modifyitems is not called by master
         self._make_nodemap(ids)
         for path in self.node_map:
-            if path in self.tests and ARGV["update"]:
+            if path in self.tests and CONFIG.argv["update"]:
                 self.results[path] = list(self.tests[path]["results"])
             else:
                 self.results[path] = ["s"] * len(self.node_map[path])

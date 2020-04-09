@@ -5,7 +5,7 @@ import sys
 import pytest
 
 import brownie
-from brownie._config import ARGV, _get_data_folder
+from brownie._config import CONFIG, _get_data_folder
 
 from .stateful import _BrownieStateMachine, state_machine
 
@@ -34,7 +34,7 @@ class PytestBrownieFixtures:
         """
         brownie.rpc.reset()
         yield
-        if not ARGV["interrupt"]:
+        if not CONFIG.argv["interrupt"]:
             brownie.rpc.reset()
 
     @pytest.fixture
@@ -47,7 +47,7 @@ class PytestBrownieFixtures:
         """
         brownie.rpc.snapshot()
         yield
-        if not ARGV["interrupt"]:
+        if not CONFIG.argv["interrupt"]:
             brownie.rpc.revert()
 
     @pytest.fixture(scope="session")
@@ -100,9 +100,9 @@ class PytestBrownieFixtures:
         Prevents coverage evaluation on contract calls during this test. Useful for speeding
         up tests that contain many repetetive calls.
         """
-        ARGV["always_transact"] = False
+        CONFIG.argv["always_transact"] = False
         yield
-        ARGV["always_transact"] = ARGV["coverage"]
+        CONFIG.argv["always_transact"] = CONFIG.argv["coverage"]
 
     @pytest.fixture(scope="session")
     def skip_coverage(self):

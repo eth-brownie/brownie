@@ -5,7 +5,7 @@ from hashlib import sha1
 
 from py.path import local
 
-from brownie._config import ARGV, CONFIG
+from brownie._config import CONFIG
 from brownie.project.scripts import _get_ast_hash
 from brownie.test import coverage, output
 
@@ -77,17 +77,14 @@ class PytestBrownieBase:
 
     def pytest_configure(self, config):
         for key in ("coverage", "always_transact"):
-            ARGV[key] = config.getoption("--coverage")
-        ARGV["cli"] = "test"
-        ARGV["gas"] = config.getoption("--gas")
-        if config.getoption("--revert-tb"):
-            ARGV["revert"] = config.getoption("--revert-tb")
-        else:
-            ARGV["revert"] = CONFIG["active_network"].get("revert_traceback", True)
-        ARGV["update"] = config.getoption("--update")
-        ARGV["network"] = None
+            CONFIG.argv[key] = config.getoption("--coverage")
+        CONFIG.argv["cli"] = "test"
+        CONFIG.argv["gas"] = config.getoption("--gas")
+        CONFIG.argv["revert"] = config.getoption("--revert-tb")
+        CONFIG.argv["update"] = config.getoption("--update")
+        CONFIG.argv["network"] = None
         if config.getoption("--network"):
-            ARGV["network"] = config.getoption("--network")[0]
+            CONFIG.argv["network"] = config.getoption("--network")[0]
 
     def _make_nodemap(self, ids):
         self.node_map.clear()
@@ -129,11 +126,11 @@ class PytestBrownieBase:
         return report.outcome, convert_outcome(report.outcome), report.outcome.upper()
 
     def _sessionfinish_coverage(self, coverage_eval):
-        if ARGV["coverage"]:
+        if CONFIG.argv["coverage"]:
             output._print_coverage_totals(self.project._build, coverage_eval)
             output._save_coverage_report(
                 self.project._build, coverage_eval, self.project_path.joinpath("reports")
             )
 
     def pytest_keyboard_interrupt(self):
-        ARGV["interrupt"] = True
+        CONFIG.argv["interrupt"] = True
