@@ -12,7 +12,6 @@ from typing import Dict, List
 
 import pytest
 import requests
-import yaml
 from _pytest.monkeypatch import MonkeyPatch
 from ethpm._utils.ipfs import dummy_ipfs_pin
 from ethpm.backends.ipfs import BaseIPFSBackend
@@ -126,19 +125,12 @@ def _base_config(tmp_path_factory, xdist_id):
         port = 8545 + xdist_id
         brownie._config.CONFIG.networks["development"]["cmd_settings"]["port"] = port
 
-    with brownie._config.BROWNIE_FOLDER.joinpath("data/brownie-config.yaml").open() as fp:
-        config = yaml.safe_load(fp)
-    yield config
-
 
 @pytest.fixture(scope="session")
-def _project_factory(tmp_path_factory, _base_config):
+def _project_factory(tmp_path_factory):
     path = tmp_path_factory.mktemp("base")
     path.rmdir()
     shutil.copytree("tests/data/brownie-test-project", path)
-
-    with path.joinpath("brownie-config.yaml").open("w") as fp:
-        yaml.dump(_base_config, fp)
 
     p = brownie.project.load(path, "TestProject")
     p.close()
@@ -170,10 +162,8 @@ def project(tmp_path):
 
 # yields a newly initialized Project that is not loaded
 @pytest.fixture
-def newproject(project, tmp_path, _base_config):
+def newproject(project, tmp_path):
     path = project.new(tmp_path)
-    with tmp_path.joinpath("brownie-config.yaml").open("w") as fp:
-        yaml.dump(_base_config, fp)
     p = project.load(path, "NewProject")
     p.close()
     yield p
@@ -214,10 +204,10 @@ def evmtester(_project_factory, project, tmp_path, accounts, request):
         _project_factory.joinpath("contracts/EVMTester.sol"),
         tmp_path.joinpath("contracts/EVMTester.sol"),
     )
-    conf_json = brownie._config._load_config(_project_factory.joinpath("brownie-config.yaml"))
-    conf_json["compiler"]["solc"].update(
-        {"version": solc_version, "optimize": runs > 0, "runs": runs, "evm_version": evm_version}
-    )
+    conf_json = {
+        "evm_version": evm_version,
+        "compiler": {"solc": {"version": solc_version, "optimize": runs > 0, "runs": runs}},
+    }
     with tmp_path.joinpath("brownie-config.yaml").open("w") as fp:
         json.dump(conf_json, fp)
     p = project.load(tmp_path, "EVMProject")

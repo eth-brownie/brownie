@@ -18,9 +18,7 @@ def setup(package_test):
 
 @pytest.fixture
 def dependentproject(newproject):
-    with newproject._path.joinpath("brownie-config.yaml").open() as fp:
-        config = yaml.safe_load(fp)
-    config["dependencies"] = ["brownie-mix/token-mix@1.0.0"]
+    config = {"dependencies": ["brownie-mix/token-mix@1.0.0"]}
     with newproject._path.joinpath("brownie-config.yaml").open("w") as fp:
         yaml.dump(config, fp)
 
