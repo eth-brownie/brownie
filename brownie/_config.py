@@ -24,6 +24,65 @@ REPLACE = ["active_network", "networks"]
 EVM_EQUIVALENTS = {"atlantis": "byzantium", "agharta": "petersburg"}
 
 
+class ConfigContainer:
+    def __init__(self):
+        base_config = _load_config(BROWNIE_FOLDER.joinpath("data/default-config.yaml"))
+        network_config = _load_config(BROWNIE_FOLDER.joinpath("data/network-config.yaml"))
+
+        self.networks = {}
+        for value in network_config["development"]:
+            key = value["id"]
+            if key in self.networks:
+                raise ValueError(f"Multiple networks using ID '{key}'")
+            self.networks[key] = value
+        for value in [x for i in network_config["production"] for x in i["networks"]]:
+            key = value["id"]
+            if key in self.networks:
+                raise ValueError(f"Multiple networks using ID '{key}'")
+            self.networks[key] = value
+
+        self.argv = defaultdict(lambda: None)
+        self.settings = _Singleton("settings", (ConfigDict,), {})(base_config)
+        self._active_network = None
+
+        self.settings._lock()
+        _modify_hypothesis_settings(self.settings["hypothesis"], "brownie-base", "default")
+
+    def set_active_network(self, id_: str = None) -> Dict:
+        """Modifies the 'active_network' configuration settings"""
+        if id_ is None:
+            id_ = self.settings["networks"]["default"]
+
+        network = self.networks[id_].copy()
+        key = "development" if "cli" in network else "production"
+        network["settings"] = self.settings["networks"][key].copy()
+
+        self._active_network = network
+        return network
+
+    def clear_active(self):
+        self._active_network = None
+
+    @property
+    def active_network(self):
+        if self._active_network is None:
+            raise ConnectionError("No active network")
+        return self._active_network
+
+    @property
+    def network_type(self):
+        if self._active_network is None:
+            return None
+        if "cmd" in self._active_network:
+            return "development"
+        else:
+            return "production"
+
+    @property
+    def mode(self):
+        return self.argv["cli"]
+
+
 class ConfigDict(dict):
     """Dict subclass that prevents adding new keys when locked"""
 
@@ -88,18 +147,6 @@ def _load_config(project_path: Path) -> Dict:
     return json.loads(valid_json)
 
 
-def _load_default_config() -> "ConfigDict":
-    # Loads the default configuration settings from brownie/data/config.yaml
-    base_config = _load_config(BROWNIE_FOLDER.joinpath("data/brownie-config.yaml"))
-    network_config = _load_config(BROWNIE_FOLDER.joinpath("data/network-config.yaml"))
-    base_config["networks"] = network_config
-
-    config = _Singleton("Config", (ConfigDict,), {})(base_config)  # type: ignore
-    config["active_network"] = {"name": None}
-    _modify_hypothesis_settings(config)
-    return config
-
-
 def _load_project_config(project_path: Path) -> None:
     # Loads configuration settings from a project's brownie-config.yaml
     config_path = project_path.joinpath("brownie-config")
@@ -114,16 +161,17 @@ def _load_project_config(project_path: Path) -> None:
         )
         del config_data["network"]
 
-    CONFIG._unlock()
-    _recursive_update(CONFIG, config_data, [])
-    CONFIG.setdefault("active_network", {"name": None})
-    CONFIG._lock()
-    _modify_hypothesis_settings(CONFIG)
+    CONFIG.settings._unlock()
+    _recursive_update(CONFIG.settings, config_data, [])
+    # CONFIG.settings.setdefault("active_network", {"name": None})
+    CONFIG.settings._lock()
+    if "hypothesis" in config_data:
+        _modify_hypothesis_settings(config_data["hypothesis"], "brownie", "brownie-base")
 
 
 def _load_project_compiler_config(project_path: Optional[Path]) -> Dict:
     if not project_path:
-        return CONFIG["compiler"]
+        return CONFIG.settings["compiler"]
     compiler_data = _load_config(project_path.joinpath("brownie-config"))["compiler"]
     if "evm_version" not in compiler_data:
         compiler_data["evm_version"] = compiler_data["solc"].pop("evm_version")
@@ -138,35 +186,14 @@ def _load_project_dependencies(project_path: Path) -> Dict:
     return dependencies
 
 
-def _modify_network_config(network: str = None) -> Dict:
-    """Modifies the 'active_network' configuration settings"""
-    CONFIG._unlock()
-    try:
-        if not network:
-            network = CONFIG["network"]["default"]
-
-        CONFIG["active_network"] = {
-            **CONFIG["network"]["settings"],
-            **CONFIG["network"]["networks"][network],
-        }
-        CONFIG["active_network"]["name"] = network
-
-        if ARGV["cli"] == "test" and "pytest" in CONFIG:
-            CONFIG["active_network"].update(CONFIG["pytest"])
-            if not CONFIG["active_network"]["reverting_tx_gas_limit"]:
-                print("WARNING: Reverting transactions will NOT be broadcasted.")
-        return CONFIG["active_network"]
-    except KeyError:
-        raise KeyError(f"Network '{network}' is not defined in config.json")
-    finally:
-        CONFIG._lock()
-
-
-def _modify_hypothesis_settings(config):
+def _modify_hypothesis_settings(settings, name, parent):
     hp_settings.register_profile(
-        "brownie", parent=hp_settings.get_profile("brownie-base"), **config.get("hypothesis", {})
+        name,
+        parent=hp_settings.get_profile(parent),
+        database=DirectoryBasedExampleDatabase(_get_data_folder().joinpath("hypothesis")),
+        **settings,
     )
-    hp_settings.load_profile("brownie")
+    hp_settings.load_profile(name)
 
 
 def _recursive_update(original: Dict, new: Dict, base: List) -> None:
@@ -181,7 +208,7 @@ def _recursive_update(original: Dict, new: Dict, base: List) -> None:
 
 
 def _update_argv_from_docopt(args: Dict) -> None:
-    ARGV.update(dict((k.lstrip("-"), v) for k, v in args.items()))
+    CONFIG.argv.update(dict((k.lstrip("-"), v) for k, v in args.items()))
 
 
 def _get_data_folder() -> Path:
@@ -204,19 +231,4 @@ def _make_data_folders(data_folder: Path) -> None:
 # create data folders
 _make_data_folders(DATA_FOLDER)
 
-
-# create argv object
-ARGV = _Singleton("Argv", (defaultdict,), {})(lambda: None)  # type: ignore
-
-# load default hypothesis settings
-hp_settings.register_profile(
-    "brownie-base",
-    max_examples=50,
-    deadline=None,
-    stateful_step_count=10,
-    database=DirectoryBasedExampleDatabase(_get_data_folder().joinpath("hypothesis")),
-)
-hp_settings.load_profile("brownie-base")
-
-# load config
-CONFIG = _load_default_config()
+CONFIG = _Singleton("Config", (ConfigContainer,), {})()

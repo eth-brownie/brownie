@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 
-from brownie._config import CONFIG as config
+from brownie._config import CONFIG as _CONFIG
 from brownie.convert import Fixed, Wei
 from brownie.project import compile_source, run
 from brownie.network import accounts, alert, history, rpc, web3
 from brownie.network.contract import Contract  # NOQA: F401
+
+config = _CONFIG.settings
 
 __all__ = [
     "accounts",  # accounts is an Accounts singleton
