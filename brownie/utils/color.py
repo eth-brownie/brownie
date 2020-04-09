@@ -34,15 +34,17 @@ base_path = str(Path(".").absolute())
 
 
 class Color:
-    def __call__(self, color_str=None):
+    def __call__(self, color_str: str = None) -> str:
+        if not CONFIG.settings["show_colors"]:
+            return ""
         if not color_str:
             return BASE + "m"
-        color_str = color_str.split()
         try:
-            if len(color_str) == 2:
-                return f"{BASE}{MODIFIERS[color_str[0]]}{COLORS[color_str[1]]}m"
-            return f"{BASE}{COLORS[color_str[0]]}m"
-        except KeyError:
+            if " " not in color_str:
+                return f"{BASE}{COLORS[color_str]}m"
+            modifier, color_str = color_str.split()
+            return f"{BASE}{MODIFIERS[modifier]}{COLORS[color_str]}m"
+        except (KeyError, ValueError):
             return BASE + "m"
 
     def __str__(self):
