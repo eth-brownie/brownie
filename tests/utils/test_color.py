@@ -54,8 +54,14 @@ def test_pretty_sequence(colorpatch):
 
 def test_format_tb():
     try:
+        # by raising, the exception has a traceback
         raise NameError("You dun goofed now")
     except Exception as exc:
         x = color.format_tb(exc)
         assert x
         assert x != color.format_tb(exc, start=1)
+
+
+def test_show_colors_config(config):
+    config.settings["show_colors"] = False
+    assert color("blue") == ""
