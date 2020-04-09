@@ -11,7 +11,7 @@ from eth_abi import decode_abi
 from hexbytes import HexBytes
 from web3.exceptions import TransactionNotFound
 
-from brownie._config import ARGV
+from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
 from brownie.exceptions import RPCRequestError, VirtualMachineError
 from brownie.project import build
@@ -135,7 +135,7 @@ class TransactionReceipt:
             revert_data: (revert string, program counter, revert type)
         """
 
-        if ARGV["cli"] == "test":
+        if CONFIG.mode == "test":
             silent = True
         if isinstance(txid, bytes):
             txid = txid.hex()
@@ -179,10 +179,14 @@ class TransactionReceipt:
         confirm_thread.start()
         try:
             confirm_thread.join()
-            if ARGV["cli"] == "console":
+            if CONFIG.mode == "console":
                 return
             # if coverage evaluation is active, evaluate the trace
-            if ARGV["coverage"] and not coverage._check_cached(self.coverage_hash) and self.trace:
+            if (
+                CONFIG.argv["coverage"]
+                and not coverage._check_cached(self.coverage_hash)
+                and self.trace
+            ):
                 self._expand_trace()
             if not self.status:
                 if self._revert_msg is None:
@@ -191,10 +195,12 @@ class TransactionReceipt:
                 if self.contract_address:
                     source = ""
                 else:
-                    source = self._traceback_string() if ARGV["revert"] else self._error_string(1)
+                    source = (
+                        self._traceback_string() if CONFIG.argv["revert"] else self._error_string(1)
+                    )
                 raise VirtualMachineError({"message": self._revert_msg or "", "source": source})
         except KeyboardInterrupt:
-            if ARGV["cli"] != "console":
+            if CONFIG.mode != "console":
                 raise
 
     def __repr__(self) -> str:
@@ -358,12 +364,12 @@ class TransactionReceipt:
 
         try:
             trace = web3.provider.make_request(  # type: ignore
-                "debug_traceTransaction", (self.txid, {"disableStorage": ARGV["cli"] != "console"})
+                "debug_traceTransaction", (self.txid, {"disableStorage": CONFIG.mode != "console"})
             )
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
             msg = f"Encountered a {type(e).__name__} while requesting "
             msg += "debug_traceTransaction. The local RPC client has likely crashed."
-            if ARGV["coverage"]:
+            if CONFIG.argv["coverage"]:
                 msg += " If the error persists, add the skip_coverage fixture to this test."
             raise RPCRequestError(msg) from None
 

@@ -3,7 +3,7 @@
 from typing import Optional, Tuple, Union
 
 from brownie import project
-from brownie._config import CONFIG, _modify_network_config
+from brownie._config import CONFIG
 from brownie.convert import Wei
 
 from .account import Accounts
@@ -21,35 +21,35 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
 
     Network information is retrieved from brownie-config.json"""
     if is_connected():
-        raise ConnectionError(f"Already connected to network '{CONFIG['active_network']['name']}'")
+        raise ConnectionError(f"Already connected to network '{CONFIG.active_network['id']}'")
     try:
-        active = _modify_network_config(network or CONFIG["network"]["default"])
+        active = CONFIG.set_active_network(network)
         if "host" not in active:
-            raise KeyError(f"No host in brownie-config.json for network '{active['name']}'")
+            raise KeyError(f"No host in brownie-config.json for network '{active['id']}'")
         host = active["host"]
 
         if ":" not in host.split("//", maxsplit=1)[-1]:
             try:
-                host += f":{active['test_rpc']['port']}"
+                host += f":{active['cmd_settings']['port']}"
             except KeyError:
                 pass
 
         web3.connect(host)
-        if "test_rpc" in active and launch_rpc and not rpc.is_active():
+        if CONFIG.network_type == "development" and launch_rpc and not rpc.is_active():
             if is_connected():
                 if web3.eth.blockNumber != 0:
                     raise ValueError("Local RPC Client has a block height > 0")
                 rpc.attach(host)
             else:
-                rpc.launch(**active["test_rpc"])
+                rpc.launch(active["cmd"], **active["cmd_settings"])
         else:
             Accounts()._reset()
-        if CONFIG["active_network"]["persist"]:
+        if CONFIG.network_type == "production":
             for p in project.get_loaded_projects():
                 p._load_deployments()
 
     except Exception:
-        CONFIG["active_network"] = {"name": None}
+        CONFIG.clear_active()
         web3.disconnect()
         raise
 
@@ -58,7 +58,7 @@ def disconnect(kill_rpc: bool = True) -> None:
     """Disconnects from the network."""
     if not is_connected():
         raise ConnectionError("Not connected to any network")
-    CONFIG["active_network"] = {"name": None}
+    CONFIG.clear_active()
     if kill_rpc and rpc.is_active():
         if rpc.is_child():
             rpc.kill()
@@ -72,7 +72,7 @@ def show_active() -> Optional[str]:
     """Returns the name of the currently active network"""
     if not web3.provider:
         return None
-    return CONFIG["active_network"]["name"]
+    return CONFIG.active_network["id"]
 
 
 def is_connected() -> bool:
@@ -90,7 +90,7 @@ def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
         raise ConnectionError("Not connected to any network")
     if args:
         if args[0] in (None, False, True, "auto"):
-            CONFIG["active_network"]["gas_limit"] = False
+            CONFIG.active_network["settings"]["gas_limit"] = False
         else:
             try:
                 limit: int = int(args[0])  # type: ignore
@@ -98,8 +98,8 @@ def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
                 raise TypeError(f"Invalid gas limit '{args[0]}'")
             if limit < 21000:
                 raise ValueError("Minimum gas limit is 21000")
-            CONFIG["active_network"]["gas_limit"] = limit
-    return CONFIG["active_network"]["gas_limit"]
+            CONFIG.active_network["settings"]["gas_limit"] = limit
+    return CONFIG.active_network["settings"]["gas_limit"]
 
 
 def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
@@ -112,11 +112,11 @@ def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
         raise ConnectionError("Not connected to any network")
     if args:
         if args[0] in (None, False, True, "auto"):
-            CONFIG["active_network"]["gas_price"] = False
+            CONFIG.active_network["settings"]["gas_price"] = False
         else:
             try:
                 price = Wei(args[0])
             except ValueError:
                 raise TypeError(f"Invalid gas price '{args[0]}'")
-            CONFIG["active_network"]["gas_price"] = price
-    return CONFIG["active_network"]["gas_price"]
+            CONFIG.active_network["settings"]["gas_price"] = price
+    return CONFIG.active_network["settings"]["gas_price"]

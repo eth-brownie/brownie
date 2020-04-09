@@ -201,19 +201,19 @@ class _PrivateKeyAccount(PublicKeyAccount):
     """Base class for Account and LocalAccount"""
 
     def _gas_limit(self, to: Union[str, "Accounts"], amount: Optional[int], data: str = "") -> int:
-        gas_limit = CONFIG["active_network"]["gas_limit"]
+        gas_limit = CONFIG.active_network["settings"]["gas_limit"]
         if isinstance(gas_limit, bool) or gas_limit in (None, "auto"):
             return self.estimate_gas(to, amount, data)
         return Wei(gas_limit)
 
     def _gas_price(self) -> Wei:
-        gas_price = CONFIG["active_network"]["gas_price"]
+        gas_price = CONFIG.active_network["settings"]["gas_price"]
         if isinstance(gas_price, bool) or gas_price in (None, "auto"):
             return web3.eth.gasPrice
         return Wei(gas_price)
 
     def _check_for_revert(self, tx: Dict) -> None:
-        if not CONFIG["active_network"]["reverting_tx_gas_limit"]:
+        if not CONFIG.active_network["settings"]["reverting_tx_gas_limit"]:
             try:
                 web3.eth.call(dict((k, v) for k, v in tx.items() if v))
             except ValueError as e:
@@ -291,8 +291,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 {"from": self.address, "to": str(to), "value": Wei(amount), "data": HexBytes(data)}
             )
         except ValueError:
-            if CONFIG["active_network"]["reverting_tx_gas_limit"]:
-                return CONFIG["active_network"]["reverting_tx_gas_limit"]
+            if CONFIG.active_network["settings"]["reverting_tx_gas_limit"]:
+                return CONFIG.active_network["settings"]["reverting_tx_gas_limit"]
             raise
 
     def transfer(
