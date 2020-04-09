@@ -7,7 +7,7 @@ import sys
 
 import brownie
 from brownie import network, project
-from brownie._config import ARGV, CONFIG, _get_data_folder, _update_argv_from_docopt
+from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
 from brownie.utils import color
 from brownie.utils.docopt import docopt
 
@@ -21,7 +21,7 @@ else:
 __doc__ = f"""Usage: brownie console [options]
 
 Options:
-  --network <name>        Use a specific network (default {CONFIG['network']['default']})
+  --network <name>        Use a specific network (default {CONFIG.settings['networks']['default']})
   --tb -t                 Show entire python traceback on exceptions
   --help -h               Display this message
 
@@ -41,7 +41,7 @@ def main():
         active_project = None
         print("No project was loaded.")
 
-    network.connect(ARGV["network"])
+    network.connect(CONFIG.argv["network"])
 
     shell = Console(active_project)
     shell.interact(banner="Brownie environment is ready.", exitmsg="")
