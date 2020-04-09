@@ -329,6 +329,8 @@ You can also affect the settings permanently by adding a ``hypothesis`` field to
     hypothesis:
         max_examples: 500
 
+ See the :ref:`Configuration File<config>` documentation for more information.
+
 Available Settings
 ------------------
 

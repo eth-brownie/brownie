@@ -10,7 +10,6 @@ Every Brownie project includes the following folders:
     * ``interfaces/``: Interface sources
     * ``scripts/``: Scripts for deployment and interaction
     * ``tests/``: Scripts for testing the project
-    * ``brownie-config.yaml``: Configuration file for the project
 
 The following folders are also created, and used internally by Brownie for managing the project. You should not edit or delete files within these folders.
 
@@ -46,8 +45,3 @@ See the :ref:`Brownie Scripts<scripts>` documentation for more information on Br
 The ``tests`` folder holds Python scripts used for testing a project. Brownie uses the `pytest <https://docs.pytest.org/en/latest/>`_ framework for unit testing.
 
 See :ref:`Brownie Pytest<pytest>` documentation for more information on testing a project.
-
-``brownie-config.yaml``
-=======================
-
-The ``brownie-config.yaml`` file holds all the configuration settings for a project.  See :ref:`config` for more information.

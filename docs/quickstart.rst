@@ -38,7 +38,6 @@ Each Brownie project uses the following structure:
     * ``interfaces/``: Interface sources
     * ``scripts/``: Scripts for deployment and interaction
     * ``tests/``: Scripts for testing the project
-    * ``brownie-config.yaml``: Configuration file for the project
 
 The following directories are also created, and used internally by Brownie for managing the project. You should not edit or delete files within these folders.
 
