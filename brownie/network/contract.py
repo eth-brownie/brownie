@@ -94,7 +94,6 @@ class ContractContainer(_ContractBase):
 
     def _reset(self) -> None:
         for contract in self._contracts:
-            contract._delete_deployment()
             _remove_contract(contract)
             contract._reverted = True
         self._contracts.clear()
@@ -294,8 +293,8 @@ class _DeployedContractBase(_ContractBase):
     def _deployment_path(self) -> Optional[Path]:
         if CONFIG.network_type != "production" or not self._project._path:
             return None
-        network = CONFIG.active_network["id"]
-        path = self._project._path.joinpath(f"build/deployments/{network}")
+        chainid = CONFIG.active_network["chainid"]
+        path = self._project._path.joinpath(f"build/deployments/{chainid}")
         path.mkdir(exist_ok=True)
         return path.joinpath(f"{self.address}.json")
 
