@@ -68,10 +68,12 @@ class Root(tk.Tk):
 
     def set_active_contract(self, contract_name):
         build_json = self.active_project._build.get(contract_name)
-        self.main.note.set_visible(build_json["allSourcePaths"])
+        self.main.note.set_visible(sorted(build_json["allSourcePaths"].values()))
         self.main.note.set_active(build_json["sourcePath"])
         self.main.oplist.set_opcodes(build_json["pcMap"])
         self.pcMap = dict((str(k), v) for k, v in build_json["pcMap"].items())
+        for value in (v for v in self.pcMap.values() if "path" in v):
+            value["path"] = build_json["allSourcePaths"][value["path"]]
 
     def destroy(self):
         super().destroy()
