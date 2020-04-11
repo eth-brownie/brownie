@@ -17,7 +17,7 @@ Brownie generates compiler artifacts for each contract within a project, which a
 
     {
         'abi': [], // contract ABI
-        'allSourcePaths': [], // relative paths to every related contract source code file
+        'allSourcePaths': {}, // map of source ids and the path to the related source file
         'ast': {}, // the AST object
         'bytecode': "0x00", // bytecode object as a hex string, used for deployment
         'bytecodeSha1': "", // hash of bytecode without final metadata
@@ -38,14 +38,9 @@ Brownie generates compiler artifacts for each contract within a project, which a
         'type': "" // contract, library, interface
     }
 
-This raw data is available within Brownie through the `build <api-project-build>`_ module.
+.. note::
 
-.. code-block:: python
-
-    >>> from brownie.project import build
-    >>> token_json = build.get("Token")
-    >>> token_json['contractName']
-    "Token"
+    The ``allSourcePaths`` field is used to map ``<SOURCE_ID>`` references to their actual paths.
 
 .. _compile-pc-map:
 
@@ -61,7 +56,7 @@ If a value is ``false`` or the type equivalent, the key is not included.
     {
         'pc': {
             'op': "", // opcode string
-            'path': "", // relative path to the contract source code
+            'path': "<SOURCE_ID>", // id of the related source code
             'offset': [0, 0], // source code start and stop offsets
             'fn': str, // name of the related method
             'jump': "", // jump instruction as given in the sourceMap (i, o)
@@ -82,14 +77,14 @@ All compiler artifacts include a ``coverageMap`` which is used when evaluating t
 
     {
         "statements": {
-            "/path/to/contract/file.sol": {
+            "<SOURCE_ID>": {
                 "ContractName.functionName": {
                     "index": [start, stop]  // source offsets
                 }
             }
         },
         "branches": {
-            "/path/to/contract/file.sol": {
+            "<SOURCE_ID>": {
                 "ContractName.functionName": {
                     "index": [start, stop, bool]  // source offsets, jump boolean
                 }
@@ -141,7 +136,7 @@ The ``build/test.json`` file holds information about unit tests and coverage eva
             "0xff": { // Transaction hash
                 "ContractName": {
                     // Coverage map indexes (see below)
-                    "path/to/contract.sol": [
+                    "<SOURCE_ID>": [
                         [], // statements
                         [], // branches that did not jump
                         []  // branches that did jump
@@ -164,12 +159,12 @@ In tracking coverage, Brownie produces a set of coverage map indexes for each tr
         "ae6ccafbd0b0c8cf2eb623e390080854755f3fa7": {
             "Token": {
                 // Coverage map indexes (see below)
-                "contracts/Token.sol": [
+                "<SOURCE_ID>": [
                     [1, 3],
                     [],
                     [5]
                 ],
-                "contracts/SafeMath.sol": [
+                "<SOURCE_ID>": [
                     [8],
                     [11],
                     [11]
@@ -189,7 +184,7 @@ To convert these indexes to source offsets, we check the :ref:`coverage map<comp
 .. code-block:: javascript
 
     {
-        "contracts/SafeMath.sol": {
+        "<SOURCE_ID>": {
             "SafeMath.add": {
                 "11": [147, 153, true]
             }
