@@ -1,8 +1,8 @@
 {
   "abi": [],
-  "allSourcePaths": [
-    "contracts/SafeMath.sol"
-  ],
+  "allSourcePaths": {
+      "0": "contracts/SafeMath.sol"
+  },
   "ast": {
     "absolutePath": "contracts/SafeMath.sol",
     "exportedSymbols": {
