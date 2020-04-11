@@ -2,26 +2,33 @@ production:
   - name: Ethereum
     networks:
       - name: Mainnet (Infura)
+        chainid: 1
         id: mainnet
         host: https://mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+      - name: Ropsten (Infura)
+        chainid: 3
+        id: ropsten
+        host: https://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+      - name: Rinkeby (Infura)
+        chainid: 4
+        id: rinkeby
+        host: https://rinkeby.infura.io/v3/$WEB3_INFURA_PROJECT_ID
       - name: Goerli (Infura)
+        chainid: 5
         id: goerli
         host: https://goerli.infura.io/v3/$WEB3_INFURA_PROJECT_ID
       - name: Kovan (Infura)
+        chainid: 42
         id: kovan
         host: https://kovan.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-      - name: Rinkeby (Infura)
-        id: rinkeby
-        host: https://rinkeby.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-      - name: Ropsten (Infura)
-        id: ropsten
-        host: https://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-  - name: ETC
+  - name: Ethereum Classic
     networks:
-      - name: mainnet
+      - name: Mainnet
+        chainid: 61
         id: etc
         host: https://www.ethercluster.com/etc
       - name: Kotti
+        chainid: 6
         id: kotti
         host: https://www.ethercluster.com/kotti
 
