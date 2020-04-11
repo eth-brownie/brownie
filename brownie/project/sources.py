@@ -53,16 +53,26 @@ class Sources:
                 + "\n  ".join(f"{k}: {', '.join(sorted(v))}" for k, v in collisions.items())
             )
 
-    def get(self, name: str) -> str:
-        """Returns the source code file for the given name.
+    def get(self, key: str) -> str:
+        """
+        Return the source code file for the given name.
 
         Args:
-            name: contract name or source code path
+            key: contract name or source code path
 
         Returns: source code as a string."""
-        if name in self._contracts:
-            return self._source[self._contracts[name]]
-        return self._source[str(name)]
+        key = str(key)
+
+        if key in self._contracts:
+            return self._source[self._contracts[key]]
+
+        if key not in self._source:
+            # for sources outside this project (packages, other projects)
+            with Path(key).open() as fp:
+                source = fp.read()
+                self._source[key] = source
+
+        return self._source[key]
 
     def get_path_list(self) -> List:
         """Returns a sorted list of source code file paths for the active project."""
