@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from brownie.network.state import TxHistory
+from brownie.project import get_loaded_projects
 from brownie.utils import color
 
 COVERAGE_COLORS = [(0.8, "bright red"), (0.9, "bright yellow"), (1, "bright green")]
@@ -37,19 +38,26 @@ def _print_gas_profile():
 
 def _print_coverage_totals(build, coverage_eval):
     # Formats and prints a coverage evaluation report to the console
-    totals = _get_totals(build, coverage_eval)
+    all_totals = [(i._name, _get_totals(i._build, coverage_eval)) for i in get_loaded_projects()]
     print("\n\nCoverage analysis:")
-    for name in sorted(totals):
-        pct = _pct(totals[name]["totals"]["statements"], totals[name]["totals"]["branches"])
-        print(
-            f"\n  contract: {color('bright magenta')}{name}{color}"
-            f" - {_cov_color(pct)}{pct:.1%}{color}"
-        )
-        cov = totals[name]
-        for fn_name, count in cov["statements"].items():
-            branch = cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
-            pct = _pct(count, branch)
-            print(f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}")
+
+    for project_name, totals in all_totals:
+        if not totals:
+            continue
+
+        print(f"\n ===== {color('bright magenta')}{project_name}{color} =====")
+
+        for name in sorted(totals):
+            pct = _pct(totals[name]["totals"]["statements"], totals[name]["totals"]["branches"])
+            print(
+                f"\n  contract: {color('bright magenta')}{name}{color}"
+                f" - {_cov_color(pct)}{pct:.1%}{color}"
+            )
+            cov = totals[name]
+            for fn_name, count in cov["statements"].items():
+                branch = cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
+                pct = _pct(count, branch)
+                print(f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}")
 
 
 def _cov_color(pct):
@@ -79,7 +87,12 @@ def _get_totals(build, coverage_eval):
         for i in coverage_eval
     )
     for name in coverage_eval:
-        coverage_map = build.get(name)["coverageMap"]
+        try:
+            coverage_map = build.get(name)["coverageMap"]
+        except KeyError:
+            del results[name]
+            continue
+
         r = results[name]
         r["statements"], r["totals"]["statements"] = _statement_totals(
             coverage_eval[name], coverage_map["statements"]
@@ -87,6 +100,7 @@ def _get_totals(build, coverage_eval):
         r["branches"], r["totals"]["branches"] = _branch_totals(
             coverage_eval[name], coverage_map["branches"]
         )
+
     return results
 
 
@@ -96,8 +110,11 @@ def _split_by_fn(build, coverage_eval):
         (i, {"statements": {}, "branches": {"true": {}, "false": {}}}) for i in coverage_eval
     )
     for name in coverage_eval:
-        map_ = build.get(name)["coverageMap"]
-        results[name] = dict((k, _split(v, map_, k)) for k, v in coverage_eval[name].items())
+        try:
+            map_ = build.get(name)["coverageMap"]
+            results[name] = dict((k, _split(v, map_, k)) for k, v in coverage_eval[name].items())
+        except KeyError:
+            pass
     return results
 
 
@@ -141,9 +158,14 @@ def _get_highlights(build, coverage_eval):
     # Returns a highlight map formatted for display in the GUI.
     results = {"statements": {}, "branches": {}}
     for name, eval_ in coverage_eval.items():
-        coverage_map = build.get(name)["coverageMap"]
+        try:
+            coverage_map = build.get(name)["coverageMap"]
+        except KeyError:
+            continue
+
         results["statements"][name] = _statement_highlights(eval_, coverage_map["statements"])
         results["branches"][name] = _branch_highlights(eval_, coverage_map["branches"])
+
     return results
 
 
