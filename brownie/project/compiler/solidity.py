@@ -227,12 +227,10 @@ def _get_solc_version_list() -> Tuple[List, List]:
 def _get_unique_build_json(
     output_evm: Dict, contract_node: Any, stmt_nodes: Dict, branch_nodes: Dict, has_fallback: bool
 ) -> Dict:
-    paths = sorted(
-        set(
-            [contract_node.parent().absolutePath]
-            + [i.parent().absolutePath for i in contract_node.dependencies]
-        )
-    )
+    paths = {
+        str(i.contract_id): i.parent().absolutePath
+        for i in [contract_node] + contract_node.dependencies
+    }
 
     bytecode = _format_link_references(output_evm)
     pc_map, statement_map, branch_map = _generate_coverage_data(
@@ -289,19 +287,18 @@ def _generate_coverage_data(
     opcodes = deque(opcodes_str.split(" "))
 
     contract_nodes = [contract_node] + contract_node.dependencies
-    source_nodes = dict((i.contract_id, i.parent()) for i in contract_nodes)
-    paths = set(v.absolutePath for v in source_nodes.values())
+    source_nodes = {str(i.contract_id): i.parent() for i in contract_nodes}
 
-    stmt_nodes = dict((i, stmt_nodes[i].copy()) for i in paths)
-    statement_map: Dict = dict((i, {}) for i in paths)
+    stmt_nodes = {i: stmt_nodes[i].copy() for i in source_nodes}
+    statement_map: Dict = {i: {} for i in source_nodes}
 
     # possible branch offsets
-    branch_original = dict((i, branch_nodes[i].copy()) for i in paths)
-    branch_nodes = dict((i, set(i.offset for i in branch_nodes[i])) for i in paths)
+    branch_original = {i: branch_nodes[i].copy() for i in source_nodes}
+    branch_nodes = {i: set(i.offset for i in branch_nodes[i]) for i in source_nodes}
     # currently active branches, awaiting a jumpi
-    branch_active: Dict = dict((i, {}) for i in paths)
+    branch_active: Dict = {i: {} for i in source_nodes}
     # branches that have been set
-    branch_set: Dict = dict((i, {}) for i in paths)
+    branch_set: Dict = {i: {} for i in source_nodes}
 
     count, pc = 0, 0
     pc_list: List = []
@@ -345,9 +342,9 @@ def _generate_coverage_data(
             continue
 
         # set contract path (-1 means none)
-        active_source_node = source_nodes[source[2]]
-        path = active_source_node.absolutePath
-        pc_list[-1]["path"] = path
+        contract_id = str(source[2])
+        active_source_node = source_nodes[contract_id]
+        pc_list[-1]["path"] = contract_id
 
         # set source offset (-1 means none)
         if source[0] == -1:
@@ -360,17 +357,20 @@ def _generate_coverage_data(
             _set_invalid_error_string(active_source_node, pc_list[-1])
 
         # for JUMPI instructions, set active branch markers
-        if branch_active[path] and pc_list[-1]["op"] == "JUMPI":
-            for offset in branch_active[path]:
+        if branch_active[contract_id] and pc_list[-1]["op"] == "JUMPI":
+            for offset in branch_active[contract_id]:
                 # ( program counter index, JUMPI index)
-                branch_set[path][offset] = (branch_active[path][offset], len(pc_list) - 1)
-            branch_active[path].clear()
+                branch_set[contract_id][offset] = (
+                    branch_active[contract_id][offset],
+                    len(pc_list) - 1,
+                )
+            branch_active[contract_id].clear()
 
         # if op relates to previously set branch marker, clear it
-        elif offset in branch_nodes[path]:
-            if offset in branch_set[path]:
-                del branch_set[path][offset]
-            branch_active[path][offset] = len(pc_list) - 1
+        elif offset in branch_nodes[contract_id]:
+            if offset in branch_set[contract_id]:
+                del branch_set[contract_id][offset]
+            branch_active[contract_id][offset] = len(pc_list) - 1
 
         try:
             # set fn name and statement coverage marker
@@ -380,10 +380,10 @@ def _generate_coverage_data(
                 active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)
                 pc_list[-1]["fn"] = active_fn_name
                 stmt_offset = next(
-                    i for i in stmt_nodes[path] if sources.is_inside_offset(offset, i)
+                    i for i in stmt_nodes[contract_id] if sources.is_inside_offset(offset, i)
                 )
-                stmt_nodes[path].discard(stmt_offset)
-                statement_map[path].setdefault(active_fn_name, {})[count] = stmt_offset
+                stmt_nodes[contract_id].discard(stmt_offset)
+                statement_map[contract_id].setdefault(active_fn_name, {})[count] = stmt_offset
                 pc_list[-1]["statement"] = count
                 count += 1
         except (KeyError, IndexError, StopIteration):
@@ -395,8 +395,8 @@ def _generate_coverage_data(
             revert_map.setdefault(key, []).append(len(pc_list))
 
     # compare revert() statements against the map of revert jumps to find
-    for (path, fn_offset), values in revert_map.items():
-        fn_node = next(i for i in source_nodes.values() if i.absolutePath == path).children(
+    for (contract_id, fn_offset), values in revert_map.items():
+        fn_node = source_nodes[contract_id].children(
             depth=2,
             include_children=False,
             required_offset=fn_offset,
@@ -414,7 +414,7 @@ def _generate_coverage_data(
                 del values[0]
 
     # set branch index markers and build final branch map
-    branch_map: Dict = dict((i, {}) for i in paths)
+    branch_map: Dict = {i: {} for i in source_nodes}
     for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
         # for branch to be hit, need an op relating to the source and the next JUMPI
         # this is because of how the compiler optimizes nested BinaryOperations
@@ -426,7 +426,7 @@ def _generate_coverage_data(
             branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
             count += 1
 
-    pc_map = dict((i.pop("pc"), i) for i in pc_list)
+    pc_map = {i.pop("pc"): i for i in pc_list}
     return pc_map, statement_map, branch_map
 
 
@@ -471,7 +471,7 @@ def _find_revert_offset(
         and next_offset != fn_node.offset
         and is_inside_offset(next_offset, fn_node.offset)
     ):
-        pc_list[-1].update(path=source_node.absolutePath, fn=fn_name, offset=next_offset)
+        pc_list[-1].update(path=str(source_node.contract_id), fn=fn_name, offset=next_offset)
         return
 
     # if any of the previous conditions are not satisfied, this is the final revert
@@ -481,7 +481,7 @@ def _find_revert_offset(
 
         if expr.nodeType == "FunctionCall" and expr.get("expression.name") == "revert":
             pc_list[-1].update(
-                path=source_node.absolutePath, fn=fn_name, offset=expr.expression.offset
+                path=str(source_node.contract_id), fn=fn_name, offset=expr.expression.offset
             )
 
 
@@ -526,7 +526,7 @@ def _get_statement_nodes(source_nodes: Dict) -> Dict:
     # Given a list of source nodes, returns a dict of lists of statement nodes
     statements = {}
     for node in source_nodes:
-        statements[node.absolutePath] = set(
+        statements[str(node.contract_id)] = set(
             i.offset
             for i in node.children(
                 include_parents=False,
@@ -542,7 +542,7 @@ def _get_branch_nodes(source_nodes: List) -> Dict:
     # to possible branches in the code
     branches: Dict = {}
     for node in source_nodes:
-        branches[node.absolutePath] = set()
+        branches[str(node.contract_id)] = set()
         for contract_node in node.children(depth=1, filters={"nodeType": "ContractDefinition"}):
             for child_node in [
                 x
@@ -555,7 +555,7 @@ def _get_branch_nodes(source_nodes: List) -> Dict:
                     )
                 )
             ]:
-                branches[node.absolutePath] |= _get_recursive_branches(child_node)
+                branches[str(node.contract_id)] |= _get_recursive_branches(child_node)
     return branches
 
 
