@@ -140,7 +140,7 @@ class SubmissionPipeline:
         bytecode = re.sub(cls.BYTECODE_ADDRESS_PATCH, "0" * 40, bytecode)
         deployed_bytecode = re.sub(cls.DEPLOYED_ADDRESS_PATCH, "0" * 40, deployed_bytecode)
 
-        source_list = artifact.get("allSourcePaths")
+        source_list = sorted(artifact.get("allSourcePaths", {}).values())
         return AnalysisSubmissionRequest(
             contract_name=artifact.get("contractName"),
             bytecode=bytecode or None,
