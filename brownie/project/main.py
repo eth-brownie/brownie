@@ -167,6 +167,10 @@ class Project(_ProjectBase):
             if not set(BUILD_KEYS).issubset(build_json) or path.stem not in contract_list:
                 path.unlink()
                 continue
+            if isinstance(build_json["allSourcePaths"], list):
+                # this handles the format change in v1.7.0, it can be removed in a future release
+                path.unlink()
+                continue
             self._build._add(build_json)
 
         self._compiler_config = _load_project_compiler_config(self._path)
