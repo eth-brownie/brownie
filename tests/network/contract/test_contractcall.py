@@ -40,3 +40,8 @@ def test_tuples(tester, accounts):
     value = ["blahblah", accounts[1], ["yesyesyes", "0x1234"]]
     tester.setTuple(value)
     assert tester.getTuple(accounts[1], {"from": accounts[0]}) == value
+
+
+def test_default_owner_with_coverage(tester, coverage_mode, accounts, config):
+    config["active_network"]["default_contract_owner"] = False
+    tester.getTuple(accounts[0])
