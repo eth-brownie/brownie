@@ -25,7 +25,7 @@ EVM_EQUIVALENTS = {"atlantis": "byzantium", "agharta": "petersburg"}
 class ConfigContainer:
     def __init__(self):
         base_config = _load_config(BROWNIE_FOLDER.joinpath("data/default-config.yaml"))
-        network_config = _load_config(BROWNIE_FOLDER.joinpath("data/network-config.yaml"))
+        network_config = _load_config(_get_data_folder().joinpath("network-config.yaml"))
 
         self.networks = {}
         for value in network_config["development"]:
