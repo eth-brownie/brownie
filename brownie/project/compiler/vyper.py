@@ -55,12 +55,11 @@ def _get_unique_build_json(
     pc_map, statement_map, branch_map = _generate_coverage_data(
         output_evm["deployedBytecode"]["sourceMap"],
         output_evm["deployedBytecode"]["opcodes"],
-        path_str,
         contract_name,
         ast_json["body"],
     )
     return {
-        "allSourcePaths": [path_str],
+        "allSourcePaths": {"0": path_str},
         "bytecode": output_evm["bytecode"]["object"],
         "bytecodeSha1": sha1(output_evm["bytecode"]["object"].encode()).hexdigest(),
         "coverageMap": {"statements": statement_map, "branches": branch_map},
@@ -80,7 +79,7 @@ def _get_dependencies(ast_json: List) -> List:
 
 
 def _generate_coverage_data(
-    source_map_str: str, opcodes_str: str, source_str: str, contract_name: str, ast_json: List
+    source_map_str: str, opcodes_str: str, contract_name: str, ast_json: List
 ) -> Tuple:
     if not opcodes_str:
         return {}, {}, {}
@@ -115,7 +114,7 @@ def _generate_coverage_data(
         if source[0] == -1:
             continue
         offset = (source[0], source[0] + source[1])
-        pc_list[-1]["path"] = source_str
+        pc_list[-1]["path"] = "0"
         pc_list[-1]["offset"] = offset
 
         try:
@@ -167,11 +166,11 @@ def _generate_coverage_data(
                 branch_map[pc_list[-1]["fn"]][count] = offset + (True,)
             count += 1
 
-    pc_list[0]["path"] = source_str
+    pc_list[0]["path"] = "0"
     pc_list[0]["offset"] = [0, _convert_src(ast_json[-1]["src"])[1]]
     pc_map = dict((i.pop("pc"), i) for i in pc_list)
 
-    return pc_map, {source_str: statement_map}, {source_str: branch_map}
+    return pc_map, {"0": statement_map}, {"0": branch_map}
 
 
 def _convert_src(src: str) -> Tuple[int, int]:

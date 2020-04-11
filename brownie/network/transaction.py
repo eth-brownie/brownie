@@ -499,7 +499,7 @@ class TransactionReceipt:
 
             if "path" not in pc:
                 continue
-            trace[i]["source"] = {"filename": pc["path"], "offset": pc["offset"]}
+            trace[i]["source"] = {"filename": last["path_map"][pc["path"]], "offset": pc["offset"]}
 
             if "fn" not in pc:
                 continue
@@ -802,7 +802,11 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
             fn=[f"{contract._name}.{contract.get_method(sig)}"],
         )
         if contract._build:
-            last_map.update(pc_map=contract._build["pcMap"], coverage=True)
+            last_map.update(
+                coverage=True,
+                path_map=contract._build["allSourcePaths"],
+                pc_map=contract._build["pcMap"],
+            )
             if contract._build["language"] == "Solidity":
                 last_map["active_branches"] = set()
     else:

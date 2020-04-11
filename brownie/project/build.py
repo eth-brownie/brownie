@@ -44,9 +44,11 @@ class Build:
         if "0" in build_json["pcMap"]:
             build_json["pcMap"] = dict((int(k), v) for k, v in build_json["pcMap"].items())
         self._build[contract_name] = build_json
-        self._generate_revert_map(build_json["pcMap"], build_json["language"])
+        self._generate_revert_map(
+            build_json["pcMap"], build_json["allSourcePaths"], build_json["language"]
+        )
 
-    def _generate_revert_map(self, pcMap: Dict, language: str) -> None:
+    def _generate_revert_map(self, pcMap: Dict, source_map: Dict, language: str) -> None:
         # Adds a contract's dev revert strings to the revert map and it's pcMap
         marker = "//" if language == "Solidity" else "#"
         for pc, data in (
@@ -54,12 +56,16 @@ class Build:
             for k, v in pcMap.items()
             if v["op"] in ("REVERT", "INVALID") or "jump_revert" in v
         ):
+            if "path" not in data:
+                continue
+            path_str = source_map[data["path"]]
+
             if "dev" not in data:
                 if "fn" not in data or "first_revert" in data:
                     _revert_map[pc] = False
                     continue
                 try:
-                    revert_str = self._sources.get(data["path"])[data["offset"][1] :]
+                    revert_str = self._sources.get(path_str)[data["offset"][1] :]
                     revert_str = revert_str[: revert_str.index("\n")]
                     revert_str = revert_str[revert_str.index(marker) + len(marker) :].strip()
                     if revert_str.startswith("dev:"):
@@ -69,7 +75,7 @@ class Build:
 
             msg = "" if data["op"] == "REVERT" else "invalid opcode"
             revert = (
-                data["path"],
+                path_str,
                 tuple(data["offset"]),
                 data.get("fn", "<None>"),
                 data.get("dev", msg),
