@@ -642,10 +642,9 @@ def _get_contract_type(build_json: Dict, relative_to: str) -> Dict:
             runtime_bytecode={"bytecode": f"0x{build_json['deployedBytecode']}"},
         )
         if build_json["language"] == "Solidity":
-            contract_type["compiler"]["settings"]["optimizer"] = {
-                "enabled": build_json["compiler"]["optimize"],
-                "runs": build_json["compiler"]["runs"],
-            }
+            contract_type["compiler"]["settings"]["optimizer"] = build_json["compiler"].get(
+                "optimizer", {}
+            )
     return contract_type
 
 

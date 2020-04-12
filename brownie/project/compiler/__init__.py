@@ -54,20 +54,21 @@ def compile_and_format(
     allow_paths: Optional[str] = None,
     interface_sources: Optional[Dict[str, str]] = None,
     remappings: Optional[list] = None,
+    optimizer: Optional[Dict] = None,
 ) -> Dict:
     """Compiles contracts and returns build data.
 
     Args:
         contract_sources: a dictionary in the form of {'path': "source code"}
         solc_version: solc version to compile with (use None to set via pragmas)
-        optimize: enable solc optimizer
-        runs: optimizer runs
+        optimize: (deprecated) enable solc optimizer
+        runs: (deprecated) optimizer runs
         evm_version: evm version to compile for
         silent: verbose reporting
         allow_paths: compiler allowed filesystem import path
         interface_sources: dictionary of interfaces as {'path': "source code"}
         remappings: list of solidity path remappings
-
+        optimizer: dictionary of solidity optimizer settings
 
     Returns:
         build data dict
@@ -98,6 +99,9 @@ def compile_and_format(
         else:
             compiler_targets[solc_version] = list(solc_sources)
 
+        if optimizer is None:
+            optimizer = {"enabled": optimize, "runs": runs if optimize else 0}
+
     for version, path_list in compiler_targets.items():
         compiler_data: Dict = {}
         if version == "vyper":
@@ -117,7 +121,12 @@ def compile_and_format(
         to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
 
         input_json = generate_input_json(
-            to_compile, optimize, runs, evm_version, language, interfaces, remappings
+            to_compile,
+            evm_version=evm_version,
+            language=language,
+            interface_sources=interfaces,
+            remappings=remappings,
+            optimizer=optimizer,
         )
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
@@ -138,24 +147,29 @@ def generate_input_json(
     language: str = "Solidity",
     interface_sources: Optional[Dict[str, str]] = None,
     remappings: Optional[list] = None,
+    optimizer: Optional[Dict] = None,
 ) -> Dict:
 
     """Formats contracts to the standard solc input json.
 
     Args:
         contract_sources: a dictionary in the form of {path: 'source code'}
-        optimize: enable solc optimizer
-        runs: optimizer runs
+        optimize: (deprecated) enable solc optimizer
+        runs: (deprecated) optimizer runs
         evm_version: evm version to compile for
         language: source language (Solidity or Vyper)
         interface_sources: dictionary of interfaces as {'path': "source code"}
         remappings: list of solidity path remappings
+        optimizer: dictionary of solidity optimizer settings
 
     Returns: dict
     """
 
     if language not in ("Solidity", "Vyper"):
         raise UnsupportedLanguage(f"{language}")
+
+    if optimizer is None:
+        optimizer = {"enabled": optimize, "runs": runs if optimize else 0}
 
     if evm_version is None:
         if language == "Solidity":
@@ -167,7 +181,7 @@ def generate_input_json(
     input_json["language"] = language
     input_json["settings"]["evmVersion"] = evm_version
     if language == "Solidity":
-        input_json["settings"]["optimizer"] = {"enabled": optimize, "runs": runs if optimize else 0}
+        input_json["settings"]["optimizer"] = optimizer
         input_json["settings"]["remappings"] = _get_solc_remappings(remappings)
     input_json["sources"] = _sources_dict(contract_sources, language)
 
@@ -261,12 +275,7 @@ def generate_build_json(
     path_list = list(input_json["sources"])
 
     if input_json["language"] == "Solidity":
-        compiler_data.update(
-            {
-                "optimize": input_json["settings"]["optimizer"]["enabled"],
-                "runs": input_json["settings"]["optimizer"]["runs"],
-            }
-        )
+        compiler_data["optimizer"] = input_json["settings"]["optimizer"]
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
     for path_str, contract_name in [

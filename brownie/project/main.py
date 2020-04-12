@@ -88,6 +88,7 @@ class _ProjectBase:
                 allow_paths=allow_paths,
                 interface_sources=self._sources.get_interface_sources(),
                 remappings=compiler_config["solc"].get("remappings", []),
+                optimizer=compiler_config["solc"].get("optimizer", None),
             )
         finally:
             os.chdir(cwd)
