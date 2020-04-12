@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function toggleCssMode(isDay) {
         var mode = (isDay ? "Day" : "Night");
         localStorage.setItem("css-mode", mode);
-        document.getElementById('modetext').innerHTML = mode;
 
         var darksheet = $('link[href="_static/css/dark.css"]')[0].sheet;
         darksheet.disabled = isDay;
