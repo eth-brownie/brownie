@@ -170,6 +170,9 @@ class Project(_ProjectBase):
             if isinstance(build_json["allSourcePaths"], list):
                 # this handles the format change in v1.7.0, it can be removed in a future release
                 path.unlink()
+                test_path = self._path.joinpath("build/tests.json")
+                if test_path.exists():
+                    test_path.unlink()
                 continue
             self._build._add(build_json)
 
