@@ -15,11 +15,10 @@ from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei, to_address
 from brownie.exceptions import IncompatibleEVMVersion, UnknownAccount, VirtualMachineError
-from brownie.network.state import _find_contract
-from brownie.network.transaction import TransactionReceipt
 from brownie.utils import color
 
 from .rpc import Rpc, _revert_register
+from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
 
 __tracebackhide__ = True
@@ -271,7 +270,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if tx.status != 1:
             return tx
         add_thread.join()
-        return _find_contract(tx.contract_address)
+        return contract.at(tx.contract_address)
 
     def estimate_gas(
         self, to: Union[str, "Accounts"], amount: Optional[int], data: str = ""
