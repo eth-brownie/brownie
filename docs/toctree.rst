@@ -50,8 +50,8 @@ Brownie
     :maxdepth: 2
 
     deploy.rst
-    nonlocal-networks.rst
-    accounts.rst
+    network-management.rst
+    account-management.rst
 
 
 .. toctree::
