@@ -33,7 +33,7 @@ class ConfigContainer:
             if key in self.networks:
                 raise ValueError(f"Multiple networks using ID '{key}'")
             self.networks[key] = value
-        for value in [x for i in network_config["production"] for x in i["networks"]]:
+        for value in [x for i in network_config["live"] for x in i["networks"]]:
             key = value["id"]
             if key in self.networks:
                 raise ValueError(f"Multiple networks using ID '{key}'")
@@ -52,7 +52,7 @@ class ConfigContainer:
             id_ = self.settings["networks"]["default"]
 
         network = self.networks[id_].copy()
-        key = "development" if "cli" in network else "production"
+        key = "development" if "cmd" in network else "live"
         network["settings"] = self.settings["networks"][key].copy()
 
         self._active_network = network
@@ -74,7 +74,7 @@ class ConfigContainer:
         if "cmd" in self._active_network:
             return "development"
         else:
-            return "production"
+            return "live"
 
     @property
     def mode(self):

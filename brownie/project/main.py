@@ -255,7 +255,7 @@ class Project(_ProjectBase):
         return False
 
     def _load_deployments(self) -> None:
-        if CONFIG.network_type != "production":
+        if CONFIG.network_type != "live":
             return
         chainid = CONFIG.active_network["chainid"]
         path = self._path.joinpath(f"build/deployments/{chainid}")
