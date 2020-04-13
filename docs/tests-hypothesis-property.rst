@@ -334,7 +334,9 @@ You can also affect the settings permanently by adding a ``hypothesis`` field to
 Available Settings
 ------------------
 
-See the Hypothesis `settings documentation <https://hypothesis.readthedocs.io/en/latest/settings.html#available-settings>`_ for a complete list of available settings. This section only lists settings where the default value has been changed.
+.. note::
+
+    See the Hypothesis `settings documentation <https://hypothesis.readthedocs.io/en/latest/settings.html#available-settings>`_ for a complete list of available settings. This section only lists settings where the default value has been changed from the Hypothesis default.
 
 .. py:attribute:: deadline
 

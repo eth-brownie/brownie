@@ -39,16 +39,17 @@ Interfaces may be written in `Solidity <https://solidity.readthedocs.io/en/lates
 Compiler Settings
 =================
 
-Settings for the compiler are found in ``brownie-config.yaml``:
+Compiler settings may be declared in the :ref:`configuration file <config>` of a project. When no configuration file is present or settings are omitted, Brownie uses the following default values:
 
 .. code-block:: yaml
 
     compiler:
         evm_version: null
         solc:
-            version: 0.6.0
-            optimize: true
-            runs: 200
+            version: null
+            optimizer:
+                enabled: true
+                runs: 200
 
 Modifying any compiler settings will result in a full recompile of the project.
 
@@ -59,9 +60,9 @@ Setting the Compiler Version
 
     Brownie supports Solidity versions ``>=0.4.22`` and Vyper version ``0.1.0-b17``.
 
-If a compiler version is set in the configuration file, all contracts in the project are compiled using that version. It is installed automatically if not already present. The version should be given as a string in the format ``0.x.x``.
+If a compiler version is set in the configuration file, all contracts in the project are compiled using that version. The compiler is installed automatically if not already present. The version should be given as a string in the format ``0.x.x``.
 
-If the version is set to ``null``, Brownie looks at the `version pragma <https://solidity.readthedocs.io/en/latest/layout-of-source-files.html#version-pragma>`_ of each contract and uses the latest matching compiler version that has been installed. If no matching version is found, the most recent release is installed.
+When the compiler version is not explicitly declared, Brownie looks at the `version pragma <https://solidity.readthedocs.io/en/latest/layout-of-source-files.html#version-pragma>`_ of each contract and uses the latest matching compiler version that has been installed. If no matching version is found, the most recent release is installed.
 
 Setting the version via pragma allows you to use multiple versions in a single project. When doing so, you may encounter compiler errors when a contract imports another contract that is meant to compile on a higher version. A good practice in this situation is to import `interfaces <https://solidity.readthedocs.io/en/latest/contracts.html#interfaces>`_ rather than actual contracts, and set all interface pragmas as ``>=0.4.22``.
 
@@ -83,7 +84,9 @@ Compiler Optimization
 
 Compiler optimization is enabled by default. Coverage evaluation was designed using optimized contracts, there is no need to disable it during testing.
 
-See the `Solidity documentation <https://solidity.readthedocs.io/en/latest/miscellaneous.html#internals-the-optimiser>`_ for more info on the ``solc`` optimizer.
+Values given under ``compiler.solc.optimizer`` in the project :ref:`configuration file <config>` are passed to the compiler with no reformatting. This way you can enable specific settings such as the YUL optimizer.
+
+See the Solidity documentation for information on the `optimizer <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_ and it's `available settings <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_.
 
 .. _compile-remap:
 

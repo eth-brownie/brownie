@@ -90,17 +90,9 @@ Compiler settings. See :ref:`compiler settings<compile_settings>` for more infor
 
         default value: ``null``
 
-    .. py:attribute:: optimize
+    .. py:attribute:: optimizer
 
-        Set to ``true`` if you wish to enable compiler optimization.
-
-        default value: ``true``
-
-    .. py:attribute:: runs
-
-        The number of times the optimizer should run.
-
-        default value: ``200``
+        Optimizer settings to be passed to the Solidity compiler. Values given here are passed into the compiler with no reformatting. See the `Solidity documentation <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_ for a list of possible values.
 
     .. py:attribute:: remappings
 
