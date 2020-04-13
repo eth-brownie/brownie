@@ -8,15 +8,15 @@
 networks:
     default: development
     development:
-        gas_limit: auto
-        gas_price: auto
-        reverting_tx_gas_limit: false
-        default_contract_owner: false
-    production:
         gas_limit: 6721975
         gas_price: 0
         reverting_tx_gas_limit: 6721975
         default_contract_owner: true
+    live:
+        gas_limit: auto
+        gas_price: auto
+        reverting_tx_gas_limit: false
+        default_contract_owner: false
 
 compiler:
     evm_version: null

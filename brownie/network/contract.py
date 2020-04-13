@@ -291,7 +291,7 @@ class _DeployedContractBase(_ContractBase):
         return Wei(balance)
 
     def _deployment_path(self) -> Optional[Path]:
-        if CONFIG.network_type != "production" or not self._project._path:
+        if CONFIG.network_type != "live" or not self._project._path:
             return None
         chainid = CONFIG.active_network["chainid"]
         path = self._project._path.joinpath(f"build/deployments/{chainid}")
