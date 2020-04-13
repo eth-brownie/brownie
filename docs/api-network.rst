@@ -13,7 +13,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
 
 .. py:method:: main.connect(network = None, launch_rpc = True)
 
-    Connects to the network.  Network settings are retrieved from ``brownie-config.yaml``
+    Connects to a network.
 
     * ``network``: The network to connect to. If ``None``, connects to the default network as specified in the config file.
     * ``launch_rpc``: If ``True`` and the configuration for this network includes ``test_rpc`` settings, attempts to launch or attach to a local RPC client.

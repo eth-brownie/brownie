@@ -157,7 +157,7 @@ See the :ref:`unit test documentation<pytest-other-projects>` for more detailed 
 Declaring Project Dependencies
 ------------------------------
 
-Project dependencies are declared by adding a ``dependencies`` field to ``brownie-config.yaml``:
+Dependencies are declared by adding a ``dependencies`` field to your project :ref:`configuration file <config>`:
 
 .. code-block:: yaml
 
