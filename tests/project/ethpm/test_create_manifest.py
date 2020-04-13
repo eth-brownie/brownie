@@ -125,10 +125,7 @@ def test_contract_types(tp_path):
             "name": "solc",
             "version": build["compiler"]["version"],
             "settings": {
-                "optimizer": {
-                    "enabled": build["compiler"]["optimize"],
-                    "runs": build["compiler"]["runs"],
-                },
+                "optimizer": build["compiler"]["optimizer"],
                 "evmVersion": build["compiler"]["evm_version"],
             },
         },
