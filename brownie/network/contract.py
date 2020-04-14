@@ -147,7 +147,7 @@ class ContractContainer(_ContractBase):
                 f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
             )
 
-        if _verify_deployed_code(address, self._build["deployedBytecode"]):
+        if _verify_deployed_code(address, self._build["deployedBytecode"], self._build["language"]):
             contract = ProjectContract(self._project, self._build, address, owner, tx)
         else:
             contract = Contract(self._name, address, self.abi, owner=owner)
@@ -591,7 +591,7 @@ def _inputs(abi: Dict) -> str:
     )
 
 
-def _verify_deployed_code(address: str, expected_bytecode: str) -> bool:
+def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -> bool:
     actual_bytecode = web3.eth.getCode(address).hex()[2:]
     expected_bytecode = remove_0x_prefix(expected_bytecode)  # type: ignore
 
@@ -607,6 +607,13 @@ def _verify_deployed_code(address: str, expected_bytecode: str) -> bool:
             idx = expected_bytecode.index(marker)
             actual_bytecode = actual_bytecode[:idx] + actual_bytecode[idx + 40 :]
             expected_bytecode = expected_bytecode[:idx] + expected_bytecode[idx + 40 :]
+
+    if language == "Solidity":
+        # do not include metadata in comparison
+        idx = -(int(actual_bytecode[-4:], 16) + 2) * 2
+        actual_bytecode = actual_bytecode[:idx]
+        idx = -(int(expected_bytecode[-4:], 16) + 2) * 2
+        expected_bytecode = expected_bytecode[:idx]
 
     return actual_bytecode == expected_bytecode
 
