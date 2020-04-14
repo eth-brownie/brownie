@@ -43,7 +43,7 @@ class _ContractBase:
 
     def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
         self._project = project
-        self._build = build
+        self._build = build.copy()
         self._sources = sources
         self._name = build["contractName"]
         self.abi = build["abi"]
@@ -148,11 +148,12 @@ class ContractContainer(_ContractBase):
                 f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
             )
 
-        if _verify_deployed_code(address, self._build["deployedBytecode"], self._build["language"]):
-            contract = ProjectContract(self._project, self._build, address, owner, tx)
-        else:
-            contract = Contract(self._name, address, self.abi, owner=owner)
-            contract._project = self._project
+        build = self._build
+        contract = ProjectContract(self._project, build, address, owner, tx)
+        if not _verify_deployed_code(address, build["deployedBytecode"], build["language"]):
+            # prevent trace attempts when the bytecode doesn't match
+            del contract._build["pcMap"]
+
         contract._save_deployment()
         _add_contract(contract)
         self._contracts.append(contract)
