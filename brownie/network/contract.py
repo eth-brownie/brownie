@@ -618,12 +618,15 @@ def _print_natspec(natspec: Dict) -> None:
         print(wrapper.fill(f"@{key} {color}{natspec[key]}"))
 
     for key, value in natspec.get("params", {}).items():
+        wrapper.subsequent_indent = " " * 9
         print(wrapper.fill(f"@param {color('bright blue')}{key}{color} {value}"))
 
     if "return" in natspec:
+        wrapper.subsequent_indent = " " * 10
         print(wrapper.fill(f"@return {color}{natspec['return']}"))
 
     for key in sorted(natspec.get("returns", [])):
+        wrapper.subsequent_indent = " " * 10
         print(wrapper.fill(f"@return {color}{natspec['returns'][key]}"))
 
     print()
