@@ -55,7 +55,8 @@ class _ContractBase:
         """
         Display NatSpec documentation for this contract.
         """
-        _print_natspec(self._build["natspec"])
+        if "natspec" in self._build:
+            _print_natspec(self._build["natspec"])
 
     def get_method(self, calldata: str) -> Optional[str]:
         sig = calldata[:10].lower()
