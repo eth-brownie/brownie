@@ -499,7 +499,7 @@ class TransactionReceipt:
                     last["address"], trace[i]["stack"][-2][-40:], trace[i]["stack"][-3]
                 )
 
-            if "pc_map" not in last:
+            if not last["pc_map"]:
                 continue
             pc = last["pc_map"][trace[i]["pc"]]
 
@@ -801,20 +801,20 @@ def _get_memory(step: Dict, idx: int) -> HexBytes:
 def _get_last_map(address: EthAddress, sig: str) -> Dict:
     contract = _find_contract(address)
     last_map = {"address": EthAddress(address), "jumpDepth": 0, "name": None, "coverage": False}
+
     if contract:
         last_map.update(
             contract=contract,
             name=contract._name,
             fn=[f"{contract._name}.{contract.get_method(sig)}"],
+            path_map=contract._build.get("allSourcePaths"),
+            pc_map=contract._build.get("pcMap"),
         )
-        if contract._build:
-            last_map.update(
-                coverage=True,
-                path_map=contract._build["allSourcePaths"],
-                pc_map=contract._build["pcMap"],
-            )
+        if contract._project:
+            last_map["coverage"] = True
             if contract._build["language"] == "Solidity":
                 last_map["active_branches"] = set()
     else:
-        last_map.update(contract=None, fn=[f"<UnknownContract>.{sig}"])
+        last_map.update(contract=None, fn=[f"<UnknownContract>.{sig}"], pc_map=None)
+
     return last_map
