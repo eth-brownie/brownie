@@ -41,14 +41,15 @@ class _ContractBase:
 
     _dir_color = "bright magenta"
 
-    def __init__(self, project: Any, build: Dict, name: str, abi: List) -> None:
+    def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
         self._project = project
         self._build = build
-        self._name = name
-        self.abi = abi
-        self.topics = _get_topics(abi)
+        self._sources = sources
+        self._name = build["contractName"]
+        self.abi = build["abi"]
+        self.topics = _get_topics(self.abi)
         self.signatures = {
-            i["name"]: build_function_selector(i) for i in abi if i["type"] == "function"
+            i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
         }
 
     def info(self) -> None:
@@ -78,7 +79,7 @@ class ContractContainer(_ContractBase):
         self.tx = None
         self.bytecode = build["bytecode"]
         self._contracts: List["ProjectContract"] = []
-        super().__init__(project, build, build["contractName"], build["abi"])
+        super().__init__(project, build, project._sources)
         self.deploy = ContractConstructor(self, self._name)
         _revert_register(self)
 
@@ -349,7 +350,7 @@ class Contract(_DeployedContractBase):
             raise TypeError("Address cannot be None unless creating object from manifest")
 
         build = {"abi": abi, "contractName": name, "type": "contract"}
-        _ContractBase.__init__(self, None, build, name, abi)  # type: ignore
+        _ContractBase.__init__(self, None, build, {})  # type: ignore
         _DeployedContractBase.__init__(self, address, owner, None)
         contract = _find_contract(address)
         if not contract:
@@ -370,7 +371,7 @@ class ProjectContract(_DeployedContractBase):
         owner: Optional[AccountsType] = None,
         tx: TransactionReceiptType = None,
     ) -> None:
-        _ContractBase.__init__(self, project, build, build["contractName"], build["abi"])
+        _ContractBase.__init__(self, project, build, project._sources)
         _DeployedContractBase.__init__(self, address, owner, tx)
 
 

@@ -725,9 +725,7 @@ class TransactionReceipt:
             return ""
         contract = _find_contract(self.trace[idx]["address"])
         source, linenos = highlight_source(
-            contract._project._sources.get(trace["source"]["filename"]),
-            trace["source"]["offset"],
-            pad,
+            contract._sources.get(trace["source"]["filename"]), trace["source"]["offset"], pad
         )
         if not source:
             return ""
