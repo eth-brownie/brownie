@@ -2,6 +2,8 @@
 
 from typing import Dict, List, Optional, Tuple
 
+from eth_hash.auto import keccak
+
 
 def get_int_bounds(type_str: str) -> Tuple[int, int]:
     """Returns the lower and upper bound for an integer type."""
@@ -32,3 +34,13 @@ def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> 
                     type_str = type_str.replace(orig, sub)
             types_list.append(type_str)
     return types_list
+
+
+def build_function_signature(abi: Dict) -> str:
+    types_list = get_type_strings(abi["inputs"])
+    return f"{abi['name']}({','.join(types_list)})"
+
+
+def build_function_selector(abi: Dict) -> str:
+    sig = build_function_signature(abi)
+    return "0x" + keccak(sig.encode()).hex()[:8]
