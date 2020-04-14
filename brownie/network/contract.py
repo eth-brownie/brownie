@@ -7,14 +7,17 @@ from textwrap import TextWrapper
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import eth_abi
-from eth_hash.auto import keccak
 from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
 
 from brownie._config import CONFIG
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
-from brownie.convert.utils import get_type_strings
+from brownie.convert.utils import (
+    build_function_selector,
+    build_function_signature,
+    get_type_strings,
+)
 from brownie.exceptions import (
     ContractExists,
     ContractNotFound,
@@ -44,7 +47,9 @@ class _ContractBase:
         self._name = name
         self.abi = abi
         self.topics = _get_topics(abi)
-        self.signatures = dict((i["name"], _selector(i)) for i in abi if i["type"] == "function")
+        self.signatures = {
+            i["name"]: build_function_selector(i) for i in abi if i["type"] == "function"
+        }
 
     def info(self) -> None:
         """
@@ -237,7 +242,7 @@ class _DeployedContractBase(_ContractBase):
         fn_names = [i["name"] for i in self.abi if i["type"] == "function"]
         for abi in [i for i in self.abi if i["type"] == "function"]:
             name = f"{self._name}.{abi['name']}"
-            sig = _signature(abi)
+            sig = build_function_signature(abi)
             natspec: Dict = {}
             if "natspec" in self._build:
                 natspec = self._build["natspec"]["methods"].get(sig, {})
@@ -404,7 +409,7 @@ class _ContractMethod:
         self._name = name
         self.abi = abi
         self._owner = owner
-        self.signature = _selector(abi)
+        self.signature = build_function_selector(abi)
         self.natspec = natspec or {}
 
     def __repr__(self) -> str:
@@ -583,16 +588,6 @@ def _inputs(abi: Dict) -> str:
     return ", ".join(
         f"{i[1]}{color('bright blue')}{' '+i[0] if i[0] else ''}{color}" for i in params
     )
-
-
-def _signature(abi: Dict) -> str:
-    types_list = get_type_strings(abi["inputs"])
-    return f"{abi['name']}({','.join(types_list)})"
-
-
-def _selector(abi: Dict) -> str:
-    sig = _signature(abi)
-    return "0x" + keccak(sig.encode()).hex()[:8]
 
 
 def _verify_deployed_code(address: str, expected_bytecode: str) -> bool:
