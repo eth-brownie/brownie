@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie.network.contract import Contract, ProjectContract
+from brownie.network.contract import ProjectContract
 
 
 def test_get_method(BrownieTester):
@@ -61,9 +61,15 @@ def test_remove_at(BrownieTester, accounts):
 def test_at_checks_bytecode(BrownieTester, ExternalCallTester, accounts):
     t = BrownieTester.deploy(True, {"from": accounts[0]})
     del BrownieTester[0]
-    assert type(BrownieTester.at(t.address)) is ProjectContract
+
+    c = BrownieTester.at(t.address)
+    assert isinstance(c, ProjectContract)
+    assert "pcMap" in c._build
+
     del BrownieTester[0]
-    assert type(ExternalCallTester.at(t.address)) is Contract
+    c = ExternalCallTester.at(t.address)
+    assert isinstance(c, ProjectContract)
+    assert "pcMap" not in c._build
 
 
 def test_load_unload_project(BrownieTester, testproject, rpc, accounts):

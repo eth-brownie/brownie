@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie.network.contract import Contract, ProjectContract
+from brownie.network.contract import ProjectContract
 
 solidity_source = """
 pragma solidity 0.6.2;
@@ -100,5 +100,9 @@ def test_vyper_create_forwarder_to(newproject, accounts):
 
     assert len(tx.new_contracts) == 1
     foo2 = newproject.Foo.at(tx.new_contracts[0])
-    assert type(foo2) is Contract
+
+    assert "pcMap" in foo._build
+
+    assert type(foo2) is ProjectContract
+    assert "pcMap" not in foo2._build
     assert foo2.foo() == 42
