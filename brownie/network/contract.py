@@ -380,6 +380,19 @@ class Contract(_DeployedContractBase):
         _DeployedContractBase.__init__(self, address, owner, None)
         _add_contract(self)
 
+    @classmethod
+    def from_abi(
+        cls, name: str, address: str, abi: Dict, owner: Optional[AccountsType] = None
+    ) -> "Contract":
+        address = _resolve_address(address)
+        build = {"abi": abi, "address": address, "contractName": name, "type": "contract"}
+
+        self = cls.__new__(cls)
+        _ContractBase.__init__(self, None, build, {})  # type: ignore
+        _DeployedContractBase.__init__(self, address, owner, None)
+        _add_contract(self)
+        return self
+
 
 class ProjectContract(_DeployedContractBase):
 
