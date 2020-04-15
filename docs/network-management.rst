@@ -1,4 +1,4 @@
-.. _nonlocal-networks:
+.. _network-management:
 
 ==================
 Network Management
@@ -56,18 +56,33 @@ To add a new network:
 
     $ brownie networks add [environment] [id] host=[host] [KEY=VALUE, ...]
 
-The following fields may be used for both live and development networks:
+When declaring a new network, the following fields must always be included:
 
     * ``environment``: the category that the network should be placed in, e.g. "Ethereum", "Ethereum Classic", or "Development"
     * ``id``: a unique identifier for the network, e.g. "mainnet"
     * ``host``: the address of the node to connect to, e.g. ``https://mainnet.infura.io/v3/1234567890abcdef``
-    * ``name`` (optional): A longer name to use for the network. If not given, ``id`` is used.
 
-The following fields are required for live networks:
+The following fields are optional:
 
-    * ``chainid``: The chain ID for a network. Live networks with the same chain ID share data about contract deployments. See `chainid.network <https://chainid.network/>`_ for a list of chain IDs.
+    * ``name`` A longer name to use for the network. If not given, ``id`` is used.
 
-The following fields are required for development networks:
+There are additional required and optional fields that are dependent on the type of network.
+
+Live Networks
+*************
+
+Live networks **must** include the following fields:
+
+    * ``chainid``: The chain ID for a network. Live networks with the same chain ID share local data about :ref:`contract deployments <core-contracts-live>`. See `chainid.network <https://chainid.network/>`_ for a list of chain IDs.
+
+The following fields are optional for live networks:
+
+    * ``explorer``: API url used by :func:`Contract.from_explorer <Contract.from_explorer>` to fetch source code. If this field is not given, you will not be able to fetch source code when using this network.
+
+Development Networks
+********************
+
+Development networks **must** include the following fields:
 
     * ``cmd``: The command used to launch the local RPC client, e.g. ``ganache-cli``.
 

@@ -36,22 +36,22 @@ Here is an small example script that unlocks a local account and uses it to depl
 Running your Deployment Script
 ==============================
 
-In order to execute your script on a non-local network, you must include the ``--network`` flag in the command line. For example, to connect to the ropsten network and run ``scripts/deploy.py``:
+In order to execute your script in a live environment, you must include the ``--network`` flag in the command line. For example, to connect to the ropsten network and run ``scripts/deploy.py``:
 
 ::
 
     $ brownie run deploy.py --network ropsten
 
-Remember that transactions are not confirmed immediately on non-local networks. You will see a notification on the status of each transaction, however the script will take some time to complete.
+Remember that transactions are not confirmed immediately on live networks. You will see a notification on the status of each transaction, however the script will take some time to complete.
 
-See the documentation on :ref:`using non-local networks<nonlocal-networks>` for more information on how to define and connect to other networks.
+See the documentation on :ref:`network management<network-management>` for more information on how to define and connect to live networks.
 
 .. _persistence:
 
 Interacting with Deployed Contracts
 ===================================
 
-Brownie saves information about contract deployments on non-local networks. Once a contract has been deployed, the generated :func:`Contract <brownie.network.contract.ProjectContract>` instance will still be available the next time you load Brownie.
+Brownie saves information about contract deployments on live networks. Once a contract has been deployed, the generated :func:`ProjectContract <brownie.network.contract.ProjectContract>` instance will still be available in future Brownie sessions.
 
 The following actions will NOT remove locally stored deployment data:
 
@@ -60,10 +60,10 @@ The following actions will NOT remove locally stored deployment data:
     * Exiting and reloading Brownie
     * Modifying a contract's source code - Brownie still retains the source for the deployed version
 
-The following actions WILL remove locally stored deployment data:
+The following actions WILL remove locally stored deployment data within your project:
 
-    * Calling :func:`ContractContainer.remove <ContractContainer.remove>` will erase deployment information for the removed :func:`Contract <brownie.network.contract.ProjectContract>` instances.
+    * Calling :func:`ContractContainer.remove <ContractContainer.remove>` will erase deployment information for the removed :func:`ProjectContract <brownie.network.contract.ProjectContract>` instances.
     * Removing or renaming a contract source file within your project will cause Brownie to delete all deployment information for the removed contract.
     * Deleting the ``build/deployments/`` directory will erase all information about deployed contracts.
 
-To restore a deleted :func:`Contract <brownie.network.contract.ProjectContract>` instance, or generate one for a deployment that was handled outside of Brownie, use the :func:`ContractContainer.at <ContractContainer.at>` method.
+To restore a deleted :func:`ProjectContract <brownie.network.contract.ProjectContract>` instance, or generate one for a deployment that was handled outside of Brownie, use the :func:`ContractContainer.at <ContractContainer.at>` method.

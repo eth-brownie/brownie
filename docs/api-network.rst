@@ -729,25 +729,24 @@ Contract and ProjectContract
 
 :func:`Contract <brownie.network.contract.Contract>` and :func:`ProjectContract <brownie.network.contract.ProjectContract>` are both used to call or send transactions to smart contracts.
 
-* :func:`Contract <brownie.network.contract.Contract>` objects are instantiated directly and only require an ABI. They are used for calls to existing contracts that exist outside of a project.
-* :func:`ProjectContract <brownie.network.contract.ProjectContract>` objects are created by calls to :func:`ContractContainer.deploy <ContractContainer.deploy>`. Because they are compiled and deployed directly by Brownie, they provide much greater debugging capability.
+* :func:`Contract <brownie.network.contract.Contract>` objects are instantiated directly. They are used for interaction with already-deployed contracts that exist outside of a project.
+* :func:`ProjectContract <brownie.network.contract.ProjectContract>` objects are created by calls to :func:`ContractContainer.deploy <ContractContainer.deploy>`. Because they are compiled and deployed directly by Brownie, they provide greater debugging capability.
 
 These classes have identical APIs.
 
-.. py:class:: brownie.network.contract.Contract(name, address=None, abi=None, manifest_uri=None, owner=None)
+.. py:class:: brownie.network.contract.Contract(address_or_alias, owner=None)
 
-    A deployed contract. This class allows you to call or send transactions to the contract.
+    A deployed contract that is not part of a Brownie project.
 
-    * ``name``: The name of the contract.
-    * ``address``: Address of the contract. Required unless a ``manifest_uri`` is given.
-    * ``abi``: ABI of the contract. Required unless a ``manifest_uri`` is given.
-    * ``manifest_uri``: EthPM registry manifest uri. If given, the ABI (and optionally the contract address) are retrieved from here.
+    :func:`from_abi<Contract.from_abi>`
+
+    * ``address_or_alias``: Address of the contract.
     * ``owner``: An optional :func:`Account <brownie.network.account.Account>` instance. If given, transactions to the contract are sent broadcasted from this account by default.
 
     .. code-block:: python
 
         >>> from brownie import Contract
-        >>> Contract("Token", "0x79447c97b6543F6eFBC91613C655977806CB18b0", abi)
+        >>> Contract("0x79447c97b6543F6eFBC91613C655977806CB18b0")
         <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
 
 .. py:class:: brownie.network.contract.ProjectContract
@@ -761,8 +760,73 @@ These classes have identical APIs.
         >>> dir(Token[0])
         [abi, allowance, approve, balance, balanceOf, bytecode, decimals, name, signatures, symbol, topics, totalSupply, transfer, transferFrom, tx]
 
+.. _api-network-contract-classmethods:
+
+Contract Classmethods
+*********************
+
+New ``Contract`` objects are created with one of the following class methods.
+
+.. py:classmethod:: Contract.from_abi(name, address, abi, owner=None)
+
+    Create a new ``Contract`` object from an address and an ABI.
+
+    * ``name``: The name of the contract.
+    * ``address``: Address of the contract.
+    * ``abi``: ABI of the contract. Required unless a ``manifest_uri`` is given.
+    * ``owner``: An optional :func:`Account <brownie.network.account.Account>` instance. If given, transactions to the contract are sent broadcasted from this account by default.
+
+    Creating a ``Contract`` from an ABI will allow you to call or send transactions to the contract, but functionality such as debugging will not be available.
+
+    .. code-block:: python
+
+        >>> from brownie import Contract
+        >>> Contract("Token", "0x79447c97b6543F6eFBC91613C655977806CB18b0", abi)
+        <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
+
+
+.. py:classmethod:: Contract.from_ethpm(name, manifest_uri, address=None, owner=None)
+
+    Create a new ``Contract`` object from an ethPM manifest.
+
+    * ``name``: The name of the contract. Must be present within the manifest.
+    * ``manifest_uri``: EthPM registry manifest uri.
+    * ``address``: Address of the contract. Only Required if more than one deployment named ``name`` is included in the manifest.
+    * ``owner``: An optional :func:`Account <brownie.network.account.Account>` instance. If given, transactions to the contract are sent broadcasted from this account by default.
+
+    .. code-block:: python
+
+        >>> from brownie import network, Contract
+        >>> network.connect('mainnet')
+        >>> Contract("DSToken", manifest_uri="ethpm://erc20.snakecharmers.eth:1/dai-dai@1.0.0")
+        <DSToken Contract object '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359'>
+
+.. py:classmethod:: Contract.from_explorer(address, owner=None)
+
+    Create a new ``Contract`` object from source code fetched from a block explorer such as `EtherScan <https://etherscan.io/>`_ or `Blockscout <https://blockscout.com/>`_.
+
+    * ``address``: Address of the contract.
+    * ``owner``: An optional :func:`Account <brownie.network.account.Account>` instance. If given, transactions to the contract are sent broadcasted from this account by default.
+
+    If the deployed bytecode was generated using a compatible compiler version, Brownie will attempt to recompile it locally. If successful, most debugging functionality will be available.
+
+    .. code-block:: python
+
+        >>> Contract.from_explorer("0x6b175474e89094c44da98b954eedeac495271d0f")
+        Fetching source of 0x6B175474E89094C44Da98b954EedeAC495271d0F from api.etherscan.io...
+        <Dai Contract '0x6B175474E89094C44Da98b954EedeAC495271d0F'>
+
 Contract Attributes
 *******************
+
+.. py:attribute:: Contract.alias
+
+    User-defined alias applied to this ``Contract`` object. Can be used to quickly restore the object in future sessions.
+
+    .. code-block:: python
+
+        >>> Token.alias
+        'mytoken'
 
 .. py:attribute:: Contract.bytecode
 
@@ -793,6 +857,23 @@ Contract Methods
 
         >>> Token[0].balance
         0
+
+
+.. py:classmethod:: Contract.set_alias(alias)
+
+    Apply a unique alias this object. The alias can be used to restore the object in future sessions.
+
+    * ``alias``: An alias to apply, given as a string. If ``None``, any existing alias is removed.
+
+    Raises ``ValueError`` if the given alias is invalid or already in use on another contract.
+
+    .. code-block:: python
+
+        >>> Token.set_alias('mytoken')
+
+        >>> Token.alias
+        'mytoken'
+
 
 Contract Internal Attributes
 ****************************

@@ -121,6 +121,12 @@ Default settings for :ref:`property-based<hypothesis>` and :ref:`stateful<hypoth
 Other Settings
 --------------
 
+.. py:attribute:: autofetch_sources
+
+    If enabled, Brownie will always attempt to fetch source code for unknown addresses using :func:`Contract.from_explorer <Contract.from_explorer>`.
+
+    default value: ``false``
+
 .. py:attribute:: show_colors
 
     Enable or disable colorful console output.
