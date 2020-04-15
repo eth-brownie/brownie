@@ -39,7 +39,7 @@ as well as possible data fields when declaring new networks."""
 
 DEV_REQUIRED = ("id", "host", "cmd", "cmd_settings")
 PROD_REQUIRED = ("id", "host", "chainid")
-OPTIONAL = ("name",)
+OPTIONAL = ("name", "explorer")
 
 DEV_CMD_SETTINGS = (
     "port",
