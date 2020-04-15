@@ -118,8 +118,6 @@ def _get_current_dependencies() -> List:
 
 def _add_contract(contract: Any) -> None:
     _contract_map[contract.address] = contract
-    if CONFIG.network_type == "live":
-        _add_deployment(contract)
 
 
 def _remove_contract(contract: Any) -> None:
@@ -158,6 +156,9 @@ def _get_deployment(
 
 
 def _add_deployment(contract: Any) -> None:
+    if CONFIG.network_type != "live":
+        return
+
     address = _resolve_address(contract.address)
     name = f"chain{CONFIG.active_network['chainid']}"
 
