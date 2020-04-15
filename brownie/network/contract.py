@@ -326,9 +326,28 @@ class _DeployedContractBase(_ContractBase):
 
 
 class Contract(_DeployedContractBase):
+    """
+    Object to interact with a deployed contract outside of a project.
+    """
+
     def __init__(
         self, address_or_alias: str, *args: Any, owner: Optional[AccountsType] = None, **kwargs: Any
     ) -> None:
+        """
+        Recreate a `Contract` object from the local database.
+
+        The init method is used to access deployments that have already previously
+        been stored locally. For new deployments use `from_abi`, `from_ethpm` or
+        `from_etherscan`.
+
+        Arguments
+        ---------
+        address_or_alias : str
+            Address or user-defined alias of the deployment.
+        owner : Account, optional
+            Contract owner. If set, transactions without a `from` field
+            will be performed using this account.
+        """
         if args or kwargs:
             warnings.warn(
                 "Initializing `Contract` in this manner is deprecated."
@@ -400,6 +419,21 @@ class Contract(_DeployedContractBase):
     def from_abi(
         cls, name: str, address: str, abi: Dict, owner: Optional[AccountsType] = None
     ) -> "Contract":
+        """
+        Create a new `Contract` object from an ABI.
+
+        Arguments
+        ---------
+        name : str
+            Name of the contract.
+        address : str
+            Address where the contract is deployed.
+        abi : dict
+            Contract ABI, given as a dictionary.
+        owner : Account, optional
+            Contract owner. If set, transactions without a `from` field
+            will be performed using this account.
+        """
         address = _resolve_address(address)
         build = {"abi": abi, "address": address, "contractName": name, "type": "contract"}
 
@@ -417,6 +451,23 @@ class Contract(_DeployedContractBase):
         address: Optional[str] = None,
         owner: Optional[AccountsType] = None,
     ) -> "Contract":
+        """
+        Create a new `Contract` object from an ethPM manifest.
+
+        Arguments
+        ---------
+        name : str
+            Name of the contract.
+        manifest_uri : str
+            erc1319 registry URI where the manifest is located
+        address : str optional
+            Address where the contract is deployed. Only required if the
+            manifest contains more than one deployment with the given name
+            on the active chain.
+        owner : Account, optional
+            Contract owner. If set, transactions without a `from` field
+            will be performed using this account.
+        """
         manifest = ethpm.get_manifest(manifest_uri)
 
         if address is None:
@@ -450,6 +501,17 @@ class Contract(_DeployedContractBase):
 
     @classmethod
     def from_explorer(cls, address: str, owner: Optional[AccountsType] = None) -> "Contract":
+        """
+        Create a new `Contract` object with source code queried from a block explorer.
+
+        Arguments
+        ---------
+        address : str
+            Address where the contract is deployed.
+        owner : Account, optional
+            Contract owner. If set, transactions without a `from` field
+            will be performed using this account.
+        """
         url = CONFIG.active_network.get("explorer")
         if url is None:
             raise ValueError("Explorer API not set for this network")
@@ -513,6 +575,15 @@ class Contract(_DeployedContractBase):
         return self
 
     def set_alias(self, alias: Optional[str]) -> None:
+        """
+        Apply a unique alias this object. The alias can be used to restore the
+        object in future sessions.
+
+        Arguments
+        ---------
+        alias: str | None
+            An alias to apply. If `None`, any existing alias is removed.
+        """
         if CONFIG.network_type != "live":
             raise ValueError("Cannot set alias outside of live environment")
 
