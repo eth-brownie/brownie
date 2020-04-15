@@ -9,6 +9,7 @@ from brownie.network.contract import Contract  # NOQA: F401
 config = _CONFIG.settings
 
 __all__ = [
+    "Contract",
     "accounts",  # accounts is an Accounts singleton
     "alert",
     "history",  # history is a TxHistory singleton
