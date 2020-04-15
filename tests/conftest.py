@@ -121,6 +121,12 @@ def xdist_id(worker_id):
 def _base_config(tmp_path_factory, xdist_id):
     brownie._config.DATA_FOLDER = tmp_path_factory.mktemp(f"data-{xdist_id}")
     brownie._config._make_data_folders(brownie._config.DATA_FOLDER)
+
+    cur = brownie.network.state.cur
+    cur.close()
+    cur.connect(brownie._config.DATA_FOLDER.joinpath("pytest.db"))
+    cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
+
     if xdist_id:
         port = 8545 + xdist_id
         brownie._config.CONFIG.networks["development"]["cmd_settings"]["port"] = port
