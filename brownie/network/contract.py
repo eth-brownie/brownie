@@ -37,7 +37,7 @@ from brownie.utils import color
 from . import accounts, rpc
 from .event import _get_topics
 from .rpc import _revert_register
-from .state import _add_contract, _find_contract, _get_deployment, _remove_contract
+from .state import _add_contract, _add_deployment, _find_contract, _get_deployment, _remove_contract
 from .web3 import _resolve_address, web3
 
 __tracebackhide__ = True
@@ -147,7 +147,7 @@ class ContractContainer(_ContractBase):
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation."""
         contract = _find_contract(address)
-        if contract:
+        if isinstance(contract, ProjectContract):
             if contract._name == self._name and contract._project == self._project:
                 return contract
             raise ContractExists(
@@ -162,6 +162,7 @@ class ContractContainer(_ContractBase):
 
         contract._save_deployment()
         _add_contract(contract)
+        _add_deployment(contract)
         self._contracts.append(contract)
         return contract
 
@@ -383,7 +384,6 @@ class Contract(_DeployedContractBase):
         build = {"abi": abi, "contractName": name, "type": "contract"}
         _ContractBase.__init__(self, None, build, {})  # type: ignore
         _DeployedContractBase.__init__(self, address, owner, None)
-        _add_contract(self)
 
     @classmethod
     def from_abi(
@@ -395,7 +395,7 @@ class Contract(_DeployedContractBase):
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build, {})  # type: ignore
         _DeployedContractBase.__init__(self, address, owner, None)
-        _add_contract(self)
+        _add_deployment(self)
         return self
 
     @classmethod
@@ -434,7 +434,7 @@ class Contract(_DeployedContractBase):
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build, manifest["sources"])  # type: ignore
         _DeployedContractBase.__init__(self, address, owner)
-        _add_contract(self)
+        _add_deployment(self)
         return self
 
     @classmethod
@@ -498,7 +498,7 @@ class Contract(_DeployedContractBase):
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build, sources)  # type: ignore
         _DeployedContractBase.__init__(self, address, owner)
-        _add_contract(self)
+        _add_deployment(self)
         return self
 
 
