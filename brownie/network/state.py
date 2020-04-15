@@ -1,14 +1,22 @@
 #!/usr/bin/python3
 
-from typing import Any, Dict, Iterator, List
+from hashlib import sha1
+from sqlite3 import OperationalError
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
+from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
+from brownie.project.build import DEPLOYMENT_KEYS
+from brownie.utils.sql import Cursor
 
 from .rpc import _revert_register
 from .web3 import _resolve_address
 
 __tracebackhide__ = True
 _contract_map: Dict = {}
+
+cur = Cursor(_get_data_folder().joinpath(f"deployments.db"))
+cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
 
 
 class TxHistory(metaclass=_Singleton):
@@ -90,9 +98,15 @@ class TxHistory(metaclass=_Singleton):
 
 def _find_contract(address: Any) -> Any:
     address = _resolve_address(address)
-    if address not in _contract_map:
-        return None
-    return _contract_map[address]
+    if address in _contract_map:
+        return _contract_map[address]
+    if CONFIG.network_type == "live":
+        try:
+            from brownie.network.contract import Contract
+
+            return Contract(address)
+        except ValueError:
+            pass
 
 
 def _get_current_dependencies() -> List:
@@ -104,7 +118,60 @@ def _get_current_dependencies() -> List:
 
 def _add_contract(contract: Any) -> None:
     _contract_map[contract.address] = contract
+    if CONFIG.network_type == "live":
+        _add_deployment(contract)
 
 
 def _remove_contract(contract: Any) -> None:
     del _contract_map[contract.address]
+
+
+def _get_deployment(
+    address: str = None, alias: str = None
+) -> Tuple[Optional[Dict], Optional[Dict]]:
+    if address and alias:
+        raise
+    if address:
+        address = _resolve_address(address)
+        query = f"address='{address}'"
+    elif alias:
+        query = f"alias='{alias}'"
+
+    name = f"chain{CONFIG.active_network['chainid']}"
+    try:
+        row = cur.fetchone(f"SELECT * FROM {name} WHERE {query}")
+    except OperationalError:
+        row = None
+    if not row:
+        return None, None
+
+    keys = ["address", "alias", "paths"] + DEPLOYMENT_KEYS
+    build_json = {k: v for k, v in zip(keys, row)}
+    path_map = build_json.pop("paths")
+    sources = {
+        i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]
+        for i in path_map.values()
+    }
+    build_json["allSourcePaths"] = {k: v[1] for k, v in path_map.items()}
+
+    return build_json, sources
+
+
+def _add_deployment(contract: Any) -> None:
+    address = _resolve_address(contract.address)
+    name = f"chain{CONFIG.active_network['chainid']}"
+
+    cur.execute(
+        f"CREATE TABLE IF NOT EXISTS {name} "
+        f"(address UNIQUE, alias UNIQUE, paths, {', '.join(DEPLOYMENT_KEYS)})"
+    )
+
+    all_sources = {}
+    for key, path in contract._build.get("allSourcePaths", {}).items():
+        source = contract._sources.get(path)
+        hash_ = sha1(source.encode()).hexdigest()
+        cur.insert("sources", hash_, source)
+        all_sources[key] = [hash_, path]
+
+    values = [contract._build.get(i) for i in DEPLOYMENT_KEYS]
+    cur.insert(name, address, "", all_sources, *values)

@@ -4,29 +4,32 @@ from typing import Dict, ItemsView, List, Optional, Tuple, Union
 
 from .sources import Sources, highlight_source
 
-BUILD_KEYS = [
+DEPLOYMENT_KEYS = [
     "abi",
-    "allSourcePaths",
     "ast",
     "bytecode",
-    "bytecodeSha1",
     "compiler",
     "contractName",
-    "coverageMap",
     "deployedBytecode",
     "deployedSourceMap",
-    "dependencies",
     "language",
     "natspec",
-    "offset",
     "opcodes",
     "pcMap",
-    "sha1",
-    "source",
     "sourceMap",
-    "sourcePath",
     "type",
 ]
+
+BUILD_KEYS = [
+    "allSourcePaths",
+    "bytecodeSha1",
+    "coverageMap",
+    "dependencies",
+    "offset",
+    "sha1",
+    "source",
+    "sourcePath",
+] + DEPLOYMENT_KEYS
 
 _revert_map: Dict = {}
 
