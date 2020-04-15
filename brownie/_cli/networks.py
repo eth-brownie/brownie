@@ -80,19 +80,19 @@ def _list(verbose=False):
         for value in chain["networks"]:
             is_last = value == chain["networks"][-1]
             if verbose:
-                _print_verbose(value, is_last)
+                _print_verbose_network_description(value, is_last)
             else:
-                _print_simple(value, is_last)
+                _print_simple_network_description(value, is_last)
 
     print("\nDevelopment")
     for value in networks["development"]:
         is_last = value == networks["development"][-1]
         if verbose:
             settings = value.pop("cmd_settings")
-            _print_verbose(value, value == networks["development"][-1])
-            _print_verbose(settings, value == networks["development"][-1], 2)
+            _print_verbose_network_description(value, value == networks["development"][-1])
+            _print_verbose_network_description(settings, value == networks["development"][-1], 2)
         else:
-            _print_simple(value, is_last)
+            _print_simple_network_description(value, is_last)
 
 
 def _add(env, id_, *args):
@@ -132,6 +132,7 @@ def _add(env, id_, *args):
     notify(
         "SUCCESS", f"A new network '{color('bright magenta')}{new['name']}{color}' has been added"
     )
+    _print_verbose_network_description(new, True)
 
 
 def _modify(id_, *args):
@@ -171,6 +172,7 @@ def _modify(id_, *args):
     notify(
         "SUCCESS", f"Network '{color('bright magenta')}{target['name']}{color}' has been modified"
     )
+    _print_verbose_network_description(target, True)
 
 
 def _delete(id_):
@@ -272,27 +274,27 @@ def _parse_args(args):
     return args
 
 
-def _print_simple(obj, is_last):
+def _print_simple_network_description(network_dict, is_last):
     u = "\u2514" if is_last else "\u251c"
     print(
-        f"{color('bright black')}  {u}\u2500{color}{obj['name']}:"
-        f" {color('green')}{obj['id']}{color}"
+        f"{color('bright black')}  {u}\u2500{color}{network_dict['name']}:"
+        f" {color('green')}{network_dict['id']}{color}"
     )
 
 
-def _print_verbose(obj, is_last, indent=0):
+def _print_verbose_network_description(network_dict, is_last, indent=0):
     u = "\u2514" if is_last else "\u251c"
     v = " " if is_last else "\u2502"
-    if "name" in obj:
-        print(f"{color('bright black')}  {u}\u2500{color}{obj.pop('name')}")
+    if "name" in network_dict:
+        print(f"{color('bright black')}  {u}\u2500{color}{network_dict.pop('name')}")
 
-    obj_keys = sorted(obj)
+    obj_keys = sorted(network_dict)
     if "id" in obj_keys:
         obj_keys.remove("id")
         obj_keys.insert(0, "id")
 
     for key in obj_keys:
-        value = obj[key]
+        value = network_dict[key]
         u = "\u2514" if key == obj_keys[-1] else "\u251c"
 
         if indent:
