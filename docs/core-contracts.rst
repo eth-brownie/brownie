@@ -37,7 +37,7 @@ It must be called with the contract constructor arguments, and a dictionary of :
     <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
 
-Calling :func:`ContractContainer.deploy <ContractContainer.deploy>` returns a :func:`Contract <brownie.network.contract.ProjectContract>` object. The returned object is also appended to the :func:`ContractContainer <brownie.network.contract.ContractContainer>`.
+Calling :func:`ContractContainer.deploy <ContractContainer.deploy>` returns a :func:`ProjectContract <brownie.network.contract.ProjectContract>` object. The returned object is also appended to the :func:`ContractContainer <brownie.network.contract.ContractContainer>`.
 
 .. code-block:: python
 
@@ -90,7 +90,7 @@ You may call or send a transaction to any public function within a contract. How
     * In Solidity, callable methods are labelled as `view <https://solidity.readthedocs.io/en/v0.6.0/contracts.html#view-functions>`_ or `pure <https://solidity.readthedocs.io/en/v0.6.0/contracts.html#pure-functions>`_
     * In Vyper, callable methods include the `@constant <https://vyper.readthedocs.io/en/latest/structure-of-a-contract.html#decorators>`_ decorator.
 
-All public contract methods are available from the :func:`Contract <brownie.network.contract.ProjectContract>` object via class methods of the same name.
+All public contract methods are available from the :func:`ProjectContract <brownie.network.contract.ProjectContract>` object via class methods of the same name.
 
 .. code-block:: python
 
@@ -172,15 +172,40 @@ If you wish to access the method via a transaction you can use :func:`ContractCa
     >>> tx.return_value
     1000000000000000000000
 
+.. _core-contracts-live:
+
 Contracts Outside of your Project
 =================================
 
-It is also possible to create a :func:`Contract <brownie.network.contract.Contract>` object using only an `ABI <https://solidity.readthedocs.io/en/latest/abi-spec.html#json>`_. In this way you can interact with already deployed contracts that are not a part of your core project.
+When working in a :ref:`live environment <network-management>`, you can create :func:`Contract <brownie.network.contract.Contract>` objects to interact with already-deployed contracts.
 
-To create a :func:`Contract <brownie.network.contract.Contract>` from an ABI:
+New :func:`Contract <brownie.network.contract.Contract>` objects are created using one of three :ref:`class methods <api-network-contract-classmethods>`. Options for creation include:
+
+    * Fetching verified source code from a block explorer, such as `Etherscan <https://etherscan.io/>`_
+    * Providing an `ABI <https://solidity.readthedocs.io/en/latest/abi-spec.html#json>`_ and an address
+    * Fetching the information from an ethPM registry
+
+For example, use :func:`Contract.from_explorer <Contract.from_explorer>` to create an object by querying Etherscan:
 
 .. code-block:: python
 
-    >>> from brownie import Contract
-    >>> Contract("Token", "0x79447c97b6543F6eFBC91613C655977806CB18b0", abi)
-    <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
+    >>> Contract.from_explorer("0x6b175474e89094c44da98b954eedeac495271d0f")
+    Fetching source of 0x6B175474E89094C44Da98b954EedeAC495271d0F from api.etherscan.io...
+    <Dai Contract '0x6B175474E89094C44Da98b954EedeAC495271d0F'>
+
+The data used to create :func:`Contract <brownie.network.contract.Contract>` objects is stored in a local database and persists between sessions. After the initial creation via a :ref:`class method <api-network-contract-classmethods>`, you can recreate an object by initializing :func:`Contract <brownie.network.contract.Contract>` with an address:
+
+.. code-block:: python
+
+    >>> Contract("0x6b175474e89094c44da98b954eedeac495271d0f")
+    <Dai Contract '0x6B175474E89094C44Da98b954EedeAC495271d0F'>
+
+Alternatively, :func:`Contract.set_alias <Contract.set_alias>` allows you to create an alias for quicker access. Aliases also persist between sessions.
+
+.. code-block:: python
+
+    >>> contract = Contract("0x6b175474e89094c44da98b954eedeac495271d0f")
+    >>> contract.set_alias('dai')
+
+    >>> Contract('dai')
+    <Dai Contract '0x6B175474E89094C44Da98b954EedeAC495271d0F'>

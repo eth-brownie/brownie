@@ -84,7 +84,16 @@ Compiler Optimization
 
 Compiler optimization is enabled by default. Coverage evaluation was designed using optimized contracts, there is no need to disable it during testing.
 
-Values given under ``compiler.solc.optimizer`` in the project :ref:`configuration file <config>` are passed to the compiler with no reformatting. This way you can enable specific settings such as the YUL optimizer.
+Values given under ``compiler.solc.optimizer`` in the project :ref:`configuration file <config>` are passed directly to the compiler. This way you can modify specific optimizer settings. For example, to enable common subexpression elimination and the YUL optimizer:
+
+.. code-block::  yaml
+
+    compiler:
+        solc:
+            optimizer:
+                details:
+                    cse: true
+                    yul: true
 
 See the Solidity documentation for information on the `optimizer <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_ and it's `available settings <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_.
 

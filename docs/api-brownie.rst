@@ -13,7 +13,7 @@ The ``brownie`` package is the main package containing all of Brownie's function
 
     >>> from brownie import *
     >>> dir()
-    ['Fixed', 'Wei', 'accounts', 'alert', 'compile_source', 'config', 'history', 'network', 'project', 'rpc', 'run', 'web3']
+    ['Contract', 'Fixed', 'Wei', 'accounts', 'alert', 'compile_source', 'config', 'history', 'network', 'project', 'rpc', 'run', 'web3']
 
 ``brownie.exceptions``
 ======================
