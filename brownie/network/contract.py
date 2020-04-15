@@ -62,7 +62,7 @@ class _ContractBase:
         """
         Display NatSpec documentation for this contract.
         """
-        if "natspec" in self._build:
+        if self._build.get("natspec"):
             _print_natspec(self._build["natspec"])
 
     def get_method(self, calldata: str) -> Optional[str]:
@@ -254,7 +254,7 @@ class _DeployedContractBase(_ContractBase):
             name = f"{self._name}.{abi['name']}"
             sig = build_function_signature(abi)
             natspec: Dict = {}
-            if "natspec" in self._build:
+            if self._build.get("natspec"):
                 natspec = self._build["natspec"]["methods"].get(sig, {})
 
             if fn_names.count(abi["name"]) == 1:
