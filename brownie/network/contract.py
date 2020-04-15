@@ -393,6 +393,45 @@ class Contract(_DeployedContractBase):
         _add_contract(self)
         return self
 
+    @classmethod
+    def from_ethpm(
+        cls,
+        name: str,
+        manifest_uri: str,
+        address: Optional[str] = None,
+        owner: Optional[AccountsType] = None,
+    ) -> "Contract":
+        manifest = ethpm.get_manifest(manifest_uri)
+
+        if address is None:
+            address_list = ethpm.get_deployment_addresses(manifest, name)
+            if not address_list:
+                raise ContractNotFound(
+                    f"'{manifest['package_name']}' manifest does not contain"
+                    f" a deployment of '{name}' on this chain"
+                )
+            if len(address_list) > 1:
+                raise ValueError(
+                    f"'{manifest['package_name']}' manifest contains more than one "
+                    f"deployment of '{name}' on this chain, you must specify an address:"
+                    f" {', '.join(address_list)}"
+                )
+            address = address_list[0]
+
+        manifest["contract_types"][name]["contract_name"]
+        build = {
+            "abi": manifest["contract_types"][name]["abi"],
+            "contractName": name,
+            "natspec": manifest["contract_types"][name]["natspec"],
+            "type": "contract",
+        }
+
+        self = cls.__new__(cls)
+        _ContractBase.__init__(self, None, build, manifest["sources"])  # type: ignore
+        _DeployedContractBase.__init__(self, address, owner)
+        _add_contract(self)
+        return self
+
 
 class ProjectContract(_DeployedContractBase):
 
