@@ -162,6 +162,7 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
                     "source_path": build["sourcePath"],
                     "all_source_paths": sorted(build["allSourcePaths"].values()),
                     "compiler": build["compiler"],
+                    "natspec": build["natspec"],
                 }
             )
 
