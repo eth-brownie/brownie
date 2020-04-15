@@ -2,6 +2,7 @@
 
 import json
 import re
+import warnings
 from pathlib import Path
 from textwrap import TextWrapper
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
@@ -31,7 +32,7 @@ from brownie.utils import color
 from . import accounts, rpc
 from .event import _get_topics
 from .rpc import _revert_register
-from .state import _add_contract, _find_contract, _remove_contract
+from .state import _add_contract, _find_contract, _get_deployment, _remove_contract
 from .web3 import _resolve_address, web3
 
 __tracebackhide__ = True
@@ -320,6 +321,30 @@ class _DeployedContractBase(_ContractBase):
 
 class Contract(_DeployedContractBase):
     def __init__(
+        self, address_or_alias: str, *args: Any, owner: Optional[AccountsType] = None, **kwargs: Any
+    ) -> None:
+        if args or kwargs:
+            warnings.warn(
+                "Initializing `Contract` in this manner is deprecated."
+                " Use `from_abi` or `from_ethpm` instead.",
+                DeprecationWarning,
+            )
+            kwargs["owner"] = owner
+            return self._deprecated_init(address_or_alias, *args, **kwargs)
+
+        try:
+            address = _resolve_address(address_or_alias)
+            build, sources = _get_deployment(address)
+        except Exception:
+            build, sources = _get_deployment(alias=address_or_alias)
+        if build is None or sources is None:
+            # TODO automatically fetch
+            raise ValueError("Unknown contract")
+
+        _ContractBase.__init__(self, None, build, sources)
+        _DeployedContractBase.__init__(self, address, owner)
+
+    def _deprecated_init(
         self,
         name: str,
         address: Optional[str] = None,
@@ -353,11 +378,7 @@ class Contract(_DeployedContractBase):
         build = {"abi": abi, "contractName": name, "type": "contract"}
         _ContractBase.__init__(self, None, build, {})  # type: ignore
         _DeployedContractBase.__init__(self, address, owner, None)
-        contract = _find_contract(address)
-        if not contract:
-            return
-        if contract.bytecode != self.bytecode:
-            contract._reverted = True
+        _add_contract(self)
 
 
 class ProjectContract(_DeployedContractBase):
