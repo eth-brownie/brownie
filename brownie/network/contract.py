@@ -1,15 +1,19 @@
 #!/usr/bin/python3
 
 import json
+import os
 import re
 import warnings
 from pathlib import Path
 from textwrap import TextWrapper
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from urllib.parse import urlparse
 
 import eth_abi
+import requests
 from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
+from semantic_version import Version
 
 from brownie._config import CONFIG
 from brownie.convert.datatypes import Wei
@@ -26,6 +30,7 @@ from brownie.exceptions import (
     VirtualMachineError,
 )
 from brownie.project import ethpm
+from brownie.project.compiler import compile_and_format
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
@@ -428,6 +433,70 @@ class Contract(_DeployedContractBase):
 
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build, manifest["sources"])  # type: ignore
+        _DeployedContractBase.__init__(self, address, owner)
+        _add_contract(self)
+        return self
+
+    @classmethod
+    def from_explorer(cls, address: str, owner: Optional[AccountsType] = None) -> "Contract":
+        url = CONFIG.active_network.get("explorer")
+        if url is None:
+            raise ValueError("Explorer API not set for this network")
+
+        address = _resolve_address(address)
+        params: Dict = {"module": "contract", "action": "getsourcecode", "address": address}
+        if "etherscan" in url:
+            if os.getenv("ETHERSCAN_TOKEN"):
+                params["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
+            else:
+                warnings.warn(
+                    "No Etherscan API token set. You may experience issues with rate limiting. "
+                    "Visit https://etherscan.io/register to obtain a token, and then store it "
+                    "as the environment variable $ETHERSCAN_TOKEN"
+                )
+
+        print(
+            f"Fetching source of {color('bright blue')}{address}{color} "
+            f"from {color('bright blue')}{urlparse(url).netloc}{color}..."
+        )
+        response = requests.get(url, params=params)
+
+        if response.status_code != 200:
+            raise ConnectionError(
+                f"Status {response.status_code} when querying {url}: {response.text}"
+            )
+        data = response.json()
+        if int(data["status"]) != 1:
+            raise ValueError(f"Failed to retrieve data from API: {data['result']}")
+        if not data["result"][0].get("SourceCode"):
+            raise ValueError(f"Source for {address} has not been verified")
+
+        name = data["result"][0]["ContractName"]
+        try:
+            version = Version(data["result"][0]["CompilerVersion"].lstrip("v")).truncate()
+        except Exception:
+            version = Version("0.0.0")
+        if version < Version("0.4.22"):
+            warnings.warn(
+                f"{address}: target compiler '{data['result'][0]['CompilerVersion']}' is "
+                "unsupported by Brownie. Some functionality will not be available."
+            )
+            return cls.from_abi(name, address, json.loads(data["result"][0]["ABI"]))
+
+        sources = {f"{name}-flattened.sol": data["result"][0]["SourceCode"]}
+        optimizer = {
+            "enabled": bool(data["result"][0]["OptimizationUsed"]),
+            "runs": int(data["result"][0]["Runs"]),
+        }
+        build = compile_and_format(sources, solc_version=str(version), optimizer=optimizer)
+        build = build[name]
+
+        if not _verify_deployed_code(address, build["deployedBytecode"], build["language"]):
+            warnings.warn(f"{address}: Locally compiled and on-chain bytecode do not match!")
+            del build["pcMap"]
+
+        self = cls.__new__(cls)
+        _ContractBase.__init__(self, None, build, sources)  # type: ignore
         _DeployedContractBase.__init__(self, address, owner)
         _add_contract(self)
         return self
