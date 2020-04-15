@@ -501,6 +501,26 @@ class Contract(_DeployedContractBase):
         _add_deployment(self)
         return self
 
+    def set_alias(self, alias: Optional[str]) -> None:
+        if CONFIG.network_type != "live":
+            raise ValueError("Cannot set alias outside of live environment")
+
+        if alias is not None:
+            if "." in alias or alias.lower().startswith("0x"):
+                raise ValueError("Invalid alias")
+            build, _ = _get_deployment(alias=alias)
+            if build is not None:
+                if build["address"] != self.address:
+                    raise ValueError("Alias is already in use on another contract")
+                return
+
+        _add_deployment(self, alias)
+        self._build["alias"] = alias
+
+    @property
+    def alias(self) -> Optional[str]:
+        return self._build.get("alias")
+
 
 class ProjectContract(_DeployedContractBase):
 

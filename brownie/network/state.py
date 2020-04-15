@@ -155,7 +155,7 @@ def _get_deployment(
     return build_json, sources
 
 
-def _add_deployment(contract: Any) -> None:
+def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
     if CONFIG.network_type != "live":
         return
 
@@ -175,4 +175,4 @@ def _add_deployment(contract: Any) -> None:
         all_sources[key] = [hash_, path]
 
     values = [contract._build.get(i) for i in DEPLOYMENT_KEYS]
-    cur.insert(name, address, "", all_sources, *values)
+    cur.insert(name, address, alias, all_sources, *values)
