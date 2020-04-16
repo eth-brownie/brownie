@@ -106,6 +106,35 @@ Compiler settings. See :ref:`compiler settings<compile_settings>` for more infor
               - zeppelin=/usr/local/lib/open-zeppelin/contracts/
               - github.com/ethereum/dapp-bin/=/usr/local/lib/dapp-bin/
 
+Console
+-------
+
+.. py:attribute:: show_colors
+
+    Enable or disable colorful output.
+
+    default value: ``true``
+
+.. py:attribute:: color_style
+
+    Set the Pygments `color style <https://pygments.org/docs/styles/#getting-a-list-of-available-styles>`_ used within the console and throughout Brownie.
+
+    You can view a gallery of popular styles `here <https://help.farbox.com/pygments.html>`_.
+
+    default value: ``monokai``
+
+.. py:attribute:: auto_suggest
+
+    Enable or disable type hints for contract function inputs.
+
+    default value: ``true``
+
+.. py:attribute:: completions
+
+    Enable or disable autocompletion.
+
+    default value: ``true``
+
 .. _config-hypothesis:
 
 Hypothesis
@@ -128,12 +157,6 @@ Other Settings
     If enabled, Brownie will always attempt to fetch source code for unknown addresses using :func:`Contract.from_explorer <Contract.from_explorer>`.
 
     default value: ``false``
-
-.. py:attribute:: show_colors
-
-    Enable or disable colorful console output.
-
-    default value: ``true``
 
 .. py:attribute:: dependencies
 
