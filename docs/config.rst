@@ -4,9 +4,11 @@
 The Configuration File
 ======================
 
-Brownie projects may optionally include a configuration file to modify certain behaviors.
+You can modify Brownie's default behaviours by creating an optional configuration file.
 
-The configuration file must be saved as ``brownie-config.yaml`` in the root folder or your project. All fields are optional. You can copy from the examples below and modify the settings as required.
+The configuration file must be saved as ``brownie-config.yaml``. If saved in the root directory of a project it will be loaded whenever that project is active. If saved in your `home path <https://docs.python.org/3/library/pathlib.html#pathlib.Path.home>`_, it will always be loaded.
+
+All configuration fields are optional. You can copy from the examples below and modify the settings as required.
 
 Default Configuration
 =====================
