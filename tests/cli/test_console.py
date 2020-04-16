@@ -3,8 +3,11 @@
 import sys
 
 import pytest
+from prompt_toolkit.input.defaults import create_pipe_input
 
 from brownie._cli.console import Console
+
+pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="stdin pipe issues")
 
 
 @pytest.fixture
@@ -13,7 +16,7 @@ def console(testproject, monkeypatch):
     monkeypatch.setattr("brownie._cli.console.Console.showsyntaxerror", _exception)
     argv = sys.argv
     sys.argv = ["brownie", "console"]
-    c = Console(testproject)
+    c = Console(testproject, create_pipe_input())
     yield c
     sys.argv = argv
 

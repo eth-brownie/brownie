@@ -53,7 +53,18 @@ def main():
 
 
 class Console(code.InteractiveConsole):
-    def __init__(self, project=None):
+    def __init__(self, project=None, inp=None):
+        """
+        Launch the Brownie console.
+
+        Arguments
+        ---------
+        project : `Project`, optional
+            Active Brownie project to include in the console's local namespace.
+        inp : Input, optional
+            Input object to be passed to the prompt_toolkit `PromptSession`.
+            Required for unit testing to avoid conflicts with Pytest.
+        """
         locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
         locals_dict["dir"] = self._dir
 
@@ -67,6 +78,7 @@ class Console(code.InteractiveConsole):
         except ModuleNotFoundError:
             pass
 
+        # prepare lexer and formatter
         self.lexer = PythonLexer()
         fmt_name = "terminal"
         try:
@@ -80,6 +92,7 @@ class Console(code.InteractiveConsole):
             pass
         self.formatter = get_formatter_by_name(fmt_name, style=CONFIG.settings["color_style"])
 
+        # create prompt session object
         history_file = str(_get_data_folder().joinpath(".history").absolute())
         kwargs = {}
         if CONFIG.settings["show_colors"]:
@@ -93,7 +106,7 @@ class Console(code.InteractiveConsole):
         if CONFIG.settings["completions"]:
             kwargs["completer"] = ConsoleCompleter(locals_dict)
         self.prompt_session = PromptSession(
-            history=SanitizedFileHistory(history_file, locals_dict), **kwargs
+            history=SanitizedFileHistory(history_file, locals_dict), input=inp, **kwargs
         )
 
         if CONFIG.settings["auto_suggest"]:
