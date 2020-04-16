@@ -5,6 +5,7 @@ import importlib
 import sys
 
 from prompt_toolkit import PromptSession
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
@@ -79,11 +80,13 @@ class Console(code.InteractiveConsole):
         history_file = str(_get_data_folder().joinpath(".history").absolute())
         kwargs = {}
         if CONFIG.settings["show_colors"]:
-            kwargs = {
-                "lexer": PygmentsLexer(PythonLexer),
-                "style": style_from_pygments_cls(get_style_by_name(CONFIG.settings["color_style"])),
-                "include_default_pygments_style": False,
-            }
+            kwargs.update(
+                lexer=PygmentsLexer(PythonLexer),
+                style=style_from_pygments_cls(get_style_by_name(CONFIG.settings["color_style"])),
+                include_default_pygments_style=False,
+            )
+        if CONFIG.settings["auto_suggest"]:
+            kwargs["auto_suggest"] = AutoSuggestFromHistory()
         self.prompt_session = PromptSession(
             history=SanitizedFileHistory(history_file, locals_dict), **kwargs
         )
