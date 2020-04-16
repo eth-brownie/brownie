@@ -6,7 +6,7 @@ import re
 import sys
 
 from prompt_toolkit import PromptSession
-from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.lexers import PygmentsLexer
@@ -19,6 +19,7 @@ from pygments.styles import get_style_by_name
 import brownie
 from brownie import network, project
 from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
+from brownie.convert.utils import get_type_strings
 from brownie.utils import color
 from brownie.utils.docopt import docopt
 
@@ -88,12 +89,19 @@ class Console(code.InteractiveConsole):
                 include_default_pygments_style=False,
             )
         if CONFIG.settings["auto_suggest"]:
-            kwargs["auto_suggest"] = AutoSuggestFromHistory()
+            kwargs["auto_suggest"] = TestAutoSuggest(locals_dict)
         if CONFIG.settings["completions"]:
             kwargs["completer"] = ConsoleCompleter(locals_dict)
         self.prompt_session = PromptSession(
             history=SanitizedFileHistory(history_file, locals_dict), **kwargs
         )
+
+        if CONFIG.settings["auto_suggest"]:
+            # remove the builting binding for auto-suggest acceptance
+            key_bindings = self.prompt_session.app.key_bindings
+            accept_binding = key_bindings.get_bindings_for_keys(("right",))[0]
+            key_bindings._bindings2.remove(accept_binding.handler)
+
         super().__init__(locals_dict)
 
     # console dir method, for simplified and colorful output
@@ -222,3 +230,50 @@ class ConsoleCompleter(Completer):
             completions = [i for i in target_dict if not i.startswith("_")]
         for key in completions:
             yield Completion(key, start_position=-len(current_text))
+
+
+class TestAutoSuggest(AutoSuggest):
+    """
+    AutoSuggest subclass to display contract function signatures.
+    """
+
+    def __init__(self, local_dict):
+        self.locals = local_dict
+        super().__init__()
+
+    def get_suggestion(self, buffer, document):
+        target_dict = self.locals
+        attributes = document.text.split(".")
+        current_text = attributes.pop()
+        if "(" not in current_text or ")" in current_text:
+            return
+
+        for key in attributes:
+            try:
+                if "[" in key:
+                    key, idx = re.match(r"^(\w+)\[([-0-9]+)\]$", key).groups()
+                    target_dict = target_dict[key][int(idx)].__dict__
+                else:
+                    target_dict = target_dict[key].__dict__
+            except Exception:
+                return
+        try:
+            method, args = current_text.split("(", maxsplit=1)
+
+            abi = target_dict[method].abi["inputs"]
+            if not args and not abi:
+                return Suggestion(")")
+
+            types_list = get_type_strings(abi, {"fixed168x10": "decimal"})
+            params = zip([i["name"] for i in abi], types_list)
+            inputs = [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params]
+
+            args = args.split(",")
+            inputs[0] = inputs[0][1:]
+            remaining_inputs = inputs[len(args) - 1 :]
+            remaining_inputs[0] = remaining_inputs[0][len(args[-1]) :]
+
+            return Suggestion(",".join(remaining_inputs) + ")")
+
+        except Exception:
+            return
