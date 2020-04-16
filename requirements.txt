@@ -5,11 +5,12 @@ eth-hash[pycryptodome]==0.2.0
 eth-utils==1.8.4
 hexbytes==0.2.0
 hypothesis==5.8.0
+prompt-toolkit==3.0.5
 psutil>=5.7.0,<6.0.0
 py>=1.5.0
-pyreadline==2.1;platform_system=='Windows'
 py-solc-ast>=1.2.3,<2.0.0
 py-solc-x>=0.8.1,<1.0.0
+pygments==2.6.1
 pytest==5.4.1
 pytest-xdist==1.31.0
 pythx==1.5.5
