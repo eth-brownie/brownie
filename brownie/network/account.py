@@ -15,7 +15,6 @@ from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei, to_address
 from brownie.exceptions import IncompatibleEVMVersion, UnknownAccount, VirtualMachineError
-from brownie.utils import color
 
 from .rpc import Rpc, _revert_register
 from .transaction import TransactionReceipt
@@ -166,7 +165,7 @@ class PublicKeyAccount:
         self.address = _resolve_address(addr)
 
     def __repr__(self) -> str:
-        return f"<{type(self).__name__} '{color('bright magenta')}{self.address}{color}'>"
+        return f"<{type(self).__name__} '{self.address}'>"
 
     def __hash__(self) -> int:
         return hash(self.address)

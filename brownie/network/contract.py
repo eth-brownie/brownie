@@ -282,7 +282,7 @@ class _DeployedContractBase(_ContractBase):
         return self.address
 
     def __repr__(self) -> str:
-        return f"<{self._name} Contract '{color('bright magenta')}{self.address}{color}'>"
+        return f"<{self._name} Contract '{self.address}'>"
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, _DeployedContractBase):
