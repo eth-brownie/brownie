@@ -20,7 +20,6 @@ from brownie._config import (
     BROWNIE_FOLDER,
     CONFIG,
     _get_data_folder,
-    _get_project_config_path,
     _load_project_compiler_config,
     _load_project_config,
     _load_project_dependencies,
@@ -370,8 +369,6 @@ def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
     """Checks for a Brownie project."""
     path = Path(path).resolve()
     for folder in [path] + list(path.parents):
-        if _get_project_config_path(folder):
-            return folder
         if next((i for i in folder.glob("contracts/**/*") if i.suffix in (".vy", ".sol")), None):
             return folder
         if folder.joinpath("contracts").is_dir() and folder.joinpath("tests").is_dir():
