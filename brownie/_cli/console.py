@@ -2,10 +2,12 @@
 
 import code
 import importlib
+import re
 import sys
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
@@ -87,6 +89,8 @@ class Console(code.InteractiveConsole):
             )
         if CONFIG.settings["auto_suggest"]:
             kwargs["auto_suggest"] = AutoSuggestFromHistory()
+        if CONFIG.settings["completions"]:
+            kwargs["completer"] = ConsoleCompleter(locals_dict)
         self.prompt_session = PromptSession(
             history=SanitizedFileHistory(history_file, locals_dict), **kwargs
         )
@@ -190,3 +194,31 @@ class SanitizedFileHistory(FileHistory):
         except (ValueError, AttributeError, KeyError):
             pass
         return super().store_string(line)
+
+
+class ConsoleCompleter(Completer):
+    def __init__(self, local_dict):
+        self.locals = local_dict
+        super().__init__()
+
+    def get_completions(self, document, complete_event):
+        target_dict = self.locals
+        attributes = document.text.split(".")
+        current_text = attributes.pop()
+
+        for key in attributes:
+            try:
+                if "[" in key:
+                    key, idx = re.match(r"^(\w+)\[([-0-9]+)\]$", key).groups()
+                    target_dict = target_dict[key][int(idx)].__dict__
+                else:
+                    target_dict = target_dict[key].__dict__
+            except Exception:
+                return
+
+        if current_text:
+            completions = [i for i in target_dict if i.startswith(current_text)]
+        else:
+            completions = [i for i in target_dict if not i.startswith("_")]
+        for key in completions:
+            yield Completion(key, start_position=-len(current_text))
