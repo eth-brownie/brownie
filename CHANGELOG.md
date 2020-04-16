@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.7.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.7.0) - 2020-04-17
+### Added
+- Install packages from Github or ethPM using `brownie pm` CLI commands ([#390](https://github.com/iamdefinitelyahuman/brownie/pull/390))
+- Manage network settings using `brownie networks` CLI commands ([#408](https://github.com/iamdefinitelyahuman/brownie/pull/408))
+- Fetch contract sources from Etherscan API with `Contract.from_explorer` ([#413](https://github.com/iamdefinitelyahuman/brownie/pull/413))
+- Maintain persistent deployment records in SQLite database ([#413](https://github.com/iamdefinitelyahuman/brownie/pull/413))
+- Use [`prompt_toolkit`](https://github.com/prompt-toolkit/python-prompt-toolkit) in console to enable autocompletion, input suggestions and code highlights ([#416](https://github.com/iamdefinitelyahuman/brownie/pull/416))
+- View NatSpec documentation for contract functions with `ContractCall.info` ([#395](https://github.com/iamdefinitelyahuman/brownie/pull/395))
+- `Accounts.default` to set default account for contract deployments ([#391](https://github.com/iamdefinitelyahuman/brownie/pull/391))
+- Cleaner output when using the `-s` flag with pytest ([#397](https://github.com/iamdefinitelyahuman/brownie/pull/397))
+
+### Changed
+- All configuration file settings are now optional and no config file is added when creating a new project ([#408](https://github.com/iamdefinitelyahuman/brownie/pull/408))
+- Network settings are handled independently of projects ([#408](https://github.com/iamdefinitelyahuman/brownie/pull/408))
+- Paths are referenced via pointers in build artifacts ([#403](https://github.com/iamdefinitelyahuman/brownie/pull/403))
+
+### Deprecated
+- `Contract` init method deprecated in favor of `from_ethpm` or `from_abi` class methods ([#413](https://github.com/iamdefinitelyahuman/brownie/pull/413))
+- `brownie ethpm` CLI tool temporarily deprecated in favor of `brownie pm` until ethPM v3 is official ([#390](https://github.com/iamdefinitelyahuman/brownie/pull/390))
+
+### Removed
+- Source minification ([#384](https://github.com/iamdefinitelyahuman/brownie/pull/384))
+
+### Fixed
+- Recursion errors when a library references itself ([#393](https://github.com/iamdefinitelyahuman/brownie/pull/393))
+- Incorrect source highlights when running tests across multiple projects at once ([#402](https://github.com/iamdefinitelyahuman/brownie/pull/402))
+
 ## [1.6.9](https://github.com/iamdefinitelyahuman/brownie/tree/v1.6.9) - 2020-04-03
 ### Fixed
 - Encoding bug for lists of tuples
