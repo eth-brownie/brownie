@@ -32,7 +32,6 @@ from brownie.project import compiler, ethpm
 from brownie.project.build import BUILD_KEYS, Build
 from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_pragma_spec
-from brownie.utils import color
 
 FOLDERS = [
     "contracts",
@@ -302,7 +301,7 @@ class Project(_ProjectBase):
                 brownie.__all__.remove(key)
 
     def __repr__(self) -> str:
-        return f"<Project '{color('bright magenta')}{self._name}{color}'>"
+        return f"<Project '{self._name}'>"
 
     def load_config(self) -> None:
         """Loads the project config file settings"""
@@ -362,7 +361,7 @@ class TempProject(_ProjectBase):
         self._create_containers()
 
     def __repr__(self) -> str:
-        return f"<TempProject '{color('bright magenta')}{self._name}{color}'>"
+        return f"<TempProject '{self._name}'>"
 
 
 def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
