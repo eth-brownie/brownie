@@ -63,5 +63,5 @@ def test_format_tb():
 
 
 def test_show_colors_config(config):
-    config.settings["show_colors"] = False
+    config.settings["console"]["show_colors"] = False
     assert color("blue") == ""

@@ -5,8 +5,6 @@
 # a project. Missing or malformed fields in this file could break Brownie.
 # https://eth-brownie.readthedocs.io/en/stable/config.html
 
-dependencies: null
-
 networks:
     default: development
     development:
@@ -29,13 +27,16 @@ compiler:
             runs: 200
         remappings: null
 
+console:
+    show_colors: true
+    color_style: monokai
+    auto_suggest: true
+    completions: true
+
 hypothesis:
     deadline: null
     max_examples: 50
     stateful_step_count: 10
 
 autofetch_sources: false
-show_colors: true
-color_style: monokai
-auto_suggest: true
-completions: true
+dependencies: null
