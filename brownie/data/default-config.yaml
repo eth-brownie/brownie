@@ -37,3 +37,4 @@ hypothesis:
 autofetch_sources: false
 show_colors: true
 color_style: monokai
+auto_suggest: true
