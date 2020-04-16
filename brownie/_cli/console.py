@@ -65,6 +65,8 @@ class Console(code.InteractiveConsole):
             Input object to be passed to the prompt_toolkit `PromptSession`.
             Required for unit testing to avoid conflicts with Pytest.
         """
+        console_settings = CONFIG.settings["console"]
+
         locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
         locals_dict["dir"] = self._dir
 
@@ -90,26 +92,26 @@ class Console(code.InteractiveConsole):
         except Exception:
             # if curses won't import we are probably using Windows
             pass
-        self.formatter = get_formatter_by_name(fmt_name, style=CONFIG.settings["color_style"])
+        self.formatter = get_formatter_by_name(fmt_name, style=console_settings["color_style"])
 
         # create prompt session object
         history_file = str(_get_data_folder().joinpath(".history").absolute())
         kwargs = {}
-        if CONFIG.settings["show_colors"]:
+        if console_settings["show_colors"]:
             kwargs.update(
                 lexer=PygmentsLexer(PythonLexer),
-                style=style_from_pygments_cls(get_style_by_name(CONFIG.settings["color_style"])),
+                style=style_from_pygments_cls(get_style_by_name(console_settings["color_style"])),
                 include_default_pygments_style=False,
             )
-        if CONFIG.settings["auto_suggest"]:
+        if console_settings["auto_suggest"]:
             kwargs["auto_suggest"] = TestAutoSuggest(locals_dict)
-        if CONFIG.settings["completions"]:
+        if console_settings["completions"]:
             kwargs["completer"] = ConsoleCompleter(locals_dict)
         self.prompt_session = PromptSession(
             history=SanitizedFileHistory(history_file, locals_dict), input=inp, **kwargs
         )
 
-        if CONFIG.settings["auto_suggest"]:
+        if console_settings["auto_suggest"]:
             # remove the builting binding for auto-suggest acceptance
             key_bindings = self.prompt_session.app.key_bindings
             accept_binding = key_bindings.get_bindings_for_keys(("right",))[0]
@@ -137,7 +139,7 @@ class Console(code.InteractiveConsole):
                 text = color.pretty_sequence(obj)
         except (SyntaxError, NameError):
             pass
-        if CONFIG.settings["show_colors"]:
+        if CONFIG.settings["console"]["show_colors"]:
             text = highlight(text, self.lexer, self.formatter)
         self.write(text)
 

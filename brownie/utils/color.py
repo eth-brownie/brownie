@@ -35,7 +35,7 @@ base_path = str(Path(".").absolute())
 
 class Color:
     def __call__(self, color_str: str = None) -> str:
-        if not CONFIG.settings["show_colors"]:
+        if not CONFIG.settings["console"]["show_colors"]:
             return ""
         if not color_str:
             return BASE + "m"
