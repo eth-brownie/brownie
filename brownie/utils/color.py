@@ -54,13 +54,13 @@ class Color:
     def pretty_dict(self, value: Dict, _indent: int = 0) -> str:
         text = ""
         if not _indent:
-            text = f"{self('dark white')}{{"
+            text = "{"
         _indent += 4
         for c, k in enumerate(sorted(value.keys(), key=lambda k: str(k))):
             if c:
                 text += ","
             s = "'" if isinstance(k, str) else ""
-            text += f"\n{' '*_indent}{s}{self}{k}{self('dark white')}{s}: "
+            text += f"\n{' '*_indent}{s}{k}{s}: "
             if isinstance(value[k], dict):
                 text += "{" + self.pretty_dict(value[k], _indent)
                 continue
@@ -70,8 +70,6 @@ class Color:
             text += self._write(value[k])
         _indent -= 4
         text += f"\n{' '*_indent}}}"
-        if not _indent:
-            text += f"{self}"
         return text
 
     # format lists for console printing
@@ -79,7 +77,7 @@ class Color:
         text = ""
         brackets = str(value)[0], str(value)[-1]
         if not _indent:
-            text += f"{self('dark white')}{brackets[0]}"
+            text += f"{brackets[0]}"
         if value and not [i for i in value if not isinstance(i, dict)]:
             # list of dicts
             text += f"\n{' '*(_indent+4)}{{"
@@ -93,14 +91,11 @@ class Color:
             # all other cases
             text += ", ".join(self._write(i) for i in value)
             text += brackets[1]
-        if not _indent:
-            text += f"{self}"
         return text
 
     def _write(self, value):
         s = '"' if isinstance(value, str) else ""
-        key = "bright magenta" if isinstance(value, str) else "bright blue"
-        return f"{s}{self(key)}{value}{self('dark white')}{s}"
+        return f"{s}{value}{s}"
 
     def format_tb(
         self,

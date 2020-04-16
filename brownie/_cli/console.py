@@ -1,22 +1,23 @@
 #!/usr/bin/python3
 
-import atexit
 import code
 import importlib
 import sys
+
+from prompt_toolkit import PromptSession
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.lexers import PygmentsLexer
+from prompt_toolkit.styles.pygments import style_from_pygments_cls
+from pygments import highlight
+from pygments.formatters import get_formatter_by_name
+from pygments.lexers import PythonLexer
+from pygments.styles import get_style_by_name
 
 import brownie
 from brownie import network, project
 from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
 from brownie.utils import color
 from brownie.utils.docopt import docopt
-
-if sys.platform == "win32":
-    from pyreadline import Readline
-
-    readline = Readline()
-else:
-    import readline  # noqa: F401
 
 __doc__ = f"""Usage: brownie console [options]
 
@@ -52,6 +53,9 @@ class Console(code.InteractiveConsole):
         locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
         locals_dict["dir"] = self._dir
 
+        if project:
+            project._update_and_register(locals_dict)
+
         # only make GUI available if Tkinter is installed
         try:
             Gui = importlib.import_module("brownie._gui").Gui
@@ -59,15 +63,30 @@ class Console(code.InteractiveConsole):
         except ModuleNotFoundError:
             pass
 
-        if project:
-            project._update_and_register(locals_dict)
+        self.lexer = PythonLexer()
+        fmt_name = "terminal"
+        try:
+            import curses
+
+            curses.setupterm()
+            if curses.tigetnum("colors") == 256:
+                fmt_name = "terminal256"
+        except Exception:
+            # if curses won't import we are probably using Windows
+            pass
+        self.formatter = get_formatter_by_name(fmt_name, style=CONFIG.settings["color_style"])
 
         history_file = str(_get_data_folder().joinpath(".history").absolute())
-        atexit.register(_atexit_readline, history_file)
-        try:
-            readline.read_history_file(history_file)
-        except (FileNotFoundError, OSError):
-            pass
+        kwargs = {}
+        if CONFIG.settings["show_colors"]:
+            kwargs = {
+                "lexer": PygmentsLexer(PythonLexer),
+                "style": style_from_pygments_cls(get_style_by_name(CONFIG.settings["color_style"])),
+                "include_default_pygments_style": False,
+            }
+        self.prompt_session = PromptSession(
+            history=SanitizedFileHistory(history_file, locals_dict), **kwargs
+        )
         super().__init__(locals_dict)
 
     # console dir method, for simplified and colorful output
@@ -90,7 +109,12 @@ class Console(code.InteractiveConsole):
                 text = color.pretty_sequence(obj)
         except (SyntaxError, NameError):
             pass
-        print(text)
+        if CONFIG.settings["show_colors"]:
+            text = highlight(text, self.lexer, self.formatter)
+        self.write(text)
+
+    def raw_input(self, prompt=""):
+        return self.prompt_session.prompt(prompt)
 
     def showsyntaxerror(self, filename):
         tb = color.format_tb(sys.exc_info()[1])
@@ -99,19 +123,6 @@ class Console(code.InteractiveConsole):
     def showtraceback(self):
         tb = color.format_tb(sys.exc_info()[1], start=1)
         self.write(tb + "\n")
-
-    # save user input to readline history file, filter for private keys
-    def push(self, line):
-        try:
-            cls_, method = line[: line.index("(")].split(".")
-            method = getattr(self.locals[cls_], method)
-            if hasattr(method, "_private"):
-                readline.replace_history_item(
-                    readline.get_current_history_length() - 1, line[: line.index("(")] + "()"
-                )
-        except (ValueError, AttributeError, KeyError):
-            pass
-        return super().push(line)
 
     def runsource(self, source, filename="<input>", symbol="single"):
         try:
@@ -145,6 +156,34 @@ def _dir_color(obj):
     return color("bright cyan")
 
 
-def _atexit_readline(history_file):
-    readline.set_history_length(1000)
-    readline.write_history_file(history_file)
+class SanitizedFileHistory(FileHistory):
+    """
+    FileHistory subclass to strip sensetive information prior to writing to disk.
+
+    Any callable containing a `_private` attribute will have it's input arguments
+    removed prior to inclusion in the history file. For example, when the user
+    input is:
+
+        Accounts.add("0x1234...")
+
+    The line saved to the history file is:
+
+        Accounts.add()
+
+    The original value is still available within the in-memory history while the
+    session is active.
+    """
+
+    def __init__(self, filename, local_dict):
+        self.locals = local_dict
+        super().__init__(filename)
+
+    def store_string(self, line):
+        try:
+            cls_, method = line[: line.index("(")].split(".")
+            method = getattr(self.locals[cls_], method)
+            if hasattr(method, "_private"):
+                line = line[: line.index("(")] + "()"
+        except (ValueError, AttributeError, KeyError):
+            pass
+        return super().store_string(line)
