@@ -25,6 +25,10 @@ EVM_EQUIVALENTS = {"atlantis": "byzantium", "agharta": "petersburg"}
 class ConfigContainer:
     def __init__(self):
         base_config = _load_config(BROWNIE_FOLDER.joinpath("data/default-config.yaml"))
+        if Path.home().joinpath("brownie-config.yaml").exists():
+            home_config = _load_config(Path.home().joinpath("brownie-config.yaml"))
+            _recursive_update(base_config, home_config)
+
         network_config = _load_config(_get_data_folder().joinpath("network-config.yaml"))
 
         self.networks = {}
