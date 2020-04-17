@@ -177,7 +177,12 @@ def _get_topics(abi: List) -> Dict:
 def _decode_logs(logs: List) -> Union["EventDict", List[None]]:
     if not logs:
         return []
-    events = eth_event.decode_logs(logs, _topics)
+    events: List = []
+    for value in logs:
+        try:
+            events += eth_event.decode_logs([value], _topics)
+        except KeyError:
+            pass
     events = [format_event(i) for i in events]
     return EventDict(events)
 
