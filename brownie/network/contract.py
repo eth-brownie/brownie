@@ -374,7 +374,7 @@ class Contract(_DeployedContractBase):
                     raise ValueError(f"Unknown alias: {address_or_alias}")
                 else:
                     raise ValueError(f"Unknown contract address: {address}")
-            contract = self.from_explorer(address, owner)
+            contract = self.from_explorer(address, owner=owner)
             build, sources = contract._build, contract._sources
 
         _ContractBase.__init__(self, None, build, sources)
@@ -500,7 +500,9 @@ class Contract(_DeployedContractBase):
         return self
 
     @classmethod
-    def from_explorer(cls, address: str, owner: Optional[AccountsType] = None) -> "Contract":
+    def from_explorer(
+        cls, address: str, as_proxy_for: Optional[str] = None, owner: Optional[AccountsType] = None
+    ) -> "Contract":
         """
         Create a new `Contract` object with source code queried from a block explorer.
 
@@ -508,9 +510,13 @@ class Contract(_DeployedContractBase):
         ---------
         address : str
             Address where the contract is deployed.
+        as_proxy_for : str, optional
+            Address of the implementation contract, if `address` is a proxy contract.
+            The generated object will send transactions to `address`, but use the ABI
+            and NatSpec of `as_proxy_for`.
         owner : Account, optional
-            Contract owner. If set, transactions without a `from` field
-            will be performed using this account.
+            Contract owner. If set, transactions without a `from` field will be
+            performed using this account.
         """
         url = CONFIG.active_network.get("explorer")
         if url is None:
@@ -544,6 +550,12 @@ class Contract(_DeployedContractBase):
         if not data["result"][0].get("SourceCode"):
             raise ValueError(f"Source for {address} has not been verified")
 
+        if as_proxy_for is not None:
+            implementation_contract = Contract.from_explorer(as_proxy_for)
+            abi = implementation_contract._build["abi"]
+        else:
+            abi = json.loads(data["result"][0]["ABI"])
+
         name = data["result"][0]["ContractName"]
         try:
             version = Version(data["result"][0]["CompilerVersion"].lstrip("v")).truncate()
@@ -554,7 +566,7 @@ class Contract(_DeployedContractBase):
                 f"{address}: target compiler '{data['result'][0]['CompilerVersion']}' is "
                 "unsupported by Brownie. Some functionality will not be available."
             )
-            return cls.from_abi(name, address, json.loads(data["result"][0]["ABI"]))
+            return cls.from_abi(name, address, abi)
 
         sources = {f"{name}-flattened.sol": data["result"][0]["SourceCode"]}
         optimizer = {
@@ -563,6 +575,8 @@ class Contract(_DeployedContractBase):
         }
         build = compile_and_format(sources, solc_version=str(version), optimizer=optimizer)
         build = build[name]
+        if as_proxy_for is not None:
+            build.update(abi=abi, natspec=implementation_contract._build["natspec"])
 
         if not _verify_deployed_code(address, build["deployedBytecode"], build["language"]):
             warnings.warn(f"{address}: Locally compiled and on-chain bytecode do not match!")
