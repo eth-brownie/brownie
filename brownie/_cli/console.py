@@ -19,7 +19,6 @@ from pygments.styles import get_style_by_name
 import brownie
 from brownie import network, project
 from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
-from brownie.convert.utils import get_type_strings
 from brownie.utils import color
 from brownie.utils.docopt import docopt
 
@@ -225,31 +224,31 @@ class ConsoleCompleter(Completer):
         super().__init__()
 
     def get_completions(self, document, complete_event):
-        target_dict = self.locals
-        attributes = document.text.split(".")
-        current_text = attributes.pop()
+        try:
+            base, current = _parse_document(self.locals, document.text)
 
-        for key in attributes:
-            try:
-                if "[" in key:
-                    key, idx = re.match(r"^(\w+)\[([-0-9]+)\]$", key).groups()
-                    target_dict = target_dict[key][int(idx)].__dict__
-                else:
-                    target_dict = target_dict[key].__dict__
-            except Exception:
-                return
+            if isinstance(base, dict):
+                completions = sorted(base)
+            else:
+                completions = dir(base)
+            if current:
+                completions = [i for i in completions if i.startswith(current)]
+            else:
+                completions = [i for i in completions if not i.startswith("_")]
+            for key in completions:
+                yield Completion(key, start_position=-len(current))
 
-        if current_text:
-            completions = [i for i in target_dict if i.startswith(current_text)]
-        else:
-            completions = [i for i in target_dict if not i.startswith("_")]
-        for key in completions:
-            yield Completion(key, start_position=-len(current_text))
+        except Exception:
+            return
 
 
 class TestAutoSuggest(AutoSuggest):
     """
-    AutoSuggest subclass to display contract function signatures.
+    AutoSuggest subclass to display contract input hints.
+
+    If an object has an `_autosuggest` method, it is used to build the suggestion.
+    Otherwise, names and default values are pulled from `__code__` and `__defaults__`
+    respectively.
     """
 
     def __init__(self, local_dict):
@@ -257,31 +256,30 @@ class TestAutoSuggest(AutoSuggest):
         super().__init__()
 
     def get_suggestion(self, buffer, document):
-        target_dict = self.locals
-        attributes = document.text.split(".")
-        current_text = attributes.pop()
-        if "(" not in current_text or ")" in current_text:
-            return
-
-        for key in attributes:
-            try:
-                if "[" in key:
-                    key, idx = re.match(r"^(\w+)\[([-0-9]+)\]$", key).groups()
-                    target_dict = target_dict[key][int(idx)].__dict__
-                else:
-                    target_dict = target_dict[key].__dict__
-            except Exception:
-                return
         try:
-            method, args = current_text.split("(", maxsplit=1)
+            if "(" not in document.text or ")" in document.text:
+                return
+            method, args = document.text.rsplit("(", maxsplit=1)
+            base, current = _parse_document(self.locals, method)
 
-            abi = target_dict[method].abi["inputs"]
-            if not args and not abi:
+            if isinstance(base, dict):
+                fn = base[current]
+            else:
+                fn = getattr(base, current)
+            if isinstance(fn, type):
+                fn = fn.__init__
+
+            if hasattr(fn, "_autosuggest"):
+                inputs = fn._autosuggest()
+            else:
+                inputs = [f" {i}" for i in fn.__code__.co_varnames[: fn.__code__.co_argcount]]
+                if fn.__defaults__:
+                    for i in range(-1, -1 - len(fn.__defaults__), -1):
+                        inputs[i] = f"{inputs[i]}={fn.__defaults__[i]}"
+                if inputs and inputs[0] in (" self", " cls"):
+                    inputs = inputs[1:]
+            if not args and not inputs:
                 return Suggestion(")")
-
-            types_list = get_type_strings(abi, {"fixed168x10": "decimal"})
-            params = zip([i["name"] for i in abi], types_list)
-            inputs = [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params]
 
             args = args.split(",")
             inputs[0] = inputs[0][1:]
@@ -292,3 +290,28 @@ class TestAutoSuggest(AutoSuggest):
 
         except Exception:
             return
+
+
+def _parse_document(local_dict, text):
+    if "=" in text:
+        text = text.split("=")[-1]
+
+    text = text.lstrip()
+    attributes = text.split(".")
+    current_text = attributes.pop()
+
+    base = local_dict
+    for key in attributes:
+        if "[" in key:
+            key, idx = re.match(r"^(\w+)\[([-0-9]+)\]$", key).groups()
+            base = _get_obj(base, key)[int(idx)]
+        else:
+            base = _get_obj(base, key)
+
+    return base, current_text
+
+
+def _get_obj(obj, key):
+    if isinstance(obj, dict):
+        return obj[key]
+    return getattr(obj, key)
