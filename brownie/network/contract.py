@@ -51,12 +51,18 @@ class _ContractBase:
         self._project = project
         self._build = build.copy()
         self._sources = sources
-        self._name = build["contractName"]
-        self.abi = build["abi"]
         self.topics = _get_topics(self.abi)
         self.signatures = {
             i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
         }
+
+    @property
+    def abi(self) -> List:
+        return self._build["abi"]
+
+    @property
+    def _name(self) -> str:
+        return self._build["contractName"]
 
     def info(self) -> None:
         """
