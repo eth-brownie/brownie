@@ -586,7 +586,7 @@ class Contract(_DeployedContractBase):
 
         sources = {f"{name}-flattened.sol": data["result"][0]["SourceCode"]}
         optimizer = {
-            "enabled": bool(data["result"][0]["OptimizationUsed"]),
+            "enabled": bool(int(data["result"][0]["OptimizationUsed"])),
             "runs": int(data["result"][0]["Runs"]),
         }
         build = compile_and_format(sources, solc_version=str(version), optimizer=optimizer)
