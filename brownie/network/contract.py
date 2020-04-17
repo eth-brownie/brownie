@@ -191,6 +191,13 @@ class ContractConstructor:
             self.abi = {"inputs": [], "name": "constructor", "type": "constructor"}
         self._name = name
 
+    @property
+    def payable(self) -> bool:
+        if "payable" in self.abi:
+            return self.abi["payable"]
+        else:
+            return self.abi["stateMutability"] == "payable"
+
     def __repr__(self) -> str:
         return f"<{type(self).__name__} '{self._name}.constructor({_inputs(self.abi)})'>"
 
@@ -214,6 +221,9 @@ class ContractConstructor:
         return tx["from"].deploy(
             self._parent, *args, amount=tx["value"], gas_limit=tx["gas"], gas_price=tx["gasPrice"]
         )
+
+    def _autosuggest(self) -> List:
+        return _contract_method_autosuggest(self)
 
     def encode_input(self, *args: tuple) -> str:
         bytecode = self._parent.bytecode
@@ -680,12 +690,15 @@ class _ContractMethod:
         self.natspec = natspec or {}
 
     def __repr__(self) -> str:
-        if "payable" in self.abi:
-            pay_bool = self.abi["payable"]
-        else:
-            pay_bool = self.abi["stateMutability"] == "payable"
-        pay = "payable " if pay_bool else ""
+        pay = "payable " if self.payable else ""
         return f"<{type(self).__name__} {pay}'{self.abi['name']}({_inputs(self.abi)})'>"
+
+    @property
+    def payable(self) -> bool:
+        if "payable" in self.abi:
+            return self.abi["payable"]
+        else:
+            return self.abi["stateMutability"] == "payable"
 
     def info(self) -> None:
         """
@@ -772,6 +785,9 @@ class ContractTx(_ContractMethod):
     Args:
         abi: Contract ABI specific to this method.
         signature: Bytes4 method signature."""
+
+    def _autosuggest(self) -> List:
+        return _contract_method_autosuggest(self)
 
     def __call__(self, *args: Tuple) -> TransactionReceiptType:
         """Broadcasts a transaction that calls this contract method.
@@ -903,3 +919,15 @@ def _print_natspec(natspec: Dict) -> None:
         print(wrapper.fill(f"@return {color}{natspec['returns'][key]}"))
 
     print()
+
+
+def _contract_method_autosuggest(method: Any) -> List:
+    types_list = get_type_strings(method.abi["inputs"], {"fixed168x10": "decimal"})
+    params = zip([i["name"] for i in method.abi["inputs"]], types_list)
+
+    if method.payable:
+        tx_hint = [" {'from': Account", " 'value': Wei}"]
+    else:
+        tx_hint = [" {'from': Account}"]
+
+    return [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params] + tx_hint
