@@ -298,6 +298,9 @@ class _DeployedContractBase(_ContractBase):
         return self.address
 
     def __repr__(self) -> str:
+        alias = self._build.get("alias")
+        if alias:
+            return f"<'{alias}' Contract '{self.address}'>"
         return f"<{self._name} Contract '{self.address}'>"
 
     def __eq__(self, other: object) -> bool:
