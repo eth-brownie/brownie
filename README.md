@@ -58,7 +58,9 @@ pip install eth-brownie
 You can clone the repository and use [`setuptools`](https://github.com/pypa/setuptools) for the most up-to-date version:
 
 ```bash
-python setup.py install
+git clone https://github.com/iamdefinitelyahuman/brownie.git
+cd brownie
+python3 setup.py install
 ```
 
 ## Quick Usage
