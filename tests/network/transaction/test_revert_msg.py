@@ -5,50 +5,70 @@ import pytest
 from brownie.exceptions import VirtualMachineError
 from brownie.project import compile_source
 
-
-def test_dev_revert_on_final_statement(console_mode, evmtester, accounts):
-
-    code = """pragma solidity >=0.4.22;
-
-contract foo {
-
-    function foo1 () external returns (bool) {
-        revert(); // dev: yuss
-    }
-
-    function foo2 () external returns (bool) {
+REVERT_FUNCTIONS_NO_INPUT = [
+    """
+    function foo () external returns (bool) {{
+        {}; // dev: yuss
+    }}""",
+    """
+    function foo () external returns (bool) {{
         uint b = 33;
-        revert(); // dev: yuss
-    }
+        {}; // dev: yuss
+    }}""",
+]
 
-    function foo3 (uint a) external returns (bool) {
-        if (a < 3) {
+REVERT_FUNCTIONS_INPUT = [
+    """
+    function foo (uint a) external returns (bool) {{
+        if (a < 3) {{
             return true;
-        }
-        revert(); // dev: yuss
-    }
-
-    function foo4 (uint a) external returns (bool) {
+        }}
+        {}; // dev: yuss
+    }}""",
+    """
+    function foo (uint a) external returns (bool) {{
         require(a >= 3);
-        revert(); // dev: yuss
-    }
-
-    function foo5 (uint a) external {
+        {}; // dev: yuss
+    }}""",
+    """
+    function foo (uint a) external {{
         require(a >= 3);
-        revert(); // dev: yuss
-    }
-}"""
+        {}; // dev: yuss
+    }}""",
+]
 
-    contract = compile_source(code).foo.deploy({"from": accounts[0]})
-    tx = contract.foo1()
+
+@pytest.mark.parametrize("expr", ["revert()", "require(false)"])
+@pytest.mark.parametrize("func", REVERT_FUNCTIONS_NO_INPUT)
+def test_final_stmt_revert_no_input(console_mode, evmtester, accounts, expr, func):
+
+    func = func.format(expr)
+    code = f"""
+pragma solidity >=0.4.22;
+contract Foo {{
+    {func}
+}}
+    """
+
+    contract = compile_source(code).Foo.deploy({"from": accounts[0]})
+    tx = contract.foo()
     assert tx.revert_msg == "dev: yuss"
-    tx = contract.foo2()
-    assert tx.revert_msg == "dev: yuss"
-    tx = contract.foo3(4)
-    assert tx.revert_msg == "dev: yuss"
-    tx = contract.foo4(4)
-    assert tx.revert_msg == "dev: yuss"
-    tx = contract.foo5(4)
+
+
+@pytest.mark.parametrize("expr", ["revert()", "require(false)"])
+@pytest.mark.parametrize("func", REVERT_FUNCTIONS_INPUT)
+def test_final_stmt_revert_input(console_mode, evmtester, accounts, expr, func):
+
+    func = func.format(expr)
+    code = f"""
+pragma solidity >=0.4.22;
+contract Foo {{
+    {func}
+}}
+    """
+
+    contract = compile_source(code).Foo.deploy({"from": accounts[0]})
+    tx = contract.foo(4)
     assert tx.revert_msg == "dev: yuss"
 
 
