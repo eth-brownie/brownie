@@ -394,7 +394,7 @@ def _generate_coverage_data(
             key = (pc_list[-1]["path"], pc_list[-1]["offset"])
             revert_map.setdefault(key, []).append(len(pc_list))
 
-    # compare revert() statements against the map of revert jumps to find
+    # compare revert and require statements against the map of revert jumps
     for (contract_id, fn_offset), values in revert_map.items():
         fn_node = source_nodes[contract_id].children(
             depth=2,
@@ -403,10 +403,12 @@ def _generate_coverage_data(
             filters={"nodeType": "FunctionDefinition"},
         )[0]
         revert_nodes = fn_node.children(
-            filters={"nodeType": "FunctionCall", "expression.name": "revert"}
+            filters=(
+                {"nodeType": "FunctionCall", "expression.name": "revert"},
+                {"nodeType": "FunctionCall", "expression.name": "require"},
+            )
         )
-        # if the node has arguments it will always be included in the source map
-        for node in (i for i in revert_nodes if not i.arguments):
+        for node in revert_nodes:
             offset = node.offset
             # if the node offset is not in the source map, apply it's offset to the JUMPI op
             if not next((x for x in pc_list if "offset" in x and x["offset"] == offset), False):
@@ -479,7 +481,7 @@ def _find_revert_offset(
     if fn_node[-1].nodeType == "ExpressionStatement":
         expr = fn_node[-1].expression
 
-        if expr.nodeType == "FunctionCall" and expr.get("expression.name") == "revert":
+        if expr.nodeType == "FunctionCall" and expr.get("expression.name") in ("revert", "require"):
             pc_list[-1].update(
                 path=str(source_node.contract_id), fn=fn_name, offset=expr.expression.offset
             )
