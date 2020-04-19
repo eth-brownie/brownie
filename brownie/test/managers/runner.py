@@ -205,6 +205,8 @@ class PytestBrownieRunner(PytestBrownieBase):
         if self.printer and report.when == "call":
             self.printer.finish(report.nodeid)
 
+        return super().pytest_report_teststatus(report)
+
     def pytest_sessionfinish(self):
         self._sessionfinish("build/tests.json")
         if CONFIG.argv["gas"]:
