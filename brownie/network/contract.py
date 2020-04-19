@@ -703,6 +703,9 @@ class _ContractMethod:
         else:
             return self.abi["stateMutability"] == "payable"
 
+    def _autosuggest(self) -> List:
+        return _contract_method_autosuggest(self)
+
     def info(self) -> None:
         """
         Display NatSpec documentation for this method.
@@ -788,9 +791,6 @@ class ContractTx(_ContractMethod):
     Args:
         abi: Contract ABI specific to this method.
         signature: Bytes4 method signature."""
-
-    def _autosuggest(self) -> List:
-        return _contract_method_autosuggest(self)
 
     def __call__(self, *args: Tuple) -> TransactionReceiptType:
         """Broadcasts a transaction that calls this contract method.
@@ -928,7 +928,9 @@ def _contract_method_autosuggest(method: Any) -> List:
     types_list = get_type_strings(method.abi["inputs"], {"fixed168x10": "decimal"})
     params = zip([i["name"] for i in method.abi["inputs"]], types_list)
 
-    if method.payable:
+    if isinstance(method, ContractCall):
+        tx_hint: List = []
+    elif method.payable:
         tx_hint = [" {'from': Account", " 'value': Wei}"]
     else:
         tx_hint = [" {'from': Account}"]
