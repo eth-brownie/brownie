@@ -160,7 +160,7 @@ def _load_project_config(project_path: Path) -> None:
     if "network" in config_data:
         warnings.warn(
             "The `network` field in `brownie-config.yaml` has been deprecated. "
-            "Network settings are now handled via `brownie network` in the CLI. "
+            "Network settings are now handled via `brownie networks` in the CLI. "
             f"Remove `network` from {config_path} to silence this warning.",
             DeprecationWarning,
         )

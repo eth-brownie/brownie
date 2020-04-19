@@ -57,12 +57,12 @@ def main():
     try:
         fn = getattr(sys.modules[__name__], f"_{args['<command>']}")
     except AttributeError:
-        print("Invalid command. Try brownie accounts --help")
+        print("Invalid command. Try brownie networks --help")
         return
     try:
         fn(*args["<arguments>"])
     except TypeError:
-        print(f"Invalid arguments for command '{args['<command>']}'. Try brownie accounts --help")
+        print(f"Invalid arguments for command '{args['<command>']}'. Try brownie networks --help")
         return
 
 
