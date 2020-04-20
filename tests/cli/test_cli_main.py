@@ -42,12 +42,12 @@ class CliTester:
 def test_cli_init(cli_tester):
     cli_tester.monkeypatch.setattr("brownie.project.new", cli_tester.mock_subroutines)
 
-    args = (".", False)
+    args = (".", False, False)
     kwargs = {}
     parameters = (args, kwargs)
     cli_tester.run_and_test_parameters("init", parameters)
 
-    args = ("test/path", True)
+    args = ("test/path", True, True)
     parameters = (args, kwargs)
     cli_tester.run_and_test_parameters("init test/path --force", parameters)
 
