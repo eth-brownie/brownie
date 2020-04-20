@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.7.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.7.1) - 2020-04-20
+### Fixed
+- Do not allow `brownie init` on a directory that isn't empty ([#428](https://github.com/iamdefinitelyahuman/brownie/pull/428))
+- Missing dev revert strings on `require` as last statement in a function ([#424](https://github.com/iamdefinitelyahuman/brownie/pull/424))
+- Colorful output when skipping tests without `xdist` ([#422](https://github.com/iamdefinitelyahuman/brownie/pull/422))
+
 ## [1.7.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.7.0) - 2020-04-17
 ### Added
 - Install packages from Github or ethPM using `brownie pm` CLI commands ([#390](https://github.com/iamdefinitelyahuman/brownie/pull/390))
