@@ -72,7 +72,7 @@ class _ProjectBase:
         cwd = os.getcwd()
         if self._path is not None:
             _install_dependencies(self._path)
-            allow_paths = self._path.joinpath("contracts").as_posix()
+            allow_paths = self._path.as_posix()
             os.chdir(self._path)
 
         try:
@@ -84,7 +84,6 @@ class _ProjectBase:
                 evm_version=compiler_config["evm_version"],
                 silent=silent,
                 allow_paths=allow_paths,
-                interface_sources=self._sources.get_interface_sources(),
                 remappings=compiler_config["solc"].get("remappings", []),
                 optimizer=compiler_config["solc"].get("optimizer", None),
             )
