@@ -379,16 +379,21 @@ def get_loaded_projects() -> List:
     return _loaded_projects.copy()
 
 
-def new(project_path_str: str = ".", ignore_subfolder: bool = False) -> str:
+def new(
+    project_path_str: str = ".", ignore_subfolder: bool = False, ignore_existing: bool = False
+) -> str:
     """Initializes a new project.
 
     Args:
         project_path: Path to initialize the project at. If not exists, it will be created.
-        ignore_subfolders: If True, will not raise if initializing in a project subfolder.
+        ignore_subfolder: If True, will not raise if initializing in a project subdirectory.
+        ignore_existing: If True, will not raise when initiating in a non-empty directory.
 
     Returns the path to the project as a string.
     """
     project_path = _new_checks(project_path_str, ignore_subfolder)
+    if not ignore_existing and project_path.exists() and list(project_path.glob("*")):
+        raise FileExistsError(f"Directory is not empty: {project_path}")
     project_path.mkdir(exist_ok=True)
     _create_folders(project_path)
     _create_gitfiles(project_path)
@@ -551,7 +556,7 @@ def _install_from_ethpm(uri: str) -> str:
         raise FileExistsError("Package is aleady installed")
 
     try:
-        new(str(install_path))
+        new(str(install_path), ignore_existing=True)
         ethpm.install_package(install_path, uri)
         project = load(install_path)
         project.close()
@@ -619,7 +624,7 @@ def _install_from_github(package_id: str) -> str:
     try:
         if not install_path.joinpath("contracts").exists():
             raise Exception
-        new(str(install_path))
+        new(str(install_path), ignore_existing=True)
         project = load(install_path)
         project.close()
     except Exception:
