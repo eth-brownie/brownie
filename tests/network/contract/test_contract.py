@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import sys
 from copy import deepcopy
 
 import pytest
@@ -257,6 +258,9 @@ def test_autofetch(network, config):
     Contract("0xdAC17F958D2ee523a2206206994597C13D831ec7")
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="https://github.com/ethereum/solidity/issues/8697"
+)
 def test_as_proxy_for(network):
     network.connect("mainnet")
     original = Contract.from_explorer("0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b")
