@@ -10,7 +10,7 @@ from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
 from brownie.utils.docopt import docopt, levenshtein_norm
 
-__version__ = "1.7.0"
+__version__ = "1.7.1"
 
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 
