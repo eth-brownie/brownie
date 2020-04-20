@@ -65,7 +65,7 @@ python3 setup.py install
 
 ## Quick Usage
 
-To set up the default folder and file structure for Brownie use:
+To initialize a new Brownie project, start by creating a new folder. From within that folder, type:
 
 ```bash
 brownie init
