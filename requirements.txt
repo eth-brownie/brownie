@@ -4,7 +4,7 @@ eth-event>=1.0.0,<2.0.0
 eth-hash[pycryptodome]==0.2.0
 eth-utils==1.8.4
 hexbytes==0.2.0
-hypothesis==5.8.0
+hypothesis==5.10.1
 prompt-toolkit==3.0.5
 psutil>=5.7.0,<6.0.0
 py>=1.5.0
@@ -13,10 +13,10 @@ py-solc-x>=0.8.1,<1.0.0
 pygments==2.6.1
 pytest==5.4.1
 pytest-xdist==1.31.0
-pythx==1.5.5
+pythx==1.5.6
 pyyaml>=5.3.0,<6.0.0
 requests>=2.23.0,<3.0.0
 semantic-version>=2.8.4,<3.0.0
-tqdm==4.43.0
+tqdm==4.45.0
 vyper==0.1.0b17
 web3==5.5.1
