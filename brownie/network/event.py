@@ -165,24 +165,22 @@ def __get_path() -> Path:
 
 
 def _get_topics(abi: List) -> Dict:
+    topic_map = eth_event.get_topic_map(abi)
+
     new_topics = _topics.copy()
-    new_topics.update(eth_event.get_event_abi(abi))
+    new_topics.update(topic_map)
     if new_topics != _topics:
         _topics.update(new_topics)
         with __get_path().open("w") as fp:
             json.dump(new_topics, fp, sort_keys=True, indent=2)
-    return eth_event.get_topics(abi)
+
+    return {v["name"]: k for k, v in topic_map.items()}
 
 
 def _decode_logs(logs: List) -> Union["EventDict", List[None]]:
     if not logs:
         return []
-    events: List = []
-    for value in logs:
-        try:
-            events += eth_event.decode_logs([value], _topics)
-        except KeyError:
-            pass
+    events = eth_event.decode_logs(logs, _topics, allow_undecoded=True)
     events = [format_event(i) for i in events]
     return EventDict(events)
 
@@ -190,7 +188,7 @@ def _decode_logs(logs: List) -> Union["EventDict", List[None]]:
 def _decode_trace(trace: Sequence) -> Union["EventDict", List[None]]:
     if not trace:
         return []
-    events = eth_event.decode_trace(trace, _topics)
+    events = eth_event.decode_traceTransaction(trace, _topics, allow_undecoded=True)
     events = [format_event(i) for i in events]
     return EventDict(events)
 
