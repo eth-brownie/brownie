@@ -1,7 +1,6 @@
 black==19.10b0
 bumpversion==0.5.3
-coverage==4.5.4
-coveralls==1.9.2
+coverage==5.1
 flake8==3.7.9
 isort==4.3.21
 mypy==0.720
@@ -10,6 +9,6 @@ pytest-mock==2.0.0
 sphinx==2.4.0
 sphinx_rtd_theme==0.4.3
 pygments_lexer_solidity==0.4.0
-tox==3.14.3
+tox==3.14.6
 twine==3.1.1
 wheel==0.34.2

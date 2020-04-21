@@ -6,14 +6,14 @@ jobs:
       python: 3.6
       dist: bionic
       install:
-        - python -m pip install coveralls==1.9.2 tox==3.14.3
+        - python -m pip install coveralls==2.0.0 tox==3.14.6
       script: tox -e lint
     - name: Documentation
       language: python
       python: 3.6
       dist: bionic
       install:
-        - python -m pip install coveralls==1.9.2 tox==3.14.3
+        - python -m pip install coveralls==2.0.0 tox==3.14.6
       script: tox -e doctest
     - name: EVM Tests - Python 3.7 (Linux)
       language: python
@@ -89,7 +89,7 @@ env:
 install:
   - python -m pip install --upgrade pip setuptools
   - npm -g install ganache-cli@6.8.2
-  - python -m pip install coveralls==1.9.2 tox==3.14.3
+  - python -m pip install coveralls==2.0.0 tox==3.14.6
 after_script: python -m coveralls
 notifications:
   email: false
