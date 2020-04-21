@@ -738,8 +738,6 @@ These classes have identical APIs.
 
     A deployed contract that is not part of a Brownie project.
 
-    :func:`from_abi<Contract.from_abi>`
-
     * ``address_or_alias``: Address of the contract.
     * ``owner``: An optional :func:`Account <brownie.network.account.Account>` instance. If given, transactions to the contract are sent broadcasted from this account by default.
 
