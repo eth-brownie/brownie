@@ -1,6 +1,6 @@
 colorama>=0.4.1;platform_system=='Windows'
 eth-abi==2.1.1
-eth-event>=0.2.2,<1.0.0
+eth-event>=1.0.0,<2.0.0
 eth-hash[pycryptodome]==0.2.0
 eth-utils==1.8.4
 hexbytes==0.2.0
@@ -8,7 +8,7 @@ hypothesis==5.8.0
 prompt-toolkit==3.0.5
 psutil>=5.7.0,<6.0.0
 py>=1.5.0
-py-solc-ast>=1.2.3,<2.0.0
+py-solc-ast>=1.2.4,<2.0.0
 py-solc-x>=0.8.1,<1.0.0
 pygments==2.6.1
 pytest==5.4.1
