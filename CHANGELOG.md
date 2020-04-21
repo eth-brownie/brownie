@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.7.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.7.2) - 2020-04-22
+### Fixed
+- Properly handle undecodable events ([#433](https://github.com/iamdefinitelyahuman/brownie/pull/433))
+
 ## [1.7.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.7.1) - 2020-04-20
 ### Fixed
 - Do not allow `brownie init` on a directory that isn't empty ([#428](https://github.com/iamdefinitelyahuman/brownie/pull/428))
