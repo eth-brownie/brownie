@@ -29,6 +29,20 @@ def format_output(abi: Dict, outputs: Union[List, Tuple]) -> ReturnValue:
 
 def format_event(event: Dict) -> Any:
     # Format event data based on ABI types
+    if not event["decoded"]:
+        topics = [
+            {"type": "bytes32", "name": f"topic{c}", "value": i}
+            for c, i in enumerate(event.get("topics", []), start=1)
+        ]
+        event["data"] = topics + [
+            {"type": "bytes", "name": "data", "value": _format_single("bytes", event["data"])}
+        ]
+        if "anonymous" in event:
+            event["name"] = "(anonymous)"
+        else:
+            event["name"] = "(unknown)"
+        return event
+
     for e in [i for i in event["data"] if not i["decoded"]]:
         e["type"] = "bytes32"
         e["name"] += " (indexed)"
