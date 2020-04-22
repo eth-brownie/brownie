@@ -100,7 +100,7 @@ def _find_contract(address: Any) -> Any:
     address = _resolve_address(address)
     if address in _contract_map:
         return _contract_map[address]
-    if CONFIG.network_type == "live":
+    if "chainid" in CONFIG.active_network:
         try:
             from brownie.network.contract import Contract
 
@@ -156,7 +156,7 @@ def _get_deployment(
 
 
 def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
-    if CONFIG.network_type != "live":
+    if "chainid" not in CONFIG.active_network:
         return
 
     address = _resolve_address(contract.address)
