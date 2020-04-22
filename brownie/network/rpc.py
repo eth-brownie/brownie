@@ -272,7 +272,7 @@ class Rpc(metaclass=_Singleton):
         self._snapshot_id = None
         self._internal_id = None
         self._reset_id = self._revert(self._reset_id)
-        return "Block height reset to 0"
+        return f"Block height reset to {web3.eth.blockNumber}"
 
 
 # objects that will update whenever the RPC is reset or reverted must register
