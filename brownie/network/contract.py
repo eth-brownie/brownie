@@ -168,8 +168,10 @@ class ContractContainer(_ContractBase):
 
         contract._save_deployment()
         _add_contract(contract)
-        _add_deployment(contract)
         self._contracts.append(contract)
+        if CONFIG.network_type == "live":
+            _add_deployment(contract)
+
         return contract
 
     def _add_from_tx(self, tx: TransactionReceiptType) -> None:
