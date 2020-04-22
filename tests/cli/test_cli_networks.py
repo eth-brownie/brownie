@@ -153,6 +153,7 @@ def test_delete_live():
 
 def test_delete_development():
     cli_networks._delete("development")
+    cli_networks._delete("mainnet-fork")
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
