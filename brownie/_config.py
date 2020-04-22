@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import os
 import re
 import shutil
 import warnings
@@ -58,6 +59,17 @@ class ConfigContainer:
         network = self.networks[id_].copy()
         key = "development" if "cmd" in network else "live"
         network["settings"] = self.settings["networks"][key].copy()
+
+        if key == "development" and "fork" in network["cmd_settings"]:
+
+            fork = network["cmd_settings"]["fork"]
+            if fork in self.networks:
+                network["cmd_settings"]["fork"] = self.networks[fork]["host"]
+                network["chainid"] = self.networks[fork]["chainid"]
+                if "explorer" in self.networks[fork]:
+                    network["explorer"] = self.networks[fork]["explorer"]
+
+            network["cmd_settings"]["fork"] = os.path.expandvars(network["cmd_settings"]["fork"])
 
         self._active_network = network
         return network

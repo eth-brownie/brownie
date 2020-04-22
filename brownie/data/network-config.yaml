@@ -50,3 +50,14 @@ development:
       accounts: 10
       evm_version: istanbul
       mnemonic: brownie
+  - name: Ganache-CLI (Mainnet Fork)
+    id: mainnet-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    cmd_settings:
+      port: 8545
+      gas_limit: 10000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: mainnet
