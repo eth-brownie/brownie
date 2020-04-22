@@ -177,7 +177,7 @@ If you wish to access the method via a transaction you can use :func:`ContractCa
 Contracts Outside of your Project
 =================================
 
-When working in a :ref:`live environment <network-management>`, you can create :func:`Contract <brownie.network.contract.Contract>` objects to interact with already-deployed contracts.
+When working in a :ref:`live environment <network-management-live>` or :ref:`forked development network <network-management-fork>`, you can create :func:`Contract <brownie.network.contract.Contract>` objects to interact with already-deployed contracts.
 
 New :func:`Contract <brownie.network.contract.Contract>` objects are created using one of three :ref:`class methods <api-network-contract-classmethods>`. Options for creation include:
 

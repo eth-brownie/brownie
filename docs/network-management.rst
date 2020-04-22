@@ -44,7 +44,8 @@ Type ``brownie networks list`` to view a list of existing networks:
       └─Kotti: kotti
 
     Development
-      └─Ganache-CLI: development
+      ├─Ganache-CLI: development
+      └─Ganache-CLI (Mainnet Fork): mainnet-fork
 
 
 Adding a New Network
@@ -93,7 +94,7 @@ The following optional fields may be given for development networks, which are p
     * ``accounts``: The number of funded, unlocked accounts. Default 10.
     * ``mnemonic``: A mnemonic to use when generating local accounts.
     * ``evm_version``: The EVM ruleset to use. Default is the most recent available.
-    * ``fork``: If given, the local client will fork from another currently running Ethereum client at a given block. Input should be the HTTP location and port of the other client, e.g. ``http://localhost:8545`` or optionally provide a block number ``http://localhost:8545@1599200``.
+    * ``fork``: If given, the local client will fork from another currently running Ethereum client. The value may be an HTTP location and port of the other client, e.g. ``http://localhost:8545``, or the ID of a production network, e.g. ``mainnet``. See :ref:`Using a Forked Development Network <network-management-fork>`.
 
 .. note::
 
@@ -147,6 +148,8 @@ To disconnect:
     >>> network.is_connected()
     False
 
+.. _network-management-live:
+
 Live Networks
 =============
 
@@ -189,3 +192,23 @@ To connect to Infura using Brownie, store your project ID as an environment vari
 ::
 
     $ export WEB3_INFURA_PROJECT_ID=YourProjectID
+
+.. _network-management-fork:
+
+Using a Forked Development Network
+==================================
+
+Ganache allows you create a development network by forking from an live network. This is useful for testing interactions between your project and other projects that are deployed on the main-net.
+
+Brownie's ``mainnet-fork`` network uses Infura to create a development network that forks from the main-net. To connect with the console:
+
+::
+
+    $ brownie console --network mainnet-fork
+
+In this mode, you can use :func:`Contract.from_explorer <Contract.from_explorer>` to fetch sources and interact with contracts on the network you have forked from.
+
+.. note::
+
+    Forking from Infura can be *very slow*. If you are using this mode
+    extensively, it may be useful to run your own Geth node.
