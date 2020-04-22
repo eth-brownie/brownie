@@ -33,5 +33,3 @@ def test_from_brownie_mix_raises(project, tmp_path):
     project.new(tmp_path.joinpath("token"))
     with pytest.raises(FileExistsError):
         project.from_brownie_mix("token")
-    with pytest.raises(SystemError):
-        project.from_brownie_mix(tmp_path.joinpath("token/contracts"))

@@ -17,7 +17,6 @@ from semantic_version import Version
 from tqdm import tqdm
 
 from brownie._config import (
-    BROWNIE_FOLDER,
     CONFIG,
     _get_data_folder,
     _load_project_compiler_config,
@@ -386,12 +385,12 @@ def new(
 
     Args:
         project_path: Path to initialize the project at. If not exists, it will be created.
-        ignore_subfolder: If True, will not raise if initializing in a project subdirectory.
+        ignore_subfolder: (deprecated)
         ignore_existing: If True, will not raise when initiating in a non-empty directory.
 
     Returns the path to the project as a string.
     """
-    project_path = _new_checks(project_path_str, ignore_subfolder)
+    project_path = Path(project_path_str).resolve()
     if not ignore_existing and project_path.exists() and list(project_path.glob("*")):
         raise FileExistsError(f"Directory is not empty: {project_path}")
     project_path.mkdir(exist_ok=True)
@@ -409,7 +408,7 @@ def from_brownie_mix(
 
     Args:
         project_path: Path to initialize the project at.
-        ignore_subfolders: If True, will not raise if initializing in a project subfolder.
+        ignore_subfolders: (deprecated)
 
     Returns the path to the project as a string.
     """
@@ -417,7 +416,7 @@ def from_brownie_mix(
     url = MIXES_URL.format(project_name)
     if project_path is None:
         project_path = Path(".").joinpath(project_name)
-    project_path = _new_checks(project_path, ignore_subfolder)
+    project_path = Path(project_path).resolve()
     if project_path.exists() and list(project_path.glob("*")):
         raise FileExistsError(f"Folder already exists - {project_path}")
 
@@ -447,17 +446,6 @@ def from_ethpm(uri: str) -> "TempProject":
             for address in get_deployment_addresses(manifest, contract_name):
                 project[contract_name].at(address)
     return project
-
-
-def _new_checks(project_path: Union[Path, str], ignore_subfolder: bool) -> Path:
-    project_path = Path(project_path).resolve()
-    if str(BROWNIE_FOLDER) in str(project_path):
-        raise SystemError("Cannot make a new project inside the main brownie installation folder.")
-    if not ignore_subfolder:
-        check = check_for_project(project_path)
-        if check and check != project_path:
-            raise SystemError("Cannot make a new project in a subfolder of an existing project.")
-    return project_path
 
 
 def compile_source(
