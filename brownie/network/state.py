@@ -151,6 +151,8 @@ def _get_deployment(
         for i in path_map.values()
     }
     build_json["allSourcePaths"] = {k: v[1] for k, v in path_map.items()}
+    if isinstance(build_json["pcMap"], dict):
+        build_json["pcMap"] = dict((int(k), v) for k, v in build_json["pcMap"].items())
 
     return build_json, sources
 
