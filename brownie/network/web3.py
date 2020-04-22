@@ -43,7 +43,7 @@ class Web3(_Web3):
         if uri[:3] == "ws:":
             self.provider = WebsocketProvider(uri)
         elif uri[:4] == "http":
-            self.provider = HTTPProvider(uri)
+            self.provider = HTTPProvider(uri, {"timeout": 30})
         else:
             raise ValueError(
                 "Unknown URI - must be a path to an IPC socket, a websocket "
