@@ -6,7 +6,7 @@ import re
 import warnings
 from pathlib import Path
 from textwrap import TextWrapper
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 from urllib.parse import urlparse
 
 import eth_abi
@@ -41,6 +41,8 @@ from .state import _add_contract, _add_deployment, _find_contract, _get_deployme
 from .web3 import _resolve_address, web3
 
 __tracebackhide__ = True
+
+_unverified_addresses: Set = set()
 
 
 class _ContractBase:
@@ -397,7 +399,7 @@ class Contract(_DeployedContractBase):
                     raise ValueError(f"Unknown alias: {address_or_alias}")
                 else:
                     raise ValueError(f"Unknown contract address: {address}")
-            contract = self.from_explorer(address, owner=owner)
+            contract = self.from_explorer(address, owner=owner, silent=True)
             build, sources = contract._build, contract._sources
             address = contract.address
 
@@ -525,7 +527,11 @@ class Contract(_DeployedContractBase):
 
     @classmethod
     def from_explorer(
-        cls, address: str, as_proxy_for: Optional[str] = None, owner: Optional[AccountsType] = None
+        cls,
+        address: str,
+        as_proxy_for: Optional[str] = None,
+        owner: Optional[AccountsType] = None,
+        silent: bool = False,
     ) -> "Contract":
         """
         Create a new `Contract` object with source code queried from a block explorer.
@@ -547,21 +553,25 @@ class Contract(_DeployedContractBase):
             raise ValueError("Explorer API not set for this network")
 
         address = _resolve_address(address)
+        if address in _unverified_addresses:
+            raise ValueError(f"Source for {address} has not been verified")
+
         params: Dict = {"module": "contract", "action": "getsourcecode", "address": address}
         if "etherscan" in url:
             if os.getenv("ETHERSCAN_TOKEN"):
                 params["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
-            else:
+            elif not silent:
                 warnings.warn(
                     "No Etherscan API token set. You may experience issues with rate limiting. "
                     "Visit https://etherscan.io/register to obtain a token, and then store it "
                     "as the environment variable $ETHERSCAN_TOKEN"
                 )
 
-        print(
-            f"Fetching source of {color('bright blue')}{address}{color} "
-            f"from {color('bright blue')}{urlparse(url).netloc}{color}..."
-        )
+        if not silent:
+            print(
+                f"Fetching source of {color('bright blue')}{address}{color} "
+                f"from {color('bright blue')}{urlparse(url).netloc}{color}..."
+            )
         response = requests.get(url, params=params)
 
         if response.status_code != 200:
@@ -572,6 +582,7 @@ class Contract(_DeployedContractBase):
         if int(data["status"]) != 1:
             raise ValueError(f"Failed to retrieve data from API: {data['result']}")
         if not data["result"][0].get("SourceCode"):
+            _unverified_addresses.add(address)
             raise ValueError(f"Source for {address} has not been verified")
 
         if as_proxy_for is not None:
@@ -586,10 +597,11 @@ class Contract(_DeployedContractBase):
         except Exception:
             version = Version("0.0.0")
         if version < Version("0.4.22"):
-            warnings.warn(
-                f"{address}: target compiler '{data['result'][0]['CompilerVersion']}' is "
-                "unsupported by Brownie. Some functionality will not be available."
-            )
+            if not silent:
+                warnings.warn(
+                    f"{address}: target compiler '{data['result'][0]['CompilerVersion']}' is "
+                    "unsupported by Brownie. Some functionality will not be available."
+                )
             return cls.from_abi(name, address, abi)
 
         sources = {f"{name}-flattened.sol": data["result"][0]["SourceCode"]}
