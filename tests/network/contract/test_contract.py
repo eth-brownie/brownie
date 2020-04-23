@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-import sys
 from copy import deepcopy
 
 import pytest
+import requests
 
 from brownie import Wei
 from brownie.exceptions import ContractNotFound
@@ -258,9 +258,23 @@ def test_autofetch(network, config):
     Contract("0xdAC17F958D2ee523a2206206994597C13D831ec7")
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="https://github.com/ethereum/solidity/issues/8697"
-)
+def test_autofetch_missing(network, config, mocker):
+    # an issue woth pytest-mock prevents spying on Contract.from_explorer,
+    # so we watch requests.get which is only called inside Contract.from_explorer
+    mocker.spy(requests, "get")
+
+    network.connect("mainnet")
+    config.settings["autofetch_sources"] = True
+
+    with pytest.raises(ValueError):
+        Contract("0xff031750F29b24e6e5552382F6E0c065830085d2")
+    assert requests.get.call_count == 1
+
+    with pytest.raises(ValueError):
+        Contract("0xff031750F29b24e6e5552382F6E0c065830085d2")
+    assert requests.get.call_count == 1
+
+
 def test_as_proxy_for(network):
     network.connect("mainnet")
     original = Contract.from_explorer("0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b")
