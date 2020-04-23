@@ -6,7 +6,11 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
-## [1.7.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.7.3) - 2020-04-23
+### Fixed
+- Do not repeat queries for unverified source
+- `KeyError` when using `autofetch_sources`
+
+## [1.7.3](https://github.com/iamdefinitelyahuman/brownie/tree/v1.7.3) - 2020-04-23
 ### Changed
 - Expanded support for use of `--fork` with Ganache ([#437](https://github.com/iamdefinitelyahuman/brownie/pull/437))
 
