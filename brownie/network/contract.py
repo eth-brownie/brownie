@@ -378,28 +378,31 @@ class Contract(_DeployedContractBase):
             kwargs["owner"] = owner
             return self._deprecated_init(address_or_alias, *args, **kwargs)
 
-        address = None
+        address = ""
         try:
             address = _resolve_address(address_or_alias)
             build, sources = _get_deployment(address)
         except Exception:
             build, sources = _get_deployment(alias=address_or_alias)
+            if build is not None:
+                address = build["address"]
 
         if build is None or sources is None:
             if (
-                address is None
+                not address
                 or not CONFIG.settings.get("autofetch_sources")
                 or not CONFIG.active_network.get("explorer")
             ):
-                if address is None:
+                if not address:
                     raise ValueError(f"Unknown alias: {address_or_alias}")
                 else:
                     raise ValueError(f"Unknown contract address: {address}")
             contract = self.from_explorer(address, owner=owner)
             build, sources = contract._build, contract._sources
+            address = contract.address
 
         _ContractBase.__init__(self, None, build, sources)
-        _DeployedContractBase.__init__(self, build["address"], owner)
+        _DeployedContractBase.__init__(self, address, owner)
 
     def _deprecated_init(
         self,
