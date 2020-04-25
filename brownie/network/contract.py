@@ -844,7 +844,7 @@ class ContractCall(_ContractMethod):
             return self.call(*args)
         rpc._internal_snap()
         args, tx = _get_tx(self._owner, args)
-        tx.update({"gas_price": 0, "from": self._owner})
+        tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
         try:
             tx = self.transact(*args, tx)
             return tx.return_value
