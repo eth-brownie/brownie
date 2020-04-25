@@ -36,7 +36,7 @@ jobs:
 
     strategy:
       matrix:
-        job: [evmtest, plugintest, pmtest]
+        job: [plugintest, pmtest]
 
     steps:
     - uses: actions/checkout@v1
@@ -49,7 +49,7 @@ jobs:
 
     - name: Setup Node.js
       uses: actions/setup-node@v1
-    
+
     - name: Install Ganache
       run: npm install -g ganache-cli@6.8.2
 
@@ -57,14 +57,54 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.8
-    
+
     - name: Install Tox
       run: pip install tox
 
     - name: Run Tox
       run: tox -e ${{ matrix.job }}
 
-    - name: Upload coverage to Codecov  
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: true
+
+
+  evm:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        job: [evm-byzantium, evm-petersburg, evm-istanbul]
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Cache Solidity Installations
+      uses: actions/cache@v1
+      with:
+        path: ~/.solcx
+        key: ${{ runner.os }}-solcx-cache
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v1
+
+    - name: Install Ganache
+      run: npm install -g ganache-cli@6.8.2
+
+    - name: Setup Python 3.8
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+
+    - name: Install Tox
+      run: pip install tox
+
+    - name: Run Tox
+      run: tox -e ${{ matrix.job }}
+
+    - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
@@ -89,7 +129,7 @@ jobs:
 
     - name: Setup Node.js
       uses: actions/setup-node@v1
-    
+
     - name: Install Ganache
       run: npm install -g ganache-cli@6.8.2
 
@@ -97,14 +137,14 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.8
-    
+
     - name: Install Tox
       run: pip install tox
 
     - name: Run Tox
       run: tox -e py38
 
-    - name: Upload coverage to Codecov  
+    - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
@@ -124,7 +164,7 @@ jobs:
 
     - name: Setup Node.js
       uses: actions/setup-node@v1
-    
+
     - name: Install Ganache
       run: npm install -g ganache-cli@6.8.2
 
@@ -132,14 +172,14 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
-    
+
     - name: Install Tox
       run: pip install tox
 
     - name: Run Tox
       run: tox -e py36
 
-    - name: Upload coverage to Codecov  
+    - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
@@ -159,7 +199,7 @@ jobs:
 
     - name: Setup Node.js
       uses: actions/setup-node@v1
-    
+
     - name: Install Ganache
       run: npm install -g ganache-cli@6.8.2
 
@@ -167,14 +207,14 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.6
-    
+
     - name: Install Tox
       run: pip install tox
 
     - name: Run Tox
       run: tox -e py36
 
-    - name: Upload coverage to Codecov  
+    - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
