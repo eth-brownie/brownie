@@ -6,6 +6,7 @@ __pycache__
 build/
 brownie/data/*/
 brownie/data/*.json
+coverage.xml
 dist/
 docs/_build
 venv/
