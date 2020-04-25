@@ -9,21 +9,25 @@ from brownie.exceptions import MainnetUndefined
 def test_connect_http(web3):
     web3.connect("http://localhost")
     assert type(web3.provider) is HTTPProvider
+    web3.disconnect()
 
 
 def test_connect_https(web3):
     web3.connect("https://localhost")
     assert type(web3.provider) is HTTPProvider
+    web3.disconnect()
 
 
 def test_connect_ipc(web3, testdir):
     web3.connect(str(testdir))
     assert type(web3.provider) is IPCProvider
+    web3.disconnect()
 
 
 def test_connect_ws(web3):
     web3.connect("ws://localhost")
     assert type(web3.provider) is WebsocketProvider
+    web3.disconnect()
 
 
 def test_connect_raises(web3):
