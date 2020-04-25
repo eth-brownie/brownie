@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from pathlib import Path
 from typing import Dict, List
 
 # -*- coding: utf-8 -*-
@@ -27,6 +28,13 @@ def setup(sphinx):
     sphinx.add_lexer("Solidity", SolidityLexer())
 
 
+with Path(__file__).parent.joinpath("../setup.py").open() as fp:
+    for line in fp:
+        if "version=" in line:
+            setup_version = line.split('"')[1]
+            break
+
+
 # -- Project information -----------------------------------------------------
 
 
@@ -35,9 +43,9 @@ copyright = "2020"
 author = "Ben Hauser"
 
 # The short X.Y version
-version = ""
+version = setup_version
 # The full version, including alpha/beta/rc tags
-release = "v1.7.3"
+release = setup_version
 
 
 # -- General configuration ---------------------------------------------------
