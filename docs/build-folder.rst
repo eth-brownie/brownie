@@ -47,7 +47,7 @@ Brownie generates compiler artifacts for each contract within a project, which a
 Program Counter Map
 -------------------
 
-Brownie generates an expanded version of the `deployed source mapping <https://solidity.readthedocs.io/en/latest/miscellaneous.html#source-mappings>`_ that it uses for debugging and test coverage evaluation. It is structured as a dictionary of dictionaries, where each key is a program counter as given by ``debug_traceTransaction``.
+Brownie generates an expanded version of the `deployed source mapping <https://solidity.readthedocs.io/en/latest/internals/source_mappings.html>`_ that it uses for debugging and test coverage evaluation. It is structured as a dictionary of dictionaries, where each key is a program counter as given by ``debug_traceTransaction``.
 
 If a value is ``false`` or the type equivalent, the key is not included.
 
