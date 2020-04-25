@@ -21,7 +21,14 @@ import brownie
 pytest_plugins = "pytester"
 
 
-TARGET_OPTS = {"evm": "evmtester", "pm": "package_test", "plugin": "plugintester"}
+TARGET_OPTS = {
+    "evm": "evmtester",
+    "evm-byzantium": "evmtester",
+    "evm-petersburg": "evmtester",
+    "evm-istanbul": "evmtester",
+    "pm": "package_test",
+    "plugin": "plugintester",
+}
 
 
 def pytest_addoption(parser):
@@ -35,11 +42,11 @@ def pytest_addoption(parser):
 
 # remove tests based on config flags and fixture names
 def pytest_collection_modifyitems(config, items):
-    target = config.getoption("--target")
+    target = config.getoption("--target").split("-")[0]
     if target == "all":
         return
     for flag, fixture in TARGET_OPTS.items():
-        if target == flag:
+        if "-" in flag or target == flag:
             continue
         for test in [i for i in items if fixture in i.fixturenames]:
             items.remove(test)
@@ -57,17 +64,24 @@ def pytest_configure(config):
 def pytest_generate_tests(metafunc):
     # parametrize the evmtester fixture
     target = metafunc.config.getoption("--target")
-    if "evmtester" in metafunc.fixturenames and target in ("all", "evm"):
-        params = list(
-            itertools.product(
-                ["byzantium", "constantinople"], [0, 10000], ["0.4.22", "0.4.25", "0.5.0"]
-            )
-        )
-        params += list(
-            itertools.product(
-                ["byzantium", "petersburg", "istanbul"], [0, 10000], ["0.5.15", "0.6.3"]
-            )
-        )
+    if "evmtester" in metafunc.fixturenames and (target == "all" or target.startswith("evm")):
+
+        if target.startswith("evm-"):
+            target = target[4:]
+        runs = [0, 10000]
+
+        versions = [target]
+        if target in ("all", "evm"):
+            versions = ["byzantium", "petersburg", "istanbul"]
+        params = list(itertools.product(versions, runs, ["0.6.3", "0.5.15"]))
+
+        if target != "istanbul":
+            if target in ("all", "evm"):
+                versions = ["byzantium", "constantinople", "istanbul"]
+            elif target == "petersburg":
+                versions = ["constantinople"]
+            params += list(itertools.product(versions, runs, ["0.5.0", "0.4.25", "0.4.22"]))
+
         metafunc.parametrize("evmtester", params, indirect=True)
 
     # parametrize the browniemix fixture
