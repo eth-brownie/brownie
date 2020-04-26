@@ -1,6 +1,6 @@
 # Development
 
-To start development for Brownie you should begin by cloning the repo.
+To start development for Brownie you should begin by cloning the repo. We highly recommend using [`venv`](https://docs.python.org/3/library/venv.html) and installing into a fresh virtual environment.
 
 ```bash
 git clone https://github.com/iamdefinitelyahuman/brownie.git
@@ -14,15 +14,16 @@ pip install -r requirements-dev.txt
 
 ## Pre-Commit Hooks
 
-We use [pre-commit](https://pre-commit.com/) hooks to ensure consistent formatting among contributors.
+We use [`pre-commit`](https://pre-commit.com/) hooks to simplify linting and ensure consistent formatting among contributors. Use of `pre-commit` is not a requirement, but is highly recommended.
 
-Install pre-commit locally from the brownie root folder:
+Install `pre-commit` locally from the brownie root folder:
 
 ```bash
+pip install pre-commit
 pre-commit install
 ```
 
-Commiting will now automatically run the local pre-commit hooks, ensuring that your commit passes our lint checks.
+Commiting will now automatically run the local hooks and ensure that your commit passes all lint checks.
 
 ## Pull Requests
 
