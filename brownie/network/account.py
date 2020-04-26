@@ -120,10 +120,10 @@ class Accounts(metaclass=_Singleton):
             if temp_json_file.exists():
                 json_file = temp_json_file
             else:
-                json_file_name = filename.split('/')[-1]
+                json_file_name = filename.split("/")[-1]
                 json_file = base_accounts_path.joinpath(json_file_name)
                 if not str(json_file).endswith(".json"):
-                        json_file = json_file.with_suffix(".json")
+                    json_file = json_file.with_suffix(".json")
                 if not json_file.exists():
                     raise FileNotFoundError(f"Cannot find {json_file}")
 

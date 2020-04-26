@@ -101,7 +101,6 @@ def _import(id_, path):
     )
 
 
-
 def _export(id_, path):
     source_path = _get_data_folder().joinpath(f"accounts/{id_}.json")
     if not source_path.exists():
