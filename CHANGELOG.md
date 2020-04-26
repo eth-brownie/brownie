@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.7.5](https://github.com/iamdefinitelyahuman/brownie/tree/v1.7.5) - 2020-04-26
+### Fixed
+- Importing keystore files from CLI without `.json` suffix ([#448](https://github.com/iamdefinitelyahuman/brownie/pull/448))
+- Properly display reports in GUI ([#449](https://github.com/iamdefinitelyahuman/brownie/pull/449))
+
+
 ## [1.7.4](https://github.com/iamdefinitelyahuman/brownie/tree/v1.7.4) - 2020-04-25
 ### Fixed
-- Do not repeat queries for unverified source ([#445](https://github.com/iamdefinitelyahuman/brownie/pull/442))
-- `KeyError` when using `autofetch_sources` ([#445](https://github.com/iamdefinitelyahuman/brownie/pull/442))
+- Do not repeat queries for unverified source ([#445](https://github.com/iamdefinitelyahuman/brownie/pull/445))
+- `KeyError` when using `autofetch_sources` ([#445](https://github.com/iamdefinitelyahuman/brownie/pull/445))
 - "No owner" issue with contract call during coverage evaluation ([#446](https://github.com/iamdefinitelyahuman/brownie/pull/446))
 
 ## [1.7.3](https://github.com/iamdefinitelyahuman/brownie/tree/v1.7.3) - 2020-04-23
