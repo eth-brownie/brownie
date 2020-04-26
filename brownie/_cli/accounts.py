@@ -80,12 +80,18 @@ def _generate(id_):
 
 
 def _import(id_, path):
-    source_path = Path(path).absolute()
-    if not source_path.suffix:
-        source_path = source_path.with_suffix(".json")
     dest_path = _get_data_folder().joinpath(f"accounts/{id_}.json")
     if dest_path.exists():
         raise FileExistsError(f"A keystore file already exists with the id '{id_}'")
+
+    source_path = Path(path).absolute()
+    if not source_path.exists():
+        temp_source = source_path.with_suffix(".json")
+        if temp_source.exists():
+            source_path = temp_source
+        else:
+            raise FileNotFoundError(f"Cannot find {source_path}")
+
     accounts.load(source_path)
     shutil.copy(source_path, dest_path)
     notify(
