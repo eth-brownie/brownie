@@ -108,17 +108,25 @@ class Accounts(metaclass=_Singleton):
 
         Returns:
             Account instance."""
-        project_path = _get_data_folder().joinpath("accounts")
+        base_accounts_path = _get_data_folder().joinpath("accounts")
         if not filename:
-            return [i.stem for i in project_path.glob("*.json")]
+            return [i.stem for i in base_accounts_path.glob("*.json")]
+
         filename = str(filename)
-        if not filename.endswith(".json"):
-            filename += ".json"
         json_file = Path(filename).expanduser()
+
         if not json_file.exists():
-            json_file = project_path.joinpath(filename)
-            if not json_file.exists():
-                raise FileNotFoundError(f"Cannot find {json_file}")
+            temp_json_file = json_file.with_suffix(".json")
+            if temp_json_file.exists():
+                json_file = temp_json_file
+            else:
+                json_file_name = filename.split('/')[-1]
+                json_file = base_accounts_path.joinpath(json_file_name)
+                if not str(json_file).endswith(".json"):
+                        json_file = json_file.with_suffix(".json")
+                if not json_file.exists():
+                    raise FileNotFoundError(f"Cannot find {json_file}")
+
         with json_file.open() as fp:
             priv_key = web3.eth.account.decrypt(
                 json.load(fp), getpass("Enter the password to unlock this account: ")
