@@ -72,8 +72,9 @@ class Root(tk.Tk):
         self.main.note.set_active(build_json["sourcePath"])
         self.main.oplist.set_opcodes(build_json["pcMap"])
         self.pcMap = dict((str(k), v) for k, v in build_json["pcMap"].items())
+        self.pathMap = build_json["allSourcePaths"]
         for value in (v for v in self.pcMap.values() if "path" in v):
-            value["path"] = build_json["allSourcePaths"][value["path"]]
+            value["path"] = self.pathMap[value["path"]]
 
     def destroy(self):
         super().destroy()
