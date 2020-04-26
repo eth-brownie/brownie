@@ -51,6 +51,25 @@ def main():
     shell.interact(banner="Brownie environment is ready.", exitmsg="")
 
 
+class _Quitter:
+    """
+    Variation of `_sitebuiltins.Quitter` that does not close `stdin` on exit.
+
+    This class sidesteps an issue with the builtin `exit` and `quit` commands,
+    which close `sys.stdin` and so prevent the console from being opened a
+    second time. https://bugs.python.org/issue34115#msg322073
+    """
+
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return f"Use {self.name}() or Ctrl-D (i.e. EOF) to exit"
+
+    def __call__(self, code=None):
+        raise SystemExit(code)
+
+
 class Console(code.InteractiveConsole):
     def __init__(self, project=None, inp=None):
         """
@@ -67,7 +86,7 @@ class Console(code.InteractiveConsole):
         console_settings = CONFIG.settings["console"]
 
         locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
-        locals_dict["dir"] = self._dir
+        locals_dict.update(_dir=dir, dir=self._dir, exit=_Quitter("exit"), quit=_Quitter("quit"))
 
         if project:
             project._update_and_register(locals_dict)
