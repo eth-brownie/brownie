@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from pathlib import Path
+import warnings
 
 from .bases import SelectBox
 
@@ -58,8 +58,11 @@ class HighlightSelect(SelectBox):
             return
         report = self.root.active_report[value][contract]
         for path, (start, stop, color, msg) in [(k, x) for k, v in report.items() for x in v]:
-            label = Path(path).name
-            self.note.mark(label, color, start, stop, msg)
+            label = self.root.pathMap[path]
+            try:
+                self.note.mark(label, color, start, stop, msg)
+            except StopIteration:
+                warnings.warn(f"Report contains data for an unknown contract: {label}")
 
     def toggle_off(self):
         self.root.highlight_key = None
