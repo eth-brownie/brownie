@@ -28,7 +28,7 @@ def test_always_transact(accounts, tester, argv, web3, monkeypatch, history):
     result = tester.owner()
     assert owner == result
     assert web3.eth.blockNumber == height == len(history)
-    monkeypatch.setattr("brownie.network.rpc._internal_revert", lambda: None)
+    monkeypatch.setattr("brownie.network.rpc.undo", lambda: None)
     result = tester.owner()
     tx = history[-1]
     assert owner == result
