@@ -46,8 +46,10 @@ class Rpc(metaclass=_Singleton):
         self._rpc: Any = None
         self._time_offset: int = 0
         self._snapshot_id: Union[int, Optional[bool]] = False
-        self._internal_id: Optional[int] = False
         self._reset_id: Union[int, bool] = False
+        self._current_id: Union[int, bool] = False
+        self._undo_buffer: List = []
+        self._redo_buffer: List = []
         atexit.register(self._at_exit)
 
     def _at_exit(self) -> None:
@@ -92,7 +94,7 @@ class Rpc(metaclass=_Singleton):
         uri = web3.provider.endpoint_uri if web3.provider else None
         for i in range(100):
             if web3.isConnected():
-                self._reset_id = self._snap()
+                self._reset_id = self._current_id = self._snap()
                 _notify_registry(0)
                 return
             time.sleep(0.1)
@@ -127,7 +129,7 @@ class Rpc(metaclass=_Singleton):
         print(f"Attached to local RPC client listening at '{laddr[0]}:{laddr[1]}'...")
         self._rpc = psutil.Process(proc.pid)
         if web3.provider:
-            self._reset_id = self._snap()
+            self._reset_id = self._current_id = self._snap()
         _notify_registry(0)
 
     def kill(self, exc: bool = True) -> None:
@@ -154,6 +156,9 @@ class Rpc(metaclass=_Singleton):
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
+        self._current_id = False
+        self._undo_buffer.clear()
+        self._redo_buffer.clear()
         self._rpc = None
         _notify_registry(0)
 
@@ -181,14 +186,58 @@ class Rpc(metaclass=_Singleton):
         _notify_registry()
         return id_
 
-    def _internal_snap(self) -> None:
-        self._internal_id = self._snap()
+    def _add_to_undo_buffer(self, fn: Any, args: Tuple, kwargs: Dict) -> None:
+        self._undo_buffer.append((self._current_id, fn, args, kwargs))
+        if self._redo_buffer and (fn, args, kwargs) == self._redo_buffer[-1]:
+            self._redo_buffer.pop()
+        else:
+            self._redo_buffer.clear()
+        self._current_id = self._snap()
 
-    def _internal_revert(self) -> None:
-        self._request("evm_revert", [self._internal_id])
-        self._internal_id = None
-        self.sleep(0)
-        _notify_registry()
+    def undo(self, num: int = 1) -> str:
+        """
+        Undo one or more transactions.
+
+        Arguments
+        ---------
+        num : int, optional
+            Number of transactions to undo.
+        """
+        if num < 1:
+            raise ValueError("num must be greater than zero")
+        if not self._undo_buffer:
+            raise ValueError("Undo buffer is empty")
+        if num > len(self._undo_buffer):
+            raise ValueError(f"Undo buffer contains {len(self._undo_buffer)} items")
+
+        for i in range(num, 0, -1):
+            id_, fn, args, kwargs = self._undo_buffer.pop()
+            self._redo_buffer.append((fn, args, kwargs))
+
+        self._current_id = self._revert(id_)
+        return f"Block height at {web3.eth.blockNumber}"
+
+    def redo(self, num: int = 1) -> str:
+        """
+        Redo one or more undone transactions.
+
+        Arguments
+        ---------
+        num : int, optional
+            Number of transactions to redo.
+        """
+        if num < 1:
+            raise ValueError("num must be greater than zero")
+        if not self._redo_buffer:
+            raise ValueError("Redo buffer is empty")
+        if num > len(self._redo_buffer):
+            raise ValueError(f"Redo buffer contains {len(self._redo_buffer)} items")
+
+        for i in range(num, 0, -1):
+            fn, args, kwargs = self._redo_buffer[-1]
+            fn(*args, **kwargs)
+
+        return f"Block height at {web3.eth.blockNumber}"
 
     def is_active(self) -> bool:
         """Returns True if Rpc client is currently active."""
@@ -255,23 +304,39 @@ class Rpc(metaclass=_Singleton):
         return f"Block height at {web3.eth.blockNumber}"
 
     def snapshot(self) -> str:
-        """Takes a snapshot of the current state of the EVM."""
-        self._snapshot_id = self._snap()
+        """
+        Take a snapshot of the current state of the EVM.
+
+        This action clears the undo buffer.
+        """
+        self._undo_buffer.clear()
+        self._redo_buffer.clear()
+        self._snapshot_id = self._current_id = self._snap()
         return f"Snapshot taken at block height {web3.eth.blockNumber}"
 
     def revert(self) -> str:
-        """Reverts the EVM to the most recently taken snapshot."""
+        """
+        Revert the EVM to the most recently taken snapshot.
+
+        This action clears the undo buffer.
+        """
         if not self._snapshot_id:
             raise ValueError("No snapshot set")
-        self._internal_id = None
-        self._snapshot_id = self._revert(self._snapshot_id)
+        self._undo_buffer.clear()
+        self._redo_buffer.clear()
+        self._snapshot_id = self._current_id = self._revert(self._snapshot_id)
         return f"Block height reverted to {web3.eth.blockNumber}"
 
     def reset(self) -> str:
-        """Reverts the EVM to the genesis state."""
+        """
+        Revert the EVM to the initial state when loaded.
+
+        This action clears the undo buffer.
+        """
         self._snapshot_id = None
-        self._internal_id = None
-        self._reset_id = self._revert(self._reset_id)
+        self._undo_buffer.clear()
+        self._redo_buffer.clear()
+        self._reset_id = self._current_id = self._revert(self._reset_id)
         return f"Block height reset to {web3.eth.blockNumber}"
 
 

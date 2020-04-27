@@ -842,14 +842,13 @@ class ContractCall(_ContractMethod):
 
         if not CONFIG.argv["always_transact"]:
             return self.call(*args)
-        rpc._internal_snap()
         args, tx = _get_tx(self._owner, args)
         tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
         try:
             tx = self.transact(*args, tx)
             return tx.return_value
         finally:
-            rpc._internal_revert()
+            rpc.undo()
 
 
 def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:

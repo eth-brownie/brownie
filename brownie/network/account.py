@@ -274,6 +274,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
         )
         add_thread = threading.Thread(target=contract._add_from_tx, args=(tx,), daemon=True)
         add_thread.start()
+        if rpc.is_active():
+            rpc._add_to_undo_buffer(
+                self.deploy,
+                (contract, *args),
+                {"amount": amount, "gas_limit": gas_limit, "gas_price": gas_price},
+            )
         if tx.status != 1:
             return tx
         add_thread.join()
@@ -338,6 +344,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
             revert_data = None
         except ValueError as e:
             txid, revert_data = _raise_or_return_tx(e)
+
+        if rpc.is_active():
+            rpc._add_to_undo_buffer(self.transfer, (to, amount, gas_limit, gas_price, data), {})
+
         return TransactionReceipt(txid, self, revert_data=revert_data)
 
 
