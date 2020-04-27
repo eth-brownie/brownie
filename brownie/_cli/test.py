@@ -15,6 +15,7 @@ Arguments:
 Brownie Options:
   --update -U              Only run tests where changes have occurred
   --coverage -C            Evaluate contract test coverage
+  --interactive -I         Open an interactive console each time a test fails
   --stateful [true,false]  Only run stateful tests, or skip them
   --revert-tb -R           Show detailed traceback on unhandled transaction reverts
   --gas -G                 Display gas profile for function calls

@@ -22,6 +22,12 @@ def pytest_addoption(parser):
             "--revert-tb", "-R", action="store_true", help="Show detailed traceback on tx reverts"
         )
         parser.addoption(
+            "--interactive",
+            "-I",
+            action="store_true",
+            help="Open an interactive console each time a test fails",
+        )
+        parser.addoption(
             "--stateful",
             choices=["true", "false"],
             default=None,
@@ -48,6 +54,8 @@ def pytest_configure(config):
             config.option.verbose = True
 
         if config.getoption("numprocesses"):
+            if config.getoption("interactive"):
+                raise ValueError("Cannot use --interactive mode with xdist")
             Plugin = PytestBrownieMaster
         elif hasattr(config, "workerinput"):
             Plugin = PytestBrownieXdistRunner
