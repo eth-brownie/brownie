@@ -6,8 +6,10 @@ import sys
 import warnings
 
 import pytest
+from _pytest._io import TerminalWriter
 
 import brownie
+from brownie._cli.console import Console
 from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
@@ -206,6 +208,39 @@ class PytestBrownieRunner(PytestBrownieBase):
             self.printer.finish(report.nodeid)
 
         return super().pytest_report_teststatus(report)
+
+    def pytest_exception_interact(self, report):
+        """
+        Called when an exception was raised which can potentially be
+        interactively handled.
+
+        With the `--interactive` flag, outputs the full repr of the failed test
+        and opens an interactive shell using `brownie._cli.console.Console`.
+
+        Arguments
+        ---------
+        report : _pytest.reports.BaseReport
+            Report object for the failed test.
+        """
+        if self.config.getoption("interactive") and report.failed:
+            capman = self.config.pluginmanager.get_plugin("capturemanager")
+            if capman:
+                capman.suspend_global_capture(in_=True)
+
+            tw = TerminalWriter()
+            report.longrepr.toterminal(tw)
+            try:
+                shell = Console(self.project)
+                shell.interact(
+                    banner=f"\nInteractive mode enabled. Use quit() to continue running tests.",
+                    exitmsg="",
+                )
+            except SystemExit:
+                pass
+
+            print("Continuing tests...")
+            if capman:
+                capman.resume_global_capture()
 
     def pytest_sessionfinish(self):
         self._sessionfinish("build/tests.json")
