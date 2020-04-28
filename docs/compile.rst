@@ -131,21 +131,24 @@ Brownie automatically ensures that all remapped paths are allowed. You do not ha
 Remapping Installed Packages
 ****************************
 
-Remappings can be applied to installed packages. For example:
+Remappings can also be applied to installed packages. For example:
+
+.. code-block:: yaml
+
+    compiler:
+        solc:
+            remappings:
+              - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@3.0.0"
+
+With the ``OpenZeppelin/openzeppelin-contracts@3.0.0`` package installed, and the above remapping added to the configuration file, both of the following import statements point to the same location:
 
 ::
 
-    oz=OpenZeppelin/openzeppelin-contracts@2.5.0/contracts
-
-With the ``OpenZeppelin/openzeppelin-contracts@2.5.0`` package installed, and the above remapping added to the configuration file, both of the following import statements point to the same location:
+    import "OpenZeppelin/openzeppelin-contracts@3.0.0/contracts/math/SafeMath.sol";
 
 ::
 
-    import "OpenZeppelin/openzeppelin-contracts@2.5.0/contracts/math/SafeMath.sol";
-
-::
-
-    import "oz/math/SafeMath.sol";
+    import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
 
