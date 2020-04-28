@@ -40,11 +40,11 @@ To install a package from Github you must use a package ID. A package ID is comp
 Examples
 ********
 
-To install `OpenZeppelin contracts <https://github.com/OpenZeppelin/openzeppelin-contracts>`_ version ``2.5.0``:
+To install `OpenZeppelin contracts <https://github.com/OpenZeppelin/openzeppelin-contracts>`_ version ``3.0.0``:
 
 .. code-block:: bash
 
-    $ brownie pm install OpenZeppelin/openzeppelin-contracts@2.5.0
+    $ brownie pm install OpenZeppelin/openzeppelin-contracts@3.0.0
 
 To install `AragonOS <https://github.com/aragon/aragonOS>`_ version ``4.0.0``:
 
@@ -100,7 +100,7 @@ Use ``brownie pm list`` to view currently installed packages. After installing a
     The following packages are currently installed:
 
     OpenZeppelin
-    └─OpenZeppelin/openzeppelin-contracts@2.5.0
+    └─OpenZeppelin/openzeppelin-contracts@3.0.0
 
     aragon
     └─aragon/aragonOS@4.0.0
@@ -134,11 +134,9 @@ For example, to import ``SafeMath`` from OpenZeppelin contracts:
 
 .. code-block:: solidity
 
-    import "OpenZeppelin/openzeppelin-contracts@2.5.0/contracts/math/SafeMath.sol";
-
+    import "OpenZeppelin/openzeppelin-contracts@3.0.0/contracts/math/SafeMath.sol";
 
 You can modify the import path with the ``remappings`` field in your project configuration file. See :ref:`Remapping Installed Packages <compile-remap-packages>` for more information.
-
 
 Using Packages in Tests
 -----------------------
