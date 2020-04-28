@@ -358,6 +358,24 @@ Brownie compares hashes of the following items to check if a test should be re-r
 * The AST of the test module
 * The AST of all ``conftest.py`` modules that are accessible to the test module
 
+Interactive Debugging
+---------------------
+
+The ``--interactive`` flag allows you to debug your project while running your tests:
+
+::
+
+    $ brownie test --interactive
+
+When using interactive mode, Brownie immediately prints the traceback for each failed test and then opens a console. You can interact with the deployed contracts and examine the transaction history to help determine what went wrong.
+
+* Deployed :func:`ProjectContract <brownie.network.contract.ProjectContract>` objects are available within their associated :func:`ContractContainer <brownie.network.contract.ContractContainer>`
+* :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` objects are in the :func:`TxHistory <brownie.network.state.TxHistory>` container, available as ``history``
+
+Once you are finished, type ``quit()`` to continue with the next test.
+
+See :ref:`Inspecting and Debugging Transactions <core-transactions>` for more information on Brownie's debugging functionality.
+
 Evaluating Coverage
 -------------------
 
