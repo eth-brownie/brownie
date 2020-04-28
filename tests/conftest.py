@@ -4,6 +4,7 @@ import itertools
 import json
 import os
 import shutil
+import sys
 import time
 from base64 import b64encode
 from copy import deepcopy
@@ -15,8 +16,10 @@ import requests
 from _pytest.monkeypatch import MonkeyPatch
 from ethpm._utils.ipfs import dummy_ipfs_pin
 from ethpm.backends.ipfs import BaseIPFSBackend
+from prompt_toolkit.input.defaults import create_pipe_input
 
 import brownie
+from brownie._cli.console import Console
 
 pytest_plugins = "pytester"
 
@@ -432,3 +435,26 @@ def ipfs_mock(monkeypatch):
 @pytest.fixture
 def package_test():
     pass
+
+
+# console mock
+
+
+@pytest.fixture(scope="session", autouse=True)
+def console_setup():
+    def _exception(obj, *args):
+        obj.resetbuffer()
+        raise sys.exc_info()[0]
+
+    monkeypatch_session = MonkeyPatch()
+    monkeypatch_session.setattr("brownie._cli.console.Console.showtraceback", _exception)
+    monkeypatch_session.setattr("brownie._cli.console.Console.showsyntaxerror", _exception)
+    Console.prompt_input = create_pipe_input()
+
+
+@pytest.fixture
+def console():
+    argv = sys.argv
+    sys.argv = ["brownie", "console"]
+    yield Console
+    sys.argv = argv
