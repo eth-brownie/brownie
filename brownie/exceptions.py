@@ -123,3 +123,11 @@ class UnsupportedLanguage(Exception):
 
 class InvalidPackage(Exception):
     pass
+
+
+class BrownieCompilerWarning(Warning):
+    pass
+
+
+class BrownieEnvironmentWarning(Warning):
+    pass
