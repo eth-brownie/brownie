@@ -4,7 +4,7 @@
 Inspecting and Debugging Transactions
 =====================================
 
-Each time your perform a transaction you are returned a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`. This object contains all relevant information about the transaction, as well as various methods to aid in debugging.
+Each time you perform a transaction you are returned a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`. This object contains all relevant information about the transaction, as well as various methods to aid in debugging.
 
 .. code-block:: python
 
