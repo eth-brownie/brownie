@@ -61,6 +61,11 @@ class PytestBrownieFixtures:
         yield brownie.accounts
 
     @pytest.fixture(scope="session")
+    def Contract(self):
+        """Yields the Contract class, used to interact with deployments outside of a project."""
+        yield brownie.Contract
+
+    @pytest.fixture(scope="session")
     def history(self):
         """Yields a TxHistory container for the active project, used to access transaction data."""
         yield brownie.history
