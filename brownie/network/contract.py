@@ -24,6 +24,8 @@ from brownie.convert.utils import (
     get_type_strings,
 )
 from brownie.exceptions import (
+    BrownieCompilerWarning,
+    BrownieEnvironmentWarning,
     ContractExists,
     ContractNotFound,
     UndeployedLibrary,
@@ -564,7 +566,8 @@ class Contract(_DeployedContractBase):
                 warnings.warn(
                     "No Etherscan API token set. You may experience issues with rate limiting. "
                     "Visit https://etherscan.io/register to obtain a token, and then store it "
-                    "as the environment variable $ETHERSCAN_TOKEN"
+                    "as the environment variable $ETHERSCAN_TOKEN",
+                    BrownieEnvironmentWarning,
                 )
 
         if not silent:
@@ -600,7 +603,8 @@ class Contract(_DeployedContractBase):
             if not silent:
                 warnings.warn(
                     f"{address}: target compiler '{data['result'][0]['CompilerVersion']}' is "
-                    "unsupported by Brownie. Some functionality will not be available."
+                    "unsupported by Brownie. Some functionality will not be available.",
+                    BrownieCompilerWarning,
                 )
             return cls.from_abi(name, address, abi)
 
@@ -615,7 +619,10 @@ class Contract(_DeployedContractBase):
             build.update(abi=abi, natspec=implementation_contract._build["natspec"])
 
         if not _verify_deployed_code(address, build["deployedBytecode"], build["language"]):
-            warnings.warn(f"{address}: Locally compiled and on-chain bytecode do not match!")
+            warnings.warn(
+                f"{address}: Locally compiled and on-chain bytecode do not match!",
+                BrownieCompilerWarning,
+            )
             del build["pcMap"]
 
         self = cls.__new__(cls)
