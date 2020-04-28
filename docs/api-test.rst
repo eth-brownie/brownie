@@ -31,6 +31,10 @@ These fixtures provide access to objects related to the project being tested.
 
     Session scope. Short form of the :func:`accounts <fixtures.accounts>` fixture.
 
+.. py:attribute:: fixtures.Contract
+
+    Session scope. Yields the :func:`Contract <brownie.network.contract.Contract>` class, used to interact with contracts outside of the active project.
+
 .. py:attribute:: fixtures.history
 
     Session scope. Yields an instantiated :func:`TxHistory <brownie.network.state.TxHistory>` object for the active project.

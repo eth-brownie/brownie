@@ -34,6 +34,17 @@ These fixtures provide quick access to Brownie objects that are frequently used 
         def test_account_balance(a):
             assert a[0].balance() == "100 ether"
 
+.. py:attribute:: Contract
+
+    Yields the :func:`Contract <brownie.network.contract.Contract>` class, used to interact with contracts outside of the active project.
+
+    .. code-block:: python
+        :linenos:
+
+        @pytest.fixture(scope="session")
+        def dai(Contract):
+            yield Contract.from_explorer("0x6B175474E89094C44Da98b954EedeAC495271d0F")
+
 .. py:attribute:: history
 
     Yields a :func:`TxHistory <brownie.network.state.TxHistory>` container for the active project, used to access transaction data.
