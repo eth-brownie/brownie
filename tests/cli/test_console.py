@@ -3,22 +3,8 @@
 import sys
 
 import pytest
-from prompt_toolkit.input.defaults import create_pipe_input
-
-from brownie._cli.console import Console
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="stdin pipe issues")
-
-
-@pytest.fixture
-def console(testproject, monkeypatch):
-    monkeypatch.setattr("brownie._cli.console.Console.showtraceback", _exception)
-    monkeypatch.setattr("brownie._cli.console.Console.showsyntaxerror", _exception)
-    argv = sys.argv
-    sys.argv = ["brownie", "console"]
-    c = Console(testproject, create_pipe_input())
-    yield c
-    sys.argv = argv
 
 
 def _run_cmd(console, cmd):
@@ -26,27 +12,25 @@ def _run_cmd(console, cmd):
         console.push(line)
 
 
-def _exception(obj, *args):
-    obj.resetbuffer()
-    raise sys.exc_info()[0]
-
-
 def test_simple(console, accounts, history):
+    shell = console()
     balance = accounts[1].balance()
-    _run_cmd(console, ['accounts[0].transfer(accounts[1], "1 ether")'])
+    _run_cmd(shell, ['accounts[0].transfer(accounts[1], "1 ether")'])
     assert len(history) == 1
     assert accounts[1].balance() == balance + 1000000000000000000
 
 
-def test_run(BrownieTester, history, console):
-    _run_cmd(console, ['run("token")'])
+def test_run(testproject, history, console, accounts):
+    shell = console(testproject)
+    _run_cmd(shell, ['run("token")'])
     assert len(history) == 1
-    assert len(BrownieTester) == 1
+    assert len(testproject.BrownieTester) == 1
 
 
-def test_multiple_commands(BrownieTester, accounts, history, console):
+def test_multiple_commands(testproject, accounts, history, console):
+    shell = console(testproject)
     _run_cmd(
-        console,
+        shell,
         [
             "config",
             "accounts[0].deploy(BrownieTester, True)",
@@ -55,12 +39,13 @@ def test_multiple_commands(BrownieTester, accounts, history, console):
         ],
     )
     assert len(history) == 2
-    assert BrownieTester[0].owner() == accounts[0]
+    assert testproject.BrownieTester[0].owner() == accounts[0]
 
 
 def test_multiline_commands(accounts, history, console):
+    shell = console()
     _run_cmd(
-        console,
+        shell,
         [
             "to_send = [",
             '(1, "1 ether"),',
@@ -80,8 +65,9 @@ def test_multiline_commands(accounts, history, console):
 
 
 def test_fn(accounts, history, console):
+    shell = console()
     _run_cmd(
-        console,
+        shell,
         [
             "def x():",
             '    accounts[0].transfer(accounts[1], "1 ether")',
@@ -95,20 +81,31 @@ def test_fn(accounts, history, console):
 
 
 def test_exceptions(console):
+    shell = console()
     with pytest.raises(NameError):
-        console.push("x += 22")
+        shell.push("x += 22")
     with pytest.raises(TypeError):
-        console.push('x = 1 + "hello"')
+        shell.push('x = 1 + "hello"')
     with pytest.raises(IndexError):
-        _run_cmd(console, ["x=[]", 'x[11] = "hello"'])
+        _run_cmd(shell, ["x=[]", 'x[11] = "hello"'])
 
 
 def test_syntax(console):
+    shell = console()
     with pytest.raises(SyntaxError):
-        console.push("x = [)")
+        shell.push("x = [)")
     with pytest.raises(SyntaxError):
-        _run_cmd(console, ["x = [", "", ")"])
+        _run_cmd(shell, ["x = [", "", ")"])
 
 
 def test_dir(console):
-    _run_cmd(console, ["dir()", "dir(network)", "dir(accounts)", "dir(project)", "dir(alert)"])
+    shell = console()
+    _run_cmd(shell, ["dir()", "dir(network)", "dir(accounts)", "dir(project)", "dir(alert)"])
+
+
+def test_exit_and_open_new_console(console):
+    shell = console()
+    with pytest.raises(SystemExit):
+        shell.push("exit()")
+    shell = console()
+    shell.push("foo = 1")

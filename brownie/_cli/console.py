@@ -71,7 +71,13 @@ class _Quitter:
 
 
 class Console(code.InteractiveConsole):
-    def __init__(self, project=None, inp=None):
+
+    # This value is used as the `input` arg when initializing `prompt_toolkit.PromptSession`.
+    # During testing there is a conflict with how pytest supresses stdin/out, so stdin is
+    # replaced with `prompt_toolkit.input.defaults.create_pipe_input`
+    prompt_input = None
+
+    def __init__(self, project=None):
         """
         Launch the Brownie console.
 
@@ -79,9 +85,6 @@ class Console(code.InteractiveConsole):
         ---------
         project : `Project`, optional
             Active Brownie project to include in the console's local namespace.
-        inp : Input, optional
-            Input object to be passed to the prompt_toolkit `PromptSession`.
-            Required for unit testing to avoid conflicts with Pytest.
         """
         console_settings = CONFIG.settings["console"]
 
@@ -126,7 +129,9 @@ class Console(code.InteractiveConsole):
         if console_settings["completions"]:
             kwargs["completer"] = ConsoleCompleter(locals_dict)
         self.prompt_session = PromptSession(
-            history=SanitizedFileHistory(history_file, locals_dict), input=inp, **kwargs
+            history=SanitizedFileHistory(history_file, locals_dict),
+            input=self.prompt_input,
+            **kwargs,
         )
 
         if console_settings["auto_suggest"]:
