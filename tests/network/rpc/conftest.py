@@ -35,6 +35,7 @@ def _no_rpc_setup(rpc, web3, temp_port, original_port):
     _notify_registry(0)
     rpc._rpc = proc
     rpc._reset_id = reset_id
+    rpc._current_id = reset_id
 
 
 @pytest.fixture
