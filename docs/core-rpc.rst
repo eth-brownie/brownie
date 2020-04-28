@@ -77,3 +77,29 @@ To return to the genesis state, use :func:`rpc.reset <Rpc.reset>`.
     >>> rpc.reset()
     >>> web3.eth.blockNumber
     0
+
+Undo / Redo
+-----------
+
+Along with snapshotting, you can use :func:`rpc.undo <Rpc.undo>` and :func:`rpc.redo <Rpc.redo>` to move backward and forward through recent transactions. This is especially useful during :ref:`interactive test debugging <pytest-interactive>`.
+
+.. code-block:: python
+
+    >>> accounts[0].transfer(accounts[1], "1 ether")
+    Transaction sent: 0x8c166b66b356ad7f5c58337973b89950f03105cdae896ac66f16cdd4fc395d05
+      Gas price: 0.0 gwei   Gas limit: 6721975
+      Transaction confirmed - Block: 1   Gas used: 21000 (0.31%)
+
+    <Transaction '0x8c166b66b356ad7f5c58337973b89950f03105cdae896ac66f16cdd4fc395d05'>
+
+    >>> rpc.undo()
+    'Block height at 0'
+
+    >>> rpc.redo()
+    Transaction sent: 0x8c166b66b356ad7f5c58337973b89950f03105cdae896ac66f16cdd4fc395d05
+      Gas price: 0.0 gwei   Gas limit: 6721975
+      Transaction confirmed - Block: 1   Gas used: 21000 (0.31%)
+
+    'Block height at 1'
+
+Note that :func:`rpc.snapshot <Rpc.snapshot>` and :func:`rpc.revert <Rpc.revert>` clear the undo buffer.

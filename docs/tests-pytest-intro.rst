@@ -358,6 +358,8 @@ Brownie compares hashes of the following items to check if a test should be re-r
 * The AST of the test module
 * The AST of all ``conftest.py`` modules that are accessible to the test module
 
+.. _pytest-interactive:
+
 Interactive Debugging
 ---------------------
 
@@ -371,6 +373,7 @@ When using interactive mode, Brownie immediately prints the traceback for each f
 
 * Deployed :func:`ProjectContract <brownie.network.contract.ProjectContract>` objects are available within their associated :func:`ContractContainer <brownie.network.contract.ContractContainer>`
 * :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` objects are in the :func:`TxHistory <brownie.network.state.TxHistory>` container, available as ``history``
+* Use :func:`rpc.undo <Rpc.undo>` and :func:`rpc.redo <Rpc.redo>` to move backward and forward through recent transactions
 
 Once you are finished, type ``quit()`` to continue with the next test.
 

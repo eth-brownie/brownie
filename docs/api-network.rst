@@ -1616,20 +1616,39 @@ Rpc Methods
         >>> accounts[0].balance()
         100000000000000000000
 
-Rpc Internal Methods
-********************
+.. py:classmethod:: Rpc.undo(num=1)
 
-.. py:classmethod:: Rpc._internal_snap()
+    Undo one or more recent transactions.
 
-    Takes an internal snapshot at the current block height.
+    * ``num``: Number of transactions to undo
 
-.. py:classmethod:: Rpc._internal_revert()
+    Once undone, a transaction can be repeated using :func:`Rpc.redo <Rpc.redo>`. Calling :func:`Rpc.snapshot <Rpc.snapshot>` or :func:`Rpc.revert <Rpc.revert>` clears the undo buffer.
 
-    Reverts to the most recently taken internal snapshot.
+    .. code-block:: python
 
-    .. note::
+        >>> web3.eth.blockNumber
+        3
+        >>> rpc.undo()
+        'Block height at 2'
 
-        When calling this method, you must ensure that the user has not had a chance to take their own snapshot since :func:`_internal_snap <Rpc._internal_snap>` was called.
+
+.. py:classmethod:: Rpc.redo(num=1)
+
+    Redo one or more recently undone transactions.
+
+    * ``num``: Number of transactions to redo
+
+    .. code-block:: python
+
+        >>> web3.eth.blockNumber
+        2
+        >>> rpc.redo()
+        Transaction sent: 0x8c166b66b356ad7f5c58337973b89950f03105cdae896ac66f16cdd4fc395d05
+          Gas price: 0.0 gwei   Gas limit: 6721975
+          Transaction confirmed - Block: 3   Gas used: 21000 (0.31%)
+
+        'Block height at 3'
+
 
 Internal Methods
 ----------------
