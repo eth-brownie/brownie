@@ -21,13 +21,13 @@ contract Bar is Foo {{
 """
 
 
-@pytest.mark.parametrize("contract_type", ("contract", "interface"))
-def test_in_contracts_folder(newproject, contract_type):
+def test_in_contracts_folder(newproject):
     with newproject._path.joinpath("contracts/Foo.sol").open("w") as fp:
-        fp.write(INTERFACE.format(contract_type))
+        fp.write(INTERFACE.format("interface"))
     newproject.load()
     assert newproject._path.joinpath("build/contracts/Foo.json").exists()
     assert not hasattr(newproject, "Foo")
+    assert hasattr(newproject.interface, "Foo")
 
 
 @pytest.mark.parametrize("contract_type", ("contract", "interface"))
@@ -37,6 +37,7 @@ def test_in_interfaces_folder(newproject, contract_type):
     newproject.load()
     assert not newproject._path.joinpath("build/contracts/Foo.json").exists()
     assert not hasattr(newproject, "Foo")
+    assert hasattr(newproject.interface, "Foo")
 
 
 @pytest.mark.parametrize("import_path", ("../", ""))

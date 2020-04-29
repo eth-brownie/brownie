@@ -38,6 +38,7 @@ def test_vy_interface(newproject):
     assert hasattr(newproject, "Foo")
     assert not newproject._path.joinpath("build/contracts/Bar.json").exists()
     assert not hasattr(newproject, "Bar")
+    assert not hasattr(newproject.interface, "Bar")
 
 
 def test_json_interface(newproject):
@@ -50,6 +51,7 @@ def test_json_interface(newproject):
     assert hasattr(newproject, "Foo")
     assert not newproject._path.joinpath("build/contracts/Bar.json").exists()
     assert not hasattr(newproject, "Bar")
+    assert hasattr(newproject.interface, "Bar")
 
 
 def test_incompatible_interface(newproject):
