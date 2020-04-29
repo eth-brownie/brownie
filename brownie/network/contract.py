@@ -626,8 +626,8 @@ class Contract(_DeployedContractBase):
         alias: str | None
             An alias to apply. If `None`, any existing alias is removed.
         """
-        if CONFIG.network_type != "live":
-            raise ValueError("Cannot set alias outside of live environment")
+        if "chainid" not in CONFIG.active_network:
+            raise ValueError("Cannot set aliases in a development environment")
 
         if alias is not None:
             if "." in alias or alias.lower().startswith("0x"):
