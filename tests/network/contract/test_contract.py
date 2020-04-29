@@ -158,6 +158,14 @@ def test_from_explorer(network):
     assert len(contract._sources) == 1
 
 
+def test_from_explorer_only_abi(network):
+    network.connect("mainnet")
+    # uniswap DAI market - ABI is available but source is not
+    contract = Contract.from_explorer("0x2a1530C4C41db0B0b2bB646CB5Eb1A67b7158667")
+    assert contract._name == "UnknownContractName"
+    assert "pcMap" not in contract._build
+
+
 def test_from_explorer_pre_422(network):
     network.connect("mainnet")
     contract = Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
@@ -268,11 +276,11 @@ def test_autofetch_missing(network, config, mocker):
 
     with pytest.raises(ValueError):
         Contract("0xff031750F29b24e6e5552382F6E0c065830085d2")
-    assert requests.get.call_count == 1
+    assert requests.get.call_count == 2
 
     with pytest.raises(ValueError):
         Contract("0xff031750F29b24e6e5552382F6E0c065830085d2")
-    assert requests.get.call_count == 1
+    assert requests.get.call_count == 2
 
 
 def test_as_proxy_for(network):
