@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 
+import warnings
 from typing import Optional, Tuple, Union
 
 from brownie import project
 from brownie._config import CONFIG
 from brownie.convert import Wei
+from brownie.exceptions import BrownieEnvironmentWarning
 
 from .account import Accounts
 from .rpc import Rpc, _notify_registry
@@ -24,8 +26,6 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
         raise ConnectionError(f"Already connected to network '{CONFIG.active_network['id']}'")
     try:
         active = CONFIG.set_active_network(network)
-        if "host" not in active:
-            raise KeyError(f"No host in brownie-config.json for network '{active['id']}'")
         host = active["host"]
 
         if ":" not in host.split("//", maxsplit=1)[-1]:
@@ -38,7 +38,10 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
         if CONFIG.network_type == "development" and launch_rpc and not rpc.is_active():
             if is_connected():
                 if web3.eth.blockNumber != 0:
-                    raise ValueError("Local RPC Client has a block height > 0")
+                    warnings.warn(
+                        f"Development network has a block height of {web3.eth.blockNumber}",
+                        BrownieEnvironmentWarning,
+                    )
                 rpc.attach(host)
             else:
                 rpc.launch(active["cmd"], **active["cmd_settings"])
