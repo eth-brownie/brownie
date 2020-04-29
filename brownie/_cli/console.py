@@ -292,6 +292,8 @@ class TestAutoSuggest(AutoSuggest):
                 fn = getattr(base, current)
             if isinstance(fn, type):
                 fn = fn.__init__
+            elif hasattr(fn, "__call__"):
+                fn = fn.__call__
 
             if hasattr(fn, "_autosuggest"):
                 inputs = fn._autosuggest()
