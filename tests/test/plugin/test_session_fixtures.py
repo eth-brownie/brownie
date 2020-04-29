@@ -12,6 +12,9 @@ def test_accounts(accounts, a):
 def test_history(history):
     assert history == brownie.history
 
+def test_interface(interface):
+    assert isinstance(interface, brownie.network.contract.InterfaceContainer)
+
 def test_rpc(rpc):
     assert rpc == brownie.rpc
 
@@ -37,9 +40,9 @@ def test_state_machine(state_machine):
 
 def test_fixtures(plugintester):
     result = plugintester.runpytest()
-    result.assert_outcomes(passed=6)
+    result.assert_outcomes(passed=7)
 
 
 def test_fixtures_xdist(isolatedtester):
     result = isolatedtester.runpytest("-n 2")
-    result.assert_outcomes(passed=6)
+    result.assert_outcomes(passed=7)
