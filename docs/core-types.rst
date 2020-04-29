@@ -57,7 +57,7 @@ The :func:`Fixed <brownie.convert.datatypes.Fixed>` class is used to handle Vype
     True
 
 
-Attempting to assign, compare or perform arithmetic against a float raises a ``TypeError``.
+Attempting to assign, compare or perform arithmetic against a float raises a :class:`TypeError`.
 
 .. code-block:: python
 

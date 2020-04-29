@@ -196,4 +196,5 @@ intersphinx_mapping = {
     "hypothesis": ("https://hypothesis.readthedocs.io/en/latest", None),
     "pytest": ("https://docs.pytest.org/en/latest/", None),
     "python": ("https://docs.python.org/3.8/", None),
+    "web3py": ("https://web3py.readthedocs.io/en/stable/", None),
 }
