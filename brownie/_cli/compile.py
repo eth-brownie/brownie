@@ -24,8 +24,10 @@ def main():
     project_path = project.check_for_project(".")
     if project_path is None:
         raise ProjectNotFound
-    build_path = project_path.joinpath("build/contracts")
+    contract_artifact_path = project_path.joinpath("build/contracts")
+    interface_artifact_path = project_path.joinpath("build/interfaces")
     if args["--all"]:
-        shutil.rmtree(build_path, ignore_errors=True)
+        shutil.rmtree(contract_artifact_path, ignore_errors=True)
+        shutil.rmtree(interface_artifact_path, ignore_errors=True)
     project.load(project_path)
-    print(f"Brownie project has been compiled at {build_path}")
+    print(f"Project has been compiled. Build artifacts saved at {contract_artifact_path}")
