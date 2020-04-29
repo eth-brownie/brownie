@@ -62,7 +62,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
 
     * If no argument is given, the current default is displayed.
     * If an integer value is given, this will be the default gas limit.
-    * If set to ``auto``, the gas limit is determined automatically via ``web3.eth.estimateGas``.
+    * If set to ``auto``, the gas limit is determined automatically via :meth:`web3.eth.estimateGas <web3.eth.Eth.estimateGas>`.
 
     Returns ``False`` if the gas limit is set automatically, or an ``int`` if it is set to a fixed value.
 
@@ -81,7 +81,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
     Gets and optionally sets the default gas price.
 
     * If an integer value is given, this will be the default gas price.
-    * If set to ``auto``, the gas price is determined automatically via ``web3.eth.getPrice``.
+    * If set to ``auto``, the gas price is determined automatically via :attr:`web3.eth.gasPrice <web3.eth.Eth.gasPrice>`.
 
     Returns ``False`` if the gas price is set automatically, or an ``int`` if it is set to a fixed value.
 
@@ -204,7 +204,7 @@ Account
 
 .. py:class:: brownie.network.account.Account
 
-    An ethereum address that you control the private key for, and so can send transactions from. Generated automatically from ``web3.eth.accounts`` and stored in the :func:`Accounts <brownie.network.account.Accounts>` container.
+    An ethereum address that you control the private key for, and so can send transactions from. Generated automatically from :attr:`web3.eth.accounts <web3.eth.Eth.accounts>` and stored in the :func:`Accounts <brownie.network.account.Accounts>` container.
 
     .. code-block:: python
 
@@ -318,7 +318,7 @@ LocalAccount
 
 .. py:class:: brownie.network.account.LocalAccount
 
-    Functionally identical to :func:`Account <brownie.network.account.Account>`. The only difference is that a ``LocalAccount`` is one where the private key was directly inputted, and so is not found in ``web3.eth.accounts``.
+    Functionally identical to :func:`Account <brownie.network.account.Account>`. The only difference is that a ``LocalAccount`` is one where the private key was directly inputted, and so is not found in :attr:`web3.eth.accounts <web3.eth.Eth.accounts>`.
 
     .. note:: Resetting the RPC client will delete all ``LocalAccount`` objects from the :func:`Account <brownie.network.account.Accounts>` container.
 
@@ -2122,16 +2122,16 @@ TransactionReceipt Methods
 ``brownie.network.web3``
 ========================
 
-The ``web3`` module contains a slightly modified version of the web3.py ``Web3`` class that is used throughout various Brownie modules for RPC communication.
+The ``web3`` module contains a slightly modified version of the web3.py :class:`Web3 <web3.Web3>` class that is used throughout various Brownie modules for RPC communication.
 
 Web3
 ----
 
-See the `Web3 API documentation <https://web3py.readthedocs.io/en/stable/web3.main.html#web3.Web3>`_ for detailed information on all the methods and attributes available here. This document only outlines methods that differ from the normal ``Web3`` public interface.
+See the `Web3 API documentation <https://web3py.readthedocs.io/en/stable/web3.main.html#web3.Web3>`_ for detailed information on all the methods and attributes available here. This document only outlines methods that differ from the normal :class:`Web3 <web3.Web3>` public interface.
 
 .. py:class:: brownie.network.web3.Web3
 
-    Brownie subclass of ``Web3``. An instance is created at ``brownie.network.web3.web`` and available for import from the main package.
+    Brownie subclass of :class:`Web3 <web3.Web3>`. An instance is created at ``brownie.network.web3.web`` and available for import from the main package.
 
     .. code-block:: python
 

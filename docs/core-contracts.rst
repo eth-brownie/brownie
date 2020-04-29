@@ -140,15 +140,15 @@ Transaction Parameters
 When executing a transaction to a contract, you can optionally include a :py:class:`dict <dict>` of transaction parameters as the final input. It may contain the following values:
 
     * ``from``: the :func:`Account <brownie.network.account.Account>` that the transaction it sent from. If not given, the transaction is sent from the account that deployed the contract.
-    * ``gas_limit``: The amount of gas provided for transaction execution, in wei. If not given, the gas limit is determined using ``web3.eth.estimateGas``.
-    * ``gas_price``: The gas price for the transaction, in wei. If not given, the gas price is set according to ``web3.eth.getPrice``.
+    * ``gas_limit``: The amount of gas provided for transaction execution, in wei. If not given, the gas limit is determined using :meth:`web3.eth.estimateGas <web3.eth.Eth.estimateGas>`.
+    * ``gas_price``: The gas price for the transaction, in wei. If not given, the gas price is set according to :attr:`web3.eth.gasPrice <web3.eth.Eth.gasPrice>`.
     * ``amount``: The amount of Ether to include with the transaction, in wei.
 
 All integer values can also be given as strings that will be converted by :func:`Wei <brownie.convert.datatypes.Wei>`.
 
 .. note::
 
-    To maintain compatibility with ``web3.eth.sendTransaction``, you can use ``gas``, ``gasPrice`` and ``value`` as aliases for ``gas_limit``, ``gas_price``, and ``amount``.
+    To maintain compatibility with :meth:`web3.eth.sendTransaction <web3.eth.Eth.sendTransaction>`, you can use ``gas``, ``gasPrice`` and ``value`` as aliases for ``gas_limit``, ``gas_price``, and ``amount``.
 
 Calls
 -----
