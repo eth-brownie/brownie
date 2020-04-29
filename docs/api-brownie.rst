@@ -18,7 +18,10 @@ The ``brownie`` package is the main package containing all of Brownie's function
 ``brownie.exceptions``
 ======================
 
-The ``exceptions`` module contains all Brownie ``Exception`` classes.
+The ``exceptions`` module contains all Brownie :class:`Exception` and :class:`Warning` classes.
+
+Exceptions
+----------
 
 .. py:exception:: brownie.exceptions.CompilerError
 
@@ -74,7 +77,7 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
 .. py:exception:: brownie.exceptions.UnknownAccount
 
-    Raised when the :func:`Accounts <brownie.network.account.Accounts>` container cannot locate a specified `Account <brownie.network.account.Account>` object.
+    Raised when the :func:`Accounts <brownie.network.account.Accounts>` container cannot locate a specified :func:`Account <brownie.network.account.Account>` object.
 
 .. py:exception:: brownie.exceptions.UnsetENSName
 
@@ -86,7 +89,7 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 
 .. py:exception:: brownie.exceptions.RPCConnectionError
 
-    Raised when the RPC process is active and `web3 <brownie.network.web3.Web3>` is connected, but Brownie is unable to communicate with it.
+    Raised when the RPC process is active and :func:`web3 <brownie.network.web3.Web3>` is connected, but Brownie is unable to communicate with it.
 
 .. py:exception:: brownie.exceptions.RPCProcessError
 
@@ -99,6 +102,17 @@ The ``exceptions`` module contains all Brownie ``Exception`` classes.
 .. py:exception:: brownie.exceptions.VirtualMachineError
 
     Raised when a contract call causes the EVM to revert.
+
+Warnings
+--------
+
+.. py:exception:: brownie.exceptions.BrownieCompilerWarning
+
+    Raised by :func:`Contract.from_explorer <Contract.from_explorer>` when a contract cannot be compiled, or compiles successfully but produces unexpected bytecode.
+
+.. py:exception:: brownie.exceptions.BrownieEnvironmentWarning
+
+    Raised on unexpected environment conditions.
 
 ``brownie._config``
 ===================
@@ -118,7 +132,7 @@ ConfigDict
 
 .. py:class:: brownie._config.ConfigDict
 
-    Subclass of `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`_ that prevents adding new keys when locked. Used to hold config file settings.
+    Subclass of :class:`dict` that prevents adding new keys when locked. Used to hold config file settings.
 
     .. code-block:: python
 
@@ -132,7 +146,7 @@ ConfigDict Internal Methods
 
 .. py:classmethod:: ConfigDict._lock
 
-    Locks the :func:`ConfigDict <brownie._config.ConfigDict>`. When locked, attempts to add a new key will raise a ``KeyError``.
+    Locks the :func:`ConfigDict <brownie._config.ConfigDict>`. When locked, attempts to add a new key will raise a :class:`KeyError`.
 
     .. code-block:: python
 
@@ -155,7 +169,7 @@ ConfigDict Internal Methods
 
 .. py:classmethod:: ConfigDict._copy
 
-    Returns a copy of the object as a ``dict``.
+    Returns a copy of the object as a :class:`dict`.
 
 ``brownie._singleton``
 ======================
