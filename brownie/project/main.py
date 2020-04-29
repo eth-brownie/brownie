@@ -25,7 +25,12 @@ from brownie._config import (
 )
 from brownie.exceptions import InvalidPackage, ProjectAlreadyLoaded, ProjectNotFound
 from brownie.network import web3
-from brownie.network.contract import Contract, ContractContainer, ProjectContract
+from brownie.network.contract import (
+    Contract,
+    ContractContainer,
+    InterfaceContainer,
+    ProjectContract,
+)
 from brownie.network.state import _add_contract, _remove_contract
 from brownie.project import compiler, ethpm
 from brownie.project.build import BUILD_KEYS, Build
@@ -98,8 +103,12 @@ class _ProjectBase:
 
     def _create_containers(self) -> None:
         # create container objects
+        self.interface = InterfaceContainer(self)
         self._containers: Dict = {}
+
         for key, data in self._build.items():
+            if data["type"] == "interface":
+                self.interface._add(data["contractName"], data["abi"])
             if data["bytecode"]:
                 container = ContractContainer(self, data)
                 self._containers[key] = container
@@ -184,7 +193,7 @@ class Project(_ProjectBase):
 
         # add project to namespaces, apply import blackmagic
         name = self._name
-        self.__all__ = list(self._containers)
+        self.__all__ = list(self._containers) + ["interface"]
         sys.modules[f"brownie.project.{name}"] = self  # type: ignore
         sys.modules["brownie.project"].__dict__[name] = self
         sys.modules["brownie.project"].__all__.append(name)  # type: ignore
@@ -281,17 +290,23 @@ class Project(_ProjectBase):
 
     def _update_and_register(self, dict_: Any) -> None:
         dict_.update(self)
+        if "interface" not in dict_:
+            dict_["interface"] = self.interface
         self._namespaces.append(dict_)
 
     def _add_to_main_namespace(self) -> None:
         # temporarily adds project objects to the main namespace
         brownie: Any = sys.modules["brownie"]
+        if "interface" not in brownie.__dict__:
+            brownie.__dict__["interface"] = self.interface
         brownie.__dict__.update(self._containers)
         brownie.__all__.extend(self.__all__)
 
     def _remove_from_main_namespace(self) -> None:
         # removes project objects from the main namespace
         brownie: Any = sys.modules["brownie"]
+        if brownie.__dict__.get("interface") == self.interface:
+            del brownie.__dict__["interface"]
         for key in self._containers:
             brownie.__dict__.pop(key, None)
         for key in self.__all__:
