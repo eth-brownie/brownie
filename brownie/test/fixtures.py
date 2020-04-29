@@ -21,6 +21,7 @@ def _generate_fixture(container):
 class PytestBrownieFixtures:
     def __init__(self, config, project):
         self.config = config
+        self._interface = project.interface
         for container in project:
             setattr(self, container._name, _generate_fixture(container))
 
@@ -69,6 +70,10 @@ class PytestBrownieFixtures:
     def history(self):
         """Yields a TxHistory container for the active project, used to access transaction data."""
         yield brownie.history
+
+    @pytest.fixture(scope="session")
+    def interface(self):
+        yield self._interface
 
     @pytest.fixture(scope="session")
     def rpc(self):
