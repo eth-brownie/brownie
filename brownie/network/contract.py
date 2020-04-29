@@ -550,51 +550,36 @@ class Contract(_DeployedContractBase):
             Contract owner. If set, transactions without a `from` field will be
             performed using this account.
         """
-        url = CONFIG.active_network.get("explorer")
-        if url is None:
-            raise ValueError("Explorer API not set for this network")
-
         address = _resolve_address(address)
-        if address in _unverified_addresses:
-            raise ValueError(f"Source for {address} has not been verified")
+        data = _fetch_from_explorer(address, "getsourcecode", silent)
+        is_verified = bool(data["result"][0].get("SourceCode"))
 
-        params: Dict = {"module": "contract", "action": "getsourcecode", "address": address}
-        if "etherscan" in url:
-            if os.getenv("ETHERSCAN_TOKEN"):
-                params["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
-            elif not silent:
-                warnings.warn(
-                    "No Etherscan API token set. You may experience issues with rate limiting. "
-                    "Visit https://etherscan.io/register to obtain a token, and then store it "
-                    "as the environment variable $ETHERSCAN_TOKEN",
-                    BrownieEnvironmentWarning,
-                )
-
-        if not silent:
-            print(
-                f"Fetching source of {color('bright blue')}{address}{color} "
-                f"from {color('bright blue')}{urlparse(url).netloc}{color}..."
+        if is_verified:
+            abi = json.loads(data["result"][0]["ABI"])
+            name = data["result"][0]["ContractName"]
+        else:
+            # if the source is not available, try to fetch only the ABI
+            try:
+                data = _fetch_from_explorer(address, "getabi", True)
+            except ValueError as exc:
+                _unverified_addresses.add(address)
+                raise exc
+            abi = json.loads(data["result"].strip())
+            name = "UnknownContractName"
+            warnings.warn(
+                f"{address}: Was able to fetch the ABI but not the source code. "
+                "Some functionality will not be available.",
+                BrownieCompilerWarning,
             )
-        response = requests.get(url, params=params)
 
-        if response.status_code != 200:
-            raise ConnectionError(
-                f"Status {response.status_code} when querying {url}: {response.text}"
-            )
-        data = response.json()
-        if int(data["status"]) != 1:
-            raise ValueError(f"Failed to retrieve data from API: {data['result']}")
-        if not data["result"][0].get("SourceCode"):
-            _unverified_addresses.add(address)
-            raise ValueError(f"Source for {address} has not been verified")
-
+        # if this is a proxy, fetch information for the implementation contract
         if as_proxy_for is not None:
             implementation_contract = Contract.from_explorer(as_proxy_for)
             abi = implementation_contract._build["abi"]
-        else:
-            abi = json.loads(data["result"][0]["ABI"])
 
-        name = data["result"][0]["ContractName"]
+        if not is_verified:
+            return cls.from_abi(name, address, abi, owner)
+
         try:
             version = Version(data["result"][0]["CompilerVersion"].lstrip("v")).truncate()
         except Exception:
@@ -606,7 +591,7 @@ class Contract(_DeployedContractBase):
                     "unsupported by Brownie. Some functionality will not be available.",
                     BrownieCompilerWarning,
                 )
-            return cls.from_abi(name, address, abi)
+            return cls.from_abi(name, address, abi, owner)
 
         sources = {f"{name}-flattened.sol": data["result"][0]["SourceCode"]}
         optimizer = {
@@ -959,3 +944,39 @@ def _contract_method_autosuggest(method: Any) -> List:
         tx_hint = [" {'from': Account}"]
 
     return [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params] + tx_hint
+
+
+def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
+    url = CONFIG.active_network.get("explorer")
+    if url is None:
+        raise ValueError("Explorer API not set for this network")
+
+    if address in _unverified_addresses:
+        raise ValueError(f"Source for {address} has not been verified")
+
+    params: Dict = {"module": "contract", "action": action, "address": address}
+    if "etherscan" in url:
+        if os.getenv("ETHERSCAN_TOKEN"):
+            params["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
+        elif not silent:
+            warnings.warn(
+                "No Etherscan API token set. You may experience issues with rate limiting. "
+                "Visit https://etherscan.io/register to obtain a token, and then store it "
+                "as the environment variable $ETHERSCAN_TOKEN",
+                BrownieEnvironmentWarning,
+            )
+
+    if not silent:
+        print(
+            f"Fetching source of {color('bright blue')}{address}{color} "
+            f"from {color('bright blue')}{urlparse(url).netloc}{color}..."
+        )
+    response = requests.get(url, params=params)
+
+    if response.status_code != 200:
+        raise ConnectionError(f"Status {response.status_code} when querying {url}: {response.text}")
+    data = response.json()
+    if int(data["status"]) != 1:
+        raise ValueError(f"Failed to retrieve data from API: {data['result']}")
+
+    return data
