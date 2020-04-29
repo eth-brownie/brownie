@@ -133,6 +133,8 @@ class ToolbarFrame(ttk.Frame):
         ToolTip(self.report, "Select a report to overlay onto the source code")
 
         # contract selection
-        self.combo = ContractSelect(self, [k for k, v in project._build.items() if v["bytecode"]])
+        self.combo = ContractSelect(
+            self, [k for k, v in project._build.items() if v.get("bytecode")]
+        )
         self.combo.grid(row=0, column=10, sticky="nsew")
         ToolTip(self.combo, "Select the contract source to view")

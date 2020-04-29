@@ -630,7 +630,7 @@ class Contract(_DeployedContractBase):
         build = compile_and_format(sources, solc_version=str(version), optimizer=optimizer)
         build = build[name]
         if as_proxy_for is not None:
-            build.update(abi=abi, natspec=implementation_contract._build["natspec"])
+            build.update(abi=abi, natspec=implementation_contract._build.get("natspec"))
 
         if not _verify_deployed_code(address, build["deployedBytecode"], build["language"]):
             warnings.warn(
