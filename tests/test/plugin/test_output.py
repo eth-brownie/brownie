@@ -7,7 +7,7 @@ from brownie.test import output
 test_source = """
 def test_stuff(BrownieTester, accounts):
     c = accounts[0].deploy(BrownieTester, True)
-    print('oh hai mark')
+    print('oh hai', 'mark')
     c.doNothing({'from': accounts[0]})"""
 
 

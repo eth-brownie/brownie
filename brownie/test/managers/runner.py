@@ -74,12 +74,18 @@ class PytestPrinter:
         self.first_line = True
         builtins.print = self
 
-    def __call__(self, text):
+    def __call__(self, *values, sep=" ", end="\n", file=sys.stdout, flush=False):
+        if file != sys.stdout:
+            self._builtins_print(*values, sep=sep, end=end, file=file, flush=flush)
+            return
+
         if self.first_line:
             self.first_line = False
             sys.stdout.write(f"{color('yellow')}RUNNING{color}\n")
-        sys.stdout.write(f"{text}\n")
-        sys.stdout.flush()
+        text = f"{sep.join(values)}{end}"
+        sys.stdout.write(text)
+        if flush:
+            sys.stdout.flush()
 
     def finish(self, nodeid):
         if not self.first_line:
