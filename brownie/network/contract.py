@@ -248,6 +248,35 @@ class ContractConstructor:
         return bytecode + eth_abi.encode_abi(types_list, data).hex()
 
 
+class InterfaceContainer:
+    """
+    Container class that provides access to interfaces within a project.
+    """
+
+    def __init__(self, project: Any) -> None:
+        self._project = project
+
+    def _add(self, name: str, abi: List) -> None:
+        constructor = InterfaceConstructor(name, abi)
+        setattr(self, name, constructor)
+
+
+class InterfaceConstructor:
+    """
+    Constructor used to create Contract objects from a project interface.
+    """
+
+    def __init__(self, name: str, abi: List) -> None:
+        self._name = name
+        self.abi = abi
+
+    def __call__(self, address: str, owner: Optional[AccountsType] = None) -> "Contract":
+        return Contract.from_abi(self._name, address, self.abi, owner)
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} '{self._name}'>"
+
+
 class _DeployedContractBase(_ContractBase):
     """Methods for interacting with a deployed contract.
 
@@ -445,7 +474,7 @@ class Contract(_DeployedContractBase):
 
     @classmethod
     def from_abi(
-        cls, name: str, address: str, abi: Dict, owner: Optional[AccountsType] = None
+        cls, name: str, address: str, abi: List, owner: Optional[AccountsType] = None
     ) -> "Contract":
         """
         Create a new `Contract` object from an ABI.
