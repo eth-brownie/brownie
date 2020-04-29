@@ -27,7 +27,7 @@ class PytestBrownieBase:
         self.isolated = {}
         self.skip = {}
         self.contracts = dict(
-            (k, v["bytecodeSha1"]) for k, v in project._build.items() if v["bytecode"]
+            (k, v["bytecodeSha1"]) for k, v in project._build.items() if v.get("bytecode")
         )
 
         glob = self.project_path.glob("tests/**/conftest.py")
