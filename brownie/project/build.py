@@ -4,6 +4,8 @@ from typing import Dict, ItemsView, List, Optional, Tuple, Union
 
 from .sources import Sources, highlight_source
 
+INTERFACE_KEYS = ["abi", "contractName", "sha1", "type"]
+
 DEPLOYMENT_KEYS = [
     "abi",
     "ast",
@@ -44,9 +46,12 @@ class Build:
 
     def _add(self, build_json: Dict) -> None:
         contract_name = build_json["contractName"]
+        self._build[contract_name] = build_json
+        if "pcMap" not in build_json:
+            # no pcMap means build artifact is for an interface
+            return
         if "0" in build_json["pcMap"]:
             build_json["pcMap"] = dict((int(k), v) for k, v in build_json["pcMap"].items())
-        self._build[contract_name] = build_json
         self._generate_revert_map(
             build_json["pcMap"], build_json["allSourcePaths"], build_json["language"]
         )
@@ -103,7 +108,7 @@ class Build:
         If a path is given, only contracts derived from that source file are returned."""
         if path is None:
             return self._build.items()
-        return [(k, v) for k, v in self._build.items() if v["sourcePath"] == path]
+        return [(k, v) for k, v in self._build.items() if v.get("sourcePath") == path]
 
     def contains(self, contract_name: str) -> bool:
         """Checks if the contract name exists in the currently loaded build data."""
@@ -113,7 +118,7 @@ class Build:
         """Returns a list of contract names that inherit from or link to the given
         contract. Used by the compiler when determining which contracts to recompile
         based on a changed source file."""
-        return [k for k, v in self._build.items() if contract_name in v["dependencies"]]
+        return [k for k, v in self._build.items() if contract_name in v.get("dependencies", [])]
 
     def _stem(self, contract_name: str) -> str:
         return contract_name.replace(".json", "")

@@ -33,7 +33,7 @@ from brownie.network.contract import (
 )
 from brownie.network.state import _add_contract, _remove_contract
 from brownie.project import compiler, ethpm
-from brownie.project.build import BUILD_KEYS, Build
+from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_pragma_spec
 
@@ -46,6 +46,7 @@ FOLDERS = [
     "build",
     "build/contracts",
     "build/deployments",
+    "build/interfaces",
 ]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 
@@ -109,7 +110,7 @@ class _ProjectBase:
         for key, data in self._build.items():
             if data["type"] == "interface":
                 self.interface._add(data["contractName"], data["abi"])
-            if data["bytecode"]:
+            if data.get("bytecode"):
                 container = ContractContainer(self, data)
                 self._containers[key] = container
                 setattr(self, container._name, container)
@@ -182,12 +183,26 @@ class Project(_ProjectBase):
                 continue
             self._build._add(build_json)
 
+        interface_hashes = {}
+        interface_list = self._sources.get_interface_list()
+        for path in list(self._path.glob("build/interfaces/*.json")):
+            try:
+                with path.open() as fp:
+                    build_json = json.load(fp)
+            except json.JSONDecodeError:
+                build_json = {}
+            if not set(INTERFACE_KEYS).issubset(build_json) or path.stem not in interface_list:
+                path.unlink()
+                continue
+            self._build._add(build_json)
+            interface_hashes[path.stem] = build_json["sha1"]
+
         self._compiler_config = _load_project_compiler_config(self._path)
 
         # compile updated sources, update build
-        changed = self._get_changed_contracts()
+        changed = self._get_changed_contracts(interface_hashes)
         self._compile(changed, self._compiler_config, False)
-        self._save_interface_hashes()
+        self._compile_interfaces(interface_hashes)
         self._create_containers()
         self._load_deployments()
 
@@ -205,11 +220,10 @@ class Project(_ProjectBase):
         self._active = True
         _loaded_projects.append(self)
 
-    def _get_changed_contracts(self) -> Dict:
+    def _get_changed_contracts(self, compiled_hashes: Dict) -> Dict:
         # get list of changed interfaces and contracts
-        old_hashes = self._load_interface_hashes()
         new_hashes = self._sources.get_interface_hashes()
-        interfaces = [k for k, v in new_hashes.items() if old_hashes.get(k, None) != v]
+        interfaces = [k for k, v in new_hashes.items() if compiled_hashes.get(k, None) != v]
         contracts = [i for i in self._sources.get_contract_list() if self._compare_build_json(i)]
 
         # get dependents of changed sources
@@ -225,18 +239,6 @@ class Project(_ProjectBase):
         final.difference_update(interfaces)
         changed_set: Set = set(self._sources.get_source_path(i) for i in final)
         return {i: self._sources.get(i) for i in changed_set}
-
-    def _load_interface_hashes(self) -> Dict:
-        try:
-            with self._path.joinpath("build/interfaces.json").open() as fp:
-                return json.load(fp)
-        except (FileNotFoundError, json.JSONDecodeError):
-            return {}
-
-    def _save_interface_hashes(self) -> None:
-        interface_hashes = self._sources.get_interface_hashes()
-        with self._path.joinpath("build/interfaces.json").open("w") as fp:
-            json.dump(interface_hashes, fp, sort_keys=True, indent=2)
 
     def _compare_build_json(self, contract_name: str) -> bool:
         config = self._compiler_config
@@ -262,6 +264,32 @@ class Project(_ProjectBase):
             if Version(build_json["compiler"]["version"]) not in get_pragma_spec(source):
                 return True
         return False
+
+    def _compile_interfaces(self, compiled_hashes: Dict) -> None:
+        new_hashes = self._sources.get_interface_hashes()
+        changed = [k for k, v in new_hashes.items() if compiled_hashes.get(k, None) != v]
+        if not changed:
+            return
+
+        print("Generating interface ABIs...")
+        for name in changed:
+            print(f" - {name}...")
+            path_str = self._sources.get_source_path(name)
+            source = self._sources.get(path_str)
+            path = Path(path_str)
+
+            if path.suffix == ".json":
+                abi = json.loads(source)
+            elif path.suffix == ".vy":
+                abi = compiler.vyper.get_abi(source, name)[name]
+            else:
+                abi = compiler.solidity.get_abi(source)[name]
+            data = {"abi": abi, "contractName": name, "type": "interface", "sha1": new_hashes[name]}
+
+            if self._path is not None:
+                with self._path.joinpath(f"build/interfaces/{name}.json").open("w") as fp:
+                    json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
+            self._build._add(data)
 
     def _load_deployments(self) -> None:
         if CONFIG.network_type != "live":
