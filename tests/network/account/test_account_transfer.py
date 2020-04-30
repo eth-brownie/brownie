@@ -172,3 +172,10 @@ def test_localaccount(accounts):
     local.transfer(accounts[1], "1 ether")
     assert accounts[1].balance() == "101 ether"
     assert local.nonce == 1
+
+
+def test_deploy_via_transfer(accounts, web3):
+    bytecode = "0x3660006000376110006000366000732157a7894439191e520825fe9399ab8655e0f7085af41558576110006000f3"  # NOQA: E501
+    tx = accounts[0].transfer(data=bytecode)
+    assert tx.contract_name == "UnknownContract"
+    assert web3.eth.getCode(tx.contract_address)
