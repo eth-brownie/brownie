@@ -56,6 +56,17 @@ These fixtures provide quick access to Brownie objects that are frequently used 
             accounts[0].transfer(accounts[1], "10 ether")
             assert len(history) == 1
 
+.. py:attribute:: interface
+
+    Yields the :func:`InterfaceContainer <brownie.network.contract.InterfaceContainer>` object for the active project, which provides access to project interfaces.
+
+    .. code-block:: python
+        :linenos:
+
+        @pytest.fixture(scope="session")
+        def dai(interface):
+            yield interface.Dai("0x6B175474E89094C44Da98b954EedeAC495271d0F")
+
 .. py:attribute:: pm
 
     Callable fixture that provides access to :func:`Project <brownie.project.main.Project>` objects, used for testing against installed packages.

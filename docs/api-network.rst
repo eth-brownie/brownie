@@ -608,7 +608,7 @@ ContractContainer Attributes
 
 .. py:attribute:: ContractContainer.topics
 
-    A dictionary of bytes32 topics for each contract event.
+    A :py:class:`dict` of bytes32 topics for each contract event.
 
     .. code-block:: python
 
@@ -631,7 +631,7 @@ ContractContainer Methods
 
     * ``*args``: Contract constructor arguments.
 
-    You can optionally include a dictionary of :ref:`transaction parameters<transaction-parameters>` as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
+    You can optionally include a :py:class:`dict` of :ref:`transaction parameters<transaction-parameters>` as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
     If the contract requires a library, the most recently deployed one will be used. If the required library has not been deployed yet an `UndeployedLibrary <brownie.exceptions.UndeployedLibrary>` exception is raised.
 
@@ -779,7 +779,7 @@ New ``Contract`` objects are created with one of the following class methods.
     .. code-block:: python
 
         >>> from brownie import Contract
-        >>> Contract("Token", "0x79447c97b6543F6eFBC91613C655977806CB18b0", abi)
+        >>> Contract.from_abi("Token", "0x79447c97b6543F6eFBC91613C655977806CB18b0", abi)
         <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
 
 
@@ -971,7 +971,7 @@ ContractTx
 
     Inputs are formatted via methods in the :ref:`convert<api-convert>` module.
 
-    You can optionally include a dictionary of :ref:`transaction parameters<transaction-parameters>` as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
+    You can optionally include a :py:class:`dict` of :ref:`transaction parameters<transaction-parameters>` as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 
     .. code-block:: python
 
@@ -1066,7 +1066,7 @@ OverloadedMethod
 
 .. py:class:: brownie.network.contract.OverloadedMethod(address, name, owner)
 
-    When a contract uses `overloaded function names <https://solidity.readthedocs.io/en/latest/contracts.html#function-overloading>`_, the :func:`ContractTx <brownie.network.contract.ContractTx>` or :func:`ContractCall <brownie.network.contract.ContractCall>` objects are stored inside a dict-like ``OverloadedMethod`` container.
+    When a contract uses `overloaded function names <https://solidity.readthedocs.io/en/latest/contracts.html#function-overloading>`_, the :func:`ContractTx <brownie.network.contract.ContractTx>` or :func:`ContractCall <brownie.network.contract.ContractCall>` objects are stored inside a :py:class:`dict`-like ``OverloadedMethod`` container.
 
     .. code-block:: python
 
@@ -1084,7 +1084,46 @@ OverloadedMethod
         >>> erc223.transfer['address', 'uint256', 'uint256']
         <ContractTx object 'transfer(address,uint256,uint256)'>
 
+InterfaceContainer
+------------------
 
+.. py:class:: brownie.network.contract.InterfaceContainer
+
+    Container class that provides access to interfaces within a project.
+
+    This object is created and populated with :func:`InterfaceConstructor <brownie.network.contract.InterfaceConstructor>` objects when a Brownie project is opened. It is available as ``interface`` within the console and as a pytest fixture.
+
+    .. code-block:: python
+
+        >>> interface
+        <brownie.network.contract.InterfaceContainer object at 0x7fa239bf0d30>
+
+InterfaceConstructor
+--------------------
+
+.. py:class:: brownie.network.contract.InterfaceConstructor(address, owner=None)
+
+    Constructor to create :func:`Contract <brownie.network.contract.Contract>` objects from a project interface.
+
+    * ``address_or_alias``: Address of the deployed contract.
+    * ``owner``: An optional :func:`Account <brownie.network.account.Account>` instance. If given, transactions to the contract are sent broadcasted from this account by default.
+
+    When a project is loaded, an ``InterfaceConstructor`` is generated from each interface file within the ``interfaces/`` folder of the project. These objects are stored as :func:`InterfaceContainer <brownie.network.contract.InterfaceContainer>` members.
+
+    .. code-block:: python
+
+        >>> interface.Dai
+        <InterfaceConstructor 'Dai'>
+
+        >>> interface.Dai("0x6B175474E89094C44Da98b954EedeAC495271d0F")
+        <Dai Contract object '0x6B175474E89094C44Da98b954EedeAC495271d0F'>
+
+InterfaceConstructor Attributes
+*******************************
+
+.. py:attribute:: InterfaceConstructor.abi
+
+    The interface ABI as a :py:class:`dict`.
 
 ``brownie.network.event``
 =========================
@@ -1098,7 +1137,7 @@ EventDict
 
 .. py:class:: brownie.network.event.EventDict
 
-    Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`_ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`_. Base class, used to hold all events that are fired in a transaction.
+    Hybrid container type that works as a :py:class:`dict` and a :py:class:`list`. Base class, used to hold all events that are fired in a transaction.
 
     When accessing events inside the object:
 
@@ -1178,7 +1217,7 @@ _EventItem
 
 .. py:class:: brownie.network.event._EventItem
 
-    Hybrid container type that works as a `dict <https://docs.python.org/3/library/stdtypes.html#mapping-types-dict>`_ and a `list <https://docs.python.org/3/library/stdtypes.html#lists>`_. Represents one or more events with the same name that were fired in a transaction.
+    Hybrid container type that works as a :py:class:`dict` and a :py:class:`list`. Represents one or more events with the same name that were fired in a transaction.
 
     Instances of this class are created by :func:`EventDict <brownie.network.event.EventDict>`, it is not intended to be instantiated directly.
 
@@ -1338,7 +1377,7 @@ TxHistory Attributes
 
 .. py:attribute:: TxHistory.gas_profile
 
-    A dict that tracks gas cost statistics for contract function calls over time.
+    A :py:class:`dict` that tracks gas cost statistics for contract function calls over time.
 
     .. code-block:: python
 
@@ -1363,7 +1402,7 @@ TxHistory Methods
 
 .. py:classmethod:: TxHistory.copy
 
-    Returns a shallow copy of the object as a ``list``.
+    Returns a shallow copy of the object as a :py:class:`list`.
 
     .. code-block:: python
 
