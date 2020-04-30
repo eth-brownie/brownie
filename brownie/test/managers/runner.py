@@ -215,7 +215,7 @@ class PytestBrownieRunner(PytestBrownieBase):
 
         return super().pytest_report_teststatus(report)
 
-    def pytest_exception_interact(self, report):
+    def pytest_exception_interact(self, report, call):
         """
         Called when an exception was raised which can potentially be
         interactively handled.
@@ -227,6 +227,8 @@ class PytestBrownieRunner(PytestBrownieBase):
         ---------
         report : _pytest.reports.BaseReport
             Report object for the failed test.
+        call : _pytest.runner.CallInfo
+            Result/Exception info for the failed test.
         """
         if self.config.getoption("interactive") and report.failed:
             capman = self.config.pluginmanager.get_plugin("capturemanager")
@@ -235,8 +237,11 @@ class PytestBrownieRunner(PytestBrownieBase):
 
             tw = TerminalWriter()
             report.longrepr.toterminal(tw)
+
+            locals_dict = call.excinfo.traceback[-1].locals
+            locals_dict = {k: v for k, v in locals_dict.items() if not k.startswith("@")}
             try:
-                shell = Console(self.project)
+                shell = Console(self.project, extra_locals={"_callinfo": call, **locals_dict})
                 shell.interact(
                     banner=f"\nInteractive mode enabled. Use quit() to continue running tests.",
                     exitmsg="",

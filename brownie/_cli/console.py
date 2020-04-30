@@ -78,7 +78,7 @@ class Console(code.InteractiveConsole):
     # replaced with `prompt_toolkit.input.defaults.create_pipe_input`
     prompt_input = None
 
-    def __init__(self, project=None):
+    def __init__(self, project=None, extra_locals=None):
         """
         Launch the Brownie console.
 
@@ -86,6 +86,8 @@ class Console(code.InteractiveConsole):
         ---------
         project : `Project`, optional
             Active Brownie project to include in the console's local namespace.
+        extra_locals: dict, optional
+            Additional variables to add to the console namespace.
         """
         console_settings = CONFIG.settings["console"]
 
@@ -101,6 +103,9 @@ class Console(code.InteractiveConsole):
             locals_dict["Gui"] = Gui
         except ModuleNotFoundError:
             pass
+
+        if extra_locals:
+            locals_dict.update(extra_locals)
 
         # prepare lexer and formatter
         self.lexer = PythonLexer()
