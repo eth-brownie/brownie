@@ -97,6 +97,9 @@ class TxHistory(metaclass=_Singleton):
 
 
 def _find_contract(address: Any) -> Any:
+    if address is None:
+        return
+
     address = _resolve_address(address)
     if address in _contract_map:
         return _contract_map[address]
