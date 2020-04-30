@@ -316,9 +316,12 @@ class TransactionReceipt:
         self.block_number = receipt["blockNumber"]
         self.txindex = receipt["transactionIndex"]
         self.gas_used = receipt["gasUsed"]
-        self.contract_address = receipt["contractAddress"]
         self.logs = receipt["logs"]
         self.status = receipt["status"]
+
+        self.contract_address = receipt["contractAddress"]
+        if self.contract_address and not self.contract_name:
+            self.contract_name = "UnknownContract"
 
         base = (
             f"{self.nonce}{self.block_number}{self.sender}{self.receiver}"

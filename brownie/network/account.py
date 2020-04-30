@@ -206,10 +206,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
     """Base class for Account and LocalAccount"""
 
-    def _gas_limit(self, to: Union[str, "Accounts"], amount: Optional[int], data: str = "") -> int:
+    def _gas_limit(self, to: Optional["Accounts"], amount: int, data: Optional[str] = None) -> int:
         gas_limit = CONFIG.active_network["settings"]["gas_limit"]
         if isinstance(gas_limit, bool) or gas_limit in (None, "auto"):
-            return self.estimate_gas(to, amount, data)
+            return self.estimate_gas(to, amount, data or "")
         return Wei(gas_limit)
 
     def _gas_price(self) -> Wei:
@@ -229,7 +229,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         self,
         contract: Any,
         *args: Tuple,
-        amount: Optional[int] = None,
+        amount: int = 0,
         gas_limit: Optional[int] = None,
         gas_price: Optional[int] = None,
     ) -> Any:
@@ -262,7 +262,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                     "value": Wei(amount),
                     "nonce": self.nonce,
                     "gasPrice": Wei(gas_price) or self._gas_price(),
-                    "gas": Wei(gas_limit) or self._gas_limit("", amount, data),
+                    "gas": Wei(gas_limit) or self._gas_limit(None, amount, data),
                     "data": HexBytes(data),
                 }
             )
@@ -285,9 +285,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         add_thread.join()
         return contract.at(tx.contract_address)
 
-    def estimate_gas(
-        self, to: Union[str, "Accounts"], amount: Optional[int], data: str = ""
-    ) -> int:
+    def estimate_gas(self, to: "Accounts" = None, amount: int = 0, data: str = None) -> int:
         """Estimates the gas cost for a transaction. Raises VirtualMachineError
         if the transaction would revert.
 
@@ -300,7 +298,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
             Estimated gas value in wei."""
         try:
             return web3.eth.estimateGas(
-                {"from": self.address, "to": str(to), "value": Wei(amount), "data": HexBytes(data)}
+                {
+                    "from": self.address,
+                    "to": str(to) if to else None,
+                    "value": Wei(amount),
+                    "data": HexBytes(data or ""),
+                }
             )
         except ValueError:
             if CONFIG.active_network["settings"]["reverting_tx_gas_limit"]:
@@ -309,38 +312,38 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
     def transfer(
         self,
-        to: "Accounts",
-        amount: int,
-        gas_limit: int = None,
-        gas_price: int = None,
-        data: str = "",
+        to: "Accounts" = None,
+        amount: int = 0,
+        gas_limit: Optional[int] = None,
+        gas_price: Optional[int] = None,
+        data: str = None,
     ) -> "TransactionReceipt":
-        """Transfers ether from this account.
-
-        Args:
-            to: Account instance or address string to transfer to.
-            amount: Amount of ether to send, in wei.
+        """
+        Broadcast a transaction from this account.
 
         Kwargs:
+            to: Account instance or address string to transfer to.
+            amount: Amount of ether to send, in wei.
             gas_limit: Gas limit of the transaction.
             gas_price: Gas price of the transaction.
             data: Hexstring of data to include in transaction.
 
         Returns:
-            TransactionReceipt object"""
+            TransactionReceipt object
+        """
 
+        tx = {
+            "from": self.address,
+            "value": Wei(amount),
+            "nonce": self.nonce,
+            "gasPrice": Wei(gas_price) if gas_price is not None else self._gas_price(),
+            "gas": Wei(gas_limit) or self._gas_limit(to, amount, data),
+            "data": HexBytes(data or ""),
+        }
+        if to:
+            tx["to"] = to_address(str(to))
         try:
-            txid = self._transact(  # type: ignore
-                {
-                    "from": self.address,
-                    "to": to_address(str(to)),
-                    "value": Wei(amount),
-                    "nonce": self.nonce,
-                    "gasPrice": Wei(gas_price) if gas_price is not None else self._gas_price(),
-                    "gas": Wei(gas_limit) or self._gas_limit(to, amount, data),
-                    "data": HexBytes(data),
-                }
-            )
+            txid = self._transact(tx)  # type: ignore
             revert_data = None
         except ValueError as e:
             txid, revert_data = _raise_or_return_tx(e)
