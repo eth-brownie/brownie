@@ -298,7 +298,12 @@ class TestAutoSuggest(AutoSuggest):
                 obj = getattr(base, current)
             if inspect.isclass(obj):
                 obj = obj.__init__
-            elif callable(obj) and not inspect.ismethod(obj) and not inspect.isfunction(obj):
+            elif (
+                callable(obj)
+                and not hasattr(obj, "_autosuggest")
+                and not inspect.ismethod(obj)
+                and not inspect.isfunction(obj)
+            ):
                 # object is a callable class instance
                 obj = obj.__call__
 
