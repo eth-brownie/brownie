@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.8.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.0) - 2020-04-30
+### Added
+- Interactive debugging mode when running tests ([#456](https://github.com/iamdefinitelyahuman/brownie/pull/456))
+- `Rpc.undo` and `Rpc.redo` ([#457](https://github.com/iamdefinitelyahuman/brownie/pull/457))
+- `InterfaceContainer` and `InterfaceConstructor` ([#463](https://github.com/iamdefinitelyahuman/brownie/pull/463))
+- Allow contract deployment via `Account.transfer` ([#464](https://github.com/iamdefinitelyahuman/brownie/pull/464))
+
+### Changed
+- Do not raise on non-zero block height ([#461](https://github.com/iamdefinitelyahuman/brownie/pull/461))
+- When fetching source code, call `getabi` if `getsourcecode` fails ([#462](https://github.com/iamdefinitelyahuman/brownie/pull/462))
+
+### Fixed
+- Add missing args to pytest `print` method ([#460](https://github.com/iamdefinitelyahuman/brownie/pull/460))
+
 ## [1.7.5](https://github.com/iamdefinitelyahuman/brownie/tree/v1.7.5) - 2020-04-26
 ### Fixed
 - Importing keystore files from CLI without `.json` suffix ([#448](https://github.com/iamdefinitelyahuman/brownie/pull/448))
