@@ -241,6 +241,7 @@ class PytestBrownieRunner(PytestBrownieBase):
             locals_dict = call.excinfo.traceback[-1].locals
             locals_dict = {k: v for k, v in locals_dict.items() if not k.startswith("@")}
             try:
+                CONFIG.argv["cli"] = "console"
                 shell = Console(self.project, extra_locals={"_callinfo": call, **locals_dict})
                 shell.interact(
                     banner=f"\nInteractive mode enabled. Use quit() to continue running tests.",
@@ -248,6 +249,8 @@ class PytestBrownieRunner(PytestBrownieBase):
                 )
             except SystemExit:
                 pass
+            finally:
+                CONFIG.argv["cli"] = "test"
 
             print("Continuing tests...")
             if capman:
