@@ -137,7 +137,7 @@ If you wish to call the contract method without a transaction, use the :func:`Co
 Transaction Parameters
 **********************
 
-When executing a transaction to a contract, you can optionally include a :py:class:`dict <dict>` of transaction parameters as the final input. It may contain the following values:
+When executing a transaction to a contract, you can optionally include a :py:class:`dict` of transaction parameters as the final input. It may contain the following values:
 
     * ``from``: the :func:`Account <brownie.network.account.Account>` that the transaction it sent from. If not given, the transaction is sent from the account that deployed the contract.
     * ``gas_limit``: The amount of gas provided for transaction execution, in wei. If not given, the gas limit is determined using :meth:`web3.eth.estimateGas <web3.eth.Eth.estimateGas>`.
@@ -179,19 +179,43 @@ Contracts Outside of your Project
 
 When working in a :ref:`live environment <network-management-live>` or :ref:`forked development network <network-management-fork>`, you can create :func:`Contract <brownie.network.contract.Contract>` objects to interact with already-deployed contracts.
 
-New :func:`Contract <brownie.network.contract.Contract>` objects are created using one of three :ref:`class methods <api-network-contract-classmethods>`. Options for creation include:
+:func:`Contract <brownie.network.contract.Contract>` objects may be created from interfaces within the ``interfaces/`` folder of your project, or by fetching information from a remote source such as a block explorer or ethPM registry.
 
-    * Fetching verified source code from a block explorer, such as `Etherscan <https://etherscan.io/>`_
-    * Providing an `ABI <https://solidity.readthedocs.io/en/latest/abi-spec.html#json>`_ and an address
-    * Fetching the information from an ethPM registry
+Using Local Interfaces
+----------------------
 
-For example, use :func:`Contract.from_explorer <Contract.from_explorer>` to create an object by querying Etherscan:
+The :func:`InterfaceContainer <brownie.network.contract.InterfaceContainer>` object (available as ``interface``) provides access to the interfaces within your project's ``interfaces/`` folder.
+
+For example, to create a :func:`Contract <brownie.network.contract.Contract>` object from an interface named ``Dai``:
+
+.. code-block:: python
+
+    >>> interface.Dai
+    <InterfaceConstructor 'Dai'>
+
+    >>> interface.Dai("0x6B175474E89094C44Da98b954EedeAC495271d0F")
+    <Dai Contract object '0x6B175474E89094C44Da98b954EedeAC495271d0F'>
+
+You can also use the :func:`Contract.from_abi <Contract.from_abi>` classmethod to instatiate from an ABI as a dictionary:
+
+.. code-block:: python
+
+    >>> Contract.from_abi("Token", "0x79447c97b6543F6eFBC91613C655977806CB18b0", abi)
+    <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
+
+Fetching from a Remote Source
+-----------------------------
+
+Contract objects may also be created by fetching data from a remote source. For example, use :func:`Contract.from_explorer <Contract.from_explorer>` to create an object by querying Etherscan:
 
 .. code-block:: python
 
     >>> Contract.from_explorer("0x6b175474e89094c44da98b954eedeac495271d0f")
     Fetching source of 0x6B175474E89094C44Da98b954EedeAC495271d0F from api.etherscan.io...
     <Dai Contract '0x6B175474E89094C44Da98b954EedeAC495271d0F'>
+
+Persisting Contracts between Sessions
+-------------------------------------
 
 The data used to create :func:`Contract <brownie.network.contract.Contract>` objects is stored in a local database and persists between sessions. After the initial creation via a :ref:`class method <api-network-contract-classmethods>`, you can recreate an object by initializing :func:`Contract <brownie.network.contract.Contract>` with an address:
 

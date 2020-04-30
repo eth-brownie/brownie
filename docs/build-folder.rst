@@ -38,6 +38,8 @@ Brownie generates compiler artifacts for each contract within a project, which a
         'type': "" // contract, library, interface
     }
 
+The ``build/interfaces`` folder contains compiler artifacts generated from project interfaces. These files use a similar structure, but only contain some of the fields listed above.
+
 .. note::
 
     The ``allSourcePaths`` field is used to map ``<SOURCE_ID>`` references to their actual paths.
