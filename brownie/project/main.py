@@ -281,7 +281,12 @@ class Project(_ProjectBase):
             if path.suffix == ".json":
                 abi = json.loads(source)
             elif path.suffix == ".vy":
-                abi = compiler.vyper.get_abi(source, name)[name]
+                try:
+                    abi = compiler.vyper.get_abi(source, name)[name]
+                except Exception:
+                    # vyper interfaces do not convert to ABIs
+                    # https://github.com/vyperlang/vyper/issues/1944
+                    continue
             else:
                 abi = compiler.solidity.get_abi(source)[name]
             data = {"abi": abi, "contractName": name, "type": "interface", "sha1": new_hashes[name]}
