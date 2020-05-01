@@ -2192,7 +2192,7 @@ See the `Web3 API documentation <https://web3py.readthedocs.io/en/stable/web3.ma
 Web3 Methods
 ************
 
-.. py:classmethod:: Web3.connect(uri)
+.. py:classmethod:: Web3.connect(uri, timeout=30)
 
     Connects to a `provider <https://web3py.readthedocs.io/en/stable/providers.html>`_. ``uri`` can be the path to a local IPC socket, a websocket address beginning in ``ws://`` or a URL.
 

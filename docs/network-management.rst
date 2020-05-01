@@ -66,6 +66,7 @@ When declaring a new network, the following fields must always be included:
 The following fields are optional:
 
     * ``name`` A longer name to use for the network. If not given, ``id`` is used.
+    * ``timeout``: The number of seconds to wait for a response when making an RPC call. Defaults to 30.
 
 There are additional required and optional fields that are dependent on the type of network.
 
