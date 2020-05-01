@@ -54,6 +54,7 @@ development:
     id: mainnet-fork
     cmd: ganache-cli
     host: http://127.0.0.1
+    timeout: 120
     cmd_settings:
       port: 8545
       gas_limit: 10000000
