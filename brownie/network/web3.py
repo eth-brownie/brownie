@@ -31,7 +31,7 @@ class Web3(_Web3):
         self._genesis_hash: Optional[str] = None
         self._chain_uri: Optional[str] = None
 
-    def connect(self, uri: str) -> None:
+    def connect(self, uri: str, timeout: int = 30) -> None:
         """Connects to a provider"""
         uri = _expand_environment_vars(uri)
         try:
@@ -43,7 +43,8 @@ class Web3(_Web3):
         if uri[:3] == "ws:":
             self.provider = WebsocketProvider(uri)
         elif uri[:4] == "http":
-            self.provider = HTTPProvider(uri, {"timeout": 30})
+
+            self.provider = HTTPProvider(uri, {"timeout": timeout})
         else:
             raise ValueError(
                 "Unknown URI - must be a path to an IPC socket, a websocket "
