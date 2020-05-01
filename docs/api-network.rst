@@ -293,7 +293,7 @@ Account Methods
         >>> accounts[0].estimate_gas(accounts[1], "1 ether")
         21000
 
-.. py:classmethod:: Account.transfer(self, to, amount, gas_limit=None, gas_price=None, data="")
+.. py:classmethod:: Account.transfer(self, to=None, amount=0, gas_limit=None, gas_price=None, data=None)
 
     Broadcasts a transaction from this account.
 
@@ -312,6 +312,18 @@ Account Methods
         Transaction sent: 0x0173aa6938c3a5e50b6dc7b4d38e16dab40811ab4e00e55f3e0d8be8491c7852
         Transaction confirmed - block: 1   gas used: 21000 (100.00%)
         <Transaction object '0x0173aa6938c3a5e50b6dc7b4d38e16dab40811ab4e00e55f3e0d8be8491c7852'>
+
+    You can also deploy contracts by omitting the ``to`` field. Note that deploying with this method does not automatically create a :func:`Contract <brownie.network.contract.Contract>` object.
+
+    .. code-block:: python
+
+        >>> deployment_bytecode = "0x6103f056600035601c52740100..."
+        >>> accounts[0].transer(data=deployment_bytecode)
+        Transaction sent: 0x2b33315f7f9ec86d27112ea6dffb69b6eea1e582d4b6352245c0ac8e614fe06f
+          Gas price: 0.0 gwei   Gas limit: 6721975
+          Transaction confirmed - Block: 1   Gas used: 268460 (3.99%)
+          UnknownContract deployed at: 0x3194cBDC3dbcd3E11a07892e7bA5c3394048Cc87
+        <Transaction '0x2b33315f7f9ec86d27112ea6dffb69b6eea1e582d4b6352245c0ac8e614fe06f'>
 
 LocalAccount
 ------------

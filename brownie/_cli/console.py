@@ -2,6 +2,7 @@
 
 import code
 import importlib
+import inspect
 import re
 import sys
 
@@ -77,7 +78,7 @@ class Console(code.InteractiveConsole):
     # replaced with `prompt_toolkit.input.defaults.create_pipe_input`
     prompt_input = None
 
-    def __init__(self, project=None):
+    def __init__(self, project=None, extra_locals=None):
         """
         Launch the Brownie console.
 
@@ -85,6 +86,8 @@ class Console(code.InteractiveConsole):
         ---------
         project : `Project`, optional
             Active Brownie project to include in the console's local namespace.
+        extra_locals: dict, optional
+            Additional variables to add to the console namespace.
         """
         console_settings = CONFIG.settings["console"]
 
@@ -100,6 +103,9 @@ class Console(code.InteractiveConsole):
             locals_dict["Gui"] = Gui
         except ModuleNotFoundError:
             pass
+
+        if extra_locals:
+            locals_dict.update(extra_locals)
 
         # prepare lexer and formatter
         self.lexer = PythonLexer()
@@ -287,21 +293,27 @@ class TestAutoSuggest(AutoSuggest):
             base, current = _parse_document(self.locals, method)
 
             if isinstance(base, dict):
-                fn = base[current]
+                obj = base[current]
             else:
-                fn = getattr(base, current)
-            if isinstance(fn, type):
-                fn = fn.__init__
-            elif hasattr(fn, "__call__"):
-                fn = fn.__call__
+                obj = getattr(base, current)
+            if inspect.isclass(obj):
+                obj = obj.__init__
+            elif (
+                callable(obj)
+                and not hasattr(obj, "_autosuggest")
+                and not inspect.ismethod(obj)
+                and not inspect.isfunction(obj)
+            ):
+                # object is a callable class instance
+                obj = obj.__call__
 
-            if hasattr(fn, "_autosuggest"):
-                inputs = fn._autosuggest()
+            if hasattr(obj, "_autosuggest"):
+                inputs = obj._autosuggest()
             else:
-                inputs = [f" {i}" for i in fn.__code__.co_varnames[: fn.__code__.co_argcount]]
-                if fn.__defaults__:
-                    for i in range(-1, -1 - len(fn.__defaults__), -1):
-                        inputs[i] = f"{inputs[i]}={fn.__defaults__[i]}"
+                inputs = [f" {i}" for i in obj.__code__.co_varnames[: obj.__code__.co_argcount]]
+                if obj.__defaults__:
+                    for i in range(-1, -1 - len(obj.__defaults__), -1):
+                        inputs[i] = f"{inputs[i]}={obj.__defaults__[i]}"
                 if inputs and inputs[0] in (" self", " cls"):
                     inputs = inputs[1:]
             if not args and not inputs:
