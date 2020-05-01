@@ -307,6 +307,26 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 return CONFIG.active_network["settings"]["reverting_tx_gas_limit"]
             raise
 
+    def increase_nonce_to(self, new_nonce: int) -> int:
+        """Increases the nonce of this account by performing empty transactions.
+
+        Args:
+            new_nonce: The target nonce of the account. Must be greater or equal to current nonce.
+
+        Returns:
+            The nonce of the account after it has been increased."""
+
+        if self.nonce > new_nonce:
+            raise ValueError(
+                f"Current nonce of {self.nonce} is HIGHER than desired nonce of {new_nonce}. "
+                f"Nonce can not be decreased."
+            )
+
+        while self.nonce < new_nonce:
+            self.transfer(Accounts()[0], 0, silent=True)
+
+        return self.nonce
+
     def transfer(
         self,
         to: "Accounts",
@@ -314,6 +334,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         gas_limit: int = None,
         gas_price: int = None,
         data: str = "",
+        silent: bool = False,
     ) -> "TransactionReceipt":
         """Transfers ether from this account.
 
@@ -325,6 +346,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             gas_limit: Gas limit of the transaction.
             gas_price: Gas price of the transaction.
             data: Hexstring of data to include in transaction.
+            silent: toggles console verbosity.
 
         Returns:
             TransactionReceipt object"""
@@ -348,7 +370,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if rpc.is_active():
             rpc._add_to_undo_buffer(self.transfer, (to, amount, gas_limit, gas_price, data), {})
 
-        return TransactionReceipt(txid, self, revert_data=revert_data)
+        return TransactionReceipt(txid, self, silent=silent, revert_data=revert_data)
 
 
 class Account(_PrivateKeyAccount):
