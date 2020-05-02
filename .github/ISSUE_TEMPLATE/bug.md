@@ -1,5 +1,5 @@
 ---
-name: Bug Report
+name: Sawsaw
 about: Report an error that you've encountered.
 ---
 ### Environment information
