@@ -40,6 +40,13 @@ def test_contract_address(accounts, tester):
     assert tester.tx.receiver is None
 
 
+@pytest.mark.parametrize("silent", [False, True])
+def test_silent_mode(accounts, tester, console_mode, capsys, silent):
+    accounts[0].transfer(accounts[1], "1 ether", silent=silent)
+    captured = capsys.readouterr()
+    assert (captured.out == "") == silent
+
+
 def test_input(accounts, tester):
     data = tester.revertStrings.encode_input(5)
     tx = accounts[0].transfer(tester.address, 0, data=data)

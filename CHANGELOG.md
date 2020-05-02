@@ -6,6 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Changed
+- Exposed `silent` parameter to `Account.transfer()`  ([#472](https://github.com/iamdefinitelyahuman/brownie/pull/472))
 
 ## [1.8.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.0) - 2020-04-30
 ### Added
