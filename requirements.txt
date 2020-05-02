@@ -19,4 +19,4 @@ requests>=2.23.0,<3.0.0
 semantic-version==2.8.5
 tqdm==4.45.0
 vyper==0.1.0b17
-web3==5.5.1
+web3==5.9.0
