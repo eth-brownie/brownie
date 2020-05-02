@@ -293,7 +293,7 @@ Account Methods
         >>> accounts[0].estimate_gas(accounts[1], "1 ether")
         21000
 
-.. py:classmethod:: Account.transfer(self, to=None, amount=0, gas_limit=None, gas_price=None, data=None)
+.. py:classmethod:: Account.transfer(self, to=None, amount=0, gas_limit=None, gas_price=None, data=None, silent=False)
 
     Broadcasts a transaction from this account.
 
@@ -302,6 +302,7 @@ Account Methods
     * ``gas_limit``: Gas limit for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using ``eth_estimateGas``.
     * ``gas_price``: Gas price for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using ``eth_gasPrice``.
     * ``data``: Transaction data hexstring.
+    * ``silent``: Toggles console verbosity. If ``True`` is given, suppresses all console output for this transaction.
 
     Returns a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` instance.
 

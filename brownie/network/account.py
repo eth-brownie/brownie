@@ -317,6 +317,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         gas_limit: Optional[int] = None,
         gas_price: Optional[int] = None,
         data: str = None,
+        silent: bool = False,
     ) -> "TransactionReceipt":
         """
         Broadcast a transaction from this account.
@@ -327,6 +328,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             gas_limit: Gas limit of the transaction.
             gas_price: Gas price of the transaction.
             data: Hexstring of data to include in transaction.
+            silent: Toggles console verbosity.
 
         Returns:
             TransactionReceipt object
@@ -351,7 +353,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if rpc.is_active():
             rpc._add_to_undo_buffer(self.transfer, (to, amount, gas_limit, gas_price, data), {})
 
-        return TransactionReceipt(txid, self, revert_data=revert_data)
+        return TransactionReceipt(txid, self, silent=silent, revert_data=revert_data)
 
 
 class Account(_PrivateKeyAccount):
