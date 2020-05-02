@@ -272,29 +272,38 @@ class Project(_ProjectBase):
             return
 
         print("Generating interface ABIs...")
-        for name in changed:
-            print(f" - {name}...")
-            path_str = self._sources.get_source_path(name)
-            source = self._sources.get(path_str)
-            path = Path(path_str)
+        cwd = os.getcwd()
+        try:
+            os.chdir(self._path.joinpath("interfaces"))
+            for name in changed:
+                print(f" - {name}...")
+                path_str = self._sources.get_source_path(name)
+                source = self._sources.get(path_str)
+                path = Path(path_str)
 
-            if path.suffix == ".json":
-                abi = json.loads(source)
-            elif path.suffix == ".vy":
-                try:
-                    abi = compiler.vyper.get_abi(source, name)[name]
-                except Exception:
-                    # vyper interfaces do not convert to ABIs
-                    # https://github.com/vyperlang/vyper/issues/1944
-                    continue
-            else:
-                abi = compiler.solidity.get_abi(source)[name]
-            data = {"abi": abi, "contractName": name, "type": "interface", "sha1": new_hashes[name]}
+                if path.suffix == ".json":
+                    abi = json.loads(source)
+                elif path.suffix == ".vy":
+                    try:
+                        abi = compiler.vyper.get_abi(source, name)[name]
+                    except Exception:
+                        # vyper interfaces do not convert to ABIs
+                        # https://github.com/vyperlang/vyper/issues/1944
+                        continue
+                else:
+                    abi = compiler.solidity.get_abi(source, allow_paths=self._path.as_posix())[name]
+                data = {
+                    "abi": abi,
+                    "contractName": name,
+                    "type": "interface",
+                    "sha1": new_hashes[name],
+                }
 
-            if self._path is not None:
                 with self._path.joinpath(f"build/interfaces/{name}.json").open("w") as fp:
                     json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
-            self._build._add(data)
+                self._build._add(data)
+        finally:
+            os.chdir(cwd)
 
     def _load_deployments(self) -> None:
         if CONFIG.network_type != "live":
