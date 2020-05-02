@@ -93,15 +93,24 @@ class PytestBrownieBase:
             self.node_map.setdefault(path, []).append(test)
 
     def pytest_sessionstart(self):
-        # remove PytestAssertRewriteWarning from terminalreporter warnings
+        """
+        Called after the `Session` object has been created and before performing
+        collection and entering the run test loop.
+
+        Removes `PytestAssertRewriteWarning` warnings from the terminalreporter.
+        This prevents warnings that "the `brownie` library was already imported and
+        so related assertions cannot be rewritten". The warning is not relevant
+        for end users who are performing tests with brownie, not on brownie,
+        so we suppress it to avoid confusion.
+
+        Removal of pytest warnings must be handled in this hook because session
+        information is passed between xdist workers and master prior to test execution.
+        """
         reporter = self.config.pluginmanager.get_plugin("terminalreporter")
-        if "warnings" in reporter.stats:
-            warnings = reporter.stats["warnings"]
-            warnings = [i for i in warnings if "PytestAssertRewriteWarning" not in i.message]
-            if not warnings:
-                del reporter.stats["warnings"]
-            else:
-                reporter.stats["warnings"] = warnings
+        warnings = reporter.stats.pop("warnings", [])
+        warnings = [i for i in warnings if "PytestAssertRewriteWarning" not in i.message]
+        if warnings and not self.config.getoption("--disable-warnings"):
+            reporter.stats["warnings"] = warnings
 
     def pytest_report_teststatus(self, report):
         if report.when == "setup":
@@ -124,6 +133,21 @@ class PytestBrownieBase:
             elif report.passed:
                 return "xpassed", "X", "XPASS"
         return report.outcome, convert_outcome(report.outcome), report.outcome.upper()
+
+    def pytest_terminal_summary(self, terminalreporter):
+        """
+        Add a section to terminal summary reporting.
+
+        When the `--disable-warnings` flag is active, removes all raised warnings
+        prior to outputting the final console report.
+
+        Arguments
+        ---------
+        terminalreporter : `_pytest.terminal.TerminalReporter`
+            the internal terminal reporter object
+        """
+        if self.config.getoption("--disable-warnings") and "warnings" in terminalreporter.stats:
+            del terminalreporter.stats["warnings"]
 
     def _sessionfinish_coverage(self, coverage_eval):
         if CONFIG.argv["coverage"]:

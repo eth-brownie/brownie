@@ -28,6 +28,7 @@ Pytest Options:
   --durations [num]        show slowest setup/test durations (num=0 for all)
   --exitfirst -x           Exit instantly on first error or failed test
   --verbose -v             Increase verbosity
+  --disable-warnings -w    Disable all warnings
 
 Help Options:
   --fixtures            Show a list of available fixtures
