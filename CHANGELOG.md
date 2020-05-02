@@ -6,8 +6,17 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.8.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.1) - 2020-05-02
+### Added
+- `--disable-warnings` flag when running tests ([#474](https://github.com/iamdefinitelyahuman/brownie/pull/474))
+- Set custom timeout option for web3 calls ([#469](https://github.com/iamdefinitelyahuman/brownie/pull/469))
+
 ### Changed
-- Exposed `silent` parameter to `Account.transfer()`  ([#472](https://github.com/iamdefinitelyahuman/brownie/pull/472))
+- Exposed `silent` parameter to `Account.transfer` ([#472](https://github.com/iamdefinitelyahuman/brownie/pull/472))
+
+### Fixed
+- Import statements within project interfaces ([#475](https://github.com/iamdefinitelyahuman/brownie/pull/475))
 
 ## [1.8.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.0) - 2020-04-30
 ### Added
