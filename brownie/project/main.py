@@ -716,7 +716,9 @@ def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
         suffixes = suffixes + (".json",)
 
     for path in project_path.glob(f"{subfolder}/**/*"):
-        if "/_" in path.as_posix() or path.suffix not in suffixes:
+        if path.suffix not in suffixes:
+            continue
+        if next((i for i in path.relative_to(project_path).parts if i.startswith("_")), False):
             continue
         with path.open() as fp:
             source = fp.read()
