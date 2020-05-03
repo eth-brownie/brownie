@@ -82,7 +82,7 @@ class PytestPrinter:
         if self.first_line:
             self.first_line = False
             sys.stdout.write(f"{color('yellow')}RUNNING{color}\n")
-        text = f"{sep.join(values)}{end}"
+        text = f"{sep.join(str(i) for i in values)}{end}"
         sys.stdout.write(text)
         if flush:
             sys.stdout.flush()
