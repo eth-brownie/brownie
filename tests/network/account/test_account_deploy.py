@@ -92,6 +92,32 @@ def test_gas_limit_config(BrownieTester, accounts, config):
     assert tx.gas_limit == 5000000
 
 
+def test_nonce_manual(BrownieTester, accounts):
+    """returns a Contract instance on successful deployment with the correct nonce"""
+    assert accounts[0].nonce == 0
+    c = accounts[0].deploy(BrownieTester, True, nonce=0)
+    assert type(c) == ProjectContract
+    assert accounts[0].nonce == 1
+    c = accounts[0].deploy(BrownieTester, True, nonce=1)
+    assert type(c) == ProjectContract
+
+
+def test_nonce_manual_on_revert_in_console(BrownieTester, accounts, console_mode):
+    """returns a TransactionReceipt instance on reverted deployment with the correct nonce"""
+    accounts[0].transfer(accounts[1], "1 ether")
+    assert accounts[0].nonce == 1
+    tx = accounts[0].deploy(BrownieTester, False, nonce=1)
+    assert tx.nonce == 1
+
+
+@pytest.mark.parametrize("nonce", (1, -1, 15, False))
+def test_raises_on_wrong_nonce(BrownieTester, accounts, nonce):
+    """raises if invalid manual nonce is provided"""
+    assert accounts[0].nonce == 0
+    with pytest.raises(VirtualMachineError):
+        accounts[0].deploy(BrownieTester, False, nonce=nonce)
+
+
 def test_evm_version(BrownieTester, accounts, monkeypatch):
     monkeypatch.setattr("psutil.Popen.cmdline", lambda s: ["-k", "byzantium"])
     with pytest.raises(IncompatibleEVMVersion):
