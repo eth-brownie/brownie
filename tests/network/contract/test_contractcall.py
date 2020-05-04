@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+import pytest
+
+from brownie.exceptions import VirtualMachineError
 
 
 def test_attributes(accounts, tester):
@@ -34,6 +37,34 @@ def test_always_transact(accounts, tester, argv, web3, monkeypatch, history):
     assert owner == result
     assert web3.eth.blockNumber == height + 1 == len(history)
     assert tx.fn_name == "owner"
+
+
+def test_nonce_manual_call(tester, accounts):
+    """manual nonce is ignored when calling without transact"""
+    nonce = accounts[0].nonce
+    tx = tester.getTuple(accounts[0], {"from": accounts[0], "nonce": 5})
+    assert not hasattr(tx, "nonce")
+    assert accounts[0].nonce == nonce
+
+
+def test_nonce_manual_transact(tester, accounts):
+    """correct manual nonce with transact"""
+    nonce = accounts[0].nonce
+    tx = tester.getTuple.transact(accounts[0], {"from": accounts[0], "nonce": nonce})
+    assert tx.nonce == nonce
+    assert accounts[0].nonce == nonce + 1
+
+
+@pytest.mark.parametrize("nonce_offset", (-1, 1, 15))
+def test_rasises_on_incorrect_nonce_manual_transact(tester, accounts, nonce_offset):
+    """raises on incorrect manual nonce with transact"""
+    nonce = accounts[0].nonce
+    with pytest.raises(VirtualMachineError):
+        tx = tester.getTuple.transact(
+            accounts[0], {"from": accounts[0], "nonce": nonce + nonce_offset}
+        )
+        assert tx.nonce == nonce + nonce_offset
+        assert accounts[0].nonce == nonce
 
 
 def test_tuples(tester, accounts):
