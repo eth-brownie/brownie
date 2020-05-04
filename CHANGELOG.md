@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.8.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.2) - 2020-05-04
+### Fixed
+- Allow leading underscores in project root path ([#478](https://github.com/iamdefinitelyahuman/brownie/pull/478))
+- Handle non-string values in pytest print function ([#479](https://github.com/iamdefinitelyahuman/brownie/pull/479))
+- Do not display `.None` for functions name of proxied contract calls ([#481](https://github.com/iamdefinitelyahuman/brownie/pull/481))
+
 ## [1.8.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.1) - 2020-05-02
 ### Added
 - `--disable-warnings` flag when running tests ([#474](https://github.com/iamdefinitelyahuman/brownie/pull/474))
