@@ -804,10 +804,14 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
     last_map = {"address": EthAddress(address), "jumpDepth": 0, "name": None, "coverage": False}
 
     if contract:
+        if contract.get_method(sig):
+            full_fn_name = f"{contract._name}.{contract.get_method(sig)}"
+        else:
+            full_fn_name = contract._name
         last_map.update(
             contract=contract,
             name=contract._name,
-            fn=[f"{contract._name}.{contract.get_method(sig)}"],
+            fn=[full_fn_name],
             path_map=contract._build.get("allSourcePaths"),
             pc_map=contract._build.get("pcMap"),
         )
