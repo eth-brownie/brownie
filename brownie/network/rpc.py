@@ -3,6 +3,7 @@
 import atexit
 import gc
 import sys
+import threading
 import time
 import weakref
 from subprocess import DEVNULL, PIPE
@@ -48,6 +49,7 @@ class Rpc(metaclass=_Singleton):
         self._snapshot_id: Union[int, Optional[bool]] = False
         self._reset_id: Union[int, bool] = False
         self._current_id: Union[int, bool] = False
+        self._undo_lock = threading.Lock()
         self._undo_buffer: List = []
         self._redo_buffer: List = []
         atexit.register(self._at_exit)
@@ -186,13 +188,15 @@ class Rpc(metaclass=_Singleton):
         _notify_registry()
         return id_
 
-    def _add_to_undo_buffer(self, fn: Any, args: Tuple, kwargs: Dict) -> None:
-        self._undo_buffer.append((self._current_id, fn, args, kwargs))
-        if self._redo_buffer and (fn, args, kwargs) == self._redo_buffer[-1]:
-            self._redo_buffer.pop()
-        else:
-            self._redo_buffer.clear()
-        self._current_id = self._snap()
+    def _add_to_undo_buffer(self, tx: Any, fn: Any, args: Tuple, kwargs: Dict) -> None:
+        with self._undo_lock:
+            tx._confirmed.wait()
+            self._undo_buffer.append((self._current_id, fn, args, kwargs))
+            if self._redo_buffer and (fn, args, kwargs) == self._redo_buffer[-1]:
+                self._redo_buffer.pop()
+            else:
+                self._redo_buffer.clear()
+            self._current_id = self._snap()
 
     def undo(self, num: int = 1) -> str:
         """
@@ -203,19 +207,20 @@ class Rpc(metaclass=_Singleton):
         num : int, optional
             Number of transactions to undo.
         """
-        if num < 1:
-            raise ValueError("num must be greater than zero")
-        if not self._undo_buffer:
-            raise ValueError("Undo buffer is empty")
-        if num > len(self._undo_buffer):
-            raise ValueError(f"Undo buffer contains {len(self._undo_buffer)} items")
+        with self._undo_lock:
+            if num < 1:
+                raise ValueError("num must be greater than zero")
+            if not self._undo_buffer:
+                raise ValueError("Undo buffer is empty")
+            if num > len(self._undo_buffer):
+                raise ValueError(f"Undo buffer contains {len(self._undo_buffer)} items")
 
-        for i in range(num, 0, -1):
-            id_, fn, args, kwargs = self._undo_buffer.pop()
-            self._redo_buffer.append((fn, args, kwargs))
+            for i in range(num, 0, -1):
+                id_, fn, args, kwargs = self._undo_buffer.pop()
+                self._redo_buffer.append((fn, args, kwargs))
 
-        self._current_id = self._revert(id_)
-        return f"Block height at {web3.eth.blockNumber}"
+            self._current_id = self._revert(id_)
+            return f"Block height at {web3.eth.blockNumber}"
 
     def redo(self, num: int = 1) -> str:
         """
@@ -226,18 +231,19 @@ class Rpc(metaclass=_Singleton):
         num : int, optional
             Number of transactions to redo.
         """
-        if num < 1:
-            raise ValueError("num must be greater than zero")
-        if not self._redo_buffer:
-            raise ValueError("Redo buffer is empty")
-        if num > len(self._redo_buffer):
-            raise ValueError(f"Redo buffer contains {len(self._redo_buffer)} items")
+        with self._undo_lock:
+            if num < 1:
+                raise ValueError("num must be greater than zero")
+            if not self._redo_buffer:
+                raise ValueError("Redo buffer is empty")
+            if num > len(self._redo_buffer):
+                raise ValueError(f"Redo buffer contains {len(self._redo_buffer)} items")
 
-        for i in range(num, 0, -1):
-            fn, args, kwargs = self._redo_buffer[-1]
-            fn(*args, **kwargs)
+            for i in range(num, 0, -1):
+                fn, args, kwargs = self._redo_buffer[-1]
+                fn(*args, **kwargs)
 
-        return f"Block height at {web3.eth.blockNumber}"
+            return f"Block height at {web3.eth.blockNumber}"
 
     def is_active(self) -> bool:
         """Returns True if Rpc client is currently active."""
