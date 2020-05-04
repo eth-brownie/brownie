@@ -269,21 +269,29 @@ class _PrivateKeyAccount(PublicKeyAccount):
             revert_data = None
         except ValueError as e:
             txid, revert_data = _raise_or_return_tx(e)
-        tx = TransactionReceipt(
+        receipt = TransactionReceipt(
             txid, self, name=contract._name + ".constructor", revert_data=revert_data
         )
-        add_thread = threading.Thread(target=contract._add_from_tx, args=(tx,), daemon=True)
+        add_thread = threading.Thread(target=contract._add_from_tx, args=(receipt,), daemon=True)
         add_thread.start()
+
         if rpc.is_active():
-            rpc._add_to_undo_buffer(
-                self.deploy,
-                (contract, *args),
-                {"amount": amount, "gas_limit": gas_limit, "gas_price": gas_price},
+            undo_thread = threading.Thread(
+                target=rpc._add_to_undo_buffer,
+                args=(
+                    receipt,
+                    self.deploy,
+                    (contract, *args),
+                    {"amount": amount, "gas_limit": gas_limit, "gas_price": gas_price},
+                ),
+                daemon=True,
             )
-        if tx.status != 1:
-            return tx
+            undo_thread.start()
+
+        if receipt.status != 1:
+            return receipt
         add_thread.join()
-        return contract.at(tx.contract_address)
+        return contract.at(receipt.contract_address)
 
     def estimate_gas(self, to: "Accounts" = None, amount: int = 0, data: str = None) -> int:
         """Estimates the gas cost for a transaction. Raises VirtualMachineError
@@ -350,10 +358,16 @@ class _PrivateKeyAccount(PublicKeyAccount):
         except ValueError as e:
             txid, revert_data = _raise_or_return_tx(e)
 
+        receipt = TransactionReceipt(txid, self, silent=silent, revert_data=revert_data)
         if rpc.is_active():
-            rpc._add_to_undo_buffer(self.transfer, (to, amount, gas_limit, gas_price, data), {})
+            undo_thread = threading.Thread(
+                target=rpc._add_to_undo_buffer,
+                args=(receipt, self.transfer, (to, amount, gas_limit, gas_price, data), {}),
+                daemon=True,
+            )
+            undo_thread.start()
 
-        return TransactionReceipt(txid, self, silent=silent, revert_data=revert_data)
+        return receipt
 
 
 class Account(_PrivateKeyAccount):
