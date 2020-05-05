@@ -285,13 +285,18 @@ class Project(_ProjectBase):
                     abi = json.loads(source)
                 elif path.suffix == ".vy":
                     try:
-                        abi = compiler.vyper.get_abi(source, name)[name]
+                        abi = compiler.get_abi(source, "Vyper", self._path.as_posix())["abi"]
                     except Exception:
                         # vyper interfaces do not convert to ABIs
                         # https://github.com/vyperlang/vyper/issues/1944
                         continue
                 else:
-                    abi = compiler.solidity.get_abi(source, allow_paths=self._path.as_posix())[name]
+                    abi = compiler.get_abi(
+                        source,
+                        "Solidity",
+                        allow_paths=self._path.as_posix(),
+                        remappings=self._compiler_config["solc"].get("remappings", []),
+                    )[name]
                 data = {
                     "abi": abi,
                     "contractName": name,
