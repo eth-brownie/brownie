@@ -91,7 +91,11 @@ def install_solc(*versions: str) -> None:
 
 
 def get_abi(contract_source: str, allow_paths: Optional[str] = None) -> Dict:
-    """Given a contract source, returns a dict of {name: abi}"""
+    """
+    Given a contract source, returns a dict of {name: abi}
+
+    This function is deprecated in favor of `brownie.project.compiler.get_abi`
+    """
     version = find_best_solc_version({"<stdin>": contract_source})
     set_solc_version(version)
     compiled = solcx.compile_source(
