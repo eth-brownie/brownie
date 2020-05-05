@@ -366,8 +366,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if rpc.is_active():
             undo_thread = threading.Thread(
                 target=rpc._add_to_undo_buffer,
-                args=(receipt, self.transfer, (to, amount, gas_limit, gas_price, data, None), {}
-            ),
+                args=(receipt, self.transfer, (to, amount, gas_limit, gas_price, data, None), {}),
                 daemon=True,
             )
             undo_thread.start()
