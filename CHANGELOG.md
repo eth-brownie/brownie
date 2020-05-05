@@ -6,8 +6,17 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.8.3](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.3) - 2020-05-06
 ### Changed
-- Exposed `nonce` parameter to deploy, transfer and transact methods ([488](https://github.com/iamdefinitelyahuman/brownie/pull/488))
+- Exposed `nonce` parameter to deploy, transfer and transact methods ([#488](https://github.com/iamdefinitelyahuman/brownie/pull/488))
+- Obtain EVM compiler version and proxy information from Etherscan API ([#492](https://github.com/iamdefinitelyahuman/brownie/pull/492))
+- Better sorting of gas used output ([#491](https://github.com/iamdefinitelyahuman/brownie/pull/491))
+
+### Fixed
+- `Rpc.undo` / `Rpc.redo` with non-instant confirmations ([#483](https://github.com/iamdefinitelyahuman/brownie/pull/483))
+- Minimum solc version when using `Contract.from_explorer` on OSX ([#490](https://github.com/iamdefinitelyahuman/brownie/pull/490))
+- Allow path remappings and imports from packages in interfaces ([#495](https://github.com/iamdefinitelyahuman/brownie/pull/495))
 
 ## [1.8.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.2) - 2020-05-04
 ### Fixed
