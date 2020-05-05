@@ -17,7 +17,11 @@ def get_version() -> Version:
 
 
 def get_abi(contract_source: str, name: str) -> Dict:
-    """Given a contract source and name, returns a dict of {name: abi}"""
+    """
+    Given a contract source and name, returns a dict of {name: abi}
+
+    This function is deprecated in favor of `brownie.project.compiler.get_abi`
+    """
     compiled = vyper_json.compile_json(
         {
             "language": "Vyper",
