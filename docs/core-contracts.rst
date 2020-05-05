@@ -143,8 +143,9 @@ When executing a transaction to a contract, you can optionally include a :py:cla
     * ``gas_limit``: The amount of gas provided for transaction execution, in wei. If not given, the gas limit is determined using :meth:`web3.eth.estimateGas <web3.eth.Eth.estimateGas>`.
     * ``gas_price``: The gas price for the transaction, in wei. If not given, the gas price is set according to :attr:`web3.eth.gasPrice <web3.eth.Eth.gasPrice>`.
     * ``amount``: The amount of Ether to include with the transaction, in wei.
+    * ``nonce``: The nonce for the transaction. If not given, the nonce is set according to :meth:`web3.eth.getTransactionCount <web3.eth.Eth.getTransactionCount>`.
 
-All integer values can also be given as strings that will be converted by :func:`Wei <brownie.convert.datatypes.Wei>`.
+All currency integer values can also be given as strings that will be converted by :func:`Wei <brownie.convert.datatypes.Wei>`.
 
 .. note::
 

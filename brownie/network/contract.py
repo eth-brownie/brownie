@@ -892,12 +892,7 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
     if args and isinstance(args[-1], dict):
         tx.update(args[-1])
         args = args[:-1]
-        for key, target in [
-            ("amount", "value"),
-            ("gas_limit", "gas"),
-            ("gas_price", "gasPrice"),
-            ("nonce", "nonce"),
-        ]:
+        for key, target in [("amount", "value"), ("gas_limit", "gas"), ("gas_price", "gasPrice")]:
             if key in tx:
                 tx[target] = tx[key]
     return args, tx
