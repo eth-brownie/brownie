@@ -303,7 +303,8 @@ def test_as_proxy_for(network):
         as_proxy_for="0x97BD4Cc841FC999194174cd1803C543247a014fe",
     )
     implementation = Contract("0x97BD4Cc841FC999194174cd1803C543247a014fe")
-    assert original.abi != proxy.abi
+
+    assert original.abi == proxy.abi
     assert original.address == proxy.address
 
     assert proxy.abi == implementation.abi
