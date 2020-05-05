@@ -581,7 +581,8 @@ class Contract(_DeployedContractBase):
         as_proxy_for : str, optional
             Address of the implementation contract, if `address` is a proxy contract.
             The generated object will send transactions to `address`, but use the ABI
-            and NatSpec of `as_proxy_for`.
+            and NatSpec of `as_proxy_for`. This field is only required when the
+            block explorer API does not provide an implementation address.
         owner : Account, optional
             Contract owner. If set, transactions without a `from` field will be
             performed using this account.
@@ -596,17 +597,20 @@ class Contract(_DeployedContractBase):
         else:
             # if the source is not available, try to fetch only the ABI
             try:
-                data = _fetch_from_explorer(address, "getabi", True)
+                data_abi = _fetch_from_explorer(address, "getabi", True)
             except ValueError as exc:
                 _unverified_addresses.add(address)
                 raise exc
-            abi = json.loads(data["result"].strip())
+            abi = json.loads(data_abi["result"].strip())
             name = "UnknownContractName"
             warnings.warn(
                 f"{address}: Was able to fetch the ABI but not the source code. "
                 "Some functionality will not be available.",
                 BrownieCompilerWarning,
             )
+
+        if as_proxy_for is None and data["result"][0].get("Implementation"):
+            as_proxy_for = _resolve_address(data["result"][0]["Implementation"])
 
         # if this is a proxy, fetch information for the implementation contract
         if as_proxy_for is not None:
@@ -639,7 +643,14 @@ class Contract(_DeployedContractBase):
             "enabled": bool(int(data["result"][0]["OptimizationUsed"])),
             "runs": int(data["result"][0]["Runs"]),
         }
-        build = compile_and_format(sources, solc_version=str(version), optimizer=optimizer)
+
+        evm_version = data["result"][0].get("EVMVersion", "Default")
+        if evm_version == "Default":
+            evm_version = None
+
+        build = compile_and_format(
+            sources, solc_version=str(version), optimizer=optimizer, evm_version=evm_version
+        )
         build = build[name]
         if as_proxy_for is not None:
             build.update(abi=abi, natspec=implementation_contract._build.get("natspec"))
