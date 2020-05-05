@@ -32,8 +32,11 @@ def _print_gas_profile():
     # Formats and prints a gas profile report to the console
     print("\n\nGas Profile:")
     gas = TxHistory().gas_profile
-    for i in sorted(gas):
-        print(f"{i} -  avg: {gas[i]['avg']:.0f}  low: {gas[i]['low']}  high: {gas[i]['high']}")
+    sorted_gas = sorted(gas.items(), key=lambda value: value[1]["avg"], reverse=True)
+    for fn_name, values in sorted_gas:
+        print(
+            f"{fn_name} -  avg: {values['avg']:.0f}  low: {values['low']}  high: {values['high']}"
+        )
 
 
 def _print_coverage_totals(build, coverage_eval):
