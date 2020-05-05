@@ -355,3 +355,42 @@ def _sources_dict(original: Dict, language: str) -> Dict:
         else:
             result[key] = {"content": value}
     return result
+
+
+def get_abi(
+    contract_source: str,
+    language: str,
+    allow_paths: Optional[str] = None,
+    remappings: Optional[list] = None,
+) -> Dict:
+    """
+    Generate an ABI from a contract.
+
+    Arguments
+    ---------
+    contract_source : str
+        Source code to generate an ABI from.
+    language : str
+        Target compiler language
+    allow_paths : str, optional
+        Compiler allowed filesystem import path
+    remappings : list, optional
+        List of solidity path remappings
+
+    Returns
+    -------
+    dict
+        Compiled ABIs in the format `{'contractName': [ABI]}`
+    """
+
+    sources = {"interfaces/abi": contract_source}
+
+    if language == "Solidity":
+        version = find_best_solc_version(sources)
+        solidity.set_solc_version(version)
+
+    input_json = generate_input_json(sources, language=language, remappings=remappings)
+    input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
+
+    output_json = compile_from_input_json(input_json, allow_paths=allow_paths)
+    return {k: v["abi"] for k, v in output_json["contracts"]["interfaces/abi"].items()}
