@@ -206,7 +206,7 @@ def test_compile_empty():
 
 def test_get_abi():
     code = "pragma solidity 0.5.7; contract Foo { function baz() external returns (bool); }"
-    abi = compiler.solidity.get_abi(code)
+    abi = compiler.get_abi(code, "Solidity")
     assert len(abi) == 1
     assert abi["Foo"] == [
         {
