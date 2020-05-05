@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import sys
 import warnings
 from pathlib import Path
 from textwrap import TextWrapper
@@ -11,6 +12,7 @@ from urllib.parse import urlparse
 
 import eth_abi
 import requests
+import solcx
 from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
 from semantic_version import Version
@@ -618,7 +620,12 @@ class Contract(_DeployedContractBase):
             version = Version(data["result"][0]["CompilerVersion"].lstrip("v")).truncate()
         except Exception:
             version = Version("0.0.0")
-        if version < Version("0.4.22"):
+        if version < Version("0.4.22") or (
+            # special case for OSX because installing 0.4.x versions is problematic
+            sys.platform == "darwin"
+            and version < Version("0.5.0")
+            and f"v{version}" not in solcx.get_installed_solc_versions()
+        ):
             if not silent:
                 warnings.warn(
                     f"{address}: target compiler '{data['result'][0]['CompilerVersion']}' is "
