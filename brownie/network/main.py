@@ -65,8 +65,6 @@ def disconnect(kill_rpc: bool = True) -> None:
     if kill_rpc and rpc.is_active():
         if rpc.is_child():
             rpc.kill()
-        else:
-            rpc.reset()
     web3.disconnect()
     _notify_registry(0)
 
