@@ -4,7 +4,7 @@ import json
 from copy import deepcopy
 from hashlib import sha1
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 from eth_utils import remove_0x_prefix
 from semantic_version import Version
@@ -49,7 +49,7 @@ def compile_and_format(
     solc_version: Optional[str] = None,
     optimize: bool = True,
     runs: int = 200,
-    evm_version: int = None,
+    evm_version: Optional[str] = None,
     silent: bool = True,
     allow_paths: Optional[str] = None,
     interface_sources: Optional[Dict[str, str]] = None,
@@ -143,7 +143,7 @@ def generate_input_json(
     contract_sources: Dict[str, str],
     optimize: bool = True,
     runs: int = 200,
-    evm_version: Union[int, str, None] = None,
+    evm_version: Optional[str] = None,
     language: str = "Solidity",
     interface_sources: Optional[Dict[str, str]] = None,
     remappings: Optional[list] = None,
