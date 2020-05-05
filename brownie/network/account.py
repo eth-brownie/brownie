@@ -318,8 +318,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
         amount: int = 0,
         gas_limit: Optional[int] = None,
         gas_price: Optional[int] = None,
-        nonce: Optional[int] = None,
         data: str = None,
+        nonce: Optional[int] = None,
         silent: bool = False,
     ) -> "TransactionReceipt":
         """
@@ -355,7 +355,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
             txid, revert_data = _raise_or_return_tx(e)
 
         if rpc.is_active():
-            rpc._add_to_undo_buffer(self.transfer, (to, amount, gas_limit, gas_price, data), {})
+            rpc._add_to_undo_buffer(
+                self.transfer, (to, amount, gas_limit, gas_price, data, None), {}
+            )
 
         return TransactionReceipt(txid, self, silent=silent, revert_data=revert_data)
 
