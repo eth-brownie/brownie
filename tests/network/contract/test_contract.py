@@ -168,9 +168,21 @@ def test_from_explorer_only_abi(network):
 
 def test_from_explorer_pre_422(network):
     network.connect("mainnet")
-    contract = Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
 
+    # MKR, compiler version 0.4.18
+    contract = Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
     assert contract._name == "DSToken"
+    assert "pcMap" not in contract._build
+
+
+def test_from_explorer_osx_pre_050(network, monkeypatch):
+    network.connect("mainnet")
+    monkeypatch.setattr("sys.platform", "darwin")
+    installed = ["v0.5.8", "v0.5.7"]
+    monkeypatch.setattr("solcx.get_installed_solc_versions", lambda: installed)
+
+    # chainlink, compiler version 0.4.24
+    contract = Contract.from_explorer("0xf79d6afbb6da890132f9d7c355e3015f15f3406f")
     assert "pcMap" not in contract._build
 
 
