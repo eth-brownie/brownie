@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 ### Changed
-- Exposed `nonce` parameter to transfer and transact methods ([#485](https://github.com/iamdefinitelyahuman/brownie/pull/485))
+- Exposed `nonce` parameter to deploy, transfer and transact methods ([488](https://github.com/iamdefinitelyahuman/brownie/pull/488))
 
 ## [1.8.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.2) - 2020-05-04
 ### Fixed

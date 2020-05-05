@@ -326,8 +326,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
         amount: int = 0,
         gas_limit: Optional[int] = None,
         gas_price: Optional[int] = None,
-        nonce: Optional[int] = None,
         data: str = None,
+        nonce: Optional[int] = None,
         silent: bool = False,
     ) -> "TransactionReceipt":
         """
@@ -366,7 +366,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if rpc.is_active():
             undo_thread = threading.Thread(
                 target=rpc._add_to_undo_buffer,
-                args=(receipt, self.transfer, (to, amount, gas_limit, gas_price, data), {}),
+                args=(receipt, self.transfer, (to, amount, gas_limit, gas_price, data, None), {}),
                 daemon=True,
             )
             undo_thread.start()
