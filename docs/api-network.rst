@@ -248,7 +248,7 @@ Account Methods
         >>> accounts[0].balance() == "100 ether"
         True
 
-.. py:classmethod:: Account.deploy(contract, *args, amount=None, gas_limit=None, gas_price=None)
+.. py:classmethod:: Account.deploy(contract, *args, amount=None, gas_limit=None, gas_price=None, nonce=None)
 
     Deploys a contract.
 
@@ -257,6 +257,7 @@ Account Methods
     * ``amount``: Amount of ether to send with the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`.
     * ``gas_limit``: Gas limit for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using ``eth_estimateGas``.
     * ``gas_price``: Gas price for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using ``eth_gasPrice``.
+    * ``nonce``: Nonce for the transaction. If none is given, the nonce is set using ``eth_getTransactionCount``.
 
     Returns a :func:`Contract <brownie.network.contract.Contract>` instance upon success. If the transaction reverts or you do not wait for a confirmation, a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is returned instead.
 
@@ -293,7 +294,7 @@ Account Methods
         >>> accounts[0].estimate_gas(accounts[1], "1 ether")
         21000
 
-.. py:classmethod:: Account.transfer(self, to=None, amount=0, gas_limit=None, gas_price=None, data=None, silent=False)
+.. py:classmethod:: Account.transfer(self, to=None, amount=0, gas_limit=None, gas_price=None, data=None, nonce=None, silent=False)
 
     Broadcasts a transaction from this account.
 
@@ -302,6 +303,7 @@ Account Methods
     * ``gas_limit``: Gas limit for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using ``eth_estimateGas``.
     * ``gas_price``: Gas price for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using ``eth_gasPrice``.
     * ``data``: Transaction data hexstring.
+    * ``nonce``: Nonce for the transaction. If none is given, the nonce is set using ``eth_getTransactionCount``.
     * ``silent``: Toggles console verbosity. If ``True`` is given, suppresses all console output for this transaction.
 
     Returns a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` instance.

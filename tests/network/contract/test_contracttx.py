@@ -142,6 +142,22 @@ def test_gas_limit_config(tester, accounts, config):
     config.active_network["settings"]["gas_limit"] = False
 
 
+def test_nonce_manual(tester, accounts):
+    """call is successful when correct nonce is specified"""
+    nonce = accounts[0].nonce
+    tx = tester.doNothing({"from": accounts[0], "nonce": nonce})
+    assert tx.nonce == nonce
+
+
+@pytest.mark.parametrize("nonce_offset", (-1, 1, 15))
+def test_raises_on_invalid_nonce_manual(tester, accounts, nonce_offset):
+    """raises if invalid nonce is specified"""
+    nonce = accounts[0].nonce
+    with pytest.raises(VirtualMachineError):
+        tx = tester.doNothing({"from": accounts[0], "nonce": nonce + nonce_offset})
+        assert tx.nonce == nonce + nonce_offset
+
+
 def test_repr(tester):
     repr(tester.revertStrings)
 

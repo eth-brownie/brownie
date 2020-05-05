@@ -222,10 +222,15 @@ class ContractConstructor:
         if not tx["from"]:
             raise AttributeError(
                 "No deployer address given. You must supply a tx dict"
-                " with a 'from' field as the last argument."
+                " as the last argument with a 'from' field."
             )
         return tx["from"].deploy(
-            self._parent, *args, amount=tx["value"], gas_limit=tx["gas"], gas_price=tx["gasPrice"]
+            self._parent,
+            *args,
+            amount=tx["value"],
+            gas_limit=tx["gas"],
+            gas_price=tx["gasPrice"],
+            nonce=tx["nonce"],
         )
 
     def _autosuggest(self) -> List:
@@ -785,13 +790,15 @@ class _ContractMethod:
         if not tx["from"]:
             raise AttributeError(
                 "Contract has no owner, you must supply a tx dict"
-                " with a 'from' field as the last argument."
+                " as the last argument with a 'from' field."
             )
+
         return tx["from"].transfer(
             self._address,
             tx["value"],
             gas_limit=tx["gas"],
             gas_price=tx["gasPrice"],
+            nonce=tx["nonce"],
             data=self.encode_input(*args),
         )
 
@@ -881,7 +888,7 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
         owner = None
 
     # seperate contract inputs from tx dict and set default tx values
-    tx = {"from": owner, "value": 0, "gas": None, "gasPrice": None}
+    tx = {"from": owner, "value": 0, "gas": None, "gasPrice": None, "nonce": None}
     if args and isinstance(args[-1], dict):
         tx.update(args[-1])
         args = args[:-1]

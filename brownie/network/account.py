@@ -232,6 +232,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         amount: int = 0,
         gas_limit: Optional[int] = None,
         gas_price: Optional[int] = None,
+        nonce: Optional[int] = None,
     ) -> Any:
         """Deploys a contract.
 
@@ -244,6 +245,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             amount: Amount of ether to send with transaction, in wei.
             gas_limit: Gas limit of the transaction.
             gas_price: Gas price of the transaction.
+            nonce: Nonce to use for the transaction.
 
         Returns:
             * Contract instance if the transaction confirms
@@ -260,7 +262,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 {
                     "from": self.address,
                     "value": Wei(amount),
-                    "nonce": self.nonce,
+                    "nonce": nonce if nonce is not None else self.nonce,
                     "gasPrice": Wei(gas_price) or self._gas_price(),
                     "gas": Wei(gas_limit) or self._gas_limit(None, amount, data),
                     "data": HexBytes(data),
@@ -325,6 +327,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         gas_limit: Optional[int] = None,
         gas_price: Optional[int] = None,
         data: str = None,
+        nonce: Optional[int] = None,
         silent: bool = False,
     ) -> "TransactionReceipt":
         """
@@ -335,6 +338,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             amount: Amount of ether to send, in wei.
             gas_limit: Gas limit of the transaction.
             gas_price: Gas price of the transaction.
+            nonce: Nonce to use for the transaction.
             data: Hexstring of data to include in transaction.
             silent: Toggles console verbosity.
 
@@ -345,7 +349,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         tx = {
             "from": self.address,
             "value": Wei(amount),
-            "nonce": self.nonce,
+            "nonce": nonce if nonce is not None else self.nonce,
             "gasPrice": Wei(gas_price) if gas_price is not None else self._gas_price(),
             "gas": Wei(gas_limit) or self._gas_limit(to, amount, data),
             "data": HexBytes(data or ""),
@@ -362,7 +366,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if rpc.is_active():
             undo_thread = threading.Thread(
                 target=rpc._add_to_undo_buffer,
-                args=(receipt, self.transfer, (to, amount, gas_limit, gas_price, data), {}),
+                args=(receipt, self.transfer, (to, amount, gas_limit, gas_price, data, None), {}),
                 daemon=True,
             )
             undo_thread.start()

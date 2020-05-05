@@ -156,6 +156,25 @@ def test_gas_limit_config(accounts, config):
     config.active_network["settings"]["gas_limit"] = False
 
 
+def test_nonce_manual(accounts):
+    """returns a Contract instance on successful deployment with the correct nonce"""
+    assert accounts[0].nonce == 0
+    tx = accounts[0].transfer(accounts[1], 1000, nonce=0)
+    assert tx.nonce == 0
+    assert accounts[0].nonce == 1
+    tx = accounts[0].transfer(accounts[1], 1000, nonce=1)
+    assert tx.nonce == 1
+
+
+@pytest.mark.parametrize("nonce", (1, -1, 15))
+def test_raises_on_wrong_nonce(accounts, nonce):
+    """raises if invalid manual nonce is provided"""
+    assert accounts[0].nonce == 0
+    with pytest.raises(VirtualMachineError):
+        tx = accounts[0].transfer(accounts[1], 1000, nonce=nonce)
+        assert tx.nonce == nonce
+
+
 def test_data(accounts):
     """transaction data is set correctly"""
     tx = accounts[0].transfer(accounts[1], 1000)
