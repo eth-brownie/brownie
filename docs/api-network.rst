@@ -819,7 +819,7 @@ New ``Contract`` objects are created with one of the following class methods.
     Create a new ``Contract`` object from source code fetched from a block explorer such as `EtherScan <https://etherscan.io/>`_ or `Blockscout <https://blockscout.com/>`_.
 
     * ``address``: Address of the contract.
-    * ``as_proxy_for``: Address of the implementation contract, if ``address`` is a proxy contract. The generated object sends transactions to ``address``, but uses the ABI and NatSpec of ``as_proxy_for``.
+    * ``as_proxy_for``: Address of the implementation contract, if ``address`` is a proxy contract. The generated object sends transactions to ``address``, but uses the ABI and NatSpec of ``as_proxy_for``. This field is only required when the block explorer API does not provide an implementation address.
     * ``owner``: An optional :func:`Account <brownie.network.account.Account>` instance. If given, transactions to the contract are sent broadcasted from this account by default.
 
     If the deployed bytecode was generated using a compatible compiler version, Brownie will attempt to recompile it locally. If successful, most debugging functionality will be available.
