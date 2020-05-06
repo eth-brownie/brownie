@@ -267,48 +267,26 @@ class Project(_ProjectBase):
 
     def _compile_interfaces(self, compiled_hashes: Dict) -> None:
         new_hashes = self._sources.get_interface_hashes()
-        changed = [k for k, v in new_hashes.items() if compiled_hashes.get(k, None) != v]
-        if not changed:
+        changed_paths = [
+            self._sources.get_source_path(k)
+            for k, v in new_hashes.items()
+            if compiled_hashes.get(k, None) != v
+        ]
+        if not changed_paths:
             return
 
         print("Generating interface ABIs...")
-        cwd = os.getcwd()
-        try:
-            os.chdir(self._path.joinpath("interfaces"))
-            for name in changed:
-                print(f" - {name}...")
-                path_str = self._sources.get_source_path(name)
-                source = self._sources.get(path_str)
-                path = Path(path_str)
+        changed_sources = {i: self._sources.get(i) for i in changed_paths}
+        abi_json = compiler.get_abi(
+            changed_sources,
+            allow_paths=self._path.as_posix(),
+            remappings=self._compiler_config["solc"].get("remappings", []),
+        )
 
-                if path.suffix == ".json":
-                    abi = json.loads(source)
-                elif path.suffix == ".vy":
-                    try:
-                        abi = compiler.get_abi(source, "Vyper", self._path.as_posix())["abi"]
-                    except Exception:
-                        # vyper interfaces do not convert to ABIs
-                        # https://github.com/vyperlang/vyper/issues/1944
-                        continue
-                else:
-                    abi = compiler.get_abi(
-                        source,
-                        "Solidity",
-                        allow_paths=self._path.as_posix(),
-                        remappings=self._compiler_config["solc"].get("remappings", []),
-                    )[name]
-                data = {
-                    "abi": abi,
-                    "contractName": name,
-                    "type": "interface",
-                    "sha1": new_hashes[name],
-                }
-
-                with self._path.joinpath(f"build/interfaces/{name}.json").open("w") as fp:
-                    json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
-                self._build._add(data)
-        finally:
-            os.chdir(cwd)
+        for name, abi in abi_json.items():
+            with self._path.joinpath(f"build/interfaces/{name}.json").open("w") as fp:
+                json.dump(abi, fp, sort_keys=True, indent=2, default=sorted)
+            self._build._add(abi)
 
     def _load_deployments(self) -> None:
         if CONFIG.network_type != "live":

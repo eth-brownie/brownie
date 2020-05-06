@@ -358,24 +358,24 @@ def _sources_dict(original: Dict, language: str) -> Dict:
 
 
 def get_abi(
-    contract_source: str,
-    language: str,
+    contract_sources: Dict[str, str],
     allow_paths: Optional[str] = None,
     remappings: Optional[list] = None,
+    silent: bool = True,
 ) -> Dict:
     """
-    Generate an ABI from a contract.
+    Generate ABIs from contract interfaces.
 
     Arguments
     ---------
-    contract_source : str
-        Source code to generate an ABI from.
-    language : str
-        Target compiler language
+    contract_sources : dict
+        a dictionary in the form of {'path': "source code"}
     allow_paths : str, optional
         Compiler allowed filesystem import path
     remappings : list, optional
         List of solidity path remappings
+    silent : bool, optional
+        Disable verbose reporting
 
     Returns
     -------
@@ -383,14 +383,65 @@ def get_abi(
         Compiled ABIs in the format `{'contractName': [ABI]}`
     """
 
-    sources = {"interfaces/abi": contract_source}
+    final_output = {
+        Path(k).stem: {
+            "abi": json.loads(v),
+            "contractName": Path(k).stem,
+            "type": "interface",
+            "sha1": sha1(v.encode()).hexdigest(),
+        }
+        for k, v in contract_sources.items()
+        if Path(k).suffix == ".json"
+    }
 
-    if language == "Solidity":
-        version = find_best_solc_version(sources)
-        solidity.set_solc_version(version)
+    for path, source in [(k, v) for k, v in contract_sources.items() if Path(k).suffix == ".vy"]:
+        input_json = generate_input_json({path: source}, language="Vyper")
+        input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
+        try:
+            output_json = compile_from_input_json(input_json, silent, allow_paths)
+        except Exception:
+            # vyper interfaces do not convert to ABIs
+            # https://github.com/vyperlang/vyper/issues/1944
+            continue
+        name = Path(path).stem
+        final_output[name] = {
+            "abi": output_json["contracts"][path][name],
+            "contractName": name,
+            "type": "interface",
+            "sha1": sha1(contract_sources[path].encode()).hexdigest(),
+        }
 
-    input_json = generate_input_json(sources, language=language, remappings=remappings)
-    input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
+    solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
 
-    output_json = compile_from_input_json(input_json, allow_paths=allow_paths)
-    return {k: v["abi"] for k, v in output_json["contracts"]["interfaces/abi"].items()}
+    if solc_sources:
+
+        compiler_targets = find_solc_versions(solc_sources, install_needed=True, silent=silent)
+
+        for version, path_list in compiler_targets.items():
+            to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
+
+            set_solc_version(version)
+            input_json = generate_input_json(
+                to_compile,
+                language="Vyper" if version == "vyper" else "Solidity",
+                remappings=remappings,
+            )
+            input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
+
+            output_json = compile_from_input_json(input_json, silent, allow_paths)
+            output_json = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+
+            final_output.update(
+                {
+                    name: {
+                        "abi": data["abi"],
+                        "contractName": name,
+                        "type": "interface",
+                        "sha1": sha1(contract_sources[path].encode()).hexdigest(),
+                    }
+                    for path, v in output_json.items()
+                    for name, data in v.items()
+                }
+            )
+
+    return final_output
