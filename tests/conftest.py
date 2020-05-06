@@ -113,6 +113,7 @@ def pytest_sessionstart():
     monkeypatch_session.setattr(
         "solcx.get_available_solc_versions",
         lambda: [
+            "v0.6.7",
             "v0.6.2",
             "v0.5.15",
             "v0.5.8",

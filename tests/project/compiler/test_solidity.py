@@ -180,9 +180,9 @@ def test_find_solc_versions_install(find_version, msolc):
     find_version("^0.4.22", install_latest=True)
     assert msolc.pop() == "v0.4.25"
     find_version("^0.4.24 || >=0.5.10", install_needed=True)
-    assert msolc.pop() == "v0.6.2"
+    assert msolc.pop() == "v0.6.7"
     find_version(">=0.4.24", install_latest=True)
-    assert msolc.pop() == "v0.6.2"
+    assert msolc.pop() == "v0.6.7"
 
 
 def test_install_solc(msolc):
