@@ -5,6 +5,7 @@ import gc
 import sys
 import threading
 import time
+import warnings
 import weakref
 from subprocess import DEVNULL, PIPE
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -14,6 +15,7 @@ import psutil
 
 from brownie._config import EVM_EQUIVALENTS
 from brownie._singleton import _Singleton
+from brownie.convert import to_int
 from brownie.exceptions import RPCConnectionError, RPCProcessError, RPCRequestError
 
 from .web3 import web3
@@ -26,6 +28,9 @@ CLI_FLAGS = {
     "fork": "--fork",
     "mnemonic": "--mnemonic",
     "account_keys_path": "--acctKeys",
+    "block_time": "--blockTime",
+    "default_balance": "--defaultBalanceEther",
+    "time": "--time",
 }
 
 EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
@@ -82,7 +87,20 @@ class Rpc(metaclass=_Singleton):
         if kwargs["evm_version"] in EVM_EQUIVALENTS:
             kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]  # type: ignore
         for key, value in [(k, v) for k, v in kwargs.items() if v]:
-            cmd += f" {CLI_FLAGS[key]} {value}"
+            if key == "default_balance":
+                try:
+                    value = int(value)  # type: ignore
+                except ValueError:
+                    # convert any input to ether, then format it properly
+                    value = to_int(value).to("ether")  # type: ignore
+                    value = value.quantize(1) if value > 1 else value.normalize()  # type: ignore
+            try:
+                cmd += f" {CLI_FLAGS[key]} {value}"
+            except KeyError:
+                warnings.warn(
+                    f"Ignoring invalid commandline setting for ganache-cli: "
+                    f'"{key}" with value "{value}".'
+                )
         print(f"Launching '{cmd}'...")
         self._time_offset = 0
         self._snapshot_id = False

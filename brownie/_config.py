@@ -60,7 +60,11 @@ class ConfigContainer:
         key = "development" if "cmd" in network else "live"
         network["settings"] = self.settings["networks"][key].copy()
 
-        if key == "development" and "fork" in network["cmd_settings"]:
+        if (
+            key == "development"
+            and isinstance(network["cmd_settings"], dict)
+            and "fork" in network["cmd_settings"]
+        ):
 
             fork = network["cmd_settings"]["fork"]
             if fork in self.networks:
@@ -149,7 +153,7 @@ def _get_project_config_path(project_path: Path):
 
 
 def _load_config(project_path: Path) -> Dict:
-    # Loads configuration data from a file, returns as a dict
+    """Loads configuration data from a file, returns as a dict"""
     path = _get_project_config_path(project_path)
     if path is None:
         return {}
@@ -163,7 +167,7 @@ def _load_config(project_path: Path) -> Dict:
 
 
 def _load_project_config(project_path: Path) -> None:
-    # Loads configuration settings from a project's brownie-config.yaml
+    """Loads configuration settings from a project's brownie-config.yaml"""
     config_path = project_path.joinpath("brownie-config")
     config_data = _load_config(config_path)
     if not config_data:
@@ -177,6 +181,22 @@ def _load_project_config(project_path: Path) -> None:
             DeprecationWarning,
         )
         del config_data["network"]
+
+    # Update the network config cmd_settings with project specific cmd_settings
+    if "networks" in config_data and isinstance(config_data["networks"], dict):
+        for network, values in config_data["networks"].items():
+            if (
+                network != "default"
+                and network in CONFIG.networks.keys()
+                and "cmd_settings" in values
+                and isinstance(values["cmd_settings"], dict)
+            ):
+                if "cmd_settings" in CONFIG.networks[network]:
+                    _recursive_update(
+                        CONFIG.networks[network]["cmd_settings"], values["cmd_settings"]
+                    )
+                else:
+                    CONFIG.networks[network]["cmd_settings"] = values["cmd_settings"]
 
     CONFIG.settings._unlock()
     _recursive_update(CONFIG.settings, config_data)
