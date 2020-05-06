@@ -67,9 +67,9 @@ def test_compile_empty():
 
 def test_get_abi():
     code = "@public\ndef baz() -> bool: return True"
-    abi = compiler.get_abi(code, "Vyper")
+    abi = compiler.vyper.get_abi(code, "Vyper")
     assert len(abi) == 1
-    assert abi["abi"] == [
+    assert abi["Vyper"] == [
         {
             "name": "baz",
             "outputs": [{"type": "bool", "name": ""}],

@@ -44,7 +44,7 @@ def test_dependency_with_remapping(newproject):
     with newproject._path.joinpath("brownie-config.yaml").open("w") as fp:
         yaml.dump(config, fp)
 
-    remapped_code = """
+    remapped_contract = """
 pragma solidity ^0.5.0;
 
 import "token/Token.sol";
@@ -52,7 +52,19 @@ import "token/Token.sol";
 contract Foo is Token {}
     """
 
-    with newproject._path.joinpath("contracts/Test.sol").open("w") as fp:
-        fp.write(remapped_code)
+    remapped_interface = """
+pragma solidity ^0.5.0;
+
+import "token/Token.sol";
+
+interface Bar {}
+    """
+
+    with newproject._path.joinpath("contracts/Foo.sol").open("w") as fp:
+        fp.write(remapped_contract)
+
+    with newproject._path.joinpath("interfaces/Bar.sol").open("w") as fp:
+        fp.write(remapped_interface)
 
     newproject.load()
+    assert hasattr(newproject.interface, "Bar")
