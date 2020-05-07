@@ -5,14 +5,11 @@ import json
 import os
 import shutil
 import sys
-import time
-from base64 import b64encode
 from copy import deepcopy
 from pathlib import Path
 from typing import Dict, List
 
 import pytest
-import requests
 from _pytest.monkeypatch import MonkeyPatch
 from ethpm._utils.ipfs import dummy_ipfs_pin
 from ethpm.backends.ipfs import BaseIPFSBackend
@@ -86,25 +83,6 @@ def pytest_generate_tests(metafunc):
             params += list(itertools.product(versions, runs, ["0.5.0", "0.4.25", "0.4.22"]))
 
         metafunc.parametrize("evmtester", params, indirect=True)
-
-    # parametrize the browniemix fixture
-    if "browniemix" in metafunc.fixturenames and target in ("all", "pm"):
-        if os.getenv("GITHUB_TOKEN"):
-            auth = b64encode(os.getenv("GITHUB_TOKEN").encode()).decode()
-            headers = {"Authorization": "Basic {}".format(auth)}
-        else:
-            headers = None
-
-        for i in range(10):
-            data = requests.get("https://api.github.com/orgs/brownie-mix/repos", headers=headers)
-            if data.status_code == 200:
-                break
-            time.sleep(30)
-
-        if data.status_code != 200:
-            raise ConnectionError("Cannot connect to Github API")
-
-        metafunc.parametrize("browniemix", [i["name"] for i in data.json()])
 
 
 # travis cannot call github ethereum/solidity API, so this method is patched
