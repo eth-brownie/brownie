@@ -74,9 +74,9 @@ class Wei(int):
     def __sub__(self, other: Any) -> "Wei":
         return Wei(super().__sub__(_to_wei(other)))
 
-    def to(self, unit: str) -> Decimal:
+    def to(self, unit: str) -> "Fixed":
         try:
-            return _to_fixed(self) * Decimal(10) ** (-Decimal(UNITS[unit]))
+            return Fixed(self * Fixed(10) ** -UNITS[unit])
         except KeyError:
             raise TypeError(f'Cannot convert wei to unknown unit: "{unit}". ')
 
