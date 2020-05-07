@@ -8,9 +8,8 @@ import pytest
 from brownie.project.scripts import run
 
 
-# browniemix is parametrized with every mix repo from https://www.github.com/brownie-mix/
-def test_mixes(plugintesterbase, project, tmp_path, rpc, browniemix, package_test):
-    path = Path(project.from_brownie_mix(browniemix, tmp_path.joinpath("testmix")))
+def test_mix(plugintesterbase, project, tmp_path, rpc, package_test):
+    path = Path(project.from_brownie_mix("token", tmp_path.joinpath("testmix")))
     os.chdir(path)
 
     # tests should pass without fails or errors
