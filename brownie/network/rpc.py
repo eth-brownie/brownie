@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import atexit
+import datetime
 import gc
 import sys
 import threading
@@ -15,7 +16,7 @@ import psutil
 
 from brownie._config import EVM_EQUIVALENTS
 from brownie._singleton import _Singleton
-from brownie.convert import to_int
+from brownie.convert import Wei
 from brownie.exceptions import RPCConnectionError, RPCProcessError, RPCRequestError
 
 from .web3 import web3
@@ -51,6 +52,7 @@ class Rpc(metaclass=_Singleton):
     def __init__(self) -> None:
         self._rpc: Any = None
         self._time_offset: int = 0
+        self._block_time: int = 0
         self._snapshot_id: Union[int, Optional[bool]] = False
         self._reset_id: Union[int, bool] = False
         self._current_id: Union[int, bool] = False
@@ -86,14 +88,8 @@ class Rpc(metaclass=_Singleton):
         kwargs.setdefault("evm_version", EVM_DEFAULT)  # type: ignore
         if kwargs["evm_version"] in EVM_EQUIVALENTS:
             kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]  # type: ignore
+        kwargs = _validate_cmd_settings(kwargs)
         for key, value in [(k, v) for k, v in kwargs.items() if v]:
-            if key == "default_balance":
-                try:
-                    value = int(value)  # type: ignore
-                except ValueError:
-                    # convert any input to ether, then format it properly
-                    value = to_int(value).to("ether")  # type: ignore
-                    value = value.quantize(1) if value > 1 else value.normalize()  # type: ignore
             try:
                 cmd += f" {CLI_FLAGS[key]} {value}"
             except KeyError:
@@ -102,6 +98,8 @@ class Rpc(metaclass=_Singleton):
                     f'"{key}" with value "{value}".'
                 )
         print(f"Launching '{cmd}'...")
+        if "block_time" in kwargs and isinstance(kwargs["block_time"], int):
+            self._block_time = kwargs["block_time"]
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
@@ -116,6 +114,7 @@ class Rpc(metaclass=_Singleton):
             if web3.isConnected():
                 self._reset_id = self._current_id = self._snap()
                 _notify_registry(0)
+                self._time_offset = self._request("evm_increaseTime", [0])
                 return
             time.sleep(0.1)
             if type(self._rpc) is psutil.Popen:
@@ -148,6 +147,7 @@ class Rpc(metaclass=_Singleton):
             ) from None
         print(f"Attached to local RPC client listening at '{laddr[0]}:{laddr[1]}'...")
         self._rpc = psutil.Process(proc.pid)
+        self._time_offset = self._request("evm_increaseTime", [0])
         if web3.provider:
             self._reset_id = self._current_id = self._snap()
         _notify_registry(0)
@@ -307,6 +307,13 @@ class Rpc(metaclass=_Singleton):
             raise SystemError("RPC is not active.")
         return int(time.time() + self._time_offset)
 
+    def block_time(self) -> int:
+        """Returns the time between mining of blocks in seconds.
+        A value of 0 stands for instant mining."""
+        if not self.is_active():
+            raise SystemError("RPC is not active.")
+        return self._block_time
+
     def sleep(self, seconds: int) -> None:
         """Increases the time within the test RPC.
 
@@ -390,3 +397,38 @@ def _check_connections(proc: psutil.Process, laddr: Tuple) -> bool:
         return laddr in [i.laddr for i in proc.connections()]
     except psutil.AccessDenied:
         return False
+
+
+def _validate_cmd_settings(cmd_settings: dict) -> dict:
+    CMD_TYPES = {
+        "port": int,
+        "gas_limit": int,
+        "block_time": int,
+        "time": datetime.datetime,
+        "accounts": int,
+        "evm_version": str,
+        "mnemonic": str,
+        "account_keys_path": str,
+        "fork": str,
+    }
+    for cmd, value in cmd_settings.items():
+        if (
+            cmd in CLI_FLAGS.keys()
+            and cmd in CMD_TYPES.keys()
+            and not type(value) == CMD_TYPES[cmd]
+        ):
+            raise ValueError(
+                f'Wrong type for cmd_settings "{cmd}" ({value}). '
+                f"Found {type(value)}, but expected {CMD_TYPES[cmd]}."
+            )
+
+    if "default_balance" in cmd_settings:
+        try:
+            cmd_settings["default_balance"] = int(cmd_settings["default_balance"])
+        except ValueError:
+            # convert any input to ether, then format it properly
+            default_eth = Wei(cmd_settings["default_balance"]).to("ether")
+            cmd_settings["default_balance"] = (
+                default_eth.quantize(1) if default_eth > 1 else default_eth.normalize()
+            )
+    return cmd_settings
