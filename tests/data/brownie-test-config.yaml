@@ -6,7 +6,6 @@ networks:
         reverting_tx_gas_limit: 8765432
         default_contract_owner: false
         cmd_settings:
-            port: 1337
             gas_limit: 7654321
             block_time: 5
             default_balance: 15 milliether
