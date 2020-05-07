@@ -52,7 +52,6 @@ class Rpc(metaclass=_Singleton):
     def __init__(self) -> None:
         self._rpc: Any = None
         self._time_offset: int = 0
-        self._block_time: int = 0
         self._snapshot_id: Union[int, Optional[bool]] = False
         self._reset_id: Union[int, bool] = False
         self._current_id: Union[int, bool] = False
@@ -98,8 +97,6 @@ class Rpc(metaclass=_Singleton):
                     f'"{key}" with value "{value}".'
                 )
         print(f"Launching '{cmd}'...")
-        if "block_time" in kwargs and isinstance(kwargs["block_time"], int):
-            self._block_time = kwargs["block_time"]
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
@@ -306,13 +303,6 @@ class Rpc(metaclass=_Singleton):
         if not self.is_active():
             raise SystemError("RPC is not active.")
         return int(time.time() + self._time_offset)
-
-    def block_time(self) -> int:
-        """Returns the time between mining of blocks in seconds.
-        A value of 0 stands for instant mining."""
-        if not self.is_active():
-            raise SystemError("RPC is not active.")
-        return self._block_time
 
     def sleep(self, seconds: int) -> None:
         """Increases the time within the test RPC.
