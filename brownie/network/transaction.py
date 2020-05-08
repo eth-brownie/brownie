@@ -73,6 +73,8 @@ class TransactionReceipt:
         gas_used: Gas used
         input: Hexstring input data
         nonce: Transaction nonce
+        block_number: Block number this transaction was included in
+        timestamp: Timestamp of the block this transaction was included in
         txindex: Index of the transaction within the mined block
         contract_address: Address of contract deployed by the transaction
         logs: Raw transaction logs
@@ -269,6 +271,12 @@ class TransactionReceipt:
         if self._trace is None:
             self._expand_trace()
         return self._trace
+
+    @property
+    def timestamp(self) -> Optional[int]:
+        if self.status == -1:
+            return None
+        return web3.eth.getBlock(self.block_number)["timestamp"]
 
     def _await_confirmation(self, silent: bool) -> None:
         # await tx showing in mempool
