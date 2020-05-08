@@ -27,7 +27,7 @@ WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, None)
 
 class Wei(int):
 
-    '''Integer subclass that converts a value to wei and allows comparison against
+    """Integer subclass that converts a value to wei and allows comparison against
     similarly formatted values.
 
     Useful for the following formats:
@@ -35,7 +35,7 @@ class Wei(int):
         * a large float in scientific notation, where direct conversion to int
           would cause inaccuracy: 8.3e32
         * bytes: b'\xff\xff'
-        * hex strings: "0x330124"'''
+        * hex strings: "0x330124\""""
 
     # Known typing error: https://github.com/python/mypy/issues/4290
     def __new__(cls, value: Any) -> Any:  # type: ignore
@@ -75,10 +75,18 @@ class Wei(int):
         return Wei(super().__sub__(_to_wei(other)))
 
     def to(self, unit: str) -> "Fixed":
+        """
+        Returns a converted denomination of the stored wei value.
+        Accepts any valid ether unit denomination as string, like:
+        "gwei", "milliether", "finney", "ether".
+
+        :param unit: An ether denomination like "ether" or "gwei"
+        :return: A 'Fixed' type number in the specified denomination
+        """
         try:
             return Fixed(self * Fixed(10) ** -UNITS[unit])
         except KeyError:
-            raise TypeError(f'Cannot convert wei to unknown unit: "{unit}". ')
+            raise TypeError(f'Cannot convert wei to unknown unit: "{unit}". ') from None
 
 
 def _to_wei(value: WeiInputTypes) -> int:
