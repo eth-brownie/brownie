@@ -1982,6 +1982,17 @@ TransactionReceipt Attributes
         >>> tx.status
         1
 
+.. py:attribute:: TransactionReceipt.timestamp
+
+    The timestamp of the block that this transaction was included in.
+
+    .. code-block:: python
+
+        >>> tx
+        <Transaction object '0xac54b49987a77805bf6bdd78fb4211b3dc3d283ff0144c231a905afa75a06db0'>
+        >>> tx.timestamp
+        1588957325
+
 .. py:attribute:: TransactionReceipt.trace
 
     An expanded `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#user-content-basic-traces>`_ structLog, returned from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ RPC endpoint. If you are using Infura this attribute is not available.
