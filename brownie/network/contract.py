@@ -320,13 +320,11 @@ class _DeployedContractBase(_ContractBase):
                 self._check_and_set(abi["name"], fn)
                 continue
 
+            # special logic to handle function overloading
             if not hasattr(self, abi["name"]):
                 overloaded = OverloadedMethod(address, name, owner)
                 self._check_and_set(abi["name"], overloaded)
-
-            key = ",".join(i["type"] for i in abi["inputs"]).replace("256", "")
-            fn = _get_method_object(address, abi, name, owner, natspec)
-            getattr(self, abi["name"]).methods[key] = fn
+            getattr(self, abi["name"])._add_fn(abi, natspec)
 
     def _check_and_set(self, name: str, obj: Any) -> None:
         if hasattr(self, name):
@@ -720,6 +718,11 @@ class OverloadedMethod:
         self._name = name
         self._owner = owner
         self.methods: Dict = {}
+
+    def _add_fn(self, abi: Dict, natspec: Dict) -> None:
+        fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
+        key = ",".join(i["type"] for i in abi["inputs"]).replace("256", "")
+        self.methods[key] = fn
 
     def __getitem__(self, key: Union[Tuple, str]) -> "_ContractMethod":
         if isinstance(key, tuple):
