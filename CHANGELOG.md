@@ -6,6 +6,12 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Added
+- `Wei.to` for unit conversion ([#501](https://github.com/iamdefinitelyahuman/brownie/pull/501))
+- Exposed `block_time`, `default_balance` and `time` ganache-cli parameters ([#501](https://github.com/iamdefinitelyahuman/brownie/pull/501))
+
+### Changed
+- `brownie-config.yaml` can now specify ganache-cli parameters ([#501](https://github.com/iamdefinitelyahuman/brownie/pull/501))
 
 ## [1.8.3](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.3) - 2020-05-06
 ### Changed
