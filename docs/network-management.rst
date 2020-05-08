@@ -81,6 +81,9 @@ The following fields are optional for live networks:
 
     * ``explorer``: API url used by :func:`Contract.from_explorer <Contract.from_explorer>` to fetch source code. If this field is not given, you will not be able to fetch source code when using this network.
 
+
+.. _adding-network:
+
 Development Networks
 ********************
 
@@ -96,6 +99,12 @@ The following optional fields may be given for development networks, which are p
     * ``mnemonic``: A mnemonic to use when generating local accounts.
     * ``evm_version``: The EVM ruleset to use. Default is the most recent available.
     * ``fork``: If given, the local client will fork from another currently running Ethereum client. The value may be an HTTP location and port of the other client, e.g. ``http://localhost:8545``, or the ID of a production network, e.g. ``mainnet``. See :ref:`Using a Forked Development Network <network-management-fork>`.
+    * ``block_time``: The time waited between mining blocks. Defaults to instant mining.
+    * ``default_balance``: The starting balance for all unlocked accounts. Can be given as unit string like "1000 ether" or "50 gwei" or as an number **in Ether**. Will default to 100 ether.
+    * ``time``: Date (ISO 8601) that the first block should start. Use this feature, along with :func:`Rpc.sleep <Rpc.sleep>` to test time-dependent code. Defaults to the current time.
+
+.. note::
+    These optional commandline fields can also be specified on a project level in the project's ``brownie-config.yaml`` file. See the :ref:`configuration files<config>`.
 
 .. note::
 
