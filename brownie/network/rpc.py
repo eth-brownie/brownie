@@ -17,7 +17,12 @@ import psutil
 from brownie._config import EVM_EQUIVALENTS
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
-from brownie.exceptions import RPCConnectionError, RPCProcessError, RPCRequestError
+from brownie.exceptions import (
+    InvalidArgumentWarning,
+    RPCConnectionError,
+    RPCProcessError,
+    RPCRequestError,
+)
 
 from .web3 import web3
 
@@ -94,7 +99,8 @@ class Rpc(metaclass=_Singleton):
             except KeyError:
                 warnings.warn(
                     f"Ignoring invalid commandline setting for ganache-cli: "
-                    f'"{key}" with value "{value}".'
+                    f'"{key}" with value "{value}".',
+                    InvalidArgumentWarning,
                 )
         print(f"Launching '{cmd}'...")
         self._time_offset = 0
@@ -405,11 +411,11 @@ def _validate_cmd_settings(cmd_settings: dict) -> dict:
         if (
             cmd in CLI_FLAGS.keys()
             and cmd in CMD_TYPES.keys()
-            and not type(value) == CMD_TYPES[cmd]
+            and not isinstance(value, CMD_TYPES[cmd])
         ):
             raise ValueError(
-                f'Wrong type for cmd_settings "{cmd}" ({value}). '
-                f"Found {type(value)}, but expected {CMD_TYPES[cmd]}."
+                f'Wrong type for cmd_settings "{cmd}": {value}. '
+                f"Found {type(value).__name__}, but expected {CMD_TYPES[cmd].__name__}."
             )
 
     if "default_balance" in cmd_settings:
