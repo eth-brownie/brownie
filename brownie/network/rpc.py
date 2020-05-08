@@ -413,7 +413,7 @@ def _validate_cmd_settings(cmd_settings: dict) -> dict:
             and cmd in CMD_TYPES.keys()
             and not isinstance(value, CMD_TYPES[cmd])
         ):
-            raise ValueError(
+            raise TypeError(
                 f'Wrong type for cmd_settings "{cmd}": {value}. '
                 f"Found {type(value).__name__}, but expected {CMD_TYPES[cmd].__name__}."
             )

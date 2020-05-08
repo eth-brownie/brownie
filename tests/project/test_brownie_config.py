@@ -5,6 +5,7 @@ import pytest
 import yaml
 
 from brownie._config import _get_data_folder, _load_config
+from brownie.network.rpc import _validate_cmd_settings
 
 
 @pytest.fixture
@@ -85,3 +86,30 @@ def test_rpc_project_cmd_settings(devnetwork, testproject, config, settings_proj
 
     assert devnetwork.rpc.evm_version() == cmd_settings_proj["evm_version"]
     devnetwork.rpc.kill()
+
+
+def test_validate_cmd_settings():
+    cmd_settings = """
+        port: 1
+        gas_limit: 2
+        block_time: 3
+        time: 2019-04-05T14:30:11
+        accounts: 4
+        evm_version: istanbul
+        mnemonic: brownie
+        account_keys_path: ../../
+        fork: main
+    """
+    cmd_settings_dict = yaml.load(cmd_settings)
+    valid_dict = _validate_cmd_settings(cmd_settings_dict)
+    for (k, v) in cmd_settings_dict.items():
+        assert valid_dict[k] == v
+
+
+@pytest.mark.parametrize(
+    "invalid_setting",
+    ({"port": "foo"}, {"gas_limit": 3.5}, {"block_time": [1]}, {"time": 1}, {"mnemonic": 0}),
+)
+def test_raise_validate_cmd_settings(invalid_setting):
+    with pytest.raises(TypeError):
+        _validate_cmd_settings(invalid_setting)
