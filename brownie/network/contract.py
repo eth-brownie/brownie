@@ -724,6 +724,21 @@ class OverloadedMethod:
         key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
         self.methods[key] = fn
 
+    def _get_fn_from_args(self, args: Tuple) -> "_ContractMethod":
+        input_length = len(args)
+        if args and isinstance(args[-1], dict):
+            input_length -= 1
+        keys = [i for i in self.methods if len(i) == input_length]
+        if not keys:
+            raise ValueError("No function matching the given number of arguments")
+        if len(keys) > 1:
+            raise ValueError(
+                f"Contract has more than one function '{self._name}' requiring "
+                f"{input_length} arguments. You must explicitly declare which function "
+                f"you are calling, e.g. {self._name}['{','.join(keys[0])}'](*args)"
+            )
+        return self.methods[keys[0]]
+
     def __getitem__(self, key: Union[Tuple, str]) -> "_ContractMethod":
         if isinstance(key, str):
             key = tuple(i.strip() for i in key.split(","))
@@ -736,6 +751,22 @@ class OverloadedMethod:
 
     def __len__(self) -> int:
         return len(self.methods)
+
+    def __call__(self, *args: Tuple) -> Any:
+        fn = self._get_fn_from_args(args)
+        return fn(*args)  # type: ignore
+
+    def call(self, *args: Tuple) -> Any:
+        fn = self._get_fn_from_args(args)
+        return fn.call(*args)
+
+    def transact(self, *args: Tuple) -> Any:
+        fn = self._get_fn_from_args(args)
+        return fn.transact(*args)
+
+    def encode_input(self, *args: Tuple) -> Any:
+        fn = self._get_fn_from_args(args)
+        return fn.encode_input(*args)
 
 
 class _ContractMethod:
