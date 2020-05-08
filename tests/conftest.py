@@ -186,17 +186,6 @@ def testproject(_project_factory, project, tmp_path):
 
 
 @pytest.fixture
-def testprojectconfig(_project_factory, project, tmp_path):
-    path = tmp_path.joinpath("testprojectconfig")
-    os.chdir(tmp_path)
-    _copy_all(_project_factory, path)
-    os.chdir(Path(__file__).parent)
-    shutil.copyfile("data/brownie-test-config.yaml", path.joinpath("brownie-config.yaml"))
-    os.chdir(path)
-    return project.load(path, "TestProjectConfig")
-
-
-@pytest.fixture
 def tp_path(testproject):
     yield testproject._path
 

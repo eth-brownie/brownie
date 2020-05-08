@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import os
 
 import pytest
 import yaml
@@ -7,38 +8,64 @@ from brownie._config import _get_data_folder, _load_config
 
 
 @pytest.fixture
-def settings_proj(testprojectconfig):
-    with testprojectconfig._path.joinpath("brownie-config.yaml").open() as fp:
-        settings_proj_raw = yaml.safe_load(fp)["networks"]["development"]
-    yield settings_proj_raw
+def settings_proj(testproject):
+    """Creates a config file in the testproject root folder and loads it manually."""
+
+    # Save the following config as "brownie-config.yaml" in the testproject root
+    test_brownie_config = """
+    networks:
+        default: development
+        development:
+            gas_limit: 6543210
+            gas_price: 1000
+            reverting_tx_gas_limit: 8765432
+            default_contract_owner: false
+            cmd_settings:
+                gas_limit: 7654321
+                block_time: 5
+                default_balance: 15 milliether
+                time: 2019-04-05T14:30:11Z
+                accounts: 15
+                evm_version: byzantium
+                mnemonic: brownie2
+    """
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(yaml.load(test_brownie_config), fp)
+
+    # Load the networks.development config from the created file and yield it
+    with testproject._path.joinpath("brownie-config.yaml").open() as fp:
+        conf = yaml.safe_load(fp)["networks"]["development"]
+        yield conf
+
+    os.remove(testproject._path.joinpath("brownie-config.yaml"))
 
 
-def test_load_project_cmd_settings(config, testprojectconfig, settings_proj):
+def test_load_project_cmd_settings(config, testproject, settings_proj):
     """Tests if project specific cmd_settings update the network config when a project is loaded"""
-    # get raw cmd_setting config data from files
+    # get raw cmd_setting config data from the network-config.yaml file
     config_path_network = _get_data_folder().joinpath("network-config.yaml")
     cmd_settings_network_raw = _load_config(config_path_network)["development"][0]["cmd_settings"]
 
-    # compare initial settings to network config
-    cmd_settings_network = config.networks["development"]["cmd_settings"]
-    for k, v in cmd_settings_network.items():
+    # compare the manually loaded cmd_settings to the cmd_settings in the CONFIG singleton
+    cmd_settings_config = config.networks["development"]["cmd_settings"]
+    for k, v in cmd_settings_config.items():
         if k != "port":
             assert cmd_settings_network_raw[k] == v
 
-    # load project and check if settings correctly updated
-    testprojectconfig.load_config()
-    cmd_settings_proj = config.networks["development"]["cmd_settings"]
+    # Load the project with its project specific settings and assert that the CONFIG was updated
+    testproject.load_config()
+    cmd_settings_config = config.networks["development"]["cmd_settings"]
     for k, v in settings_proj["cmd_settings"].items():
         if k != "port":
-            assert cmd_settings_proj[k] == v
+            assert cmd_settings_config[k] == v
 
 
-def test_rpc_project_cmd_settings(devnetwork, testprojectconfig, config, settings_proj):
+def test_rpc_project_cmd_settings(devnetwork, testproject, config, settings_proj):
     """Test if project specific settings are properly passed on to the RPC."""
     if devnetwork.rpc.is_active():
         devnetwork.rpc.kill()
     cmd_settings_proj = settings_proj["cmd_settings"]
-    testprojectconfig.load_config()
+    testproject.load_config()
     devnetwork.connect("development")
 
     # Check if rpc time is roughly the start time in the config file
