@@ -104,6 +104,17 @@ def test_hash(tester):
     assert a == a
 
 
+def test_timestamp(accounts, web3):
+    tx = accounts[0].transfer(accounts[1], "1 ether")
+    assert tx.timestamp == web3.eth.getBlock(web3.eth.blockNumber)["timestamp"]
+
+
+def test_timestamp_pending(accounts, web3):
+    tx = accounts[0].transfer(accounts[1], "1 ether")
+    tx.status = -1
+    assert tx.timestamp is None
+
+
 def test_attribute_error(tester):
     tx = tester.doNothing()
     with pytest.raises(AttributeError):
