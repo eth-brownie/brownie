@@ -721,13 +721,14 @@ class OverloadedMethod:
 
     def _add_fn(self, abi: Dict, natspec: Dict) -> None:
         fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
-        key = ",".join(i["type"] for i in abi["inputs"]).replace("256", "")
+        key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
         self.methods[key] = fn
 
     def __getitem__(self, key: Union[Tuple, str]) -> "_ContractMethod":
-        if isinstance(key, tuple):
-            key = ",".join(key)
-        key = key.replace("256", "").replace(", ", ",")
+        if isinstance(key, str):
+            key = tuple(i.strip() for i in key.split(","))
+
+        key = tuple(i.replace("256", "") for i in key)
         return self.methods[key]
 
     def __repr__(self) -> str:
