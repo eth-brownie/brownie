@@ -49,6 +49,9 @@ DEV_CMD_SETTINGS = (
     "fork",
     "mnemonic",
     "account_keys_path",
+    "block_time",
+    "default_balance",
+    "time",
 )
 
 
