@@ -12,7 +12,7 @@ networks:
         gas_price: 0
         reverting_tx_gas_limit: 6721975
         default_contract_owner: true
-        cmd_settings: {}
+        cmd_settings: null
     live:
         gas_limit: auto
         gas_price: auto

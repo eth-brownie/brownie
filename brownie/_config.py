@@ -235,7 +235,9 @@ def _modify_hypothesis_settings(settings, name, parent):
 
 
 def _recursive_update(original: Dict, new: Dict) -> None:
-    # merges project config with brownie default config
+    """Recursively merges a new dict into the original dict"""
+    if not original:
+        original = {}
     for k in new:
         if k in original and isinstance(new[k], dict):
             _recursive_update(original[k], new[k])

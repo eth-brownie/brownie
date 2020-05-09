@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 import pytest
 
-from brownie import Fixed
-from brownie.convert import Wei
+from brownie.convert.datatypes import Fixed, Wei
 
 
 def test_nonetype():

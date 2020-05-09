@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-import os
 
 import pytest
 import yaml
@@ -31,14 +30,13 @@ def settings_proj(testproject):
                 mnemonic: brownie2
     """
     with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
-        yaml.dump(yaml.load(test_brownie_config), fp)
+        yaml.dump(yaml.safe_load(test_brownie_config), fp)
 
     # Load the networks.development config from the created file and yield it
     with testproject._path.joinpath("brownie-config.yaml").open() as fp:
         conf = yaml.safe_load(fp)["networks"]["development"]
-        yield conf
 
-    os.remove(testproject._path.joinpath("brownie-config.yaml"))
+    yield conf
 
 
 def test_load_project_cmd_settings(config, testproject, settings_proj):
@@ -47,7 +45,7 @@ def test_load_project_cmd_settings(config, testproject, settings_proj):
     config_path_network = _get_data_folder().joinpath("network-config.yaml")
     cmd_settings_network_raw = _load_config(config_path_network)["development"][0]["cmd_settings"]
 
-    # compare the manually loaded cmd_settings to the cmd_settings in the CONFIG singleton
+    # compare the manually loaded network cmd_settings to the cmd_settings in the CONFIG singleton
     cmd_settings_config = config.networks["development"]["cmd_settings"]
     for k, v in cmd_settings_config.items():
         if k != "port":
@@ -100,7 +98,7 @@ def test_validate_cmd_settings():
         account_keys_path: ../../
         fork: main
     """
-    cmd_settings_dict = yaml.load(cmd_settings)
+    cmd_settings_dict = yaml.safe_load(cmd_settings)
     valid_dict = _validate_cmd_settings(cmd_settings_dict)
     for (k, v) in cmd_settings_dict.items():
         assert valid_dict[k] == v
