@@ -223,6 +223,18 @@ Wei
         >>> Wei("1 ether") - "0.75 ether"
         250000000000000000
 
+.. py:classmethod:: Wei.to(unit)
+
+    Returns a :class:`Fixed <brownie.convert.datatypes.Fixed>` number converted to the specified unit.
+
+    Attempting a conversion to an unknown unit raises a ``TypeError``.
+
+    .. code-block:: python
+
+        >>> from brownie import Wei
+        >>> Wei("20 gwei").to("ether")
+        Fixed('2.0000000000E-8')
+
 ``brownie.convert.normalize``
 =============================
 

@@ -131,3 +131,7 @@ class BrownieCompilerWarning(Warning):
 
 class BrownieEnvironmentWarning(Warning):
     pass
+
+
+class InvalidArgumentWarning(BrownieEnvironmentWarning):
+    pass

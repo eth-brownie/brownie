@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 
 import atexit
+import datetime
 import gc
 import sys
 import threading
 import time
+import warnings
 import weakref
 from subprocess import DEVNULL, PIPE
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -14,7 +16,13 @@ import psutil
 
 from brownie._config import EVM_EQUIVALENTS
 from brownie._singleton import _Singleton
-from brownie.exceptions import RPCConnectionError, RPCProcessError, RPCRequestError
+from brownie.convert import Wei
+from brownie.exceptions import (
+    InvalidArgumentWarning,
+    RPCConnectionError,
+    RPCProcessError,
+    RPCRequestError,
+)
 
 from .web3 import web3
 
@@ -26,6 +34,9 @@ CLI_FLAGS = {
     "fork": "--fork",
     "mnemonic": "--mnemonic",
     "account_keys_path": "--acctKeys",
+    "block_time": "--blockTime",
+    "default_balance": "--defaultBalanceEther",
+    "time": "--time",
 }
 
 EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
@@ -81,8 +92,16 @@ class Rpc(metaclass=_Singleton):
         kwargs.setdefault("evm_version", EVM_DEFAULT)  # type: ignore
         if kwargs["evm_version"] in EVM_EQUIVALENTS:
             kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]  # type: ignore
+        kwargs = _validate_cmd_settings(kwargs)
         for key, value in [(k, v) for k, v in kwargs.items() if v]:
-            cmd += f" {CLI_FLAGS[key]} {value}"
+            try:
+                cmd += f" {CLI_FLAGS[key]} {value}"
+            except KeyError:
+                warnings.warn(
+                    f"Ignoring invalid commandline setting for ganache-cli: "
+                    f'"{key}" with value "{value}".',
+                    InvalidArgumentWarning,
+                )
         print(f"Launching '{cmd}'...")
         self._time_offset = 0
         self._snapshot_id = False
@@ -98,6 +117,7 @@ class Rpc(metaclass=_Singleton):
             if web3.isConnected():
                 self._reset_id = self._current_id = self._snap()
                 _notify_registry(0)
+                self._time_offset = self._request("evm_increaseTime", [0])
                 return
             time.sleep(0.1)
             if type(self._rpc) is psutil.Popen:
@@ -130,6 +150,7 @@ class Rpc(metaclass=_Singleton):
             ) from None
         print(f"Attached to local RPC client listening at '{laddr[0]}:{laddr[1]}'...")
         self._rpc = psutil.Process(proc.pid)
+        self._time_offset = self._request("evm_increaseTime", [0])
         if web3.provider:
             self._reset_id = self._current_id = self._snap()
         _notify_registry(0)
@@ -372,3 +393,38 @@ def _check_connections(proc: psutil.Process, laddr: Tuple) -> bool:
         return laddr in [i.laddr for i in proc.connections()]
     except psutil.AccessDenied:
         return False
+
+
+def _validate_cmd_settings(cmd_settings: dict) -> dict:
+    CMD_TYPES = {
+        "port": int,
+        "gas_limit": int,
+        "block_time": int,
+        "time": datetime.datetime,
+        "accounts": int,
+        "evm_version": str,
+        "mnemonic": str,
+        "account_keys_path": str,
+        "fork": str,
+    }
+    for cmd, value in cmd_settings.items():
+        if (
+            cmd in CLI_FLAGS.keys()
+            and cmd in CMD_TYPES.keys()
+            and not isinstance(value, CMD_TYPES[cmd])
+        ):
+            raise TypeError(
+                f'Wrong type for cmd_settings "{cmd}": {value}. '
+                f"Found {type(value).__name__}, but expected {CMD_TYPES[cmd].__name__}."
+            )
+
+    if "default_balance" in cmd_settings:
+        try:
+            cmd_settings["default_balance"] = int(cmd_settings["default_balance"])
+        except ValueError:
+            # convert any input to ether, then format it properly
+            default_eth = Wei(cmd_settings["default_balance"]).to("ether")
+            cmd_settings["default_balance"] = (
+                default_eth.quantize(1) if default_eth > 1 else default_eth.normalize()
+            )
+    return cmd_settings

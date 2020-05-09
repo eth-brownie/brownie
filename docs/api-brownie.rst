@@ -114,6 +114,10 @@ Warnings
 
     Raised on unexpected environment conditions.
 
+.. py:exception:: brownie.exceptions.InvalidArgumentWarning
+
+    Raised on non-critical, invalid arguments passed to a method, function or config file.
+
 ``brownie._config``
 ===================
 

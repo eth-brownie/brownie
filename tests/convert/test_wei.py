@@ -1,6 +1,7 @@
 #!/usr/bin/python3
+import pytest
 
-from brownie.convert import Wei
+from brownie.convert.datatypes import Fixed, Wei
 
 
 def test_nonetype():
@@ -64,3 +65,22 @@ def test_gt():
 def test_ge():
     assert Wei("2 ether") >= "1 ether"
     assert Wei("2 ether") >= "2 ether"
+
+
+@pytest.mark.parametrize(
+    "conversion_tuples",
+    (
+        ("999999", "gwei"),
+        ("50", "ether"),
+        ("0", "milliether"),
+        ("0.1", "kwei"),
+        ("0.00001", "ether"),
+    ),
+)
+def test_to(conversion_tuples):
+    assert Wei(" ".join(conversion_tuples)).to(conversion_tuples[1]) == Fixed(conversion_tuples[0])
+
+
+def test_raise_to():
+    with pytest.raises(TypeError):
+        Wei("1 ether").to("foo")
