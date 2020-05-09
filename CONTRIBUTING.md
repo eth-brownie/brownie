@@ -1,14 +1,20 @@
 # Development
 
-To start development for Brownie you should begin by cloning the repo. We highly recommend using [`venv`](https://docs.python.org/3/library/venv.html) and installing into a fresh virtual environment.
+To get started with working on the Brownie codebaser, use the following steps prepare your local environment:
 
 ```bash
+# clone the github repo and navigate into the folder
 git clone https://github.com/iamdefinitelyahuman/brownie.git
-```
+cd brownie
 
-Next, ensure all dev dependencies have been installed:
+# create and load a virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-```bash
+# install brownie into the virtual environment
+python setup.py install
+
+# install the developer dependencies
 pip install -r requirements-dev.txt
 ```
 
