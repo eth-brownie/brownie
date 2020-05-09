@@ -403,7 +403,7 @@ class TransactionReceipt:
         contract = _find_contract(self.receiver)
         if contract:
             data = _get_memory(trace[-1], -1)
-            fn = getattr(contract, self.fn_name)
+            fn = contract.get_method_object(self.input)
             self._return_value = fn.decode_output(data)
 
     def _reverted_trace(self, trace: Sequence) -> None:

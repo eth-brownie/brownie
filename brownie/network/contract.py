@@ -58,6 +58,10 @@ class _ContractBase:
         self._build = build.copy()
         self._sources = sources
         self.topics = _get_topics(self.abi)
+        self.selectors = {
+            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+        }
+        # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
         self.signatures = {
             i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
         }
@@ -79,7 +83,7 @@ class _ContractBase:
 
     def get_method(self, calldata: str) -> Optional[str]:
         sig = calldata[:10].lower()
-        return next((k for k, v in self.signatures.items() if v == sig), None)
+        return self.selectors.get(sig)
 
 
 class ContractContainer(_ContractBase):
@@ -358,6 +362,18 @@ class _DeployedContractBase(_ContractBase):
         if super().__getattribute__("_reverted"):
             raise ContractNotFound("This contract no longer exists.")
         return super().__getattribute__(name)
+
+    def get_method_object(self, calldata: str) -> Optional["_ContractMethod"]:
+        """
+        Given a calldata hex string, returns a `ContractMethod` object.
+        """
+        sig = calldata[:10].lower()
+        if sig not in self.selectors:
+            return None
+        fn = getattr(self, self.selectors[sig], None)
+        if isinstance(fn, OverloadedMethod):
+            return next((v for v in fn.methods.values() if v.signature == sig), None)
+        return fn
 
     def balance(self) -> Wei:
         """Returns the current ether balance of the contract, in wei."""
