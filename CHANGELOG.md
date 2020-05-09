@@ -6,12 +6,17 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.8.4](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.4) - 2020-05-09
 ### Added
 - `Wei.to` for unit conversion ([#501](https://github.com/iamdefinitelyahuman/brownie/pull/501))
 - Exposed `block_time`, `default_balance` and `time` ganache-cli parameters ([#501](https://github.com/iamdefinitelyahuman/brownie/pull/501))
+- `TransactionReceipt.timestamp` ([#504](https://github.com/iamdefinitelyahuman/brownie/pull/504))
 
 ### Changed
 - `brownie-config.yaml` can now specify ganache-cli parameters ([#501](https://github.com/iamdefinitelyahuman/brownie/pull/501))
+- Global variables are now available when using the console for debugging ([#506](https://github.com/iamdefinitelyahuman/brownie/pull/506))
+- Simplified syntax for calling overloaded methods ([#507](https://github.com/iamdefinitelyahuman/brownie/pull/507))
 
 ## [1.8.3](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.3) - 2020-05-06
 ### Changed
