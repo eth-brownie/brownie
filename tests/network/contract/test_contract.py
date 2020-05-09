@@ -11,7 +11,6 @@ from brownie.network.contract import (
     Contract,
     ContractCall,
     ContractTx,
-    OverloadedMethod,
     ProjectContract,
     _DeployedContractBase,
 )
@@ -51,34 +50,6 @@ def test_namespace_collision(tester, build):
     )
     with pytest.raises(AttributeError):
         Contract.from_abi(None, tester.address, build["abi"])
-
-
-def test_overloaded(testproject, tester, build):
-    build["abi"].append(
-        {
-            "constant": False,
-            "inputs": [
-                {"name": "_to", "type": "address"},
-                {"name": "_value", "type": "uint256"},
-                {"name": "_test", "type": "uint256"},
-            ],
-            "name": "revertStrings",
-            "outputs": [{"name": "", "type": "bool"}],
-            "payable": False,
-            "stateMutability": "nonpayable",
-            "type": "function",
-        }
-    )
-    del testproject.BrownieTester[0]
-    c = Contract.from_abi(None, tester.address, build["abi"])
-    fn = c.revertStrings
-    assert type(fn) == OverloadedMethod
-    assert len(fn) == 2
-    assert type(fn["uint"]) == ContractTx
-    assert fn["address", "uint256", "uint256"] == fn["address, uint256, uint256"]
-    assert fn["uint"] == fn["uint256"]
-    assert fn["uint"] != fn["address, uint256, uint256"]
-    repr(fn)
 
 
 def test_set_methods(tester):
