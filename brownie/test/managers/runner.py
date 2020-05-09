@@ -238,11 +238,26 @@ class PytestBrownieRunner(PytestBrownieBase):
             tw = TerminalWriter()
             report.longrepr.toterminal(tw)
 
+            # get global namespace
+            globals_dict = call.excinfo.traceback[-1].frame.f_globals
+
+            # filter python internals and pytest internals
+            globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("__")}
+            globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("@")}
+
+            # filter test functions
+            test_names = self.node_map[report.location[0]]
+            globals_dict = {k: v for k, v in globals_dict.items() if k not in test_names}
+
+            # get local namespace
             locals_dict = call.excinfo.traceback[-1].locals
             locals_dict = {k: v for k, v in locals_dict.items() if not k.startswith("@")}
+
+            namespace = {"_callinfo": call, **globals_dict, **locals_dict}
+
             try:
                 CONFIG.argv["cli"] = "console"
-                shell = Console(self.project, extra_locals={"_callinfo": call, **locals_dict})
+                shell = Console(self.project, extra_locals=namespace)
                 shell.interact(
                     banner=f"\nInteractive mode enabled. Use quit() to continue running tests.",
                     exitmsg="",
