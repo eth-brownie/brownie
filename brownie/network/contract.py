@@ -58,6 +58,10 @@ class _ContractBase:
         self._build = build.copy()
         self._sources = sources
         self.topics = _get_topics(self.abi)
+        self.selectors = {
+            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+        }
+        # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
         self.signatures = {
             i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
         }
@@ -79,7 +83,7 @@ class _ContractBase:
 
     def get_method(self, calldata: str) -> Optional[str]:
         sig = calldata[:10].lower()
-        return next((k for k, v in self.signatures.items() if v == sig), None)
+        return self.selectors.get(sig)
 
 
 class ContractContainer(_ContractBase):
@@ -320,13 +324,11 @@ class _DeployedContractBase(_ContractBase):
                 self._check_and_set(abi["name"], fn)
                 continue
 
+            # special logic to handle function overloading
             if not hasattr(self, abi["name"]):
                 overloaded = OverloadedMethod(address, name, owner)
                 self._check_and_set(abi["name"], overloaded)
-
-            key = ",".join(i["type"] for i in abi["inputs"]).replace("256", "")
-            fn = _get_method_object(address, abi, name, owner, natspec)
-            getattr(self, abi["name"]).methods[key] = fn
+            getattr(self, abi["name"])._add_fn(abi, natspec)
 
     def _check_and_set(self, name: str, obj: Any) -> None:
         if hasattr(self, name):
@@ -360,6 +362,18 @@ class _DeployedContractBase(_ContractBase):
         if super().__getattribute__("_reverted"):
             raise ContractNotFound("This contract no longer exists.")
         return super().__getattribute__(name)
+
+    def get_method_object(self, calldata: str) -> Optional["_ContractMethod"]:
+        """
+        Given a calldata hex string, returns a `ContractMethod` object.
+        """
+        sig = calldata[:10].lower()
+        if sig not in self.selectors:
+            return None
+        fn = getattr(self, self.selectors[sig], None)
+        if isinstance(fn, OverloadedMethod):
+            return next((v for v in fn.methods.values() if v.signature == sig), None)
+        return fn
 
     def balance(self) -> Wei:
         """Returns the current ether balance of the contract, in wei."""
@@ -721,10 +735,31 @@ class OverloadedMethod:
         self._owner = owner
         self.methods: Dict = {}
 
+    def _add_fn(self, abi: Dict, natspec: Dict) -> None:
+        fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
+        key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
+        self.methods[key] = fn
+
+    def _get_fn_from_args(self, args: Tuple) -> "_ContractMethod":
+        input_length = len(args)
+        if args and isinstance(args[-1], dict):
+            input_length -= 1
+        keys = [i for i in self.methods if len(i) == input_length]
+        if not keys:
+            raise ValueError("No function matching the given number of arguments")
+        if len(keys) > 1:
+            raise ValueError(
+                f"Contract has more than one function '{self._name}' requiring "
+                f"{input_length} arguments. You must explicitly declare which function "
+                f"you are calling, e.g. {self._name}['{','.join(keys[0])}'](*args)"
+            )
+        return self.methods[keys[0]]
+
     def __getitem__(self, key: Union[Tuple, str]) -> "_ContractMethod":
-        if isinstance(key, tuple):
-            key = ",".join(key)
-        key = key.replace("256", "").replace(", ", ",")
+        if isinstance(key, str):
+            key = tuple(i.strip() for i in key.split(","))
+
+        key = tuple(i.replace("256", "") for i in key)
         return self.methods[key]
 
     def __repr__(self) -> str:
@@ -732,6 +767,70 @@ class OverloadedMethod:
 
     def __len__(self) -> int:
         return len(self.methods)
+
+    def __call__(self, *args: Tuple) -> Any:
+        fn = self._get_fn_from_args(args)
+        return fn(*args)  # type: ignore
+
+    def call(self, *args: Tuple) -> Any:
+        """
+        Call the contract method without broadcasting a transaction.
+
+        The specific function called is chosen based on the number of
+        arguments given. If more than one function exists with this number
+        of arguments, a `ValueError` is raised.
+
+        Arguments
+        ---------
+        *args:
+            Contract method inputs. You can optionally provide a
+            dictionary of transaction properties as the last arg.
+
+        Returns
+        -------
+            Contract method return value(s).
+        """
+        fn = self._get_fn_from_args(args)
+        return fn.call(*args)
+
+    def transact(self, *args: Tuple) -> TransactionReceiptType:
+        """
+        Broadcast a transaction that calls this contract method.
+
+        The specific function called is chosen based on the number of
+        arguments given. If more than one function exists with this number
+        of arguments, a `ValueError` is raised.
+
+        Arguments
+        ---------
+        *args
+            Contract method inputs. You can optionally provide a
+            dictionary of transaction properties as the last arg.
+
+        Returns
+        -------
+        TransactionReceipt
+            Object representing the broadcasted transaction.
+        """
+        fn = self._get_fn_from_args(args)
+        return fn.transact(*args)
+
+    def encode_input(self, *args: Tuple) -> Any:
+        """
+        Generate encoded ABI data to call the method with the given arguments.
+
+        Arguments
+        ---------
+        *args
+            Contract method inputs
+
+        Returns
+        -------
+        str
+            Hexstring of encoded ABI data
+        """
+        fn = self._get_fn_from_args(args)
+        return fn.encode_input(*args)
 
 
 class _ContractMethod:
@@ -775,14 +874,19 @@ class _ContractMethod:
         _print_natspec(self.natspec)
 
     def call(self, *args: Tuple) -> Any:
-        """Calls the contract method without broadcasting a transaction.
+        """
+        Call the contract method without broadcasting a transaction.
 
-        Args:
-            *args: Contract method inputs. You can optionally provide a
-                   dictionary of transaction properties as the last arg.
+        Arguments
+        ---------
+        *args:
+            Contract method inputs. You can optionally provide a
+            dictionary of transaction properties as the last arg.
 
-        Returns:
-            Contract method return value(s)."""
+        Returns
+        -------
+            Contract method return value(s).
+        """
 
         args, tx = _get_tx(self._owner, args)
         if tx["from"]:
@@ -795,14 +899,20 @@ class _ContractMethod:
         return self.decode_output(data)
 
     def transact(self, *args: Tuple) -> TransactionReceiptType:
-        """Broadcasts a transaction that calls this contract method.
+        """
+        Broadcast a transaction that calls this contract method.
 
-        Args:
-            *args: Contract method inputs. You can optionally provide a
-                   dictionary of transaction properties as the last arg.
+        Arguments
+        ---------
+        *args:
+            Contract method inputs. You can optionally provide a
+            dictionary of transaction properties as the last arg.
 
-        Returns:
-            TransactionReceipt instance."""
+        Returns
+        -------
+        TransactionReceipt
+            Object representing the broadcasted transaction.
+        """
 
         args, tx = _get_tx(self._owner, args)
         if not tx["from"]:
@@ -821,13 +931,19 @@ class _ContractMethod:
         )
 
     def encode_input(self, *args: Tuple) -> str:
-        """Returns encoded ABI data to call the method with the given arguments.
+        """
+        Generate encoded ABI data to call the method with the given arguments.
 
-        Args:
-            *args: Contract method inputs
+        Arguments
+        ---------
+        *args
+            Contract method inputs
 
-        Returns:
-            Hexstring of encoded ABI data."""
+        Returns
+        -------
+        str
+            Hexstring of encoded ABI data
+        """
         data = format_input(self.abi, args)
         types_list = get_type_strings(self.abi["inputs"])
         return self.signature + eth_abi.encode_abi(types_list, data).hex()
@@ -848,43 +964,63 @@ class _ContractMethod:
 
 
 class ContractTx(_ContractMethod):
+    """
+    A public payable or non-payable contract method.
 
-    """A public payable or non-payable contract method.
-
-    Args:
-        abi: Contract ABI specific to this method.
-        signature: Bytes4 method signature."""
+    Attributes
+    ----------
+    abi : dict
+        Contract ABI specific to this method.
+    signature : str
+        Bytes4 method signature.
+    """
 
     def __call__(self, *args: Tuple) -> TransactionReceiptType:
-        """Broadcasts a transaction that calls this contract method.
+        """
+        Broadcast a transaction that calls this contract method.
 
-        Args:
-            *args: Contract method inputs. You can optionally provide a
-                   dictionary of transaction properties as the last arg.
+        Arguments
+        ---------
+        *args:
+            Contract method inputs. You can optionally provide a
+            dictionary of transaction properties as the last arg.
 
-        Returns:
-            TransactionReceipt instance."""
+        Returns
+        -------
+        TransactionReceipt
+            Object representing the broadcasted transaction.
+        """
 
         return self.transact(*args)
 
 
 class ContractCall(_ContractMethod):
 
-    """A public view or pure contract method.
+    """
+    A public view or pure contract method.
 
-    Args:
-        abi: Contract ABI specific to this method.
-        signature: Bytes4 method signature."""
+    Attributes
+    ----------
+    abi : dict
+        Contract ABI specific to this method.
+    signature : str
+        Bytes4 method signature.
+    """
 
     def __call__(self, *args: Tuple) -> Callable:
-        """Calls the contract method without broadcasting a transaction.
+        """
+        Call the contract method without broadcasting a transaction.
 
-        Args:
-            *args: Contract method inputs. You can optionally provide a
-                   dictionary of transaction properties as the last arg.
+        Arguments
+        ---------
+        *args:
+            Contract method inputs. You can optionally provide a
+            dictionary of transaction properties as the last arg.
 
-        Returns:
-            Contract method return value(s)."""
+        Returns
+        -------
+            Contract method return value(s).
+        """
 
         if not CONFIG.argv["always_transact"]:
             return self.call(*args)
