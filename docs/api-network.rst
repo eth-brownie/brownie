@@ -1099,6 +1099,15 @@ OverloadedMethod
         >>> erc223.transfer['address', 'uint256', 'uint256']
         <ContractTx object 'transfer(address,uint256,uint256)'>
 
+    When a contract only contains one method with the given name and number of arguements, ``OverloadedMethod`` may be called directly. When more than one method is present, a ``ValueError`` is raised.
+
+    .. code-block:: python
+
+        >>> erc223.transfer(accounts[0], "1 ether")
+        Transaction sent: 0x8dbf15878104571669f9843c18afc40529305ddb842f94522094454dcde22186
+        ERC223.transfer confirmed - block: 2   gas used: 50985 (100.00%)
+        <Transaction object '0x8dbf15878104571669f9843c18afc40529305ddb842f94522094454dcde22186'>
+
 InterfaceContainer
 ------------------
 
