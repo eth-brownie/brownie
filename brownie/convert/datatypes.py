@@ -286,9 +286,16 @@ class ReturnValue(tuple):
         for i in range(len(values)):
             if isinstance(values[i], (tuple, list)) and not isinstance(values[i], ReturnValue):
                 if abi is not None and "components" in abi[i]:
-                    values[i] = ReturnValue(values[i], abi[i]["components"])
+                    if abi[i]["type"] == "tuple":
+                        # tuple
+                        values[i] = ReturnValue(values[i], abi[i]["components"])
+                    else:
+                        # array of tuples
+                        values[i] = ReturnValue(values[i], [abi[i]] * len(values[i]))
                 else:
+                    # array
                     values[i] = ReturnValue(values[i])
+
         self = super().__new__(cls, values)  # type: ignore
         self._abi = abi or []
         self._dict = {i["name"]: values[c] for c, i in enumerate(self._abi) if i["name"]}
