@@ -19,3 +19,10 @@ def test_balance(accounts):
     balance = accounts[0].balance()
     assert type(balance) is Wei
     assert balance == "100 ether"
+
+
+def test_gas_paid(accounts):
+    accounts[0].transfer(accounts[1], 10000)
+    accounts[0].transfer(accounts[2], 10000)
+
+    assert accounts[0].gas_used == 42000
