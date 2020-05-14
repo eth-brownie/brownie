@@ -10,6 +10,8 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.history import FileHistory
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.keys import Keys
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from pygments import highlight
@@ -134,14 +136,21 @@ class Console(code.InteractiveConsole):
             kwargs["auto_suggest"] = TestAutoSuggest(locals_dict)
         if console_settings["completions"]:
             kwargs["completer"] = ConsoleCompleter(locals_dict)
+
+        # add binding for multi-line pastes
+        key_bindings = KeyBindings()
+        key_bindings.add(Keys.BracketedPaste)(self.paste_event)
+        self.compile_mode = "single"
+
         self.prompt_session = PromptSession(
             history=SanitizedFileHistory(history_file, locals_dict),
             input=self.prompt_input,
+            key_bindings=key_bindings,
             **kwargs,
         )
 
         if console_settings["auto_suggest"]:
-            # remove the builting binding for auto-suggest acceptance
+            # remove the builtin binding for auto-suggest acceptance
             key_bindings = self.prompt_session.app.key_bindings
             accept_binding = key_bindings.get_bindings_for_keys(("right",))[0]
             key_bindings._bindings2.remove(accept_binding.handler)
@@ -175,6 +184,15 @@ class Console(code.InteractiveConsole):
     def raw_input(self, prompt=""):
         return self.prompt_session.prompt(prompt)
 
+    def paste_event(self, event):
+        data = event.data
+        data = data.replace("\r\n", "\n")
+        data = data.replace("\r", "\n")
+
+        if "\n" in data:
+            self.compile_mode = "exec"
+        event.current_buffer.insert_text(data)
+
     def showsyntaxerror(self, filename):
         tb = color.format_tb(sys.exc_info()[1])
         self.write(tb + "\n")
@@ -184,8 +202,11 @@ class Console(code.InteractiveConsole):
         self.write(tb + "\n")
 
     def runsource(self, source, filename="<input>", symbol="single"):
+        mode = self.compile_mode
+        self.compile_mode = "single"
+
         try:
-            code = self.compile(source, filename, "single")
+            code = self.compile(source, filename, mode)
         except (OverflowError, SyntaxError, ValueError):
             self.showsyntaxerror(filename)
             return False
