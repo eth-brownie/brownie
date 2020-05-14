@@ -3,6 +3,7 @@
 import pytest
 
 from brownie.convert.datatypes import EthAddress, HexString, ReturnValue, Wei
+from brownie.project import compile_source
 
 
 @pytest.fixture
@@ -122,3 +123,55 @@ def test_hashable():
 def test_decimals(vypertester):
     ret = vypertester.fixedType("1.234", ["-42", "3.1337"])
     assert ret == ["1.234", "-42", "3.1337"]
+
+
+def test_dynamic_tuple_array(accounts):
+    code = """
+pragma solidity ^0.6.0;
+pragma experimental ABIEncoderV2;
+
+contract Test {
+
+struct Foo { uint256 a; }
+
+Foo[] bar;
+
+function foo() public returns (Foo[] memory a) {
+    bar.push(Foo(1));
+    bar.push(Foo(6));
+    return bar;
+}
+
+}
+"""
+    contract = compile_source(code).Test.deploy({"from": accounts[0]})
+
+    assert contract.foo.call() == [(1,), (6,)]
+
+
+def test_fixed_tuple_array(accounts):
+    code = """
+pragma solidity ^0.6.0;
+pragma experimental ABIEncoderV2;
+
+contract Test {
+
+struct Foo { uint256 a; string b; }
+
+Foo[2][2] bar;
+
+function foo() public returns (Foo[2][2] memory, Foo[2] memory) {
+    bar[0][0].a = 42;
+    bar[0][0].b = "hello";
+    bar[1][1].a = 69;
+    return (bar, bar[1]);
+}
+
+}
+"""
+    contract = compile_source(code).Test.deploy({"from": accounts[0]})
+
+    assert contract.foo.call() == [
+        ([(42, "hello"), (0, "")], [(0, ""), (69, "")]),
+        [(0, ""), (69, "")],
+    ]
