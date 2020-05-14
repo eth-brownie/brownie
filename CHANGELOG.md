@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.8.5](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.5) - 2020-05-14
+### Added
+- `Account.gas_used` ([#518](https://github.com/iamdefinitelyahuman/brownie/pull/518))
+
+### Fixed
+- Decoding error with arrays of tuples ([#517](https://github.com/iamdefinitelyahuman/brownie/pull/517))
+- Allow pasting multiple commands into the console ([#519](https://github.com/iamdefinitelyahuman/brownie/pull/519))
+- Minor pytest fixes ([#521](https://github.com/iamdefinitelyahuman/brownie/pull/521))
+
 ## [1.8.4](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.4) - 2020-05-09
 ### Added
 - `Wei.to` for unit conversion ([#501](https://github.com/iamdefinitelyahuman/brownie/pull/501))
