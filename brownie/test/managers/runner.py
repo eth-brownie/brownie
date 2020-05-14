@@ -19,14 +19,18 @@ from brownie.utils import color
 from .base import PytestBrownieBase
 from .utils import convert_outcome
 
+SCOPE_ORDER = ("session", "package", "module", "class", "function")
+
 
 def _make_fixture_execute_first(metafunc, name, scope):
     fixtures = metafunc.fixturenames
+
+    scopes = SCOPE_ORDER[SCOPE_ORDER.index(scope) :]
     if name in fixtures:
         fixtures.remove(name)
         defs = metafunc._arg2fixturedefs
         idx = next(
-            (fixtures.index(i) for i in fixtures if i in defs and defs[i][0].scope == scope),
+            (fixtures.index(i) for i in fixtures if i in defs and defs[i][0].scope in scopes),
             len(fixtures),
         )
         fixtures.insert(idx, name)
