@@ -101,9 +101,6 @@ class PytestBrownieFixtures:
 
         yield package_loader
 
-        for project in _open_projects.values():
-            project.close(raises=False)
-
     @pytest.fixture
     def no_call_coverage(self):
         """

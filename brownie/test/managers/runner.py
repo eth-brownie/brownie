@@ -285,7 +285,9 @@ class PytestBrownieRunner(PytestBrownieBase):
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
         coverage_eval = coverage.get_merged_coverage_eval()
         self._sessionfinish_coverage(coverage_eval)
-        self.project.close()
+
+        for project in brownie.project.get_loaded_projects():
+            project.close(raises=False)
 
 
 class PytestBrownieXdistRunner(PytestBrownieRunner):
