@@ -225,6 +225,15 @@ Account Attributes
         >>> accounts[0].address
         '0x7Ebaa12c5d1EE7fD498b51d4F9278DC45f8D627A'
 
+.. py:attribute:: Account.gas_used
+
+    The cumulative gas amount paid for transactions from this account.
+
+    .. code-block:: python
+
+        >>> accounts[0].gas_used
+        21000
+
 .. py:attribute:: Account.nonce
 
     The current nonce of the address.
@@ -232,7 +241,7 @@ Account Attributes
     .. code-block:: python
 
         >>> accounts[0].nonce
-        0
+        1
 
 Account Methods
 ***************
