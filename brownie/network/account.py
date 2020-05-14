@@ -17,10 +17,13 @@ from brownie.convert import Wei, to_address
 from brownie.exceptions import IncompatibleEVMVersion, UnknownAccount, VirtualMachineError
 
 from .rpc import Rpc, _revert_register
+from .state import TxHistory
 from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
 
 __tracebackhide__ = True
+
+history = TxHistory()
 rpc = Rpc()
 
 
@@ -196,6 +199,11 @@ class PublicKeyAccount:
         """Returns the current balance at the address, in wei."""
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
+
+    @property
+    def gas_used(self) -> int:
+        """Returns the cumulative gas amount paid from this account."""
+        return sum(i.gas_used for i in history.from_sender(self.address))
 
     @property
     def nonce(self) -> int:
