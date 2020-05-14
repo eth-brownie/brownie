@@ -6,6 +6,7 @@ import pytest
 from xdist.scheduler import LoadFileScheduling
 
 from brownie._config import CONFIG
+from brownie.project import get_loaded_projects
 from brownie.test import coverage
 
 from .base import PytestBrownieBase
@@ -44,4 +45,6 @@ class PytestBrownieMaster(PytestBrownieBase):
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
         coverage_eval = coverage.get_merged_coverage_eval(report["tx"])
         self._sessionfinish_coverage(coverage_eval)
-        self.project.close()
+
+        for project in get_loaded_projects():
+            project.close(raises=False)
