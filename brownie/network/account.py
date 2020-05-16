@@ -299,7 +299,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
             undo_thread.start()
 
         if receipt.status != 1:
+            receipt._raise_if_reverted()
             return receipt
+
         add_thread.join()
         return contract.at(receipt.contract_address)
 
@@ -378,7 +380,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 daemon=True,
             )
             undo_thread.start()
-
+        receipt._raise_if_reverted()
         return receipt
 
 
@@ -458,4 +460,5 @@ def _raise_or_return_tx(exc: ValueError) -> Any:
     except SyntaxError:
         raise exc
     except Exception:
+        print("hrmmmmmm")
         raise VirtualMachineError(exc) from None

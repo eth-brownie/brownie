@@ -181,8 +181,6 @@ class TransactionReceipt:
         confirm_thread.start()
         try:
             confirm_thread.join()
-            if CONFIG.mode == "console":
-                return
             # if coverage evaluation is active, evaluate the trace
             if (
                 CONFIG.argv["coverage"]
@@ -190,17 +188,6 @@ class TransactionReceipt:
                 and self.trace
             ):
                 self._expand_trace()
-            if not self.status:
-                if self._revert_msg is None:
-                    # no revert message and unable to check dev string - have to get trace
-                    self._expand_trace()
-                if self.contract_address:
-                    source = ""
-                else:
-                    source = (
-                        self._traceback_string() if CONFIG.argv["revert"] else self._error_string(1)
-                    )
-                raise VirtualMachineError({"message": self._revert_msg or "", "source": source})
         except KeyboardInterrupt:
             if CONFIG.mode != "console":
                 raise
@@ -277,6 +264,20 @@ class TransactionReceipt:
         if self.status == -1:
             return None
         return web3.eth.getBlock(self.block_number)["timestamp"]
+
+    def _raise_if_reverted(self) -> None:
+        if self.status or CONFIG.mode == "console":
+            return
+        if self._revert_msg is None:
+            # no revert message and unable to check dev string - have to get trace
+            self._expand_trace()
+        if self.contract_address:
+            source = ""
+        elif CONFIG.argv["revert"]:
+            source = self._traceback_string()
+        else:
+            source = self._error_string(1)
+        raise VirtualMachineError({"message": self._revert_msg or "", "source": source})
 
     def _await_confirmation(self, silent: bool) -> None:
         # await tx showing in mempool
