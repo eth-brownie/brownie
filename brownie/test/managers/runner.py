@@ -241,20 +241,27 @@ class PytestBrownieRunner(PytestBrownieBase):
 
             tw = TerminalWriter()
             report.longrepr.toterminal(tw)
+            location = report.location[0]
+
+            # find last traceback frame within the active test
+            traceback = next(
+                (i for i in call.excinfo.traceback[::-1] if i.path.strpath.endswith(location)),
+                call.excinfo.traceback[-1],
+            )
 
             # get global namespace
-            globals_dict = call.excinfo.traceback[-1].frame.f_globals
+            globals_dict = traceback.frame.f_globals
 
             # filter python internals and pytest internals
             globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("__")}
             globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("@")}
 
             # filter test functions
-            test_names = self.node_map[report.location[0]]
+            test_names = self.node_map[location]
             globals_dict = {k: v for k, v in globals_dict.items() if k not in test_names}
 
             # get local namespace
-            locals_dict = call.excinfo.traceback[-1].locals
+            locals_dict = traceback.locals
             locals_dict = {k: v for k, v in locals_dict.items() if not k.startswith("@")}
 
             namespace = {"_callinfo": call, **globals_dict, **locals_dict}
