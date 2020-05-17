@@ -7,13 +7,14 @@ from py.path import local
 
 from brownie._config import CONFIG
 from brownie.project.scripts import _get_ast_hash
-from brownie.test import coverage, output
+from brownie.test import _apply_given_wrapper, coverage, output
 
 from .utils import convert_outcome
 
 
 class PytestBrownieBase:
     def __init__(self, config, project):
+        _apply_given_wrapper()
 
         self.config = config
         # required when brownie project is in a subfolder of another project
