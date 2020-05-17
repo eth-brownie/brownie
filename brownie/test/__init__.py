@@ -6,6 +6,7 @@ import hypothesis
 from hypothesis.errors import HypothesisDeprecationWarning
 
 from brownie import network
+from brownie.exceptions import BrownieTestWarning
 
 from .stateful import state_machine  # NOQA: F401
 from .strategies import strategy  # NOQA: F401
@@ -30,7 +31,7 @@ def given(*given_args, **given_kwargs):
 
         # hypothesis.given must wrap the target test to correctly
         # impersonate the call signature for pytest
-        hy_given = hypothesis.given(*given_args, **given_kwargs)
+        hy_given = _hypothesis_given(*given_args, **given_kwargs)
         hy_wrapped = hy_given(test)
 
         if hasattr(hy_wrapped, "hypothesis"):
@@ -38,3 +39,19 @@ def given(*given_args, **given_kwargs):
         return hy_wrapped
 
     return outer_wrapper
+
+
+def _given_warning_wrapper(*args, **kwargs):
+    warnings.warn(
+        "Directly importing `hypothesis.given` may result in improper isolation"
+        " between test runs. You should import `brownie.test.given` instead.",
+        BrownieTestWarning,
+    )
+    return _hypothesis_given(*args, **kwargs)
+
+
+def _apply_given_wrapper():
+    hypothesis.given = _given_warning_wrapper
+
+
+_hypothesis_given = hypothesis.given
