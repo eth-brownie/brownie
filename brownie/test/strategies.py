@@ -7,7 +7,7 @@ from hypothesis import strategies as st
 from hypothesis.strategies import SearchStrategy
 from hypothesis.strategies._internal.deferred import DeferredStrategy
 
-from brownie import network
+from brownie import network, project
 from brownie.convert import Fixed, Wei
 from brownie.convert.utils import get_int_bounds
 
@@ -18,8 +18,12 @@ NumberType = Union[float, int, None]
 
 
 class _DeferredStrategyRepr(DeferredStrategy):
+    def __init__(self, fn: Callable, repr_target: str) -> None:
+        super().__init__(fn)
+        self._repr_target = repr_target
+
     def __repr__(self):
-        return "sampled_from(accounts)"
+        return f"sampled_from({self._repr_target})"
 
 
 def _exclude_filter(fn: Callable) -> Callable:
@@ -73,7 +77,7 @@ def _decimal_strategy(
 
 @_exclude_filter
 def _address_strategy() -> SearchStrategy:
-    return _DeferredStrategyRepr(lambda: st.sampled_from(list(network.accounts)))
+    return _DeferredStrategyRepr(lambda: st.sampled_from(list(network.accounts)), "accounts")
 
 
 @_exclude_filter
@@ -134,6 +138,17 @@ def _array_strategy(
 def _tuple_strategy(abi_type: TupleType) -> SearchStrategy:
     strategies = [strategy(i.to_type_str()) for i in abi_type.components]
     return st.tuples(*strategies)
+
+
+def contract_strategy(contract_name: str) -> SearchStrategy:
+    def _contract_deferred(name):
+        for proj in project.get_loaded_projects():
+            if name in proj.dict():
+                return st.sampled_from(list(proj[name]))
+
+        raise NameError(f"Contract '{name}' does not exist in any active projects")
+
+    return _DeferredStrategyRepr(lambda: _contract_deferred(contract_name), contract_name)
 
 
 def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:

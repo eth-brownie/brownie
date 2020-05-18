@@ -9,7 +9,7 @@ from brownie import network
 from brownie.exceptions import BrownieTestWarning
 
 from .stateful import state_machine  # NOQA: F401
-from .strategies import strategy  # NOQA: F401
+from .strategies import contract_strategy, strategy  # NOQA: F401
 
 # hypothesis warns against combining function-scoped fixtures with @given
 # but in brownie this is a documented and useful behaviour
