@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
-import json
 import sys
-from typing import Any, Type
+from typing import Optional, Type
 
 import psutil
+import yaml
 
 # network
 
@@ -53,23 +53,58 @@ class MainnetUndefined(Exception):
 
 class VirtualMachineError(Exception):
 
-    """Raised when a call to a contract causes an EVM exception.
+    """
+    Raised when a call to a contract causes an EVM exception.
 
-    Attributes:
-        revert_msg: The returned error string, if any.
-        source: The contract source code where the revert occured, if available."""
+    Attributes
+    ----------
+    message : str
+        The full error message received from the RPC client.
+    revert_msg : str
+        The returned error string, if any.
+    revert_type : str
+        The error type.
+    pc : int
+        The program counter where the error was raised.
+    txid : str
+        The transaction ID that raised the error.
+    """
 
-    def __init__(self, exc: Any) -> None:
-        if type(exc) is not dict:
+    def __init__(self, exc: ValueError) -> None:
+        try:
+            exc = yaml.safe_load(str(exc))
+        except Exception:
+            pass
+
+        if isinstance(exc, dict) and "message" in exc:
+            self.message: str = exc["message"]
             try:
-                exc = eval(str(exc))
-            except SyntaxError:
-                exc = {"message": str(exc)}
-        self.revert_msg = msg = exc["message"]
-        self.source = exc.get("source", "")
-        if self.source:
+                txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
+            except StopIteration:
+                return
+
+            self.txid: str = txid
+            self.revert_type: str = data["error"]
+            self.revert_msg: Optional[str] = data.get("reason")
+            self.pc: Optional[str] = data.get("program_counter")
+            if self.revert_type == "revert":
+                self.pc -= 1
+        else:
+            self.message = str(exc)
+
+    def __str__(self) -> str:
+        if not hasattr(self, "revert_type"):
+            return self.message
+        msg = self.revert_type
+        if self.revert_msg:
+            msg = f"{msg}: {self.revert_msg}"
+        if hasattr(self, "source"):
             msg = f"{msg}\n{self.source}"
-        super().__init__(msg)
+        return msg
+
+    def _with_source(self, source: str) -> "VirtualMachineError":
+        self.source = source
+        return self
 
 
 class EventLookupError(LookupError):
@@ -101,7 +136,7 @@ class ProjectNotFound(Exception):
 
 class CompilerError(Exception):
     def __init__(self, e: Type[psutil.Popen]) -> None:
-        err = [i["formattedMessage"] for i in json.loads(e.stdout_data)["errors"]]
+        err = [i["formattedMessage"] for i in yaml.safe_load(e.stdout_data)["errors"]]
         super().__init__("Compiler returned the following errors:\n\n" + "\n".join(err))
 
 

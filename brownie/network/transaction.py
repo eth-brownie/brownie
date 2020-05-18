@@ -13,7 +13,7 @@ from web3.exceptions import TransactionNotFound
 
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
-from brownie.exceptions import RPCRequestError, VirtualMachineError
+from brownie.exceptions import RPCRequestError
 from brownie.project import build
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
@@ -265,7 +265,7 @@ class TransactionReceipt:
             return None
         return web3.eth.getBlock(self.block_number)["timestamp"]
 
-    def _raise_if_reverted(self) -> None:
+    def _raise_if_reverted(self, exc: Any) -> None:
         if self.status or CONFIG.mode == "console":
             return
         if self._revert_msg is None:
@@ -277,7 +277,7 @@ class TransactionReceipt:
             source = self._traceback_string()
         else:
             source = self._error_string(1)
-        raise VirtualMachineError({"message": self._revert_msg or "", "source": source})
+        raise exc.with_source(source)
 
     def _await_confirmation(self, silent: bool) -> None:
         # await tx showing in mempool
