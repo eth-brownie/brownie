@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.8.6](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.6) - 2020-05-19
+### Added
+- `contract_strategy` for drawing objects from a `ContractContainer` ([#528](https://github.com/iamdefinitelyahuman/brownie/pull/528))
+
+### Changed
+- Warn on direct import of `hypothesis.given` ([#526](https://github.com/iamdefinitelyahuman/brownie/pull/526))
+- Standardize revert exceptions between calls and transactions ([#527](https://github.com/iamdefinitelyahuman/brownie/pull/527))
+
+### Fixed
+- Ensure correct frame for locals and globals with pytest console debugging ([#523](https://github.com/iamdefinitelyahuman/brownie/pull/523))
+- Add failed tx's to undo buffer prior to raising ([#524](https://github.com/iamdefinitelyahuman/brownie/pull/524))
+
 ## [1.8.5](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.5) - 2020-05-14
 ### Added
 - `Account.gas_used` ([#518](https://github.com/iamdefinitelyahuman/brownie/pull/518))
