@@ -6,6 +6,8 @@ from typing import Optional, Type
 import psutil
 import yaml
 
+import brownie
+
 # network
 
 
@@ -87,8 +89,11 @@ class VirtualMachineError(Exception):
             self.revert_type: str = data["error"]
             self.revert_msg: Optional[str] = data.get("reason")
             self.pc: Optional[str] = data.get("program_counter")
+            self.source: str = ""
             if self.revert_type == "revert":
                 self.pc -= 1
+            if self.revert_msg is None and self.revert_type in ("revert", "invalid opcode"):
+                self.revert_msg = brownie.project.build._get_dev_revert(self.pc)
         else:
             self.message = str(exc)
 
@@ -98,12 +103,13 @@ class VirtualMachineError(Exception):
         msg = self.revert_type
         if self.revert_msg:
             msg = f"{msg}: {self.revert_msg}"
-        if hasattr(self, "source"):
+        if self.source:
             msg = f"{msg}\n{self.source}"
         return msg
 
-    def _with_source(self, source: str) -> "VirtualMachineError":
-        self.source = source
+    def _with_attr(self, **kwargs) -> "VirtualMachineError":
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         return self
 
 
