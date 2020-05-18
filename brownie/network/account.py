@@ -276,9 +276,14 @@ class _PrivateKeyAccount(PublicKeyAccount):
                     "data": HexBytes(data),
                 }
             )
-            revert_data = None
+            exc, revert_data = None, None
         except ValueError as e:
-            txid, revert_data = _raise_or_return_tx(e)
+            exc = VirtualMachineError(e)
+            if not hasattr(exc, "txid"):
+                raise exc from None
+            txid = exc.txid
+            revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
+
         receipt = TransactionReceipt(
             txid, self, name=contract._name + ".constructor", revert_data=revert_data
         )
@@ -299,7 +304,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             undo_thread.start()
 
         if receipt.status != 1:
-            receipt._raise_if_reverted()
+            receipt._raise_if_reverted(exc)
             return receipt
 
         add_thread.join()
@@ -368,9 +373,13 @@ class _PrivateKeyAccount(PublicKeyAccount):
             tx["to"] = to_address(str(to))
         try:
             txid = self._transact(tx)  # type: ignore
-            revert_data = None
+            exc, revert_data = None, None
         except ValueError as e:
-            txid, revert_data = _raise_or_return_tx(e)
+            exc = VirtualMachineError(e)
+            if not hasattr(exc, "txid"):
+                raise exc from None
+            txid = exc.txid
+            revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
 
         receipt = TransactionReceipt(txid, self, silent=silent, revert_data=revert_data)
         if rpc.is_active():
@@ -380,7 +389,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 daemon=True,
             )
             undo_thread.start()
-        receipt._raise_if_reverted()
+        receipt._raise_if_reverted(exc)
         return receipt
 
 
@@ -445,20 +454,3 @@ class LocalAccount(_PrivateKeyAccount):
         self._check_for_revert(tx)
         signed_tx = self._acct.sign_transaction(tx).rawTransaction  # type: ignore
         return web3.eth.sendRawTransaction(signed_tx)
-
-
-def _raise_or_return_tx(exc: ValueError) -> Any:
-    try:
-        data = eval(str(exc))["data"]
-        txid = next(i for i in data.keys() if i[:2] == "0x")
-        reason = data[txid]["reason"] if "reason" in data[txid] else None
-        pc = data[txid]["program_counter"]
-        revert_type = data[txid]["error"]
-        if revert_type == "revert":
-            pc -= 1
-        return txid, [reason, pc, revert_type]
-    except SyntaxError:
-        raise exc
-    except Exception:
-        print("hrmmmmmm")
-        raise VirtualMachineError(exc) from None

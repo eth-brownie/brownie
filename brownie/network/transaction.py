@@ -13,7 +13,7 @@ from web3.exceptions import TransactionNotFound
 
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
-from brownie.exceptions import RPCRequestError, VirtualMachineError
+from brownie.exceptions import RPCRequestError
 from brownie.project import build
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
@@ -164,14 +164,8 @@ class TransactionReceipt:
             self.contract_name, self.fn_name = name.split(".", maxsplit=1)
 
         # avoid querying the trace to get the revert string if possible
-        revert_msg, self._revert_pc, revert_type = revert_data or (None, None, None)
-        if revert_msg:
-            # revert message was returned
-            self._revert_msg = revert_msg
-        elif revert_type in ("revert", "invalid opcode"):
-            # check for dev revert string as a comment
-            self._revert_msg = build._get_dev_revert(self._revert_pc)
-        else:
+        self._revert_msg, self._revert_pc, revert_type = revert_data or (None, None, None)
+        if self._revert_msg is None and revert_type not in ("revert", "invalid_opcode"):
             self._revert_msg = revert_type
 
         # threaded to allow impatient users to ctrl-c to stop waiting in the console
@@ -265,7 +259,7 @@ class TransactionReceipt:
             return None
         return web3.eth.getBlock(self.block_number)["timestamp"]
 
-    def _raise_if_reverted(self) -> None:
+    def _raise_if_reverted(self, exc: Any) -> None:
         if self.status or CONFIG.mode == "console":
             return
         if self._revert_msg is None:
@@ -277,7 +271,7 @@ class TransactionReceipt:
             source = self._traceback_string()
         else:
             source = self._error_string(1)
-        raise VirtualMachineError({"message": self._revert_msg or "", "source": source})
+        raise exc._with_attr(source=source, revert_msg=self._revert_msg)
 
     def _await_confirmation(self, silent: bool) -> None:
         # await tx showing in mempool
