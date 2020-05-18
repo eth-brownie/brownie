@@ -33,8 +33,19 @@ To begin writing property-based tests, import the following two methods:
 
     from brownie.test import given, strategy
 
-* ``given`` is a decorator that converts a test function that accepts arguments into a randomized test. This is a thin wrapper around :func:`hypothesis.given <hypothesis.given>`, the API is identical.
-* ``strategy`` is a method for creating :ref:`test strategies<hypothesis-strategies>` based on ABI types.
+.. py:function:: brownie.test.given
+
+    A decorator for turning a test function that accepts arguments into a randomized test.
+
+    When using Brownie, this is the main entry point to property-based testing. This is a thin wrapper around :func:`hypothesis.given <hypothesis.given>`, the API is identical.
+
+    .. warning::
+
+        Be sure to import ``@given`` from Brownie and not directly from Hypothesis. Importing the function directly can cause issues with test isolation.
+
+.. py:function:: brownie.test.strategy
+
+    A method for creating :ref:`test strategies<hypothesis-strategies>` based on ABI types.
 
 A test using Hypothesis consists of two parts: A function that looks like a normal pytest test with some additional arguments, and a ``@given`` decorator that specifies how to those arguments are provided.
 
@@ -293,6 +304,34 @@ This strategy does not accept any keyword arguments.
 
     >>> strategy('(uint16,bool)').example()
     (47628, False)
+
+Contract Strategies
+-------------------
+
+The ``contract_strategy`` function is used to draw from :func:`ProjectContract <brownie.network.contract.ProjectContract>` objects within a :func:`ContractContainer <brownie.network.contract.ContractContainer>`.
+
+
+.. py:function:: brownie.test.contract_strategy(contract_name)
+
+    `Base strategy:` :func:`hypothesis.strategies.sampled_from <hypothesis.strategies.sampled_from>`
+
+    A strategy to access :func:`ProjectContract <brownie.network.contract.ProjectContract>` objects.
+
+    * ``contract_name``: The name of the contract, given as a string
+
+    .. code-block:: python
+
+        >>> ERC20
+        [<ERC20 Contract '0x3194cBDC3dbcd3E11a07892e7bA5c3394048Cc87'>, <ERC20 Contract '0x602C71e4DAC47a042Ee7f46E0aee17F94A3bA0B6'>]
+
+        >>> from brownie.test import contract_strategy
+        >>> contract_strategy('ERC20')
+        sampled_from(ERC20)
+
+        >>> contract_strategy('ERC20').example()
+        <ERC20 Contract '0x602C71e4DAC47a042Ee7f46E0aee17F94A3bA0B6'>
+
+
 
 Other Strategies
 ----------------
