@@ -10,6 +10,7 @@ from ens import ENS
 from web3 import HTTPProvider, IPCProvider
 from web3 import Web3 as _Web3
 from web3 import WebsocketProvider
+from web3.gas_strategies.rpc import rpc_gas_price_strategy
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie.convert import to_address
@@ -132,6 +133,7 @@ def _resolve_address(domain: str) -> str:
 
 
 web3 = Web3()
+web3.eth.setGasPriceStrategy(rpc_gas_price_strategy)
 
 try:
     with _get_path().open() as fp:
