@@ -13,6 +13,12 @@ from .utils import convert_outcome
 
 
 class PytestBrownieBase:
+    """
+    Brownie plugin base hooks.
+
+    Pytest hooks in this class are used in every testing mode.
+    """
+
     def __init__(self, config, project):
         _apply_given_wrapper()
 
@@ -114,6 +120,17 @@ class PytestBrownieBase:
             reporter.stats["warnings"] = warnings
 
     def pytest_report_teststatus(self, report):
+        """
+        Return result-category, shortletter and verbose word for status reporting.
+
+        With the `--update` flag, modifies the outcome of already-run skipped
+        tests so that the final report shows accurate pass/fail information.
+
+        Arguments
+        ---------
+        report : _pytest.reports.BaseReport
+            Report object for the current test.
+        """
         if report.when == "setup":
             self.skip[report.nodeid] = report.skipped
             if report.failed:
