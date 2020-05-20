@@ -223,7 +223,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
     def _gas_price(self) -> Wei:
         gas_price = CONFIG.active_network["settings"]["gas_price"]
         if isinstance(gas_price, bool) or gas_price in (None, "auto"):
-            return web3.eth.gasPrice
+            return web3.eth.generateGasPrice()
         return Wei(gas_price)
 
     def _check_for_revert(self, tx: Dict) -> None:
