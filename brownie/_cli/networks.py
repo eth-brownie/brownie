@@ -115,8 +115,10 @@ def _add(env, id_, *args):
             "id": id_,
             "cmd": args.pop("cmd"),
             "host": args.pop("host"),
-            "cmd_settings": args,
         }
+        if "timeout" in args:
+            new["timeout"] = args.pop("timeout")
+        new["cmd_settings"] = args
         _validate_network(new, DEV_REQUIRED)
         networks["development"].append(new)
     else:
