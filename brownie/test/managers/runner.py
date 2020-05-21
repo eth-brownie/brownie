@@ -99,6 +99,13 @@ class PytestPrinter:
 
 
 class PytestBrownieRunner(PytestBrownieBase):
+    """
+    Brownie plugin runner hooks.
+
+    Hooks in this class are loaded when running without xdist, and by xdist
+    worker processes.
+    """
+
     def __init__(self, config, project):
         super().__init__(config, project)
         brownie.reverts = RevertContextManager
@@ -108,25 +115,56 @@ class PytestBrownieRunner(PytestBrownieBase):
             self.printer = PytestPrinter()
 
     def pytest_generate_tests(self, metafunc):
+        """
+        Generate parametrized calls to a test function.
+
+        Ensure that `module_isolation` and `fn_isolation` are always the
+        first fixtures to run within their respective scopes.
+
+        Arguments
+        ---------
+        metafunc : _pytest.python.Metafunc
+            Used to inspect a test function generate tests according to test
+            configuration or values specified in the class or module where a
+            test function is defined.
+        """
         # module_isolation always runs before other module scoped functions
         _make_fixture_execute_first(metafunc, "module_isolation", "module")
         # fn_isolation always runs before other function scoped fixtures
         _make_fixture_execute_first(metafunc, "fn_isolation", "function")
 
     def pytest_collection_modifyitems(self, items):
+        """
+        Called after collection has been performed, may filter or re-order the
+        items in-place.
+
+        Determines which modules are isolated, and skips tests based on
+        the `--update` and `--stateful` flags as well as the `skip_coverage`
+        fixture.
+
+        Arguments
+        ---------
+        items : List[_pytest.nodes.Item]
+            List of item objects representing the collected tests
+        """
+
         stateful = self.config.getoption("--stateful")
         self._make_nodemap([i.nodeid for i in items])
 
-        # determine which modules are properly isolated
         tests = {}
         for i in items:
+            # apply skip_coverage
             if "skip_coverage" in i.fixturenames and CONFIG.argv["coverage"]:
                 i.add_marker("skip")
+
+            # apply --stateful flag
             if stateful is not None:
                 if stateful == "true" and "state_machine" not in i.fixturenames:
                     i.add_marker("skip")
                 elif stateful == "false" and "state_machine" in i.fixturenames:
                     i.add_marker("skip")
+
+            # determine which modules are isolated
             path = self._path(i.parent.fspath)
             if "module_isolation" not in i.fixturenames:
                 tests[path] = None
@@ -134,6 +172,7 @@ class PytestBrownieRunner(PytestBrownieBase):
             if path in tests and tests[path] is None:
                 continue
             tests.setdefault(path, []).append(i)
+
         isolated_tests = sorted(k for k, v in tests.items() if v)
         self.isolated = dict((self._path(i), set()) for i in isolated_tests)
 
@@ -166,7 +205,20 @@ class PytestBrownieRunner(PytestBrownieBase):
             self.node_map.setdefault(path, []).append(test)
 
     def pytest_runtest_protocol(self, item):
-        # does not run on master
+        """
+        Implements the runtest_setup/call/teardown protocol for the given test item,
+        including capturing exceptions and calling reporting hooks.
+
+        * With the `-s` flag, enable custom stdout handling
+        * When the test is from a new module, creates an entry in `self.results`
+          and populates it with previous outcomes (if available).
+
+        Arguments
+        ---------
+        item : _pytest.nodes.Item
+            Test item for which the runtest protocol is performed.
+        """
+        # enable custom stdout
         if self.printer:
             self.printer.start()
 
@@ -179,13 +231,30 @@ class PytestBrownieRunner(PytestBrownieBase):
                 self.results[path] = ["s"] * len(self.node_map[path])
 
     def pytest_runtest_logreport(self, report):
+        """
+        Process a test setup/call/teardown report relating to the respective phase
+        of executing a test.
+
+        * Updates isolation data for the given test module
+        * Stores the outcome of the test in `self.results`
+        * During teardown of the final test in a given module, resets coverage
+          data and records results for that module in `self.tests`
+
+        Arguments
+        ---------
+        report : _pytest.reports.BaseReport
+            Report object for the current test.
+        """
         path, test_id = self._test_id(report.nodeid)
+        idx = self.node_map[path].index(test_id)
+
+        # update module isolation data
         if path in self.isolated:
             self.isolated[path].update(
                 [i for i in _get_current_dependencies() if i in self.contracts]
             )
-        idx = self.node_map[path].index(test_id)
 
+        # save results for this test
         results = self.results[path]
         if report.when == "call":
             results[idx] = convert_outcome(report.outcome)
@@ -196,24 +265,40 @@ class PytestBrownieRunner(PytestBrownieBase):
         if report.when != "teardown" or idx < len(self.node_map[path]) - 1:
             return
 
-        isolated = False
-        if path in self.isolated:
-            isolated = sorted(self.isolated[path])
-
+        # record and reset coverage data
         txhash = coverage._get_active_txlist()
         coverage._clear_active_txlist()
         if not CONFIG.argv["coverage"] and (path in self.tests and self.tests[path]["coverage"]):
+            # if coverage is not active but we already have coverage data from
+            # a previous run, retain the previous data
             txhash = self.tests[path]["txhash"]
+
+        # save module test results
+        isolated = False
+        if path in self.isolated:
+            isolated = sorted(self.isolated[path])
+        is_cov = CONFIG.argv["coverage"] or (path in self.tests and self.tests[path]["coverage"])
         self.tests[path] = {
             "sha1": self._get_hash(path),
             "isolated": isolated,
-            "coverage": CONFIG.argv["coverage"]
-            or (path in self.tests and self.tests[path]["coverage"]),
+            "coverage": is_cov,
             "txhash": txhash,
             "results": "".join(self.results[path]),
         }
 
     def pytest_report_teststatus(self, report):
+        """
+        Return result-category, shortletter and verbose word for status reporting.
+        Stops at first non-None result.
+
+        With the `-s` flag, disables `PytestPrinter` prior to the teardown phase
+        of each test.
+
+        Arguments
+        ---------
+        report : _pytest.reports.BaseReport
+            Report object for the current test.
+        """
         if self.printer and report.when == "call":
             self.printer.finish(report.nodeid)
 
@@ -283,6 +368,14 @@ class PytestBrownieRunner(PytestBrownieBase):
                 capman.resume_global_capture()
 
     def pytest_sessionfinish(self):
+        """
+        Called after whole test run finished, right before returning the exit
+        status to the system.
+
+        * Stores test results in `build/tests.json`
+        * Generates coverage report and outputs results to console
+        * Closes all active projects
+        """
         self._sessionfinish("build/tests.json")
         if CONFIG.argv["gas"]:
             output._print_gas_profile()
@@ -302,6 +395,12 @@ class PytestBrownieRunner(PytestBrownieBase):
 
 
 class PytestBrownieXdistRunner(PytestBrownieRunner):
+    """
+    Brownie plugin xdist worker hooks.
+
+    Hooks in this class are loaded on worker processes when using xdist.
+    """
+
     def __init__(self, config, project):
         self.workerid = int("".join(i for i in config.workerinput["workerid"] if i.isdigit()))
         # TODO fix me
@@ -310,12 +409,33 @@ class PytestBrownieXdistRunner(PytestBrownieRunner):
         super().__init__(config, project)
 
     def pytest_collection_modifyitems(self, items):
-        # clear collection if isolation is not active
+        """
+        Called after collection has been performed, may filter or re-order the
+        items in-place.
+
+        If any tests do not use the `module_isolation` fixture, all tests are
+        discarded. This in turn causes `PytestBrownieMaster.pytest_sessionfinish`
+        to raise an exception notifying the user that xdist may only be used
+        when tests are properly isolated.
+
+        Arguments
+        ---------
+        items : List[_pytest.nodes.Item]
+            List of item objects representing the collected tests
+        """
         if next((i for i in items if "module_isolation" not in i.fixturenames), False):
             items.clear()
             return True
+
         super().pytest_collection_modifyitems(items)
 
     def pytest_sessionfinish(self):
+        """
+        Called after whole test run finished, right before returning the exit
+        status to the system.
+
+        Stores test results in `build/tests-{workerid}.json`. Each of these files
+        is then aggregated in `PytestBrownieMaster.pytest_sessionfinish`.
+        """
         self.tests = dict((k, v) for k, v in self.tests.items() if k in self.results)
         self._sessionfinish(f"build/tests-{self.workerid}.json")

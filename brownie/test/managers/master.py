@@ -13,11 +13,29 @@ from .base import PytestBrownieBase
 
 
 class PytestBrownieMaster(PytestBrownieBase):
+    """
+    Brownie plugin xdist master hooks.
+
+    Hooks in this class are loaded by the master process when using xdist.
+    """
+
     def pytest_xdist_make_scheduler(self, config, log):
-        # if using xdist, schedule according to file
+        """
+        Return a node scheduler implementation.
+
+        Uses file scheduling to ensure consistent test execution with module-level
+        isolation.
+        """
         return LoadFileScheduling(config, log)
 
     def pytest_xdist_node_collection_finished(self, ids):
+        """
+        Called by the master node when a node finishes collecting.
+
+        * Generates the node map
+        * Populates `self.results` with previous test results. For tests that
+          are executed by one of the runners, these results will be overwritten.
+        """
         # required because pytest_collection_modifyitems is not called by master
         self._make_nodemap(ids)
         for path in self.node_map:
@@ -27,6 +45,15 @@ class PytestBrownieMaster(PytestBrownieBase):
                 self.results[path] = ["s"] * len(self.node_map[path])
 
     def pytest_sessionfinish(self, session):
+        """
+        Called after whole test run finished, right before returning the exit
+        status to the system.
+
+        * Aggregates results from `build/tests-{workerid}.json` files and stores
+          them as `build/test.json`.
+        * Generates coverage report and outputs results to console
+        * Closes all active projects
+        """
         if session.testscollected == 0:
             raise pytest.UsageError(
                 "xdist workers failed to collect tests. Ensure all test cases are "
