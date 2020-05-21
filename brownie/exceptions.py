@@ -166,6 +166,10 @@ class InvalidPackage(Exception):
     pass
 
 
+class BrownieEnvironmentError(Exception):
+    pass
+
+
 class BrownieCompilerWarning(Warning):
     pass
 

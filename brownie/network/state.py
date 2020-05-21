@@ -6,6 +6,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
+from brownie.exceptions import BrownieEnvironmentError
 from brownie.project.build import DEPLOYMENT_KEYS
 from brownie.utils.sql import Cursor
 
@@ -138,7 +139,10 @@ def _get_deployment(
     elif alias:
         query = f"alias='{alias}'"
 
-    name = f"chain{CONFIG.active_network['chainid']}"
+    try:
+        name = f"chain{CONFIG.active_network['chainid']}"
+    except KeyError:
+        raise BrownieEnvironmentError("Functionality not available in local environment") from None
     try:
         row = cur.fetchone(f"SELECT * FROM {name} WHERE {query}")
     except OperationalError:
