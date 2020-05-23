@@ -155,6 +155,12 @@ class Console(code.InteractiveConsole):
             accept_binding = key_bindings.get_bindings_for_keys(("right",))[0]
             key_bindings._bindings2.remove(accept_binding.handler)
 
+        # this is required because of a pytest conflict when using the debugging console
+        if sys.platform == "win32":
+            import colorama
+
+            colorama.init()
+
         super().__init__(locals_dict)
 
     # console dir method, for simplified and colorful output
