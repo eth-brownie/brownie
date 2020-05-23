@@ -14,7 +14,12 @@ from hexbytes import HexBytes
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei, to_address
-from brownie.exceptions import IncompatibleEVMVersion, UnknownAccount, VirtualMachineError
+from brownie.exceptions import (
+    ContractNotFound,
+    IncompatibleEVMVersion,
+    UnknownAccount,
+    VirtualMachineError,
+)
 
 from .rpc import Rpc, _revert_register
 from .state import TxHistory
@@ -256,8 +261,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
             nonce: Nonce to use for the transaction.
 
         Returns:
-            * Contract instance if the transaction confirms
-            * TransactionReceipt if the transaction is pending or reverts"""
+            * Contract instance if the transaction confirms and the contract exists
+            * TransactionReceipt if the transaction is pending or reverts
+        """
 
         evm = contract._build["compiler"]["evm_version"]
         if rpc.is_active() and not rpc.evm_compatible(evm):
@@ -308,7 +314,11 @@ class _PrivateKeyAccount(PublicKeyAccount):
             return receipt
 
         add_thread.join()
-        return contract.at(receipt.contract_address)
+        try:
+            return contract.at(receipt.contract_address)
+        except ContractNotFound:
+            # if the contract self-destructed during deployment
+            return receipt
 
     def estimate_gas(self, to: "Accounts" = None, amount: int = 0, data: str = None) -> int:
         """Estimates the gas cost for a transaction. Raises VirtualMachineError
