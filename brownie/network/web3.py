@@ -41,9 +41,9 @@ class Web3(_Web3):
                 return
         except OSError:
             pass
-        if uri[:3] == "ws:":
+        if uri.startswith("ws"):
             self.provider = WebsocketProvider(uri)
-        elif uri[:4] == "http":
+        elif uri.startswith("http"):
 
             self.provider = HTTPProvider(uri, {"timeout": timeout})
         else:

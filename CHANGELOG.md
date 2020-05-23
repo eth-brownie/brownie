@@ -6,6 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Changed
+- Allow connections to `wss://` endpoints ([#542](https://github.com/iamdefinitelyahuman/brownie/pull/542))
 
 ## [1.8.6](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.6) - 2020-05-19
 ### Added
