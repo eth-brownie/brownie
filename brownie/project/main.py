@@ -181,6 +181,9 @@ class Project(_ProjectBase):
                 if test_path.exists():
                     test_path.unlink()
                 continue
+            if not self._path.joinpath(build_json["sourcePath"]).exists():
+                path.unlink()
+                continue
             self._build._add(build_json)
 
         interface_hashes = {}
