@@ -5,10 +5,14 @@ from pathlib import Path
 from brownie.test import output
 
 test_source = """
-def test_stuff(BrownieTester, accounts):
+def test_stuff(BrownieTester, EVMTester, accounts):
     c = accounts[0].deploy(BrownieTester, True)
     print('oh hai', 'mark')
-    c.doNothing({'from': accounts[0]})"""
+    c.doNothing({'from': accounts[0]})
+    c.sendEth({'from': accounts[0]})
+    d = accounts[0].deploy(EVMTester)
+    d.modulusByZero(5, 1, {'from': accounts[0]})
+    """
 
 
 def test_print_gas(plugintester, mocker):
