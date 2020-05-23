@@ -32,11 +32,37 @@ def _print_gas_profile():
     # Formats and prints a gas profile report to the console
     print("\n\nGas Profile:")
     gas = TxHistory().gas_profile
-    sorted_gas = sorted(gas.items(), key=lambda value: value[1]["avg"], reverse=True)
-    for fn_name, values in sorted_gas:
-        print(
-            f"{fn_name} -  avg: {values['avg']:.0f}  low: {values['low']}  high: {values['high']}"
+    sorted_gas = sorted(gas.items())
+    grouped_by_contract = {}
+    padding = {}
+    for full_name, values in sorted_gas:
+        contract, function = full_name.split(".", 1)
+
+        # calculate padding to get table-like formatting
+        padding["fn"] = max(padding.get("fn", 0), len(str(function)))
+        for k, v in values.items():
+            padding[k] = max(padding.get(k, 0), len(str(v)))
+
+        # group functions with payload by contract name
+        if contract in grouped_by_contract.keys():
+            grouped_by_contract[contract][function] = values
+        else:
+            grouped_by_contract[contract] = {function: values}
+
+    for contract, functions in grouped_by_contract.items():
+        print(f"{color('bright magenta')}{contract}{color} <Contract>")
+        sorted_functions = dict(
+            sorted(functions.items(), key=lambda value: value[1]["avg"], reverse=True)
         )
+        for ix, (fn_name, values) in enumerate(sorted_functions.items()):
+            prefix = "\u2514\u2500" if ix == len(functions) - 1 else "\u251c\u2500"
+            fn_name = fn_name.ljust(padding["fn"])
+            values["avg"] = int(values["avg"])
+            values = {k: str(v).rjust(padding[k]) for k, v in values.items()}
+            print(
+                f"   {prefix} {fn_name} -  avg: {values['avg']}"
+                f"  low: {values['low']}  high: {values['high']}"
+            )
 
 
 def _print_coverage_totals(build, coverage_eval):
