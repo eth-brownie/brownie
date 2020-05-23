@@ -379,6 +379,33 @@ Once you are finished, type ``quit()`` to continue with the next test.
 
 See :ref:`Inspecting and Debugging Transactions <core-transactions>` for more information on Brownie's debugging functionality.
 
+
+
+Evaluating Gas Usage
+--------------------
+
+To generate a gas profile report, add the ``--gas`` flag:
+
+::
+
+    $ brownie test --gas
+
+When the tests complete, a report will display:
+
+::
+
+        Gas Profile:
+        Token <Contract>
+           ├─ constructor   -  avg: 1099591  low: 1099591  high: 1099591
+           ├─ transfer      -  avg:   43017  low:   43017  high:   43017
+           └─ approve       -  avg:   21437  low:   21437  high:   21437
+        Storage <Contract>
+           ├─ constructor   -  avg:  211445  low:  211445  high:  211445
+           └─ set           -  avg:   21658  low:   21658  high:   21658
+
+
+
+
 Evaluating Coverage
 -------------------
 
