@@ -102,22 +102,6 @@ def test_cli_compile_and_analyze_projectnotfound_exception(cli_tester):
     assert cli_tester.mock_subroutines.call_count == 0
 
 
-def test_cli_run(cli_tester, testproject):
-    cli_tester.monkeypatch.setattr("brownie.run", cli_tester.mock_subroutines)
-
-    subtargets = ("brownie.network.connect",)
-    for target in subtargets:
-        cli_tester.monkeypatch.setattr(target, cli_tester.mock_subroutines)
-
-    args = ("testfile",)
-    kwargs = {"method_name": "main"}
-    parameters = (args, kwargs)
-    cli_tester.run_and_test_parameters("run testfile", parameters)
-
-    assert cli_tester.mock_subroutines.called is True
-    assert cli_tester.mock_subroutines.call_count == (len(subtargets) + 1)
-
-
 def test_cli_run_with_projectnotfound_exception(cli_tester):
     cli_tester.monkeypatch.setattr("brownie.run", cli_tester.mock_subroutines)
 
