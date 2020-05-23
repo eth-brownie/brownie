@@ -2,6 +2,7 @@
 
 import pytest
 
+from brownie import compile_source
 from brownie.exceptions import IncompatibleEVMVersion, VirtualMachineError
 from brownie.network.contract import ProjectContract
 from brownie.network.transaction import TransactionReceipt
@@ -122,3 +123,18 @@ def test_evm_version(BrownieTester, accounts, monkeypatch):
     monkeypatch.setattr("psutil.Popen.cmdline", lambda s: ["-k", "byzantium"])
     with pytest.raises(IncompatibleEVMVersion):
         accounts[0].deploy(BrownieTester, True)
+
+
+def test_selfdestruct_during_deploy(accounts):
+    foo = compile_source(
+        """
+pragma solidity 0.5.0;
+
+contract Foo {
+    constructor () public { selfdestruct(address(0)); }
+}
+    """
+    ).Foo
+
+    result = foo.deploy({"from": accounts[0]})
+    assert isinstance(result, TransactionReceipt)
