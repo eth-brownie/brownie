@@ -326,7 +326,7 @@ class PytestBrownieRunner(PytestBrownieBase):
 
             tw = TerminalWriter()
             report.longrepr.toterminal(tw)
-            location = report.location[0]
+            location = self._path(report.location[0])
 
             # find last traceback frame within the active test
             traceback = next(
