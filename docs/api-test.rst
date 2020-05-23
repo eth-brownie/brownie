@@ -181,7 +181,7 @@ Internal Methods
 
 .. py:method:: output._print_gas_profile()
 
-    Formats and prints a gas profile report. Report is sorted by gas amount used.
+    Formats and prints a gas profile report. The report is grouped by contracts and functions are sorted by average gas used.
 
 .. py:method:: output._print_coverage_totals(build, coverage_eval)
 
