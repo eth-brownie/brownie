@@ -6,10 +6,21 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.8.7](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.7) - 2020-05-23
+### Added
+- `--interactive` flag when using `brownie run` ([#547](https://github.com/iamdefinitelyahuman/brownie/pull/547))
+
 ### Changed
 - Allow connections to `wss://` endpoints ([#542](https://github.com/iamdefinitelyahuman/brownie/pull/542))
 - Improved `--gas` report ([#543](https://github.com/iamdefinitelyahuman/brownie/pull/543))
-- Fixed error on moving contracts ([#545](https://github.com/iamdefinitelyahuman/brownie/pull/545)) 
+- Adjust how gas prices are handled to allow use of web3 gas price API ([#530](https://github.com/iamdefinitelyahuman/brownie/pull/530))
+
+### Fixed
+- Compiler error when on moving contracts ([#545](https://github.com/iamdefinitelyahuman/brownie/pull/545))
+- Allow `timeout` as a field in `brownie networks` CLI ([#533](https://github.com/iamdefinitelyahuman/brownie/pull/533))
+- Issues with interactive debugging in Windows ([#544](https://github.com/iamdefinitelyahuman/brownie/pull/544))
+- Handle selfdestructed contract during deployment ([#546](https://github.com/iamdefinitelyahuman/brownie/pull/546))
 
 ## [1.8.6](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.6) - 2020-05-19
 ### Added
