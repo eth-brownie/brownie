@@ -6,6 +6,13 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+## [1.8.8](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.8) - 2020-05-24
+### Changed
+- Check `web3.eth.accounts` for new unlocked accounts when calling `Accounts.at` ([#551](https://github.com/iamdefinitelyahuman/brownie/pull/551))
+
+### Fixed
+- Apply timeout setting to all web3 provider types ([#549](https://github.com/iamdefinitelyahuman/brownie/pull/549))
+- `KeyError` when handling certain types of RPC errors ([#550](https://github.com/iamdefinitelyahuman/brownie/pull/550))
 
 ## [1.8.7](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.7) - 2020-05-23
 ### Added
