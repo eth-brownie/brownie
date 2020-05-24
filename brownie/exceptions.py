@@ -79,6 +79,9 @@ class VirtualMachineError(Exception):
             pass
 
         if isinstance(exc, dict) and "message" in exc:
+            if "data" not in exc:
+                raise ValueError(exc["message"]) from None
+
             self.message: str = exc["message"]
             try:
                 txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
@@ -95,7 +98,7 @@ class VirtualMachineError(Exception):
             if self.revert_msg is None and self.revert_type in ("revert", "invalid opcode"):
                 self.revert_msg = brownie.project.build._get_dev_revert(self.pc)
         else:
-            self.message = str(exc)
+            raise ValueError(str(exc)) from None
 
     def __str__(self) -> str:
         if not hasattr(self, "revert_type"):
