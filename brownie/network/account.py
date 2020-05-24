@@ -152,10 +152,15 @@ class Accounts(metaclass=_Singleton):
             Account instance.
         """
         address = _resolve_address(address)
-        try:
-            return next(i for i in self._accounts if i == address)
-        except StopIteration:
-            raise UnknownAccount(f"No account exists for {address}")
+        acct = next((i for i in self._accounts if i == address), None)
+
+        if acct is None and address in web3.eth.accounts:
+            acct = Account(address)
+            self._accounts.append(acct)
+
+        if acct:
+            return acct
+        raise UnknownAccount(f"No account exists for {address}")
 
     def remove(self, address: str) -> None:
         """Removes an account instance from the container.
