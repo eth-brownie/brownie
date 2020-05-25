@@ -206,6 +206,7 @@ class Project(_ProjectBase):
         changed = self._get_changed_contracts(interface_hashes)
         self._compile(changed, self._compiler_config, False)
         self._compile_interfaces(interface_hashes)
+        self._flatten_contract(self._build)
         self._create_containers()
         self._load_deployments()
 
@@ -223,7 +224,37 @@ class Project(_ProjectBase):
         self._active = True
         _loaded_projects.append(self)
 
-    def _get_changed_contracts(self, compiled_hashes: Dict) -> Dict:
+    def _flatten_contract(self, build_project: Build) -> str:
+        flatterner = "flatten_contracts.sol"
+        flatten_path = self._path.joinpath(flatterner)
+
+        base_contract_name = ""
+        has_dependencies = 0
+        for contract_name, _ in build_project.items():
+            contract_dependencies_length = len(build_project.get_dependents(contract_name))
+            if contract_dependencies_length == has_dependencies:
+                base_contract_name = contract_name
+        base_contract = build_project._sources._contracts[base_contract_name]
+
+        for contract in build_project._sources._source.keys():
+            if contract == base_contract:
+                continue
+
+            with flatten_path.open("a") as fp:
+                filter_data = str(build_project._sources._source[contract]).replace(
+                    "import", "// import"
+                )
+                fp.write(filter_data)
+
+        with flatten_path.open("a") as fp:
+            filter_data = str(build_project._sources._source[base_contract]).replace(
+                "import", "// import"
+            )
+            fp.write(filter_data)
+
+        print(f"Brownie has flattened contract at {flatten_path} =========")
+
+    def _get_changed_contracts(self) -> Dict:
         # get list of changed interfaces and contracts
         new_hashes = self._sources.get_interface_hashes()
         interfaces = [k for k, v in new_hashes.items() if compiled_hashes.get(k, None) != v]
