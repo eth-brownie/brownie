@@ -8,6 +8,8 @@ import yaml
 
 import brownie
 
+__tracebackhide__ = True
+
 # network
 
 
@@ -86,7 +88,7 @@ class VirtualMachineError(Exception):
             try:
                 txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
             except StopIteration:
-                return
+                raise ValueError(exc["message"]) from None
 
             self.txid: str = txid
             self.revert_type: str = data["error"]
