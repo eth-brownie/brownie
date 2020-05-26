@@ -44,6 +44,9 @@ def main():
     if project_path is None:
         raise ProjectNotFound
 
+    # ensure imports are possible from anywhere in the project
+    project.main._add_to_sys_path(project_path)
+
     if args["<path>"] is None:
         args["<path>"] = project_path.joinpath("tests").as_posix()
 
