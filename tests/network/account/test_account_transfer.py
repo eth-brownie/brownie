@@ -170,9 +170,8 @@ def test_nonce_manual(accounts):
 def test_raises_on_wrong_nonce(accounts, nonce):
     """raises if invalid manual nonce is provided"""
     assert accounts[0].nonce == 0
-    with pytest.raises(VirtualMachineError):
-        tx = accounts[0].transfer(accounts[1], 1000, nonce=nonce)
-        assert tx.nonce == nonce
+    with pytest.raises(ValueError):
+        accounts[0].transfer(accounts[1], 1000, nonce=nonce)
 
 
 def test_data(accounts):
