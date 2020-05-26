@@ -101,8 +101,9 @@ def _get_ast_hash(path: str) -> str:
     with Path(path).open() as fp:
         ast_list = [ast.parse(fp.read(), path)]
     base_path = str(check_for_project(path))
-    for obj in [i for i in ast_list[0].body if type(i) in (ast.Import, ast.ImportFrom)]:
-        if type(obj) is ast.Import:
+
+    for obj in [i for i in ast_list[0].body if isinstance(i, (ast.Import, ast.ImportFrom))]:
+        if isinstance(obj, ast.Import):
             name = obj.names[0].name  # type: ignore
         else:
             name = obj.module  # type: ignore
@@ -115,8 +116,9 @@ def _get_ast_hash(path: str) -> str:
                 ImportWarning,
             )
             continue
-        if base_path in origin:
+        if origin is not None and base_path in origin:
             with open(origin) as fp:
                 ast_list.append(ast.parse(fp.read(), origin))
+
     dump = "\n".join(ast.dump(i) for i in ast_list)
     return sha1(dump.encode()).hexdigest()

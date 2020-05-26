@@ -1,9 +1,12 @@
 #!/usr/bin/python3
 
+import pytest
+
 from brownie import project
 from brownie._config import CONFIG
 from brownie.test.fixtures import PytestBrownieFixtures
 from brownie.test.managers import PytestBrownieMaster, PytestBrownieRunner, PytestBrownieXdistRunner
+from brownie.utils import color
 
 
 # set commandline options
@@ -45,9 +48,14 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     if project.check_for_project("."):
 
-        active_project = project.load()
-        active_project.load_config()
-        active_project._add_to_main_namespace()
+        try:
+            active_project = project.load()
+            active_project.load_config()
+            active_project._add_to_main_namespace()
+        except Exception as e:
+            # prevent pytest INTERNALERROR traceback when project fails to compile
+            print(f"{color.format_tb(e)}\n")
+            raise pytest.UsageError("Unable to load project")
 
         # enable verbose output if stdout capture is disabled
         if config.getoption("capture") == "no":
