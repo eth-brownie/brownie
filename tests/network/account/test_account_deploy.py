@@ -111,12 +111,12 @@ def test_nonce_manual_on_revert_in_console(BrownieTester, accounts, console_mode
     assert tx.nonce == 1
 
 
-@pytest.mark.parametrize("nonce", (1, -1, 15, False))
+@pytest.mark.parametrize("nonce", (1, -1, 15))
 def test_raises_on_wrong_nonce(BrownieTester, accounts, nonce):
     """raises if invalid manual nonce is provided"""
     assert accounts[0].nonce == 0
-    with pytest.raises(VirtualMachineError):
-        accounts[0].deploy(BrownieTester, False, nonce=nonce)
+    with pytest.raises(ValueError):
+        accounts[0].deploy(BrownieTester, True, nonce=nonce)
 
 
 def test_evm_version(BrownieTester, accounts, monkeypatch):

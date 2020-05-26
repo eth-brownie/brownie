@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 import pytest
 
-from brownie.exceptions import VirtualMachineError
-
 
 def test_attributes(accounts, tester):
     assert tester.getTuple._address == tester.address
@@ -55,16 +53,12 @@ def test_nonce_manual_transact(tester, accounts):
     assert accounts[0].nonce == nonce + 1
 
 
-@pytest.mark.parametrize("nonce_offset", (-1, 1, 15))
-def test_rasises_on_incorrect_nonce_manual_transact(tester, accounts, nonce_offset):
+@pytest.mark.parametrize("nonce", (-1, 1, 15))
+def test_rasises_on_incorrect_nonce_manual_transact(tester, accounts, nonce):
     """raises on incorrect manual nonce with transact"""
-    nonce = accounts[0].nonce
-    with pytest.raises(VirtualMachineError):
-        tx = tester.getTuple.transact(
-            accounts[0], {"from": accounts[0], "nonce": nonce + nonce_offset}
-        )
-        assert tx.nonce == nonce + nonce_offset
-        assert accounts[0].nonce == nonce
+    nonce += accounts[0].nonce
+    with pytest.raises(ValueError):
+        tester.getTuple.transact(accounts[0], {"from": accounts[0], "nonce": nonce})
 
 
 def test_tuples(tester, accounts):

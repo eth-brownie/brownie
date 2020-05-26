@@ -54,12 +54,19 @@ class RevertContextManager:
 
     def __exit__(self, exc_type, exc_value, traceback):
         __tracebackhide__ = True
+
         if exc_type is None:
             raise AssertionError("Transaction did not revert") from None
+
         if exc_type is not VirtualMachineError:
-            raise exc_type(exc_value).with_traceback(traceback)
+            raise exc_type(exc_value) from None
+
         if self.revert_msg is None or self.revert_msg == exc_value.revert_msg:
             return True
+
+        if exc_value.revert_msg is None:
+            raise AssertionError("Transaction reverted, but no revert string was given") from None
+
         raise AssertionError(
             f"Unexpected revert string '{exc_value.revert_msg}'\n{exc_value.source}"
         ) from None
