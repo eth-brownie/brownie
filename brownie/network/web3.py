@@ -37,7 +37,7 @@ class Web3(_Web3):
         uri = _expand_environment_vars(uri)
         try:
             if Path(uri).exists():
-                self.provider = IPCProvider(uri, {"timeout": timeout})
+                self.provider = IPCProvider(uri, timeout=timeout)
                 return
         except OSError:
             pass
