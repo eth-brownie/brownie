@@ -6,6 +6,16 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.8.9](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.9) - 2020-05-26
+### Changed
+- Raise `ValueError` instead of `VirtualMachineError` when the returned RPC error does not contain a data field ([#555](https://github.com/iamdefinitelyahuman/brownie/pull/555))
+- Improve readability of exception when compilation fails while running pytest ([#556](https://github.com/iamdefinitelyahuman/brownie/pull/556))
+
+### Fixed
+- IPC timeout setting ([#554](https://github.com/iamdefinitelyahuman/brownie/pull/554))
+- Pytest import issues ([#556](https://github.com/iamdefinitelyahuman/brownie/pull/556))
+
 ## [1.8.8](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.8) - 2020-05-24
 ### Changed
 - Check `web3.eth.accounts` for new unlocked accounts when calling `Accounts.at` ([#551](https://github.com/iamdefinitelyahuman/brownie/pull/551))
