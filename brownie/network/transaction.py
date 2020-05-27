@@ -615,6 +615,12 @@ class TransactionReceipt:
                     result += f"\n      {key}: {color('bright blue')}{value}{color}"
         print(result)
 
+    def get_trace_gas(self, start, stop) -> int:
+        gas = 0
+        for i in range(start, stop):
+            gas += int(self.trace[i]["gasCost"])
+        return gas
+
     @trace_inspection
     def call_trace(self) -> None:
         """Displays the complete sequence of contracts and methods called during
@@ -625,7 +631,7 @@ class TransactionReceipt:
 
         trace = self.trace
         result = f"Call trace for '{color('bright blue')}{self.txid}{color}':"
-        result += _step_print(trace[0], trace[-1], None, 0, len(trace))
+        result += _step_print(trace[0], trace[-1], None, 0, len(trace), self.gas_used)
         indent = {0: 0}
         indent_chars = [""] * 1000
 
@@ -645,7 +651,8 @@ class TransactionReceipt:
                 _depth = depth + indent[depth]
                 symbol, indent_chars[_depth] = _check_last(trace_index[i - 1 :])
                 indent_str = "".join(indent_chars[:_depth]) + symbol
-                result += _step_print(trace[idx], trace[end - 1], indent_str, idx, end)
+                call_gas = self.get_trace_gas(idx, end)
+                result += _step_print(trace[idx], trace[end - 1], indent_str, idx, end, 1)
             elif depth == last[1] and jump_depth > last[2]:
                 # jumped into an internal function
                 end = next(
@@ -659,7 +666,8 @@ class TransactionReceipt:
                 _depth = depth + jump_depth + indent[depth]
                 symbol, indent_chars[_depth] = _check_last(trace_index[i - 1 :])
                 indent_str = "".join(indent_chars[:_depth]) + symbol
-                result += _step_print(trace[idx], trace[end - 1], indent_str, idx, end)
+                call_gas = self.get_trace_gas(idx, end)
+                result += _step_print(trace[idx], trace[end - 1], indent_str, idx, end, call_gas)
         print(result)
 
     def traceback(self) -> None:
@@ -796,6 +804,7 @@ def _step_print(
     indent: Optional[str],
     start: Union[str, int],
     stop: Union[str, int],
+    gas: Union[str, int],
 ) -> str:
     print_str = f"\n{color('dark white')}"
     if indent is not None:
@@ -805,6 +814,7 @@ def _step_print(
     else:
         contract_color = color("bright magenta" if not step["jumpDepth"] else "")
     print_str += f"{contract_color}{step['fn']} {color('dark white')}{start}:{stop}{color}"
+    print_str += f"  [{gas} gas]"
     if not step["jumpDepth"]:
         print_str += (
             f"  {color('dark white')}({color}{step['address']}{color('dark white')}){color}"
