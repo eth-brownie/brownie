@@ -90,6 +90,7 @@ class TransactionReceipt:
         modified_state: Boolean, did this contract write to storage?"""
 
     __slots__ = (
+        "_call_cost",
         "_confirmed",
         "_events",
         "_internal_transfers",
@@ -100,6 +101,7 @@ class TransactionReceipt:
         "_revert_msg",
         "_revert_pc",
         "_trace",
+        "_trace_origin",
         "block_number",
         "contract_address",
         "contract_name",
@@ -145,8 +147,10 @@ class TransactionReceipt:
             print(f"Transaction sent: {color('bright blue')}{txid}{color}")
         history._add_tx(self)
 
+        self._trace_origin = None
         self._raw_trace = None
         self._trace = None
+        self._call_cost = 0
         self._events = None
         self._return_value = None
         self._revert_msg = None
@@ -463,6 +467,18 @@ class TransactionReceipt:
             return
         if "fn" in trace[0]:
             return
+
+        if trace[0]["depth"] == 1:
+            self._trace_origin = "geth"
+            self._call_cost = self.gas_used - trace[0]["gas"] + trace[-1]["gas"]
+            for t in trace:
+                t["depth"] = t["depth"] - 1
+        else:
+            self._trace_origin = "ganache"
+            self._call_cost = trace[0]["gasCost"]
+            for i in range(len(trace) - 1):
+                trace[i]["gasCost"] = trace[i + 1]["gasCost"]
+            trace[-1]["gasCost"] = 0
 
         # last_map gives a quick reference of previous values at each depth
         last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
