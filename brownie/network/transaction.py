@@ -615,10 +615,17 @@ class TransactionReceipt:
                     result += f"\n      {key}: {color('bright blue')}{value}{color}"
         print(result)
 
-    def get_trace_gas(self, start, stop) -> int:
+    def get_trace_gas(self, start: int, stop: int) -> int:
         gas = 0
+        trace = self.trace
         for i in range(start, stop):
-            gas += int(self.trace[i]["gasCost"])
+            gas += int(trace[i]["gasCost"])
+            if trace[i]["op"] == "SELFDESTRUCT":
+                # 24000 gas is refunded on selfdestruct
+                gas -= 24000
+        # The remaining gas for the external function needs to be added to that function
+        if trace[start]["depth"] > trace[start - 1]["depth"]:
+            gas += int(trace[stop]["gasCost"])
         return gas
 
     @trace_inspection
@@ -652,7 +659,7 @@ class TransactionReceipt:
                 symbol, indent_chars[_depth] = _check_last(trace_index[i - 1 :])
                 indent_str = "".join(indent_chars[:_depth]) + symbol
                 call_gas = self.get_trace_gas(idx, end)
-                result += _step_print(trace[idx], trace[end - 1], indent_str, idx, end, 1)
+                result += _step_print(trace[idx], trace[end - 1], indent_str, idx, end, call_gas)
             elif depth == last[1] and jump_depth > last[2]:
                 # jumped into an internal function
                 end = next(
@@ -804,7 +811,7 @@ def _step_print(
     indent: Optional[str],
     start: Union[str, int],
     stop: Union[str, int],
-    gas: Union[str, int],
+    gas: int,
 ) -> str:
     print_str = f"\n{color('dark white')}"
     if indent is not None:
@@ -813,8 +820,9 @@ def _step_print(
         contract_color = color("bright red")
     else:
         contract_color = color("bright magenta" if not step["jumpDepth"] else "")
+    gas_color = color("bright yellow") if gas > 0 else color("bright green")
     print_str += f"{contract_color}{step['fn']} {color('dark white')}{start}:{stop}{color}"
-    print_str += f"  [{gas} gas]"
+    print_str += f"  [{gas_color}{gas} gas{color}]"
     if not step["jumpDepth"]:
         print_str += (
             f"  {color('dark white')}({color}{step['address']}{color('dark white')}){color}"
