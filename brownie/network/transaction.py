@@ -622,17 +622,18 @@ class TransactionReceipt:
         for i in range(start, stop):
             is_internal = _step_compare(trace[i], trace[start])
             totalGas += int(trace[i]["gasCost"])
-            if is_internal and trace[i]["gasCost"] > 0:
+            if is_internal:
                 internalGas += int(trace[i]["gasCost"])
             if trace[i]["op"] == "SELFDESTRUCT":
                 # 24000 gas is refunded on selfdestruct
                 totalGas -= 24000
                 if is_internal:
                     internalGas -= 24000
-        # The remaining gas for the external function needs to be added to that function
+
+        # Add the forwarded gas for external calls
         if trace[start]["depth"] > trace[start - 1]["depth"]:
-            totalGas += int(trace[stop]["gasCost"])
-            internalGas += int(trace[stop]["gasCost"])
+            totalGas += int(trace[start - 1]["gasCost"])
+            internalGas += int(trace[start - 1]["gasCost"])
 
         return totalGas, internalGas
 
@@ -646,6 +647,7 @@ class TransactionReceipt:
 
         trace = self.trace
         result = f"Call trace for '{color('bright blue')}{self.txid}{color}':"
+        result += f"\nInitial call cost  [{color('bright yellow')}{self._call_cost} gas{color}]"
         result += _step_print(
             trace[0], trace[-1], None, 0, len(trace), self.get_trace_gas(0, len(self.trace))
         )
