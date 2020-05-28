@@ -624,6 +624,15 @@ class TransactionReceipt:
             totalGas += int(trace[i]["gasCost"])
             if is_internal:
                 internalGas += int(trace[i]["gasCost"])
+
+            # manually add gas refunds where they occur
+            if trace[i]["op"] == "SSTORE" and int(trace[i]["stack"][-2], 16) == 0:
+                # 15000 gas is refunded if a word is set to 0x0
+                # Note: There is currently no way to check if the value was 0x0 before.
+                # This will give an incorrect refund if 0x0 is assigned to 0x0.
+                totalGas -= 15000
+                if is_internal:
+                    internalGas -= 15000
             if trace[i]["op"] == "SELFDESTRUCT":
                 # 24000 gas is refunded on selfdestruct
                 totalGas -= 24000
