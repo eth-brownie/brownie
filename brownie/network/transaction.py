@@ -615,18 +615,26 @@ class TransactionReceipt:
                     result += f"\n      {key}: {color('bright blue')}{value}{color}"
         print(result)
 
-    def get_trace_gas(self, start: int, stop: int) -> int:
-        gas = 0
+    def get_trace_gas(self, start: int, stop: int) -> Tuple[int, int]:
+        totalGas = 0
+        internalGas = 0
         trace = self.trace
         for i in range(start, stop):
-            gas += int(trace[i]["gasCost"])
+            is_internal = _step_compare(trace[i], trace[start])
+            totalGas += int(trace[i]["gasCost"])
+            if is_internal and trace[i]["gasCost"] > 0:
+                internalGas += int(trace[i]["gasCost"])
             if trace[i]["op"] == "SELFDESTRUCT":
                 # 24000 gas is refunded on selfdestruct
-                gas -= 24000
+                totalGas -= 24000
+                if is_internal:
+                    internalGas -= 24000
         # The remaining gas for the external function needs to be added to that function
         if trace[start]["depth"] > trace[start - 1]["depth"]:
-            gas += int(trace[stop]["gasCost"])
-        return gas
+            totalGas += int(trace[stop]["gasCost"])
+            internalGas += int(trace[stop]["gasCost"])
+
+        return totalGas, internalGas
 
     @trace_inspection
     def call_trace(self) -> None:
@@ -638,7 +646,9 @@ class TransactionReceipt:
 
         trace = self.trace
         result = f"Call trace for '{color('bright blue')}{self.txid}{color}':"
-        result += _step_print(trace[0], trace[-1], None, 0, len(trace), self.gas_used)
+        result += _step_print(
+            trace[0], trace[-1], None, 0, len(trace), self.get_trace_gas(0, len(self.trace))
+        )
         indent = {0: 0}
         indent_chars = [""] * 1000
 
@@ -658,8 +668,10 @@ class TransactionReceipt:
                 _depth = depth + indent[depth]
                 symbol, indent_chars[_depth] = _check_last(trace_index[i - 1 :])
                 indent_str = "".join(indent_chars[:_depth]) + symbol
-                call_gas = self.get_trace_gas(idx, end)
-                result += _step_print(trace[idx], trace[end - 1], indent_str, idx, end, call_gas)
+                (totalGas, internalGas) = self.get_trace_gas(idx, end)
+                result += _step_print(
+                    trace[idx], trace[end - 1], indent_str, idx, end, (totalGas, internalGas)
+                )
             elif depth == last[1] and jump_depth > last[2]:
                 # jumped into an internal function
                 end = next(
@@ -673,8 +685,10 @@ class TransactionReceipt:
                 _depth = depth + jump_depth + indent[depth]
                 symbol, indent_chars[_depth] = _check_last(trace_index[i - 1 :])
                 indent_str = "".join(indent_chars[:_depth]) + symbol
-                call_gas = self.get_trace_gas(idx, end)
-                result += _step_print(trace[idx], trace[end - 1], indent_str, idx, end, call_gas)
+                (totalGas, internalGas) = self.get_trace_gas(idx, end)
+                result += _step_print(
+                    trace[idx], trace[end - 1], indent_str, idx, end, (totalGas, internalGas)
+                )
         print(result)
 
     def traceback(self) -> None:
@@ -811,7 +825,7 @@ def _step_print(
     indent: Optional[str],
     start: Union[str, int],
     stop: Union[str, int],
-    gas: int,
+    gas: Tuple[int, int],
 ) -> str:
     print_str = f"\n{color('dark white')}"
     if indent is not None:
@@ -820,9 +834,11 @@ def _step_print(
         contract_color = color("bright red")
     else:
         contract_color = color("bright magenta" if not step["jumpDepth"] else "")
-    gas_color = color("bright yellow") if gas > 0 else color("bright green")
     print_str += f"{contract_color}{step['fn']} {color('dark white')}{start}:{stop}{color}"
-    print_str += f"  [{gas_color}{gas} gas{color}]"
+    if gas[0] == gas[1]:
+        print_str += f"  [{color('bright yellow')}{gas[0]} gas{color}]"
+    else:
+        print_str += f"  [{color('bright yellow')}{gas[1]} / {gas[0]} gas{color}]"
     if not step["jumpDepth"]:
         print_str += (
             f"  {color('dark white')}({color}{step['address']}{color('dark white')}){color}"
