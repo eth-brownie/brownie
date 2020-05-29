@@ -620,13 +620,18 @@ class TransactionReceipt:
         internalGas = 0
         is_internal = True
         trace = self.trace
-        for i in range(start, stop - 1):
+
+        is_gas_forwarded = trace[start]["depth"] > trace[start - 1]["depth"]
+        for i in range(start, stop):
 
             # Track if we are on the same depth we started.
             # Offsetting is required because the forwarded gas is tracked on the outer depth.
-            if is_internal and trace[i + 1]["depth"] > trace[start]["depth"]:
+            if is_internal and not _step_compare(trace[i], trace[start]):
                 is_internal = False
-            elif not is_internal and trace[i - 1]["depth"] == trace[start]["depth"]:
+                if trace[i]["depth"] > trace[start]["depth"]:
+                    internalGas -= trace[i - 1]["gasCost"]
+
+            elif not is_internal and _step_compare(trace[i], trace[start]):
                 is_internal = True
 
             totalGas += int(trace[i]["gasCost"])
@@ -647,12 +652,8 @@ class TransactionReceipt:
                 if is_internal:
                     internalGas -= 24000
 
-        # Add last step and the forwarded gas for external calls
-        totalGas += trace[stop - 1]["gasCost"]
-        if trace[stop - 1]["depth"] == trace[start]["depth"]:
-            internalGas += trace[stop - 1]["gasCost"]
-
-        if trace[start]["depth"] > trace[start - 1]["depth"]:
+        # For external calls, add the remaining gas returned back
+        if is_gas_forwarded:
             totalGas += trace[start - 1]["gasCost"]
             internalGas += trace[start - 1]["gasCost"]
 
