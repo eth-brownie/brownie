@@ -624,17 +624,16 @@ class TransactionReceipt:
         is_gas_forwarded = trace[start]["depth"] > trace[start - 1]["depth"]
         for i in range(start, stop):
 
-            # Track if we are on the same depth we started.
-            # Offsetting is required because the forwarded gas is tracked on the outer depth.
+            # Check if we are in a subfunction or not
             if is_internal and not _step_compare(trace[i], trace[start]):
                 is_internal = False
+                # For the internal gas tracking we ignore the gas passed to an external call
                 if trace[i]["depth"] > trace[start]["depth"]:
                     internalGas -= trace[i - 1]["gasCost"]
-
             elif not is_internal and _step_compare(trace[i], trace[start]):
                 is_internal = True
 
-            totalGas += int(trace[i]["gasCost"])
+            totalGas += trace[i]["gasCost"]
             if is_internal:
                 internalGas += trace[i]["gasCost"]
 
