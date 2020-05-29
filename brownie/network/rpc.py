@@ -393,6 +393,10 @@ def _check_connections(proc: psutil.Process, laddr: Tuple) -> bool:
         return laddr in [i.laddr for i in proc.connections()]
     except psutil.AccessDenied:
         return False
+    except psutil.ZombieProcess:
+        return False
+    except psutil.NoSuchProcess:
+        return False
 
 
 def _validate_cmd_settings(cmd_settings: dict) -> dict:
