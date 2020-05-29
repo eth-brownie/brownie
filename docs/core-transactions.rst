@@ -231,49 +231,48 @@ Each step in the trace includes the following data:
 Call Traces
 -----------
 
-When dealing with complex transactions the trace can be may thousands of steps long - it can be challenging to know where to begin when examining it. Brownie provides the :func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` method to view a complete map of every jump that occured in the transaction, along with associated trace indexes:
+When dealing with complex transactions the trace can be may thousands of steps long - it can be challenging to know where to begin when examining it. Brownie provides the :func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` method to view a complete map of every jump that occured in the transaction, along with associated trace indexes and gas usage:
 
 .. code-block:: python
 
     >>> tx.call_trace()
-    Call trace for '0xd31c1c8db46a5bf2d3be822778c767e1b12e0257152fcc14dcf7e4a942793cb4':
-    SecurityToken.transfer 0:5198  (0xea53cB8c11f96243CE3A29C55dd9B7D761b2c0BA)
-    └─SecurityToken._transfer 170:5198
-        ├─IssuingEntity.transferTokens 608:4991  (0x40b49Ad1B8D6A8Df6cEdB56081D51b69e6569e06)
-        │ ├─IssuingEntity.checkTransfer 834:4052
-        │ │ ├─IssuingEntity._getID 959:1494
-        │ │ │ └─KYCRegistrar.getID 1186:1331  (0xa79269260195879dBA8CEFF2767B7F2B5F2a54D8)
-        │ │ ├─IssuingEntity._getID 1501:1635
-        │ │ ├─IssuingEntity._getID 1642:2177
-        │ │ │ └─KYCRegistrar.getID 1869:2014  (0xa79269260195879dBA8CEFF2767B7F2B5F2a54D8)
-        │ │ ├─IssuingEntity._getInvestors 2305:3540
-        │ │ │ └─KYCRegistrar.getInvestors 2520:3483  (0xa79269260195879dBA8CEFF2767B7F2B5F2a54D8)
-        │ │ │   ├─KYCBase.isPermitted 2874:3003
-        │ │ │   │ └─KYCRegistrar.isPermittedID 2925:2997
-        │ │ │   └─KYCBase.isPermitted 3014:3143
-        │ │ │     └─KYCRegistrar.isPermittedID 3065:3137
-        │ │ └─IssuingEntity._checkTransfer 3603:4037
-        │ ├─IssuingEntity._setRating 4098:4162
-        │ ├─IssuingEntity._setRating 4204:4268
-        │ ├─SafeMath32.add 4307:4330
-        │ └─IssuingEntity._incrementCount 4365:4770
-        │   ├─SafeMath32.add 4400:4423
-        │   ├─SafeMath32.add 4481:4504
-        │   ├─SafeMath32.add 4599:4622
-        │   └─SafeMath32.add 4692:4715
-        └─SecurityToken._checkTransfer 5071:5198
-
+    Call trace for '0x7f618202ef31ab6927824caa3d338abe192fc6eb062dac1ee195d186a8a188f0':
+    Initial call cost  [21368 gas]
+    LgtHelper.burnAndFree 0:4126  [1263 / 148049 gas]  (0xe7CB1c67752cBb975a56815Af242ce2Ce63d3113)
+    ├─LgtHelper.burnGas 68:3083  [200081 gas]
+    └─LiquidGasToken.freeFrom 3137:4080  [2312 / -53295 gas]  (0x00000000007475142d6329FC42Dc9684c9bE6cD0)
+      ├─ERC20PointerSupply.allowance 3228:3264  [986 gas]
+      ├─ERC20PointerSupply.balanceOf 3275:3296  [902 gas]
+      ├─LiquidGasToken._destroyContracts 3307:3728  [687 / -52606 gas]
+      │ ├─ERC20PointerSupply.totalBurned 3312:3317  [815 gas]
+      │ ├─LiquidGasToken.computeAddress2 3352:3413  [245 gas]
+      │ ├─<UnknownContract>.0x00000000 3434:3441  [-18278 gas]  (0x5E77b3934E758eDfC7baCAbD84c6c91295d5eF15)
+      │ ├─LiquidGasToken.computeAddress2 3477:3538  [242 gas]
+      │ ├─<UnknownContract>.0x00000000 3559:3566  [-18278 gas]  (0x88d97e2fD96a170F57c5c5AD636Ab8a8de3Ec776)
+      │ ├─LiquidGasToken.computeAddress2 3602:3663  [239 gas]
+      │ └─<UnknownContract>.0x00 3684:3691  [-18278 gas]  (0xb1fC7df83B2b966a3E988679e1504036B18A7f42)
+      ├─ERC20PointerSupply._burnFrom 3734:3892  [-4148 / -12023 gas]
+      │ └─ERC20PointerSupply._unassign 3747:3886  [-8067 / -7875 gas]
+      │   ├─SafeMath.sub 3792:3809  [56 gas]
+      │   └─SafeMath.sub 3838:3879  [136 gas]
+      ├─SafeMath.sub 3950:3967  [56 gas]
+      └─ERC20PointerSupply._approve 3970:4049  [7078 gas]
 
 Each line shows the following information:
 
 ::
 
-    ContractName.functionName start:stop
+    ContractName.functionName start:stop [internal / total gas used] (address of an external call)
 
 
-Where ``start`` and ``stop`` are the indexes of :func:`TransactionReceipt.trace <TransactionReceipt.trace>` where the function was entered and exited. If an address is also shown, it means the function was entered via an external jump. Functions that terminated with ``REVERT`` or ``INVALID`` opcodes are highlighted in red.
+Where ``start`` and ``stop`` are the indexes of :func:`TransactionReceipt.trace <TransactionReceipt.trace>` where the function was entered and exited.
 
-:func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` provides an initial high level overview of the transaction execution path, which helps you to examine the individual trace steps in a more targetted manner.
+For functions with no further calls, the used gas is shown. Otherwise, the first gas number is the amount of gas used internally by this function and the second number is the total gas used by the function including all sub-calls.
+Gas refunds from deleting storage or contracts is shown as negative gas used. Note that overwriting an existing zero-value with another zero-value will incorrectly display a gas refund.
+
+If an address is also shown, it means the function was entered via an external jump. Functions that terminated with ``REVERT`` or ``INVALID`` opcodes are highlighted in red.
+
+:func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` provides an initial high level overview of the transaction execution path, which helps you to examine the individual trace steps in a more targetted manner and can help profile a transaction for gas usage.
 
 Accessing Transaction History
 =============================
