@@ -616,8 +616,8 @@ class TransactionReceipt:
         print(result)
 
     def _get_trace_gas(self, start: int, stop: int) -> Tuple[int, int]:
-        totalGas = 0
-        internalGas = 0
+        total_gas = 0
+        internal_gas = 0
         is_internal = True
         trace = self.trace
 
@@ -629,34 +629,34 @@ class TransactionReceipt:
                 is_internal = False
                 # For the internal gas tracking we ignore the gas passed to an external call
                 if trace[i]["depth"] > trace[start]["depth"]:
-                    internalGas -= trace[i - 1]["gasCost"]
+                    internal_gas -= trace[i - 1]["gasCost"]
             elif not is_internal and _step_compare(trace[i], trace[start]):
                 is_internal = True
 
-            totalGas += trace[i]["gasCost"]
+            total_gas += trace[i]["gasCost"]
             if is_internal:
-                internalGas += trace[i]["gasCost"]
+                internal_gas += trace[i]["gasCost"]
 
             # manually add gas refunds where they occur
             if trace[i]["op"] == "SSTORE" and int(trace[i]["stack"][-2], 16) == 0:
                 # 15000 gas is refunded if a word is set to 0x0
                 # Note: There is currently no way to check if the value was 0x0 before.
                 # This will give an incorrect refund if 0x0 is assigned to 0x0.
-                totalGas -= 15000
+                total_gas -= 15000
                 if is_internal:
-                    internalGas -= 15000
+                    internal_gas -= 15000
             if trace[i]["op"] == "SELFDESTRUCT":
                 # 24000 gas is refunded on selfdestruct
-                totalGas -= 24000
+                total_gas -= 24000
                 if is_internal:
-                    internalGas -= 24000
+                    internal_gas -= 24000
 
         # For external calls, add the remaining gas returned back
         if is_gas_forwarded:
-            totalGas += trace[start - 1]["gasCost"]
-            internalGas += trace[start - 1]["gasCost"]
+            total_gas += trace[start - 1]["gasCost"]
+            internal_gas += trace[start - 1]["gasCost"]
 
-        return internalGas, totalGas
+        return internal_gas, total_gas
 
     @trace_inspection
     def call_trace(self) -> None:
