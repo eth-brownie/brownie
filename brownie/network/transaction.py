@@ -621,9 +621,7 @@ class TransactionReceipt:
         is_internal = True
         trace = self.trace
 
-        is_gas_forwarded = trace[start]["depth"] > trace[start - 1]["depth"]
         for i in range(start, stop):
-
             # Check if we are in a subfunction or not
             if is_internal and not _step_compare(trace[i], trace[start]):
                 is_internal = False
@@ -652,7 +650,7 @@ class TransactionReceipt:
                     internal_gas -= 24000
 
         # For external calls, add the remaining gas returned back
-        if is_gas_forwarded:
+        if start > 0 and trace[start]["depth"] > trace[start - 1]["depth"]:
             total_gas += trace[start - 1]["gasCost"]
             internal_gas += trace[start - 1]["gasCost"]
 
@@ -691,9 +689,9 @@ class TransactionReceipt:
                 _depth = depth + indent[depth]
                 symbol, indent_chars[_depth] = _check_last(trace_index[i - 1 :])
                 indent_str = "".join(indent_chars[:_depth]) + symbol
-                (totalGas, internalGas) = self._get_trace_gas(idx, end)
+                (total_gas, internal_gas) = self._get_trace_gas(idx, end)
                 result += _step_print(
-                    trace[idx], trace[end - 1], indent_str, idx, end, (totalGas, internalGas)
+                    trace[idx], trace[end - 1], indent_str, idx, end, (total_gas, internal_gas)
                 )
             elif depth == last[1] and jump_depth > last[2]:
                 # jumped into an internal function
@@ -708,9 +706,9 @@ class TransactionReceipt:
                 _depth = depth + jump_depth + indent[depth]
                 symbol, indent_chars[_depth] = _check_last(trace_index[i - 1 :])
                 indent_str = "".join(indent_chars[:_depth]) + symbol
-                (totalGas, internalGas) = self._get_trace_gas(idx, end)
+                (total_gas, internal_gas) = self._get_trace_gas(idx, end)
                 result += _step_print(
-                    trace[idx], trace[end - 1], indent_str, idx, end, (totalGas, internalGas)
+                    trace[idx], trace[end - 1], indent_str, idx, end, (total_gas, internal_gas)
                 )
         print(result)
 
