@@ -5,6 +5,14 @@
 # a project. Missing or malformed fields in this file could break Brownie.
 # https://eth-brownie.readthedocs.io/en/stable/config.html
 
+project_structure:
+    build: build
+    contracts: contracts
+    interfaces: interfaces
+    reports: reports
+    scripts: scripts
+    tests: tests
+
 networks:
     default: development
     development:
