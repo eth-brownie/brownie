@@ -167,12 +167,23 @@ def __get_path() -> Path:
 def _get_topics(abi: List) -> Dict:
     topic_map = eth_event.get_topic_map(abi)
 
-    new_topics = _topics.copy()
-    new_topics.update(topic_map)
-    if new_topics != _topics:
-        _topics.update(new_topics)
+    updated_topics = _topics.copy()
+
+    for key, value in topic_map.items():
+        if key not in updated_topics:
+            # new event topic
+            updated_topics[key] = value
+        elif value == updated_topics[key]:
+            # existing event topic, nothing has changed
+            continue
+        elif not next((i for i in updated_topics[key]["inputs"] if i["indexed"]), False):
+            # existing topic, but the old abi has no indexed events - keep the new one
+            updated_topics[key] = value
+
+    if updated_topics != _topics:
+        _topics.update(updated_topics)
         with __get_path().open("w") as fp:
-            json.dump(new_topics, fp, sort_keys=True, indent=2)
+            json.dump(updated_topics, fp, sort_keys=True, indent=2)
 
     return {v["name"]: k for k, v in topic_map.items()}
 
