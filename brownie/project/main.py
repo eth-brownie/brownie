@@ -210,6 +210,7 @@ class Project(_ProjectBase):
         self._compile(changed, self._compiler_config, False)
         self._compile_interfaces(interface_hashes)
         self._create_containers()
+        self._clear_dev_deployments()
         self._load_deployments()
 
         # add project to namespaces, apply import blackmagic
@@ -296,29 +297,100 @@ class Project(_ProjectBase):
             self._build._add(abi)
 
     def _load_deployments(self) -> None:
-        if CONFIG.network_type != "live":
+        if CONFIG.network_type != "live" and not CONFIG.settings.get("dev_deployment_artifacts"):
             return
-        chainid = CONFIG.active_network["chainid"]
+        chainid = "dev" if CONFIG.network_type != "live" else CONFIG.active_network["chainid"]
         path = self._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         deployments = list(path.glob("*.json"))
         deployments.sort(key=lambda k: k.stat().st_mtime)
+        deployment_map: Dict = {}
         for build_json in deployments:
             with build_json.open() as fp:
                 build = json.load(fp)
-            if build["contractName"] not in self._containers:
-                build_json.unlink()
-                continue
-            if "pcMap" in build:
-                contract = ProjectContract(self, build, build_json.stem)
+
+            contract_name = build["contractName"]
+            if CONFIG.network_type == "live":
+                if contract_name not in self._containers:
+                    build_json.unlink()
+                    continue
+                if "pcMap" in build:
+                    contract = ProjectContract(self, build, build_json.stem)
+                else:
+                    contract = Contract(  # type: ignore
+                        contract_name, build_json.stem, build["abi"]
+                    )
+                    contract._project = self
+                container = self._containers[contract_name]
+                _add_contract(contract)
+                container._contracts.append(contract)
+
+            contract_address = build_json.stem
+            if chainid in deployment_map:
+                if contract_name in deployment_map[chainid] and isinstance(
+                    deployment_map[chainid][contract_name], list
+                ):
+                    deployment_map[chainid][contract_name].insert(0, contract_address)
+                else:
+                    deployment_map[chainid][contract_name] = [contract_address]
             else:
-                contract = Contract(  # type: ignore
-                    build["contractName"], build_json.stem, build["abi"]
-                )
-                contract._project = self
-            container = self._containers[build["contractName"]]
-            _add_contract(contract)
-            container._contracts.append(contract)
+                deployment_map[chainid] = {contract_name: [contract_address]}
+        with self._path.joinpath("build/deployments/map.json").open("w") as fp:
+            json.dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
+
+    def _clear_dev_deployments(self) -> None:
+        path = self._path.joinpath(f"build/deployments/dev")
+        if path.exists():
+            deployments = list(path.glob("*.json"))
+            for deployment in deployments:
+                deployment.unlink()
+
+    def _load_deployment_map(self) -> Dict:
+        deployment_map: Dict = {}
+        map_path = self._path.joinpath("build/deployments/map.json")
+        if map_path.exists():
+            with map_path.open("r") as fp:
+                deployment_map = json.load(fp)
+        return deployment_map
+
+    def _save_deployment_map(self, deployment_map: Dict) -> None:
+        with self._path.joinpath("build/deployments/map.json").open("w") as fp:
+            json.dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
+
+    def _remove_from_deployment_map(self, contract: ProjectContract) -> None:
+        if CONFIG.network_type != "live" and not CONFIG.settings.get("dev_deployment_artifacts"):
+            return
+
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        deployment_map = self._load_deployment_map()
+
+        try:
+            deployment_map[chainid][contract._name].remove(contract.address)
+        except (KeyError, ValueError):
+            pass
+
+        self._save_deployment_map(deployment_map)
+
+    def _add_to_deployment_map(self, contract: ProjectContract) -> None:
+        if CONFIG.network_type != "live" and not CONFIG.settings.get("dev_deployment_artifacts"):
+            return
+
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        deployment_map = self._load_deployment_map()
+
+        if chainid in deployment_map:
+            if contract._name in deployment_map[chainid] and isinstance(
+                deployment_map[chainid][contract._name], list
+            ):
+                if contract.address in deployment_map[chainid][contract._name]:
+                    deployment_map[chainid][contract._name].remove(contract.address)
+                deployment_map[chainid][contract._name].insert(0, contract.address)
+            else:
+                deployment_map[chainid][contract._name] = [contract.address]
+        else:
+            deployment_map[chainid] = {contract._name: [contract.address]}
+
+        self._save_deployment_map(deployment_map)
 
     def _update_and_register(self, dict_: Any) -> None:
         dict_.update(self)
