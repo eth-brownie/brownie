@@ -8,7 +8,7 @@ from brownie._cli import __main__ as cli_main
 
 
 @pytest.fixture
-def cli_tester(monkeypatch, mocker, argv, config):
+def cli_tester(monkeypatch, mocker, argv, config, project):
     tester = CliTester(monkeypatch, mocker)
     tester.mocker.spy(tester, "mock_subroutines")
 
