@@ -3,6 +3,7 @@
 import shutil
 
 from brownie import project
+from brownie._config import _load_project_structure_config
 from brownie.exceptions import ProjectNotFound
 from brownie.utils.docopt import docopt
 
@@ -24,10 +25,14 @@ def main():
     project_path = project.check_for_project(".")
     if project_path is None:
         raise ProjectNotFound
-    contract_artifact_path = project_path.joinpath("build/contracts")
-    interface_artifact_path = project_path.joinpath("build/interfaces")
+
+    build_path = project_path.joinpath(_load_project_structure_config(project_path)["build"])
+
+    contract_artifact_path = build_path.joinpath("contracts")
+    interface_artifact_path = build_path.joinpath("interfaces")
     if args["--all"]:
         shutil.rmtree(contract_artifact_path, ignore_errors=True)
         shutil.rmtree(interface_artifact_path, ignore_errors=True)
+
     project.load()
     print(f"Project has been compiled. Build artifacts saved at {contract_artifact_path}")

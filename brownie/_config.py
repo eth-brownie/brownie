@@ -223,7 +223,7 @@ def _load_project_structure_config(project_path):
     if path is None:
         return structure
 
-    data = _load_config(project_path).get("project_structure")
+    data = _load_config(project_path).get("project_structure", {})
     structure.update(data)
     return structure
 

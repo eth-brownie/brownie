@@ -25,6 +25,7 @@ from brownie._config import (
     _load_project_compiler_config,
     _load_project_config,
     _load_project_dependencies,
+    _load_project_structure_config,
 )
 from brownie.exceptions import (
     BrownieEnvironmentWarning,
@@ -45,6 +46,7 @@ from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_pragma_spec
 
+BUILD_FOLDERS = ["contracts", "deployments", "interfaces"]
 FOLDERS = [
     "contracts",
     "interfaces",
@@ -75,6 +77,7 @@ _loaded_projects = []
 class _ProjectBase:
 
     _path: Optional[Path]
+    _build_path: Optional[Path]
     _sources: Sources
     _build: Build
 
@@ -104,8 +107,8 @@ class _ProjectBase:
             os.chdir(cwd)
 
         for data in build_json.values():
-            if self._path is not None:
-                path = self._path.joinpath(f"build/contracts/{data['contractName']}.json")
+            if self._build_path is not None:
+                path = self._build_path.joinpath(f"contracts/{data['contractName']}.json")
                 with path.open("w") as fp:
                     json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
             self._build._add(data)
@@ -157,6 +160,9 @@ class Project(_ProjectBase):
 
     def __init__(self, name: str, project_path: Path) -> None:
         self._path: Path = project_path
+        self._structure = _load_project_structure_config(project_path)
+        self._build_path: Path = project_path.joinpath(self._structure["build"])
+
         self._name = name
         self._active = False
         self.load()
@@ -167,13 +173,13 @@ class Project(_ProjectBase):
         if self._active:
             raise ProjectAlreadyLoaded("Project is already active")
 
-        contract_sources = _load_sources(self._path, "contracts", False)
-        interface_sources = _load_sources(self._path, "interfaces", True)
+        contract_sources = _load_sources(self._path, self._structure["contracts"], False)
+        interface_sources = _load_sources(self._path, self._structure["interfaces"], True)
         self._sources = Sources(contract_sources, interface_sources)
         self._build = Build(self._sources)
 
         contract_list = self._sources.get_contract_list()
-        for path in list(self._path.glob("build/contracts/*.json")):
+        for path in list(self._build_path.glob("contracts/*.json")):
             try:
                 with path.open() as fp:
                     build_json = json.load(fp)
@@ -185,7 +191,7 @@ class Project(_ProjectBase):
             if isinstance(build_json["allSourcePaths"], list):
                 # this handles the format change in v1.7.0, it can be removed in a future release
                 path.unlink()
-                test_path = self._path.joinpath("build/tests.json")
+                test_path = self._build_path.joinpath("tests.json")
                 if test_path.exists():
                     test_path.unlink()
                 continue
@@ -196,7 +202,7 @@ class Project(_ProjectBase):
 
         interface_hashes = {}
         interface_list = self._sources.get_interface_list()
-        for path in list(self._path.glob("build/interfaces/*.json")):
+        for path in list(self._build_path.glob("interfaces/*.json")):
             try:
                 with path.open() as fp:
                     build_json = json.load(fp)
@@ -295,7 +301,8 @@ class Project(_ProjectBase):
         )
 
         for name, abi in abi_json.items():
-            with self._path.joinpath(f"build/interfaces/{name}.json").open("w") as fp:
+
+            with self._build_path.joinpath(f"interfaces/{name}.json").open("w") as fp:
                 json.dump(abi, fp, sort_keys=True, indent=2, default=sorted)
             self._build._add(abi)
 
@@ -303,7 +310,7 @@ class Project(_ProjectBase):
         if CONFIG.network_type != "live":
             return
         chainid = CONFIG.active_network["chainid"]
-        path = self._path.joinpath(f"build/deployments/{chainid}")
+        path = self._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         deployments = list(path.glob("*.json"))
         deployments.sort(key=lambda k: k.stat().st_mtime)
@@ -403,6 +410,7 @@ class TempProject(_ProjectBase):
 
     def __init__(self, name: str, contract_sources: Dict, compiler_config: Dict) -> None:
         self._path = None
+        self._build_path = None
         self._name = name
         self._sources = Sources(contract_sources, {})
         self._build = Build(self._sources)
@@ -417,9 +425,21 @@ def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
     """Checks for a Brownie project."""
     path = Path(path).resolve()
     for folder in [path] + list(path.parents):
-        if next((i for i in folder.glob("contracts/**/*") if i.suffix in (".vy", ".sol")), None):
+
+        structure_config = _load_project_structure_config(folder)
+        contracts_path = structure_config["contracts"]
+        tests_path = structure_config["tests"]
+
+        if next(
+            (
+                i
+                for i in folder.joinpath(contracts_path).glob("**/*")
+                if i.suffix in (".vy", ".sol")
+            ),
+            None,
+        ):
             return folder
-        if folder.joinpath("contracts").is_dir() and folder.joinpath("tests").is_dir():
+        if folder.joinpath(tests_path).is_dir() and folder.joinpath(tests_path).is_dir():
             return folder
     return None
 
@@ -692,8 +712,12 @@ def _create_gitfiles(project_path: Path) -> None:
 
 
 def _create_folders(project_path: Path) -> None:
-    for path in [i for i in FOLDERS]:
+    structure = _load_project_structure_config(project_path)
+    for path in structure.values():
         project_path.joinpath(path).mkdir(exist_ok=True)
+    build_path = project_path.joinpath(structure["build"])
+    for path in BUILD_FOLDERS:
+        build_path.joinpath(path).mkdir(exist_ok=True)
 
 
 def _add_to_sys_path(project_path: Path) -> None:

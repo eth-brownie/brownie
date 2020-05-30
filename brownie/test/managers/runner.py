@@ -383,7 +383,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         * Generates coverage report and outputs results to console
         * Closes all active projects
         """
-        self._sessionfinish("build/tests.json")
+        self._sessionfinish("tests.json")
         if CONFIG.argv["gas"]:
             output._print_gas_profile()
 
@@ -392,7 +392,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         coverage_eval = dict((k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash)
         report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
 
-        with self.project_path.joinpath(path).open("w") as fp:
+        with self.project._build_path.joinpath(path).open("w") as fp:
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
         coverage_eval = coverage.get_merged_coverage_eval()
         self._sessionfinish_coverage(coverage_eval)
@@ -445,4 +445,4 @@ class PytestBrownieXdistRunner(PytestBrownieRunner):
         is then aggregated in `PytestBrownieMaster.pytest_sessionfinish`.
         """
         self.tests = dict((k, v) for k, v in self.tests.items() if k in self.results)
-        self._sessionfinish(f"build/tests-{self.workerid}.json")
+        self._sessionfinish(f"tests-{self.workerid}.json")

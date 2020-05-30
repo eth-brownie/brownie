@@ -67,12 +67,10 @@ def _get_path(path_str: str) -> Tuple[Path, Project]:
     path = Path(path_str).with_suffix(".py")
 
     if not path.is_absolute():
-        if path.parts[0] != "scripts":
-            path = Path("scripts").joinpath(path)
         for project in get_loaded_projects():
-            if project._path.joinpath(path).exists():
-                path = project._path.joinpath(path)
-                return path, project
+            script_path = project._path.joinpath(project._structure["scripts"]).joinpath(path)
+            if script_path.exists():
+                return script_path, project
         raise FileNotFoundError(f"Cannot find {path_str}")
 
     if not path.exists():

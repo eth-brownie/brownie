@@ -3,7 +3,7 @@
 import pytest
 
 from brownie import project
-from brownie._config import CONFIG
+from brownie._config import CONFIG, _load_project_structure_config
 from brownie.exceptions import ProjectNotFound
 from brownie.utils.docopt import docopt
 
@@ -48,7 +48,8 @@ def main():
     project.main._add_to_sys_path(project_path)
 
     if args["<path>"] is None:
-        args["<path>"] = project_path.joinpath("tests").as_posix()
+        structure_config = _load_project_structure_config(project_path)
+        args["<path>"] = project_path.joinpath(structure_config["tests"]).as_posix()
 
     pytest_args = [args["<path>"]]
     for opt, value in [(i, args[i]) for i in sorted(args) if i.startswith("-") and args[i]]:

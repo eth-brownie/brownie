@@ -22,7 +22,9 @@ class SourceNoteBook(ttk.Notebook):
         self.bind_count = 0
         self.root.bind("<Left>", self.key_left)
         self.root.bind("<Right>", self.key_right)
-        base_path = self.root.active_project._path.joinpath("contracts")
+        base_path = self.root.active_project._path.joinpath(
+            self.root.active_project._structure["contracts"]
+        )
         for path in base_path.glob("**/*"):
             if path.suffix in (".sol", ".vy"):
                 self.add(path)

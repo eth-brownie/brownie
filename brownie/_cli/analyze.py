@@ -5,7 +5,6 @@ import json
 import re
 import time
 from os import environ
-from pathlib import Path
 from typing import Dict
 
 from mythx_models.request import AnalysisSubmissionRequest
@@ -15,7 +14,7 @@ from pythx.middleware import ClientToolNameMiddleware, GroupDataMiddleware
 
 from brownie import project
 from brownie._cli.__main__ import __version__
-from brownie._config import CONFIG, _update_argv_from_docopt
+from brownie._config import CONFIG, _load_project_structure_config, _update_argv_from_docopt
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
 from brownie.utils.docopt import docopt
@@ -341,7 +340,9 @@ def main():
     submission.generate_highlighting_report()
 
     # erase previous report
-    report_path = Path("reports/security.json")
+    report_path = project_path.joinpath(_load_project_structure_config(project_path)["reports"])
+
+    report_path = report_path.joinpath("security.json")
     if report_path.exists():
         report_path.unlink()
 
