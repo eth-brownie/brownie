@@ -398,7 +398,7 @@ class _DeployedContractBase(_ContractBase):
 
     def _save_deployment(self) -> None:
         path = self._deployment_path()
-        if path and (not path.exists() or CONFIG.network_type != "live"):
+        if path and not path.exists():
             with path.open("w") as fp:
                 json.dump(self._build, fp)
         self._project._add_to_deployment_map(self)
