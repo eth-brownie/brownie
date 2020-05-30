@@ -386,23 +386,28 @@ class _DeployedContractBase(_ContractBase):
         return Wei(balance)
 
     def _deployment_path(self) -> Optional[Path]:
-        if CONFIG.network_type != "live" or not self._project._path:
+        if not self._project._path or (
+            CONFIG.network_type != "live" and not CONFIG.settings.get("dev_deployment_artifacts")
+        ):
             return None
-        chainid = CONFIG.active_network["chainid"]
+
+        chainid = "dev" if CONFIG.network_type != "live" else CONFIG.active_network["chainid"]
         path = self._project._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         return path.joinpath(f"{self.address}.json")
 
     def _save_deployment(self) -> None:
         path = self._deployment_path()
-        if path and not path.exists():
+        if path and (not path.exists() or CONFIG.network_type != "live"):
             with path.open("w") as fp:
                 json.dump(self._build, fp)
+        self._project._add_to_deployment_map(self)
 
     def _delete_deployment(self) -> None:
         path = self._deployment_path()
         if path and path.exists():
             path.unlink()
+        self._project._remove_from_deployment_map(self)
 
 
 class Contract(_DeployedContractBase):
