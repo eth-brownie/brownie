@@ -6,6 +6,9 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Changed
+- `tx.call_trace()` now displays internal and total gas usage ([#564](https://github.com/iamdefinitelyahuman/brownie/pull/564))
+
 ### Fixed
 - Geth Traces depth reduced ([#562](https://github.com/iamdefinitelyahuman/brownie/pull/562))
 - Ganache gasCost in traces (ganache bug) ([#562](https://github.com/iamdefinitelyahuman/brownie/pull/562))
