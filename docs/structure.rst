@@ -18,6 +18,8 @@ The following folders are also created, and used internally by Brownie for manag
 
 See :ref:`build-folder` for more information about Brownie internal project folders.
 
+If you require a different organization for your project, you can adjust the subdirectory names within the project :ref:`configuration file <config-project-structure>`.
+
 ``contracts/``
 ==============
 

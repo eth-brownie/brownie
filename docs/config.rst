@@ -23,6 +23,49 @@ The following example shows all configuration settings and their default values:
 Settings
 ========
 
+Project Structure
+-----------------
+
+.. _config-project-structure:
+
+Project subdirectory names. Include these fields if you wish to modify the default structure of your project.
+
+.. py:attribute:: project_structure.build
+
+    Project subdirectory that stores data such as compiler artifacts and unit test results.
+
+    default value: ``build``
+
+.. py:attribute:: project_structure.contracts
+
+    Project subdirectory that stores contract source files.
+
+    default value: ``contracts``
+
+.. py:attribute:: project_structure.interfaces
+
+    Project subdirectory that stores interface source files and ABIs.
+
+    default value: ``interfaces``
+
+.. py:attribute:: project_structure.reports
+
+    Project subdirectory that stores JSON report files.
+
+    default value: ``reports``
+
+.. py:attribute:: project_structure.scripts
+
+    Project subdirectory that stores scripts for deployment and interaction.
+
+    default value: ``scripts``
+
+.. py:attribute:: project_structure.tests
+
+    Project subdirectory that stores unit tests.
+
+    default value: ``tests``
+
 Networks
 --------
 
