@@ -2,6 +2,7 @@
 
 import pytest
 
+from brownie import compile_source
 from brownie.exceptions import EventLookupError
 from brownie.network.event import EventDict, _EventItem
 
@@ -85,3 +86,32 @@ def test_eventitem_raises(event):
         event["Debug"][4]
     with pytest.raises(EventLookupError):
         event["Debug"]["foo"]
+
+
+def test_same_topic_different_abi(accounts):
+    proj = compile_source(
+        """
+    pragma solidity 0.5.0;
+
+    contract Foo {
+        event Baz(uint256 indexed a, uint256 b, uint256 c);
+        function foo() public {
+            emit Baz(1, 2, 3);
+        }
+    }
+
+    contract Bar {
+        event Baz(uint256 indexed a, uint256 b, uint256 indexed c);
+        function bar(Foo _addr) public {
+            _addr.foo();
+            emit Baz(4, 5, 6);
+        }
+    }"""
+    )
+
+    foo = proj.Foo.deploy({"from": accounts[0]})
+    bar = proj.Bar.deploy({"from": accounts[0]})
+    tx = bar.bar(foo, {"from": accounts[0]})
+    assert len(tx.events) == 2
+    assert tx.events[0].values() == [1, 2, 3]
+    assert tx.events[1].values() == [4, 5, 6]

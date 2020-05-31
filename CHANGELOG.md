@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Geth Traces depth reduced ([#562](https://github.com/iamdefinitelyahuman/brownie/pull/562))
 - Ganache gasCost in traces (ganache bug) ([#562](https://github.com/iamdefinitelyahuman/brownie/pull/562))
+- Decoding error when contracts use the same event signature with different argument indexing ([#575](https://github.com/iamdefinitelyahuman/brownie/pull/575))
 
 ## [1.8.9](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.9) - 2020-05-26
 ### Changed

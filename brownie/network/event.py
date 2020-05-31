@@ -167,20 +167,52 @@ def __get_path() -> Path:
 def _get_topics(abi: List) -> Dict:
     topic_map = eth_event.get_topic_map(abi)
 
-    new_topics = _topics.copy()
-    new_topics.update(topic_map)
-    if new_topics != _topics:
-        _topics.update(new_topics)
+    updated_topics = _topics.copy()
+
+    for key, value in topic_map.items():
+        if key not in updated_topics:
+            # new event topic
+            updated_topics[key] = value
+        elif value == updated_topics[key]:
+            # existing event topic, nothing has changed
+            continue
+        elif not next((i for i in updated_topics[key]["inputs"] if i["indexed"]), False):
+            # existing topic, but the old abi has no indexed events - keep the new one
+            updated_topics[key] = value
+
+    if updated_topics != _topics:
+        _topics.update(updated_topics)
         with __get_path().open("w") as fp:
-            json.dump(new_topics, fp, sort_keys=True, indent=2)
+            json.dump(updated_topics, fp, sort_keys=True, indent=2)
 
     return {v["name"]: k for k, v in topic_map.items()}
+
+
+def _add_deployment_topics(address: str, abi: List) -> None:
+    _deployment_topics[address] = eth_event.get_topic_map(abi)
 
 
 def _decode_logs(logs: List) -> Union["EventDict", List[None]]:
     if not logs:
         return []
-    events = eth_event.decode_logs(logs, _topics, allow_undecoded=True)
+
+    idx = 0
+    events: List = []
+    while True:
+        address = logs[idx]["address"]
+        try:
+            new_idx = logs.index(next(i for i in logs[idx:] if i["address"] != address))
+            log_slice = logs[idx:new_idx]
+            idx = new_idx
+        except StopIteration:
+            log_slice = logs[idx:]
+
+        topics_map = _deployment_topics.get(address, _topics)
+        events.extend(eth_event.decode_logs(log_slice, topics_map, allow_undecoded=True))
+
+        if log_slice[-1] == logs[-1]:
+            break
+
     events = [format_event(i) for i in events]
     return EventDict(events)
 
@@ -188,13 +220,20 @@ def _decode_logs(logs: List) -> Union["EventDict", List[None]]:
 def _decode_trace(trace: Sequence) -> Union["EventDict", List[None]]:
     if not trace:
         return []
+
     events = eth_event.decode_traceTransaction(trace, _topics, allow_undecoded=True)
     events = [format_event(i) for i in events]
     return EventDict(events)
 
 
+# dictionary of event topic ABIs specific to a single contract deployment
+_deployment_topics: Dict = {}
+
+# general event topic ABIs for decoding events on unknown contracts
+_topics: Dict = {}
+
 try:
     with __get_path().open() as fp:
-        _topics: Dict = json.load(fp)
+        _topics = json.load(fp)
 except (FileNotFoundError, json.decoder.JSONDecodeError):
-    _topics = {}
+    pass

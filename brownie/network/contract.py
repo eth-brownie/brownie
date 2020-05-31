@@ -39,7 +39,7 @@ from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
 from . import accounts, rpc
-from .event import _get_topics
+from .event import _add_deployment_topics, _get_topics
 from .rpc import _revert_register
 from .state import _add_contract, _add_deployment, _find_contract, _get_deployment, _remove_contract
 from .web3 import _resolve_address, web3
@@ -314,6 +314,7 @@ class _DeployedContractBase(_ContractBase):
         self._owner = owner
         self.tx = tx
         self.address = address
+        _add_deployment_topics(address, self.abi)
 
         fn_names = [i["name"] for i in self.abi if i["type"] == "function"]
         for abi in [i for i in self.abi if i["type"] == "function"]:
