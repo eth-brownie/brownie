@@ -406,16 +406,18 @@ class _DeployedContractBase(_ContractBase):
             "chainid": chainid,
             "blockHeight": web3.eth.blockNumber,
         }
-        if path and not path.exists():
-            with path.open("w") as fp:
-                json.dump(deployment_build, fp)
-        self._project._add_to_deployment_map(self)
+        if path:
+            self._project._add_to_deployment_map(self)
+            if not path.exists():
+                with path.open("w") as fp:
+                    json.dump(deployment_build, fp)
 
     def _delete_deployment(self) -> None:
         path = self._deployment_path()
-        if path and path.exists():
-            path.unlink()
-        self._project._remove_from_deployment_map(self)
+        if path:
+            self._project._remove_from_deployment_map(self)
+            if path.exists():
+                path.unlink()
 
 
 class Contract(_DeployedContractBase):
