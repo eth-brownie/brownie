@@ -98,8 +98,8 @@ class Accounts(metaclass=_Singleton):
 
         Arguments
         ---------
-        priv_key : int | bytes | str, optional
-        Private key of the account. If none is given, one is randomly generated.
+        private_key : int | bytes | str, optional
+            Private key of the account. If none is given, one is randomly generated.
 
         Returns
         -------
@@ -151,14 +151,18 @@ class Accounts(metaclass=_Singleton):
         return new_accounts
 
     def load(self, filename: str = None) -> Union[List, "LocalAccount"]:
-        """Loads a local account from a keystore file.
+        """
+        Load a local account from a keystore file.
 
-        Args:
-            filename: Keystore filename. If none is given, returns a list of
-                      available keystores.
+        Arguments
+        ---------
+        filename: str
+            Keystore filename. If `None`, returns a list of available keystores.
 
-        Returns:
-            Account instance."""
+        Returns
+        -------
+        LocalAccount
+        """
         base_accounts_path = _get_data_folder().joinpath("accounts")
         if not filename:
             return [i.stem for i in base_accounts_path.glob("*.json")]
@@ -185,14 +189,19 @@ class Accounts(metaclass=_Singleton):
         return self.add(priv_key)
 
     def at(self, address: str) -> "LocalAccount":
-        """Retrieves an Account instance from the address string. Raises
-        ValueError if the account cannot be found.
+        """
+        Retrieve an `Account` instance from the address string.
 
-        Args:
-            address: string of the account address.
+        Raises `ValueError` if the account cannot be found.
 
-        Returns:
-            Account instance.
+        Arguments
+        ---------
+        address: string
+            Address of the account
+
+        Returns
+        -------
+        Account
         """
         address = _resolve_address(address)
         acct = next((i for i in self._accounts if i == address), None)
@@ -205,19 +214,25 @@ class Accounts(metaclass=_Singleton):
             return acct
         raise UnknownAccount(f"No account exists for {address}")
 
-    def remove(self, address: str) -> None:
-        """Removes an account instance from the container.
+    def remove(self, address: Union[str, "Account"]) -> None:
+        """
+        Remove an `Account` instance from the container.
 
-        Args:
-            address: Account instance or address string of account to remove."""
-        address = _resolve_address(address)
+        Arguments
+        ---------
+        address: str | Account
+            Account instance, or string of the account address.
+        """
+        address = _resolve_address(str(address))
         try:
             self._accounts.remove(address)
         except ValueError:
             raise UnknownAccount(f"No account exists for {address}")
 
     def clear(self) -> None:
-        """Empties the container."""
+        """
+        Empty the container.
+        """
         self._accounts.clear()
 
 
