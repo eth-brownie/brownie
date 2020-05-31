@@ -210,7 +210,6 @@ class Project(_ProjectBase):
         self._compile(changed, self._compiler_config, False)
         self._compile_interfaces(interface_hashes)
         self._create_containers()
-        self._clear_dev_deployments()
         self._load_deployments()
 
         # add project to namespaces, apply import blackmagic
