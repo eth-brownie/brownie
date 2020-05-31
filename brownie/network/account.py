@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import json
-import os
 import threading
 from getpass import getpass
 from pathlib import Path
@@ -9,7 +8,6 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import eth_account
 import eth_keys
-from eth_hash.auto import keccak
 from hexbytes import HexBytes
 
 from brownie._config import CONFIG, _get_data_folder
@@ -21,6 +19,7 @@ from brownie.exceptions import (
     UnknownAccount,
     VirtualMachineError,
 )
+from brownie.utils import color
 
 from .rpc import Rpc, _revert_register
 from .state import TxHistory
@@ -91,26 +90,33 @@ class Accounts(metaclass=_Singleton):
     def __len__(self) -> int:
         return len(self._accounts)
 
-    def add(self, priv_key: Union[int, bytes, str] = None) -> "LocalAccount":
-        """Creates a new ``LocalAccount`` instance and appends it to the container.
+    def add(self, private_key: Union[int, bytes, str] = None) -> "LocalAccount":
+        """
+        Create a new ``LocalAccount`` instance and appends it to the container.
 
-        Args:
-            priv_key: Private key of the account. If none is given, one is
-                      randomly generated.
+        When the no private key is given, a mnemonic is also generated and outputted.
 
-        Returns:
-            Account instance."""
-        private_key: Union[int, bytes, str]
-        if not priv_key:
-            private_key = "0x" + keccak(os.urandom(8192)).hex()
+        Arguments
+        ---------
+        priv_key : int | bytes | str, optional
+        Private key of the account. If none is given, one is randomly generated.
+
+        Returns
+        -------
+        LocalAccount
+        """
+        if private_key is None:
+            w3account, mnemonic = eth_account.Account.create_with_mnemonic()
+            print(f"mnemonic: '{color('bright cyan')}{mnemonic}{color}'")
         else:
-            private_key = priv_key
+            w3account = web3.eth.account.from_key(private_key)
 
-        w3account = web3.eth.account.from_key(private_key)
         if w3account.address in self._accounts:
             return self.at(w3account.address)
-        account = LocalAccount(w3account.address, w3account, private_key)
+
+        account = LocalAccount(w3account.address, w3account, w3account.privateKey)
         self._accounts.append(account)
+
         return account
 
     def from_mnemonic(
