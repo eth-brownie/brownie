@@ -1,6 +1,10 @@
+comment: false
 coverage:
   status:
     project:
-      informational: true
+      default:
+        target: 0
     patch:
-      informational: true
+      default:
+        target: 0
+
