@@ -14,6 +14,7 @@ from urllib.parse import urlparse
 
 import psutil
 
+import brownie
 from brownie._config import EVM_EQUIVALENTS
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
@@ -353,6 +354,8 @@ class Rpc(metaclass=_Singleton):
         self._undo_buffer.clear()
         self._redo_buffer.clear()
         self._snapshot_id = self._current_id = self._revert(self._snapshot_id)
+        for project in brownie.project.get_loaded_projects():
+            project._clear_dev_deployments(web3.eth.blockNumber)
         return f"Block height reverted to {web3.eth.blockNumber}"
 
     def reset(self) -> str:
@@ -365,6 +368,8 @@ class Rpc(metaclass=_Singleton):
         self._undo_buffer.clear()
         self._redo_buffer.clear()
         self._reset_id = self._current_id = self._revert(self._reset_id)
+        for project in brownie.project.get_loaded_projects():
+            project._clear_dev_deployments()
         return f"Block height reset to {web3.eth.blockNumber}"
 
 
