@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import importlib
 import json
 import os
 import shutil
@@ -9,6 +10,7 @@ from base64 import b64encode
 from hashlib import sha1
 from io import BytesIO
 from pathlib import Path
+from types import ModuleType
 from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
 from urllib.parse import urlparse
 
@@ -701,6 +703,11 @@ def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
     if allow_json:
         suffixes = suffixes + (".json",)
 
+    # one day this will be a beautiful plugin system
+    hooks: Optional[ModuleType] = None
+    if project_path.joinpath("brownie_hooks.py").exists():
+        hooks = importlib.import_module("brownie_hooks")
+
     for path in project_path.glob(f"{subfolder}/**/*"):
         if path.suffix not in suffixes:
             continue
@@ -708,6 +715,10 @@ def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
             continue
         with path.open() as fp:
             source = fp.read()
+
+        if hasattr(hooks, "brownie_load_source"):
+            source = hooks.brownie_load_source(path, source)  # type: ignore
+
         path_str: str = path.relative_to(project_path).as_posix()
         contract_sources[path_str] = source
     return contract_sources
