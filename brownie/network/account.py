@@ -491,6 +491,8 @@ class LocalAccount(_PrivateKeyAccount):
 
     def __init__(self, address: str, account: Account, priv_key: Union[int, bytes, str]) -> None:
         self._acct = account
+        if not isinstance(priv_key, str):
+            priv_key = HexBytes(priv_key).hex()
         self.private_key = priv_key
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
