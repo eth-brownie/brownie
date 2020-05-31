@@ -7,6 +7,7 @@ from getpass import getpass
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
+import eth_account
 import eth_keys
 from eth_hash.auto import keccak
 from hexbytes import HexBytes
@@ -31,6 +32,8 @@ __tracebackhide__ = True
 history = TxHistory()
 rpc = Rpc()
 
+eth_account.Account.enable_unaudited_hdwallet_features()
+
 
 class Accounts(metaclass=_Singleton):
     """
@@ -45,8 +48,11 @@ class Accounts(metaclass=_Singleton):
     def __init__(self) -> None:
         self.default = None
         self._accounts: List = []
-        # prevent private keys from being stored in readline history
+
+        # prevent sensitive info from being stored in readline history
         self.add.__dict__["_private"] = True
+        self.from_mnemonic.__dict__["_private"] = True
+
         _revert_register(self)
         self._reset()
 
@@ -106,6 +112,37 @@ class Accounts(metaclass=_Singleton):
         account = LocalAccount(w3account.address, w3account, private_key)
         self._accounts.append(account)
         return account
+
+    def from_mnemonic(
+        self, mnemonic: str, count: int = 1, offset: int = 0
+    ) -> Union["LocalAccount", List["LocalAccount"]]:
+        """
+        Generate one or more `LocalAccount` objects from a seed phrase.
+
+        Arguments
+        ---------
+        mnemonic : str
+            Space-separated list of BIP39 mnemonic seed words
+        count : int, optional
+            The number of `LocalAccount` objects to create
+        offset : int, optional
+            The initial account index to create accounts from
+        """
+        new_accounts = []
+
+        for i in range(offset, offset + count):
+            w3account = eth_account.Account.from_mnemonic(
+                mnemonic, account_path=f"m/44'/60'/0'/0/{i}"
+            )
+
+            account = LocalAccount(w3account.address, w3account, w3account.privateKey)
+            new_accounts.append(account)
+            if account not in self._accounts:
+                self._accounts.append(account)
+
+        if count == 1:
+            return new_accounts[0]
+        return new_accounts
 
     def load(self, filename: str = None) -> Union[List, "LocalAccount"]:
         """Loads a local account from a keystore file.
