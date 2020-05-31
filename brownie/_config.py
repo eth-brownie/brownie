@@ -44,6 +44,11 @@ class ConfigContainer:
                 raise ValueError(f"Multiple networks using ID '{key}'")
             self.networks[key] = value
 
+        # make sure chainids are always strings
+        for network, values in self.networks.items():
+            if "chainid" in values:
+                self.networks[network]["chainid"] = str(values["chainid"])
+
         self.argv = defaultdict(lambda: None)
         self.settings = _Singleton("settings", (ConfigDict,), {})(base_config)
         self._active_network = None
