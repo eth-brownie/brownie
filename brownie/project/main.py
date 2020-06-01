@@ -334,31 +334,6 @@ class Project(_ProjectBase):
 
         self._save_deployment_map(deployment_map)
 
-    def _clear_dev_deployments(self, height: int = 0) -> None:
-        path = self._build_path.joinpath(f"deployments/dev")
-        if path.exists():
-            deployment_map = self._load_deployment_map()
-            for deployment in list(path.glob("*.json")):
-                if height == 0:
-                    deployment.unlink()
-                else:
-                    with deployment.open("r") as fp:
-                        deployment_artifact = json.load(fp)
-                        block_height = deployment_artifact["deployment"]["blockHeight"]
-                        address = deployment_artifact["deployment"]["address"]
-                        contract_name = deployment_artifact["contractName"]
-                    if block_height > height:
-                        deployment.unlink()
-                        try:
-                            deployment_map["dev"][contract_name].remove(address)
-                        except (KeyError, ValueError):
-                            pass
-            if "dev" in deployment_map and (height == 0 or not deployment_map["dev"]):
-                del deployment_map["dev"]
-                path.rmdir()
-
-            self._save_deployment_map(deployment_map)
-
     def _load_deployment_map(self) -> Dict:
         deployment_map: Dict = {}
         map_path = self._build_path.joinpath("deployments/map.json")
@@ -473,11 +448,36 @@ class Project(_ProjectBase):
         except ValueError:
             pass
 
+    def _clear_dev_deployments(self, height: int) -> None:
+        path = self._build_path.joinpath(f"deployments/dev")
+        if path.exists():
+            deployment_map = self._load_deployment_map()
+            for deployment in path.glob("*.json"):
+                if height == 0:
+                    deployment.unlink()
+                else:
+                    with deployment.open("r") as fp:
+                        deployment_artifact = json.load(fp)
+                    block_height = deployment_artifact["deployment"]["blockHeight"]
+                    address = deployment_artifact["deployment"]["address"]
+                    contract_name = deployment_artifact["contractName"]
+                    if block_height > height:
+                        deployment.unlink()
+                        try:
+                            deployment_map["dev"][contract_name].remove(address)
+                        except (KeyError, ValueError):
+                            pass
+            if "dev" in deployment_map and (height == 0 or not deployment_map["dev"]):
+                del deployment_map["dev"]
+                shutil.rmtree(path)
+
+            self._save_deployment_map(deployment_map)
+
     def _revert(self, height: int) -> None:
         self._clear_dev_deployments(height)
 
     def _reset(self) -> None:
-        self._clear_dev_deployments()
+        self._clear_dev_deployments(0)
 
 
 class TempProject(_ProjectBase):
