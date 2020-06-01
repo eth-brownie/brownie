@@ -338,11 +338,11 @@ class Project(_ProjectBase):
                     deployment_map[chainid][contract_name] = [contract_address]
             else:
                 deployment_map[chainid] = {contract_name: [contract_address]}
-        with self._path.joinpath("build/deployments/map.json").open("w") as fp:
+        with self._build_path.joinpath("deployments/map.json").open("w") as fp:
             json.dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
 
     def _clear_dev_deployments(self, height: int = 0) -> None:
-        path = self._path.joinpath(f"build/deployments/dev")
+        path = self._build_path.joinpath(f"deployments/dev")
         if path.exists():
             deployment_map = self._load_deployment_map()
             for deployment in list(path.glob("*.json")):
@@ -366,14 +366,14 @@ class Project(_ProjectBase):
 
     def _load_deployment_map(self) -> Dict:
         deployment_map: Dict = {}
-        map_path = self._path.joinpath("build/deployments/map.json")
+        map_path = self._build_path.joinpath("deployments/map.json")
         if map_path.exists():
             with map_path.open("r") as fp:
                 deployment_map = json.load(fp)
         return deployment_map
 
     def _save_deployment_map(self, deployment_map: Dict) -> None:
-        with self._path.joinpath("build/deployments/map.json").open("w") as fp:
+        with self._build_path.joinpath("deployments/map.json").open("w") as fp:
             json.dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
 
     def _remove_from_deployment_map(self, contract: ProjectContract) -> None:

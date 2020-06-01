@@ -387,18 +387,18 @@ class _DeployedContractBase(_ContractBase):
 
     def _deployment_path(self) -> Optional[Path]:
         if not self._project._path or (
-            CONFIG.network_type != "live" and not CONFIG.settings.get("dev_deployment_artifacts")
+            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]
         ):
             return None
 
-        chainid = "dev" if CONFIG.network_type != "live" else CONFIG.active_network["chainid"]
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
         path = self._project._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         return path.joinpath(f"{self.address}.json")
 
     def _save_deployment(self) -> None:
         path = self._deployment_path()
-        chainid = "dev" if CONFIG.network_type != "live" else CONFIG.active_network["chainid"]
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
         deployment_build = self._build.copy()
 
         deployment_build["deployment"] = {
