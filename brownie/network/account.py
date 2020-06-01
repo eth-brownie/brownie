@@ -1,14 +1,13 @@
 #!/usr/bin/python3
 
 import json
-import os
 import threading
 from getpass import getpass
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
+import eth_account
 import eth_keys
-from eth_hash.auto import keccak
 from hexbytes import HexBytes
 
 from brownie._config import CONFIG, _get_data_folder
@@ -20,6 +19,7 @@ from brownie.exceptions import (
     UnknownAccount,
     VirtualMachineError,
 )
+from brownie.utils import color
 
 from .rpc import Rpc, _revert_register
 from .state import TxHistory
@@ -30,6 +30,8 @@ __tracebackhide__ = True
 
 history = TxHistory()
 rpc = Rpc()
+
+eth_account.Account.enable_unaudited_hdwallet_features()
 
 
 class Accounts(metaclass=_Singleton):
@@ -45,8 +47,11 @@ class Accounts(metaclass=_Singleton):
     def __init__(self) -> None:
         self.default = None
         self._accounts: List = []
-        # prevent private keys from being stored in readline history
+
+        # prevent sensitive info from being stored in readline history
         self.add.__dict__["_private"] = True
+        self.from_mnemonic.__dict__["_private"] = True
+
         _revert_register(self)
         self._reset()
 
@@ -85,37 +90,79 @@ class Accounts(metaclass=_Singleton):
     def __len__(self) -> int:
         return len(self._accounts)
 
-    def add(self, priv_key: Union[int, bytes, str] = None) -> "LocalAccount":
-        """Creates a new ``LocalAccount`` instance and appends it to the container.
+    def add(self, private_key: Union[int, bytes, str] = None) -> "LocalAccount":
+        """
+        Create a new ``LocalAccount`` instance and appends it to the container.
 
-        Args:
-            priv_key: Private key of the account. If none is given, one is
-                      randomly generated.
+        When the no private key is given, a mnemonic is also generated and outputted.
 
-        Returns:
-            Account instance."""
-        private_key: Union[int, bytes, str]
-        if not priv_key:
-            private_key = "0x" + keccak(os.urandom(8192)).hex()
+        Arguments
+        ---------
+        private_key : int | bytes | str, optional
+            Private key of the account. If none is given, one is randomly generated.
+
+        Returns
+        -------
+        LocalAccount
+        """
+        if private_key is None:
+            w3account, mnemonic = eth_account.Account.create_with_mnemonic()
+            print(f"mnemonic: '{color('bright cyan')}{mnemonic}{color}'")
         else:
-            private_key = priv_key
+            w3account = web3.eth.account.from_key(private_key)
 
-        w3account = web3.eth.account.from_key(private_key)
         if w3account.address in self._accounts:
             return self.at(w3account.address)
-        account = LocalAccount(w3account.address, w3account, private_key)
+
+        account = LocalAccount(w3account.address, w3account, w3account.privateKey)
         self._accounts.append(account)
+
         return account
 
+    def from_mnemonic(
+        self, mnemonic: str, count: int = 1, offset: int = 0
+    ) -> Union["LocalAccount", List["LocalAccount"]]:
+        """
+        Generate one or more `LocalAccount` objects from a seed phrase.
+
+        Arguments
+        ---------
+        mnemonic : str
+            Space-separated list of BIP39 mnemonic seed words
+        count : int, optional
+            The number of `LocalAccount` objects to create
+        offset : int, optional
+            The initial account index to create accounts from
+        """
+        new_accounts = []
+
+        for i in range(offset, offset + count):
+            w3account = eth_account.Account.from_mnemonic(
+                mnemonic, account_path=f"m/44'/60'/0'/0/{i}"
+            )
+
+            account = LocalAccount(w3account.address, w3account, w3account.privateKey)
+            new_accounts.append(account)
+            if account not in self._accounts:
+                self._accounts.append(account)
+
+        if count == 1:
+            return new_accounts[0]
+        return new_accounts
+
     def load(self, filename: str = None) -> Union[List, "LocalAccount"]:
-        """Loads a local account from a keystore file.
+        """
+        Load a local account from a keystore file.
 
-        Args:
-            filename: Keystore filename. If none is given, returns a list of
-                      available keystores.
+        Arguments
+        ---------
+        filename: str
+            Keystore filename. If `None`, returns a list of available keystores.
 
-        Returns:
-            Account instance."""
+        Returns
+        -------
+        LocalAccount
+        """
         base_accounts_path = _get_data_folder().joinpath("accounts")
         if not filename:
             return [i.stem for i in base_accounts_path.glob("*.json")]
@@ -142,14 +189,19 @@ class Accounts(metaclass=_Singleton):
         return self.add(priv_key)
 
     def at(self, address: str) -> "LocalAccount":
-        """Retrieves an Account instance from the address string. Raises
-        ValueError if the account cannot be found.
+        """
+        Retrieve an `Account` instance from the address string.
 
-        Args:
-            address: string of the account address.
+        Raises `ValueError` if the account cannot be found.
 
-        Returns:
-            Account instance.
+        Arguments
+        ---------
+        address: string
+            Address of the account
+
+        Returns
+        -------
+        Account
         """
         address = _resolve_address(address)
         acct = next((i for i in self._accounts if i == address), None)
@@ -162,19 +214,25 @@ class Accounts(metaclass=_Singleton):
             return acct
         raise UnknownAccount(f"No account exists for {address}")
 
-    def remove(self, address: str) -> None:
-        """Removes an account instance from the container.
+    def remove(self, address: Union[str, "Account"]) -> None:
+        """
+        Remove an `Account` instance from the container.
 
-        Args:
-            address: Account instance or address string of account to remove."""
-        address = _resolve_address(address)
+        Arguments
+        ---------
+        address: str | Account
+            Account instance, or string of the account address.
+        """
+        address = _resolve_address(str(address))
         try:
             self._accounts.remove(address)
         except ValueError:
             raise UnknownAccount(f"No account exists for {address}")
 
     def clear(self) -> None:
-        """Empties the container."""
+        """
+        Empty the container.
+        """
         self._accounts.clear()
 
 
@@ -433,6 +491,8 @@ class LocalAccount(_PrivateKeyAccount):
 
     def __init__(self, address: str, account: Account, priv_key: Union[int, bytes, str]) -> None:
         self._acct = account
+        if not isinstance(priv_key, str):
+            priv_key = HexBytes(priv_key).hex()
         self.private_key = priv_key
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)

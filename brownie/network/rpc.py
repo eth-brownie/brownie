@@ -89,25 +89,26 @@ class Rpc(metaclass=_Singleton):
                 cmd = cmd.replace(" ", ".cmd ", 1)
             else:
                 cmd += ".cmd"
+        cmd_list = cmd.split(" ")
         kwargs.setdefault("evm_version", EVM_DEFAULT)  # type: ignore
         if kwargs["evm_version"] in EVM_EQUIVALENTS:
             kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]  # type: ignore
         kwargs = _validate_cmd_settings(kwargs)
         for key, value in [(k, v) for k, v in kwargs.items() if v]:
             try:
-                cmd += f" {CLI_FLAGS[key]} {value}"
+                cmd_list.extend([CLI_FLAGS[key], str(value)])
             except KeyError:
                 warnings.warn(
                     f"Ignoring invalid commandline setting for ganache-cli: "
                     f'"{key}" with value "{value}".',
                     InvalidArgumentWarning,
                 )
-        print(f"Launching '{cmd}'...")
+        print(f"Launching '{' '.join(cmd_list)}'...")
         self._time_offset = 0
         self._snapshot_id = False
         self._reset_id = False
         out = DEVNULL if sys.platform == "win32" else PIPE
-        self._rpc = psutil.Popen(cmd.split(" "), stdin=DEVNULL, stdout=out, stderr=out)
+        self._rpc = psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
         # check that web3 can connect
         if not web3.provider:
             _notify_registry(0)

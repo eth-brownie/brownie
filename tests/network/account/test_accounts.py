@@ -93,3 +93,41 @@ def test_default_cleared_on_disconnect(accounts, network):
     accounts.default = accounts[0]
     network.disconnect()
     assert accounts.default is None
+
+
+def test_from_mnemonic(accounts):
+    acct = accounts.from_mnemonic(
+        "street dutch license offer where music rice correct stomach there right surprise"
+    )
+
+    assert isinstance(acct, LocalAccount)
+    assert acct.address == "0x64483769Cd246aa69956B18bfd49F20426FdE2A6"
+
+
+def test_mnemonic_multiple(accounts):
+    acct = accounts.from_mnemonic(
+        "grant buyer family hybrid recipe motor cube general apart snow monster tunnel", 3
+    )
+    assert [str(i) for i in acct] == [
+        "0x4d44087e86DaEA4db7030F0558D083a75114F56C",
+        "0xD57D53eCEFAA99b9f1d67a8C4D21E46fC16Aa133",
+        "0x0efE90a99343A9AcF48501FAF3505b10822067c6",
+    ]
+
+
+def test_mnemonic_offset(accounts):
+    acct = accounts.from_mnemonic(
+        "retire basic saddle brief bridge path cradle credit angry vendor repair rhythm", offset=5
+    )
+
+    assert acct.address == "0x12ba8F2E54B1B57C54D1CA06c0a0b8d14E9abc62"
+
+
+def test_mnemonic_offset_multiple(accounts):
+    acct = accounts.from_mnemonic(
+        "day axis gallery size rebuild logic steak food palm victory useful kick", 2, 7
+    )
+    assert [str(i) for i in acct] == [
+        "0x44302d4c1e535b4FB77bc390e3053586ecA411b0",
+        "0x1F413d7E7B85E557D9997E6714479C7848A9Ea07",
+    ]

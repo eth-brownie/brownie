@@ -136,16 +136,22 @@ Accounts Attributes
 Accounts Methods
 ****************
 
-.. py:classmethod:: Accounts.add(priv_key=None)
+.. py:classmethod:: Accounts.add(private_key=None)
 
-    Creates a new :func:`LocalAccount <brownie.network.account.LocalAccount>` with private key ``priv_key``, appends it to the container, and returns the new account instance.  If no private key is entered, one is randomly generated via ``os.urandom(8192)``.
+    Creates a new :func:`LocalAccount <brownie.network.account.LocalAccount>` with private key ``private_key``, appends it to the container, and returns the new account instance.
+
+    .. code-block:: python
+
+        >>> accounts.add('8fa2fdfb89003176a16b707fc860d0881da0d1d8248af210df12d37860996fb2')
+        <Account object '0xc1826925377b4103cC92DeeCDF6F96A03142F37a'>
+
+    When no private key is given a new one is randomly generated. A seed phrase for the account is also printed to the console.
 
     .. code-block:: python
 
         >>> accounts.add()
-        <Account object '0xb094716BC0E9D3F3Fb42FF928bd76618435FeeAA'>
-        >>> accounts.add('8fa2fdfb89003176a16b707fc860d0881da0d1d8248af210df12d37860996fb2')
-        <Account object '0xc1826925377b4103cC92DeeCDF6F96A03142F37a'>
+        mnemonic: 'buffalo cinnamon glory chalk require inform strike ginger crop sell hidden cart'
+        <LocalAccount '0xf293C5E0b22802Bf5DCef3FB8112EaA4cA54fcCF'>
 
 .. py:classmethod:: Accounts.at(address)
 
@@ -163,6 +169,22 @@ Accounts Methods
     .. code-block:: python
 
         >>> accounts.clear()
+
+.. py:classmethod:: Accounts.from_mnemonic(mnemonic, count=1, offset=0)
+
+    Generates one or more :func:`LocalAccount <brownie.network.account.LocalAccount>` objects from a seed phrase.
+
+    * ``mnemonic`` : Space-separated list of BIP39 mnemonic seed words
+    * ``count`` : The number of `LocalAccount` objects to create
+    * ``offset`` : The initial account index to create accounts from
+
+    If ``count`` is greater than 1, a list of :func:`LocalAccount <brownie.network.account.LocalAccount>` objects are returned.
+
+    .. code-block:: python
+
+        >>> a.from_mnemonic('buffalo cinnamon glory chalk require inform strike ginger crop sell hidden cart')
+        <LocalAccount '0xf293C5E0b22802Bf5DCef3FB8112EaA4cA54fcCF'>
+
 
 .. py:classmethod:: Accounts.load(filename=None)
 
