@@ -48,6 +48,27 @@ See the documentation on :ref:`network management<network-management>` for more 
 
 .. _persistence:
 
+The Deployment Map
+==================
+
+Brownie will maintain a ``map.json`` file in your ``build/deployment/`` folder that lists all deployed contracts on live networks, sorted by chain and contract name.
+
+::
+
+    {
+      "1": {
+        "SolidityStorage": [
+          "0x73B74F5f1d1f7A00d8c33bFbD09744eD90220D12",
+          "0x189a7fBB0038D4b55Bd03840be0B0a38De034089"
+        ],
+        "VyperStorage": [
+          "0xF104A50668c3b1026E8f9B0d9D404faF8E42e642"
+        ]
+      }
+    }
+
+The list for each contract is sorted by the block number of the deployment with the most recent deployment first.
+
 Interacting with Deployed Contracts
 ===================================
 
@@ -67,3 +88,14 @@ The following actions WILL remove locally stored deployment data within your pro
     * Deleting the ``build/deployments/`` directory will erase all information about deployed contracts.
 
 To restore a deleted :func:`ProjectContract <brownie.network.contract.ProjectContract>` instance, or generate one for a deployment that was handled outside of Brownie, use the :func:`ContractContainer.at <ContractContainer.at>` method.
+
+
+Saving Deployments on Development Networks
+==========================================
+
+If you need deployment artifacts on a development network, set :attr:`dev_deployment_artifacts` to true in the in the project's ``brownie-config.yaml`` file.
+
+These temporary deployment artifacts and the corresponding entries in :ref:`the deployment map<persistence>`  will be removed whenever you (re-) load a project or connect, disconnect, revert or reset your local network.
+
+If you use a development network that is not started by brownie - for example an external instance of ganache - the deployment artifacts will not be deleted when disconnecting from that network.
+However, the network will be reset and the deployment artifacts deleted when you connect to such a network with brownie.
