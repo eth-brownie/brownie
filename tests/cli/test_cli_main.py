@@ -74,9 +74,7 @@ def test_cli_bake(cli_tester):
 def test_cli_compile(cli_tester, testproject):
     cli_tester.monkeypatch.setattr("brownie.project.load", cli_tester.mock_subroutines)
 
-    args = (testproject._path,)
-    kwargs = {}
-    parameters = (args, kwargs)
+    parameters = ((), {})
     cli_tester.run_and_test_parameters("compile", parameters)
     cli_tester.run_and_test_parameters("compile --all", parameters)
 
