@@ -376,9 +376,12 @@ class Project(_ProjectBase):
             return
         chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
         deployment_map = self._load_deployment_map()
-
         try:
             deployment_map[chainid][contract._name].remove(contract.address)
+            if not deployment_map[chainid][contract._name]:
+                del deployment_map[chainid][contract._name]
+            if not deployment_map[chainid]:
+                del deployment_map[chainid]
         except (KeyError, ValueError):
             pass
 
