@@ -47,17 +47,6 @@ from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_pragma_spec
 
 BUILD_FOLDERS = ["contracts", "deployments", "interfaces"]
-FOLDERS = [
-    "contracts",
-    "interfaces",
-    "scripts",
-    "tests",
-    "reports",
-    "build",
-    "build/contracts",
-    "build/deployments",
-    "build/interfaces",
-]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
 
 GITIGNORE = """__pycache__
@@ -427,20 +416,14 @@ def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
     for folder in [path] + list(path.parents):
 
         structure_config = _load_project_structure_config(folder)
-        contracts_path = structure_config["contracts"]
-        tests_path = structure_config["tests"]
+        contracts_path = folder.joinpath(structure_config["contracts"])
+        tests_path = folder.joinpath(structure_config["tests"])
 
-        if next(
-            (
-                i
-                for i in folder.joinpath(contracts_path).glob("**/*")
-                if i.suffix in (".vy", ".sol")
-            ),
-            None,
-        ):
+        if next((i for i in contracts_path.glob("**/*") if i.suffix in (".vy", ".sol")), None):
             return folder
-        if folder.joinpath(tests_path).is_dir() and folder.joinpath(tests_path).is_dir():
+        if contracts_path.is_dir() and tests_path.is_dir():
             return folder
+
     return None
 
 
