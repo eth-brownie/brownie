@@ -40,6 +40,7 @@ from brownie.network.contract import (
     InterfaceContainer,
     ProjectContract,
 )
+from brownie.network.rpc import _revert_register
 from brownie.network.state import _add_contract, _remove_contract
 from brownie.project import compiler, ethpm
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
@@ -223,6 +224,10 @@ class Project(_ProjectBase):
             sys.modules["__main__"].__dict__,
             sys.modules["brownie.project"].__dict__,
         ]
+
+        # register project for revert and reset
+        _revert_register(self)
+
         self._active = True
         _loaded_projects.append(self)
 
@@ -336,29 +341,28 @@ class Project(_ProjectBase):
         with self._path.joinpath("build/deployments/map.json").open("w") as fp:
             json.dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
 
-    def _clear_dev_deployments(self, after_block: int = 0) -> None:
+    def _clear_dev_deployments(self, height: int = 0) -> None:
         path = self._path.joinpath(f"build/deployments/dev")
         if path.exists():
-            deployments = list(path.glob("*.json"))
             deployment_map = self._load_deployment_map()
-            for deployment in deployments:
-                if after_block == 0:
+            for deployment in list(path.glob("*.json")):
+                if height == 0:
                     deployment.unlink()
-                    if "dev" in deployment_map:
-                        del deployment_map["dev"]
-                    self._save_deployment_map(deployment_map)
                 else:
                     with deployment.open("r") as fp:
                         deployment_artifact = json.load(fp)
                         block_height = deployment_artifact["deployment"]["blockHeight"]
                         address = deployment_artifact["deployment"]["address"]
                         contract_name = deployment_artifact["contractName"]
-                    if block_height > after_block:
+                    if block_height > height:
                         deployment.unlink()
                         try:
                             deployment_map["dev"][contract_name].remove(address)
                         except (KeyError, ValueError):
                             pass
+            if height == 0 and "dev" in deployment_map:
+                del deployment_map["dev"]
+            self._save_deployment_map(deployment_map)
 
     def _load_deployment_map(self) -> Dict:
         deployment_map: Dict = {}
@@ -476,6 +480,12 @@ class Project(_ProjectBase):
             sys.path.remove(str(self._path))
         except ValueError:
             pass
+
+    def _revert(self, height: int) -> None:
+        self._clear_dev_deployments(height)
+
+    def _reset(self) -> None:
+        self._clear_dev_deployments()
 
 
 class TempProject(_ProjectBase):
