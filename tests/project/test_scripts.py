@@ -22,7 +22,6 @@ def test_kwargs(testproject):
 
 def test_paths(testproject, devnetwork):
     run("token")
-    run("scripts/token")
     run("token.py")
     run(testproject._path.joinpath("scripts/token").as_posix())
 

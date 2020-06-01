@@ -60,15 +60,17 @@ class PytestBrownieMaster(PytestBrownieBase):
                 "isolated with the module_isolation or fn_isolation fixtures.\n\n"
                 "https://eth-brownie.readthedocs.io/en/stable/tests.html#isolating-tests"
             )
+        build_path = self.project._build_path
+
         report = {"tests": {}, "contracts": self.contracts, "tx": {}}
-        for path in list(self.project_path.glob("build/tests-*.json")):
+        for path in list(build_path.glob("tests-*.json")):
             with path.open() as fp:
                 data = json.load(fp)
             assert data["contracts"] == report["contracts"]
             report["tests"].update(data["tests"])
             report["tx"].update(data["tx"])
             path.unlink()
-        with self.project_path.joinpath("build/tests.json").open("w") as fp:
+        with build_path.joinpath("tests.json").open("w") as fp:
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
         coverage_eval = coverage.get_merged_coverage_eval(report["tx"])
         self._sessionfinish_coverage(coverage_eval)

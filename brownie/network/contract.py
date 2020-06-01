@@ -389,7 +389,7 @@ class _DeployedContractBase(_ContractBase):
         if CONFIG.network_type != "live" or not self._project._path:
             return None
         chainid = CONFIG.active_network["chainid"]
-        path = self._project._path.joinpath(f"build/deployments/{chainid}")
+        path = self._project._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         return path.joinpath(f"{self.address}.json")
 

@@ -37,10 +37,10 @@ class PytestBrownieBase:
             (k, v["bytecodeSha1"]) for k, v in project._build.items() if v.get("bytecode")
         )
 
-        glob = self.project_path.glob("tests/**/conftest.py")
+        glob = self.project_path.joinpath(self.project._structure["tests"]).glob("**/conftest.py")
         self.conf_hashes = dict((self._path(i.parent), _get_ast_hash(i)) for i in glob)
         try:
-            with self.project_path.joinpath("build/tests.json").open() as fp:
+            with self.project._build_path.joinpath("tests.json").open() as fp:
                 hashes = json.load(fp)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             hashes = {"tests": {}, "contracts": {}, "tx": {}}
@@ -171,7 +171,9 @@ class PytestBrownieBase:
         if CONFIG.argv["coverage"]:
             output._print_coverage_totals(self.project._build, coverage_eval)
             output._save_coverage_report(
-                self.project._build, coverage_eval, self.project_path.joinpath("reports")
+                self.project._build,
+                coverage_eval,
+                self.project_path.joinpath(self.project._structure["reports"]),
             )
 
     def pytest_keyboard_interrupt(self):

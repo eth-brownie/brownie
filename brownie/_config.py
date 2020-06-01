@@ -216,6 +216,18 @@ def _load_project_compiler_config(project_path: Optional[Path]) -> Dict:
     return compiler_data
 
 
+def _load_project_structure_config(project_path):
+    structure = CONFIG.settings["project_structure"]._copy()
+
+    path = _get_project_config_path(project_path)
+    if path is None:
+        return structure
+
+    data = _load_config(project_path).get("project_structure", {})
+    structure.update(data)
+    return structure
+
+
 def _load_project_dependencies(project_path: Path) -> List:
     data = _load_config(project_path.joinpath("brownie-config"))
     dependencies = data.get("dependencies", []) or []
