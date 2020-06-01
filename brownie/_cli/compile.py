@@ -29,5 +29,5 @@ def main():
     if args["--all"]:
         shutil.rmtree(contract_artifact_path, ignore_errors=True)
         shutil.rmtree(interface_artifact_path, ignore_errors=True)
-    project.load(project_path)
+    project.load()
     print(f"Project has been compiled. Build artifacts saved at {contract_artifact_path}")

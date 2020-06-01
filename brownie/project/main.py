@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import sys
+import warnings
 import zipfile
 from base64 import b64encode
 from hashlib import sha1
@@ -25,7 +26,12 @@ from brownie._config import (
     _load_project_config,
     _load_project_dependencies,
 )
-from brownie.exceptions import InvalidPackage, ProjectAlreadyLoaded, ProjectNotFound
+from brownie.exceptions import (
+    BrownieEnvironmentWarning,
+    InvalidPackage,
+    ProjectAlreadyLoaded,
+    ProjectNotFound,
+)
 from brownie.network import web3
 from brownie.network.contract import (
     Contract,
@@ -526,6 +532,13 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
     # checks
     if project_path is None:
         project_path = check_for_project(".")
+        if project_path is not None and project_path != Path(".").absolute():
+            warnings.warn(
+                f"Loaded project has a root folder of '{project_path}' "
+                "which is different from the current working directory",
+                BrownieEnvironmentWarning,
+            )
+
     elif Path(project_path).resolve() != check_for_project(project_path):
         project_path = None
     if project_path is None:
