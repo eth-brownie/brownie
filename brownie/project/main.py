@@ -393,19 +393,13 @@ class Project(_ProjectBase):
 
         chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
         deployment_map = self._load_deployment_map()
-
-        if chainid in deployment_map:
-            if contract._name in deployment_map[chainid] and isinstance(
-                deployment_map[chainid][contract._name], list
-            ):
-                if contract.address in deployment_map[chainid][contract._name]:
-                    deployment_map[chainid][contract._name].remove(contract.address)
-                deployment_map[chainid][contract._name].insert(0, contract.address)
-            else:
-                deployment_map[chainid][contract._name] = [contract.address]
-        else:
-            deployment_map[chainid] = {contract._name: [contract.address]}
-
+        try:
+            deployment_map[chainid][contract._name].remove(contract.address)
+        except (ValueError, KeyError):
+            pass
+        deployment_map.setdefault(chainid, {}).setdefault(contract._name, []).insert(
+            0, contract.address
+        )
         self._save_deployment_map(deployment_map)
 
     def _update_and_register(self, dict_: Any) -> None:
