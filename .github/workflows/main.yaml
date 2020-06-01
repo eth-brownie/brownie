@@ -13,8 +13,13 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
-        job: [lint, doctest]
+        job: [lint, docs-local]
+        experimental: [false]
+        include:
+          - job: docs-external
+            experimental: true
 
     steps:
     - uses: actions/checkout@v1
@@ -29,12 +34,14 @@ jobs:
 
     - name: Run Tox
       run: tox -e ${{ matrix.job }}
+      continue-on-error: ${{ matrix.experimental }}
 
 
   functionality:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         job: [plugintest, pmtest]
 
@@ -75,6 +82,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         job: [evm-byzantium, evm-petersburg, evm-istanbul]
 
@@ -115,6 +123,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest]
 
