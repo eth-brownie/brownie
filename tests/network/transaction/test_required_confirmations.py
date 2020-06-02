@@ -44,3 +44,12 @@ def test_required_confirmations_zero(accounts, block_time_network, web3):
     time.sleep(1.5)
     assert tx.status == 1
     assert web3.eth.blockNumber - block >= 1
+
+
+def test_wait_for_confirmations(accounts, block_time_network):
+    tx = accounts[0].transfer(accounts[1], "1 ether", required_confs=1)
+    tx.wait(3)
+    assert tx.confirmations in [3, 4]
+    tx.wait(2)
+    tx.wait(5)
+    assert tx.confirmations >= 5
