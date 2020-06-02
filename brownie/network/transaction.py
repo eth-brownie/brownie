@@ -54,10 +54,12 @@ def trace_inspection(fn: Callable) -> Any:
 class TransactionReceipt:
 
     """Attributes and methods relating to a broadcasted transaction.
+
     * All ether values are given as integers denominated in wei.
     * Before the tx has confirmed, most attributes are set to None
     * Accessing methods / attributes that query debug_traceTransaction
       may be very slow if the transaction involved many steps
+
     Attributes:
         contract_name: Name of the contract called in the transaction
         fn_name: Name of the method called in the transaction
@@ -78,8 +80,10 @@ class TransactionReceipt:
         contract_address: Address of contract deployed by the transaction
         logs: Raw transaction logs
         status: Transaction status: -1 pending, 0 reverted, 1 successful
+
     Additional attributes:
     (only available if debug_traceTransaction is enabled in the RPC)
+
         events: Decoded transaction log events
         trace: Expanded stack trace from debug_traceTransaction
         return_value: Return value(s) from contract call
@@ -130,6 +134,7 @@ class TransactionReceipt:
         revert_data: Optional[Tuple] = None,
     ) -> None:
         """Instantiates a new TransactionReceipt object.
+
         Args:
             txid: hexstring transaction ID
             sender: sender as a hex string or Account object
@@ -262,6 +267,19 @@ class TransactionReceipt:
         if not self.block_number:
             return 0
         return web3.eth.blockNumber - self.block_number + 1
+
+    def wait(self, required_confs: int) -> None:
+        if self.confirmations > required_confs:
+            print(f"This transaction already has {self.confirmations} confirmations.")
+        else:
+            self.required_confs = required_confs
+            while True:
+                try:
+                    tx: Dict = web3.eth.getTransaction(self.txid)
+                    break
+                except TransactionNotFound:
+                    time.sleep(0.5)
+            self._await_confirmation(tx)
 
     def _raise_if_reverted(self, exc: Any) -> None:
         if self.status or CONFIG.mode == "console":
@@ -483,6 +501,7 @@ class TransactionReceipt:
 
     def _expand_trace(self) -> None:
         """Adds the following attributes to each step of the stack trace:
+
         address: The address executing this contract.
         contractName: The name of the contract.
         fn: The name of the function.
@@ -698,6 +717,7 @@ class TransactionReceipt:
     def call_trace(self) -> None:
         """Displays the complete sequence of contracts and methods called during
         the transaction, and the range of trace step indexes for each method.
+
         Lines highlighed in red ended with a revert.
         """
 
@@ -790,8 +810,10 @@ class TransactionReceipt:
     @trace_inspection
     def _error_string(self, pad: int = 3) -> str:
         """Returns the source code that caused the transaction to revert.
+
         Args:
             pad: Number of unrelated lines of code to include before and after
+
         Returns: source code string
         """
         if self.status == 1:
