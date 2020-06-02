@@ -308,7 +308,7 @@ class Project(_ProjectBase):
         path.mkdir(exist_ok=True)
         deployments = list(path.glob("*.json"))
         deployments.sort(key=lambda k: k.stat().st_mtime)
-        deployment_map: Dict = {}
+        deployment_map = self._load_deployment_map()
         for build_json in deployments:
             with build_json.open() as fp:
                 build = json.load(fp)
@@ -328,9 +328,11 @@ class Project(_ProjectBase):
             _add_contract(contract)
             container._contracts.append(contract)
 
-            deployment_map.setdefault(chainid, {}).setdefault(contract_name, []).insert(
-                0, build_json.stem
-            )
+            # update deployment map for the current chain
+            instances = deployment_map.setdefault(chainid, {}).setdefault(contract_name, [])
+            if build_json.stem in instances:
+                instances.remove(build_json.stem)
+            instances.insert(0, build_json.stem)
 
         self._save_deployment_map(deployment_map)
 
