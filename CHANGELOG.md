@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 ### Added
 - Project folder structure is now configurable ([#581](https://github.com/eth-brownie/brownie/pull/581))
+- Deployment artifacts can now be saved via project setting `dev_deployment_artifacts: true` ([#590](https://github.com/eth-brownie/brownie/pull/590))
+- All deployment artifacts are tracked in `deployments/map.json` ([#590](https://github.com/eth-brownie/brownie/pull/590))
 
 ### Changed
 - `tx.call_trace()` now displays internal and total gas usage ([#564](https://github.com/iamdefinitelyahuman/brownie/pull/564))

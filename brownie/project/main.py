@@ -40,6 +40,7 @@ from brownie.network.contract import (
     InterfaceContainer,
     ProjectContract,
 )
+from brownie.network.rpc import _revert_register
 from brownie.network.state import _add_contract, _remove_contract
 from brownie.project import compiler, ethpm
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
@@ -223,6 +224,10 @@ class Project(_ProjectBase):
             sys.modules["__main__"].__dict__,
             sys.modules["brownie.project"].__dict__,
         ]
+
+        # register project for revert and reset
+        _revert_register(self)
+
         self._active = True
         _loaded_projects.append(self)
 
@@ -296,29 +301,83 @@ class Project(_ProjectBase):
             self._build._add(abi)
 
     def _load_deployments(self) -> None:
-        if CONFIG.network_type != "live":
+        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
             return
-        chainid = CONFIG.active_network["chainid"]
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
         path = self._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         deployments = list(path.glob("*.json"))
         deployments.sort(key=lambda k: k.stat().st_mtime)
+        deployment_map = self._load_deployment_map()
         for build_json in deployments:
             with build_json.open() as fp:
                 build = json.load(fp)
-            if build["contractName"] not in self._containers:
+
+            contract_name = build["contractName"]
+            if contract_name not in self._containers:
                 build_json.unlink()
                 continue
             if "pcMap" in build:
                 contract = ProjectContract(self, build, build_json.stem)
             else:
                 contract = Contract(  # type: ignore
-                    build["contractName"], build_json.stem, build["abi"]
+                    contract_name, build_json.stem, build["abi"]
                 )
                 contract._project = self
-            container = self._containers[build["contractName"]]
+            container = self._containers[contract_name]
             _add_contract(contract)
             container._contracts.append(contract)
+
+            # update deployment map for the current chain
+            instances = deployment_map.setdefault(chainid, {}).setdefault(contract_name, [])
+            if build_json.stem in instances:
+                instances.remove(build_json.stem)
+            instances.insert(0, build_json.stem)
+
+        self._save_deployment_map(deployment_map)
+
+    def _load_deployment_map(self) -> Dict:
+        deployment_map: Dict = {}
+        map_path = self._build_path.joinpath("deployments/map.json")
+        if map_path.exists():
+            with map_path.open("r") as fp:
+                deployment_map = json.load(fp)
+        return deployment_map
+
+    def _save_deployment_map(self, deployment_map: Dict) -> None:
+        with self._build_path.joinpath("deployments/map.json").open("w") as fp:
+            json.dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
+
+    def _remove_from_deployment_map(self, contract: ProjectContract) -> None:
+        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
+            return
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        deployment_map = self._load_deployment_map()
+        try:
+            deployment_map[chainid][contract._name].remove(contract.address)
+            if not deployment_map[chainid][contract._name]:
+                del deployment_map[chainid][contract._name]
+            if not deployment_map[chainid]:
+                del deployment_map[chainid]
+        except (KeyError, ValueError):
+            pass
+
+        self._save_deployment_map(deployment_map)
+
+    def _add_to_deployment_map(self, contract: ProjectContract) -> None:
+        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
+            return
+
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        deployment_map = self._load_deployment_map()
+        try:
+            deployment_map[chainid][contract._name].remove(contract.address)
+        except (ValueError, KeyError):
+            pass
+        deployment_map.setdefault(chainid, {}).setdefault(contract._name, []).insert(
+            0, contract.address
+        )
+        self._save_deployment_map(deployment_map)
 
     def _update_and_register(self, dict_: Any) -> None:
         dict_.update(self)
@@ -391,6 +450,37 @@ class Project(_ProjectBase):
         except ValueError:
             pass
 
+    def _clear_dev_deployments(self, height: int) -> None:
+        path = self._build_path.joinpath(f"deployments/dev")
+        if path.exists():
+            deployment_map = self._load_deployment_map()
+            for deployment in path.glob("*.json"):
+                if height == 0:
+                    deployment.unlink()
+                else:
+                    with deployment.open("r") as fp:
+                        deployment_artifact = json.load(fp)
+                    block_height = deployment_artifact["deployment"]["blockHeight"]
+                    address = deployment_artifact["deployment"]["address"]
+                    contract_name = deployment_artifact["contractName"]
+                    if block_height > height:
+                        deployment.unlink()
+                        try:
+                            deployment_map["dev"][contract_name].remove(address)
+                        except (KeyError, ValueError):
+                            pass
+            if "dev" in deployment_map and (height == 0 or not deployment_map["dev"]):
+                del deployment_map["dev"]
+                shutil.rmtree(path)
+
+            self._save_deployment_map(deployment_map)
+
+    def _revert(self, height: int) -> None:
+        self._clear_dev_deployments(height)
+
+    def _reset(self) -> None:
+        self._clear_dev_deployments(0)
+
 
 class TempProject(_ProjectBase):
 
@@ -427,7 +517,7 @@ def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
     return None
 
 
-def get_loaded_projects() -> List:
+def get_loaded_projects() -> List["Project"]:
     """Returns a list of currently loaded Project objects."""
     return _loaded_projects.copy()
 

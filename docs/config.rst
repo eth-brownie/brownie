@@ -240,3 +240,13 @@ Other Settings
             - defi.snakecharmers.eth/compound@1.1.0
 
     See the :ref:`Brownie Package Manager<package-manager>` to learn more about package dependencies.
+
+.. _dev_artifacts:
+
+.. py:attribute:: dev_deployment_artifacts
+
+    If enabled, Brownie will save deployment artifacts for contracts deployed on development networks and will include the "dev" network on the deployment map.
+
+    This is useful if another application, such as a front end framework, needs access to deployment artifacts while you are on a development network.
+
+    default value: ``false``

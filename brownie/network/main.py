@@ -47,7 +47,7 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
                 rpc.launch(active["cmd"], **active["cmd_settings"])
         else:
             Accounts()._reset()
-        if CONFIG.network_type == "live":
+        if CONFIG.network_type == "live" or CONFIG.settings["dev_deployment_artifacts"]:
             for p in project.get_loaded_projects():
                 p._load_deployments()
 
