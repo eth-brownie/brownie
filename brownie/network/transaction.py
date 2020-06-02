@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+import sys
 import threading
 import time
 from hashlib import sha1
@@ -114,6 +114,7 @@ class TransactionReceipt:
         "logs",
         "nonce",
         "receiver",
+        "required_confs",
         "sender",
         "status",
         "txid",
@@ -163,6 +164,7 @@ class TransactionReceipt:
         self.status = -1
         self.txid = txid
         self.fn_name = name
+        self.required_confs = 1
 
         if name and "." in name:
             self.contract_name, self.fn_name = name.split(".", maxsplit=1)
@@ -298,11 +300,43 @@ class TransactionReceipt:
                 f"  Gas price: {color('bright blue')}{self.gas_price/10**9}{color} gwei"
                 f"   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
             )
-        if not tx["blockNumber"] and not silent:
-            print("Waiting for confirmation...")
 
-        # await confirmation
+        if not tx["blockNumber"] and not silent and self.required_confs > 0:
+            if self.required_confs == 1:
+                print("Waiting for confirmation...")
+            else:
+                sys.stdout.write(
+                    f"\rRequired confirmations: {color('bright yellow')}0/"
+                    f"{self.required_confs}{color}"
+                )
+                sys.stdout.flush()
+
+        # await first confirmation
         receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
+
+        self.block_number: int = receipt["blockNumber"]
+        # wait for more confirmations if required and handle uncle blocks
+        remaining_confs = self.required_confs
+        while remaining_confs > 0 and self.required_confs > 1:
+            try:
+                receipt = web3.eth.getTransactionReceipt(self.txid)
+                self.block_number = receipt["blockNumber"]
+            except TransactionNotFound:
+                if not silent:
+                    sys.stdout.write(f"\r{color('red')}Transaction was lost...{color}")
+                    sys.stdout.flush()
+                continue
+            if self.required_confs - self.confirmations != remaining_confs and not silent:
+                remaining_confs = self.required_confs - self.confirmations
+                sys.stdout.write(
+                    f"\rRequired confirmations: {color('bright yellow')}{self.confirmations}/"
+                    f"{self.required_confs}{color}"
+                )
+                if remaining_confs == 0:
+                    sys.stdout.write("\n")
+                sys.stdout.flush()
+            time.sleep(1)
+
         self._set_from_receipt(receipt)
         self._confirmed.set()
         if not silent:
