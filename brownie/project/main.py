@@ -16,6 +16,7 @@ from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Un
 from urllib.parse import urlparse
 
 import requests
+import yaml
 from semantic_version import Version
 from tqdm import tqdm
 
@@ -46,6 +47,7 @@ from brownie.project import compiler, ethpm
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_pragma_spec
+from brownie.utils import notify
 
 BUILD_FOLDERS = ["contracts", "deployments", "interfaces"]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
@@ -716,7 +718,8 @@ def _install_from_github(package_id: str) -> str:
             "\ne.g. 'OpenZeppelin/openzeppelin-contracts@v2.5.0'"
         ) from None
 
-    install_path = _get_data_folder().joinpath(f"packages/{org}")
+    base_install_path = _get_data_folder().joinpath(f"packages")
+    install_path = base_install_path.joinpath(f"{org}")
     install_path.mkdir(exist_ok=True)
     install_path = install_path.joinpath(f"{repo}@{version}")
     if install_path.exists():
@@ -761,14 +764,40 @@ def _install_from_github(package_id: str) -> str:
     shutil.move(installed, install_path)
 
     try:
-        if not install_path.joinpath("contracts").exists():
-            raise Exception
-        new(str(install_path), ignore_existing=True)
+        brownie_config: Dict = {"project_structure": {}}
+
+        contract_paths = set(
+            i.relative_to(install_path).parts[0] for i in install_path.glob("**/*.sol")
+        )
+        contract_paths.update(
+            i.relative_to(install_path).parts[0] for i in install_path.glob("**/*.vy")
+        )
+        if not contract_paths:
+            raise InvalidPackage(f"{package_id} does not contain any .sol or .vy files")
+        if install_path.joinpath("contracts").is_dir():
+            brownie_config["project_structure"]["contracts"] = "contracts"
+        elif len(contract_paths) == 1:
+            brownie_config["project_structure"]["contracts"] = contract_paths.pop()
+        else:
+            raise InvalidPackage(
+                f"{package_id} has no `contracts/` subdirectory, and "
+                "multiple directories containing source files"
+            )
+
+        with install_path.joinpath("brownie-config.yaml").open("w") as fp:
+            yaml.dump(brownie_config, fp)
+
         project = load(install_path)
         project.close()
-    except Exception:
+    except InvalidPackage:
         shutil.rmtree(install_path)
-        raise InvalidPackage(f"{package_id} cannot be interpreted as a Brownie project")
+        raise
+    except Exception as e:
+        notify(
+            "WARNING",
+            f"Unable to compile {package_id} due to a {type(e).__name__} - you may still be able to"
+            " import sources from the package, but will be unable to load the package directly.\n",
+        )
 
     return f"{org}/{repo}@{version}"
 
