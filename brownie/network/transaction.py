@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import sys
 import threading
 import time
@@ -842,9 +844,11 @@ class TransactionReceipt:
     @trace_inspection
     def _source_string(self, idx: int, pad: int) -> str:
         """Displays the associated source code for a given stack trace step.
+
         Args:
             idx: Stack trace step index
             pad: Number of unrelated lines of code to include before and after
+
         Returns: source code string
         """
         trace = self.trace[idx]
