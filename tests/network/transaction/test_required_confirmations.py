@@ -1,3 +1,5 @@
+import time
+
 import pytest
 
 
@@ -32,3 +34,13 @@ def test_required_confirmations_transact(accounts, BrownieTester, block_time_net
     tx = brownieTester.doNothing({"from": accounts[0], "required_confs": 4})
     assert tx.confirmations >= 4
     assert web3.eth.blockNumber - block >= 4
+
+
+def test_required_confirmations_zero(accounts, block_time_network, web3):
+    block = web3.eth.blockNumber
+    tx = accounts[0].transfer(accounts[1], "1 ether", required_confs=0)
+    assert tx.status == -1
+    assert web3.eth.blockNumber - block == 0
+    time.sleep(1.5)
+    assert tx.status == 1
+    assert web3.eth.blockNumber - block >= 1
