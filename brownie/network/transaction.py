@@ -102,6 +102,7 @@ class TransactionReceipt:
         "_return_value",
         "_revert_msg",
         "_revert_pc",
+        "_silent",
         "_trace",
         "_trace_origin",
         "block_number",
@@ -144,11 +145,12 @@ class TransactionReceipt:
             revert_data: (revert string, program counter, revert type)
         """
 
+        self._silent = silent
         if CONFIG.mode == "test":
-            silent = True
+            self._silent = True
         if isinstance(txid, bytes):
             txid = txid.hex()
-        if not silent:
+        if not self._silent:
             print(f"Transaction sent: {color('bright blue')}{txid}{color}")
         history._add_tx(self)
 
@@ -179,9 +181,7 @@ class TransactionReceipt:
             self._revert_msg = revert_type
 
         # threaded to allow impatient users to ctrl-c to stop waiting in the console
-        confirm_thread = threading.Thread(
-            target=self._await_confirmation, args=(silent,), daemon=True
-        )
+        confirm_thread = threading.Thread(target=self._await_confirmation, daemon=True)
         confirm_thread.start()
         try:
             confirm_thread.join()
@@ -289,7 +289,7 @@ class TransactionReceipt:
             source = self._error_string(1)
         raise exc._with_attr(source=source, revert_msg=self._revert_msg)
 
-    def _await_confirmation(self, silent: bool) -> None:
+    def _await_confirmation(self) -> None:
         # await tx showing in mempool
         while True:
             try:
@@ -299,13 +299,13 @@ class TransactionReceipt:
                 time.sleep(0.5)
         self._set_from_tx(tx)
 
-        if not silent:
+        if not self._silent:
             print(
                 f"  Gas price: {color('bright blue')}{self.gas_price/10**9}{color} gwei"
                 f"   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
             )
 
-        if not tx["blockNumber"] and not silent and self.required_confs > 0:
+        if not tx["blockNumber"] and not self._silent and self.required_confs > 0:
             if self.required_confs == 1:
                 print("Waiting for confirmation...")
             else:
@@ -326,11 +326,11 @@ class TransactionReceipt:
                 receipt = web3.eth.getTransactionReceipt(self.txid)
                 self.block_number = receipt["blockNumber"]
             except TransactionNotFound:
-                if not silent:
+                if not self._silent:
                     sys.stdout.write(f"\r{color('red')}Transaction was lost...{color}")
                     sys.stdout.flush()
                 continue
-            if self.required_confs - self.confirmations != remaining_confs and not silent:
+            if self.required_confs - self.confirmations != remaining_confs and not self._silent:
                 remaining_confs = self.required_confs - self.confirmations
                 sys.stdout.write(
                     f"\rRequired confirmations: {color('bright yellow')}{self.confirmations}/"
@@ -343,7 +343,7 @@ class TransactionReceipt:
 
         self._set_from_receipt(receipt)
         self._confirmed.set()
-        if not silent:
+        if not self._silent and self.required_confs > 0:
             print(self._confirm_output())
 
     def _set_from_tx(self, tx: Dict) -> None:
