@@ -53,7 +53,7 @@ The Deployment Map
 
 Brownie will maintain a ``map.json`` file in your ``build/deployment/`` folder that lists all deployed contracts on live networks, sorted by chain and contract name.
 
-::
+.. code-block:: json
 
     {
       "1": {
@@ -93,7 +93,7 @@ To restore a deleted :func:`ProjectContract <brownie.network.contract.ProjectCon
 Saving Deployments on Development Networks
 ==========================================
 
-If you need deployment artifacts on a development network, set :attr:`dev_deployment_artifacts` to true in the in the project's ``brownie-config.yaml`` file.
+If you need deployment artifacts on a development network, set :attr:`dev_deployment_artifacts` to ``true`` in the in the project's ``brownie-config.yaml`` file.
 
 These temporary deployment artifacts and the corresponding entries in :ref:`the deployment map<persistence>`  will be removed whenever you (re-) load a project or connect, disconnect, revert or reset your local network.
 
