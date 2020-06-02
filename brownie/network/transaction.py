@@ -72,6 +72,8 @@ class TransactionReceipt:
         gas_limit: Gas limit
         gas_used: Gas used
         input: Hexstring input data
+        confirmations: The number of blocks since the transaction was confirmed
+        required_confs: Required confirmations before processing the receipt
         nonce: Transaction nonce
         block_number: Block number this transaction was included in
         timestamp: Timestamp of the block this transaction was included in
@@ -127,6 +129,7 @@ class TransactionReceipt:
         txid: Union[str, bytes],
         sender: Any = None,
         silent: bool = False,
+        required_confs: int = 1,
         name: str = "",
         revert_data: Optional[Tuple] = None,
     ) -> None:
@@ -135,6 +138,7 @@ class TransactionReceipt:
         Args:
             txid: hexstring transaction ID
             sender: sender as a hex string or Account object
+            required_confs: the number of required confirmations before processing the receipt
             silent: toggles console verbosity
             name: contract function being called
             revert_data: (revert string, program counter, revert type)
@@ -164,7 +168,7 @@ class TransactionReceipt:
         self.status = -1
         self.txid = txid
         self.fn_name = name
-        self.required_confs = 1
+        self.required_confs = required_confs
 
         if name and "." in name:
             self.contract_name, self.fn_name = name.split(".", maxsplit=1)

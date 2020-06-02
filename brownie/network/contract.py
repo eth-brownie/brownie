@@ -241,6 +241,7 @@ class ContractConstructor:
             gas_limit=tx["gas"],
             gas_price=tx["gasPrice"],
             nonce=tx["nonce"],
+            required_confs=tx["required_confs"],
         )
 
     def _autosuggest(self) -> List:
@@ -947,6 +948,7 @@ class _ContractMethod:
             gas_limit=tx["gas"],
             gas_price=tx["gasPrice"],
             nonce=tx["nonce"],
+            required_confs=tx["required_confs"],
             data=self.encode_input(*args),
         )
 
@@ -1062,7 +1064,14 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
         owner = None
 
     # seperate contract inputs from tx dict and set default tx values
-    tx = {"from": owner, "value": 0, "gas": None, "gasPrice": None, "nonce": None}
+    tx = {
+        "from": owner,
+        "value": 0,
+        "gas": None,
+        "gasPrice": None,
+        "nonce": None,
+        "required_confs": 1,
+    }
     if args and isinstance(args[-1], dict):
         tx.update(args[-1])
         args = args[:-1]
