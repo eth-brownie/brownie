@@ -263,6 +263,12 @@ class TransactionReceipt:
             return None
         return web3.eth.getBlock(self.block_number)["timestamp"]
 
+    @property
+    def confirmations(self) -> int:
+        if not self.block_number:
+            return 0
+        return web3.eth.blockNumber - self.block_number + 1
+
     def _raise_if_reverted(self, exc: Any) -> None:
         if self.status or CONFIG.mode == "console":
             return
