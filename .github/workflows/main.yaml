@@ -75,7 +75,6 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
-        fail_ci_if_error: true
 
 
   evm:
@@ -116,7 +115,6 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
-        fail_ci_if_error: true
 
 
   py38core:
@@ -157,7 +155,6 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
-        fail_ci_if_error: true
 
   py37core:
     runs-on: ubuntu-latest
@@ -192,7 +189,6 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
-        fail_ci_if_error: true
 
   py36core:
     runs-on: ubuntu-latest
@@ -227,4 +223,3 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
-        fail_ci_if_error: true
