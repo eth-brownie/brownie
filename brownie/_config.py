@@ -246,6 +246,7 @@ def _modify_hypothesis_settings(settings, name, parent):
         name,
         parent=hp_settings.get_profile(parent),
         database=DirectoryBasedExampleDatabase(_get_data_folder().joinpath("hypothesis")),
+        report_multiple_bugs=False,
         **settings,
     )
     hp_settings.load_profile(name)
