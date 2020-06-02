@@ -24,10 +24,20 @@ def given(*given_args, **given_kwargs):
     """
 
     def outer_wrapper(test):
+        first_run = True
+
         def isolation_wrapper(*args, **kwargs):
-            network.rpc.snapshot()
+            nonlocal first_run
+            if first_run:
+                # prior to the first test run, take a snapshot to ensure
+                # consistent chain state for each run
+                network.rpc.snapshot()
+                first_run = False
+            else:
+                # revert at the start of subsequent tests runs so the chain is
+                # not reverted prior to launching the interactive debugger
+                network.rpc.revert()
             test(*args, **kwargs)
-            network.rpc.revert()
 
         # hypothesis.given must wrap the target test to correctly
         # impersonate the call signature for pytest
