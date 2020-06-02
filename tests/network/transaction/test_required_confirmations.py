@@ -31,6 +31,7 @@ def block_time_network(block_time_config):
         brownie.network.disconnect()
     brownie.network.connect("development")
     yield brownie.network
+    brownie.network.disconnect()
 
 
 def test_required_confirmations_deploy(accounts, BrownieTester, block_time_network, web3):
