@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 import pytest
 
+from brownie import compile_source
+
 
 def test_attributes(accounts, tester):
     assert tester.getTuple._address == tester.address
@@ -22,19 +24,54 @@ def test_transact(accounts, tester):
     assert accounts[0].nonce == nonce + 1
 
 
+def test_block_identifier(accounts, history):
+    contract = compile_source(
+        """
+foo: public(int128)
+
+@public
+def set_foo(_foo: int128):
+    self.foo = _foo
+    """
+    ).Vyper.deploy({"from": accounts[0]})
+
+    contract.set_foo(13)
+    contract.set_foo(42)
+
+    assert contract.foo() == 42
+    assert contract.foo(block_identifier=history[-2].block_number) == 13
+    assert contract.foo.call(block_identifier=history[-2].block_number) == 13
+
+
 def test_always_transact(accounts, tester, argv, web3, monkeypatch, history):
     owner = tester.owner()
     argv["always_transact"] = True
     height = web3.eth.blockNumber
     result = tester.owner()
+
     assert owner == result
     assert web3.eth.blockNumber == height == len(history)
+
     monkeypatch.setattr("brownie.network.rpc.undo", lambda: None)
     result = tester.owner()
     tx = history[-1]
+
     assert owner == result
     assert web3.eth.blockNumber == height + 1 == len(history)
     assert tx.fn_name == "owner"
+
+
+def test_always_transact_block_identifier(accounts, tester, argv, web3, monkeypatch, history):
+    argv["always_transact"] = True
+    height = web3.eth.blockNumber
+    last_tx = history[-1]
+
+    monkeypatch.setattr("brownie.network.rpc.undo", lambda: None)
+    tester.owner(block_identifier="latest")
+
+    # using `block_identifier` should take priority over `always_transact`
+    assert web3.eth.blockNumber == height
+    assert last_tx == history[-1]
 
 
 def test_nonce_manual_call(tester, accounts):
