@@ -930,11 +930,12 @@ Contract Internal Attributes
 ContractCall
 ------------
 
-.. py:class:: brownie.network.contract.ContractCall(*args)
+.. py:class:: brownie.network.contract.ContractCall(*args, block_identifier=None)
 
     Calls a non state-changing contract method without broadcasting a transaction, and returns the result. ``args`` must match the required inputs for the method.
 
-    The expected inputs are shown in the method's ``__repr__`` value.
+    * ``args``: Input arguments for the call. The expected inputs are shown in the method's ``__repr__`` value.
+    * ``block_identifier``: A block number or hash that the call is executed at. If ``None``, the latest block is used. Raises `ValueError` if this value is too far in the past and you are not using an archival node.
 
     Inputs and return values are formatted via methods in the :ref:`convert<api-convert>` module. Multiple values are returned inside a :func:`ReturnValue <brownie.convert.datatypes.ReturnValue>`.
 
@@ -1061,9 +1062,12 @@ ContractTx Attributes
 ContractTx Methods
 ******************
 
-.. py:classmethod:: ContractTx.call(*args)
+.. py:classmethod:: ContractTx.call(*args, block_identifier=None)
 
     Calls the contract method without broadcasting a transaction, and returns the result.
+
+    * ``args``: Input arguments for the call. The expected inputs are shown in the method's ``__repr__`` value.
+    * ``block_identifier``: A block number or hash that the call is executed at. If ``None``, the latest block is used. Raises `ValueError` if this value is too far in the past and you are not using an archival node.
 
     Inputs and return values are formatted via methods in the :ref:`convert<api-convert>` module. Multiple values are returned inside a :func:`ReturnValue <brownie.convert.datatypes.ReturnValue>`.
 
