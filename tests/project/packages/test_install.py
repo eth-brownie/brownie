@@ -84,3 +84,8 @@ def test_install_from_config_dependencies(dependentproject):
 def test_dependency_already_installed(dependentproject):
     install_package("brownie-mix/token-mix@1.0.0")
     dependentproject.load()
+
+
+def test_wont_compile():
+    # can't compile due to a NamespaceCollision, should still install
+    install_package("makerdao/dss@1.0.6")
