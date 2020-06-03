@@ -40,3 +40,58 @@ The :func:`Account.transfer <Account.transfer>` method is used to send ether bet
     <Transaction object '0x124ba3f9f9e5a8c5e7e559390bebf8dfca998ef32130ddd114b7858f255f6369'>
     >>> accounts[1].balance()
     110000000000000000000
+
+=========================
+Running Many Transactions
+=========================
+
+Running any transaction will by default wait until that transaction is completed before continuing. There are two ways to run many transactions at the same time without waiting:
+
+1. Set the required confirmations of the transaction to ``0``.
+
+This will immediately return a pending :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` and continue without waiting for a confirmation. Additionally, setting ``silent=True`` will suppress the console output.
+
+.. code-block:: python
+
+    >>> transactions = [
+            accounts[0].transfer(accounts[i], "1 ether", required_confs=0, silent=True)
+            for i in range(1, 4)
+        ]
+    >>> [tx.status for tx in transactions]
+    [1, -1, -1]
+
+These transactions will initially be pending (``status = -1``) and confirm in a seperate thread in the background.
+
+2. Run the transactions in individual threads.
+
+A more advanced usage is to create a thread for each transaction. Brownie will automatically set the correct nonces and ensure thread safety.
+
+.. code-block:: python
+
+    import threading
+
+    def send_confirmed_ether(recipient):
+        accounts[0].transfer(recipient, "1 ether", required_confs=4, silent=True)
+        print(f"Confirmed tx to send ether to {recipient}.")
+
+    threads = [
+        threading.Thread(target=send_confirmed_ether, args=(accounts[i],), daemon=True)
+        for i in range(1, 4)
+    ]
+
+    for t in threads:
+        t.start()
+    print("Transactions queued.")
+
+    # ... code while you wait for confirmations ...
+
+    for t in threads:
+        t.join()
+    print("All transactions confirmed.")
+
+    # Output
+    Transactions queued.
+    Confirmed tx to send ether to 0x33A4622B82D4c04a53e170c638B944ce27cffce3.
+    Confirmed tx to send ether to 0x0063046686E46Dc6F15918b61AE2B121458534a5.
+    Confirmed tx to send ether to 0x21b42413bA931038f35e7A5224FaDb065d297Ba3.
+    Transactions confirmed.
