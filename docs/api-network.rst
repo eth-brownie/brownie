@@ -1998,17 +1998,6 @@ TransactionReceipt Attributes
         >>> tx.revert_msg
         None
 
-.. py:attribute:: TransactionReceipt.required_confs
-
-    The number of :attr:`confirmations<TransactionReceipt.confirmations>` needed before the ``TransactionReceipt`` is processesd.
-
-    .. code-block:: python
-
-        >>> tx
-        <Transaction '0x8c166b66b356ad7f5c58337973b89950f03105cdae896ac66f16cdd4fc395d05'>
-        >>> tx.required_confs
-        4
-
 .. py:attribute:: TransactionReceipt.return_value
 
     The value returned from the called function, if any. Only available if the RPC client allows ``debug_traceTransaction``.
