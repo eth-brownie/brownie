@@ -355,7 +355,8 @@ class TransactionReceipt:
                     if remaining_confs == 0:
                         sys.stdout.write("\n")
                     sys.stdout.flush()
-            time.sleep(1)
+            if remaining_confs > 0:
+                time.sleep(1)
 
         self._set_from_receipt(receipt)
         self._confirmed.set()
