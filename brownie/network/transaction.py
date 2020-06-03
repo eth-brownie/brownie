@@ -74,7 +74,6 @@ class TransactionReceipt:
         gas_used: Gas used
         input: Hexstring input data
         confirmations: The number of blocks since the transaction was confirmed
-        required_confs: Required confirmations before processing the receipt
         nonce: Transaction nonce
         block_number: Block number this transaction was included in
         timestamp: Timestamp of the block this transaction was included in
@@ -118,7 +117,6 @@ class TransactionReceipt:
         "logs",
         "nonce",
         "receiver",
-        "_required_confs",
         "sender",
         "status",
         "txid",
