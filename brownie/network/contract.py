@@ -7,7 +7,7 @@ import sys
 import warnings
 from pathlib import Path
 from textwrap import TextWrapper
-from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
 from urllib.parse import urlparse
 
 import eth_abi
@@ -1038,7 +1038,7 @@ class ContractCall(_ContractMethod):
         Bytes4 method signature.
     """
 
-    def __call__(self, *args: Tuple, block_identifier: Union[int, str, bytes] = None) -> Callable:
+    def __call__(self, *args: Tuple, block_identifier: Union[int, str, bytes] = None) -> Any:
         """
         Call the contract method without broadcasting a transaction.
 
