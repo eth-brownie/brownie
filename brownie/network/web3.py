@@ -52,6 +52,10 @@ class Web3(_Web3):
                 "beginning with 'ws' or a URL beginning with 'http'"
             )
 
+        if "fork" in CONFIG.active_network.get("cmd_settings"):
+            print("oh hai mark")
+            self.middleware_onion.add(_ForkMiddleware)
+
     def disconnect(self) -> None:
         """Disconnects from a provider"""
         if self.provider:
@@ -98,6 +102,32 @@ class Web3(_Web3):
             chain_uri = f"blockchain://{self.genesis_hash}/block/{block_hash}"
             _chain_uri_cache[self.genesis_hash] = chain_uri
         return _chain_uri_cache[self.genesis_hash]
+
+
+class _ForkMiddleware:
+
+    """
+    Web3 middleware for raising more expressive exceptions when a forked local network
+    cannot access archival states.
+    """
+
+    def __init__(self, make_request, w3):
+        self.w3 = w3
+        self.make_request = make_request
+
+    def __call__(self, method, params):
+        response = self.make_request(method, params)
+        err_msg = response.get("error", {}).get("message", "")
+        if (
+            err_msg == "Returned error: project ID does not have access to archive state"
+            or err_msg.startswith("Returned error: missing trie node")
+        ):
+            raise ValueError(
+                "Local fork was created more than 128 blocks ago and you do not"
+                " have access to archival states. Please restart your session."
+            )
+
+        return response
 
 
 def _expand_environment_vars(uri: str) -> str:
