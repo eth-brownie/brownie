@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import sys
 import threading
 import time
 from hashlib import sha1
@@ -72,6 +73,7 @@ class TransactionReceipt:
         gas_limit: Gas limit
         gas_used: Gas used
         input: Hexstring input data
+        confirmations: The number of blocks since the transaction was confirmed
         nonce: Transaction nonce
         block_number: Block number this transaction was included in
         timestamp: Timestamp of the block this transaction was included in
@@ -100,6 +102,7 @@ class TransactionReceipt:
         "_return_value",
         "_revert_msg",
         "_revert_pc",
+        "_silent",
         "_trace",
         "_trace_origin",
         "block_number",
@@ -126,6 +129,7 @@ class TransactionReceipt:
         txid: Union[str, bytes],
         sender: Any = None,
         silent: bool = False,
+        required_confs: int = 1,
         name: str = "",
         revert_data: Optional[Tuple] = None,
     ) -> None:
@@ -134,16 +138,18 @@ class TransactionReceipt:
         Args:
             txid: hexstring transaction ID
             sender: sender as a hex string or Account object
+            required_confs: the number of required confirmations before processing the receipt
             silent: toggles console verbosity
             name: contract function being called
             revert_data: (revert string, program counter, revert type)
         """
 
+        self._silent = silent
         if CONFIG.mode == "test":
-            silent = True
+            self._silent = True
         if isinstance(txid, bytes):
             txid = txid.hex()
-        if not silent:
+        if not self._silent:
             print(f"Transaction sent: {color('bright blue')}{txid}{color}")
         history._add_tx(self)
 
@@ -172,23 +178,15 @@ class TransactionReceipt:
         if self._revert_msg is None and revert_type not in ("revert", "invalid_opcode"):
             self._revert_msg = revert_type
 
-        # threaded to allow impatient users to ctrl-c to stop waiting in the console
-        confirm_thread = threading.Thread(
-            target=self._await_confirmation, args=(silent,), daemon=True
-        )
-        confirm_thread.start()
-        try:
-            confirm_thread.join()
-            # if coverage evaluation is active, evaluate the trace
-            if (
-                CONFIG.argv["coverage"]
-                and not coverage._check_cached(self.coverage_hash)
-                and self.trace
-            ):
-                self._expand_trace()
-        except KeyboardInterrupt:
-            if CONFIG.mode != "console":
-                raise
+        self._await_transaction(required_confs)
+
+        # if coverage evaluation is active, evaluate the trace
+        if (
+            CONFIG.argv["coverage"]
+            and not coverage._check_cached(self.coverage_hash)
+            and self.trace
+        ):
+            self._expand_trace()
 
     def __repr__(self) -> str:
         c = {-1: "bright yellow", 0: "bright red", 1: None}
@@ -263,6 +261,24 @@ class TransactionReceipt:
             return None
         return web3.eth.getBlock(self.block_number)["timestamp"]
 
+    @property
+    def confirmations(self) -> int:
+        if not self.block_number:
+            return 0
+        return web3.eth.blockNumber - self.block_number + 1
+
+    def wait(self, required_confs: int) -> None:
+        if self.confirmations > required_confs:
+            print(f"This transaction already has {self.confirmations} confirmations.")
+        else:
+            while True:
+                try:
+                    tx: Dict = web3.eth.getTransaction(self.txid)
+                    break
+                except TransactionNotFound:
+                    time.sleep(0.5)
+            self._await_confirmation(tx, required_confs)
+
     def _raise_if_reverted(self, exc: Any) -> None:
         if self.status or CONFIG.mode == "console":
             return
@@ -277,29 +293,72 @@ class TransactionReceipt:
             source = self._error_string(1)
         raise exc._with_attr(source=source, revert_msg=self._revert_msg)
 
-    def _await_confirmation(self, silent: bool) -> None:
+    def _await_transaction(self, required_confs: int = 1) -> None:
         # await tx showing in mempool
         while True:
             try:
-                tx = web3.eth.getTransaction(self.txid)
+                tx: Dict = web3.eth.getTransaction(self.txid)
                 break
             except TransactionNotFound:
                 time.sleep(0.5)
         self._set_from_tx(tx)
 
-        if not silent:
+        if not self._silent:
             print(
-                f"  Gas price: {color('bright blue')}{self.gas_price/10**9}{color} gwei"
+                f"  Gas price: {color('bright blue')}{self.gas_price / 10 ** 9}{color} gwei"
                 f"   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
             )
-        if not tx["blockNumber"] and not silent:
-            print("Waiting for confirmation...")
 
-        # await confirmation
+        # await confirmation of tx in a separate thread which is blocking if required_confs > 0
+        confirm_thread = threading.Thread(
+            target=self._await_confirmation, args=(tx, required_confs), daemon=True
+        )
+        confirm_thread.start()
+        if required_confs > 0:
+            confirm_thread.join()
+
+    def _await_confirmation(self, tx: Dict, required_confs: int = 1) -> None:
+        if not tx["blockNumber"] and not self._silent and required_confs > 0:
+            if required_confs == 1:
+                print("Waiting for confirmation...")
+            else:
+                sys.stdout.write(
+                    f"\rRequired confirmations: {color('bright yellow')}0/"
+                    f"{required_confs}{color}"
+                )
+                sys.stdout.flush()
+
+        # await first confirmation
         receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
+
+        self.block_number: int = receipt["blockNumber"]
+        # wait for more confirmations if required and handle uncle blocks
+        remaining_confs = required_confs
+        while remaining_confs > 0 and required_confs > 1:
+            try:
+                receipt = web3.eth.getTransactionReceipt(self.txid)
+                self.block_number = receipt["blockNumber"]
+            except TransactionNotFound:
+                if not self._silent:
+                    sys.stdout.write(f"\r{color('red')}Transaction was lost...{color}{' ' * 8}")
+                    sys.stdout.flush()
+                continue
+            if required_confs - self.confirmations != remaining_confs:
+                remaining_confs = required_confs - self.confirmations
+                if not self._silent:
+                    sys.stdout.write(
+                        f"\rRequired confirmations: {color('bright yellow')}{self.confirmations}/"
+                        f"{required_confs}{color}  "
+                    )
+                    if remaining_confs == 0:
+                        sys.stdout.write("\n")
+                    sys.stdout.flush()
+            if remaining_confs > 0:
+                time.sleep(1)
+
         self._set_from_receipt(receipt)
         self._confirmed.set()
-        if not silent:
+        if not self._silent and required_confs > 0:
             print(self._confirm_output())
 
     def _set_from_tx(self, tx: Dict) -> None:

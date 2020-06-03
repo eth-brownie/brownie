@@ -1798,6 +1798,17 @@ TransactionReceipt Attributes
         >>> tx.block_number
         2
 
+.. py:attribute:: TransactionReceipt.confirmations
+
+    The number of blocks mined since the transaction was confirmed, including the block the transaction was mined in: ``block_height - tx.block_number + 1``.
+
+    .. code-block:: python
+
+        >>> tx
+        <Transaction '0x8c166b66b356ad7f5c58337973b89950f03105cdae896ac66f16cdd4fc395d05'>
+        >>> tx.confirmations
+        11
+
 .. py:attribute:: TransactionReceipt.contract_address
 
     The address of the contract deployed in this transaction, if the transaction was a deployment.
@@ -2223,6 +2234,21 @@ TransactionReceipt Methods
             }
             function mul(uint a, uint b) internal pure returns (uint c) {
                 c = a * b;
+
+
+.. py:classmethod:: TransactionReceipt.wait(n)
+
+    Will wait for ``n`` :attr:`confirmations<TransactionReceipt.confirmations>` of the transaction. This has no effect if ``n`` is less than the current amount of confirmations.
+
+.. code-block:: python
+
+        >>> tx
+        <Transaction '0x830b842e24efae712b67dddd97633356122c36e6cf2193fcf9f7dc635c4cbe2f'>
+        >>> tx.wait(2)
+        This transaction already has 3 confirmations.
+        >>> tx.wait(6)
+        Required confirmations: 6/6
+          Transaction confirmed - Block: 17   Gas used: 21000 (0.31%)
 
 ``brownie.network.web3``
 ========================
