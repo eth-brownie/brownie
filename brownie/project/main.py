@@ -764,28 +764,29 @@ def _install_from_github(package_id: str) -> str:
     shutil.move(installed, install_path)
 
     try:
-        brownie_config: Dict = {"project_structure": {}}
+        if not install_path.joinpath("brownie-config.yaml").exists():
+            brownie_config: Dict = {"project_structure": {}}
 
-        contract_paths = set(
-            i.relative_to(install_path).parts[0] for i in install_path.glob("**/*.sol")
-        )
-        contract_paths.update(
-            i.relative_to(install_path).parts[0] for i in install_path.glob("**/*.vy")
-        )
-        if not contract_paths:
-            raise InvalidPackage(f"{package_id} does not contain any .sol or .vy files")
-        if install_path.joinpath("contracts").is_dir():
-            brownie_config["project_structure"]["contracts"] = "contracts"
-        elif len(contract_paths) == 1:
-            brownie_config["project_structure"]["contracts"] = contract_paths.pop()
-        else:
-            raise InvalidPackage(
-                f"{package_id} has no `contracts/` subdirectory, and "
-                "multiple directories containing source files"
+            contract_paths = set(
+                i.relative_to(install_path).parts[0] for i in install_path.glob("**/*.sol")
             )
+            contract_paths.update(
+                i.relative_to(install_path).parts[0] for i in install_path.glob("**/*.vy")
+            )
+            if not contract_paths:
+                raise InvalidPackage(f"{package_id} does not contain any .sol or .vy files")
+            if install_path.joinpath("contracts").is_dir():
+                brownie_config["project_structure"]["contracts"] = "contracts"
+            elif len(contract_paths) == 1:
+                brownie_config["project_structure"]["contracts"] = contract_paths.pop()
+            else:
+                raise InvalidPackage(
+                    f"{package_id} has no `contracts/` subdirectory, and "
+                    "multiple directories containing source files"
+                )
 
-        with install_path.joinpath("brownie-config.yaml").open("w") as fp:
-            yaml.dump(brownie_config, fp)
+            with install_path.joinpath("brownie-config.yaml").open("w") as fp:
+                yaml.dump(brownie_config, fp)
 
         project = load(install_path)
         project.close()
