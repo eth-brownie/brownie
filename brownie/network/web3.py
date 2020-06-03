@@ -4,7 +4,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Callable, Dict, List, Optional, Set
 
 from ens import ENS
 from web3 import HTTPProvider, IPCProvider
@@ -31,9 +31,14 @@ class Web3(_Web3):
         self._mainnet_w3: Optional[_Web3] = None
         self._genesis_hash: Optional[str] = None
         self._chain_uri: Optional[str] = None
+        self._custom_middleware: Set = set()
 
     def connect(self, uri: str, timeout: int = 30) -> None:
         """Connects to a provider"""
+        for middleware in self._custom_middleware:
+            self.middleware_onion.remove(middleware)
+        self._custom_middleware.clear()
+
         uri = _expand_environment_vars(uri)
         try:
             if Path(uri).exists():
@@ -51,6 +56,13 @@ class Web3(_Web3):
                 "Unknown URI - must be a path to an IPC socket, a websocket "
                 "beginning with 'ws' or a URL beginning with 'http'"
             )
+
+        try:
+            if "fork" in CONFIG.active_network["cmd_settings"]:
+                self._custom_middleware.add(_ForkMiddleware)
+                self.middleware_onion.add(_ForkMiddleware)
+        except (ConnectionError, KeyError):
+            pass
 
     def disconnect(self) -> None:
         """Disconnects from a provider"""
@@ -98,6 +110,32 @@ class Web3(_Web3):
             chain_uri = f"blockchain://{self.genesis_hash}/block/{block_hash}"
             _chain_uri_cache[self.genesis_hash] = chain_uri
         return _chain_uri_cache[self.genesis_hash]
+
+
+class _ForkMiddleware:
+
+    """
+    Web3 middleware for raising more expressive exceptions when a forked local network
+    cannot access archival states.
+    """
+
+    def __init__(self, make_request: Callable, w3: _Web3):
+        self.w3 = w3
+        self.make_request = make_request
+
+    def __call__(self, method: str, params: List) -> Dict:
+        response = self.make_request(method, params)
+        err_msg = response.get("error", {}).get("message", "")
+        if (
+            err_msg == "Returned error: project ID does not have access to archive state"
+            or err_msg.startswith("Returned error: missing trie node")
+        ):
+            raise ValueError(
+                "Local fork was created more than 128 blocks ago and you do not"
+                " have access to archival states. Please restart your session."
+            )
+
+        return response
 
 
 def _expand_environment_vars(uri: str) -> str:
