@@ -345,15 +345,16 @@ class TransactionReceipt:
                     sys.stdout.write(f"\r{color('red')}Transaction was lost...{color}")
                     sys.stdout.flush()
                 continue
-            if self.required_confs - self.confirmations != remaining_confs and not self._silent:
+            if self.required_confs - self.confirmations != remaining_confs:
                 remaining_confs = self.required_confs - self.confirmations
-                sys.stdout.write(
-                    f"\rRequired confirmations: {color('bright yellow')}{self.confirmations}/"
-                    f"{self.required_confs}{color}"
-                )
-                if remaining_confs == 0:
-                    sys.stdout.write("\n")
-                sys.stdout.flush()
+                if not self._silent:
+                    sys.stdout.write(
+                        f"\rRequired confirmations: {color('bright yellow')}{self.confirmations}/"
+                        f"{self.required_confs}{color}"
+                    )
+                    if remaining_confs == 0:
+                        sys.stdout.write("\n")
+                    sys.stdout.flush()
             time.sleep(1)
 
         self._set_from_receipt(receipt)
