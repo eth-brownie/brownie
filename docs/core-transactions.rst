@@ -284,9 +284,3 @@ The :func:`TxHistory <brownie.network.state.TxHistory>` container, available as 
     >>> history
     [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>, <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>]
 
-Unconfirmed Transactions
-========================
-
-After broadcasting a transaction, Brownie will pause and wait for it to confirm. If you are using the console you can press ``Ctrl-C`` stop waiting and immediately receive the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` object. It will be marked as pending, and many attributes and methods will not yet be available. A notification will be displayed when the transaction confirms.
-
-If you send another transaction from the same account before the previous one has confirmed, it is still broadcast with the next sequential nonce.
