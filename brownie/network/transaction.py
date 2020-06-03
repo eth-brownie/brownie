@@ -329,9 +329,9 @@ class TransactionReceipt:
                 sys.stdout.flush()
 
         # await first confirmation
-        receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
+        receipt = web3.eth.waitForTransactionReceipt(self.txid, timeout=None, poll_latency=0.5)
 
-        self.block_number: int = receipt["blockNumber"]
+        self.block_number: Optional[int] = receipt["blockNumber"]
         # wait for more confirmations if required and handle uncle blocks
         remaining_confs = required_confs
         while remaining_confs > 0 and required_confs > 1:
@@ -342,7 +342,10 @@ class TransactionReceipt:
                 if not self._silent:
                     sys.stdout.write(f"\r{color('red')}Transaction was lost...{color}{' ' * 8}")
                     sys.stdout.flush()
-                continue
+                # check if tx is still in mempool, this will raise otherwise
+                tx = web3.eth.getTransaction(self.txid)
+                self.block_number = None
+                return self._await_confirmation(tx, required_confs)
             if required_confs - self.confirmations != remaining_confs:
                 remaining_confs = required_confs - self.confirmations
                 if not self._silent:

@@ -282,6 +282,21 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
     """Base class for Account and LocalAccount"""
 
+    def __init__(self, addr: str) -> None:
+        self._lock = threading.Lock()
+        super().__init__(addr)
+
+    def _pending_nonce(self) -> int:
+        tx_from_sender = history.from_sender(self.address)
+        if len(tx_from_sender) == 0:
+            return self.nonce
+
+        last_tx = tx_from_sender[-1]
+        if last_tx.status == -1:
+            return last_tx.nonce + 1
+        else:
+            return self.nonce
+
     def _gas_limit(self, to: Optional["Accounts"], amount: int, data: Optional[str] = None) -> int:
         gas_limit = CONFIG.active_network["settings"]["gas_limit"]
         if isinstance(gas_limit, bool) or gas_limit in (None, "auto"):
@@ -335,32 +350,33 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 f"Local RPC using '{rpc.evm_version()}' but contract was compiled for '{evm}'"
             )
         data = contract.deploy.encode_input(*args)
-        try:
-            txid = self._transact(  # type: ignore
-                {
-                    "from": self.address,
-                    "value": Wei(amount),
-                    "nonce": nonce if nonce is not None else self.nonce,
-                    "gasPrice": Wei(gas_price) or self._gas_price(),
-                    "gas": Wei(gas_limit) or self._gas_limit(None, amount, data),
-                    "data": HexBytes(data),
-                }
-            )
-            exc, revert_data = None, None
-        except ValueError as e:
-            exc = VirtualMachineError(e)
-            if not hasattr(exc, "txid"):
-                raise exc from None
-            txid = exc.txid
-            revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
+        with self._lock:
+            try:
+                txid = self._transact(  # type: ignore
+                    {
+                        "from": self.address,
+                        "value": Wei(amount),
+                        "nonce": nonce if nonce is not None else self._pending_nonce(),
+                        "gasPrice": Wei(gas_price) or self._gas_price(),
+                        "gas": Wei(gas_limit) or self._gas_limit(None, amount, data),
+                        "data": HexBytes(data),
+                    }
+                )
+                exc, revert_data = None, None
+            except ValueError as e:
+                exc = VirtualMachineError(e)
+                if not hasattr(exc, "txid"):
+                    raise exc from None
+                txid = exc.txid
+                revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
 
-        receipt = TransactionReceipt(
-            txid,
-            self,
-            required_confs=required_confs,
-            name=contract._name + ".constructor",
-            revert_data=revert_data,
-        )
+            receipt = TransactionReceipt(
+                txid,
+                self,
+                required_confs=required_confs,
+                name=contract._name + ".constructor",
+                revert_data=revert_data,
+            )
         add_thread = threading.Thread(target=contract._add_from_tx, args=(receipt,), daemon=True)
         add_thread.start()
 
@@ -439,30 +455,30 @@ class _PrivateKeyAccount(PublicKeyAccount):
         Returns:
             TransactionReceipt object
         """
+        with self._lock:
+            tx = {
+                "from": self.address,
+                "value": Wei(amount),
+                "nonce": nonce if nonce is not None else self._pending_nonce(),
+                "gasPrice": Wei(gas_price) if gas_price is not None else self._gas_price(),
+                "gas": Wei(gas_limit) or self._gas_limit(to, amount, data),
+                "data": HexBytes(data or ""),
+            }
+            if to:
+                tx["to"] = to_address(str(to))
+            try:
+                txid = self._transact(tx)  # type: ignore
+                exc, revert_data = None, None
+            except ValueError as e:
+                exc = VirtualMachineError(e)
+                if not hasattr(exc, "txid"):
+                    raise exc from None
+                txid = exc.txid
+                revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
 
-        tx = {
-            "from": self.address,
-            "value": Wei(amount),
-            "nonce": nonce if nonce is not None else self.nonce,
-            "gasPrice": Wei(gas_price) if gas_price is not None else self._gas_price(),
-            "gas": Wei(gas_limit) or self._gas_limit(to, amount, data),
-            "data": HexBytes(data or ""),
-        }
-        if to:
-            tx["to"] = to_address(str(to))
-        try:
-            txid = self._transact(tx)  # type: ignore
-            exc, revert_data = None, None
-        except ValueError as e:
-            exc = VirtualMachineError(e)
-            if not hasattr(exc, "txid"):
-                raise exc from None
-            txid = exc.txid
-            revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
-
-        receipt = TransactionReceipt(
-            txid, self, required_confs=required_confs, silent=silent, revert_data=revert_data
-        )
+            receipt = TransactionReceipt(
+                txid, self, required_confs=required_confs, silent=silent, revert_data=revert_data
+            )
         if rpc.is_active():
             undo_thread = threading.Thread(
                 target=rpc._add_to_undo_buffer,

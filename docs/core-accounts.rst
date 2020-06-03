@@ -40,3 +40,24 @@ The :func:`Account.transfer <Account.transfer>` method is used to send ether bet
     <Transaction object '0x124ba3f9f9e5a8c5e7e559390bebf8dfca998ef32130ddd114b7858f255f6369'>
     >>> accounts[1].balance()
     110000000000000000000
+
+
+Broadcasting Multiple Transactions
+==================================
+
+Broadcasting a transaction is normally a *blocking action* - Brownie waits until the transaction has confirmed before continuing.
+One way to broadcast transactions without blocking is to set ``required_confs = 0``.
+This immediately returns a pending :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` and continues without waiting for a confirmation.
+Additionally, setting ``silent = True`` suppresses the console output.
+
+
+.. code-block:: python
+
+    >>> transactions = [
+            accounts[0].transfer(accounts[i], "1 ether", required_confs=0, silent=True)
+            for i in range(1, 4)
+        ]
+    >>> [tx.status for tx in transactions]
+    [1, -1, -1]
+
+These transactions are initially pending (``status == -1``) and appear yellow in the console.

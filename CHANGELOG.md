@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `tx.call_trace()` now displays internal and total gas usage ([#564](https://github.com/iamdefinitelyahuman/brownie/pull/564))
+- Default nonce for transactions now takes pending transactions into account. ([#597](https://github.com/iamdefinitelyahuman/brownie/pull/597))
 
 ### Fixed
 - Geth Traces depth reduced ([#562](https://github.com/iamdefinitelyahuman/brownie/pull/562))

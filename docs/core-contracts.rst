@@ -143,7 +143,8 @@ When executing a transaction to a contract, you can optionally include a :py:cla
     * ``gas_limit``: The amount of gas provided for transaction execution, in wei. If not given, the gas limit is determined using :meth:`web3.eth.estimateGas <web3.eth.Eth.estimateGas>`.
     * ``gas_price``: The gas price for the transaction, in wei. If not given, the gas price is set according to :attr:`web3.eth.gasPrice <web3.eth.Eth.gasPrice>`.
     * ``amount``: The amount of Ether to include with the transaction, in wei.
-    * ``nonce``: The nonce for the transaction. If not given, the nonce is set according to :meth:`web3.eth.getTransactionCount <web3.eth.Eth.getTransactionCount>`.
+    * ``nonce``: The nonce for the transaction. If not given, the nonce is set according to :meth:`web3.eth.getTransactionCount <web3.eth.Eth.getTransactionCount>` while taking pending transactions from the sender into account.
+    * ``required_confs``: The required :attr:`confirmations<TransactionReceipt.confirmations>` before the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is processed. If none is given, defaults to 1 confirmation.  If 0 is given, immediately returns a pending :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, while waiting for a confirmation in a separate thread.
 
 All currency integer values can also be given as strings that will be converted by :func:`Wei <brownie.convert.datatypes.Wei>`.
 
