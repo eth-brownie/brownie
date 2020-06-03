@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Project folder structure is now configurable ([#581](https://github.com/eth-brownie/brownie/pull/581))
 - Deployment artifacts can now be saved via project setting `dev_deployment_artifacts: true` ([#590](https://github.com/eth-brownie/brownie/pull/590))
 - All deployment artifacts are tracked in `deployments/map.json` ([#590](https://github.com/eth-brownie/brownie/pull/590))
+- `required_confs = n / {'required_confs: n}` argument for transactions. Will wait for n confirmations before processing the tx receipt. `n = 0` will immediately return a pending receipt. ([#587](https://github.com/eth-brownie/brownie/pull/587))
+- `tx.confirmations` shows number of confirmations, `tx.wait(n)` waits until `tx` has `n` or more confirmations. ([#587](https://github.com/eth-brownie/brownie/pull/587))
 
 ### Changed
 - `tx.call_trace()` now displays internal and total gas usage ([#564](https://github.com/iamdefinitelyahuman/brownie/pull/564))
