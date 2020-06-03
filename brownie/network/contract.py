@@ -793,7 +793,7 @@ class OverloadedMethod:
         fn = self._get_fn_from_args(args)
         return fn(*args)  # type: ignore
 
-    def call(self, *args: Tuple) -> Any:
+    def call(self, *args: Tuple, block_identifier: Union[int, str, bytes] = None) -> Any:
         """
         Call the contract method without broadcasting a transaction.
 
@@ -803,16 +803,20 @@ class OverloadedMethod:
 
         Arguments
         ---------
-        *args:
+        *args
             Contract method inputs. You can optionally provide a
             dictionary of transaction properties as the last arg.
+        block_identifier : int | str | bytes, optional
+            A block number or hash that the call is executed at. If not given, the
+            latest block used. Raises `ValueError` if this value is too far in the
+            past and you are not using an archival node.
 
         Returns
         -------
             Contract method return value(s).
         """
         fn = self._get_fn_from_args(args)
-        return fn.call(*args)
+        return fn.call(*args, block_identifier=block_identifier)
 
     def transact(self, *args: Tuple) -> TransactionReceiptType:
         """
@@ -894,15 +898,19 @@ class _ContractMethod:
         print(f"{self.abi['name']}({_inputs(self.abi)})")
         _print_natspec(self.natspec)
 
-    def call(self, *args: Tuple) -> Any:
+    def call(self, *args: Tuple, block_identifier: Union[int, str, bytes] = None) -> Any:
         """
         Call the contract method without broadcasting a transaction.
 
         Arguments
         ---------
-        *args:
+        *args
             Contract method inputs. You can optionally provide a
             dictionary of transaction properties as the last arg.
+        block_identifier : int | str | bytes, optional
+            A block number or hash that the call is executed at. If not given, the
+            latest block used. Raises `ValueError` if this value is too far in the
+            past and you are not using an archival node.
 
         Returns
         -------
@@ -914,9 +922,10 @@ class _ContractMethod:
             tx["from"] = str(tx["from"])
         tx.update({"to": self._address, "data": self.encode_input(*args)})
         try:
-            data = web3.eth.call(dict((k, v) for k, v in tx.items() if v))
+            data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier)
         except ValueError as e:
             raise VirtualMachineError(e) from None
+
         return self.decode_output(data)
 
     def transact(self, *args: Tuple) -> TransactionReceiptType:
@@ -925,7 +934,7 @@ class _ContractMethod:
 
         Arguments
         ---------
-        *args:
+        *args
             Contract method inputs. You can optionally provide a
             dictionary of transaction properties as the last arg.
 
@@ -1003,7 +1012,7 @@ class ContractTx(_ContractMethod):
 
         Arguments
         ---------
-        *args:
+        *args
             Contract method inputs. You can optionally provide a
             dictionary of transaction properties as the last arg.
 
@@ -1029,23 +1038,28 @@ class ContractCall(_ContractMethod):
         Bytes4 method signature.
     """
 
-    def __call__(self, *args: Tuple) -> Callable:
+    def __call__(self, *args: Tuple, block_identifier: Union[int, str, bytes] = None) -> Callable:
         """
         Call the contract method without broadcasting a transaction.
 
         Arguments
         ---------
-        *args:
+        args
             Contract method inputs. You can optionally provide a
             dictionary of transaction properties as the last arg.
+        block_identifier : int | str | bytes, optional
+            A block number or hash that the call is executed at. If not given, the
+            latest block used. Raises `ValueError` if this value is too far in the
+            past and you are not using an archival node.
 
         Returns
         -------
             Contract method return value(s).
         """
 
-        if not CONFIG.argv["always_transact"]:
-            return self.call(*args)
+        if not CONFIG.argv["always_transact"] or block_identifier is not None:
+            return self.call(*args, block_identifier=block_identifier)
+
         args, tx = _get_tx(self._owner, args)
         tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
         try:
