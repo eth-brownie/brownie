@@ -329,7 +329,7 @@ class TransactionReceipt:
                 sys.stdout.flush()
 
         # await first confirmation
-        receipt = web3.eth.waitForTransactionReceipt(self.txid, None)
+        receipt = web3.eth.waitForTransactionReceipt(self.txid, timeout=None, poll_latency=0.5)
 
         self.block_number: int = receipt["blockNumber"]
         # wait for more confirmations if required and handle uncle blocks
