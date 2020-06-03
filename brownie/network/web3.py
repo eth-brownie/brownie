@@ -4,7 +4,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Callable, Dict, List, Optional, Set
 
 from ens import ENS
 from web3 import HTTPProvider, IPCProvider
@@ -31,7 +31,7 @@ class Web3(_Web3):
         self._mainnet_w3: Optional[_Web3] = None
         self._genesis_hash: Optional[str] = None
         self._chain_uri: Optional[str] = None
-        self._custom_middleware: set = set()
+        self._custom_middleware: Set = set()
 
     def connect(self, uri: str, timeout: int = 30) -> None:
         """Connects to a provider"""
@@ -119,11 +119,11 @@ class _ForkMiddleware:
     cannot access archival states.
     """
 
-    def __init__(self, make_request, w3):
+    def __init__(self, make_request: Callable, w3: _Web3):
         self.w3 = w3
         self.make_request = make_request
 
-    def __call__(self, method, params):
+    def __call__(self, method: str, params: List) -> Dict:
         response = self.make_request(method, params)
         err_msg = response.get("error", {}).get("message", "")
         if (
