@@ -1,6 +1,18 @@
+import threading
 import time
 
 import pytest
+
+import brownie
+
+
+def send_and_wait_for_tx():
+    tx = brownie.accounts[0].transfer(
+        brownie.accounts[1], "0.1 ether", required_confs=0, silent=True
+    )
+    tx.wait(2)
+    assert tx.confirmations >= 2
+    assert tx.status == 1
 
 
 @pytest.fixture
@@ -54,3 +66,27 @@ def test_wait_for_confirmations(accounts, block_time_network):
     tx.wait(2)
     tx.wait(5)
     assert tx.confirmations >= 5
+
+
+def test_pending_nonce(accounts, block_time_network):
+    for _ in range(3):
+        accounts[0].transfer(accounts[1], "0.1 ether", required_confs=0, silent=True)
+    assert accounts[0]._pending_nonce() == 3
+    assert accounts[0].nonce < 3
+    time.sleep(3.5)
+    assert accounts[0].nonce == 3
+
+
+def test_multithreading(accounts, history, block_time_network):
+    threads = []
+    for _ in range(3):
+        thread = threading.Thread(target=send_and_wait_for_tx, daemon=True)
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    for tx in history:
+        assert tx.status == 1
+        assert tx.confirmations >= 2
