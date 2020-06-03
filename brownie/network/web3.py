@@ -31,9 +31,14 @@ class Web3(_Web3):
         self._mainnet_w3: Optional[_Web3] = None
         self._genesis_hash: Optional[str] = None
         self._chain_uri: Optional[str] = None
+        self._custom_middleware: set = set()
 
     def connect(self, uri: str, timeout: int = 30) -> None:
         """Connects to a provider"""
+        for middleware in self._custom_middleware:
+            self.middleware_onion.remove(middleware)
+        self._custom_middleware.clear()
+
         uri = _expand_environment_vars(uri)
         try:
             if Path(uri).exists():
@@ -52,9 +57,12 @@ class Web3(_Web3):
                 "beginning with 'ws' or a URL beginning with 'http'"
             )
 
-        if "fork" in CONFIG.active_network.get("cmd_settings"):
-            print("oh hai mark")
-            self.middleware_onion.add(_ForkMiddleware)
+        try:
+            if "fork" in CONFIG.active_network["cmd_settings"]:
+                self._custom_middleware.add(_ForkMiddleware)
+                self.middleware_onion.add(_ForkMiddleware)
+        except (ConnectionError, KeyError):
+            pass
 
     def disconnect(self) -> None:
         """Disconnects from a provider"""
