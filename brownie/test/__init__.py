@@ -44,6 +44,9 @@ def given(*given_args, **given_kwargs):
         hy_given = _hypothesis_given(*given_args, **given_kwargs)
         hy_wrapped = hy_given(test)
 
+        # modify the wrapper name so it shows correctly in test report
+        isolation_wrapper.__name__ = test.__name__
+
         if hasattr(hy_wrapped, "hypothesis"):
             hy_wrapped.hypothesis.inner_test = isolation_wrapper
         return hy_wrapped
