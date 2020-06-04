@@ -130,6 +130,7 @@ Address
 
 Optional keyword arguments:
 
+    * ``length``: The number of :func:`Account <brownie.network.account.Account>` objects to include in the strategy. If the :func:`Accounts <brownie.network.account.Accounts>` container holds less than this number of objects, the entire container is used.
     * ``excludes``: An object, iterable or callable used to filter strategy results.
 
 .. code-block:: python
