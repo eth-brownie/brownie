@@ -316,7 +316,7 @@ class Rpc(metaclass=_Singleton):
 
         Args:
             seconds (int): Number of seconds to increase the time by."""
-        if type(seconds) is not int:
+        if not isinstance(seconds, int):
             raise TypeError("seconds must be an integer value")
         self._time_offset = self._request("evm_increaseTime", [seconds])
 
@@ -325,7 +325,7 @@ class Rpc(metaclass=_Singleton):
 
         Args:
             blocks (int): Number of new blocks to be mined."""
-        if type(blocks) is not int:
+        if not isinstance(blocks, int):
             raise TypeError("blocks must be an integer value")
         for i in range(blocks):
             self._request("evm_mine", [])
