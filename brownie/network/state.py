@@ -13,7 +13,6 @@ from brownie.utils.sql import Cursor
 from .rpc import _revert_register
 from .web3 import _resolve_address
 
-__tracebackhide__ = True
 _contract_map: Dict = {}
 
 cur = Cursor(_get_data_folder().joinpath(f"deployments.db"))

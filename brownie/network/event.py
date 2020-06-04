@@ -11,8 +11,6 @@ from brownie._config import _get_data_folder
 from brownie.convert.normalize import format_event
 from brownie.exceptions import EventLookupError
 
-__tracebackhide__ = True
-
 
 class EventDict:
     """Dict/list hybrid container, base class for all events fired in a transaction."""

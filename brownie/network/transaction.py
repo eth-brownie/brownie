@@ -24,7 +24,6 @@ from .event import _decode_logs, _decode_trace
 from .state import TxHistory, _find_contract
 from .web3 import web3
 
-__tracebackhide__ = True
 history = TxHistory()
 
 

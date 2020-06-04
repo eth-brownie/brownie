@@ -26,8 +26,6 @@ from .state import TxHistory
 from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
 
-__tracebackhide__ = True
-
 history = TxHistory()
 rpc = Rpc()
 

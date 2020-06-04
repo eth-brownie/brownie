@@ -13,7 +13,6 @@ from hypothesis.strategies import SearchStrategy
 import brownie
 from brownie.utils import color
 
-__tracebackhide__ = True
 sf.__tracebackhide__ = True
 
 marker = deque("-/|\\-/|\\")

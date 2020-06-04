@@ -53,8 +53,6 @@ class RevertContextManager:
         pass
 
     def __exit__(self, exc_type, exc_value, traceback):
-        __tracebackhide__ = True
-
         if exc_type is None:
             raise AssertionError("Transaction did not revert") from None
 
