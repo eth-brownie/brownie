@@ -93,3 +93,10 @@ def test_chain_uri_disconnected(web3):
     web3.disconnect()
     with pytest.raises(ConnectionError):
         web3.chain_uri
+
+
+def test_rinkeby(web3, network):
+    network.connect("rinkeby")
+
+    # this should work because we automatically add the POA middleware
+    web3.eth.getBlock("latest")
