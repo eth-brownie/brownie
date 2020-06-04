@@ -218,6 +218,7 @@ Default settings for :ref:`property-based<hypothesis>` and :ref:`stateful<hypoth
     hypothesis:
         deadline: null
         max_examples: 50
+        report_multiple_bugs: False
         stateful_step_count: 10
 
 Other Settings
