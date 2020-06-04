@@ -60,7 +60,7 @@ def pytest_configure(config):
             print(f"{color.format_tb(e)}\n")
             raise pytest.UsageError("Unable to load project")
 
-        # apply __tracebackhide__ so brownie internals aren't included in tracebacks
+        # do not include brownie internals in tracebacks
         base_path = Path(sys.modules["brownie"].__file__).parent.as_posix()
         for module in [
             v
@@ -68,6 +68,7 @@ def pytest_configure(config):
             if getattr(v, "__file__", None) and v.__file__.startswith(base_path)
         ]:
             module.__tracebackhide__ = True
+            module.__hypothesistracebackhide__ = True
 
         # enable verbose output if stdout capture is disabled
         if config.getoption("capture") == "no":
