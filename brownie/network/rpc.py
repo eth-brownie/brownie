@@ -319,6 +319,10 @@ class Rpc(metaclass=_Singleton):
             raise TypeError("seconds must be an integer value")
         self._time_offset = self._request("evm_increaseTime", [seconds])
 
+        if seconds:
+            self._redo_buffer.clear()
+            self._current_id = self._snap()
+
     def mine(self, blocks: int = 1) -> str:
         """Increases the block height within the test RPC.
 
@@ -328,6 +332,9 @@ class Rpc(metaclass=_Singleton):
             raise TypeError("blocks must be an integer value")
         for i in range(blocks):
             self._request("evm_mine", [])
+
+        self._redo_buffer.clear()
+        self._current_id = self._snap()
         return f"Block height at {web3.eth.blockNumber}"
 
     def snapshot(self) -> str:

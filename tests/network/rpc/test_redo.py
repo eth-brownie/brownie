@@ -63,11 +63,29 @@ def test_snapshot_clears_redo_buffer(accounts, rpc):
         rpc.redo()
 
 
-def test_revert_clears_undo_buffer(accounts, rpc):
+def test_revert_clears_redo_buffer(accounts, rpc):
     rpc.snapshot()
     accounts[0].transfer(accounts[1], 100)
     accounts[0].transfer(accounts[1], 100)
     rpc.undo()
     rpc.revert()
+    with pytest.raises(ValueError):
+        rpc.redo()
+
+
+def test_sleep_clears_redo_buffer(accounts, rpc):
+    accounts[0].transfer(accounts[1], 100)
+    accounts[0].transfer(accounts[1], 100)
+    rpc.undo()
+    rpc.sleep(100)
+    with pytest.raises(ValueError):
+        rpc.redo()
+
+
+def test_mine_clears_redo_buffer(accounts, rpc):
+    accounts[0].transfer(accounts[1], 100)
+    accounts[0].transfer(accounts[1], 100)
+    rpc.undo()
+    rpc.mine()
     with pytest.raises(ValueError):
         rpc.redo()
