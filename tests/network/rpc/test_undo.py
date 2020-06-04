@@ -50,3 +50,21 @@ def test_revert_clears_undo_buffer(accounts, rpc):
     rpc.revert()
     with pytest.raises(ValueError):
         rpc.undo()
+
+
+def test_does_not_undo_sleep(accounts, rpc):
+    accounts[0].transfer(accounts[1], 100)
+    time = rpc.time()
+    rpc.sleep(100000)
+    accounts[0].transfer(accounts[1], 100)
+    rpc.undo()
+    assert rpc.time() >= time + 100000
+
+
+def test_does_not_undo_mining(accounts, rpc, web3):
+    accounts[0].transfer(accounts[1], 100)
+    rpc.mine()
+    height = web3.eth.blockNumber
+    accounts[0].transfer(accounts[1], 100)
+    rpc.undo()
+    assert web3.eth.blockNumber == height
