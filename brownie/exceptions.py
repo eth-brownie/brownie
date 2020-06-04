@@ -8,8 +8,6 @@ import yaml
 
 import brownie
 
-__tracebackhide__ = True
-
 # network
 
 

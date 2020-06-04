@@ -44,8 +44,6 @@ from .rpc import _revert_register
 from .state import _add_contract, _add_deployment, _find_contract, _get_deployment, _remove_contract
 from .web3 import _resolve_address, web3
 
-__tracebackhide__ = True
-
 _unverified_addresses: Set = set()
 
 
