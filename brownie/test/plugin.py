@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from brownie import project
-from brownie._config import CONFIG
+from brownie._config import CONFIG, _modify_hypothesis_settings
 from brownie.test.fixtures import PytestBrownieFixtures
 from brownie.test.managers import PytestBrownieMaster, PytestBrownieRunner, PytestBrownieXdistRunner
 from brownie.utils import color
@@ -73,6 +73,10 @@ def pytest_configure(config):
         # enable verbose output if stdout capture is disabled
         if config.getoption("capture") == "no":
             config.option.verbose = True
+
+        # if verbose mode is enabled, also enable hypothesis verbose mode
+        if config.option.verbose:
+            _modify_hypothesis_settings({"verbosity": 2}, "brownie-verbose")
 
         if config.getoption("numprocesses"):
             if config.getoption("interactive"):

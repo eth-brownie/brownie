@@ -241,7 +241,9 @@ def _load_project_dependencies(project_path: Path) -> List:
     return dependencies
 
 
-def _modify_hypothesis_settings(settings, name, parent):
+def _modify_hypothesis_settings(settings, name, parent=None):
+    if parent is None:
+        parent = hp_settings._current_profile
     hp_settings.register_profile(
         name,
         parent=hp_settings.get_profile(parent),

@@ -4,7 +4,7 @@ import json
 from hashlib import sha1
 from pathlib import Path
 
-from hypothesis.reporting import reporter as hy_reporter
+import hypothesis
 from py.path import local
 
 import brownie
@@ -118,7 +118,8 @@ class PytestBrownieBase:
 
         * Replaces the default hypothesis reporter with a one that applies source
           highlights and increased vertical space between results. The effect is
-          seen in output for `hypothesis.errors.MultipleFailures`.
+          seen in output for `hypothesis.errors.MultipleFailures` and while the
+          `-v` flag is active.
 
         * Removes `PytestAssertRewriteWarning` warnings from the terminalreporter.
           This prevents warnings that "the `brownie` library was already imported and
@@ -132,11 +133,14 @@ class PytestBrownieBase:
 
         def _hypothesis_reporter(text):
             text = self._reduce_path_strings(text)
-            if text.startswith("Falsifying example") or text.startswith("Traceback"):
-                reporter.write("\n")
-            reporter._tw._write_source(text.split("\n"))
+            if next((i for i in ("Falsifying", "Trying", "Traceback") if text.startswith(i)), None):
+                print("")
 
-        hy_reporter.default = _hypothesis_reporter
+            end = "\n" if text.startswith("Traceback") else ""
+            print(reporter._tw._highlight(text), end=end)
+
+        hypothesis.reporting.reporter.default = _hypothesis_reporter
+        hypothesis.extra.pytestplugin.default_reporter = _hypothesis_reporter
 
         reporter = self.config.pluginmanager.get_plugin("terminalreporter")
         warnings = reporter.stats.pop("warnings", [])
