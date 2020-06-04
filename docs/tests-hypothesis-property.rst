@@ -393,6 +393,12 @@ Available Settings
 
     default-value: ``50``
 
+.. py:attributes:: report_multiple_bugs
+
+    Because Hypothesis runs each test many times, it can sometimes find multiple bugs in a single run. Reporting all of them at once can be useful, but also produces significantly longer and less descriptive output when compared to reporting a single error.
+
+    default-value: ``False``
+
 .. py:attribute:: stateful_step_count
 
     The maximum number of rules to execute in a stateful program before ending the run and considering it to have passed.

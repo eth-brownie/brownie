@@ -45,6 +45,7 @@ console:
 hypothesis:
     deadline: null
     max_examples: 50
+    report_multiple_bugs: False
     stateful_step_count: 10
 
 autofetch_sources: false
