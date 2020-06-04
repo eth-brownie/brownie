@@ -17,5 +17,10 @@ def test_given(accounts, value):
     assert isinstance(value, Account)
 
 
+@given(value=strategy("address", length=3))
+def test_length(accounts, value):
+    assert accounts.index(value) < 3
+
+
 def test_repr():
     assert repr(strategy("address")) == "sampled_from(accounts)"
