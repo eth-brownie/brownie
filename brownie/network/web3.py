@@ -10,7 +10,9 @@ from ens import ENS
 from web3 import HTTPProvider, IPCProvider
 from web3 import Web3 as _Web3
 from web3 import WebsocketProvider
+from web3.exceptions import ExtraDataLengthError
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
+from web3.middleware import geth_poa_middleware
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie.convert import to_address
@@ -56,12 +58,22 @@ class Web3(_Web3):
                 "beginning with 'ws' or a URL beginning with 'http'"
             )
 
-        try:
-            if "fork" in CONFIG.active_network["cmd_settings"]:
-                self._custom_middleware.add(_ForkMiddleware)
-                self.middleware_onion.add(_ForkMiddleware)
-        except (ConnectionError, KeyError):
-            pass
+        # add middlewares
+        if self.isConnected():
+            try:
+                if "fork" in CONFIG.active_network["cmd_settings"]:
+                    self._custom_middleware.add(_ForkMiddleware)
+                    self.middleware_onion.add(_ForkMiddleware)
+            except (ConnectionError, KeyError):
+                pass
+
+            try:
+                self.eth.getBlock("latest")
+            except ExtraDataLengthError:
+                self._custom_middleware.add(geth_poa_middleware)
+                self.middleware_onion.inject(geth_poa_middleware, layer=0)
+            except ConnectionError:
+                pass
 
     def disconnect(self) -> None:
         """Disconnects from a provider"""
