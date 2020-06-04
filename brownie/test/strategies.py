@@ -76,8 +76,10 @@ def _decimal_strategy(
 
 
 @_exclude_filter
-def _address_strategy() -> SearchStrategy:
-    return _DeferredStrategyRepr(lambda: st.sampled_from(list(network.accounts)), "accounts")
+def _address_strategy(length: Optional[int] = None) -> SearchStrategy:
+    return _DeferredStrategyRepr(
+        lambda: st.sampled_from(list(network.accounts)[:length]), "accounts"
+    )
 
 
 @_exclude_filter
