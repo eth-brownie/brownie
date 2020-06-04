@@ -2,9 +2,12 @@
 
 import json
 from hashlib import sha1
+from pathlib import Path
 
+from hypothesis.reporting import reporter as hy_reporter
 from py.path import local
 
+import brownie
 from brownie._config import CONFIG
 from brownie.project.scripts import _get_ast_hash
 from brownie.test import _apply_given_wrapper, coverage, output
@@ -69,6 +72,15 @@ class PytestBrownieBase:
             for txhash, coverage_eval in hashes["tx"].items():
                 coverage._add_cached_transaction(txhash, coverage_eval)
 
+    def _reduce_path_strings(self, text):
+        # convert absolute path strings to relative ones, prior to outputting to console
+        base_path = f"{Path(brownie.__file__).parent.as_posix()}"
+        project_path = f"{self.project_path.as_posix()}/"
+
+        text = text.replace(base_path, "brownie")
+        text = text.replace(project_path, "")
+        return text
+
     def _path(self, path):
         return self.project_path.joinpath(path).relative_to(self.project_path).as_posix()
 
@@ -104,15 +116,28 @@ class PytestBrownieBase:
         Called after the `Session` object has been created and before performing
         collection and entering the run test loop.
 
-        Removes `PytestAssertRewriteWarning` warnings from the terminalreporter.
-        This prevents warnings that "the `brownie` library was already imported and
-        so related assertions cannot be rewritten". The warning is not relevant
-        for end users who are performing tests with brownie, not on brownie,
-        so we suppress it to avoid confusion.
+        * Replaces the default hypothesis reporter with a one that applies source
+          highlights and increased vertical space between results. The effect is
+          seen in output for `hypothesis.errors.MultipleFailures`.
+
+        * Removes `PytestAssertRewriteWarning` warnings from the terminalreporter.
+          This prevents warnings that "the `brownie` library was already imported and
+          so related assertions cannot be rewritten". The warning is not relevant
+          for end users who are performing tests with brownie, not on brownie,
+          so we suppress it to avoid confusion.
 
         Removal of pytest warnings must be handled in this hook because session
         information is passed between xdist workers and master prior to test execution.
         """
+
+        def _hypothesis_reporter(text):
+            text = self._reduce_path_strings(text)
+            if text.startswith("Falsifying example") or text.startswith("Traceback"):
+                reporter.write("\n")
+            reporter._tw._write_source(text.split("\n"))
+
+        hy_reporter.default = _hypothesis_reporter
+
         reporter = self.config.pluginmanager.get_plugin("terminalreporter")
         warnings = reporter.stats.pop("warnings", [])
         warnings = [i for i in warnings if "PytestAssertRewriteWarning" not in i.message]
@@ -151,6 +176,33 @@ class PytestBrownieBase:
             elif report.passed:
                 return "xpassed", "X", "XPASS"
         return report.outcome, convert_outcome(report.outcome), report.outcome.upper()
+
+    def pytest_runtest_makereport(self, item):
+        """
+        Return a _pytest.runner.TestReport object for the given pytest.Item and
+        _pytest.runner.CallInfo.
+
+        Applies source highlighting to hypothesis output that is not related to
+        `hypothesis.errors.MultipleFailures`.
+
+        Attributes
+        ----------
+        item : pytest.Item
+            Object representing the currently active test
+        """
+        if not hasattr(item, "hypothesis_report_information"):
+            return
+
+        reporter = self.config.pluginmanager.get_plugin("terminalreporter")
+
+        report = [x for i in item.hypothesis_report_information for x in i.split("\n")]
+        report = [self._reduce_path_strings(i) for i in report]
+        report = [
+            reporter._tw._highlight(i).rstrip("\n") if not i.lstrip().startswith("\x1b") else i
+            for i in report
+        ]
+
+        item.hypothesis_report_information = report
 
     def pytest_terminal_summary(self, terminalreporter):
         """
