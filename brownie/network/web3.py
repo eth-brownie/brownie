@@ -39,24 +39,26 @@ class Web3(_Web3):
         for middleware in self._custom_middleware:
             self.middleware_onion.remove(middleware)
         self._custom_middleware.clear()
+        self.provider = None
 
         uri = _expand_environment_vars(uri)
         try:
             if Path(uri).exists():
                 self.provider = IPCProvider(uri, timeout=timeout)
-                return
         except OSError:
             pass
-        if uri.startswith("ws"):
-            self.provider = WebsocketProvider(uri, {"timeout": timeout})
-        elif uri.startswith("http"):
 
-            self.provider = HTTPProvider(uri, {"timeout": timeout})
-        else:
-            raise ValueError(
-                "Unknown URI - must be a path to an IPC socket, a websocket "
-                "beginning with 'ws' or a URL beginning with 'http'"
-            )
+        if self.provider is None:
+            if uri.startswith("ws"):
+                self.provider = WebsocketProvider(uri, {"timeout": timeout})
+            elif uri.startswith("http"):
+
+                self.provider = HTTPProvider(uri, {"timeout": timeout})
+            else:
+                raise ValueError(
+                    "Unknown URI - must be a path to an IPC socket, a websocket "
+                    "beginning with 'ws' or a URL beginning with 'http'"
+                )
 
         # add middlewares
         if self.isConnected():
