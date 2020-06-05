@@ -11,14 +11,14 @@ with open("requirements.txt", "r") as f:
 setup(
     name="eth-brownie",
     packages=find_packages(),
-    version="1.8.9",  # don't change this manually, use bumpversion instead
+    version="1.9.0",  # don't change this manually, use bumpversion instead
     license="MIT",
     description="A Python framework for Ethereum smart contract deployment, testing and interaction.",  # noqa: E501
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Ben Hauser",
     author_email="ben@hauser.id",
-    url="https://github.com/iamdefinitelyahuman/brownie",
+    url="https://github.com/eth-brownie/brownie",
     keywords=["brownie"],
     install_requires=requirements,
     entry_points={

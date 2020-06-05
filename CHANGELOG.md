@@ -6,22 +6,36 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.9.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.9.0) - 2020-06-05
 ### Added
 - Project folder structure is now configurable ([#581](https://github.com/eth-brownie/brownie/pull/581))
 - Deployment artifacts can now be saved via project setting `dev_deployment_artifacts: true` ([#590](https://github.com/eth-brownie/brownie/pull/590))
 - All deployment artifacts are tracked in `deployments/map.json` ([#590](https://github.com/eth-brownie/brownie/pull/590))
 - `required_confs = n / {'required_confs: n}` argument for transactions. Will wait for n confirmations before processing the tx receipt. `n = 0` will immediately return a pending receipt. ([#587](https://github.com/eth-brownie/brownie/pull/587))
 - `tx.confirmations` shows number of confirmations, `tx.wait(n)` waits until `tx` has `n` or more confirmations. ([#587](https://github.com/eth-brownie/brownie/pull/587))
+- `load_source` hook point ([#584](https://github.com/eth-brownie/brownie/pull/584))
+- Support for BIP39 mnemonics ([#585](https://github.com/eth-brownie/brownie/pull/585))
+- Expose `block_identifier` for contract calls ([#596](https://github.com/eth-brownie/brownie/pull/596))
+- `length` kwarg for `strategy('address')` ([#607](https://github.com/eth-brownie/brownie/pull/607))
 
 ### Changed
 - `tx.call_trace()` now displays internal and total gas usage ([#564](https://github.com/iamdefinitelyahuman/brownie/pull/564))
 - Default nonce for transactions now takes pending transactions into account. ([#597](https://github.com/iamdefinitelyahuman/brownie/pull/597))
+- Raise more expressive exception on stale fork ([#598](https://github.com/eth-brownie/brownie/pull/598))
+- Automatically add middleware when connecting to POA networks ([#602](https://github.com/eth-brownie/brownie/pull/602))
+- Hypothesis output includes code highlights ([#605](https://github.com/eth-brownie/brownie/pull/605))
 
 ### Fixed
 - Geth Traces depth reduced ([#562](https://github.com/iamdefinitelyahuman/brownie/pull/562))
 - Ganache gasCost in traces (ganache bug) ([#562](https://github.com/iamdefinitelyahuman/brownie/pull/562))
 - Decoding error when contracts use the same event signature with different argument indexing ([#575](https://github.com/iamdefinitelyahuman/brownie/pull/575))
-- Repeated alerts will now run indefinitely, instead of twice
+- Repeated alerts will now run indefinitely, instead of twice ([#608](https://github.com/eth-brownie/brownie/pull/608))
+- Catch `ZombieProcess` and `NoSuchProcess` when attaching to ganache in OSX ([#574](https://github.com/eth-brownie/brownie/pull/574))
+- Snapshotting during failed `@given` tests ([#591](https://github.com/eth-brownie/brownie/pull/591))
+- `Rpc.undo` correctly rewinds to immediately before a transaction ([#604](https://github.com/eth-brownie/brownie/pull/604))
+
+A big thank you to [@matnad](https://github.com/matnad) for many contributions during this release!
 
 ## [1.8.9](https://github.com/iamdefinitelyahuman/brownie/tree/v1.8.9) - 2020-05-26
 ### Changed
