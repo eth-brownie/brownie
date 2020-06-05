@@ -25,7 +25,6 @@ class Alert:
         callback: Callable = None,
         repeat: bool = False,
     ) -> None:
-
         """Creates a new Alert.
 
         Args:
@@ -69,7 +68,7 @@ class Alert:
         delay: float,
         msg: str,
         callback: Callable,
-        repeat: Union[int, bool, None] = False,
+        repeat: Union[int, bool, None]=False,
     ) -> None:
         try:
             sleep = min(delay, 0.05)
@@ -90,7 +89,7 @@ class Alert:
                 start_value = value
                 if not repeat:
                     repeat = None
-                elif isinstance(repeat, int):
+                elif type(repeat) == int:
                     repeat -= 1
         finally:
             _instances.discard(self)
