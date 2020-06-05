@@ -90,7 +90,7 @@ class Alert:
                 start_value = value
                 if not repeat:
                     repeat = None
-                elif isinstance(repeat, int):
+                elif isinstance(repeat, int) and not isinstance(repeat, bool):
                     repeat -= 1
         finally:
             _instances.discard(self)
