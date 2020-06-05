@@ -33,15 +33,27 @@ Mixes are automatically created within a subfolder of their name. To initialize 
 
 This creates a new folder ``token/`` and deploys the project inside it.
 
-The Continuous Integration Template
------------------------------------
-
-`Travis-Mix <https://github.com/brownie-mix/travis-mix>`_ is a template preconfigured for use with `Travis-CI <https://travis-ci.com/>`_ continuous integration, as well as other useful tools.
+React Template
+--------------
+`React-Mix <https://github.com/brownie-mix/react-mix>`_ is a bare-bones implementation of `Create React App <https://create-react-app.dev/>`_ configured to work with Brownie. You can use it as a starting point for building your own React frontend for your dApp.
 
 To initialize from this mix:
 
 ::
 
-    $ brownie bake travis
+    $ brownie bake react
 
-See the `Travis-Mix Github repo <https://github.com/brownie-mix/travis-mix>`_ for a detailed explanation of how to configure and use the tools within this template.
+See the `React-Mix repo <https://github.com/brownie-mix/react-mix>`_ for more information on how to use React with Brownie.
+
+Continuous Integration Template
+-------------------------------
+
+`Github-Actions-Mix <https://github.com/brownie-mix/github-actions-mix>`_ is a template preconfigured for use with `Github Actions <https://github.com/features/actions>`_ continuous integration, as well as other useful tools.
+
+To initialize from this mix:
+
+::
+
+    $ brownie bake github-actions
+
+See the `Github-Actions-Mix repo <https://github.com/brownie-mix/github-actions-mix>`_ for a detailed explanation of how to configure and use the tools within this template.
