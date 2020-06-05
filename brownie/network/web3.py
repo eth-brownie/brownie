@@ -60,22 +60,28 @@ class Web3(_Web3):
                     "beginning with 'ws' or a URL beginning with 'http'"
                 )
 
-        # add middlewares
-        if self.isConnected():
-            try:
-                if "fork" in CONFIG.active_network["cmd_settings"]:
-                    self._custom_middleware.add(_ForkMiddleware)
-                    self.middleware_onion.add(_ForkMiddleware)
-            except (ConnectionError, KeyError):
-                pass
+        try:
+            if not self.isConnected():
+                return
+        except Exception:
+            # checking an invalid connection sometimes raises on windows systems
+            return
 
-            try:
-                self.eth.getBlock("latest")
-            except ExtraDataLengthError:
-                self._custom_middleware.add(geth_poa_middleware)
-                self.middleware_onion.inject(geth_poa_middleware, layer=0)
-            except ConnectionError:
-                pass
+        # add middlewares
+        try:
+            if "fork" in CONFIG.active_network["cmd_settings"]:
+                self._custom_middleware.add(_ForkMiddleware)
+                self.middleware_onion.add(_ForkMiddleware)
+        except (ConnectionError, KeyError):
+            pass
+
+        try:
+            self.eth.getBlock("latest")
+        except ExtraDataLengthError:
+            self._custom_middleware.add(geth_poa_middleware)
+            self.middleware_onion.inject(geth_poa_middleware, layer=0)
+        except ConnectionError:
+            pass
 
     def disconnect(self) -> None:
         """Disconnects from a provider"""
