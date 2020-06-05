@@ -25,6 +25,7 @@ class Alert:
         callback: Callable = None,
         repeat: bool = False,
     ) -> None:
+
         """Creates a new Alert.
 
         Args:
@@ -68,7 +69,7 @@ class Alert:
         delay: float,
         msg: str,
         callback: Callable,
-        repeat: Union[int, bool, None]=False,
+        repeat: Union[int, bool, None] = False,
     ) -> None:
         try:
             sleep = min(delay, 0.05)
