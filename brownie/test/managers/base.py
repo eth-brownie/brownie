@@ -136,8 +136,14 @@ class PytestBrownieBase:
             if next((i for i in ("Falsifying", "Trying", "Traceback") if text.startswith(i)), None):
                 print("")
 
+            lines = [
+                reporter._tw._highlight(i) if not i.lstrip().startswith("\x1b") else f"{i}\n"
+                for i in text.split("\n")
+            ]
+            text = "".join(lines)
+
             end = "\n" if text.startswith("Traceback") else ""
-            print(reporter._tw._highlight(text), end=end)
+            print(text, end=end)
 
         hypothesis.reporting.reporter.default = _hypothesis_reporter
         hypothesis.extra.pytestplugin.default_reporter = _hypothesis_reporter
