@@ -186,6 +186,7 @@ def test_retrieve_existing(network):
     assert new == existing
 
 
+@pytest.mark.xfail(reason="Infura rate limiting - the test suite needs a refactor", strict=False)
 def test_existing_different_chains(network):
     network.connect("mainnet")
     Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")

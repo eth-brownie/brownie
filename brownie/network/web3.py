@@ -39,41 +39,49 @@ class Web3(_Web3):
         for middleware in self._custom_middleware:
             self.middleware_onion.remove(middleware)
         self._custom_middleware.clear()
+        self.provider = None
 
         uri = _expand_environment_vars(uri)
         try:
             if Path(uri).exists():
                 self.provider = IPCProvider(uri, timeout=timeout)
-                return
         except OSError:
             pass
-        if uri.startswith("ws"):
-            self.provider = WebsocketProvider(uri, {"timeout": timeout})
-        elif uri.startswith("http"):
 
-            self.provider = HTTPProvider(uri, {"timeout": timeout})
-        else:
-            raise ValueError(
-                "Unknown URI - must be a path to an IPC socket, a websocket "
-                "beginning with 'ws' or a URL beginning with 'http'"
-            )
+        if self.provider is None:
+            if uri.startswith("ws"):
+                self.provider = WebsocketProvider(uri, {"timeout": timeout})
+            elif uri.startswith("http"):
+
+                self.provider = HTTPProvider(uri, {"timeout": timeout})
+            else:
+                raise ValueError(
+                    "Unknown URI - must be a path to an IPC socket, a websocket "
+                    "beginning with 'ws' or a URL beginning with 'http'"
+                )
+
+        try:
+            if not self.isConnected():
+                return
+        except Exception:
+            # checking an invalid connection sometimes raises on windows systems
+            return
 
         # add middlewares
-        if self.isConnected():
-            try:
-                if "fork" in CONFIG.active_network["cmd_settings"]:
-                    self._custom_middleware.add(_ForkMiddleware)
-                    self.middleware_onion.add(_ForkMiddleware)
-            except (ConnectionError, KeyError):
-                pass
+        try:
+            if "fork" in CONFIG.active_network["cmd_settings"]:
+                self._custom_middleware.add(_ForkMiddleware)
+                self.middleware_onion.add(_ForkMiddleware)
+        except (ConnectionError, KeyError):
+            pass
 
-            try:
-                self.eth.getBlock("latest")
-            except ExtraDataLengthError:
-                self._custom_middleware.add(geth_poa_middleware)
-                self.middleware_onion.inject(geth_poa_middleware, layer=0)
-            except ConnectionError:
-                pass
+        try:
+            self.eth.getBlock("latest")
+        except ExtraDataLengthError:
+            self._custom_middleware.add(geth_poa_middleware)
+            self.middleware_onion.inject(geth_poa_middleware, layer=0)
+        except ConnectionError:
+            pass
 
     def disconnect(self) -> None:
         """Disconnects from a provider"""

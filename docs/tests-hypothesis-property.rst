@@ -394,7 +394,7 @@ Available Settings
 
     default-value: ``50``
 
-.. py:attributes:: report_multiple_bugs
+.. py:attribute:: report_multiple_bugs
 
     Because Hypothesis runs each test many times, it can sometimes find multiple bugs in a single run. Reporting all of them at once can be useful, but also produces significantly longer and less descriptive output when compared to reporting a single error.
 
