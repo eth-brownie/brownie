@@ -1062,10 +1062,12 @@ class ContractCall(_ContractMethod):
         args, tx = _get_tx(self._owner, args)
         tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
         try:
-            tx = self.transact(*args, tx)
-            return tx.return_value
-        finally:
-            rpc.undo()
+            self.transact(*args, tx)
+        except Exception:
+            pass
+
+        rpc.undo()
+        return self.call(*args)
 
 
 def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
