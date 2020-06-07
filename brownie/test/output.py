@@ -28,13 +28,15 @@ def _save_coverage_report(build, coverage_eval, report_path):
     return report_path
 
 
-def _print_gas_profile():
-    # Formats and prints a gas profile report to the console
-    print("\n\nGas Profile:")
+def _build_gas_profile_output():
+    # Formats gas profile report that may be printed to the console
     gas = TxHistory().gas_profile
     sorted_gas = sorted(gas.items())
     grouped_by_contract = {}
     padding = {}
+
+    lines = [""]
+
     for full_name, values in sorted_gas:
         contract, function = full_name.split(".", 1)
 
@@ -50,7 +52,7 @@ def _print_gas_profile():
             grouped_by_contract[contract] = {function: values}
 
     for contract, functions in grouped_by_contract.items():
-        print(f"{color('bright magenta')}{contract}{color} <Contract>")
+        lines.append(f"{color('bright magenta')}{contract}{color} <Contract>")
         sorted_functions = dict(
             sorted(functions.items(), key=lambda value: value[1]["avg"], reverse=True)
         )
@@ -59,26 +61,29 @@ def _print_gas_profile():
             fn_name = fn_name.ljust(padding["fn"])
             values["avg"] = int(values["avg"])
             values = {k: str(v).rjust(padding[k]) for k, v in values.items()}
-            print(
+            lines.append(
                 f"   {prefix} {fn_name} -  avg: {values['avg']}"
                 f"  low: {values['low']}  high: {values['high']}"
             )
 
+    return lines + [""]
 
-def _print_coverage_totals(build, coverage_eval):
-    # Formats and prints a coverage evaluation report to the console
+
+def _build_coverage_output(build, coverage_eval):
+    # Formats a coverage evaluation report that may be printed to the console
     all_totals = [(i._name, _get_totals(i._build, coverage_eval)) for i in get_loaded_projects()]
-    print("\n\nCoverage analysis:")
+    lines = []
 
     for project_name, totals in all_totals:
         if not totals:
             continue
 
-        print(f"\n ===== {color('bright magenta')}{project_name}{color} =====")
+        if len(all_totals) > 1:
+            lines.append(f"\n======== {color('bright magenta')}{project_name}{color} ========")
 
         for name in sorted(totals):
             pct = _pct(totals[name]["totals"]["statements"], totals[name]["totals"]["branches"])
-            print(
+            lines.append(
                 f"\n  contract: {color('bright magenta')}{name}{color}"
                 f" - {_cov_color(pct)}{pct:.1%}{color}"
             )
@@ -86,7 +91,9 @@ def _print_coverage_totals(build, coverage_eval):
             for fn_name, count in cov["statements"].items():
                 branch = cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
                 pct = _pct(count, branch)
-                print(f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}")
+                lines.append(f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}")
+
+    return lines
 
 
 def _cov_color(pct):
