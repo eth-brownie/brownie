@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.9.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.9.1) - 2020-06-07
+### Fixed
+- Return actual call when running calls as transactions ([#614](https://github.com/eth-brownie/brownie/pull/614))
+- Non-zero exit status when using `brownie test` ([#616](https://github.com/eth-brownie/brownie/pull/616))
+
 ## [1.9.0](https://github.com/iamdefinitelyahuman/brownie/tree/v1.9.0) - 2020-06-05
 ### Added
 - Project folder structure is now configurable ([#581](https://github.com/eth-brownie/brownie/pull/581))
