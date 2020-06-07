@@ -919,7 +919,9 @@ class _ContractMethod:
         args, tx = _get_tx(self._owner, args)
         if tx["from"]:
             tx["from"] = str(tx["from"])
+        del tx["required_confs"]
         tx.update({"to": self._address, "data": self.encode_input(*args)})
+
         try:
             data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier)
         except ValueError as e:
