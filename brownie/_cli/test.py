@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import sys
+
 import pytest
 
 from brownie import project
@@ -58,4 +60,8 @@ def main():
         elif isinstance(value, str):
             pytest_args.extend([opt, value])
 
-    pytest.main(pytest_args, ["pytest-brownie"])
+    return_code = pytest.main(pytest_args, ["pytest-brownie"])
+
+    if return_code:
+        # only exit with non-zero status to make testing easier
+        sys.exit(return_code)
