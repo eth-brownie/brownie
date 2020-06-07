@@ -23,7 +23,7 @@ class CliTester:
         self.mocker = mocker
 
     def mock_subroutines(self, *args, **kwargs):
-        return True
+        return
 
     def run_and_test_parameters(self, argv=None, parameters={}):
         sys.argv = ["brownie"]
