@@ -16,23 +16,23 @@ def test_stuff(BrownieTester, EVMTester, accounts):
 
 
 def test_print_gas(plugintester, mocker):
-    mocker.spy(output, "_print_gas_profile")
+    mocker.spy(output, "_build_gas_profile_output")
     plugintester.runpytest("--gas")
-    assert output._print_gas_profile.call_count == 1
+    assert output._build_gas_profile_output.call_count == 1
     plugintester.runpytest()
-    assert output._print_gas_profile.call_count == 1
+    assert output._build_gas_profile_output.call_count == 1
     plugintester.runpytest("-G")
-    assert output._print_gas_profile.call_count == 2
+    assert output._build_gas_profile_output.call_count == 2
 
 
 def test_print_coverage(plugintester, mocker):
-    mocker.spy(output, "_print_coverage_totals")
+    mocker.spy(output, "_build_coverage_output")
     plugintester.runpytest("--coverage")
-    assert output._print_coverage_totals.call_count == 1
+    assert output._build_coverage_output.call_count == 1
     plugintester.runpytest()
-    assert output._print_coverage_totals.call_count == 1
+    assert output._build_coverage_output.call_count == 1
     plugintester.runpytest("-C")
-    assert output._print_coverage_totals.call_count == 2
+    assert output._build_coverage_output.call_count == 2
 
 
 def test_coverage_save_report(plugintester):

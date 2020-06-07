@@ -8,7 +8,7 @@ from brownie._cli.console import Console
 from brownie._config import CONFIG, _update_argv_from_docopt
 from brownie.exceptions import ProjectNotFound
 from brownie.project.scripts import _get_path, run
-from brownie.test.output import _print_gas_profile
+from brownie.test.output import _build_gas_profile_output
 from brownie.utils import color
 from brownie.utils.docopt import docopt
 
@@ -63,4 +63,6 @@ def main():
                 )
 
     if CONFIG.argv["gas"]:
-        _print_gas_profile()
+        print("\n======= Gas profile =======")
+        for line in _build_gas_profile_output():
+            print(line)

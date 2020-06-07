@@ -6,7 +6,6 @@ import pytest
 from xdist.scheduler import LoadFileScheduling
 
 from brownie._config import CONFIG
-from brownie.project import get_loaded_projects
 from brownie.test import coverage
 
 from .base import PytestBrownieBase
@@ -51,8 +50,6 @@ class PytestBrownieMaster(PytestBrownieBase):
 
         * Aggregates results from `build/tests-{workerid}.json` files and stores
           them as `build/test.json`.
-        * Generates coverage report and outputs results to console
-        * Closes all active projects
         """
         if session.testscollected == 0:
             raise pytest.UsageError(
@@ -62,6 +59,7 @@ class PytestBrownieMaster(PytestBrownieBase):
             )
         build_path = self.project._build_path
 
+        # aggregate worker test results
         report = {"tests": {}, "contracts": self.contracts, "tx": {}}
         for path in list(build_path.glob("tests-*.json")):
             with path.open() as fp:
@@ -70,10 +68,11 @@ class PytestBrownieMaster(PytestBrownieBase):
             report["tests"].update(data["tests"])
             report["tx"].update(data["tx"])
             path.unlink()
+
+        # store worker coverage results - these are used in `pytest_terminal_summary`
+        for hash_, coverage_eval in report["tx"].items():
+            coverage._add_transaction(hash_, coverage_eval)
+
+        # save aggregate test results
         with build_path.joinpath("tests.json").open("w") as fp:
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
-        coverage_eval = coverage.get_merged_coverage_eval(report["tx"])
-        self._sessionfinish_coverage(coverage_eval)
-
-        for project in get_loaded_projects():
-            project.close(raises=False)
