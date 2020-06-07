@@ -377,26 +377,36 @@ class PytestBrownieRunner(PytestBrownieBase):
         Called after whole test run finished, right before returning the exit
         status to the system.
 
-        * Stores test results in `build/tests.json`
-        * Generates coverage report and outputs results to console
-        * Closes all active projects
+        Stores test results in `build/tests.json`.
         """
         self._sessionfinish("tests.json")
-        if CONFIG.argv["gas"]:
-            output._print_gas_profile()
 
     def _sessionfinish(self, path):
+        # store test results at the given path
         txhash = set(x for v in self.tests.values() for x in v["txhash"])
         coverage_eval = dict((k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash)
         report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
 
         with self.project._build_path.joinpath(path).open("w") as fp:
             json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
-        coverage_eval = coverage.get_merged_coverage_eval()
-        self._sessionfinish_coverage(coverage_eval)
 
-        for project in brownie.project.get_loaded_projects():
-            project.close(raises=False)
+    def pytest_terminal_summary(self, terminalreporter):
+        """
+        Add a section to terminal summary reporting.
+
+        When `--gas` is active, outputs the gas profile report.
+
+        Arguments
+        ---------
+        terminalreporter : `_pytest.terminal.TerminalReporter`
+            The internal terminal reporter object
+        """
+        if CONFIG.argv["gas"]:
+            terminalreporter.section("Gas Profile")
+            for line in output._build_gas_profile_output():
+                terminalreporter.write_line(line)
+
+        super().pytest_terminal_summary(terminalreporter)
 
 
 class PytestBrownieXdistRunner(PytestBrownieRunner):

@@ -218,25 +218,43 @@ class PytestBrownieBase:
         """
         Add a section to terminal summary reporting.
 
-        When the `--disable-warnings` flag is active, removes all raised warnings
-        prior to outputting the final console report.
+        * When the `--disable-warnings` flag is active, removes all raised warnings
+          prior to outputting the final console report.
+
+        * When `--coverage` is active, outputs the result to stdout and saves the
+          final report json.
 
         Arguments
         ---------
         terminalreporter : `_pytest.terminal.TerminalReporter`
-            the internal terminal reporter object
+            The internal terminal reporter object
         """
         if self.config.getoption("--disable-warnings") and "warnings" in terminalreporter.stats:
             del terminalreporter.stats["warnings"]
 
-    def _sessionfinish_coverage(self, coverage_eval):
         if CONFIG.argv["coverage"]:
-            output._print_coverage_totals(self.project._build, coverage_eval)
+            terminalreporter.section("Coverage")
+
+            # output coverage report to console
+            coverage_eval = coverage.get_merged_coverage_eval()
+            for line in output._build_coverage_output(self.project._build, coverage_eval):
+                terminalreporter.write_line(line)
+
+            # save coverage report as `reports/coverage.json`
             output._save_coverage_report(
                 self.project._build,
                 coverage_eval,
                 self.project_path.joinpath(self.project._structure["reports"]),
             )
+
+    def pytest_unconfigure(self):
+        """
+        Called before test process is exited.
+
+        Closes all active projects.
+        """
+        for project in brownie.project.get_loaded_projects():
+            project.close(raises=False)
 
     def pytest_keyboard_interrupt(self):
         CONFIG.argv["interrupt"] = True
