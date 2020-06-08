@@ -111,7 +111,7 @@ def _build_gas_profile_output():
     return lines + [""]
 
 
-def _build_coverage_output(build, coverage_eval):
+def _build_coverage_output(coverage_eval):
     # Formats a coverage evaluation report that may be printed to the console
 
     exclude_paths, exclude_contracts = _load_report_exclude_data(CONFIG.settings["reports"])
