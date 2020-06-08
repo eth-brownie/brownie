@@ -346,9 +346,12 @@ class PytestBrownieRunner(PytestBrownieBase):
             globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("__")}
             globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("@")}
 
-            # filter test functions
+            # filter test functions and fixtures
             test_names = self.node_map[location]
             globals_dict = {k: v for k, v in globals_dict.items() if k not in test_names}
+            globals_dict = {
+                k: v for k, v in globals_dict.items() if not hasattr(v, "_pytestfixturefunction")
+            }
 
             # get local namespace
             locals_dict = traceback.locals
