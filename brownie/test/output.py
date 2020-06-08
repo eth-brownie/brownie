@@ -72,9 +72,6 @@ def _build_gas_profile_output():
 
 def _build_coverage_output(build, coverage_eval):
     # Formats a coverage evaluation report that may be printed to the console
-    all_totals = [(i, _get_totals(i._build, coverage_eval)) for i in get_loaded_projects()]
-    all_totals = [i for i in all_totals if i[1]]
-    lines = []
 
     exclude_paths = []
     if CONFIG.settings["reports"]["exclude_paths"]:
@@ -98,6 +95,12 @@ def _build_coverage_output(build, coverage_eval):
         if not isinstance(exclude_contracts, list):
             exclude_contracts = [exclude_contracts]
 
+    all_totals = [
+        (i, _get_totals(i._build, coverage_eval, exclude_contracts)) for i in get_loaded_projects()
+    ]
+    all_totals = [i for i in all_totals if i[1]]
+    lines = []
+
     for project, totals in all_totals:
 
         if len(all_totals) > 1:
@@ -105,8 +108,6 @@ def _build_coverage_output(build, coverage_eval):
 
         for contract_name in sorted(totals):
             if project._sources.get_source_path(contract_name) in exclude_paths:
-                continue
-            if contract_name in exclude_contracts:
                 continue
 
             pct = _pct(
@@ -137,9 +138,11 @@ def _pct(statement, branch):
     return pct
 
 
-def _get_totals(build, coverage_eval):
+def _get_totals(build, coverage_eval, exclude_contracts=None):
     # Returns a modified coverage eval dict showing counts and totals for each function.
 
+    if exclude_contracts is None:
+        exclude_contracts = []
     coverage_eval = _split_by_fn(build, coverage_eval)
     results = dict(
         (
@@ -152,19 +155,22 @@ def _get_totals(build, coverage_eval):
         )
         for i in coverage_eval
     )
-    for name in coverage_eval:
+    for contract_name in coverage_eval:
+        if contract_name in exclude_contracts:
+            del results[contract_name]
+            continue
         try:
-            coverage_map = build.get(name)["coverageMap"]
+            coverage_map = build.get(contract_name)["coverageMap"]
         except KeyError:
-            del results[name]
+            del results[contract_name]
             continue
 
-        r = results[name]
+        r = results[contract_name]
         r["statements"], r["totals"]["statements"] = _statement_totals(
-            coverage_eval[name], coverage_map["statements"]
+            coverage_eval[contract_name], coverage_map["statements"], exclude_contracts
         )
         r["branches"], r["totals"]["branches"] = _branch_totals(
-            coverage_eval[name], coverage_map["branches"]
+            coverage_eval[contract_name], coverage_map["branches"], exclude_contracts
         )
 
     return results
@@ -194,20 +200,24 @@ def _split(coverage_eval, coverage_map, key):
     return results
 
 
-def _statement_totals(coverage_eval, coverage_map):
+def _statement_totals(coverage_eval, coverage_map, exclude_contracts):
     result = {}
     count, total = 0, 0
     for path, fn in [(k, x) for k, v in coverage_eval.items() for x in v]:
+        if fn.split(".")[0] in exclude_contracts:
+            continue
         count += len(coverage_eval[path][fn][0])
         total += len(coverage_map[path][fn])
         result[fn] = (len(coverage_eval[path][fn][0]), len(coverage_map[path][fn]))
     return result, (count, total)
 
 
-def _branch_totals(coverage_eval, coverage_map):
+def _branch_totals(coverage_eval, coverage_map, exclude_contracts):
     result = {}
     final = [0, 0, 0]
     for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
+        if fn.split(".")[0] in exclude_contracts:
+            continue
         if path not in coverage_eval:
             true, false = 0, 0
         else:
