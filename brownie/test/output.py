@@ -77,8 +77,11 @@ def _build_gas_profile_output():
     for full_name, values in sorted_gas:
         contract, function = full_name.split(".", 1)
 
-        if project and project._sources.get_source_path(contract) in exclude_paths:
-            continue
+        try:
+            if project._sources.get_source_path(contract) in exclude_paths:
+                continue
+        except (AttributeError, KeyError):
+            pass
         if contract in exclude_contracts:
             continue
 
