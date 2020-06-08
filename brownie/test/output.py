@@ -29,8 +29,40 @@ def _save_coverage_report(build, coverage_eval, report_path):
     return report_path
 
 
+def _load_report_exclude_data(settings):
+    exclude_paths = []
+    if settings["exclude_paths"]:
+        exclude = settings["exclude_paths"]
+        if not isinstance(exclude, list):
+            exclude = [exclude]
+        for glob_str in exclude:
+            if Path(glob_str).is_absolute():
+                base_path = Path(glob_str).root
+            else:
+                base_path = Path(".")
+            try:
+                exclude_paths.extend([i.as_posix() for i in base_path.glob(glob_str)])
+            except Exception:
+                # TODO
+                pass
+
+    exclude_contracts = []
+    if settings["exclude_contracts"]:
+        exclude_contracts = settings["exclude_contracts"]
+        if not isinstance(exclude_contracts, list):
+            exclude_contracts = [exclude_contracts]
+
+    return exclude_paths, exclude_contracts
+
+
 def _build_gas_profile_output():
     # Formats gas profile report that may be printed to the console
+    exclude_paths, exclude_contracts = _load_report_exclude_data(CONFIG.settings["reports"])
+    try:
+        project = get_loaded_projects()[0]
+    except IndexError:
+        project = None
+
     gas = TxHistory().gas_profile
     sorted_gas = sorted(gas.items())
     grouped_by_contract = {}
@@ -40,6 +72,11 @@ def _build_gas_profile_output():
 
     for full_name, values in sorted_gas:
         contract, function = full_name.split(".", 1)
+
+        if project and project._sources.get_source_path(contract) in exclude_paths:
+            continue
+        if contract in exclude_contracts:
+            continue
 
         # calculate padding to get table-like formatting
         padding["fn"] = max(padding.get("fn", 0), len(str(function)))
@@ -73,28 +110,7 @@ def _build_gas_profile_output():
 def _build_coverage_output(build, coverage_eval):
     # Formats a coverage evaluation report that may be printed to the console
 
-    exclude_paths = []
-    if CONFIG.settings["reports"]["exclude_paths"]:
-        exclude = CONFIG.settings["reports"]["exclude_paths"]
-        if not isinstance(exclude, list):
-            exclude = [exclude]
-        for glob_str in exclude:
-            if Path(glob_str).is_absolute():
-                base_path = Path(glob_str).root
-            else:
-                base_path = Path(".")
-            try:
-                exclude_paths.extend([i.as_posix() for i in base_path.glob(glob_str)])
-            except Exception:
-                # TODO
-                pass
-
-    exclude_contracts = []
-    if CONFIG.settings["reports"]["exclude_contracts"]:
-        exclude_contracts = CONFIG.settings["reports"]["exclude_contracts"]
-        if not isinstance(exclude_contracts, list):
-            exclude_contracts = [exclude_contracts]
-
+    exclude_paths, exclude_contracts = _load_report_exclude_data(CONFIG.settings["reports"])
     all_totals = [
         (i, _get_totals(i._build, coverage_eval, exclude_contracts)) for i in get_loaded_projects()
     ]
