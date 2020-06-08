@@ -619,7 +619,7 @@ def release_package(
         uri: IPFS uri of the package
     """
 
-    registry = network.contract.Contract(
+    registry = network.contract.Contract.from_abi(
         "ERC1319Registry", registry_address, REGISTRY_ABI, owner=account
     )
     verify_manifest(package_name, version, uri)
