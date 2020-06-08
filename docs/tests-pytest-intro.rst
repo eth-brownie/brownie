@@ -379,8 +379,6 @@ Once you are finished, type ``quit()`` to continue with the next test.
 
 See :ref:`Inspecting and Debugging Transactions <core-transactions>` for more information on Brownie's debugging functionality.
 
-
-
 Evaluating Gas Usage
 --------------------
 
@@ -403,9 +401,6 @@ When the tests complete, a report will display:
            ├─ constructor   -  avg:  211445  low:  211445  high:  211445
            └─ set           -  avg:   21658  low:   21658  high:   21658
 
-
-
-
 Evaluating Coverage
 -------------------
 
@@ -419,25 +414,21 @@ When the tests complete, a report will display:
 
 ::
 
-    Coverage analysis:
-
-      contract: Token - 82.3%
-        SafeMath.add - 66.7%
-        SafeMath.sub - 100.0%
-        Token.<fallback> - 0.0%
-        Token.allowance - 100.0%
-        Token.approve - 100.0%
-        Token.balanceOf - 100.0%
-        Token.decimals - 0.0%
-        Token.name - 100.0%
-        Token.symbol - 0.0%
-        Token.totalSupply - 100.0%
-        Token.transfer - 85.7%
-        Token.transferFrom - 100.0%
+    contract: Token - 80.8%
+      Token.allowance - 100.0%
+      Token.approve - 100.0%
+      Token.balanceOf - 100.0%
+      Token.transfer - 100.0%
+      Token.transferFrom - 100.0%
+      SafeMath.add - 75.0%
+      SafeMath.sub - 75.0%
+      Token.<fallback> - 0.0%
 
     Coverage report saved at reports/coverage.json
 
 Brownie outputs a % score for each contract method that you can use to quickly gauge your overall coverage level. A detailed coverage report is also saved in the project's ``reports`` folder, that can be viewed via the Brownie GUI. See :ref:`coverage-gui` for more information.
+
+You can exclude specific contracts or source files from this report by modifying your project's :ref:`configuration file <config-reports>`.
 
 .. _xdist:
 
