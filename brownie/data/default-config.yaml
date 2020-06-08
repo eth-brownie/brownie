@@ -42,6 +42,10 @@ console:
     auto_suggest: true
     completions: true
 
+reports:
+    exclude_paths: null
+    exclude_contracts: null
+
 hypothesis:
     deadline: null
     max_examples: 50
