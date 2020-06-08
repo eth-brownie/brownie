@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+from brownie._config import CONFIG
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
 from brownie.utils import color
@@ -71,23 +72,52 @@ def _build_gas_profile_output():
 
 def _build_coverage_output(build, coverage_eval):
     # Formats a coverage evaluation report that may be printed to the console
-    all_totals = [(i._name, _get_totals(i._build, coverage_eval)) for i in get_loaded_projects()]
+    all_totals = [(i, _get_totals(i._build, coverage_eval)) for i in get_loaded_projects()]
+    all_totals = [i for i in all_totals if i[1]]
     lines = []
 
-    for project_name, totals in all_totals:
-        if not totals:
-            continue
+    exclude_paths = []
+    if CONFIG.settings["reports"]["exclude_paths"]:
+        exclude = CONFIG.settings["reports"]["exclude_paths"]
+        if not isinstance(exclude, list):
+            exclude = [exclude]
+        for glob_str in exclude:
+            if Path(glob_str).is_absolute():
+                base_path = Path(glob_str).root
+            else:
+                base_path = Path(".")
+            try:
+                exclude_paths.extend([i.as_posix() for i in base_path.glob(glob_str)])
+            except Exception:
+                # TODO
+                pass
+
+    exclude_contracts = []
+    if CONFIG.settings["reports"]["exclude_contracts"]:
+        exclude_contracts = CONFIG.settings["reports"]["exclude_contracts"]
+        if not isinstance(exclude_contracts, list):
+            exclude_contracts = [exclude_contracts]
+
+    for project, totals in all_totals:
 
         if len(all_totals) > 1:
-            lines.append(f"\n======== {color('bright magenta')}{project_name}{color} ========")
+            lines.append(f"\n======== {color('bright magenta')}{project._name}{color} ========")
 
-        for name in sorted(totals):
-            pct = _pct(totals[name]["totals"]["statements"], totals[name]["totals"]["branches"])
+        for contract_name in sorted(totals):
+            if project._sources.get_source_path(contract_name) in exclude_paths:
+                continue
+            if contract_name in exclude_contracts:
+                continue
+
+            pct = _pct(
+                totals[contract_name]["totals"]["statements"],
+                totals[contract_name]["totals"]["branches"],
+            )
             lines.append(
-                f"\n  contract: {color('bright magenta')}{name}{color}"
+                f"\n  contract: {color('bright magenta')}{contract_name}{color}"
                 f" - {_cov_color(pct)}{pct:.1%}{color}"
             )
-            cov = totals[name]
+            cov = totals[contract_name]
             for fn_name, count in cov["statements"].items():
                 branch = cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
                 pct = _pct(count, branch)
