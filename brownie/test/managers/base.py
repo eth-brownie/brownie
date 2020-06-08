@@ -237,7 +237,7 @@ class PytestBrownieBase:
 
             # output coverage report to console
             coverage_eval = coverage.get_merged_coverage_eval()
-            for line in output._build_coverage_output(self.project._build, coverage_eval):
+            for line in output._build_coverage_output(coverage_eval):
                 terminalreporter.write_line(line)
 
             # save coverage report as `reports/coverage.json`

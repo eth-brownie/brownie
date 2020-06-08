@@ -1,8 +1,11 @@
 #!/usr/bin/python3
 
 import json
+import warnings
 from pathlib import Path
 
+from brownie._config import CONFIG
+from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
 from brownie.utils import color
@@ -28,8 +31,42 @@ def _save_coverage_report(build, coverage_eval, report_path):
     return report_path
 
 
+def _load_report_exclude_data(settings):
+    exclude_paths = []
+    if settings["exclude_paths"]:
+        exclude = settings["exclude_paths"]
+        if not isinstance(exclude, list):
+            exclude = [exclude]
+        for glob_str in exclude:
+            if Path(glob_str).is_absolute():
+                base_path = Path(glob_str).root
+            else:
+                base_path = Path(".")
+            try:
+                exclude_paths.extend([i.as_posix() for i in base_path.glob(glob_str)])
+            except Exception:
+                warnings.warn(
+                    "Invalid glob pattern in config exclude settings: '{glob_str}'",
+                    BrownieConfigWarning,
+                )
+
+    exclude_contracts = []
+    if settings["exclude_contracts"]:
+        exclude_contracts = settings["exclude_contracts"]
+        if not isinstance(exclude_contracts, list):
+            exclude_contracts = [exclude_contracts]
+
+    return exclude_paths, exclude_contracts
+
+
 def _build_gas_profile_output():
     # Formats gas profile report that may be printed to the console
+    exclude_paths, exclude_contracts = _load_report_exclude_data(CONFIG.settings["reports"])
+    try:
+        project = get_loaded_projects()[0]
+    except IndexError:
+        project = None
+
     gas = TxHistory().gas_profile
     sorted_gas = sorted(gas.items())
     grouped_by_contract = {}
@@ -39,6 +76,14 @@ def _build_gas_profile_output():
 
     for full_name, values in sorted_gas:
         contract, function = full_name.split(".", 1)
+
+        try:
+            if project._sources.get_source_path(contract) in exclude_paths:
+                continue
+        except (AttributeError, KeyError):
+            pass
+        if contract in exclude_contracts:
+            continue
 
         # calculate padding to get table-like formatting
         padding["fn"] = max(padding.get("fn", 0), len(str(function)))
@@ -69,28 +114,42 @@ def _build_gas_profile_output():
     return lines + [""]
 
 
-def _build_coverage_output(build, coverage_eval):
+def _build_coverage_output(coverage_eval):
     # Formats a coverage evaluation report that may be printed to the console
-    all_totals = [(i._name, _get_totals(i._build, coverage_eval)) for i in get_loaded_projects()]
+
+    exclude_paths, exclude_contracts = _load_report_exclude_data(CONFIG.settings["reports"])
+    all_totals = [
+        (i, _get_totals(i._build, coverage_eval, exclude_contracts)) for i in get_loaded_projects()
+    ]
+    all_totals = [i for i in all_totals if i[1]]
     lines = []
 
-    for project_name, totals in all_totals:
-        if not totals:
-            continue
+    for project, totals in all_totals:
 
         if len(all_totals) > 1:
-            lines.append(f"\n======== {color('bright magenta')}{project_name}{color} ========")
+            lines.append(f"\n======== {color('bright magenta')}{project._name}{color} ========")
 
-        for name in sorted(totals):
-            pct = _pct(totals[name]["totals"]["statements"], totals[name]["totals"]["branches"])
+        for contract_name in sorted(totals):
+            if project._sources.get_source_path(contract_name) in exclude_paths:
+                continue
+
+            pct = _pct(
+                totals[contract_name]["totals"]["statements"],
+                totals[contract_name]["totals"]["branches"],
+            )
             lines.append(
-                f"\n  contract: {color('bright magenta')}{name}{color}"
+                f"\n  contract: {color('bright magenta')}{contract_name}{color}"
                 f" - {_cov_color(pct)}{pct:.1%}{color}"
             )
-            cov = totals[name]
-            for fn_name, count in cov["statements"].items():
-                branch = cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
-                pct = _pct(count, branch)
+
+            cov = totals[contract_name]
+            results = []
+            for fn_name, statement_cov in cov["statements"].items():
+                branch_cov = cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
+                pct = _pct(statement_cov, branch_cov)
+                results.append((fn_name, pct))
+
+            for fn_name, pct in sorted(results, key=lambda k: (-k[1], k[0])):
                 lines.append(f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}")
 
     return lines
@@ -107,9 +166,11 @@ def _pct(statement, branch):
     return pct
 
 
-def _get_totals(build, coverage_eval):
+def _get_totals(build, coverage_eval, exclude_contracts=None):
     # Returns a modified coverage eval dict showing counts and totals for each function.
 
+    if exclude_contracts is None:
+        exclude_contracts = []
     coverage_eval = _split_by_fn(build, coverage_eval)
     results = dict(
         (
@@ -122,19 +183,22 @@ def _get_totals(build, coverage_eval):
         )
         for i in coverage_eval
     )
-    for name in coverage_eval:
+    for contract_name in coverage_eval:
+        if contract_name in exclude_contracts:
+            del results[contract_name]
+            continue
         try:
-            coverage_map = build.get(name)["coverageMap"]
+            coverage_map = build.get(contract_name)["coverageMap"]
         except KeyError:
-            del results[name]
+            del results[contract_name]
             continue
 
-        r = results[name]
+        r = results[contract_name]
         r["statements"], r["totals"]["statements"] = _statement_totals(
-            coverage_eval[name], coverage_map["statements"]
+            coverage_eval[contract_name], coverage_map["statements"], exclude_contracts
         )
         r["branches"], r["totals"]["branches"] = _branch_totals(
-            coverage_eval[name], coverage_map["branches"]
+            coverage_eval[contract_name], coverage_map["branches"], exclude_contracts
         )
 
     return results
@@ -164,20 +228,24 @@ def _split(coverage_eval, coverage_map, key):
     return results
 
 
-def _statement_totals(coverage_eval, coverage_map):
+def _statement_totals(coverage_eval, coverage_map, exclude_contracts):
     result = {}
     count, total = 0, 0
     for path, fn in [(k, x) for k, v in coverage_eval.items() for x in v]:
+        if fn.split(".")[0] in exclude_contracts:
+            continue
         count += len(coverage_eval[path][fn][0])
         total += len(coverage_map[path][fn])
         result[fn] = (len(coverage_eval[path][fn][0]), len(coverage_map[path][fn]))
     return result, (count, total)
 
 
-def _branch_totals(coverage_eval, coverage_map):
+def _branch_totals(coverage_eval, coverage_map, exclude_contracts):
     result = {}
     final = [0, 0, 0]
     for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
+        if fn.split(".")[0] in exclude_contracts:
+            continue
         if path not in coverage_eval:
             true, false = 0, 0
         else:

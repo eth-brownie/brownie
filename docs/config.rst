@@ -206,6 +206,39 @@ Console
 
     default value: ``true``
 
+.. _config-reports:
+
+Reports
+-------
+
+Settings related to reports such as coverage data and gas profiles.
+
+.. py:attribute:: exclude_paths
+
+    Paths or `glob patterns <https://en.wikipedia.org/wiki/Glob_%28programming%29>`_ of source files to be excluded from report data.
+
+    default value: ``null``
+
+    .. code-block:: yaml
+
+        reports:
+            exclude_sources:
+                - contracts/mocks/**/*.*
+                - contracts/SafeMath.sol
+
+.. py:attribute:: exclude_contracts
+
+    Contract names to be excluded from report data.
+
+    default value: ``null``
+
+    .. code-block:: yaml
+
+        reports:
+            exclude_contracts:
+                - SafeMath
+                - Owned
+
 .. _config-hypothesis:
 
 Hypothesis
