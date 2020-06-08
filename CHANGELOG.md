@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+## [1.9.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.9.12) - 2020-06-08
+### Added
+- Filter report outputs by source path or contract name ([#626](https://github.com/eth-brownie/brownie/pull/626))
+
+### Fixed
+- Delete `required_confs` from transaction parameters prior to making a call ([#620](https://github.com/eth-brownie/brownie/pull/620))
+- Handle coverage data and gas profile as `pytest` reports, fixes Windows formatting issues ([#620](https://github.com/eth-brownie/brownie/pull/622))
+- Filter fixtures from namespace when using interactive test debugger ([#627](https://github.com/eth-brownie/brownie/pull/627))
+
 ## [1.9.1](https://github.com/iamdefinitelyahuman/brownie/tree/v1.9.1) - 2020-06-07
 ### Fixed
 - Return actual call when running calls as transactions ([#614](https://github.com/eth-brownie/brownie/pull/614))
