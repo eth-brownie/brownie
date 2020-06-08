@@ -187,3 +187,7 @@ class InvalidArgumentWarning(BrownieEnvironmentWarning):
 
 class BrownieTestWarning(Warning):
     pass
+
+
+class BrownieConfigWarning(Warning):
+    pass

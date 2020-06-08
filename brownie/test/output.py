@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 
 import json
+import warnings
 from pathlib import Path
 
 from brownie._config import CONFIG
+from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
 from brownie.utils import color
@@ -43,8 +45,10 @@ def _load_report_exclude_data(settings):
             try:
                 exclude_paths.extend([i.as_posix() for i in base_path.glob(glob_str)])
             except Exception:
-                # TODO
-                pass
+                warnings.warn(
+                    "Invalid glob pattern in config exclude settings: '{glob_str}'",
+                    BrownieConfigWarning,
+                )
 
     exclude_contracts = []
     if settings["exclude_contracts"]:
