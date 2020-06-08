@@ -6,7 +6,7 @@ import pytest
 import requests
 
 from brownie import Wei
-from brownie.exceptions import ContractNotFound
+from brownie.exceptions import BrownieCompilerWarning, ContractNotFound
 from brownie.network.contract import (
     Contract,
     ContractCall,
@@ -109,13 +109,17 @@ def test_contract_from_ethpm_no_deployments(ipfs_mock, network):
 
 
 def test_deprecated_init_abi(tester):
-    old = Contract("BrownieTester", tester.address, tester.abi)
+    with pytest.warns(DeprecationWarning):
+        old = Contract("BrownieTester", tester.address, tester.abi)
+
     assert old == Contract.from_abi("BrownieTester", tester.address, tester.abi)
 
 
 def test_deprecated_init_ethpm(ipfs_mock, network):
     network.connect("ropsten")
-    old = Contract("ComplexNothing", manifest_uri="ipfs://testipfs-complex")
+
+    with pytest.warns(DeprecationWarning):
+        old = Contract("ComplexNothing", manifest_uri="ipfs://testipfs-complex")
 
     assert old == Contract.from_ethpm("ComplexNothing", manifest_uri="ipfs://testipfs-complex")
 
@@ -132,7 +136,9 @@ def test_from_explorer(network):
 def test_from_explorer_only_abi(network):
     network.connect("mainnet")
     # uniswap DAI market - ABI is available but source is not
-    contract = Contract.from_explorer("0x2a1530C4C41db0B0b2bB646CB5Eb1A67b7158667")
+    with pytest.warns(BrownieCompilerWarning):
+        contract = Contract.from_explorer("0x2a1530C4C41db0B0b2bB646CB5Eb1A67b7158667")
+
     assert contract._name == "UnknownContractName"
     assert "pcMap" not in contract._build
 
@@ -141,7 +147,8 @@ def test_from_explorer_pre_422(network):
     network.connect("mainnet")
 
     # MKR, compiler version 0.4.18
-    contract = Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
+    with pytest.warns(BrownieCompilerWarning):
+        contract = Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
     assert contract._name == "DSToken"
     assert "pcMap" not in contract._build
 
@@ -153,13 +160,15 @@ def test_from_explorer_osx_pre_050(network, monkeypatch):
     monkeypatch.setattr("solcx.get_installed_solc_versions", lambda: installed)
 
     # chainlink, compiler version 0.4.24
-    contract = Contract.from_explorer("0xf79d6afbb6da890132f9d7c355e3015f15f3406f")
+    with pytest.warns(BrownieCompilerWarning):
+        contract = Contract.from_explorer("0xf79d6afbb6da890132f9d7c355e3015f15f3406f")
     assert "pcMap" not in contract._build
 
 
 def test_from_explorer_vyper(network):
     network.connect("mainnet")
-    contract = Contract.from_explorer("0x2157a7894439191e520825fe9399ab8655e0f708")
+    with pytest.warns(BrownieCompilerWarning):
+        contract = Contract.from_explorer("0x2157a7894439191e520825fe9399ab8655e0f708")
 
     assert contract._name == "Vyper_contract"
     assert "pcMap" not in contract._build
@@ -173,14 +182,16 @@ def test_from_explorer_unverified(network):
 
 def test_from_explorer_etc(network):
     network.connect("etc")
-    contract = Contract.from_explorer("0x085b0fdf115aa9e16ae1bddd396ce1f993c52220")
+    with pytest.warns(BrownieCompilerWarning):
+        contract = Contract.from_explorer("0x085b0fdf115aa9e16ae1bddd396ce1f993c52220")
 
     assert contract._name == "ONEX"
 
 
 def test_retrieve_existing(network):
     network.connect("mainnet")
-    new = Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
+    with pytest.warns(BrownieCompilerWarning):
+        new = Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
 
     existing = Contract("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
     assert new == existing
@@ -189,7 +200,8 @@ def test_retrieve_existing(network):
 @pytest.mark.xfail(reason="Infura rate limiting - the test suite needs a refactor", strict=False)
 def test_existing_different_chains(network):
     network.connect("mainnet")
-    Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
+    with pytest.warns(BrownieCompilerWarning):
+        Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
 
     network.disconnect()
     network.connect("ropsten")
@@ -199,7 +211,8 @@ def test_existing_different_chains(network):
 
 def test_alias(network):
     network.connect("mainnet")
-    contract = Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
+    with pytest.warns(BrownieCompilerWarning):
+        contract = Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
 
     contract.set_alias("testalias")
 
@@ -222,8 +235,10 @@ def test_alias_not_exists(network):
 
 def test_duplicate_alias(network):
     network.connect("mainnet")
+
     foo = Contract.from_explorer("0x2af5d2ad76741191d15dfe7bf6ac92d4bd912ca3")
-    bar = Contract.from_explorer("0x2157a7894439191e520825fe9399ab8655e0f708")
+    with pytest.warns(BrownieCompilerWarning):
+        bar = Contract.from_explorer("0x2157a7894439191e520825fe9399ab8655e0f708")
 
     foo.set_alias("foo")
     with pytest.raises(ValueError):
