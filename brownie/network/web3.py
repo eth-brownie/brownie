@@ -50,7 +50,7 @@ class Web3(_Web3):
 
         if self.provider is None:
             if uri.startswith("ws"):
-                self.provider = WebsocketProvider(uri, {"timeout": timeout})
+                self.provider = WebsocketProvider(uri, {"close_timeout": timeout})
             elif uri.startswith("http"):
 
                 self.provider = HTTPProvider(uri, {"timeout": timeout})
