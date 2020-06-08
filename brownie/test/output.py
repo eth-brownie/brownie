@@ -118,10 +118,15 @@ def _build_coverage_output(build, coverage_eval):
                 f"\n  contract: {color('bright magenta')}{contract_name}{color}"
                 f" - {_cov_color(pct)}{pct:.1%}{color}"
             )
+
             cov = totals[contract_name]
-            for fn_name, count in cov["statements"].items():
-                branch = cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
-                pct = _pct(count, branch)
+            results = []
+            for fn_name, statement_cov in cov["statements"].items():
+                branch_cov = cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
+                pct = _pct(statement_cov, branch_cov)
+                results.append((fn_name, pct))
+
+            for fn_name, pct in sorted(results, key=lambda k: (-k[1], k[0])):
                 lines.append(f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}")
 
     return lines
