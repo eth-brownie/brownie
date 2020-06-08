@@ -112,7 +112,7 @@ class Accounts(metaclass=_Singleton):
         if w3account.address in self._accounts:
             return self.at(w3account.address)
 
-        account = LocalAccount(w3account.address, w3account, w3account.privateKey)
+        account = LocalAccount(w3account.address, w3account, w3account.key)
         self._accounts.append(account)
 
         return account
@@ -139,7 +139,7 @@ class Accounts(metaclass=_Singleton):
                 mnemonic, account_path=f"m/44'/60'/0'/0/{i}"
             )
 
-            account = LocalAccount(w3account.address, w3account, w3account.privateKey)
+            account = LocalAccount(w3account.address, w3account, w3account.key)
             new_accounts.append(account)
             if account not in self._accounts:
                 self._accounts.append(account)
