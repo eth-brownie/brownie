@@ -3,8 +3,10 @@
 import sys
 from typing import Optional, Type
 
+import eth_abi
 import psutil
 import yaml
+from hexbytes import HexBytes
 
 import brownie
 
@@ -82,7 +84,20 @@ class VirtualMachineError(Exception):
             if "data" not in exc:
                 raise ValueError(exc["message"]) from None
 
-            self.message: str = exc["message"]
+            self.message: str = exc["message"].rstrip(".")
+
+            if isinstance(exc["data"], str):
+                # handle parity exceptions - this logic probably is not perfect
+                if "0x08c379a0" in exc["data"]:
+                    revert_type, err_msg = [i.strip() for i in exc["data"].split("0x08c379a0", 1)]
+                    err_msg = eth_abi.decode_abi(["string"], HexBytes(err_msg))
+                    err_msg = f"{revert_type} '{err_msg}'"
+                elif exc["data"].endswith("0x"):
+                    err_msg = exc["data"][:-2].strip()
+                else:
+                    err_msg = exc["data"]
+                raise ValueError(f"{self.message}: {err_msg}") from None
+
             try:
                 txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
             except StopIteration:
