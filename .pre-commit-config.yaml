@@ -7,7 +7,7 @@ repos:
     rev: 19.10b0
     hooks:
       - id: black
-        name: fmt        
+        name: black        
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.4.0
     hooks:
