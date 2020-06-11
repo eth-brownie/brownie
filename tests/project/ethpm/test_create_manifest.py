@@ -117,7 +117,7 @@ def test_contract_types(tp_path):
     assert "EVMTester" in manifest["contract_types"]
     assert manifest["contract_types"]["EVMTester"] == {
         "contract_name": "EVMTester",
-        "source_path": f"./EVMTester.sol",
+        "source_path": "./EVMTester.sol",
         "deployment_bytecode": {"bytecode": f"0x{build['bytecode']}"},
         "runtime_bytecode": {"bytecode": f"0x{build['deployedBytecode']}"},
         "abi": build["abi"],
@@ -280,7 +280,7 @@ def test_pin_and_get(dep_project):
     get = ethpm.get_manifest(uri)
 
     for key in list(process) + list(get):
-        if type(process[key]) is str:
+        if isinstance(process[key], str):
             assert process[key] == get[key]
             continue
         for k in list(process[key]) + list(get[key]):

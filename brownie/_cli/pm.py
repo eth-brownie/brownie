@@ -74,7 +74,7 @@ def _clone(package_id, path_str="."):
     dest_path = Path(path_str)
     if dest_path.exists():
         if not dest_path.is_dir():
-            raise FileExistsError(f"Destination path already exists")
+            raise FileExistsError("Destination path already exists")
         dest_path = dest_path.joinpath(package_id)
     shutil.copytree(source_path, dest_path)
     notify("SUCCESS", f"Package '{_format_pkg(org, repo, version)}' was cloned at {dest_path}")

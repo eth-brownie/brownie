@@ -104,7 +104,7 @@ class OpcodeList(ttk.Treeview):
             if targets:
                 console.append(f"\nJumps: {', '.join(targets)}")
             else:
-                console.append(f"\nJumps: None")
+                console.append("\nJumps: None")
             for item in targets:
                 self.tag_configure(item, foreground="#00ff00")
                 self._last.add(item)

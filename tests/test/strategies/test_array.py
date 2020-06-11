@@ -33,56 +33,56 @@ def test_size_wrong_length():
 
 @given(value=strategy("uint8[2][5]"))
 def test_given(value):
-    assert type(value) is list
+    assert isinstance(value, list)
     assert len(value) == 5
     for item in value:
-        assert type(item) is list
+        assert isinstance(item, list)
         assert len(item) == 2
-        assert type(item[0]) is int
+        assert isinstance(item[0], int)
         assert 0 <= item[0] <= 255
 
 
 @given(value=strategy("uint8[][]", min_length=2))
 def test_min_int(value):
-    assert type(value) is list
+    assert isinstance(value, list)
     assert 2 <= len(value) <= 8
     for item in value:
-        assert type(item) is list
+        assert isinstance(item, list)
         assert 2 <= len(item) <= 8
-        assert type(item[0]) is int
+        assert isinstance(item[0], int)
         assert 0 <= item[0] <= 255
 
 
 @given(value=strategy("uint8[][]", min_length=[4, 3]))
 def test_min_list(value):
-    assert type(value) is list
+    assert isinstance(value, list)
     assert 3 <= len(value) <= 8
     for item in value:
-        assert type(item) is list
+        assert isinstance(item, list)
         assert 4 <= len(item) <= 8
-        assert type(item[0]) is int
+        assert isinstance(item[0], int)
         assert 0 <= item[0] <= 255
 
 
 @given(value=strategy("uint8[][]", max_length=4))
 def test_max_int(value):
-    assert type(value) is list
+    assert isinstance(value, list)
     assert 1 <= len(value) <= 4
     for item in value:
-        assert type(item) is list
+        assert isinstance(item, list)
         assert 1 <= len(item) <= 4
-        assert type(item[0]) is int
+        assert isinstance(item[0], int)
         assert 0 <= item[0] <= 255
 
 
 @given(value=strategy("uint8[][]", max_length=[2, 4]))
 def test_max_list(value):
-    assert type(value) is list
+    assert isinstance(value, list)
     assert 1 <= len(value) <= 4
     for item in value:
-        assert type(item) is list
+        assert isinstance(item, list)
         assert 1 <= len(item) <= 2
-        assert type(item[0]) is int
+        assert isinstance(item[0], int)
         assert 0 <= item[0] <= 255
 
 

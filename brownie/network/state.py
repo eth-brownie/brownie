@@ -15,7 +15,7 @@ from .web3 import _resolve_address
 
 _contract_map: Dict = {}
 
-cur = Cursor(_get_data_folder().joinpath(f"deployments.db"))
+cur = Cursor(_get_data_folder().joinpath("deployments.db"))
 cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
 
 

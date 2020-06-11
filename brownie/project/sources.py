@@ -49,7 +49,7 @@ class Sources:
 
         if collisions:
             raise NamespaceCollision(
-                f"Multiple contracts or interfaces with the same name\n  "
+                "Multiple contracts or interfaces with the same name\n  "
                 + "\n  ".join(f"{k}: {', '.join(sorted(v))}" for k, v in collisions.items())
             )
 
@@ -202,4 +202,4 @@ def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
         return NpmSpec(pragma_string)
     if path:
         raise PragmaError(f"No version pragma in '{path}'")
-    raise PragmaError(f"String does not contain a version pragma")
+    raise PragmaError("String does not contain a version pragma")

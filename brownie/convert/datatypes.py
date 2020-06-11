@@ -175,7 +175,8 @@ class Fixed(Decimal):
 def _to_fixed(value: Any) -> Decimal:
     if isinstance(value, float):
         raise TypeError("Cannot convert float to decimal - use a string instead")
-    elif isinstance(value, (str, bytes)):
+
+    if isinstance(value, (str, bytes)):
         try:
             value = Wei(value)
         except TypeError:
