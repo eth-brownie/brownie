@@ -453,7 +453,7 @@ class Project(_ProjectBase):
             pass
 
     def _clear_dev_deployments(self, height: int) -> None:
-        path = self._build_path.joinpath(f"deployments/dev")
+        path = self._build_path.joinpath("deployments/dev")
         if path.exists():
             deployment_map = self._load_deployment_map()
             for deployment in path.glob("*.json"):
@@ -718,7 +718,7 @@ def _install_from_github(package_id: str) -> str:
             "\ne.g. 'OpenZeppelin/openzeppelin-contracts@v2.5.0'"
         ) from None
 
-    base_install_path = _get_data_folder().joinpath(f"packages")
+    base_install_path = _get_data_folder().joinpath("packages")
     install_path = base_install_path.joinpath(f"{org}")
     install_path.mkdir(exist_ok=True)
     install_path = install_path.joinpath(f"{repo}@{version}")

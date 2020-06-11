@@ -59,7 +59,7 @@ def main():
 
                 shell = Console(active_project, {**globals_dict, **frame.f_locals})
                 shell.interact(
-                    banner=f"\nInteractive mode enabled. Use quit() to close.", exitmsg=""
+                    banner="\nInteractive mode enabled. Use quit() to close.", exitmsg=""
                 )
 
     if CONFIG.argv["gas"]:

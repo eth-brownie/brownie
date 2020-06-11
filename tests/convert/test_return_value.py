@@ -12,13 +12,13 @@ def return_value(accounts, tester):
 
 
 def test_type(return_value):
-    assert type(return_value) is ReturnValue
-    assert type(return_value["_addr"]) is EthAddress
-    assert type(return_value["_bool"]) is ReturnValue
-    assert type(return_value["_bool"][0]) is bool
-    assert type(return_value["_num"]) is Wei
-    assert type(return_value["_bytes"]) is ReturnValue
-    assert type(return_value["_bytes"][0][0]) is HexString
+    assert isinstance(return_value, ReturnValue)
+    assert isinstance(return_value["_addr"], EthAddress)
+    assert isinstance(return_value["_bool"], ReturnValue)
+    assert isinstance(return_value["_bool"][0], bool)
+    assert isinstance(return_value["_num"], Wei)
+    assert isinstance(return_value["_bytes"], ReturnValue)
+    assert isinstance(return_value["_bytes"][0][0], HexString)
 
 
 def test_len(return_value):
@@ -63,7 +63,7 @@ def test_eq_conversions(accounts, return_value):
 
 def test_dict(accounts, return_value):
     d = return_value.dict()
-    assert type(d) is dict
+    assert isinstance(d, dict)
     assert len(d) == 4
     assert len(d["_bool"]) == 3
     assert sorted(d) == ["_addr", "_bool", "_bytes", "_num"]
@@ -86,7 +86,7 @@ def test_getitem(accounts, return_value):
 def test_getitem_slice(accounts, return_value):
     s = return_value[1:3]
     assert s == [[False, False, False], accounts[2]]
-    assert type(s) is ReturnValue
+    assert isinstance(s, ReturnValue)
     assert s[0] == s["_bool"]
     assert "_num" not in s
 

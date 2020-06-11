@@ -363,7 +363,7 @@ class PytestBrownieRunner(PytestBrownieBase):
                 CONFIG.argv["cli"] = "console"
                 shell = Console(self.project, extra_locals=namespace)
                 shell.interact(
-                    banner=f"\nInteractive mode enabled. Use quit() to continue running tests.",
+                    banner="\nInteractive mode enabled. Use quit() to continue running tests.",
                     exitmsg="",
                 )
             except SystemExit:
