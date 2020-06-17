@@ -153,9 +153,10 @@ Accounts Methods
         mnemonic: 'buffalo cinnamon glory chalk require inform strike ginger crop sell hidden cart'
         <LocalAccount '0xf293C5E0b22802Bf5DCef3FB8112EaA4cA54fcCF'>
 
-.. py:classmethod:: Accounts.at(address)
+.. py:classmethod:: Accounts.at(address, force=False)
 
     Given an address as a string, returns the corresponding :func:`Account <brownie.network.account.Account>` or :func:`LocalAccount <brownie.network.account.LocalAccount>` from the container.
+    If ``force=True``, returns and adds the account even if it is not found in the container. Use this if an account is unlocked by external means.
 
     .. code-block:: python
 

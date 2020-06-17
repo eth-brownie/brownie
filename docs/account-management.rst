@@ -75,3 +75,21 @@ In order to access a local account from a script or console, you must first unlo
     [<LocalAccount object '0xa9c2DD830DfFE8934fEb0A93BAbcb6e823e1FF05'>]
 
 Once the account is unlocked it will be available for use within the :func:`Accounts <brownie.network.account.Accounts>` container.
+
+Unlocking Accounts on Development Networks
+==========================================
+
+On a local or forked development network you can unlock and use any account, even if you don't have the corresponding private key.
+To do so, add the account to the ``unlock`` setting in a project's :ref:`configuration file<config>`:
+
+.. code-block:: yaml
+
+        networks:
+            development:
+                cmd_settings:
+                    unlock:
+                        - 0x7E1E3334130355799F833ffec2D731BCa3E68aF6
+                        - 0x0063046686E46Dc6F15918b61AE2B121458534a5
+
+The unlocked accounts are automatically added to the :func:`Accounts <brownie.network.account.Accounts>` container.
+Note that you might need to fund the unlocked accounts manually.
