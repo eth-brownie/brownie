@@ -6,6 +6,9 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+### Added
+- Accounts can now be unlocked on development networks ([#633](https://github.com/eth-brownie/brownie/pull/633))
+
 
 ## [1.9.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.9.12) - 2020-06-08
 ### Added
