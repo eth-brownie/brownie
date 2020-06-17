@@ -59,6 +59,19 @@ class Accounts(metaclass=_Singleton):
             self._accounts = [Account(i) for i in web3.eth.accounts]
         except Exception:
             pass
+
+        # Check if accounts were manually unlocked and add them
+        try:
+            unlocked_accounts = CONFIG.active_network["cmd_settings"]["unlock"]
+            if not isinstance(unlocked_accounts, list):
+                unlocked_accounts = [unlocked_accounts]
+            for address in unlocked_accounts:
+                if isinstance(address, int):
+                    address = HexBytes(address.to_bytes(20, "big")).hex()
+                self._accounts.append(Account(address))
+        except (ConnectionError, ValueError, KeyError):
+            pass
+
         if self.default not in self._accounts:
             self.default = None
 
