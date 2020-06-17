@@ -98,11 +98,11 @@ class Rpc(metaclass=_Singleton):
         for key, value in [(k, v) for k, v in kwargs.items() if v]:
             if key == "unlock":
                 if not isinstance(value, list):
-                    value: [value]  # type: ignore
+                    value = [value]  # type: ignore
                 for address in value:
                     if isinstance(address, int):
                         address = HexBytes(address.to_bytes(20, "big")).hex()
-                    cmd_list.extend([CLI_FLAGS[key], str(address)])
+                    cmd_list.extend([CLI_FLAGS[key], address])
             else:
                 try:
                     cmd_list.extend([CLI_FLAGS[key], str(value)])

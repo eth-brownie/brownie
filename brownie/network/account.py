@@ -68,7 +68,9 @@ class Accounts(metaclass=_Singleton):
             for address in unlocked_accounts:
                 if isinstance(address, int):
                     address = HexBytes(address.to_bytes(20, "big")).hex()
-                self._accounts.append(Account(address))
+                account = Account(address)
+                if account not in self._accounts:
+                    self._accounts.append(account)
         except (ConnectionError, ValueError, KeyError):
             pass
 
