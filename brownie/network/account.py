@@ -201,7 +201,7 @@ class Accounts(metaclass=_Singleton):
             )
         return self.add(priv_key)
 
-    def at(self, address: str) -> "LocalAccount":
+    def at(self, address: str, force: bool = False) -> "LocalAccount":
         """
         Retrieve an `Account` instance from the address string.
 
@@ -211,6 +211,8 @@ class Accounts(metaclass=_Singleton):
         ---------
         address: string
             Address of the account
+        force: bool
+            When True, will add the account even if it was not found in web3.eth.accounts
 
         Returns
         -------
@@ -219,7 +221,7 @@ class Accounts(metaclass=_Singleton):
         address = _resolve_address(address)
         acct = next((i for i in self._accounts if i == address), None)
 
-        if acct is None and address in web3.eth.accounts:
+        if acct is None and (address in web3.eth.accounts or force):
             acct = Account(address)
             self._accounts.append(acct)
 
