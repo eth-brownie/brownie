@@ -52,7 +52,8 @@ def main():
 
         if args["--interactive"]:
             frame = next(
-                (i.frame for i in inspect.trace() if Path(i.filename).as_posix() == path_str), None
+                (i.frame for i in inspect.trace()[::-1] if Path(i.filename).as_posix() == path_str),
+                None,
             )
             if frame is not None:
                 globals_dict = {k: v for k, v in frame.f_globals.items() if not k.startswith("__")}
