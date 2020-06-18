@@ -942,6 +942,12 @@ class _ContractMethod:
         except ValueError as e:
             raise VirtualMachineError(e) from None
 
+        if HexBytes(data)[:4].hex() == "0x08c379a0":
+            revert_str = eth_abi.decode_abi(["string"], HexBytes(data)[4:])[0]
+            raise ValueError(f"Call reverted: {revert_str}")
+        if self.abi["outputs"] and not data:
+            raise ValueError("No data was returned - the call likely reverted")
+
         return self.decode_output(data)
 
     def transact(self, *args: Tuple) -> TransactionReceiptType:
