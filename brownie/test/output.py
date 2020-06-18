@@ -2,7 +2,11 @@
 
 import json
 import warnings
+import time
 from pathlib import Path
+from lxml import etree
+from pycobertura import Cobertura
+from pycobertura.reporters import HtmlReporter, TextReporter
 
 from brownie._config import CONFIG
 from brownie.exceptions import BrownieConfigWarning
@@ -24,11 +28,146 @@ def _save_coverage_report(build, coverage_eval, report_path):
     report_path = Path(report_path).absolute()
     if report_path.is_dir():
         report_path = report_path.joinpath("coverage.json")
+
     with report_path.open("w") as fp:
         json.dump(report, fp, sort_keys=True, indent=2)
-    print(f"\nCoverage report saved at {report_path}")
+
+    for contract_name in coverage_eval:
+        contract = build.get(contract_name)
+        coverage_map = contract["coverageMap"]
+
+        root = etree.Element("coverage")
+        root.set("branch-rate", "1")
+        root.set("branches-covered", "0")
+        root.set("branches-valid", "0")
+        root.set("complexity", "")
+        root.set("version", "1.9")
+        root.set("timestamp", str(int(time.time() * 1000)))
+
+        packages = etree.SubElement(root, "packages")
+        package = etree.SubElement(packages, "package")
+        package.set("name", contract_name)
+        package.set("branch-rate", "1")
+        package.set("complexity", "")
+
+        classes = etree.SubElement(package, "classes")
+
+        path_ids = set(
+            [k for k, v in coverage_map["statements"].items() if v]
+            + [k for k, v in coverage_map["branches"].items() if v]
+        )
+
+        plc = 0
+        phc = 0
+        for path_id in sorted(list(path_ids)):
+            filename = contract["allSourcePaths"][path_id]
+            if filename.startswith("/"):
+                continue
+            content = open(filename).readlines()
+
+            class_ = etree.SubElement(classes, "class")
+            class_.set("name", filename)
+            class_.set("filename", filename)
+            class_.set("branch-rate", "1")
+            class_.set("complexity", "")
+
+            class_lines = etree.SubElement(class_, "lines")
+
+            file_coverage = coverage_eval[contract_name][path_id]
+
+            line_coverage = _lines_to_coverage(coverage_map, path_id, file_coverage, content)
+
+            clc = 0
+            chc = 0
+            for line_no in sorted(line_coverage):
+                line = etree.SubElement(class_lines, "line")
+                line.set("number", str(line_no))
+                clc += 1
+                plc += 1
+                if line_coverage[line_no]:
+                    line.set("hits", str(1))
+                    chc += 1
+                    phc += 1
+                else:
+                    line.set("hits", str(0))
+
+            class_.set("line-rate", _rate(clc, chc))
+
+        package.set("line-rate", _rate(plc, phc))
+        root.set("line-rate", _rate(plc, phc))
+        root.set("lines-covered", str(phc))
+        root.set("lines-valid", str(plc))
+
+        xml_path = report_path.parent.joinpath(f"{contract_name}-coverage.xml")
+        html_path = report_path.parent.joinpath(f"{contract_name}-coverage.html")
+
+        with xml_path.open("wb") as fp:
+            fp.write(etree.tostring(root, pretty_print=True))
+
+        cobertura = Cobertura(str(xml_path), source=".")
+
+        print(TextReporter(cobertura).generate())
+
+        with html_path.open("w") as fp:
+            fp.write(HtmlReporter(cobertura).generate())
+
+    print(f"\nCoverage reports saved at {report_path} and {xml_path}")
     print("View the report using the Brownie GUI")
     return report_path
+
+
+def _rate(line_count, hit_count):
+    if line_count == 0:
+        return "1.0"
+    else:
+        return "{:.5}".format(hit_count / line_count)
+
+
+def _lines_to_coverage(coverage_map, path_id, file_coverage, content):
+    available_offsets = set()
+
+    for function in coverage_map["statements"][path_id].values():
+        for statement, [from_, to] in function.items():
+            available_offsets.update(range(from_, to))
+
+    for function in coverage_map["branches"][path_id].values():
+        for statement, [from_, to, _] in function.items():
+            available_offsets.update(range(from_, to))
+
+    statements = coverage_map["statements"][path_id]
+    branches = coverage_map["branches"][path_id]
+
+    flat_statements = {k: v for d in statements.values() for k, v in d.items()}
+
+    flat_yes_branches = {k: [v[0], v[1]] for d in branches.values() for k, v in d.items() if v[2]}
+
+    flat_no_branches = {
+        k: [v[0], v[1]] for d in branches.values() for k, v in d.items() if not v[2]
+    }
+
+    covered_offsets = set()
+    [covered_statements, covered_yes_branches, covered_no_branches] = file_coverage
+
+    for stmt in covered_statements:
+        if str(stmt) in flat_statements:
+            covered_offsets.update(range(*flat_statements[str(stmt)]))
+
+    for stmt in covered_yes_branches:
+        if str(stmt) in flat_yes_branches:
+            covered_offsets.update(range(*flat_yes_branches[str(stmt)]))
+
+    for stmt in covered_yes_branches:
+        if str(stmt) in flat_no_branches:
+            covered_offsets.update(range(*flat_no_branches[str(stmt)]))
+
+    line_to_coverage = {}
+    from_ = 0
+    for n, line in enumerate(content):
+        to = from_ + len(line)
+        if set(range(from_, to)).intersection(available_offsets):
+            line_to_coverage[n + 1] = bool(set(range(from_, to)).intersection(covered_offsets))
+        from_ = to
+    return line_to_coverage
 
 
 def _load_report_exclude_data(settings):
