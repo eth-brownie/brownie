@@ -138,27 +138,19 @@ def _lines_to_coverage(coverage_map, path_id, file_coverage, content):
     branches = coverage_map["branches"][path_id]
 
     flat_statements = {k: v for d in statements.values() for k, v in d.items()}
-
-    flat_yes_branches = {k: [v[0], v[1]] for d in branches.values() for k, v in d.items() if v[2]}
-
-    flat_no_branches = {
-        k: [v[0], v[1]] for d in branches.values() for k, v in d.items() if not v[2]
-    }
+    flat_branches = {k: [v[0], v[1]] for d in branches.values() for k, v in d.items()}
 
     covered_offsets = set()
     [covered_statements, covered_yes_branches, covered_no_branches] = file_coverage
 
     for stmt in covered_statements:
-        if str(stmt) in flat_statements:
-            covered_offsets.update(range(*flat_statements[str(stmt)]))
+        covered_offsets.update(range(*flat_statements[str(stmt)]))
 
     for stmt in covered_yes_branches:
-        if str(stmt) in flat_yes_branches:
-            covered_offsets.update(range(*flat_yes_branches[str(stmt)]))
+        covered_offsets.update(range(*flat_branches[str(stmt)]))
 
-    for stmt in covered_yes_branches:
-        if str(stmt) in flat_no_branches:
-            covered_offsets.update(range(*flat_no_branches[str(stmt)]))
+    for stmt in covered_no_branches:
+        covered_offsets.update(range(*flat_branches[str(stmt)]))
 
     line_to_coverage = {}
     from_ = 0
