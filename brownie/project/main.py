@@ -22,6 +22,7 @@ from tqdm import tqdm
 
 from brownie._config import (
     CONFIG,
+    REQUEST_HEADERS,
     _get_data_folder,
     _load_project_compiler_config,
     _load_project_config,
@@ -725,13 +726,12 @@ def _install_from_github(package_id: str) -> str:
     if install_path.exists():
         raise FileExistsError("Package is aleady installed")
 
-    headers: Dict = {}
     if os.getenv("GITHUB_TOKEN"):
         auth = b64encode(os.environ["GITHUB_TOKEN"].encode()).decode()
-        headers = {"Authorization": "Basic {}".format(auth)}
+        REQUEST_HEADERS.update({"Authorization": "Basic {}".format(auth)})
 
     response = requests.get(
-        f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100", headers=headers
+        f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100", headers=REQUEST_HEADERS
     )
     if response.status_code != 200:
         msg = "Status {} when getting package versions from Github: '{}'".format(
@@ -865,7 +865,7 @@ def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
 
 
 def _stream_download(download_url: str, target_path: str) -> None:
-    response = requests.get(download_url, stream=True)
+    response = requests.get(download_url, stream=True, headers=REQUEST_HEADERS)
     total_size = int(response.headers.get("content-length", 0))
     progress_bar = tqdm(total=total_size, unit="iB", unit_scale=True)
     content = bytes()
