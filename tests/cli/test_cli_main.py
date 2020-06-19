@@ -82,19 +82,13 @@ def test_cli_compile(cli_tester, testproject):
     assert cli_tester.mock_subroutines.call_count == 2
 
 
-def test_cli_analyze_with_mocked_project(cli_tester, testproject):
-    cli_tester.monkeypatch.setattr("brownie.project.load", cli_tester.mock_subroutines)
-    cli_tester.run_and_test_parameters("analyze")
-
-    assert cli_tester.mock_subroutines.called is True
-    assert cli_tester.mock_subroutines.call_count == 1
-
-
 def test_cli_compile_and_analyze_projectnotfound_exception(cli_tester):
     cli_tester.monkeypatch.setattr("brownie.project.load", cli_tester.mock_subroutines)
 
-    cli_tester.run_and_test_parameters("compile", parameters=None)
-    cli_tester.run_and_test_parameters("analyze", parameters=None)
+    with pytest.raises(SystemExit):
+        cli_tester.run_and_test_parameters("compile", parameters=None)
+    with pytest.raises(SystemExit):
+        cli_tester.run_and_test_parameters("analyze", parameters=None)
 
     assert cli_tester.mock_subroutines.called is False
     assert cli_tester.mock_subroutines.call_count == 0
@@ -107,7 +101,8 @@ def test_cli_run_with_projectnotfound_exception(cli_tester):
     for target in subtargets:
         cli_tester.monkeypatch.setattr(target, cli_tester.mock_subroutines)
 
-    cli_tester.run_and_test_parameters("run testfile", parameters=None)
+    with pytest.raises(SystemExit):
+        cli_tester.run_and_test_parameters("run testfile", parameters=None)
 
     assert cli_tester.mock_subroutines.called is False
     assert cli_tester.mock_subroutines.call_count == 0
@@ -129,7 +124,8 @@ def test_cli_ethpm(cli_tester, testproject):
 def test_cli_ethpm_with_projectnotfound_exception(cli_tester):
     cli_tester.monkeypatch.setattr("brownie._cli.ethpm._list", cli_tester.mock_subroutines)
 
-    cli_tester.run_and_test_parameters("ethpm list", parameters=None)
+    with pytest.raises(SystemExit):
+        cli_tester.run_and_test_parameters("ethpm list", parameters=None)
 
     assert cli_tester.mock_subroutines.called is False
     assert cli_tester.mock_subroutines.call_count == 0
