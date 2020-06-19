@@ -4,6 +4,7 @@ import json
 import os
 import re
 import shutil
+import sys
 import warnings
 from collections import defaultdict
 from pathlib import Path
@@ -13,6 +14,7 @@ import yaml
 from hypothesis import settings as hp_settings
 from hypothesis.database import DirectoryBasedExampleDatabase
 
+from brownie._cli.__main__ import __version__
 from brownie._singleton import _Singleton
 
 BROWNIE_FOLDER = Path(__file__).parent
@@ -21,6 +23,12 @@ DATA_FOLDER = Path.home().joinpath(".brownie")
 DATA_SUBFOLDERS = ("accounts", "ethpm", "packages")
 
 EVM_EQUIVALENTS = {"atlantis": "byzantium", "agharta": "petersburg"}
+
+python_version = (
+    f"{sys.version_info.major}.{sys.version_info.minor}"
+    f".{sys.version_info.micro} {sys.version_info.releaselevel}"
+)
+REQUEST_HEADERS = {"User-Agent": f"Brownie/{__version__} (Python/{python_version})"}
 
 
 class ConfigContainer:
