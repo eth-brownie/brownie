@@ -13,8 +13,12 @@ from pythx import Client, ValidationError
 from pythx.middleware import ClientToolNameMiddleware, GroupDataMiddleware
 
 from brownie import project
-from brownie._cli.__main__ import __version__
-from brownie._config import CONFIG, _load_project_structure_config, _update_argv_from_docopt
+from brownie._config import (
+    CONFIG,
+    __version__,
+    _load_project_structure_config,
+    _update_argv_from_docopt,
+)
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
 from brownie.utils.docopt import docopt
