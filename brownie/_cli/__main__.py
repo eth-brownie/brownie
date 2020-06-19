@@ -58,6 +58,6 @@ def main():
         importlib.import_module(f"brownie._cli.{cmd}").main()
     except ProjectNotFound:
         notify("ERROR", "Brownie environment has not been initiated for this folder.")
-        print("Type 'brownie init' to create the file structure.")
+        sys.exit("Type 'brownie init' to create the file structure.")
     except Exception as e:
-        print(color.format_tb(e))
+        sys.exit(color.format_tb(e))
