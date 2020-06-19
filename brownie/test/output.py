@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 
 import json
-import warnings
 import time
+import warnings
 from collections import defaultdict
 from pathlib import Path
+
 from lxml import etree
 
 from brownie._config import CONFIG
@@ -31,14 +32,19 @@ def _save_coverage_report(build, coverage_eval, report_path):
     with report_path.open("w") as fp:
         json.dump(report, fp, sort_keys=True, indent=2)
 
+    root = etree.Element("coverage")
+    root.set("complexity", "")
+    root.set("version", "1.9")
+    root.set("timestamp", str(int(time.time() * 1000)))
+    total_valid_lines = 0
+    total_lines_covered = 0
+
+    total_valid_branches = 0
+    total_branches_covered = 0
+
     for contract_name in coverage_eval:
         contract = build.get(contract_name)
         coverage_map = contract["coverageMap"]
-
-        root = etree.Element("coverage")
-        root.set("complexity", "")
-        root.set("version", "1.9")
-        root.set("timestamp", str(int(time.time() * 1000)))
 
         packages = etree.SubElement(root, "packages")
         package = etree.SubElement(packages, "package")
@@ -57,6 +63,7 @@ def _save_coverage_report(build, coverage_eval, report_path):
 
         package_valid_branches = 0
         package_branches_covered = 0
+
         for path_id in sorted(list(path_ids)):
             filename = contract["allSourcePaths"][path_id]
             if filename.startswith("/"):
@@ -84,10 +91,12 @@ def _save_coverage_report(build, coverage_eval, report_path):
                 line.set("number", str(line_no))
                 class_valid_lines += 1
                 package_valid_lines += 1
+                total_valid_lines += 1
                 if line_coverage[line_no] is not None:
                     line.set("hits", str(1))
                     class_lines_covered += 1
                     package_lines_covered += 1
+                    total_lines_covered += 1
                     if line_coverage[line_no]:
                         line.set("branch", "true")
                         branches_covered = sum(line_coverage[line_no])
@@ -96,6 +105,8 @@ def _save_coverage_report(build, coverage_eval, report_path):
                         class_branches_covered += branches_covered
                         package_valid_branches += valid_branches
                         package_branches_covered += branches_covered
+                        total_valid_branches += valid_branches
+                        total_branches_covered += branches_covered
                         pct = round((branches_covered / valid_branches) * 100)
                         line.set(
                             "condition-coverage", f"{pct}% ({branches_covered}/{valid_branches})"
@@ -108,17 +119,18 @@ def _save_coverage_report(build, coverage_eval, report_path):
 
         package.set("line-rate", _rate(package_valid_lines, package_lines_covered))
         package.set("branch-rate", _rate(package_valid_branches, package_branches_covered))
-        root.set("line-rate", _rate(package_valid_lines, package_lines_covered))
-        root.set("branch-rate", _rate(package_valid_branches, package_branches_covered))
-        root.set("lines-covered", str(package_lines_covered))
-        root.set("lines-valid", str(package_valid_lines))
-        root.set("branches-covered", str(package_branches_covered))
-        root.set("branches-valid", str(package_valid_branches))
 
-        xml_path = report_path.parent.joinpath(f"{contract_name}-coverage.xml")
+    root.set("line-rate", _rate(package_valid_lines, package_lines_covered))
+    root.set("branch-rate", _rate(package_valid_branches, package_branches_covered))
+    root.set("lines-covered", str(package_lines_covered))
+    root.set("lines-valid", str(package_valid_lines))
+    root.set("branches-covered", str(package_branches_covered))
+    root.set("branches-valid", str(package_valid_branches))
 
-        with xml_path.open("wb") as fp:
-            fp.write(etree.tostring(root, pretty_print=True))
+    xml_path = report_path.parent.joinpath("coverage.xml")
+
+    with xml_path.open("wb") as fp:
+        fp.write(etree.tostring(root, pretty_print=True))
 
     print(f"\nCoverage reports saved at {report_path} and {xml_path}")
     print("View the report using the Brownie GUI")
