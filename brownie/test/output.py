@@ -6,8 +6,6 @@ import time
 from collections import defaultdict
 from pathlib import Path
 from lxml import etree
-from pycobertura import Cobertura
-from pycobertura.reporters import HtmlReporter, TextReporter
 
 from brownie._config import CONFIG
 from brownie.exceptions import BrownieConfigWarning
@@ -118,17 +116,9 @@ def _save_coverage_report(build, coverage_eval, report_path):
         root.set("branches-valid", str(package_valid_branches))
 
         xml_path = report_path.parent.joinpath(f"{contract_name}-coverage.xml")
-        html_path = report_path.parent.joinpath(f"{contract_name}-coverage.html")
 
         with xml_path.open("wb") as fp:
             fp.write(etree.tostring(root, pretty_print=True))
-
-        cobertura = Cobertura(str(xml_path), source=".")
-
-        print(TextReporter(cobertura).generate())
-
-        with html_path.open("w") as fp:
-            fp.write(HtmlReporter(cobertura).generate())
 
     print(f"\nCoverage reports saved at {report_path} and {xml_path}")
     print("View the report using the Brownie GUI")
