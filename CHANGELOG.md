@@ -6,11 +6,19 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
+
+## [1.9.3](https://github.com/iamdefinitelyahuman/brownie/tree/v1.9.3) - 2020-06-19
 ### Added
 - Accounts can now be unlocked on development networks ([#633](https://github.com/eth-brownie/brownie/pull/633))
 
+### Fixed
+- Parity error messages ([#631](https://github.com/eth-brownie/brownie/pull/631))
+- Geth error messages on reverted `eth_call` ([#639](https://github.com/eth-brownie/brownie/pull/639))
+- Etherscan source code returned as compiler JSON input ([#637](https://github.com/eth-brownie/brownie/pull/637))
+- Enter correct frame on exception with `brownie run -I` ([#638](https://github.com/eth-brownie/brownie/pull/638))
+- Always exit with non-zero status on an unhandled exception ([#640](https://github.com/eth-brownie/brownie/pull/640))
 
-## [1.9.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.9.12) - 2020-06-08
+## [1.9.2](https://github.com/iamdefinitelyahuman/brownie/tree/v1.9.2) - 2020-06-08
 ### Added
 - Filter report outputs by source path or contract name ([#626](https://github.com/eth-brownie/brownie/pull/626))
 
