@@ -3,6 +3,7 @@
 import json
 import warnings
 import time
+from collections import defaultdict
 from pathlib import Path
 from lxml import etree
 from pycobertura import Cobertura
@@ -37,9 +38,6 @@ def _save_coverage_report(build, coverage_eval, report_path):
         coverage_map = contract["coverageMap"]
 
         root = etree.Element("coverage")
-        root.set("branch-rate", "1")
-        root.set("branches-covered", "0")
-        root.set("branches-valid", "0")
         root.set("complexity", "")
         root.set("version", "1.9")
         root.set("timestamp", str(int(time.time() * 1000)))
@@ -47,7 +45,6 @@ def _save_coverage_report(build, coverage_eval, report_path):
         packages = etree.SubElement(root, "packages")
         package = etree.SubElement(packages, "package")
         package.set("name", contract_name)
-        package.set("branch-rate", "1")
         package.set("complexity", "")
 
         classes = etree.SubElement(package, "classes")
@@ -57,8 +54,11 @@ def _save_coverage_report(build, coverage_eval, report_path):
             + [k for k, v in coverage_map["branches"].items() if v]
         )
 
-        plc = 0
-        phc = 0
+        package_valid_lines = 0
+        package_lines_covered = 0
+
+        package_valid_branches = 0
+        package_branches_covered = 0
         for path_id in sorted(list(path_ids)):
             filename = contract["allSourcePaths"][path_id]
             if filename.startswith("/"):
@@ -68,7 +68,6 @@ def _save_coverage_report(build, coverage_eval, report_path):
             class_ = etree.SubElement(classes, "class")
             class_.set("name", filename)
             class_.set("filename", filename)
-            class_.set("branch-rate", "1")
             class_.set("complexity", "")
 
             class_lines = etree.SubElement(class_, "lines")
@@ -77,26 +76,52 @@ def _save_coverage_report(build, coverage_eval, report_path):
 
             line_coverage = _lines_to_coverage(coverage_map, path_id, file_coverage, content)
 
-            clc = 0
-            chc = 0
+            class_valid_lines = 0
+            class_lines_covered = 0
+
+            class_valid_branches = 0
+            class_branches_covered = 0
             for line_no in sorted(line_coverage):
                 line = etree.SubElement(class_lines, "line")
                 line.set("number", str(line_no))
-                clc += 1
-                plc += 1
-                if line_coverage[line_no]:
+                class_valid_lines += 1
+                package_valid_lines += 1
+                if line_coverage[line_no] is not None:
                     line.set("hits", str(1))
-                    chc += 1
-                    phc += 1
+                    class_lines_covered += 1
+                    package_lines_covered += 1
+                    if line_coverage[line_no]:
+                        line.set("branch", "true")
+                        branches_covered = sum(line_coverage[line_no])
+                        valid_branches = len(line_coverage[line_no]) * 2
+                        class_valid_branches += valid_branches
+                        class_branches_covered += branches_covered
+                        package_valid_branches += valid_branches
+                        package_branches_covered += branches_covered
+                        pct = round((branches_covered / valid_branches) * 100)
+                        line.set(
+                            "condition-coverage",
+                            f"{pct}% ({branches_covered}/{valid_branches})")
                 else:
                     line.set("hits", str(0))
 
-            class_.set("line-rate", _rate(clc, chc))
+            class_.set(
+                "line-rate", _rate(class_valid_lines, class_lines_covered))
+            class_.set(
+                "branch-rate", _rate(class_valid_branches, class_branches_covered))
 
-        package.set("line-rate", _rate(plc, phc))
-        root.set("line-rate", _rate(plc, phc))
-        root.set("lines-covered", str(phc))
-        root.set("lines-valid", str(plc))
+        package.set(
+            "line-rate", _rate(package_valid_lines, package_lines_covered))
+        package.set(
+            "branch-rate", _rate(package_valid_branches, package_branches_covered))
+        root.set(
+            "line-rate", _rate(package_valid_lines, package_lines_covered))
+        root.set(
+            "branch-rate", _rate(package_valid_branches, package_branches_covered))
+        root.set("lines-covered", str(package_lines_covered))
+        root.set("lines-valid", str(package_valid_lines))
+        root.set("branches-covered", str(package_branches_covered))
+        root.set("branches-valid", str(package_valid_branches))
 
         xml_path = report_path.parent.joinpath(f"{contract_name}-coverage.xml")
         html_path = report_path.parent.joinpath(f"{contract_name}-coverage.html")
@@ -137,28 +162,54 @@ def _lines_to_coverage(coverage_map, path_id, file_coverage, content):
     statements = coverage_map["statements"][path_id]
     branches = coverage_map["branches"][path_id]
 
-    flat_statements = {k: v for d in statements.values() for k, v in d.items()}
-    flat_branches = {k: [v[0], v[1]] for d in branches.values() for k, v in d.items()}
+    flat_statements = {int(k): v for d in statements.values() for k, v in d.items()}
+    flat_branches = {int(k): [v[0], v[1]] for d in branches.values() for k, v in d.items()}
+    branch_coverage = defaultdict(int)
 
     covered_offsets = set()
     [covered_statements, covered_yes_branches, covered_no_branches] = file_coverage
 
     for stmt in covered_statements:
-        covered_offsets.update(range(*flat_statements[str(stmt)]))
+        covered_offsets.update(range(*flat_statements[stmt]))
 
     for stmt in covered_yes_branches:
-        covered_offsets.update(range(*flat_branches[str(stmt)]))
+        covered_offsets.update(range(*flat_branches[stmt]))
+        branch_coverage[stmt] += 1
 
     for stmt in covered_no_branches:
-        covered_offsets.update(range(*flat_branches[str(stmt)]))
+        covered_offsets.update(range(*flat_branches[stmt]))
+        branch_coverage[stmt] += 1
 
+    offset_branches = defaultdict(list)
+    for statements in branches.values():
+        for stmt, [from_, to, _] in statements.items():
+            offset_branches[from_].append(stmt)
+
+    branch_lines = {}
     line_to_coverage = {}
     from_ = 0
     for n, line in enumerate(content):
         to = from_ + len(line)
         if set(range(from_, to)).intersection(available_offsets):
-            line_to_coverage[n + 1] = bool(set(range(from_, to)).intersection(covered_offsets))
+            is_covered = bool(set(range(from_, to)).intersection(covered_offsets))
+            if is_covered:
+                line_to_coverage[n + 1] = []
+            else:
+                line_to_coverage[n + 1] = None
+        for offset, branches in list(offset_branches.items()):
+            if from_ <= offset < to:
+                for branch in branches:
+                    branch_lines[branch] = n + 1
+                offset_branches.pop(offset)
         from_ = to
+
+    for stmt, coverage in branch_coverage.items():
+        line = branch_lines[str(stmt)]
+        # nothing covers the line
+        if line_to_coverage[line] is None:
+            continue
+        line_to_coverage[line].append(coverage)
+
     return line_to_coverage
 
 
