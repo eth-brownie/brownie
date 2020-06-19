@@ -68,7 +68,10 @@ def _save_coverage_report(build, coverage_eval, report_path):
             filename = contract["allSourcePaths"][path_id]
             if filename.startswith("/"):
                 continue
+
             content = open(filename).readlines()
+            file_coverage = coverage_eval[contract_name].get(path_id, [set(), set(), set()])
+            line_coverage = _lines_to_coverage(coverage_map, path_id, file_coverage, content)
 
             class_ = etree.SubElement(classes, "class")
             class_.set("name", filename)
@@ -76,10 +79,6 @@ def _save_coverage_report(build, coverage_eval, report_path):
             class_.set("complexity", "")
 
             class_lines = etree.SubElement(class_, "lines")
-
-            file_coverage = coverage_eval[contract_name][path_id]
-
-            line_coverage = _lines_to_coverage(coverage_map, path_id, file_coverage, content)
 
             class_valid_lines = 0
             class_lines_covered = 0
@@ -195,12 +194,12 @@ def _lines_to_coverage(coverage_map, path_id, file_coverage, content):
         for offset, branches in list(offset_branches.items()):
             if from_ <= offset < to:
                 for branch in branches:
-                    branch_lines[branch] = n + 1
+                    branch_lines[int(branch)] = n + 1
                 offset_branches.pop(offset)
         from_ = to
 
     for stmt, coverage in branch_coverage.items():
-        line = branch_lines[str(stmt)]
+        line = branch_lines[int(stmt)]
         # nothing covers the line
         if line_to_coverage[line] is None:
             continue
