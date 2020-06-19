@@ -33,8 +33,7 @@ from brownie.exceptions import (
     UndeployedLibrary,
     VirtualMachineError,
 )
-from brownie.project import ethpm
-from brownie.project.compiler import compile_and_format
+from brownie.project import compiler, ethpm
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
@@ -672,32 +671,48 @@ class Contract(_DeployedContractBase):
                 )
             return cls.from_abi(name, address, abi, owner)
 
-        sources = {f"{name}-flattened.sol": data["result"][0]["SourceCode"]}
         optimizer = {
             "enabled": bool(int(data["result"][0]["OptimizationUsed"])),
             "runs": int(data["result"][0]["Runs"]),
         }
-
         evm_version = data["result"][0].get("EVMVersion", "Default")
         if evm_version == "Default":
             evm_version = None
 
-        build = compile_and_format(
-            sources, solc_version=str(version), optimizer=optimizer, evm_version=evm_version
-        )
-        build = build[name]
-        if as_proxy_for is not None:
-            build.update(abi=abi, natspec=implementation_contract._build.get("natspec"))
+        if data["result"][0]["SourceCode"].startswith("{"):
+            # source was verified using compiler standard JSON
+            input_json = json.loads(data["result"][0]["SourceCode"][1:-1])
+            sources = {k: v["content"] for k, v in input_json["sources"].items()}
+            evm_version = input_json["settings"].get("evmVersion", evm_version)
 
-        if not _verify_deployed_code(address, build["deployedBytecode"], build["language"]):
+            compiler.set_solc_version(str(version))
+            input_json.update(
+                compiler.generate_input_json(sources, optimizer=optimizer, evm_version=evm_version)
+            )
+            output_json = compiler.compile_from_input_json(input_json)
+            build_json = compiler.generate_build_json(input_json, output_json)
+        else:
+            # source was submitted as a single flattened file
+            sources = {f"{name}-flattened.sol": data["result"][0]["SourceCode"]}
+            build_json = compiler.compile_and_format(
+                sources, solc_version=str(version), optimizer=optimizer, evm_version=evm_version
+            )
+
+        build_json = build_json[name]
+        if as_proxy_for is not None:
+            build_json.update(abi=abi, natspec=implementation_contract._build.get("natspec"))
+
+        if not _verify_deployed_code(
+            address, build_json["deployedBytecode"], build_json["language"]
+        ):
             warnings.warn(
                 f"{address}: Locally compiled and on-chain bytecode do not match!",
                 BrownieCompilerWarning,
             )
-            del build["pcMap"]
+            del build_json["pcMap"]
 
         self = cls.__new__(cls)
-        _ContractBase.__init__(self, None, build, sources)  # type: ignore
+        _ContractBase.__init__(self, None, build_json, sources)  # type: ignore
         _DeployedContractBase.__init__(self, address, owner)
         _add_deployment(self)
         return self
