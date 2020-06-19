@@ -100,24 +100,18 @@ def _save_coverage_report(build, coverage_eval, report_path):
                         package_branches_covered += branches_covered
                         pct = round((branches_covered / valid_branches) * 100)
                         line.set(
-                            "condition-coverage",
-                            f"{pct}% ({branches_covered}/{valid_branches})")
+                            "condition-coverage", f"{pct}% ({branches_covered}/{valid_branches})"
+                        )
                 else:
                     line.set("hits", str(0))
 
-            class_.set(
-                "line-rate", _rate(class_valid_lines, class_lines_covered))
-            class_.set(
-                "branch-rate", _rate(class_valid_branches, class_branches_covered))
+            class_.set("line-rate", _rate(class_valid_lines, class_lines_covered))
+            class_.set("branch-rate", _rate(class_valid_branches, class_branches_covered))
 
-        package.set(
-            "line-rate", _rate(package_valid_lines, package_lines_covered))
-        package.set(
-            "branch-rate", _rate(package_valid_branches, package_branches_covered))
-        root.set(
-            "line-rate", _rate(package_valid_lines, package_lines_covered))
-        root.set(
-            "branch-rate", _rate(package_valid_branches, package_branches_covered))
+        package.set("line-rate", _rate(package_valid_lines, package_lines_covered))
+        package.set("branch-rate", _rate(package_valid_branches, package_branches_covered))
+        root.set("line-rate", _rate(package_valid_lines, package_lines_covered))
+        root.set("branch-rate", _rate(package_valid_branches, package_branches_covered))
         root.set("lines-covered", str(package_lines_covered))
         root.set("lines-valid", str(package_valid_lines))
         root.set("branches-covered", str(package_branches_covered))
