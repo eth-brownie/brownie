@@ -28,6 +28,9 @@ def settings_proj(testproject):
                 accounts: 15
                 evm_version: byzantium
                 mnemonic: brownie2
+                unlock:
+                    - 0x16Fb96a5fa0427Af0C8F7cF1eB4870231c8154B6
+                    - "0x81431b69B1e0E334d4161A13C2955e0f3599381e"
     """
     with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
         yaml.dump(yaml.safe_load(test_brownie_config), fp)
@@ -72,11 +75,15 @@ def test_rpc_project_cmd_settings(devnetwork, testproject, config, settings_proj
     assert cmd_settings_proj["time"].timestamp() - devnetwork.rpc.time() < 60 * 60 * 25
 
     accounts = devnetwork.accounts
-    assert cmd_settings_proj["accounts"] == len(accounts)
+    assert cmd_settings_proj["accounts"] + len(cmd_settings_proj["unlock"]) == len(accounts)
     assert cmd_settings_proj["default_balance"] == accounts[0].balance()
 
     # Test if mnemonic was updated to "brownie2"
     assert "0x816200940a049ff1DEAB864d67a71ae6Dd1ebc3e" == accounts[0].address
+
+    # Test if unlocked accounts are added to the accounts object
+    assert "0x16Fb96a5fa0427Af0C8F7cF1eB4870231c8154B6" == accounts[-2].address
+    assert "0x81431b69B1e0E334d4161A13C2955e0f3599381e" == accounts[-1].address
 
     tx = accounts[0].transfer(accounts[1], 0)
     assert tx.gas_limit == settings_proj["gas_limit"]

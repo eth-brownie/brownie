@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 import psutil
+from hexbytes import HexBytes
 
 from brownie._config import EVM_EQUIVALENTS
 from brownie._singleton import _Singleton
@@ -37,6 +38,7 @@ CLI_FLAGS = {
     "block_time": "--blockTime",
     "default_balance": "--defaultBalanceEther",
     "time": "--time",
+    "unlock": "--unlock",
 }
 
 EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
@@ -94,14 +96,22 @@ class Rpc(metaclass=_Singleton):
             kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]  # type: ignore
         kwargs = _validate_cmd_settings(kwargs)
         for key, value in [(k, v) for k, v in kwargs.items() if v]:
-            try:
-                cmd_list.extend([CLI_FLAGS[key], str(value)])
-            except KeyError:
-                warnings.warn(
-                    f"Ignoring invalid commandline setting for ganache-cli: "
-                    f'"{key}" with value "{value}".',
-                    InvalidArgumentWarning,
-                )
+            if key == "unlock":
+                if not isinstance(value, list):
+                    value = [value]  # type: ignore
+                for address in value:
+                    if isinstance(address, int):
+                        address = HexBytes(address.to_bytes(20, "big")).hex()
+                    cmd_list.extend([CLI_FLAGS[key], address])
+            else:
+                try:
+                    cmd_list.extend([CLI_FLAGS[key], str(value)])
+                except KeyError:
+                    warnings.warn(
+                        f"Ignoring invalid commandline setting for ganache-cli: "
+                        f'"{key}" with value "{value}".',
+                        InvalidArgumentWarning,
+                    )
         print(f"Launching '{' '.join(cmd_list)}'...")
         self._time_offset = 0
         self._snapshot_id = False

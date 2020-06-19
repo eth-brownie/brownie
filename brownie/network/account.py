@@ -59,6 +59,21 @@ class Accounts(metaclass=_Singleton):
             self._accounts = [Account(i) for i in web3.eth.accounts]
         except Exception:
             pass
+
+        # Check if accounts were manually unlocked and add them
+        try:
+            unlocked_accounts = CONFIG.active_network["cmd_settings"]["unlock"]
+            if not isinstance(unlocked_accounts, list):
+                unlocked_accounts = [unlocked_accounts]
+            for address in unlocked_accounts:
+                if isinstance(address, int):
+                    address = HexBytes(address.to_bytes(20, "big")).hex()
+                account = Account(address)
+                if account not in self._accounts:
+                    self._accounts.append(account)
+        except (ConnectionError, ValueError, KeyError):
+            pass
+
         if self.default not in self._accounts:
             self.default = None
 
@@ -186,7 +201,7 @@ class Accounts(metaclass=_Singleton):
             )
         return self.add(priv_key)
 
-    def at(self, address: str) -> "LocalAccount":
+    def at(self, address: str, force: bool = False) -> "LocalAccount":
         """
         Retrieve an `Account` instance from the address string.
 
@@ -196,6 +211,8 @@ class Accounts(metaclass=_Singleton):
         ---------
         address: string
             Address of the account
+        force: bool
+            When True, will add the account even if it was not found in web3.eth.accounts
 
         Returns
         -------
@@ -204,7 +221,7 @@ class Accounts(metaclass=_Singleton):
         address = _resolve_address(address)
         acct = next((i for i in self._accounts if i == address), None)
 
-        if acct is None and address in web3.eth.accounts:
+        if acct is None and (address in web3.eth.accounts or force):
             acct = Account(address)
             self._accounts.append(acct)
 
