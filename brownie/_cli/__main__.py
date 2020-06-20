@@ -5,12 +5,10 @@ import sys
 from pathlib import Path
 
 from brownie import network
-from brownie._config import CONFIG
+from brownie._config import CONFIG, __version__
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
 from brownie.utils.docopt import docopt, levenshtein_norm
-
-__version__ = "1.9.3"
 
 __doc__ = """Usage:  brownie <command> [<args>...] [options <args>]
 

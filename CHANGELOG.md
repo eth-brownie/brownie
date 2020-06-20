@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/iamdefinitelyahuman/brownie)
 
+### Fixed
+- Http Requests now send a custom User-Agent (Fixes Kovan api requests) ([#643](https://github.com/eth-brownie/brownie/pull/643))
+
 ## [1.9.3](https://github.com/iamdefinitelyahuman/brownie/tree/v1.9.3) - 2020-06-19
 ### Added
 - Accounts can now be unlocked on development networks ([#633](https://github.com/eth-brownie/brownie/pull/633))

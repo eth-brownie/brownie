@@ -17,7 +17,7 @@ from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
 from semantic_version import Version
 
-from brownie._config import CONFIG
+from brownie._config import CONFIG, REQUEST_HEADERS
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
 from brownie.convert.utils import (
@@ -1228,8 +1228,8 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
             f"Fetching source of {color('bright blue')}{address}{color} "
             f"from {color('bright blue')}{urlparse(url).netloc}{color}..."
         )
-    response = requests.get(url, params=params)
 
+    response = requests.get(url, params=params, headers=REQUEST_HEADERS)
     if response.status_code != 200:
         raise ConnectionError(f"Status {response.status_code} when querying {url}: {response.text}")
     data = response.json()
