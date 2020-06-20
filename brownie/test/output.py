@@ -119,12 +119,12 @@ def _save_coverage_report(build, coverage_eval, report_path):
         package.set("line-rate", _rate(package_valid_lines, package_lines_covered))
         package.set("branch-rate", _rate(package_valid_branches, package_branches_covered))
 
-    root.set("line-rate", _rate(package_valid_lines, package_lines_covered))
-    root.set("branch-rate", _rate(package_valid_branches, package_branches_covered))
-    root.set("lines-covered", str(package_lines_covered))
-    root.set("lines-valid", str(package_valid_lines))
-    root.set("branches-covered", str(package_branches_covered))
-    root.set("branches-valid", str(package_valid_branches))
+    root.set("line-rate", _rate(total_valid_lines, total_lines_covered))
+    root.set("branch-rate", _rate(total_valid_branches, total_branches_covered))
+    root.set("lines-covered", str(total_lines_covered))
+    root.set("lines-valid", str(total_valid_lines))
+    root.set("branches-covered", str(total_branches_covered))
+    root.set("branches-valid", str(total_valid_branches))
 
     xml_path = report_path.parent.joinpath("coverage.xml")
 
