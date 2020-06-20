@@ -36,6 +36,8 @@ def _save_coverage_report(build, coverage_eval, report_path):
     root.set("complexity", "")
     root.set("version", "1.9")
     root.set("timestamp", str(int(time.time() * 1000)))
+    packages = etree.SubElement(root, "packages")
+
     total_valid_lines = 0
     total_lines_covered = 0
 
@@ -46,7 +48,6 @@ def _save_coverage_report(build, coverage_eval, report_path):
         contract = build.get(contract_name)
         coverage_map = contract["coverageMap"]
 
-        packages = etree.SubElement(root, "packages")
         package = etree.SubElement(packages, "package")
         package.set("name", contract_name)
         package.set("complexity", "")
