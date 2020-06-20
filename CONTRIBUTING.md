@@ -4,7 +4,7 @@ To get started with working on the Brownie codebaser, use the following steps pr
 
 ```bash
 # clone the github repo and navigate into the folder
-git clone https://github.com/iamdefinitelyahuman/brownie.git
+git clone https://github.com/eth-brownie/brownie.git
 cd brownie
 
 # create and load a virtual environment
