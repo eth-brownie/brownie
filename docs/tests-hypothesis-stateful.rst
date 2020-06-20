@@ -16,7 +16,7 @@ Much of the content in this section is based on the official `hypothesis.works <
 
 .. warning::
 
-    This functionality is still under development and should be considered experimental. Use common sense when evaluating the results, and if you encounter any problems please `open an issue <https://github.com/iamdefinitelyahuman/brownie/issues>`_ on Github.
+    This functionality is still under development and should be considered experimental. Use common sense when evaluating the results, and if you encounter any problems please `open an issue <https://github.com/eth-brownie/brownie/issues>`_ on Github.
 
 
 Rule-based State Machines
@@ -285,7 +285,7 @@ On line 12, rather than subtracting ``value``, the balance is being `set` to ``v
 More Examples
 -------------
 
-Here are some links to repositories that make use of stateful testing. If you have a project that you would like included here, feel free to `edit this document <https://github.com/iamdefinitelyahuman/brownie/edit/master/docs/tests-hypothesis-stateful.rst>`_ and open a pull request, or let us know about it on `Gitter <https://gitter.im/eth-brownie/community>`_.
+Here are some links to repositories that make use of stateful testing. If you have a project that you would like included here, feel free to `edit this document <https://github.com/eth-brownie/brownie/edit/master/docs/tests-hypothesis-stateful.rst>`_ and open a pull request, or let us know about it on `Gitter <https://gitter.im/eth-brownie/community>`_.
 
     * `iamdefinitelyahuman/NFToken <https://github.com/iamdefinitelyahuman/nftoken/tree/master/tests/stateful>`_: A non-fungible implementation of the ERC20 standard.
 
@@ -294,7 +294,7 @@ Running Stateful Tests
 
 By default, stateful tests are included when you run your test suite. There is no special action required to invoke them.
 
-You can choose to exclude stateful tests, or to *only* run stateful tests, with the ``--stateful`` flag. This can be useful to split the test suite when setting up `continuous integration <https://github.com/brownie-mix/travis-mix>`_.
+You can choose to exclude stateful tests, or to *only* run stateful tests, with the ``--stateful`` flag. This can be useful to split the test suite when setting up `continuous integration <https://github.com/brownie-mix/github-actions-mix>`_.
 
 To only run stateful tests:
 

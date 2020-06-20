@@ -48,11 +48,11 @@ To install via ``pip``:
 
     pip install eth-brownie
 
-To clone the `github repository <https://github.com/iamdefinitelyahuman/brownie>`_ and install via ``setuptools``:
+To clone the `github repository <https://github.com/eth-brownie/brownie>`_ and install via ``setuptools``:
 
 .. code-block:: bash
 
-    git clone https://github.com/iamdefinitelyahuman/brownie.git
+    git clone https://github.com/eth-brownie/brownie.git
     cd brownie
     python3 setup.py install
 

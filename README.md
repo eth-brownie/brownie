@@ -1,6 +1,6 @@
 # Brownie
 
-[![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg)](https://pypi.org/project/eth-brownie/) [![Build Status](https://img.shields.io/github/workflow/status/iamdefinitelyahuman/brownie/brownie%20workflow)](https://github.com/iamdefinitelyahuman/brownie/actions) [![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)](https://eth-brownie.readthedocs.io/en/latest/) [![Coverage Status](https://img.shields.io/codecov/c/github/iamdefinitelyahuman/brownie)](https://codecov.io/gh/iamdefinitelyahuman/brownie)
+[![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg)](https://pypi.org/project/eth-brownie/) [![Build Status](https://img.shields.io/github/workflow/status/eth-brownie/brownie/brownie%20workflow)](https://github.com/eth-brownie/brownie/actions) [![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)](https://eth-brownie.readthedocs.io/en/stable/) [![Coverage Status](https://img.shields.io/codecov/c/github/eth-brownie/brownie)](https://codecov.io/gh/eth-brownie/brownie)
 
 Brownie is a Python-based development and testing framework for smart contracts targeting the [Ethereum Virtual Machine](https://solidity.readthedocs.io/en/v0.6.0/introduction-to-smart-contracts.html#the-ethereum-virtual-machine).
 
@@ -56,7 +56,7 @@ pip install eth-brownie
 You can clone the repository and use [`setuptools`](https://github.com/pypa/setuptools) for the most up-to-date version:
 
 ```bash
-git clone https://github.com/iamdefinitelyahuman/brownie.git
+git clone https://github.com/eth-brownie/brownie.git
 cd brownie
 python3 setup.py install
 ```
