@@ -4,29 +4,39 @@ import json
 import warnings
 from pathlib import Path
 
+from lxml import etree
+
 from brownie._config import CONFIG
 from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
+from brownie.test.cobertura import _make_cobertura_report
 from brownie.utils import color
 
 COVERAGE_COLORS = [(0.8, "bright red"), (0.9, "bright yellow"), (1, "bright green")]
 
 
 def _save_coverage_report(build, coverage_eval, report_path):
+    report_dir = Path(report_path).absolute()
+
     # Saves a test coverage report for viewing in the GUI
-    report = {
+    json_report = {
         "highlights": _get_highlights(build, coverage_eval),
         "coverage": _get_totals(build, coverage_eval),
         "sha1": {},  # TODO
     }
-    report = json.loads(json.dumps(report, default=sorted))
-    report_path = Path(report_path).absolute()
-    if report_path.is_dir():
-        report_path = report_path.joinpath("coverage.json")
-    with report_path.open("w") as fp:
-        json.dump(report, fp, sort_keys=True, indent=2)
-    print(f"\nCoverage report saved at {report_path}")
+    json_report = json.loads(json.dumps(json_report, default=sorted))
+    json_path = report_dir.joinpath("coverage.json")
+    with json_path.open("w") as fp:
+        json.dump(json_report, fp, sort_keys=True, indent=2)
+
+    # Saves a test coverage report for codecov.io
+    cobertura_report = _make_cobertura_report(build, coverage_eval)
+    xml_path = report_dir.joinpath("coverage.xml")
+    with xml_path.open("wb") as fp:
+        fp.write(etree.tostring(cobertura_report, pretty_print=True))
+
+    print(f"\nCoverage reports saved at {json_path} and {xml_path}")
     print("View the report using the Brownie GUI")
     return report_path
 

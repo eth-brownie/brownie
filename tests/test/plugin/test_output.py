@@ -35,17 +35,22 @@ def test_print_coverage(plugintester, mocker):
     assert output._build_coverage_output.call_count == 2
 
 
+def list_files(path):
+    return sorted([i.name for i in path.glob("*")])
+
+
 def test_coverage_save_report(plugintester):
     path = Path(plugintester.tmpdir).joinpath("reports")
     plugintester.runpytest()
     assert not len(list(path.glob("*")))
     plugintester.runpytest("-C")
-    assert [i.name for i in path.glob("*")] == ["coverage.json"]
+    assert list_files(path) == ["coverage.json", "coverage.xml"]
     plugintester.runpytest("-C")
-    assert [i.name for i in path.glob("*")] == ["coverage.json"]
-    next(path.glob("*")).open("w").write("this isn't json, is it?")
+    assert list_files(path) == ["coverage.json", "coverage.xml"]
+    next(path.glob("*.json")).open("w").write("this isn't json, is it?")
+    next(path.glob("*.xml")).open("w").write("this isn't xml, is it?")
     plugintester.runpytest("-C")
-    assert [i.name for i in path.glob("*")] == ["coverage.json"]
+    assert list_files(path) == ["coverage.json", "coverage.xml"]
 
 
 def test_stdout_capture(plugintester):
