@@ -726,12 +726,13 @@ def _install_from_github(package_id: str) -> str:
     if install_path.exists():
         raise FileExistsError("Package is aleady installed")
 
+    headers = REQUEST_HEADERS.copy()
     if os.getenv("GITHUB_TOKEN"):
         auth = b64encode(os.environ["GITHUB_TOKEN"].encode()).decode()
-        REQUEST_HEADERS.update({"Authorization": "Basic {}".format(auth)})
+        headers.update({"Authorization": "Basic {}".format(auth)})
 
     response = requests.get(
-        f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100", headers=REQUEST_HEADERS
+        f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100", headers=headers
     )
     if response.status_code != 200:
         msg = "Status {} when getting package versions from Github: '{}'".format(
