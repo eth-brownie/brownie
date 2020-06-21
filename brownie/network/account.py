@@ -2,6 +2,7 @@
 
 import json
 import threading
+import time
 from getpass import getpass
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
@@ -309,8 +310,14 @@ class _PrivateKeyAccount(PublicKeyAccount):
         last_tx = tx_from_sender[-1]
         if last_tx.status == -1:
             return last_tx.nonce + 1
-        else:
-            return self.nonce
+
+        nonce = self.nonce
+        while nonce == last_tx.nonce:
+            # ganache does not always immediately increment the nonce
+            time.sleep(0.5)
+            nonce = self.nonce
+
+        return nonce
 
     def _gas_limit(self, to: Optional["Accounts"], amount: int, data: Optional[str] = None) -> int:
         gas_limit = CONFIG.active_network["settings"]["gas_limit"]
