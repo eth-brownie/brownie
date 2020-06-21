@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.9.4](https://github.com/eth-brownie/brownie/tree/v1.9.4) - 2020-06-21
 ### Fixed
 - Http Requests now send a custom User-Agent (Fixes Kovan api requests) ([#643](https://github.com/eth-brownie/brownie/pull/643))
+- Ensure nonce increments prior to sending a new transaction ([#645](https://github.com/eth-brownie/brownie/pull/645))
 
 ## [1.9.3](https://github.com/eth-brownie/brownie/tree/v1.9.3) - 2020-06-19
 ### Added
