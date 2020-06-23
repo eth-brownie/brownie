@@ -314,6 +314,7 @@ def _generate_coverage_data(
     active_source_node: Optional[NodeBase] = None
     active_fn_node: Optional[NodeBase] = None
     active_fn_name: Optional[str] = None
+    first_source = source_map[0]
 
     while source_map:
         # format of source_map is [start, stop, contract_id, jump code]
@@ -340,12 +341,13 @@ def _generate_coverage_data(
             pc += int(pc_list[-1]["op"][4:])
 
         # for REVERT opcodes without an source offset, try to infer one
-        if source[2] == -1:
+        if source[2] == -1 or source == first_source:
             if pc_list[-1]["op"] == "REVERT":
                 _find_revert_offset(
                     pc_list, source_map, active_source_node, active_fn_node, active_fn_name
                 )
-            continue
+            if source[2] == -1:
+                continue
 
         # set contract path (-1 means none)
         contract_id = str(source[2])
@@ -448,8 +450,8 @@ def _find_revert_offset(
 
     # attempt to infer a source offset for reverts that do not have one
 
-    if source_map and source_map[0][2] == -1:
-        # this is not the last instruction and the following instruction also has no source
+    if source_map:
+        # is not the last instruction
         if len(pc_list) >= 8 and pc_list[-8]["op"] == "CALLVALUE":
             # reference to CALLVALUE 8 instructions previous is a nonpayable function check
             pc_list[-1].update(
@@ -458,7 +460,7 @@ def _find_revert_offset(
                 offset=pc_list[-8]["offset"],
                 path=pc_list[-8]["path"],
             )
-        return
+            return
 
     # if there is active function, we are still in the function selector table
     if not fn_node:
