@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, List
 
 import pytest
+import solcx
 from _pytest.monkeypatch import MonkeyPatch
 from ethpm._utils.ipfs import dummy_ipfs_pin
 from ethpm.backends.ipfs import BaseIPFSBackend
@@ -23,9 +24,6 @@ pytest_plugins = "pytester"
 
 TARGET_OPTS = {
     "evm": "evmtester",
-    "evm-byzantium": "evmtester",
-    "evm-petersburg": "evmtester",
-    "evm-istanbul": "evmtester",
     "pm": "package_test",
     "plugin": "plugintester",
 }
@@ -34,19 +32,27 @@ TARGET_OPTS = {
 def pytest_addoption(parser):
     parser.addoption(
         "--target",
-        choices=["all", "core"] + list(TARGET_OPTS),
+        choices=["core", "pm", "plugin"],
         default="core",
-        help="Target a specific component of the tests. Use 'all' to run the full suite.",
+        help="Target a specific component of the tests.",
+    )
+    parser.addoption(
+        "--evm",
+        nargs=3,
+        metavar=("solc_versions", "evm_rulesets", "optimizer_runs"),
+        help="Run evm tests against a matrix of solc versions, evm versions, and compiler runs.",
     )
 
 
 # remove tests based on config flags and fixture names
 def pytest_collection_modifyitems(config, items):
-    target = config.getoption("--target").split("-")[0]
-    if target == "all":
-        return
+    if config.getoption("--evm"):
+        target = "evm"
+    else:
+        target = config.getoption("--target")
+
     for flag, fixture in TARGET_OPTS.items():
-        if "-" in flag or target == flag:
+        if target == flag:
             continue
         for test in [i for i in items if fixture in i.fixturenames]:
             items.remove(test)
@@ -57,31 +63,25 @@ def pytest_collection_modifyitems(config, items):
 
 
 def pytest_configure(config):
-    if config.getoption("--target") in ("all", "plugin") and config.getoption("numprocesses"):
+    if config.getoption("--target") == "plugin" and config.getoption("numprocesses"):
         raise pytest.UsageError("Cannot use xdist with plugin tests, try adding the '-n 0' flag")
+
+    if config.getoption("--evm"):
+        # reformat evm options - only do this once to avoid repeat queries for latest solc version
+        solc_versions, evm_verions, runs = [i.split(",") for i in config.option.evm]
+        runs = [int(i) for i in runs]
+        if "latest" in solc_versions:
+            latest_version = solcx.get_available_solc_versions()[0]
+            solc_versions.remove("latest")
+            solc_versions.append(latest_version)
+        config.option.evm = (evm_verions, runs, solc_versions)
 
 
 def pytest_generate_tests(metafunc):
     # parametrize the evmtester fixture
-    target = metafunc.config.getoption("--target")
-    if "evmtester" in metafunc.fixturenames and (target == "all" or target.startswith("evm")):
-
-        if target.startswith("evm-"):
-            target = target[4:]
-        runs = [0, 10000]
-
-        versions = [target]
-        if target in ("all", "evm"):
-            versions = ["byzantium", "petersburg", "istanbul"]
-        params = list(itertools.product(versions, runs, ["0.6.3", "0.5.15"]))
-
-        if target != "istanbul":
-            if target in ("all", "evm"):
-                versions = ["byzantium", "constantinople", "istanbul"]
-            elif target == "petersburg":
-                versions = ["constantinople"]
-            params += list(itertools.product(versions, runs, ["0.5.0", "0.4.25", "0.4.22"]))
-
+    evm_config = metafunc.config.getoption("--evm")
+    if "evmtester" in metafunc.fixturenames and evm_config:
+        params = list(itertools.product(*evm_config))
         metafunc.parametrize("evmtester", params, indirect=True)
 
 

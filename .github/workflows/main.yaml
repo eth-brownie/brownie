@@ -83,7 +83,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        job: [evm-byzantium, evm-petersburg, evm-istanbul]
+        job: [evm-byzantium, evm-petersburg, evm-istanbul, evm-latest]
 
     steps:
     - uses: actions/checkout@v1
