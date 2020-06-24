@@ -223,7 +223,7 @@ Settings related to reports such as coverage data and gas profiles.
     .. code-block:: yaml
 
         reports:
-            exclude_sources:
+            exclude_paths:
                 - contracts/mocks/**/*.*
                 - contracts/SafeMath.sol
 
