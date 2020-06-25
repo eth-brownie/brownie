@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import inspect
+import sys
 from pathlib import Path
 
 from brownie import network, project
@@ -62,6 +63,7 @@ def main():
                 shell.interact(
                     banner="\nInteractive mode enabled. Use quit() to close.", exitmsg=""
                 )
+        sys.exit(1)
 
     if CONFIG.argv["gas"]:
         print("\n======= Gas profile =======")
