@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Fixed
 - Less restrictive `default_langauge_version` in pre-commit hooks
+- Updated network configs to match mainnet's latest gas limits
 
 ## [1.9.4](https://github.com/eth-brownie/brownie/tree/v1.9.4) - 2020-06-21
 ### Fixed

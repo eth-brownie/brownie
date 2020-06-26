@@ -46,7 +46,7 @@ development:
     host: http://127.0.0.1
     cmd_settings:
       port: 8545
-      gas_limit: 6721975
+      gas_limit: 12000000
       accounts: 10
       evm_version: istanbul
       mnemonic: brownie
@@ -57,7 +57,7 @@ development:
     timeout: 120
     cmd_settings:
       port: 8545
-      gas_limit: 10000000
+      gas_limit: 12000000
       accounts: 10
       evm_version: istanbul
       mnemonic: brownie
