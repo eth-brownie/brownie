@@ -762,6 +762,80 @@ class ProjectContract(_DeployedContractBase):
         _ContractBase.__init__(self, project, build, project._sources)
         _DeployedContractBase.__init__(self, address, owner, tx)
 
+    def verify_sourcecode(self, silent: bool = False) -> Dict:
+        """
+        Use a block explorer to verify that the deployed sourcecode matches this `ProjectContract`.
+        """
+        url = CONFIG.active_network.get("explorer")
+        if url is None:
+            raise ValueError("Explorer API not set for this network")
+
+        # TODO: return now if it is already verified?
+
+        # https://etherscan.io/apis#contracts
+        # https://etherscan.io/sourcecode-demo.html
+        post_data: Dict = {
+            "module": "contract",
+            "action": "verifysourcecode",
+            "codeformat": "solidity-standard-json-input",
+            # TODO: pull these out of self
+            "contractaddress": address,
+            "sourceCode": source_code,
+            "contractname": contract_name,
+            "compilerversion": compiler_version,
+            "constructorArguements": constructor_arguments,
+            "evmVersion": evm_version,
+            "licenseType": license_type,
+        }
+
+        guid_params: Dict = {"module": "contract", "action": "checkverifystatus"}
+
+        # TODO: if numLibraries >10, exit
+        # TODO: for each library, add librarynameN and libraryaddressN
+
+        if "etherscan" in url:
+            if os.getenv("ETHERSCAN_TOKEN"):
+                post_data["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
+                guid_params["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
+            else:
+                sys.exit(
+                    "No Etherscan API token set. A token is required to publish. "
+                    "Visit https://etherscan.io/register to obtain a token, and then store it "
+                    "as the environment variable $ETHERSCAN_TOKEN",
+                    BrownieEnvironmentWarning,
+                )
+
+        if not silent:
+            print(
+                f"Verifying source of {color('bright blue')}{address}{color} "
+                f"from {color('bright blue')}{urlparse(url).netloc}{color}..."
+            )
+
+        response = requests.post(url, data=post_data, headers=REQUEST_HEADERS)
+        if response.status_code != 200:
+            raise ConnectionError(
+                f"Status {response.status_code} when querying {url} for verifysourcecode: {response.text}"
+            )
+        data = response.json()
+
+        if int(data["status"]) != 1:
+            raise ValueError(f"Failed to retrieve data from API: {data['result']}")
+
+        # data.result is the GUID receipt for the submission, we can use this guid for checking the verification status
+        guid_params["guid"] = data.result
+
+        response = requests.get(url, params=guid_params, headers=REQUEST_HEADERS)
+        if response.status_code != 200:
+            raise ConnectionError(
+                f"Status {response.status_code} when querying {url} for checkverifystatus: {response.text}"
+            )
+        data = response.json()
+
+        if int(data["status"]) != 1:
+            raise ValueError(f"Failed to verify sourcecode from API: {data['result']}")
+
+        return data
+
 
 class OverloadedMethod:
     def __init__(self, address: str, name: str, owner: Optional[AccountsType]):
