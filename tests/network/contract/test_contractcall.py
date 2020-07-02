@@ -29,7 +29,7 @@ def test_block_identifier(accounts, history):
         """
 foo: public(int128)
 
-@public
+@external
 def set_foo(_foo: int128):
     self.foo = _foo
     """

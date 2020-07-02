@@ -15,7 +15,7 @@ abstract contract Baz is Foo {}
 @pytest.fixture(scope="module")
 def sourceobj(solc5source):
     yield sources.Sources(
-        {"path/to/Foo.sol": solc5source}, {"interfaces/Baz.vy": "@public\ndef bar(): pass"}
+        {"path/to/Foo.sol": solc5source}, {"interfaces/Baz.vy": "@external\ndef bar(): pass"}
     )
 
 
@@ -31,9 +31,9 @@ def test_namespace_collisions(solc5source):
         sources.Sources({}, {"foo.sol": solc5source, "bar.sol": solc5source})
     # solc / vyper collision
     with pytest.raises(NamespaceCollision):
-        sources.Sources({"foo.sol": solc5source, "Foo.vy": "@public\ndef bar(): pass"}, {})
+        sources.Sources({"foo.sol": solc5source, "Foo.vy": "@external\ndef bar(): pass"}, {})
     with pytest.raises(NamespaceCollision):
-        sources.Sources({"foo.sol": solc5source}, {"Foo.vy": "@public\ndef bar(): pass"})
+        sources.Sources({"foo.sol": solc5source}, {"Foo.vy": "@external\ndef bar(): pass"})
 
 
 def test_get_path_list(sourceobj):

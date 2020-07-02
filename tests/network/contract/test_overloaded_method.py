@@ -6,8 +6,8 @@ from brownie.network.contract import ContractCall, ContractTx, OverloadedMethod
 from brownie.project import compile_source
 
 vyper_source = """
-@public
-@constant
+@external
+@view
 def foo(a: int128, b: int128 = 42) -> int128:
     return a + b
 """

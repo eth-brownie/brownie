@@ -29,7 +29,7 @@ contract OnlyEvents {{
 def test_vyper_external_call(newproject):
     source = """
 from vyper.interfaces import ERC721
-@public
+@external
 def interfaceTest():
     ERC721(msg.sender).safeTransferFrom(msg.sender, self, 1, b"")
     """

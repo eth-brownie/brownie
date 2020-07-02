@@ -66,7 +66,7 @@ def test_compile_empty():
 
 
 def test_get_abi():
-    code = "@public\ndef baz() -> bool: return True"
+    code = "@external\ndef baz() -> bool: return True"
     abi = compiler.vyper.get_abi(code, "Vyper")
     assert len(abi) == 1
     assert abi["Vyper"] == [
@@ -74,8 +74,7 @@ def test_get_abi():
             "name": "baz",
             "outputs": [{"type": "bool", "name": ""}],
             "inputs": [],
-            "constant": False,
-            "payable": False,
+            "stateMutability": "nonpayable",
             "type": "function",
             "gas": 351,
         }
@@ -83,6 +82,6 @@ def test_get_abi():
 
 
 def test_size_limit(capfd):
-    code = f"@public\ndef baz():\n    assert msg.sender != ZERO_ADDRESS, '{'blah'*10000}'"
+    code = f"@external\ndef baz():\n    assert msg.sender != ZERO_ADDRESS, '{'blah'*10000}'"
     compiler.compile_and_format({"foo.vy": code})
     assert "exceeds EIP-170 limit of 24577" in capfd.readouterr()[0]

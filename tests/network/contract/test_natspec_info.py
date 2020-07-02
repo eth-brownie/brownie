@@ -38,9 +38,9 @@ vyper_natspec = '''
     the throat to be considered eaten
 """
 
-@public
+@external
 @payable
-def doesEat(food: string[30], qty: uint256) -> (bool, bool):
+def doesEat(food: String[30], qty: uint256) -> (bool, bool):
     """
     @notice Determine if Bugs will accept `qty` of `food` to eat
     @dev Compares the entire string and does not rely on a hash

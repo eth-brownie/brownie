@@ -37,7 +37,7 @@ def test_compiles(project, tmp_path):
     with tmp_path.joinpath("sources/Foo.vy").open("w") as fp:
         fp.write(
             """
-@public
+@external
 def foo() -> int128:
     return 2
 """
