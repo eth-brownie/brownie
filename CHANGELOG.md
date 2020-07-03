@@ -6,9 +6,15 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.9.5](https://github.com/eth-brownie/brownie/tree/v1.9.5) - 2020-07-03
+### Changed
+- Support for Vyper `v0.2.1` ([#656](https://github.com/eth-brownie/brownie/pull/656))
+- Updated development network config to match mainnet's latest gas limits ([#650](https://github.com/eth-brownie/brownie/pull/650))
+
 ### Fixed
-- Less restrictive `default_langauge_version` in pre-commit hooks
-- Updated network configs to match mainnet's latest gas limits
+- Heuristic for non-payable function reverts based on changes in Solidity `v0.6.9` ([#647](https://github.com/eth-brownie/brownie/pull/647))
+- `brownie run` exit status when using `--interactive` flag ([#655](https://github.com/eth-brownie/brownie/pull/655))
 
 ## [1.9.4](https://github.com/eth-brownie/brownie/tree/v1.9.4) - 2020-06-21
 ### Fixed
