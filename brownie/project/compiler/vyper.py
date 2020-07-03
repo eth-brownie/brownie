@@ -79,7 +79,7 @@ def _get_dependencies(ast_json: List) -> List:
     import_nodes += [
         i for i in ast_json if i["ast_type"] == "ImportFrom" if i["module"] != "vyper.interfaces"
     ]
-    return sorted(set([i["names"][0]["name"].split(".")[-1] for i in import_nodes]))
+    return sorted(set([i["name"].split(".")[-1] for i in import_nodes]))
 
 
 def _generate_coverage_data(

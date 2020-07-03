@@ -13,13 +13,13 @@ interface Baz is Foo { event BazEvent(); }
 """
 
 vyper_contract = """
-@public
+@external
 def foo() -> bool:
     return True
 """
 
 vyper_interface = """
-@public
+@external
 def foo() -> bool:
     pass
 """

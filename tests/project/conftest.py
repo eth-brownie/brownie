@@ -54,7 +54,7 @@ def solc4source():
 def vysource():
     return """
 # comments are totally kickass
-@public
+@external
 def test() -> bool:
     return True
 """

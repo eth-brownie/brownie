@@ -1,7 +1,7 @@
 import json
 
 INTERFACE = """
-@public
+@external
 def baz() -> bool: pass
 """
 
@@ -10,7 +10,7 @@ import interfaces.Bar as Bar
 
 implements: Bar
 
-@public
+@external
 def baz() -> bool:
     return True
 """

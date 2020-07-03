@@ -98,7 +98,7 @@ def test_compile_solc_object(project, solc5source):
 
 
 def test_compile_vyper_object(project):
-    temp = project.compile_source("@public\ndef x() -> bool: return True")
+    temp = project.compile_source("@external\ndef x() -> bool: return True")
     assert type(temp) is TempProject
     assert isinstance(temp, _ProjectBase)
     assert len(temp) == 1

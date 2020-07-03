@@ -29,7 +29,7 @@ def test_invalid_min_max():
 @given(value=strategy("decimal"))
 def test_given(value):
     assert type(value) is Decimal
-    assert value.quantize(Decimal("1.0000000000")) == value
+    assert value.as_tuple().exponent >= -10
     assert -(2 ** 127) <= value <= 2 ** 127 - 1
 
 
