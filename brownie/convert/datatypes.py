@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from copy import deepcopy
-from decimal import Decimal
+from decimal import Decimal, getcontext
 from typing import Any, Dict, ItemsView, KeysView, List, Optional, Sequence, TypeVar, Union
 
 import eth_utils
@@ -182,7 +182,9 @@ def _to_fixed(value: Any) -> Decimal:
         except TypeError:
             pass
     try:
-        return Decimal(value)
+        ctx = getcontext()
+        ctx.prec = 100
+        return Decimal(value, context=ctx)
     except Exception:
         raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to decimal.")
 
