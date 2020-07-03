@@ -17,7 +17,7 @@ If one or more contracts are unable to compile, Brownie raises an exception with
 Supported Languages
 ===================
 
-Brownie supports Solidity (``>=0.4.22``) and Vyper (``0.1.0-b17``). The file extension determines which compiler is used:
+Brownie supports Solidity (``>=0.4.22``) and Vyper (``0.2.x``). The file extension determines which compiler is used:
 
 * Solidity: ``.sol``
 * Vyper: ``.vy``
@@ -58,7 +58,7 @@ Setting the Compiler Version
 
 .. note::
 
-    Brownie supports Solidity versions ``>=0.4.22`` and Vyper version ``0.1.0-b17``.
+    Brownie supports Solidity versions ``>=0.4.22`` and Vyper version ``0.2.x``.
 
 If a compiler version is set in the configuration file, all contracts in the project are compiled using that version. The compiler is installed automatically if not already present. The version should be given as a string in the format ``0.x.x``.
 
