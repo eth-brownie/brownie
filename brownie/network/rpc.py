@@ -75,8 +75,6 @@ class Rpc(metaclass=_Singleton):
             if getattr(self._rpc, "stderr", None) is not None:
                 self._rpc.stderr.close()
             self.kill(False)
-        else:
-            self._request("evm_revert", [self._reset_id])
 
     def launch(self, cmd: str, **kwargs: Dict) -> None:
         """Launches the RPC client.
