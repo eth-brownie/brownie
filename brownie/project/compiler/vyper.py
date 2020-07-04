@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple
 import vyper
 from semantic_version import Version
 from vyper.cli import vyper_json
+from vyper.exceptions import VyperException
 
 from brownie.project.compiler.utils import expand_source_map
 from brownie.project.sources import is_inside_offset
@@ -50,7 +51,10 @@ def compile_from_input_json(
     if not silent:
         print("Compiling contracts...")
         print(f"  Vyper version: {get_version()}")
-    return vyper_json.compile_json(input_json, root_path=allow_paths)
+    try:
+        return vyper_json.compile_json(input_json, root_path=allow_paths)
+    except VyperException as exc:
+        raise exc.with_traceback(None)
 
 
 def _get_unique_build_json(
