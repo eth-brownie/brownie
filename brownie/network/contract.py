@@ -1084,13 +1084,23 @@ class ContractCall(_ContractMethod):
 
         args, tx = _get_tx(self._owner, args)
         tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
+        pc, revert_msg = None, None
+
         try:
             self.transact(*args, tx)
+        except VirtualMachineError as exc:
+            pc, revert_msg = exc.pc, exc.revert_msg
         except Exception:
             pass
 
         rpc.undo()
-        return self.call(*args)
+        try:
+            return self.call(*args)
+        except VirtualMachineError as exc:
+            if pc == exc.pc and revert_msg and exc.revert_msg is None:
+                # in case we miss a dev revert string
+                exc.revert_msg = revert_msg
+            raise exc
 
 
 def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:

@@ -48,11 +48,18 @@ def revert_deprecation(revert_msg=None):
 class RevertContextManager:
     def __init__(self, revert_msg=None):
         self.revert_msg = revert_msg
+        self.always_transact = CONFIG.argv["always_transact"]
+
+        if revert_msg is not None and revert_msg.startswith("dev:"):
+            # run calls as transactins when catching a dev revert string
+            CONFIG.argv["always_transact"] = True
 
     def __enter__(self):
         pass
 
     def __exit__(self, exc_type, exc_value, traceback):
+        CONFIG.argv["always_transact"] = self.always_transact
+
         if exc_type is None:
             raise AssertionError("Transaction did not revert") from None
 
