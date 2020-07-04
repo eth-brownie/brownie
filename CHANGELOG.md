@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.9.6](https://github.com/eth-brownie/brownie/tree/v1.9.6) - 2020-07-04
+### Changed
+- Reduce length of traceback on failed Vyper compilation ([#661](https://github.com/eth-brownie/brownie/pull/661))
+- Run calls as transactions when catching dev revert string ([#659](https://github.com/eth-brownie/brownie/pull/659))
+
+### Fixed
+- Do not reset local chain when closing Brownie ([#660](https://github.com/eth-brownie/brownie/pull/660))
+
 ## [1.9.5](https://github.com/eth-brownie/brownie/tree/v1.9.5) - 2020-07-03
 ### Changed
 - Support for Vyper `v0.2.1` ([#656](https://github.com/eth-brownie/brownie/pull/656))
