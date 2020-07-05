@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.9.7](https://github.com/eth-brownie/brownie/tree/v1.9.7) - 2020-07-05
+### Added
+- `max` gas limit configuration setting ([#664](https://github.com/eth-brownie/brownie/pull/664))
+- `--failfast` flag for hypothesis tests ([#666](https://github.com/eth-brownie/brownie/pull/666))
+
+### Fixed
+- Iterate trace in reverse when looking for revert reason ([#663](https://github.com/eth-brownie/brownie/pull/663))
+- `TransactionReceipt` verbosity and minor fixes ([#665](https://github.com/eth-brownie/brownie/pull/665))
+
+
 ## [1.9.6](https://github.com/eth-brownie/brownie/tree/v1.9.6) - 2020-07-04
 ### Changed
 - Reduce length of traceback on failed Vyper compilation ([#661](https://github.com/eth-brownie/brownie/pull/661))
