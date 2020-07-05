@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
+from hypothesis import Phase
 from hypothesis import settings as hp_settings
 from hypothesis.database import DirectoryBasedExampleDatabase
 
@@ -253,6 +254,13 @@ def _load_project_dependencies(project_path: Path) -> List:
 def _modify_hypothesis_settings(settings, name, parent=None):
     if parent is None:
         parent = hp_settings._current_profile
+
+    if "phases" in settings:
+        try:
+            settings["phases"] = [getattr(Phase, k) for k, v in settings["phases"].items() if v]
+        except AttributeError as exc:
+            raise ValueError(f"'{exc.args[0]}' is not a valid hypothesis phase setting")
+
     hp_settings.register_profile(
         name,
         parent=hp_settings.get_profile(parent),
