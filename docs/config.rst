@@ -121,9 +121,9 @@ Networks
 
     .. py:attribute:: gas_limit
 
-        The default gas limit for all transactions. If set to ``auto`` the gas limit is determined using ``web3.eth.estimateGas``.
+        The default gas limit for all transactions. If set to ``auto`` the gas limit is determined using ``web3.eth.estimateGas``. If set to ``max``, the block gas limit is used.
 
-        development default: ``6721975``
+        development default: ``max``
 
         live default: ``auto``
 
@@ -135,7 +135,7 @@ Networks
 
         The gas limit to use when a transaction would revert. If set to ``false``, transactions that would revert will instead raise a :func:`VirtualMachineError <brownie.exceptions.VirtualMachineError>`.
 
-        development default: ``6721975``
+        development default: ``max``
 
         live default: ``false``
 
