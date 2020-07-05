@@ -40,6 +40,9 @@ def pytest_addoption(parser):
             help="Only run or skip stateful tests (default: run all tests)",
         )
         parser.addoption(
+            "--failfast", action="store_true", help="Fail hypothesis tests quickly (no shrinking)",
+        )
+        parser.addoption(
             "--network",
             "-N",
             default=False,
@@ -86,6 +89,14 @@ def pytest_configure(config):
             Plugin = PytestBrownieXdistRunner
         else:
             Plugin = PytestBrownieRunner
+
+        if config.getoption("interactive"):
+            config.option.failfast = True
+
+        if config.getoption("failfast"):
+            _modify_hypothesis_settings(
+                {"phases": {"explicit": True, "generate": True, "target": True}}, "brownie-failfast"
+            )
 
         session = Plugin(config, active_project)
         config.pluginmanager.register(session, "brownie-core")

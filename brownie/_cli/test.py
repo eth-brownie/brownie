@@ -19,6 +19,7 @@ Brownie Options:
   --coverage -C            Evaluate contract test coverage
   --interactive -I         Open an interactive console each time a test fails
   --stateful [true,false]  Only run stateful tests, or skip them
+  --failfast               Fail hypothesis tests quickly (no shrinking)
   --revert-tb -R           Show detailed traceback on unhandled transaction reverts
   --gas -G                 Display gas profile for function calls
   --network [name]         Use a specific network (default {CONFIG.settings['networks']['default']})
