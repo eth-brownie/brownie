@@ -476,32 +476,37 @@ class TransactionReceipt:
                 self._revert_msg = "exceeds EIP-170 size limit"
         if self._revert_msg is not None:
             return
-        # get revert message
-        step = next(i for i in trace if i["op"] in ("REVERT", "INVALID"))
-        if step["op"] == "REVERT" and int(step["stack"][-2], 16):
-            # get returned error string from stack
-            data = _get_memory(step, -1)[4:]
-            self._revert_msg = decode_abi(["string"], data)[0]
-            return
-        if self.contract_address:
-            self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
-            return
-        # check for dev revert string using program counter
-        self._revert_msg = build._get_dev_revert(step["pc"])
-        if self._revert_msg is not None:
-            return
-        # if none is found, expand the trace and get it from the pcMap
-        self._expand_trace()
-        try:
-            pc_map = _find_contract(step["address"])._build["pcMap"]
-            # if this is the function selector revert, check for a jump
-            if "first_revert" in pc_map[step["pc"]]:
-                i = trace.index(step) - 4
-                if trace[i]["pc"] != step["pc"] - 4:
-                    step = trace[i]
-            self._revert_msg = pc_map[step["pc"]]["dev"]
-        except (KeyError, AttributeError):
-            self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
+
+        # iterate over revert instructions in reverse to find revert message
+        for step in (i for i in trace[::-1] if i["op"] in ("REVERT", "INVALID")):
+            if step["op"] == "REVERT" and int(step["stack"][-2], 16):
+                # get returned error string from stack
+                data = _get_memory(step, -1)[4:]
+                self._revert_msg = decode_abi(["string"], data)[0]
+                return
+            if self.contract_address:
+                self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
+                return
+            # check for dev revert string using program counter
+            self._revert_msg = build._get_dev_revert(step["pc"])
+            if self._revert_msg is not None:
+                return
+            # if none is found, expand the trace and get it from the pcMap
+            self._expand_trace()
+            try:
+                pc_map = _find_contract(step["address"])._build["pcMap"]
+                # if this is the function selector revert, check for a jump
+                if "first_revert" in pc_map[step["pc"]]:
+                    i = trace.index(step) - 4
+                    if trace[i]["pc"] != step["pc"] - 4:
+                        step = trace[i]
+                self._revert_msg = pc_map[step["pc"]]["dev"]
+                return
+            except (KeyError, AttributeError):
+                pass
+
+        step = next(i for i in trace[::-1] if i["op"] in ("REVERT", "INVALID"))
+        self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
 
     def _expand_trace(self) -> None:
         """Adds the following attributes to each step of the stack trace:
