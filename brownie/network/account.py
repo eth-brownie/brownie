@@ -321,6 +321,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
     def _gas_limit(self, to: Optional["Accounts"], amount: int, data: Optional[str] = None) -> int:
         gas_limit = CONFIG.active_network["settings"]["gas_limit"]
+        if gas_limit == "max":
+            gas_limit = web3.eth.getBlock("latest")["gasLimit"]
+            CONFIG.active_network["settings"]["gas_limit"] = gas_limit
+
         if isinstance(gas_limit, bool) or gas_limit in (None, "auto"):
             return self.estimate_gas(to, amount, data or "")
         return Wei(gas_limit)
@@ -447,8 +451,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 }
             )
         except ValueError:
-            if CONFIG.active_network["settings"]["reverting_tx_gas_limit"]:
-                return CONFIG.active_network["settings"]["reverting_tx_gas_limit"]
+            revert_gas_limit = CONFIG.active_network["settings"]["reverting_tx_gas_limit"]
+            if revert_gas_limit == "max":
+                revert_gas_limit = web3.eth.getBlock("latest")["gasLimit"]
+                CONFIG.active_network["settings"]["reverting_tx_gas_limit"] = revert_gas_limit
+            if revert_gas_limit:
+                return revert_gas_limit
             raise
 
     def transfer(

@@ -16,9 +16,9 @@ project_structure:
 networks:
     default: development
     development:
-        gas_limit: 12000000
+        gas_limit: max
         gas_price: 0
-        reverting_tx_gas_limit: 12000000
+        reverting_tx_gas_limit: max
         default_contract_owner: true
         cmd_settings: null
     live:
