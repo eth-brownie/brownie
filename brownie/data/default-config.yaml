@@ -51,6 +51,12 @@ hypothesis:
     max_examples: 50
     report_multiple_bugs: False
     stateful_step_count: 10
+    phases:
+        explicit: true
+        reuse: true
+        generate: true
+        target: true
+        shrink: true
 
 autofetch_sources: false
 dependencies: null
