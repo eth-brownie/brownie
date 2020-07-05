@@ -127,7 +127,7 @@ class TransactionReceipt:
         self,
         txid: Union[str, bytes],
         sender: Any = None,
-        silent: bool = False,
+        silent: bool = True,
         required_confs: int = 1,
         name: str = "",
         revert_data: Optional[Tuple] = None,
@@ -150,7 +150,6 @@ class TransactionReceipt:
             txid = txid.hex()
         if not self._silent:
             print(f"Transaction sent: {color('bright blue')}{txid}{color}")
-        history._add_tx(self)
 
         self._trace_origin = None
         self._raw_trace = None

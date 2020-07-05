@@ -351,6 +351,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         gas_price: Optional[int] = None,
         nonce: Optional[int] = None,
         required_confs: int = 1,
+        silent: bool = False,
     ) -> Any:
         """Deploys a contract.
 
@@ -399,10 +400,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
             receipt = TransactionReceipt(
                 txid,
                 self,
+                silent=silent,
                 required_confs=required_confs,
                 name=contract._name + ".constructor",
                 revert_data=revert_data,
             )
+            history._add_tx(receipt)
         add_thread = threading.Thread(target=contract._add_from_tx, args=(receipt,), daemon=True)
         add_thread.start()
 
@@ -509,6 +512,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             receipt = TransactionReceipt(
                 txid, self, required_confs=required_confs, silent=silent, revert_data=revert_data
             )
+            history._add_tx(receipt)
         if rpc.is_active():
             undo_thread = threading.Thread(
                 target=rpc._add_to_undo_buffer,
