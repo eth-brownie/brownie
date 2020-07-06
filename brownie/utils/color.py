@@ -5,12 +5,29 @@ import traceback
 from pathlib import Path
 from typing import Dict, Optional, Sequence
 
+import pygments
+from pygments.formatters import get_formatter_by_name
+from pygments.lexers import PythonLexer
+
 from brownie._config import CONFIG
 
 if sys.platform == "win32":
     import colorama
 
     colorama.init()
+
+fmt_name = "terminal"
+try:
+    import curses
+
+    curses.setupterm()
+    if curses.tigetnum("colors") == 256:
+        fmt_name = "terminal256"
+except Exception:
+    # if curses won't import we are probably using Windows
+    pass
+
+formatter = get_formatter_by_name(fmt_name, style=CONFIG.settings["console"]["color_style"])
 
 
 BASE = "\x1b[0;"
@@ -139,6 +156,12 @@ class Color:
             f"{self('dark white')},\n{self}    {exc.text.strip()}\n"
             f"{' '*offset}^\n{self('bright red')}SyntaxError{self}: {exc.msg}"
         )
+
+    def highlight(self, text):
+        """
+        Apply python syntax highlighting to a string.
+        """
+        return pygments.highlight(text, PythonLexer(), formatter)
 
 
 def notify(type_, msg):

@@ -14,8 +14,6 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
-from pygments import highlight
-from pygments.formatters import get_formatter_by_name
 from pygments.lexers import PythonLexer
 from pygments.styles import get_style_by_name
 
@@ -109,20 +107,6 @@ class Console(code.InteractiveConsole):
         if extra_locals:
             locals_dict.update(extra_locals)
 
-        # prepare lexer and formatter
-        self.lexer = PythonLexer()
-        fmt_name = "terminal"
-        try:
-            import curses
-
-            curses.setupterm()
-            if curses.tigetnum("colors") == 256:
-                fmt_name = "terminal256"
-        except Exception:
-            # if curses won't import we are probably using Windows
-            pass
-        self.formatter = get_formatter_by_name(fmt_name, style=console_settings["color_style"])
-
         # create prompt session object
         history_file = str(_get_data_folder().joinpath(".history").absolute())
         kwargs = {}
@@ -184,7 +168,7 @@ class Console(code.InteractiveConsole):
         except (SyntaxError, NameError):
             pass
         if CONFIG.settings["console"]["show_colors"]:
-            text = highlight(text, self.lexer, self.formatter)
+            text = color.highlight(text)
         self.write(text)
 
     def raw_input(self, prompt=""):
