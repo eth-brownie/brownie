@@ -124,6 +124,7 @@ class Color:
     ) -> str:
         if isinstance(exc, SyntaxError) and exc.text is not None:
             return self.format_syntaxerror(exc)
+
         tb = [i.replace("./", "") for i in traceback.format_tb(exc.__traceback__)]
         if filename and not CONFIG.argv["tb"]:
             try:
@@ -131,6 +132,7 @@ class Color:
                 stop = tb.index(next(i for i in tb[::-1] if filename in i)) + 1
             except Exception:
                 pass
+
         tb = tb[start:stop]
         for i in range(len(tb)):
             info, code = tb[i].split("\n")[:2]
@@ -148,8 +150,10 @@ class Color:
 
         msg = str(exc)
         if isinstance(exc, VyperException):
-            # apply syntax highlights to vyper exceptions
+            # apply syntax highlight and remove traceback on vyper exceptions
             msg = self.highlight(msg)
+            if not CONFIG.argv["tb"]:
+                tb.clear()
 
         tb.append(f"{self('bright red')}{type(exc).__name__}{self}: {msg}")
         return "\n".join(tb)
