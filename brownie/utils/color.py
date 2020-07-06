@@ -5,12 +5,30 @@ import traceback
 from pathlib import Path
 from typing import Dict, Optional, Sequence
 
+import pygments
+from pygments.formatters import get_formatter_by_name
+from pygments.lexers import PythonLexer
+from vyper.exceptions import VyperException
+
 from brownie._config import CONFIG
 
 if sys.platform == "win32":
     import colorama
 
     colorama.init()
+
+fmt_name = "terminal"
+try:
+    import curses
+
+    curses.setupterm()
+    if curses.tigetnum("colors") == 256:
+        fmt_name = "terminal256"
+except Exception:
+    # if curses won't import we are probably using Windows
+    pass
+
+formatter = get_formatter_by_name(fmt_name, style=CONFIG.settings["console"]["color_style"])
 
 
 BASE = "\x1b[0;"
@@ -106,6 +124,7 @@ class Color:
     ) -> str:
         if isinstance(exc, SyntaxError) and exc.text is not None:
             return self.format_syntaxerror(exc)
+
         tb = [i.replace("./", "") for i in traceback.format_tb(exc.__traceback__)]
         if filename and not CONFIG.argv["tb"]:
             try:
@@ -113,6 +132,7 @@ class Color:
                 stop = tb.index(next(i for i in tb[::-1] if filename in i)) + 1
             except Exception:
                 pass
+
         tb = tb[start:stop]
         for i in range(len(tb)):
             info, code = tb[i].split("\n")[:2]
@@ -127,7 +147,15 @@ class Color:
             )
             if code:
                 tb[i] += f"\n{code}"
-        tb.append(f"{self('bright red')}{type(exc).__name__}{self}: {exc}")
+
+        msg = str(exc)
+        if isinstance(exc, VyperException):
+            # apply syntax highlight and remove traceback on vyper exceptions
+            msg = self.highlight(msg)
+            if not CONFIG.argv["tb"]:
+                tb.clear()
+
+        tb.append(f"{self('bright red')}{type(exc).__name__}{self}: {msg}")
         return "\n".join(tb)
 
     def format_syntaxerror(self, exc: SyntaxError) -> str:
@@ -139,6 +167,12 @@ class Color:
             f"{self('dark white')},\n{self}    {exc.text.strip()}\n"
             f"{' '*offset}^\n{self('bright red')}SyntaxError{self}: {exc.msg}"
         )
+
+    def highlight(self, text):
+        """
+        Apply python syntax highlighting to a string.
+        """
+        return pygments.highlight(text, PythonLexer(), formatter)
 
 
 def notify(type_, msg):
