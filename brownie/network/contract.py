@@ -645,6 +645,9 @@ class Contract(_DeployedContractBase):
         if as_proxy_for is None and data["result"][0].get("Implementation"):
             as_proxy_for = _resolve_address(data["result"][0]["Implementation"])
 
+        if as_proxy_for == address:
+            as_proxy_for = None
+
         # if this is a proxy, fetch information for the implementation contract
         if as_proxy_for is not None:
             implementation_contract = Contract.from_explorer(as_proxy_for)
