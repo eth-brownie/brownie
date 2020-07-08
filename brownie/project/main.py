@@ -867,6 +867,18 @@ def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
 
 def _stream_download(download_url: str, target_path: str) -> None:
     response = requests.get(download_url, stream=True, headers=REQUEST_HEADERS)
+
+    if response.status_code == 404:
+        raise ConnectionError(
+            f"404 error when attempting to download from {download_url} - "
+            "are you sure this is a valid mix? https://github.com/brownie-mix"
+        )
+    if response.status_code != 200:
+        raise ConnectionError(
+            f"Received status code {response.status_code} when attempting "
+            f"to download from {download_url}"
+        )
+
     total_size = int(response.headers.get("content-length", 0))
     progress_bar = tqdm(total=total_size, unit="iB", unit_scale=True)
     content = bytes()
