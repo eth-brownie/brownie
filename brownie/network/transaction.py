@@ -34,6 +34,8 @@ def trace_property(fn: Callable) -> Any:
     def wrapper(self: "TransactionReceipt") -> Any:
         if self.status == -1:
             return None
+        if self._trace_exc is not None:
+            raise self._trace_exc
         return fn(self)
 
     return wrapper
@@ -119,6 +121,7 @@ class TransactionReceipt:
             print(f"Transaction sent: {color('bright blue')}{txid}{color}")
 
         # internal attributes
+        self._trace_exc = None
         self._trace_origin = None
         self._raw_trace = None
         self._trace = None
@@ -417,7 +420,9 @@ class TransactionReceipt:
 
         if "error" in trace:
             self._modified_state = None
-            raise RPCRequestError(trace["error"]["message"])
+            self._trace_exc = RPCRequestError(trace["error"]["message"])
+            raise self._trace_exc
+
         self._raw_trace = trace = trace["result"]["structLogs"]
         if not trace:
             self._modified_state = False
