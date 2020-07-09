@@ -136,7 +136,7 @@ class TransactionReceipt:
 
         # attributes that cannot be set until the tx confirms
         self.block_number = None
-        self.contract_address = None
+        self.contract_address: Optional[str] = None
         self.gas_used = None
         self.logs = None
         self.nonce = None

@@ -184,7 +184,7 @@ class ContractContainer(_ContractBase):
 
     def _add_from_tx(self, tx: TransactionReceiptType) -> None:
         tx._confirmed.wait()
-        if tx.status:
+        if tx.status and tx.contract_address is not None:
             try:
                 self.at(tx.contract_address, tx.sender, tx)
             except ContractNotFound:
