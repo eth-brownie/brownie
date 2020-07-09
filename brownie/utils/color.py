@@ -8,6 +8,7 @@ from typing import Dict, Optional, Sequence
 import pygments
 from pygments.formatters import get_formatter_by_name
 from pygments.lexers import PythonLexer
+from pygments_lexer_solidity import SolidityLexer
 from vyper.exceptions import VyperException
 
 from brownie._config import CONFIG
@@ -155,6 +156,14 @@ class Color:
             if not CONFIG.argv["tb"]:
                 tb.clear()
 
+        from brownie.exceptions import CompilerError
+
+        if isinstance(exc, CompilerError):
+            # apply syntax highlighting on solc exceptions
+            msg = self.highlight(msg, SolidityLexer())
+            if not CONFIG.argv["tb"]:
+                tb.clear()
+
         tb.append(f"{self('bright red')}{type(exc).__name__}{self}: {msg}")
         return "\n".join(tb)
 
@@ -168,11 +177,11 @@ class Color:
             f"{' '*offset}^\n{self('bright red')}SyntaxError{self}: {exc.msg}"
         )
 
-    def highlight(self, text):
+    def highlight(self, text, lexer=PythonLexer()):
         """
-        Apply python syntax highlighting to a string.
+        Apply syntax highlighting to a string.
         """
-        return pygments.highlight(text, PythonLexer(), formatter)
+        return pygments.highlight(text, lexer, formatter)
 
 
 def notify(type_, msg):
