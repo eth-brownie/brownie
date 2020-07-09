@@ -90,39 +90,6 @@ class TransactionReceipt:
         revert_msg: Error string from reverted contract all
         modified_state: Boolean, did this contract write to storage?"""
 
-    __slots__ = (
-        "_call_cost",
-        "_confirmed",
-        "_events",
-        "_internal_transfers",
-        "_modified_state",
-        "_new_contracts",
-        "_raw_trace",
-        "_return_value",
-        "_revert_msg",
-        "_revert_pc",
-        "_silent",
-        "_trace",
-        "_trace_origin",
-        "block_number",
-        "contract_address",
-        "contract_name",
-        "coverage_hash",
-        "fn_name",
-        "gas_limit",
-        "gas_price",
-        "gas_used",
-        "input",
-        "logs",
-        "nonce",
-        "receiver",
-        "sender",
-        "status",
-        "txid",
-        "txindex",
-        "value",
-    )
-
     def __init__(
         self,
         txid: Union[str, bytes],
@@ -151,6 +118,7 @@ class TransactionReceipt:
         if not self._silent:
             print(f"Transaction sent: {color('bright blue')}{txid}{color}")
 
+        # internal attributes
         self._trace_origin = None
         self._raw_trace = None
         self._trace = None
@@ -163,9 +131,19 @@ class TransactionReceipt:
         self._internal_transfers = None
         self._confirmed = threading.Event()
 
+        # attributes that cannot be set until the tx confirms
+        self.block_number = None
+        self.contract_address = None
+        self.gas_used = None
+        self.logs = None
+        self.nonce = None
+        self.txindex = None
+
+        # attributes that can be set immediately
         self.sender = sender
         self.status = -1
         self.txid = txid
+        self.contract_name = None
         self.fn_name = name
 
         if name and "." in name:
@@ -192,12 +170,6 @@ class TransactionReceipt:
 
     def __hash__(self) -> int:
         return hash(self.txid)
-
-    def __getattr__(self, attr: str) -> Any:
-        if attr not in self.__slots__:
-            raise AttributeError(f"'TransactionReceipt' object has no attribute '{attr}'")
-        if self.status == -1:
-            return None
 
     @trace_property
     def events(self) -> Optional[List]:
@@ -329,7 +301,7 @@ class TransactionReceipt:
         # await first confirmation
         receipt = web3.eth.waitForTransactionReceipt(self.txid, timeout=None, poll_latency=0.5)
 
-        self.block_number: Optional[int] = receipt["blockNumber"]
+        self.block_number = receipt["blockNumber"]
         # wait for more confirmations if required and handle uncle blocks
         remaining_confs = required_confs
         while remaining_confs > 0 and required_confs > 1:
@@ -444,7 +416,7 @@ class TransactionReceipt:
             raise RPCRequestError(msg) from None
 
         if "error" in trace:
-            self.modified_state = None
+            self._modified_state = None
             raise RPCRequestError(trace["error"]["message"])
         self._raw_trace = trace = trace["result"]["structLogs"]
         if not trace:
