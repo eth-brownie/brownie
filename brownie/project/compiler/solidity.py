@@ -402,6 +402,14 @@ def _generate_coverage_data(
             key = (pc_list[-1]["path"], pc_list[-1]["offset"])
             revert_map.setdefault(key, []).append(len(pc_list))
 
+    while opcodes and opcodes[0] not in ("INVALID", "STOP"):
+        # necessary because sometimes solidity returns an incomplete source map
+        pc_list.append({"op": opcodes.popleft(), "pc": pc})
+        pc += 1
+        if opcodes and opcodes[0][:2] == "0x":
+            pc_list[-1]["value"] = opcodes.popleft()
+            pc += int(pc_list[-1]["op"][4:])
+
     # compare revert and require statements against the map of revert jumps
     for (contract_id, fn_offset), values in revert_map.items():
         fn_node = source_nodes[contract_id].children(
