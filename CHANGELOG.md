@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.9.8](https://github.com/eth-brownie/brownie/tree/v1.9.8) - 2020-07-09
+### Added
+- Syntax highlights for Vyper exceptions ([#668](https://github.com/eth-brownie/brownie/pull/668))
+- Syntax highlights for Solidity exceptions ([#675](https://github.com/eth-brownie/brownie/pull/675))
+
+### Fixed
+- Infinite loop when querying implementation contract from Etherscan ([#672](https://github.com/eth-brownie/brownie/pull/672))
+- Check return status before streaming brownie mix ([#673](https://github.com/eth-brownie/brownie/pull/673))
+- Meaningful error message on failed trace ([#674](https://github.com/eth-brownie/brownie/pull/674))
+- Handle incomplete Solidity source map ([#676](https://github.com/eth-brownie/brownie/pull/676))
+
 ## [1.9.7](https://github.com/eth-brownie/brownie/tree/v1.9.7) - 2020-07-05
 ### Added
 - `max` gas limit configuration setting ([#664](https://github.com/eth-brownie/brownie/pull/664))
@@ -15,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Iterate trace in reverse when looking for revert reason ([#663](https://github.com/eth-brownie/brownie/pull/663))
 - `TransactionReceipt` verbosity and minor fixes ([#665](https://github.com/eth-brownie/brownie/pull/665))
-
 
 ## [1.9.6](https://github.com/eth-brownie/brownie/tree/v1.9.6) - 2020-07-04
 ### Changed
