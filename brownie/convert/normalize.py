@@ -17,7 +17,7 @@ def format_input(abi: Dict, inputs: Union[List, Tuple]) -> List:
     try:
         return _format_tuple(abi_types, inputs)
     except Exception as e:
-        raise type(e)(f"{abi['name']} {e}")
+        raise type(e)(f"{abi['name']} {e}") from None
 
 
 def format_output(abi: Dict, outputs: Union[List, Tuple]) -> ReturnValue:
@@ -67,7 +67,7 @@ def _format_tuple(abi_types: Sequence[ABIType], values: Union[List, Tuple]) -> L
             else:
                 result.append(_format_single(type_.to_type_str(), value))
         except Exception as e:
-            raise type(e)(f"'{value}' - {e}")
+            raise type(e)(f"'{value}' - {e}") from None
     return result
 
 
