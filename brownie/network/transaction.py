@@ -3,6 +3,7 @@
 import sys
 import threading
 import time
+from collections import OrderedDict
 from hashlib import sha1
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
@@ -19,6 +20,7 @@ from brownie.project import build
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie.utils import color
+from brownie.utils.output import build_tree
 
 from .event import _decode_logs, _decode_trace
 from .state import TxHistory, _find_contract
@@ -719,13 +721,12 @@ class TransactionReceipt:
         """
 
         trace = self.trace
-        result = f"Call trace for '{color('bright blue')}{self.txid}{color}':"
-        result += f"\nInitial call cost  [{color('bright yellow')}{self._call_cost} gas{color}]"
-        result += _step_print(
-            trace[0], trace[-1], None, 0, len(trace), self._get_trace_gas(0, len(self.trace))
+        key = _step_print(
+            trace[0], trace[-1], 0, len(trace), self._get_trace_gas(0, len(self.trace))
         )
-        indent = {0: 0}
-        indent_chars = [""] * 1000
+
+        call_tree: OrderedDict = OrderedDict({key: OrderedDict()})
+        active_tree = [call_tree[key]]
 
         # (index, depth, jumpDepth) for relevent steps in the trace
         trace_index = [(0, 0, 0)] + [
@@ -736,17 +737,18 @@ class TransactionReceipt:
 
         for i, (idx, depth, jump_depth) in enumerate(trace_index[1:], start=1):
             last = trace_index[i - 1]
+            if depth == last[1] and jump_depth < last[2]:
+                # returning from an internal function, reduce tree by one
+                active_tree.pop()
+                continue
+            elif depth < last[1]:
+                # returning from an external call, return tree by jumpDepth of the previous depth
+                active_tree = active_tree[: -(last[2] + 1)]
+                continue
+
             if depth > last[1]:
                 # called to a new contract
-                indent[depth] = trace_index[i - 1][2] + indent[depth - 1]
                 end = next((x[0] for x in trace_index[i + 1 :] if x[1] < depth), len(trace))
-                _depth = depth + indent[depth]
-                symbol, indent_chars[_depth] = _check_last(trace_index[i - 1 :])
-                indent_str = "".join(indent_chars[:_depth]) + symbol
-                (total_gas, internal_gas) = self._get_trace_gas(idx, end)
-                result += _step_print(
-                    trace[idx], trace[end - 1], indent_str, idx, end, (total_gas, internal_gas)
-                )
             elif depth == last[1] and jump_depth > last[2]:
                 # jumped into an internal function
                 end = next(
@@ -757,14 +759,17 @@ class TransactionReceipt:
                     ),
                     len(trace),
                 )
-                _depth = depth + jump_depth + indent[depth]
-                symbol, indent_chars[_depth] = _check_last(trace_index[i - 1 :])
-                indent_str = "".join(indent_chars[:_depth]) + symbol
-                (total_gas, internal_gas) = self._get_trace_gas(idx, end)
-                result += _step_print(
-                    trace[idx], trace[end - 1], indent_str, idx, end, (total_gas, internal_gas)
-                )
-        print(result)
+
+            total_gas, internal_gas = self._get_trace_gas(idx, end)
+            key = _step_print(trace[idx], trace[end - 1], idx, end, (total_gas, internal_gas))
+            active_tree[-1][key] = OrderedDict()
+            active_tree.append(active_tree[-1][key])
+
+        print(
+            f"Call trace for '{color('bright blue')}{self.txid}{color}':\n"
+            f"Initial call cost  [{color('bright yellow')}{self._call_cost} gas{color}]"
+        )
+        print(build_tree(call_tree))
 
     def traceback(self) -> None:
         print(self._traceback_string() or "")
@@ -881,30 +886,14 @@ def _step_compare(a: Dict, b: Dict) -> bool:
     return a["depth"] == b["depth"] and a["jumpDepth"] == b["jumpDepth"]
 
 
-def _check_last(trace_index: Sequence[Tuple]) -> Tuple[str, str]:
-    initial = trace_index[0][1:]
-    try:
-        trace = next(i for i in trace_index[1:-1] if i[1:] == initial)
-    except StopIteration:
-        return "\u2514", "  "
-    i = trace_index[1:].index(trace) + 2
-    next_ = trace_index[i][1:]
-    if next_[0] < initial[0] or (next_[0] == initial[0] and next_[1] <= initial[1]):
-        return "\u2514", "  "
-    return "\u251c", "\u2502 "
-
-
 def _step_print(
     step: Dict,
     last_step: Dict,
-    indent: Optional[str],
     start: Union[str, int],
     stop: Union[str, int],
     gas: Tuple[int, int],
 ) -> str:
-    print_str = f"\n{color('dark white')}"
-    if indent is not None:
-        print_str += f"{indent}\u2500"
+    print_str = f"{color('dark white')}"
     if last_step["op"] in {"REVERT", "INVALID"} and _step_compare(step, last_step):
         contract_color = color("bright red")
     else:
