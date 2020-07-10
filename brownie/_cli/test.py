@@ -23,6 +23,7 @@ Brownie Options:
   --revert-tb -R           Show detailed traceback on unhandled transaction reverts
   --gas -G                 Display gas profile for function calls
   --network [name]         Use a specific network (default {CONFIG.settings['networks']['default']})
+  --showinternal           Include Brownie internal frames in tracebacks
 
 Pytest Options:
   -s                       Disable stdout capture when running tests
