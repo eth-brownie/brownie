@@ -567,7 +567,7 @@ class TransactionReceipt:
             trace[i].update(
                 address=last["address"],
                 contractName=last["name"],
-                fn=last["fn"][-1],
+                fn=last["internal_calls"][-1],
                 jumpDepth=last["jumpDepth"],
                 source=False,
             )
@@ -612,12 +612,12 @@ class TransactionReceipt:
                         fn = last["pc_map"][trace[i + 1]["pc"]]["fn"]
                     except (KeyError, IndexError):
                         continue
-                    if fn != last["fn"][-1]:
-                        last["fn"].append(fn)
+                    if fn != last["internal_calls"][-1]:
+                        last["internal_calls"].append(fn)
                         last["jumpDepth"] += 1
                 # jump 'o' is returning from an internal function
                 elif last["jumpDepth"] > 0:
-                    del last["fn"][-1]
+                    del last["internal_calls"][-1]
                     last["jumpDepth"] -= 1
         coverage._add_transaction(
             self.coverage_hash, dict((k, v) for k, v in coverage_eval.items() if v)
@@ -928,7 +928,7 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
         last_map.update(
             contract=contract,
             name=contract._name,
-            fn=[full_fn_name],
+            internal_calls=[full_fn_name],
             path_map=contract._build.get("allSourcePaths"),
             pc_map=contract._build.get("pcMap"),
         )
@@ -937,6 +937,6 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
             if contract._build["language"] == "Solidity":
                 last_map["active_branches"] = set()
     else:
-        last_map.update(contract=None, fn=[f"<UnknownContract>.{sig}"], pc_map=None)
+        last_map.update(contract=None, internal_calls=[f"<UnknownContract>.{sig}"], pc_map=None)
 
     return last_map
