@@ -571,9 +571,8 @@ class TransactionReceipt:
                 )
                 if calldata and last_map[trace[i]["depth"]]["contract"]:
                     fn = last_map[trace[i]["depth"]]["function"]
-                    self.subcalls[-1].update(
-                        inputs=fn.decode_input(calldata), signature=fn._input_sig
-                    )
+                    zip_ = zip(fn.abi["inputs"], fn.decode_input(calldata))
+                    self.subcalls[-1]["inputs"] = {i[0]["name"]: i[1] for i in zip_}  # type: ignore
                 elif calldata:
                     self.subcalls[-1]["calldata"] = calldata
 
@@ -602,7 +601,12 @@ class TransactionReceipt:
                         i for i in self.subcalls[::-1] if i["to"] == last["address"]  # type: ignore
                     )
                     data = _get_memory(trace[i], -1)
-                    subcall["return_value"] = last["function"].decode_output(data)
+                    subcall["return_value"] = None
+                    if data:
+                        fn = last["function"]
+                        return_values = fn.decode_output(data)
+                        subcall["return_value"] = return_values
+
                 elif trace[i]["op"] in ("REVERT", "INVALID"):
                     subcall = next(
                         i for i in self.subcalls[::-1] if i["to"] == last["address"]  # type: ignore
@@ -746,15 +750,21 @@ class TransactionReceipt:
         return internal_gas, total_gas
 
     @trace_inspection
-    def call_trace(self) -> None:
-        """Displays the complete sequence of contracts and methods called during
+    def call_trace(self, expand: bool = False) -> None:
+        """
+        Display the complete sequence of contracts and methods called during
         the transaction, and the range of trace step indexes for each method.
 
         Lines highlighed in red ended with a revert.
+
+        Arguments
+        ---------
+        expand : bool
+            If `True`, show an expanded trace including call inputs and return values
         """
 
         trace = self.trace
-        key = _step_print(
+        key = _step_internal(
             trace[0], trace[-1], 0, len(trace), self._get_trace_gas(0, len(self.trace))
         )
 
@@ -768,6 +778,7 @@ class TransactionReceipt:
             if not _step_compare(trace[i], trace[i - 1])
         ]
 
+        subcalls = self.subcalls[::-1]
         for i, (idx, depth, jump_depth) in enumerate(trace_index[1:], start=1):
             last = trace_index[i - 1]
             if depth == last[1] and jump_depth < last[2]:
@@ -782,6 +793,16 @@ class TransactionReceipt:
             if depth > last[1]:
                 # called to a new contract
                 end = next((x[0] for x in trace_index[i + 1 :] if x[1] < depth), len(trace))
+                total_gas, internal_gas = self._get_trace_gas(idx, end)
+                key = _step_external(
+                    trace[idx],
+                    trace[end - 1],
+                    idx,
+                    end,
+                    (total_gas, internal_gas),
+                    subcalls.pop(),
+                    expand,
+                )
             elif depth == last[1] and jump_depth > last[2]:
                 # jumped into an internal function
                 end = next(
@@ -793,8 +814,11 @@ class TransactionReceipt:
                     len(trace),
                 )
 
-            total_gas, internal_gas = self._get_trace_gas(idx, end)
-            key = _step_print(trace[idx], trace[end - 1], idx, end, (total_gas, internal_gas))
+                total_gas, internal_gas = self._get_trace_gas(idx, end)
+                key = _step_internal(
+                    trace[idx], trace[end - 1], idx, end, (total_gas, internal_gas)
+                )
+
             active_tree[-1][key] = OrderedDict()
             active_tree.append(active_tree[-1][key])
 
@@ -802,7 +826,7 @@ class TransactionReceipt:
             f"Call trace for '{color('bright blue')}{self.txid}{color}':\n"
             f"Initial call cost  [{color('bright yellow')}{self._call_cost} gas{color}]"
         )
-        print(build_tree(call_tree))
+        print(build_tree(call_tree).rstrip())
 
     def traceback(self) -> None:
         print(self._traceback_string() or "")
@@ -919,28 +943,64 @@ def _step_compare(a: Dict, b: Dict) -> bool:
     return a["depth"] == b["depth"] and a["jumpDepth"] == b["jumpDepth"]
 
 
-def _step_print(
+def _step_internal(
     step: Dict,
     last_step: Dict,
     start: Union[str, int],
     stop: Union[str, int],
     gas: Tuple[int, int],
+    subcall: Dict = None,
 ) -> str:
-    print_str = f"{color('dark white')}"
     if last_step["op"] in {"REVERT", "INVALID"} and _step_compare(step, last_step):
         contract_color = color("bright red")
     else:
-        contract_color = color("bright magenta" if not step["jumpDepth"] else "")
-    print_str += f"{contract_color}{step['fn']} {color('dark white')}{start}:{stop}{color}"
-    if gas[0] == gas[1]:
-        print_str += f"  [{color('bright yellow')}{gas[0]} gas{color}]"
+        contract_color = color("bright cyan") if not step["jumpDepth"] else color()
+    key = f"{color('dark white')}{contract_color}{step['fn']}  {color('dark white')}"
+
+    if subcall:
+        key = f"{key}[{color}{subcall['op']}{color('dark white')}]  "
+
+    key = f"{key}{start}:{stop}{color}"
+
+    if gas:
+        if gas[0] == gas[1]:
+            key = f"{key}  [{color('bright yellow')}{gas[0]} gas{color}]"
+        else:
+            key = f"{key}  [{color('bright yellow')}{gas[0]} / {gas[1]} gas{color}]"
+
+    return key
+
+
+def _step_external(
+    step: Dict,
+    last_step: Dict,
+    start: Union[str, int],
+    stop: Union[str, int],
+    gas: Tuple[int, int],
+    subcall: Dict,
+    expand: bool,
+) -> str:
+    key = _step_internal(step, last_step, start, stop, gas, subcall)
+    if not expand:
+        return key
+
+    result: OrderedDict = OrderedDict({key: {}})
+    result[key][f"address: {step['address']}"] = None
+
+    if subcall["inputs"]:
+        result[key]["input arguments:"] = [f"{k}: {v}" for k, v in subcall["inputs"].items()]
     else:
-        print_str += f"  [{color('bright yellow')}{gas[0]} / {gas[1]} gas{color}]"
-    if not step["jumpDepth"]:
-        print_str += (
-            f"  {color('dark white')}({color}{step['address']}{color('dark white')}){color}"
-        )
-    return print_str
+        result[key]["input arguments: None"] = None
+
+    if "return_value" in subcall:
+        if isinstance(subcall["return_value"], tuple):
+            result[key]["return values:"] = subcall["return_value"]
+        else:
+            result[key][f"return value: {subcall['return_value']}"] = None
+    if "revert_msg" in subcall:
+        result[key][f"revert reason: {color('bright red')}{subcall['revert_msg']}{color}"] = None
+
+    return build_tree(result).rstrip()
 
 
 def _get_memory(step: Dict, idx: int) -> HexBytes:
