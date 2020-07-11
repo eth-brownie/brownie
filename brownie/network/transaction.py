@@ -555,8 +555,8 @@ class TransactionReceipt:
                 else:
                     # calling an existing contract
                     stack_idx = -4 if step["op"] in ("CALL", "CALLCODE") else -3
-                    offset = int(step["stack"][stack_idx], 16) * 2
-                    sig = HexBytes("".join(step["memory"])[offset : offset + 8]).hex()
+                    offset = int(step["stack"][stack_idx], 16)
+                    sig = HexBytes("".join(step["memory"]))[offset : offset + 4].hex()
                     address = step["stack"][-2][-40:]
 
                 last_map[trace[i]["depth"]] = _get_last_map(address, sig)
@@ -911,9 +911,9 @@ def _step_print(
 
 
 def _get_memory(step: Dict, idx: int) -> HexBytes:
-    offset = int(step["stack"][idx], 16) * 2
-    length = int(step["stack"][idx - 1], 16) * 2
-    return HexBytes("".join(step["memory"])[offset : offset + length])
+    offset = int(step["stack"][idx], 16)
+    length = int(step["stack"][idx - 1], 16)
+    return HexBytes("".join(step["memory"]))[offset : offset + length]
 
 
 def _get_last_map(address: EthAddress, sig: str) -> Dict:
