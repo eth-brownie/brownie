@@ -540,6 +540,7 @@ class TransactionReceipt:
         last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
         coverage_eval: Dict = {last_map[0]["name"]: {}}
 
+        self.subcalls: List[Dict[str, Any]] = []
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
             if trace[i]["depth"] > trace[i - 1]["depth"]:
@@ -549,6 +550,7 @@ class TransactionReceipt:
                     out = next(x for x in trace[i:] if x["depth"] == step["depth"])
                     address = out["stack"][-1][-40:]
                     sig = f"<{step['op']}>"
+                    calldata = None
                     self._new_contracts.append(EthAddress(address))
                     if int(step["stack"][-1], 16):
                         self._add_internal_xfer(step["address"], address, step["stack"][-1])
@@ -556,11 +558,24 @@ class TransactionReceipt:
                     # calling an existing contract
                     stack_idx = -4 if step["op"] in ("CALL", "CALLCODE") else -3
                     offset = int(step["stack"][stack_idx], 16)
-                    sig = HexBytes("".join(step["memory"]))[offset : offset + 4].hex()
+                    length = int(step["stack"][stack_idx - 1], 16)
+                    calldata = HexBytes("".join(step["memory"]))[offset : offset + length]
+                    sig = calldata[:4].hex()
                     address = step["stack"][-2][-40:]
 
                 last_map[trace[i]["depth"]] = _get_last_map(address, sig)
                 coverage_eval.setdefault(last_map[trace[i]["depth"]]["name"], {})
+
+                self.subcalls.append(
+                    {"from": step["address"], "to": EthAddress(address), "op": step["op"]}
+                )
+                if calldata and last_map[trace[i]["depth"]]["contract"]:
+                    fn = last_map[trace[i]["depth"]]["function"]
+                    self.subcalls[-1].update(
+                        inputs=fn.decode_input(calldata), signature=fn._input_sig
+                    )
+                elif calldata:
+                    self.subcalls[-1]["calldata"] = calldata
 
             # update trace from last_map
             last = last_map[trace[i]["depth"]]
@@ -580,6 +595,24 @@ class TransactionReceipt:
             if not last["pc_map"]:
                 continue
             pc = last["pc_map"][trace[i]["pc"]]
+
+            if trace[i]["depth"]:
+                if trace[i]["op"] == "RETURN":
+                    subcall: dict = next(
+                        i for i in self.subcalls[::-1] if i["to"] == last["address"]  # type: ignore
+                    )
+                    data = _get_memory(trace[i], -1)
+                    subcall["return_value"] = last["function"].decode_output(data)
+                elif trace[i]["op"] in ("REVERT", "INVALID"):
+                    subcall = next(
+                        i for i in self.subcalls[::-1] if i["to"] == last["address"]  # type: ignore
+                    )
+                    if trace[i]["op"] == "REVERT":
+                        data = _get_memory(trace[i], -1)
+                        if data:
+                            subcall["revert_msg"] = decode_abi(["string"], data)[0]
+                    if "revert_msg" not in subcall and "dev" in pc:
+                        subcall["revert_msg"] = pc["dev"]
 
             if "path" not in pc:
                 continue
@@ -927,6 +960,7 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
             full_fn_name = contract._name
         last_map.update(
             contract=contract,
+            function=contract.get_method_object(sig),
             name=contract._name,
             internal_calls=[full_fn_name],
             path_map=contract._build.get("allSourcePaths"),
