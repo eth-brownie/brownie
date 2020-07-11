@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Optional
+from typing import Optional, Sequence, Union
 
 from brownie.utils.color import Color
 
@@ -7,13 +7,18 @@ color = Color()
 
 
 def build_tree(
-    tree_dict: OrderedDict, multiline_pad: int = 1, _indent_data: Optional[list] = None,
+    tree_dict: Union[OrderedDict, Sequence],
+    multiline_pad: int = 1,
+    _indent_data: Optional[list] = None,
 ) -> str:
     """
     Build a tree graph from a nested OrderedDict.
 
-    Each dictionary key is a value to be added to the tree. It's value must also
-    be an OrderedDict, containing keys to be placed beneath it within the tree.
+    Each dictionary key is a value to be added to the tree. The value may be:
+
+    * an OrderedDict, containing keys to be placed beneath it within the tree
+    * a List, for keys beneath it in the node when none also have their own sub-nodes
+    * None, when the key has no subnode
 
     For keys that contain a new line, all lines beyond the first are indented. It
     is possible to create complex trees that contain subtrees, by using the tree_str
@@ -24,7 +29,8 @@ def build_tree(
     tree_dict : OrderedDict
         OrderedDict to be turned into a tree.
     multiline_pad : int, optional
-        Number of empty lines to leave after a tree value spanning multiple lines.
+        Number of padding lines to leave befor and after a tree value that spans
+        multiple lines.
     _indent_data
         Internal list to handle indentation during recursive calls. The initial
         call to this function should always leave this value as `None`.
@@ -38,6 +44,7 @@ def build_tree(
     if _indent_data is None:
         _indent_data = []
 
+    was_padded = False
     for i, key in enumerate(tree_dict):
         is_last_item = bool(i < len(tree_dict) - 1)
 
@@ -50,17 +57,23 @@ def build_tree(
             indent = f"{indent}{symbol}\u2500\u2500 "
 
         lines = key.split("\n")
+        if len(lines) > 1 and not was_padded:
+            for i in range(multiline_pad):
+                tree_str = f"{tree_str}{indent[:-4]}\u2502   \n"
+
         tree_str = f"{tree_str}{indent}{color}{lines[0]}\n"
+        was_padded = False
 
         if len(lines) > 1:
             # handle multiline keys
             symbol = "\u2502" if is_last_item else " "
-            symbol2 = "\u2502" if tree_dict[key] else " "
+            symbol2 = "\u2502" if (isinstance(tree_dict, dict) and tree_dict[key]) else " "
             indent = f"{indent[:-4]}{symbol}   {symbol2}   "
             for line in lines[1:] + ([""] * multiline_pad):
                 tree_str = f"{tree_str}{color('dark white')}{indent}{color}{line}\n"
+            was_padded = True
 
-        if tree_dict[key]:
+        if isinstance(tree_dict, dict) and tree_dict[key]:
             # create nested tree
             nested_tree = build_tree(tree_dict[key], multiline_pad, _indent_data + [is_last_item])
             tree_str = f"{tree_str}{nested_tree}"
