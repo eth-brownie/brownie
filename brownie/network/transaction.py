@@ -770,14 +770,20 @@ class TransactionReceipt:
     def call_trace(self, expand: bool = False) -> None:
         """
         Display the complete sequence of contracts and methods called during
-        the transaction, and the range of trace step indexes for each method.
+        the transaction. The format:
 
-        Lines highlighed in red ended with a revert.
+        Contract.functionName  [instruction]  start:stop  [gas used]
+
+        * start:stop are index values for the `trace` member of this object,
+          showing the points where the call begins and ends
+        * for calls that include subcalls, gas use is displayed as
+          [gas used in this frame / gas used in this frame + subcalls]
+        * Calls displayed in red ended with a `REVERT` or `INVALID` instruction.
 
         Arguments
         ---------
         expand : bool
-            If `True`, show an expanded trace including call inputs and return values
+            If `True`, show an expanded call trace including inputs and return values
         """
 
         trace = self.trace
