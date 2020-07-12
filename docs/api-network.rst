@@ -1079,6 +1079,15 @@ ContractTx Methods
         >>> Token[0].transfer.call(accounts[2], 10000, {'from': accounts[0]})
         True
 
+.. py:classmethod:: ContractTx.decode_input(hexstr)
+
+    Decodes hexstring input data for this method.
+
+    .. code-block:: python
+
+        >>>  Token[0].transfer.decode_input("0xa9059cbb0000000000000000000000000d36bdba474b5b442310a5bfb989903020249bba00000000000000000000000000000000000000000000000000000000000003e8")
+        ("0xd36bdba474b5b442310a5bfb989903020249bba", 1000)
+
 .. py:classmethod:: ContractTx.decode_output(hexstr)
 
     Decodes raw hexstring data returned by this method.
@@ -2018,6 +2027,44 @@ TransactionReceipt Attributes
         >>> tx.return_value
         True
 
+.. py:attribute:: TransactionReceipt.subcalls
+
+    A list of dictionaries providing information about subcalls that occured during the transaction.
+
+    The following fields are always included:
+
+    * ``from``: Address where the call originated
+    * ``to``: Address being called
+    * ``op``: Instruction used to make the call
+
+    The following fields are included when the source code for ``to`` is known:
+
+    * ``function``: Signature of the function being called
+    * ``inputs``: Dictionary of decoded input arguments in the call
+
+    One of the following fields is included, depending on how the call ends:
+
+    * ``return_value``: A tuple of decoded return values, if the call ended with ``RETURN``
+    * ``revert_msg``: The given error message, if the call ended in a ``REVERT`` or ``INVALID`` instruction
+    * ``selfdestruct``: Set to ``True`` if the call ended in a ``SELFDESTRUCT`` instruction
+
+    .. code-block:: python
+
+        >>> history[-1].subcalls
+        [
+            {
+                'from': "0x5AE569698C5F986665018B6e1d92A71be71DEF9a",
+                'function': "get_period_timestamp(int128)",
+                'inputs': {
+                    'p': 0
+                },
+                'op': "STATICCALL",
+                'return_value': (1594574319,),
+                'to': "0x0C41Fc429cC21BC3c826efB3963929AEdf1DBb8e"
+            },
+        ...
+
+
 .. py:attribute:: TransactionReceipt.sender
 
     The address the transaction was sent from. Where possible, this will be an Account instance instead of a string.
@@ -2153,23 +2200,57 @@ TransactionReceipt Methods
               to: 0x31d504908351d2d87f3d6111f491f0b52757b592
               value: 100
 
-.. py:classmethod:: TransactionReceipt.call_trace()
+.. py:classmethod:: TransactionReceipt.call_trace(expand=False)
 
-    Returns the sequence of contracts and functions called while executing this transaction, and the step indexes where each new method is entered and exitted. Any functions that terminated with ``REVERT`` or ``INVALID`` opcodes are highlighted in red.
+    Display the complete sequence of contracts and functions called while execiting this transaction.
+
+    Each line is formatted as:
+
+    ::
+
+        ContractName.functionName  (external call opcode)  start:stop  [internal / total gas used]
+
+
+    * ``start``:``stop`` are index values for the :func:`TransactionReceipt.trace <TransactionReceipt.trace>`, showing where the call begins and ends
+    * for calls that include subcalls, gas use is displayed as ``[gas used in this frame / gas used in this frame + subcalls]``
+    * Calls that terminate with a ``REVERT`` or ``INVALID`` instruction are highlighted in red
 
     .. code-block:: python
 
-        >>> tx = Token[0].transferFrom(accounts[2], accounts[3], "10000 ether")
-
-        Transaction sent: 0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753
-        Token.transferFrom confirmed (reverted) - block: 4   gas used: 25425 (26.42%)
-
         >>> tx.call_trace()
-        Call trace for '0x0d96e8ceb555616fca79dd9d07971a9148295777bb767f9aa5b34ede483c9753':
-        Token.transfer 0:244  (0x4A32104371b05837F2A36dF6D850FA33A92a178D)
-        └─Token.transfer 72:226
-          ├─SafeMath.sub 100:114
-          └─SafeMath.add 149:165
+        Call trace for '0x7824c6032966ca2349d6a14ec3174d48d546d0fb3020a71b08e50c7b31c1bcb1':
+        Initial call cost  [21228 gas]
+        LiquidityGauge.deposit  0:3103  [64010 / 128030 gas]
+        ├── LiquidityGauge._checkpoint  83:1826  [-6420 / 7698 gas]
+        │   ├── GaugeController.get_period_timestamp  [STATICCALL]  119:384  [2511 gas]
+        │   ├── ERC20CRV.start_epoch_time_write  [CALL]  411:499  [1832 gas]
+        │   ├── GaugeController.gauge_relative_weight_write  [CALL]  529:1017  [3178 / 7190 gas]
+        │   │   └── GaugeController.change_epoch  697:953  [2180 / 4012 gas]
+        │   │       └── ERC20CRV.start_epoch_time_write  [CALL]  718:806  [1832 gas]
+        │   └── GaugeController.period  [STATICCALL]  1043:1336  [2585 gas]
+        ├── LiquidityGauge._update_liquidity_limit  1929:2950  [45242 / 54376 gas]
+        │   ├── VotingEscrow.balanceOf  [STATICCALL]  1957:2154  [2268 gas]
+        │   └── VotingEscrow.totalSupply  [STATICCALL]  2180:2768  [6029 / 6866 gas]
+        │       └── VotingEscrow.supply_at  2493:2748  [837 gas]
+        └── ERC20LP.transferFrom  [CALL]  2985:3098  [1946 gas]
+
+    Setting ``expand=True`` displays an expanded call trace that also includes function inputs and return values for all external calls.
+
+    .. code-block:: python
+
+        >>> history[-1].call_trace(True)
+
+        Call trace for '0x7824c6032966ca2349d6a14ec3174d48d546d0fb3020a71b08e50c7b31c1bcb1':
+        Initial call cost  [21228 gas]
+        LiquidityGauge.deposit  0:3103  [64010 / 128030 gas]
+        ├── LiquidityGauge._checkpoint  83:1826  [-6420 / 7698 gas]
+        │   │
+        │   ├── GaugeController.get_period_timestamp  [STATICCALL]  119:384  [2511 gas]
+        │   │       ├── address: 0x0C41Fc429cC21BC3c826efB3963929AEdf1DBb8e
+        │   │       ├── input arguments:
+        │   │       │   └── p: 0
+        │   │       └── return value: 1594574319
+        ...
 
 .. py:classmethod:: TransactionReceipt.traceback()
 

@@ -41,6 +41,16 @@ To view human-readable information on a transaction, call the :func:`Transaction
 
 .. _event-data:
 
+Accessing Transaction History
+=============================
+
+The :func:`TxHistory <brownie.network.state.TxHistory>` container, available as ``history``, holds all the transactions that have been broadcasted. You can use it to access :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` objects if you did not assign them a unique name when making the call.
+
+.. code-block:: python
+
+    >>> history
+    [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>, <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>]
+
 Event Data
 ==========
 
@@ -231,56 +241,93 @@ Each step in the trace includes the following data:
 Call Traces
 -----------
 
-When dealing with complex transactions the trace can be may thousands of steps long - it can be challenging to know where to begin when examining it. Brownie provides the :func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` method to view a complete map of every jump that occured in the transaction, along with associated trace indexes and gas usage:
+When dealing with complex transactions the trace can be may thousands of steps long - it can be challenging to know where to begin examining it. Brownie provides the :func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` method to view a complete map of every jump that occured in the transaction:
 
 .. code-block:: python
 
     >>> tx.call_trace()
-    Call trace for '0x7f618202ef31ab6927824caa3d338abe192fc6eb062dac1ee195d186a8a188f0':
-    Initial call cost  [21368 gas]
-    LgtHelper.burnAndFree 0:4126  [1263 / 148049 gas]  (0xe7CB1c67752cBb975a56815Af242ce2Ce63d3113)
-    ├─LgtHelper.burnGas 68:3083  [200081 gas]
-    └─LiquidGasToken.freeFrom 3137:4080  [2312 / -53295 gas]  (0x00000000007475142d6329FC42Dc9684c9bE6cD0)
-      ├─ERC20PointerSupply.allowance 3228:3264  [986 gas]
-      ├─ERC20PointerSupply.balanceOf 3275:3296  [902 gas]
-      ├─LiquidGasToken._destroyContracts 3307:3728  [687 / -52606 gas]
-      │ ├─ERC20PointerSupply.totalBurned 3312:3317  [815 gas]
-      │ ├─LiquidGasToken.computeAddress2 3352:3413  [245 gas]
-      │ ├─<UnknownContract>.0x00000000 3434:3441  [-18278 gas]  (0x5E77b3934E758eDfC7baCAbD84c6c91295d5eF15)
-      │ ├─LiquidGasToken.computeAddress2 3477:3538  [242 gas]
-      │ ├─<UnknownContract>.0x00000000 3559:3566  [-18278 gas]  (0x88d97e2fD96a170F57c5c5AD636Ab8a8de3Ec776)
-      │ ├─LiquidGasToken.computeAddress2 3602:3663  [239 gas]
-      │ └─<UnknownContract>.0x00 3684:3691  [-18278 gas]  (0xb1fC7df83B2b966a3E988679e1504036B18A7f42)
-      ├─ERC20PointerSupply._burnFrom 3734:3892  [-4148 / -12023 gas]
-      │ └─ERC20PointerSupply._unassign 3747:3886  [-8067 / -7875 gas]
-      │   ├─SafeMath.sub 3792:3809  [56 gas]
-      │   └─SafeMath.sub 3838:3879  [136 gas]
-      ├─SafeMath.sub 3950:3967  [56 gas]
-      └─ERC20PointerSupply._approve 3970:4049  [7078 gas]
+    Call trace for '0x7824c6032966ca2349d6a14ec3174d48d546d0fb3020a71b08e50c7b31c1bcb1':
+    Initial call cost  [21228 gas]
+    LiquidityGauge.deposit  0:3103  [64010 / 128030 gas]
+    ├── LiquidityGauge._checkpoint  83:1826  [-6420 / 7698 gas]
+    │   ├── GaugeController.get_period_timestamp  [STATICCALL]  119:384  [2511 gas]
+    │   ├── ERC20CRV.start_epoch_time_write  [CALL]  411:499  [1832 gas]
+    │   ├── GaugeController.gauge_relative_weight_write  [CALL]  529:1017  [3178 / 7190 gas]
+    │   │   └── GaugeController.change_epoch  697:953  [2180 / 4012 gas]
+    │   │       └── ERC20CRV.start_epoch_time_write  [CALL]  718:806  [1832 gas]
+    │   └── GaugeController.period  [STATICCALL]  1043:1336  [2585 gas]
+    ├── LiquidityGauge._update_liquidity_limit  1929:2950  [45242 / 54376 gas]
+    │   ├── VotingEscrow.balanceOf  [STATICCALL]  1957:2154  [2268 gas]
+    │   └── VotingEscrow.totalSupply  [STATICCALL]  2180:2768  [6029 / 6866 gas]
+    │       └── VotingEscrow.supply_at  2493:2748  [837 gas]
+    └── ERC20LP.transferFrom  [CALL]  2985:3098  [1946 gas]
 
 Each line shows the following information:
 
 ::
 
-    ContractName.functionName start:stop [internal / total gas used] (address of an external call)
+    ContractName.functionName (external call opcode) start:stop [internal / total gas used]
 
+Where ``start`` and ``stop`` are the indexes of :func:`TransactionReceipt.trace <TransactionReceipt.trace>` where the function was entered and exited. :func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` provides an initial high level overview of the transaction execution path, which helps you to examine the individual trace steps in a more targetted manner and determine where things went wrong in a complex transaction.
 
-Where ``start`` and ``stop`` are the indexes of :func:`TransactionReceipt.trace <TransactionReceipt.trace>` where the function was entered and exited.
+Functions that terminated with ``REVERT`` or ``INVALID`` opcodes are highlighted in red.
 
-For functions with no further calls, the used gas is shown. Otherwise, the first gas number is the amount of gas used internally by this function and the second number is the total gas used by the function including all sub-calls.
-Gas refunds from deleting storage or contracts is shown as negative gas used. Note that overwriting an existing zero-value with another zero-value will incorrectly display a gas refund.
+For functions with no subcalls, the used gas is shown. Otherwise, the first gas number is the amount of gas used internally by this function and the second number is the total gas used by the function including all sub-calls. Gas refunds from deleting storage or contracts are shown as negative gas used. Note that overwriting an existing zero-value with another zero-value will incorrectly display a gas refund.
 
-If an address is also shown, it means the function was entered via an external jump. Functions that terminated with ``REVERT`` or ``INVALID`` opcodes are highlighted in red.
-
-:func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` provides an initial high level overview of the transaction execution path, which helps you to examine the individual trace steps in a more targetted manner and can help profile a transaction for gas usage.
-
-Accessing Transaction History
-=============================
-
-The :func:`TxHistory <brownie.network.state.TxHistory>` container, available as ``history``, holds all the transactions that have been broadcasted. You can use it to access :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` objects if you did not assign them a unique name when making the call.
+Calling :func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` with ``True`` as an argument provides an expanded view:
 
 .. code-block:: python
 
-    >>> history
-    [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>, <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>]
+    >>> history[-1].call_trace(True)
 
+    Call trace for '0x7824c6032966ca2349d6a14ec3174d48d546d0fb3020a71b08e50c7b31c1bcb1':
+    Initial call cost  [21228 gas]
+    LiquidityGauge.deposit  0:3103  [64010 / 128030 gas]
+    ├── LiquidityGauge._checkpoint  83:1826  [-6420 / 7698 gas]
+    │   │
+    │   ├── GaugeController.get_period_timestamp  [STATICCALL]  119:384  [2511 gas]
+    │   │       ├── address: 0x0C41Fc429cC21BC3c826efB3963929AEdf1DBb8e
+    │   │       ├── input arguments:
+    │   │       │   └── p: 0
+    │   │       └── return value: 1594574319
+    ...
+
+The expanded trace includes information about external subcalls, including:
+
+* the target address
+* the amount of ether transferred
+* input arguments
+* return values
+
+For calls that revert, the revert reason is given in place of the return value:
+
+.. code-block:: python
+
+    >>> history[-1].call_trace(True)
+    ...
+    └── ERC20LP.transferFrom  [CALL]  2985:3098  [1946 gas]
+            ├── address: 0xd495633B90a237de510B4375c442C0469D3C161C
+            ├── value: 0
+            ├── input arguments:
+            │   ├── _from: 0x9EC9431CCCCD2C73F0A2F68DC69A4A527AB5D809
+            │   ├── _to: 0x5AE569698C5F986665018B6E1D92A71BE71DEF9A
+            │   └── _value: 100000
+            └── revert reason: Integer underflow
+
+You can also access this information programmatically via the :func:`TransactionReceipt.subcalls <TransactionReceipt.subcalls>` attribute:
+
+.. code-block:: python
+
+    >>> history[-1].subcalls
+    [
+        {
+            'from': "0x5AE569698C5F986665018B6e1d92A71be71DEF9a",
+            'function': "get_period_timestamp(int128)",
+            'inputs': {
+                'p': 0
+            },
+            'op': "STATICCALL",
+            'return_value': (1594574319,),
+            'to': "0x0C41Fc429cC21BC3c826efB3963929AEdf1DBb8e"
+        },
+    ...
