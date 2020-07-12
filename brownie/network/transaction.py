@@ -601,7 +601,8 @@ class TransactionReceipt:
                 source=False,
             )
 
-            if trace[i]["op"] == "CALL" and int(trace[i]["stack"][-3], 16):
+            opcode = trace[i]["op"]
+            if opcode == "CALL" and int(trace[i]["stack"][-3], 16):
                 self._add_internal_xfer(
                     last["address"], trace[i]["stack"][-2][-40:], trace[i]["stack"][-3]
                 )
@@ -610,12 +611,12 @@ class TransactionReceipt:
                 continue
             pc = last["pc_map"][trace[i]["pc"]]
 
-            if trace[i]["depth"] and trace[i]["op"] in ("RETURN", "REVERT", "INVALID"):
+            if trace[i]["depth"] and opcode in ("RETURN", "REVERT", "INVALID", "SELFDESTRUCT"):
                 subcall: dict = next(
                     i for i in self._subcalls[::-1] if i["to"] == last["address"]  # type: ignore
                 )
 
-                if trace[i]["op"] == "RETURN":
+                if opcode == "RETURN":
                     data = _get_memory(trace[i], -1)
                     subcall["return_value"] = None
                     if data:
@@ -624,8 +625,10 @@ class TransactionReceipt:
                         if len(fn.abi["outputs"]) == 1:
                             return_values = (return_values,)
                         subcall["return_value"] = return_values
+                elif opcode == "SELFDESTRUCT":
+                    subcall["selfdestruct"] = True
                 else:
-                    if trace[i]["op"] == "REVERT":
+                    if opcode == "REVERT":
                         data = _get_memory(trace[i], -1)
                         if data:
                             subcall["revert_msg"] = decode_abi(["string"], data)[0]
@@ -971,16 +974,23 @@ def _step_internal(
         contract_color = color("bright cyan") if not step["jumpDepth"] else color()
     key = f"{color('dark white')}{contract_color}{step['fn']}  {color('dark white')}"
 
+    left_bracket = f"{color('dark white')}["
+    right_bracket = f"{color('dark white')}]"
+
     if subcall:
-        key = f"{key}[{color}{subcall['op']}{color('dark white')}]  "
+        key = f"{key}[{color}{subcall['op']}{right_bracket}  "
 
     key = f"{key}{start}:{stop}{color}"
 
     if gas:
         if gas[0] == gas[1]:
-            key = f"{key}  [{color('bright yellow')}{gas[0]} gas{color}]"
+            gas_str = f"{color('bright yellow')}{gas[0]} gas"
         else:
-            key = f"{key}  [{color('bright yellow')}{gas[0]} / {gas[1]} gas{color}]"
+            gas_str = f"{color('bright yellow')}{gas[0]} / {gas[1]} gas"
+        key = f"{key}  {left_bracket}{gas_str}{right_bracket}"
+
+    if last_step["op"] == "SELFDESTRUCT":
+        key = f"{key}  {left_bracket}{color('bright red')}SELFDESTRUCT{right_bracket}"
 
     return key
 
