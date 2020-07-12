@@ -892,6 +892,7 @@ class _ContractMethod:
         self.abi = abi
         self._owner = owner
         self.signature = build_function_selector(abi)
+        self._input_sig = build_function_signature(abi)
         self.natspec = natspec or {}
 
     def __repr__(self) -> str:

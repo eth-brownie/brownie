@@ -576,11 +576,14 @@ class TransactionReceipt:
                 self._subcalls.append(
                     {"from": step["address"], "to": EthAddress(address), "op": step["op"]}
                 )
+                if step["op"] in ("CALL", "CALLCODE"):
+                    self._subcalls[-1]["value"] = int(step["stack"][-3], 16)
                 if calldata and last_map[trace[i]["depth"]]["contract"]:
                     fn = last_map[trace[i]["depth"]]["function"]
                     zip_ = zip(fn.abi["inputs"], fn.decode_input(calldata))
                     self._subcalls[-1].update(
                         inputs={i[0]["name"]: i[1] for i in zip_},  # type:ignore
+                        function=fn._input_sig,
                     )
                 elif calldata:
                     self._subcalls[-1]["calldata"] = calldata
@@ -993,6 +996,11 @@ def _step_external(
     result: OrderedDict = OrderedDict({key: {}})
     result[key][f"address: {step['address']}"] = None
 
+    if "value" in subcall:
+        result[key][f"value: {subcall['value']}"] = None
+
+    if "inputs" not in subcall:
+        result[key][f"calldata: {subcall['calldata']}"] = None
     if subcall["inputs"]:
         result[key]["input arguments:"] = [f"{k}: {v}" for k, v in subcall["inputs"].items()]
     else:
