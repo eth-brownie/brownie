@@ -21,6 +21,7 @@ Arguments:
 
 Options:
   --network [name]        Use a specific network (default {CONFIG.settings['networks']['default']})
+  --silent                Suppress console output for transactions
   --interactive -I        Open an interactive console if the script fails
   --gas -g                Display gas profile for function calls
   --tb -t                 Show entire python traceback on exceptions
