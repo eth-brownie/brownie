@@ -49,6 +49,11 @@ def pytest_addoption(parser):
             nargs=1,
             help=f"Use a specific network (default {CONFIG.settings['networks']['default']})",
         )
+        parser.addoption(
+            "--showinternal",
+            action="store_true",
+            help="Include Brownie internal frames in tracebacks",
+        )
 
 
 def pytest_configure(config):
@@ -63,15 +68,16 @@ def pytest_configure(config):
             print(f"{color.format_tb(e)}\n")
             raise pytest.UsageError("Unable to load project")
 
-        # do not include brownie internals in tracebacks
-        base_path = Path(sys.modules["brownie"].__file__).parent.as_posix()
-        for module in [
-            v
-            for v in sys.modules.values()
-            if getattr(v, "__file__", None) and v.__file__.startswith(base_path)
-        ]:
-            module.__tracebackhide__ = True
-            module.__hypothesistracebackhide__ = True
+        if not config.getoption("showinternal"):
+            # do not include brownie internals in tracebacks
+            base_path = Path(sys.modules["brownie"].__file__).parent.as_posix()
+            for module in [
+                v
+                for v in sys.modules.values()
+                if getattr(v, "__file__", None) and v.__file__.startswith(base_path)
+            ]:
+                module.__tracebackhide__ = True
+                module.__hypothesistracebackhide__ = True
 
         # enable verbose output if stdout capture is disabled
         if config.getoption("capture") == "no":
