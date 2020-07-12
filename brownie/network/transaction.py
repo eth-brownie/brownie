@@ -96,7 +96,7 @@ class TransactionReceipt:
         self,
         txid: Union[str, bytes],
         sender: Any = None,
-        silent: bool = True,
+        silent: bool = None,
         required_confs: int = 1,
         name: str = "",
         revert_data: Optional[Tuple] = None,
@@ -107,14 +107,17 @@ class TransactionReceipt:
             txid: hexstring transaction ID
             sender: sender as a hex string or Account object
             required_confs: the number of required confirmations before processing the receipt
-            silent: toggles console verbosity
+            silent: toggles console verbosity (default True)
             name: contract function being called
             revert_data: (revert string, program counter, revert type)
         """
-
-        self._silent = silent
-        if CONFIG.mode == "test":
+        if silent is None and (CONFIG.mode == "test" or CONFIG.argv["silent"]):
             self._silent = True
+        else:
+            if silent is None:
+                silent = True
+            self._silent = silent
+
         if isinstance(txid, bytes):
             txid = txid.hex()
         if not self._silent:
