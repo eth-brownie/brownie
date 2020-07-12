@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import functools
 import sys
 import threading
 import time
@@ -54,6 +55,7 @@ def trace_inspection(fn: Callable) -> Any:
             return None
         return fn(self, *args, **kwargs)
 
+    functools.update_wrapper(wrapper, fn)
     return wrapper
 
 
