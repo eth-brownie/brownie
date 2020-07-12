@@ -137,6 +137,7 @@ class TransactionReceipt:
         self._modified_state = None
         self._new_contracts = None
         self._internal_transfers = None
+        self._subcalls: Optional[List[Dict]] = None
         self._confirmed = threading.Event()
 
         # attributes that cannot be set until the tx confirms
@@ -226,6 +227,12 @@ class TransactionReceipt:
         elif self.contract_address and self._revert_msg == "out of gas":
             self._get_trace()
         return self._revert_msg
+
+    @trace_property
+    def subcalls(self) -> Optional[List]:
+        if self._subcalls is None:
+            self._expand_trace()
+        return self._subcalls
 
     @trace_property
     def trace(self) -> Optional[List]:
@@ -434,7 +441,7 @@ class TransactionReceipt:
             return
 
         if isinstance(trace[0]["gas"], str):
-            # handle traces where numeric values are returned as nex (Nethermind)
+            # handle traces where numeric values are returned as hex (Nethermind)
             for step in trace:
                 step["gas"] = int(step["gas"], 16)
                 step["gasCost"] = int.from_bytes(HexBytes(step["gasCost"]), "big", signed=True)
@@ -518,6 +525,7 @@ class TransactionReceipt:
         self._trace = trace = self._raw_trace
         self._new_contracts = []
         self._internal_transfers = []
+        self._subcalls = []
         if self.contract_address or not trace:
             coverage._add_transaction(self.coverage_hash, {})
             return
@@ -540,7 +548,6 @@ class TransactionReceipt:
         last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
         coverage_eval: Dict = {last_map[0]["name"]: {}}
 
-        self.subcalls: List[Dict[str, Any]] = []
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
             if trace[i]["depth"] > trace[i - 1]["depth"]:
@@ -566,15 +573,17 @@ class TransactionReceipt:
                 last_map[trace[i]["depth"]] = _get_last_map(address, sig)
                 coverage_eval.setdefault(last_map[trace[i]["depth"]]["name"], {})
 
-                self.subcalls.append(
+                self._subcalls.append(
                     {"from": step["address"], "to": EthAddress(address), "op": step["op"]}
                 )
                 if calldata and last_map[trace[i]["depth"]]["contract"]:
                     fn = last_map[trace[i]["depth"]]["function"]
                     zip_ = zip(fn.abi["inputs"], fn.decode_input(calldata))
-                    self.subcalls[-1]["inputs"] = {i[0]["name"]: i[1] for i in zip_}  # type: ignore
+                    self._subcalls[-1].update(
+                        inputs={i[0]["name"]: i[1] for i in zip_},  # type:ignore
+                    )
                 elif calldata:
-                    self.subcalls[-1]["calldata"] = calldata
+                    self._subcalls[-1]["calldata"] = calldata
 
             # update trace from last_map
             last = last_map[trace[i]["depth"]]
@@ -595,22 +604,19 @@ class TransactionReceipt:
                 continue
             pc = last["pc_map"][trace[i]["pc"]]
 
-            if trace[i]["depth"]:
+            if trace[i]["depth"] and trace[i]["op"] in ("RETURN", "REVERT", "INVALID"):
+                subcall: dict = next(
+                    i for i in self._subcalls[::-1] if i["to"] == last["address"]  # type: ignore
+                )
+
                 if trace[i]["op"] == "RETURN":
-                    subcall: dict = next(
-                        i for i in self.subcalls[::-1] if i["to"] == last["address"]  # type: ignore
-                    )
                     data = _get_memory(trace[i], -1)
                     subcall["return_value"] = None
                     if data:
                         fn = last["function"]
                         return_values = fn.decode_output(data)
                         subcall["return_value"] = return_values
-
-                elif trace[i]["op"] in ("REVERT", "INVALID"):
-                    subcall = next(
-                        i for i in self.subcalls[::-1] if i["to"] == last["address"]  # type: ignore
-                    )
+                else:
                     if trace[i]["op"] == "REVERT":
                         data = _get_memory(trace[i], -1)
                         if data:
