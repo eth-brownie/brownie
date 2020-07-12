@@ -8,6 +8,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
+import black
 import requests
 from eth_abi import decode_abi
 from hexbytes import HexBytes
@@ -618,6 +619,8 @@ class TransactionReceipt:
                     if data:
                         fn = last["function"]
                         return_values = fn.decode_output(data)
+                        if len(fn.abi["outputs"]) == 1:
+                            return_values = (return_values,)
                         subcall["return_value"] = return_values
                 else:
                     if trace[i]["op"] == "REVERT":
@@ -993,6 +996,7 @@ def _step_external(
     if not expand:
         return key
 
+    mode = black.FileMode(line_length=60)
     result: OrderedDict = OrderedDict({key: {}})
     result[key][f"address: {step['address']}"] = None
 
@@ -1002,19 +1006,26 @@ def _step_external(
     if "inputs" not in subcall:
         result[key][f"calldata: {subcall['calldata']}"] = None
     if subcall["inputs"]:
-        result[key]["input arguments:"] = [f"{k}: {v}" for k, v in subcall["inputs"].items()]
+        result[key]["input arguments:"] = [
+            f"{k}: {black.format_str(str(v), mode=mode)}" for k, v in subcall["inputs"].items()
+        ]
     else:
         result[key]["input arguments: None"] = None
 
     if "return_value" in subcall:
-        if isinstance(subcall["return_value"], tuple):
-            result[key]["return values:"] = subcall["return_value"]
+        value = subcall["return_value"]
+        if isinstance(value, tuple) and len(value) > 1:
+            result[key]["return values:"] = [black.format_str(str(i), mode=mode) for i in value]
         else:
-            result[key][f"return value: {subcall['return_value']}"] = None
+            if isinstance(value, tuple):
+                value = value[0]
+            value_str = black.format_str(str(value), mode=mode)
+            result[key][f"return value: {value_str}"] = None
+
     if "revert_msg" in subcall:
         result[key][f"revert reason: {color('bright red')}{subcall['revert_msg']}{color}"] = None
 
-    return build_tree(result).rstrip()
+    return build_tree(result, multiline_pad=0).rstrip()
 
 
 def _get_memory(step: Dict, idx: int) -> HexBytes:

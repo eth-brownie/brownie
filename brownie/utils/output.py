@@ -56,7 +56,7 @@ def build_tree(
             symbol = "\u251c" if is_last_item else "\u2514"
             indent = f"{indent}{symbol}\u2500\u2500 "
 
-        lines = key.split("\n")
+        lines = [i for i in key.split("\n") if i]
         if len(lines) > 1 and not was_padded:
             for i in range(multiline_pad):
                 tree_str = f"{tree_str}{indent[:-4]}\u2502   \n"
