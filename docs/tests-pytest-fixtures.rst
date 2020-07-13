@@ -34,6 +34,21 @@ These fixtures provide quick access to Brownie objects that are frequently used 
         def test_account_balance(a):
             assert a[0].balance() == "100 ether"
 
+.. py:attribute:: chain
+
+    Yields an :func:`Chain <brownie.network.state.Chain>` object, used to access block data and interact with the local test chain.
+
+    .. code-block:: python
+        :linenos:
+
+        def test_account_balance(accounts, chain):
+            balance = accounts[1].balance()
+            accounts[0].transfer(accounts[1], "10 ether")
+            assert accounts[1].balance() == balance + "10 ether"
+
+            chain.reset()
+            assert accounts[1].balance() == balance
+
 .. py:attribute:: Contract
 
     Yields the :func:`Contract <brownie.network.contract.Contract>` class, used to interact with contracts outside of the active project.
@@ -78,22 +93,6 @@ These fixtures provide quick access to Brownie objects that are frequently used 
         def compound(pm, accounts):
             ctoken = pm('defi.snakecharmers.eth/compound@1.1.0').CToken
             yield ctoken.deploy({'from': accounts[0]})
-
-
-.. py:attribute:: rpc
-
-    Yields an :func:`Rpc <brownie.network.rpc.Rpc>` object, used for interacting with the local test chain.
-
-    .. code-block:: python
-        :linenos:
-
-        def test_account_balance(accounts, rpc):
-            balance = accounts[1].balance()
-            accounts[0].transfer(accounts[1], "10 ether")
-            assert accounts[1].balance() == balance + "10 ether"
-
-            rpc.reset()
-            assert accounts[1].balance() == balance
 
 .. py:attribute:: state_machine
 
