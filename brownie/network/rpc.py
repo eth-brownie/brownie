@@ -6,7 +6,7 @@ import sys
 import time
 import warnings
 from subprocess import DEVNULL, PIPE
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 import psutil
@@ -43,6 +43,18 @@ CLI_FLAGS = {
 
 EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
 EVM_DEFAULT = "istanbul"
+
+
+def rpc_deprecation(fn: Callable) -> Callable:
+    def wrapped(*args: Any, **kwargs: Any) -> Callable:
+        warnings.warn(
+            f"rpc.{fn.__name__} has been deprecated, use chain.{fn.__name__} instead",
+            FutureWarning,
+            stacklevel=2,
+        )
+        return fn(*args, **kwargs)
+
+    return wrapped
 
 
 class Rpc(metaclass=_Singleton):
@@ -207,6 +219,38 @@ class Rpc(metaclass=_Singleton):
             )
         except ValueError:
             raise ValueError(f"Unknown EVM version: '{version}'") from None
+
+    @rpc_deprecation
+    def undo(self, num: int = 1) -> int:
+        return chain.undo(num)
+
+    @rpc_deprecation
+    def redo(self, num: int = 1) -> int:
+        return chain.redo(num)
+
+    @rpc_deprecation
+    def time(self) -> int:
+        return chain.time()
+
+    @rpc_deprecation
+    def sleep(self, seconds: int) -> None:
+        return chain.sleep(seconds)
+
+    @rpc_deprecation
+    def mine(self, blocks: int = 1) -> int:
+        return chain.mine(blocks)
+
+    @rpc_deprecation
+    def snapshot(self) -> None:
+        return chain.snapshot()
+
+    @rpc_deprecation
+    def revert(self) -> int:
+        return chain.revert()
+
+    @rpc_deprecation
+    def reset(self) -> int:
+        return chain.reset()
 
 
 def _check_connections(proc: psutil.Process, laddr: Tuple) -> bool:
