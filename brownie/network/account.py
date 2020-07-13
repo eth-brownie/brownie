@@ -22,8 +22,8 @@ from brownie.exceptions import (
 )
 from brownie.utils import color
 
-from .rpc import Rpc, _revert_register
-from .state import TxHistory
+from .rpc import Rpc
+from .state import Chain, TxHistory, _revert_register
 from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
 
@@ -411,7 +411,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         if rpc.is_active():
             undo_thread = threading.Thread(
-                target=rpc._add_to_undo_buffer,
+                target=Chain()._add_to_undo_buffer,
                 args=(
                     receipt,
                     self.deploy,
@@ -515,7 +515,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             history._add_tx(receipt)
         if rpc.is_active():
             undo_thread = threading.Thread(
-                target=rpc._add_to_undo_buffer,
+                target=Chain()._add_to_undo_buffer,
                 args=(receipt, self.transfer, (to, amount, gas_limit, gas_price, data, None), {}),
                 daemon=True,
             )

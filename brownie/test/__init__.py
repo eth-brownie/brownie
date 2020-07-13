@@ -31,12 +31,12 @@ def given(*given_args, **given_kwargs):
             if first_run:
                 # prior to the first test run, take a snapshot to ensure
                 # consistent chain state for each run
-                network.rpc.snapshot()
+                network.chain.snapshot()
                 first_run = False
             else:
                 # revert at the start of subsequent tests runs so the chain is
                 # not reverted prior to launching the interactive debugger
-                network.rpc.revert()
+                network.chain.revert()
             test(*args, **kwargs)
 
         # hypothesis.given must wrap the target test to correctly

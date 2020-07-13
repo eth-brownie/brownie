@@ -37,10 +37,16 @@ from brownie.project import compiler, ethpm
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
-from . import accounts, rpc
+from . import accounts, chain
 from .event import _add_deployment_topics, _get_topics
-from .rpc import _revert_register
-from .state import _add_contract, _add_deployment, _find_contract, _get_deployment, _remove_contract
+from .state import (
+    _add_contract,
+    _add_deployment,
+    _find_contract,
+    _get_deployment,
+    _remove_contract,
+    _revert_register,
+)
 from .web3 import _resolve_address, web3
 
 _unverified_addresses: Set = set()
@@ -1120,7 +1126,7 @@ class ContractCall(_ContractMethod):
         except Exception:
             pass
 
-        rpc.undo()
+        chain.undo()
         try:
             return self.call(*args)
         except VirtualMachineError as exc:
