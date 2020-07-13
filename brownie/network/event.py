@@ -3,7 +3,7 @@
 import json
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, Iterator, List, Sequence, Tuple, Union, ValuesView
+from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Union, ValuesView
 
 import eth_event
 
@@ -13,7 +13,9 @@ from brownie.exceptions import EventLookupError
 
 
 class EventDict:
-    """Dict/list hybrid container, base class for all events fired in a transaction."""
+    """
+    Dict/list hybrid container, base class for all events fired in a transaction.
+    """
 
     def __init__(self, events: List) -> None:
         """Instantiates the class.
@@ -21,7 +23,12 @@ class EventDict:
         Args:
             events: event data as supplied by eth_event.decode_logs or eth_event.decode_trace"""
         self._ordered = [
-            _EventItem(i["name"], [OrderedDict((x["name"], x["value"]) for x in i["data"])], (pos,))
+            _EventItem(
+                i["name"],
+                i["address"],
+                [OrderedDict((x["name"], x["value"]) for x in i["data"])],
+                (pos,),
+            )
             for pos, i in enumerate(events)
         ]
 
@@ -30,7 +37,7 @@ class EventDict:
             if event.name not in self._dict:
                 events = [i for i in self._ordered if i.name == event.name]
                 self._dict[event.name] = _EventItem(
-                    event.name, events, tuple(i.pos[0] for i in events)
+                    event.name, None, events, tuple(i.pos[0] for i in events)
                 )
 
     def __repr__(self) -> str:
@@ -87,15 +94,24 @@ class EventDict:
 
 
 class _EventItem:
-    """Dict/list hybrid container, represents one or more events with the same name
+    """
+    Dict/list hybrid container, represents one or more events with the same name
     that were fired in a transaction.
 
-    Attributes:
-        name: event name
-        pos: tuple of indexes where this event fired"""
+    Attributes
+    ----------
+    name : str
+        Name of the event.
+    address : str
+        Address where this event fired. When the object represents more than one event,
+        this value is set to `None`.
+    pos : tuple
+        Tuple of indexes where this event fired.
+    """
 
-    def __init__(self, name: str, event_data: List, pos: Tuple) -> None:
+    def __init__(self, name: str, address: Optional[str], event_data: List, pos: Tuple) -> None:
         self.name = name
+        self.address = address
         self._ordered = event_data
         self.pos = pos
 
@@ -215,11 +231,13 @@ def _decode_logs(logs: List) -> Union["EventDict", List[None]]:
     return EventDict(events)
 
 
-def _decode_trace(trace: Sequence) -> Union["EventDict", List[None]]:
+def _decode_trace(trace: Sequence, initial_address: str) -> Union["EventDict", List[None]]:
     if not trace:
         return []
 
-    events = eth_event.decode_traceTransaction(trace, _topics, allow_undecoded=True)
+    events = eth_event.decode_traceTransaction(
+        trace, _topics, allow_undecoded=True, initial_address=initial_address
+    )
     events = [format_event(i) for i in events]
     return EventDict(events)
 
