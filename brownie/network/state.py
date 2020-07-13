@@ -17,6 +17,7 @@ from brownie.exceptions import BrownieEnvironmentError, RPCRequestError
 from brownie.project.build import DEPLOYMENT_KEYS
 from brownie.utils.sql import Cursor
 
+from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
 
 _contract_map: Dict = {}
@@ -49,7 +50,7 @@ class TxHistory(metaclass=_Singleton):
     def __iter__(self) -> Iterator:
         return iter(self._list)
 
-    def __getitem__(self, key: Any) -> Any:
+    def __getitem__(self, key: int) -> TransactionReceipt:
         return self._list[key]
 
     def __len__(self) -> int:
@@ -61,7 +62,7 @@ class TxHistory(metaclass=_Singleton):
     def _revert(self, height: int) -> None:
         self._list = [i for i in self._list if i.block_number <= height]
 
-    def _add_tx(self, tx: Any) -> None:
+    def _add_tx(self, tx: TransactionReceipt) -> None:
         self._list.append(tx)
 
     def clear(self) -> None:
@@ -196,62 +197,18 @@ class Chain(metaclass=_Singleton):
                 self._redo_buffer.clear()
             self._current_id = self._snap()
 
-    def undo(self, num: int = 1) -> int:
-        """
-        Undo one or more transactions.
+    def _network_connected(self) -> None:
+        self._reset_id = None
+        self.reset()
 
-        Arguments
-        ---------
-        num : int, optional
-            Number of transactions to undo.
-
-        Returns
-        -------
-        int
-            Current block height
-        """
-        with self._undo_lock:
-            if num < 1:
-                raise ValueError("num must be greater than zero")
-            if not self._undo_buffer:
-                raise ValueError("Undo buffer is empty")
-            if num > len(self._undo_buffer):
-                raise ValueError(f"Undo buffer contains {len(self._undo_buffer)} items")
-
-            for i in range(num, 0, -1):
-                id_, fn, args, kwargs = self._undo_buffer.pop()
-                self._redo_buffer.append((fn, args, kwargs))
-
-            self._current_id = self._revert(id_)
-            return web3.eth.blockNumber
-
-    def redo(self, num: int = 1) -> int:
-        """
-        Redo one or more undone transactions.
-
-        Arguments
-        ---------
-        num : int, optional
-            Number of transactions to redo.
-
-        Returns
-        -------
-        int
-            Current block height
-        """
-        with self._undo_lock:
-            if num < 1:
-                raise ValueError("num must be greater than zero")
-            if not self._redo_buffer:
-                raise ValueError("Redo buffer is empty")
-            if num > len(self._redo_buffer):
-                raise ValueError(f"Redo buffer contains {len(self._redo_buffer)} items")
-
-            for i in range(num, 0, -1):
-                fn, args, kwargs = self._redo_buffer[-1]
-                fn(*args, **kwargs)
-
-            return web3.eth.blockNumber
+    def _network_disconnected(self) -> None:
+        self._undo_buffer.clear()
+        self._redo_buffer.clear()
+        self._snapshot_id = None
+        self._reset_id = None
+        self._current_id = None
+        self._chainid = None
+        _notify_registry(0)
 
     def time(self) -> int:
         """Return the current epoch time from the test RPC as an int"""
@@ -346,18 +303,62 @@ class Chain(metaclass=_Singleton):
             self._reset_id = self._current_id = self._revert(self._reset_id)
         return web3.eth.blockNumber
 
-    def _network_connected(self) -> None:
-        self._reset_id = None
-        self.reset()
+    def undo(self, num: int = 1) -> int:
+        """
+        Undo one or more transactions.
 
-    def _network_disconnected(self) -> None:
-        self._undo_buffer.clear()
-        self._redo_buffer.clear()
-        self._snapshot_id = None
-        self._reset_id = None
-        self._current_id = None
-        self._chainid = None
-        _notify_registry(0)
+        Arguments
+        ---------
+        num : int, optional
+            Number of transactions to undo.
+
+        Returns
+        -------
+        int
+            Current block height
+        """
+        with self._undo_lock:
+            if num < 1:
+                raise ValueError("num must be greater than zero")
+            if not self._undo_buffer:
+                raise ValueError("Undo buffer is empty")
+            if num > len(self._undo_buffer):
+                raise ValueError(f"Undo buffer contains {len(self._undo_buffer)} items")
+
+            for i in range(num, 0, -1):
+                id_, fn, args, kwargs = self._undo_buffer.pop()
+                self._redo_buffer.append((fn, args, kwargs))
+
+            self._current_id = self._revert(id_)
+            return web3.eth.blockNumber
+
+    def redo(self, num: int = 1) -> int:
+        """
+        Redo one or more undone transactions.
+
+        Arguments
+        ---------
+        num : int, optional
+            Number of transactions to redo.
+
+        Returns
+        -------
+        int
+            Current block height
+        """
+        with self._undo_lock:
+            if num < 1:
+                raise ValueError("num must be greater than zero")
+            if not self._redo_buffer:
+                raise ValueError("Redo buffer is empty")
+            if num > len(self._redo_buffer):
+                raise ValueError(f"Redo buffer contains {len(self._redo_buffer)} items")
+
+            for i in range(num, 0, -1):
+                fn, args, kwargs = self._redo_buffer[-1]
+                fn(*args, **kwargs)
+
+            return web3.eth.blockNumber
 
 
 # objects that will update whenever the RPC is reset or reverted must register
