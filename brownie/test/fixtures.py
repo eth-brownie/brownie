@@ -62,6 +62,11 @@ class PytestBrownieFixtures:
         yield brownie.accounts
 
     @pytest.fixture(scope="session")
+    def chain(self):
+        """Yields a Chain object, used for interacting with the blockchain."""
+        yield brownie.rpc
+
+    @pytest.fixture(scope="session")
     def Contract(self):
         """Yields the Contract class, used to interact with deployments outside of a project."""
         yield brownie.Contract
@@ -77,7 +82,7 @@ class PytestBrownieFixtures:
 
     @pytest.fixture(scope="session")
     def rpc(self):
-        """Yields an Rpc object, used for interacting with the local test chain."""
+        """Yields an Rpc object, used for interacting with the local RPC client."""
         yield brownie.rpc
 
     @pytest.fixture(scope="session")
