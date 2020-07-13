@@ -241,11 +241,11 @@ def plugintester(_project_factory, plugintesterbase, request):
 
 # launches and connects to ganache, yields the brownie.network module
 @pytest.fixture
-def devnetwork(network, rpc):
+def devnetwork(network, rpc, chain):
     brownie.network.connect("development")
     yield brownie.network
     if rpc.is_active():
-        rpc.reset()
+        chain.reset()
 
 
 # brownie object fixtures
@@ -274,6 +274,11 @@ def network():
 @pytest.fixture(scope="session")
 def rpc():
     return brownie.network.rpc
+
+
+@pytest.fixture(scope="session")
+def chain():
+    return brownie.network.chain
 
 
 @pytest.fixture(scope="session")

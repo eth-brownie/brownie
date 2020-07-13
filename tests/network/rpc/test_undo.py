@@ -3,68 +3,68 @@
 import pytest
 
 
-def test_undo(accounts, rpc, web3):
+def test_undo(accounts, chain, web3):
     initial = accounts[0].balance()
     accounts[0].transfer(accounts[1], "1 ether")
-    rpc.undo()
+    chain.undo()
     assert web3.eth.blockNumber == 0
     assert accounts[0].balance() == initial
 
 
-def test_undo_multiple(accounts, rpc, web3):
+def test_undo_multiple(accounts, chain, web3):
     initial = accounts[0].balance()
     for i in range(1, 6):
         accounts[0].transfer(accounts[i], "1 ether")
-    rpc.undo(5)
+    chain.undo(5)
     assert accounts[0].balance() == initial
 
 
-def test_undo_empty_buffer(accounts, rpc):
+def test_undo_empty_buffer(accounts, chain):
     with pytest.raises(ValueError):
-        rpc.undo()
+        chain.undo()
 
 
-def test_undo_zero(accounts, rpc):
-    accounts[0].transfer(accounts[1], 100)
-    with pytest.raises(ValueError):
-        rpc.undo(0)
-
-
-def test_undo_too_many(accounts, rpc):
+def test_undo_zero(accounts, chain):
     accounts[0].transfer(accounts[1], 100)
     with pytest.raises(ValueError):
-        rpc.undo(2)
+        chain.undo(0)
 
 
-def test_snapshot_clears_undo_buffer(accounts, rpc):
+def test_undo_too_many(accounts, chain):
     accounts[0].transfer(accounts[1], 100)
-    rpc.snapshot()
     with pytest.raises(ValueError):
-        rpc.undo()
+        chain.undo(2)
 
 
-def test_revert_clears_undo_buffer(accounts, rpc):
+def test_snapshot_clears_undo_buffer(accounts, chain):
     accounts[0].transfer(accounts[1], 100)
-    rpc.snapshot()
-    accounts[0].transfer(accounts[1], 100)
-    rpc.revert()
+    chain.snapshot()
     with pytest.raises(ValueError):
-        rpc.undo()
+        chain.undo()
 
 
-def test_does_not_undo_sleep(accounts, rpc):
+def test_revert_clears_undo_buffer(accounts, chain):
     accounts[0].transfer(accounts[1], 100)
-    time = rpc.time()
-    rpc.sleep(100000)
+    chain.snapshot()
     accounts[0].transfer(accounts[1], 100)
-    rpc.undo()
-    assert rpc.time() >= time + 100000
+    chain.revert()
+    with pytest.raises(ValueError):
+        chain.undo()
 
 
-def test_does_not_undo_mining(accounts, rpc, web3):
+def test_does_not_undo_sleep(accounts, chain):
     accounts[0].transfer(accounts[1], 100)
-    rpc.mine()
+    time = chain.time()
+    chain.sleep(100000)
+    accounts[0].transfer(accounts[1], 100)
+    chain.undo()
+    assert chain.time() >= time + 100000
+
+
+def test_does_not_undo_mining(accounts, chain, web3):
+    accounts[0].transfer(accounts[1], 100)
+    chain.mine()
     height = web3.eth.blockNumber
     accounts[0].transfer(accounts[1], 100)
-    rpc.undo()
+    chain.undo()
     assert web3.eth.blockNumber == height

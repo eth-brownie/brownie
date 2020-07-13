@@ -31,8 +31,8 @@ def test_await_conf_failed_contract_deploy(accounts, BrownieTester, console_mode
     tx._await_transaction()
 
 
-def test_transaction_confirmations(accounts, rpc):
+def test_transaction_confirmations(accounts, chain):
     tx = accounts[0].transfer(accounts[1], "1 ether")
     assert tx.confirmations == 1
-    rpc.mine()
+    chain.mine()
     assert tx.confirmations == 2

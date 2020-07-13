@@ -77,23 +77,23 @@ def test_nonce(accounts):
     assert accounts[1].nonce == 1
 
 
-def test_balance_int(accounts, web3, rpc):
+def test_balance_int(accounts, web3, chain):
     """transfers use the correct balance"""
     balance = accounts[0].balance()
     assert web3.eth.getBalance(accounts[0].address) == balance
     accounts[1].transfer(accounts[0], 1000)
     assert accounts[0].balance() == balance + 1000
-    rpc.reset()
+    chain.reset()
     assert web3.eth.getBalance(accounts[0].address) == balance
 
 
-def test_balance_wei(accounts, web3, rpc):
+def test_balance_wei(accounts, web3, chain):
     """transfer balances are converted using wei"""
     balance = accounts[0].balance()
     assert web3.eth.getBalance(accounts[0].address) == balance
     accounts[1].transfer(accounts[0], "1 ether")
     assert accounts[0].balance() == balance + 1000000000000000000
-    rpc.reset()
+    chain.reset()
     assert web3.eth.getBalance(accounts[0].address) == balance
 
 

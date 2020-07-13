@@ -13,68 +13,65 @@ def noweb3(config, web3):
     web3.connect(uri)
 
 
-def test_time(devnetwork, rpc):
-    assert rpc.time() == int(time.time())
-    rpc.sleep(25)
-    rpc.snapshot()
-    rpc.sleep(75)
-    assert rpc.time() == int(time.time() + 100)
-    rpc.revert()
-    assert rpc.time() == int(time.time() + 25)
+def test_time(devnetwork, chain):
+    assert chain.time() == int(time.time())
+    chain.sleep(25)
+    chain.snapshot()
+    chain.sleep(75)
+    assert chain.time() == int(time.time() + 100)
+    chain.revert()
+    assert chain.time() == int(time.time() + 25)
 
 
-def test_time_exceptions(devnetwork, rpc, monkeypatch):
+def test_time_exceptions(devnetwork, chain):
     with pytest.raises(TypeError):
-        rpc.sleep("foo")
+        chain.sleep("foo")
     with pytest.raises(TypeError):
-        rpc.sleep(3.0)
-    monkeypatch.setattr("brownie.rpc.is_active", lambda: False)
-    with pytest.raises(SystemError):
-        rpc.time()
+        chain.sleep(3.0)
 
 
-def test_mine(devnetwork, rpc, web3):
+def test_mine(devnetwork, chain, web3):
     height = web3.eth.blockNumber
-    rpc.mine()
+    chain.mine()
     assert web3.eth.blockNumber == height + 1
-    rpc.mine(5)
+    chain.mine(5)
     assert web3.eth.blockNumber == height + 6
 
 
-def test_mine_exceptions(devnetwork, rpc):
+def test_mine_exceptions(devnetwork, chain):
     with pytest.raises(TypeError):
-        rpc.mine("foo")
+        chain.mine("foo")
     with pytest.raises(TypeError):
-        rpc.mine(3.0)
+        chain.mine(3.0)
 
 
-def test_snapshot_revert(BrownieTester, accounts, rpc, web3):
+def test_snapshot_revert(BrownieTester, accounts, chain, web3):
     height = web3.eth.blockNumber
     balance = accounts[0].balance()
     count = len(BrownieTester)
-    rpc.snapshot()
+    chain.snapshot()
     accounts[0].transfer(accounts[1], "1 ether")
     BrownieTester.deploy(True, {"from": accounts[0]})
-    rpc.revert()
+    chain.revert()
     assert height == web3.eth.blockNumber
     assert balance == accounts[0].balance()
     assert count == len(BrownieTester)
-    rpc.revert()
+    chain.revert()
     assert height == web3.eth.blockNumber
     assert balance == accounts[0].balance()
     assert count == len(BrownieTester)
 
 
-def test_revert_exceptions(devnetwork, rpc):
-    rpc.reset()
+def test_revert_exceptions(devnetwork, chain):
+    chain.reset()
     with pytest.raises(ValueError):
-        rpc.revert()
+        chain.revert()
 
 
-def test_reset(BrownieTester, accounts, rpc, web3):
+def test_reset(BrownieTester, accounts, chain, web3):
     accounts[0].transfer(accounts[1], "1 ether")
     BrownieTester.deploy(True, {"from": accounts[0]})
-    rpc.reset()
+    chain.reset()
     assert web3.eth.blockNumber == 0
     assert accounts[0].balance() == 100000000000000000000
     assert len(BrownieTester) == 0

@@ -8,7 +8,7 @@ import pytest
 from brownie.project.scripts import run
 
 
-def test_mix(plugintesterbase, project, tmp_path, rpc, package_test):
+def test_mix(plugintesterbase, project, tmp_path, chain, package_test):
     path = Path(project.from_brownie_mix("token", tmp_path.joinpath("testmix")))
     os.chdir(path)
 
@@ -23,7 +23,7 @@ def test_mix(plugintesterbase, project, tmp_path, rpc, package_test):
     try:
         for script in path.glob("scripts/*.py"):
             run(str(script), "main", project=mix_project)
-            rpc.reset()
+            chain.reset()
     finally:
         mix_project.close()
 

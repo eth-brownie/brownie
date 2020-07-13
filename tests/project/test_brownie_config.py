@@ -72,7 +72,7 @@ def test_rpc_project_cmd_settings(devnetwork, testproject, config, settings_proj
 
     # Check if rpc time is roughly the start time in the config file
     # Use diff < 25h to dodge potential timezone differences
-    assert cmd_settings_proj["time"].timestamp() - devnetwork.rpc.time() < 60 * 60 * 25
+    assert cmd_settings_proj["time"].timestamp() - devnetwork.chain.time() < 60 * 60 * 25
 
     accounts = devnetwork.accounts
     assert cmd_settings_proj["accounts"] + len(cmd_settings_proj["unlock"]) == len(accounts)

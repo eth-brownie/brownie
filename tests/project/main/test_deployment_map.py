@@ -55,14 +55,14 @@ def test_dev_deployment_map_clear_on_remove(testproject, BrownieTester, config, 
     assert not content
 
 
-def test_dev_deployment_map_revert(testproject, BrownieTester, config, accounts, rpc):
+def test_dev_deployment_map_revert(testproject, BrownieTester, config, accounts, chain):
     config.settings["dev_deployment_artifacts"] = True
 
     BrownieTester.deploy(True, {"from": accounts[0]})
-    rpc.snapshot()
+    chain.snapshot()
     BrownieTester.deploy(True, {"from": accounts[0]})
     assert len(get_dev_artifacts(testproject)) == 2
-    rpc.revert()
+    chain.revert()
     assert len(get_dev_artifacts(testproject)) == 1
     content = get_map(testproject)
     assert len(content["dev"]["BrownieTester"]) == 1

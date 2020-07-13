@@ -11,25 +11,25 @@ def test_adds_tx(accounts, history):
     assert len(history) == 2
 
 
-def test_resets(accounts, history, rpc):
+def test_resets(accounts, history, chain):
     for i in range(3):
         accounts[0].transfer(accounts[1], "1 ether")
     assert len(history) == 3
-    rpc.reset()
+    chain.reset()
     assert len(history) == 0
     assert not history
 
 
-def test_reverts(accounts, history, rpc):
+def test_reverts(accounts, history, chain):
     for i in range(3):
         accounts[0].transfer(accounts[1], "1 ether")
-    rpc.snapshot()
+    chain.snapshot()
     assert len(history) == 3
     for i in range(3):
         accounts[0].transfer(accounts[1], "1 ether")
     assert len(history) == 6
     tx = history[-1]
-    rpc.revert()
+    chain.revert()
     assert len(history) == 3
     assert tx not in history
 
@@ -59,11 +59,11 @@ def test_of(accounts, history):
     assert len(history.of_address(accounts[3])) == 1
 
 
-def test_copy(accounts, history, rpc):
+def test_copy(accounts, history, chain):
     accounts[0].transfer(accounts[1], "1 ether")
     h = history.copy()
     assert type(h) is list
     assert len(h) == 1
     assert h[0] == history[0]
-    rpc.reset()
+    chain.reset()
     assert len(h) == 1

@@ -78,8 +78,8 @@ def test_comparison(testproject, tester):
     repr(tester)
 
 
-def test_revert_not_found(tester, rpc):
-    rpc.reset()
+def test_revert_not_found(tester, chain):
+    chain.reset()
     with pytest.raises(ContractNotFound):
         tester.balance()
 

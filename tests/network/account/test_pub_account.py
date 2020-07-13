@@ -27,10 +27,10 @@ def test_balance(accounts):
     assert balance == "100 ether"
 
 
-def test_transfer(accounts, rpc):
+def test_transfer(accounts, chain):
     pub = PublicKeyAccount("0x0000Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E")
     assert pub.balance() == 0
     accounts[0].transfer(pub, "10 ether")
     assert pub.balance() == "10 ether"
-    rpc.reset()
+    chain.reset()
     assert pub.balance() == 0
