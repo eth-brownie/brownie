@@ -1,19 +1,23 @@
 #!/usr/bin/python3
 
+import gc
+import threading
+import time
+import weakref
 from hashlib import sha1
 from sqlite3 import OperationalError
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
-from brownie.exceptions import BrownieEnvironmentError
+from brownie.exceptions import BrownieEnvironmentError, RPCRequestError
 from brownie.project.build import DEPLOYMENT_KEYS
 from brownie.utils.sql import Cursor
 
-from .rpc import _revert_register
-from .web3 import _resolve_address
+from .web3 import _resolve_address, web3
 
 _contract_map: Dict = {}
+_revert_refs: List = []
 
 cur = Cursor(_get_data_folder().joinpath("deployments.db"))
 cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
@@ -94,6 +98,201 @@ class TxHistory(metaclass=_Singleton):
             }
         )
         gas["count"] += 1
+
+
+class Chain(metaclass=_Singleton):
+    def __init__(self) -> None:
+        self._time_offset: int = 0
+        self._snapshot_id: Union[int, Optional[bool]] = False
+        self._reset_id: Union[int, bool] = False
+        self._current_id: Union[int, bool] = False
+        self._undo_lock = threading.Lock()
+        self._undo_buffer: List = []
+        self._redo_buffer: List = []
+        self._block_cache: Dict = {}
+
+    def __len__(self) -> int:
+        return web3.eth.blockNumber + 1
+
+    def __getitem__(self, key):
+        if not isinstance(key, int):
+            raise
+        if key < 0:
+            key = web3.eth.blockNumber + 1 - key
+        return web3.eth.getBlock(key)
+
+    def _request(self, method: str, args: List) -> int:
+        try:
+            response = web3.provider.make_request(method, args)  # type: ignore
+            if "result" in response:
+                return response["result"]
+        except AttributeError:
+            raise RPCRequestError("Web3 is not connected.")
+        raise RPCRequestError(response["error"]["message"])
+
+    def _snap(self) -> int:
+        return self._request("evm_snapshot", [])
+
+    def _revert(self, id_: int) -> int:
+        if web3.isConnected() and not web3.eth.blockNumber and not self._time_offset:
+            _notify_registry(0)
+            return self._snap()
+        self._request("evm_revert", [id_])
+        id_ = self._snap()
+        self.sleep(0)
+        _notify_registry()
+        return id_
+
+    def _add_to_undo_buffer(self, tx: Any, fn: Any, args: Tuple, kwargs: Dict) -> None:
+        with self._undo_lock:
+            tx._confirmed.wait()
+            self._undo_buffer.append((self._current_id, fn, args, kwargs))
+            if self._redo_buffer and (fn, args, kwargs) == self._redo_buffer[-1]:
+                self._redo_buffer.pop()
+            else:
+                self._redo_buffer.clear()
+            self._current_id = self._snap()
+
+    def undo(self, num: int = 1) -> str:
+        """
+        Undo one or more transactions.
+
+        Arguments
+        ---------
+        num : int, optional
+            Number of transactions to undo.
+        """
+        with self._undo_lock:
+            if num < 1:
+                raise ValueError("num must be greater than zero")
+            if not self._undo_buffer:
+                raise ValueError("Undo buffer is empty")
+            if num > len(self._undo_buffer):
+                raise ValueError(f"Undo buffer contains {len(self._undo_buffer)} items")
+
+            for i in range(num, 0, -1):
+                id_, fn, args, kwargs = self._undo_buffer.pop()
+                self._redo_buffer.append((fn, args, kwargs))
+
+            self._current_id = self._revert(id_)
+            return f"Block height at {web3.eth.blockNumber}"
+
+    def redo(self, num: int = 1) -> str:
+        """
+        Redo one or more undone transactions.
+
+        Arguments
+        ---------
+        num : int, optional
+            Number of transactions to redo.
+        """
+        with self._undo_lock:
+            if num < 1:
+                raise ValueError("num must be greater than zero")
+            if not self._redo_buffer:
+                raise ValueError("Redo buffer is empty")
+            if num > len(self._redo_buffer):
+                raise ValueError(f"Redo buffer contains {len(self._redo_buffer)} items")
+
+            for i in range(num, 0, -1):
+                fn, args, kwargs = self._redo_buffer[-1]
+                fn(*args, **kwargs)
+
+            return f"Block height at {web3.eth.blockNumber}"
+
+    def time(self) -> int:
+        """Returns the current epoch time from the test RPC as an int"""
+        return int(time.time() + self._time_offset)
+
+    def sleep(self, seconds: int) -> None:
+        """Increases the time within the test RPC.
+
+        Args:
+            seconds (int): Number of seconds to increase the time by."""
+        if not isinstance(seconds, int):
+            raise TypeError("seconds must be an integer value")
+        self._time_offset = self._request("evm_increaseTime", [seconds])
+
+        if seconds:
+            self._redo_buffer.clear()
+            self._current_id = self._snap()
+
+    def mine(self, blocks: int = 1) -> str:
+        """Increases the block height within the test RPC.
+
+        Args:
+            blocks (int): Number of new blocks to be mined."""
+        if not isinstance(blocks, int):
+            raise TypeError("blocks must be an integer value")
+        for i in range(blocks):
+            self._request("evm_mine", [])
+
+        self._redo_buffer.clear()
+        self._current_id = self._snap()
+        return f"Block height at {web3.eth.blockNumber}"
+
+    def snapshot(self) -> str:
+        """
+        Take a snapshot of the current state of the EVM.
+
+        This action clears the undo buffer.
+        """
+        self._undo_buffer.clear()
+        self._redo_buffer.clear()
+        self._snapshot_id = self._current_id = self._snap()
+        return f"Snapshot taken at block height {web3.eth.blockNumber}"
+
+    def revert(self) -> str:
+        """
+        Revert the EVM to the most recently taken snapshot.
+
+        This action clears the undo buffer.
+        """
+        if not self._snapshot_id:
+            raise ValueError("No snapshot set")
+        self._undo_buffer.clear()
+        self._redo_buffer.clear()
+        self._snapshot_id = self._current_id = self._revert(self._snapshot_id)
+        return f"Block height reverted to {web3.eth.blockNumber}"
+
+    def reset(self) -> None:
+        """
+        Revert the EVM to the initial state when loaded.
+
+        This action clears the undo buffer.
+        """
+        self._snapshot_id = None
+        self._undo_buffer.clear()
+        self._redo_buffer.clear()
+        self._reset_id = self._current_id = self._revert(self._reset_id)
+
+    def _network_reset(self) -> None:
+        try:
+            self.reset()
+        except RPCRequestError:
+            self._reset_id = self._current_id = False
+            _notify_registry(0)
+
+
+# objects that will update whenever the RPC is reset or reverted must register
+# by calling to this function. The must also include _revert and _reset methods
+# to recieve notifications from this object
+def _revert_register(obj: object) -> None:
+    _revert_refs.append(weakref.ref(obj))
+
+
+def _notify_registry(height: int = None) -> None:
+    gc.collect()
+    if height is None:
+        height = web3.eth.blockNumber
+    for ref in _revert_refs.copy():
+        obj = ref()
+        if obj is None:
+            _revert_refs.remove(ref)
+        elif height:
+            obj._revert(height)
+        else:
+            obj._reset()
 
 
 def _find_contract(address: Any) -> Any:
