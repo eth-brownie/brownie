@@ -9,6 +9,7 @@ from sqlite3 import OperationalError
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from requests.exceptions import ConnectionError as RequestsConnectionError
+from web3.types import BlockData
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
@@ -103,6 +104,12 @@ class TxHistory(metaclass=_Singleton):
 
 
 class Chain(metaclass=_Singleton):
+
+    """
+    List-like singleton used to access block data, and perform actions such as
+    snapshotting, mining, and chain rewinds.
+    """
+
     def __init__(self) -> None:
         self._time_offset: int = 0
         self._snapshot_id: Optional[int] = None
@@ -113,14 +120,32 @@ class Chain(metaclass=_Singleton):
         self._redo_buffer: List = []
 
     def __len__(self) -> int:
+        """
+        Return the current number of blocks.
+        """
         return web3.eth.blockNumber + 1
 
-    def __getitem__(self, key):
-        if not isinstance(key, int):
-            raise
-        if key < 0:
-            key = web3.eth.blockNumber + 1 - key
-        return web3.eth.getBlock(key)
+    def __getitem__(self, block_number: int) -> BlockData:
+        """
+        Return information about a block by block number.
+
+        Arguments
+        ---------
+        block_number : int
+            Integer of a block number. If the value is negative, the block returned
+            is relative to the most recently mined block, e.g. `chain[-1]` returns
+            the most recent block.
+
+        Returns
+        -------
+        BlockData
+            web3 block data object
+        """
+        if not isinstance(block_number, int):
+            raise TypeError("Block height must be given as an integer")
+        if block_number < 0:
+            block_number = web3.eth.blockNumber + 1 + block_number
+        return web3.eth.getBlock(block_number)
 
     def _request(self, method: str, args: List) -> int:
         try:
@@ -154,7 +179,7 @@ class Chain(metaclass=_Singleton):
                 self._redo_buffer.clear()
             self._current_id = self._snap()
 
-    def undo(self, num: int = 1) -> str:
+    def undo(self, num: int = 1) -> int:
         """
         Undo one or more transactions.
 
@@ -162,6 +187,11 @@ class Chain(metaclass=_Singleton):
         ---------
         num : int, optional
             Number of transactions to undo.
+
+        Returns
+        -------
+        int
+            Current block height
         """
         with self._undo_lock:
             if num < 1:
@@ -176,9 +206,9 @@ class Chain(metaclass=_Singleton):
                 self._redo_buffer.append((fn, args, kwargs))
 
             self._current_id = self._revert(id_)
-            return f"Block height at {web3.eth.blockNumber}"
+            return web3.eth.blockNumber
 
-    def redo(self, num: int = 1) -> str:
+    def redo(self, num: int = 1) -> int:
         """
         Redo one or more undone transactions.
 
@@ -186,6 +216,11 @@ class Chain(metaclass=_Singleton):
         ---------
         num : int, optional
             Number of transactions to redo.
+
+        Returns
+        -------
+        int
+            Current block height
         """
         with self._undo_lock:
             if num < 1:
@@ -199,17 +234,21 @@ class Chain(metaclass=_Singleton):
                 fn, args, kwargs = self._redo_buffer[-1]
                 fn(*args, **kwargs)
 
-            return f"Block height at {web3.eth.blockNumber}"
+            return web3.eth.blockNumber
 
     def time(self) -> int:
-        """Returns the current epoch time from the test RPC as an int"""
+        """Return the current epoch time from the test RPC as an int"""
         return int(time.time() + self._time_offset)
 
     def sleep(self, seconds: int) -> None:
-        """Increases the time within the test RPC.
+        """
+        Increase the time within the test RPC.
 
-        Args:
-            seconds (int): Number of seconds to increase the time by."""
+        Arguments
+        ---------
+        seconds : int
+            Number of seconds to increase the time by
+        """
         if not isinstance(seconds, int):
             raise TypeError("seconds must be an integer value")
         self._time_offset = self._request("evm_increaseTime", [seconds])
@@ -218,11 +257,20 @@ class Chain(metaclass=_Singleton):
             self._redo_buffer.clear()
             self._current_id = self._snap()
 
-    def mine(self, blocks: int = 1) -> str:
-        """Increases the block height within the test RPC.
+    def mine(self, blocks: int = 1) -> int:
+        """
+        Increase the block height within the test RPC.
 
-        Args:
-            blocks (int): Number of new blocks to be mined."""
+        Arguments
+        ---------
+        blocks : int
+            Number of new blocks to be mined
+
+        Returns
+        -------
+        int
+            Current block height
+        """
         if not isinstance(blocks, int):
             raise TypeError("blocks must be an integer value")
         for i in range(blocks):
@@ -230,9 +278,9 @@ class Chain(metaclass=_Singleton):
 
         self._redo_buffer.clear()
         self._current_id = self._snap()
-        return f"Block height at {web3.eth.blockNumber}"
+        return web3.eth.blockNumber
 
-    def snapshot(self) -> str:
+    def snapshot(self) -> None:
         """
         Take a snapshot of the current state of the EVM.
 
@@ -241,26 +289,35 @@ class Chain(metaclass=_Singleton):
         self._undo_buffer.clear()
         self._redo_buffer.clear()
         self._snapshot_id = self._current_id = self._snap()
-        return f"Snapshot taken at block height {web3.eth.blockNumber}"
 
-    def revert(self) -> str:
+    def revert(self) -> int:
         """
         Revert the EVM to the most recently taken snapshot.
 
         This action clears the undo buffer.
+
+        Returns
+        -------
+        int
+            Current block height
         """
         if self._snapshot_id is None:
             raise ValueError("No snapshot set")
         self._undo_buffer.clear()
         self._redo_buffer.clear()
         self._snapshot_id = self._current_id = self._revert(self._snapshot_id)
-        return f"Block height reverted to {web3.eth.blockNumber}"
+        return web3.eth.blockNumber
 
-    def reset(self) -> None:
+    def reset(self) -> int:
         """
         Revert the EVM to the initial state when loaded.
 
         This action clears the undo buffer.
+
+        Returns
+        -------
+        int
+            Current block height
         """
         self._snapshot_id = None
         self._undo_buffer.clear()
@@ -270,6 +327,7 @@ class Chain(metaclass=_Singleton):
             _notify_registry(0)
         else:
             self._reset_id = self._current_id = self._revert(self._reset_id)
+        return web3.eth.blockNumber
 
     def _network_connected(self) -> None:
         self._reset_id = None
