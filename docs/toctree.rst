@@ -28,8 +28,8 @@ Brownie
 
     core-accounts.rst
     core-contracts.rst
+    core-chain.rst
     core-transactions.rst
-    core-rpc.rst
     core-types.rst
 
 

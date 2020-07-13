@@ -4,7 +4,7 @@
 Inspecting and Debugging Transactions
 =====================================
 
-Each time you perform a transaction you are returned a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`. This object contains all relevant information about the transaction, as well as various methods to aid in debugging.
+The :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` object provides information about a transaction, as well as various methods to aid in debugging.
 
 .. code-block:: python
 
@@ -41,24 +41,14 @@ To view human-readable information on a transaction, call the :func:`Transaction
 
 .. _event-data:
 
-Accessing Transaction History
-=============================
-
-The :func:`TxHistory <brownie.network.state.TxHistory>` container, available as ``history``, holds all the transactions that have been broadcasted. You can use it to access :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` objects if you did not assign them a unique name when making the call.
-
-.. code-block:: python
-
-    >>> history
-    [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>, <Transaction object '0xa7616a96ef571f1791586f570017b37f4db9decb1a5f7888299a035653e8b44b'>]
-
 Event Data
 ==========
 
 Data about events is available as :func:`TransactionReceipt.events <TransactionReceipt.events>`. It is stored in an :func:`EventDict <brownie.network.event.EventDict>` object; a hybrid container with both dict-like and list-like properties.
 
-.. note::
+.. hint::
 
-    Event data is still available when a transaction reverts.
+    You can also view events that were emitted in a reverted transaction. When debugging it can be useful to create temporary events to examine local variables during the execution of a failed transaction.
 
 .. code-block:: python
 
