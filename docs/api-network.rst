@@ -1338,6 +1338,14 @@ _EventItem
         >>> tx.events[2].name
         CountryModified
 
+.. py:attribute:: _EventItem.address
+
+    The address where the event was fired. If the object contains multiple events, this value is set to ``None``.
+
+    .. code-block:: python
+
+        >>> tx.events[2].address
+        "0x2d72c1598537bcf4a4af97668b3a24e68b7d0cc5"
 
 .. py:attribute:: _EventItem.pos
 

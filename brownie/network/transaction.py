@@ -473,7 +473,7 @@ class TransactionReceipt:
     def _reverted_trace(self, trace: Sequence) -> None:
         self._modified_state = False
         # get events from trace
-        self._events = _decode_trace(trace)
+        self._events = _decode_trace(trace, str(self.receiver or self.contract_address))
         if self.contract_address:
             step = next((i for i in trace if i["op"] == "CODECOPY"), None)
             if step is not None and int(step["stack"][-3], 16) > 24577:

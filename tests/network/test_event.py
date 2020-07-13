@@ -27,6 +27,11 @@ def test_types(event):
     assert type(event["IndexedEvent"]) is _EventItem
 
 
+def test_address(event, tester):
+    assert event["Debug"].address is None
+    assert event["Debug"][0].address == tester
+
+
 def test_count(event):
     assert len(event) == 3
     assert event.count("IndexedEvent") == len(event["IndexedEvent"]) == 1

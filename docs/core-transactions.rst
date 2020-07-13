@@ -57,13 +57,13 @@ Data about events is available as :func:`TransactionReceipt.events <TransactionR
         'CountryModified': [
             {
                 'country': 1,
-                'limits': (0,0,0,0,0,0,0,0),
+                'limits': (0, 0, 0, 0, 0, 0, 0, 0),
                 'minrating': 1,
                 'permitted': True
             },
             {
                 'country': 2,
-                'limits': (0,0,0,0,0,0,0,0),
+                'limits': (0, 0, 0, 0, 0, 0, 0, 0),
                 'minrating': 1,
                 'permitted': True
             }
@@ -100,12 +100,18 @@ Or as a list when the sequence is important, or more than one event of the same 
 
 .. code-block:: python
 
+    # name of the address
     >>> tx.events[1].name
     'CountryModified'
+
+    # address where the event fired
+    >>> tx.events[1].address
+    "0xDd18d6475A7C71Ee33CEBE730a905DbBd89945a1"
+
     >>> tx.events[1]
     {
         'country': 1,
-        'limits': (0,0,0,0,0,0,0,0),
+        'limits': (0, 0, 0, 0, 0, 0, 0, 0),
         'minrating': 1,
         'permitted': True
     }
