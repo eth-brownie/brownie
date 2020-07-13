@@ -6,7 +6,9 @@ import time
 import weakref
 from hashlib import sha1
 from sqlite3 import OperationalError
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple
+
+from requests.exceptions import ConnectionError as RequestsConnectionError
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
@@ -103,13 +105,12 @@ class TxHistory(metaclass=_Singleton):
 class Chain(metaclass=_Singleton):
     def __init__(self) -> None:
         self._time_offset: int = 0
-        self._snapshot_id: Union[int, Optional[bool]] = False
-        self._reset_id: Union[int, bool] = False
-        self._current_id: Union[int, bool] = False
+        self._snapshot_id: Optional[int] = None
+        self._reset_id: Optional[int] = None
+        self._current_id: Optional[int] = None
         self._undo_lock = threading.Lock()
         self._undo_buffer: List = []
         self._redo_buffer: List = []
-        self._block_cache: Dict = {}
 
     def __len__(self) -> int:
         return web3.eth.blockNumber + 1
@@ -126,7 +127,7 @@ class Chain(metaclass=_Singleton):
             response = web3.provider.make_request(method, args)  # type: ignore
             if "result" in response:
                 return response["result"]
-        except AttributeError:
+        except (AttributeError, RequestsConnectionError):
             raise RPCRequestError("Web3 is not connected.")
         raise RPCRequestError(response["error"]["message"])
 
@@ -248,7 +249,7 @@ class Chain(metaclass=_Singleton):
 
         This action clears the undo buffer.
         """
-        if not self._snapshot_id:
+        if self._snapshot_id is None:
             raise ValueError("No snapshot set")
         self._undo_buffer.clear()
         self._redo_buffer.clear()
@@ -264,14 +265,23 @@ class Chain(metaclass=_Singleton):
         self._snapshot_id = None
         self._undo_buffer.clear()
         self._redo_buffer.clear()
-        self._reset_id = self._current_id = self._revert(self._reset_id)
-
-    def _network_reset(self) -> None:
-        try:
-            self.reset()
-        except RPCRequestError:
-            self._reset_id = self._current_id = False
+        if self._reset_id is None:
+            self._reset_id = self._current_id = self._snap()
             _notify_registry(0)
+        else:
+            self._reset_id = self._current_id = self._revert(self._reset_id)
+
+    def _network_connected(self) -> None:
+        self._reset_id = None
+        self.reset()
+
+    def _network_disconnected(self) -> None:
+        self._undo_buffer.clear()
+        self._redo_buffer.clear()
+        self._snapshot_id = None
+        self._reset_id = None
+        self._current_id = None
+        _notify_registry(0)
 
 
 # objects that will update whenever the RPC is reset or reverted must register

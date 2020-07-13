@@ -106,12 +106,12 @@ class Rpc(metaclass=_Singleton):
         self._rpc = psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
         # check that web3 can connect
         if not web3.provider:
-            chain._network_reset()
+            chain._network_disconnected()
             return
         uri = web3.provider.endpoint_uri if web3.provider else None
         for i in range(100):
             if web3.isConnected():
-                chain._network_reset()
+                chain._network_connected()
                 return
             time.sleep(0.1)
             if type(self._rpc) is psutil.Popen:
@@ -144,7 +144,7 @@ class Rpc(metaclass=_Singleton):
             ) from None
         print(f"Attached to local RPC client listening at '{laddr[0]}:{laddr[1]}'...")
         self._rpc = psutil.Process(proc.pid)
-        chain._network_reset()
+        chain._network_connected()
 
     def kill(self, exc: bool = True) -> None:
         """Terminates the RPC process and all children with SIGKILL.
@@ -168,7 +168,7 @@ class Rpc(metaclass=_Singleton):
         self._rpc.kill()
         self._rpc.wait()
         self._rpc = None
-        chain._network_reset()
+        chain._network_disconnected()
 
     def is_active(self) -> bool:
         """Returns True if Rpc client is currently active."""

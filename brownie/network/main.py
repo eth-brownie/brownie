@@ -10,7 +10,7 @@ from brownie.exceptions import BrownieEnvironmentWarning
 
 from .account import Accounts
 from .rpc import Rpc
-from .state import Chain
+from .state import Chain, _notify_registry
 from .web3 import web3
 
 chain = Chain()
@@ -68,7 +68,7 @@ def disconnect(kill_rpc: bool = True) -> None:
         if rpc.is_child():
             rpc.kill()
     web3.disconnect()
-    chain._network_reset()
+    _notify_registry(0)
 
 
 def show_active() -> Optional[str]:
