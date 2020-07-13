@@ -6,8 +6,9 @@ import time
 import weakref
 from hashlib import sha1
 from sqlite3 import OperationalError
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
+from hexbytes import HexBytes
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from web3.types import BlockData
 
@@ -209,6 +210,15 @@ class Chain(metaclass=_Singleton):
         self._current_id = None
         self._chainid = None
         _notify_registry(0)
+
+    def get_transaction(self, txid: Union[str, bytes]) -> TransactionReceipt:
+        """
+        Return a TransactionReceipt object for the given transaction hash.
+        """
+        if not isinstance(txid, str):
+            txid = HexBytes(txid).hex()
+        tx = next((i for i in TxHistory() if i.txid == txid), None)
+        return tx or TransactionReceipt(txid, silent=True, required_confs=0)
 
     def time(self) -> int:
         """Return the current epoch time from the test RPC as an int"""

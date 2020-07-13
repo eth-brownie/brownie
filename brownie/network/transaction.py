@@ -122,7 +122,7 @@ class TransactionReceipt:
             self._silent = silent
 
         if isinstance(txid, bytes):
-            txid = txid.hex()
+            txid = HexBytes(txid).hex()
         if not self._silent:
             print(f"Transaction sent: {color('bright blue')}{txid}{color}")
 
@@ -256,14 +256,16 @@ class TransactionReceipt:
     def wait(self, required_confs: int) -> None:
         if self.confirmations > required_confs:
             print(f"This transaction already has {self.confirmations} confirmations.")
-        else:
-            while True:
-                try:
-                    tx: Dict = web3.eth.getTransaction(self.txid)
-                    break
-                except TransactionNotFound:
-                    time.sleep(0.5)
-            self._await_confirmation(tx, required_confs)
+            return
+
+        while True:
+            try:
+                tx: Dict = web3.eth.getTransaction(self.txid)
+                break
+            except TransactionNotFound:
+                time.sleep(0.5)
+
+        self._await_confirmation(tx, required_confs)
 
     def _raise_if_reverted(self, exc: Any) -> None:
         if self.status or CONFIG.mode == "console":
@@ -286,6 +288,10 @@ class TransactionReceipt:
                 tx: Dict = web3.eth.getTransaction(self.txid)
                 break
             except TransactionNotFound:
+                if self.sender is None:
+                    # if sender was not explicitly set, this transaction was
+                    # not broadcasted locally and so likely doesn't exist
+                    raise
                 time.sleep(0.5)
         self._set_from_tx(tx)
 
