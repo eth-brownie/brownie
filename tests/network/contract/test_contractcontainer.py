@@ -10,7 +10,7 @@ def test_get_method(BrownieTester):
     assert BrownieTester.get_method(calldata) == "getTuple"
 
 
-def test_container_add_remove(BrownieTester, accounts, rpc):
+def test_container_add_remove(BrownieTester, accounts, chain):
     assert len(BrownieTester) == 0
     t = BrownieTester.deploy(True, {"from": accounts[0]})
     t2 = BrownieTester.deploy(True, {"from": accounts[0]})
@@ -22,24 +22,24 @@ def test_container_add_remove(BrownieTester, accounts, rpc):
     del BrownieTester[0]
     assert len(BrownieTester) == 1
     assert BrownieTester[0] == t2
-    rpc.reset()
+    chain.reset()
     assert len(BrownieTester) == 0
 
 
-def test_container_reset(BrownieTester, accounts, rpc):
+def test_container_reset(BrownieTester, accounts, chain):
     BrownieTester.deploy(True, {"from": accounts[0]})
     assert len(BrownieTester) == 1
-    rpc.reset()
+    chain.reset()
     assert len(BrownieTester) == 0
 
 
-def test_container_revert(BrownieTester, accounts, rpc):
+def test_container_revert(BrownieTester, accounts, chain):
     c = BrownieTester.deploy(True, {"from": accounts[0]})
     assert len(BrownieTester) == 1
-    rpc.snapshot()
+    chain.snapshot()
     BrownieTester.deploy(True, {"from": accounts[0]})
     assert len(BrownieTester) == 2
-    rpc.revert()
+    chain.revert()
     assert len(BrownieTester) == 1
     assert BrownieTester[0] == c
 
@@ -72,10 +72,10 @@ def test_at_checks_bytecode(BrownieTester, ExternalCallTester, accounts):
     assert "pcMap" not in c._build
 
 
-def test_load_unload_project(BrownieTester, testproject, rpc, accounts):
+def test_load_unload_project(BrownieTester, testproject, chain, accounts):
     BrownieTester.deploy(True, {"from": accounts[0]})
     testproject.close()
-    rpc.reset()
+    chain.reset()
     assert len(BrownieTester) == 0
     testproject.load()
     assert testproject.BrownieTester != BrownieTester

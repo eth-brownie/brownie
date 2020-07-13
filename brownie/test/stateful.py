@@ -23,7 +23,7 @@ class _BrownieStateMachine:
     _failed = False
 
     def __init__(self) -> None:
-        brownie.rpc.revert()
+        brownie.chain.revert()
         sf.RuleBasedStateMachine.__init__(self)
 
         # pytest capturemanager plugin, added when accessed via the state_manager fixture
@@ -98,7 +98,7 @@ def state_machine(
     if hasattr(rules_object, "__init__"):
         # __init__ is treated as a class method
         rules_object.__init__(machine, *args, **kwargs)  # type: ignore
-    brownie.rpc.snapshot()
+    brownie.chain.snapshot()
 
     try:
         sf.run_state_machine_as_test(lambda: machine(), settings=hp_settings(**settings or {}))

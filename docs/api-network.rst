@@ -216,11 +216,11 @@ Accounts Internal Methods
 
 .. py:classmethod:: Accounts._reset()
 
-    Called by :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>` when the local chain has been reset. All :func:`Account <brownie.network.account.Account>` objects are recreated.
+    Called by :func:`state._notify_registry <brownie.network.state._notify_registry>` when the local chain has been reset. All :func:`Account <brownie.network.account.Account>` objects are recreated.
 
 .. py:classmethod:: Accounts._revert(height)
 
-    Called by :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>` when the local chain has been reverted to a block height greater than zero. Adjusts :func:`Account <brownie.network.account.Account>` object nonce values.
+    Called by :func:`state._notify_registry <brownie.network.state._notify_registry>` when the local chain has been reverted to a block height greater than zero. Adjusts :func:`Account <brownie.network.account.Account>` object nonce values.
 
 Account
 -------
@@ -767,11 +767,11 @@ ContractContainer Internal Methods
 
 .. py:classmethod:: ContractContainer._reset()
 
-    Called by :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>` when the local chain has been reset. All :func:`Contract <brownie.network.contract.Contract>` objects are removed from the container and marked as :func:`reverted <Contract._reverted>`.
+    Called by :func:`state._notify_registry <brownie.network.state._notify_registry>` when the local chain has been reset. All :func:`Contract <brownie.network.contract.Contract>` objects are removed from the container and marked as :func:`reverted <Contract._reverted>`.
 
 .. py:classmethod:: ContractContainer._revert(height)
 
-    Called by :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>` when the local chain has been reverted to a block height greater than zero. Any :func:`Contract <brownie.network.contract.Contract>` objects that no longer exist are removed from the container and marked as :func:`reverted <Contract._reverted>`.
+    Called by :func:`state._notify_registry <brownie.network.state._notify_registry>` when the local chain has been reverted to a block height greater than zero. Any :func:`Contract <brownie.network.contract.Contract>` objects that no longer exist are removed from the container and marked as :func:`reverted <Contract._reverted>`.
 
 Contract and ProjectContract
 ----------------------------
@@ -928,7 +928,7 @@ Contract Internal Attributes
 
 .. py:attribute:: Contract._reverted
 
-    Boolean. Once set to to ``True``, any attempt to interact with the object raises a :func:`ContractNotFound <brownie.exceptions.ContractNotFound>` exception. Set as a result of a call to :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>`.
+    Boolean. Once set to to ``True``, any attempt to interact with the object raises a :func:`ContractNotFound <brownie.exceptions.ContractNotFound>` exception. Set as a result of a call to :func:`state._notify_registry <brownie.network.state._notify_registry>`.
 
 ContractCall
 ------------
@@ -1426,6 +1426,8 @@ Internal Methods
 
 The ``state`` module contains classes to record transactions and contracts as they occur on the blockchain.
 
+Classes in ``state`` are not meant to be instantiated directly. :func:`TxHistory <brownie.network.state.TxHistory>` and :func:`Chain <brownie.network.state.Chain>` objects are available as ``history`` and ``chain`` in the console and as pytest fixtures.
+
 TxHistory
 ---------
 
@@ -1441,7 +1443,6 @@ TxHistory
         []
         >>> dir(history)
         [copy, from_sender, of_address, to_receiver]
-
 
 TxHistory Attributes
 ********************
@@ -1517,33 +1518,222 @@ TxHistory Internal Methods
 
 .. py:classmethod:: TxHistory._reset()
 
-    Called by :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>` when the local chain has been reset. All :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` objects are removed from the container.
+    Called by :func:`state._notify_registry <brownie.network.state._notify_registry>` when the local chain has been reset. All :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` objects are removed from the container.
 
 .. py:classmethod:: TxHistory._revert(height)
 
-    Called by :func:`rpc._notify_registry <brownie.network.rpc._notify_registry>` when the local chain has been reverted to a block height greater than zero. Any :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` objects that no longer exist are removed from the container.
+    Called by :func:`state._notify_registry <brownie.network.state._notify_registry>` when the local chain has been reverted to a block height greater than zero. Any :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` objects that no longer exist are removed from the container.
 
+Chain
+-----
+
+.. py:class:: brownie.network.state.Chain
+
+    List-like :func:`Singleton <brownie._singleton._Singleton>` used to access chain information and perform actions such as snapshotting, rewinds and time travel.
+
+    .. code-block:: python
+
+        >>> from brownie.network.state import Chain
+        >>> chain = Chain()
+        >>> chain
+        <Chain object (chainid=1, height=10451202)>
+
+    You can use list indexing the access specific blocks. For negative index values, the block returned is relative to the most recently mined block. For example, ``chain[-1]`` returns the most recently mined block.
+
+    .. code-block:: python
+
+        >>> web3.eth.blockNumber
+        10451202
+
+        >>> len(chain)
+        10451203  # always +1 to the current block number, because the first block is zero
+
+        >>> chain[0] == web3.eth.getBlock(0)
+        True
+
+        >>> chain[-1] == web3.eth.getBlock('latest')
+        True
+
+Chain Attributes
+****************
+
+.. py:attribute:: Chain.height
+
+    The current block height.
+
+    .. code-block:: python
+
+        >>> chain.height
+        10451202
+
+.. py:attribute:: Chain.id
+
+    The chain ID value for the active network. Returns ``None`` if no chain ID is available.
+
+    .. code-block:: python
+
+        >>> chain.id
+        1
+
+Chain Methods
+*************
+
+.. py:method:: Chain.get_transaction(txid)
+
+    Return a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` object for the given transaction hash.
+
+    This function is non-blocking. Pending transaction return immediately.
+
+    Raises ``TransactionNotFound`` if the transaction does not exist.
+
+    .. code-block:: python
+
+        >>> chain.get_transaction(0xf598d43ef34a48478f3bb0ad969c6735f416902c4eb1eb18ebebe0fca786105e)
+        <Transaction '0xf598d43ef34a48478f3bb0ad969c6735f416902c4eb1eb18ebebe0fca786105e'>
+
+.. py:method:: Chain.time()
+
+    Return the current epoch time in the RPC as an integer.
+
+    .. code-block:: python
+
+        >>> chain.time()
+        1550189043
+
+.. py:method:: Chain.sleep(seconds)
+
+    Advance the RPC time. You can only advance the time by whole seconds.
+
+    .. code-block:: python
+
+        >>> chain.time()
+        1550189043
+        >>> chain.sleep(100)
+        >>> chain.time()
+        1550189143
+
+.. py:method:: Chain.mine(blocks=1)
+
+    Mine one or more empty blocks.
+
+    * ``blocks``: Number of blocks to mine
+
+    Returns the block height after all new blocks have been mined.
+
+    .. code-block:: python
+
+        >>> web3.eth.blockNumber
+        0
+        >>> chain.mine()
+        1
+        >>> chain.mine(3)
+        4
+
+.. py:method:: Chain.snapshot()
+
+    Create a snapshot at the current block height.
+
+    .. code-block:: python
+
+        >>> chain.snapshot()
+
+.. py:method:: Chain.revert()
+
+    Revert the blockchain to the latest snapshot. Raises ``ValueError`` if no snapshot has been taken.
+
+    .. code-block:: python
+
+        >>> chain.snapshot()
+        >>> accounts[0].balance()
+        100000000000000000000
+        >>> accounts[0].transfer(accounts[1], "10 ether")
+
+        Transaction sent: 0xd5d3b40eb298dfc48721807935eda48d03916a3f48b51f20bcded372113e1dca
+        Transaction confirmed - block: 5   gas used: 21000 (100.00%)
+        <Transaction object '0xd5d3b40eb298dfc48721807935eda48d03916a3f48b51f20bcded372113e1dca'>
+        >>> accounts[0].balance()
+        89999580000000000000
+        >>> chain.revert()
+        4
+        >>> accounts[0].balance()
+        100000000000000000000
+
+.. py:method:: Chain.reset()
+
+    Reset the local environment to the initial state when Brownie was loaded. This action is performed using a snapshot - it is NOT equivalent to calling :func:`rpc.kill <Rpc.kill>` and then :func:`rpc.launch <Rpc.launch>`.
+
+    Returns the block height after resetting.
+
+    .. code-block:: python
+
+        >>> chain.reset()
+        0
+
+.. py:method:: Chain.undo(num=1)
+
+    Undo one or more recent transactions.
+
+    * ``num``: Number of transactions to undo
+
+    Once undone, a transaction can be repeated using :func:`Chain.redo <Chain.redo>`. Calling :func:`Chain.snapshot <Chain.snapshot>` or :func:`Chain.revert <Chain.revert>` clears the undo buffer.
+
+    Returns the block height after all undo actions are complete.
+
+    .. code-block:: python
+
+        >>> web3.eth.blockNumber
+        3
+        >>> chain.undo()
+        2
+
+.. py:method:: Chain.redo(num=1)
+
+    Redo one or more recently undone transactions.
+
+    * ``num``: Number of transactions to redo
+
+    Returns the block height after all redo actions are complete.
+
+    .. code-block:: python
+
+        >>> web3.eth.blockNumber
+        2
+        >>> chain.redo()
+        Transaction sent: 0x8c166b66b356ad7f5c58337973b89950f03105cdae896ac66f16cdd4fc395d05
+          Gas price: 0.0 gwei   Gas limit: 6721975
+          Transaction confirmed - Block: 3   Gas used: 21000 (0.31%)
+
+        3
 
 Internal Methods
 ----------------
 
-The internal methods in the ``state`` module are primarily used for tracking and adjusting :func:`Contract <brownie.network.contract.Contract>` instances whenever the local RPC network is reverted or reset.
+The internal methods in the ``state`` module are used for tracking and adjusting the contents of various container objects when the local RPC network is reverted or reset.
 
-.. py:method:: brownie.network.state._add_contract(contract)
+.. py:function:: brownie.network.state._revert_register(obj)
+
+    Registers an object to be called whenever the local RPC is reset or reverted. Objects that register must include ``_revert`` and ``_reset`` methods in order to receive these callbacks.
+
+.. py:function:: brownie.network.state._notify_registry(height)
+
+    Calls each registered object's ``_revert`` or ``_reset`` method after the local state has been reverted.
+
+
+.. py:function:: brownie.network.state._add_contract(contract)
 
     Adds a :func:`Contract <brownie.network.contract.Contract>` or :func:`ProjectContract <brownie.network.contract.ProjectContract>` object to the global contract record.
 
-.. py:method:: brownie.network.state._find_contract(address)
+.. py:function:: brownie.network.state._find_contract(address)
 
     Given an address, returns the related :func:`Contract <brownie.network.contract.Contract>` or :func:`ProjectContract <brownie.network.contract.ProjectContract>` object. If none exists, returns ``None``.
 
-    This method is used internally by Brownie to locate a :func:`ProjectContract <brownie.network.contract.ProjectContract>` when the project it belongs to is unknown.
+    This function is used internally by Brownie to locate a :func:`ProjectContract <brownie.network.contract.ProjectContract>` when the project it belongs to is unknown.
 
-.. py:method:: brownie.network.state._remove_contract(contract)
+.. py:function:: brownie.network.state._remove_contract(contract)
 
     Removes a :func:`Contract <brownie.network.contract.Contract>` or :func:`ProjectContract <brownie.network.contract.ProjectContract>` object to the global contract record.
 
-.. py:method:: brownie.network.state._get_current_dependencies()
+.. py:function:: brownie.network.state._get_current_dependencies()
 
     Returns a list of the names of all currently deployed contracts, and of every contract that these contracts are dependent upon.
 
@@ -1610,14 +1800,6 @@ Rpc Methods
 
     .. note:: Brownie registers this method with the `atexit <https://docs.python.org/3/library/atexit.html>`_ module. It is not necessary to explicitly kill :func:`Rpc <brownie.network.rpc.Rpc>` before terminating a script or console session.
 
-.. py:classmethod:: Rpc.reset()
-
-    Resets the RPC to the genesis state by loading a snapshot. This is NOT equivalent to calling :func:`rpc.kill <Rpc.kill>` and then :func:`rpc.launch <Rpc.launch>`.
-
-    .. code-block:: python
-
-        >>> rpc.reset()
-
 .. py:classmethod:: Rpc.is_active()
 
     Returns a boolean indicating if the RPC process is currently active.
@@ -1656,121 +1838,6 @@ Rpc Methods
 
         >>> rpc.evm_compatible('byzantium')
         True
-
-.. py:classmethod:: Rpc.time()
-
-    Returns the current epoch time in the RPC as an integer.
-
-    .. code-block:: python
-
-        >>> rpc.time()
-        1550189043
-
-.. py:classmethod:: Rpc.sleep(seconds)
-
-    Advances the RPC time. You can only advance the time by whole seconds.
-
-    .. code-block:: python
-
-        >>> rpc.time()
-        1550189043
-        >>> rpc.sleep(100)
-        >>> rpc.time()
-        1550189143
-
-.. py:classmethod:: Rpc.mine(blocks=1)
-
-    Forces new blocks to be mined.
-
-    .. code-block:: python
-
-        >>> web3.eth.blockNumber
-        0
-        >>> rpc.mine()
-        Block height at 1
-        >>> web3.eth.blockNumber
-        1
-        >>> rpc.mine(3)
-        Block height at 4
-        >>> web3.eth.blockNumber
-        4
-
-.. py:classmethod:: Rpc.snapshot()
-
-    Creates a snapshot at the current block height.
-
-    .. code-block:: python
-
-        >>> rpc.snapshot()
-        Snapshot taken at block height 4
-
-.. py:classmethod:: Rpc.revert()
-
-    Reverts the blockchain to the latest snapshot. Raises ``ValueError`` if no snapshot has been taken.
-
-    .. code-block:: python
-
-        >>> rpc.snapshot()
-        Snapshot taken at block height 4
-        >>> accounts[0].balance()
-        100000000000000000000
-        >>> accounts[0].transfer(accounts[1], "10 ether")
-
-        Transaction sent: 0xd5d3b40eb298dfc48721807935eda48d03916a3f48b51f20bcded372113e1dca
-        Transaction confirmed - block: 5   gas used: 21000 (100.00%)
-        <Transaction object '0xd5d3b40eb298dfc48721807935eda48d03916a3f48b51f20bcded372113e1dca'>
-        >>> accounts[0].balance()
-        89999580000000000000
-        >>> rpc.revert()
-        Block height reverted to 4
-        >>> accounts[0].balance()
-        100000000000000000000
-
-.. py:classmethod:: Rpc.undo(num=1)
-
-    Undo one or more recent transactions.
-
-    * ``num``: Number of transactions to undo
-
-    Once undone, a transaction can be repeated using :func:`Rpc.redo <Rpc.redo>`. Calling :func:`Rpc.snapshot <Rpc.snapshot>` or :func:`Rpc.revert <Rpc.revert>` clears the undo buffer.
-
-    .. code-block:: python
-
-        >>> web3.eth.blockNumber
-        3
-        >>> rpc.undo()
-        'Block height at 2'
-
-
-.. py:classmethod:: Rpc.redo(num=1)
-
-    Redo one or more recently undone transactions.
-
-    * ``num``: Number of transactions to redo
-
-    .. code-block:: python
-
-        >>> web3.eth.blockNumber
-        2
-        >>> rpc.redo()
-        Transaction sent: 0x8c166b66b356ad7f5c58337973b89950f03105cdae896ac66f16cdd4fc395d05
-          Gas price: 0.0 gwei   Gas limit: 6721975
-          Transaction confirmed - Block: 3   Gas used: 21000 (0.31%)
-
-        'Block height at 3'
-
-
-Internal Methods
-----------------
-
-.. py:class:: brownie.network.rpc._revert_register(obj)
-
-    Registers an object to be called whenever the local RPC is reset or reverted. Objects that register must include ``_revert`` and ``_reset`` methods in order to receive these callbacks.
-
-.. py:class:: brownie.network.rpc._notify_registry(height)
-
-    Calls each registered object's ``_revert`` or ``_reset`` method after the local state has been reverted.
-
 
 ``brownie.network.transaction``
 ===============================

@@ -101,7 +101,7 @@ The following optional fields may be given for development networks, which are p
     * ``fork``: If given, the local client will fork from another currently running Ethereum client. The value may be an HTTP location and port of the other client, e.g. ``http://localhost:8545``, or the ID of a production network, e.g. ``mainnet``. See :ref:`Using a Forked Development Network <network-management-fork>`.
     * ``block_time``: The time waited between mining blocks. Defaults to instant mining.
     * ``default_balance``: The starting balance for all unlocked accounts. Can be given as unit string like "1000 ether" or "50 gwei" or as an number **in Ether**. Will default to 100 ether.
-    * ``time``: Date (ISO 8601) that the first block should start. Use this feature, along with :func:`Rpc.sleep <Rpc.sleep>` to test time-dependent code. Defaults to the current time.
+    * ``time``: Date (ISO 8601) that the first block should start. Use this feature, along with :func:`Chain.sleep <Chain.sleep>` to test time-dependent code. Defaults to the current time.
     * ``unlock``: A single address or a list of addresses to unlock. These accounts are added to the :func:`Accounts <brownie.network.account.Accounts>` container and can be used as if the private key is known. Also works in combination with ``fork`` to send transactions from any account.
 
 .. note::

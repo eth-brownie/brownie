@@ -42,8 +42,7 @@ from brownie.network.contract import (
     InterfaceContainer,
     ProjectContract,
 )
-from brownie.network.rpc import _revert_register
-from brownie.network.state import _add_contract, _remove_contract
+from brownie.network.state import _add_contract, _remove_contract, _revert_register
 from brownie.project import compiler, ethpm
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.ethpm import get_deployment_addresses, get_manifest

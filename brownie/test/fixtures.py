@@ -33,10 +33,10 @@ class PytestBrownieFixtures:
         a clean environment for the module, and that it's results will not affect
         subsequent tests.
         """
-        brownie.rpc.reset()
+        brownie.chain.reset()
         yield
         if not CONFIG.argv["interrupt"]:
-            brownie.rpc.reset()
+            brownie.chain.reset()
 
     @pytest.fixture
     def fn_isolation(self, module_isolation):
@@ -46,10 +46,10 @@ class PytestBrownieFixtures:
 
         Used to ensure that each test in a module begins with an identical environment.
         """
-        brownie.rpc.snapshot()
+        brownie.chain.snapshot()
         yield
         if not CONFIG.argv["interrupt"]:
-            brownie.rpc.revert()
+            brownie.chain.revert()
 
     @pytest.fixture(scope="session")
     def accounts(self):
@@ -60,6 +60,11 @@ class PytestBrownieFixtures:
     def a(self):
         """Short form of the accounts fixture."""
         yield brownie.accounts
+
+    @pytest.fixture(scope="session")
+    def chain(self):
+        """Yields a Chain object, used for interacting with the blockchain."""
+        yield brownie.rpc
 
     @pytest.fixture(scope="session")
     def Contract(self):
@@ -77,7 +82,7 @@ class PytestBrownieFixtures:
 
     @pytest.fixture(scope="session")
     def rpc(self):
-        """Yields an Rpc object, used for interacting with the local test chain."""
+        """Yields an Rpc object, used for interacting with the local RPC client."""
         yield brownie.rpc
 
     @pytest.fixture(scope="session")

@@ -9,9 +9,11 @@ from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentWarning
 
 from .account import Accounts
-from .rpc import Rpc, _notify_registry
+from .rpc import Rpc
+from .state import Chain, _notify_registry
 from .web3 import web3
 
+chain = Chain()
 rpc = Rpc()
 
 

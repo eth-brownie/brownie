@@ -52,7 +52,7 @@ def test_always_transact(accounts, tester, argv, web3, monkeypatch, history):
     assert owner == result
     assert web3.eth.blockNumber == height == len(history)
 
-    monkeypatch.setattr("brownie.network.rpc.undo", lambda: None)
+    monkeypatch.setattr("brownie.network.chain.undo", lambda: None)
     result = tester.owner()
     tx = history[-1]
 
@@ -66,7 +66,7 @@ def test_always_transact_block_identifier(accounts, tester, argv, web3, monkeypa
     height = web3.eth.blockNumber
     last_tx = history[-1]
 
-    monkeypatch.setattr("brownie.network.rpc.undo", lambda: None)
+    monkeypatch.setattr("brownie.network.chain.undo", lambda: None)
     tester.owner(block_identifier="latest")
 
     # using `block_identifier` should take priority over `always_transact`

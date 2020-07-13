@@ -25,7 +25,7 @@ from typing import Dict, List
 def setup(sphinx):
     from pygments_lexer_solidity import SolidityLexer
 
-    sphinx.add_lexer("Solidity", SolidityLexer())
+    sphinx.add_lexer("Solidity", SolidityLexer)
 
 
 with Path(__file__).parent.joinpath("../setup.py").open() as fp:

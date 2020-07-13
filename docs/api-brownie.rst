@@ -132,7 +132,7 @@ The ``_config`` module handles all Brownie configuration settings. It is not des
     {'name': 'development', 'gas_limit': False, 'gas_price': False}
 
 ConfigDict
-**********
+----------
 
 .. py:class:: brownie._config.ConfigDict
 
@@ -146,7 +146,7 @@ ConfigDict
         {'test': 123}
 
 ConfigDict Internal Methods
----------------------------
+***************************
 
 .. py:classmethod:: ConfigDict._lock
 

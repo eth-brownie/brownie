@@ -27,12 +27,12 @@ def test_returns_tx_on_revert_in_console(BrownieTester, accounts, console_mode):
     assert tx.status == 0
 
 
-def test_nonce(BrownieTester, accounts, rpc):
+def test_nonce(BrownieTester, accounts, chain):
     """nonces increment properly"""
     assert accounts[0].nonce == 0
     accounts[0].deploy(BrownieTester, True)
     assert accounts[0].nonce == 1
-    rpc.reset()
+    chain.reset()
     assert accounts[0].nonce == 0
 
 

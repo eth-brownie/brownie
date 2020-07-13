@@ -18,23 +18,23 @@ def setup(no_call_coverage):
     pass"""
 
 
-def test_always_transact(plugintester, mocker, rpc):
-    mocker.spy(rpc, "undo")
+def test_always_transact(plugintester, mocker, chain):
+    mocker.spy(chain, "undo")
 
     result = plugintester.runpytest()
     result.assert_outcomes(passed=1)
-    assert rpc.undo.call_count == 0
+    assert chain.undo.call_count == 0
 
     # with coverage eval
     result = plugintester.runpytest("--coverage")
     result.assert_outcomes(passed=1)
-    assert rpc.undo.call_count == 1
+    assert chain.undo.call_count == 1
 
     # with coverage and no_call_coverage fixture
     plugintester.makeconftest(conf_source)
     result = plugintester.runpytest("--coverage")
     result.assert_outcomes(passed=1)
-    assert rpc.undo.call_count == 1
+    assert chain.undo.call_count == 1
 
 
 def test_coverage_tx(json_path, plugintester):

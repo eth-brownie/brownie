@@ -24,11 +24,9 @@ from brownie.test import coverage
 from brownie.utils import color
 from brownie.utils.output import build_tree
 
+from . import state
 from .event import _decode_logs, _decode_trace
-from .state import TxHistory, _find_contract
 from .web3 import web3
-
-history = TxHistory()
 
 
 def trace_property(fn: Callable) -> Any:
@@ -124,7 +122,7 @@ class TransactionReceipt:
             self._silent = silent
 
         if isinstance(txid, bytes):
-            txid = txid.hex()
+            txid = HexBytes(txid).hex()
         if not self._silent:
             print(f"Transaction sent: {color('bright blue')}{txid}{color}")
 
@@ -258,14 +256,16 @@ class TransactionReceipt:
     def wait(self, required_confs: int) -> None:
         if self.confirmations > required_confs:
             print(f"This transaction already has {self.confirmations} confirmations.")
-        else:
-            while True:
-                try:
-                    tx: Dict = web3.eth.getTransaction(self.txid)
-                    break
-                except TransactionNotFound:
-                    time.sleep(0.5)
-            self._await_confirmation(tx, required_confs)
+            return
+
+        while True:
+            try:
+                tx: Dict = web3.eth.getTransaction(self.txid)
+                break
+            except TransactionNotFound:
+                time.sleep(0.5)
+
+        self._await_confirmation(tx, required_confs)
 
     def _raise_if_reverted(self, exc: Any) -> None:
         if self.status or CONFIG.mode == "console":
@@ -288,6 +288,10 @@ class TransactionReceipt:
                 tx: Dict = web3.eth.getTransaction(self.txid)
                 break
             except TransactionNotFound:
+                if self.sender is None:
+                    # if sender was not explicitly set, this transaction was
+                    # not broadcasted locally and so likely doesn't exist
+                    raise
                 time.sleep(0.5)
         self._set_from_tx(tx)
 
@@ -363,8 +367,8 @@ class TransactionReceipt:
         self.nonce = tx["nonce"]
 
         # if receiver is a known contract, set function name
-        if not self.fn_name and _find_contract(tx["to"]) is not None:
-            contract = _find_contract(tx["to"])
+        if not self.fn_name and state._find_contract(tx["to"]) is not None:
+            contract = state._find_contract(tx["to"])
             self.contract_name = contract._name
             self.fn_name = contract.get_method(tx["input"])
 
@@ -389,7 +393,7 @@ class TransactionReceipt:
         if self.status:
             self._events = _decode_logs(receipt["logs"])
         if self.fn_name:
-            history._gas(self._full_name(), receipt["gasUsed"])
+            state.TxHistory()._gas(self._full_name(), receipt["gasUsed"])
 
     def _confirm_output(self) -> str:
         status = ""
@@ -460,7 +464,7 @@ class TransactionReceipt:
 
         if trace[-1]["op"] != "RETURN" or self.contract_address:
             return
-        contract = _find_contract(self.receiver)
+        contract = state._find_contract(self.receiver)
         if contract:
             data = _get_memory(trace[-1], -1)
             fn = contract.get_method_object(self.input)
@@ -494,7 +498,7 @@ class TransactionReceipt:
             # if none is found, expand the trace and get it from the pcMap
             self._expand_trace()
             try:
-                pc_map = _find_contract(step["address"])._build["pcMap"]
+                pc_map = state._find_contract(step["address"])._build["pcMap"]
                 # if this is the function selector revert, check for a jump
                 if "first_revert" in pc_map[step["pc"]]:
                     i = trace.index(step) - 4
@@ -934,7 +938,7 @@ class TransactionReceipt:
         trace = self.trace[idx]
         if not trace.get("source", None):
             return ""
-        contract = _find_contract(self.trace[idx]["address"])
+        contract = state._find_contract(self.trace[idx]["address"])
         source, linenos = highlight_source(
             contract._sources.get(trace["source"]["filename"]), trace["source"]["offset"], pad
         )
@@ -1053,7 +1057,7 @@ def _get_memory(step: Dict, idx: int) -> HexBytes:
 
 
 def _get_last_map(address: EthAddress, sig: str) -> Dict:
-    contract = _find_contract(address)
+    contract = state._find_contract(address)
     last_map = {"address": EthAddress(address), "jumpDepth": 0, "name": None, "coverage": False}
 
     if contract:

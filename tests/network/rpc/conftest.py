@@ -3,7 +3,7 @@
 import pytest
 
 from brownie._config import CONFIG
-from brownie.network.rpc import _notify_registry
+from brownie.network.state import _notify_registry
 
 
 @pytest.fixture(scope="session")
@@ -17,13 +17,13 @@ def original_port(xdist_id):
 
 
 @pytest.fixture(scope="module")
-def _no_rpc_setup(rpc, web3, temp_port, original_port):
+def _no_rpc_setup(rpc, chain, web3, temp_port, original_port):
     CONFIG.networks["development"]["cmd_settings"]["port"] = temp_port
     web3.connect(f"http://127.0.0.1:{temp_port}")
     proc = rpc._rpc
-    reset_id = rpc._reset_id
+    reset_id = chain._reset_id
     rpc._rpc = None
-    rpc._reset_id = False
+    chain._reset_id = False
     # rpc._launch = rpc.launch
     # rpc.launch = _launch
     _notify_registry(0)
@@ -34,8 +34,8 @@ def _no_rpc_setup(rpc, web3, temp_port, original_port):
     rpc.kill(False)
     _notify_registry(0)
     rpc._rpc = proc
-    rpc._reset_id = reset_id
-    rpc._current_id = reset_id
+    chain._reset_id = reset_id
+    chain._current_id = reset_id
 
 
 @pytest.fixture
