@@ -1,12 +1,15 @@
 #!/usr/bin/python3
 
+import functools
 import sys
 import threading
 import time
+from collections import OrderedDict
 from hashlib import sha1
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
+import black
 import requests
 from eth_abi import decode_abi
 from hexbytes import HexBytes
@@ -19,6 +22,7 @@ from brownie.project import build
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie.utils import color
+from brownie.utils.output import build_tree
 
 from .event import _decode_logs, _decode_trace
 from .state import TxHistory, _find_contract
@@ -51,6 +55,7 @@ def trace_inspection(fn: Callable) -> Any:
             return None
         return fn(self, *args, **kwargs)
 
+    functools.update_wrapper(wrapper, fn)
     return wrapper
 
 
@@ -135,6 +140,7 @@ class TransactionReceipt:
         self._modified_state = None
         self._new_contracts = None
         self._internal_transfers = None
+        self._subcalls: Optional[List[Dict]] = None
         self._confirmed = threading.Event()
 
         # attributes that cannot be set until the tx confirms
@@ -224,6 +230,12 @@ class TransactionReceipt:
         elif self.contract_address and self._revert_msg == "out of gas":
             self._get_trace()
         return self._revert_msg
+
+    @trace_property
+    def subcalls(self) -> Optional[List]:
+        if self._subcalls is None:
+            self._expand_trace()
+        return self._subcalls
 
     @trace_property
     def trace(self) -> Optional[List]:
@@ -432,7 +444,7 @@ class TransactionReceipt:
             return
 
         if isinstance(trace[0]["gas"], str):
-            # handle traces where numeric values are returned as nex (Nethermind)
+            # handle traces where numeric values are returned as hex (Nethermind)
             for step in trace:
                 step["gas"] = int(step["gas"], 16)
                 step["gasCost"] = int.from_bytes(HexBytes(step["gasCost"]), "big", signed=True)
@@ -516,6 +528,7 @@ class TransactionReceipt:
         self._trace = trace = self._raw_trace
         self._new_contracts = []
         self._internal_transfers = []
+        self._subcalls = []
         if self.contract_address or not trace:
             coverage._add_transaction(self.coverage_hash, {})
             return
@@ -547,30 +560,49 @@ class TransactionReceipt:
                     out = next(x for x in trace[i:] if x["depth"] == step["depth"])
                     address = out["stack"][-1][-40:]
                     sig = f"<{step['op']}>"
+                    calldata = None
                     self._new_contracts.append(EthAddress(address))
                     if int(step["stack"][-1], 16):
                         self._add_internal_xfer(step["address"], address, step["stack"][-1])
                 else:
                     # calling an existing contract
                     stack_idx = -4 if step["op"] in ("CALL", "CALLCODE") else -3
-                    offset = int(step["stack"][stack_idx], 16) * 2
-                    sig = HexBytes("".join(step["memory"])[offset : offset + 8]).hex()
+                    offset = int(step["stack"][stack_idx], 16)
+                    length = int(step["stack"][stack_idx - 1], 16)
+                    calldata = HexBytes("".join(step["memory"]))[offset : offset + length]
+                    sig = calldata[:4].hex()
                     address = step["stack"][-2][-40:]
 
                 last_map[trace[i]["depth"]] = _get_last_map(address, sig)
                 coverage_eval.setdefault(last_map[trace[i]["depth"]]["name"], {})
+
+                self._subcalls.append(
+                    {"from": step["address"], "to": EthAddress(address), "op": step["op"]}
+                )
+                if step["op"] in ("CALL", "CALLCODE"):
+                    self._subcalls[-1]["value"] = int(step["stack"][-3], 16)
+                if calldata and last_map[trace[i]["depth"]]["contract"]:
+                    fn = last_map[trace[i]["depth"]]["function"]
+                    zip_ = zip(fn.abi["inputs"], fn.decode_input(calldata))
+                    self._subcalls[-1].update(
+                        inputs={i[0]["name"]: i[1] for i in zip_},  # type:ignore
+                        function=fn._input_sig,
+                    )
+                elif calldata:
+                    self._subcalls[-1]["calldata"] = calldata
 
             # update trace from last_map
             last = last_map[trace[i]["depth"]]
             trace[i].update(
                 address=last["address"],
                 contractName=last["name"],
-                fn=last["fn"][-1],
+                fn=last["internal_calls"][-1],
                 jumpDepth=last["jumpDepth"],
                 source=False,
             )
 
-            if trace[i]["op"] == "CALL" and int(trace[i]["stack"][-3], 16):
+            opcode = trace[i]["op"]
+            if opcode == "CALL" and int(trace[i]["stack"][-3], 16):
                 self._add_internal_xfer(
                     last["address"], trace[i]["stack"][-2][-40:], trace[i]["stack"][-3]
                 )
@@ -578,6 +610,30 @@ class TransactionReceipt:
             if not last["pc_map"]:
                 continue
             pc = last["pc_map"][trace[i]["pc"]]
+
+            if trace[i]["depth"] and opcode in ("RETURN", "REVERT", "INVALID", "SELFDESTRUCT"):
+                subcall: dict = next(
+                    i for i in self._subcalls[::-1] if i["to"] == last["address"]  # type: ignore
+                )
+
+                if opcode == "RETURN":
+                    data = _get_memory(trace[i], -1)
+                    subcall["return_value"] = None
+                    if data:
+                        fn = last["function"]
+                        return_values = fn.decode_output(data)
+                        if len(fn.abi["outputs"]) == 1:
+                            return_values = (return_values,)
+                        subcall["return_value"] = return_values
+                elif opcode == "SELFDESTRUCT":
+                    subcall["selfdestruct"] = True
+                else:
+                    if opcode == "REVERT":
+                        data = _get_memory(trace[i], -1)
+                        if data:
+                            subcall["revert_msg"] = decode_abi(["string"], data)[0]
+                    if "revert_msg" not in subcall and "dev" in pc:
+                        subcall["revert_msg"] = pc["dev"]
 
             if "path" not in pc:
                 continue
@@ -610,12 +666,12 @@ class TransactionReceipt:
                         fn = last["pc_map"][trace[i + 1]["pc"]]["fn"]
                     except (KeyError, IndexError):
                         continue
-                    if fn != last["fn"][-1]:
-                        last["fn"].append(fn)
+                    if fn != last["internal_calls"][-1]:
+                        last["internal_calls"].append(fn)
                         last["jumpDepth"] += 1
                 # jump 'o' is returning from an internal function
                 elif last["jumpDepth"] > 0:
-                    del last["fn"][-1]
+                    del last["internal_calls"][-1]
                     last["jumpDepth"] -= 1
         coverage._add_transaction(
             self.coverage_hash, dict((k, v) for k, v in coverage_eval.items() if v)
@@ -711,21 +767,32 @@ class TransactionReceipt:
         return internal_gas, total_gas
 
     @trace_inspection
-    def call_trace(self) -> None:
-        """Displays the complete sequence of contracts and methods called during
-        the transaction, and the range of trace step indexes for each method.
+    def call_trace(self, expand: bool = False) -> None:
+        """
+        Display the complete sequence of contracts and methods called during
+        the transaction. The format:
 
-        Lines highlighed in red ended with a revert.
+        Contract.functionName  [instruction]  start:stop  [gas used]
+
+        * start:stop are index values for the `trace` member of this object,
+          showing the points where the call begins and ends
+        * for calls that include subcalls, gas use is displayed as
+          [gas used in this frame / gas used in this frame + subcalls]
+        * Calls displayed in red ended with a `REVERT` or `INVALID` instruction.
+
+        Arguments
+        ---------
+        expand : bool
+            If `True`, show an expanded call trace including inputs and return values
         """
 
         trace = self.trace
-        result = f"Call trace for '{color('bright blue')}{self.txid}{color}':"
-        result += f"\nInitial call cost  [{color('bright yellow')}{self._call_cost} gas{color}]"
-        result += _step_print(
-            trace[0], trace[-1], None, 0, len(trace), self._get_trace_gas(0, len(self.trace))
+        key = _step_internal(
+            trace[0], trace[-1], 0, len(trace), self._get_trace_gas(0, len(self.trace))
         )
-        indent = {0: 0}
-        indent_chars = [""] * 1000
+
+        call_tree: OrderedDict = OrderedDict({key: OrderedDict()})
+        active_tree = [call_tree[key]]
 
         # (index, depth, jumpDepth) for relevent steps in the trace
         trace_index = [(0, 0, 0)] + [
@@ -734,18 +801,30 @@ class TransactionReceipt:
             if not _step_compare(trace[i], trace[i - 1])
         ]
 
+        subcalls = self.subcalls[::-1]
         for i, (idx, depth, jump_depth) in enumerate(trace_index[1:], start=1):
             last = trace_index[i - 1]
+            if depth == last[1] and jump_depth < last[2]:
+                # returning from an internal function, reduce tree by one
+                active_tree.pop()
+                continue
+            elif depth < last[1]:
+                # returning from an external call, return tree by jumpDepth of the previous depth
+                active_tree = active_tree[: -(last[2] + 1)]
+                continue
+
             if depth > last[1]:
                 # called to a new contract
-                indent[depth] = trace_index[i - 1][2] + indent[depth - 1]
                 end = next((x[0] for x in trace_index[i + 1 :] if x[1] < depth), len(trace))
-                _depth = depth + indent[depth]
-                symbol, indent_chars[_depth] = _check_last(trace_index[i - 1 :])
-                indent_str = "".join(indent_chars[:_depth]) + symbol
-                (total_gas, internal_gas) = self._get_trace_gas(idx, end)
-                result += _step_print(
-                    trace[idx], trace[end - 1], indent_str, idx, end, (total_gas, internal_gas)
+                total_gas, internal_gas = self._get_trace_gas(idx, end)
+                key = _step_external(
+                    trace[idx],
+                    trace[end - 1],
+                    idx,
+                    end,
+                    (total_gas, internal_gas),
+                    subcalls.pop(),
+                    expand,
                 )
             elif depth == last[1] and jump_depth > last[2]:
                 # jumped into an internal function
@@ -757,14 +836,20 @@ class TransactionReceipt:
                     ),
                     len(trace),
                 )
-                _depth = depth + jump_depth + indent[depth]
-                symbol, indent_chars[_depth] = _check_last(trace_index[i - 1 :])
-                indent_str = "".join(indent_chars[:_depth]) + symbol
-                (total_gas, internal_gas) = self._get_trace_gas(idx, end)
-                result += _step_print(
-                    trace[idx], trace[end - 1], indent_str, idx, end, (total_gas, internal_gas)
+
+                total_gas, internal_gas = self._get_trace_gas(idx, end)
+                key = _step_internal(
+                    trace[idx], trace[end - 1], idx, end, (total_gas, internal_gas)
                 )
-        print(result)
+
+            active_tree[-1][key] = OrderedDict()
+            active_tree.append(active_tree[-1][key])
+
+        print(
+            f"Call trace for '{color('bright blue')}{self.txid}{color}':\n"
+            f"Initial call cost  [{color('bright yellow')}{self._call_cost} gas{color}]"
+        )
+        print(build_tree(call_tree).rstrip())
 
     def traceback(self) -> None:
         print(self._traceback_string() or "")
@@ -881,50 +966,90 @@ def _step_compare(a: Dict, b: Dict) -> bool:
     return a["depth"] == b["depth"] and a["jumpDepth"] == b["jumpDepth"]
 
 
-def _check_last(trace_index: Sequence[Tuple]) -> Tuple[str, str]:
-    initial = trace_index[0][1:]
-    try:
-        trace = next(i for i in trace_index[1:-1] if i[1:] == initial)
-    except StopIteration:
-        return "\u2514", "  "
-    i = trace_index[1:].index(trace) + 2
-    next_ = trace_index[i][1:]
-    if next_[0] < initial[0] or (next_[0] == initial[0] and next_[1] <= initial[1]):
-        return "\u2514", "  "
-    return "\u251c", "\u2502 "
-
-
-def _step_print(
+def _step_internal(
     step: Dict,
     last_step: Dict,
-    indent: Optional[str],
     start: Union[str, int],
     stop: Union[str, int],
     gas: Tuple[int, int],
+    subcall: Dict = None,
 ) -> str:
-    print_str = f"\n{color('dark white')}"
-    if indent is not None:
-        print_str += f"{indent}\u2500"
     if last_step["op"] in {"REVERT", "INVALID"} and _step_compare(step, last_step):
         contract_color = color("bright red")
     else:
-        contract_color = color("bright magenta" if not step["jumpDepth"] else "")
-    print_str += f"{contract_color}{step['fn']} {color('dark white')}{start}:{stop}{color}"
-    if gas[0] == gas[1]:
-        print_str += f"  [{color('bright yellow')}{gas[0]} gas{color}]"
+        contract_color = color("bright cyan") if not step["jumpDepth"] else color()
+    key = f"{color('dark white')}{contract_color}{step['fn']}  {color('dark white')}"
+
+    left_bracket = f"{color('dark white')}["
+    right_bracket = f"{color('dark white')}]"
+
+    if subcall:
+        key = f"{key}[{color}{subcall['op']}{right_bracket}  "
+
+    key = f"{key}{start}:{stop}{color}"
+
+    if gas:
+        if gas[0] == gas[1]:
+            gas_str = f"{color('bright yellow')}{gas[0]} gas"
+        else:
+            gas_str = f"{color('bright yellow')}{gas[0]} / {gas[1]} gas"
+        key = f"{key}  {left_bracket}{gas_str}{right_bracket}"
+
+    if last_step["op"] == "SELFDESTRUCT":
+        key = f"{key}  {left_bracket}{color('bright red')}SELFDESTRUCT{right_bracket}"
+
+    return key
+
+
+def _step_external(
+    step: Dict,
+    last_step: Dict,
+    start: Union[str, int],
+    stop: Union[str, int],
+    gas: Tuple[int, int],
+    subcall: Dict,
+    expand: bool,
+) -> str:
+    key = _step_internal(step, last_step, start, stop, gas, subcall)
+    if not expand:
+        return key
+
+    mode = black.FileMode(line_length=60)
+    result: OrderedDict = OrderedDict({key: {}})
+    result[key][f"address: {step['address']}"] = None
+
+    if "value" in subcall:
+        result[key][f"value: {subcall['value']}"] = None
+
+    if "inputs" not in subcall:
+        result[key][f"calldata: {subcall['calldata']}"] = None
+    if subcall["inputs"]:
+        result[key]["input arguments:"] = [
+            f"{k}: {black.format_str(str(v), mode=mode)}" for k, v in subcall["inputs"].items()
+        ]
     else:
-        print_str += f"  [{color('bright yellow')}{gas[0]} / {gas[1]} gas{color}]"
-    if not step["jumpDepth"]:
-        print_str += (
-            f"  {color('dark white')}({color}{step['address']}{color('dark white')}){color}"
-        )
-    return print_str
+        result[key]["input arguments: None"] = None
+
+    if "return_value" in subcall:
+        value = subcall["return_value"]
+        if isinstance(value, tuple) and len(value) > 1:
+            result[key]["return values:"] = [black.format_str(str(i), mode=mode) for i in value]
+        else:
+            if isinstance(value, tuple):
+                value = value[0]
+            value_str = black.format_str(str(value), mode=mode)
+            result[key][f"return value: {value_str}"] = None
+
+    if "revert_msg" in subcall:
+        result[key][f"revert reason: {color('bright red')}{subcall['revert_msg']}{color}"] = None
+
+    return build_tree(result, multiline_pad=0).rstrip()
 
 
 def _get_memory(step: Dict, idx: int) -> HexBytes:
-    offset = int(step["stack"][idx], 16) * 2
-    length = int(step["stack"][idx - 1], 16) * 2
-    return HexBytes("".join(step["memory"])[offset : offset + length])
+    offset = int(step["stack"][idx], 16)
+    length = int(step["stack"][idx - 1], 16)
+    return HexBytes("".join(step["memory"]))[offset : offset + length]
 
 
 def _get_last_map(address: EthAddress, sig: str) -> Dict:
@@ -938,8 +1063,9 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
             full_fn_name = contract._name
         last_map.update(
             contract=contract,
+            function=contract.get_method_object(sig),
             name=contract._name,
-            fn=[full_fn_name],
+            internal_calls=[full_fn_name],
             path_map=contract._build.get("allSourcePaths"),
             pc_map=contract._build.get("pcMap"),
         )
@@ -948,6 +1074,6 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
             if contract._build["language"] == "Solidity":
                 last_map["active_branches"] = set()
     else:
-        last_map.update(contract=None, fn=[f"<UnknownContract>.{sig}"], pc_map=None)
+        last_map.update(contract=None, internal_calls=[f"<UnknownContract>.{sig}"], pc_map=None)
 
     return last_map

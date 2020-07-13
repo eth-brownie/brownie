@@ -318,6 +318,10 @@ class TestAutoSuggest(AutoSuggest):
                 # object is a callable class instance
                 obj = obj.__call__
 
+            # ensure we aren't looking at a decorator
+            if hasattr(obj, "__wrapped__"):
+                obj = obj.__wrapped__
+
             if hasattr(obj, "_autosuggest"):
                 inputs = obj._autosuggest()
             else:

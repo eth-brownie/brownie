@@ -892,6 +892,7 @@ class _ContractMethod:
         self.abi = abi
         self._owner = owner
         self.signature = build_function_selector(abi)
+        self._input_sig = build_function_signature(abi)
         self.natspec = natspec or {}
 
     def __repr__(self) -> str:
@@ -986,6 +987,23 @@ class _ContractMethod:
             data=self.encode_input(*args),
         )
 
+    def decode_input(self, hexstr: str) -> List:
+        """
+        Decode input call data for this method.
+
+        Arguments
+        ---------
+        hexstr : str
+            Hexstring of input call data
+
+        Returns
+        -------
+        Decoded values
+        """
+        types_list = get_type_strings(self.abi["inputs"])
+        result = eth_abi.decode_abi(types_list, HexBytes(hexstr)[4:])
+        return format_input(self.abi, result)
+
     def encode_input(self, *args: Tuple) -> str:
         """
         Generate encoded ABI data to call the method with the given arguments.
@@ -1005,12 +1023,18 @@ class _ContractMethod:
         return self.signature + eth_abi.encode_abi(types_list, data).hex()
 
     def decode_output(self, hexstr: str) -> Tuple:
-        """Decodes hexstring data returned by this method.
+        """
+        Decode hexstring data returned by this method.
 
-        Args:
-            hexstr: Hexstring of returned call data
+        Arguments
+        ---------
+        hexstr : str
+            Hexstring of returned call data
 
-        Returns: Decoded values."""
+        Returns
+        -------
+        Decoded values
+        """
         types_list = get_type_strings(self.abi["outputs"])
         result = eth_abi.decode_abi(types_list, HexBytes(hexstr))
         result = format_output(self.abi, result)
