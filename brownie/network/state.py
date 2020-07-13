@@ -118,6 +118,13 @@ class Chain(metaclass=_Singleton):
         self._undo_lock = threading.Lock()
         self._undo_buffer: List = []
         self._redo_buffer: List = []
+        self._chainid: Optional[int] = None
+
+    def __repr__(self) -> str:
+        try:
+            return f"<Chain object (chainid={self.id}, height={self.height})>"
+        except Exception:
+            return "<Chain object (disconnected)>"
 
     def __len__(self) -> int:
         """
@@ -146,6 +153,16 @@ class Chain(metaclass=_Singleton):
         if block_number < 0:
             block_number = web3.eth.blockNumber + 1 + block_number
         return web3.eth.getBlock(block_number)
+
+    @property
+    def height(self) -> int:
+        return web3.eth.blockNumber
+
+    @property
+    def id(self) -> int:
+        if self._chainid is None:
+            self._chainid = web3.eth.chainId
+        return self._chainid
 
     def _request(self, method: str, args: List) -> int:
         try:
@@ -339,6 +356,7 @@ class Chain(metaclass=_Singleton):
         self._snapshot_id = None
         self._reset_id = None
         self._current_id = None
+        self._chainid = None
         _notify_registry(0)
 
 
