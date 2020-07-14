@@ -3,8 +3,9 @@
 import code
 import importlib
 import inspect
-import re
 import sys
+import tokenize
+from io import StringIO
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
@@ -364,26 +365,73 @@ class TestAutoSuggest(AutoSuggest):
             return
 
 
-def _parse_document(local_dict, text):
-    if "=" in text:
-        text = text.split("=")[-1]
-
-    text = text.lstrip()
-    attributes = text.split(".")
-    current_text = attributes.pop()
-
-    base = local_dict
-    for key in attributes:
-        if "[" in key:
-            key, idx = re.match(r"^(\w+)\[([-0-9]+)\]$", key).groups()
-            base = _get_obj(base, key)[int(idx)]
-        else:
-            base = _get_obj(base, key)
-
-    return base, current_text
-
-
-def _get_obj(obj, key):
+def _obj_from_tokens(obj, token_list):
+    if len(token_list) > 1:
+        raise
+    key = token_list[0].string
     if isinstance(obj, dict):
         return obj[key]
     return getattr(obj, key)
+
+
+def _parse_document(local_dict, text):
+    try:
+        token_list = list(tokenize.generate_tokens(StringIO(text).readline))[:-2]
+    except tokenize.TokenError:
+        index = max(text.rfind("("), text.rfind("["))
+        return _parse_document(local_dict, text[index + 1 :])
+
+    idx = 0
+    token_iter = iter(token_list)
+    base = local_dict
+    for token in token_iter:
+        if token.type == 54 and token.string not in ".[]()":
+            # if token is an operator or delimiter but not a parenthesis or dot, this is
+            # the start of a new expression. we restart evaluation from the next token.
+            idx = token_list.index(token) + 1
+            return _parse_document(local_dict, tokenize.untokenize(token_list[idx:]))
+
+        if token.exact_type == 23:
+            # token is a dot `.`
+            i = token_list.index(token)
+            base = _obj_from_tokens(base, token_list[idx:i])
+            idx = i + 1
+
+        elif token.exact_type == 7:
+            # token is a left parenthesis `(`
+            paren_count = 1
+            base = _obj_from_tokens(base, token_list[idx : token_list.index(token)])
+            base = base.__annotations__["return"]
+            while True:
+                # advance the iterator until we find the closing parenthesis
+                token = next(token_iter)
+                if token.exact_type == 7:
+                    paren_count += 1
+                elif token.exact_type == 8:
+                    paren_count -= 1
+                if not paren_count:
+                    # token is a right parenthesis
+                    # advance the iterator by one more token, it should be a dot
+                    next(token_iter)
+                    break
+            idx = token_list.index(token) + 2
+
+        elif token.exact_type == 9:
+            # token is a left square bracket `[`
+            inner_tokens = []
+            base = _obj_from_tokens(base, token_list[idx : token_list.index(token)])
+            while True:
+                inner_tokens.append(next(token_iter))
+                if inner_tokens[-1].exact_type == 10:
+                    # token is a right square bracket
+                    # advance the iterator by one more token, it should be a dot
+                    next(token_iter)
+                    break
+            idx = token_list.index(inner_tokens[-1]) + 2
+            value = int(tokenize.untokenize(inner_tokens[:-1]))
+            base = base[value]
+
+    # if the final token is a name of number, it is the current text we are basing
+    # the completion suggestion on. otherwise, there is no current text.
+    current_text = token_list[-1].string if token_list[-1].type in (1, 2) else ""
+    return base, current_text

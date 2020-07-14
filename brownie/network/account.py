@@ -472,7 +472,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         nonce: Optional[int] = None,
         required_confs: int = 1,
         silent: bool = False,
-    ) -> "TransactionReceipt":
+    ) -> TransactionReceipt:
         """
         Broadcast a transaction from this account.
 
