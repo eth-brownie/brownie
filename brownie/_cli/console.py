@@ -204,6 +204,7 @@ class Console(code.InteractiveConsole):
             return False
 
         if code is None:
+            # multiline statement
             return True
 
         try:
@@ -286,12 +287,21 @@ class ConsoleCompleter(Completer):
 
     def get_completions(self, document, complete_event):
         try:
-            base, current = _parse_document(self.locals, document.text)
+            base, current, _, is_open_sqb = _parse_document(self.locals, document.text)
 
-            if isinstance(base, dict):
-                completions = sorted(base)
+            if is_open_sqb:
+                # special case for dictionary keys
+                if not isinstance(base[-2], dict):
+                    return
+                completions = sorted(base[-2], key=lambda k: str(k))
+                completions = [str(i) if not isinstance(i, str) else f'"{i}"' for i in completions]
+                current = current.lstrip("'\"")
+
+            elif isinstance(base[-1], dict):
+                completions = sorted(base[-1], key=lambda k: str(k))
             else:
-                completions = dir(base)
+                completions = dir(base[-1])
+
             if current:
                 completions = [i for i in completions if i.startswith(current)]
             else:
@@ -318,15 +328,18 @@ class TestAutoSuggest(AutoSuggest):
 
     def get_suggestion(self, buffer, document):
         try:
-            if "(" not in document.text or ")" in document.text:
-                return
-            method, args = document.text.rsplit("(", maxsplit=1)
-            base, current = _parse_document(self.locals, method)
+            base, current, comma_data, _ = _parse_document(self.locals, document.text)
 
-            if isinstance(base, dict):
-                obj = base[current]
-            else:
-                obj = getattr(base, current)
+            # find the active function call
+            del base[-1]
+            while base[-1] == self.locals:
+                del base[-1]
+                del comma_data[-1]
+            obj = base[-1]
+
+            count = comma_data[-1][0]
+            distance = len(document.text) - comma_data[-1][1]
+
             if inspect.isclass(obj):
                 obj = obj.__init__
             elif (
@@ -351,15 +364,14 @@ class TestAutoSuggest(AutoSuggest):
                         inputs[i] = f"{inputs[i]}={obj.__defaults__[i]}"
                 if inputs and inputs[0] in (" self", " cls"):
                     inputs = inputs[1:]
-            if not args and not inputs:
+            if not count and not inputs:
                 return Suggestion(")")
 
-            args = args.split(",")
             inputs[0] = inputs[0][1:]
-            remaining_inputs = inputs[len(args) - 1 :]
-            remaining_inputs[0] = remaining_inputs[0][len(args[-1]) :]
+            remaining_inputs = inputs[count:]
+            remaining_inputs[0] = remaining_inputs[0][distance:]
 
-            return Suggestion(",".join(remaining_inputs) + ")")
+            return Suggestion(f"{','.join(remaining_inputs)})")
 
         except Exception:
             return
@@ -375,63 +387,117 @@ def _obj_from_tokens(obj, token_list):
 
 
 def _parse_document(local_dict, text):
-    try:
-        token_list = list(tokenize.generate_tokens(StringIO(text).readline))[:-2]
-    except tokenize.TokenError:
-        index = max(text.rfind("("), text.rfind("["))
-        return _parse_document(local_dict, text[index + 1 :])
+    token_list = []
+    paren_count = 0
+    lsq_count = 0
+    active_objects = [local_dict]
+    pending_active = []
 
-    idx = 0
-    token_iter = iter(token_list)
-    base = local_dict
-    for token in token_iter:
-        if token.type == 54 and token.string not in ".[]()":
+    # number of comments at this call depth, end offset of the last comment
+    comma_data = [[0, 0]]
+
+    token_iter = tokenize.generate_tokens(StringIO(text).readline)
+    while True:
+        try:
+            token = next(token_iter)
+        except (tokenize.TokenError, StopIteration):
+            break
+
+        if token.type in (0, 4):
+            # end marker, newline
+            continue
+
+        if token.type == 54 and token.string not in ",.[]()":
             # if token is an operator or delimiter but not a parenthesis or dot, this is
-            # the start of a new expression. we restart evaluation from the next token.
-            idx = token_list.index(token) + 1
-            return _parse_document(local_dict, tokenize.untokenize(token_list[idx:]))
+            # the start of a new expression. restart evaluation from the next token.
+            token_list = []
+            comma_data = [[0, token.end[1]]]
+            paren_count = 0
+            lsq_count = 0
+            active_objects = [local_dict]
+            pending_active = None
+            continue
 
-        if token.exact_type == 23:
-            # token is a dot `.`
-            i = token_list.index(token)
-            base = _obj_from_tokens(base, token_list[idx:i])
-            idx = i + 1
+        if token.exact_type == 8:
+            # right parenthesis `)`
+            paren_count -= 1
+            del comma_data[-1]
+            del active_objects[-1]
+            token_list.clear()
+            if active_objects[-1] != local_dict:
+                try:
+                    pending_active = active_objects[-1].__annotations__["return"]
+                except (AttributeError, KeyError):
+                    pending_active = None
+                if isinstance(pending_active, str):
+                    pending_active = None
 
-        elif token.exact_type == 7:
-            # token is a left parenthesis `(`
-            paren_count = 1
-            base = _obj_from_tokens(base, token_list[idx : token_list.index(token)])
-            base = base.__annotations__["return"]
-            while True:
-                # advance the iterator until we find the closing parenthesis
-                token = next(token_iter)
-                if token.exact_type == 7:
-                    paren_count += 1
-                elif token.exact_type == 8:
-                    paren_count -= 1
-                if not paren_count:
-                    # token is a right parenthesis
-                    # advance the iterator by one more token, it should be a dot
-                    next(token_iter)
-                    break
-            idx = token_list.index(token) + 2
+        elif token.exact_type == 10:
+            # right square bracket `]`
+            lsq_count -= 1
+            del comma_data[-1]
+            del active_objects[-1]
+            if lsq_count or len(token_list) > 1:
+                # no support for nested index references or multiple keys
+                return
+            if active_objects[-1] != local_dict:
+                if token_list[0].exact_type == 2:
+                    # number
+                    idx = int(token_list[0].string)
+                elif token_list[0].exact_type == 3:
+                    # string
+                    idx = token_list[0].string.strip(token_list[0].string[0])
+                else:
+                    return
 
-        elif token.exact_type == 9:
-            # token is a left square bracket `[`
-            inner_tokens = []
-            base = _obj_from_tokens(base, token_list[idx : token_list.index(token)])
-            while True:
-                inner_tokens.append(next(token_iter))
-                if inner_tokens[-1].exact_type == 10:
-                    # token is a right square bracket
-                    # advance the iterator by one more token, it should be a dot
-                    next(token_iter)
-                    break
-            idx = token_list.index(inner_tokens[-1]) + 2
-            value = int(tokenize.untokenize(inner_tokens[:-1]))
-            base = base[value]
+                pending_active = active_objects[-1][idx]
+            token_list.clear()
 
-    # if the final token is a name of number, it is the current text we are basing
+        elif token.exact_type == 12:
+            # comma `,`
+            comma_data[-1][0] += 1
+            comma_data[-1][1] = token.end[1]
+            token_list.clear()
+            active_objects[-1] = local_dict
+            pending_active = None
+
+        elif token.exact_type == 23:
+            # period `.`
+            if pending_active:
+                active_objects[-1] = pending_active
+                pending_active = None
+            else:
+                active_objects[-1] = _obj_from_tokens(active_objects[-1], token_list)
+            token_list.clear()
+
+        elif token.exact_type in (7, 9):
+            # left parenthesis `(` or left square bracket `[`
+            if pending_active:
+                active_objects[-1] = pending_active
+                pending_active = None
+
+            if token.exact_type == 7:
+                paren_count += 1
+            else:
+                lsq_count += 1
+                if lsq_count > 1:
+                    return
+
+            comma_data.append([0, token.end[1]])
+            if token_list:
+                active_objects[-1] = _obj_from_tokens(active_objects[-1], token_list)
+                token_list.clear()
+            active_objects.append(local_dict)
+
+        else:
+            if pending_active:
+                return
+            token_list.append(token)
+
+    # if the final token is a name or number, it is the current text we are basing
     # the completion suggestion on. otherwise, there is no current text.
-    current_text = token_list[-1].string if token_list[-1].type in (1, 2) else ""
-    return base, current_text
+    current_text = ""
+    if token_list and token_list[-1].type in (1, 2, 3):
+        current_text = token_list[-1].string
+
+    return active_objects, current_text, comma_data, lsq_count > 0
