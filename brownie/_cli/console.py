@@ -11,6 +11,7 @@ from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.key_binding.defaults import load_key_bindings
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
@@ -92,7 +93,9 @@ class Console(code.InteractiveConsole):
         console_settings = CONFIG.settings["console"]
 
         locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
-        locals_dict.update(_dir=dir, dir=self._dir, exit=_Quitter("exit"), quit=_Quitter("quit"))
+        locals_dict.update(
+            _dir=dir, dir=self._dir, exit=_Quitter("exit"), quit=_Quitter("quit"), _console=self
+        )
 
         if project:
             project._update_and_register(locals_dict)
@@ -121,17 +124,24 @@ class Console(code.InteractiveConsole):
         if console_settings["completions"]:
             kwargs["completer"] = ConsoleCompleter(locals_dict)
 
-        # add binding for multi-line pastes
-        key_bindings = KeyBindings()
-        key_bindings.add(Keys.BracketedPaste)(self.paste_event)
         self.compile_mode = "single"
-
         self.prompt_session = PromptSession(
             history=SanitizedFileHistory(history_file, locals_dict),
             input=self.prompt_input,
-            key_bindings=key_bindings,
+            key_bindings=KeyBindings(),
             **kwargs,
         )
+
+        # add custom bindings
+        key_bindings = self.prompt_session.key_bindings
+        key_bindings.add(Keys.BracketedPaste)(self.paste_event)
+
+        key_bindings.add("c-i")(self.tab_event)
+        key_bindings.get_bindings_for_keys(("c-i",))[-1].filter = lambda: not self.tab_filter()
+
+        # modify default bindings
+        key_bindings = load_key_bindings()
+        key_bindings.get_bindings_for_keys(("c-i",))[-1].filter = self.tab_filter
 
         if console_settings["auto_suggest"]:
             # remove the builtin binding for auto-suggest acceptance
@@ -174,15 +184,6 @@ class Console(code.InteractiveConsole):
     def raw_input(self, prompt=""):
         return self.prompt_session.prompt(prompt)
 
-    def paste_event(self, event):
-        data = event.data
-        data = data.replace("\r\n", "\n")
-        data = data.replace("\r", "\n")
-
-        if "\n" in data:
-            self.compile_mode = "exec"
-        event.current_buffer.insert_text(data)
-
     def showsyntaxerror(self, filename):
         tb = color.format_tb(sys.exc_info()[1])
         self.write(tb + "\n")
@@ -214,6 +215,24 @@ class Console(code.InteractiveConsole):
             self._console_write(self.locals["__ret_value__"])
             del self.locals["__ret_value__"]
         return False
+
+    def paste_event(self, event):
+        # pasting multiline data temporarily switches to multiline mode
+        data = event.data
+        data = data.replace("\r\n", "\n")
+        data = data.replace("\r", "\n")
+
+        if "\n" in data:
+            self.compile_mode = "exec"
+        event.current_buffer.insert_text(data)
+
+    def tab_event(self, event):
+        # for multiline input, pressing tab at the start of a new line adds four spaces
+        event.current_buffer.insert_text("    ")
+
+    def tab_filter(self):
+        # detect multiline input with no meaningful text on the current line
+        return not self.buffer or self.prompt_session.app.current_buffer.text.strip()
 
 
 def _dir_color(obj):
