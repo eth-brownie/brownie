@@ -121,9 +121,9 @@ class Console(code.InteractiveConsole):
                 include_default_pygments_style=False,
             )
         if console_settings["auto_suggest"]:
-            kwargs["auto_suggest"] = TestAutoSuggest(locals_dict)
+            kwargs["auto_suggest"] = TestAutoSuggest(self, locals_dict)
         if console_settings["completions"]:
-            kwargs["completer"] = ConsoleCompleter(locals_dict)
+            kwargs["completer"] = ConsoleCompleter(self, locals_dict)
 
         self.compile_mode = "single"
         self.prompt_session = PromptSession(
@@ -281,13 +281,15 @@ class SanitizedFileHistory(FileHistory):
 
 
 class ConsoleCompleter(Completer):
-    def __init__(self, local_dict):
+    def __init__(self, console, local_dict):
+        self.console = console
         self.locals = local_dict
         super().__init__()
 
     def get_completions(self, document, complete_event):
         try:
-            base, current, _, is_open_sqb = _parse_document(self.locals, document.text)
+            text = "\n".join(self.console.buffer + [document.text])
+            base, current, _, is_open_sqb = _parse_document(self.locals, text)
 
             if is_open_sqb:
                 # special case for dictionary keys
@@ -322,13 +324,15 @@ class TestAutoSuggest(AutoSuggest):
     respectively.
     """
 
-    def __init__(self, local_dict):
+    def __init__(self, console, local_dict):
+        self.console = console
         self.locals = local_dict
         super().__init__()
 
     def get_suggestion(self, buffer, document):
         try:
-            base, current, comma_data, _ = _parse_document(self.locals, document.text)
+            text = "\n".join(self.console.buffer + [document.text])
+            base, current, comma_data, _ = _parse_document(self.locals, text)
 
             # find the active function call
             del base[-1]
@@ -337,8 +341,13 @@ class TestAutoSuggest(AutoSuggest):
                 del comma_data[-1]
             obj = base[-1]
 
-            count = comma_data[-1][0]
-            distance = len(document.text) - comma_data[-1][1]
+            # calculate distance from last comma
+            count, offset = comma_data[-1]
+            lines = text.count("\n") + 1
+            if offset[0] < lines:
+                distance = len(document.text)
+            else:
+                distance = len(document.text) - offset[1]
 
             if inspect.isclass(obj):
                 obj = obj.__init__
@@ -394,7 +403,7 @@ def _parse_document(local_dict, text):
     pending_active = []
 
     # number of comments at this call depth, end offset of the last comment
-    comma_data = [[0, 0]]
+    comma_data = [(0, (0, 0))]
 
     token_iter = tokenize.generate_tokens(StringIO(text).readline)
     while True:
@@ -403,15 +412,20 @@ def _parse_document(local_dict, text):
         except (tokenize.TokenError, StopIteration):
             break
 
-        if token.type in (0, 4):
+        if token.exact_type in (0, 4):
             # end marker, newline
+            break
+
+        if token.exact_type in (5, 6, 61):
+            # indent, dedent, non-terminating newline
+            # these can be ignored
             continue
 
         if token.type == 54 and token.string not in ",.[]()":
             # if token is an operator or delimiter but not a parenthesis or dot, this is
             # the start of a new expression. restart evaluation from the next token.
             token_list = []
-            comma_data = [[0, token.end[1]]]
+            comma_data = [(0, token.end)]
             paren_count = 0
             lsq_count = 0
             active_objects = [local_dict]
@@ -455,8 +469,7 @@ def _parse_document(local_dict, text):
 
         elif token.exact_type == 12:
             # comma `,`
-            comma_data[-1][0] += 1
-            comma_data[-1][1] = token.end[1]
+            comma_data[-1] = (comma_data[-1][0] + 1, token.end)
             token_list.clear()
             active_objects[-1] = local_dict
             pending_active = None
@@ -483,7 +496,7 @@ def _parse_document(local_dict, text):
                 if lsq_count > 1:
                     return
 
-            comma_data.append([0, token.end[1]])
+            comma_data.append((0, token.end))
             if token_list:
                 active_objects[-1] = _obj_from_tokens(active_objects[-1], token_list)
                 token_list.clear()
