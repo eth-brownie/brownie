@@ -296,17 +296,9 @@ class ConsoleCompleter(Completer):
     def get_completions(self, document, complete_event):
         try:
             text = "\n".join(self.console.buffer + [document.text])
-            base, current, _, is_open_sqb = _parse_document(self.locals, text)
+            base, current = _parse_document(self.locals, text)[:2]
 
-            if is_open_sqb:
-                # special case for dictionary keys
-                if not isinstance(base[-2], dict):
-                    return
-                completions = sorted(base[-2], key=lambda k: str(k))
-                completions = [str(i) if not isinstance(i, str) else f'"{i}"' for i in completions]
-                current = current.lstrip("'\"")
-
-            elif isinstance(base[-1], dict):
+            if isinstance(base[-1], dict):
                 completions = sorted(base[-1], key=lambda k: str(k))
             else:
                 completions = dir(base[-1])
@@ -339,7 +331,7 @@ class TestAutoSuggest(AutoSuggest):
     def get_suggestion(self, buffer, document):
         try:
             text = "\n".join(self.console.buffer + [document.text])
-            base, _, comma_data, _ = _parse_document(self.locals, text)
+            base, _, comma_data = _parse_document(self.locals, text)
 
             # find the active function call
             del base[-1]
@@ -391,8 +383,8 @@ def _parse_document(local_dict, text):
             raise SyntaxError
 
         # return copies of lists so we can mutate them without worry
-        active_objects, current_text, comma_data, is_open_sqb = _parser_cache[text]
-        return active_objects.copy(), current_text, comma_data.copy(), is_open_sqb
+        active_objects, current_text, comma_data = _parser_cache[text]
+        return active_objects.copy(), current_text, comma_data.copy()
 
     last_token = None
     active_objects = [local_dict]
@@ -427,11 +419,7 @@ def _parse_document(local_dict, text):
             # if token is an operator or delimiter but not a parenthesis or dot, this is
             # the start of a new expression. restart evaluation from the next token.
             last_token = None
-            comma_data = [(0, token.end)]
-            paren_count = 0
-            is_open_sqb = False
-            active_objects = [local_dict]
-            pending_active = None
+            active_objects[-1] = local_dict
             continue
 
         if token.exact_type == 8:
@@ -443,11 +431,12 @@ def _parse_document(local_dict, text):
             if active_objects[-1] != local_dict:
                 try:
                     pending_active = active_objects[-1].__annotations__["return"]
-                    active_objects[-1] = None
+                    if isinstance(pending_active, str):
+                        module = sys.modules[active_objects[-1].__module__]
+                        pending_active = getattr(module, pending_active)
                 except (AttributeError, KeyError):
                     pending_active = None
-                if isinstance(pending_active, str):
-                    pending_active = None
+                active_objects[-1] = None
 
         elif token.exact_type == 10:
             # right square bracket `]`
@@ -458,20 +447,17 @@ def _parse_document(local_dict, text):
             is_open_sqb = False
             del comma_data[-1]
             del active_objects[-1]
-
-            if active_objects[-1] != local_dict:
-                if last_token.exact_type == 2:
-                    # number
-                    idx = int(last_token.string)
-                elif last_token.exact_type == 3:
-                    # string
-                    idx = last_token.string.strip(last_token.string[0])
-                else:
-                    _parser_cache[text] = None
-                    raise SyntaxError
-
-                pending_active = active_objects[-1][idx]
             last_token = None
+            if active_objects[-1] != local_dict:
+                try:
+                    func = active_objects[-1].__getitem__.__func__
+                    pending_active = func.__annotations__["return"]
+                    if isinstance(pending_active, str):
+                        module = sys.modules[active_objects[-1].__module__]
+                        pending_active = getattr(module, pending_active)
+                except (AttributeError, KeyError):
+                    pending_active = None
+                active_objects[-1] = None
 
         elif token.exact_type == 12:
             # comma `,`
@@ -550,5 +536,5 @@ def _parse_document(local_dict, text):
     if last_token and last_token.type in (1, 2, 3):
         current_text = last_token.string
 
-    _parser_cache[text] = (active_objects, current_text, comma_data, is_open_sqb)
-    return active_objects.copy(), current_text, comma_data.copy(), is_open_sqb
+    _parser_cache[text] = (active_objects, current_text, comma_data)
+    return active_objects.copy(), current_text, comma_data.copy()

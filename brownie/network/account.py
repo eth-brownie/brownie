@@ -95,7 +95,7 @@ class Accounts(metaclass=_Singleton):
     def __iter__(self) -> Iterator:
         return iter(self._accounts)
 
-    def __getitem__(self, key: int) -> Any:
+    def __getitem__(self, key: int) -> "_PrivateKeyAccount":
         return self._accounts[key]
 
     def __delitem__(self, key: int) -> None:
