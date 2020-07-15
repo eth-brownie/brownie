@@ -356,21 +356,6 @@ class TestAutoSuggest(AutoSuggest):
             else:
                 distance = len(document.text) - offset[1]
 
-            if inspect.isclass(obj):
-                obj = obj.__init__
-            elif (
-                callable(obj)
-                and not hasattr(obj, "_autosuggest")
-                and not inspect.ismethod(obj)
-                and not inspect.isfunction(obj)
-            ):
-                # object is a callable class instance
-                obj = obj.__call__
-
-            # ensure we aren't looking at a decorator
-            if hasattr(obj, "__wrapped__"):
-                obj = obj.__wrapped__
-
             if hasattr(obj, "_autosuggest"):
                 inputs = obj._autosuggest()
             else:
@@ -458,6 +443,7 @@ def _parse_document(local_dict, text):
             if active_objects[-1] != local_dict:
                 try:
                     pending_active = active_objects[-1].__annotations__["return"]
+                    active_objects[-1] = None
                 except (AttributeError, KeyError):
                     pending_active = None
                 if isinstance(pending_active, str):
@@ -503,24 +489,53 @@ def _parse_document(local_dict, text):
                 active_objects[-1] = _obj_from_token(active_objects[-1], last_token)
             last_token = None
 
-        elif token.exact_type in (7, 9):
-            # left parenthesis `(` or left square bracket `[`
+        elif token.exact_type == 7:
+            # left parenthesis `(`
             if pending_active:
                 active_objects[-1] = pending_active
                 pending_active = None
 
-            if token.exact_type == 7:
-                paren_count += 1
-            else:
-                if is_open_sqb:
-                    _parser_cache[text] = None
-                    raise SyntaxError
-                is_open_sqb = True
+            if last_token:
+                obj = _obj_from_token(active_objects[-1], last_token)
 
+                if inspect.isclass(obj):
+                    obj = obj.__init__
+                elif (
+                    callable(obj)
+                    and not hasattr(obj, "_autosuggest")
+                    and not inspect.ismethod(obj)
+                    and not inspect.isfunction(obj)
+                ):
+                    # object is a callable class instance
+                    obj = obj.__call__
+
+                # ensure we aren't looking at a decorator
+                if hasattr(obj, "__wrapped__"):
+                    obj = obj.__wrapped__
+
+                active_objects[-1] = obj
+                last_token = None
+
+            paren_count += 1
             comma_data.append((0, token.end))
+            active_objects.append(local_dict)
+
+        elif token.exact_type == 9:
+            # left square bracket `[`
+            if is_open_sqb:
+                _parser_cache[text] = None
+                raise SyntaxError
+
+            if pending_active:
+                active_objects[-1] = pending_active
+                pending_active = None
+
             if last_token:
                 active_objects[-1] = _obj_from_token(active_objects[-1], last_token)
                 last_token = None
+
+            is_open_sqb = True
+            comma_data.append((0, token.end))
             active_objects.append(local_dict)
 
         else:
