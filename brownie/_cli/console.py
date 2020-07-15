@@ -35,6 +35,8 @@ Options:
 Connects to the network and opens the brownie console.
 """
 
+_parser_cache: dict = {}
+
 
 def main():
     args = docopt(__doc__)
@@ -158,8 +160,8 @@ class Console(code.InteractiveConsole):
 
         super().__init__(locals_dict)
 
-    # console dir method, for simplified and colorful output
     def _dir(self, obj=None):
+        # console dir method, for simplified and colorful output
         if obj is None:
             results = [(k, v) for k, v in self.locals.items() if not k.startswith("_")]
         elif hasattr(obj, "__console_dir__"):
@@ -192,6 +194,11 @@ class Console(code.InteractiveConsole):
     def showtraceback(self):
         tb = color.format_tb(sys.exc_info()[1], start=1)
         self.write(tb + "\n")
+
+    def resetbuffer(self):
+        # reset the input buffer and parser cache
+        _parser_cache.clear()
+        return super().resetbuffer()
 
     def runsource(self, source, filename="<input>", symbol="single"):
         mode = self.compile_mode
@@ -332,7 +339,7 @@ class TestAutoSuggest(AutoSuggest):
     def get_suggestion(self, buffer, document):
         try:
             text = "\n".join(self.console.buffer + [document.text])
-            base, current, comma_data, _ = _parse_document(self.locals, text)
+            base, _, comma_data, _ = _parse_document(self.locals, text)
 
             # find the active function call
             del base[-1]
@@ -386,21 +393,31 @@ class TestAutoSuggest(AutoSuggest):
             return
 
 
-def _obj_from_tokens(obj, token_list):
-    if len(token_list) > 1:
-        raise
-    key = token_list[0].string
+def _obj_from_token(obj, token):
+    key = token.string
     if isinstance(obj, dict):
         return obj[key]
     return getattr(obj, key)
 
 
 def _parse_document(local_dict, text):
-    token_list = []
-    paren_count = 0
-    lsq_count = 0
+    if text in _parser_cache:
+        if _parser_cache[text] is None:
+            raise SyntaxError
+
+        # return copies of lists so we can mutate them without worry
+        active_objects, current_text, comma_data, is_open_sqb = _parser_cache[text]
+        return active_objects.copy(), current_text, comma_data.copy(), is_open_sqb
+
+    last_token = None
     active_objects = [local_dict]
     pending_active = []
+
+    # number of open parentheses
+    paren_count = 0
+
+    # is a square bracket open?
+    is_open_sqb = False
 
     # number of comments at this call depth, end offset of the last comment
     comma_data = [(0, (0, 0))]
@@ -424,10 +441,10 @@ def _parse_document(local_dict, text):
         if token.type == 54 and token.string not in ",.[]()":
             # if token is an operator or delimiter but not a parenthesis or dot, this is
             # the start of a new expression. restart evaluation from the next token.
-            token_list = []
+            last_token = None
             comma_data = [(0, token.end)]
             paren_count = 0
-            lsq_count = 0
+            is_open_sqb = False
             active_objects = [local_dict]
             pending_active = None
             continue
@@ -437,7 +454,7 @@ def _parse_document(local_dict, text):
             paren_count -= 1
             del comma_data[-1]
             del active_objects[-1]
-            token_list.clear()
+            last_token = None
             if active_objects[-1] != local_dict:
                 try:
                     pending_active = active_objects[-1].__annotations__["return"]
@@ -448,29 +465,32 @@ def _parse_document(local_dict, text):
 
         elif token.exact_type == 10:
             # right square bracket `]`
-            lsq_count -= 1
+            if not is_open_sqb:
+                # no support for nested index references or multiple keys
+                _parser_cache[text] = None
+                raise SyntaxError
+            is_open_sqb = False
             del comma_data[-1]
             del active_objects[-1]
-            if lsq_count or len(token_list) > 1:
-                # no support for nested index references or multiple keys
-                return
+
             if active_objects[-1] != local_dict:
-                if token_list[0].exact_type == 2:
+                if last_token.exact_type == 2:
                     # number
-                    idx = int(token_list[0].string)
-                elif token_list[0].exact_type == 3:
+                    idx = int(last_token.string)
+                elif last_token.exact_type == 3:
                     # string
-                    idx = token_list[0].string.strip(token_list[0].string[0])
+                    idx = last_token.string.strip(last_token.string[0])
                 else:
-                    return
+                    _parser_cache[text] = None
+                    raise SyntaxError
 
                 pending_active = active_objects[-1][idx]
-            token_list.clear()
+            last_token = None
 
         elif token.exact_type == 12:
             # comma `,`
             comma_data[-1] = (comma_data[-1][0] + 1, token.end)
-            token_list.clear()
+            last_token = None
             active_objects[-1] = local_dict
             pending_active = None
 
@@ -480,8 +500,8 @@ def _parse_document(local_dict, text):
                 active_objects[-1] = pending_active
                 pending_active = None
             else:
-                active_objects[-1] = _obj_from_tokens(active_objects[-1], token_list)
-            token_list.clear()
+                active_objects[-1] = _obj_from_token(active_objects[-1], last_token)
+            last_token = None
 
         elif token.exact_type in (7, 9):
             # left parenthesis `(` or left square bracket `[`
@@ -492,25 +512,28 @@ def _parse_document(local_dict, text):
             if token.exact_type == 7:
                 paren_count += 1
             else:
-                lsq_count += 1
-                if lsq_count > 1:
-                    return
+                if is_open_sqb:
+                    _parser_cache[text] = None
+                    raise SyntaxError
+                is_open_sqb = True
 
             comma_data.append((0, token.end))
-            if token_list:
-                active_objects[-1] = _obj_from_tokens(active_objects[-1], token_list)
-                token_list.clear()
+            if last_token:
+                active_objects[-1] = _obj_from_token(active_objects[-1], last_token)
+                last_token = None
             active_objects.append(local_dict)
 
         else:
-            if pending_active:
-                return
-            token_list.append(token)
+            if pending_active or last_token:
+                _parser_cache[text] = None
+                raise SyntaxError
+            last_token = token
 
     # if the final token is a name or number, it is the current text we are basing
     # the completion suggestion on. otherwise, there is no current text.
     current_text = ""
-    if token_list and token_list[-1].type in (1, 2, 3):
-        current_text = token_list[-1].string
+    if last_token and last_token.type in (1, 2, 3):
+        current_text = last_token.string
 
-    return active_objects, current_text, comma_data, lsq_count > 0
+    _parser_cache[text] = (active_objects, current_text, comma_data, is_open_sqb)
+    return active_objects.copy(), current_text, comma_data.copy(), is_open_sqb
