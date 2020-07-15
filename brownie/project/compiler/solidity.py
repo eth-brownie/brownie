@@ -239,6 +239,9 @@ def _get_unique_build_json(
     }
 
     bytecode = _format_link_references(output_evm)
+    without_metadata = _remove_metadata(output_evm["deployedBytecode"]["object"])
+    instruction_count = len(without_metadata) // 2
+
     pc_map, statement_map, branch_map = _generate_coverage_data(
         output_evm["deployedBytecode"]["sourceMap"],
         output_evm["deployedBytecode"]["opcodes"],
@@ -246,6 +249,7 @@ def _get_unique_build_json(
         stmt_nodes,
         branch_nodes,
         has_fallback,
+        instruction_count,
     )
     return {
         "allSourcePaths": paths,
@@ -284,6 +288,7 @@ def _generate_coverage_data(
     stmt_nodes: Dict,
     branch_nodes: Dict,
     has_fallback: bool,
+    instruction_count: int,
 ) -> Tuple:
     # Generates data used by Brownie for debugging and coverage evaluation
     if not opcodes_str:
@@ -402,7 +407,7 @@ def _generate_coverage_data(
             key = (pc_list[-1]["path"], pc_list[-1]["offset"])
             revert_map.setdefault(key, []).append(len(pc_list))
 
-    while opcodes and opcodes[0] not in ("INVALID", "STOP"):
+    while opcodes[0] not in ("INVALID", "STOP") and pc < instruction_count:
         # necessary because sometimes solidity returns an incomplete source map
         pc_list.append({"op": opcodes.popleft(), "pc": pc})
         pc += 1
