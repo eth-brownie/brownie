@@ -194,14 +194,15 @@ class EthAddress(str):
     """String subclass that raises TypeError when compared to a non-address."""
 
     def __new__(cls, value: Union[bytes, str]) -> str:
+        converted_value = value
         if isinstance(value, bytes):
-            value = HexBytes(value).hex()
-        value = eth_utils.add_0x_prefix(str(value))  # type: ignore
+            converted_value = HexBytes(value).hex()
+        converted_value = eth_utils.add_0x_prefix(str(converted_value))  # type: ignore
         try:
-            value = eth_utils.to_checksum_address(value)
+            converted_value = eth_utils.to_checksum_address(converted_value)
         except ValueError:
-            raise ValueError(f"'{value}' is not a valid ETH address.") from None
-        return super().__new__(cls, value)  # type: ignore
+            raise ValueError(f"'{value}' is not a valid ETH address") from None
+        return super().__new__(cls, converted_value)  # type: ignore
 
     def __eq__(self, other: Any) -> bool:
         return _address_compare(str(self), other)
