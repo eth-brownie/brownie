@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.10.0](https://github.com/eth-brownie/brownie/tree/v1.10.0) - 2020-07-16
+### Added
+- `TransactionReceipt.call_trace` includes inputs and return values ([#679](https://github.com/eth-brownie/brownie/pull/679))
+- `chain` object ([#681](https://github.com/eth-brownie/brownie/pull/681))
+- `--silent` flag for `brownie run` ([#680](https://github.com/eth-brownie/brownie/pull/680))
+- `address` member for decoded events ([#682](https://github.com/eth-brownie/brownie/pull/682))
+
+### Changed
+- Various `rpc` methods have been deprecated in favor of the new `chain` object ([#681](https://github.com/eth-brownie/brownie/pull/681))
+- Improvements to console autocompletion / type hints ([#](https://github.com/eth-brownie/brownie/pull/683))
+
+### Fixed
+- Properly handle Solidity source maps that are too long ([#684](https://github.com/eth-brownie/brownie/pull/684))
+
 ## [1.9.8](https://github.com/eth-brownie/brownie/tree/v1.9.8) - 2020-07-09
 ### Added
 - Syntax highlights for Vyper exceptions ([#668](https://github.com/eth-brownie/brownie/pull/668))
