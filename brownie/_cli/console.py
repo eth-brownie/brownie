@@ -533,7 +533,9 @@ def _parse_document(local_dict, text):
     # if the final token is a name or number, it is the current text we are basing
     # the completion suggestion on. otherwise, there is no current text.
     current_text = ""
-    if last_token and last_token.type in (1, 2, 3):
+    if text.endswith(" "):
+        active_objects[-1] = local_dict
+    elif last_token and last_token.type in (1, 2, 3):
         current_text = last_token.string
 
     _parser_cache[text] = (active_objects, current_text, comma_data)
