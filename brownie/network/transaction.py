@@ -95,6 +95,18 @@ class TransactionReceipt:
         revert_msg: Error string from reverted contract all
         modified_state: Boolean, did this contract write to storage?"""
 
+    # these are defined as class attributes to expose them in console completion hints
+    block_number = None
+    contract_address: Optional[str] = None
+    contract_name = None
+    fn_name = None
+    gas_used = None
+    logs = None
+    nonce = None
+    sender = None
+    txid = None
+    txindex = None
+
     def __init__(
         self,
         txid: Union[str, bytes],
@@ -140,14 +152,6 @@ class TransactionReceipt:
         self._internal_transfers = None
         self._subcalls: Optional[List[Dict]] = None
         self._confirmed = threading.Event()
-
-        # attributes that cannot be set until the tx confirms
-        self.block_number = None
-        self.contract_address: Optional[str] = None
-        self.gas_used = None
-        self.logs = None
-        self.nonce = None
-        self.txindex = None
 
         # attributes that can be set immediately
         self.sender = sender
