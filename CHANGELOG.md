@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.10.1](https://github.com/eth-brownie/brownie/tree/v1.10.0) - 2020-07-17
+### Fixed
+- `chain` fixture returns expected object ([#689](https://github.com/eth-brownie/brownie/pull/689))
+
 ## [1.10.0](https://github.com/eth-brownie/brownie/tree/v1.10.0) - 2020-07-16
 ### Added
 - `TransactionReceipt.call_trace` includes inputs and return values ([#679](https://github.com/eth-brownie/brownie/pull/679))
@@ -16,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Various `rpc` methods have been deprecated in favor of the new `chain` object ([#681](https://github.com/eth-brownie/brownie/pull/681))
-- Improvements to console autocompletion / type hints ([#](https://github.com/eth-brownie/brownie/pull/683))
+- Improvements to console autocompletion / type hints ([#683](https://github.com/eth-brownie/brownie/pull/683))
 
 ### Fixed
 - Properly handle Solidity source maps that are too long ([#684](https://github.com/eth-brownie/brownie/pull/684))
