@@ -61,10 +61,10 @@ class RevertContextManager:
         CONFIG.argv["always_transact"] = self.always_transact
 
         if exc_type is None:
-            raise AssertionError("Transaction did not revert") from None
+            raise AssertionError("Transaction did not revert")
 
         if exc_type is not VirtualMachineError:
-            raise exc_type(exc_value) from None
+            raise
 
         if self.revert_msg is None or self.revert_msg == exc_value.revert_msg:
             return True
