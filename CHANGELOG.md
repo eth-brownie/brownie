@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
-## [1.10.1](https://github.com/eth-brownie/brownie/tree/v1.10.0) - 2020-07-17
+## [1.10.2](https://github.com/eth-brownie/brownie/tree/v1.10.2) - 2020-07-18
+### Fixed
+- decoding error on internal call to an invalid function in a known contract ([#691](https://github.com/eth-brownie/brownie/pull/691))
+- `chain.redo` across multiple transactions ([#692](https://github.com/eth-brownie/brownie/pull/692))
+
+## [1.10.1](https://github.com/eth-brownie/brownie/tree/v1.10.1) - 2020-07-17
 ### Fixed
 - `chain` fixture returns expected object ([#689](https://github.com/eth-brownie/brownie/pull/689))
 
