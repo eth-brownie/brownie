@@ -335,7 +335,7 @@ class Chain(metaclass=_Singleton):
             if num > len(self._undo_buffer):
                 raise ValueError(f"Undo buffer contains {len(self._undo_buffer)} items")
 
-            for i in range(num, 0, -1):
+            for i in range(num):
                 id_, fn, args, kwargs = self._undo_buffer.pop()
                 self._redo_buffer.append((fn, args, kwargs))
 
@@ -364,8 +364,8 @@ class Chain(metaclass=_Singleton):
             if num > len(self._redo_buffer):
                 raise ValueError(f"Redo buffer contains {len(self._redo_buffer)} items")
 
-            for i in range(num, 0, -1):
-                fn, args, kwargs = self._redo_buffer[-1]
+            for i in range(num):
+                fn, args, kwargs = self._redo_buffer.pop()
                 fn(*args, **kwargs)
 
             return web3.eth.blockNumber
