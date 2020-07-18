@@ -14,7 +14,7 @@ def test_undo(accounts, chain, web3):
 def test_undo_multiple(accounts, chain, web3):
     initial = accounts[0].balance()
     for i in range(1, 6):
-        accounts[0].transfer(accounts[i], "1 ether")
+        accounts[0].transfer(accounts[i], f"{i} ether")
     chain.undo(5)
     assert accounts[0].balance() == initial
 

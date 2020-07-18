@@ -15,7 +15,7 @@ def test_redo(accounts, chain, web3):
 
 def test_redo_multiple(accounts, chain, web3):
     for i in range(1, 6):
-        accounts[0].transfer(accounts[i], "1 ether")
+        accounts[0].transfer(accounts[i], f"{i} ether")
     result = accounts[0].balance()
     chain.undo(5)
     chain.redo(5)
