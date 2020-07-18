@@ -589,7 +589,7 @@ class TransactionReceipt:
                 )
                 if step["op"] in ("CALL", "CALLCODE"):
                     self._subcalls[-1]["value"] = int(step["stack"][-3], 16)
-                if calldata and last_map[trace[i]["depth"]]["contract"]:
+                if calldata and last_map[trace[i]["depth"]].get("function"):
                     fn = last_map[trace[i]["depth"]]["function"]
                     zip_ = zip(fn.abi["inputs"], fn.decode_input(calldata))
                     self._subcalls[-1].update(
