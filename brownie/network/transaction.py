@@ -111,7 +111,7 @@ class TransactionReceipt:
         self,
         txid: Union[str, bytes],
         sender: Any = None,
-        silent: bool = None,
+        silent: bool = True,
         required_confs: int = 1,
         name: str = "",
         revert_data: Optional[Tuple] = None,
@@ -126,12 +126,7 @@ class TransactionReceipt:
             name: contract function being called
             revert_data: (revert string, program counter, revert type)
         """
-        if silent is None and (CONFIG.mode == "test" or CONFIG.argv["silent"]):
-            self._silent = True
-        else:
-            if silent is None:
-                silent = True
-            self._silent = silent
+        self._silent = silent
 
         if isinstance(txid, bytes):
             txid = HexBytes(txid).hex()
