@@ -126,19 +126,21 @@ class PytestBrownieFixtures:
     def state_machine(self):
         """Yields a rule-based state machine factory method."""
 
-        # allows the state machine to disable pytest capturing
-        capman = self.config.pluginmanager.get_plugin("capturemanager")
-        _BrownieStateMachine._capman = capman
+        if self.config.getoption("capture") != "no":
+            # allows the state machine to disable pytest capturing
+            capman = self.config.pluginmanager.get_plugin("capturemanager")
+            _BrownieStateMachine._capman = capman
 
-        # for posix systems we disable the cursor to make the progress spinner prettier
-        if sys.platform != "win32":
-            with capman.global_and_fixture_disabled():
-                sys.stdout.write("\033[?25l")
-                sys.stdout.flush()
+            # for posix systems we disable the cursor to make the progress spinner prettier
+            if sys.platform != "win32":
+                with capman.global_and_fixture_disabled():
+                    sys.stdout.write("\033[?25l")
+                    sys.stdout.flush()
 
         yield state_machine
 
-        if sys.platform != "win32":
+        if self.config.getoption("capture") != "no" and sys.platform != "win32":
+            # re-enable the cursor
             with capman.global_and_fixture_disabled():
                 sys.stdout.write("\033[?25h")
                 sys.stdout.flush()
