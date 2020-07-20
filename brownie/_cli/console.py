@@ -501,6 +501,8 @@ def _parse_document(local_dict, text):
 
                 active_objects[-1] = obj
                 last_token = None
+                if not hasattr(active_objects[-1], "__call__"):
+                    raise SyntaxError
 
             paren_count += 1
             comma_data.append((0, token.end))
@@ -519,6 +521,8 @@ def _parse_document(local_dict, text):
             if last_token:
                 active_objects[-1] = _obj_from_token(active_objects[-1], last_token)
                 last_token = None
+                if not hasattr(active_objects[-1], "__getitem__"):
+                    raise SyntaxError
 
             is_open_sqb = True
             comma_data.append((0, token.end))
