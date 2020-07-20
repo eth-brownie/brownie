@@ -351,7 +351,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         gas_price: Optional[int] = None,
         nonce: Optional[int] = None,
         required_confs: int = 1,
-        silent: bool = False,
+        silent: bool = None,
     ) -> Any:
         """Deploys a contract.
 
@@ -377,6 +377,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 f"Local RPC using '{rpc.evm_version()}' but contract was compiled for '{evm}'"
             )
         data = contract.deploy.encode_input(*args)
+        if silent is None:
+            silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
         with self._lock:
             try:
                 txid = self._transact(  # type: ignore
@@ -471,7 +473,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         data: str = None,
         nonce: Optional[int] = None,
         required_confs: int = 1,
-        silent: bool = False,
+        silent: bool = None,
     ) -> TransactionReceipt:
         """
         Broadcast a transaction from this account.
@@ -488,6 +490,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
         Returns:
             TransactionReceipt object
         """
+        if silent is None:
+            silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
         with self._lock:
             tx = {
                 "from": self.address,
