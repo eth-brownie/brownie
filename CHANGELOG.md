@@ -7,9 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.10.3](https://github.com/eth-brownie/brownie/tree/v1.10.3) - 2020-07-20
+### Changed
+- Do not show stateful spinner when stdout is not suppressed ([#696](https://github.com/eth-brownie/brownie/pull/696))
+
+### Fixed
+- Decoding error with internal revert message ([#697](https://github.com/eth-brownie/brownie/pull/697))
+- Transaction verbosity during tests ([#695](https://github.com/eth-brownie/brownie/pull/695))
+- Check for `__getitem__`/`__call__` prior to showing type hints ([#694](https://github.com/eth-brownie/brownie/pull/694))
+
 ## [1.10.2](https://github.com/eth-brownie/brownie/tree/v1.10.2) - 2020-07-18
 ### Fixed
-- decoding error on internal call to an invalid function in a known contract ([#691](https://github.com/eth-brownie/brownie/pull/691))
+- Decoding error on internal call to an invalid function in a known contract ([#691](https://github.com/eth-brownie/brownie/pull/691))
 - `chain.redo` across multiple transactions ([#692](https://github.com/eth-brownie/brownie/pull/692))
 
 ## [1.10.1](https://github.com/eth-brownie/brownie/tree/v1.10.1) - 2020-07-17
