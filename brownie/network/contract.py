@@ -122,7 +122,9 @@ class ContractContainer(_ContractBase):
         return len(self._contracts)
 
     def __repr__(self) -> str:
-        return str(self._contracts)
+        if CONFIG.argv["cli"] == "console":
+            return str(self._contracts)
+        return super().__repr__()
 
     def _reset(self) -> None:
         for contract in self._contracts:
