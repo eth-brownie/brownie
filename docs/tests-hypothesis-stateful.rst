@@ -4,7 +4,7 @@
 Stateful Testing
 ================
 
-`Stateful testing` is a more advanced method of :ref:`propery-based testing<hypothesis>` used to test complex systems. In a stateful test you define a number of actions that can be combined together in different ways, and Hypothesis attempts to find a sequence of those actions that results in a failure. This is useful for testing complex contracts or contract-to-contract interactions where there are many possible states.
+`Stateful testing` is a more advanced method of :ref:`property-based testing<hypothesis>` used to test complex systems. In a stateful test you define a number of actions that can be combined together in different ways, and Hypothesis attempts to find a sequence of those actions that results in a failure. This is useful for testing complex contracts or contract-to-contract interactions where there are many possible states.
 
 Brownie utilizes the ``hypothesis`` framework to allow for stateful testing.
 
@@ -33,7 +33,7 @@ Rules
 
 At the core of every state machine are one or more `rules`.  Rules are class methods that are very similar to ``@given`` based tests; they receive values drawn from strategies and pass them to a user defined test function. The key difference is that where ``@given`` based tests run independently, rules can be chained together - a single stateful test run may involve multiple rule invocations, which may interact in various ways.
 
-Any state machine method named ``rule`` or begining with ``rule_`` is treated as a rule.
+Any state machine method named ``rule`` or beginning with ``rule_`` is treated as a rule.
 
 .. code-block:: python
 
@@ -191,19 +191,19 @@ As a basic example, we will create a state machine to test the following Vyper `
 .. code-block:: python
     :linenos:
 
-    deposited: public(map(address, uint256(wei)))
+    deposited: public(HashMap[address, uint256])
 
-    @public
+    @external
     @payable
-    def deposit_for(receiver: address) -> bool:
-        self.deposited[receiver] += msg.value
+    def deposit_for(_receiver: address) -> bool:
+        self.deposited[_receiver] += msg.value
         return True
 
-    @public
-    def withdraw_from(value: uint256(wei)) -> bool:
-        assert self.deposited[msg.sender] >= value, "Insufficient balance"
-        self.deposited[msg.sender] = value
-        send(msg.sender, value)
+    @external
+    def withdraw_from(_value: uint256) -> bool:
+        assert self.deposited[msg.sender] >= _value, "Insufficient balance"
+        self.deposited[msg.sender] = _value
+        send(msg.sender, _value)
         return True
 
 If you looked closely you may have noticed a major issue in the contract code. If not, don't worry! We're going to find it using our test.
@@ -253,7 +253,7 @@ Here is a state machine and test function we can use to test the contract.
     def test_stateful(Depositer, accounts, state_machine):
         state_machine(StateMachine, accounts, Depositer)
 
-When this test is executed, it will call ``rule_deposit`` and ``rule_withdraw`` using random data from the given stratgies until it encounters a state which violates one of the assertions. If this happens, it repeats the test in an attempt to find the shortest path and smallest data set possible that reproduces the error. Finally it saves the failing conditions to be used in future tests, and then delivers the following output:
+When this test is executed, it will call ``rule_deposit`` and ``rule_withdraw`` using random data from the given strategies until it encounters a state which violates one of the assertions. If this happens, it repeats the test in an attempt to find the shortest path and smallest data set possible that reproduces the error. Finally it saves the failing conditions to be used in future tests, and then delivers the following output:
 
 ::
 
@@ -273,14 +273,14 @@ From this we can see the sequence of calls leading up to the error, and that the
 .. code-block:: python
     :lineno-start: 9
 
-    @public
-    def withdraw_from(value: uint256(wei)) -> bool:
-        assert self.deposited[msg.sender] >= value, "Insufficient balance"
-        self.deposited[msg.sender] = value
-        send(msg.sender, value)
+    @external
+    def withdraw_from(_value: uint256) -> bool:
+        assert self.deposited[msg.sender] >= _value, "Insufficient balance"
+        self.deposited[msg.sender] = _value
+        send(msg.sender, _value)
         return True
 
-On line 12, rather than subtracting ``value``, the balance is being `set` to ``value``. We found the bug!
+On line 12, rather than subtracting ``_value``, the balance is being *set* to ``_value``. We found the bug!
 
 More Examples
 -------------
@@ -288,6 +288,8 @@ More Examples
 Here are some links to repositories that make use of stateful testing. If you have a project that you would like included here, feel free to `edit this document <https://github.com/eth-brownie/brownie/edit/master/docs/tests-hypothesis-stateful.rst>`_ and open a pull request, or let us know about it on `Gitter <https://gitter.im/eth-brownie/community>`_.
 
     * `iamdefinitelyahuman/NFToken <https://github.com/iamdefinitelyahuman/nftoken/tree/master/tests/stateful>`_: A non-fungible implementation of the ERC20 standard.
+    * `apguerrera/DreamFrames <https://github.com/apguerrera/DreamFrames/tree/master/tests/stateful>`_: Buy and sell frames in movies.
+    * `curvefi/curve-dao-contracts <https://github.com/curvefi/curve-dao-contracts/tree/master/tests/integration>`_: Vyper contracts used by Curve DAO
 
 Running Stateful Tests
 ======================
