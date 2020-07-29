@@ -252,6 +252,7 @@ def _load_project_dependencies(project_path: Path) -> List:
 
 
 def _modify_hypothesis_settings(settings, name, parent=None):
+    settings = settings.copy()
     if parent is None:
         parent = hp_settings._current_profile
 
