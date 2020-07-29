@@ -27,6 +27,7 @@ Commands:
 
 Options:
   --help -h          Display this message
+  --version          Show version and exit
 
 Type 'brownie <command> --help' for specific options and more information about
 each command."""
@@ -35,6 +36,9 @@ each command."""
 def main():
 
     print(f"Brownie v{__version__} - Python development framework for Ethereum\n")
+
+    if "--version" in sys.argv:
+        sys.exit()
 
     if len(sys.argv) < 2 or sys.argv[1].startswith("-"):
         # this call triggers a SystemExit
