@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.10.4](https://github.com/eth-brownie/brownie/tree/v1.10.4) - 2020-07-30
+### Added
+- `--version` cli flag ([#705](https://github.com/eth-brownie/brownie/pull/705))
+
+### Fixed
+- Do not mutate hypothesis settings ([#704](https://github.com/eth-brownie/brownie/pull/704))
+
 ## [1.10.3](https://github.com/eth-brownie/brownie/tree/v1.10.3) - 2020-07-20
 ### Changed
 - Do not show stateful spinner when stdout is not suppressed ([#696](https://github.com/eth-brownie/brownie/pull/696))
