@@ -113,7 +113,7 @@ class Rpc(metaclass=_Singleton):
                         f'"{key}" with value "{value}".',
                         InvalidArgumentWarning,
                     )
-        print(f"Launching '{' '.join(cmd_list)}'...")
+        print(f"\nLaunching '{' '.join(cmd_list)}'...")
         out = DEVNULL if sys.platform == "win32" else PIPE
         self._rpc = psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
         # check that web3 can connect

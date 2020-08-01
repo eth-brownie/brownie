@@ -90,7 +90,9 @@ class Accounts(metaclass=_Singleton):
             return False
 
     def __repr__(self) -> str:
-        return str(self._accounts)
+        if CONFIG.argv["cli"] == "console":
+            return str(self._accounts)
+        return super().__repr__()
 
     def __iter__(self) -> Iterator:
         return iter(self._accounts)

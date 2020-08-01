@@ -40,7 +40,9 @@ class TxHistory(metaclass=_Singleton):
         _revert_register(self)
 
     def __repr__(self) -> str:
-        return str(self._list)
+        if CONFIG.argv["cli"] == "console":
+            return str(self._list)
+        return super().__repr__()
 
     def __bool__(self) -> bool:
         return bool(self._list)
