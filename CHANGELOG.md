@@ -6,6 +6,15 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+## [1.10.5](https://github.com/eth-brownie/brownie/tree/v1.10.5) - 2020-08-07
+### Changed
+- Container repr outside of console ([#707](https://github.com/eth-brownie/brownie/pull/707))
+
+### Fixed
+- Do not shift gas values for `ganache-cli>=6.10.1` ([#704](https://github.com/eth-brownie/brownie/pull/714))
+- Handle multiple pragma statements in a single source ([#708](https://github.com/eth-brownie/brownie/pull/708))
+- Do not call undo on general exceptions during call-as-tx ([#713](https://github.com/eth-brownie/brownie/pull/713))
+- Correctly handle structs and enums outside of contracts ([#715](https://github.com/eth-brownie/brownie/pull/715))
 
 ## [1.10.4](https://github.com/eth-brownie/brownie/tree/v1.10.4) - 2020-07-30
 ### Added
