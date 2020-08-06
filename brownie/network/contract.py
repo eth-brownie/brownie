@@ -1123,12 +1123,13 @@ class ContractCall(_ContractMethod):
 
         try:
             self.transact(*args, tx)
+            chain.undo()
         except VirtualMachineError as exc:
             pc, revert_msg = exc.pc, exc.revert_msg
+            chain.undo()
         except Exception:
             pass
 
-        chain.undo()
         try:
             return self.call(*args)
         except VirtualMachineError as exc:
