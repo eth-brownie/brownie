@@ -169,7 +169,7 @@ def get_contract_names(full_source: str) -> List:
     comment_regex = r"(?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)"
     uncommented_source = re.sub(comment_regex, "", full_source)
     contracts = re.findall(
-        r"((?:abstract contract|contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:abstract contract|contract|library|interface|pragma)\s|$)",  # NOQA: E501
+        r"((?:abstract contract|contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:abstract contract|contract|library|interface|pragma|struct|enum)\s|$)",  # NOQA: E501
         uncommented_source,
     )
 
