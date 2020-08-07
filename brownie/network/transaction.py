@@ -545,10 +545,15 @@ class TransactionReceipt:
                 t["depth"] = t["depth"] - 1
         else:
             self._trace_origin = "ganache"
-            self._call_cost = trace[0]["gasCost"]
-            for i in range(len(trace) - 1):
-                trace[i]["gasCost"] = trace[i + 1]["gasCost"]
-            trace[-1]["gasCost"] = 0
+            if trace[0]["gasCost"] >= 21000:
+                # in ganache <6.10.0, gas costs are shifted by one step - we can
+                # identify this when the first step has a gas cost >= 21000
+                self._call_cost = trace[0]["gasCost"]
+                for i in range(len(trace) - 1):
+                    trace[i]["gasCost"] = trace[i + 1]["gasCost"]
+                trace[-1]["gasCost"] = 0
+            else:
+                self._call_cost = self.gas_used - trace[0]["gas"] + trace[-1]["gas"]
 
         # last_map gives a quick reference of previous values at each depth
         last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
