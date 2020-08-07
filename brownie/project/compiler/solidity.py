@@ -256,7 +256,9 @@ def _get_unique_build_json(
         "bytecode": bytecode,
         "bytecodeSha1": sha1(_remove_metadata(bytecode).encode()).hexdigest(),
         "coverageMap": {"statements": statement_map, "branches": branch_map},
-        "dependencies": [i.name for i in contract_node.dependencies],
+        "dependencies": [
+            i.name for i in contract_node.dependencies if i.nodeType == "ContractDefinition"
+        ],
         "offset": contract_node.offset,
         "pcMap": pc_map,
         "type": contract_node.contractKind,
