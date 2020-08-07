@@ -3,13 +3,17 @@
 import pytest
 from semantic_version import NpmSpec
 
+from brownie import compile_source
 from brownie.exceptions import NamespaceCollision
 from brownie.project import sources
 
 MESSY_SOURCE = """
-  pragma  solidity>=0.4.22    <0.7.0  ;contract Foo{} interface Bar {}
-abstract contract Baz is Foo {}
- library   Potato{}"""
+  pragma  solidity>=0.4.22   <0.7.0  ;contract Foo{} interface Bar
+    {} enum Struct { Contract }
+abstract contract Baz is Foo {} struct  Interface  { uint256 Abstract;
+}    library   Potato{} pragma     solidity    ^0.6.0;  contract Foo2 is
+Foo{ enum E {a, b}  struct S {bool b;
+}}  library Bar2{}"""
 
 
 @pytest.fixture(scope="module")
@@ -57,7 +61,12 @@ def test_get_source_path(sourceobj):
 
 def test_get_contract_names():
     names = sources.get_contract_names(MESSY_SOURCE)
-    assert names == ["Foo", "Bar", "Baz", "Potato"]
+    assert names == ["Foo", "Bar", "Baz", "Potato", "Foo2", "Bar2"]
+
+
+def test_load_messy_project():
+    project = compile_source(MESSY_SOURCE)
+    assert list(project.keys()) == ["Bar2", "Foo", "Foo2", "Potato"]
 
 
 def test_get_pragma_spec():
