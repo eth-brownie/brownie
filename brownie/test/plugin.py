@@ -107,6 +107,7 @@ def pytest_configure(config):
                 {"phases": {"explicit": True, "generate": True, "target": True}}, "brownie-failfast"
             )
 
+        active_project = project.get_loaded_projects()[-1]
         session = Plugin(config, active_project)
         config.pluginmanager.register(session, "brownie-core")
 
