@@ -56,7 +56,7 @@ def pytest_addoption(parser):
         )
 
 
-def pytest_load_initial_conftests(early_config, parser, args):
+def pytest_load_initial_conftests():
     if project.check_for_project("."):
         try:
             active_project = project.load()
@@ -107,7 +107,7 @@ def pytest_configure(config):
                 {"phases": {"explicit": True, "generate": True, "target": True}}, "brownie-failfast"
             )
 
-        active_project = project.get_loaded_projects()[-1]
+        active_project = project.get_loaded_projects()[0]
         session = Plugin(config, active_project)
         config.pluginmanager.register(session, "brownie-core")
 
