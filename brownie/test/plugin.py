@@ -56,9 +56,8 @@ def pytest_addoption(parser):
         )
 
 
-def pytest_configure(config):
+def pytest_load_initial_conftests():
     if project.check_for_project("."):
-
         try:
             active_project = project.load()
             active_project.load_config()
@@ -67,6 +66,10 @@ def pytest_configure(config):
             # prevent pytest INTERNALERROR traceback when project fails to compile
             print(f"{color.format_tb(e)}\n")
             raise pytest.UsageError("Unable to load project")
+
+
+def pytest_configure(config):
+    if project.check_for_project("."):
 
         if not config.getoption("showinternal"):
             # do not include brownie internals in tracebacks
@@ -104,6 +107,7 @@ def pytest_configure(config):
                 {"phases": {"explicit": True, "generate": True, "target": True}}, "brownie-failfast"
             )
 
+        active_project = project.get_loaded_projects()[0]
         session = Plugin(config, active_project)
         config.pluginmanager.register(session, "brownie-core")
 

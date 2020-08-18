@@ -6,6 +6,9 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Fixed
+- Allow using contract types in conftest ([#719](https://github.com/eth-brownie/brownie/pull/719))
+
 ## [1.10.5](https://github.com/eth-brownie/brownie/tree/v1.10.5) - 2020-08-07
 ### Changed
 - Container repr outside of console ([#707](https://github.com/eth-brownie/brownie/pull/707))
