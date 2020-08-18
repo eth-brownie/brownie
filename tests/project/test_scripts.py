@@ -2,7 +2,6 @@
 
 import pytest
 
-from brownie.exceptions import ProjectNotFound
 from brownie.project.scripts import run
 
 
@@ -41,11 +40,6 @@ def test_multiple_projects(testproject, otherproject):
     otherproject.close()
     with pytest.raises(FileNotFoundError):
         run("other")
-
-
-def test_no_project():
-    with pytest.raises(ProjectNotFound):
-        run("foo")
 
 
 def test_no_script(testproject):
