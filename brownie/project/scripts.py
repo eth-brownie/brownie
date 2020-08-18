@@ -2,6 +2,7 @@
 
 import ast
 import importlib
+import sys
 import warnings
 from hashlib import sha1
 from pathlib import Path
@@ -37,16 +38,17 @@ def run(
     if kwargs is None:
         kwargs = {}
 
-    if not get_loaded_projects():
-        raise ProjectNotFound("Cannot run a script without an active project")
-
     script, project = _get_path(script_path)
 
     # temporarily add project objects to the main namespace, so the script can import them
-    project._add_to_main_namespace()
+    if project is not None:
+        project._add_to_main_namespace()
+
+    # modify sys.path to ensure script can be imported
+    sys.path.insert(0, script.absolute().parent.as_posix())
+    script = Path(script.stem)
 
     try:
-        script = script.absolute().relative_to(project._path)
         module = _import_from_path(script)
 
         name = module.__name__
@@ -58,13 +60,24 @@ def run(
         )
         return getattr(module, method_name)(*args, **kwargs)
     finally:
-        # cleanup namespace
-        project._remove_from_main_namespace()
+        # cleanup namespace and sys.path
+        del sys.path[0]
+        if project is not None:
+            project._remove_from_main_namespace()
 
 
-def _get_path(path_str: str) -> Tuple[Path, Project]:
+def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
     # Returns path to a python module
     path = Path(path_str).with_suffix(".py")
+
+    if not get_loaded_projects():
+        if not path.exists():
+            raise FileNotFoundError(f"Cannot find {path_str}")
+        return path, None
+
+    if path.parts[:1] == ("scripts",):
+        # for scripts in projects,
+        path = path.relative_to("scripts")
 
     if not path.is_absolute():
         for project in get_loaded_projects():

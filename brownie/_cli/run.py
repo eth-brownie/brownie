@@ -7,7 +7,6 @@ from pathlib import Path
 from brownie import network, project
 from brownie._cli.console import Console
 from brownie._config import CONFIG, _update_argv_from_docopt
-from brownie.exceptions import ProjectNotFound
 from brownie.project.scripts import _get_path, run
 from brownie.test.output import _build_gas_profile_output
 from brownie.utils import color
@@ -39,8 +38,6 @@ def main():
         active_project = project.load()
         active_project.load_config()
         print(f"{active_project._name} is the active project.")
-    else:
-        raise ProjectNotFound
 
     network.connect(CONFIG.argv["network"])
 
