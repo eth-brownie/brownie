@@ -343,7 +343,13 @@ class _DeployedContractBase(_ContractBase):
             getattr(self, abi["name"])._add_fn(abi, natspec)
 
     def _check_and_set(self, name: str, obj: Any) -> None:
-        if hasattr(self, name):
+        if name == "balance":
+            warnings.warn(
+                f"'{self._name}' defines a 'balance' function, "
+                f"'{self._name}.balance' is unavailable",
+                BrownieEnvironmentWarning,
+            )
+        elif hasattr(self, name):
             raise AttributeError(f"Namespace collision: '{self._name}.{name}'")
         setattr(self, name, obj)
 
