@@ -45,8 +45,8 @@ def run(
         project._add_to_main_namespace()
 
     # modify sys.path to ensure script can be imported
-    sys.path.insert(0, script.absolute().parent.as_posix())
-    script = Path(script.stem)
+    root_path = Path(".").resolve().root
+    sys.path.insert(0, root_path)
 
     try:
         module = _import_from_path(script)
@@ -61,7 +61,7 @@ def run(
         return getattr(module, method_name)(*args, **kwargs)
     finally:
         # cleanup namespace and sys.path
-        del sys.path[0]
+        sys.path.remove(root_path)
         if project is not None:
             project._remove_from_main_namespace()
 
@@ -73,17 +73,16 @@ def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
     if not get_loaded_projects():
         if not path.exists():
             raise FileNotFoundError(f"Cannot find {path_str}")
-        return path, None
-
-    if path.parts[:1] == ("scripts",):
-        # for scripts in projects,
-        path = path.relative_to("scripts")
+        return path.resolve(), None
 
     if not path.is_absolute():
         for project in get_loaded_projects():
-            script_path = project._path.joinpath(project._structure["scripts"]).joinpath(path)
+            if path.parts[:1] == (project._structure["scripts"],):
+                script_path = project._path.joinpath(path)
+            else:
+                script_path = project._path.joinpath(project._structure["scripts"]).joinpath(path)
             if script_path.exists():
-                return script_path, project
+                return script_path.resolve(), project
         raise FileNotFoundError(f"Cannot find {path_str}")
 
     if not path.exists():
@@ -94,12 +93,12 @@ def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
     except StopIteration:
         raise ProjectNotFound(f"{path_str} is not part of an active project")
 
-    return path, project
+    return path.resolve(), project
 
 
 def _import_from_path(path: Path) -> ModuleType:
     # Imports a module from the given path
-    import_str = ".".join(path.parts[:-1] + (path.stem,))
+    import_str = ".".join(path.parts[1:-1] + (path.stem,))
     if import_str in _import_cache:
         importlib.reload(_import_cache[import_str])
     else:
