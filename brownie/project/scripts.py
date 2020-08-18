@@ -2,6 +2,7 @@
 
 import ast
 import importlib
+import sys
 import warnings
 from hashlib import sha1
 from pathlib import Path
@@ -37,16 +38,17 @@ def run(
     if kwargs is None:
         kwargs = {}
 
-    if not get_loaded_projects():
-        raise ProjectNotFound("Cannot run a script without an active project")
-
     script, project = _get_path(script_path)
 
     # temporarily add project objects to the main namespace, so the script can import them
-    project._add_to_main_namespace()
+    if project is not None:
+        project._add_to_main_namespace()
+
+    # modify sys.path to ensure script can be imported
+    root_path = Path(".").resolve().root
+    sys.path.insert(0, root_path)
 
     try:
-        script = script.absolute().relative_to(project._path)
         module = _import_from_path(script)
 
         name = module.__name__
@@ -58,19 +60,29 @@ def run(
         )
         return getattr(module, method_name)(*args, **kwargs)
     finally:
-        # cleanup namespace
-        project._remove_from_main_namespace()
+        # cleanup namespace and sys.path
+        sys.path.remove(root_path)
+        if project is not None:
+            project._remove_from_main_namespace()
 
 
-def _get_path(path_str: str) -> Tuple[Path, Project]:
+def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
     # Returns path to a python module
     path = Path(path_str).with_suffix(".py")
 
+    if not get_loaded_projects():
+        if not path.exists():
+            raise FileNotFoundError(f"Cannot find {path_str}")
+        return path.resolve(), None
+
     if not path.is_absolute():
         for project in get_loaded_projects():
-            script_path = project._path.joinpath(project._structure["scripts"]).joinpath(path)
+            if path.parts[:1] == (project._structure["scripts"],):
+                script_path = project._path.joinpath(path)
+            else:
+                script_path = project._path.joinpath(project._structure["scripts"]).joinpath(path)
             if script_path.exists():
-                return script_path, project
+                return script_path.resolve(), project
         raise FileNotFoundError(f"Cannot find {path_str}")
 
     if not path.exists():
@@ -81,12 +93,12 @@ def _get_path(path_str: str) -> Tuple[Path, Project]:
     except StopIteration:
         raise ProjectNotFound(f"{path_str} is not part of an active project")
 
-    return path, project
+    return path.resolve(), project
 
 
 def _import_from_path(path: Path) -> ModuleType:
     # Imports a module from the given path
-    import_str = ".".join(path.parts[:-1] + (path.stem,))
+    import_str = ".".join(path.parts[1:-1] + (path.stem,))
     if import_str in _import_cache:
         importlib.reload(_import_cache[import_str])
     else:

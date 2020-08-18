@@ -94,7 +94,7 @@ def test_cli_compile_and_analyze_projectnotfound_exception(cli_tester):
     assert cli_tester.mock_subroutines.call_count == 0
 
 
-def test_cli_run_with_projectnotfound_exception(cli_tester):
+def test_cli_run_with_missing_file(cli_tester):
     cli_tester.monkeypatch.setattr("brownie.run", cli_tester.mock_subroutines)
 
     subtargets = ("brownie.network.connect",)
@@ -104,8 +104,8 @@ def test_cli_run_with_projectnotfound_exception(cli_tester):
     with pytest.raises(SystemExit):
         cli_tester.run_and_test_parameters("run testfile", parameters=None)
 
-    assert cli_tester.mock_subroutines.called is False
-    assert cli_tester.mock_subroutines.call_count == 0
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == 1
 
 
 def test_cli_ethpm(cli_tester, testproject):
