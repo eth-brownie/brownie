@@ -171,6 +171,10 @@ class IncompatibleSolcVersion(Exception):
     pass
 
 
+class IncompatibleVyperVersion(Exception):
+    pass
+
+
 class PragmaError(Exception):
     pass
 

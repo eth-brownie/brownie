@@ -1,20 +1,40 @@
 #!/usr/bin/python3
 
+import logging
 from collections import deque
 from hashlib import sha1
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
-import vyper
+import vvm
 from semantic_version import Version
-from vyper.cli import vyper_json
-from vyper.exceptions import VyperException
 
+from brownie.exceptions import CompilerError, IncompatibleVyperVersion
+from brownie.project import sources
 from brownie.project.compiler.utils import expand_source_map
 from brownie.project.sources import is_inside_offset
 
+vvm_logger = logging.getLogger("vvm")
+vvm_logger.setLevel(10)
+sh = logging.StreamHandler()
+sh.setLevel(10)
+sh.setFormatter(logging.Formatter("%(message)s"))
+vvm_logger.addHandler(sh)
+
+AVAILABLE_VYPER_VERSIONS = None
+
 
 def get_version() -> Version:
-    return Version.coerce(vyper.__version__)
+    return vvm.get_vyper_version()
+
+
+def set_vyper_version(version: str) -> str:
+    """Sets the vyper version. If not available it will be installed."""
+    try:
+        vvm.set_vyper_version(version, silent=True)
+    except vvm.exceptions.VyperNotInstalled:
+        install_vyper(version)
+        vvm.set_vyper_version(version, silent=True)
+    return str(vvm.get_vyper_version())
 
 
 def get_abi(contract_source: str, name: str) -> Dict:
@@ -23,7 +43,7 @@ def get_abi(contract_source: str, name: str) -> Dict:
 
     This function is deprecated in favor of `brownie.project.compiler.get_abi`
     """
-    compiled = vyper_json.compile_json(
+    compiled = vvm.compile_standard(
         {
             "language": "Vyper",
             "sources": {name: {"content": contract_source}},
@@ -31,6 +51,93 @@ def get_abi(contract_source: str, name: str) -> Dict:
         }
     )
     return {name: compiled["contracts"][name][name]["abi"]}
+
+
+def _get_vyper_version_list() -> Tuple[List, List]:
+    global AVAILABLE_VYPER_VERSIONS
+    installed_versions = vvm.get_installed_vyper_versions()
+    if AVAILABLE_VYPER_VERSIONS is None:
+        try:
+            AVAILABLE_VYPER_VERSIONS = vvm.get_installable_vyper_versions()
+        except ConnectionError:
+            if not installed_versions:
+                raise ConnectionError("Vyper not installed and cannot connect to GitHub")
+            AVAILABLE_VYPER_VERSIONS = installed_versions
+    return AVAILABLE_VYPER_VERSIONS, installed_versions
+
+
+def install_vyper(*versions: str) -> None:
+    """Installs vyper versions."""
+    for version in versions:
+        vvm.install_vyper(version, show_progress=True)
+
+
+def find_vyper_versions(
+    contract_sources: Dict[str, str],
+    install_needed: bool = False,
+    install_latest: bool = False,
+    silent: bool = True,
+) -> Dict:
+
+    """
+    Analyzes contract pragmas and determines which vyper version(s) to use.
+
+    Args:
+        contract_sources: a dictionary in the form of {'path': "source code"}
+        install_needed: if True, will install when no installed version matches
+                        the contract pragma
+        install_latest: if True, will install when a newer version is available
+                        than the installed one
+        silent: set to False to enable verbose reporting
+
+    Returns: dictionary of {'version': ['path', 'path', ..]}
+    """
+
+    available_versions, installed_versions = _get_vyper_version_list()
+
+    pragma_specs: Dict = {}
+    to_install = set()
+    new_versions = set()
+
+    for path, source in contract_sources.items():
+        pragma_specs[path] = sources.get_vyper_pragma_spec(source, path)
+        version = pragma_specs[path].select(installed_versions)
+
+        if not version and not (install_needed or install_latest):
+            raise IncompatibleVyperVersion(
+                f"No installed vyper version matching '{pragma_specs[path]}' in '{path}'"
+            )
+
+        # if no installed version of vyper matches the pragma, find the latest available version
+        latest = pragma_specs[path].select(available_versions)
+
+        if not version and not latest:
+            raise IncompatibleVyperVersion(
+                f"No installable vyper version matching '{pragma_specs[path]}' in '{path}'"
+            )
+
+        if not version or (install_latest and latest > version):
+            to_install.add(latest)
+        elif latest and latest > version:
+            new_versions.add(str(version))
+
+    # install new versions if needed
+    if to_install:
+        install_vyper(*to_install)
+        installed_versions = vvm.get_installed_vyper_versions()
+    elif new_versions and not silent:
+        print(
+            f"New compatible vyper version{'s' if len(new_versions) > 1 else ''}"
+            f" available: {', '.join(new_versions)}"
+        )
+
+    # organize source paths by latest available vyper version
+    compiler_versions: Dict = {}
+    for path, spec in pragma_specs.items():
+        version = spec.select(installed_versions)
+        compiler_versions.setdefault(str(version), []).append(path)
+
+    return compiler_versions
 
 
 def compile_from_input_json(
@@ -41,7 +148,7 @@ def compile_from_input_json(
     Compiles contracts from a standard input json.
 
     Args:
-        input_json: solc input json
+        input_json: vyper input json
         silent: verbose reporting
         allow_paths: compiler allowed filesystem import path
 
@@ -51,27 +158,38 @@ def compile_from_input_json(
     if not silent:
         print("Compiling contracts...")
         print(f"  Vyper version: {get_version()}")
+    if get_version() < Version("0.1.0-beta.17"):
+        outputs = input_json["settings"]["outputSelection"]["*"]["*"]
+        outputs.remove("userdoc")
+        outputs.remove("devdoc")
     try:
-        return vyper_json.compile_json(input_json, root_path=allow_paths)
-    except VyperException as exc:
-        raise exc.with_traceback(None)
+        return vvm.compile_standard(input_json, base_path=allow_paths)
+    except vvm.exceptions.VyperError as exc:
+        raise CompilerError(exc, "vyper")
 
 
 def _get_unique_build_json(
-    output_evm: Dict, path_str: str, contract_name: str, ast_json: Dict, offset: Tuple
+    output_evm: Dict, path_str: str, contract_name: str, ast_json: Union[Dict, List], offset: Tuple
 ) -> Dict:
+
+    ast: List
+    if isinstance(ast_json, dict):
+        ast = ast_json["body"]
+    else:
+        ast = ast_json
+
     pc_map, statement_map, branch_map = _generate_coverage_data(
         output_evm["deployedBytecode"]["sourceMap"],
         output_evm["deployedBytecode"]["opcodes"],
         contract_name,
-        ast_json["body"],
+        ast,
     )
     return {
         "allSourcePaths": {"0": path_str},
         "bytecode": output_evm["bytecode"]["object"],
         "bytecodeSha1": sha1(output_evm["bytecode"]["object"].encode()).hexdigest(),
         "coverageMap": {"statements": statement_map, "branches": branch_map},
-        "dependencies": _get_dependencies(ast_json["body"]),
+        "dependencies": _get_dependencies(ast),
         "offset": offset,
         "pcMap": pc_map,
         "type": "contract",
