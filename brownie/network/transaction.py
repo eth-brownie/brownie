@@ -19,6 +19,7 @@ from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
 from brownie.exceptions import RPCRequestError
 from brownie.project import build
+from brownie.project import main as project_main
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie.utils import color
@@ -1077,7 +1078,8 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
             path_map=contract._build.get("allSourcePaths"),
             pc_map=contract._build.get("pcMap"),
         )
-        if contract._project:
+        if isinstance(contract._project, project_main.Project):
+            # only evaluate coverage for contracts that are part of a `Project`
             last_map["coverage"] = True
             if contract._build["language"] == "Solidity":
                 last_map["active_branches"] = set()
