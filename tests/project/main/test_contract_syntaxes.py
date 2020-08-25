@@ -28,6 +28,7 @@ contract OnlyEvents {{
 
 def test_vyper_external_call(newproject):
     source = """
+# @version 0.2.4
 from vyper.interfaces import ERC721
 @external
 def interfaceTest():

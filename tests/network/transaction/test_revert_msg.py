@@ -146,6 +146,12 @@ def test_vyper_revert_reasons(vypertester, console_mode):
 
 
 def test_deployment_size_limit(accounts, console_mode):
-    code = f"@external\ndef baz():\n    assert msg.sender != ZERO_ADDRESS, '{'blah'*10000}'"
-    tx = compile_source(code).Vyper.deploy({"from": accounts[0]})
+    code = f"""
+# @version 0.2.4
+
+@external
+def baz():
+    assert msg.sender != ZERO_ADDRESS, '{'blah'*10000}'
+    """
+    tx = compile_source(code, vyper_version="").Vyper.deploy({"from": accounts[0]})
     assert tx.revert_msg == "exceeds EIP-170 size limit"

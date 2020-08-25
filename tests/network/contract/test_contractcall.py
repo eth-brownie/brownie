@@ -27,6 +27,7 @@ def test_transact(accounts, tester):
 def test_block_identifier(accounts, history):
     contract = compile_source(
         """
+# @version 0.2.4
 foo: public(int128)
 
 @external

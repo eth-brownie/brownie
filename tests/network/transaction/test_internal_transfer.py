@@ -7,6 +7,8 @@ from brownie.convert import EthAddress
 def test_to_eoa(accounts):
     container = compile_source(
         """
+# @version 0.2.4
+
 @external
 @payable
 def send_ether(receivers: address[3]) -> bool:
@@ -28,6 +30,8 @@ def send_ether(receivers: address[3]) -> bool:
 def test_to_contract(accounts):
     container = compile_source(
         """
+# @version 0.2.4
+
 @external
 @payable
 def send_ether(receiver: address) -> bool:
@@ -50,6 +54,8 @@ def __default__():
 def test_types(accounts):
     container = compile_source(
         """
+# @version 0.2.4
+
 @external
 @payable
 def send_ether(receiver: address) -> bool:
@@ -67,6 +73,8 @@ def send_ether(receiver: address) -> bool:
 def test_via_create_vyper(accounts):
     container = compile_source(
         """
+# @version 0.2.4
+
 @external
 @payable
 def send_ether() -> bool:

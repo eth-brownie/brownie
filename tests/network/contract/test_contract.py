@@ -126,9 +126,9 @@ def test_deprecated_init_ethpm(ipfs_mock, network):
 
 def test_from_explorer(network):
     network.connect("mainnet")
-    contract = Contract.from_explorer("0x2af5d2ad76741191d15dfe7bf6ac92d4bd912ca3")
+    contract = Contract.from_explorer("0x973e52691176d36453868d9d86572788d27041a9")
 
-    assert contract._name == "LEO"
+    assert contract._name == "DxToken"
     assert "pcMap" in contract._build
     assert len(contract._sources) == 1
 
@@ -165,9 +165,30 @@ def test_from_explorer_osx_pre_050(network, monkeypatch):
     assert "pcMap" not in contract._build
 
 
-def test_from_explorer_vyper(network):
+def test_from_explorer_vyper_supported_020(network):
+    network.connect("mainnet")
+
+    # curve yCRV gauge - `0.2.4`
+    contract = Contract.from_explorer("0xFA712EE4788C042e2B7BB55E6cb8ec569C4530c1")
+
+    assert contract._name == "Vyper_contract"
+    assert "pcMap" in contract._build
+
+
+def test_from_explorer_vyper_supported_010(network):
+    network.connect("mainnet")
+
+    # curve cDAI/cUSDC - `0.1.0-beta.16`
+    contract = Contract.from_explorer("0x845838DF265Dcd2c412A1Dc9e959c7d08537f8a2")
+
+    assert contract._name == "Vyper_contract"
+    assert "pcMap" in contract._build
+
+
+def test_from_explorer_vyper_old_version(network):
     network.connect("mainnet")
     with pytest.warns(BrownieCompilerWarning):
+        # uniswap v1 - `0.1.0-beta.4`
         contract = Contract.from_explorer("0x2157a7894439191e520825fe9399ab8655e0f708")
 
     assert contract._name == "Vyper_contract"

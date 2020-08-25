@@ -1,3 +1,5 @@
+# @version ^0.2.0
+
 stuff: public(uint256[4])
 
 

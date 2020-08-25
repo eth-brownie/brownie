@@ -137,3 +137,17 @@ def test_from_ethpm_with_deployments(ipfs_mock, project, network):
     p = project.from_ethpm("ipfs://testipfs-math")
     assert len(p.Math) == 1
     assert p.Math[0].address == "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2"
+
+
+def test_compile_source_solc_without_pragma(project):
+    project.compile_source("""contract X {}""")
+
+
+def test_compile_source_vyper_without_pragma(project):
+    project.compiler.vyper.set_vyper_version("0.2.4")
+    project.compile_source(
+        """
+@external
+def foo():
+    pass"""
+    )

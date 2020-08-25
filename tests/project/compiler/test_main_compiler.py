@@ -11,6 +11,7 @@ def test_multiple_compilers(solc4source, vysource):
         {
             "solc4.sol": solc4source,
             "vyper.vy": vysource,
+            "vyperold.vy": "# @version 0.1.0b16\n",
             "solc6.sol": "pragma solidity 0.6.2; contract Foo {}",
         }
     )

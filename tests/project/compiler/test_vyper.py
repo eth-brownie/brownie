@@ -3,21 +3,16 @@
 import functools
 
 import pytest
-import vyper
-from semantic_version import Version
-from vyper.exceptions import StructureException
 
+from brownie.exceptions import CompilerError
 from brownie.project import build, compiler
 
 
 @pytest.fixture
 def vyjson(vysource):
+    compiler.vyper.set_vyper_version("0.2.4")
     input_json = compiler.generate_input_json({"path.vy": vysource}, language="Vyper")
     yield compiler.compile_from_input_json(input_json)
-
-
-def test_version():
-    assert compiler.vyper.get_version() == Version.coerce(vyper.__version__)
 
 
 def test_generate_input_json(vysource):
@@ -37,9 +32,11 @@ def test_compile_input_json(vyjson):
     assert "path" in vyjson["contracts"]["path.vy"]
 
 
-def test_compile_input_json_raises():
+@pytest.mark.parametrize("vyper_version", ["0.1.0-beta.16", "0.2.4"])
+def test_compile_input_json_raises(vyper_version):
+    compiler.vyper.set_vyper_version(vyper_version)
     input_json = compiler.generate_input_json({"path.vy": "potato"}, language="Vyper")
-    with pytest.raises(StructureException):
+    with pytest.raises(CompilerError):
         compiler.compile_from_input_json(input_json)
 
 
@@ -50,6 +47,7 @@ def test_build_json_keys(vysource):
 
 def test_dependencies(vysource):
     code = """
+# @version 0.2.4
 import path as foo
 from vyper.interfaces import ERC20
 from foo import bar
@@ -62,7 +60,7 @@ from foo import bar
 
 
 def test_compile_empty():
-    compiler.compile_and_format({"empty.vy": ""})
+    compiler.compile_and_format({"empty.vy": ""}, vyper_version="0.2.4")
 
 
 def test_get_abi():
@@ -83,5 +81,5 @@ def test_get_abi():
 
 def test_size_limit(capfd):
     code = f"@external\ndef baz():\n    assert msg.sender != ZERO_ADDRESS, '{'blah'*10000}'"
-    compiler.compile_and_format({"foo.vy": code})
+    compiler.compile_and_format({"foo.vy": code}, vyper_version="0.2.4")
     assert "exceeds EIP-170 limit of 24577" in capfd.readouterr()[0]
