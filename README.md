@@ -6,7 +6,7 @@ Brownie is a Python-based development and testing framework for smart contracts 
 
 ## Features
 
-* Full support for [Solidity](https://github.com/ethereum/solidity) (`>=0.4.22`) and [Vyper](https://github.com/vyperlang/vyper) (`0.2.x`)
+* Full support for [Solidity](https://github.com/ethereum/solidity) (`>=0.4.22`) and [Vyper](https://github.com/vyperlang/vyper) (`>=0.1.0-beta.16`)
 * Contract testing via [`pytest`](https://github.com/pytest-dev/pytest), including trace-based coverage evaluation
 * Property-based and stateful testing via [`hypothesis`](https://github.com/HypothesisWorks/hypothesis/tree/master/hypothesis-python)
 * Powerful debugging tools, including python-style tracebacks and custom error strings

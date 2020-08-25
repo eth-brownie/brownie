@@ -17,7 +17,7 @@ If one or more contracts are unable to compile, Brownie raises an exception with
 Supported Languages
 ===================
 
-Brownie supports Solidity (``>=0.4.22``) and Vyper (``0.2.x``). The file extension determines which compiler is used:
+Brownie supports Solidity (``>=0.4.22``) and Vyper (``>=0.1.0-beta.16``). The file extension determines which compiler is used:
 
 * Solidity: ``.sol``
 * Vyper: ``.vy``
@@ -50,6 +50,8 @@ Compiler settings may be declared in the :ref:`configuration file <config>` of a
             optimizer:
                 enabled: true
                 runs: 200
+        vyper:
+            version: null
 
 Modifying any compiler settings will result in a full recompile of the project.
 
@@ -58,7 +60,7 @@ Setting the Compiler Version
 
 .. note::
 
-    Brownie supports Solidity versions ``>=0.4.22`` and Vyper version ``0.2.x``.
+    Brownie supports Solidity versions ``>=0.4.22`` and Vyper versions ``>=0.1.0-beta.16``.
 
 If a compiler version is set in the configuration file, all contracts in the project are compiled using that version. The compiler is installed automatically if not already present. The version should be given as a string in the format ``0.x.x``.
 
@@ -155,9 +157,14 @@ With the ``OpenZeppelin/openzeppelin-contracts@3.0.0`` package installed, and th
 Installing the Compiler
 =======================
 
-If you wish to manually install a different version of ``solc``:
+If you wish to manually install a different version of ``solc`` or ``vyper``:
 
 .. code-block:: python
 
     >>> from brownie.project.compiler import install_solc
     >>> install_solc("0.5.10")
+
+.. code-block:: python
+
+    >>> from brownie.project.compiler import install_vyper
+    >>> install_vyper("0.2.4")
