@@ -140,6 +140,51 @@ def find_vyper_versions(
     return compiler_versions
 
 
+def find_best_vyper_version(
+    contract_sources: Dict[str, str],
+    install_needed: bool = False,
+    install_latest: bool = False,
+    silent: bool = True,
+) -> str:
+
+    """
+    Analyze contract pragma and find the best compatible version across multiple sources.
+
+    Args:
+        contract_sources: a dictionary in the form of {'path': "source code"}
+        install_needed: if True, will install when no installed version matches
+                        the contract pragma
+        install_latest: if True, will install when a newer version is available
+                        than the installed one
+        silent: set to False to enable verbose reporting
+
+    Returns: version string
+    """
+
+    available_versions, installed_versions = _get_vyper_version_list()
+
+    for path, source in contract_sources.items():
+
+        pragma_spec = sources.get_vyper_pragma_spec(source, path)
+        installed_versions = [i for i in installed_versions if i in pragma_spec]
+        available_versions = [i for i in available_versions if i in pragma_spec]
+
+    if not available_versions:
+        raise IncompatibleVyperVersion("No installable vyper version compatible across all sources")
+
+    if not installed_versions and not (install_needed or install_latest):
+        raise IncompatibleVyperVersion("No installed vyper version compatible across all sources")
+
+    if max(available_versions) > max(installed_versions, default=Version("0.0.0")):
+        if install_latest or (install_needed and not installed_versions):
+            install_vyper(max(available_versions))
+            return str(max(available_versions))
+        if not silent:
+            print(f"New compatible vyper version available: {max(available_versions)}")
+
+    return str(max(installed_versions))
+
+
 def compile_from_input_json(
     input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
 ) -> Dict:
