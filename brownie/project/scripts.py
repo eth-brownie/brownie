@@ -52,10 +52,15 @@ def run(
         module = _import_from_path(script)
 
         name = module.__name__
+
         if not hasattr(module, method_name):
             raise AttributeError(f"Module '{name}' has no method '{method_name}'")
+        try:
+            module_path = Path(module.__file__).relative_to(Path(".").absolute())
+        except ValueError:
+            module_path = Path(module.__file__)
         print(
-            f"\nRunning '{color('bright blue')}{name}{color}."
+            f"\nRunning '{color('bright blue')}{module_path}{color}::"
             f"{color('bright cyan')}{method_name}{color}'..."
         )
         return getattr(module, method_name)(*args, **kwargs)
