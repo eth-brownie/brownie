@@ -587,6 +587,7 @@ def from_ethpm(uri: str) -> "TempProject":
     compiler_config = {
         "evm_version": None,
         "solc": {"version": None, "optimize": True, "runs": 200},
+        "vyper": {"version": None},
     }
     project = TempProject(manifest["package_name"], manifest["sources"], compiler_config)
     if web3.isConnected():
