@@ -87,6 +87,7 @@ class _ProjectBase:
             build_json = compiler.compile_and_format(
                 contract_sources,
                 solc_version=compiler_config["solc"].get("version", None),
+                vyper_version=compiler_config["vyper"].get("version", None),
                 optimize=compiler_config["solc"].get("optimize", None),
                 runs=compiler_config["solc"].get("runs", None),
                 evm_version=compiler_config["evm_version"],

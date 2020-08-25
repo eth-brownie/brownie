@@ -48,6 +48,7 @@ EVM_SOLC_VERSIONS = [
 def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
+    vyper_version: Optional[str] = None,
     optimize: bool = True,
     runs: int = 200,
     evm_version: Optional[str] = None,
@@ -90,10 +91,12 @@ def compile_and_format(
     vyper_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".vy"}
     if vyper_sources:
         # TODO add `vyper_version` input arg to manually specify, support in config file
-        compiler_targets.update(
-            find_vyper_versions(vyper_sources, install_needed=True, silent=silent)
-        )
-
+        if vyper_version is None:
+            compiler_targets.update(
+                find_vyper_versions(vyper_sources, install_needed=True, silent=silent)
+            )
+        else:
+            compiler_targets[vyper_version] = list(vyper_sources)
     solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
     if solc_sources:
         if solc_version is None:
