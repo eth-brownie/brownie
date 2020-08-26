@@ -184,6 +184,15 @@ class Console(code.InteractiveConsole):
             text = color.highlight(text)
         self.write(text)
 
+    def interact(self, *args, **kwargs):
+        # temporarily modify mode so that container repr's display correctly for console
+        cli_mode = CONFIG.argv["cli"]
+        CONFIG.argv["cli"] = "console"
+        try:
+            super().interact(*args, **kwargs)
+        finally:
+            CONFIG.argv["cli"] = cli_mode
+
     def raw_input(self, prompt=""):
         return self.prompt_session.prompt(prompt)
 
