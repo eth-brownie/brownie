@@ -63,7 +63,7 @@ Unlocking Accounts
 
 In order to access a local account from a script or console, you must first unlock it. This is done via the :func:`Accounts.load <Accounts.load>` method:
 
-.. code-block::
+.. code-block:: python
 
     >>> accounts
     []

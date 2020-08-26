@@ -71,3 +71,17 @@ def test_load_messy_project():
 
 def test_get_pragma_spec():
     assert sources.get_pragma_spec(MESSY_SOURCE) == NpmSpec(">=0.4.22 <0.7.0")
+
+
+@pytest.mark.parametrize(
+    "version, spec",
+    [
+        ("0.1.0b16", NpmSpec("0.1.0-beta.16")),
+        ("0.1.0Beta17", NpmSpec("0.1.0-beta.17")),
+        ("^0.2.0", NpmSpec("^0.2.0")),
+        ("<=0.2.4", NpmSpec("<=0.2.4")),
+    ],
+)
+def test_get_vyper_pragma_spec(version, spec):
+    source = f"""# @version {version}"""
+    assert sources.get_vyper_pragma_spec(source) == spec

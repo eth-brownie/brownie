@@ -16,6 +16,8 @@ import solcx
 from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
 from semantic_version import Version
+from vvm import get_installable_vyper_versions
+from vvm.utils.convert import to_vyper_version
 
 from brownie._config import CONFIG, REQUEST_HEADERS
 from brownie.convert.datatypes import Wei
@@ -670,19 +672,30 @@ class Contract(_DeployedContractBase):
         if not is_verified:
             return cls.from_abi(name, address, abi, owner)
 
-        try:
-            version = Version(data["result"][0]["CompilerVersion"].lstrip("v")).truncate()
-        except Exception:
-            version = Version("0.0.0")
-        if version < Version("0.4.22") or (
-            # special case for OSX because installing 0.4.x versions is problematic
-            sys.platform == "darwin"
-            and version < Version("0.5.0")
-            and f"v{version}" not in solcx.get_installed_solc_versions()
-        ):
+        compiler_str = data["result"][0]["CompilerVersion"]
+        if compiler_str.startswith("vyper:"):
+            try:
+                version = to_vyper_version(compiler_str[6:])
+                is_compilable = version in get_installable_vyper_versions()
+            except Exception:
+                is_compilable = False
+        else:
+            try:
+                version = Version(compiler_str.lstrip("v")).truncate()
+                if sys.platform == "darwin":
+                    is_compilable = (
+                        version >= Version("0.5.0")
+                        or f"v{version}" in solcx.get_installed_solc_versions()
+                    )
+                else:
+                    is_compilable = f"v{version}" in solcx.get_available_solc_versions()
+            except Exception:
+                is_compilable = False
+
+        if not is_compilable:
             if not silent:
                 warnings.warn(
-                    f"{address}: target compiler '{data['result'][0]['CompilerVersion']}' is "
+                    f"{address}: target compiler '{compiler_str}' is "
                     "unsupported by Brownie. Some functionality will not be available.",
                     BrownieCompilerWarning,
                 )
@@ -696,9 +709,10 @@ class Contract(_DeployedContractBase):
         if evm_version == "Default":
             evm_version = None
 
-        if data["result"][0]["SourceCode"].startswith("{"):
+        source_str = "\n".join(data["result"][0]["SourceCode"].splitlines())
+        if source_str.startswith("{"):
             # source was verified using compiler standard JSON
-            input_json = json.loads(data["result"][0]["SourceCode"][1:-1])
+            input_json = json.loads(source_str[1:-1])
             sources = {k: v["content"] for k, v in input_json["sources"].items()}
             evm_version = input_json["settings"].get("evmVersion", evm_version)
 
@@ -709,10 +723,19 @@ class Contract(_DeployedContractBase):
             output_json = compiler.compile_from_input_json(input_json)
             build_json = compiler.generate_build_json(input_json, output_json)
         else:
-            # source was submitted as a single flattened file
-            sources = {f"{name}-flattened.sol": data["result"][0]["SourceCode"]}
+            # source was submitted as a single file
+            if compiler_str.startswith("vyper"):
+                path_str = f"{name}.vy"
+            else:
+                path_str = f"{name}-flattened.sol"
+
+            sources = {path_str: source_str}
             build_json = compiler.compile_and_format(
-                sources, solc_version=str(version), optimizer=optimizer, evm_version=evm_version
+                sources,
+                solc_version=str(version),
+                vyper_version=str(version),
+                optimizer=optimizer,
+                evm_version=evm_version,
             )
 
         build_json = build_json[name]

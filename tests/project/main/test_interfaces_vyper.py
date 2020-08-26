@@ -1,11 +1,13 @@
 import json
 
 INTERFACE = """
+# @version 0.2.4
 @external
 def baz() -> bool: pass
 """
 
 CONTRACT = """
+# @version 0.2.4
 import interfaces.Bar as Bar
 
 implements: Bar

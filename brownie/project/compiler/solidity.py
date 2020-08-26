@@ -69,7 +69,7 @@ def compile_from_input_json(
             allow_paths=allow_paths,
         )
     except solcx.exceptions.SolcError as e:
-        raise CompilerError(e)
+        raise CompilerError(e, "solc")
 
 
 def set_solc_version(version: str) -> str:

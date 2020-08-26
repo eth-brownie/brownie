@@ -32,6 +32,7 @@ from brownie._config import (
 from brownie.exceptions import (
     BrownieEnvironmentWarning,
     InvalidPackage,
+    PragmaError,
     ProjectAlreadyLoaded,
     ProjectNotFound,
 )
@@ -87,6 +88,7 @@ class _ProjectBase:
             build_json = compiler.compile_and_format(
                 contract_sources,
                 solc_version=compiler_config["solc"].get("version", None),
+                vyper_version=compiler_config["vyper"].get("version", None),
                 optimize=compiler_config["solc"].get("optimize", None),
                 runs=compiler_config["solc"].get("runs", None),
                 evm_version=compiler_config["evm_version"],
@@ -585,6 +587,7 @@ def from_ethpm(uri: str) -> "TempProject":
     compiler_config = {
         "evm_version": None,
         "solc": {"version": None, "optimize": True, "runs": 200},
+        "vyper": {"version": None},
     }
     project = TempProject(manifest["package_name"], manifest["sources"], compiler_config)
     if web3.isConnected():
@@ -597,20 +600,59 @@ def from_ethpm(uri: str) -> "TempProject":
 def compile_source(
     source: str,
     solc_version: Optional[str] = None,
+    vyper_version: Optional[str] = None,
     optimize: bool = True,
     runs: Optional[int] = 200,
     evm_version: Optional[str] = None,
 ) -> "TempProject":
-    """Compiles the given source code string and returns a TempProject container with
-    the ContractContainer instances."""
+    """
+    Compile the given source code string and return a TempProject container with
+    the ContractContainer instances.
+    """
+    compiler_config: Dict = {"evm_version": evm_version, "solc": {}, "vyper": {}}
 
-    compiler_config: Dict = {"evm_version": evm_version}
+    # if no compiler version was given, first try to find a Solidity pragma
+    if solc_version is None and vyper_version is None:
+        try:
+            solc_version = compiler.solidity.find_best_solc_version(
+                {"<stdin>": source}, install_needed=True, silent=False
+            )
+        except PragmaError:
+            pass
 
-    if solc_version is not None or source.lstrip().startswith("pragma"):
-        compiler_config["solc"] = {"version": solc_version, "optimize": optimize, "runs": runs}
-        return TempProject("TempSolcProject", {"<stdin>.sol": source}, compiler_config)
+    if vyper_version is None:
+        # if no vyper compiler version is given, try to compile using solidity
+        compiler_config["solc"] = {
+            "version": solc_version or str(compiler.solidity.get_version()),
+            "optimize": optimize,
+            "runs": runs,
+        }
+        try:
+            return TempProject("TempSolcProject", {"<stdin>.sol": source}, compiler_config)
+        except Exception as exc:
+            # if compilation fails, raise when a solc version was given or we found a pragma
+            if solc_version is not None:
+                raise exc
 
-    return TempProject("TempVyperProject", {"<stdin>.vy": source}, compiler_config)
+    if vyper_version is None:
+        # if no vyper compiler version was given, try to find a pragma
+        try:
+            vyper_version = compiler.vyper.find_best_vyper_version(
+                {"<stdin>": source}, install_needed=True, silent=False
+            )
+        except PragmaError:
+            pass
+
+    compiler_config["vyper"] = {"version": vyper_version or compiler.vyper.get_version()}
+    try:
+        return TempProject("TempVyperProject", {"<stdin>.vy": source}, compiler_config)
+    except Exception as exc:
+        if solc_version is None and vyper_version is None:
+            raise PragmaError(
+                "No compiler version specified, no pragma statement in the source, "
+                "and compilation failed with both solc and vyper"
+            ) from None
+        raise exc
 
 
 def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None) -> "Project":

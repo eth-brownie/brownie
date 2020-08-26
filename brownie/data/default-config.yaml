@@ -35,6 +35,8 @@ compiler:
             enabled: true
             runs: 200
         remappings: null
+    vyper:
+        version: null
 
 console:
     show_colors: true

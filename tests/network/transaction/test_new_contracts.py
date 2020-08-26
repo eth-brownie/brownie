@@ -72,14 +72,14 @@ def test_solidity_reverts(solcproject, console_mode):
 
 
 vyper_forwarder_source = """
-
+# @version 0.2.4
 @external
 def create_new(_target: address) -> address:
     return create_forwarder_to(_target)
 """
 
 vyper_factory_source = """
-
+# @version 0.2.4
 @external
 @view
 def foo() -> uint256:

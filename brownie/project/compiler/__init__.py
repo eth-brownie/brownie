@@ -19,6 +19,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
     set_solc_version,
 )
 from brownie.project.compiler.utils import merge_natspec
+from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
 from brownie.utils import notify
 
 from . import solidity, vyper
@@ -47,6 +48,7 @@ EVM_SOLC_VERSIONS = [
 def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
+    vyper_version: Optional[str] = None,
     optimize: bool = True,
     runs: int = 200,
     evm_version: Optional[str] = None,
@@ -86,10 +88,15 @@ def compile_and_format(
     build_json: Dict = {}
     compiler_targets = {}
 
-    vyper_paths = [i for i in contract_sources if Path(i).suffix == ".vy"]
-    if vyper_paths:
-        compiler_targets["vyper"] = vyper_paths
-
+    vyper_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".vy"}
+    if vyper_sources:
+        # TODO add `vyper_version` input arg to manually specify, support in config file
+        if vyper_version is None:
+            compiler_targets.update(
+                find_vyper_versions(vyper_sources, install_needed=True, silent=silent)
+            )
+        else:
+            compiler_targets[vyper_version] = list(vyper_sources)
     solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
     if solc_sources:
         if solc_version is None:
@@ -104,7 +111,8 @@ def compile_and_format(
 
     for version, path_list in compiler_targets.items():
         compiler_data: Dict = {}
-        if version == "vyper":
+        if path_list[0].endswith(".vy"):
+            set_vyper_version(version)
             language = "Vyper"
             compiler_data["version"] = str(vyper.get_version())
             interfaces = {k: v for k, v in interface_sources.items() if Path(k).suffix != ".sol"}
@@ -287,8 +295,8 @@ def generate_build_json(
 
         abi = output_json["contracts"][path_str][contract_name]["abi"]
         natspec = merge_natspec(
-            output_json["contracts"][path_str][contract_name]["devdoc"],
-            output_json["contracts"][path_str][contract_name]["userdoc"],
+            output_json["contracts"][path_str][contract_name].get("devdoc", {}),
+            output_json["contracts"][path_str][contract_name].get("userdoc", {}),
         )
         output_evm = output_json["contracts"][path_str][contract_name]["evm"]
 

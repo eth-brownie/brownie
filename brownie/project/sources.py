@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from semantic_version import NpmSpec
+from vvm.utils.convert import to_vyper_version
 
 from brownie.exceptions import NamespaceCollision, PragmaError
 from brownie.utils import color
@@ -203,3 +204,36 @@ def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     if path:
         raise PragmaError(f"No version pragma in '{path}'")
     raise PragmaError("String does not contain a version pragma")
+
+
+def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
+    """
+    Extracts pragma information from Vyper source code.
+
+    Args:
+        source: Vyper source code
+        path: Optional path to the source (only used for error reporting)
+
+    Returns: NpmSpec object
+    """
+    pragma_match = next(re.finditer(r"(?:\n|^)\s*#\s*@version\s*([^\n]*)", source), None)
+    if pragma_match is None:
+        if path:
+            raise PragmaError(f"No version pragma in '{path}'")
+        raise PragmaError("String does not contain a version pragma")
+
+    pragma_string = pragma_match.groups()[0]
+    pragma_string = " ".join(pragma_string.split())
+    try:
+        return NpmSpec(pragma_string)
+    except ValueError:
+        pass
+    try:
+        # special case for Vyper 0.1.0-beta.X
+        version = to_vyper_version(pragma_string)
+        return NpmSpec(str(version))
+    except Exception:
+        pass
+
+    path = "" if path is None else f"{path}: "
+    raise PragmaError(f"{path}Cannot parse Vyper version from pragma: {pragma_string}")

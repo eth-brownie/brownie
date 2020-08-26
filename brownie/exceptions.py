@@ -159,12 +159,19 @@ class ProjectNotFound(Exception):
 
 
 class CompilerError(Exception):
-    def __init__(self, e: Type[psutil.Popen]) -> None:
-        err = [i["formattedMessage"] for i in yaml.safe_load(e.stdout_data)["errors"]]
-        super().__init__("Compiler returned the following errors:\n\n" + "\n".join(err))
+    def __init__(self, e: Type[psutil.Popen], compiler: str = "Compiler") -> None:
+        self.compiler = compiler
+
+        err_json = yaml.safe_load(e.stdout_data)
+        err = [i.get("formattedMessage") or i["message"] for i in err_json["errors"]]
+        super().__init__(f"{compiler} returned the following errors:\n\n" + "\n".join(err))
 
 
 class IncompatibleSolcVersion(Exception):
+    pass
+
+
+class IncompatibleVyperVersion(Exception):
     pass
 
 
