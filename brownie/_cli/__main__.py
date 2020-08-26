@@ -44,6 +44,10 @@ def main():
         # this call triggers a SystemExit
         docopt(__doc__, ["brownie", "-h"])
 
+    if "-i" in sys.argv:
+        # a small kindness to ipython users
+        sys.argv[sys.argv.index("-i")] = "-I"
+
     cmd = sys.argv[1]
     cmd_list = [i.stem for i in Path(__file__).parent.glob("[!_]*.py")]
     if cmd not in cmd_list:
