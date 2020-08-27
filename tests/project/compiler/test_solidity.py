@@ -44,9 +44,15 @@ def find_version():
 
 @pytest.fixture
 def msolc(monkeypatch):
-    installed = ["v0.5.8", "v0.5.7", "v0.4.23", "v0.4.22", "v0.4.6"]
+    installed = [
+        Version("0.5.8"),
+        Version("0.5.7"),
+        Version("0.4.23"),
+        Version("0.4.22"),
+        Version("0.4.6"),
+    ]
     monkeypatch.setattr("solcx.get_installed_solc_versions", lambda: installed)
-    monkeypatch.setattr("solcx.install_solc", lambda k, **z: installed.append("v" + k))
+    monkeypatch.setattr("solcx.install_solc", lambda k, **z: installed.append(k))
     yield installed
 
 
@@ -94,31 +100,6 @@ def test_compile_input_json_evm_translates(solc5source, original, translated):
     compiler.set_solc_version("0.5.7")
     input_json = compiler.generate_input_json({"path.sol": solc5source}, True, 200, original)
     compiler.compile_from_input_json(input_json)
-
-
-def test_compile_optimizer(monkeypatch):
-    def _test_compiler(a, **kwargs):
-        assert kwargs["optimize"] is True
-        assert kwargs["optimize_runs"] == 666
-
-    monkeypatch.setattr("solcx.compile_standard", _test_compiler)
-    input_json = {
-        "language": "Solidity",
-        "settings": {"optimizer": {"enabled": True, "runs": 666}, "remappings": []},
-    }
-    compiler.compile_from_input_json(input_json)
-    input_json = {
-        "language": "Solidity",
-        "settings": {"optimizer": {"enabled": True, "runs": 31337}, "remappings": []},
-    }
-    with pytest.raises(AssertionError):
-        compiler.compile_from_input_json(input_json)
-    input_json = {
-        "language": "Solidity",
-        "settings": {"optimizer": {"enabled": False, "runs": 666}, "remappings": []},
-    }
-    with pytest.raises(AssertionError):
-        compiler.compile_from_input_json(input_json)
 
 
 def test_build_json_keys(solc5source):
@@ -173,24 +154,24 @@ def test_find_solc_versions(find_version, msolc):
 
 
 def test_find_solc_versions_install(find_version, msolc):
-    assert "v0.4.25" not in msolc
-    assert "v0.5.10" not in msolc
+    assert Version("0.4.25") not in msolc
+    assert Version("0.5.10") not in msolc
     find_version("^0.4.24", install_needed=True)
-    assert msolc.pop() == "v0.4.25"
+    assert msolc.pop() == Version("0.4.25")
     find_version("^0.4.22", install_latest=True)
-    assert msolc.pop() == "v0.4.25"
+    assert msolc.pop() == Version("0.4.25")
     find_version("^0.4.24 || >=0.5.10", install_needed=True)
-    assert msolc.pop() == "v0.6.7"
+    assert msolc.pop() == Version("0.6.7")
     find_version(">=0.4.24", install_latest=True)
-    assert msolc.pop() == "v0.6.7"
+    assert msolc.pop() == Version("0.6.7")
 
 
 def test_install_solc(msolc):
-    assert "v0.5.10" not in msolc
-    assert "v0.6.0" not in msolc
-    compiler.install_solc("0.6.0", "0.5.10")
-    assert "v0.5.10" in msolc
-    assert "v0.6.0" in msolc
+    assert Version("0.5.10") not in msolc
+    assert Version("0.6.0") not in msolc
+    compiler.install_solc(Version("0.6.0"), Version("0.5.10"))
+    assert Version("0.5.10") in msolc
+    assert Version("0.6.0") in msolc
 
 
 def test_first_revert(BrownieTester, ExternalCallTester):
