@@ -15,6 +15,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from ethpm._utils.ipfs import dummy_ipfs_pin
 from ethpm.backends.ipfs import BaseIPFSBackend
 from prompt_toolkit.input.defaults import create_pipe_input
+from semantic_version import Version
 
 import brownie
 from brownie._cli.console import Console
@@ -71,7 +72,7 @@ def pytest_configure(config):
         solc_versions, evm_verions, runs = [i.split(",") for i in config.option.evm]
         runs = [int(i) for i in runs]
         if "latest" in solc_versions:
-            latest_version = solcx.get_available_solc_versions()[0]
+            latest_version = solcx.get_installable_solc_versions()[0]
             solc_versions.remove("latest")
             solc_versions.append(latest_version)
         config.option.evm = (evm_verions, runs, solc_versions)
@@ -86,22 +87,24 @@ def pytest_generate_tests(metafunc):
 
 
 # travis cannot call github ethereum/solidity API, so this method is patched
-def pytest_sessionstart():
-    monkeypatch_session = MonkeyPatch()
-    monkeypatch_session.setattr(
-        "solcx.get_available_solc_versions",
-        lambda: [
-            "v0.6.7",
-            "v0.6.2",
-            "v0.5.15",
-            "v0.5.8",
-            "v0.5.7",
-            "v0.5.0",
-            "v0.4.25",
-            "v0.4.24",
-            "v0.4.22",
-        ],
-    )
+def pytest_sessionstart(session):
+    if not session.config.getoption("--evm"):
+        monkeypatch_session = MonkeyPatch()
+        monkeypatch_session.setattr(
+            "solcx.get_installable_solc_versions",
+            lambda: [
+                Version("0.6.7"),
+                Version("0.6.2"),
+                Version("0.6.0"),
+                Version("0.5.15"),
+                Version("0.5.8"),
+                Version("0.5.7"),
+                Version("0.5.0"),
+                Version("0.4.25"),
+                Version("0.4.24"),
+                Version("0.4.22"),
+            ],
+        )
 
 
 # worker ID for xdist process, as an integer
@@ -208,7 +211,7 @@ def evmtester(_project_factory, project, tmp_path, accounts, request):
     )
     conf_json = {
         "evm_version": evm_version,
-        "compiler": {"solc": {"version": solc_version, "optimize": runs > 0, "runs": runs}},
+        "compiler": {"solc": {"version": str(solc_version), "optimize": runs > 0, "runs": runs}},
     }
     with tmp_path.joinpath("brownie-config.yaml").open("w") as fp:
         json.dump(conf_json, fp)

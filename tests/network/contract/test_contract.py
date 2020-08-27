@@ -153,18 +153,6 @@ def test_from_explorer_pre_422(network):
     assert "pcMap" not in contract._build
 
 
-def test_from_explorer_osx_pre_050(network, monkeypatch):
-    network.connect("mainnet")
-    monkeypatch.setattr("sys.platform", "darwin")
-    installed = ["v0.5.8", "v0.5.7"]
-    monkeypatch.setattr("solcx.get_installed_solc_versions", lambda: installed)
-
-    # chainlink, compiler version 0.4.24
-    with pytest.warns(BrownieCompilerWarning):
-        contract = Contract.from_explorer("0xf79d6afbb6da890132f9d7c355e3015f15f3406f")
-    assert "pcMap" not in contract._build
-
-
 def test_from_explorer_vyper_supported_020(network):
     network.connect("mainnet")
 
