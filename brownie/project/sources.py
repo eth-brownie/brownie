@@ -22,28 +22,33 @@ class Sources:
         self._contracts: Dict = {}
         self._interfaces: Dict = {}
 
+        contracts: Dict = {}
         collisions: Dict = {}
         for path, source in contract_sources.items():
             self._source[path] = source
             if Path(path).suffix != ".sol":
-                contract_names = [Path(path).stem]
+                contract_names = [(Path(path).stem, "contract")]
             else:
                 contract_names = get_contract_names(source)
-            for name in contract_names:
-                if name in self._contracts:
-                    collisions.setdefault(name, set()).update([path, self._contracts[name]])
-                self._contracts[name] = path
+            for name, type_ in contract_names:
+                if name in contracts:
+                    if type_ == "interface":
+                        # allow names to overlap when dealing with interfaces
+                        continue
+                    if contracts[name][1] != "interface":
+                        collisions.setdefault(name, set()).update([path, contracts[name][0]])
+                contracts[name] = (path, type_)
+
+        self._contracts = {k: v[0] for k, v in contracts.items()}
 
         for path, source in interface_sources.items():
             self._source[path] = source
 
             if Path(path).suffix != ".sol":
-                interface_names = [Path(path).stem]
+                interface_names = [(Path(path).stem, "interface")]
             else:
                 interface_names = get_contract_names(source)
-            for name in interface_names:
-                if name in self._contracts:
-                    collisions.setdefault(name, set()).update([path, self._contracts[name]])
+            for name, type_ in interface_names:
                 if name in self._interfaces:
                     collisions.setdefault(name, set()).update([path, self._interfaces[name]])
                 self._interfaces[name] = path
@@ -164,7 +169,7 @@ def get_contract_names(full_source: str) -> List:
     Args:
         full_source: Solidity source code
 
-    Returns: list of contract names
+    Returns: list of (contract name, type)
     """
     # remove comments in case they contain code snippets that could fail the regex
     comment_regex = r"(?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)"
@@ -176,11 +181,11 @@ def get_contract_names(full_source: str) -> List:
 
     contract_names = []
     for source in contracts:
-        _, name, _ = re.findall(
+        type_, name, _ = re.findall(
             r"(abstract contract|contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)",
             source,
         )[0]
-        contract_names.append(name)
+        contract_names.append((name, type_))
     return contract_names
 
 
