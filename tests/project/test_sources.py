@@ -27,17 +27,18 @@ def test_namespace_collisions(solc5source):
     # contract collision
     with pytest.raises(NamespaceCollision):
         sources.Sources({"foo.sol": solc5source, "bar.sol": solc5source}, {})
-    # contract / interface collision
-    with pytest.raises(NamespaceCollision):
-        sources.Sources({"foo.sol": solc5source}, {"bar.sol": solc5source})
     # interface collision
     with pytest.raises(NamespaceCollision):
         sources.Sources({}, {"foo.sol": solc5source, "bar.sol": solc5source})
     # solc / vyper collision
     with pytest.raises(NamespaceCollision):
         sources.Sources({"foo.sol": solc5source, "Foo.vy": "@external\ndef bar(): pass"}, {})
-    with pytest.raises(NamespaceCollision):
-        sources.Sources({"foo.sol": solc5source}, {"Foo.vy": "@external\ndef bar(): pass"})
+
+
+def test_contract_interface_collisions(solc5source):
+    # contract / interface collision
+    sources.Sources({"foo.sol": solc5source}, {"bar.sol": solc5source})
+    sources.Sources({"foo.sol": solc5source}, {"Foo.vy": "@external\ndef bar(): pass"})
 
 
 def test_get_path_list(sourceobj):
@@ -61,7 +62,14 @@ def test_get_source_path(sourceobj):
 
 def test_get_contract_names():
     names = sources.get_contract_names(MESSY_SOURCE)
-    assert names == ["Foo", "Bar", "Baz", "Potato", "Foo2", "Bar2"]
+    assert names == [
+        ("Foo", "contract"),
+        ("Bar", "interface"),
+        ("Baz", "abstract contract"),
+        ("Potato", "library"),
+        ("Foo2", "contract"),
+        ("Bar2", "library"),
+    ]
 
 
 def test_load_messy_project():
