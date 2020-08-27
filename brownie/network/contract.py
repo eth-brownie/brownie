@@ -3,7 +3,6 @@
 import json
 import os
 import re
-import sys
 import warnings
 from pathlib import Path
 from textwrap import TextWrapper
@@ -682,21 +681,18 @@ class Contract(_DeployedContractBase):
         else:
             try:
                 version = Version(compiler_str.lstrip("v")).truncate()
-                if sys.platform == "darwin":
-                    is_compilable = (
-                        version >= Version("0.5.0")
-                        or f"v{version}" in solcx.get_installed_solc_versions()
-                    )
-                else:
-                    is_compilable = f"v{version}" in solcx.get_available_solc_versions()
+                is_compilable = (
+                    version
+                    in solcx.get_installable_solc_versions() + solcx.get_installed_solc_versions()
+                )
             except Exception:
                 is_compilable = False
 
         if not is_compilable:
             if not silent:
                 warnings.warn(
-                    f"{address}: target compiler '{compiler_str}' is "
-                    "unsupported by Brownie. Some functionality will not be available.",
+                    f"{address}: target compiler '{compiler_str}' cannot be installed or is not "
+                    "supported by Brownie. Some debugging functionality will not be available.",
                     BrownieCompilerWarning,
                 )
             return cls.from_abi(name, address, abi, owner)

@@ -3,7 +3,7 @@
 import logging
 from collections import deque
 from hashlib import sha1
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import solcast
 import solcx
@@ -61,33 +61,34 @@ def compile_from_input_json(
             print(f"  EVM Version: {input_json['settings']['evmVersion'].capitalize()}")
 
     try:
-        return solcx.compile_standard(
-            input_json,
-            optimize=optimizer["enabled"],
-            optimize_runs=optimizer["runs"],
-            evm_version=input_json["settings"]["evmVersion"],
-            allow_paths=allow_paths,
-        )
+        return solcx.compile_standard(input_json, allow_paths=allow_paths,)
     except solcx.exceptions.SolcError as e:
         raise CompilerError(e, "solc")
 
 
-def set_solc_version(version: str) -> str:
+def set_solc_version(version: Union[str, Version]) -> str:
     """Sets the solc version. If not available it will be installed."""
-    if Version(version.lstrip("v")) < Version("0.4.22"):
+    if not isinstance(version, Version):
+        version = Version(version.lstrip("v"))
+    if version < Version("0.4.22"):
         raise IncompatibleSolcVersion("Brownie only supports Solidity versions >=0.4.22")
     try:
         solcx.set_solc_version(version, silent=True)
     except solcx.exceptions.SolcNotInstalled:
+        if version not in _get_solc_version_list()[0]:
+            raise IncompatibleSolcVersion(
+                f"Cannot install Solidity v{version} on this OS. You may be able to "
+                f"manually compile from source with `solcx.compile_solc('{version}')`"
+            )
         install_solc(version)
         solcx.set_solc_version(version, silent=True)
     return str(solcx.get_solc_version())
 
 
-def install_solc(*versions: str) -> None:
+def install_solc(*versions: Union[Version, str]) -> None:
     """Installs solc versions."""
     for version in versions:
-        solcx.install_solc(str(version), show_progress=True)
+        solcx.install_solc(version, show_progress=True)
 
 
 def get_abi(contract_source: str, allow_paths: Optional[str] = None) -> Dict:
@@ -156,7 +157,7 @@ def find_solc_versions(
     # install new versions if needed
     if to_install:
         install_solc(*to_install)
-        installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
+        installed_versions = solcx.get_installed_solc_versions()
     elif new_versions and not silent:
         print(
             f"New compatible solc version{'s' if len(new_versions) > 1 else ''}"
@@ -219,10 +220,10 @@ def find_best_solc_version(
 
 def _get_solc_version_list() -> Tuple[List, List]:
     global AVAILABLE_SOLC_VERSIONS
-    installed_versions = [Version(i[1:]) for i in solcx.get_installed_solc_versions()]
+    installed_versions = solcx.get_installed_solc_versions()
     if AVAILABLE_SOLC_VERSIONS is None:
         try:
-            AVAILABLE_SOLC_VERSIONS = [Version(i[1:]) for i in solcx.get_available_solc_versions()]
+            AVAILABLE_SOLC_VERSIONS = solcx.get_installable_solc_versions()
         except ConnectionError:
             if not installed_versions:
                 raise ConnectionError("Solc not installed and cannot connect to GitHub")
