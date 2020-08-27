@@ -123,7 +123,7 @@ def _get_ast_hash(path: str) -> str:
         else:
             name = obj.module  # type: ignore
         try:
-            origin = importlib.util.find_spec(name).origin
+            origin = importlib.util.find_spec(name).origin  # type: ignore
         except Exception:
             warnings.warn(
                 f"{Path(path).name}, unable to determine import spec for '{name}',"
