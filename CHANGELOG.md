@@ -6,6 +6,17 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+## [1.11.0](https://github.com/eth-brownie/brownie/tree/v1.11.0) - 2020-08-28
+### Added
+- Support for multiple Vyper versions ([#731](https://github.com/eth-brownie/brownie/pull/731))
+
+### Changed
+- Use `solcx` v1.0.0 ([#733](https://github.com/eth-brownie/brownie/pull/733))
+- Always enter console when using `brownie run -I` ([#732](https://github.com/eth-brownie/brownie/pull/732))
+- Allow namespace collisions between interfaces ([#734](https://github.com/eth-brownie/brownie/pull/734))
+
+### Fixed
+- Ignore `TempProject` contracts when calculating coverage ([#730](https://github.com/eth-brownie/brownie/pull/730))
 
 ## [1.10.6](https://github.com/eth-brownie/brownie/tree/v1.10.6) - 2020-08-18
 ### Changed
