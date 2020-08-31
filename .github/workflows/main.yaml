@@ -22,12 +22,12 @@ jobs:
             experimental: true
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Setup Python 3.6
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
-        python-version: 3.6
+        python-version: 3.8
 
     - name: Install Tox
       run: pip install tox
@@ -46,13 +46,15 @@ jobs:
         job: [plugintest, pmtest]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Cache Solidity Installations
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
-        path: ~/.solcx
-        key: ${{ runner.os }}-solcx-cache
+        path: |
+          ~/.solcx
+          ~/.vvm
+        key: ${{ runner.os }}-compiler-cache
 
     - name: Setup Node.js
       uses: actions/setup-node@v1
@@ -61,7 +63,7 @@ jobs:
       run: npm install -g ganache-cli@6.10.1
 
     - name: Setup Python 3.8
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: 3.8
 
@@ -86,13 +88,15 @@ jobs:
         job: [evm-byzantium, evm-petersburg, evm-istanbul, evm-latest]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Cache Solidity Installations
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
-        path: ~/.solcx
-        key: ${{ runner.os }}-solcx-cache
+        path: |
+          ~/.solcx
+          ~/.vvm
+        key: ${{ runner.os }}-compiler-cache
 
     - name: Setup Node.js
       uses: actions/setup-node@v1
@@ -101,7 +105,7 @@ jobs:
       run: npm install -g ganache-cli@6.10.1
 
     - name: Setup Python 3.8
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: 3.8
 
@@ -126,13 +130,15 @@ jobs:
         os: [windows-latest, ubuntu-latest]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Cache Solidity Installations
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
-        path: ~/.solcx
-        key: ${{ runner.os }}-solcx-cache
+        path: |
+          ~/.solcx
+          ~/.vvm
+        key: ${{ runner.os }}-compiler-cache
 
     - name: Setup Node.js
       uses: actions/setup-node@v1
@@ -141,7 +147,7 @@ jobs:
       run: npm install -g ganache-cli@6.10.1
 
     - name: Setup Python 3.8
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: 3.8
 
@@ -160,13 +166,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Cache Solidity Installations
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
-        path: ~/.solcx
-        key: ${{ runner.os }}-solcx-cache
+        path: |
+          ~/.solcx
+          ~/.vvm
+        key: ${{ runner.os }}-compiler-cache
 
     - name: Setup Node.js
       uses: actions/setup-node@v1
@@ -175,7 +183,7 @@ jobs:
       run: npm install -g ganache-cli@6.10.1
 
     - name: Setup Python 3.7
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: 3.7
 
@@ -194,13 +202,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Cache Solidity Installations
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
-        path: ~/.solcx
-        key: ${{ runner.os }}-solcx-cache
+        path: |
+          ~/.solcx
+          ~/.vvm
+        key: ${{ runner.os }}-compiler-cache
 
     - name: Setup Node.js
       uses: actions/setup-node@v1
@@ -209,7 +219,7 @@ jobs:
       run: npm install -g ganache-cli@6.10.1
 
     - name: Setup Python 3.6
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: 3.6
 
