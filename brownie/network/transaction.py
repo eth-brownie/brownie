@@ -1010,6 +1010,13 @@ def _step_internal(
     return key
 
 
+def _format(value: Any) -> str:
+    if isinstance(value, (list, tuple)):
+        mode = black.FileMode(line_length=60)
+        black.format_str(str(value), mode=mode)
+    return str(value)
+
+
 def _step_external(
     step: Dict,
     last_step: Dict,
@@ -1023,7 +1030,6 @@ def _step_external(
     if not expand:
         return key
 
-    mode = black.FileMode(line_length=60)
     result: OrderedDict = OrderedDict({key: {}})
     result[key][f"address: {step['address']}"] = None
 
@@ -1034,7 +1040,7 @@ def _step_external(
         result[key][f"calldata: {subcall['calldata']}"] = None
     if subcall["inputs"]:
         result[key]["input arguments:"] = [
-            f"{k}: {black.format_str(str(v), mode=mode)}" for k, v in subcall["inputs"].items()
+            f"{k}: {_format(v)}" for k, v in subcall["inputs"].items()
         ]
     else:
         result[key]["input arguments: None"] = None
@@ -1042,12 +1048,11 @@ def _step_external(
     if "return_value" in subcall:
         value = subcall["return_value"]
         if isinstance(value, tuple) and len(value) > 1:
-            result[key]["return values:"] = [black.format_str(str(i), mode=mode) for i in value]
+            result[key]["return values:"] = [_format(i) for i in value]
         else:
             if isinstance(value, tuple):
                 value = value[0]
-            value_str = black.format_str(str(value), mode=mode)
-            result[key][f"return value: {value_str}"] = None
+            result[key][f"return value: {_format(value)}"] = None
 
     if "revert_msg" in subcall:
         result[key][f"revert reason: {color('bright red')}{subcall['revert_msg']}{color}"] = None
