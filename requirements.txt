@@ -1,13 +1,13 @@
 black==19.10b0
 colorama>=0.4.1;platform_system=='Windows'
 eth-abi==2.1.1
-eth-account==0.5.2
+eth-account==0.5.3
 eth-event>=1.2.0,<2.0.0
 eth-hash[pycryptodome]==0.2.0
-eth-utils==1.9.4
+eth-utils==1.9.5
 hexbytes==0.2.1
-hypothesis==5.29.1
-prompt-toolkit==3.0.6
+hypothesis==5.32.1
+prompt-toolkit==3.0.7
 psutil>=5.7.2,<6.0.0
 py>=1.5.0
 py-solc-ast>=1.2.5,<2.0.0
