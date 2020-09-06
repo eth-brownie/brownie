@@ -506,7 +506,7 @@ class TransactionReceipt:
                         step = trace[i]
                 self._revert_msg = pc_map[step["pc"]]["dev"]
                 return
-            except (KeyError, AttributeError):
+            except (KeyError, AttributeError, TypeError):
                 pass
 
         step = next(i for i in trace[::-1] if i["op"] in ("REVERT", "INVALID"))
@@ -525,18 +525,18 @@ class TransactionReceipt:
             offset: Start and end offset associated source code
         }
         """
-        if self._trace is not None:
-            return
         if self._raw_trace is None:
             self._get_trace()
+        if self._trace is not None:
+            # in case `_get_trace` also expanded the trace, do not repeat
+            return
+
         self._trace = trace = self._raw_trace
         self._new_contracts = []
         self._internal_transfers = []
         self._subcalls = []
         if self.contract_address or not trace:
             coverage._add_transaction(self.coverage_hash, {})
-            return
-        if "fn" in trace[0]:
             return
 
         if trace[0]["depth"] == 1:
@@ -598,7 +598,7 @@ class TransactionReceipt:
                         function=fn._input_sig,
                     )
                 elif calldata:
-                    self._subcalls[-1]["calldata"] = calldata
+                    self._subcalls[-1]["calldata"] = calldata.hex()
 
             # update trace from last_map
             last = last_map[trace[i]["depth"]]
@@ -626,14 +626,18 @@ class TransactionReceipt:
                 )
 
                 if opcode == "RETURN":
-                    data = _get_memory(trace[i], -1)
-                    subcall["return_value"] = None
-                    if data:
+                    returndata = _get_memory(trace[i], -1)
+                    if returndata:
                         fn = last["function"]
-                        return_values = fn.decode_output(data)
-                        if len(fn.abi["outputs"]) == 1:
-                            return_values = (return_values,)
-                        subcall["return_value"] = return_values
+                        try:
+                            return_values = fn.decode_output(returndata)
+                            if len(fn.abi["outputs"]) == 1:
+                                return_values = (return_values,)
+                            subcall["return_value"] = return_values
+                        except Exception:
+                            subcall["returndata"] = returndata.hex()
+                    else:
+                        subcall["return_value"] = None
                 elif opcode == "SELFDESTRUCT":
                     subcall["selfdestruct"] = True
                 else:
@@ -1038,7 +1042,7 @@ def _step_external(
 
     if "inputs" not in subcall:
         result[key][f"calldata: {subcall['calldata']}"] = None
-    if subcall["inputs"]:
+    elif subcall["inputs"]:
         result[key]["input arguments:"] = [
             f"{k}: {_format(v)}" for k, v in subcall["inputs"].items()
         ]
@@ -1053,6 +1057,8 @@ def _step_external(
             if isinstance(value, tuple):
                 value = value[0]
             result[key][f"return value: {_format(value)}"] = None
+    elif "returndata" in subcall:
+        result[key][f"returndata: {subcall['returndata']}"] = None
 
     if "revert_msg" in subcall:
         result[key][f"revert reason: {color('bright red')}{subcall['revert_msg']}{color}"] = None
