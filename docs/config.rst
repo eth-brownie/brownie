@@ -91,9 +91,10 @@ Networks
 
         networks:
             development:
-                gas_limit: 6721975
+                gas_limit: max
+                gas_buffer: 1
                 gas_price: 0
-                reverting_tx_gas_limit: 6721975
+                reverting_tx_gas_limit: max
                 default_contract_owner: true
                 cmd_settings:
                     port: 8545
@@ -111,19 +112,27 @@ Networks
 
     Default settings for development and live environments.
 
-    .. py:attribute:: gas_price
-
-        The default gas price for all transactions. If set to ``auto`` the gas price is determined using ``web3.eth.gasPrice``.
-
-        development default: ``0``
-
-        live default: ``auto``
-
     .. py:attribute:: gas_limit
 
         The default gas limit for all transactions. If set to ``auto`` the gas limit is determined using ``web3.eth.estimateGas``. If set to ``max``, the block gas limit is used.
 
         development default: ``max``
+
+        live default: ``auto``
+
+    .. py:attribute:: gas_buffer
+
+        A modifier applied to ``web3.eth.estimateGas`` when determining gas price automatically.
+
+        development default: ``1``
+
+        live default: ``1.1``
+
+    .. py:attribute:: gas_price
+
+        The default gas price for all transactions. If set to ``auto`` the gas price is determined using ``web3.eth.gasPrice``.
+
+        development default: ``0``
 
         live default: ``auto``
 
