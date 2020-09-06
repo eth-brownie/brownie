@@ -321,14 +321,24 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         return nonce
 
-    def _gas_limit(self, to: Optional["Accounts"], amount: int, data: Optional[str] = None) -> int:
+    def _gas_limit(
+        self,
+        to: Optional["Accounts"],
+        amount: int,
+        gas_buffer: Optional[float],
+        data: Optional[str] = None,
+    ) -> int:
         gas_limit = CONFIG.active_network["settings"]["gas_limit"]
         if gas_limit == "max":
-            gas_limit = web3.eth.getBlock("latest")["gasLimit"]
-            CONFIG.active_network["settings"]["gas_limit"] = gas_limit
+            return Chain().block_gas_limit
 
         if isinstance(gas_limit, bool) or gas_limit in (None, "auto"):
-            return self.estimate_gas(to, amount, data or "")
+            gas_buffer = gas_buffer or CONFIG.active_network["settings"]["gas_buffer"]
+            gas_limit = self.estimate_gas(to, amount, data or "")
+            if gas_buffer != 1:
+                gas_limit = Wei(gas_limit * gas_buffer)
+                return min(gas_limit, Chain().block_gas_limit)
+
         return Wei(gas_limit)
 
     def _gas_price(self) -> Wei:
@@ -350,6 +360,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         *args: Tuple,
         amount: int = 0,
         gas_limit: Optional[int] = None,
+        gas_buffer: Optional[float] = None,
         gas_price: Optional[int] = None,
         nonce: Optional[int] = None,
         required_confs: int = 1,
@@ -365,6 +376,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         Kwargs:
             amount: Amount of ether to send with transaction, in wei.
             gas_limit: Gas limit of the transaction.
+            gas_buffer: Multiplier to apply to gas limit.
             gas_price: Gas price of the transaction.
             nonce: Nonce to use for the transaction.
 
@@ -372,6 +384,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
             * Contract instance if the transaction confirms and the contract exists
             * TransactionReceipt if the transaction is pending or reverts
         """
+        if gas_limit and gas_buffer:
+            raise ValueError("Cannot set gas_limit and gas_buffer together")
 
         evm = contract._build["compiler"]["evm_version"]
         if rpc.is_active() and not rpc.evm_compatible(evm):
@@ -389,7 +403,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         "value": Wei(amount),
                         "nonce": nonce if nonce is not None else self._pending_nonce(),
                         "gasPrice": Wei(gas_price) or self._gas_price(),
-                        "gas": Wei(gas_limit) or self._gas_limit(None, amount, data),
+                        "gas": Wei(gas_limit) or self._gas_limit(None, amount, gas_buffer, data),
                         "data": HexBytes(data),
                     }
                 )
@@ -420,7 +434,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
                     receipt,
                     self.deploy,
                     (contract, *args),
-                    {"amount": amount, "gas_limit": gas_limit, "gas_price": gas_price},
+                    {
+                        "amount": amount,
+                        "gas_limit": gas_limit,
+                        "gas_buffer": gas_buffer,
+                        "gas_price": gas_price,
+                    },
                 ),
                 daemon=True,
             )
@@ -471,6 +490,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         to: "Accounts" = None,
         amount: int = 0,
         gas_limit: Optional[int] = None,
+        gas_buffer: Optional[float] = None,
         gas_price: Optional[int] = None,
         data: str = None,
         nonce: Optional[int] = None,
@@ -484,6 +504,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             to: Account instance or address string to transfer to.
             amount: Amount of ether to send, in wei.
             gas_limit: Gas limit of the transaction.
+            gas_buffer: Multiplier to apply to gas limit.
             gas_price: Gas price of the transaction.
             nonce: Nonce to use for the transaction.
             data: Hexstring of data to include in transaction.
@@ -492,6 +513,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
         Returns:
             TransactionReceipt object
         """
+        if gas_limit and gas_buffer:
+            raise ValueError("Cannot set gas_limit and gas_buffer together")
         if silent is None:
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
         with self._lock:
@@ -500,7 +523,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 "value": Wei(amount),
                 "nonce": nonce if nonce is not None else self._pending_nonce(),
                 "gasPrice": Wei(gas_price) if gas_price is not None else self._gas_price(),
-                "gas": Wei(gas_limit) or self._gas_limit(to, amount, data),
+                "gas": Wei(gas_limit) or self._gas_limit(to, amount, gas_buffer, data),
                 "data": HexBytes(data or ""),
             }
             if to:
@@ -522,7 +545,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if rpc.is_active():
             undo_thread = threading.Thread(
                 target=Chain()._add_to_undo_buffer,
-                args=(receipt, self.transfer, (to, amount, gas_limit, gas_price, data, None), {}),
+                args=(
+                    receipt,
+                    self.transfer,
+                    (to, amount, gas_limit, gas_buffer, gas_price, data, None),
+                    {},
+                ),
                 daemon=True,
             )
             undo_thread.start()

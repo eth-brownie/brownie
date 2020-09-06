@@ -14,6 +14,7 @@ from web3.types import BlockData
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
+from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, RPCRequestError
 from brownie.project.build import DEPLOYMENT_KEYS
 from brownie.utils.sql import Cursor
@@ -123,6 +124,8 @@ class Chain(metaclass=_Singleton):
         self._undo_buffer: List = []
         self._redo_buffer: List = []
         self._chainid: Optional[int] = None
+        self._block_gas_time: int = -1
+        self._block_gas_limit: int = 0
 
     def __repr__(self) -> str:
         try:
@@ -156,7 +159,11 @@ class Chain(metaclass=_Singleton):
             raise TypeError("Block height must be given as an integer")
         if block_number < 0:
             block_number = web3.eth.blockNumber + 1 + block_number
-        return web3.eth.getBlock(block_number)
+        block = web3.eth.getBlock(block_number)
+        if block["timestamp"] > self._block_gas_time:
+            self._block_gas_limit = block["gasLimit"]
+            self._block_gas_time = block["timestamp"]
+        return block
 
     @property
     def height(self) -> int:
@@ -167,6 +174,14 @@ class Chain(metaclass=_Singleton):
         if self._chainid is None:
             self._chainid = web3.eth.chainId
         return self._chainid
+
+    @property
+    def block_gas_limit(self) -> Wei:
+        if time.time() > self._block_gas_time + 3600:
+            block = web3.eth.getBlock("latest")
+            self._block_gas_limit = block["gasLimit"]
+            self._block_gas_time = block["timestamp"]
+        return Wei(self._block_gas_limit)
 
     def _request(self, method: str, args: List) -> int:
         try:

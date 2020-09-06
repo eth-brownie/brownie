@@ -141,6 +141,7 @@ When executing a transaction to a contract, you can optionally include a :py:cla
 
     * ``from``: the :func:`Account <brownie.network.account.Account>` that the transaction it sent from. If not given, the transaction is sent from the account that deployed the contract.
     * ``gas_limit``: The amount of gas provided for transaction execution, in wei. If not given, the gas limit is determined using :meth:`web3.eth.estimateGas <web3.eth.Eth.estimateGas>`.
+    * ``gas_buffer``: A multiplier applied to :meth:`web3.eth.estimateGas <web3.eth.Eth.estimateGas>` when setting gas limit automatically. ``gas_limit`` and ``gas_buffer`` cannot be given at the same time.
     * ``gas_price``: The gas price for the transaction, in wei. If not given, the gas price is set according to :attr:`web3.eth.gasPrice <web3.eth.Eth.gasPrice>`.
     * ``amount``: The amount of Ether to include with the transaction, in wei.
     * ``nonce``: The nonce for the transaction. If not given, the nonce is set according to :meth:`web3.eth.getTransactionCount <web3.eth.Eth.getTransactionCount>` while taking pending transactions from the sender into account.

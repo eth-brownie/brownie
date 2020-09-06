@@ -126,12 +126,14 @@ def test_gas_limit_manual(tester, accounts):
     assert tx.gas_limit == 100000
 
 
-@pytest.mark.parametrize("auto", (True, False, None, "auto"))
-def test_gas_limit_automatic(tester, accounts, config, auto):
+@pytest.mark.parametrize("gas_limit", (True, False, None, "auto"))
+@pytest.mark.parametrize("gas_buffer", (1, 1.25))
+def test_gas_limit_automatic(tester, accounts, config, gas_limit, gas_buffer):
     """gas limit is set correctly using web3.eth.estimateGas"""
-    config.active_network["settings"]["gas_limit"] = auto
+    config.active_network["settings"]["gas_limit"] = gas_limit
+    config.active_network["settings"]["gas_buffer"] = gas_buffer
     tx = tester.doNothing({"from": accounts[0]})
-    assert tx.gas_limit == tx.gas_used
+    assert int(tx.gas_used * gas_buffer) == tx.gas_limit
 
 
 def test_gas_limit_config(tester, accounts, config):
@@ -175,3 +177,8 @@ def test_tuples(tester, accounts):
     assert tx.status == 1
     assert tx.return_value == value
     assert tx.return_value["nested"]["a"] == "yesyesyes"
+
+
+def test_gas_limit_and_buffer(tester, accounts):
+    with pytest.raises(ValueError):
+        tester.doNothing({"from": accounts[0], "gas_limit": 100000, "gas_buffer": 1.2})
