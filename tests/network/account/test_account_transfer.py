@@ -139,12 +139,22 @@ def test_gas_limit_manual(accounts):
     assert tx.gas_used == 21000
 
 
-@pytest.mark.parametrize("auto", (True, False, None, "auto"))
-def test_gas_limit_automatic(accounts, config, auto):
+def test_gas_buffer_manual(accounts, config):
+    """gas limit is set correctly when specified in the call"""
+    config.active_network["settings"]["gas_limit"] = None
+    tx = accounts[0].transfer(accounts[1], 1000, gas_buffer=1.337)
+    assert tx.gas_limit == int(21000 * 1.337)
+    assert tx.gas_used == 21000
+
+
+@pytest.mark.parametrize("gas_limit", (True, False, None, "auto"))
+@pytest.mark.parametrize("gas_buffer", (1, 1.25))
+def test_gas_limit_automatic(accounts, config, gas_limit, gas_buffer):
     """gas limit is set correctly using web3.eth.estimateGas"""
-    config.active_network["settings"]["gas_limit"] = auto
+    config.active_network["settings"]["gas_limit"] = gas_limit
+    config.active_network["settings"]["gas_buffer"] = gas_buffer
     tx = accounts[0].transfer(accounts[1], 1000)
-    assert tx.gas_limit == 21000
+    assert tx.gas_limit == int(21000 * gas_buffer)
 
 
 def test_gas_limit_config(accounts, config):
@@ -197,3 +207,8 @@ def test_deploy_via_transfer(accounts, web3):
     tx = accounts[0].transfer(data=bytecode)
     assert tx.contract_name == "UnknownContract"
     assert web3.eth.getCode(tx.contract_address)
+
+
+def test_gas_limit_and_buffer(accounts):
+    with pytest.raises(ValueError):
+        accounts[0].transfer(accounts[1], 1000, gas_limit=21000, gas_buffer=1.3)
