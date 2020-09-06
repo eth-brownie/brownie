@@ -6,6 +6,14 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.11.1](https://github.com/eth-brownie/brownie/tree/v1.11.1) - 2020-09-06
+### Added
+- `gas_buffer` setting for transactions ([#739](https://github.com/eth-brownie/brownie/pull/739))
+
+### Fixed
+- Formatting issue when expanding call traces ([#737](https://github.com/eth-brownie/brownie/pull/737))
+
 ## [1.11.0](https://github.com/eth-brownie/brownie/tree/v1.11.0) - 2020-08-28
 ### Added
 - Support for multiple Vyper versions ([#731](https://github.com/eth-brownie/brownie/pull/731))
