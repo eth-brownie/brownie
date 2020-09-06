@@ -598,7 +598,7 @@ class TransactionReceipt:
                         function=fn._input_sig,
                     )
                 elif calldata:
-                    self._subcalls[-1]["calldata"] = calldata
+                    self._subcalls[-1]["calldata"] = calldata.hex()
 
             # update trace from last_map
             last = last_map[trace[i]["depth"]]
@@ -626,14 +626,18 @@ class TransactionReceipt:
                 )
 
                 if opcode == "RETURN":
-                    data = _get_memory(trace[i], -1)
-                    subcall["return_value"] = None
-                    if data:
+                    returndata = _get_memory(trace[i], -1)
+                    if returndata:
                         fn = last["function"]
-                        return_values = fn.decode_output(data)
-                        if len(fn.abi["outputs"]) == 1:
-                            return_values = (return_values,)
-                        subcall["return_value"] = return_values
+                        try:
+                            return_values = fn.decode_output(returndata)
+                            if len(fn.abi["outputs"]) == 1:
+                                return_values = (return_values,)
+                            subcall["return_value"] = return_values
+                        except Exception:
+                            subcall["returndata"] = returndata.hex()
+                    else:
+                        subcall["return_value"] = None
                 elif opcode == "SELFDESTRUCT":
                     subcall["selfdestruct"] = True
                 else:
@@ -1053,6 +1057,8 @@ def _step_external(
             if isinstance(value, tuple):
                 value = value[0]
             result[key][f"return value: {_format(value)}"] = None
+    elif "returndata" in subcall:
+        result[key][f"returndata: {subcall['returndata']}"] = None
 
     if "revert_msg" in subcall:
         result[key][f"revert reason: {color('bright red')}{subcall['revert_msg']}{color}"] = None
