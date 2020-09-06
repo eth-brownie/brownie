@@ -506,7 +506,7 @@ class TransactionReceipt:
                         step = trace[i]
                 self._revert_msg = pc_map[step["pc"]]["dev"]
                 return
-            except (KeyError, AttributeError):
+            except (KeyError, AttributeError, TypeError):
                 pass
 
         step = next(i for i in trace[::-1] if i["op"] in ("REVERT", "INVALID"))
