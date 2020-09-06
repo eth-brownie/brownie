@@ -525,18 +525,18 @@ class TransactionReceipt:
             offset: Start and end offset associated source code
         }
         """
-        if self._trace is not None:
-            return
         if self._raw_trace is None:
             self._get_trace()
+        if self._trace is not None:
+            # in case `_get_trace` also expanded the trace, do not repeat
+            return
+
         self._trace = trace = self._raw_trace
         self._new_contracts = []
         self._internal_transfers = []
         self._subcalls = []
         if self.contract_address or not trace:
             coverage._add_transaction(self.coverage_hash, {})
-            return
-        if "fn" in trace[0]:
             return
 
         if trace[0]["depth"] == 1:
