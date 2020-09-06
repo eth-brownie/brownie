@@ -434,7 +434,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
                     receipt,
                     self.deploy,
                     (contract, *args),
-                    {"amount": amount, "gas_limit": gas_limit, "gas_price": gas_price},
+                    {
+                        "amount": amount,
+                        "gas_limit": gas_limit,
+                        "gas_buffer": gas_buffer,
+                        "gas_price": gas_price,
+                    },
                 ),
                 daemon=True,
             )
@@ -540,7 +545,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if rpc.is_active():
             undo_thread = threading.Thread(
                 target=Chain()._add_to_undo_buffer,
-                args=(receipt, self.transfer, (to, amount, gas_limit, gas_price, data, None), {}),
+                args=(
+                    receipt,
+                    self.transfer,
+                    (to, amount, gas_limit, gas_buffer, gas_price, data, None),
+                    {},
+                ),
                 daemon=True,
             )
             undo_thread.start()
