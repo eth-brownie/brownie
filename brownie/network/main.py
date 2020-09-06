@@ -123,3 +123,16 @@ def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
                 raise TypeError(f"Invalid gas price '{args[0]}'")
             CONFIG.active_network["settings"]["gas_price"] = price
     return CONFIG.active_network["settings"]["gas_price"]
+
+
+def gas_buffer(*args: Tuple[float, None]) -> Union[float, None]:
+    if not is_connected():
+        raise ConnectionError("Not connected to any network")
+    if args:
+        if args[0] is None:
+            CONFIG.active_network["settings"]["gas_buffer"] = 1
+        elif isinstance(args[0], (float, int)):
+            CONFIG.active_network["settings"]["gas_buffer"] = args[0]
+        else:
+            raise TypeError("Invalid gas buffer - must be given as a float, int or None")
+    return CONFIG.active_network["settings"]["gas_buffer"]
