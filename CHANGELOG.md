@@ -6,6 +6,12 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+## [1.11.2](https://github.com/eth-brownie/brownie/tree/v1.11.2) - 2020-09-07
+### Added
+- `chain.new_blocks` for iterating over new blocks ([#742](https://github.com/eth-brownie/brownie/pull/742))
+
+### Fixed
+- Various fixes involving transaction traces and subcalls ([#741](https://github.com/eth-brownie/brownie/pull/741))
 
 ## [1.11.1](https://github.com/eth-brownie/brownie/tree/v1.11.1) - 2020-09-06
 ### Added
