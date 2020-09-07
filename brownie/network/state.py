@@ -165,6 +165,38 @@ class Chain(metaclass=_Singleton):
             self._block_gas_time = block["timestamp"]
         return block
 
+    def new_blocks(self, height_buffer: int = 0, poll_interval: int = 5) -> Iterator:
+        """
+        Generator for iterating over new blocks.
+
+        Arguments
+        ---------
+        height_buffer : int, optional
+            The number of blocks behind "latest" to return. A higher value means
+            more delayed results but less likelihood of uncles.
+        poll_interval : int, optional
+            Maximum interval between querying for a new block, if the height has
+            not changed. Set this lower to detect uncles more frequently.
+        """
+        if height_buffer < 0:
+            raise ValueError("Buffer cannot be negative")
+
+        last_block = None
+        last_height = 0
+        last_poll = 0.0
+
+        while True:
+            if last_poll + poll_interval < time.time() or last_height != web3.eth.blockNumber:
+                last_height = web3.eth.blockNumber
+                block = web3.eth.getBlock(last_height - height_buffer)
+                last_poll = time.time()
+
+                if block != last_block:
+                    last_block = block
+                    yield last_block
+            else:
+                time.sleep(1)
+
     @property
     def height(self) -> int:
         return web3.eth.blockNumber
