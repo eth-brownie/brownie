@@ -1619,6 +1619,22 @@ Chain Methods
         >>> chain.get_transaction(0xf598d43ef34a48478f3bb0ad969c6735f416902c4eb1eb18ebebe0fca786105e)
         <Transaction '0xf598d43ef34a48478f3bb0ad969c6735f416902c4eb1eb18ebebe0fca786105e'>
 
+.. py:method:: Chain.new_blocks(height_buffer, poll_interval)
+
+    Generator for iterating over new blocks.
+
+    ``height_buffer``: The number of blocks behind "latest" to return. A higher value means more delayed results but less likelihood of uncles.
+    ``poll_interval``: Maximum interval between querying for a new block, if the height has not changed. Set this lower to detect uncles more frequently.
+
+    .. code-block:: python
+
+        count = 0
+        for block in chain.new_blocks():
+            print(block.number)
+            count += 1
+            if count == 5:
+                break
+
 .. py:method:: Chain.time()
 
     Return the current epoch time in the RPC as an integer.
