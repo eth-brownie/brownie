@@ -616,9 +616,11 @@ class TransactionReceipt:
                     last["address"], trace[i]["stack"][-2][-40:], trace[i]["stack"][-3]
                 )
 
-            if not last["pc_map"]:
+            try:
+                pc = last["pc_map"][trace[i]["pc"]]
+            except (KeyError, TypeError):
+                # we don't have enough information about this contract
                 continue
-            pc = last["pc_map"][trace[i]["pc"]]
 
             if trace[i]["depth"] and opcode in ("RETURN", "REVERT", "INVALID", "SELFDESTRUCT"):
                 subcall: dict = next(
