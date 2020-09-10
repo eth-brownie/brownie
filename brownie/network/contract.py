@@ -292,6 +292,9 @@ class InterfaceConstructor:
     def __init__(self, name: str, abi: List) -> None:
         self._name = name
         self.abi = abi
+        self.selectors = {
+            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+        }
 
     def __call__(self, address: str, owner: Optional[AccountsType] = None) -> "Contract":
         return Contract.from_abi(self._name, address, self.abi, owner)
