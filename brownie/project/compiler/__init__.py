@@ -413,7 +413,7 @@ def get_abi(
             continue
         name = Path(path).stem
         final_output[name] = {
-            "abi": output_json["contracts"][path][name],
+            "abi": output_json["contracts"][path][name]["abi"],
             "contractName": name,
             "type": "interface",
             "sha1": sha1(contract_sources[path].encode()).hexdigest(),
