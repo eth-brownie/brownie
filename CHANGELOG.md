@@ -6,6 +6,14 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+## [1.11.3](https://github.com/eth-brownie/brownie/tree/v1.11.3) - 2020-09-11
+### Added
+`InterfaceConstructor.selectors` ([#748](https://github.com/eth-brownie/brownie/pull/748))
+
+### Fixed
+- Ensure `VirtualMachineError.__str__` always returns a string ([#747](https://github.com/eth-brownie/brownie/pull/747))
+- Expanding traces when the contract is unknown ([#745](https://github.com/eth-brownie/brownie/pull/745))
+
 ## [1.11.2](https://github.com/eth-brownie/brownie/tree/v1.11.2) - 2020-09-07
 ### Added
 - `chain.new_blocks` for iterating over new blocks ([#742](https://github.com/eth-brownie/brownie/pull/742))
