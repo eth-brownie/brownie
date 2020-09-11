@@ -117,13 +117,13 @@ class VirtualMachineError(Exception):
 
     def __str__(self) -> str:
         if not hasattr(self, "revert_type"):
-            return self.message
+            return str(self.message)
         msg = self.revert_type
         if self.revert_msg:
             msg = f"{msg}: {self.revert_msg}"
         if self.source:
             msg = f"{msg}\n{self.source}"
-        return msg
+        return str(msg)
 
     def _with_attr(self, **kwargs) -> "VirtualMachineError":
         for key, value in kwargs.items():
