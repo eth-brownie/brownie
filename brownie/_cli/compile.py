@@ -5,12 +5,16 @@ import shutil
 from brownie import project
 from brownie._config import _load_project_structure_config
 from brownie.exceptions import ProjectNotFound
+from brownie.utils import color
 from brownie.utils.docopt import docopt
+
+CODESIZE_COLORS = [(0.8, ""), (0.95, "bright yellow"), (1, "bright red")]
 
 __doc__ = """Usage: brownie compile [options]
 
 Options:
   --all -a              Recompile all contracts
+  --size -s             Show deployed bytecode sizes contracts
   --help -h             Display this message
 
 Compiles the contract source files for this project and saves the results
@@ -34,5 +38,20 @@ def main():
         shutil.rmtree(contract_artifact_path, ignore_errors=True)
         shutil.rmtree(interface_artifact_path, ignore_errors=True)
 
-    project.load()
+    proj = project.load()
+
+    if args["--size"]:
+        print("============ Deployment Bytecode Sizes ============")
+        codesize = []
+        for contract in proj:
+            bytecode = contract._build["deployedBytecode"]
+            if bytecode:
+                codesize.append((contract._name, len(bytecode) // 2))
+        indent = max(len(i[0]) for i in codesize)
+        for name, size in sorted(codesize, key=lambda k: k[1], reverse=True):
+            pct = size / 24577
+            pct_color = color(next(i[1] for i in CODESIZE_COLORS if pct <= i[0]))
+            print(f"  {name:<{indent}}  -  {size:>6,}B  ({pct_color}{pct:.2%}{color})")
+        print()
+
     print(f"Project has been compiled. Build artifacts saved at {contract_artifact_path}")
