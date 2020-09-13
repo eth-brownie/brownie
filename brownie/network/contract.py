@@ -18,7 +18,7 @@ from semantic_version import Version
 from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
 
-from brownie._config import CONFIG, REQUEST_HEADERS
+from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
 from brownie.convert.utils import (
@@ -278,6 +278,13 @@ class InterfaceContainer:
 
     def __init__(self, project: Any) -> None:
         self._project = project
+
+        # automatically populate with interfaces in `data/interfaces`
+        # overwritten if a project contains an interface with the same name
+        for path in BROWNIE_FOLDER.glob("data/interfaces/*.json"):
+            with path.open() as fp:
+                abi = json.load(fp)
+            self._add(path.stem, abi)
 
     def _add(self, name: str, abi: List) -> None:
         constructor = InterfaceConstructor(name, abi)

@@ -4,8 +4,6 @@ __pycache__
 .coverage
 .coverage.*
 build/
-brownie/data/*/
-brownie/data/*.json
 coverage.xml
 dist/
 docs/_build
