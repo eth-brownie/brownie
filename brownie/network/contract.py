@@ -383,7 +383,10 @@ class _DeployedContractBase(_ContractBase):
     def __getattribute__(self, name: str) -> Any:
         if super().__getattribute__("_reverted"):
             raise ContractNotFound("This contract no longer exists.")
-        return super().__getattribute__(name)
+        try:
+            return super().__getattribute__(name)
+        except AttributeError:
+            raise AttributeError(f"Contract '{self._name}' object has no attribute '{name}'")
 
     def get_method_object(self, calldata: str) -> Optional["_ContractMethod"]:
         """
