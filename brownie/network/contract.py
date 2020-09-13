@@ -685,7 +685,8 @@ class Contract(_DeployedContractBase):
             try:
                 version = Version(compiler_str.lstrip("v")).truncate()
                 is_compilable = (
-                    version
+                    version >= Version("0.4.22")
+                    and version
                     in solcx.get_installable_solc_versions() + solcx.get_installed_solc_versions()
                 )
             except Exception:
