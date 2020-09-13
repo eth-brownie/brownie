@@ -18,14 +18,15 @@ class Sources:
     """Methods for accessing and manipulating a project's contract source files."""
 
     def __init__(self, contract_sources: Dict, interface_sources: Dict) -> None:
-        self._source: Dict = {}
+        self._contract_sources: Dict = {}
         self._contracts: Dict = {}
+        self._interface_sources: Dict = {}
         self._interfaces: Dict = {}
 
         contracts: Dict = {}
         collisions: Dict = {}
         for path, source in contract_sources.items():
-            self._source[path] = source
+            self._contract_sources[path] = source
             if Path(path).suffix != ".sol":
                 contract_names = [(Path(path).stem, "contract")]
             else:
@@ -42,7 +43,7 @@ class Sources:
         self._contracts = {k: v[0] for k, v in contracts.items()}
 
         for path, source in interface_sources.items():
-            self._source[path] = source
+            self._interface_sources[path] = source
 
             if Path(path).suffix != ".sol":
                 interface_names = [(Path(path).stem, "interface")]
@@ -70,19 +71,19 @@ class Sources:
         key = str(key)
 
         if key in self._contracts:
-            return self._source[self._contracts[key]]
+            return self._contract_sources[self._contracts[key]]
 
-        if key not in self._source:
+        if key not in self._contract_sources:
             # for sources outside this project (packages, other projects)
             with Path(key).open() as fp:
                 source = fp.read()
-                self._source[key] = source
+                self._contract_sources[key] = source
 
-        return self._source[key]
+        return self._contract_sources[key]
 
     def get_path_list(self) -> List:
         """Returns a sorted list of source code file paths for the active project."""
-        return sorted(self._source.keys())
+        return sorted(self._contract_sources.keys())
 
     def get_contract_list(self) -> List:
         """Returns a sorted list of contract names for the active project."""
@@ -94,15 +95,18 @@ class Sources:
 
     def get_interface_hashes(self) -> Dict:
         """Returns a dict of interface hashes in the form of {name: hash}"""
-        return {k: sha1(self._source[v].encode()).hexdigest() for k, v in self._interfaces.items()}
+        return {
+            k: sha1(self._interface_sources[v].encode()).hexdigest()
+            for k, v in self._interfaces.items()
+        }
 
     def get_interface_sources(self) -> Dict:
         """Returns a dict of interfaces sources in the form {path: source}"""
-        return {v: self._source[v] for v in self._interfaces.values()}
+        return {v: self._interface_sources[v] for v in self._interfaces.values()}
 
-    def get_source_path(self, contract_name: str) -> str:
+    def get_source_path(self, contract_name: str, is_interface: bool = False) -> str:
         """Returns the path to the source file where a contract is located."""
-        if contract_name in self._contracts:
+        if contract_name in self._contracts and not is_interface:
             return self._contracts[contract_name]
         if contract_name in self._interfaces:
             return self._interfaces[contract_name]
