@@ -105,7 +105,7 @@ class _ProjectBase:
                 path = self._build_path.joinpath(f"contracts/{data['contractName']}.json")
                 with path.open("w") as fp:
                     json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
-            self._build._add(data)
+            self._build._add_contract(data)
 
     def _create_containers(self) -> None:
         # create container objects
@@ -192,7 +192,7 @@ class Project(_ProjectBase):
             if not self._path.joinpath(build_json["sourcePath"]).exists():
                 path.unlink()
                 continue
-            self._build._add(build_json)
+            self._build._add_contract(build_json)
 
         interface_hashes = {}
         interface_list = self._sources.get_interface_list()
@@ -205,7 +205,7 @@ class Project(_ProjectBase):
             if not set(INTERFACE_KEYS).issubset(build_json) or path.stem not in interface_list:
                 path.unlink()
                 continue
-            self._build._add(build_json)
+            self._build._add_interface(build_json)
             interface_hashes[path.stem] = build_json["sha1"]
 
         self._compiler_config = _load_project_compiler_config(self._path)
@@ -238,21 +238,20 @@ class Project(_ProjectBase):
     def _get_changed_contracts(self, compiled_hashes: Dict) -> Dict:
         # get list of changed interfaces and contracts
         new_hashes = self._sources.get_interface_hashes()
-        interfaces = [k for k, v in new_hashes.items() if compiled_hashes.get(k, None) != v]
-        contracts = [i for i in self._sources.get_contract_list() if self._compare_build_json(i)]
+        # remove outdated build artifacts
+        for name in [k for k, v in new_hashes.items() if compiled_hashes.get(k, None) != v]:
+            self._build._remove_interface(name)
 
-        # get dependents of changed sources
-        final = set(contracts + interfaces)
-        for contract_name in list(final):
-            final.update(self._build.get_dependents(contract_name))
+        contracts = set(i for i in self._sources.get_contract_list() if self._compare_build_json(i))
+        for contract_name in list(contracts):
+            contracts.update(self._build.get_dependents(contract_name))
 
         # remove outdated build artifacts
-        for name in [i for i in final if self._build.contains(i)]:
-            self._build._remove(name)
+        for name in contracts:
+            self._build._remove_contract(name)
 
         # get final list of changed source paths
-        final.difference_update(interfaces)
-        changed_set: Set = set(self._sources.get_source_path(i) for i in final)
+        changed_set: Set = set(self._sources.get_source_path(i) for i in contracts)
         return {i: self._sources.get(i) for i in changed_set}
 
     def _compare_build_json(self, contract_name: str) -> bool:
@@ -283,7 +282,7 @@ class Project(_ProjectBase):
     def _compile_interfaces(self, compiled_hashes: Dict) -> None:
         new_hashes = self._sources.get_interface_hashes()
         changed_paths = [
-            self._sources.get_source_path(k)
+            self._sources.get_source_path(k, True)
             for k, v in new_hashes.items()
             if compiled_hashes.get(k, None) != v
         ]
@@ -302,7 +301,7 @@ class Project(_ProjectBase):
 
             with self._build_path.joinpath(f"interfaces/{name}.json").open("w") as fp:
                 json.dump(abi, fp, sort_keys=True, indent=2, default=sorted)
-            self._build._add(abi)
+            self._build._add_interface(abi)
 
     def _load_deployments(self) -> None:
         if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
@@ -510,12 +509,15 @@ def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
     for folder in [path] + list(path.parents):
 
         structure_config = _load_project_structure_config(folder)
-        contracts_path = folder.joinpath(structure_config["contracts"])
-        tests_path = folder.joinpath(structure_config["tests"])
+        contracts = folder.joinpath(structure_config["contracts"])
+        interfaces = folder.joinpath(structure_config["interfaces"])
+        tests = folder.joinpath(structure_config["tests"])
 
-        if next((i for i in contracts_path.glob("**/*") if i.suffix in (".vy", ".sol")), None):
+        if next((i for i in contracts.glob("**/*") if i.suffix in (".vy", ".sol")), None):
             return folder
-        if contracts_path.is_dir() and tests_path.is_dir():
+        if next((i for i in interfaces.glob("**/*") if i.suffix in (".json", ".vy", ".sol")), None):
+            return folder
+        if contracts.is_dir() and tests.is_dir():
             return folder
 
     return None

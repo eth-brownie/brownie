@@ -42,11 +42,14 @@ class Build:
 
     def __init__(self, sources: Sources) -> None:
         self._sources = sources
-        self._build: Dict = {}
+        self._contracts: Dict = {}
+        self._interfaces: Dict = {}
 
-    def _add(self, build_json: Dict) -> None:
+    def _add_contract(self, build_json: Dict) -> None:
         contract_name = build_json["contractName"]
-        self._build[contract_name] = build_json
+        if contract_name in self._contracts and build_json["type"] == "interface":
+            return
+        self._contracts[contract_name] = build_json
         if "pcMap" not in build_json:
             # no pcMap means build artifact is for an interface
             return
@@ -55,6 +58,10 @@ class Build:
         self._generate_revert_map(
             build_json["pcMap"], build_json["allSourcePaths"], build_json["language"]
         )
+
+    def _add_interface(self, build_json: Dict) -> None:
+        contract_name = build_json["contractName"]
+        self._interfaces[contract_name] = build_json
 
     def _generate_revert_map(self, pcMap: Dict, source_map: Dict, language: str) -> None:
         # Adds a contract's dev revert strings to the revert map and it's pcMap
@@ -96,29 +103,37 @@ class Build:
                 continue
             _revert_map[pc] = False
 
-    def _remove(self, contract_name: str) -> None:
-        del self._build[self._stem(contract_name)]
+    def _remove_contract(self, contract_name: str) -> None:
+        key = self._stem(contract_name)
+        if key in self._contracts:
+            del self._contracts[key]
+
+    def _remove_interface(self, contract_name: str) -> None:
+        key = self._stem(contract_name)
+        if key in self._interfaces:
+            del self._interfaces[key]
 
     def get(self, contract_name: str) -> Dict:
         """Returns build data for the given contract name."""
-        return self._build[self._stem(contract_name)]
+        return self._contracts[self._stem(contract_name)]
 
     def items(self, path: Optional[str] = None) -> Union[ItemsView, List]:
         """Provides an list of tuples as (key,value), similar to calling dict.items.
         If a path is given, only contracts derived from that source file are returned."""
+        items = list(self._contracts.items()) + list(self._interfaces.items())
         if path is None:
-            return self._build.items()
-        return [(k, v) for k, v in self._build.items() if v.get("sourcePath") == path]
+            return items
+        return [(k, v) for k, v in items if v.get("sourcePath") == path]
 
     def contains(self, contract_name: str) -> bool:
         """Checks if the contract name exists in the currently loaded build data."""
-        return self._stem(contract_name) in self._build
+        return self._stem(contract_name) in list(self._contracts) + list(self._interfaces)
 
     def get_dependents(self, contract_name: str) -> List:
         """Returns a list of contract names that inherit from or link to the given
         contract. Used by the compiler when determining which contracts to recompile
         based on a changed source file."""
-        return [k for k, v in self._build.items() if contract_name in v.get("dependencies", [])]
+        return [k for k, v in self._contracts.items() if contract_name in v.get("dependencies", [])]
 
     def _stem(self, contract_name: str) -> str:
         return contract_name.replace(".json", "")

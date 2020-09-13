@@ -279,7 +279,7 @@ def generate_build_json(
     if compiler_data is None:
         compiler_data = {}
     compiler_data["evm_version"] = input_json["settings"]["evmVersion"]
-    build_json = {}
+    build_json: Dict = {}
     path_list = list(input_json["sources"])
 
     if input_json["language"] == "Solidity":
@@ -299,6 +299,8 @@ def generate_build_json(
             output_json["contracts"][path_str][contract_name].get("userdoc", {}),
         )
         output_evm = output_json["contracts"][path_str][contract_name]["evm"]
+        if contract_name in build_json and not output_evm["deployedBytecode"]["object"]:
+            continue
 
         if input_json["language"] == "Solidity":
             contract_node = next(
@@ -429,11 +431,7 @@ def get_abi(
             to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
 
             set_solc_version(version)
-            input_json = generate_input_json(
-                to_compile,
-                language="Vyper" if version == "vyper" else "Solidity",
-                remappings=remappings,
-            )
+            input_json = generate_input_json(to_compile, language="Solidity", remappings=remappings)
             input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
 
             output_json = compile_from_input_json(input_json, silent, allow_paths)
