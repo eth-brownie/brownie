@@ -42,7 +42,7 @@ def test_contract_interface_collisions(solc5source):
 
 
 def test_get_path_list(sourceobj):
-    assert sourceobj.get_path_list() == ["interfaces/Baz.vy", "path/to/Foo.sol"]
+    assert sourceobj.get_path_list() == ["path/to/Foo.sol"]
 
 
 def test_get_contract_list(sourceobj):

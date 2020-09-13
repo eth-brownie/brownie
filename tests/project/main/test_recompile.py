@@ -109,18 +109,6 @@ def test_modify_library(mockproject):
     ]
 
 
-# modifying an interface should recompile a dependent contract
-def test_modify_interface(mockproject):
-    code = INTERFACE.split("\n")
-    code[3] = ""
-    code = "\n".join(code)
-    with mockproject._path.joinpath("interfaces/IFoo.sol").open("w") as fp:
-        fp.write(code)
-
-    mockproject.load()
-    assert sorted(mockproject._compile.call_args[0][0]) == ["contracts/Foo.sol"]
-
-
 # modifying a base contract should recompile a dependent
 def test_modify_base(mockproject):
     code = BASE_CONTRACT.split("\n")
