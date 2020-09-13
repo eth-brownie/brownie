@@ -6,9 +6,21 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+## [1.11.4](https://github.com/eth-brownie/brownie/tree/v1.11.4) - 2020-09-13
+### Added
+- Default interfaces in `InterfaceContainer` ([#754](https://github.com/eth-brownie/brownie/pull/754))
+- `--size` flag for `brownie compile` to see deployed bytecode sizes ([#750](https://github.com/eth-brownie/brownie/pull/750))
+
+### Changed
+- Improve error message for `AttributeError` from `ProjectContract` ([#753](https://github.com/eth-brownie/brownie/pull/753))
+
+### Fixed
+- Check min solc version when using `Contract.from_explorer` ([#752](https://github.com/eth-brownie/brownie/pull/752))
+- Issues related to interfaces and contracts using the same name ([#751](https://github.com/eth-brownie/brownie/pull/751))
+
 ## [1.11.3](https://github.com/eth-brownie/brownie/tree/v1.11.3) - 2020-09-11
 ### Added
-`InterfaceConstructor.selectors` ([#748](https://github.com/eth-brownie/brownie/pull/748))
+- `InterfaceConstructor.selectors` ([#748](https://github.com/eth-brownie/brownie/pull/748))
 
 ### Fixed
 - Ensure `VirtualMachineError.__str__` always returns a string ([#747](https://github.com/eth-brownie/brownie/pull/747))
