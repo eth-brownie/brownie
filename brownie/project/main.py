@@ -509,12 +509,15 @@ def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
     for folder in [path] + list(path.parents):
 
         structure_config = _load_project_structure_config(folder)
-        contracts_path = folder.joinpath(structure_config["contracts"])
-        tests_path = folder.joinpath(structure_config["tests"])
+        contracts = folder.joinpath(structure_config["contracts"])
+        interfaces = folder.joinpath(structure_config["interfaces"])
+        tests = folder.joinpath(structure_config["tests"])
 
-        if next((i for i in contracts_path.glob("**/*") if i.suffix in (".vy", ".sol")), None):
+        if next((i for i in contracts.glob("**/*") if i.suffix in (".vy", ".sol")), None):
             return folder
-        if contracts_path.is_dir() and tests_path.is_dir():
+        if next((i for i in interfaces.glob("**/*") if i.suffix in (".json", ".vy", ".sol")), None):
+            return folder
+        if contracts.is_dir() and tests.is_dir():
             return folder
 
     return None
