@@ -204,6 +204,9 @@ class EthAddress(str):
             raise ValueError(f"'{value}' is not a valid ETH address") from None
         return super().__new__(cls, converted_value)  # type: ignore
 
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     def __eq__(self, other: Any) -> bool:
         return _address_compare(str(self), other)
 
