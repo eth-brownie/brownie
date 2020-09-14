@@ -37,8 +37,9 @@ class ConfigContainer:
     def __init__(self):
         base_config = _load_config(BROWNIE_FOLDER.joinpath("data/default-config.yaml"))
         if Path.home().joinpath("brownie-config.yaml").exists():
-            home_config = _load_config(Path.home().joinpath("brownie-config.yaml"))
-            _recursive_update(base_config, home_config)
+            home_config_path = Path.home().joinpath("brownie-config.yaml")
+            home_config = _load_config(home_config_path)
+            _recursive_update(base_config, home_config, home_config_path)
 
         network_config = _load_config(_get_data_folder().joinpath("network-config.yaml"))
 
@@ -156,7 +157,9 @@ class ConfigDict(dict):
         return config_copy
 
 
-def _get_project_config_path(project_path: Path):
+def _get_project_config_path(project_path: Optional[Path]) -> Optional[Path]:
+    if project_path is None:
+        return None
     if project_path.is_dir():
         path = project_path.joinpath("brownie-config")
     else:
@@ -183,10 +186,11 @@ def _load_config(project_path: Path) -> Dict:
 
 def _load_project_config(project_path: Path) -> None:
     """Loads configuration settings from a project's brownie-config.yaml"""
-    config_path = project_path.joinpath("brownie-config")
-    config_data = _load_config(config_path)
-    if not config_data:
+    config_path = _get_project_config_path(project_path.joinpath("brownie-config"))
+    if not config_path:
         return
+
+    config_data = _load_config(config_path)
 
     if "network" in config_data:
         warnings.warn(
@@ -208,13 +212,15 @@ def _load_project_config(project_path: Path) -> None:
             ):
                 if "cmd_settings" in CONFIG.networks[network]:
                     _recursive_update(
-                        CONFIG.networks[network]["cmd_settings"], values["cmd_settings"]
+                        CONFIG.networks[network]["cmd_settings"],
+                        values["cmd_settings"],
+                        config_path,
                     )
                 else:
                     CONFIG.networks[network]["cmd_settings"] = values["cmd_settings"]
 
     CONFIG.settings._unlock()
-    _recursive_update(CONFIG.settings, config_data)
+    _recursive_update(CONFIG.settings, config_data, config_path)
     CONFIG.settings._lock()
     if "hypothesis" in config_data:
         _modify_hypothesis_settings(config_data["hypothesis"], "brownie", "brownie-base")
@@ -225,8 +231,9 @@ def _load_project_compiler_config(project_path: Optional[Path]) -> Dict:
         return CONFIG.settings["compiler"]
 
     compiler_data = CONFIG.settings["compiler"]._copy()
-    project_data = _load_config(project_path.joinpath("brownie-config")).get("compiler", {})
-    _recursive_update(compiler_data, project_data)
+    path = _get_project_config_path(project_path.joinpath("brownie-config"))
+    project_data = _load_config(path).get("compiler", {})
+    _recursive_update(compiler_data, project_data, path)
 
     return compiler_data
 
@@ -271,15 +278,19 @@ def _modify_hypothesis_settings(settings, name, parent=None):
     hp_settings.load_profile(name)
 
 
-def _recursive_update(original: Dict, new: Dict) -> None:
+def _recursive_update(original: Dict, new: Dict, path: Path) -> None:
     """Recursively merges a new dict into the original dict"""
     if not original:
         original = {}
-    for k in new:
-        if k in original and isinstance(new[k], dict):
-            _recursive_update(original[k], new[k])
+    for key in new:
+        if key in original and isinstance(new[key], dict):
+            if not isinstance(original[key], dict):
+                raise TypeError(
+                    f"'{path.as_posix()}' has invalid setting for '{key}' - expected a single value"
+                )
+            _recursive_update(original[key], new[key], path)
         else:
-            original[k] = new[k]
+            original[key] = new[key]
 
 
 def _update_argv_from_docopt(args: Dict) -> None:
