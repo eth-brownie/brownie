@@ -6,6 +6,14 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+## [1.11.5](https://github.com/eth-brownie/brownie/tree/v1.11.5) - 2020-09-16
+### Changed
+- `EthAddress` is now hashable ([#756](https://github.com/eth-brownie/brownie/pull/756))
+- Warn instead of raising when an event has an incorrect number of topics ([#759](https://github.com/eth-brownie/brownie/pull/759))
+
+### Fixed
+- More trace fixes ([#760](https://github.com/eth-brownie/brownie/pull/760))
+
 ## [1.11.4](https://github.com/eth-brownie/brownie/tree/v1.11.4) - 2020-09-13
 ### Added
 - Default interfaces in `InterfaceContainer` ([#754](https://github.com/eth-brownie/brownie/pull/754))
