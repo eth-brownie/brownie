@@ -1,11 +1,13 @@
 #!/usr/bin/python3
 
 import json
+import warnings
 from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Union, ValuesView
 
 import eth_event
+from eth_event import EventError
 
 from brownie._config import _get_data_folder
 from brownie.convert.normalize import format_event
@@ -222,7 +224,11 @@ def _decode_logs(logs: List) -> Union["EventDict", List[None]]:
             log_slice = logs[idx:]
 
         topics_map = _deployment_topics.get(address, _topics)
-        events.extend(eth_event.decode_logs(log_slice, topics_map, allow_undecoded=True))
+        for item in log_slice:
+            try:
+                events.extend(eth_event.decode_logs([item], topics_map, allow_undecoded=True))
+            except EventError as exc:
+                warnings.warn(str(exc))
 
         if log_slice[-1] == logs[-1]:
             break
