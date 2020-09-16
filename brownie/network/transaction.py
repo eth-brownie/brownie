@@ -1043,7 +1043,7 @@ def _step_external(
         result[key][f"value: {subcall['value']}"] = None
 
     if "inputs" not in subcall:
-        result[key][f"calldata: {subcall['calldata']}"] = None
+        result[key][f"calldata: {subcall.get('calldata')}"] = None
     elif subcall["inputs"]:
         result[key]["input arguments:"] = [
             f"{k}: {_format(v)}" for k, v in subcall["inputs"].items()
