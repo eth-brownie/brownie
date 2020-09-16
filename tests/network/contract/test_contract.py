@@ -296,9 +296,9 @@ def test_as_proxy_for(network):
     original = Contract.from_explorer("0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b")
     proxy = Contract.from_explorer(
         "0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b",
-        as_proxy_for="0xAf601CbFF871d0BE62D18F79C31e387c76fa0374",
+        as_proxy_for="0x7b5e3521a049C8fF88e6349f33044c6Cc33c113c",
     )
-    implementation = Contract("0xAf601CbFF871d0BE62D18F79C31e387c76fa0374")
+    implementation = Contract("0x7b5e3521a049C8fF88e6349f33044c6Cc33c113c")
 
     assert original.abi == proxy.abi
     assert original.address == proxy.address
