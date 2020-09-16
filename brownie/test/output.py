@@ -214,7 +214,7 @@ def _split_by_fn(build, coverage_eval):
             map_ = build.get(name)["coverageMap"]
             results[name] = dict((k, _split(v, map_, k)) for k, v in coverage_eval[name].items())
         except KeyError:
-            pass
+            del results[name]
     return results
 
 
