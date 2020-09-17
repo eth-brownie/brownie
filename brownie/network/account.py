@@ -323,8 +323,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
     def _gas_limit(
         self,
-        to: Optional["Accounts"],
+        to: Optional["Account"],
         amount: int,
+        gas_price: int,
         gas_buffer: Optional[float],
         data: Optional[str] = None,
     ) -> int:
@@ -334,7 +335,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         if isinstance(gas_limit, bool) or gas_limit in (None, "auto"):
             gas_buffer = gas_buffer or CONFIG.active_network["settings"]["gas_buffer"]
-            gas_limit = self.estimate_gas(to, amount, data or "")
+            gas_limit = self.estimate_gas(to, amount, gas_price, data or "")
             if gas_buffer != 1:
                 gas_limit = Wei(gas_limit * gas_buffer)
                 return min(gas_limit, Chain().block_gas_limit)
@@ -397,13 +398,17 @@ class _PrivateKeyAccount(PublicKeyAccount):
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
         with self._lock:
             try:
+                gas_price = Wei(gas_price) if gas_price is not None else self._gas_price()
+                gas_limit = Wei(gas_limit) or self._gas_limit(
+                    None, amount, gas_price, gas_buffer, data
+                )
                 txid = self._transact(  # type: ignore
                     {
                         "from": self.address,
                         "value": Wei(amount),
                         "nonce": nonce if nonce is not None else self._pending_nonce(),
-                        "gasPrice": Wei(gas_price) or self._gas_price(),
-                        "gas": Wei(gas_limit) or self._gas_limit(None, amount, gas_buffer, data),
+                        "gasPrice": gas_price,
+                        "gas": gas_limit,
                         "data": HexBytes(data),
                     }
                 )
@@ -456,26 +461,39 @@ class _PrivateKeyAccount(PublicKeyAccount):
             # if the contract self-destructed during deployment
             return receipt
 
-    def estimate_gas(self, to: "Accounts" = None, amount: int = 0, data: str = None) -> int:
-        """Estimates the gas cost for a transaction. Raises VirtualMachineError
-        if the transaction would revert.
+    def estimate_gas(
+        self, to: "Account" = None, amount: int = 0, gas_price: int = None, data: str = None
+    ) -> int:
+        """
+        Estimate the gas cost for a transaction.
 
-        Args:
-            to: Account instance or address string of transaction recipient.
-            amount: Amount of ether to send in wei.
-            data: Transaction data hexstring.
+        Raises VirtualMachineError if the transaction would revert.
 
-        Returns:
-            Estimated gas value in wei."""
+        Arguments
+        ---------
+        to : Account, optional
+            Account instance or address string of transaction recipient.
+        amount : int, optional
+            Amount of ether to send in wei.
+        gas_price : int, optional
+            Gas price of the transaction.
+        data : str, optional
+            Transaction data hexstring.
+
+        Returns
+        -------
+        Estimated gas value in wei.
+        """
+        tx: Dict = {
+            "from": self.address,
+            "to": str(to) if to else None,
+            "value": Wei(amount),
+            "data": HexBytes(data or ""),
+        }
+        if gas_price is not None:
+            tx["gasPrce"] = gas_price
         try:
-            return web3.eth.estimateGas(
-                {
-                    "from": self.address,
-                    "to": str(to) if to else None,
-                    "value": Wei(amount),
-                    "data": HexBytes(data or ""),
-                }
-            )
+            return web3.eth.estimateGas(tx)
         except ValueError:
             revert_gas_limit = CONFIG.active_network["settings"]["reverting_tx_gas_limit"]
             if revert_gas_limit == "max":
@@ -487,7 +505,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
     def transfer(
         self,
-        to: "Accounts" = None,
+        to: "Account" = None,
         amount: int = 0,
         gas_limit: Optional[int] = None,
         gas_buffer: Optional[float] = None,
@@ -518,12 +536,14 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if silent is None:
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
         with self._lock:
+            gas_price = Wei(gas_price) if gas_price is not None else self._gas_price()
+            gas_limit = Wei(gas_limit) or self._gas_limit(to, amount, gas_price, gas_buffer, data)
             tx = {
                 "from": self.address,
                 "value": Wei(amount),
                 "nonce": nonce if nonce is not None else self._pending_nonce(),
-                "gasPrice": Wei(gas_price) if gas_price is not None else self._gas_price(),
-                "gas": Wei(gas_limit) or self._gas_limit(to, amount, gas_buffer, data),
+                "gasPrice": gas_price,
+                "gas": gas_limit,
                 "data": HexBytes(data or ""),
             }
             if to:
