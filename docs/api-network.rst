@@ -331,7 +331,7 @@ Account Methods
         >>> Token[0]
         <Token Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
-.. py:classmethod:: Account.estimate_gas(to, amount, data="")
+.. py:classmethod:: Account.estimate_gas(to=None, amount=0, gas_price=None, data="")
 
     Estimates the gas required to perform a transaction. Raises a func:`VirtualMachineError <brownie.exceptions.VirtualMachineError>` if the transaction would revert.
 
@@ -339,6 +339,7 @@ Account Methods
 
     * ``to``: Recipient address. Can be an :func:`Account <brownie.network.account.Account>` instance or string.
     * ``amount``: Amount of ether to send. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`.
+    * ``gas_price``: Gas price of the transaction.
     * ``data``: Transaction data hexstring.
 
     .. code-block:: python
