@@ -8,7 +8,7 @@ from brownie.exceptions import ProjectNotFound
 from brownie.utils import color
 from brownie.utils.docopt import docopt
 
-CODESIZE_COLORS = [(0.8, ""), (0.95, "bright yellow"), (1, "bright red")]
+CODESIZE_COLORS = [(1, "bright red"), (0.8, "bright yellow")]
 
 __doc__ = """Usage: brownie compile [options]
 
@@ -50,7 +50,7 @@ def main():
         indent = max(len(i[0]) for i in codesize)
         for name, size in sorted(codesize, key=lambda k: k[1], reverse=True):
             pct = size / 24577
-            pct_color = color(next(i[1] for i in CODESIZE_COLORS if pct <= i[0]))
+            pct_color = color(next((i[1] for i in CODESIZE_COLORS if pct >= i[0]), ""))
             print(f"  {name:<{indent}}  -  {size:>6,}B  ({pct_color}{pct:.2%}{color})")
         print()
 
