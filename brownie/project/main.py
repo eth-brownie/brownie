@@ -18,7 +18,9 @@ from urllib.parse import urlparse
 import requests
 import yaml
 from semantic_version import Version
+from solcx.exceptions import SolcNotInstalled
 from tqdm import tqdm
+from vvm.exceptions import VyperNotInstalled
 
 from brownie._config import (
     CONFIG,
@@ -619,7 +621,7 @@ def compile_source(
             solc_version = compiler.solidity.find_best_solc_version(
                 {"<stdin>": source}, install_needed=True, silent=False
             )
-        except PragmaError:
+        except (PragmaError, SolcNotInstalled):
             pass
 
     if vyper_version is None:
@@ -642,7 +644,7 @@ def compile_source(
             vyper_version = compiler.vyper.find_best_vyper_version(
                 {"<stdin>": source}, install_needed=True, silent=False
             )
-        except PragmaError:
+        except (PragmaError, VyperNotInstalled):
             pass
 
     compiler_config["vyper"] = {"version": vyper_version or compiler.vyper.get_version()}
