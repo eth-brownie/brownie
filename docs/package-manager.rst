@@ -111,10 +111,10 @@ Use ``brownie pm list`` to view currently installed packages. After installing a
     defi.snakecharmers.eth
     └─defi.snakecharmers.eth/compound@1.1.0
 
-Exporting a Package
+Cloning a Package
 -------------------
 
-Use ``brownie pm export`` to copy the contents of a package into another folder. This is useful for exploring the filestructure of a package, or when you wish to build a project on top of an existing package.
+Use ``brownie pm clone [path]`` to copy the contents of a package into another folder. The package will be cloned to the current directory if [path] is ommited. This is useful for exploring the filestructure of a package, or when you wish to build a project on top of an existing package.
 
 To copy the Aragon package to the current folder:
 
