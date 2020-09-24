@@ -9,10 +9,10 @@ from brownie._config import CONFIG, _load_project_structure_config
 from brownie.exceptions import ProjectNotFound
 from brownie.utils.docopt import docopt
 
-__doc__ = f"""Usage: brownie test [<path>] [options]
+__doc__ = f"""Usage: brownie test [<path>, ...] [options]
 
 Arguments:
-  [<path>]                 Path to the test(s) to run
+  [<path>, ...]            Path(s) of the test modules to run
 
 Brownie Options:
   --update -U              Only run tests where changes have occurred
@@ -42,7 +42,9 @@ Launches pytest and runs the tests for a project."""
 
 
 def main():
-    args = docopt(__doc__)
+    if "-h" in sys.argv or "--help" in sys.argv:
+        # display the help screen and exit
+        docopt(__doc__)
 
     project_path = project.check_for_project(".")
     if project_path is None:
@@ -51,16 +53,10 @@ def main():
     # ensure imports are possible from anywhere in the project
     project.main._add_to_sys_path(project_path)
 
-    if args["<path>"] is None:
+    pytest_args = sys.argv[sys.argv.index("test") + 1 :]
+    if not pytest_args or pytest_args[0].startswith("-"):
         structure_config = _load_project_structure_config(project_path)
-        args["<path>"] = project_path.joinpath(structure_config["tests"]).as_posix()
-
-    pytest_args = [args["<path>"]]
-    for opt, value in [(i, args[i]) for i in sorted(args) if i.startswith("-") and args[i]]:
-        if value is True:
-            pytest_args.append(opt)
-        elif isinstance(value, str):
-            pytest_args.extend([opt, value])
+        pytest_args.insert(0, project_path.joinpath(structure_config["tests"]).as_posix())
 
     return_code = pytest.main(pytest_args, ["pytest-brownie"])
 
