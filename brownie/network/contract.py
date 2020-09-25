@@ -1203,6 +1203,10 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
         for key, target in [("amount", "value"), ("gas_limit", "gas"), ("gas_price", "gasPrice")]:
             if key in tx:
                 tx[target] = tx[key]
+
+    if isinstance(tx["from"], str):
+        tx["from"] = accounts.at(tx["from"], force=True)
+
     return args, tx
 
 

@@ -226,6 +226,11 @@ class Accounts(metaclass=_Singleton):
 
         if acct is None and (address in web3.eth.accounts or force):
             acct = Account(address)
+
+            if CONFIG.network_type == "development" and address not in web3.eth.accounts:
+                # prior to ganache v6.11.0 this does nothing, but should not raise
+                web3.provider.make_request("evm_unlockUnknownAccount", [address])  # type: ignore
+
             self._accounts.append(acct)
 
         if acct:
