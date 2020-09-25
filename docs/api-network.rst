@@ -204,7 +204,6 @@ Accounts Methods
         >>> a.from_mnemonic('buffalo cinnamon glory chalk require inform strike ginger crop sell hidden cart')
         <LocalAccount '0xf293C5E0b22802Bf5DCef3FB8112EaA4cA54fcCF'>
 
-
 .. py:classmethod:: Accounts.load(filename=None)
 
     Decrypts a `keystore <https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition>`_ file and returns a :func:`LocalAccount <brownie.network.account.LocalAccount>` object.
@@ -346,6 +345,17 @@ Account Methods
 
         >>> accounts[0].estimate_gas(accounts[1], "1 ether")
         21000
+
+.. py:classmethod:: Account.get_deployment_address(nonce=None)
+
+    Return the address where a contract will be deployed from this account, if the deployment transaction uses the given nonce.
+
+    If nonce is `None`, the nonce of the next transaction is used.
+
+    .. code-block:: python
+
+        >>> accounts[0].get_deployment_address()
+        '0xd495633B90a237de510B4375c442C0469D3C161C'
 
 .. py:classmethod:: Account.transfer(self, to=None, amount=0, gas_limit=None, gas_price=None, data=None, nonce=None, required_confs=1, silent=False)
 

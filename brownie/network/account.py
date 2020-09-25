@@ -9,11 +9,13 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import eth_account
 import eth_keys
+import rlp
+from eth_utils import keccak
 from hexbytes import HexBytes
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
-from brownie.convert import Wei, to_address
+from brownie.convert import EthAddress, Wei, to_address
 from brownie.exceptions import (
     ContractNotFound,
     IncompatibleEVMVersion,
@@ -300,6 +302,25 @@ class PublicKeyAccount:
     def nonce(self) -> int:
         return web3.eth.getTransactionCount(self.address)
 
+    def get_deployment_address(self, nonce: Optional[int] = None) -> EthAddress:
+        """
+        Return the address of a contract deployed from this account at the given nonce.
+
+        Arguments
+        ---------
+        nonce : int, optional
+            The nonce of the deployment transaction. If not given, the nonce of the next
+            transaction is used.
+        """
+        if nonce is None:
+            nonce = self.nonce
+
+        address = HexBytes(self.address)
+        raw = rlp.encode([address, nonce])
+        deployment_address = keccak(raw)[12:]
+
+        return EthAddress(deployment_address)
+
 
 class _PrivateKeyAccount(PublicKeyAccount):
 
@@ -420,9 +441,6 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 exc, revert_data = None, None
             except ValueError as e:
                 exc = VirtualMachineError(e)
-                size = len(contract._build["deployedBytecode"]) // 2
-                if exc.revert_type == "out of gas" and size > 24577:
-                    exc.revert_msg = "exceeds EIP-170 size limit"
                 if not hasattr(exc, "txid"):
                     raise exc from None
                 txid = exc.txid
