@@ -56,16 +56,22 @@ def pytest_addoption(parser):
         )
 
 
-def pytest_load_initial_conftests():
+def pytest_load_initial_conftests(early_config):
+    capsys = early_config.pluginmanager.get_plugin("capturemanager")
     if project.check_for_project("."):
+        # suspend stdout capture to display compilation data
+        capsys.suspend()
         try:
             active_project = project.load()
+
             active_project.load_config()
             active_project._add_to_main_namespace()
         except Exception as e:
             # prevent pytest INTERNALERROR traceback when project fails to compile
             print(f"{color.format_tb(e)}\n")
             raise pytest.UsageError("Unable to load project")
+        finally:
+            capsys.resume()
 
 
 def pytest_configure(config):
