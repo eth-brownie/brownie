@@ -415,6 +415,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 exc, revert_data = None, None
             except ValueError as e:
                 exc = VirtualMachineError(e)
+                size = len(contract._build["deployedBytecode"]) // 2
+                if exc.revert_type == "out of gas" and size > 24577:
+                    exc.revert_msg = "exceeds EIP-170 size limit"
                 if not hasattr(exc, "txid"):
                     raise exc from None
                 txid = exc.txid

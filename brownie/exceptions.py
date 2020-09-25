@@ -76,7 +76,7 @@ class VirtualMachineError(Exception):
 
     def __init__(self, exc: ValueError) -> None:
         try:
-            exc = yaml.safe_load(str(exc))
+            exc = exc.args[0]
         except Exception:
             pass
 
