@@ -6,6 +6,21 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+## [1.11.6](https://github.com/eth-brownie/brownie/tree/v1.11.6) - 2020-09-26
+### Added
+- `Account.get_deployment_address` ([#763](https://github.com/eth-brownie/brownie/pull/763))
+- Use `eth_unlockUnkonwnAccount` to unlock arbitrary accounts in development mode ([#776](https://github.com/eth-brownie/brownie/pull/776))
+
+### Changed
+- Generalize `sys.argv` handling for `brownie test` to allow arbitrary flags ([#773](https://github.com/eth-brownie/brownie/pull/773))
+- Disable `stdout` capture when compiling a project prior to running tests ([#774](https://github.com/eth-brownie/brownie/pull/774))
+- Attempt to determine proxy implementation without relying on Etherscan APi output ([#777](https://github.com/eth-brownie/brownie/pull/777))
+
+### Fixed
+- Add `gas_limit` kwarg for `Account.estimate_gas` ([#764](https://github.com/eth-brownie/brownie/pull/764))
+- Improve exception message on bytecode exceeding 24kb limit ([#767](https://github.com/eth-brownie/brownie/pull/767))
+- Properly handle no installed compiler when using `compile_source` ([#768](https://github.com/eth-brownie/brownie/pull/768))
+
 ## [1.11.5](https://github.com/eth-brownie/brownie/tree/v1.11.5) - 2020-09-16
 ### Changed
 - `EthAddress` is now hashable ([#756](https://github.com/eth-brownie/brownie/pull/756))
