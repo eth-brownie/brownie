@@ -671,7 +671,13 @@ class Contract(_DeployedContractBase):
             )
 
         if as_proxy_for is None and data["result"][0].get("Implementation"):
-            as_proxy_for = _resolve_address(data["result"][0]["Implementation"])
+            try:
+                # many proxy patterns use an `implementation()` function, so first we
+                # try to determine the implementation address without trusting etherscan
+                contract = cls.from_abi(name, address, abi)
+                as_proxy_for = contract.implementation()
+            except Exception:
+                as_proxy_for = _resolve_address(data["result"][0]["Implementation"])
 
         if as_proxy_for == address:
             as_proxy_for = None
