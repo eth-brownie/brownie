@@ -124,7 +124,7 @@ class Console(code.InteractiveConsole):
                 include_default_pygments_style=False,
             )
         if console_settings["auto_suggest"]:
-            kwargs["auto_suggest"] = TestAutoSuggest(self, locals_dict)
+            kwargs["auto_suggest"] = ConsoleAutoSuggest(self, locals_dict)
         if console_settings["completions"]:
             kwargs["completer"] = ConsoleCompleter(self, locals_dict)
 
@@ -324,7 +324,7 @@ class ConsoleCompleter(Completer):
             return
 
 
-class TestAutoSuggest(AutoSuggest):
+class ConsoleAutoSuggest(AutoSuggest):
     """
     AutoSuggest subclass to display contract input hints.
 
@@ -359,7 +359,7 @@ class TestAutoSuggest(AutoSuggest):
                 distance = len(document.text) - offset[1]
 
             if hasattr(obj, "_autosuggest"):
-                inputs = obj._autosuggest()
+                inputs = obj._autosuggest(obj)
             else:
                 inputs = [f" {i}" for i in obj.__code__.co_varnames[: obj.__code__.co_argcount]]
                 if obj.__defaults__:

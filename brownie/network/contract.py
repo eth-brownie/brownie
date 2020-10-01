@@ -251,8 +251,9 @@ class ContractConstructor:
             required_confs=tx["required_confs"],
         )
 
+    @staticmethod
     def _autosuggest(self) -> List:
-        return _contract_method_autosuggest(self)
+        return _contract_method_autosuggest(self.abi["inputs"], True, self.payable)
 
     def encode_input(self, *args: tuple) -> str:
         bytecode = self._parent.bytecode
@@ -963,8 +964,12 @@ class _ContractMethod:
         else:
             return self.abi["stateMutability"] == "payable"
 
+    @staticmethod
     def _autosuggest(self) -> List:
-        return _contract_method_autosuggest(self)
+        # this is a staticmethod to be compatible with `_call_suggest` and `_transact_suggest`
+        return _contract_method_autosuggest(
+            self.abi["inputs"], isinstance(self, ContractTx), self.payable
+        )
 
     def info(self) -> None:
         """
@@ -1290,20 +1295,6 @@ def _print_natspec(natspec: Dict) -> None:
     print()
 
 
-def _contract_method_autosuggest(method: Any) -> List:
-    types_list = get_type_strings(method.abi["inputs"], {"fixed168x10": "decimal"})
-    params = zip([i["name"] for i in method.abi["inputs"]], types_list)
-
-    if isinstance(method, ContractCall):
-        tx_hint: List = []
-    elif method.payable:
-        tx_hint = [" {'from': Account", " 'value': Wei}"]
-    else:
-        tx_hint = [" {'from': Account}"]
-
-    return [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params] + tx_hint
-
-
 def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     url = CONFIG.active_network.get("explorer")
     if url is None:
@@ -1338,3 +1329,39 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
         raise ValueError(f"Failed to retrieve data from API: {data['result']}")
 
     return data
+
+
+# console auto-completion logic
+
+
+def _call_autosuggest(method):
+    # since methods are not unique for each object, we use `__reduce__`
+    # to locate the specific object so we can access the correct ABI
+    method = method.__reduce__()[1][0]
+    return _contract_method_autosuggest(method.abi["inputs"], False, False)
+
+
+def _transact_autosuggest(method):
+    method = method.__reduce__()[1][0]
+    return _contract_method_autosuggest(method.abi["inputs"], True, method.payable)
+
+
+# assign the autosuggest functionality to various methods
+ContractConstructor.encode_input.__dict__["_autosuggest"] = _call_autosuggest
+_ContractMethod.call.__dict__["_autosuggest"] = _call_autosuggest
+_ContractMethod.encode_input.__dict__["_autosuggest"] = _call_autosuggest
+_ContractMethod.transact.__dict__["_autosuggest"] = _transact_autosuggest
+
+
+def _contract_method_autosuggest(args: List, is_transaction: bool, is_payable: bool) -> List:
+    types_list = get_type_strings(args, {"fixed168x10": "decimal"})
+    params = zip([i["name"] for i in args], types_list)
+
+    if not is_transaction:
+        tx_hint: List = []
+    elif is_payable:
+        tx_hint = [" {'from': Account", " 'value': Wei}"]
+    else:
+        tx_hint = [" {'from': Account}"]
+
+    return [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params] + tx_hint
