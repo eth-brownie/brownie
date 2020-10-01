@@ -271,6 +271,35 @@ class ContractConstructor:
         types_list = get_type_strings(self.abi["inputs"])
         return bytecode + eth_abi.encode_abi(types_list, data).hex()
 
+    def estimate_gas(self, *args: Tuple) -> int:
+        """
+        Estimate the gas cost for the deployment.
+
+        Raises VirtualMachineError if the transaction would revert.
+
+        Arguments
+        ---------
+        *args
+            Constructor arguments. The last argument MUST be a dictionary
+            of transaction values containing at minimum a 'from' key to
+            specify which account to deploy this contract from.
+
+        Returns
+        -------
+        int
+            Estimated gas value in wei.
+        """
+        args, tx = _get_tx(None, args)
+        if not tx["from"]:
+            raise AttributeError(
+                "Contract has no owner, you must supply a tx dict"
+                " as the last argument with a 'from' field."
+            )
+
+        return tx["from"].estimate_gas(
+            amount=tx["value"], gas_price=tx["gasPrice"], data=self.encode_input(*args)
+        )
+
 
 class InterfaceContainer:
     """
@@ -1105,6 +1134,36 @@ class _ContractMethod:
             result = result[0]
         return result
 
+    def estimate_gas(self, *args: Tuple) -> int:
+        """
+        Estimate the gas cost for a transaction.
+
+        Raises VirtualMachineError if the transaction would revert.
+
+        Arguments
+        ---------
+        *args
+            Contract method inputs
+
+        Returns
+        -------
+        int
+            Estimated gas value in wei.
+        """
+        args, tx = _get_tx(self._owner, args)
+        if not tx["from"]:
+            raise AttributeError(
+                "Contract has no owner, you must supply a tx dict"
+                " as the last argument with a 'from' field."
+            )
+
+        return tx["from"].estimate_gas(
+            to=self._address,
+            amount=tx["value"],
+            gas_price=tx["gasPrice"],
+            data=self.encode_input(*args),
+        )
+
 
 class ContractTx(_ContractMethod):
     """
@@ -1350,6 +1409,9 @@ def _transact_autosuggest(method):
 ContractConstructor.encode_input.__dict__["_autosuggest"] = _call_autosuggest
 _ContractMethod.call.__dict__["_autosuggest"] = _call_autosuggest
 _ContractMethod.encode_input.__dict__["_autosuggest"] = _call_autosuggest
+
+ContractConstructor.estimate_gas.__dict__["_autosuggest"] = _transact_autosuggest
+_ContractMethod.estimate_gas.__dict__["_autosuggest"] = _transact_autosuggest
 _ContractMethod.transact.__dict__["_autosuggest"] = _transact_autosuggest
 
 
