@@ -6,6 +6,17 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+## [1.11.7](https://github.com/eth-brownie/brownie/tree/v1.11.7) - 2020-10-02
+### Added
+- Support for Etherscan's multi-file source output ([#786](https://github.com/eth-brownie/brownie/pull/786))
+- Improvements to console hinting and autocompletion ([#788](https://github.com/eth-brownie/brownie/pull/788))
+
+### Changed
+- Bump suggested Ganache version to `v6.11.0` ([#787](https://github.com/eth-brownie/brownie/pull/787))
+
+### Fixed
+- Update non-payable heuristic for Vyper `v0.2.5` ([#784](https://github.com/eth-brownie/brownie/pull/784))
+
 ## [1.11.6](https://github.com/eth-brownie/brownie/tree/v1.11.6) - 2020-09-26
 ### Added
 - `Account.get_deployment_address` ([#763](https://github.com/eth-brownie/brownie/pull/763))
