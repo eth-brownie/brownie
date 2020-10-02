@@ -5,6 +5,7 @@ import importlib
 import inspect
 import sys
 import tokenize
+from collections.abc import Iterable
 from io import StringIO
 
 from prompt_toolkit import PromptSession
@@ -123,7 +124,7 @@ class Console(code.InteractiveConsole):
                 include_default_pygments_style=False,
             )
         if console_settings["auto_suggest"]:
-            kwargs["auto_suggest"] = TestAutoSuggest(self, locals_dict)
+            kwargs["auto_suggest"] = ConsoleAutoSuggest(self, locals_dict)
         if console_settings["completions"]:
             kwargs["completer"] = ConsoleCompleter(self, locals_dict)
 
@@ -323,7 +324,7 @@ class ConsoleCompleter(Completer):
             return
 
 
-class TestAutoSuggest(AutoSuggest):
+class ConsoleAutoSuggest(AutoSuggest):
     """
     AutoSuggest subclass to display contract input hints.
 
@@ -358,7 +359,7 @@ class TestAutoSuggest(AutoSuggest):
                 distance = len(document.text) - offset[1]
 
             if hasattr(obj, "_autosuggest"):
-                inputs = obj._autosuggest()
+                inputs = obj._autosuggest(obj)
             else:
                 inputs = [f" {i}" for i in obj.__code__.co_varnames[: obj.__code__.co_argcount]]
                 if obj.__defaults__:
@@ -383,6 +384,8 @@ def _obj_from_token(obj, token):
     key = token.string
     if isinstance(obj, dict):
         return obj[key]
+    if isinstance(obj, Iterable):
+        return obj[int(key)]
     return getattr(obj, key)
 
 
@@ -456,17 +459,26 @@ def _parse_document(local_dict, text):
             is_open_sqb = False
             del comma_data[-1]
             del active_objects[-1]
-            last_token = None
+
+            pending_active = None
             if active_objects[-1] != local_dict:
                 try:
-                    func = active_objects[-1].__getitem__.__func__
-                    pending_active = func.__annotations__["return"]
-                    if isinstance(pending_active, str):
-                        module = sys.modules[active_objects[-1].__module__]
-                        pending_active = getattr(module, pending_active)
-                except (AttributeError, KeyError):
-                    pending_active = None
+                    # try to get the actual object first
+                    pending_active = _obj_from_token(active_objects[-1], last_token)
+                except (AttributeError, TypeError):
+                    # if we can't get the object, use the return type from the annotation
+                    try:
+                        func = active_objects[-1].__getitem__.__func__
+                        pending_active = func.__annotations__["return"]
+                        if isinstance(pending_active, str):
+                            module = sys.modules[active_objects[-1].__module__]
+                            pending_active = getattr(module, pending_active)
+                    except (AttributeError, KeyError):
+                        pass
+                except Exception:
+                    pass
                 active_objects[-1] = None
+            last_token = None
 
         elif token.exact_type == 12:
             # comma `,`

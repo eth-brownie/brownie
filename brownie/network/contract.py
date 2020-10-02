@@ -251,8 +251,9 @@ class ContractConstructor:
             required_confs=tx["required_confs"],
         )
 
-    def _autosuggest(self) -> List:
-        return _contract_method_autosuggest(self)
+    @staticmethod
+    def _autosuggest(obj: "ContractConstructor") -> List:
+        return _contract_method_autosuggest(obj.abi["inputs"], True, obj.payable)
 
     def encode_input(self, *args: tuple) -> str:
         bytecode = self._parent.bytecode
@@ -269,6 +270,35 @@ class ContractConstructor:
         data = format_input(self.abi, args)
         types_list = get_type_strings(self.abi["inputs"])
         return bytecode + eth_abi.encode_abi(types_list, data).hex()
+
+    def estimate_gas(self, *args: Tuple) -> int:
+        """
+        Estimate the gas cost for the deployment.
+
+        Raises VirtualMachineError if the transaction would revert.
+
+        Arguments
+        ---------
+        *args
+            Constructor arguments. The last argument MUST be a dictionary
+            of transaction values containing at minimum a 'from' key to
+            specify which account to deploy this contract from.
+
+        Returns
+        -------
+        int
+            Estimated gas value in wei.
+        """
+        args, tx = _get_tx(None, args)
+        if not tx["from"]:
+            raise AttributeError(
+                "Contract has no owner, you must supply a tx dict"
+                " as the last argument with a 'from' field."
+            )
+
+        return tx["from"].estimate_gas(
+            amount=tx["value"], gas_price=tx["gasPrice"], data=self.encode_input(*args)
+        )
 
 
 class InterfaceContainer:
@@ -963,8 +993,12 @@ class _ContractMethod:
         else:
             return self.abi["stateMutability"] == "payable"
 
-    def _autosuggest(self) -> List:
-        return _contract_method_autosuggest(self)
+    @staticmethod
+    def _autosuggest(obj: "_ContractMethod") -> List:
+        # this is a staticmethod to be compatible with `_call_suggest` and `_transact_suggest`
+        return _contract_method_autosuggest(
+            obj.abi["inputs"], isinstance(obj, ContractTx), obj.payable
+        )
 
     def info(self) -> None:
         """
@@ -1099,6 +1133,36 @@ class _ContractMethod:
         if len(result) == 1:
             result = result[0]
         return result
+
+    def estimate_gas(self, *args: Tuple) -> int:
+        """
+        Estimate the gas cost for a transaction.
+
+        Raises VirtualMachineError if the transaction would revert.
+
+        Arguments
+        ---------
+        *args
+            Contract method inputs
+
+        Returns
+        -------
+        int
+            Estimated gas value in wei.
+        """
+        args, tx = _get_tx(self._owner, args)
+        if not tx["from"]:
+            raise AttributeError(
+                "Contract has no owner, you must supply a tx dict"
+                " as the last argument with a 'from' field."
+            )
+
+        return tx["from"].estimate_gas(
+            to=self._address,
+            amount=tx["value"],
+            gas_price=tx["gasPrice"],
+            data=self.encode_input(*args),
+        )
 
 
 class ContractTx(_ContractMethod):
@@ -1290,20 +1354,6 @@ def _print_natspec(natspec: Dict) -> None:
     print()
 
 
-def _contract_method_autosuggest(method: Any) -> List:
-    types_list = get_type_strings(method.abi["inputs"], {"fixed168x10": "decimal"})
-    params = zip([i["name"] for i in method.abi["inputs"]], types_list)
-
-    if isinstance(method, ContractCall):
-        tx_hint: List = []
-    elif method.payable:
-        tx_hint = [" {'from': Account", " 'value': Wei}"]
-    else:
-        tx_hint = [" {'from': Account}"]
-
-    return [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params] + tx_hint
-
-
 def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     url = CONFIG.active_network.get("explorer")
     if url is None:
@@ -1338,3 +1388,42 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
         raise ValueError(f"Failed to retrieve data from API: {data['result']}")
 
     return data
+
+
+# console auto-completion logic
+
+
+def _call_autosuggest(method: Any) -> List:
+    # since methods are not unique for each object, we use `__reduce__`
+    # to locate the specific object so we can access the correct ABI
+    method = method.__reduce__()[1][0]
+    return _contract_method_autosuggest(method.abi["inputs"], False, False)
+
+
+def _transact_autosuggest(method: Any) -> List:
+    method = method.__reduce__()[1][0]
+    return _contract_method_autosuggest(method.abi["inputs"], True, method.payable)
+
+
+# assign the autosuggest functionality to various methods
+ContractConstructor.encode_input.__dict__["_autosuggest"] = _call_autosuggest
+_ContractMethod.call.__dict__["_autosuggest"] = _call_autosuggest
+_ContractMethod.encode_input.__dict__["_autosuggest"] = _call_autosuggest
+
+ContractConstructor.estimate_gas.__dict__["_autosuggest"] = _transact_autosuggest
+_ContractMethod.estimate_gas.__dict__["_autosuggest"] = _transact_autosuggest
+_ContractMethod.transact.__dict__["_autosuggest"] = _transact_autosuggest
+
+
+def _contract_method_autosuggest(args: List, is_transaction: bool, is_payable: bool) -> List:
+    types_list = get_type_strings(args, {"fixed168x10": "decimal"})
+    params = zip([i["name"] for i in args], types_list)
+
+    if not is_transaction:
+        tx_hint: List = []
+    elif is_payable:
+        tx_hint = [" {'from': Account", " 'value': Wei}"]
+    else:
+        tx_hint = [" {'from': Account}"]
+
+    return [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params] + tx_hint
