@@ -726,7 +726,7 @@ class Contract(_DeployedContractBase):
             evm_version = None
 
         source_str = "\n".join(data["result"][0]["SourceCode"].splitlines())
-        if source_str.startswith("{"):
+        if source_str.startswith("{{"):
             # source was verified using compiler standard JSON
             input_json = json.loads(source_str[1:-1])
             sources = {k: v["content"] for k, v in input_json["sources"].items()}
@@ -739,13 +739,17 @@ class Contract(_DeployedContractBase):
             output_json = compiler.compile_from_input_json(input_json)
             build_json = compiler.generate_build_json(input_json, output_json)
         else:
-            # source was submitted as a single file
-            if compiler_str.startswith("vyper"):
-                path_str = f"{name}.vy"
+            if source_str.startswith("{"):
+                # source was submitted as multiple files
+                sources = {k: v["content"] for k, v in json.loads(source_str).items()}
             else:
-                path_str = f"{name}-flattened.sol"
+                # source was submitted as a single file
+                if compiler_str.startswith("vyper"):
+                    path_str = f"{name}.vy"
+                else:
+                    path_str = f"{name}-flattened.sol"
+                sources = {path_str: source_str}
 
-            sources = {path_str: source_str}
             build_json = compiler.compile_and_format(
                 sources,
                 solc_version=str(version),
