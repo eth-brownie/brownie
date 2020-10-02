@@ -7,6 +7,8 @@ import pytest
 from brownie._cli import ethpm as cli_ethpm
 from brownie.project import ethpm
 
+pytestmark = pytest.mark.skip(reason="deprecated, must be updated for ethpmv3")
+
 ETHPM_CONFIG = {
     "package_name": "testpackage",
     "version": "1.0.0",
