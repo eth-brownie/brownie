@@ -252,8 +252,8 @@ class ContractConstructor:
         )
 
     @staticmethod
-    def _autosuggest(self) -> List:
-        return _contract_method_autosuggest(self.abi["inputs"], True, self.payable)
+    def _autosuggest(obj: "ContractConstructor") -> List:
+        return _contract_method_autosuggest(obj.abi["inputs"], True, obj.payable)
 
     def encode_input(self, *args: tuple) -> str:
         bytecode = self._parent.bytecode
@@ -994,10 +994,10 @@ class _ContractMethod:
             return self.abi["stateMutability"] == "payable"
 
     @staticmethod
-    def _autosuggest(self) -> List:
+    def _autosuggest(obj: "_ContractMethod") -> List:
         # this is a staticmethod to be compatible with `_call_suggest` and `_transact_suggest`
         return _contract_method_autosuggest(
-            self.abi["inputs"], isinstance(self, ContractTx), self.payable
+            obj.abi["inputs"], isinstance(obj, ContractTx), obj.payable
         )
 
     def info(self) -> None:
@@ -1393,14 +1393,14 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
 # console auto-completion logic
 
 
-def _call_autosuggest(method):
+def _call_autosuggest(method: Any) -> List:
     # since methods are not unique for each object, we use `__reduce__`
     # to locate the specific object so we can access the correct ABI
     method = method.__reduce__()[1][0]
     return _contract_method_autosuggest(method.abi["inputs"], False, False)
 
 
-def _transact_autosuggest(method):
+def _transact_autosuggest(method: Any) -> List:
     method = method.__reduce__()[1][0]
     return _contract_method_autosuggest(method.abi["inputs"], True, method.payable)
 
