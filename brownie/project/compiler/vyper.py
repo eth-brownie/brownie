@@ -339,6 +339,11 @@ def _generate_coverage_data(
 
     pc_list[0]["path"] = "0"
     pc_list[0]["offset"] = [0, _convert_src(ast_json[-1]["src"])[1]]
+
+    if len(pc_list) > 7 and pc_list[0]["op"] == "CALLVALUE" and pc_list[6]["op"] == "REVERT":
+        # special case - initial nonpayable check on vyper >=0.2.5
+        pc_list[6]["dev"] = "Cannot send ether to nonpayable function"
+
     pc_map = dict((i.pop("pc"), i) for i in pc_list)
 
     return pc_map, {"0": statement_map}, {"0": branch_map}
