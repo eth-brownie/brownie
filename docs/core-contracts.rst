@@ -149,9 +149,9 @@ When executing a transaction to a contract, you can optionally include a :py:cla
 
 All currency integer values can also be given as strings that will be converted by :func:`Wei <brownie.convert.datatypes.Wei>`.
 
-.. note::
+.. hint::
 
-    To maintain compatibility with :meth:`web3.eth.sendTransaction <web3.eth.Eth.sendTransaction>`, you can use ``gas``, ``gasPrice`` and ``value`` as aliases for ``gas_limit``, ``gas_price``, and ``amount``.
+    When working in development environment, the ``from`` field can be any address given as a string. In this way you can broadcast a transaction from an address without having it's private key. It is even possible to send transactions from contracts!
 
 Calls
 -----

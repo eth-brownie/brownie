@@ -41,6 +41,34 @@ The :func:`Account.transfer <Account.transfer>` method is used to send ether bet
     >>> accounts[1].balance()
     110000000000000000000
 
+Generating, Adding, and Unlocking Accounts
+==========================================
+
+Newly added accounts are automatically appended to the :func:`Accounts <brownie.network.account.Accounts>` container.
+
+The :func:`Accounts.add <Accounts.add>` method is used to randomly generate a new account:
+
+.. code-block:: python
+
+    >>> accounts.add()
+    mnemonic: 'rice cement vehicle ladder end engine tiger gospel toy inspire steel teach'
+    <LocalAccount '0x7f1eCD32aF08635A3fB3128108F6Eb0956Efd532'>
+
+You can optionally specify a private key to access a specific account:
+
+.. code-block:: python
+
+    >>> accounts.add('0xca751356c37a98109fd969d8e79b42d768587efc6ba35e878bc8c093ed95d8a9')
+    <LocalAccount '0xf6c0182eFD54830A87e4020E13B8E4C82e2f60f0'>
+
+In a development environment, it is possible to send transactions from an address without having that addresses private key. To create an :func:`Account <brownie.network.account.Account>` object from an arbitrary address, use the :func:`Accounts.at <Accounts.at>` method and include ``force=True`` as a keyword argument:
+
+.. code-block:: python
+
+    >>> accounts.at('0x79B2f0CbED2a565C925A8b35f2B402710564F8a2', force=True)
+    <Account '0x79B2f0CbED2a565C925A8b35f2B402710564F8a2'>
+
+See :ref:`local-accounts` for more information on working with accounts.
 
 Broadcasting Multiple Transactions
 ==================================
