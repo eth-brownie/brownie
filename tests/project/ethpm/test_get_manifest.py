@@ -2,11 +2,15 @@
 
 import shutil
 
+import pytest
+
 from brownie._config import _get_data_folder
 from brownie.project import ethpm
 
 ROPSTEN_GENESIS_HASH = "41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d"
 MAINNET_GENESIS_HASH = "d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3"
+
+pytestmark = pytest.mark.skip(reason="deprecated, must be updated for ethpmv3")
 
 
 def test_get_manifest_from_ipfs():

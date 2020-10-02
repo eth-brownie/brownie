@@ -29,6 +29,7 @@ def test_install_from_github():
     install_package("brownie-mix/token-mix@1.0.0")
 
 
+@pytest.mark.skip(reason="Need to update to ethpm v3")
 def test_install_from_ethpm(ipfs_mock):
     install_package("ethpm://zeppelin.snakecharmers.eth:1/access@1.0.0")
 
@@ -42,6 +43,7 @@ def test_github_already_installed():
         install_package("brownie-mix/token-mix@1.0.0")
 
 
+@pytest.mark.skip(reason="Need to update to ethpm v3")
 def test_ethpm_already_installed():
     path = _get_data_folder().joinpath("packages/zeppelin.snakecharmers.eth")
     path.mkdir()
