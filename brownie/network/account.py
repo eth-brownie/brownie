@@ -362,7 +362,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if isinstance(gas_limit, bool) or gas_limit in (None, "auto"):
             gas_buffer = gas_buffer or CONFIG.active_network["settings"]["gas_buffer"]
             gas_limit = self.estimate_gas(to, amount, gas_price, data or "")
-            if gas_buffer != 1:
+            if gas_limit > 21000 and gas_buffer != 1:
                 gas_limit = Wei(gas_limit * gas_buffer)
                 return min(gas_limit, Chain().block_gas_limit)
 
