@@ -268,12 +268,13 @@ class PytestBrownieRunner(PytestBrownieBase):
 
         # save results for this test
         results = self.results[path]
-        if report.when == "call":
-            results[idx] = convert_outcome(report.outcome)
-            if hasattr(report, "wasxfail"):
-                results[idx] = "x" if report.skipped else "X"
-        elif report.failed:
-            results[idx] = "E"
+        if not self.skip.get(report.nodeid):
+            if report.when == "call":
+                results[idx] = convert_outcome(report.outcome)
+                if hasattr(report, "wasxfail"):
+                    results[idx] = "x" if report.skipped else "X"
+            elif report.failed:
+                results[idx] = "E"
         if report.when != "teardown" or idx < len(self.node_map[path]) - 1:
             return
 
