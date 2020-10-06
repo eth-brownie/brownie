@@ -366,6 +366,9 @@ class PytestBrownieRunner(PytestBrownieBase):
             locals_dict = {k: v for k, v in locals_dict.items() if not k.startswith("@")}
 
             namespace = {"_callinfo": call, **globals_dict, **locals_dict}
+            if "tx" not in namespace and brownie.history:
+                # make it easier to look at the most recent transaction
+                namespace["tx"] = brownie.history[-1]
 
             try:
                 CONFIG.argv["cli"] = "console"
