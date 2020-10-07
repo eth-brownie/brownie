@@ -9,6 +9,7 @@ import pygments
 from pygments.formatters import get_formatter_by_name
 from pygments.lexers import PythonLexer
 from pygments_lexer_solidity import SolidityLexer
+from vyper.exceptions import VyperException
 
 from brownie._config import CONFIG
 
@@ -148,9 +149,14 @@ class Color:
             if code:
                 tb[i] += f"\n{code}"
 
-        from brownie.exceptions import CompilerError
-
         msg = str(exc)
+        if isinstance(exc, VyperException):
+            # apply syntax highlight and remove traceback on vyper exceptions
+            msg = self.highlight(msg)
+            if not CONFIG.argv["tb"]:
+                tb.clear()
+
+        from brownie.exceptions import CompilerError
 
         if isinstance(exc, CompilerError):
             # apply syntax highlighting on solc exceptions
