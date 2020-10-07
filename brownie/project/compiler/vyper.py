@@ -6,7 +6,10 @@ from hashlib import sha1
 from typing import Dict, List, Optional, Tuple, Union
 
 import vvm
+import vyper
 from semantic_version import Version
+from vyper.cli import vyper_json
+from vyper.exceptions import VyperException
 
 from brownie.exceptions import CompilerError, IncompatibleVyperVersion
 from brownie.project import sources
@@ -21,20 +24,24 @@ sh.setFormatter(logging.Formatter("%(message)s"))
 vvm_logger.addHandler(sh)
 
 AVAILABLE_VYPER_VERSIONS = None
+_active_version = Version(vyper.__version__)
 
 
 def get_version() -> Version:
-    return vvm.get_vyper_version()
+    return _active_version
 
 
 def set_vyper_version(version: str) -> str:
     """Sets the vyper version. If not available it will be installed."""
-    try:
-        vvm.set_vyper_version(version, silent=True)
-    except vvm.exceptions.VyperNotInstalled:
-        install_vyper(version)
-        vvm.set_vyper_version(version, silent=True)
-    return str(vvm.get_vyper_version())
+    global _active_version
+    if Version(version) != Version(vyper.__version__):
+        try:
+            vvm.set_vyper_version(version, silent=True)
+        except vvm.exceptions.VyperNotInstalled:
+            install_vyper(version)
+            vvm.set_vyper_version(version, silent=True)
+    _active_version = Version(version)
+    return str(_active_version)
 
 
 def get_abi(contract_source: str, name: str) -> Dict:
@@ -43,19 +50,30 @@ def get_abi(contract_source: str, name: str) -> Dict:
 
     This function is deprecated in favor of `brownie.project.compiler.get_abi`
     """
-    compiled = vvm.compile_standard(
-        {
-            "language": "Vyper",
-            "sources": {name: {"content": contract_source}},
-            "settings": {"outputSelection": {"*": {"*": ["abi"]}}},
-        }
-    )
+    input_json = {
+        "language": "Vyper",
+        "sources": {name: {"content": contract_source}},
+        "settings": {"outputSelection": {"*": {"*": ["abi"]}}},
+    }
+    if _active_version == Version(vyper.__version__):
+        try:
+            compiled = vyper_json.compile_json(input_json)
+        except VyperException as exc:
+            raise exc.with_traceback(None)
+    else:
+        try:
+            compiled = vvm.compile_standard(input_json, vyper_version=_active_version)
+        except vvm.exceptions.VyperError as exc:
+            raise CompilerError(exc, "vyper")
+
     return {name: compiled["contracts"][name][name]["abi"]}
 
 
 def _get_vyper_version_list() -> Tuple[List, List]:
     global AVAILABLE_VYPER_VERSIONS
     installed_versions = vvm.get_installed_vyper_versions()
+    if Version(vyper.__version__) not in installed_versions:
+        installed_versions.append(Version(vyper.__version__))
     if AVAILABLE_VYPER_VERSIONS is None:
         try:
             AVAILABLE_VYPER_VERSIONS = vvm.get_installable_vyper_versions()
@@ -200,17 +218,26 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
+    version = get_version()
     if not silent:
         print("Compiling contracts...")
-        print(f"  Vyper version: {get_version()}")
-    if get_version() < Version("0.1.0-beta.17"):
+        print(f"  Vyper version: {version}")
+    if version < Version("0.1.0-beta.17"):
         outputs = input_json["settings"]["outputSelection"]["*"]["*"]
         outputs.remove("userdoc")
         outputs.remove("devdoc")
-    try:
-        return vvm.compile_standard(input_json, base_path=allow_paths)
-    except vvm.exceptions.VyperError as exc:
-        raise CompilerError(exc, "vyper")
+    if version == Version(vyper.__version__):
+        try:
+            return vyper_json.compile_json(input_json, root_path=allow_paths)
+        except VyperException as exc:
+            raise exc.with_traceback(None)
+    else:
+        try:
+            return vvm.compile_standard(
+                input_json, base_path=allow_paths, vyper_version=_active_version
+            )
+        except vvm.exceptions.VyperError as exc:
+            raise CompilerError(exc, "vyper")
 
 
 def _get_unique_build_json(
