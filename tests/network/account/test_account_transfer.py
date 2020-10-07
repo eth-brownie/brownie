@@ -2,9 +2,16 @@
 
 import pytest
 
-# from brownie import network, accounts, config, web3
+from brownie import compile_source
 from brownie.exceptions import VirtualMachineError
 from brownie.network.transaction import TransactionReceipt
+
+code = """
+pragma solidity ^0.6.0;
+contract Foo {
+    fallback () external payable {}
+}
+"""
 
 
 def test_to_string(accounts):
@@ -142,9 +149,16 @@ def test_gas_limit_manual(accounts):
 def test_gas_buffer_manual(accounts, config):
     """gas limit is set correctly when specified in the call"""
     config.active_network["settings"]["gas_limit"] = None
+    foo = compile_source(code).Foo.deploy({"from": accounts[0]})
+    tx = accounts[0].transfer(foo, 1000, gas_buffer=1.337)
+    assert int(tx.gas_used * 1.337) == tx.gas_limit
+
+
+def test_gas_buffer_send_to_eoa(accounts, config):
+    """gas limit is set correctly when specified in the call"""
+    config.active_network["settings"]["gas_limit"] = None
     tx = accounts[0].transfer(accounts[1], 1000, gas_buffer=1.337)
-    assert tx.gas_limit == int(21000 * 1.337)
-    assert tx.gas_used == 21000
+    assert tx.gas_limit == 21000
 
 
 @pytest.mark.parametrize("gas_limit", (True, False, None, "auto"))
@@ -153,8 +167,9 @@ def test_gas_limit_automatic(accounts, config, gas_limit, gas_buffer):
     """gas limit is set correctly using web3.eth.estimateGas"""
     config.active_network["settings"]["gas_limit"] = gas_limit
     config.active_network["settings"]["gas_buffer"] = gas_buffer
-    tx = accounts[0].transfer(accounts[1], 1000)
-    assert tx.gas_limit == int(21000 * gas_buffer)
+    foo = compile_source(code).Foo.deploy({"from": accounts[0]})
+    tx = accounts[0].transfer(foo, 1000)
+    assert int(tx.gas_used * gas_buffer) == tx.gas_limit
 
 
 def test_gas_limit_config(accounts, config):
