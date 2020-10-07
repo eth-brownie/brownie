@@ -6,6 +6,18 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.11.8](https://github.com/eth-brownie/brownie/tree/v1.11.8) - 2020-10-07
+### Added
+- Automatically add `tx` as a local variable during interactive debugging ([#796](https://github.com/eth-brownie/brownie/pull/796))
+
+### Changed
+- Gas buffer is not applied to transactions between EOAs ([#798](https://github.com/eth-brownie/brownie/pull/798))
+- Use `vyper` instead of `vvm` for compilation, where possible ([#797](https://github.com/eth-brownie/brownie/pull/797))
+
+### Fixed
+- Correctly highlight skipped, previously failing tests in red when using `-U` flag ([#795](https://github.com/eth-brownie/brownie/pull/795))
+
 ## [1.11.7](https://github.com/eth-brownie/brownie/tree/v1.11.7) - 2020-10-02
 ### Added
 - Support for Etherscan's multi-file source output ([#786](https://github.com/eth-brownie/brownie/pull/786))
