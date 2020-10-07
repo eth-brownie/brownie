@@ -31,16 +31,18 @@ def get_version() -> Version:
     return _active_version
 
 
-def set_vyper_version(version: str) -> str:
+def set_vyper_version(version: Union[str, Version]) -> str:
     """Sets the vyper version. If not available it will be installed."""
     global _active_version
-    if Version(version) != Version(vyper.__version__):
+    if isinstance(version, str):
+        version = Version(version)
+    if version != Version(vyper.__version__):
         try:
             vvm.set_vyper_version(version, silent=True)
         except vvm.exceptions.VyperNotInstalled:
             install_vyper(version)
             vvm.set_vyper_version(version, silent=True)
-    _active_version = Version(version)
+    _active_version = version
     return str(_active_version)
 
 
@@ -72,8 +74,9 @@ def get_abi(contract_source: str, name: str) -> Dict:
 def _get_vyper_version_list() -> Tuple[List, List]:
     global AVAILABLE_VYPER_VERSIONS
     installed_versions = vvm.get_installed_vyper_versions()
-    if Version(vyper.__version__) not in installed_versions:
-        installed_versions.append(Version(vyper.__version__))
+    lib_version = Version(vyper.__version__)
+    if lib_version not in installed_versions:
+        installed_versions.append(lib_version)
     if AVAILABLE_VYPER_VERSIONS is None:
         try:
             AVAILABLE_VYPER_VERSIONS = vvm.get_installable_vyper_versions()
@@ -233,9 +236,7 @@ def compile_from_input_json(
             raise exc.with_traceback(None)
     else:
         try:
-            return vvm.compile_standard(
-                input_json, base_path=allow_paths, vyper_version=_active_version
-            )
+            return vvm.compile_standard(input_json, base_path=allow_paths, vyper_version=version)
         except vvm.exceptions.VyperError as exc:
             raise CompilerError(exc, "vyper")
 
