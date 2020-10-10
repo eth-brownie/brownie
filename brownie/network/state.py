@@ -6,7 +6,7 @@ import time
 import weakref
 from hashlib import sha1
 from sqlite3 import OperationalError
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 from hexbytes import HexBytes
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -75,6 +75,31 @@ class TxHistory(metaclass=_Singleton):
     def copy(self) -> List:
         """Returns a shallow copy of the object as a list"""
         return self._list.copy()
+
+    def filter(self, key: Optional[Callable] = None, **kwargs: Dict) -> List:
+        """
+        Return a filtered list of transactions.
+
+        Arguments
+        ---------
+        key : Callable, optional
+            An optional function to filter with. It should expect one agument and return
+            True or False.
+
+        Keyword Arguments
+        -----------------
+        **kwargs : Any
+            Names and expected values for TransactionReceipt attributes.
+
+        Returns
+        -------
+        List
+            A filtered list of TransactionReceipt objects.
+        """
+        result = [i for i in self._list if all(getattr(i, k) == v for k, v in kwargs.items())]
+        if key is None:
+            return result
+        return [i for i in result if key(i)]
 
     def from_sender(self, account: str) -> List:
         """Returns a list of transactions where the sender is account"""
