@@ -1278,8 +1278,11 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
             if key in tx:
                 tx[target] = tx[key]
 
+    # enable the magic of ganache's `evm_unlockUnknownAccount`
     if isinstance(tx["from"], str):
         tx["from"] = accounts.at(tx["from"], force=True)
+    elif isinstance(tx["from"], Contract):
+        tx["from"] = accounts.at(tx["from"].address, force=True)
 
     return args, tx
 
