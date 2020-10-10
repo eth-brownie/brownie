@@ -10,7 +10,10 @@ from brownie.utils.docopt import docopt
 
 CODESIZE_COLORS = [(1, "bright red"), (0.8, "bright yellow")]
 
-__doc__ = """Usage: brownie compile [options]
+__doc__ = """Usage: brownie compile [<contract> ...] [options]
+
+Arguments
+  [<contract> ...]       Optional list of contract names to compile.
 
 Options:
   --all -a              Recompile all contracts
@@ -34,9 +37,15 @@ def main():
 
     contract_artifact_path = build_path.joinpath("contracts")
     interface_artifact_path = build_path.joinpath("interfaces")
+
     if args["--all"]:
         shutil.rmtree(contract_artifact_path, ignore_errors=True)
         shutil.rmtree(interface_artifact_path, ignore_errors=True)
+    elif args["<contract>"]:
+        for name in args["<contract>"]:
+            path = contract_artifact_path.joinpath(f"{name}.json")
+            if path.exists():
+                path.unlink()
 
     proj = project.load()
 
