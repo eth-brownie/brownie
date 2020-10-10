@@ -254,6 +254,8 @@ class TransactionReceipt:
         return web3.eth.blockNumber - self.block_number + 1
 
     def wait(self, required_confs: int) -> None:
+        if required_confs < 1:
+            return
         if self.confirmations > required_confs:
             print(f"This transaction already has {self.confirmations} confirmations.")
             return
