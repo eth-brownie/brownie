@@ -13,7 +13,7 @@ import black
 import requests
 from eth_abi import decode_abi
 from hexbytes import HexBytes
-from web3.exceptions import TransactionNotFound
+from web3.exceptions import TimeExhausted, TransactionNotFound
 
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
@@ -148,6 +148,7 @@ class TransactionReceipt:
         self._internal_transfers = None
         self._subcalls: Optional[List[Dict]] = None
         self._confirmed = threading.Event()
+        self._replaced_by = None
 
         # attributes that can be set immediately
         self.sender = sender
@@ -175,8 +176,11 @@ class TransactionReceipt:
             self._expand_trace()
 
     def __repr__(self) -> str:
-        c = {-1: "bright yellow", 0: "bright red", 1: None}
-        return f"<Transaction '{color(c[self.status])}{self.txid}{color}'>"
+        if self._replaced_by:
+            color_str: Optional[str] = color("dark white")
+        else:
+            color_str = {-1: "bright yellow", 0: "bright red", 1: None}[self.status]
+        return f"<Transaction '{color_str}{self.txid}{color}'>"
 
     def __hash__(self) -> int:
         return hash(self.txid)
@@ -253,6 +257,48 @@ class TransactionReceipt:
             return 0
         return web3.eth.blockNumber - self.block_number + 1
 
+    def replace(
+        self, increment: Optional[float] = None, gas_price: Optional[Wei] = None,
+    ) -> "TransactionReceipt":
+        """
+        Rebroadcast this transaction with a higher gas price.
+
+        Exactly one of `increment` and `gas_price` must be given.
+
+        Arguments
+        ---------
+        increment : float, optional
+            Multiplier applied to the gas price of this transaction in order
+            to determine the new gas price
+        gas_price: Wei, optional
+            Absolute gas price to use in the replacement transaction
+
+        Returns
+        -------
+        TransactionReceipt
+            New transaction object
+        """
+        if increment is None and gas_price is None:
+            raise ValueError("Must give one of `increment` or `gas_price`")
+        if gas_price is not None and increment is not None:
+            raise ValueError("Cannot set `increment` and `gas_price` together")
+        if self.status > -1:
+            raise ValueError("Transaction has already confirmed")
+
+        if increment is not None:
+            gas_price = Wei(self.gas_price * 1.1)
+
+        return self.sender.transfer(  # type: ignore
+            self.receiver,
+            self.value,
+            gas_limit=self.gas_limit,
+            gas_price=Wei(gas_price),
+            data=self.input,
+            nonce=self.nonce,
+            required_confs=0,
+            silent=self._silent,
+        )
+
     def wait(self, required_confs: int) -> None:
         if required_confs < 1:
             return
@@ -265,9 +311,15 @@ class TransactionReceipt:
                 tx: Dict = web3.eth.getTransaction(self.txid)
                 break
             except TransactionNotFound:
-                time.sleep(0.5)
+                if self._replaced_by:
+                    print(f"This transaction was replaced by {self._replaced_by.txid}.")
+                    return
+                time.sleep(1)
 
         self._await_confirmation(tx, required_confs)
+
+    def _set_replaced_by(self, tx: "TransactionReceipt") -> None:
+        self._replaced_by = tx
 
     def _raise_if_reverted(self, exc: Any) -> None:
         if self.status or CONFIG.mode == "console":
@@ -294,7 +346,9 @@ class TransactionReceipt:
                     # if sender was not explicitly set, this transaction was
                     # not broadcasted locally and so likely doesn't exist
                     raise
-                time.sleep(0.5)
+                if self._replaced_by:
+                    return
+                time.sleep(1)
         self._set_from_tx(tx)
 
         if not self._silent:
@@ -324,7 +378,13 @@ class TransactionReceipt:
                 sys.stdout.flush()
 
         # await first confirmation
-        receipt = web3.eth.waitForTransactionReceipt(self.txid, timeout=None, poll_latency=0.5)
+        while True:
+            try:
+                receipt = web3.eth.waitForTransactionReceipt(self.txid, timeout=30, poll_latency=1)
+                break
+            except TimeExhausted:
+                if self._replaced_by:
+                    return
 
         self.block_number = receipt["blockNumber"]
         # wait for more confirmations if required and handle uncle blocks
