@@ -19,11 +19,14 @@ class EventDict:
     Dict/list hybrid container, base class for all events fired in a transaction.
     """
 
-    def __init__(self, events: List) -> None:
+    def __init__(self, events: Optional[List] = None) -> None:
         """Instantiates the class.
 
         Args:
             events: event data as supplied by eth_event.decode_logs or eth_event.decode_trace"""
+        if events is None:
+            events = []
+
         self._ordered = [
             _EventItem(
                 i["name"],
@@ -208,9 +211,9 @@ def _add_deployment_topics(address: str, abi: List) -> None:
     _deployment_topics[address] = eth_event.get_topic_map(abi)
 
 
-def _decode_logs(logs: List) -> Union["EventDict", List[None]]:
+def _decode_logs(logs: List) -> EventDict:
     if not logs:
-        return []
+        return EventDict()
 
     idx = 0
     events: List = []
@@ -237,9 +240,9 @@ def _decode_logs(logs: List) -> Union["EventDict", List[None]]:
     return EventDict(events)
 
 
-def _decode_trace(trace: Sequence, initial_address: str) -> Union["EventDict", List[None]]:
+def _decode_trace(trace: Sequence, initial_address: str) -> EventDict:
     if not trace:
-        return []
+        return EventDict()
 
     events = eth_event.decode_traceTransaction(
         trace, _topics, allow_undecoded=True, initial_address=initial_address
