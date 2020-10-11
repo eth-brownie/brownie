@@ -145,7 +145,7 @@ def find_vyper_versions(
     # install new versions if needed
     if to_install:
         install_vyper(*to_install)
-        installed_versions = vvm.get_installed_vyper_versions()
+        _, installed_versions = _get_vyper_version_list()
     elif new_versions and not silent:
         print(
             f"New compatible vyper version{'s' if len(new_versions) > 1 else ''}"
