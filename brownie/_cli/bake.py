@@ -1,27 +1,28 @@
-#!/usr/bin/python3
+import click
 
 from brownie import project
 from brownie.utils import notify
-from brownie.utils.docopt import docopt
-
-__doc__ = """Usage: brownie bake <mix> [<path>] [options]
-
-Arguments:
-  <mix>                 Name of Brownie mix to initialize
-  <path>                Path to initialize to (default is name of mix)
-
-Options:
-  --force -f            Allow init inside a project subfolder
-  --help -h             Display this message
-
-Brownie mixes are ready-made templates that you can use as a starting
-point for your own project, or as a part of a tutorial.
-
-For a complete list of Brownie mixes visit https://www.github.com/brownie-mix
-"""
 
 
-def main():
-    args = docopt(__doc__)
-    path = project.from_brownie_mix(args["<mix>"], args["<path>"], args["--force"])
-    notify("SUCCESS", f"Brownie mix '{args['<mix>']}' has been initiated at {path}")
+@click.command(short_help="Initialize a new brownie project")
+@click.argument("mix", type=str)
+@click.option(
+    "--path",
+    default=None,
+    type=click.Path(exists=True, file_okay=False),
+    help="Path to initialize (default is the name of the mix)",
+)
+@click.option("--force", default=False, is_flag=True, help="Allow init inside a project subfolder")
+def cli(mix, path, force):
+    """
+    Initialize this project using MIX as a template.
+
+    Brownie mixes are ready-made templates that you can use as a starting
+    point for your own project, or as a part of a tutorial.
+
+    For a complete list of Brownie mixes visit https://www.github.com/brownie-mixes
+    """
+    if not path:
+        path = mix
+    path = project.from_brownie_mix(mix, path, force)
+    notify("SUCCESS", f"Brownie mix '{mix}' has been initiated at {path}")
