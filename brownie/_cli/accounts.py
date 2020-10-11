@@ -1,88 +1,72 @@
-#!/usr/bin/python3
-
 import json
 import shutil
-import sys
 from pathlib import Path
+
+import click
 
 from brownie import accounts
 from brownie._config import _get_data_folder
 from brownie.convert import to_address
 from brownie.utils import color, notify
-from brownie.utils.docopt import docopt
-
-__doc__ = """Usage: brownie accounts <command> [<arguments> ...] [options]
-
-Commands:
-  list                             List available accounts
-  new <id>                         Add a new account by entering a private key
-  generate <id>                    Add a new account with a random private key
-  import <id> <path>               Import a new account via a keystore file
-  export <id> <path>               Export an existing account keystore file
-  password <id>                    Change the password of an existing account
-  delete <id>                      Delete an existing account
-
-Options:
-  --help -h                        Display this message
-
-Command-line helper for managing local accounts. You can unlock local accounts from
-scripts or the console using the Accounts.load method.
-"""
 
 
-def main():
-    args = docopt(__doc__)
-    try:
-        fn = getattr(sys.modules[__name__], f"_{args['<command>']}")
-    except AttributeError:
-        print("Invalid command. Try brownie accounts --help")
-        return
-    try:
-        fn(*args["<arguments>"])
-    except TypeError:
-        print(f"Invalid arguments for command '{args['<command>']}'. Try brownie accounts --help")
-        return
+@click.group(short_help="Manage local accounts")
+def cli():
+    """
+    Command-line helper for managing local accounts. You can unlock local accounts from
+    scripts or the console using the Accounts.load method.
+    """
 
 
+# Different name because `list` is a keyword
+@cli.command(name="list", short_help="List available accounts")
 def _list():
     account_paths = sorted(_get_data_folder().glob("accounts/*.json"))
-    print(f"Found {len(account_paths)} account{'s' if len(account_paths)!=1 else ''}:")
+    click.echo(f"Found {len(account_paths)} account{'s' if len(account_paths)!=1 else ''}:")
     for path in account_paths:
         u = "\u2514" if path == account_paths[-1] else "\u251c"
         with path.open() as fp:
             data = json.load(fp)
-        print(
+        click.echo(
             f" {color('bright black')}{u}\u2500{color('bright blue')}{path.stem}{color}"
             f": {color('bright magenta')}{to_address(data['address'])}{color}"
         )
 
 
-def _new(id_):
+@cli.command(short_help="Add a new account by entering a private key")
+@click.argument("id")
+def new(id):
     pk = input("Enter the private key you wish to add: ")
     a = accounts.add(pk)
-    a.save(id_)
+    a.save(id)
     notify(
         "SUCCESS",
         f"A new account '{color('bright magenta')}{a.address}{color}'"
-        f" has been generated with the id '{color('bright blue')}{id_}{color}'",
+        f" has been generated with the id '{color('bright blue')}{id}{color}'",
     )
 
 
-def _generate(id_):
-    print("Generating a new private key...")
+@cli.command(short_help="Add a new account with a random private key")
+@click.argument("id")
+def generate(id):
+    click.echo("Generating a new private key...")
     a = accounts.add()
-    a.save(id_)
+    a.save(id)
     notify(
         "SUCCESS",
         f"A new account '{color('bright magenta')}{a.address}{color}'"
-        f" has been generated with the id '{color('bright blue')}{id_}{color}'",
+        f" has been generated with the id '{color('bright blue')}{id}{color}'",
     )
 
 
-def _import(id_, path):
-    dest_path = _get_data_folder().joinpath(f"accounts/{id_}.json")
+# Different name because `import` is a keyword
+@cli.command(name="import", short_help="Import a new account via a keystore file")
+@click.argument("id")
+@click.argument("path", type=click.Path(exists=True, dir_okay=False, allow_dash=True))
+def _import(id, path):
+    dest_path = _get_data_folder().joinpath(f"accounts/{id}.json")
     if dest_path.exists():
-        raise FileExistsError(f"A keystore file already exists with the id '{id_}'")
+        raise FileExistsError(f"A keystore file already exists with the id '{id}'")
 
     source_path = Path(path).absolute()
     if not source_path.exists():
@@ -97,14 +81,17 @@ def _import(id_, path):
     notify(
         "SUCCESS",
         f"Keystore '{color('bright magenta')}{source_path}{color}'"
-        f" has been imported with the id '{color('bright blue')}{id_}{color}'",
+        f" has been imported with the id '{color('bright blue')}{id}{color}'",
     )
 
 
-def _export(id_, path):
-    source_path = _get_data_folder().joinpath(f"accounts/{id_}.json")
+@cli.command(short_help="Export an existing account keystore file")
+@click.argument("id")
+@click.argument("path", type=click.Path(writable=True, allow_dash=True))
+def export(id, path):
+    source_path = _get_data_folder().joinpath(f"accounts/{id}.json")
     if not source_path.exists():
-        raise FileNotFoundError(f"No keystore exists with the id '{id_}'")
+        raise FileNotFoundError(f"No keystore exists with the id '{id}'")
     dest_path = Path(path).absolute()
     if not dest_path.suffix:
         dest_path = dest_path.with_suffix(".json")
@@ -113,18 +100,22 @@ def _export(id_, path):
     shutil.copy(source_path, dest_path)
     notify(
         "SUCCESS",
-        f"Account with id '{color('bright blue')}{id_}{color}' has been"
+        f"Account with id '{color('bright blue')}{id}{color}' has been"
         f" exported to keystore '{color('bright magenta')}{dest_path}{color}'",
     )
 
 
-def _password(id_):
-    a = accounts.load(id_)
-    a.save(id_, overwrite=True)
-    notify("SUCCESS", f"Password has been changed for account '{color('bright blue')}{id_}{color}'")
+@cli.command(short_help="Change the password of an existing account")
+@click.argument("id")
+def password(id):
+    a = accounts.load(id)
+    a.save(id, overwrite=True)
+    notify("SUCCESS", f"Password has been changed for account '{color('bright blue')}{id}{color}'")
 
 
-def _delete(id_):
-    path = _get_data_folder().joinpath(f"accounts/{id_}.json")
+@cli.command(short_help="Delete an existing account")
+@click.argument("id")
+def delete(id):
+    path = _get_data_folder().joinpath(f"accounts/{id}.json")
     path.unlink()
-    notify("SUCCESS", f"Account '{color('bright blue')}{id_}{color}' has been deleted")
+    notify("SUCCESS", f"Account '{color('bright blue')}{id}{color}' has been deleted")
