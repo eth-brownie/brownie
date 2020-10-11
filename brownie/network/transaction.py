@@ -159,7 +159,6 @@ class TransactionReceipt:
         self._new_contracts: Optional[List] = None
         self._internal_transfers: Optional[List[Dict]] = None
         self._subcalls: Optional[List[Dict]] = None
-        self._replaced_by: Optional["TransactionReceipt"] = None
 
         # attributes that can be set immediately
         self.sender = sender
@@ -179,11 +178,8 @@ class TransactionReceipt:
         self._await_transaction(required_confs, is_blocking)
 
     def __repr__(self) -> str:
-        if self._replaced_by:
-            color_str: Optional[str] = color("dark white")
-        else:
-            color_str = {-1: "bright yellow", 0: "bright red", 1: None}[self.status]
-        return f"<Transaction '{color_str}{self.txid}{color}'>"
+        color_str = {-2: "dark white", -1: "bright yellow", 0: "bright red", 1: ""}[self.status]
+        return f"<Transaction '{color(color_str)}{self.txid}{color}'>"
 
     def __hash__(self) -> int:
         return hash(self.txid)
@@ -314,15 +310,13 @@ class TransactionReceipt:
                 tx: Dict = web3.eth.getTransaction(self.txid)
                 break
             except TransactionNotFound:
-                if self._replaced_by:
-                    print(f"This transaction was replaced by {self._replaced_by.txid}.")
+                if self.sender.nonce > self.nonce:  # type: ignore
+                    self.status = Status(-2)
+                    print("This transaction was replaced.")
                     return
                 time.sleep(1)
 
         self._await_confirmation(tx, required_confs)
-
-    def _set_replaced_by(self, tx: "TransactionReceipt") -> None:
-        self._replaced_by = tx
 
     def _raise_if_reverted(self, exc: Any) -> None:
         if self.status or CONFIG.mode == "console":
@@ -349,7 +343,8 @@ class TransactionReceipt:
                     # if sender was not explicitly set, this transaction was
                     # not broadcasted locally and so likely doesn't exist
                     raise
-                if self._replaced_by:
+                if self.sender.nonce > self.nonce:
+                    self.status = Status(-2)
                     return
                 time.sleep(1)
         self._set_from_tx(tx)
@@ -382,11 +377,15 @@ class TransactionReceipt:
 
         # await first confirmation
         while True:
+            # if sender nonce is greater than tx nonce, the tx should be confirmed
+            expect_confirmed = bool(self.sender.nonce > self.nonce)  # type: ignore
             try:
                 receipt = web3.eth.waitForTransactionReceipt(self.txid, timeout=30, poll_latency=1)
                 break
             except TimeExhausted:
-                if self._replaced_by:
+                if expect_confirmed:
+                    # if we expected confirmation based on the nonce, tx likely dropped
+                    self.status = Status(-2)
                     return
 
         self.block_number = receipt["blockNumber"]
