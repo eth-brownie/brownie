@@ -1,4 +1,5 @@
 black==19.10b0
+click>=7.1.2,<8.0.0
 colorama>=0.4.1;platform_system=='Windows'
 eth-abi==2.1.1
 eth-account==0.5.2
