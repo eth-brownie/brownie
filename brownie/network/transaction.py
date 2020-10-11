@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 from collections import OrderedDict
+from enum import IntEnum
 from hashlib import sha1
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
@@ -35,7 +36,7 @@ def trace_property(fn: Callable) -> Any:
 
     @property  # type: ignore
     def wrapper(self: "TransactionReceipt") -> Any:
-        if self.status == -1:
+        if self.status < 0:
             return None
         if self._trace_exc is not None:
             raise self._trace_exc
@@ -56,6 +57,13 @@ def trace_inspection(fn: Callable) -> Any:
 
     functools.update_wrapper(wrapper, fn)
     return wrapper
+
+
+class Status(IntEnum):
+    Dropped = -2
+    Pending = -1
+    Reverted = 0
+    Confirmed = 1
 
 
 class TransactionReceipt:
@@ -155,7 +163,7 @@ class TransactionReceipt:
 
         # attributes that can be set immediately
         self.sender = sender
-        self.status = -1
+        self.status = Status(-1)
         self.txid = txid
         self.contract_name = None
         self.fn_name = name
@@ -242,7 +250,7 @@ class TransactionReceipt:
 
     @property
     def timestamp(self) -> Optional[int]:
-        if self.status == -1:
+        if self.status < 0:
             return None
         return web3.eth.getBlock(self.block_number)["timestamp"]
 
@@ -443,7 +451,7 @@ class TransactionReceipt:
         self.txindex = receipt["transactionIndex"]
         self.gas_used = receipt["gasUsed"]
         self.logs = receipt["logs"]
-        self.status = receipt["status"]
+        self.status = Status(receipt["status"])
 
         self.contract_address = receipt["contractAddress"]
         if self.contract_address and not self.contract_name:
@@ -451,7 +459,7 @@ class TransactionReceipt:
 
         base = (
             f"{self.nonce}{self.block_number}{self.sender}{self.receiver}"
-            f"{self.value}{self.input}{self.status}{self.gas_used}{self.txindex}"
+            f"{self.value}{self.input}{int(self.status)}{self.gas_used}{self.txindex}"
         )
         self.coverage_hash = sha1(base.encode()).hexdigest()
 
