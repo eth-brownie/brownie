@@ -1525,6 +1525,24 @@ TxHistory Methods
         >>> type(c)
         <class 'list'>
 
+.. py:classmethod:: TxHistory.filter(key=None, **kwargs)
+
+    Return a filtered list of transactions.
+
+    Each keyword argument corresponds to a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` attribute. Only transactions where every attributes matches the given value are returned.
+
+    .. code-block:: python
+
+        >>> history.filter(sender=accounts[0], value="1 ether")
+        [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
+
+    You can also use ``key`` to prodive a function or lambda. It should receive one argument, a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, and return a boolean indicating if the object is to be included in the result.
+
+    .. code-block:: python
+
+        >>> history.filter(key=lambda k: k.nonce < 2)
+        [<Transaction '0x03569ee152b04ba5b55c2bf05f99f7ec153db715acfe0c1600f144ded58f31fe'>, <Transaction '0x42193c0ff7007c6e2a5e5572a3c6b5706cd133d21e30e5826add3d971134504c'>]
+
 .. py:classmethod:: TxHistory.from_sender(account)
 
     Returns a list of transactions where the sender is :func:`Account <brownie.network.account.Account>`.
