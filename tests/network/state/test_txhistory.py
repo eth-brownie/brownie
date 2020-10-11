@@ -67,3 +67,13 @@ def test_copy(accounts, history, chain):
     assert h[0] == history[0]
     chain.reset()
     assert len(h) == 1
+
+
+def test_filter(accounts, history):
+    tx1 = accounts[0].transfer(accounts[1], "1 ether")
+    tx2 = accounts[1].transfer(accounts[2], "2 ether")
+    tx3 = accounts[0].transfer(accounts[2], "3 ether")
+
+    assert history.filter(sender=accounts[0]) == [tx1, tx3]
+    assert history.filter(sender=accounts[1], receiver=accounts[2]) == [tx2]
+    assert history.filter(sender=accounts[0], key=lambda k: k.value > "1 ether") == [tx3]
