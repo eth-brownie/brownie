@@ -450,14 +450,16 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 txid,
                 self,
                 silent=silent,
-                required_confs=0,
+                required_confs=required_confs,
+                is_blocking=False,
                 name=contract._name + ".constructor",
                 revert_data=revert_data,
             )
             # add the TxHistory before waiting for confirmation, this way the tx
             # object is available if the user CTRL-C to stop waiting in the console
             history._add_tx(receipt)
-            receipt.wait(required_confs)
+            if required_confs > 0:
+                receipt._confirmed.wait()
 
         add_thread = threading.Thread(target=contract._add_from_tx, args=(receipt,), daemon=True)
         add_thread.start()
@@ -589,12 +591,18 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
 
             receipt = TransactionReceipt(
-                txid, self, required_confs=0, silent=silent, revert_data=revert_data
+                txid,
+                self,
+                required_confs=required_confs,
+                is_blocking=False,
+                silent=silent,
+                revert_data=revert_data,
             )
             # add the TxHistory before waiting for confirmation, this way the tx
             # object is available if the user CTRL-C to stop waiting in the console
             history._add_tx(receipt)
-            receipt.wait(required_confs)
+            if required_confs > 0:
+                receipt._confirmed.wait()
 
         if rpc.is_active():
             undo_thread = threading.Thread(

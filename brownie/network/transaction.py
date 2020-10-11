@@ -26,7 +26,7 @@ from brownie.utils import color
 from brownie.utils.output import build_tree
 
 from . import state
-from .event import _decode_logs, _decode_trace
+from .event import EventDict, _decode_logs, _decode_trace
 from .web3 import web3
 
 
@@ -114,6 +114,7 @@ class TransactionReceipt:
         sender: Any = None,
         silent: bool = True,
         required_confs: int = 1,
+        is_blocking: bool = True,
         name: str = "",
         revert_data: Optional[Tuple] = None,
     ) -> None:
@@ -123,6 +124,8 @@ class TransactionReceipt:
             txid: hexstring transaction ID
             sender: sender as a hex string or Account object
             required_confs: the number of required confirmations before processing the receipt
+            is_blocking: if True, creating the object is a blocking action until the required
+                         confirmations are received
             silent: toggles console verbosity (default True)
             name: contract function being called
             revert_data: (revert string, program counter, revert type)
@@ -135,20 +138,20 @@ class TransactionReceipt:
             print(f"Transaction sent: {color('bright blue')}{txid}{color}")
 
         # internal attributes
-        self._trace_exc = None
-        self._trace_origin = None
-        self._raw_trace = None
-        self._trace = None
         self._call_cost = 0
-        self._events = None
-        self._return_value = None
-        self._revert_msg = None
-        self._modified_state = None
-        self._new_contracts = None
-        self._internal_transfers = None
-        self._subcalls: Optional[List[Dict]] = None
         self._confirmed = threading.Event()
-        self._replaced_by = None
+        self._trace_exc: Optional[Exception] = None
+        self._trace_origin: Optional[str] = None
+        self._raw_trace: Optional[List] = None
+        self._trace: Optional[List] = None
+        self._events: Optional[EventDict] = None
+        self._return_value: Any = None
+        self._revert_msg: Optional[str] = None
+        self._modified_state: Optional[bool] = None
+        self._new_contracts: Optional[List] = None
+        self._internal_transfers: Optional[List[Dict]] = None
+        self._subcalls: Optional[List[Dict]] = None
+        self._replaced_by: Optional["TransactionReceipt"] = None
 
         # attributes that can be set immediately
         self.sender = sender
@@ -165,15 +168,7 @@ class TransactionReceipt:
         if self._revert_msg is None and revert_type not in ("revert", "invalid_opcode"):
             self._revert_msg = revert_type
 
-        self._await_transaction(required_confs)
-
-        # if coverage evaluation is active, evaluate the trace
-        if (
-            CONFIG.argv["coverage"]
-            and not coverage._check_cached(self.coverage_hash)
-            and self.trace
-        ):
-            self._expand_trace()
+        self._await_transaction(required_confs, is_blocking)
 
     def __repr__(self) -> str:
         if self._replaced_by:
@@ -186,7 +181,7 @@ class TransactionReceipt:
         return hash(self.txid)
 
     @trace_property
-    def events(self) -> Optional[List]:
+    def events(self) -> Optional[EventDict]:
         if not self.status:
             self._get_trace()
         return self._events
@@ -335,7 +330,7 @@ class TransactionReceipt:
             source = self._error_string(1)
         raise exc._with_attr(source=source, revert_msg=self._revert_msg)
 
-    def _await_transaction(self, required_confs: int = 1) -> None:
+    def _await_transaction(self, required_confs: int, is_blocking: bool) -> None:
         # await tx showing in mempool
         while True:
             try:
@@ -363,7 +358,7 @@ class TransactionReceipt:
             target=self._await_confirmation, args=(tx, required_confs), daemon=True
         )
         confirm_thread.start()
-        if required_confs > 0:
+        if is_blocking and required_confs > 0:
             confirm_thread.join()
 
     def _await_confirmation(self, tx: Dict, required_confs: int = 1) -> None:
@@ -415,9 +410,16 @@ class TransactionReceipt:
                 time.sleep(1)
 
         self._set_from_receipt(receipt)
-        self._confirmed.set()
+        # if coverage evaluation is active, evaluate the trace
+        if (
+            CONFIG.argv["coverage"]
+            and not coverage._check_cached(self.coverage_hash)
+            and self.trace
+        ):
+            self._expand_trace()
         if not self._silent and required_confs > 0:
             print(self._confirm_output())
+        self._confirmed.set()
 
     def _set_from_tx(self, tx: Dict) -> None:
         if not self.sender:
