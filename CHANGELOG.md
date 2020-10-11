@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.11.9](https://github.com/eth-brownie/brownie/tree/v1.11.9) - 2020-10-11
+### Added
+- `TxHistory.filter` method ([#804](https://github.com/eth-brownie/brownie/pull/804))
+- Allow force-compiling of specific contracts in CLI ([#802](https://github.com/eth-brownie/brownie/pull/802))
+
+### Fixed
+- Include `vyper` library version in installed versions, after installing a new version ([#803](https://github.com/eth-brownie/brownie/pull/803))
+- Understand `Contract` objects in the `from` field of a transaction dict ([#801](https://github.com/eth-brownie/brownie/pull/801))
+
 ## [1.11.8](https://github.com/eth-brownie/brownie/tree/v1.11.8) - 2020-10-07
 ### Added
 - Automatically add `tx` as a local variable during interactive debugging ([#796](https://github.com/eth-brownie/brownie/pull/796))
