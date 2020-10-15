@@ -163,6 +163,10 @@ def highlight_source(source: str, offset: Tuple, pad: int = 3) -> Tuple:
     count = source[offset[1] : pad_stop].count("\n")
     final = final.replace("\n ", f"\n{color('dark white')} ", count)
 
+    # prepend with a newline if the offset starts on the first line
+    if offset[0] < newlines[1]:
+        final = f"\n{final}"
+
     return final, ln
 
 
