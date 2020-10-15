@@ -81,7 +81,8 @@ def _build_gas_profile_output():
             if project._sources.get_source_path(contract) in exclude_paths:
                 continue
         except (AttributeError, KeyError):
-            pass
+            # filters contracts that are not part of the project
+            continue
         if contract in exclude_contracts:
             continue
 
