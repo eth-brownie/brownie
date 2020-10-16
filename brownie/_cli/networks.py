@@ -1,41 +1,11 @@
-#!/usr/bin/python3
-
 import shutil
-import sys
 from pathlib import Path
 
+import click
 import yaml
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie.utils import color, notify
-from brownie.utils.docopt import docopt
-
-__doc__ = """Usage: brownie networks <command> [<arguments> ...] [options]
-
-Commands:
-  list [verbose=false]             List existing networks
-  add <env> <id> [key=value, ...]  Add a new network
-  modify <id> [key=value, ...]     Modify field(s) for an existing network
-  import <path> <replace=False>    Import network settings
-  export <path>                    Export network settings
-  delete <id>                      Delete an existing network
-
-Options:
-  --help -h                        Display this message
-
-Settings related to local development chains and live environments.
-
-Each network has a unique id. To connect to a specific network when running tests
-or launching the console, use the commandline flag `--network [id]`.
-
-To add a network you must specify an environment and id, as well as required fields.
-For example, to add a network "mainnet" to the "Ethereum" environment:
-
-  brownie networks add Ethereum mainnet host=https://mainnet.infura.io/ chainid=1
-
-Use `brownie networks list true` to see a detailed view of available networks
-as well as possible data fields when declaring new networks."""
-
 
 DEV_REQUIRED = ("id", "host", "cmd", "cmd_settings")
 PROD_REQUIRED = ("id", "host", "chainid")
@@ -55,31 +25,36 @@ DEV_CMD_SETTINGS = (
 )
 
 
-def main():
-    args = docopt(__doc__)
-    try:
-        fn = getattr(sys.modules[__name__], f"_{args['<command>']}")
-    except AttributeError:
-        print("Invalid command. Try brownie networks --help")
-        return
-    try:
-        fn(*args["<arguments>"])
-    except TypeError:
-        print(f"Invalid arguments for command '{args['<command>']}'. Try brownie networks --help")
-        return
+@click.group(short_help="Manage network settings")
+def cli():
+    """
+    Settings related to local development chains and live environments.
+
+    Each network has a unique network id. To connect to a specific network when
+    running tests or launching the console, use the commandline flag `--network [network_id]`.
+    """
 
 
-def _list(verbose=False):
+@cli.command(short_help="List existing networks")
+@click.option(
+    "-v",
+    "--verbose",
+    default=False,
+    is_flag=True,
+    help="see a detailed view of available networks as well "
+    "as possible data fields when declaring new networks.",
+)
+def list(verbose):
     if isinstance(verbose, str):
         verbose = eval(verbose.capitalize())
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
 
-    print("The following networks are declared:")
+    click.echo("The following networks are declared:")
 
     for chain in networks["live"]:
-        print(f"\n{chain['name']}")
+        click.echo(f"\n{chain['name']}")
         for value in chain["networks"]:
             is_last = value == chain["networks"][-1]
             if verbose:
@@ -87,7 +62,7 @@ def _list(verbose=False):
             else:
                 _print_simple_network_description(value, is_last)
 
-    print("\nDevelopment")
+    click.echo("\nDevelopment")
     for value in networks["development"]:
         is_last = value == networks["development"][-1]
         if verbose:
@@ -98,21 +73,32 @@ def _list(verbose=False):
             _print_simple_network_description(value, is_last)
 
 
-def _add(env, id_, *args):
-    if id_ in CONFIG.networks:
-        raise ValueError(f"Network '{color('bright magenta')}{id_}{color}' already exists")
+@cli.command(short_help="Add a new network", context_settings=dict(ignore_unknown_options=True))
+@click.argument("environment")
+@click.argument("network_id")
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def add(environment, network_id, args):
+    """
+    Add NETWORK_ID to ENVIRONMENT, using the settings provided in ARGS
+
+    For example, to add a network "mainnet" to the "Ethereum" environment:
+
+      brownie networks add Ethereum mainnet host=https://mainnet.infura.io/ chainid=1
+    """
+    if network_id in CONFIG.networks:
+        raise ValueError(f"Network '{color('bright magenta')}{network_id}{color}' already exists")
 
     args = _parse_args(args)
 
     if "name" not in args:
-        args["name"] = id_
+        args["name"] = network_id
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
-    if env.lower() == "development":
+    if environment.lower() == "development":
         new = {
             "name": args.pop("name"),
-            "id": id_,
+            "id": network_id,
             "cmd": args.pop("cmd"),
             "host": args.pop("host"),
         }
@@ -123,12 +109,13 @@ def _add(env, id_, *args):
         networks["development"].append(new)
     else:
         target = next(
-            (i["networks"] for i in networks["live"] if i["name"].lower() == env.lower()), None
+            (i["networks"] for i in networks["live"] if i["name"].lower() == environment.lower()),
+            None,
         )
         if target is None:
-            networks["live"].append({"name": env, "networks": []})
+            networks["live"].append({"name": environment, "networks": []})
             target = networks["live"][-1]["networks"]
-        new = {"id": id_, **args}
+        new = {"id": network_id, **args}
         _validate_network(new, PROD_REQUIRED)
         target.append(new)
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
@@ -140,20 +127,26 @@ def _add(env, id_, *args):
     _print_verbose_network_description(new, True)
 
 
-def _modify(id_, *args):
-    if id_ not in CONFIG.networks:
-        raise ValueError(f"Network '{color('bright magenta')}{id_}{color}' does not exist")
+@cli.command(
+    short_help="Modify field(s) for an existing network",
+    context_settings=dict(ignore_unknown_options=True),
+)
+@click.argument("network_id")
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def modify(network_id, args):
+    if network_id not in CONFIG.networks:
+        raise ValueError(f"Network '{color('bright magenta')}{network_id}{color}' does not exist")
 
     args = _parse_args(args)
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
 
-    is_dev = "cmd" in CONFIG.networks[id_]
+    is_dev = "cmd" in CONFIG.networks[network_id]
     if is_dev:
-        target = next(i for i in networks["development"] if i["id"] == id_)
+        target = next(i for i in networks["development"] if i["id"] == network_id)
     else:
-        target = next(x for i in networks["live"] for x in i["networks"] if x["id"] == id_)
+        target = next(x for i in networks["live"] for x in i["networks"] if x["id"] == network_id)
 
     for key, value in args.items():
         t = target
@@ -169,7 +162,7 @@ def _modify(id_, *args):
         _validate_network(target, PROD_REQUIRED)
 
     if "name" not in target:
-        target["name"] = id_
+        target["name"] = network_id
 
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(networks, fp)
@@ -180,48 +173,58 @@ def _modify(id_, *args):
     _print_verbose_network_description(target, True)
 
 
-def _delete(id_):
-    if id_ not in CONFIG.networks:
-        raise ValueError(f"Network '{color('bright magenta')}{id_}{color}' does not exist")
+@cli.command(short_help="Delete an existing network")
+@click.argument("network_id")
+def delete(network_id):
+    """
+    Delete NETWORK_ID from your networks
+    """
+    if network_id not in CONFIG.networks:
+        raise ValueError(f"Network '{color('bright magenta')}{network_id}{color}' does not exist")
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
 
-    if "cmd" in CONFIG.networks[id_]:
-        networks["development"] = [i for i in networks["development"] if i["id"] != id_]
+    if "cmd" in CONFIG.networks[network_id]:
+        networks["development"] = [i for i in networks["development"] if i["id"] != network_id]
     else:
-        target = next(i for i in networks["live"] for x in i["networks"] if x["id"] == id_)
-        target["networks"] = [i for i in target["networks"] if i["id"] != id_]
+        target = next(i for i in networks["live"] for x in i["networks"] if x["id"] == network_id)
+        target["networks"] = [i for i in target["networks"] if i["id"] != network_id]
         networks["live"] = [i for i in networks["live"] if i["networks"]]
 
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(networks, fp)
 
-    notify("SUCCESS", f"Network '{color('bright magenta')}{id_}{color}' has been deleted")
+    notify("SUCCESS", f"Network '{color('bright magenta')}{network_id}{color}' has been deleted")
 
 
-def _import(path_str, replace=False):
-    if isinstance(replace, str):
-        replace = eval(replace.capitalize())
-
-    path = Path(path_str)
-    with path.open() as fp:
-        new_networks = yaml.safe_load(fp)
+@cli.command(name="import", short_help="Import network settings")
+@click.argument("path", type=click.File("r"))
+@click.option(
+    "-R", "--replace", default=False, is_flag=True, help="Overwrite existing network configuration"
+)
+def import_(path, replace):
+    """
+    Load network options from PATH
+    """
+    new_networks = yaml.safe_load(path.read())
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         old_networks = yaml.safe_load(fp)
 
     for value in new_networks.get("development", []):
-        id_ = value["id"]
-        if id_ in CONFIG.networks:
-            if "cmd" not in CONFIG.networks[id_]:
+        network_id = value["id"]
+        if network_id in CONFIG.networks:
+            if "cmd" not in CONFIG.networks[network_id]:
                 raise ValueError(
-                    f"Import file contains development network with id '{id_}',"
+                    f"Import file contains development network with id '{network_id}',"
                     " but this is already an existing live network."
                 )
             if not replace:
-                raise ValueError(f"Cannot overwrite existing network {id_}")
-            old_networks["development"] = [i for i in old_networks["development"] if i["id"] != id_]
+                raise ValueError(f"Cannot overwrite existing network {network_id}")
+            old_networks["development"] = [
+                i for i in old_networks["development"] if i["id"] != network_id
+            ]
         _validate_network(value, DEV_REQUIRED)
         old_networks["development"].append(value)
 
@@ -230,14 +233,14 @@ def _import(path_str, replace=False):
         if prod is None:
             prod = {"name": chain["name"], "networks": []}
             old_networks["live"].append(prod)
-        id_ = value["id"]
-        if id_ in CONFIG.networks:
+        network_id = value["id"]
+        if network_id in CONFIG.networks:
             if not replace:
-                raise ValueError(f"Cannot overwrite existing network {id_}")
-            existing = next((i for i in prod["networks"] if i["id"] == id_), None)
+                raise ValueError(f"Cannot overwrite existing network {network_id}")
+            existing = next((i for i in prod["networks"] if i["id"] == network_id), None)
             if existing is None:
                 raise ValueError(
-                    f"Import file contains live network with id '{id_}',"
+                    f"Import file contains live network with id '{network_id}',"
                     " but this is already an existing network on a different environment."
                 )
             prod["networks"].remove(existing)
@@ -247,18 +250,26 @@ def _import(path_str, replace=False):
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(old_networks, fp)
 
-    notify("SUCCESS", f"Network settings imported from '{color('bright magenta')}{path}{color}'")
+    notify(
+        "SUCCESS", f"Network settings imported from '{color('bright magenta')}{path.name}{color}'"
+    )
 
 
-def _export(path_str):
-    path = Path(path_str)
-    if path.exists():
-        if path.is_dir():
-            path = path.joinpath("network-config.yaml")
-        else:
-            raise FileExistsError(f"{path} already exists")
-    if not path.suffix:
-        path = path.with_suffix(".yaml")
+@cli.command(short_help="Export network settings")
+@click.argument("path", type=click.Path(exists=False))
+def export(path):
+    """
+    Export network settings to directory or file located at PATH
+
+    If directory, `PATH/network-config.yaml` will be used.
+    If file, PATH must be a `*.yaml` or `*.yml` file
+    """
+    path = Path(path)
+    if path.is_dir():
+        path = path.joinpath("network-config.yaml")
+    elif path.suffix not in ("yaml", "yml"):
+        raise ValueError(f"'{path}' must be a yaml file")
+
     shutil.copy(_get_data_folder().joinpath("network-config.yaml"), path)
 
     notify("SUCCESS", f"Network settings exported as '{color('bright magenta')}{path}{color}'")
@@ -281,7 +292,7 @@ def _parse_args(args):
 
 def _print_simple_network_description(network_dict, is_last):
     u = "\u2514" if is_last else "\u251c"
-    print(
+    click.echo(
         f"{color('bright black')}  {u}\u2500{color}{network_dict['name']}:"
         f" {color('green')}{network_dict['id']}{color}"
     )
@@ -291,7 +302,7 @@ def _print_verbose_network_description(network_dict, is_last, indent=0):
     u = "\u2514" if is_last else "\u251c"
     v = " " if is_last else "\u2502"
     if "name" in network_dict:
-        print(f"{color('bright black')}  {u}\u2500{color}{network_dict.pop('name')}")
+        click.echo(f"{color('bright black')}  {u}\u2500{color}{network_dict.pop('name')}")
 
     obj_keys = sorted(network_dict)
     if "id" in obj_keys:
@@ -305,7 +316,7 @@ def _print_verbose_network_description(network_dict, is_last, indent=0):
         if indent:
             u = (" " * indent) + u
         c = color("green") if key == "id" else ""
-        print(f"{color('bright black')}  {v} {u}\u2500{color}{key}: {c}{value}{color}")
+        click.echo(f"{color('bright black')}  {v} {u}\u2500{color}{key}: {c}{value}{color}")
 
 
 def _validate_network(network, required):
