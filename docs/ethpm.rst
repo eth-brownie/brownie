@@ -200,7 +200,7 @@ Here is an example configuration for ``ethpm-config.yaml``:
     settings:
       deployment_networks:
         - mainnet
-    include_dependencies: false
+      include_dependencies: false
 
     # optional fields
     meta:
