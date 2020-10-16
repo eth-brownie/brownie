@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import vvm
 import vyper
+from requests.exceptions import ConnectionError
 from semantic_version import Version
 from vyper.cli import vyper_json
 from vyper.exceptions import VyperException
