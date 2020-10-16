@@ -171,6 +171,17 @@ class Accounts(metaclass=_Singleton):
             return new_accounts[0]
         return new_accounts
 
+    def list_local(self) -> List[str]:
+        """
+        List all local accounts.
+
+        Returns
+        -------
+        List[str]
+        """
+        base_accounts_path = _get_data_folder().joinpath("accounts")
+        return list(i.stem for i in base_accounts_path.glob("*.json"))
+
     def load(self, filename: str = None) -> Union[List, "LocalAccount"]:
         """
         Load a local account from a keystore file.
