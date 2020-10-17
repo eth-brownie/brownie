@@ -11,7 +11,7 @@ import pytest
 from _pytest._io import TerminalWriter
 
 import brownie
-from brownie._cli.console import Console
+from brownie._cli.console import console
 from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
@@ -411,7 +411,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         interactively handled.
 
         With the `--interactive` flag, outputs the full repr of the failed test
-        and opens an interactive shell using `brownie._cli.console.Console`.
+        and opens an interactive shell using `brownie._cli.console.console`.
 
         Arguments
         ---------
@@ -466,7 +466,7 @@ class PytestBrownieRunner(PytestBrownieBase):
 
             try:
                 CONFIG.argv["cli"] = "console"
-                shell = Console(self.project, extra_locals=namespace)
+                shell = console(self.project, extra_locals=namespace)
                 shell.interact(
                     banner="\nInteractive mode enabled. Use quit() to continue running tests.",
                     exitmsg="",
