@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+import click
 
 import code
 import importlib
@@ -22,27 +22,35 @@ from pygments.styles import get_style_by_name
 
 import brownie
 from brownie import network, project
-from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
+from brownie._config import CONFIG, _get_data_folder
 from brownie.utils import color
-from brownie.utils.docopt import docopt
 
-__doc__ = f"""Usage: brownie console [options]
-
-Options:
-  --network <name>        Use a specific network (default {CONFIG.settings['networks']['default']})
-  --tb -t                 Show entire python traceback on exceptions
-  --help -h               Display this message
-
-Connects to the network and opens the brownie console.
-"""
 
 _parser_cache: dict = {}
 
 
-def main():
-    args = docopt(__doc__)
-    _update_argv_from_docopt(args)
-
+@click.command(short_help="Load the console")
+@click.option(
+    "--network",
+    "selected_network",
+    default=CONFIG.settings["networks"]["default"],
+    type=click.Choice(CONFIG.networks.keys()),
+    show_default=True,
+    help="Use a specific network",
+)
+@click.option(
+    "-t",
+    "--traceback",
+    "show_traceback",
+    default=False,
+    is_flag=True,
+    help="Show entire python traceback on exceptions",
+)
+@click.argument("ipython_args", nargs=-1, type=click.UNPROCESSED)
+def cli(selected_network, show_traceback, ipython_args):
+    """
+    Connects to the selected network and opens the brownie console.
+    """
     if project.check_for_project():
         active_project = project.load()
         active_project.load_config()
@@ -52,7 +60,7 @@ def main():
         sys.path.insert(0, "")
         print("No project was loaded.")
 
-    network.connect(CONFIG.argv["network"])
+    network.connect(selected_network)
 
     shell = Console(active_project)
     shell.interact(banner="Brownie environment is ready.", exitmsg="")
