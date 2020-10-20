@@ -517,7 +517,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             "data": HexBytes(data or ""),
         }
         if gas_price is not None:
-            tx["gasPrce"] = gas_price
+            tx["gasPrice"] = gas_price
         try:
             return web3.eth.estimateGas(tx)
         except ValueError:
