@@ -1016,10 +1016,25 @@ def _step_internal(
     return key
 
 
+def _convert_0x_to_empty_bytes(value: Any) -> Any:
+    # black cannot parse `0x` without any trailing zeros, so we temporarily
+    # replace it with an empty bytestring
+    final = []
+    for item in value:
+        if isinstance(item, (list, tuple)):
+            final.append(_convert_0x_to_empty_bytes(item))
+        elif item == "0x":
+            final.append(b"")
+        else:
+            final.append(item)
+    return type(value)(final)
+
+
 def _format(value: Any) -> str:
     if isinstance(value, (list, tuple)):
+        value = _convert_0x_to_empty_bytes(value)
         mode = black.FileMode(line_length=60)
-        black.format_str(str(value), mode=mode)
+        value = black.format_str(str(value), mode=mode).replace('b""', "0x")
     return str(value)
 
 
