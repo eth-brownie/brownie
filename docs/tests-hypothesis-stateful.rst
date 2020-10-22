@@ -287,6 +287,7 @@ More Examples
 
 Here are some links to repositories that make use of stateful testing. If you have a project that you would like included here, feel free to `edit this document <https://github.com/eth-brownie/brownie/edit/master/docs/tests-hypothesis-stateful.rst>`_ and open a pull request, or let us know about it on `Gitter <https://gitter.im/eth-brownie/community>`_.
 
+    * `celioggr/erc20-pbt <https://github.com/celioggr/erc20-pbt/tree/master>`_ : A testing framework based in Property-based testing for assessing the correctness and compliance of ERC-20 contracts.
     * `iamdefinitelyahuman/NFToken <https://github.com/iamdefinitelyahuman/nftoken/tree/master/tests/stateful>`_: A non-fungible implementation of the ERC20 standard.
     * `apguerrera/DreamFrames <https://github.com/apguerrera/DreamFrames/tree/master/tests/stateful>`_: Buy and sell frames in movies.
     * `curvefi/curve-dao-contracts <https://github.com/curvefi/curve-dao-contracts/tree/master/tests/integration>`_: Vyper contracts used by Curve DAO
