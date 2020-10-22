@@ -385,7 +385,10 @@ def _obj_from_token(obj, token):
     if isinstance(obj, dict):
         return obj[key]
     if isinstance(obj, Iterable):
-        return obj[int(key)]
+        try:
+            return obj[int(key)]
+        except ValueError:
+            pass
     return getattr(obj, key)
 
 
