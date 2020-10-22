@@ -195,11 +195,6 @@ class PytestBrownieRunner(PytestBrownieBase):
                 tests[path][0].parent.add_marker("skip")
                 self.isolated[path] = set(self.tests[path]["isolated"])
 
-        # only connect to network if there are tests to run
-        to_run = any(i for i in items if not i.get_closest_marker("skip"))
-        if to_run and not self.config.getoption("--fixtures"):
-            brownie.network.connect(CONFIG.argv["network"])
-
     def _check_updated(self, path):
         path = self._path(path)
         if path not in self.tests or not self.tests[path]["isolated"]:
@@ -215,6 +210,26 @@ class PytestBrownieRunner(PytestBrownieBase):
         for item in ids:
             path, test = self._test_id(item)
             self.node_map.setdefault(path, []).append(test)
+
+    @pytest.hookimpl(trylast=True, hookwrapper=True)
+    def pytest_collection_finish(self, session):
+        """
+        Called after collection has been performed and modified.
+
+        This is the final hookpoint that executes prior to running tests. If
+        the number of tests collected is > 0 and there is not an active network
+        at this point, Brownie connects to the the default network and launches
+        the RPC client if required.
+
+        Arguments
+        ---------
+        session : pytest.Session
+            The pytest session object.
+        """
+        outcome = yield
+        # handled as a hookwrapper to ensure connecting is the last action for this hook
+        if not outcome.get_result() and session.items and not brownie.network.is_connected():
+            brownie.network.connect(CONFIG.argv["network"])
 
     def pytest_runtest_protocol(self, item):
         """
