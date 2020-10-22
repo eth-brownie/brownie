@@ -6,6 +6,16 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+## [1.11.10](https://github.com/eth-brownie/brownie/tree/v1.11.10) - 2020-10-23
+### Changed
+- During testing, do not connect to network until immediately before running tests ([#819](https://github.com/eth-brownie/brownie/pull/819))
+
+### Fixed
+- Vyper 0.2.5 non-payable revert error no longer displays the entire contract ([#812](https://github.com/eth-brownie/brownie/pull/812))
+- Handle correct `ConnectionError` when pulling Vyper versions ([#815](https://github.com/eth-brownie/brownie/pull/815))
+- Typo in `gasPrice` during gas estimation ([#817](https://github.com/eth-brownie/brownie/pull/817))
+- Handle `0x` when parsing tuples with black for call trace ([#818](https://github.com/eth-brownie/brownie/pull/818))
+- Console completions for `Contract.deploy` ([#820](https://github.com/eth-brownie/brownie/pull/820))
 
 ## [1.11.9](https://github.com/eth-brownie/brownie/tree/v1.11.9) - 2020-10-11
 ### Added
