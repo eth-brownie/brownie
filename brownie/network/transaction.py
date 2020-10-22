@@ -1023,7 +1023,7 @@ def _convert_0x_to_empty_bytes(value: Any) -> Any:
     for item in value:
         if isinstance(item, (list, tuple)):
             final.append(_convert_0x_to_empty_bytes(item))
-        elif item == "0x":
+        elif str(item) == "0x":
             final.append(b"")
         else:
             final.append(item)
