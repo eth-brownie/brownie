@@ -4,6 +4,7 @@ import builtins
 import json
 import sys
 import warnings
+from pathlib import Path
 
 import pytest
 from _pytest._io import TerminalWriter
@@ -357,9 +358,10 @@ class PytestBrownieRunner(PytestBrownieBase):
             location = self._path(report.location[0])
 
             # find last traceback frame within the active test
+            excinfo = call.excinfo
             traceback = next(
-                (i for i in call.excinfo.traceback[::-1] if i.path.strpath.endswith(location)),
-                call.excinfo.traceback[-1],
+                (i for i in excinfo.traceback[::-1] if Path(i.path).as_posix().endswith(location)),
+                excinfo.traceback[-1],
             )
 
             # get global namespace
