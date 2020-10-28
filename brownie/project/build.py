@@ -88,12 +88,15 @@ class Build:
                 except (KeyError, ValueError):
                     pass
 
-            msg = "" if data["op"] == "REVERT" else "invalid opcode"
+            msg = data.get("dev")
+            if msg is None or not msg.startswith("dev:"):
+                # filter out revert strings generated via heuristics (overflows, bounds checks, etc)
+                msg = "" if data["op"] == "REVERT" else "invalid opcode"
             revert = (
                 path_str,
                 tuple(data["offset"]),
                 data.get("fn", "<None>"),
-                data.get("dev", msg),
+                msg,
                 self._sources,
             )
 
