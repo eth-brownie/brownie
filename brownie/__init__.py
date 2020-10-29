@@ -9,11 +9,13 @@ from brownie.convert import Fixed, Wei
 from brownie.network import accounts, alert, chain, history, rpc, web3
 from brownie.network.contract import Contract  # NOQA: F401
 
+ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 config = _CONFIG.settings
 
 __all__ = [
     "Contract",
+    "ZERO_ADDRESS",
     "accounts",  # accounts is an Accounts singleton
     "alert",
     "chain",
