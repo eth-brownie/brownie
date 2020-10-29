@@ -564,7 +564,7 @@ def from_brownie_mix(
 
     Returns the path to the project as a string.
     """
-    project_name = str(project_name).replace("-mix", "")
+    project_name = str(project_name).lower().replace("-mix", "")
     url = MIXES_URL.format(project_name)
     if project_path is None:
         project_path = Path(".").joinpath(project_name)
