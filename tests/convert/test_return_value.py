@@ -61,6 +61,15 @@ def test_eq_conversions(accounts, return_value):
     assert return_value == tuple(data)
 
 
+def test_ne_conversions(accounts, return_value):
+    data = [88, [False, False, False], accounts[2], [("0x1234", "0x6666")]]
+    assert not return_value != data
+    assert not return_value != tuple(data)
+    data[1] = tuple(data[1])
+    data[3] = tuple(data[3])
+    assert not return_value != tuple(data)
+
+
 def test_dict(accounts, return_value):
     d = return_value.dict()
     assert isinstance(d, dict)
