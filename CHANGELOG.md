@@ -6,6 +6,19 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.11.11](https://github.com/eth-brownie/brownie/tree/v1.11.11) - 2020-10-31
+### Added
+- `ZERO_ADDRESS` constant is now available from main namespace ([#830](https://github.com/eth-brownie/brownie/pull/830))
+- Include nonce in `stdout` output when broadcasting a transaction ([#833](https://github.com/eth-brownie/brownie/pull/833))
+
+### Changed
+- `brownie bake` project names are no longer case sensetive ([#829](https://github.com/eth-brownie/brownie/pull/829))
+
+### Fixed
+- Handle `str` when looking at traceback paths ([#823](https://github.com/eth-brownie/brownie/pull/823))
+- Add `__ne__` to `ReturnValue` object ([#831](https://github.com/eth-brownie/brownie/pull/831))
+
 ## [1.11.10](https://github.com/eth-brownie/brownie/tree/v1.11.10) - 2020-10-23
 ### Changed
 - During testing, do not connect to network until immediately before running tests ([#819](https://github.com/eth-brownie/brownie/pull/819))
