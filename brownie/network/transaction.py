@@ -299,6 +299,7 @@ class TransactionReceipt:
             print(
                 f"  Gas price: {color('bright blue')}{self.gas_price / 10 ** 9}{color} gwei"
                 f"   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
+                f"   Nonce: {color('bright blue')}{self.nonce}{color}"
             )
 
         # await confirmation of tx in a separate thread which is blocking if required_confs > 0
