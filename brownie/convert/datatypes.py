@@ -314,6 +314,9 @@ class ReturnValue(tuple):
     def __eq__(self, other: Any) -> bool:
         return _kwargtuple_compare(self, other)
 
+    def __ne__(self, other: Any) -> bool:
+        return not _kwargtuple_compare(self, other)
+
     def __getitem__(self, key: Any) -> Any:
         if type(key) is slice:
             abi = None
