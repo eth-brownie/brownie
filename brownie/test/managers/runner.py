@@ -349,13 +349,18 @@ class PytestBrownieRunner(PytestBrownieBase):
             Result/Exception info for the failed test.
         """
         if self.config.getoption("interactive") and report.failed:
+            location = self._path(report.location[0])
+            if location not in self.node_map:
+                # if the exception happened prior to collection it is likely a
+                # SyntaxError and we cannot open an interactive debugger
+                return
+
             capman = self.config.pluginmanager.get_plugin("capturemanager")
             if capman:
                 capman.suspend_global_capture(in_=True)
 
             tw = TerminalWriter()
             report.longrepr.toterminal(tw)
-            location = self._path(report.location[0])
 
             # find last traceback frame within the active test
             excinfo = call.excinfo
