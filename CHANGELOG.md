@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.11.12](https://github.com/eth-brownie/brownie/tree/v1.11.12) - 2020-11-04
+### Added
+- `timestamp` kwarg for `chain.mine` ([#838](https://github.com/eth-brownie/brownie/pull/838))
+- `ETH_ADDRESS` constant ([#835](https://github.com/eth-brownie/brownie/pull/835))
+- show nonce in console output for pending transactions ([#833](https://github.com/eth-brownie/brownie/pull/833))
+
+### Fixed
+- Allow use of `ProjectContract` in tx "from" field on development networks ([#836](https://github.com/eth-brownie/brownie/pull/836))
+- Do not attempt to open debugging console when the failing test has not been collected due to a `SyntaxError` ([#834](https://github.com/eth-brownie/brownie/pull/834))
+
 ## [1.11.11](https://github.com/eth-brownie/brownie/tree/v1.11.11) - 2020-10-31
 ### Added
 - `ZERO_ADDRESS` constant is now available from main namespace ([#830](https://github.com/eth-brownie/brownie/pull/830))
