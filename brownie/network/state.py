@@ -190,6 +190,9 @@ class Chain(metaclass=_Singleton):
             self._block_gas_time = block["timestamp"]
         return block
 
+    def __iter__(self) -> Iterator:
+        return iter(web3.eth.getBlock(i) for i in range(web3.eth.blockNumber + 1))
+
     def new_blocks(self, height_buffer: int = 0, poll_interval: int = 5) -> Iterator:
         """
         Generator for iterating over new blocks.
@@ -315,7 +318,7 @@ class Chain(metaclass=_Singleton):
             self._redo_buffer.clear()
             self._current_id = self._snap()
 
-    def mine(self, blocks: int = 1) -> int:
+    def mine(self, blocks: int = 1, timestamp: Optional[int] = None) -> int:
         """
         Increase the block height within the test RPC.
 
@@ -323,6 +326,10 @@ class Chain(metaclass=_Singleton):
         ---------
         blocks : int
             Number of new blocks to be mined
+        timestamp : int
+            Timestamp of the final block being mined. If multiple blocks
+            are mined, they will be placed at equal intervals starting
+            at `chain.time()` and ending at `timestamp`.
 
         Returns
         -------
@@ -331,8 +338,21 @@ class Chain(metaclass=_Singleton):
         """
         if not isinstance(blocks, int):
             raise TypeError("blocks must be an integer value")
+
+        if timestamp is None:
+            params: List = [[] for i in range(blocks)]
+        elif blocks == 1:
+            params = [[timestamp]]
+        else:
+            now = self.time()
+            duration = (timestamp - now) / (blocks - 1)
+            params = [[round(now + duration * i)] for i in range(blocks)]
+
         for i in range(blocks):
-            self._request("evm_mine", [])
+            self._request("evm_mine", params[i])
+
+        if timestamp is not None:
+            self.sleep(0)
 
         self._redo_buffer.clear()
         self._current_id = self._snap()
