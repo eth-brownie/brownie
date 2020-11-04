@@ -190,6 +190,9 @@ class Chain(metaclass=_Singleton):
             self._block_gas_time = block["timestamp"]
         return block
 
+    def __iter__(self) -> Iterator:
+        return iter(web3.eth.getBlock(i) for i in range(web3.eth.blockNumber + 1))
+
     def new_blocks(self, height_buffer: int = 0, poll_interval: int = 5) -> Iterator:
         """
         Generator for iterating over new blocks.
