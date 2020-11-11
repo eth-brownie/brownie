@@ -169,6 +169,7 @@ class ContractContainer(_ContractBase):
             address: Address string of the contract.
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation."""
+        address = _resolve_address(address)
         contract = _find_contract(address)
         if isinstance(contract, ProjectContract):
             if contract._name == self._name and contract._project == self._project:
