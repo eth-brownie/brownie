@@ -645,9 +645,12 @@ class TransactionReceipt:
                     subcall["selfdestruct"] = True
                 else:
                     if opcode == "REVERT":
-                        data = _get_memory(trace[i], -1)[4:]
-                        if data:
-                            subcall["revert_msg"] = decode_abi(["string"], data)[0]
+                        data = _get_memory(trace[i], -1)
+                        if len(data) > 4:
+                            try:
+                                subcall["revert_msg"] = decode_abi(["string"], data[4:])[0]
+                            except Exception:
+                                subcall["revert_msg"] = data.hex()
                     if "revert_msg" not in subcall and "dev" in pc:
                         subcall["revert_msg"] = pc["dev"]
 
