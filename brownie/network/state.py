@@ -335,7 +335,7 @@ class Chain(metaclass=_Singleton):
             self._redo_buffer.clear()
             self._current_id = self._snap()
 
-    def mine(self, blocks: int = 1, timestamp: Optional[int] = None) -> int:
+    def mine(self, blocks: int = 1, timestamp: Optional[int] = None, timedelta: Optional[int] = None) -> int:
         """
         Increase the block height within the test RPC.
 
@@ -355,6 +355,12 @@ class Chain(metaclass=_Singleton):
         """
         if not isinstance(blocks, int):
             raise TypeError("blocks must be an integer value")
+            
+        if timedelta is not None:
+            if timestamp is not None:
+                raise TypeError("Cannot use both `timestamp` and `timedelta`")
+            
+            timestamp = self.time() + timedelta
 
         if timestamp is None:
             params: List = [[] for i in range(blocks)]
