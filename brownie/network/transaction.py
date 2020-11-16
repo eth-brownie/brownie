@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 from collections import OrderedDict
+from enum import IntEnum
 from hashlib import sha1
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
@@ -13,7 +14,7 @@ import black
 import requests
 from eth_abi import decode_abi
 from hexbytes import HexBytes
-from web3.exceptions import TransactionNotFound
+from web3.exceptions import TimeExhausted, TransactionNotFound
 
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
@@ -26,7 +27,7 @@ from brownie.utils import color
 from brownie.utils.output import build_tree
 
 from . import state
-from .event import _decode_logs, _decode_trace
+from .event import EventDict, _decode_logs, _decode_trace
 from .web3 import web3
 
 
@@ -35,7 +36,7 @@ def trace_property(fn: Callable) -> Any:
 
     @property  # type: ignore
     def wrapper(self: "TransactionReceipt") -> Any:
-        if self.status == -1:
+        if self.status < 0:
             return None
         if self._trace_exc is not None:
             raise self._trace_exc
@@ -56,6 +57,13 @@ def trace_inspection(fn: Callable) -> Any:
 
     functools.update_wrapper(wrapper, fn)
     return wrapper
+
+
+class Status(IntEnum):
+    Dropped = -2
+    Pending = -1
+    Reverted = 0
+    Confirmed = 1
 
 
 class TransactionReceipt:
@@ -105,7 +113,7 @@ class TransactionReceipt:
     logs = None
     nonce = None
     sender = None
-    txid = None
+    txid: str
     txindex = None
 
     def __init__(
@@ -114,6 +122,7 @@ class TransactionReceipt:
         sender: Any = None,
         silent: bool = True,
         required_confs: int = 1,
+        is_blocking: bool = True,
         name: str = "",
         revert_data: Optional[Tuple] = None,
     ) -> None:
@@ -123,6 +132,8 @@ class TransactionReceipt:
             txid: hexstring transaction ID
             sender: sender as a hex string or Account object
             required_confs: the number of required confirmations before processing the receipt
+            is_blocking: if True, creating the object is a blocking action until the required
+                         confirmations are received
             silent: toggles console verbosity (default True)
             name: contract function being called
             revert_data: (revert string, program counter, revert type)
@@ -135,24 +146,24 @@ class TransactionReceipt:
             print(f"Transaction sent: {color('bright blue')}{txid}{color}")
 
         # internal attributes
-        self._trace_exc = None
-        self._trace_origin = None
-        self._raw_trace = None
-        self._trace = None
         self._call_cost = 0
-        self._events = None
-        self._return_value = None
-        self._revert_msg = None
-        self._modified_state = None
-        self._new_contracts = None
-        self._internal_transfers = None
-        self._subcalls: Optional[List[Dict]] = None
         self._confirmed = threading.Event()
+        self._trace_exc: Optional[Exception] = None
+        self._trace_origin: Optional[str] = None
+        self._raw_trace: Optional[List] = None
+        self._trace: Optional[List] = None
+        self._events: Optional[EventDict] = None
+        self._return_value: Any = None
+        self._revert_msg: Optional[str] = None
+        self._modified_state: Optional[bool] = None
+        self._new_contracts: Optional[List] = None
+        self._internal_transfers: Optional[List[Dict]] = None
+        self._subcalls: Optional[List[Dict]] = None
 
         # attributes that can be set immediately
         self.sender = sender
-        self.status = -1
-        self.txid = txid
+        self.status = Status(-1)
+        self.txid = str(txid)
         self.contract_name = None
         self.fn_name = name
 
@@ -164,25 +175,17 @@ class TransactionReceipt:
         if self._revert_msg is None and revert_type not in ("revert", "invalid_opcode"):
             self._revert_msg = revert_type
 
-        self._await_transaction(required_confs)
-
-        # if coverage evaluation is active, evaluate the trace
-        if (
-            CONFIG.argv["coverage"]
-            and not coverage._check_cached(self.coverage_hash)
-            and self.trace
-        ):
-            self._expand_trace()
+        self._await_transaction(required_confs, is_blocking)
 
     def __repr__(self) -> str:
-        c = {-1: "bright yellow", 0: "bright red", 1: None}
-        return f"<Transaction '{color(c[self.status])}{self.txid}{color}'>"
+        color_str = {-2: "dark white", -1: "bright yellow", 0: "bright red", 1: ""}[self.status]
+        return f"<Transaction '{color(color_str)}{self.txid}{color}'>"
 
     def __hash__(self) -> int:
         return hash(self.txid)
 
     @trace_property
-    def events(self) -> Optional[List]:
+    def events(self) -> Optional[EventDict]:
         if not self.status:
             self._get_trace()
         return self._events
@@ -243,7 +246,7 @@ class TransactionReceipt:
 
     @property
     def timestamp(self) -> Optional[int]:
-        if self.status == -1:
+        if self.status < 0:
             return None
         return web3.eth.getBlock(self.block_number)["timestamp"]
 
@@ -253,7 +256,51 @@ class TransactionReceipt:
             return 0
         return web3.eth.blockNumber - self.block_number + 1
 
+    def replace(
+        self, increment: Optional[float] = None, gas_price: Optional[Wei] = None,
+    ) -> "TransactionReceipt":
+        """
+        Rebroadcast this transaction with a higher gas price.
+
+        Exactly one of `increment` and `gas_price` must be given.
+
+        Arguments
+        ---------
+        increment : float, optional
+            Multiplier applied to the gas price of this transaction in order
+            to determine the new gas price
+        gas_price: Wei, optional
+            Absolute gas price to use in the replacement transaction
+
+        Returns
+        -------
+        TransactionReceipt
+            New transaction object
+        """
+        if increment is None and gas_price is None:
+            raise ValueError("Must give one of `increment` or `gas_price`")
+        if gas_price is not None and increment is not None:
+            raise ValueError("Cannot set `increment` and `gas_price` together")
+        if self.status > -1:
+            raise ValueError("Transaction has already confirmed")
+
+        if increment is not None:
+            gas_price = Wei(self.gas_price * 1.1)
+
+        return self.sender.transfer(  # type: ignore
+            self.receiver,
+            self.value,
+            gas_limit=self.gas_limit,
+            gas_price=Wei(gas_price),
+            data=self.input,
+            nonce=self.nonce,
+            required_confs=0,
+            silent=self._silent,
+        )
+
     def wait(self, required_confs: int) -> None:
+        if required_confs < 1:
+            return
         if self.confirmations > required_confs:
             print(f"This transaction already has {self.confirmations} confirmations.")
             return
@@ -263,7 +310,11 @@ class TransactionReceipt:
                 tx: Dict = web3.eth.getTransaction(self.txid)
                 break
             except TransactionNotFound:
-                time.sleep(0.5)
+                if self.sender.nonce > self.nonce:  # type: ignore
+                    self.status = Status(-2)
+                    print("This transaction was replaced.")
+                    return
+                time.sleep(1)
 
         self._await_confirmation(tx, required_confs)
 
@@ -281,18 +332,21 @@ class TransactionReceipt:
             source = self._error_string(1)
         raise exc._with_attr(source=source, revert_msg=self._revert_msg)
 
-    def _await_transaction(self, required_confs: int = 1) -> None:
+    def _await_transaction(self, required_confs: int, is_blocking: bool) -> None:
         # await tx showing in mempool
         while True:
             try:
-                tx: Dict = web3.eth.getTransaction(self.txid)
+                tx: Dict = web3.eth.getTransaction(HexBytes(self.txid))
                 break
-            except TransactionNotFound:
+            except (TransactionNotFound, ValueError):
                 if self.sender is None:
                     # if sender was not explicitly set, this transaction was
                     # not broadcasted locally and so likely doesn't exist
                     raise
-                time.sleep(0.5)
+                if self.nonce is not None and self.sender.nonce > self.nonce:
+                    self.status = Status(-2)
+                    return
+                time.sleep(1)
         self._set_from_tx(tx)
 
         if not self._silent:
@@ -307,7 +361,7 @@ class TransactionReceipt:
             target=self._await_confirmation, args=(tx, required_confs), daemon=True
         )
         confirm_thread.start()
-        if required_confs > 0:
+        if is_blocking and required_confs > 0:
             confirm_thread.join()
 
     def _await_confirmation(self, tx: Dict, required_confs: int = 1) -> None:
@@ -322,7 +376,19 @@ class TransactionReceipt:
                 sys.stdout.flush()
 
         # await first confirmation
-        receipt = web3.eth.waitForTransactionReceipt(self.txid, timeout=None, poll_latency=0.5)
+        while True:
+            # if sender nonce is greater than tx nonce, the tx should be confirmed
+            expect_confirmed = bool(self.sender.nonce > self.nonce)  # type: ignore
+            try:
+                receipt = web3.eth.waitForTransactionReceipt(
+                    HexBytes(self.txid), timeout=30, poll_latency=1
+                )
+                break
+            except TimeExhausted:
+                if expect_confirmed:
+                    # if we expected confirmation based on the nonce, tx likely dropped
+                    self.status = Status(-2)
+                    return
 
         self.block_number = receipt["blockNumber"]
         # wait for more confirmations if required and handle uncle blocks
@@ -353,9 +419,16 @@ class TransactionReceipt:
                 time.sleep(1)
 
         self._set_from_receipt(receipt)
-        self._confirmed.set()
+        # if coverage evaluation is active, evaluate the trace
+        if (
+            CONFIG.argv["coverage"]
+            and not coverage._check_cached(self.coverage_hash)
+            and self.trace
+        ):
+            self._expand_trace()
         if not self._silent and required_confs > 0:
             print(self._confirm_output())
+        self._confirmed.set()
 
     def _set_from_tx(self, tx: Dict) -> None:
         if not self.sender:
@@ -379,7 +452,7 @@ class TransactionReceipt:
         self.txindex = receipt["transactionIndex"]
         self.gas_used = receipt["gasUsed"]
         self.logs = receipt["logs"]
-        self.status = receipt["status"]
+        self.status = Status(receipt["status"])
 
         self.contract_address = receipt["contractAddress"]
         if self.contract_address and not self.contract_name:
@@ -387,7 +460,7 @@ class TransactionReceipt:
 
         base = (
             f"{self.nonce}{self.block_number}{self.sender}{self.receiver}"
-            f"{self.value}{self.input}{self.status}{self.gas_used}{self.txindex}"
+            f"{self.value}{self.input}{int(self.status)}{self.gas_used}{self.txindex}"
         )
         self.coverage_hash = sha1(base.encode()).hexdigest()
 

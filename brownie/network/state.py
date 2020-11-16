@@ -45,6 +45,13 @@ class TxHistory(metaclass=_Singleton):
             return str(self._list)
         return super().__repr__()
 
+    def __getattribute__(self, name: str) -> Any:
+        # filter dropped transactions prior to attribute access
+        items = super().__getattribute__("_list")
+        items = [i for i in items if i.status != -2]
+        setattr(self, "_list", items)
+        return super().__getattribute__(name)
+
     def __bool__(self) -> bool:
         return bool(self._list)
 
@@ -68,6 +75,14 @@ class TxHistory(metaclass=_Singleton):
 
     def _add_tx(self, tx: TransactionReceipt) -> None:
         self._list.append(tx)
+        confirm_thread = threading.Thread(target=self._await_confirm, args=(tx,), daemon=True)
+        confirm_thread.start()
+
+    def _await_confirm(self, tx: TransactionReceipt) -> None:
+        # in case of multiple tx's with the same nonce, remove the dropped tx's upon confirmation
+        tx._confirmed.wait()
+        for dropped_tx in self.filter(sender=tx.sender, nonce=tx.nonce, key=lambda k: k != tx):
+            self._list.remove(dropped_tx)
 
     def clear(self) -> None:
         self._list.clear()
@@ -76,7 +91,9 @@ class TxHistory(metaclass=_Singleton):
         """Returns a shallow copy of the object as a list"""
         return self._list.copy()
 
-    def filter(self, key: Optional[Callable] = None, **kwargs: Dict) -> List:
+    def filter(
+        self, key: Optional[Callable] = None, **kwargs: Optional[Any]
+    ) -> List[TransactionReceipt]:
         """
         Return a filtered list of transactions.
 
