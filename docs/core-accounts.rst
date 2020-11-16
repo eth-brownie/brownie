@@ -89,3 +89,22 @@ Additionally, setting ``silent = True`` suppresses the console output.
     [1, -1, -1]
 
 These transactions are initially pending (``status == -1``) and appear yellow in the console.
+
+Replacing Transactions
+======================
+
+The :func:`TransactionReceipt.replace <TransactionReceipt.replace>` method can be used to replace underpriced transactions while they are still pending:
+
+.. code-block:: python
+
+    >>> tx = accounts[0].transfer(accounts[1], 100, required_confs=0, gas_price="1 gwei")
+    Transaction sent: 0xc1aab54599d7875fc1fe8d3e375abb0f490cbb80d5b7f48cedaa95fa726f29be
+        Gas price: 13.0 gwei   Gas limit: 21000   Nonce: 3
+    <Transaction object '0xc1aab54599d7875fc1fe8d3e375abb0f490cbb80d5b7f48cedaa95fa726f29be'>
+
+    >>> tx.replace(1.1)
+    Transaction sent: 0x9a525e42b326c3cd57e889ad8c5b29c88108227a35f9763af33dccd522375212
+        Gas price: 14.3 gwei   Gas limit: 21000   Nonce: 3
+    <Transaction '0x9a525e42b326c3cd57e889ad8c5b29c88108227a35f9763af33dccd522375212'>
+
+All pending transactions are available within the :func:`history <brownie.network.state.TxHistory>` object. As soon as one transaction confirms, the remaining dropped transactions are removed. See the documentation on :ref:`accessing transaction history <core-chain-history>` for more info.

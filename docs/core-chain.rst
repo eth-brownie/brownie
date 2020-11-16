@@ -53,6 +53,8 @@ The :func:`Chain <brownie.network.state.Chain>` object, available as ``chain``, 
 Accessing Transaction Data
 ==========================
 
+.. _core-chain-history:
+
 Local Transaction History
 -------------------------
 

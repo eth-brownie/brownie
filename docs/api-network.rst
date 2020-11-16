@@ -2219,7 +2219,12 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.status
 
-    The status of the transaction: -1 for pending, 0 for failed, 1 for success.
+    An :class:`IntEnum <enum.IntEnum>` object representing the status of the transaction:
+
+        * ``1``: Successful
+        * ``0``: Reverted
+        * ``-1``: Pending
+        * ``-2``: Dropped
 
     .. code-block:: python
 
@@ -2314,6 +2319,29 @@ TransactionReceipt Attributes
 
 TransactionReceipt Methods
 **************************
+
+.. py:method:: TransactionReceipt.replace(increment=None, gas_price=None)
+
+    Broadcast an identical transaction with the same nonce and a higher gas price.
+
+    Exactly one of the following arguments must be provided:
+
+    * ``increment``: Multiplier applied to the gas price of the current transaction in order to determine a new gas price
+    * ``gas_price``: Absolute gas price to use in the replacement transaction
+
+    Returns a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` object.
+
+    .. code-block:: python
+
+        >>> tx = accounts[0].transfer(accounts[1], 100, required_confs=0, gas_price="1 gwei")
+        Transaction sent: 0xc1aab54599d7875fc1fe8d3e375abb0f490cbb80d5b7f48cedaa95fa726f29be
+          Gas price: 13.0 gwei   Gas limit: 21000   Nonce: 3
+        <Transaction object '0xc1aab54599d7875fc1fe8d3e375abb0f490cbb80d5b7f48cedaa95fa726f29be'>
+
+        >>> tx.replace(1.1)
+        Transaction sent: 0x9a525e42b326c3cd57e889ad8c5b29c88108227a35f9763af33dccd522375212
+          Gas price: 14.3 gwei   Gas limit: 21000   Nonce: 3
+        <Transaction '0x9a525e42b326c3cd57e889ad8c5b29c88108227a35f9763af33dccd522375212'>
 
 .. py:classmethod:: TransactionReceipt.info()
 
