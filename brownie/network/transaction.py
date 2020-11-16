@@ -113,7 +113,7 @@ class TransactionReceipt:
     logs = None
     nonce = None
     sender = None
-    txid = None
+    txid: str
     txindex = None
 
     def __init__(
@@ -163,7 +163,7 @@ class TransactionReceipt:
         # attributes that can be set immediately
         self.sender = sender
         self.status = Status(-1)
-        self.txid = txid
+        self.txid = str(txid)
         self.contract_name = None
         self.fn_name = name
 
@@ -336,14 +336,14 @@ class TransactionReceipt:
         # await tx showing in mempool
         while True:
             try:
-                tx: Dict = web3.eth.getTransaction(self.txid)
+                tx: Dict = web3.eth.getTransaction(HexBytes(self.txid))
                 break
-            except TransactionNotFound:
+            except (TransactionNotFound, ValueError):
                 if self.sender is None:
                     # if sender was not explicitly set, this transaction was
                     # not broadcasted locally and so likely doesn't exist
                     raise
-                if self.sender.nonce > self.nonce:
+                if self.nonce is not None and self.sender.nonce > self.nonce:
                     self.status = Status(-2)
                     return
                 time.sleep(1)
@@ -380,7 +380,9 @@ class TransactionReceipt:
             # if sender nonce is greater than tx nonce, the tx should be confirmed
             expect_confirmed = bool(self.sender.nonce > self.nonce)  # type: ignore
             try:
-                receipt = web3.eth.waitForTransactionReceipt(self.txid, timeout=30, poll_latency=1)
+                receipt = web3.eth.waitForTransactionReceipt(
+                    HexBytes(self.txid), timeout=30, poll_latency=1
+                )
                 break
             except TimeExhausted:
                 if expect_confirmed:
