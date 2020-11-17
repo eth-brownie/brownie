@@ -24,6 +24,7 @@ from brownie.exceptions import (
 )
 from brownie.utils import color
 
+from .gas.bases import GasABC
 from .rpc import Rpc
 from .state import Chain, TxHistory, _revert_register
 from .transaction import TransactionReceipt
@@ -368,11 +369,19 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         return Wei(gas_limit)
 
-    def _gas_price(self) -> Wei:
-        gas_price = CONFIG.active_network["settings"]["gas_price"]
+    def _gas_price(self, gas_price: Any = None) -> Tuple[Wei, Optional[GasABC]]:
+        if gas_price is None:
+            gas_price = CONFIG.active_network["settings"]["gas_price"]
+
+        if isinstance(gas_price, GasABC):
+            if gas_price.get_gas_price.__code__.co_argcount:  # type: ignore
+                return Wei(gas_price.get_gas_price(None, 0)), gas_price  # type: ignore
+            else:
+                return Wei(gas_price.get_gas_price()), None  # type: ignore
+
         if isinstance(gas_price, bool) or gas_price in (None, "auto"):
-            return web3.eth.generateGasPrice()
-        return Wei(gas_price)
+            return web3.eth.generateGasPrice(), None
+        return Wei(gas_price), None
 
     def _check_for_revert(self, tx: Dict) -> None:
         try:
@@ -428,7 +437,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
         with self._lock:
             try:
-                gas_price = Wei(gas_price) if gas_price is not None else self._gas_price()
+                gas_price, gas_strategy = self._gas_price(gas_price)
                 gas_limit = Wei(gas_limit) or self._gas_limit(
                     None, amount, gas_price, gas_buffer, data
                 )
@@ -579,7 +588,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if silent is None:
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
         with self._lock:
-            gas_price = Wei(gas_price) if gas_price is not None else self._gas_price()
+            gas_price, gas_strategy = self._gas_price(gas_price)
             gas_limit = Wei(gas_limit) or self._gas_limit(to, amount, gas_price, gas_buffer, data)
             tx = {
                 "from": self.address,
@@ -612,6 +621,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
             # add the TxHistory before waiting for confirmation, this way the tx
             # object is available if the user CTRL-C to stop waiting in the console
             history._add_tx(receipt)
+
+            if gas_strategy is not None:
+                gas_strategy._add_tx(receipt)
+
             if required_confs > 0:
                 receipt._confirmed.wait()
 
