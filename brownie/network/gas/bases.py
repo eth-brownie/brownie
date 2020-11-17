@@ -66,15 +66,21 @@ def _update_loop():
             if height - latest >= gas_strategy.block_duration:
                 gas_price = gas_strategy.get_gas_price(tx.gas_price, height - initial)
                 if gas_price is not None:
-                    tx = tx.replace(gas_price=gas_price, silent=True)
-                    latest = web3.eth.blockNumber
+                    try:
+                        tx = tx.replace(gas_price=gas_price, silent=True)
+                        latest = web3.eth.blockNumber
+                    except ValueError:
+                        pass
 
         else:
             if time.time() - latest >= gas_strategy.time_duration:
                 gas_price = gas_strategy.get_gas_price(tx.gas_price, time.time() - initial)
                 if gas_price is not None:
-                    tx = tx.replace(gas_price=gas_price, silent=True)
-                    latest = time.time()
+                    try:
+                        tx = tx.replace(gas_price=gas_price, silent=True)
+                        latest = time.time()
+                    except ValueError:
+                        pass
 
         _queue.append((gas_strategy, tx, initial, latest))
         time.sleep(1)
