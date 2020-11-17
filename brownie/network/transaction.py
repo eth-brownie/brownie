@@ -262,7 +262,10 @@ class TransactionReceipt:
         return web3.eth.blockNumber - self.block_number + 1
 
     def replace(
-        self, increment: Optional[float] = None, gas_price: Optional[Wei] = None,
+        self,
+        increment: Optional[float] = None,
+        gas_price: Optional[Wei] = None,
+        silent: Optional[bool] = None,
     ) -> "TransactionReceipt":
         """
         Rebroadcast this transaction with a higher gas price.
@@ -274,8 +277,10 @@ class TransactionReceipt:
         increment : float, optional
             Multiplier applied to the gas price of this transaction in order
             to determine the new gas price
-        gas_price: Wei, optional
+        gas_price : Wei, optional
             Absolute gas price to use in the replacement transaction
+        silent : bool, optional
+            Toggle console verbosity (default is same setting as this transaction)
 
         Returns
         -------
@@ -292,6 +297,9 @@ class TransactionReceipt:
         if increment is not None:
             gas_price = Wei(self.gas_price * 1.1)
 
+        if silent is None:
+            silent = self._silent
+
         return self.sender.transfer(  # type: ignore
             self.receiver,
             self.value,
@@ -300,7 +308,7 @@ class TransactionReceipt:
             data=self.input,
             nonce=self.nonce,
             required_confs=0,
-            silent=self._silent,
+            silent=silent,
         )
 
     def wait(self, required_confs: int) -> None:
