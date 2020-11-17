@@ -632,14 +632,20 @@ class _PrivateKeyAccount(PublicKeyAccount):
             receipt._confirmed.wait()
             if receipt.status == -2:
                 # if transaction was dropped (status -2), find and return the tx that confirmed
-                receipt = next(
-                    history.filter(sender=self, nonce=receipt.nonce, key=lambda k: k.status >= 0),
-                    None,
-                )  # type: ignore
-                if receipt is None:
-                    raise TransactionError(
-                        f"Transaction was dropped without a known replacement: {txid}"
-                    )
+                replacements = history.filter(
+                    sender=self, nonce=receipt.nonce, key=lambda k: k.status != -2
+                )
+                while True:
+                    if not replacements:
+                        raise TransactionError(
+                            f"Transaction was dropped without a known replacement: {txid}"
+                        )
+                    if len(replacements) == 1:
+                        receipt = replacements[0]
+                        break
+                    # in case we have multiple tx's where the status is still unresolved
+                    replacements = [i for i in replacements if i.status != 2]
+                    time.sleep(0.5)
 
         if rpc.is_active():
             undo_thread = threading.Thread(
