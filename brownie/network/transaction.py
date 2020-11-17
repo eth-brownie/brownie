@@ -150,9 +150,12 @@ class TransactionReceipt:
         if not self._silent:
             print(f"Transaction sent: {color('bright blue')}{txid}{color}")
 
+        # this event is set once the transaction is confirmed or dropped
+        # it is used to waiting during blocking transaction actions
+        self._confirmed = threading.Event()
+
         # internal attributes
         self._call_cost = 0
-        self._confirmed = threading.Event()
         self._trace_exc: Optional[Exception] = None
         self._trace_origin: Optional[str] = None
         self._raw_trace: Optional[List] = None
@@ -453,7 +456,14 @@ class TransactionReceipt:
             self._expand_trace()
         if not self._silent and required_confs > 0:
             print(self._confirm_output())
+
+        # set the confirmation event and mark other tx's with the same nonce as dropped
         self._confirmed.set()
+        for dropped_tx in state.TxHistory().filter(
+            sender=self.sender, nonce=self.nonce, key=lambda k: k != self
+        ):
+            dropped_tx.status = Status(-2)
+            dropped_tx._confirmed.set()
 
     def _set_from_tx(self, tx: Dict) -> None:
         if not self.sender:
