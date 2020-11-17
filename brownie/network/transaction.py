@@ -327,7 +327,7 @@ class TransactionReceipt:
                     sender_nonce = web3.eth.getTransactionCount(str(self.sender))
                     if sender_nonce > self.nonce:
                         self.status = Status(-2)
-                        print("This transaction was replaced.")
+                        self._confirmed.set()
                         return
                 time.sleep(1)
 
@@ -412,6 +412,7 @@ class TransactionReceipt:
                 if expect_confirmed:
                     # if we expected confirmation based on the nonce, tx likely dropped
                     self.status = Status(-2)
+                    self._confirmed.set()
                     return
 
         self.block_number = receipt["blockNumber"]

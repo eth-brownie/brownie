@@ -19,6 +19,7 @@ from brownie.convert import EthAddress, Wei, to_address
 from brownie.exceptions import (
     ContractNotFound,
     IncompatibleEVMVersion,
+    TransactionError,
     UnknownAccount,
     VirtualMachineError,
 )
@@ -469,11 +470,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 name=contract._name + ".constructor",
                 revert_data=revert_data,
             )
-            # add the TxHistory before waiting for confirmation, this way the tx
-            # object is available if the user CTRL-C to stop waiting in the console
-            history._add_tx(receipt)
-            if required_confs > 0:
-                receipt._confirmed.wait()
+
+        # add the TxHistory before waiting for confirmation, this way the tx
+        # object is available if the user CTRL-C to stop waiting in the console
+        history._add_tx(receipt)
+        if required_confs > 0:
+            receipt._confirmed.wait()
 
         add_thread = threading.Thread(target=contract._add_from_tx, args=(receipt,), daemon=True)
         add_thread.start()
@@ -618,15 +620,26 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 silent=silent,
                 revert_data=revert_data,
             )
-            # add the TxHistory before waiting for confirmation, this way the tx
-            # object is available if the user CTRL-C to stop waiting in the console
-            history._add_tx(receipt)
 
-            if gas_strategy is not None:
-                gas_strategy._add_tx(receipt)
+        # add the TxHistory before waiting for confirmation, this way the tx
+        # object is available if the user CTRL-C to stop waiting in the console
+        history._add_tx(receipt)
 
-            if required_confs > 0:
-                receipt._confirmed.wait()
+        if gas_strategy is not None:
+            gas_strategy._add_tx(receipt)
+
+        if required_confs > 0:
+            receipt._confirmed.wait()
+            if receipt.status == -2:
+                # if transaction was dropped (status -2), find and return the tx that confirmed
+                receipt = next(
+                    history.filter(sender=self, nonce=receipt.nonce, key=lambda k: k.status >= 0),
+                    None,
+                )  # type: ignore
+                if receipt is None:
+                    raise TransactionError(
+                        f"Transaction was dropped without a known replacement: {txid}"
+                    )
 
         if rpc.is_active():
             undo_thread = threading.Thread(
@@ -640,6 +653,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 daemon=True,
             )
             undo_thread.start()
+
         receipt._raise_if_reverted(exc)
         return receipt
 
