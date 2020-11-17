@@ -310,10 +310,12 @@ class TransactionReceipt:
                 tx: Dict = web3.eth.getTransaction(self.txid)
                 break
             except TransactionNotFound:
-                if self.sender.nonce > self.nonce:  # type: ignore
-                    self.status = Status(-2)
-                    print("This transaction was replaced.")
-                    return
+                if self.nonce is not None:
+                    sender_nonce = web3.eth.getTransactionCount(str(self.sender))
+                    if sender_nonce > self.nonce:
+                        self.status = Status(-2)
+                        print("This transaction was replaced.")
+                        return
                 time.sleep(1)
 
         self._await_confirmation(tx, required_confs)
@@ -343,10 +345,13 @@ class TransactionReceipt:
                     # if sender was not explicitly set, this transaction was
                     # not broadcasted locally and so likely doesn't exist
                     raise
-                if self.nonce is not None and self.sender.nonce > self.nonce:
-                    self.status = Status(-2)
-                    return
+                if self.nonce is not None:
+                    sender_nonce = web3.eth.getTransactionCount(str(self.sender))
+                    if sender_nonce > self.nonce:
+                        self.status = Status(-2)
+                        return
                 time.sleep(1)
+
         self._set_from_tx(tx)
 
         if not self._silent:
@@ -378,10 +383,11 @@ class TransactionReceipt:
         # await first confirmation
         while True:
             # if sender nonce is greater than tx nonce, the tx should be confirmed
-            expect_confirmed = bool(self.sender.nonce > self.nonce)  # type: ignore
+            sender_nonce = web3.eth.getTransactionCount(str(self.sender))
+            expect_confirmed = bool(sender_nonce > self.nonce)  # type: ignore
             try:
                 receipt = web3.eth.waitForTransactionReceipt(
-                    HexBytes(self.txid), timeout=30, poll_latency=1
+                    HexBytes(self.txid), timeout=15, poll_latency=1
                 )
                 break
             except TimeExhausted:
