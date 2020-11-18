@@ -142,7 +142,7 @@ def _update_loop() -> None:
                 gas_price = gas_strategy.update_gas_price(tx.gas_price, height - initial)
                 if gas_price is not None:
                     try:
-                        tx = tx.replace(gas_price=gas_price, silent=True)
+                        tx = tx.replace(gas_price=gas_price)
                         latest = web3.eth.blockNumber
                     except ValueError:
                         pass
@@ -152,7 +152,7 @@ def _update_loop() -> None:
                 gas_price = gas_strategy.update_gas_price(tx.gas_price, time.time() - initial)
                 if gas_price is not None:
                     try:
-                        tx = tx.replace(gas_price=gas_price, silent=True)
+                        tx = tx.replace(gas_price=gas_price)
                         latest = time.time()
                     except ValueError:
                         pass

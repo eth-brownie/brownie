@@ -148,7 +148,7 @@ class TransactionReceipt:
         if isinstance(txid, bytes):
             txid = HexBytes(txid).hex()
         if not self._silent:
-            print(f"Transaction sent: {color('bright blue')}{txid}{color}")
+            print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
 
         # this event is set once the transaction is confirmed or dropped
         # it is used to waiting during blocking transaction actions
@@ -334,7 +334,7 @@ class TransactionReceipt:
                         return
                 time.sleep(1)
 
-        self._await_confirmation(tx, required_confs)
+        self._await_confirmation(tx["blockNumber"], required_confs)
 
     def _raise_if_reverted(self, exc: Any) -> None:
         if self.status or CONFIG.mode == "console":
@@ -384,22 +384,22 @@ class TransactionReceipt:
         # await confirmation of tx in a separate thread which is blocking if
         # required_confs > 0 or tx has already confirmed (`blockNumber` != None)
         confirm_thread = threading.Thread(
-            target=self._await_confirmation, args=(tx, required_confs), daemon=True
+            target=self._await_confirmation, args=(tx["blockNumber"], required_confs), daemon=True
         )
         confirm_thread.start()
         if is_blocking and (required_confs > 0 or tx["blockNumber"]):
             confirm_thread.join()
 
-    def _await_confirmation(self, tx: Dict, required_confs: int = 1) -> None:
-        if not tx["blockNumber"] and not self._silent and required_confs > 0:
+    def _await_confirmation(self, block_number: int = None, required_confs: int = 1) -> None:
+        block_number = block_number or self.block_number
+        if not block_number and not self._silent and required_confs > 0:
             if required_confs == 1:
-                print("Waiting for confirmation...")
+                sys.stdout.write("\rWaiting for confirmation... ")
             else:
                 sys.stdout.write(
-                    f"\rRequired confirmations: {color('bright yellow')}0/"
-                    f"{required_confs}{color}"
+                    f"\rRequired confirmations: {color('bright yellow')}0/{required_confs}{color}"
                 )
-                sys.stdout.flush()
+            sys.stdout.flush()
 
         # await first confirmation
         while True:
@@ -432,7 +432,7 @@ class TransactionReceipt:
                 # check if tx is still in mempool, this will raise otherwise
                 tx = web3.eth.getTransaction(self.txid)
                 self.block_number = None
-                return self._await_confirmation(tx, required_confs)
+                return self._await_confirmation(tx["blockNumber"], required_confs)
             if required_confs - self.confirmations != remaining_confs:
                 remaining_confs = required_confs - self.confirmations
                 if not self._silent:
@@ -510,7 +510,7 @@ class TransactionReceipt:
             revert_msg = self.revert_msg if web3.supports_traces else None
             status = f"({color('bright red')}{revert_msg or 'reverted'}{color}) "
         result = (
-            f"  {self._full_name()} confirmed {status}- "
+            f"\r  {self._full_name()} confirmed {status}- "
             f"Block: {color('bright blue')}{self.block_number}{color}   "
             f"Gas used: {color('bright blue')}{self.gas_used}{color} "
             f"({color('bright blue')}{self.gas_used / self.gas_limit:.2%}{color})"
