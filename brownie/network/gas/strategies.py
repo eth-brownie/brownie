@@ -66,24 +66,29 @@ class GasNowScalingStrategy(BlockGasStrategy):
     for each subsequent transaction is increased by multiplying the previous gas
     price by `increment`, or increasing to the current `initial_speed` gas price,
     whichever is higher. No repricing occurs if the new gas price would exceed
-    the current "rapid" price as given by the API.
+    the current `max_speed` price as given by the API.
     """
 
     def __init__(
-        self, initial_speed: str = "standard", increment: float = 1.1, block_duration: int = 2
+        self,
+        initial_speed: str = "standard",
+        max_speed: str = "rapid",
+        increment: float = 1.125,
+        block_duration: int = 2,
     ):
         super().__init__(block_duration)
         if initial_speed not in ("rapid", "fast", "standard", "slow"):
             raise ValueError("`initial_speed` must be one of: rapid, fast, standard, slow")
-        self.speed = initial_speed
+        self.initial_speed = initial_speed
+        self.max_speed = max_speed
         self.increment = increment
 
     def update_gas_price(self, last_gas_price: int, elapsed_blocks: int) -> Optional[int]:
-        rapid_gas_price = _fetch_gasnow("rapid")
-        new_gas_price = max(int(last_gas_price * self.increment), _fetch_gasnow(self.speed))
-        if new_gas_price <= rapid_gas_price:
+        max_gas_price = _fetch_gasnow(self.max_speed)
+        new_gas_price = max(int(last_gas_price * self.increment), _fetch_gasnow(self.initial_speed))
+        if new_gas_price <= max_gas_price:
             return new_gas_price
         return None
 
     def get_gas_price(self) -> int:
-        return _fetch_gasnow(self.speed)
+        return _fetch_gasnow(self.initial_speed)
