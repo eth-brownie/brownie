@@ -1,17 +1,20 @@
 import threading
 import time
+from typing import Dict, Optional
 
 import requests
 
 from .bases import BlockGasStrategy, SimpleGasStrategy
 
-_gasnow = {"time": 0, "data": None}
+_gasnow_update = 0
+_gasnow_data: Dict[str, int] = {}
 _gasnow_lock = threading.Lock()
 
 
-def _fetch_gasnow(key):
+def _fetch_gasnow(key: str) -> int:
+    global _gasnow_update
     with _gasnow_lock:
-        if time.time() - _gasnow["time"] > 15:
+        if time.time() - _gasnow_update > 15:
             data = None
             for i in range(12):
                 response = requests.get(
@@ -23,10 +26,10 @@ def _fetch_gasnow(key):
                 data = response.json()["data"]
             if data is None:
                 raise ValueError
-            _gasnow["time"] = data.pop("timestamp") // 1000
-            _gasnow["data"] = data
+            _gasnow_update = data.pop("timestamp") // 1000
+            _gasnow_data.update(data)
 
-    return _gasnow["data"][key]
+    return _gasnow_data[key]
 
 
 class GasNowStrategy(SimpleGasStrategy):
@@ -35,7 +38,7 @@ class GasNowStrategy(SimpleGasStrategy):
             raise ValueError("`speed` must be one of: rapid, fast, standard, slow")
         self.speed = speed
 
-    def get_gas_price(self):
+    def get_gas_price(self) -> int:
         return _fetch_gasnow(self.speed)
 
 
@@ -49,11 +52,12 @@ class GasNowScalingStrategy(BlockGasStrategy):
         self.speed = initial_speed
         self.increment = increment
 
-    def get_gas_price(self, current_gas_price, elapsed_blocks):
-        if current_gas_price is None:
-            return _fetch_gasnow(self.speed)
+    def update_gas_price(self, last_gas_price: int, elapsed_blocks: int) -> Optional[int]:
         rapid_gas_price = _fetch_gasnow("rapid")
-        new_gas_price = max(int(current_gas_price * self.increment), _fetch_gasnow(self.speed))
+        new_gas_price = max(int(last_gas_price * self.increment), _fetch_gasnow(self.speed))
         if new_gas_price <= rapid_gas_price:
             return new_gas_price
         return None
+
+    def get_gas_price(self) -> int:
+        return _fetch_gasnow(self.speed)

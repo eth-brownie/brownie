@@ -25,7 +25,7 @@ from brownie.exceptions import (
 )
 from brownie.utils import color
 
-from .gas.bases import GasABC
+from .gas.bases import GasABC, _add_to_gas_strategy_queue
 from .rpc import Rpc
 from .state import Chain, TxHistory, _revert_register
 from .transaction import TransactionReceipt
@@ -375,13 +375,14 @@ class _PrivateKeyAccount(PublicKeyAccount):
             gas_price = CONFIG.active_network["settings"]["gas_price"]
 
         if isinstance(gas_price, GasABC):
-            if gas_price.get_gas_price.__code__.co_argcount:  # type: ignore
-                return Wei(gas_price.get_gas_price(None, 0)), gas_price  # type: ignore
-            else:
-                return Wei(gas_price.get_gas_price()), None  # type: ignore
+            return Wei(gas_price.get_gas_price()), gas_price
+
+        if isinstance(gas_price, Wei):
+            return gas_price, None
 
         if isinstance(gas_price, bool) or gas_price in (None, "auto"):
             return web3.eth.generateGasPrice(), None
+
         return Wei(gas_price), None
 
     def _check_for_revert(self, tx: Dict) -> None:
@@ -643,7 +644,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         history._add_tx(receipt)
 
         if gas_strategy is not None:
-            gas_strategy._add_tx(receipt)
+            _add_to_gas_strategy_queue(gas_strategy, receipt)
 
         if required_confs == 0:
             return receipt
@@ -664,7 +665,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 replacements = [i for i in replacements if i.status != 2]
                 time.sleep(0.5)
             else:
-                return replacements[0]
+                receipt = replacements[0]
+                receipt._await_confirmation(required_confs=required_confs)
+                return receipt
 
 
 class Account(_PrivateKeyAccount):
