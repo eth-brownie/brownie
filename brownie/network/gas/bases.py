@@ -8,16 +8,48 @@ from brownie.network.web3 import web3
 
 
 class GasABC(ABC):
+    """
+    Base ABC for all gas strategies.
+
+    This class should not be directly subclassed from. Instead, use
+    `SimpleGasStrategy`, `BlockGasStrategy` or `TimeGasStrategy`.
+    """
+
     @abstractmethod
     def get_gas_price(self) -> int:
+        """
+        Return the initial gas price for a transaction.
+
+        Returns
+        -------
+        int
+            Gas price, given as an integer in wei.
+        """
         raise NotImplementedError
 
 
 class SimpleGasStrategy(GasABC):
-    pass
+    """
+    Abstract base class for simple gas strategies.
+
+    Simple gas strategies are called once to provide a gas price
+    at the time a transaction is broadcasted. Transactions using simple
+    gas strategies are not automatically rebroadcasted.
+
+    Subclass from this ABC to implement your own simple gas strategy.
+    """
 
 
 class BlockGasStrategy(GasABC):
+    """
+    Abstract base class for block gas strategies.
+
+    Block gas strategies are called every `block_duration` blocks and
+    can be used to automatically rebroadcast a pending transaction with
+    a higher gas price.
+
+    Subclass from this ABC to implement your own block gas strategy.
+    """
 
     block_duration = 2
 
@@ -26,10 +58,39 @@ class BlockGasStrategy(GasABC):
 
     @abstractmethod
     def update_gas_price(self, last_gas_price: int, elapsed_blocks: int) -> Optional[int]:
+        """
+        Return an updated gas price.
+
+        This method is called every `block_duration` blocks while a transaction
+        is still pending. If the return value is an integer, the transaction
+        is rebroadcasted with the new gas price.
+
+        Arguments
+        ---------
+        last_gas_price : int
+            The gas price of the most recently broadcasted transaction.
+        elapsed_blocks : int
+            The total number of blocks that have been mined since the first
+            transaction using this strategy was broadcasted.
+
+        Returns
+        -------
+        int, optional
+            New gas price to rebroadcast the transaction with.
+        """
         raise NotImplementedError
 
 
 class TimeGasStrategy(GasABC):
+    """
+    Abstract base class for time gas strategies.
+
+    Time gas strategies are called every `time_duration` seconds and
+    can be used to automatically rebroadcast a pending transaction with
+    a higher gas price.
+
+    Subclass from this ABC to implement your own time gas strategy.
+    """
 
     time_duration = 30
 
@@ -38,6 +99,26 @@ class TimeGasStrategy(GasABC):
 
     @abstractmethod
     def update_gas_price(self, last_gas_price: int, elapsed_time: int) -> Optional[int]:
+        """
+        Return an updated gas price.
+
+        This method is called every `time_duration` seconds while a transaction
+        is still pending. If the return value is an integer, the transaction
+        is rebroadcasted with the new gas price.
+
+        Arguments
+        ---------
+        last_gas_price : int
+            The gas price of the most recently broadcasted transaction.
+        elapsed_time : int
+            The number of seconds that have passed since the first
+            transaction using this strategy was broadcasted.
+
+        Returns
+        -------
+        int, optional
+            New gas price to rebroadcast the transaction with.
+        """
         raise NotImplementedError
 
 

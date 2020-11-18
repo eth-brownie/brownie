@@ -33,6 +33,22 @@ def _fetch_gasnow(key: str) -> int:
 
 
 class GasNowStrategy(SimpleGasStrategy):
+    """
+    Gas strategy for determing a price using the GasNow API.
+
+    GasNow returns 4 possible prices:
+
+    rapid: the median gas prices for all transactions currently included
+           in the mining block
+    fast: the gas price transaction "N", the minimum priced tx currently
+          included in the mining block
+    standard: the gas price of the Max(2N, 500th) transaction in the mempool
+    slow: the gas price of the max(5N, 1000th) transaction within the mempool
+
+    Visit https://www.gasnow.org/ for more information on how GasNow
+    calculates gas prices.
+    """
+
     def __init__(self, speed: str = "fast"):
         if speed not in ("rapid", "fast", "standard", "slow"):
             raise ValueError("`speed` must be one of: rapid, fast, standard, slow")
@@ -43,6 +59,16 @@ class GasNowStrategy(SimpleGasStrategy):
 
 
 class GasNowScalingStrategy(BlockGasStrategy):
+    """
+    Block based scaling gas strategy using the GasNow API.
+
+    The initial gas price is set according to `initial_speed`. The gas price
+    for each subsequent transaction is increased by multiplying the previous gas
+    price by `increment`, or increasing to the current `initial_speed` gas price,
+    whichever is higher. No repricing occurs if the new gas price would exceed
+    the current "rapid" price as given by the API.
+    """
+
     def __init__(
         self, initial_speed: str = "standard", increment: float = 1.1, block_duration: int = 2
     ):
