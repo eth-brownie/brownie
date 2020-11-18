@@ -640,7 +640,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         self, receipt: TransactionReceipt, gas_strategy: Optional[GasABC], required_confs: int
     ) -> TransactionReceipt:
         # add to TxHistory before waiting for confirmation, this way the tx
-        # object is available if the user CTRL-C to stop waiting in the console
+        # object is available if the user exits blocking via keyboard interrupt
         history._add_tx(receipt)
 
         if gas_strategy is not None:
@@ -649,7 +649,17 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if required_confs == 0:
             return receipt
 
-        receipt._confirmed.wait()
+        try:
+            receipt._confirmed.wait()
+        except KeyboardInterrupt:
+            # set related transactions as silent
+            receipt._silent = True
+            for receipt in history.filter(
+                sender=self, nonce=receipt.nonce, key=lambda k: k.status != -2
+            ):
+                receipt._silent = True
+            raise
+
         if receipt.status != -2:
             return receipt
 
