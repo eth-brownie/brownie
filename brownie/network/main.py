@@ -9,6 +9,7 @@ from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentWarning
 
 from .account import Accounts
+from .gas.bases import GasABC
 from .rpc import Rpc
 from .state import Chain, _notify_registry
 from .web3 import web3
@@ -114,7 +115,9 @@ def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
     if not is_connected():
         raise ConnectionError("Not connected to any network")
     if args:
-        if args[0] in (None, False, True, "auto"):
+        if isinstance(args[0], GasABC):
+            CONFIG.active_network["settings"]["gas_price"] = args[0]
+        elif args[0] in (None, False, True, "auto"):
             CONFIG.active_network["settings"]["gas_price"] = False
         else:
             try:
