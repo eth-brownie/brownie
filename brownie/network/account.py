@@ -471,11 +471,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 revert_data=revert_data,
             )
 
-        # add the TxHistory before waiting for confirmation, this way the tx
-        # object is available if the user CTRL-C to stop waiting in the console
-        history._add_tx(receipt)
-        if required_confs > 0:
-            receipt._confirmed.wait()
+        receipt = self._await_confirmation(receipt, gas_strategy, required_confs)
 
         add_thread = threading.Thread(target=contract._add_from_tx, args=(receipt,), daemon=True)
         add_thread.start()
@@ -621,31 +617,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 revert_data=revert_data,
             )
 
-        # add the TxHistory before waiting for confirmation, this way the tx
-        # object is available if the user CTRL-C to stop waiting in the console
-        history._add_tx(receipt)
-
-        if gas_strategy is not None:
-            gas_strategy._add_tx(receipt)
-
-        if required_confs > 0:
-            receipt._confirmed.wait()
-            if receipt.status == -2:
-                # if transaction was dropped (status -2), find and return the tx that confirmed
-                replacements = history.filter(
-                    sender=self, nonce=receipt.nonce, key=lambda k: k.status != -2
-                )
-                while True:
-                    if not replacements:
-                        raise TransactionError(
-                            f"Transaction was dropped without a known replacement: {txid}"
-                        )
-                    if len(replacements) == 1:
-                        receipt = replacements[0]
-                        break
-                    # in case we have multiple tx's where the status is still unresolved
-                    replacements = [i for i in replacements if i.status != 2]
-                    time.sleep(0.5)
+        receipt = self._await_confirmation(receipt, gas_strategy, required_confs)
 
         if rpc.is_active():
             undo_thread = threading.Thread(
@@ -662,6 +634,37 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         receipt._raise_if_reverted(exc)
         return receipt
+
+    def _await_confirmation(
+        self, receipt: TransactionReceipt, gas_strategy: Optional[GasABC], required_confs: int
+    ) -> TransactionReceipt:
+        # add to TxHistory before waiting for confirmation, this way the tx
+        # object is available if the user CTRL-C to stop waiting in the console
+        history._add_tx(receipt)
+
+        if gas_strategy is not None:
+            gas_strategy._add_tx(receipt)
+
+        if required_confs == 0:
+            return receipt
+
+        receipt._confirmed.wait()
+        if receipt.status != -2:
+            return receipt
+
+        # if transaction was dropped (status -2), find and return the tx that confirmed
+        replacements = history.filter(
+            sender=self, nonce=receipt.nonce, key=lambda k: k.status != -2
+        )
+        while True:
+            if not replacements:
+                raise TransactionError(f"Tx dropped without known replacement: {receipt.txid}")
+            if len(replacements) > 1:
+                # in case we have multiple tx's where the status is still unresolved
+                replacements = [i for i in replacements if i.status != 2]
+                time.sleep(0.5)
+            else:
+                return replacements[0]
 
 
 class Account(_PrivateKeyAccount):
