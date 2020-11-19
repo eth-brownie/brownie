@@ -3,9 +3,10 @@
 import json
 import threading
 import time
+from collections.abc import Iterator
 from getpass import getpass
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import eth_account
 import eth_keys
@@ -25,7 +26,7 @@ from brownie.exceptions import (
 )
 from brownie.utils import color
 
-from .gas.bases import GasABC, _add_to_gas_strategy_queue
+from .gas.bases import GasABC
 from .rpc import Rpc
 from .state import Chain, TxHistory, _revert_register
 from .transaction import TransactionReceipt
@@ -370,20 +371,29 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         return Wei(gas_limit)
 
-    def _gas_price(self, gas_price: Any = None) -> Tuple[Wei, Optional[GasABC]]:
+    def _gas_price(self, gas_price: Any = None) -> Tuple[Wei, Optional[GasABC], Optional[Iterator]]:
+        # returns the gas price, gas strategy object, and active gas strategy iterator
         if gas_price is None:
             gas_price = CONFIG.active_network["settings"]["gas_price"]
 
         if isinstance(gas_price, GasABC):
-            return Wei(gas_price.get_gas_price()), gas_price
+            value = gas_price.get_gas_price()
+            if isinstance(value, Iterator):
+                # if `get_gas_price` returns an interator, this is a gas strategy
+                # intended for rebroadcasting. we need to retain both the strategy
+                # object and the active gas price iterator
+                return Wei(next(value)), gas_price, value
+            else:
+                # for simple strategies, we can simply use the generated gas price
+                return Wei(value), None, None
 
         if isinstance(gas_price, Wei):
-            return gas_price, None
+            return gas_price, None, None
 
         if isinstance(gas_price, bool) or gas_price in (None, "auto"):
-            return web3.eth.generateGasPrice(), None
+            return web3.eth.generateGasPrice(), None, None
 
-        return Wei(gas_price), None
+        return Wei(gas_price), None, None
 
     def _check_for_revert(self, tx: Dict) -> None:
         try:
@@ -439,7 +449,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
         with self._lock:
             try:
-                gas_price, gas_strategy = self._gas_price(gas_price)
+                gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
                 gas_limit = Wei(gas_limit) or self._gas_limit(
                     None, amount, gas_price, gas_buffer, data
                 )
@@ -472,7 +482,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 revert_data=revert_data,
             )
 
-        receipt = self._await_confirmation(receipt, gas_strategy, required_confs)
+        receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
 
         add_thread = threading.Thread(target=contract._add_from_tx, args=(receipt,), daemon=True)
         add_thread.start()
@@ -587,7 +597,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if silent is None:
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
         with self._lock:
-            gas_price, gas_strategy = self._gas_price(gas_price)
+            gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
             gas_limit = Wei(gas_limit) or self._gas_limit(to, amount, gas_price, gas_buffer, data)
             tx = {
                 "from": self.address,
@@ -618,7 +628,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 revert_data=revert_data,
             )
 
-        receipt = self._await_confirmation(receipt, gas_strategy, required_confs)
+        receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
 
         if rpc.is_active():
             undo_thread = threading.Thread(
@@ -637,16 +647,21 @@ class _PrivateKeyAccount(PublicKeyAccount):
         return receipt
 
     def _await_confirmation(
-        self, receipt: TransactionReceipt, gas_strategy: Optional[GasABC], required_confs: int
+        self,
+        receipt: TransactionReceipt,
+        required_confs: int,
+        gas_strategy: Optional[GasABC],
+        gas_iter: Optional[Iterator],
     ) -> TransactionReceipt:
         # add to TxHistory before waiting for confirmation, this way the tx
         # object is available if the user exits blocking via keyboard interrupt
         history._add_tx(receipt)
 
         if gas_strategy is not None:
-            _add_to_gas_strategy_queue(gas_strategy, receipt)
+            gas_strategy.run(receipt, gas_iter)  # type: ignore
 
         if required_confs == 0:
+            receipt._silent = True
             return receipt
 
         try:

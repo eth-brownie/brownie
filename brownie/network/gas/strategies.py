@@ -1,6 +1,6 @@
 import threading
 import time
-from typing import Dict
+from typing import Dict, Generator
 
 import requests
 
@@ -24,6 +24,7 @@ def _fetch_gasnow(key: str) -> int:
                     time.sleep(5)
                     continue
                 data = response.json()["data"]
+                break
             if data is None:
                 raise ValueError
             _gasnow_update = data.pop("timestamp") // 1000
@@ -83,13 +84,18 @@ class GasNowScalingStrategy(BlockGasStrategy):
         self.max_speed = max_speed
         self.increment = increment
 
-    def update_gas_price(self, last_gas_price: int, elapsed_blocks: int) -> int:
-        initial_gas_price = _fetch_gasnow(self.initial_speed)
-        max_gas_price = _fetch_gasnow(self.max_speed)
+    def get_gas_price(self) -> Generator[int, None, None]:
+        last_gas_price = _fetch_gasnow(self.initial_speed)
+        yield last_gas_price
 
-        incremented_gas_price = int(last_gas_price * self.increment)
-        new_gas_price = max(initial_gas_price, incremented_gas_price)
-        return min(max_gas_price, new_gas_price)
+        while True:
+            # increment the last price by `increment` or use the new
+            # `initial_speed` value, whichever is higher
+            initial_gas_price = _fetch_gasnow(self.initial_speed)
+            incremented_gas_price = int(last_gas_price * self.increment)
+            new_gas_price = max(initial_gas_price, incremented_gas_price)
 
-    def get_gas_price(self) -> int:
-        return _fetch_gasnow(self.initial_speed)
+            # do not exceed the current `max_speed` price
+            max_gas_price = _fetch_gasnow(self.max_speed)
+            last_gas_price = min(max_gas_price, new_gas_price)
+            yield last_gas_price
