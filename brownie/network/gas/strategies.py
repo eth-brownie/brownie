@@ -1,10 +1,11 @@
+import itertools
 import threading
 import time
 from typing import Dict, Generator
 
 import requests
 
-from .bases import BlockGasStrategy, SimpleGasStrategy
+from .bases import BlockGasStrategy, SimpleGasStrategy, TimeGasStrategy
 
 _gasnow_update = 0
 _gasnow_data: Dict[str, int] = {}
@@ -31,6 +32,79 @@ def _fetch_gasnow(key: str) -> int:
             _gasnow_data.update(data)
 
     return _gasnow_data[key]
+
+
+class LinearScalingStrategy(TimeGasStrategy):
+    """
+    Gas strategy for linear gas price increase.
+
+    Arguments
+    ---------
+    initial_gas_price : int
+        The initial gas price to use in the first transaction
+    max_gas_price : int
+        The maximum gas price to use
+    increment : float
+        Multiplier applied to the previous gas price in order to determine the new gas price
+    time_duration : int
+        Number of seconds between transactions
+    """
+
+    def __init__(
+        self,
+        initial_gas_price: int,
+        max_gas_price: int,
+        increment: float = 1.125,
+        time_duration: int = 30,
+    ):
+        super().__init__(time_duration)
+        self.initial_gas_price = initial_gas_price
+        self.max_gas_price = max_gas_price
+        self.increment = increment
+
+    def get_gas_price(self) -> Generator[int, None, None]:
+        last_gas_price = self.initial_gas_price
+        yield last_gas_price
+
+        while True:
+            last_gas_price = min(int(last_gas_price * self.increment), self.max_gas_price)
+            yield last_gas_price
+
+
+class ExponentialScalingStrategy(TimeGasStrategy):
+    """
+    Gas strategy for exponential increasing gas prices.
+
+    The gas price for each subsequent transaction is calculated as the previous price
+    multiplied by `1.1 ** n` where n is the number of transactions that have been broadcast.
+    In this way the price increase starts gradually and ramps up until confirmation.
+
+    Arguments
+    ---------
+    initial_gas_price : int
+        The initial gas price to use in the first transaction
+    max_gas_price : int
+        The maximum gas price to use
+    increment : float
+        Multiplier applied to the previous gas price in order to determine the new gas price
+    time_duration : int
+        Number of seconds between transactions
+    """
+
+    def __init__(
+        self, initial_gas_price: int, max_gas_price: int, time_duration: int = 30,
+    ):
+        super().__init__(time_duration)
+        self.initial_gas_price = initial_gas_price
+        self.max_gas_price = max_gas_price
+
+    def get_gas_price(self) -> Generator[int, None, None]:
+        last_gas_price = self.initial_gas_price
+        yield last_gas_price
+
+        for i in itertools.count(1):
+            last_gas_price = int(last_gas_price * 1.1 ** i)
+            yield min(last_gas_price, self.max_gas_price)
 
 
 class GasNowStrategy(SimpleGasStrategy):
