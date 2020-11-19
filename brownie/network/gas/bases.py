@@ -2,7 +2,7 @@ import threading
 import time
 from abc import ABC, abstractmethod
 from collections import deque
-from typing import Any, Optional
+from typing import Any
 
 from brownie.network.web3 import web3
 
@@ -57,13 +57,13 @@ class BlockGasStrategy(GasABC):
         self.block_duration = block_duration
 
     @abstractmethod
-    def update_gas_price(self, last_gas_price: int, elapsed_blocks: int) -> Optional[int]:
+    def update_gas_price(self, last_gas_price: int, elapsed_blocks: int) -> int:
         """
         Return an updated gas price.
 
         This method is called every `block_duration` blocks while a transaction
-        is still pending. If the return value is an integer, the transaction
-        is rebroadcasted with the new gas price.
+        is still pending. If the return value is at least 10% higher than the
+        current gas price, the transaction is rebroadcasted with the new gas price.
 
         Arguments
         ---------
@@ -98,13 +98,13 @@ class TimeGasStrategy(GasABC):
         self.time_duration = time_duration
 
     @abstractmethod
-    def update_gas_price(self, last_gas_price: int, elapsed_time: int) -> Optional[int]:
+    def update_gas_price(self, last_gas_price: int, elapsed_time: int) -> int:
         """
         Return an updated gas price.
 
         This method is called every `time_duration` seconds while a transaction
-        is still pending. If the return value is an integer, the transaction
-        is rebroadcasted with the new gas price.
+        is still pending. If the return value is at least 10% higher than the
+        current gas price, the transaction is rebroadcasted with the new gas price.
 
         Arguments
         ---------
@@ -140,7 +140,7 @@ def _update_loop() -> None:
             height = web3.eth.blockNumber
             if height - latest >= gas_strategy.block_duration:
                 gas_price = gas_strategy.update_gas_price(tx.gas_price, height - initial)
-                if gas_price is not None:
+                if gas_price >= int(tx.gas_price * 1.1):
                     try:
                         tx = tx.replace(gas_price=gas_price)
                         latest = web3.eth.blockNumber
@@ -150,7 +150,7 @@ def _update_loop() -> None:
         elif isinstance(gas_strategy, TimeGasStrategy):
             if time.time() - latest >= gas_strategy.time_duration:
                 gas_price = gas_strategy.update_gas_price(tx.gas_price, time.time() - initial)
-                if gas_price is not None:
+                if gas_price >= int(tx.gas_price * 1.1):
                     try:
                         tx = tx.replace(gas_price=gas_price)
                         latest = time.time()

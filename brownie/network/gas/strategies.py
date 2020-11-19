@@ -1,6 +1,6 @@
 import threading
 import time
-from typing import Dict, Optional
+from typing import Dict
 
 import requests
 
@@ -83,12 +83,13 @@ class GasNowScalingStrategy(BlockGasStrategy):
         self.max_speed = max_speed
         self.increment = increment
 
-    def update_gas_price(self, last_gas_price: int, elapsed_blocks: int) -> Optional[int]:
+    def update_gas_price(self, last_gas_price: int, elapsed_blocks: int) -> int:
+        initial_gas_price = _fetch_gasnow(self.initial_speed)
         max_gas_price = _fetch_gasnow(self.max_speed)
-        new_gas_price = max(int(last_gas_price * self.increment), _fetch_gasnow(self.initial_speed))
-        if new_gas_price <= max_gas_price:
-            return new_gas_price
-        return None
+
+        incremented_gas_price = int(last_gas_price * self.increment)
+        new_gas_price = max(initial_gas_price, incremented_gas_price)
+        return min(max_gas_price, new_gas_price)
 
     def get_gas_price(self) -> int:
         return _fetch_gasnow(self.initial_speed)
