@@ -31,6 +31,7 @@ Brownie
     core-chain.rst
     core-transactions.rst
     core-types.rst
+    core-gas.rst
 
 
 .. toctree::
