@@ -5,6 +5,9 @@ from typing import Dict, Generator
 
 import requests
 
+from brownie.exceptions import RPCRequestError
+from brownie.network.web3 import web3
+
 from .bases import BlockGasStrategy, SimpleGasStrategy, TimeGasStrategy
 
 _gasnow_update = 0
@@ -173,3 +176,37 @@ class GasNowScalingStrategy(BlockGasStrategy):
             max_gas_price = _fetch_gasnow(self.max_speed)
             last_gas_price = min(max_gas_price, new_gas_price)
             yield last_gas_price
+
+
+class GethMempoolStrategy(BlockGasStrategy):
+    """
+    Block based scaling gas strategy using the GraphQL and the Geth mempool.
+
+    The yielded gas price is determined by sorting transactions in the mempool
+    according to gas price, and returning the price of the transaction at `position`.
+    This is the same technique used by the GasNow API.
+
+    A position of 500 should place a transaction within the 2nd block to be mined.
+    A position of 200 or less should place it within the next block.
+    """
+
+    def __init__(self, position: int = 500, graphql_endpoint: str = None, block_duration: int = 2):
+        super().__init__(block_duration)
+        self.position = position
+        if graphql_endpoint is None:
+            graphql_endpoint = f"{web3.provider.endpoint_uri}/graphql"  # type: ignore
+        self.graphql_endpoint = graphql_endpoint
+
+    def get_gas_price(self) -> Generator[int, None, None]:
+        query = "{ pending { transactions { gasPrice }}}"
+
+        while True:
+            response = requests.post(self.graphql_endpoint, json={"query": query})
+            response.raise_for_status()
+            if "error" in response.json():
+                raise RPCRequestError("could not fetch mempool, run geth with `--graphql` flag")
+
+            data = response.json()["data"]["pending"]["transactions"]
+
+            prices = sorted((int(x["gasPrice"], 16) for x in data), reverse=True)
+            yield prices[: self.position][-1]
