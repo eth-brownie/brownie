@@ -357,7 +357,7 @@ Account Methods
         >>> accounts[0].get_deployment_address()
         '0xd495633B90a237de510B4375c442C0469D3C161C'
 
-.. py:classmethod:: Account.transfer(self, to=None, amount=0, gas_limit=None, gas_price=None, data=None, nonce=None, required_confs=1, silent=False)
+.. py:classmethod:: Account.transfer(self, to=None, amount=0, gas_limit=None, gas_price=None, data=None, nonce=None, required_confs=1, allow_revert=None, silent=False)
 
     Broadcasts a transaction from this account.
 
@@ -369,6 +369,7 @@ Account Methods
     * ``data``: Transaction data hexstring.
     * ``nonce``: Nonce for the transaction. If none is given, the nonce is set using :meth:`web3.eth.getTransactionCount <web3.eth.Eth.getTransactionCount>` while also considering any pending transactions of the Account.
     * ``required_confs``: The required :attr:`confirmations<TransactionReceipt.confirmations>` before the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is processed. If none is given, defaults to 1 confirmation.  If 0 is given, immediately returns a pending :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, while waiting for a confirmation in a separate thread.
+    * ``allow_revert``: Boolean indicating whether the transaction should be broadacsted when it is expected to revert. If not set, the default behaviour is to allow reverting transactions in development and disallow them in a live environment.
     * ``silent``: Toggles console verbosity. If ``True`` is given, suppresses all console output for this transaction.
 
     Returns a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` instance.
