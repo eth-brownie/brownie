@@ -375,11 +375,14 @@ class _PrivateKeyAccount(PublicKeyAccount):
         return Wei(gas_price)
 
     def _check_for_revert(self, tx: Dict) -> None:
-        if not CONFIG.active_network["settings"]["reverting_tx_gas_limit"]:
-            try:
-                web3.eth.call(dict((k, v) for k, v in tx.items() if v))
-            except ValueError as e:
-                raise VirtualMachineError(e) from None
+        try:
+            web3.eth.call(dict((k, v) for k, v in tx.items() if v))
+        except ValueError as exc:
+            msg = exc.args[0]["message"] if isinstance(exc.args[0], dict) else str(exc)
+            raise ValueError(
+                f"Execution reverted during call: '{msg}'. This transaction will likely revert. "
+                "If you wish to broadcast, include `allow_revert=True` as a transaction parameter.",
+            ) from None
 
     def deploy(
         self,
@@ -391,6 +394,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         gas_price: Optional[int] = None,
         nonce: Optional[int] = None,
         required_confs: int = 1,
+        allow_revert: bool = None,
         silent: bool = None,
     ) -> Any:
         """Deploys a contract.
@@ -436,7 +440,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         "gasPrice": gas_price,
                         "gas": gas_limit,
                         "data": HexBytes(data),
-                    }
+                    },
+                    allow_revert,
                 )
                 exc, revert_data = None, None
             except ValueError as e:
@@ -550,6 +555,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         data: str = None,
         nonce: Optional[int] = None,
         required_confs: int = 1,
+        allow_revert: bool = None,
         silent: bool = None,
     ) -> TransactionReceipt:
         """
@@ -586,7 +592,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             if to:
                 tx["to"] = to_address(str(to))
             try:
-                txid = self._transact(tx)  # type: ignore
+                txid = self._transact(tx, allow_revert)  # type: ignore
                 exc, revert_data = None, None
             except ValueError as e:
                 exc = VirtualMachineError(e)
@@ -633,8 +639,11 @@ class Account(_PrivateKeyAccount):
         address: Public address of the account.
         nonce: Current nonce of the account."""
 
-    def _transact(self, tx: Dict) -> Any:
-        self._check_for_revert(tx)
+    def _transact(self, tx: Dict, allow_revert: bool) -> Any:
+        if allow_revert is None:
+            allow_revert = bool(CONFIG.network_type == "development")
+        if not allow_revert:
+            self._check_for_revert(tx)
         return web3.eth.sendTransaction(tx)
 
 
@@ -684,7 +693,10 @@ class LocalAccount(_PrivateKeyAccount):
             json.dump(encrypted, fp)
         return str(json_file)
 
-    def _transact(self, tx: Dict) -> None:
-        self._check_for_revert(tx)
+    def _transact(self, tx: Dict, allow_revert: bool) -> None:
+        if allow_revert is None:
+            allow_revert = bool(CONFIG.network_type == "development")
+        if not allow_revert:
+            self._check_for_revert(tx)
         signed_tx = self._acct.sign_transaction(tx).rawTransaction  # type: ignore
         return web3.eth.sendRawTransaction(signed_tx)

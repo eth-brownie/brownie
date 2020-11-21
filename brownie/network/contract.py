@@ -1078,6 +1078,7 @@ class _ContractMethod:
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
             data=self.encode_input(*args),
+            allow_revert=tx["allow_revert"],
         )
 
     def decode_input(self, hexstr: str) -> List:
@@ -1271,6 +1272,7 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
         "gasPrice": None,
         "nonce": None,
         "required_confs": 1,
+        "allow_revert": None,
     }
     if args and isinstance(args[-1], dict):
         tx.update(args[-1])
