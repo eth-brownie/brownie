@@ -526,14 +526,19 @@ class _PrivateKeyAccount(PublicKeyAccount):
             tx["gasPrice"] = gas_price
         try:
             return web3.eth.estimateGas(tx)
-        except ValueError:
+        except ValueError as exc:
             revert_gas_limit = CONFIG.active_network["settings"]["reverting_tx_gas_limit"]
             if revert_gas_limit == "max":
                 revert_gas_limit = web3.eth.getBlock("latest")["gasLimit"]
                 CONFIG.active_network["settings"]["reverting_tx_gas_limit"] = revert_gas_limit
             if revert_gas_limit:
                 return revert_gas_limit
-            raise
+
+            msg = exc.args[0]["message"] if isinstance(exc.args[0], dict) else str(exc)
+            raise ValueError(
+                f"Gas estimation failed: '{msg}'. This transaction will likely revert. "
+                "If you wish to broadcast, you must set the gas limit manually."
+            )
 
     def transfer(
         self,
