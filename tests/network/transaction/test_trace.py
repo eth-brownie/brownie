@@ -6,6 +6,7 @@ possible. These tests check that it is only being called when absolutely necessa
 import pytest
 
 from brownie import Contract
+from brownie.exceptions import RPCRequestError
 from brownie.network.transaction import TransactionReceipt
 from brownie.project import build
 
@@ -248,3 +249,16 @@ def test_contractabi(ExternalCallTester, accounts, tester, ext_tester):
     del ExternalCallTester[0]
     ext_tester = Contract.from_abi("ExternalTesterABI", ext_tester.address, ext_tester.abi)
     tx.call_trace()
+
+
+def test_traces_not_supported(network, chain):
+    network.connect("ropsten")
+
+    tx = chain.get_transaction("0xfd9f98a245d3cff68dd67546fa7e89009a291101f045f81eb9afd14abcbdc6aa")
+
+    # the confirmation output should work even without traces
+    tx._confirm_output()
+
+    # querying the revert message should raise
+    with pytest.raises(RPCRequestError):
+        tx.revert_msg

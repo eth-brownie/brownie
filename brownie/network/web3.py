@@ -33,6 +33,7 @@ class Web3(_Web3):
         self._genesis_hash: Optional[str] = None
         self._chain_uri: Optional[str] = None
         self._custom_middleware: Set = set()
+        self._supports_traces = None
 
     def connect(self, uri: str, timeout: int = 30) -> None:
         """Connects to a provider"""
@@ -89,11 +90,26 @@ class Web3(_Web3):
             self.provider = None
             self._genesis_hash = None
             self._chain_uri = None
+            self._supports_traces = None
 
     def isConnected(self) -> bool:
         if not self.provider:
             return False
         return super().isConnected()
+
+    @property
+    def supports_traces(self) -> bool:
+        if not self.provider:
+            return False
+
+        # Send a malformed request to `debug_traceTransaction`. If the error code
+        # returned is -32601 "endpoint does not exist/is not available" we know
+        # traces are not possible. Any other error code means the endpoint is open.
+        if self._supports_traces is None:
+            response = self.provider.make_request("debug_traceTransaction", [])
+            self._supports_traces = bool(response["error"]["code"] != -32601)
+
+        return self._supports_traces
 
     @property
     def _mainnet(self) -> _Web3:

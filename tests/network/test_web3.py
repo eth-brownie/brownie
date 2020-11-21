@@ -100,3 +100,26 @@ def test_rinkeby(web3, network):
 
     # this should work because we automatically add the POA middleware
     web3.eth.getBlock("latest")
+
+
+def test_supports_traces_development(web3, devnetwork):
+    # development should return true
+    assert web3.supports_traces
+
+
+def test_supports_traces_not_connected(web3, network):
+    # should return false when disconnected
+    assert not web3.supports_traces
+
+
+def test_supports_traces_infura(web3, network):
+    # ropsten should return false (infura, geth)
+    network.connect("ropsten")
+    assert not web3.supports_traces
+
+
+def test_supports_traces_kovan(web3, network):
+    # kovan should return false (infura, parity)
+    network.connect("kovan")
+
+    assert not web3.supports_traces

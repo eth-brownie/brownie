@@ -38,6 +38,11 @@ def trace_property(fn: Callable) -> Any:
     def wrapper(self: "TransactionReceipt") -> Any:
         if self.status < 0:
             return None
+        if not web3.supports_traces:
+            raise RPCRequestError(
+                f"`TransactionReceipt.{fn.__name__}` requires the `debug_traceTransaction` RPC"
+                " endpoint, but the node client does not support it or has not made it available."
+            )
         if self._trace_exc is not None:
             raise self._trace_exc
         return fn(self)
@@ -323,6 +328,10 @@ class TransactionReceipt:
     def _raise_if_reverted(self, exc: Any) -> None:
         if self.status or CONFIG.mode == "console":
             return
+        if not web3.supports_traces:
+            # if traces are not available, do not attempt to determine the revert reason
+            raise exc
+
         if self._revert_msg is None:
             # no revert message and unable to check dev string - have to get trace
             self._expand_trace()
@@ -479,7 +488,8 @@ class TransactionReceipt:
     def _confirm_output(self) -> str:
         status = ""
         if not self.status:
-            status = f"({color('bright red')}{self.revert_msg or 'reverted'}{color}) "
+            revert_msg = self.revert_msg if web3.supports_traces else None
+            status = f"({color('bright red')}{revert_msg or 'reverted'}{color}) "
         result = (
             f"  {self._full_name()} confirmed {status}- "
             f"Block: {color('bright blue')}{self.block_number}{color}   "

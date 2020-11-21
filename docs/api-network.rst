@@ -2568,6 +2568,16 @@ Web3 Attributes
         >>> web3.genesis_hash
         '41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d'
 
+.. py:classmethod:: Web3.supports_traces
+
+    Boolean indicating if the currently connected node client supports the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ RPC endpoint.
+
+    .. code-block:: python
+
+        >>> web3.supports_traces
+        True
+
+
 Web3 Internals
 **************
 
