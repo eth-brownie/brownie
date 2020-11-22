@@ -82,8 +82,8 @@ During coverage analysis, all contract calls are executed as transactions. This 
 Some things to keep in mind that can help to reduce your test runtime when evaluating coverage:
 
     1. Coverage is analyzed on a per-transaction basis, and the results are cached. If you repeat an identical transaction, Brownie will not analyze it the 2nd time. Keep this in mind when designing and sequencing setup fixtures.
-    2. For tests that involve many calls to the same getter method, use :func:`no_call_coverage <fixtures.no_call_coverage>` to significantly speed execution.
-    3. Omit very complex tests altogether with :func:`skip_coverage <fixtures.skip_coverage>`.
+    2. For tests that involve many calls to the same getter method, use the :func:`no_call_coverage <pytest.mark.no_call_coverage>` marker to significantly speed execution.
+    3. Omit very complex tests altogether with the :func:`skip_coverage <pytest.mark.skip_coverage>` marker.
     4. If possible, always run your tests in parralel with :ref:`xdist<xdist>`.
 
-You can use the ``--durations`` flag to view a profile of your slowest tests. You may find good candidates for optimization, or the use of the :func:`no_call_coverage <fixtures.no_call_coverage>` and :func:`skip_coverage <fixtures.skip_coverage>` fixtures.
+You can use the ``--durations`` flag to view a profile of your slowest tests. You may find good candidates for optimization, or the use of the :func:`no_call_coverage <pytest.mark.no_call_coverage>` and :func:`skip_coverage <pytest.mark.skip_coverage>` fixtures.

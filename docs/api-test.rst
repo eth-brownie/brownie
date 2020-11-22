@@ -68,19 +68,6 @@ These fixtures are used to effectively isolate tests. If included on every test 
 
     Applies the :func:`module_isolation <fixtures.module_isolation>` fixture, and additionally takes a snapshot prior to running each test which is then reverted to after the test completes. The snapshot is taken immediately after any module-scoped fixtures are applied, and before all function-scoped ones.
 
-Coverage Fixtures
-*****************
-
-These fixtures alter the behaviour of tests when coverage evaluation is active.
-
-.. py:attribute:: fixtures.no_call_coverage
-
-    Function scope. Coverage evaluation will not be performed on called contact methods during this test.
-
-.. py:attribute:: fixtures.skip_coverage
-
-    Function scope. If coverage evaluation is active, this test will be skipped.
-
 ``brownie.test.strategies``
 ===========================
 
