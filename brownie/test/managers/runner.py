@@ -258,6 +258,25 @@ class PytestBrownieRunner(PytestBrownieBase):
                 # all tests are initially marked as skipped
                 self.results[path] = ["s"] * len(self.node_map[path])
 
+    def pytest_runtest_setup(self, item):
+        """
+        Called to perform the setup phase for a test item.
+
+        * The `require_network` marker is applied.
+
+        Arguments
+        ---------
+        item : _pytest.nodes.Item
+            Test item for which setup is performed.
+        """
+        # `require_network` marker logic
+        marker = next(item.iter_markers(name="require_network"), None)
+        if marker is not None:
+            if not len(marker.args):
+                raise ValueError("`require_network` marker must include a network name")
+            if brownie.network.show_active() not in marker.args:
+                pytest.skip("Active network does not match `require_network` marker")
+
     def pytest_runtest_logreport(self, report):
         """
         Process a test setup/call/teardown report relating to the respective phase
