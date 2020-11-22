@@ -72,14 +72,16 @@ class Sources:
 
         if key in self._contracts:
             return self._contract_sources[self._contracts[key]]
+        if key in self._contract_sources:
+            return self._contract_sources[key]
+        if key in self._interface_sources:
+            return self._interface_sources[key]
 
-        if key not in self._contract_sources:
-            # for sources outside this project (packages, other projects)
-            with Path(key).open() as fp:
-                source = fp.read()
-                self._contract_sources[key] = source
-
-        return self._contract_sources[key]
+        # for sources outside this project (packages, other projects)
+        with Path(key).open() as fp:
+            source = fp.read()
+            self._contract_sources[key] = source
+            return source
 
     def get_path_list(self) -> List:
         """Returns a sorted list of source code file paths for the active project."""
