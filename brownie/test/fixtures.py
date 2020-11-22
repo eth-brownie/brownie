@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import sys
+import warnings
 
 import pytest
 
@@ -118,9 +119,11 @@ class PytestBrownieFixtures:
 
     @pytest.fixture(scope="session")
     def skip_coverage(self):
-        """Skips a test when coverage evaluation is active."""
-        # implemented in pytest_collection_modifyitems
-        pass
+        warnings.warn(
+            "`skip_coverage` as a fixture has been deprecated, use it as a marker instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     @pytest.fixture
     def state_machine(self):
