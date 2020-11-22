@@ -109,10 +109,11 @@ class PytestBrownieFixtures:
 
     @pytest.fixture
     def no_call_coverage(self):
-        """
-        Prevents coverage evaluation on contract calls during this test. Useful for speeding
-        up tests that contain many repetetive calls.
-        """
+        warnings.warn(
+            "`no_call_coverage` as a fixture has been deprecated, use it as a marker instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         CONFIG.argv["always_transact"] = False
         yield
         CONFIG.argv["always_transact"] = CONFIG.argv["coverage"]

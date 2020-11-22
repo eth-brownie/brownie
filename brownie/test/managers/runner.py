@@ -336,6 +336,27 @@ class PytestBrownieRunner(PytestBrownieBase):
             "results": "".join(self.results[path]),
         }
 
+    @pytest.hookimpl(hookwrapper=True)
+    def pytest_runtest_call(self, item):
+        """
+        Called to run the test for test item (the call phase).
+
+        * Handles logic for the `always_transact` marker.
+
+        Arguments
+        ---------
+        item : _pytest.nodes.Item
+            Test item for which setup is performed.
+        """
+        no_call_coverage = next(item.iter_markers(name="no_call_coverage"), None)
+        if no_call_coverage:
+            CONFIG.argv["always_transact"] = False
+
+        yield
+
+        if no_call_coverage:
+            CONFIG.argv["always_transact"] = CONFIG.argv["coverage"]
+
     def pytest_report_teststatus(self, report):
         """
         Return result-category, shortletter and verbose word for status reporting.
