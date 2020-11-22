@@ -3,37 +3,37 @@
 import json
 
 test_source = """
+import pytest
+
+@pytest.mark.no_call_coverage
 def test_call_and_transact(BrownieTester, accounts, web3, fn_isolation):
     c = accounts[0].deploy(BrownieTester, True)
     c.setNum(12, {'from': accounts[0]})
     assert web3.eth.blockNumber == 2
     c.getTuple(accounts[0])
-    assert web3.eth.blockNumber == 2"""
+    assert web3.eth.blockNumber == 2
 
-conf_source = """
-import pytest
 
-@pytest.fixture(autouse=True)
-def setup(no_call_coverage):
-    pass"""
+def test_call_and_transact_without_decorator(BrownieTester, accounts, web3, fn_isolation):
+    c = accounts[0].deploy(BrownieTester, True)
+    c.setNum(12, {'from': accounts[0]})
+    assert web3.eth.blockNumber == 2
+    c.getTuple(accounts[0])
+    assert web3.eth.blockNumber == 2
+    """
 
 
 def test_always_transact(plugintester, mocker, chain):
     mocker.spy(chain, "undo")
 
+    # without coverage eval, there should be no calls to `chain.undo`
     result = plugintester.runpytest()
-    result.assert_outcomes(passed=1)
+    result.assert_outcomes(passed=2)
     assert chain.undo.call_count == 0
 
-    # with coverage eval
+    # with coverage eval, only one of the tests should call `chain.undo`
     result = plugintester.runpytest("--coverage")
-    result.assert_outcomes(passed=1)
-    assert chain.undo.call_count == 1
-
-    # with coverage and no_call_coverage fixture
-    plugintester.makeconftest(conf_source)
-    result = plugintester.runpytest("--coverage")
-    result.assert_outcomes(passed=1)
+    result.assert_outcomes(passed=2)
     assert chain.undo.call_count == 1
 
 
