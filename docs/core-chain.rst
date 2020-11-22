@@ -112,15 +112,23 @@ Ganache's default behavior is to mine a new block each time you broadcast a tran
 Time Travel
 -----------
 
-You can call :func:`chain.time <Chain.time>` to view the current epoch time. To fast forward the clock, call :func:`chain.sleep <Chain.sleep>`.
+You can call :func:`chain.time <Chain.time>` to view the current epoch time:
 
 .. code-block:: python
 
     >>> chain.time()
     1500000000
+
+To fast forward the clock, call :func:`chain.sleep <Chain.sleep>`.
+
+.. code-block:: python
+
     >>> chain.sleep(31337)
+
     >>> chain.time()
     1500031337
+
+Note that sleeping does not mine a new block. Contract view functions that rely on ``block.timestamp`` will be unaffected until you perform a transaction or call :func:`chain.mine <Chain.mine>`.
 
 Snapshots
 ---------

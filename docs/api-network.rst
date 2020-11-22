@@ -1686,12 +1686,13 @@ Chain Methods
         >>> chain.time()
         1550189143
 
-.. py:method:: Chain.mine(blocks=1, timestamp=None)
+.. py:method:: Chain.mine(blocks=1, timestamp=None, timedelta=None)
 
     Mine one or more empty blocks.
 
     * ``blocks``: Number of blocks to mine
-    * ``timestamp``: Timestamp of the final block being mined. If multiple blocks are mined, they will be mined at equal intervals starting from :ref:`chain.time <Chain.time>` and ending at ``timestamp``.
+    * ``timestamp``: Timestamp of the final block being mined. If multiple blocks are mined, they will be mined at equal intervals starting from :func:`chain.time <Chain.time>` and ending at ``timestamp``.
+    * ``timedelta``: Timedelta for the final block to be mined. If given, the final block will have a timestamp of ``chain.time() + timedelta``.
 
     Returns the block height after all new blocks have been mined.
 
