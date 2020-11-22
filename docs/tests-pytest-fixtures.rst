@@ -1,11 +1,11 @@
 
 .. _pytest-fixtures-reference:
 
-=========================
-Pytest Fixtures Reference
-=========================
+============================
+Fixture and Marker Reference
+============================
 
-Brownie provides :ref:`fixtures <pytest-fixtures-docs>` to allow you to interact with your project during tests. To use a fixture, add an argument with the same name to the inputs of your test function.
+Brownie includes custom :ref:`fixtures <pytest-fixtures-docs>` and :ref:`markers<pytest-markers-docs>` that can be used when testing your project.
 
 Session Fixtures
 ================
@@ -182,4 +182,22 @@ Coverage fixtures alter the behaviour of tests when coverage evaluation is activ
         :linenos:
 
         def test_heavy_lifting(skip_coverage):
+            pass
+
+.. _pytest-fixtures-reference-markers:
+
+Markers
+=======
+
+Brownie provides the following :ref:`markers<pytest-markers-docs>` for use within your tests:
+
+.. py:attribute:: pytest.mark.require_network(network_name)
+
+    Mark a test so that it only runs if the active network is named ``network_name``. This is useful when you have some tests intended for a local development environment and others for a forked mainnet.
+
+    .. code-block:: python
+        :linenos:
+
+        @pytest.mark.require_network("mainnet-fork")
+        def test_almost_in_prod():
             pass

@@ -95,6 +95,10 @@ class PytestBrownieBase:
         return sha1(hash_.encode()).hexdigest()
 
     def pytest_configure(self, config):
+        config.addinivalue_line(
+            "markers", "require_network: only run test when a specific network is active"
+        )
+
         for key in ("coverage", "always_transact"):
             CONFIG.argv[key] = config.getoption("--coverage")
         CONFIG.argv["cli"] = "test"

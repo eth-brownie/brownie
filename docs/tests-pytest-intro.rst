@@ -54,7 +54,7 @@ Fixtures
 
 A `fixture <http://docs.pytest.org/en/latest/fixture.html>`_ is a function that is applied to one or more test functions, and is called prior to the execution of each test. Fixtures are used to setup the initial conditions required for a test.
 
-Fixtures are declared using the ``@pytest.fixture`` decorator. To pass a fixture to a test, include the fixture name as an input argument for the test:
+Fixtures are declared using the :func:`@pytest.fixture <pytest.fixture>` decorator. To pass a fixture to a test, include the fixture name as an input argument for the test:
 
 .. code-block:: python
     :linenos:
@@ -205,6 +205,35 @@ The sequence of events in the above example is:
 8. The teardown phase of :func:`fn_isolation <fixtures.fn_isolation>` runs. The blockchain is reverted to it's state before ``test_chain_reverted``.
 9. The teardown phase of :func:`module_isolation <fixtures.module_isolation>` runs, resetting the local environment.
 
+.. _pytest-markers-docs:
+
+Markers
+=======
+
+A `marker <https://docs.pytest.org/en/stable/mark.html#mark>`_ is a decorator applied to a test function. Markers are used to pass meta data about the test which is accessible by fixtures and plugins.
+
+To apply a marker to a specific test, use the :func:`@pytest.mark <pytest.mark>` decorator:
+
+.. code-block:: python
+    :linenos:
+
+    @pytest.mark.foo
+    def test_with_example_marker():
+        pass
+
+To apply markers at the module level, add the ``pytestmark`` global variable:
+
+.. code-block:: python
+    :linenos:
+
+    import pytest
+
+    pytestmark = [pytest.mark.foo, pytest.mark.bar]
+
+Along with the standard `pytest markers <https://docs.pytest.org/en/latest/reference.html#marks>`_, Brownie provides additional markers specific to smart contract testing. See the :ref:`markers reference<pytest-fixtures-reference-markers>` section of the documentation for more information.
+
+
+
 Handling Reverted Transactions
 ==============================
 
@@ -273,7 +302,7 @@ If the above function is executed in the console:
 Parametrizing Tests
 ===================
 
-The ``@pytest.mark.parametrize`` decorator enables `parametrization of arguments <http://docs.pytest.org/en/latest/parametrize.html>`_ for a test function. Here is a typical example of a parametrized test function, checking that a certain input results in an expected output:
+The ``@pytest.mark.parametrize`` marker enables `parametrization of arguments <http://docs.pytest.org/en/latest/parametrize.html>`_ for a test function. Here is a typical example of a parametrized test function, checking that a certain input results in an expected output:
 
 .. code-block:: python
     :linenos:
