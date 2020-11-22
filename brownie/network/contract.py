@@ -352,6 +352,7 @@ class _DeployedContractBase(_ContractBase):
         tx: TransactionReceipt of the of the tx that deployed the contract."""
 
     _reverted = False
+    _initialized = False
 
     def __init__(
         self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
@@ -383,6 +384,8 @@ class _DeployedContractBase(_ContractBase):
                 overloaded = OverloadedMethod(address, name, owner)
                 self._check_and_set(abi["name"], overloaded)
             getattr(self, abi["name"])._add_fn(abi, natspec)
+
+        self._initialized = True
 
     def _check_and_set(self, name: str, obj: Any) -> None:
         if name == "balance":
@@ -425,6 +428,14 @@ class _DeployedContractBase(_ContractBase):
             return super().__getattribute__(name)
         except AttributeError:
             raise AttributeError(f"Contract '{self._name}' object has no attribute '{name}'")
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if self._initialized and hasattr(self, name):
+            if isinstance(getattr(self, name), _ContractMethod):
+                raise AttributeError(
+                    f"{self._name}.{name} is a contract function, it cannot be assigned to"
+                )
+        super().__setattr__(name, value)
 
     def get_method_object(self, calldata: str) -> Optional["_ContractMethod"]:
         """
