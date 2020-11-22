@@ -341,7 +341,7 @@ class TransactionReceipt:
             return
         if not web3.supports_traces:
             # if traces are not available, do not attempt to determine the revert reason
-            raise exc
+            raise exc or ValueError("Execution reverted")
 
         if self._revert_msg is None:
             # no revert message and unable to check dev string - have to get trace
