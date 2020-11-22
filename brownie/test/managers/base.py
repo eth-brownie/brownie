@@ -98,6 +98,9 @@ class PytestBrownieBase:
         config.addinivalue_line(
             "markers", "require_network: only run test when a specific network is active"
         )
+        config.addinivalue_line(
+            "markers", "skip_coverage: skips a test when coverage evaluation is active"
+        )
 
         for key in ("coverage", "always_transact"):
             CONFIG.argv[key] = config.getoption("--coverage")

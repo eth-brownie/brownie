@@ -525,7 +525,7 @@ class TransactionReceipt:
             msg = f"Encountered a {type(e).__name__} while requesting "
             msg += "debug_traceTransaction. The local RPC client has likely crashed."
             if CONFIG.argv["coverage"]:
-                msg += " If the error persists, add the skip_coverage fixture to this test."
+                msg += " If the error persists, add the `skip_coverage` marker to this test."
             raise RPCRequestError(msg) from None
 
         if "error" in trace:

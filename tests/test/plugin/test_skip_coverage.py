@@ -4,8 +4,10 @@ import pytest
 
 test_source = """
 import brownie
+import pytest
 
-def test_call_and_transact(BrownieTester, accounts, skip_coverage):
+@pytest.mark.skip_coverage
+def test_call_and_transact(BrownieTester, accounts):
     c = accounts[0].deploy(BrownieTester, True)
     c.doNothing({'from': accounts[0]})
 

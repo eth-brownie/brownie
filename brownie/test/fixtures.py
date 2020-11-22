@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import sys
+import warnings
 
 import pytest
 
@@ -108,19 +109,22 @@ class PytestBrownieFixtures:
 
     @pytest.fixture
     def no_call_coverage(self):
-        """
-        Prevents coverage evaluation on contract calls during this test. Useful for speeding
-        up tests that contain many repetetive calls.
-        """
+        warnings.warn(
+            "`no_call_coverage` as a fixture has been deprecated, use it as a marker instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         CONFIG.argv["always_transact"] = False
         yield
         CONFIG.argv["always_transact"] = CONFIG.argv["coverage"]
 
     @pytest.fixture(scope="session")
     def skip_coverage(self):
-        """Skips a test when coverage evaluation is active."""
-        # implemented in pytest_collection_modifyitems
-        pass
+        warnings.warn(
+            "`skip_coverage` as a fixture has been deprecated, use it as a marker instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     @pytest.fixture
     def state_machine(self):

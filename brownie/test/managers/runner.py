@@ -152,8 +152,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         items in-place.
 
         Determines which modules are isolated, and skips tests based on
-        the `--update` and `--stateful` flags as well as the `skip_coverage`
-        fixture.
+        the `--update` and `--stateful` flags.
 
         Arguments
         ---------
@@ -166,10 +165,6 @@ class PytestBrownieRunner(PytestBrownieBase):
 
         tests = {}
         for i in items:
-            # apply skip_coverage
-            if "skip_coverage" in i.fixturenames and CONFIG.argv["coverage"]:
-                i.add_marker("skip")
-
             # apply --stateful flag
             if stateful is not None:
                 if stateful == "true" and "state_machine" not in i.fixturenames:
@@ -276,6 +271,13 @@ class PytestBrownieRunner(PytestBrownieBase):
                 raise ValueError("`require_network` marker must include a network name")
             if brownie.network.show_active() not in marker.args:
                 pytest.skip("Active network does not match `require_network` marker")
+                return
+
+        if CONFIG.argv["coverage"] and (
+            next(item.iter_markers(name="skip_coverage"), None)
+            or "skip_coverage" in item.fixturenames
+        ):
+            pytest.skip("`skip_coverage` marker and coverage is active")
 
     def pytest_runtest_logreport(self, report):
         """
@@ -333,6 +335,27 @@ class PytestBrownieRunner(PytestBrownieBase):
             "txhash": txhash,
             "results": "".join(self.results[path]),
         }
+
+    @pytest.hookimpl(hookwrapper=True)
+    def pytest_runtest_call(self, item):
+        """
+        Called to run the test for test item (the call phase).
+
+        * Handles logic for the `always_transact` marker.
+
+        Arguments
+        ---------
+        item : _pytest.nodes.Item
+            Test item for which setup is performed.
+        """
+        no_call_coverage = next(item.iter_markers(name="no_call_coverage"), None)
+        if no_call_coverage:
+            CONFIG.argv["always_transact"] = False
+
+        yield
+
+        if no_call_coverage:
+            CONFIG.argv["always_transact"] = CONFIG.argv["coverage"]
 
     def pytest_report_teststatus(self, report):
         """
