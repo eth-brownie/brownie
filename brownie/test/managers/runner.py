@@ -47,12 +47,13 @@ def revert_deprecation(revert_msg=None):
 
 
 class RevertContextManager:
-    def __init__(self, revert_msg=None):
+    def __init__(self, revert_msg=None, dev_revert_msg=None):
         self.revert_msg = revert_msg
+        self.dev_revert_msg = dev_revert_msg
         self.always_transact = CONFIG.argv["always_transact"]
 
-        if revert_msg is not None and revert_msg.startswith("dev:"):
-            # run calls as transactins when catching a dev revert string
+        if revert_msg is not None and (revert_msg.startswith("dev:") or dev_revert_msg):
+            # run calls as transactinos when catching a dev revert string
             CONFIG.argv["always_transact"] = True
 
     def __enter__(self):
@@ -67,15 +68,17 @@ class RevertContextManager:
         if exc_type is not VirtualMachineError:
             raise
 
-        if self.revert_msg is None or self.revert_msg == exc_value.revert_msg:
-            return True
+        if self.dev_revert_msg is not None and self.dev_revert_msg != exc_value.dev_revert_msg:
+            raise AssertionError(
+                f"Unexpected dev revert string '{exc_value.dev_revert_msg}'\n{exc_value.source}"
+            ) from None
 
-        if exc_value.revert_msg is None:
-            raise AssertionError("Transaction reverted, but no revert string was given") from None
+        if self.revert_msg is not None and self.revert_msg != exc_value.revert_msg:
+            raise AssertionError(
+                f"Unexpected revert string '{exc_value.revert_msg}'\n{exc_value.source}"
+            ) from None
 
-        raise AssertionError(
-            f"Unexpected revert string '{exc_value.revert_msg}'\n{exc_value.source}"
-        ) from None
+        return True
 
 
 class PytestPrinter:
