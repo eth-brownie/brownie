@@ -355,7 +355,7 @@ class TransactionReceipt:
             # if traces are not available, do not attempt to determine the revert reason
             raise exc or ValueError("Execution reverted")
 
-        if self._revert_msg is None:
+        if self._dev_revert_msg is None:
             # no revert message and unable to check dev string - have to get trace
             self._expand_trace()
         if self.contract_address:
@@ -364,7 +364,9 @@ class TransactionReceipt:
             source = self._traceback_string()
         else:
             source = self._error_string(1)
-        raise exc._with_attr(source=source, revert_msg=self._revert_msg)
+        raise exc._with_attr(
+            source=source, revert_msg=self._revert_msg, dev_revert_msg=self._dev_revert_msg
+        )
 
     def _await_transaction(self, required_confs: int, is_blocking: bool) -> None:
         # await tx showing in mempool
