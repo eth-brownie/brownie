@@ -1,6 +1,7 @@
 import itertools
 import threading
 import time
+import warnings
 from typing import Dict, Generator
 
 import requests
@@ -18,21 +19,24 @@ _gasnow_lock = threading.Lock()
 def _fetch_gasnow(key: str) -> int:
     global _gasnow_update
     with _gasnow_lock:
-        if time.time() - _gasnow_update > 15:
-            data = None
-            for i in range(12):
+        time_since_update = int(time.time() - _gasnow_update)
+        if time_since_update > 15:
+            try:
                 response = requests.get(
                     "https://www.gasnow.org/api/v3/gas/price?utm_source=brownie"
                 )
-                if response.status_code != 200:
-                    time.sleep(5)
-                    continue
+                response.raise_for_status()
                 data = response.json()["data"]
-                break
-            if data is None:
-                raise ValueError
-            _gasnow_update = data.pop("timestamp") // 1000
-            _gasnow_data.update(data)
+                _gasnow_update = data.pop("timestamp") // 1000
+                _gasnow_data.update(data)
+            except requests.exceptions.RequestException as exc:
+                if time_since_update > 120:
+                    raise
+                warnings.warn(
+                    f"{type(exc).__name__} while querying GasNow API. "
+                    f"Last successful update was {time_since_update}s ago.",
+                    RuntimeWarning,
+                )
 
     return _gasnow_data[key]
 
