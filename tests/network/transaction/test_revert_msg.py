@@ -80,29 +80,40 @@ def test_revert_msg_via_jump(ext_tester, console_mode):
 def test_solidity_revert_msg(evmtester, console_mode):
     tx = evmtester.revertStrings(0)
     assert tx.revert_msg == "zero"
+    assert tx.dev_revert_msg is None
     tx = evmtester.revertStrings(1)
     assert tx.revert_msg == "dev: one"
+    assert tx.dev_revert_msg == "dev: one"
     tx = evmtester.revertStrings(2)
     assert tx.revert_msg == "two"
+    assert tx.dev_revert_msg == "dev: error"
     tx = evmtester.revertStrings(3)
     assert tx.revert_msg == ""
+    assert tx.dev_revert_msg is None
     tx = evmtester.revertStrings(31337)
     assert tx.revert_msg == "dev: great job"
+    assert tx.dev_revert_msg == "dev: great job"
 
 
 def test_vyper_revert_msg(vypertester, console_mode):
     tx = vypertester.revertStrings(0)
     assert tx.revert_msg == "zero"
+    assert tx.dev_revert_msg is None
     tx = vypertester.revertStrings(1)
     assert tx.revert_msg == "dev: one"
+    assert tx.dev_revert_msg == "dev: one"
     tx = vypertester.revertStrings(2)
     assert tx.revert_msg == "two"
+    assert tx.dev_revert_msg == "dev: error"
     tx = vypertester.revertStrings(3)
     assert tx.revert_msg == ""
+    assert tx.dev_revert_msg is None
     tx = vypertester.revertStrings(4)
     assert tx.revert_msg == "dev: such modifiable, wow"
+    assert tx.dev_revert_msg == "dev: such modifiable, wow"
     tx = vypertester.revertStrings(31337)
     assert tx.revert_msg == "awesome show"
+    assert tx.dev_revert_msg == "dev: great job"
 
 
 def test_nonpayable(tester, evmtester, console_mode):
