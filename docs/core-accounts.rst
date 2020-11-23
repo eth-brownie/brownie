@@ -70,6 +70,8 @@ In a development environment, it is possible to send transactions from an addres
 
 See :ref:`local-accounts` for more information on working with accounts.
 
+.. _core-accounts-non-blocking:
+
 Broadcasting Multiple Transactions
 ==================================
 

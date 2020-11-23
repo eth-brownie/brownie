@@ -75,14 +75,6 @@ class TxHistory(metaclass=_Singleton):
 
     def _add_tx(self, tx: TransactionReceipt) -> None:
         self._list.append(tx)
-        confirm_thread = threading.Thread(target=self._await_confirm, args=(tx,), daemon=True)
-        confirm_thread.start()
-
-    def _await_confirm(self, tx: TransactionReceipt) -> None:
-        # in case of multiple tx's with the same nonce, remove the dropped tx's upon confirmation
-        tx._confirmed.wait()
-        for dropped_tx in self.filter(sender=tx.sender, nonce=tx.nonce, key=lambda k: k != tx):
-            self._list.remove(dropped_tx)
 
     def clear(self) -> None:
         self._list.clear()

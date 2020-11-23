@@ -3,9 +3,10 @@
 import json
 import threading
 import time
+from collections.abc import Iterator
 from getpass import getpass
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import eth_account
 import eth_keys
@@ -19,11 +20,13 @@ from brownie.convert import EthAddress, Wei, to_address
 from brownie.exceptions import (
     ContractNotFound,
     IncompatibleEVMVersion,
+    TransactionError,
     UnknownAccount,
     VirtualMachineError,
 )
 from brownie.utils import color
 
+from .gas.bases import GasABC
 from .rpc import Rpc
 from .state import Chain, TxHistory, _revert_register
 from .transaction import TransactionReceipt
@@ -368,11 +371,29 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         return Wei(gas_limit)
 
-    def _gas_price(self) -> Wei:
-        gas_price = CONFIG.active_network["settings"]["gas_price"]
+    def _gas_price(self, gas_price: Any = None) -> Tuple[Wei, Optional[GasABC], Optional[Iterator]]:
+        # returns the gas price, gas strategy object, and active gas strategy iterator
+        if gas_price is None:
+            gas_price = CONFIG.active_network["settings"]["gas_price"]
+
+        if isinstance(gas_price, GasABC):
+            value = gas_price.get_gas_price()
+            if isinstance(value, Iterator):
+                # if `get_gas_price` returns an interator, this is a gas strategy
+                # intended for rebroadcasting. we need to retain both the strategy
+                # object and the active gas price iterator
+                return Wei(next(value)), gas_price, value
+            else:
+                # for simple strategies, we can simply use the generated gas price
+                return Wei(value), None, None
+
+        if isinstance(gas_price, Wei):
+            return gas_price, None, None
+
         if isinstance(gas_price, bool) or gas_price in (None, "auto"):
-            return web3.eth.generateGasPrice()
-        return Wei(gas_price)
+            return web3.eth.generateGasPrice(), None, None
+
+        return Wei(gas_price), None, None
 
     def _check_for_revert(self, tx: Dict) -> None:
         try:
@@ -428,7 +449,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
         with self._lock:
             try:
-                gas_price = Wei(gas_price) if gas_price is not None else self._gas_price()
+                gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
                 gas_limit = Wei(gas_limit) or self._gas_limit(
                     None, amount, gas_price, gas_buffer, data
                 )
@@ -460,11 +481,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 name=contract._name + ".constructor",
                 revert_data=revert_data,
             )
-            # add the TxHistory before waiting for confirmation, this way the tx
-            # object is available if the user CTRL-C to stop waiting in the console
-            history._add_tx(receipt)
-            if required_confs > 0:
-                receipt._confirmed.wait()
+
+        receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
 
         add_thread = threading.Thread(target=contract._add_from_tx, args=(receipt,), daemon=True)
         add_thread.start()
@@ -579,7 +597,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if silent is None:
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
         with self._lock:
-            gas_price = Wei(gas_price) if gas_price is not None else self._gas_price()
+            gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
             gas_limit = Wei(gas_limit) or self._gas_limit(to, amount, gas_price, gas_buffer, data)
             tx = {
                 "from": self.address,
@@ -609,11 +627,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 silent=silent,
                 revert_data=revert_data,
             )
-            # add the TxHistory before waiting for confirmation, this way the tx
-            # object is available if the user CTRL-C to stop waiting in the console
-            history._add_tx(receipt)
-            if required_confs > 0:
-                receipt._confirmed.wait()
+
+        receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
 
         if rpc.is_active():
             undo_thread = threading.Thread(
@@ -627,8 +642,57 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 daemon=True,
             )
             undo_thread.start()
+
         receipt._raise_if_reverted(exc)
         return receipt
+
+    def _await_confirmation(
+        self,
+        receipt: TransactionReceipt,
+        required_confs: int,
+        gas_strategy: Optional[GasABC],
+        gas_iter: Optional[Iterator],
+    ) -> TransactionReceipt:
+        # add to TxHistory before waiting for confirmation, this way the tx
+        # object is available if the user exits blocking via keyboard interrupt
+        history._add_tx(receipt)
+
+        if gas_strategy is not None:
+            gas_strategy.run(receipt, gas_iter)  # type: ignore
+
+        if required_confs == 0:
+            receipt._silent = True
+            return receipt
+
+        try:
+            receipt._confirmed.wait()
+        except KeyboardInterrupt:
+            # set related transactions as silent
+            receipt._silent = True
+            for receipt in history.filter(
+                sender=self, nonce=receipt.nonce, key=lambda k: k.status != -2
+            ):
+                receipt._silent = True
+            raise
+
+        if receipt.status != -2:
+            return receipt
+
+        # if transaction was dropped (status -2), find and return the tx that confirmed
+        replacements = history.filter(
+            sender=self, nonce=receipt.nonce, key=lambda k: k.status != -2
+        )
+        while True:
+            if not replacements:
+                raise TransactionError(f"Tx dropped without known replacement: {receipt.txid}")
+            if len(replacements) > 1:
+                # in case we have multiple tx's where the status is still unresolved
+                replacements = [i for i in replacements if i.status != 2]
+                time.sleep(0.5)
+            else:
+                receipt = replacements[0]
+                receipt._await_confirmation(required_confs=required_confs)
+                return receipt
 
 
 class Account(_PrivateKeyAccount):

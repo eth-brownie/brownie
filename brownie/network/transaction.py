@@ -148,11 +148,14 @@ class TransactionReceipt:
         if isinstance(txid, bytes):
             txid = HexBytes(txid).hex()
         if not self._silent:
-            print(f"Transaction sent: {color('bright blue')}{txid}{color}")
+            print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
+
+        # this event is set once the transaction is confirmed or dropped
+        # it is used to waiting during blocking transaction actions
+        self._confirmed = threading.Event()
 
         # internal attributes
         self._call_cost = 0
-        self._confirmed = threading.Event()
         self._trace_exc: Optional[Exception] = None
         self._trace_origin: Optional[str] = None
         self._raw_trace: Optional[List] = None
@@ -262,7 +265,10 @@ class TransactionReceipt:
         return web3.eth.blockNumber - self.block_number + 1
 
     def replace(
-        self, increment: Optional[float] = None, gas_price: Optional[Wei] = None,
+        self,
+        increment: Optional[float] = None,
+        gas_price: Optional[Wei] = None,
+        silent: Optional[bool] = None,
     ) -> "TransactionReceipt":
         """
         Rebroadcast this transaction with a higher gas price.
@@ -274,8 +280,10 @@ class TransactionReceipt:
         increment : float, optional
             Multiplier applied to the gas price of this transaction in order
             to determine the new gas price
-        gas_price: Wei, optional
+        gas_price : Wei, optional
             Absolute gas price to use in the replacement transaction
+        silent : bool, optional
+            Toggle console verbosity (default is same setting as this transaction)
 
         Returns
         -------
@@ -292,6 +300,9 @@ class TransactionReceipt:
         if increment is not None:
             gas_price = Wei(self.gas_price * 1.1)
 
+        if silent is None:
+            silent = self._silent
+
         return self.sender.transfer(  # type: ignore
             self.receiver,
             self.value,
@@ -300,7 +311,7 @@ class TransactionReceipt:
             data=self.input,
             nonce=self.nonce,
             required_confs=0,
-            silent=self._silent,
+            silent=silent,
         )
 
     def wait(self, required_confs: int) -> None:
@@ -319,18 +330,18 @@ class TransactionReceipt:
                     sender_nonce = web3.eth.getTransactionCount(str(self.sender))
                     if sender_nonce > self.nonce:
                         self.status = Status(-2)
-                        print("This transaction was replaced.")
+                        self._confirmed.set()
                         return
                 time.sleep(1)
 
-        self._await_confirmation(tx, required_confs)
+        self._await_confirmation(tx["blockNumber"], required_confs)
 
     def _raise_if_reverted(self, exc: Any) -> None:
         if self.status or CONFIG.mode == "console":
             return
         if not web3.supports_traces:
             # if traces are not available, do not attempt to determine the revert reason
-            raise exc
+            raise exc or ValueError("Execution reverted")
 
         if self._revert_msg is None:
             # no revert message and unable to check dev string - have to get trace
@@ -373,22 +384,22 @@ class TransactionReceipt:
         # await confirmation of tx in a separate thread which is blocking if
         # required_confs > 0 or tx has already confirmed (`blockNumber` != None)
         confirm_thread = threading.Thread(
-            target=self._await_confirmation, args=(tx, required_confs), daemon=True
+            target=self._await_confirmation, args=(tx["blockNumber"], required_confs), daemon=True
         )
         confirm_thread.start()
         if is_blocking and (required_confs > 0 or tx["blockNumber"]):
             confirm_thread.join()
 
-    def _await_confirmation(self, tx: Dict, required_confs: int = 1) -> None:
-        if not tx["blockNumber"] and not self._silent and required_confs > 0:
+    def _await_confirmation(self, block_number: int = None, required_confs: int = 1) -> None:
+        block_number = block_number or self.block_number
+        if not block_number and not self._silent and required_confs > 0:
             if required_confs == 1:
-                print("Waiting for confirmation...")
+                sys.stdout.write("\rWaiting for confirmation... ")
             else:
                 sys.stdout.write(
-                    f"\rRequired confirmations: {color('bright yellow')}0/"
-                    f"{required_confs}{color}"
+                    f"\rRequired confirmations: {color('bright yellow')}0/{required_confs}{color}"
                 )
-                sys.stdout.flush()
+            sys.stdout.flush()
 
         # await first confirmation
         while True:
@@ -404,6 +415,7 @@ class TransactionReceipt:
                 if expect_confirmed:
                     # if we expected confirmation based on the nonce, tx likely dropped
                     self.status = Status(-2)
+                    self._confirmed.set()
                     return
 
         self.block_number = receipt["blockNumber"]
@@ -420,7 +432,7 @@ class TransactionReceipt:
                 # check if tx is still in mempool, this will raise otherwise
                 tx = web3.eth.getTransaction(self.txid)
                 self.block_number = None
-                return self._await_confirmation(tx, required_confs)
+                return self._await_confirmation(tx["blockNumber"], required_confs)
             if required_confs - self.confirmations != remaining_confs:
                 remaining_confs = required_confs - self.confirmations
                 if not self._silent:
@@ -444,7 +456,14 @@ class TransactionReceipt:
             self._expand_trace()
         if not self._silent and required_confs > 0:
             print(self._confirm_output())
+
+        # set the confirmation event and mark other tx's with the same nonce as dropped
         self._confirmed.set()
+        for dropped_tx in state.TxHistory().filter(
+            sender=self.sender, nonce=self.nonce, key=lambda k: k != self
+        ):
+            dropped_tx.status = Status(-2)
+            dropped_tx._confirmed.set()
 
     def _set_from_tx(self, tx: Dict) -> None:
         if not self.sender:
@@ -491,7 +510,7 @@ class TransactionReceipt:
             revert_msg = self.revert_msg if web3.supports_traces else None
             status = f"({color('bright red')}{revert_msg or 'reverted'}{color}) "
         result = (
-            f"  {self._full_name()} confirmed {status}- "
+            f"\r  {self._full_name()} confirmed {status}- "
             f"Block: {color('bright blue')}{self.block_number}{color}   "
             f"Gas used: {color('bright blue')}{self.gas_used}{color} "
             f"({color('bright blue')}{self.gas_used / self.gas_limit:.2%}{color})"

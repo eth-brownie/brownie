@@ -1461,6 +1461,146 @@ Internal Methods
         >>> e
         {}
 
+
+``brownie.network.gas``
+=======================
+
+The ``gas`` module contains gas strategy classes, as well as abstract base classes for buiding your own gas strategies.
+
+Gas Strategies
+--------------
+
+.. py:class:: brownie.network.gas.strategies.ExponentialScalingStrategy(initial_gas_price, max_gas_price, time_duration=30)
+
+    Time based scaling strategy for exponential gas price increase.
+
+    The gas price for each subsequent transaction is calculated as the previous price multiplied by `1.1 ** n` where n is the number of transactions that have been broadcast. In this way the price increase starts gradually and ramps up until confirmation.
+
+    * ``initial_gas_price``: The initial gas price to use in the first transaction
+    * ``max_gas_price``: The maximum gas price to use
+    * ``time_duration``: Number of seconds between transactions
+
+    .. code-block:: python
+
+        >>> from brownie.network.gas.strategies import ExponentialScalingStrategy
+        >>> gas_strategy = ExponentialScalingStrategy("10 gwei", "50 gwei")
+
+        >>> accounts[0].transfer(accounts[1], "1 ether", gas_price=gas_strategy)
+
+.. py:class:: brownie.network.gas.strategies.GasNowStrategy(speed="fast")
+
+    Gas strategy for determing a price using the `GasNow <https://www.gasnow.org/>`_ API.
+
+    * ``speed``: The gas price to use based on the API call. Options are rapid, fast, standard and slow.
+
+    .. code-block:: python
+
+        >>> from brownie.network.gas.strategies import GasNowStrategy
+        >>> gas_strategy = GasNowStrategy("fast")
+
+        >>> accounts[0].transfer(accounts[1], "1 ether", gas_price=gas_strategy)
+
+.. py:class:: brownie.network.gas.strategies.GasNowScalingStrategy(initial_speed="standard", max_speed="rapid", increment=1.125, block_duration=2)
+
+    Block based scaling gas strategy using the GasNow API.
+
+    * ``initial_speed``: The initial gas price to use when broadcasting the first transaction. Options are rapid, fast, standard and slow.
+    * ``max_speed``: The maximum gas price to use when replacing the transaction. Options are rapid, fast, standard and slow.
+    * ``increment``: A multiplier applied to the most recently used gas price in order to determine the new gas price. If the incremented value is less than or equal to the current ``max_speed`` rate, a new transaction is broadcasted. If the current rate for ``initial_speed`` is greater than the incremented rate, it is used instead.
+    * ``block_duration``: The number of blocks to wait between broadcasting new transactions.
+
+    .. code-block:: python
+
+        >>> from brownie.network.gas.strategies import GasNowScalingStrategy
+        >>> gas_strategy = GasNowScalingStrategy("standard", increment=1.125, block_duration=2)
+
+        >>> accounts[0].transfer(accounts[1], "1 ether", gas_price=gas_strategy)
+
+.. py:class:: brownie.network.gas.strategies.GethMempoolStrategy(position=500, graphql_endpoint=None, block_duration=2)
+
+    Block based scaling gas strategy using Geth's `GraphQL interface <https://eips.ethereum.org/EIPS/eip-1767>`_.
+
+    In order to use this strategy you must be connecting via a Geth node with GraphQL enabled.
+
+    The yielded gas price is determined by sorting transactions in the mempool according to gas price, and returning the price of the transaction at `position`. This is the same technique used by the GasNow API.
+
+    * A position of 200 or less usually places a transaction within the mining block.
+    * A position of 500 usually places a transaction within the 2nd pending block.
+
+    .. code-block:: python
+
+        >>> from brownie.network.gas.strategies import GethMempoolStrategy
+        >>> gas_strategy = GethMempoolStrategy(200)
+
+        >>> accounts[0].transfer(accounts[1], "1 ether", gas_price=gas_strategy)
+
+.. py:class:: brownie.network.gas.strategies.LinearScalingStrategy(initial_gas_price, max_gas_price, increment=1.125, time_duration=30)
+
+    Time based scaling strategy for linear gas price increase.
+
+    * ``initial_gas_price``: The initial gas price to use in the first transaction
+    * ``max_gas_price``: The maximum gas price to use
+    * ``increment``: Multiplier applied to the previous gas price in order to determine the new gas price
+    * ``time_duration``: Number of seconds between transactions
+
+    .. code-block:: python
+
+        >>> from brownie.network.gas.strategies import LinearScalingStrategy
+        >>> gas_strategy = LinearScalingStrategy("10 gwei", "50 gwei", 1.1)
+
+        >>> accounts[0].transfer(accounts[1], "1 ether", gas_price=gas_strategy)
+
+.. _api-network-gas-abc:
+
+Gas Strategy ABCs
+-----------------
+
+`Abstract base classes <https://docs.python.org/3/library/abc.html#module-abc>`_ for building your own gas strategies.
+
+Simple Strategies
+*****************
+
+.. py:class:: brownie.network.gas.bases.SimpleGasStrategy
+
+    Abstract base class for simple gas strategies.
+
+    Simple gas strategies are called once to provide a dynamically genreated gas price at the time a transaction is broadcasted. Transactions using simple gas strategies are not automatically rebroadcasted.
+
+Simple Strategy Abstract Methods
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To implement a simple gas strategy, subclass :func:`SimpleGasStrategy <brownie.network.gas.bases.SimpleGasStrategy>` and include the following method:
+
+.. py:method:: SimpleGasStrategy.get_gas_price(self) -> int:
+
+    Return the gas price for a transaction.
+
+Scaling Strategies
+******************
+
+.. py:class:: brownie.network.gas.bases.BlockGasStrategy(duration=2)
+
+    Abstract base class for block-based gas strategies.
+
+    Block gas strategies are called every ``duration`` blocks and can be used to automatically rebroadcast a pending transaction with a higher gas price.
+
+.. py:class:: brownie.network.gas.bases.TimeGasStrategy(duration=30)
+
+    Abstract base class for time-based gas strategies.
+
+    Time gas strategies are called every ``duration`` seconds and can be used to automatically rebroadcast a pending transaction with a higher gas price.
+
+Scaling Strategy Abstract Methods
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To implement a scaling strategy, subclass one of the above ABCs and implement the following generator function:
+
+.. py:method:: BlockGasStrategy.get_gas_price(self) -> Generator[int]:
+
+    Generator function that yields a new gas price each time it is called.
+
+    The produced generator is called every ``duration`` seconds while a transaction is still pending. Each call must yield a new gas price as an integer. If the newly yielded value is at least 10% higher than the current gas price, the transaction is rebroadcasted with the new gas price.
+
 ``brownie.network.state``
 =========================
 

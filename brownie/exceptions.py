@@ -131,6 +131,10 @@ class VirtualMachineError(Exception):
         return self
 
 
+class TransactionError(Exception):
+    pass
+
+
 class EventLookupError(LookupError):
     pass
 
