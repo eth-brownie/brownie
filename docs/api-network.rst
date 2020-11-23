@@ -2132,6 +2132,18 @@ TransactionReceipt Attributes
         >>> tx.contract_name
         Token
 
+
+.. py:attribute:: TransactionReceipt.dev_revert_msg
+
+    The :ref:`developer revert comment<dev-revert>` returned when a transaction causes the EVM to revert, if any.
+
+    .. code-block:: python
+
+        >>> tx
+        <Transaction object '0xd9e0fb1bd6532f6aec972fc8aef806a8d8b894349cf5c82c487335625db8d0ef'>
+        >>> tx.dev_revert_msg
+        'dev: is four'
+
 .. py:attribute:: TransactionReceipt.events
 
     An :func:`EventDict <brownie.network.event.EventDict>` of decoded event logs for this transaction.

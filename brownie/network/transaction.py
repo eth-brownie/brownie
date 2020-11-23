@@ -163,6 +163,7 @@ class TransactionReceipt:
         self._events: Optional[EventDict] = None
         self._return_value: Any = None
         self._revert_msg: Optional[str] = None
+        self._dev_revert_msg: Optional[str] = None
         self._modified_state: Optional[bool] = None
         self._new_contracts: Optional[List] = None
         self._internal_transfers: Optional[List[Dict]] = None
@@ -182,6 +183,8 @@ class TransactionReceipt:
         self._revert_msg, self._revert_pc, revert_type = revert_data or (None, None, None)
         if self._revert_msg is None and revert_type not in ("revert", "invalid_opcode"):
             self._revert_msg = revert_type
+        if self._revert_pc is not None:
+            self._dev_revert_msg = build._get_dev_revert(self._revert_pc) or None
 
         self._await_transaction(required_confs, is_blocking)
 
@@ -239,6 +242,15 @@ class TransactionReceipt:
         elif self.contract_address and self._revert_msg == "out of gas":
             self._get_trace()
         return self._revert_msg
+
+    @trace_property
+    def dev_revert_msg(self) -> Optional[str]:
+        if self.status:
+            return None
+        if self._dev_revert_msg is None:
+            self._get_trace()
+
+        return self._dev_revert_msg
 
     @trace_property
     def subcalls(self) -> Optional[List]:
@@ -597,14 +609,20 @@ class TransactionReceipt:
                 # get returned error string from stack
                 data = _get_memory(step, -1)[4:]
                 self._revert_msg = decode_abi(["string"], data)[0]
-                return
-            if self.contract_address:
+
+            elif self.contract_address:
                 self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
                 return
+
             # check for dev revert string using program counter
-            self._revert_msg = build._get_dev_revert(step["pc"])
+            dev_revert = build._get_dev_revert(step["pc"])
+            if dev_revert is not None:
+                self._dev_revert_msg = dev_revert
+                if self._revert_msg is None:
+                    self._revert_msg = dev_revert
             if self._revert_msg is not None:
                 return
+
             # if none is found, expand the trace and get it from the pcMap
             self._expand_trace()
             try:
@@ -614,7 +632,9 @@ class TransactionReceipt:
                     i = trace.index(step) - 4
                     if trace[i]["pc"] != step["pc"] - 4:
                         step = trace[i]
-                self._revert_msg = pc_map[step["pc"]]["dev"]
+                self._dev_revert_msg = pc_map[step["pc"]]["dev"]
+                if self._revert_msg is None:
+                    self._revert_msg = self._dev_revert_msg
                 return
             except (KeyError, AttributeError, TypeError):
                 pass
