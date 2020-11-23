@@ -299,6 +299,21 @@ If the above function is executed in the console:
     >>> tx.revert_msg
     'dev: is three'
 
+When there is an error string included in the code, you can still access the dev revert reason via :func:`TransactionReceipt.dev_revert_msg <TransactionReceipt.dev_revert_msg>`:
+
+.. code-block:: python
+
+    >>> tx = test.revertExamples(4)
+    Transaction sent: 0xd9e0fb1bd6532f6aec972fc8aef806a8d8b894349cf5c82c487335625db8d0ef
+    test.revertExamples confirmed (cannot be four) - block: 3   gas used: 31337 (6.66%)
+    <Transaction object '0xd9e0fb1bd6532f6aec972fc8aef806a8d8b894349cf5c82c487335625db8d0ef'>
+
+    >>> tx.revert_msg
+    'cannot be four'
+
+    >>> tx.dev_revert_msg
+    'dev: is four'
+
 Parametrizing Tests
 ===================
 
