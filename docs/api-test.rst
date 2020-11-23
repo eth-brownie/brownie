@@ -130,14 +130,16 @@ One of these classes is instantiated in the ``pytest_configure`` method of ``bro
 RevertContextManager
 --------------------
 
-The ``RevertContextManager`` closely mimics the behaviour of :func:`pytest.raises <pytest.raises>`.
+The ``RevertContextManager`` behaves similarly to :func:`pytest.raises <pytest.raises>`.
 
-.. py:class:: brownie.test.plugin.RevertContextManager(revert_msg=None, dev_revert_msg=None)
+.. py:class:: brownie.test.plugin.RevertContextManager(revert_msg=None, dev_revert_msg=None, revert_pattern=None, dev_revert_pattern=None)
 
     Context manager used to handle :func:`VirtualMachineError <brownie.exceptions.VirtualMachineError>` exceptions. Raises ``AssertionError`` if no transaction has reverted when the context closes.
 
     * ``revert_msg``: Optional. Raises if the transaction does not revert with this error string.
     * ``dev_revert_msg``: Optional. Raises if the transaction does not revert with this :ref:`dev revert string<dev-revert>`.
+    * ``revert_pattern``: Regex pattern to compare against the transaction error string. Raises if the error string does not fully match the regex (partial matches are not allowed).
+    * ``dev_revert_pattern``: Regex pattern to compare against the transaction dev revert string.
 
     This class is available as ``brownie.reverts`` when ``pytest`` is active.
 
