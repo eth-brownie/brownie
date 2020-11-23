@@ -40,7 +40,7 @@ REVERT_FUNCTIONS_INPUT = [
 
 @pytest.mark.parametrize("expr", ["revert()", "require(false)"])
 @pytest.mark.parametrize("func", REVERT_FUNCTIONS_NO_INPUT)
-def test_final_stmt_revert_no_input(console_mode, evmtester, accounts, expr, func):
+def test_final_stmt_revert_no_input_no_msg(console_mode, evmtester, accounts, expr, func):
 
     func = func.format(expr)
     code = f"""
@@ -53,9 +53,45 @@ contract Foo {{
     contract = compile_source(code).Foo.deploy({"from": accounts[0]})
     tx = contract.foo()
     assert tx.revert_msg == "dev: yuss"
+    assert tx.dev_revert_msg == "dev: yuss"
+
+
+@pytest.mark.parametrize("expr", ["revert('foo')", "require(false, 'foo')"])
+@pytest.mark.parametrize("func", REVERT_FUNCTIONS_NO_INPUT)
+def test_final_stmt_revert_no_input(console_mode, evmtester, accounts, expr, func):
+
+    func = func.format(expr)
+    code = f"""
+pragma solidity >=0.4.22;
+contract Foo {{
+    {func}
+}}
+    """
+
+    contract = compile_source(code).Foo.deploy({"from": accounts[0]})
+    tx = contract.foo()
+    assert tx.revert_msg == "foo"
+    assert tx.dev_revert_msg == "dev: yuss"
 
 
 @pytest.mark.parametrize("expr", ["revert()", "require(false)"])
+@pytest.mark.parametrize("func", REVERT_FUNCTIONS_INPUT)
+def test_final_stmt_revert_input_no_msg(console_mode, evmtester, accounts, expr, func):
+
+    func = func.format(expr)
+    code = f"""
+pragma solidity >=0.4.22;
+contract Foo {{
+    {func}
+}}
+    """
+
+    contract = compile_source(code).Foo.deploy({"from": accounts[0]})
+    tx = contract.foo(4)
+    assert tx.revert_msg == "dev: yuss"
+
+
+@pytest.mark.parametrize("expr", ["revert('foo')", "require(false, 'foo')"])
 @pytest.mark.parametrize("func", REVERT_FUNCTIONS_INPUT)
 def test_final_stmt_revert_input(console_mode, evmtester, accounts, expr, func):
 
@@ -69,7 +105,8 @@ contract Foo {{
 
     contract = compile_source(code).Foo.deploy({"from": accounts[0]})
     tx = contract.foo(4)
-    assert tx.revert_msg == "dev: yuss"
+    assert tx.revert_msg == "foo"
+    assert tx.dev_revert_msg == "dev: yuss"
 
 
 def test_revert_msg_via_jump(ext_tester, console_mode):

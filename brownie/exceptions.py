@@ -104,14 +104,16 @@ class VirtualMachineError(Exception):
                 raise ValueError(exc["message"]) from None
 
             self.txid: str = txid
-            self.revert_type: str = data["error"]
-            self.revert_msg: Optional[str] = data.get("reason")
-            self.pc: Optional[str] = data.get("program_counter")
             self.source: str = ""
+            self.revert_type: str = data["error"]
+            self.pc: Optional[str] = data.get("program_counter")
             if self.revert_type == "revert":
                 self.pc -= 1
+
+            self.revert_msg: Optional[str] = data.get("reason")
+            self.dev_revert_msg = brownie.project.build._get_dev_revert(self.pc)
             if self.revert_msg is None and self.revert_type in ("revert", "invalid opcode"):
-                self.revert_msg = brownie.project.build._get_dev_revert(self.pc)
+                self.revert_msg = self.dev_revert_msg
         else:
             raise ValueError(str(exc)) from None
 
