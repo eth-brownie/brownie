@@ -183,6 +183,8 @@ class TransactionReceipt:
         self._revert_msg, self._revert_pc, revert_type = revert_data or (None, None, None)
         if self._revert_msg is None and revert_type not in ("revert", "invalid_opcode"):
             self._revert_msg = revert_type
+        if self._revert_pc is not None:
+            self._dev_revert_msg = build._get_dev_revert(self._revert_pc) or None
 
         self._await_transaction(required_confs, is_blocking)
 
