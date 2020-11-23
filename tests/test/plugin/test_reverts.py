@@ -13,7 +13,7 @@ def tester(BrownieTester, accounts):
 def test_reverts_success(tester):
     with brownie.reverts("zero"):
         tester.revertStrings(0)
-    with brownie.reverts("dev: one"):
+    with brownie.reverts(dev_revert_msg="dev: one"):
         tester.revertStrings(1)
 
 @pytest.mark.xfail(condition=True, reason="", raises=AssertionError, strict=True)
