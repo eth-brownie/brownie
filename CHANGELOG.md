@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.12.0](https://github.com/eth-brownie/brownie/tree/v1.12.0) - 2020-11-24
+### Added
+- `TransactionReceipt.replace` for rebroadcasting pending transactions ([#846](https://github.com/eth-brownie/brownie/pull/846))
+- Gas strategies for automatic transaction pricing and replacement ([#847](https://github.com/eth-brownie/brownie/pull/847))
+- Allow broadcasting reverting transactions in a live environment ([#854](https://github.com/eth-brownie/brownie/pull/854))
+- Add `timedelta` as a kwarg in `chain.mine` ([#856](https://github.com/eth-brownie/brownie/pull/856))
+- `require_network` pytest marker ([#858](https://github.com/eth-brownie/brownie/pull/858))
+- `TransactionReceipt.dev_revert_msg` to access the dev revert string when there is a regular revert message ([#860](https://github.com/eth-brownie/brownie/pull/860))
+- Allow targetting dev revert string in `brownie.reverts` ([#861](https://github.com/eth-brownie/brownie/pull/861))
+- Support regex in `brownie.reverts` ([#864](https://github.com/eth-brownie/brownie/pull/864))
+
+### Changed
+- Improved handling of trace queries and related exceptions ([#853](https://github.com/eth-brownie/brownie/pull/853))
+- Disallow assignment over contract functions ([#855](https://github.com/eth-brownie/brownie/pull/855))
+- `skip_coverage` and `no_call_coverage` are now markers, the fixtures have been deprecated ([#859](https://github.com/eth-brownie/brownie/pull/859))
+- Improved exception messages for contract calls missing the `"from"` field ([864](https://github.com/eth-brownie/brownie/pull/865))
+
+### Fixed
+- Address resolution in `Contract.at` ([#842](https://github.com/eth-brownie/brownie/pull/842))
+- Handle undecodable revert messages within subcalls ([#843](https://github.com/eth-brownie/brownie/pull/843))
+- Bug when installed packages contain an `interfaces` folder ([#857](https://github.com/eth-brownie/brownie/pull/857))
+
 ## [1.11.12](https://github.com/eth-brownie/brownie/tree/v1.11.12) - 2020-11-04
 ### Added
 - `timestamp` kwarg for `chain.mine` ([#838](https://github.com/eth-brownie/brownie/pull/838))

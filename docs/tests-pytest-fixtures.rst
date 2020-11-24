@@ -146,12 +146,6 @@ Isolation fixtures are used ensure a clean test environment when running tests, 
 
     Takes a snapshot of the chain before running a test and reverts to it after the test completes.
 
-Coverage Fixtures
-=================
-
-Coverage fixtures alter the behaviour of tests when coverage evaluation is active. They are useful for tests with many repetitive functions, to avoid the slowdown caused by ``debug_traceTransaction`` queries.
-
-
 .. _pytest-fixtures-reference-markers:
 
 Markers
