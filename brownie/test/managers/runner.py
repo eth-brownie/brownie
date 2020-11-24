@@ -2,6 +2,7 @@
 
 import builtins
 import json
+import re
 import sys
 import warnings
 from pathlib import Path
@@ -47,9 +48,23 @@ def revert_deprecation(revert_msg=None):
 
 
 class RevertContextManager:
-    def __init__(self, revert_msg=None, dev_revert_msg=None):
+    def __init__(
+        self, revert_msg=None, dev_revert_msg=None, revert_pattern=None, dev_revert_pattern=None
+    ):
+        if revert_msg is not None and revert_pattern is not None:
+            raise ValueError("Can only use one of`revert_msg` and `revert_pattern`")
+        if dev_revert_msg is not None and dev_revert_pattern is not None:
+            raise ValueError("Can only use one of `dev_revert_msg` and `dev_revert_pattern`")
+
+        if revert_pattern:
+            re.compile(revert_pattern)
+        if dev_revert_pattern:
+            re.compile(dev_revert_pattern)
+
         self.revert_msg = revert_msg
         self.dev_revert_msg = dev_revert_msg
+        self.revert_pattern = revert_pattern
+        self.dev_revert_pattern = dev_revert_pattern
         self.always_transact = CONFIG.argv["always_transact"]
 
         if revert_msg is not None and (revert_msg.startswith("dev:") or dev_revert_msg):
@@ -68,15 +83,27 @@ class RevertContextManager:
         if exc_type is not VirtualMachineError:
             raise
 
-        if self.dev_revert_msg is not None and self.dev_revert_msg != exc_value.dev_revert_msg:
-            raise AssertionError(
-                f"Unexpected dev revert string '{exc_value.dev_revert_msg}'\n{exc_value.source}"
-            ) from None
+        if self.dev_revert_msg or self.dev_revert_pattern:
+            actual = exc_value.dev_revert_msg
+            if (
+                actual is None
+                or (self.dev_revert_pattern and not re.fullmatch(self.dev_revert_pattern, actual))
+                or (self.dev_revert_msg and self.dev_revert_msg != actual)
+            ):
+                raise AssertionError(
+                    f"Unexpected dev revert string '{actual}'\n{exc_value.source}"
+                ) from None
 
-        if self.revert_msg is not None and self.revert_msg != exc_value.revert_msg:
-            raise AssertionError(
-                f"Unexpected revert string '{exc_value.revert_msg}'\n{exc_value.source}"
-            ) from None
+        if self.revert_msg or self.revert_pattern:
+            actual = exc_value.revert_msg
+            if (
+                actual is None
+                or (self.revert_pattern and not re.fullmatch(self.revert_pattern, actual))
+                or (self.revert_msg and self.revert_msg != actual)
+            ):
+                raise AssertionError(
+                    f"Unexpected revert string '{actual}'\n{exc_value.source}"
+                ) from None
 
         return True
 
