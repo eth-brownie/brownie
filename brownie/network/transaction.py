@@ -38,14 +38,19 @@ def trace_property(fn: Callable) -> Any:
     def wrapper(self: "TransactionReceipt") -> Any:
         if self.status < 0:
             return None
-        if not web3.supports_traces:
-            raise RPCRequestError(
-                f"`TransactionReceipt.{fn.__name__}` requires the `debug_traceTransaction` RPC"
-                " endpoint, but the node client does not support it or has not made it available."
-            )
         if self._trace_exc is not None:
             raise self._trace_exc
-        return fn(self)
+        try:
+            return fn(self)
+        except RPCRequestError as exc:
+            if web3.supports_traces:
+                # if the node client supports traces, raise the actual error
+                raise exc
+            raise RPCRequestError(
+                f"Accessing `TransactionReceipt.{fn.__name__}` on a {self.status.name.lower()} "
+                "transaction requires the `debug_traceTransaction` RPC endpoint, but the node "
+                "client does not support it or has not made it available."
+            ) from None
 
     return wrapper
 
@@ -550,13 +555,15 @@ class TransactionReceipt:
             self._trace = []
             return
 
+        if not web3.supports_traces:
+            raise RPCRequestError("Node client does not support `debug_traceTransaction`")
         try:
             trace = web3.provider.make_request(  # type: ignore
                 "debug_traceTransaction", (self.txid, {"disableStorage": CONFIG.mode != "console"})
             )
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
             msg = f"Encountered a {type(e).__name__} while requesting "
-            msg += "debug_traceTransaction. The local RPC client has likely crashed."
+            msg += "`debug_traceTransaction`. The local RPC client has likely crashed."
             if CONFIG.argv["coverage"]:
                 msg += " If the error persists, add the `skip_coverage` marker to this test."
             raise RPCRequestError(msg) from None
