@@ -239,8 +239,8 @@ class ContractConstructor:
         args, tx = _get_tx(None, args)
         if not tx["from"]:
             raise AttributeError(
-                "No deployer address given. You must supply a tx dict"
-                " as the last argument with a 'from' field."
+                "Final argument must be a dict of transaction parameters that "
+                "includes a `from` field specifying the address to deploy from"
             )
         return tx["from"].deploy(
             self._parent,
@@ -293,8 +293,8 @@ class ContractConstructor:
         args, tx = _get_tx(None, args)
         if not tx["from"]:
             raise AttributeError(
-                "Contract has no owner, you must supply a tx dict"
-                " as the last argument with a 'from' field."
+                "Final argument must be a dict of transaction parameters that "
+                "includes a `from` field specifying the sender of the transaction"
             )
 
         return tx["from"].estimate_gas(
@@ -1076,8 +1076,8 @@ class _ContractMethod:
         args, tx = _get_tx(self._owner, args)
         if not tx["from"]:
             raise AttributeError(
-                "Contract has no owner, you must supply a tx dict"
-                " as the last argument with a 'from' field."
+                "Final argument must be a dict of transaction parameters that "
+                "includes a `from` field specifying the sender of the transaction"
             )
 
         return tx["from"].transfer(
@@ -1166,8 +1166,8 @@ class _ContractMethod:
         args, tx = _get_tx(self._owner, args)
         if not tx["from"]:
             raise AttributeError(
-                "Contract has no owner, you must supply a tx dict"
-                " as the last argument with a 'from' field."
+                "Final argument must be a dict of transaction parameters that "
+                "includes a `from` field specifying the sender of the transaction"
             )
 
         return tx["from"].estimate_gas(
