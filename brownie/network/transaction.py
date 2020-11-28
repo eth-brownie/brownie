@@ -1234,7 +1234,10 @@ def _step_external(
 def _get_memory(step: Dict, idx: int) -> HexBytes:
     offset = int(step["stack"][idx], 16)
     length = int(step["stack"][idx - 1], 16)
-    return HexBytes("".join(step["memory"]))[offset : offset + length]
+    data = HexBytes("".join(step["memory"]))[offset : offset + length]
+    # append zero-bytes if allocated memory ends before `length` bytes
+    data = HexBytes(data + b"\x00" * (length - len(data)))
+    return data
 
 
 def _get_last_map(address: EthAddress, sig: str) -> Dict:
