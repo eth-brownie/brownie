@@ -43,6 +43,11 @@ To upgrade to the latest version:
 pipx upgrade eth-brownie
 ```
 
+To use lastest master or another branch as version:
+```bash
+pipx install git+https://github.com/eth-brownie/brownie.git@master
+```
+
 ### via `pip`
 
 You can install the latest release via [`pip`](https://pypi.org/project/pip/):
