@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.12.1](https://github.com/eth-brownie/brownie/tree/v1.12.1) - 2020-11-28
+### Fixed
+- Append zero-bytes when expected size of memory exceeds actual size ([#868](https://github.com/eth-brownie/brownie/pull/868))
+
 ## [1.12.0](https://github.com/eth-brownie/brownie/tree/v1.12.0) - 2020-11-24
 ### Added
 - `TransactionReceipt.replace` for rebroadcasting pending transactions ([#846](https://github.com/eth-brownie/brownie/pull/846))
