@@ -138,12 +138,8 @@ def compile_and_format(
         )
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
-
-        output_json["contracts"] = {
-            k: v for k, v in output_json["contracts"].items() if k in path_list
-        }
-
         build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
+
     return build_json
 
 
@@ -280,18 +276,33 @@ def generate_build_json(
         compiler_data = {}
     compiler_data["evm_version"] = input_json["settings"]["evmVersion"]
     build_json: Dict = {}
-    path_list = list(input_json["sources"])
 
     if input_json["language"] == "Solidity":
         compiler_data["optimizer"] = input_json["settings"]["optimizer"]
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
     for path_str, contract_name in [
-        (k, v) for k in path_list for v in output_json["contracts"].get(k, {})
+        (k, x) for k, v in output_json["contracts"].items() for x in v.keys()
     ]:
+        contract_alias = contract_name
+
+        if path_str in input_json["sources"]:
+            source = input_json["sources"][path_str]["content"]
+        else:
+            # If the source is not present in `input_json`, this is likely a
+            # dependency from an installed package. We alias the contract as
+            # [PACKAGE]/[NAME] to avoid namespace collisions.
+            with Path(path_str).open() as fp:
+                source = fp.read()
+
+            data_path = _get_data_folder().parts
+            path_parts = Path(path_str).parts
+            if path_parts[: len(data_path)] == data_path:
+                idx = len(data_path) + 1
+                contract_alias = f"{path_parts[idx]}/{path_parts[idx+1]}/{contract_name}"
 
         if not silent:
-            print(f" - {contract_name}...")
+            print(f" - {contract_alias}")
 
         abi = output_json["contracts"][path_str][contract_name]["abi"]
         natspec = merge_natspec(
@@ -299,14 +310,14 @@ def generate_build_json(
             output_json["contracts"][path_str][contract_name].get("userdoc", {}),
         )
         output_evm = output_json["contracts"][path_str][contract_name]["evm"]
-        if contract_name in build_json and not output_evm["deployedBytecode"]["object"]:
+        if contract_alias in build_json and not output_evm["deployedBytecode"]["object"]:
             continue
 
         if input_json["language"] == "Solidity":
             contract_node = next(
                 i[contract_name] for i in source_nodes if i.absolutePath == path_str
             )
-            build_json[contract_name] = solidity._get_unique_build_json(
+            build_json[contract_alias] = solidity._get_unique_build_json(
                 output_evm,
                 contract_node,
                 statement_nodes,
@@ -322,10 +333,10 @@ def generate_build_json(
                 path_str,
                 contract_name,
                 output_json["sources"][path_str]["ast"],
-                (0, len(input_json["sources"][path_str]["content"])),
+                (0, len(source)),
             )
 
-        build_json[contract_name].update(
+        build_json[contract_alias].update(
             {
                 "abi": abi,
                 "ast": output_json["sources"][path_str]["ast"],
@@ -336,8 +347,8 @@ def generate_build_json(
                 "language": input_json["language"],
                 "natspec": natspec,
                 "opcodes": output_evm["deployedBytecode"]["opcodes"],
-                "sha1": sha1(input_json["sources"][path_str]["content"].encode()).hexdigest(),
-                "source": input_json["sources"][path_str]["content"],
+                "sha1": sha1(source.encode()).hexdigest(),
+                "source": source,
                 "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
                 "sourcePath": path_str,
             }
