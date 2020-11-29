@@ -102,12 +102,22 @@ class _ProjectBase:
         finally:
             os.chdir(cwd)
 
-        for data in build_json.values():
+        for alias, data in build_json.items():
             if self._build_path is not None:
-                path = self._build_path.joinpath(f"contracts/{data['contractName']}.json")
+                if alias == data["contractName"]:
+                    # if the alias == contract name, this is a part of the core project
+                    path = self._build_path.joinpath(f"contracts/{alias}.json")
+                else:
+                    # otherwise, this is an artifact from an external dependency
+                    path = self._build_path.joinpath(f"contracts/dependencies/{alias}.json")
+                    for parent in list(path.parents)[::-1]:
+                        parent.mkdir(exist_ok=True)
                 with path.open("w") as fp:
                     json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
-            self._build._add_contract(data)
+
+            if alias == data["contractName"]:
+                # only add artifacts from the core project for now
+                self._build._add_contract(data)
 
     def _create_containers(self) -> None:
         # create container objects
