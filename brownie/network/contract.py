@@ -712,14 +712,25 @@ class Contract(_DeployedContractBase):
                 BrownieCompilerWarning,
             )
 
-        if as_proxy_for is None and data["result"][0].get("Implementation"):
-            try:
-                # many proxy patterns use an `implementation()` function, so first we
-                # try to determine the implementation address without trusting etherscan
-                contract = cls.from_abi(name, address, abi)
-                as_proxy_for = contract.implementation()
-            except Exception:
-                as_proxy_for = _resolve_address(data["result"][0]["Implementation"])
+        if as_proxy_for is None:
+            # always check for an EIP1967 proxy - https://eips.ethereum.org/EIPS/eip-1967
+            implementation_eip1967 = web3.eth.getStorageAt(
+                address, "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
+            )
+            if int(implementation_eip1967.hex(), 16):
+                as_proxy_for = _resolve_address(implementation_eip1967[12:])
+            elif data["result"][0].get("Implementation"):
+                # for other proxy patterns, we only check if etherscan indicates
+                # the contract is a proxy. otherwise we could have a false positive
+                # if there is an `implementation` method on a regular contract.
+                try:
+                    # first try to call `implementation` per EIP897
+                    # https://eips.ethereum.org/EIPS/eip-897
+                    contract = cls.from_abi(name, address, abi)
+                    as_proxy_for = contract.implementation.call()
+                except Exception:
+                    # if that fails, fall back to the address provided by etherscan
+                    as_proxy_for = _resolve_address(data["result"][0]["Implementation"])
 
         if as_proxy_for == address:
             as_proxy_for = None
