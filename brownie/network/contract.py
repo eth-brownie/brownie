@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import sys
 import warnings
 from pathlib import Path
 from textwrap import TextWrapper
@@ -15,10 +16,8 @@ import solcx
 from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
 from semantic_version import Version
-from vvm import get_installable_vyper_versions
-from vvm.utils.convert import to_vyper_version
 
-from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS
+from brownie._config import CONFIG, REQUEST_HEADERS
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
 from brownie.convert.utils import (
@@ -38,16 +37,9 @@ from brownie.project import compiler, ethpm
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
-from . import accounts, chain
+from . import accounts, rpc
 from .event import _add_deployment_topics, _get_topics
-from .state import (
-    _add_contract,
-    _add_deployment,
-    _find_contract,
-    _get_deployment,
-    _remove_contract,
-    _revert_register,
-)
+from .state import _add_contract, _add_deployment, _find_contract, _get_deployment, _remove_contract, _revert_register
 from .web3 import _resolve_address, web3
 
 _unverified_addresses: Set = set()
@@ -123,9 +115,7 @@ class ContractContainer(_ContractBase):
         return len(self._contracts)
 
     def __repr__(self) -> str:
-        if CONFIG.argv["cli"] == "console":
-            return str(self._contracts)
-        return super().__repr__()
+        return str(self._contracts)
 
     def _reset(self) -> None:
         for contract in self._contracts:
@@ -169,7 +159,6 @@ class ContractContainer(_ContractBase):
             address: Address string of the contract.
             owner: Default Account instance to send contract transactions from.
             tx: Transaction ID of the contract creation."""
-        address = _resolve_address(address)
         contract = _find_contract(address)
         if isinstance(contract, ProjectContract):
             if contract._name == self._name and contract._project == self._project:
@@ -194,7 +183,7 @@ class ContractContainer(_ContractBase):
 
     def _add_from_tx(self, tx: TransactionReceiptType) -> None:
         tx._confirmed.wait()
-        if tx.status and tx.contract_address is not None:
+        if tx.status:
             try:
                 self.at(tx.contract_address, tx.sender, tx)
             except ContractNotFound:
@@ -252,9 +241,8 @@ class ContractConstructor:
             required_confs=tx["required_confs"],
         )
 
-    @staticmethod
-    def _autosuggest(obj: "ContractConstructor") -> List:
-        return _contract_method_autosuggest(obj.abi["inputs"], True, obj.payable)
+    def _autosuggest(self) -> List:
+        return _contract_method_autosuggest(self)
 
     def encode_input(self, *args: tuple) -> str:
         bytecode = self._parent.bytecode
@@ -301,7 +289,6 @@ class ContractConstructor:
             amount=tx["value"], gas_price=tx["gasPrice"], data=self.encode_input(*args)
         )
 
-
 class InterfaceContainer:
     """
     Container class that provides access to interfaces within a project.
@@ -309,13 +296,6 @@ class InterfaceContainer:
 
     def __init__(self, project: Any) -> None:
         self._project = project
-
-        # automatically populate with interfaces in `data/interfaces`
-        # overwritten if a project contains an interface with the same name
-        for path in BROWNIE_FOLDER.glob("data/interfaces/*.json"):
-            with path.open() as fp:
-                abi = json.load(fp)
-            self._add(path.stem, abi)
 
     def _add(self, name: str, abi: List) -> None:
         constructor = InterfaceConstructor(name, abi)
@@ -330,9 +310,6 @@ class InterfaceConstructor:
     def __init__(self, name: str, abi: List) -> None:
         self._name = name
         self.abi = abi
-        self.selectors = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
-        }
 
     def __call__(self, address: str, owner: Optional[AccountsType] = None) -> "Contract":
         return Contract.from_abi(self._name, address, self.abi, owner)
@@ -388,13 +365,7 @@ class _DeployedContractBase(_ContractBase):
         self._initialized = True
 
     def _check_and_set(self, name: str, obj: Any) -> None:
-        if name == "balance":
-            warnings.warn(
-                f"'{self._name}' defines a 'balance' function, "
-                f"'{self._name}.balance' is unavailable",
-                BrownieEnvironmentWarning,
-            )
-        elif hasattr(self, name):
+        if hasattr(self, name):
             raise AttributeError(f"Namespace collision: '{self._name}.{name}'")
         setattr(self, name, obj)
 
@@ -424,10 +395,7 @@ class _DeployedContractBase(_ContractBase):
     def __getattribute__(self, name: str) -> Any:
         if super().__getattribute__("_reverted"):
             raise ContractNotFound("This contract no longer exists.")
-        try:
-            return super().__getattribute__(name)
-        except AttributeError:
-            raise AttributeError(f"Contract '{self._name}' object has no attribute '{name}'")
+        return super().__getattribute__(name)
 
     def __setattr__(self, name: str, value: Any) -> None:
         if self._initialized and hasattr(self, name):
@@ -713,16 +681,7 @@ class Contract(_DeployedContractBase):
             )
 
         if as_proxy_for is None and data["result"][0].get("Implementation"):
-            try:
-                # many proxy patterns use an `implementation()` function, so first we
-                # try to determine the implementation address without trusting etherscan
-                contract = cls.from_abi(name, address, abi)
-                as_proxy_for = contract.implementation()
-            except Exception:
-                as_proxy_for = _resolve_address(data["result"][0]["Implementation"])
-
-        if as_proxy_for == address:
-            as_proxy_for = None
+            as_proxy_for = _resolve_address(data["result"][0]["Implementation"])
 
         # if this is a proxy, fetch information for the implementation contract
         if as_proxy_for is not None:
@@ -732,29 +691,20 @@ class Contract(_DeployedContractBase):
         if not is_verified:
             return cls.from_abi(name, address, abi, owner)
 
-        compiler_str = data["result"][0]["CompilerVersion"]
-        if compiler_str.startswith("vyper:"):
-            try:
-                version = to_vyper_version(compiler_str[6:])
-                is_compilable = version in get_installable_vyper_versions()
-            except Exception:
-                is_compilable = False
-        else:
-            try:
-                version = Version(compiler_str.lstrip("v")).truncate()
-                is_compilable = (
-                    version >= Version("0.4.22")
-                    and version
-                    in solcx.get_installable_solc_versions() + solcx.get_installed_solc_versions()
-                )
-            except Exception:
-                is_compilable = False
-
-        if not is_compilable:
+        try:
+            version = Version(data["result"][0]["CompilerVersion"].lstrip("v")).truncate()
+        except Exception:
+            version = Version("0.0.0")
+        if version < Version("0.4.22") or (
+            # special case for OSX because installing 0.4.x versions is problematic
+            sys.platform == "darwin"
+            and version < Version("0.5.0")
+            and f"v{version}" not in solcx.get_installed_solc_versions()
+        ):
             if not silent:
                 warnings.warn(
-                    f"{address}: target compiler '{compiler_str}' cannot be installed or is not "
-                    "supported by Brownie. Some debugging functionality will not be available.",
+                    f"{address}: target compiler '{data['result'][0]['CompilerVersion']}' is "
+                    "unsupported by Brownie. Some functionality will not be available.",
                     BrownieCompilerWarning,
                 )
             return cls.from_abi(name, address, abi, owner)
@@ -767,10 +717,9 @@ class Contract(_DeployedContractBase):
         if evm_version == "Default":
             evm_version = None
 
-        source_str = "\n".join(data["result"][0]["SourceCode"].splitlines())
-        if source_str.startswith("{{"):
+        if data["result"][0]["SourceCode"].startswith("{"):
             # source was verified using compiler standard JSON
-            input_json = json.loads(source_str[1:-1])
+            input_json = json.loads(data["result"][0]["SourceCode"][1:-1])
             sources = {k: v["content"] for k, v in input_json["sources"].items()}
             evm_version = input_json["settings"].get("evmVersion", evm_version)
 
@@ -781,23 +730,10 @@ class Contract(_DeployedContractBase):
             output_json = compiler.compile_from_input_json(input_json)
             build_json = compiler.generate_build_json(input_json, output_json)
         else:
-            if source_str.startswith("{"):
-                # source was submitted as multiple files
-                sources = {k: v["content"] for k, v in json.loads(source_str).items()}
-            else:
-                # source was submitted as a single file
-                if compiler_str.startswith("vyper"):
-                    path_str = f"{name}.vy"
-                else:
-                    path_str = f"{name}-flattened.sol"
-                sources = {path_str: source_str}
-
+            # source was submitted as a single flattened file
+            sources = {f"{name}-flattened.sol": data["result"][0]["SourceCode"]}
             build_json = compiler.compile_and_format(
-                sources,
-                solc_version=str(version),
-                vyper_version=str(version),
-                optimizer=optimizer,
-                evm_version=evm_version,
+                sources, solc_version=str(version), optimizer=optimizer, evm_version=evm_version
             )
 
         build_json = build_json[name]
@@ -863,6 +799,91 @@ class ProjectContract(_DeployedContractBase):
     ) -> None:
         _ContractBase.__init__(self, project, build, project._sources)
         _DeployedContractBase.__init__(self, address, owner, tx)
+
+    def publish_to_explorer(self, silent: bool = False) -> Dict:
+        """
+        Use a block explorer to verify that the deployed sourcecode matches this `ProjectContract`.
+        """
+        input_json = compiler.generate_input_json(self._project._sources._contract_sources)
+        output_json = compiler.compile_from_input_json(input_json)
+        url = CONFIG.active_network.get("explorer")
+        if url is None:
+            raise ValueError("Explorer API not set for this network")
+
+        # TODO: return now if it is already verified?
+
+        # https://etherscan.io/apis#contracts
+        # https://etherscan.io/sourcecode-demo.html
+        print(f"{list(output_json['contracts'].keys())[-1]}:{self._build['contractName']}")
+        print(input_json)
+        print(output_json)
+        post_data: Dict = {
+            "module": "contract",
+            "action": "verifysourcecode",
+            "codeformat": "solidity-standard-json-input",
+            "contractaddress": self.address,
+            "sourceCode": json.dumps(output_json),
+            "contractname": f"{list(output_json['contracts'].keys())[-1]}:{self._build['contractName']}",
+            "compilerversion": "v" + self._build['compiler']['version']+"+commit.27d51765",
+            "optimizationUsed": self._build['compiler']['optimizer']['enabled'],
+            "runs": self._build['compiler']['optimizer']['runs'],
+            #"constructorArguments": self.tx.input[2:],
+            "evmversion": self._build['compiler']['evm_version'],
+            "licensetype": 1
+        }
+
+        for i, dependency in enumerate(self._build['dependencies']):
+            if i <= 10:
+                post_data[f"libraryname{i}"] = dependency
+                if self._project[dependency]:
+                    post_data[f"libraryaddress{i}"] = self._project[library][-1].address[-40:]
+            else:
+                raise Exception('Too many libraries to publish on explorer')
+
+        guid_params: Dict = {"module": "contract", "action": "checkverifystatus"}
+
+        if "etherscan" in url:
+            if os.getenv("ETHERSCAN_TOKEN"):
+                post_data["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
+                guid_params["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
+            else:
+                sys.exit(
+                    "No Etherscan API token set. A token is required to publish. "
+                    "Visit https://etherscan.io/register to obtain a token, and then store it "
+                    "as the environment variable $ETHERSCAN_TOKEN",
+                    BrownieEnvironmentWarning,
+                )
+
+        if not silent:
+            print(
+                f"Verifying source of {color('bright blue')}{self.address}{color} "
+                f"from {color('bright blue')}{urlparse(url).netloc}{color}..."
+            )
+
+        response = requests.post(url, data=post_data, headers=REQUEST_HEADERS)
+        if response.status_code != 200:
+            raise ConnectionError(
+                f"Status {response.status_code} when querying {url} for verifysourcecode: {response.text}"
+            )
+        data = response.json()
+
+        if int(data["status"]) != 1:
+            raise ValueError(f"Failed to retrieve data from API: {data['result']}")
+
+        # data.result is the GUID receipt for the submission, we can use this guid for checking the verification status
+        guid_params["guid"] = data['result']
+
+        response = requests.get(url, params=guid_params, headers=REQUEST_HEADERS)
+        if response.status_code != 200:
+            raise ConnectionError(
+                f"Status {response.status_code} when querying {url} for checkverifystatus: {response.text}"
+            )
+        data = response.json()
+
+        if int(data["status"]) != 1:
+            raise ValueError(f"Failed to verify sourcecode from API: {data['result']}")
+
+        return data
 
 
 class OverloadedMethod:
@@ -991,7 +1012,6 @@ class _ContractMethod:
         self.abi = abi
         self._owner = owner
         self.signature = build_function_selector(abi)
-        self._input_sig = build_function_signature(abi)
         self.natspec = natspec or {}
 
     def __repr__(self) -> str:
@@ -1005,12 +1025,8 @@ class _ContractMethod:
         else:
             return self.abi["stateMutability"] == "payable"
 
-    @staticmethod
-    def _autosuggest(obj: "_ContractMethod") -> List:
-        # this is a staticmethod to be compatible with `_call_suggest` and `_transact_suggest`
-        return _contract_method_autosuggest(
-            obj.abi["inputs"], isinstance(obj, ContractTx), obj.payable
-        )
+    def _autosuggest(self) -> List:
+        return _contract_method_autosuggest(self)
 
     def info(self) -> None:
         """
@@ -1084,30 +1100,12 @@ class _ContractMethod:
             self._address,
             tx["value"],
             gas_limit=tx["gas"],
-            gas_buffer=tx["gas_buffer"],
             gas_price=tx["gasPrice"],
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
             data=self.encode_input(*args),
             allow_revert=tx["allow_revert"],
         )
-
-    def decode_input(self, hexstr: str) -> List:
-        """
-        Decode input call data for this method.
-
-        Arguments
-        ---------
-        hexstr : str
-            Hexstring of input call data
-
-        Returns
-        -------
-        Decoded values
-        """
-        types_list = get_type_strings(self.abi["inputs"])
-        result = eth_abi.decode_abi(types_list, HexBytes(hexstr)[4:])
-        return format_input(self.abi, result)
 
     def encode_input(self, *args: Tuple) -> str:
         """
@@ -1128,18 +1126,12 @@ class _ContractMethod:
         return self.signature + eth_abi.encode_abi(types_list, data).hex()
 
     def decode_output(self, hexstr: str) -> Tuple:
-        """
-        Decode hexstring data returned by this method.
+        """Decodes hexstring data returned by this method.
 
-        Arguments
-        ---------
-        hexstr : str
-            Hexstring of returned call data
+        Args:
+            hexstr: Hexstring of returned call data
 
-        Returns
-        -------
-        Decoded values
-        """
+        Returns: Decoded values."""
         types_list = get_type_strings(self.abi["outputs"])
         result = eth_abi.decode_abi(types_list, HexBytes(hexstr))
         result = format_output(self.abi, result)
@@ -1176,7 +1168,6 @@ class _ContractMethod:
             gas_price=tx["gasPrice"],
             data=self.encode_input(*args),
         )
-
 
 class ContractTx(_ContractMethod):
     """
@@ -1246,24 +1237,13 @@ class ContractCall(_ContractMethod):
 
         args, tx = _get_tx(self._owner, args)
         tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
-        pc, revert_msg = None, None
-
         try:
             self.transact(*args, tx)
-            chain.undo()
-        except VirtualMachineError as exc:
-            pc, revert_msg = exc.pc, exc.revert_msg
-            chain.undo()
         except Exception:
             pass
 
-        try:
-            return self.call(*args)
-        except VirtualMachineError as exc:
-            if pc == exc.pc and revert_msg and exc.revert_msg is None:
-                # in case we miss a dev revert string
-                exc.revert_msg = revert_msg
-            raise exc
+        rpc.undo()
+        return self.call(*args)
 
 
 def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
@@ -1279,7 +1259,6 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
         "from": owner,
         "value": 0,
         "gas": None,
-        "gas_buffer": None,
         "gasPrice": None,
         "nonce": None,
         "required_confs": 1,
@@ -1291,13 +1270,6 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
         for key, target in [("amount", "value"), ("gas_limit", "gas"), ("gas_price", "gasPrice")]:
             if key in tx:
                 tx[target] = tx[key]
-
-    # enable the magic of ganache's `evm_unlockUnknownAccount`
-    if isinstance(tx["from"], str):
-        tx["from"] = accounts.at(tx["from"], force=True)
-    elif isinstance(tx["from"], _DeployedContractBase):
-        tx["from"] = accounts.at(tx["from"].address, force=True)
-
     return args, tx
 
 
@@ -1371,6 +1343,20 @@ def _print_natspec(natspec: Dict) -> None:
     print()
 
 
+def _contract_method_autosuggest(method: Any) -> List:
+    types_list = get_type_strings(method.abi["inputs"], {"fixed168x10": "decimal"})
+    params = zip([i["name"] for i in method.abi["inputs"]], types_list)
+
+    if isinstance(method, ContractCall):
+        tx_hint: List = []
+    elif method.payable:
+        tx_hint = [" {'from': Account", " 'value': Wei}"]
+    else:
+        tx_hint = [" {'from': Account}"]
+
+    return [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params] + tx_hint
+
+
 def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     url = CONFIG.active_network.get("explorer")
     if url is None:
@@ -1405,42 +1391,3 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
         raise ValueError(f"Failed to retrieve data from API: {data['result']}")
 
     return data
-
-
-# console auto-completion logic
-
-
-def _call_autosuggest(method: Any) -> List:
-    # since methods are not unique for each object, we use `__reduce__`
-    # to locate the specific object so we can access the correct ABI
-    method = method.__reduce__()[1][0]
-    return _contract_method_autosuggest(method.abi["inputs"], False, False)
-
-
-def _transact_autosuggest(method: Any) -> List:
-    method = method.__reduce__()[1][0]
-    return _contract_method_autosuggest(method.abi["inputs"], True, method.payable)
-
-
-# assign the autosuggest functionality to various methods
-ContractConstructor.encode_input.__dict__["_autosuggest"] = _call_autosuggest
-_ContractMethod.call.__dict__["_autosuggest"] = _call_autosuggest
-_ContractMethod.encode_input.__dict__["_autosuggest"] = _call_autosuggest
-
-ContractConstructor.estimate_gas.__dict__["_autosuggest"] = _transact_autosuggest
-_ContractMethod.estimate_gas.__dict__["_autosuggest"] = _transact_autosuggest
-_ContractMethod.transact.__dict__["_autosuggest"] = _transact_autosuggest
-
-
-def _contract_method_autosuggest(args: List, is_transaction: bool, is_payable: bool) -> List:
-    types_list = get_type_strings(args, {"fixed168x10": "decimal"})
-    params = zip([i["name"] for i in args], types_list)
-
-    if not is_transaction:
-        tx_hint: List = []
-    elif is_payable:
-        tx_hint = [" {'from': Account", " 'value': Wei}"]
-    else:
-        tx_hint = [" {'from': Account}"]
-
-    return [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params] + tx_hint
