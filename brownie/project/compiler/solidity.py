@@ -13,7 +13,7 @@ from solcast.nodes import NodeBase, is_inside_offset
 
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion
-from brownie.project.compiler.utils import expand_source_map
+from brownie.project.compiler.utils import _get_alias, expand_source_map
 
 from . import sources
 
@@ -252,14 +252,21 @@ def _get_unique_build_json(
         has_fallback,
         instruction_count,
     )
+
+    dependencies = []
+    for node in [i for i in contract_node.dependencies if i.nodeType == "ContractDefinition"]:
+        # use contract aliases when recording dependencies, to avoid
+        # potential namespace collisions when importing across projects
+        name = node.name
+        path_str = node.parent().absolutePath
+        dependencies.append(_get_alias(name, path_str))
+
     return {
         "allSourcePaths": paths,
         "bytecode": bytecode,
         "bytecodeSha1": sha1(_remove_metadata(bytecode).encode()).hexdigest(),
         "coverageMap": {"statements": statement_map, "branches": branch_map},
-        "dependencies": [
-            i.name for i in contract_node.dependencies if i.nodeType == "ContractDefinition"
-        ],
+        "dependencies": dependencies,
         "offset": contract_node.offset,
         "pcMap": pc_map,
         "type": contract_node.contractKind,

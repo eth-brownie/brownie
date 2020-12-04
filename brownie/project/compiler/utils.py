@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 
+from pathlib import Path
 from typing import Dict, List
+
+from brownie._config import _get_data_folder
 
 
 def expand_source_map(source_map_str: str) -> List:
@@ -52,3 +55,17 @@ def merge_natspec(devdoc: Dict, userdoc: Dict) -> Dict:
             # sometimes Solidity has inconsistent NatSpec formatting ¯\_(ツ)_/¯
             pass
     return natspec
+
+
+def _get_alias(contract_name: str, path_str: str) -> str:
+    # Generate an alias for a contract, used when tracking dependencies.
+    # For a contract within the project, the alias == the name. For contracts
+    # imported from a dependency, the alias is set as [PACKAGE]/[NAME]
+    # to avoid namespace collisions.
+    data_path = _get_data_folder().parts
+    path_parts = Path(path_str).parts
+    if path_parts[: len(data_path)] == data_path:
+        idx = len(data_path) + 1
+        return f"{path_parts[idx]}/{path_parts[idx+1]}/{contract_name}"
+    else:
+        return contract_name

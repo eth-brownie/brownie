@@ -18,7 +18,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
     install_solc,
     set_solc_version,
 )
-from brownie.project.compiler.utils import merge_natspec
+from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
 from brownie.utils import notify
 
@@ -289,17 +289,9 @@ def generate_build_json(
         if path_str in input_json["sources"]:
             source = input_json["sources"][path_str]["content"]
         else:
-            # If the source is not present in `input_json`, this is likely a
-            # dependency from an installed package. We alias the contract as
-            # [PACKAGE]/[NAME] to avoid namespace collisions.
             with Path(path_str).open() as fp:
                 source = fp.read()
-
-            data_path = _get_data_folder().parts
-            path_parts = Path(path_str).parts
-            if path_parts[: len(data_path)] == data_path:
-                idx = len(data_path) + 1
-                contract_alias = f"{path_parts[idx]}/{path_parts[idx+1]}/{contract_name}"
+            contract_alias = _get_alias(contract_name, path_str)
 
         if not silent:
             print(f" - {contract_alias}")
