@@ -458,7 +458,6 @@ class _DeployedContractBase(_ContractBase):
         """
         Use a block explorer to verify that the deployed sourcecode matches this `ProjectContract`.
         """
-        from pathlib import Path
         input_json = compiler.generate_input_json(self._project._sources._contract_sources)
         output_json = compiler.compile_from_input_json(input_json)
         url = CONFIG.active_network.get("explorer")
@@ -469,32 +468,36 @@ class _DeployedContractBase(_ContractBase):
 
         # https://etherscan.io/apis#contracts
         # https://etherscan.io/sourcecode-demo.html
-        print(f"{Path(list(output_json['contracts'].keys())[-1]).name}:{self._build['contractName']}")
+        print(
+            f"{Path(list(output_json['contracts'].keys())[-1]).name}:{self._build['contractName']}"
+        )
         print(input_json)
         print(output_json)
+        contract_file = f"{Path(list(output_json['contracts'].keys())[-1]).name}"
+        contract_name = f"{self._build['contractName']}"
+        constructor_arguments = self.tx.input[2:] if self.tx else None
         post_data: Dict = {
             "module": "contract",
             "action": "verifysourcecode",
             "codeformat": "solidity-standard-json-input",
             "contractaddress": self.address,
             "sourceCode": json.dumps(output_json),
-            "contractname": f"{Path(list(output_json['contracts'].keys())[-1]).name}:{self._build['contractName']}",
-            #"contractname": "Token.sol:Token",
-            "compilerversion": "v" + self._build['compiler']['version']+"+commit.27d51765",
-            "optimizationUsed": self._build['compiler']['optimizer']['enabled'],
-            "runs": self._build['compiler']['optimizer']['runs'],
-            "constructorArguments": self.tx.input[2:],
-            "evmversion": self._build['compiler']['evm_version'],
-            "licensetype": 1
+            "contractname": f"{contract_file}:{contract_name}",
+            "compilerversion": "v" + self._build["compiler"]["version"] + "+commit.27d51765",
+            "optimizationUsed": self._build["compiler"]["optimizer"]["enabled"],
+            "runs": self._build["compiler"]["optimizer"]["runs"],
+            "constructorArguments": constructor_arguments,
+            "evmversion": self._build["compiler"]["evm_version"],
+            "licensetype": 1,
         }
 
-        for i, dependency in enumerate(self._build['dependencies']):
+        for i, dependency in enumerate(self._build["dependencies"]):
             if i <= 10:
                 post_data[f"libraryname{i}"] = dependency
                 if self._project[dependency]:
-                    post_data[f"libraryaddress{i}"] = self._project[library][-1].address[-40:]
+                    post_data[f"libraryaddress{i}"] = self._project[dependency][-1].address[-40:]
             else:
-                raise Exception('Too many libraries to publish on explorer')
+                raise Exception("Too many libraries to publish on explorer")
 
         guid_params: Dict = {"module": "contract", "action": "checkverifystatus"}
 
@@ -503,13 +506,7 @@ class _DeployedContractBase(_ContractBase):
                 post_data["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
                 guid_params["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
             else:
-                sys.exit(
-                    "No Etherscan API token set. A token is required to publish. "
-                    "Visit https://etherscan.io/register to obtain a token, and then store it "
-                    "as the environment variable $ETHERSCAN_TOKEN",
-                    BrownieEnvironmentWarning,
-                )
-
+                raise Exception("No Etherscan token/api key in ETHERSCAN_TOKEN")
         if not silent:
             print(
                 f"Verifying source of {color('bright blue')}{self.address}{color} "
@@ -517,25 +514,29 @@ class _DeployedContractBase(_ContractBase):
             )
 
         import time
+
         time.sleep(10)
 
         response = requests.post(url, data=post_data, headers=REQUEST_HEADERS)
         if response.status_code != 200:
             raise ConnectionError(
-                f"Status {response.status_code} when querying {url} for verifysourcecode: {response.text}"
+                f"Status {response.status_code} when querying {url}"
+                + f"for verifysourcecode: {response.text}"
             )
         data = response.json()
 
         if int(data["status"]) != 1:
             raise ValueError(f"Failed to retrieve data from API: {data['result']}")
 
-        # data.result is the GUID receipt for the submission, we can use this guid for checking the verification status
-        guid_params["guid"] = data['result']
+        # data.result is the GUID receipt for the submission,
+        # we can use this guid for checking the verification status
+        guid_params["guid"] = data["result"]
 
         response = requests.get(url, params=guid_params, headers=REQUEST_HEADERS)
         if response.status_code != 200:
             raise ConnectionError(
-                f"Status {response.status_code} when querying {url} for checkverifystatus: {response.text}"
+                f"Status {response.status_code} when querying {url} "
+                + f"for checkverifystatus: {response.text}"
             )
         data = response.json()
 
