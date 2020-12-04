@@ -765,6 +765,16 @@ ContractContainer Methods
             raise ValueError("No contract deployed at {}".format(address))
         ValueError: No contract deployed at 0xefb1336a2E6B5dfD83D4f3a8F3D2f85b7bfb61DC
 
+.. py:classmethod:: ContractContainer.decode_input(calldata)
+
+    Given the call data of a transaction, returns the function signature as a string and the decoded input arguments.
+
+    Raises ``ValueError`` if the call data cannot be decoded.
+
+    .. code-block:: python
+
+        >>> Token.decode_input('0xa9059cbb0000000000000000000000009dc9431ccccd2c73f0a2f68dc69a4a527ab5d8090000000000000000000000000000000000000000000000000000000000002710')
+        ("transfer(address,uint256)", ['0x9DC9431CcCCD2C73F0a2F68Dc69A4a527aB5d809', 10000])
 
 .. py:classmethod:: ContractContainer.get_method(calldata)
 
