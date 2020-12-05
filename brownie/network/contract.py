@@ -89,6 +89,44 @@ class _ContractBase:
         sig = calldata[:10].lower()
         return self.selectors.get(sig)
 
+    def decode_input(self, calldata: Union[str, bytes]) -> Tuple[str, Any]:
+        """
+        Decode input calldata for this contract.
+
+        Arguments
+        ---------
+        calldata : str | bytes
+            Calldata for a call to this contract
+
+        Returns
+        -------
+        str
+            Signature of the function that was called
+        Any
+            Decoded input arguments
+        """
+        if not isinstance(calldata, HexBytes):
+            calldata = HexBytes(calldata)
+
+        abi = next(
+            (
+                i
+                for i in self.abi
+                if i["type"] == "function" and build_function_selector(i) == calldata[:4].hex()
+            ),
+            None,
+        )
+        if abi is None:
+            raise ValueError("Four byte selector does not match the ABI for this contract")
+
+        function_sig = build_function_signature(abi)
+
+        types_list = get_type_strings(abi["inputs"])
+        result = eth_abi.decode_abi(types_list, calldata[4:])
+        input_args = format_input(abi, result)
+
+        return function_sig, input_args
+
 
 class ContractContainer(_ContractBase):
 
@@ -339,6 +377,44 @@ class InterfaceConstructor:
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} '{self._name}'>"
+
+    def decode_input(self, calldata: Union[str, bytes]) -> Tuple[str, Any]:
+        """
+        Decode input calldata for this contract.
+
+        Arguments
+        ---------
+        calldata : str | bytes
+            Calldata for a call to this contract
+
+        Returns
+        -------
+        str
+            Signature of the function that was called
+        Any
+            Decoded input arguments
+        """
+        if not isinstance(calldata, HexBytes):
+            calldata = HexBytes(calldata)
+
+        abi = next(
+            (
+                i
+                for i in self.abi
+                if i["type"] == "function" and build_function_selector(i) == calldata[:4].hex()
+            ),
+            None,
+        )
+        if abi is None:
+            raise ValueError("Four byte selector does not match the ABI for this contract")
+
+        function_sig = build_function_signature(abi)
+
+        types_list = get_type_strings(abi["inputs"])
+        result = eth_abi.decode_abi(types_list, calldata[4:])
+        input_args = format_input(abi, result)
+
+        return function_sig, input_args
 
 
 class _DeployedContractBase(_ContractBase):
