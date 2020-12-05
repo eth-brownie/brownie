@@ -17,7 +17,7 @@ Options:
 Brownie mixes are ready-made templates that you can use as a starting
 point for your own project, or as a part of a tutorial.
 
-For a complete list of Brownie mixes visit https://www.github.com/brownie-mixes
+For a complete list of Brownie mixes visit https://www.github.com/brownie-mix
 """
 
 
