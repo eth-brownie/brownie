@@ -105,10 +105,17 @@ class _ContractBase:
         Any
             Decoded input arguments
         """
-        if not isinstance(calldata, bytes):
+        if not isinstance(calldata, HexBytes):
             calldata = HexBytes(calldata)
 
-        abi = next((i for i in self.abi if build_function_selector(i) == calldata[:4].hex()), None)
+        abi = next(
+            (
+                i
+                for i in self.abi
+                if i["type"] == "function" and build_function_selector(i) == calldata[:4].hex()
+            ),
+            None,
+        )
         if abi is None:
             raise ValueError("Four byte selector does not match the ABI for this contract")
 
@@ -387,10 +394,17 @@ class InterfaceConstructor:
         Any
             Decoded input arguments
         """
-        if not isinstance(calldata, bytes):
+        if not isinstance(calldata, HexBytes):
             calldata = HexBytes(calldata)
 
-        abi = next((i for i in self.abi if build_function_selector(i) == calldata[:4].hex()), None)
+        abi = next(
+            (
+                i
+                for i in self.abi
+                if i["type"] == "function" and build_function_selector(i) == calldata[:4].hex()
+            ),
+            None,
+        )
         if abi is None:
             raise ValueError("Four byte selector does not match the ABI for this contract")
 
