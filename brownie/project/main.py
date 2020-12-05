@@ -102,12 +102,22 @@ class _ProjectBase:
         finally:
             os.chdir(cwd)
 
-        for data in build_json.values():
+        for alias, data in build_json.items():
             if self._build_path is not None:
-                path = self._build_path.joinpath(f"contracts/{data['contractName']}.json")
+                if alias == data["contractName"]:
+                    # if the alias == contract name, this is a part of the core project
+                    path = self._build_path.joinpath(f"contracts/{alias}.json")
+                else:
+                    # otherwise, this is an artifact from an external dependency
+                    path = self._build_path.joinpath(f"contracts/dependencies/{alias}.json")
+                    for parent in list(path.parents)[::-1]:
+                        parent.mkdir(exist_ok=True)
                 with path.open("w") as fp:
                     json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
-            self._build._add_contract(data)
+
+            if alias == data["contractName"]:
+                # only add artifacts from the core project for now
+                self._build._add_contract(data)
 
     def _create_containers(self) -> None:
         # create container objects
@@ -216,6 +226,8 @@ class Project(_ProjectBase):
         changed = self._get_changed_contracts(interface_hashes)
         self._compile(changed, self._compiler_config, False)
         self._compile_interfaces(interface_hashes)
+        self._load_dependency_artifacts()
+
         self._create_containers()
         self._load_deployments()
 
@@ -304,6 +316,17 @@ class Project(_ProjectBase):
             with self._build_path.joinpath(f"interfaces/{name}.json").open("w") as fp:
                 json.dump(abi, fp, sort_keys=True, indent=2, default=sorted)
             self._build._add_interface(abi)
+
+    def _load_dependency_artifacts(self) -> None:
+        dep_build_path = self._build_path.joinpath("contracts/dependencies/")
+        for path in list(dep_build_path.glob("**/*.json")):
+            contract_alias = path.relative_to(dep_build_path).with_suffix("").as_posix()
+            if self._build.get_dependents(contract_alias):
+                with path.open() as fp:
+                    build_json = json.load(fp)
+                self._build._add_contract(build_json, contract_alias)
+            else:
+                path.unlink()
 
     def _load_deployments(self) -> None:
         if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:

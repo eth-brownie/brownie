@@ -48,7 +48,7 @@ def test_contract_requires_interface(newproject, contract_type, import_path):
     with newproject._path.joinpath("contracts/Bar.sol").open("w") as fp:
         fp.write(CONTRACT.format(import_path))
     newproject.load()
-    assert not newproject._path.joinpath("build/contracts/Foo.json").exists()
+    assert newproject._path.joinpath("build/contracts/Foo.json").exists()
     assert not hasattr(newproject, "Foo")
 
 

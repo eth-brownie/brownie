@@ -45,8 +45,8 @@ class Build:
         self._contracts: Dict = {}
         self._interfaces: Dict = {}
 
-    def _add_contract(self, build_json: Dict) -> None:
-        contract_name = build_json["contractName"]
+    def _add_contract(self, build_json: Dict, alias: str = None) -> None:
+        contract_name = alias or build_json["contractName"]
         if contract_name in self._contracts and build_json["type"] == "interface":
             return
         self._contracts[contract_name] = build_json
@@ -115,7 +115,10 @@ class Build:
 
     def get(self, contract_name: str) -> Dict:
         """Returns build data for the given contract name."""
-        return self._contracts[self._stem(contract_name)]
+        key = self._stem(contract_name)
+        if key in self._contracts:
+            return self._contracts[key]
+        return self._interfaces[key]
 
     def items(self, path: Optional[str] = None) -> Union[ItemsView, List]:
         """Provides an list of tuples as (key,value), similar to calling dict.items.

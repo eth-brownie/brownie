@@ -6,6 +6,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Dict, Optional
 
+import solcast
 from eth_utils import remove_0x_prefix
 from semantic_version import Version
 
@@ -18,7 +19,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
     install_solc,
     set_solc_version,
 )
-from brownie.project.compiler.utils import merge_natspec
+from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
 from brownie.utils import notify
 
@@ -138,12 +139,8 @@ def compile_and_format(
         )
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
-
-        output_json["contracts"] = {
-            k: v for k, v in output_json["contracts"].items() if k in path_list
-        }
-
         build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
+
     return build_json
 
 
@@ -280,18 +277,25 @@ def generate_build_json(
         compiler_data = {}
     compiler_data["evm_version"] = input_json["settings"]["evmVersion"]
     build_json: Dict = {}
-    path_list = list(input_json["sources"])
 
     if input_json["language"] == "Solidity":
         compiler_data["optimizer"] = input_json["settings"]["optimizer"]
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
     for path_str, contract_name in [
-        (k, v) for k in path_list for v in output_json["contracts"].get(k, {})
+        (k, x) for k, v in output_json["contracts"].items() for x in v.keys()
     ]:
+        contract_alias = contract_name
+
+        if path_str in input_json["sources"]:
+            source = input_json["sources"][path_str]["content"]
+        else:
+            with Path(path_str).open() as fp:
+                source = fp.read()
+            contract_alias = _get_alias(contract_name, path_str)
 
         if not silent:
-            print(f" - {contract_name}...")
+            print(f" - {contract_alias}")
 
         abi = output_json["contracts"][path_str][contract_name]["abi"]
         natspec = merge_natspec(
@@ -299,14 +303,14 @@ def generate_build_json(
             output_json["contracts"][path_str][contract_name].get("userdoc", {}),
         )
         output_evm = output_json["contracts"][path_str][contract_name]["evm"]
-        if contract_name in build_json and not output_evm["deployedBytecode"]["object"]:
+        if contract_alias in build_json and not output_evm["deployedBytecode"]["object"]:
             continue
 
         if input_json["language"] == "Solidity":
             contract_node = next(
                 i[contract_name] for i in source_nodes if i.absolutePath == path_str
             )
-            build_json[contract_name] = solidity._get_unique_build_json(
+            build_json[contract_alias] = solidity._get_unique_build_json(
                 output_evm,
                 contract_node,
                 statement_nodes,
@@ -316,16 +320,16 @@ def generate_build_json(
 
         else:
             if contract_name == "<stdin>":
-                contract_name = "Vyper"
-            build_json[contract_name] = vyper._get_unique_build_json(
+                contract_name = contract_alias = "Vyper"
+            build_json[contract_alias] = vyper._get_unique_build_json(
                 output_evm,
                 path_str,
-                contract_name,
+                contract_alias,
                 output_json["sources"][path_str]["ast"],
-                (0, len(input_json["sources"][path_str]["content"])),
+                (0, len(source)),
             )
 
-        build_json[contract_name].update(
+        build_json[contract_alias].update(
             {
                 "abi": abi,
                 "ast": output_json["sources"][path_str]["ast"],
@@ -336,8 +340,8 @@ def generate_build_json(
                 "language": input_json["language"],
                 "natspec": natspec,
                 "opcodes": output_evm["deployedBytecode"]["opcodes"],
-                "sha1": sha1(input_json["sources"][path_str]["content"].encode()).hexdigest(),
-                "source": input_json["sources"][path_str]["content"],
+                "sha1": sha1(source.encode()).hexdigest(),
+                "source": source,
                 "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
                 "sourcePath": path_str,
             }
@@ -398,6 +402,8 @@ def get_abi(
             "abi": json.loads(v),
             "contractName": Path(k).stem,
             "type": "interface",
+            "source": None,
+            "offset": None,
             "sha1": sha1(v.encode()).hexdigest(),
         }
         for k, v in contract_sources.items()
@@ -418,36 +424,38 @@ def get_abi(
             "abi": output_json["contracts"][path][name]["abi"],
             "contractName": name,
             "type": "interface",
+            "source": source,
+            "offset": [0, len(source)],
             "sha1": sha1(contract_sources[path].encode()).hexdigest(),
         }
 
     solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
 
-    if solc_sources:
+    if not solc_sources:
+        return final_output
 
-        compiler_targets = find_solc_versions(solc_sources, install_needed=True, silent=silent)
+    compiler_targets = find_solc_versions(solc_sources, install_needed=True, silent=silent)
 
-        for version, path_list in compiler_targets.items():
-            to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
+    for version, path_list in compiler_targets.items():
+        to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
 
-            set_solc_version(version)
-            input_json = generate_input_json(to_compile, language="Solidity", remappings=remappings)
-            input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
+        set_solc_version(version)
+        input_json = generate_input_json(to_compile, language="Solidity", remappings=remappings)
+        input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"], "": ["ast"]}
 
-            output_json = compile_from_input_json(input_json, silent, allow_paths)
-            output_json = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+        output_json = compile_from_input_json(input_json, silent, allow_paths)
+        source_nodes = solcast.from_standard_output(output_json)
+        output_json = {k: v for k, v in output_json["contracts"].items() if k in path_list}
 
-            final_output.update(
-                {
-                    name: {
-                        "abi": data["abi"],
-                        "contractName": name,
-                        "type": "interface",
-                        "sha1": sha1(contract_sources[path].encode()).hexdigest(),
-                    }
-                    for path, v in output_json.items()
-                    for name, data in v.items()
-                }
-            )
+        for path, name, data in [(k, x, y) for k, v in output_json.items() for x, y in v.items()]:
+            contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
+            final_output[name] = {
+                "abi": data["abi"],
+                "contractName": name,
+                "type": "interface",
+                "source": contract_sources[path],
+                "offset": contract_node.offset,
+                "sha1": sha1(contract_sources[path].encode()).hexdigest(),
+            }
 
     return final_output
