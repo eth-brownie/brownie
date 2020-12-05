@@ -6,8 +6,18 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.12.2](https://github.com/eth-brownie/brownie/tree/v1.12.2) - 2020-12-04
 ### Added
 - Detect EIP1822 proxies `Contract.from_explorer` ([#881](https://github.com/eth-brownie/brownie/pull/881))
+- Support for [EIP 1967](https://eips.ethereum.org/EIPS/eip-1967) proxy pattern in `Contract.from_explorer` ([#876](https://github.com/eth-brownie/brownie/pull/876))
+- `ContractContainer.decode_input` ([#879](https://github.com/eth-brownie/brownie/pull/879))
+
+### Changed
+- Build artifacts for dependencies are now saved at `build/contracts/dependencies` ([#878](https://github.com/eth-brownie/brownie/pull/878))
+
+#### Fixed
+- Ensure receiver address is checksummed when calling `eth_estimateGas` ([#880](https://github.com/eth-brownie/brownie/pull/880))
 
 ## [1.12.1](https://github.com/eth-brownie/brownie/tree/v1.12.1) - 2020-11-28
 ### Fixed
