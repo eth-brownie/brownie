@@ -291,14 +291,24 @@ def test_autofetch_missing(network, config, mocker):
     assert requests.get.call_count == 2
 
 
-def test_as_proxy_for(network):
+@pytest.mark.parametrize(
+    "original,impl",
+    [
+        [
+            "0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b",
+            "0x7b5e3521a049C8fF88e6349f33044c6Cc33c113c",
+        ],
+        [
+            "0x87a3eF113C210Ab35AFebe820fF9880bf0DD4bfC",
+            "0x1BA2F447E620E3Ec027992d20234A9715a124041",
+        ],
+    ],
+)
+def test_as_proxy_for(network, original, impl):
     network.connect("mainnet")
-    original = Contract.from_explorer("0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b")
-    proxy = Contract.from_explorer(
-        "0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b",
-        as_proxy_for="0x7b5e3521a049C8fF88e6349f33044c6Cc33c113c",
-    )
-    implementation = Contract("0x7b5e3521a049C8fF88e6349f33044c6Cc33c113c")
+    original = Contract.from_explorer(original)
+    proxy = Contract.from_explorer(original, as_proxy_for=impl)
+    implementation = Contract(impl)
 
     assert original.abi == proxy.abi
     assert original.address == proxy.address
