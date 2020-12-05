@@ -541,7 +541,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         """
         tx: Dict = {
             "from": self.address,
-            "to": str(to) if to else None,
+            "to": to_address(str(to)) if to else None,
             "value": Wei(amount),
             "data": HexBytes(data or ""),
         }
