@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 import importlib
 import json
 import re
@@ -7,31 +5,20 @@ import time
 from os import environ
 from typing import Dict
 
+import click
 from mythx_models.request import AnalysisSubmissionRequest
 from mythx_models.response import AnalysisSubmissionResponse, DetectedIssuesResponse
 from pythx import Client, ValidationError
 from pythx.middleware import ClientToolNameMiddleware, GroupDataMiddleware
 
 from brownie import project
-from brownie._config import (
-    CONFIG,
-    __version__,
-    _load_project_structure_config,
-    _update_argv_from_docopt,
-)
+from brownie._config import CONFIG, __version__, _load_project_structure_config
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
-from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie analyze [options] [--async | --interval=<sec>]
 
 Options:
-  --gui                     Launch the Brownie GUI after analysis
-  --mode=<string>           The analysis mode (quick, standard, deep) [default: quick]
-  --interval=<sec>          Result polling interval in seconds [default: 3]
-  --async                   Do not poll for results, print job IDs and exit
-  --api-key=<string>        The JWT access token from the MythX dashboard
-  --help -h                 Display this message
 
 Submits your project to the MythX API for smart contract security analysis.
 
@@ -41,6 +28,89 @@ environment variable "MYTHX_API_KEY", or given via a command line option.
 
 Visit https://mythx.io/ to learn more about MythX and sign up for an account.
 """
+
+
+@click.command(short_help="Find security vulnerabilties using the MythX API")
+@click.option("--gui", default=False, help="Launch the Brownie GUI after analysis")
+@click.option(
+    "--mode",
+    default="quick",
+    show_default=True,
+    type=click.Choice(["quick", "standard", "deep"]),
+    help="The analysis mode (quick, standard, deep)",
+)
+@click.option(
+    "--interval", type=int, default=3, show_default=True, help="Result polling interval in seconds"
+)
+@click.option(
+    "--async", "async_", default=False, help="Do not poll for results, click.echo job IDs and exit"
+)
+@click.option(
+    "--api-key",
+    type=str,
+    envvar="MYTHX_API_KEY",
+    help="The JWT access token from the MythX dashboard",
+)
+def cli(gui, mode, interval, async_, api_key):
+    """
+    Submits your project to the MythX API for smart contract security analysis.
+
+    In order to perform an analysis you must register for a MythX account and
+    generate a JWT access token. This access token may be passed through an
+    environment variable "MYTHX_API_KEY", or given via a command line option.
+
+    Visit https://mythx.io/ to learn more about MythX and sign up for an account.
+    """
+
+    if not api_key:
+        raise ValidationError(
+            "You must provide a MythX API key via environment variable or the command line"
+        )
+
+    project_path = project.check_for_project(".")
+    if project_path is None:
+        raise ProjectNotFound
+
+    build = project.load()._build
+    submission = SubmissionPipeline(build)
+
+    click.echo("Preparing project data for submission to MythX...")
+    submission.prepare_requests()
+
+    click.echo("Sending analysis requests to MythX...")
+    submission.send_requests()
+
+    # exit if user wants an async analysis run
+    if async_:
+        click.echo(
+            "\nAll contracts were submitted successfully. Check the dashboard at "
+            "https://dashboard.mythx.io/ for the progress and results of your analyses"
+        )
+        return
+
+    click.echo("\nWaiting for results...")
+
+    submission.wait_for_jobs()
+    submission.generate_stdout_report()
+    submission.generate_highlighting_report()
+
+    # erase previous report
+    report_path = project_path.joinpath(_load_project_structure_config(project_path)["reports"])
+
+    report_path = report_path.joinpath("security.json")
+    if report_path.exists():
+        report_path.unlink()
+
+    print_console_report(submission.stdout_report)
+
+    # Write report to Brownie directory
+    with report_path.open("w+") as fp:
+        json.dump(submission.highlight_report, fp, indent=2, sort_keys=True)
+
+    # Launch GUI if user requested it
+    if gui:
+        click.echo("Launching the Brownie GUI")
+        importlib.import_module("brownie._gui").Gui().mainloop()
 
 
 ANALYSIS_MODES = ("quick", "standard", "deep")
@@ -179,11 +249,11 @@ class SubmissionPipeline:
         for contract_name, request in self.requests.items():
             response = self.client.analyze(payload=request)
             self.responses[contract_name] = response
-            print(
+            click.echo(
                 f"Submitted analysis {color('bright blue')}{response.uuid}{color} for "
                 f"contract {color('bright magenta')}{request.contract_name}{color})"
             )
-            print(f"You can also check the results at {DASHBOARD_BASE_URL}{response.uuid}\n")
+            click.echo(f"You can also check the results at {DASHBOARD_BASE_URL}{response.uuid}\n")
         self.client.seal_group(group_id=group_resp.group.identifier)
         self.client.handler.middlewares.pop(-1)
 
@@ -221,7 +291,7 @@ class SubmissionPipeline:
 
         source_to_name = {d["sourcePath"]: d["contractName"] for _, d in self.build.items()}
         for idx, (contract_name, issue_report) in enumerate(self.reports.items()):
-            print(
+            click.echo(
                 "Generating report for {}{}{} ({}/{})".format(
                     color("bright blue"), contract_name, color, idx, len(self.reports)
                 )
@@ -262,7 +332,7 @@ class SubmissionPipeline:
         """Generated a stdout report overview from a MythX issue report.
 
         This will convert a MythX issue report into a Brownie report that is
-        printed on stdout when analysis results have been received. It iterates
+        click.echoed on stdout when analysis results have been received. It iterates
         over the internal :code:`reports` dictionary and fills the
         :code:`highlight_report` instance variable.
 
@@ -277,9 +347,9 @@ class SubmissionPipeline:
 
 
 def print_console_report(stdout_report) -> None:
-    """Highlight and print a given stdout report to the console.
+    """Highlight and click.echo a given stdout report to the console.
 
-    This adds color formatting to the given stdout report and prints
+    This adds color formatting to the given stdout report and click.echos
     a summary of the vulnerabilities MythX has detected.
 
     :return: None
@@ -297,67 +367,9 @@ def print_console_report(stdout_report) -> None:
             "WARNING", f"Found {total_issues} issues including {total_high_severity} high severity!"
         )
     else:
-        print(f"Found {total_issues} issues:")
+        click.echo(f"Found {total_issues} issues:")
     for name in sorted(stdout_report):
-        print(f"\n  contract: {color('bright magenta')}{name}{color}")
+        click.echo(f"\n  contract: {color('bright magenta')}{name}{color}")
         for key in [i for i in ("HIGH", "MEDIUM", "LOW") if i in stdout_report[name]]:
             c = color("bright red" if key == "HIGH" else "bright yellow")
-            print(f"    {key.title()}: {c}{stdout_report[name][key]}{color}")
-
-
-def main():
-    """The main entry point of the MythX plugin for Brownie."""
-
-    args = docopt(__doc__)
-    _update_argv_from_docopt(args)
-
-    if CONFIG.argv["mode"] not in ANALYSIS_MODES:
-        raise ValidationError(
-            "Invalid analysis mode: Must be one of [{}]".format(", ".join(ANALYSIS_MODES))
-        )
-
-    project_path = project.check_for_project(".")
-    if project_path is None:
-        raise ProjectNotFound
-
-    build = project.load()._build
-    submission = SubmissionPipeline(build)
-
-    print("Preparing project data for submission to MythX...")
-    submission.prepare_requests()
-
-    print("Sending analysis requests to MythX...")
-    submission.send_requests()
-
-    # exit if user wants an async analysis run
-    if CONFIG.argv["async"]:
-        print(
-            "\nAll contracts were submitted successfully. Check the dashboard at "
-            "https://dashboard.mythx.io/ for the progress and results of your analyses"
-        )
-        return
-
-    print("\nWaiting for results...")
-
-    submission.wait_for_jobs()
-    submission.generate_stdout_report()
-    submission.generate_highlighting_report()
-
-    # erase previous report
-    report_path = project_path.joinpath(_load_project_structure_config(project_path)["reports"])
-
-    report_path = report_path.joinpath("security.json")
-    if report_path.exists():
-        report_path.unlink()
-
-    print_console_report(submission.stdout_report)
-
-    # Write report to Brownie directory
-    with report_path.open("w+") as fp:
-        json.dump(submission.highlight_report, fp, indent=2, sort_keys=True)
-
-    # Launch GUI if user requested it
-    if CONFIG.argv["gui"]:
-        print("Launching the Brownie GUI")
-        gui = importlib.import_module("brownie._gui").Gui
-        gui().mainloop()
+            click.echo(f"    {key.title()}: {c}{stdout_report[name][key]}{color}")
