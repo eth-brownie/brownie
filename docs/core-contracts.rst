@@ -41,7 +41,7 @@ Calling :func:`ContractContainer.deploy <ContractContainer.deploy>` returns a :f
 
 .. code-block:: python
 
-    >>> t = Token.deploy("Test Token", "TST", 18, 1e23 {'from': accounts[1]})
+    >>> t = Token.deploy("Test Token", "TST", 18, 1e23, {'from': accounts[1]})
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
     Transaction confirmed - block: 1   gas spent: 594186
