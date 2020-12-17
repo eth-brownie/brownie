@@ -127,6 +127,32 @@ class _ContractBase:
 
         return function_sig, input_args
 
+    def flatten(self) -> str:
+        """
+        Return a single, deployable source code for this contract.
+        """
+        language = self._build["language"]
+        if language == "Vyper":
+            return self._build["source"]
+        elif language == "Solidity":
+            flattened_source = ""
+
+            for name in self._build["dependencies"]:
+                build_json = self._project._build.get(name)
+                offset = slice(*build_json["offset"])
+                source = build_json["source"][offset]
+                flattened_source = f"{flattened_source}\n\n{source}"
+
+            build_json = self._build
+            version = build_json["compiler"]["version"]
+            offset = slice(*build_json["offset"])
+            source = build_json["source"][offset]
+            flattened_source = f"pragma solidity {version};{flattened_source}\n\n{source}\n"
+
+            return flattened_source
+        else:
+            raise TypeError(f"Unsupported language for flattening: {language}")
+
 
 class ContractContainer(_ContractBase):
 
