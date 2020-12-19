@@ -6,8 +6,12 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+### Added
+- `brownie run` without paramters now prints the scripts directory ([#891](https://github.com/eth-brownie/brownie/issues/891))
 ### Fixed
 - Typo in link to mixes ([#886](https://github.com/eth-brownie/brownie/pull/886))
+- Fixed breaking proxy tests ([#899](https://github.com/eth-brownie/brownie/issues/899))
 
 ## [1.12.2](https://github.com/eth-brownie/brownie/tree/v1.12.2) - 2020-12-04
 ### Added
