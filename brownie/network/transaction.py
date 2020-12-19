@@ -4,7 +4,6 @@ import functools
 import sys
 import threading
 import time
-from collections import OrderedDict
 from enum import IntEnum
 from hashlib import sha1
 from pathlib import Path
@@ -994,8 +993,8 @@ class TransactionReceipt:
             trace[0], trace[-1], 0, len(trace), self._get_trace_gas(0, len(self.trace))
         )
 
-        call_tree: OrderedDict = OrderedDict({key: OrderedDict()})
-        active_tree = [call_tree[key]]
+        call_tree: List = [[key]]
+        active_tree: List = [call_tree[0]]
 
         # (index, depth, jumpDepth) for relevent steps in the trace
         trace_index = [(0, 0, 0)] + [
@@ -1045,8 +1044,8 @@ class TransactionReceipt:
                     trace[idx], trace[end - 1], idx, end, (total_gas, internal_gas)
                 )
 
-            active_tree[-1][key] = OrderedDict()
-            active_tree.append(active_tree[-1][key])
+            active_tree[-1].append([key])
+            active_tree.append(active_tree[-1][-1])
 
         print(
             f"Call trace for '{color('bright blue')}{self.txid}{color}':\n"
@@ -1239,36 +1238,35 @@ def _step_external(
     if not expand:
         return key
 
-    result: OrderedDict = OrderedDict({key: {}})
-    result[key][f"address: {step['address']}"] = None
+    result: List = [key, f"address: {step['address']}"]
 
     if "value" in subcall:
-        result[key][f"value: {subcall['value']}"] = None
+        result.append(f"value: {subcall['value']}")
 
     if "inputs" not in subcall:
-        result[key][f"calldata: {subcall.get('calldata')}"] = None
+        result.append(f"calldata: {subcall.get('calldata')}")
     elif subcall["inputs"]:
-        result[key]["input arguments:"] = [
-            f"{k}: {_format(v)}" for k, v in subcall["inputs"].items()
-        ]
+        result.append(
+            ["input arguments:", *(f"{k}: {_format(v)}" for k, v in subcall["inputs"].items())]
+        )
     else:
-        result[key]["input arguments: None"] = None
+        result.append("input arguments: None")
 
     if "return_value" in subcall:
         value = subcall["return_value"]
         if isinstance(value, tuple) and len(value) > 1:
-            result[key]["return values:"] = [_format(i) for i in value]
+            result.append(["return values:", *(_format(i) for i in value)])
         else:
             if isinstance(value, tuple):
                 value = value[0]
-            result[key][f"return value: {_format(value)}"] = None
+            result.append(f"return value: {_format(value)}")
     elif "returndata" in subcall:
-        result[key][f"returndata: {subcall['returndata']}"] = None
+        result.append(f"returndata: {subcall['returndata']}")
 
     if "revert_msg" in subcall:
-        result[key][f"revert reason: {color('bright red')}{subcall['revert_msg']}{color}"] = None
+        result.append(f"revert reason: {color('bright red')}{subcall['revert_msg']}{color}")
 
-    return build_tree(result, multiline_pad=0).rstrip()
+    return build_tree([result], multiline_pad=0).rstrip()
 
 
 def _get_memory(step: Dict, idx: int) -> HexBytes:
