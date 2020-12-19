@@ -4,6 +4,7 @@ import ast
 import importlib
 import sys
 import warnings
+import os
 from hashlib import sha1
 from pathlib import Path
 from types import ModuleType
@@ -79,7 +80,6 @@ def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
         if not path.exists():
             raise FileNotFoundError(f"Cannot find {path_str}")
         return path.resolve(), None
-
     if not path.is_absolute():
         for project in get_loaded_projects():
             if path.parts[:1] == (project._structure["scripts"],):
@@ -137,3 +137,19 @@ def _get_ast_hash(path: str) -> str:
 
     dump = "\n".join(ast.dump(i) for i in ast_list)
     return sha1(dump.encode()).hexdigest()
+
+
+def get_available_scripts() -> str:
+    # Returns a string of available scripts
+    output_scripts = ''
+    for project in get_loaded_projects():
+        for dirpath, dirnames, filenames in os.walk(project._structure["scripts"]):
+            directory_level = dirpath.replace(project._structure["scripts"], "")
+            directory_level = directory_level.count(os.sep)
+            indent = " " * 4
+            output_scripts = output_scripts + \
+                "{}{}/\n".format(indent * directory_level, os.path.basename(dirpath))
+            for f in filenames:
+                output_scripts = output_scripts + \
+                    ("{}{}\n".format(indent * (directory_level + 1), f))
+    return output_scripts
