@@ -31,6 +31,9 @@ except Exception:
 
 formatter = get_formatter_by_name(fmt_name, style=CONFIG.settings["console"]["color_style"])
 
+if fmt_name == "terminal256" and CONFIG.settings["console"]["color_style"] == "monokai":
+    # dirty hack to make tree diagrams not have a fixed black blackground
+    formatter.style_string["Token.Error"] = ("\x1b[0;2;37m", "\x1b[0;m")
 
 BASE = "\x1b[0;"
 
