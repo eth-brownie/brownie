@@ -1,12 +1,11 @@
-from typing import Optional, Sequence
-
-from brownie.utils.color import Color
-
-color = Color()
+from typing import List, Optional, Sequence
 
 
 def build_tree(
-    tree_structure: Sequence, multiline_pad: int = 1, _indent_data: Optional[list] = None,
+    tree_structure: Sequence,
+    multiline_pad: int = 1,
+    pad_depth: Optional[List[int]] = None,
+    _indent_data: Optional[list] = None,
 ) -> str:
     """
     Build a tree graph from a nested list.
@@ -31,6 +30,10 @@ def build_tree(
     multiline_pad : int, optional
         Number of padding lines to leave before and after a tree value that spans
         multiple lines.
+    pad_depth : List[int], optional
+        Number of padding lines to leave between each node. Each entry in the list
+        represents padding at a specific depth of the tree. If no value is given,
+        zero is assumed.
     _indent_data
         Internal list to handle indentation during recursive calls. The initial
         call to this function should always leave this value as `None`.
@@ -40,7 +43,7 @@ def build_tree(
     str
         Tree graph.
     """
-    tree_str = f"{color('dark white')}"
+    tree_str = ""
     if _indent_data is None:
         _indent_data = []
 
@@ -49,7 +52,7 @@ def build_tree(
         is_last_item = bool(i < len(tree_structure) - 1)
 
         # create indentation string
-        indent = f"{color('dark white')}"
+        indent = ""
         for value in _indent_data[1:]:
             indent = f"{indent}\u2502   " if value else f"{indent}    "
         if _indent_data:
@@ -57,12 +60,15 @@ def build_tree(
             indent = f"{indent}{symbol}\u2500\u2500 "
 
         key = row[0] if isinstance(row, (list, tuple)) else row
-        lines = [i for i in key.split("\n") if i]
-        if len(lines) > 1 and not was_padded:
-            for i in range(multiline_pad):
+        lines = [x for x in key.split("\n") if x]
+        if pad_depth and i > 0:
+            for x in range(pad_depth[0]):
+                tree_str = f"{tree_str}{indent[:-4]}\u2502   \n"
+        elif len(lines) > 1 and not was_padded:
+            for x in range(multiline_pad):
                 tree_str = f"{tree_str}{indent[:-4]}\u2502   \n"
 
-        tree_str = f"{tree_str}{indent}{color}{lines[0]}\n"
+        tree_str = f"{tree_str}{indent}{lines[0]}\n"
         was_padded = False
 
         if len(lines) > 1:
@@ -71,12 +77,15 @@ def build_tree(
             symbol2 = "\u2502" if isinstance(row, (list, tuple)) and len(row) > 1 else " "
             indent = f"{indent[:-4]}{symbol}   {symbol2}   "
             for line in lines[1:] + ([""] * multiline_pad):
-                tree_str = f"{tree_str}{color('dark white')}{indent}{color}{line}\n"
+                tree_str = f"{tree_str}{indent}{line}\n"
             was_padded = True
 
         if isinstance(row, (list, tuple)) and len(row) > 1:
             # create nested tree
-            nested_tree = build_tree(row[1:], multiline_pad, _indent_data + [is_last_item])
+            new_pad_depth = pad_depth[1:] if pad_depth else None
+            nested_tree = build_tree(
+                row[1:], multiline_pad, new_pad_depth, _indent_data + [is_last_item]
+            )
             tree_str = f"{tree_str}{nested_tree}"
 
     return tree_str
