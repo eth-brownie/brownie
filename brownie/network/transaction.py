@@ -891,41 +891,48 @@ class TransactionReceipt:
 
     def info(self) -> None:
         """Displays verbose information about the transaction, including decoded event logs."""
-        status = ""
-        if not self.status:
-            status = f"({color('bright red')}{self.revert_msg or 'reverted'}{color})"
-
-        result = (
-            f"Transaction was Mined {status}\n---------------------\n"
-            f"Tx Hash: {color('bright blue')}{self.txid}\n"
-            f"From: {color('bright blue')}{self.sender}\n"
-        )
-
+        result = f"Tx Hash: {self.txid}\nFrom: {self.sender}\n"
         if self.contract_address and self.status:
-            result += (
-                f"New {self.contract_name} address: {color('bright blue')}{self.contract_address}\n"
-            )
+            result += f"New {self.contract_name} address: {self.contract_address}\n"
         else:
-            result += (
-                f"To: {color('bright blue')}{self.receiver}{color}\n"
-                f"Value: {color('bright blue')}{self.value}\n"
-            )
+            result += f"To: {self.receiver}\n" f"Value: {self.value}\n"
             if self.input != "0x" and int(self.input, 16):
-                result += f"Function: {color('bright blue')}{self._full_name()}\n"
+                result += f"Function: {self._full_name()}\n"
 
         result += (
-            f"Block: {color('bright blue')}{self.block_number}{color}\nGas Used: "
-            f"{color('bright blue')}{self.gas_used}{color} / {color('bright blue')}{self.gas_limit}"
-            f"{color} ({color('bright blue')}{self.gas_used / self.gas_limit:.1%}{color})\n"
+            f"Block: {self.block_number}\nGas Used: "
+            f"{self.gas_used} / {self.gas_limit} "
+            f"({self.gas_used / self.gas_limit:.1%})\n"
         )
 
         if self.events:
-            result += "\n   Events In This Transaction\n   --------------------------"
-            for event in self.events:  # type: ignore
-                result += f"\n   {color('bright yellow')}{event.name}{color}"  # type: ignore
-                for key, value in event.items():  # type: ignore
-                    result += f"\n      {key}: {color('bright blue')}{value}{color}"
-        print(result)
+            events = list(self.events)
+            call_tree: List = ["--------------------------"]
+            while events:
+                idx = next(
+                    (events.index(i) for i in events if i.address != events[0].address), len(events)
+                )
+                contract = state._find_contract(events[0].address)
+                if contract:
+                    try:
+                        name = contract.name()
+                    except Exception:
+                        name = contract._name
+                    sub_tree: List = [f"{name} ({events[0].address})"]
+                else:
+                    sub_tree = [f"{events[0].address}"]
+                for event in events[:idx]:
+                    sub_tree.append([event.name, *(f"{k}: {v}" for k, v in event.items())])
+                call_tree.append(sub_tree)
+                events = events[idx:]
+            event_tree = build_tree([call_tree], multiline_pad=0, pad_depth=[0, 1])
+            result = f"{result}\nEvents In This Transaction\n{event_tree}"
+
+        result = color.highlight(result)
+        status = ""
+        if not self.status:
+            status = f"({color('bright red')}{self.revert_msg or 'reverted'}{color})"
+        print(f"Transaction was Mined {status}\n---------------------\n{result}")
 
     def _get_trace_gas(self, start: int, stop: int) -> Tuple[int, int]:
         total_gas = 0
@@ -1195,10 +1202,10 @@ def _step_internal(
             gas_str = f"{color('bright yellow')}{gas[0]} gas"
         else:
             gas_str = f"{color('bright yellow')}{gas[0]} / {gas[1]} gas"
-        key = f"{key}  {left_bracket}{gas_str}{right_bracket}"
+        key = f"{key}  {left_bracket}{gas_str}{right_bracket}{color}"
 
     if last_step["op"] == "SELFDESTRUCT":
-        key = f"{key}  {left_bracket}{color('bright red')}SELFDESTRUCT{right_bracket}"
+        key = f"{key}  {left_bracket}{color('bright red')}SELFDESTRUCT{right_bracket}{color}"
 
     return key
 
