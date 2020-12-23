@@ -7,7 +7,7 @@ from pathlib import Path
 from brownie import network, project
 from brownie._cli.console import Console
 from brownie._config import CONFIG, _update_argv_from_docopt
-from brownie.project.scripts import _get_path, run, create_string_tree
+from brownie.project.scripts import _get_path, create_string_tree, run
 from brownie.test.output import _build_gas_profile_output
 from brownie.utils import color
 from brownie.utils.docopt import docopt
@@ -32,10 +32,10 @@ interactions, or for gas profiling."""
 
 def main():
     if len(sys.argv) == 2:
-        print('Available scripts:')
+        print("Available scripts:")
         root_path = Path(".").resolve().root
         sys.path.insert(0, root_path)
-        string_tree = create_string_tree('scripts')
+        string_tree = create_string_tree("scripts")
         print(string_tree)
         sys.exit(docopt(__doc__))
     args = docopt(__doc__)
