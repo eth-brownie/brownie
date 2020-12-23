@@ -213,7 +213,7 @@ def tree(dir_path: Path, prefix: str = ""):
 
 def create_string_tree(path_name):
     string_tree = ""
-    t = tree(Path(path_name))
-    for line in t:
+    tree_generator = tree(Path(path_name))
+    for line in tree_generator:
         string_tree += line + "\n"
     return string_tree
