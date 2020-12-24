@@ -21,6 +21,7 @@ from brownie.convert import EthAddress, Wei
 from brownie.exceptions import RPCRequestError
 from brownie.project import build
 from brownie.project import main as project_main
+from brownie.project.compiler.solidity import SOLIDITY_ERROR_CODES
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie.utils import color
@@ -618,8 +619,15 @@ class TransactionReceipt:
         for step in (i for i in trace[::-1] if i["op"] in ("REVERT", "INVALID")):
             if step["op"] == "REVERT" and int(step["stack"][-2], 16):
                 # get returned error string from stack
-                data = _get_memory(step, -1)[4:]
-                self._revert_msg = decode_abi(["string"], data)[0]
+                data = _get_memory(step, -1)
+                if data[:4].hex() == "0x4e487b71":  # keccak of Panic(uint256)
+                    error_code = int(data[4:].hex(), 16)
+                    if error_code in SOLIDITY_ERROR_CODES:
+                        self._revert_msg = SOLIDITY_ERROR_CODES[error_code]
+                    else:
+                        self._revert_msg = f"Panic (error code: {error_code})"
+                else:
+                    self._revert_msg = decode_abi(["string"], data[4:])[0]
 
             elif self.contract_address:
                 self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
