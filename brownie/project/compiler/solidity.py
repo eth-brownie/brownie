@@ -366,6 +366,12 @@ def _generate_coverage_data(
 
         # set contract path (-1 means none)
         contract_id = str(source[2])
+        if contract_id not in source_nodes:
+            # In Solidity >=0.7.2 contract ID can reference an AST within the YUL-optimization
+            # "generatedSources". Brownie does not support coverage evaluation within these
+            # sources, so we consider to this to be unmapped.
+            continue
+
         active_source_node = source_nodes[contract_id]
         pc_list[-1]["path"] = contract_id
 
