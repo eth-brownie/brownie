@@ -26,6 +26,20 @@ solcx_logger.addHandler(sh)
 
 AVAILABLE_SOLC_VERSIONS = None
 
+# error codes used in Solidity >=0.8.0
+# docs.soliditylang.org/en/v0.8.0/control-structures.html#panic-via-assert-and-error-via-require
+SOLIDITY_ERROR_CODES = {
+    1: "Failed assertion",
+    17: "Integer overflow",
+    18: "Division or modulo by zero",
+    33: "Conversion to enum out of bounds",
+    24: "Access to storage byte array that is incorrectly encoded",
+    49: "Pop from empty array",
+    50: "Index out of range",
+    65: "Attempted to allocate too much memory",
+    81: "Call to zero-initialized variable of internal function type",
+}
+
 
 def get_version() -> Version:
     return solcx.get_solc_version().truncate()
