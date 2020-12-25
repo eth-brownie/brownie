@@ -296,7 +296,7 @@ def test_autofetch_missing(network, config, mocker):
     [
         [
             "0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b",
-            "0x7b5e3521a049C8fF88e6349f33044c6Cc33c113c",
+            "0x7d47d3f06A9C10576bc5DC87ceFbf3288F96Ea04",
         ],
         [
             "0x87a3eF113C210Ab35AFebe820fF9880bf0DD4bfC",
