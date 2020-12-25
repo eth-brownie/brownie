@@ -644,17 +644,49 @@ class TransactionReceipt:
                 # if none is found, expand the trace and get it from the pcMap
                 self._expand_trace()
                 try:
-                    pc_map = state._find_contract(step["address"])._build["pcMap"]
+                    contract = state._find_contract(step["address"])
+                    pc_map = contract._build["pcMap"]
                     # if this is the function selector revert, check for a jump
                     if "first_revert" in pc_map[step["pc"]]:
-                        i = trace.index(step) - 4
-                        if trace[i]["pc"] != step["pc"] - 4:
-                            step = trace[i]
-                    self._dev_revert_msg = pc_map[step["pc"]]["dev"]
+                        idx = trace.index(step) - 4
+                        if trace[idx]["pc"] != step["pc"] - 4:
+                            step = trace[idx]
+
+                    # if this is the optimizer revert, find the actual source
+                    if "optimizer_revert" in pc_map[step["pc"]]:
+                        idx = trace.index(step)
+                        while trace[idx]["op"] != "JUMPDEST":
+                            # look for the most recent jump
+                            idx -= 1
+                        idx -= 1
+                        while not trace[idx]["source"]:
+                            # now we're in a yul optimization, keep stepping back
+                            # until we find a source offset
+                            idx -= 1
+                        # at last we have the real location of the revert
+                        step["source"] = trace[idx]["source"]
+                        step = trace[idx]
+
+                    if "dev" in pc_map[step["pc"]]:
+                        self._dev_revert_msg = pc_map[step["pc"]]["dev"]
+                    else:
+                        # extract the dev revert string from the source code
+                        # TODO this technique appears superior to `_get_dev_revert`, and
+                        # changes in solc 0.8.0 have necessitated it. the old approach
+                        # of building a dev revert map should be refactored out in favor
+                        # of this one.
+                        source = contract._sources.get(step["source"]["filename"])
+                        offset = step["source"]["offset"][1]
+                        line = source[offset:].split("\n")[0]
+                        marker = "//" if contract._build["language"] == "Solidity" else "#"
+                        revert_str = line[line.index(marker) + len(marker) :].strip()
+                        if revert_str.startswith("dev:"):
+                            self._dev_revert_msg = revert_str
+
                     if self._revert_msg is None:
                         self._revert_msg = self._dev_revert_msg
                     return
-                except (KeyError, AttributeError, TypeError):
+                except (KeyError, AttributeError, TypeError, ValueError):
                     pass
 
             if self._revert_msg is not None:
