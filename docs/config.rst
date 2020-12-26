@@ -85,7 +85,7 @@ Networks
 
         Additional commandline parameters, which are passed into Ganache as commandline arguments. These settings will update the network specific settings defined in :ref:`network management<adding-network>` whenever the project with this configuration file is active.
 
-        The following example shows all commandline settings with their default value. ``fork`` and ``unlock`` have no default values and ``time`` will default to the current time. See :ref:`adding a development network<adding-network>` for more details on the arguments.
+        The following example shows all commandline settings with their default value. ``fork`` and ``unlock`` have no default values. ``network_id`` and ``time`` will default to the current timestamp or time respectively. See :ref:`adding a development network<adding-network>` for more details on the arguments.
 
     .. code-block:: yaml
 
@@ -100,6 +100,8 @@ Networks
                     port: 8545
                     gas_limit: 6721975
                     accounts: 10
+                    chain_id: 1337
+                    network_id: 1588949648
                     evm_version: istanbul
                     fork: null
                     mnemonic: brownie
