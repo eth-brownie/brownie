@@ -74,7 +74,8 @@ class TxHistory(metaclass=_Singleton):
         self._list = [i for i in self._list if i.block_number <= height]
 
     def _add_tx(self, tx: TransactionReceipt) -> None:
-        self._list.append(tx)
+        if tx not in self._list:
+            self._list.append(tx)
 
     def clear(self) -> None:
         self._list.clear()
