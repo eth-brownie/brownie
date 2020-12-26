@@ -52,6 +52,8 @@ DEV_CMD_SETTINGS = (
     "block_time",
     "default_balance",
     "time",
+    "network_id",
+    "chain_id",
 )
 
 
