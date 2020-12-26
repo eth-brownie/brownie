@@ -340,6 +340,8 @@ def _generate_coverage_data(
     revert_map: Dict = {}
     fallback_hexstr: str = "unassigned"
 
+    optimizer_revert = False if get_version() >= Version("0.8.0") else True
+
     active_source_node: Optional[NodeBase] = None
     active_fn_node: Optional[NodeBase] = None
     active_fn_name: Optional[str] = None
@@ -394,6 +396,26 @@ def _generate_coverage_data(
             continue
         offset = (source[0], source[0] + source[1])
         pc_list[-1]["offset"] = offset
+
+        if pc_list[-1]["op"] == "REVERT" and not optimizer_revert:
+            # In Solidity >=0.8.0, an optimization is applied to reverts with an error string
+            # such that all reverts appear to happen at the same point in the source code.
+            # We mark this REVERT as the "optimizer revert" so that when it's encountered in
+            # a trace we know to look back to find the actual revert location.
+            fn_node = active_source_node.children(
+                include_parents=False,
+                include_children=True,
+                required_offset=offset,
+                filters=(
+                    {"nodeType": "FunctionCall", "expression.name": "revert"},
+                    {"nodeType": "FunctionCall", "expression.name": "require"},
+                ),
+            )
+            if fn_node:
+                args = len(fn_node[0].arguments)
+                if args == 2 or (fn_node[0].expression.name == "revert" and args):
+                    optimizer_revert = True
+                    pc_list[-1]["optimizer_revert"] = True
 
         # add error messages for INVALID opcodes
         if pc_list[-1]["op"] == "INVALID":
