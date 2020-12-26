@@ -6,8 +6,11 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Added
+- Exposed `chain_id` and `network_id` ganache-cli parameters. Forked networks retain `chain_id`. ([#908](https://github.com/eth-brownie/brownie/pull/908))
 ### Fixed
 - Typo in link to mixes ([#886](https://github.com/eth-brownie/brownie/pull/886))
+
 
 ## [1.12.2](https://github.com/eth-brownie/brownie/tree/v1.12.2) - 2020-12-04
 ### Added
