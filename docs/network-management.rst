@@ -97,7 +97,7 @@ The following optional fields may be given for development networks, which are p
     * ``gas_limit``: The block gas limit. Defaults to 6721925.
     * ``accounts``: The number of funded, unlocked accounts. Default 10.
     * ``mnemonic``: A mnemonic to use when generating local accounts.
-    * ``chain_id``: The chain id as integer used for ``eth_chainId`` and the ``CHAINID`` opcode. If no value is given, defaults to 1337 and 1 respectively, for legacy reasons.
+    * ``chain_id``: The chain id as integer used for ``eth_chainId`` and the ``CHAINID`` opcode. If no value is given, defaults to the chain id of the forked network or to 1337 and 1 respectively if no fork is specified.
     * ``network_id``: The network id as integer used by ganache to identify itself. Defaults to the current timestamp or the network id of the forked chain.
     * ``evm_version``: The EVM ruleset to use. Default is the most recent available.
     * ``fork``: If given, the local client will fork from another currently running Ethereum client. The value may be an HTTP location and port of the other client, e.g. ``http://localhost:8545``, or the ID of a production network, e.g. ``mainnet``. See :ref:`Using a Forked Development Network <network-management-fork>`.
