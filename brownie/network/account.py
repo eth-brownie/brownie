@@ -661,6 +661,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             gas_strategy.run(receipt, gas_iter)  # type: ignore
 
         if required_confs == 0:
+            # set 0-conf tx's as silent to hide the confirmation output
             receipt._silent = True
             return receipt
 
