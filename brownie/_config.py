@@ -85,6 +85,8 @@ class ConfigContainer:
             if fork in self.networks:
                 network["cmd_settings"]["fork"] = self.networks[fork]["host"]
                 network["chainid"] = self.networks[fork]["chainid"]
+                if "chain_id" not in network["cmd_settings"]:
+                    network["cmd_settings"]["chain_id"] = int(self.networks[fork]["chainid"])
                 if "explorer" in self.networks[fork]:
                     network["explorer"] = self.networks[fork]["explorer"]
 
