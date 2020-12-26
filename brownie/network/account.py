@@ -667,14 +667,14 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         try:
             receipt._confirmed.wait()
-        except KeyboardInterrupt:
+        except KeyboardInterrupt as exc:
             # set related transactions as silent
             receipt._silent = True
             for receipt in history.filter(
                 sender=self, nonce=receipt.nonce, key=lambda k: k.status != -2
             ):
                 receipt._silent = True
-            raise
+            raise exc.with_traceback(None)
 
         if receipt.status != -2:
             return receipt
