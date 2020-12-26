@@ -315,7 +315,7 @@ class TransactionReceipt:
             raise ValueError("Transaction has already confirmed")
 
         if increment is not None:
-            gas_price = Wei(self.gas_price * 1.1)
+            gas_price = Wei(self.gas_price * increment)
 
         if silent is None:
             silent = self._silent
