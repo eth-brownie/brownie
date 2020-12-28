@@ -181,7 +181,7 @@ class _ContractBase:
             stripped = line.strip()
             if stripped.startswith(("//", "/*", "*", "*/")):
                 offset_start -= (len(line) + 1)
-            elif stripped is not "":
+            elif stripped != "":
                 # Stop on the first non-empty, non-comment line
                 break
         offset_start = max(0, offset_start)
