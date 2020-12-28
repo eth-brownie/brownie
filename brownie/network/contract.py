@@ -148,7 +148,7 @@ class _ContractBase:
 
             build_json = self._build
             version = build_json["compiler"]["version"]
-            version_short = re.findall(r'^[^+]+', version)[0]
+            version_short = re.findall(r"^[^+]+", version)[0]
             offset = slice(*build_json["offset"])
             source = self._slice_source(build_json["source"], offset)
             file_name = Path(build_json["sourcePath"]).parts[-1]
@@ -172,21 +172,22 @@ class _ContractBase:
         else:
             raise TypeError(f"Unsupported language for flattening: {language}")
 
-    def _slice_source(self, source, offset):
+    def _slice_source(self, source: str, offset: slice) -> str:
         """Slice the source of the contract, including any comments above the first line."""
-        offset_start = offset.start
+        offset_start: int = int(offset.start) if offset.start else 0
         top_source = source[:offset_start]
-        top_lines = top_source.split('\n')[::-1]
+        top_lines = top_source.split("\n")[::-1]
         for line in top_lines:
             stripped = line.strip()
             if stripped.startswith(("//", "/*", "*", "*/")):
-                offset_start -= (len(line) + 1)
+                offset_start = offset_start - len(line) - 1
             elif stripped != "":
                 # Stop on the first non-empty, non-comment line
                 break
         offset_start = max(0, offset_start)
         offset = slice(offset_start, offset.stop, None)
         return source[offset]
+    
 
 class ContractContainer(_ContractBase):
 
