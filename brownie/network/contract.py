@@ -127,9 +127,10 @@ class _ContractBase:
 
         return function_sig, input_args
 
-    def flatten(self) -> str:
+    def flatten(self) -> dict:
         """
-        Return a single, deployable source code for this contract.
+        Return a dict with a single, deployable source code for this contract
+        and further information needed for verification
         """
         language = self._build["language"]
         if language == "Vyper":
@@ -150,10 +151,17 @@ class _ContractBase:
             source = build_json["source"][offset]
             file_name = Path(build_json["sourcePath"]).parts[-1]
             licenses = re.findall(r'SPDX-License-Identifier:(.*)\n', build_json["source"][:offset.start])
-            license_identifier = licenses[0].strip() if len(licenses) == 1 else "UNLICENSED"
+            license_identifier = licenses[0].strip() if len(licenses) == 1 else "NONE"
             flattened_source = f"// SPDX-License-Identifier: {license_identifier}\n\n" \
                                f"pragma solidity {version};{flattened_source}\n\n// File: {file_name}\n\n{source}\n"
-            return flattened_source
+            return {
+                "flattened_source": flattened_source,
+                "contract_name": build_json["contractName"],
+                "compiler_version": version,  # TODO: add commit hash
+                "optimizer_enabled": build_json["compiler"]["optimizer"]["enabled"],
+                "optimizer_runs": build_json["compiler"]["optimizer"]["runs"],
+                "license_identifier": license_identifier,
+            }
         else:
             raise TypeError(f"Unsupported language for flattening: {language}")
 
