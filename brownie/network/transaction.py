@@ -776,11 +776,13 @@ class TransactionReceipt:
                     self._subcalls[-1]["value"] = int(step["stack"][-3], 16)
                 if calldata and last_map[trace[i]["depth"]].get("function"):
                     fn = last_map[trace[i]["depth"]]["function"]
-                    zip_ = zip(fn.abi["inputs"], fn.decode_input(calldata))
-                    self._subcalls[-1].update(
-                        inputs={i[0]["name"]: i[1] for i in zip_},  # type:ignore
-                        function=fn._input_sig,
-                    )
+                    self._subcalls[-1]["function"] = fn._input_sig
+                    try:
+                        zip_ = zip(fn.abi["inputs"], fn.decode_input(calldata))
+                        inputs = {i[0]["name"]: i[1] for i in zip_}  # type: ignore
+                        self._subcalls[-1]["inputs"] = inputs
+                    except Exception:
+                        self._subcalls[-1]["calldata"] = calldata.hex()
                 elif calldata:
                     self._subcalls[-1]["calldata"] = calldata.hex()
 
