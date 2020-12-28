@@ -151,10 +151,15 @@ class _ContractBase:
             offset = slice(*build_json["offset"])
             source = build_json["source"][offset]
             file_name = Path(build_json["sourcePath"]).parts[-1]
-            licenses = re.findall(r'SPDX-License-Identifier:(.*)\n', build_json["source"][:offset.start])
+            licenses = re.findall(
+                r"SPDX-License-Identifier:(.*)\n", build_json["source"][: offset.start]
+            )
             license_identifier = licenses[0].strip() if len(licenses) == 1 else "NONE"
-            flattened_source = f"// SPDX-License-Identifier: {license_identifier}\n\n" \
-                               f"pragma solidity {version};{flattened_source}\n\n// File: {file_name}\n\n{source}\n"
+            flattened_source = (
+                f"// SPDX-License-Identifier: {license_identifier}\n\n"
+                f"pragma solidity {version};{flattened_source}\n\n"
+                f"// File: {file_name}\n\n{source}\n"
+            )
             return {
                 "flattened_source": flattened_source,
                 "contract_name": build_json["contractName"],
@@ -569,7 +574,7 @@ class _DeployedContractBase(_ContractBase):
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
 
-    def publish_source(self, silent: bool = False, wait_for_result: bool = True):
+    def publish_source(self, silent: bool = False) -> bool:
         """Flatten contract and publish source on the selected explorer"""
 
         # Check required conditions for verifying
@@ -577,7 +582,9 @@ class _DeployedContractBase(_ContractBase):
         if url is None:
             raise ValueError("Explorer API not set for this network")
         if "etherscan" not in url:
-            raise ValueError("Publishing source is only supported on etherscan, change the Explorer API")
+            raise ValueError(
+                "Publishing source is only supported on etherscan, change the Explorer API"
+            )
 
         if os.getenv("ETHERSCAN_TOKEN"):
             api_key = os.getenv("ETHERSCAN_TOKEN")
@@ -596,7 +603,7 @@ class _DeployedContractBase(_ContractBase):
         if is_verified:
             if not silent:
                 print(f"Source for {address} is already verified")
-            return
+            return True
 
         # Verify code
         flat = self.flatten()
@@ -639,7 +646,7 @@ class _DeployedContractBase(_ContractBase):
             "sourceCode": flat["flattened_source"],
             "codeformat": "solidity-single-file",
             "contractname": flat["contract_name"],
-            "compilerversion": "v0.6.9+commit.3e3065ac",  # "v0.4.25+commit.59dbf8f1",  # flat["compiler_version"],
+            "compilerversion": "v0.6.9+commit.3e3065ac",  # TODO: implement
             "optimizationUsed": 1 if flat["optimizer_enabled"] else 0,
             "runs": flat["optimizer_runs"],
             "licenseType": license_code,
@@ -649,7 +656,9 @@ class _DeployedContractBase(_ContractBase):
         while True:
             response = requests.post(url, data=payload, headers=REQUEST_HEADERS)
             if response.status_code != 200:
-                raise ConnectionError(f"Status {response.status_code} when querying {url}: {response.text}")
+                raise ConnectionError(
+                    f"Status {response.status_code} when querying {url}: {response.text}"
+                )
             data = response.json()
             if int(data["status"]) == 1:
                 # Request successfully submitted
@@ -668,33 +677,32 @@ class _DeployedContractBase(_ContractBase):
                 else:
                     raise ValueError(f"Failed to retrieve data from API: {data['result']}")
 
-        if wait_for_result:
-            guid = data["result"]
-            if not silent:
-                print("Verification submitted successfully. Waiting for result...")
+        guid = data["result"]
+        if not silent:
+            print("Verification submitted successfully. Waiting for result...")
+        time.sleep(10)
+        params: Dict = {
+            "apikey": api_key,
+            "module": "contract",
+            "action": "checkverifystatus",
+            "guid": guid,
+        }
+        while True:
+            response = requests.get(url, params=params, headers=REQUEST_HEADERS)
+            if response.status_code == 200:
+                data = response.json()
+                if data["result"] == "Pending in queue":
+                    if not silent:
+                        print("Verification pending...")
+                else:
+                    if not silent:
+                        col = "bright green" if data["message"] == "OK" else "bright red"
+                        print(
+                            f"Verification complete. "
+                            f"Result: {color(col)}{data['result']}{color}"
+                        )
+                    return data["message"] == "OK"
             time.sleep(10)
-            params = {
-                "apikey": api_key,
-                "module": "contract",
-                "action": "checkverifystatus",
-                "guid": guid,
-            }
-            while True:
-                response = requests.get(url, params=params, headers=REQUEST_HEADERS)
-                if response.status_code == 200:
-                    data = response.json()
-                    if data["result"] == "Pending in queue":
-                        if not silent:
-                            print("Verification pending...")
-                    else:
-                        if not silent:
-                            col = "bright green" if data["message"] == "OK" else "bright red"
-                            print(f"Verification complete. Result: {color(col)}{data['result']}{color}")
-                        break
-                time.sleep(10)
-
-        else:
-            print(f"Verification submitted successfully. Check contract \"{address}\" on etherscan")
 
     def _deployment_path(self) -> Optional[Path]:
         if not self._project._path or (
