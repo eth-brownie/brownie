@@ -187,7 +187,7 @@ class _ContractBase:
         offset_start = max(0, offset_start)
         offset = slice(offset_start, offset.stop, None)
         return source[offset]
-    
+
 
 class ContractContainer(_ContractBase):
 
