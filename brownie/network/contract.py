@@ -142,14 +142,15 @@ class _ContractBase:
             for name in self._build["dependencies"]:
                 build_json = self._project._build.get(name)
                 offset = slice(*build_json["offset"])
-                source = build_json["source"][offset]
+                source = self._slice_source(build_json["source"], offset)
                 file_name = Path(build_json["sourcePath"]).parts[-1]
                 flattened_source = f"{flattened_source}\n\n// File: {file_name}\n\n{source}"
 
             build_json = self._build
             version = build_json["compiler"]["version"]
+            version_short = re.findall(r'^[^+]+', version)[0]
             offset = slice(*build_json["offset"])
-            source = build_json["source"][offset]
+            source = self._slice_source(build_json["source"], offset)
             file_name = Path(build_json["sourcePath"]).parts[-1]
             licenses = re.findall(
                 r"SPDX-License-Identifier:(.*)\n", build_json["source"][: offset.start]
@@ -157,13 +158,13 @@ class _ContractBase:
             license_identifier = licenses[0].strip() if len(licenses) == 1 else "NONE"
             flattened_source = (
                 f"// SPDX-License-Identifier: {license_identifier}\n\n"
-                f"pragma solidity {version};{flattened_source}\n\n"
+                f"pragma solidity {version_short};{flattened_source}\n\n"
                 f"// File: {file_name}\n\n{source}\n"
             )
             return {
                 "flattened_source": flattened_source,
                 "contract_name": build_json["contractName"],
-                "compiler_version": version,  # TODO: add commit hash
+                "compiler_version": version,
                 "optimizer_enabled": build_json["compiler"]["optimizer"]["enabled"],
                 "optimizer_runs": build_json["compiler"]["optimizer"]["runs"],
                 "license_identifier": license_identifier,
@@ -171,6 +172,21 @@ class _ContractBase:
         else:
             raise TypeError(f"Unsupported language for flattening: {language}")
 
+    def _slice_source(self, source, offset):
+        """Slice the source of the contract, including any comments above the first line."""
+        offset_start = offset.start
+        top_source = source[:offset_start]
+        top_lines = top_source.split('\n')[::-1]
+        for line in top_lines:
+            stripped = line.strip()
+            if stripped.startswith(("//", "/*", "*", "*/")):
+                offset_start -= (len(line) + 1)
+            elif stripped is not "":
+                # Stop on the first non-empty, non-comment line
+                break
+        offset_start = max(0, offset_start)
+        offset = slice(offset_start, offset.stop, None)
+        return source[offset]
 
 class ContractContainer(_ContractBase):
 
@@ -646,7 +662,7 @@ class _DeployedContractBase(_ContractBase):
             "sourceCode": flat["flattened_source"],
             "codeformat": "solidity-single-file",
             "contractname": flat["contract_name"],
-            "compilerversion": "v0.6.9+commit.3e3065ac",  # TODO: implement
+            "compilerversion": "".join(("v", flat["compiler_version"])),
             "optimizationUsed": 1 if flat["optimizer_enabled"] else 0,
             "runs": flat["optimizer_runs"],
             "licenseType": license_code,

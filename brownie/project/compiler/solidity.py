@@ -42,7 +42,7 @@ SOLIDITY_ERROR_CODES = {
 
 
 def get_version() -> Version:
-    return solcx.get_solc_version().truncate()
+    return solcx.get_solc_version(True)
 
 
 def compile_from_input_json(
