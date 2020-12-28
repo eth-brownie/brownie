@@ -141,14 +141,18 @@ class _ContractBase:
                 build_json = self._project._build.get(name)
                 offset = slice(*build_json["offset"])
                 source = build_json["source"][offset]
-                flattened_source = f"{flattened_source}\n\n{source}"
+                file_name = Path(build_json["sourcePath"]).parts[-1]
+                flattened_source = f"{flattened_source}\n\n// File: {file_name}\n\n{source}"
 
             build_json = self._build
             version = build_json["compiler"]["version"]
             offset = slice(*build_json["offset"])
             source = build_json["source"][offset]
-            flattened_source = f"pragma solidity {version};{flattened_source}\n\n{source}\n"
-
+            file_name = Path(build_json["sourcePath"]).parts[-1]
+            licenses = re.findall(r'SPDX-License-Identifier:(.*)\n', build_json["source"][:offset.start])
+            license_identifier = licenses[0].strip() if len(licenses) == 1 else "UNLICENSED"
+            flattened_source = f"// SPDX-License-Identifier: {license_identifier}\n\n" \
+                               f"pragma solidity {version};{flattened_source}\n\n// File: {file_name}\n\n{source}\n"
             return flattened_source
         else:
             raise TypeError(f"Unsupported language for flattening: {language}")
