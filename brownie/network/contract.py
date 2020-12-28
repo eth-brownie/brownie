@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import time
 import warnings
 from pathlib import Path
 from textwrap import TextWrapper
@@ -567,6 +568,133 @@ class _DeployedContractBase(_ContractBase):
         """Returns the current ether balance of the contract, in wei."""
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
+
+    def publish_source(self, silent: bool = False, wait_for_result: bool = True):
+        """Flatten contract and publish source on the selected explorer"""
+
+        # Check required conditions for verifying
+        url = CONFIG.active_network.get("explorer")
+        if url is None:
+            raise ValueError("Explorer API not set for this network")
+        if "etherscan" not in url:
+            raise ValueError("Publishing source is only supported on etherscan, change the Explorer API")
+
+        if os.getenv("ETHERSCAN_TOKEN"):
+            api_key = os.getenv("ETHERSCAN_TOKEN")
+        else:
+            raise ValueError(
+                "An Etherscan API token is required to verify contract source code. "
+                "Visit https://etherscan.io/register to obtain a token, and then store it "
+                "as the environment variable $ETHERSCAN_TOKEN"
+            )
+
+        address = _resolve_address(self.address)
+
+        # Check if code is already verified
+        data = _fetch_from_explorer(address, "getsourcecode", silent=True)
+        is_verified = bool(data["result"][0].get("SourceCode"))
+        if is_verified:
+            if not silent:
+                print(f"Source for {address} is already verified")
+            return
+
+        # Verify code
+        flat = self.flatten()
+
+        # Select matching license code (https://etherscan.io/contract-license-types)
+        license_code = 1
+        identifier = flat["license_identifier"].lower()
+        if "unlicensed" in identifier:
+            license_code = 2
+        elif "mit" in identifier:
+            license_code = 3
+        elif "agpl" in identifier and "3.0" in identifier:
+            license_code = 13
+        elif "lgpl" in identifier:
+            if "2.1" in identifier:
+                license_code = 6
+            elif "3.0" in identifier:
+                license_code = 7
+        elif "gpl" in identifier:
+            if "2.0" in identifier:
+                license_code = 4
+            elif "3.0" in identifier:
+                license_code = 5
+        elif "bsd-2-clause" in identifier:
+            license_code = 8
+        elif "bsd-3-clause" in identifier:
+            license_code = 9
+        elif "mpl" in identifier and "2.0" in identifier:
+            license_code = 10
+        elif identifier.startswith("osl") and "3.0" in identifier:
+            license_code = 11
+        elif "apache" in identifier and "2.0" in identifier:
+            license_code = 12
+
+        payload: Dict = {
+            "apikey": api_key,
+            "module": "contract",
+            "action": "verifysourcecode",
+            "contractaddress": address,
+            "sourceCode": flat["flattened_source"],
+            "codeformat": "solidity-single-file",
+            "contractname": flat["contract_name"],
+            "compilerversion": "v0.6.9+commit.3e3065ac",  # "v0.4.25+commit.59dbf8f1",  # flat["compiler_version"],
+            "optimizationUsed": 1 if flat["optimizer_enabled"] else 0,
+            "runs": flat["optimizer_runs"],
+            "licenseType": license_code,
+        }
+
+        i = 0
+        while True:
+            response = requests.post(url, data=payload, headers=REQUEST_HEADERS)
+            if response.status_code != 200:
+                raise ConnectionError(f"Status {response.status_code} when querying {url}: {response.text}")
+            data = response.json()
+            if int(data["status"]) == 1:
+                # Request successfully submitted
+                break
+            else:
+                if data["result"].startswith("Unable to locate ContractCode"):
+                    # Wait for contract to be recognized by etherscan
+                    # This takes a few seconds after the contract is deployed
+                    # After 10 loops we throw with the API result message (includes address)
+                    if i >= 10:
+                        raise ValueError(f"API request failed with: {data['result']}")
+                    elif i == 0 and not silent:
+                        print("Waiting for etherscan to process contract...")
+                    i += 1
+                    time.sleep(10)
+                else:
+                    raise ValueError(f"Failed to retrieve data from API: {data['result']}")
+
+        if wait_for_result:
+            guid = data["result"]
+            if not silent:
+                print("Verification submitted successfully. Waiting for result...")
+            time.sleep(10)
+            params = {
+                "apikey": api_key,
+                "module": "contract",
+                "action": "checkverifystatus",
+                "guid": guid,
+            }
+            while True:
+                response = requests.get(url, params=params, headers=REQUEST_HEADERS)
+                if response.status_code == 200:
+                    data = response.json()
+                    if data["result"] == "Pending in queue":
+                        if not silent:
+                            print("Verification pending...")
+                    else:
+                        if not silent:
+                            col = "bright green" if data["message"] == "OK" else "bright red"
+                            print(f"Verification complete. Result: {color(col)}{data['result']}{color}")
+                        break
+                time.sleep(10)
+
+        else:
+            print(f"Verification submitted successfully. Check contract \"{address}\" on etherscan")
 
     def _deployment_path(self) -> Optional[Path]:
         if not self._project._path or (
