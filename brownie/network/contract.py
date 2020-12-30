@@ -128,14 +128,17 @@ class _ContractBase:
 
         return function_sig, input_args
 
-    def flatten(self) -> dict:
+    def get_verification_info(self) -> Dict:
         """
-        Return a dict with a single, deployable source code for this contract
+        Return a dict with flattened source code for this contract
         and further information needed for verification
         """
         language = self._build["language"]
         if language == "Vyper":
-            return self._build["source"]
+            raise TypeError(
+                "Etherscan does not support API verification of source code "
+                "for vyper contracts. You need to verify the source manually"
+            )
         elif language == "Solidity":
             flattened_source = ""
 
@@ -170,7 +173,7 @@ class _ContractBase:
                 "license_identifier": license_identifier,
             }
         else:
-            raise TypeError(f"Unsupported language for flattening: {language}")
+            raise TypeError(f"Unsupported language for source verification: {language}")
 
     def _slice_source(self, source: str, offset: slice) -> str:
         """Slice the source of the contract, including any comments above the first line."""
@@ -614,20 +617,12 @@ class _DeployedContractBase(_ContractBase):
 
         address = _resolve_address(self.address)
 
-        # Check if code is already verified
-        data = _fetch_from_explorer(address, "getsourcecode", silent=True)
-        is_verified = bool(data["result"][0].get("SourceCode"))
-        if is_verified:
-            if not silent:
-                print(f"Source for {address} is already verified")
-            return True
-
-        # Verify code
-        flat = self.flatten()
+        # Get flattened source code and contract/compiler information
+        contract_info = self.get_verification_info()
 
         # Select matching license code (https://etherscan.io/contract-license-types)
         license_code = 1
-        identifier = flat["license_identifier"].lower()
+        identifier = contract_info["license_identifier"].lower()
         if "unlicensed" in identifier:
             license_code = 2
         elif "mit" in identifier:
@@ -660,12 +655,12 @@ class _DeployedContractBase(_ContractBase):
             "module": "contract",
             "action": "verifysourcecode",
             "contractaddress": address,
-            "sourceCode": flat["flattened_source"],
+            "sourceCode": contract_info["flattened_source"],
             "codeformat": "solidity-single-file",
-            "contractname": flat["contract_name"],
-            "compilerversion": "".join(("v", flat["compiler_version"])),
-            "optimizationUsed": 1 if flat["optimizer_enabled"] else 0,
-            "runs": flat["optimizer_runs"],
+            "contractname": contract_info["contract_name"],
+            "compilerversion": f"v{contract_info['compiler_version']}",
+            "optimizationUsed": 1 if contract_info["optimizer_enabled"] else 0,
+            "runs": contract_info["optimizer_runs"],
             "licenseType": license_code,
         }
 
@@ -692,7 +687,7 @@ class _DeployedContractBase(_ContractBase):
                     i += 1
                     time.sleep(10)
                 else:
-                    raise ValueError(f"Failed to retrieve data from API: {data['result']}")
+                    raise ValueError(f"Failed to submit verification request: {data['result']}")
 
         guid = data["result"]
         if not silent:
