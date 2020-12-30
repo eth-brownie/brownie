@@ -184,6 +184,7 @@ class _ContractBase:
                 "optimizer_enabled": build_json["compiler"]["optimizer"]["enabled"],
                 "optimizer_runs": build_json["compiler"]["optimizer"]["runs"],
                 "license_identifier": license_identifier,
+                "bytecode_len": len(build_json["bytecode"]),
             }
         else:
             raise TypeError(f"Unsupported language for source verification: {language}")
@@ -663,6 +664,44 @@ class _DeployedContractBase(_ContractBase):
         elif "apache" in identifier and "2.0" in identifier:
             license_code = 12
 
+        # get constructor arguments
+        params = {
+            "apikey": api_key,
+            "module": "account",
+            "action": "txlist",
+            "address": address,
+            "page": 1,
+            "sort": "asc",
+            "offset": 1,
+        }
+        i = 0
+        while True:
+            response = requests.get(url, params=params, headers=REQUEST_HEADERS)
+            if response.status_code != 200:
+                raise ConnectionError(
+                    f"Status {response.status_code} when querying {url}: {response.text}"
+                )
+            data = response.json()
+            if int(data["status"]) == 1:
+                # Constructor arguments received
+                break
+            else:
+                # Wait for contract to be recognized by etherscan
+                # This takes a few seconds after the contract is deployed
+                # After 10 loops we throw with the API result message (includes address)
+                if i >= 10:
+                    raise ValueError(f"API request failed with: {data['result']}")
+                elif i == 0 and not silent:
+                    print("Waiting for etherscan to process contract...")
+                i += 1
+                time.sleep(10)
+
+        if data["message"] == "OK":
+            constructor_arguments = data["result"][0]["input"][contract_info["bytecode_len"] + 2:]
+        else:
+            constructor_arguments = ""
+
+        # Submit verification
         payload: Dict = {
             "apikey": api_key,
             "module": "contract",
@@ -674,33 +713,17 @@ class _DeployedContractBase(_ContractBase):
             "compilerversion": f"v{contract_info['compiler_version']}",
             "optimizationUsed": 1 if contract_info["optimizer_enabled"] else 0,
             "runs": contract_info["optimizer_runs"],
+            "constructorArguements": constructor_arguments,
             "licenseType": license_code,
         }
-
-        i = 0
-        while True:
-            response = requests.post(url, data=payload, headers=REQUEST_HEADERS)
-            if response.status_code != 200:
-                raise ConnectionError(
-                    f"Status {response.status_code} when querying {url}: {response.text}"
-                )
-            data = response.json()
-            if int(data["status"]) == 1:
-                # Request successfully submitted
-                break
-            else:
-                if data["result"].startswith("Unable to locate ContractCode"):
-                    # Wait for contract to be recognized by etherscan
-                    # This takes a few seconds after the contract is deployed
-                    # After 10 loops we throw with the API result message (includes address)
-                    if i >= 10:
-                        raise ValueError(f"API request failed with: {data['result']}")
-                    elif i == 0 and not silent:
-                        print("Waiting for etherscan to process contract...")
-                    i += 1
-                    time.sleep(10)
-                else:
-                    raise ValueError(f"Failed to submit verification request: {data['result']}")
+        response = requests.post(url, data=payload, headers=REQUEST_HEADERS)
+        if response.status_code != 200:
+            raise ConnectionError(
+                f"Status {response.status_code} when querying {url}: {response.text}"
+            )
+        data = response.json()
+        if int(data["status"]) != 1:
+            raise ValueError(f"Failed to submit verification request: {data['result']}")
 
         guid = data["result"]
         if not silent:
@@ -725,10 +748,7 @@ class _DeployedContractBase(_ContractBase):
             else:
                 if not silent:
                     col = "bright green" if data["message"] == "OK" else "bright red"
-                    print(
-                        f"Verification complete. "
-                        f"Result: {color(col)}{data['result']}{color}"
-                    )
+                    print(f"Verification complete. Result: {color(col)}{data['result']}{color}")
                 return data["message"] == "OK"
             time.sleep(10)
 
