@@ -141,6 +141,9 @@ class _ContractBase:
             )
         elif language == "Solidity":
             flattened_source = ""
+            has_abiencoder = False
+            abiencoder_str = "\npragma experimental ABIEncoderV2;"
+            abiencoder_re = r"(^|\r|\n|\r\n)\s*pragma experimental ABIEncoderV2;"
 
             for name in self._build["dependencies"]:
                 build_json = self._project._build.get(name)
@@ -148,6 +151,10 @@ class _ContractBase:
                 source = self._slice_source(build_json["source"], offset)
                 file_name = Path(build_json["sourcePath"]).parts[-1]
                 flattened_source = f"{flattened_source}\n\n// File: {file_name}\n\n{source}"
+                if not has_abiencoder:
+                    has_abiencoder = len(
+                        re.findall(abiencoder_re, build_json["source"][:offset.start])
+                    ) > 0
 
             build_json = self._build
             version = build_json["compiler"]["version"]
@@ -159,11 +166,17 @@ class _ContractBase:
                 r"SPDX-License-Identifier:(.*)\n", build_json["source"][: offset.start]
             )
             license_identifier = licenses[0].strip() if len(licenses) == 1 else "NONE"
+            if not has_abiencoder:
+                has_abiencoder = len(
+                    re.findall(abiencoder_re, build_json["source"][:offset.start])
+                ) > 0
             flattened_source = (
                 f"// SPDX-License-Identifier: {license_identifier}\n\n"
-                f"pragma solidity {version_short};{flattened_source}\n\n"
+                f"pragma solidity {version_short};"
+                f"{abiencoder_str if has_abiencoder else ''}{flattened_source}\n\n"
                 f"// File: {file_name}\n\n{source}\n"
             )
+
             return {
                 "flattened_source": flattened_source,
                 "contract_name": build_json["contractName"],
@@ -182,14 +195,14 @@ class _ContractBase:
         top_lines = top_source.split("\n")[::-1]
         for line in top_lines:
             stripped = line.strip()
-            if stripped.startswith(("//", "/*", "*", "*/")):
+            if not stripped or stripped.startswith(("//", "/*", "*", "*/")):
                 offset_start = offset_start - len(line) - 1
-            elif stripped != "":
+            else:
                 # Stop on the first non-empty, non-comment line
                 break
         offset_start = max(0, offset_start)
         offset = slice(offset_start, offset.stop, None)
-        return source[offset]
+        return source[offset].strip()
 
 
 class ContractContainer(_ContractBase):
@@ -701,19 +714,22 @@ class _DeployedContractBase(_ContractBase):
         }
         while True:
             response = requests.get(url, params=params, headers=REQUEST_HEADERS)
-            if response.status_code == 200:
-                data = response.json()
-                if data["result"] == "Pending in queue":
-                    if not silent:
-                        print("Verification pending...")
-                else:
-                    if not silent:
-                        col = "bright green" if data["message"] == "OK" else "bright red"
-                        print(
-                            f"Verification complete. "
-                            f"Result: {color(col)}{data['result']}{color}"
-                        )
-                    return data["message"] == "OK"
+            if response.status_code != 200:
+                raise ConnectionError(
+                    f"Status {response.status_code} when querying {url}: {response.text}"
+                )
+            data = response.json()
+            if data["result"] == "Pending in queue":
+                if not silent:
+                    print("Verification pending...")
+            else:
+                if not silent:
+                    col = "bright green" if data["message"] == "OK" else "bright red"
+                    print(
+                        f"Verification complete. "
+                        f"Result: {color(col)}{data['result']}{color}"
+                    )
+                return data["message"] == "OK"
             time.sleep(10)
 
     def _deployment_path(self) -> Optional[Path]:
