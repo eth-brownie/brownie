@@ -149,12 +149,15 @@ class _ContractBase:
                 build_json = self._project._build.get(name)
                 offset = slice(*build_json["offset"])
                 source = self._slice_source(build_json["source"], offset)
-                file_name = Path(build_json["sourcePath"]).parts[-1]
+                if "sourcePath" in build_json:
+                    file_name = Path(build_json["sourcePath"]).parts[-1]
+                else:
+                    file_name = f"{build_json['contractName']}.sol"
                 flattened_source = f"{flattened_source}\n\n// File: {file_name}\n\n{source}"
                 if not has_abiencoder:
-                    has_abiencoder = len(
-                        re.findall(abiencoder_re, build_json["source"][:offset.start])
-                    ) > 0
+                    has_abiencoder = (
+                        len(re.findall(abiencoder_re, build_json["source"][: offset.start])) > 0
+                    )
 
             build_json = self._build
             version = build_json["compiler"]["version"]
@@ -167,9 +170,9 @@ class _ContractBase:
             )
             license_identifier = licenses[0].strip() if len(licenses) == 1 else "NONE"
             if not has_abiencoder:
-                has_abiencoder = len(
-                    re.findall(abiencoder_re, build_json["source"][:offset.start])
-                ) > 0
+                has_abiencoder = (
+                    len(re.findall(abiencoder_re, build_json["source"][: offset.start])) > 0
+                )
             flattened_source = (
                 f"// SPDX-License-Identifier: {license_identifier}\n\n"
                 f"pragma solidity {version_short};"
@@ -665,7 +668,7 @@ class _DeployedContractBase(_ContractBase):
             license_code = 12
 
         # get constructor arguments
-        params = {
+        params_tx: Dict = {
             "apikey": api_key,
             "module": "account",
             "action": "txlist",
@@ -676,7 +679,7 @@ class _DeployedContractBase(_ContractBase):
         }
         i = 0
         while True:
-            response = requests.get(url, params=params, headers=REQUEST_HEADERS)
+            response = requests.get(url, params=params_tx, headers=REQUEST_HEADERS)
             if response.status_code != 200:
                 raise ConnectionError(
                     f"Status {response.status_code} when querying {url}: {response.text}"
@@ -697,12 +700,12 @@ class _DeployedContractBase(_ContractBase):
                 time.sleep(10)
 
         if data["message"] == "OK":
-            constructor_arguments = data["result"][0]["input"][contract_info["bytecode_len"] + 2:]
+            constructor_arguments = data["result"][0]["input"][contract_info["bytecode_len"] + 2 :]
         else:
             constructor_arguments = ""
 
         # Submit verification
-        payload: Dict = {
+        payload_verification: Dict = {
             "apikey": api_key,
             "module": "contract",
             "action": "verifysourcecode",
@@ -716,7 +719,7 @@ class _DeployedContractBase(_ContractBase):
             "constructorArguements": constructor_arguments,
             "licenseType": license_code,
         }
-        response = requests.post(url, data=payload, headers=REQUEST_HEADERS)
+        response = requests.post(url, data=payload_verification, headers=REQUEST_HEADERS)
         if response.status_code != 200:
             raise ConnectionError(
                 f"Status {response.status_code} when querying {url}: {response.text}"
@@ -725,18 +728,19 @@ class _DeployedContractBase(_ContractBase):
         if int(data["status"]) != 1:
             raise ValueError(f"Failed to submit verification request: {data['result']}")
 
+        # Status of request
         guid = data["result"]
         if not silent:
             print("Verification submitted successfully. Waiting for result...")
         time.sleep(10)
-        params: Dict = {
+        params_status: Dict = {
             "apikey": api_key,
             "module": "contract",
             "action": "checkverifystatus",
             "guid": guid,
         }
         while True:
-            response = requests.get(url, params=params, headers=REQUEST_HEADERS)
+            response = requests.get(url, params=params_status, headers=REQUEST_HEADERS)
             if response.status_code != 200:
                 raise ConnectionError(
                     f"Status {response.status_code} when querying {url}: {response.text}"
