@@ -8,7 +8,7 @@ import warnings
 from collections import defaultdict
 from pathlib import Path
 from textwrap import TextWrapper
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterator, List, Match, Optional, Set, Tuple, Union
 from urllib.parse import urlparse
 
 import eth_abi
@@ -146,18 +146,18 @@ class _ContractBase:
             has_abiencoder = False
             abiencoder_re = r"(^|\r|\n|\r\n)\s*pragma experimental ABIEncoderV2;"
 
-            dependency_tree = defaultdict(set)
+            dependency_tree: Dict = defaultdict(set)
             dependency_tree["__root_node__"] = set(self._build["dependencies"])
-            code_fragments = {}
+            code_fragments: Dict = {}
 
-            used_offsets = defaultdict(list)  # aggregate all used offsets per source file
+            used_offsets: Dict = defaultdict(list)  # aggregate all used offsets per source file
 
             for name in self._build["dependencies"]:
                 build_json = self._project._build.get(name)
                 if "dependencies" in build_json:
                     dependency_tree[name].update(build_json["dependencies"])
                 offset = slice(*build_json["offset"])
-                used_offsets[build_json["source"]].append((offset.start, offset.stop))
+                used_offsets[build_json["source"]].append(tuple(build_json["offset"]))
                 source = self._slice_source(build_json["source"], offset)
                 if "sourcePath" in build_json:
                     part_name = Path(build_json["sourcePath"]).parts[-1]
@@ -180,7 +180,7 @@ class _ContractBase:
             version = build_json["compiler"]["version"]
             version_short = re.findall(r"^[^+]+", version)[0]
             offset = slice(*build_json["offset"])
-            used_offsets[build_json["source"]].append((offset.start, offset.stop))
+            used_offsets[build_json["source"]].append(tuple(build_json["offset"]))
             source = self._slice_source(build_json["source"], offset)
             file_name = Path(build_json["sourcePath"]).parts[-1]
             licenses = re.findall(
@@ -196,14 +196,17 @@ class _ContractBase:
             global_structs = set()
             global_enums = set()
             for src, offsets in used_offsets.items():
+                print(offsets)
                 offsets = sorted(offsets)
                 offsets.append((len(src), len(src)))
                 start = 0
-                for offset in offsets:
-                    cleaned_section = remove_comments(src[start:offset[0]])
+                for o in offsets:
+                    print(type(offset), type(o[0]))
+                    print(type(src))
+                    cleaned_section = remove_comments(src[start : o[0]])
                     global_structs.update(re.findall(r"(\w*struct [^}]+})", cleaned_section))
                     global_enums.update(re.findall(r"(\w*enum [^}]+})", cleaned_section))
-                    start = offset[1]
+                    start = o[1]
 
             # combine to final flattened source
             lb = "\n"
@@ -1807,23 +1810,22 @@ def remove_comments(text: str) -> str:
     Strip all comments from a (multiline) string.
     """
     comment_re = re.compile(
-        r'(^)?[^\S\n]*/(?:\*(.*?)\*/[^\S\n]*|/[^\n]*)($)?',
-        re.DOTALL | re.MULTILINE
+        r"(^)?[^\S\n]*/(?:\*(.*?)\*/[^\S\n]*|/[^\n]*)($)?", re.DOTALL | re.MULTILINE
     )
     return comment_re.sub(_comment_slicer, text)
 
 
-def _comment_slicer(match: re.Match) -> str:
+def _comment_slicer(match: Match) -> str:
     start, mid, end = match.group(1, 2, 3)
     if mid is None:
         # single line comment
-        return ''
+        return ""
     elif start is not None or end is not None:
         # multi line comment at start or end of a line
-        return ''
-    elif '\n' in mid:
+        return ""
+    elif "\n" in mid:
         # multi line comment with line break
-        return '\n'
+        return "\n"
     else:
         # multi line comment without line break
-        return ' '
+        return " "
