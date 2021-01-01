@@ -383,7 +383,7 @@ class ContractConstructor:
     def __repr__(self) -> str:
         return f"<{type(self).__name__} '{self._name}.constructor({_inputs(self.abi)})'>"
 
-    def __call__(self, *args: Tuple) -> Union["Contract", TransactionReceiptType]:
+    def __call__(self, *args: Tuple, **kwargs: Dict) -> Union["Contract", TransactionReceiptType]:
         """Deploys a contract.
 
         Args:
@@ -400,6 +400,7 @@ class ContractConstructor:
                 "Final argument must be a dict of transaction parameters that "
                 "includes a `from` field specifying the address to deploy from"
             )
+
         return tx["from"].deploy(
             self._parent,
             *args,
@@ -408,6 +409,7 @@ class ContractConstructor:
             gas_price=tx["gasPrice"],
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
+            publish_source="publish_source" in kwargs and kwargs["publish_source"] is True,
         )
 
     @staticmethod
