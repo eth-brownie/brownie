@@ -53,7 +53,7 @@ from brownie.project.sources import Sources, get_pragma_spec
 from brownie.utils import notify
 
 BUILD_FOLDERS = ["contracts", "deployments", "interfaces"]
-MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
+MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"
 
 GITIGNORE = """__pycache__
 .history
@@ -588,7 +588,8 @@ def from_brownie_mix(
     Returns the path to the project as a string.
     """
     project_name = str(project_name).lower().replace("-mix", "")
-    url = MIXES_URL.format(project_name)
+    default_branch = _get_mix_default_branch(project_name)
+    url = MIXES_URL.format(project_name, default_branch)
     if project_path is None:
         project_path = Path(".").joinpath(project_name)
     project_path = Path(project_path).resolve()
@@ -958,3 +959,21 @@ def _stream_download(download_url: str, target_path: str) -> None:
 
     with zipfile.ZipFile(BytesIO(content)) as zf:
         zf.extractall(target_path)
+
+
+def _get_mix_default_branch(mix_name: str) -> str:
+    """Get the default branch for a brownie-mix repository.
+
+    Arguments
+    ---------
+    mix_name : str
+        Name of a brownie-mix repository without -mix appended.
+
+    Returns
+    -------
+    str
+        The default branch name on github.
+    """
+    REPO_GH_API = "https://api.github.com/repos/brownie-mix/{}-mix".format(mix_name)
+    r = requests.get(REPO_GH_API).json()
+    return r["default_branch"]
