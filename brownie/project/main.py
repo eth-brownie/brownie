@@ -598,7 +598,9 @@ def from_brownie_mix(
 
     print(f"Downloading from {url}...")
     _stream_download(url, str(project_path.parent))
-    project_path.parent.joinpath(project_name + "-mix-master").rename(project_path)
+    project_path.parent.joinpath(project_name + "-mix-{}".format(default_branch)).rename(
+        project_path
+    )
     _create_folders(project_path)
     _create_gitfiles(project_path)
     _add_to_sys_path(project_path)
