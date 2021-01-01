@@ -10,6 +10,7 @@ import eth_event
 from eth_event import EventError
 
 from brownie._config import _get_data_folder
+from brownie.convert.datatypes import ReturnValue
 from brownie.convert.normalize import format_event
 from brownie.exceptions import EventLookupError
 
@@ -166,17 +167,17 @@ class _EventItem:
             return other == self._ordered[0]
         return other == self._ordered
 
-    def items(self) -> List:
+    def items(self) -> ReturnValue:
         """_EventItem.items() -> a list object providing a view on _EventItem[0]'s items"""
-        return [(i, self[i]) for i in self.keys()]
+        return ReturnValue([(i, self[i]) for i in self.keys()])
 
-    def keys(self) -> List:
+    def keys(self) -> ReturnValue:
         """_EventItem.keys() -> a list object providing a view on _EventItem[0]'s keys"""
-        return [i.replace(" (indexed)", "") for i in self._ordered[0].keys()]
+        return ReturnValue([i.replace(" (indexed)", "") for i in self._ordered[0].keys()])
 
-    def values(self) -> List:
+    def values(self) -> ReturnValue:
         """_EventItem.values() -> a list object providing a view on _EventItem[0]'s values"""
-        return list(self._ordered[0].values())
+        return ReturnValue(self._ordered[0].values())
 
 
 def __get_path() -> Path:
