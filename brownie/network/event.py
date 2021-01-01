@@ -164,6 +164,9 @@ class _EventItem:
 
     def __eq__(self, other: object) -> bool:
         if len(self._ordered) == 1:
+            if isinstance(other, (tuple, list, ReturnValue)):
+                # sequences compare directly against the event values
+                return self._ordered[0].values() == other
             return other == self._ordered[0]
         return other == self._ordered
 
