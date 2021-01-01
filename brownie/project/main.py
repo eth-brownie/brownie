@@ -975,5 +975,20 @@ def _get_mix_default_branch(mix_name: str) -> str:
         The default branch name on github.
     """
     REPO_GH_API = "https://api.github.com/repos/brownie-mix/{}-mix".format(mix_name)
-    r = requests.get(REPO_GH_API).json()
-    return r["default_branch"]
+    r = requests.get(REPO_GH_API, headers=REQUEST_HEADERS)
+    if r.status_code != 200:
+        msg = "Status {} when retrieving repo brownie-mix/{} information from GHAPI: '{}'".format(
+            r.status_code, mix_name, r.json()["message"]
+        )
+        if r.status_code == 403:
+            msg += (
+                "\n\nIf this issue persists, generate a Github API token and store"
+                " it as the environment variable `GITHUB_TOKEN`:\n"
+                "https://github.blog/2013-05-16-personal-api-tokens/"
+            )
+        raise ConnectionError(msg)
+    elif r.json().get("default_branch") is None:
+        msg = "API results did not include {}'s default branch".format(mix_name)
+        raise KeyError(msg)
+
+    return r.json()["default_branch"]
