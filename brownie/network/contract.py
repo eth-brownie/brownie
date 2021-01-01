@@ -196,13 +196,10 @@ class _ContractBase:
             global_structs = set()
             global_enums = set()
             for src, offsets in used_offsets.items():
-                print(offsets)
                 offsets = sorted(offsets)
                 offsets.append((len(src), len(src)))
                 start = 0
                 for o in offsets:
-                    print(type(offset), type(o[0]))
-                    print(type(src))
                     cleaned_section = remove_comments(src[start : o[0]])
                     global_structs.update(re.findall(r"(\w*struct [^}]+})", cleaned_section))
                     global_enums.update(re.findall(r"(\w*enum [^}]+})", cleaned_section))

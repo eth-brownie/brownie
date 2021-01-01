@@ -104,6 +104,7 @@ class _ProjectBase:
 
         for alias, data in build_json.items():
             if self._build_path is not None and not data["sourcePath"].startswith("interface"):
+                # interfaces should generate artifact in /build/interfaces/ not /build/contracts/
                 if alias == data["contractName"]:
                     # if the alias == contract name, this is a part of the core project
                     path = self._build_path.joinpath(f"contracts/{alias}.json")
