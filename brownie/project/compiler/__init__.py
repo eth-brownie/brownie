@@ -449,9 +449,17 @@ def get_abi(
 
         for path, name, data in [(k, x, y) for k, v in output_json.items() for x, y in v.items()]:
             contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
+            dependencies = []
+            for node in [i for i in contract_node.dependencies if
+                         i.nodeType == "ContractDefinition"]:
+                dependency_name = node.name
+                path_str = node.parent().absolutePath
+                dependencies.append(_get_alias(dependency_name, path_str))
+
             final_output[name] = {
                 "abi": data["abi"],
                 "contractName": name,
+                "dependencies": dependencies,
                 "type": "interface",
                 "source": contract_sources[path],
                 "offset": contract_node.offset,
