@@ -5,6 +5,7 @@ import os
 import re
 import time
 import warnings
+from collections import defaultdict
 from pathlib import Path
 from textwrap import TextWrapper
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
@@ -38,6 +39,7 @@ from brownie.exceptions import (
 from brownie.project import compiler, ethpm
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
+from brownie.utils.toposort import toposort_flatten
 
 from . import accounts, chain
 from .event import _add_deployment_topics, _get_topics
@@ -142,27 +144,43 @@ class _ContractBase:
         elif language == "Solidity":
             flattened_source = ""
             has_abiencoder = False
-            abiencoder_str = "\npragma experimental ABIEncoderV2;"
             abiencoder_re = r"(^|\r|\n|\r\n)\s*pragma experimental ABIEncoderV2;"
+
+            dependency_tree = defaultdict(set)
+            dependency_tree["__root_node__"] = set(self._build["dependencies"])
+            code_fragments = {}
+
+            used_offsets = defaultdict(list)  # aggregate all used offsets per source file
 
             for name in self._build["dependencies"]:
                 build_json = self._project._build.get(name)
+                if "dependencies" in build_json:
+                    dependency_tree[name].update(build_json["dependencies"])
                 offset = slice(*build_json["offset"])
+                used_offsets[build_json["source"]].append((offset.start, offset.stop))
                 source = self._slice_source(build_json["source"], offset)
                 if "sourcePath" in build_json:
-                    file_name = Path(build_json["sourcePath"]).parts[-1]
+                    part_name = Path(build_json["sourcePath"]).parts[-1]
                 else:
-                    file_name = f"{build_json['contractName']}.sol"
-                flattened_source = f"{flattened_source}\n\n// File: {file_name}\n\n{source}"
+                    part_name = f"{build_json['contractName']}"
+                code_fragments[name] = [source, part_name]
                 if not has_abiencoder:
                     has_abiencoder = (
                         len(re.findall(abiencoder_re, build_json["source"][: offset.start])) > 0
                     )
 
+            for name in toposort_flatten(dependency_tree):
+                if name == "__root_node__":
+                    continue
+                source, part_name = code_fragments[name]
+                flattened_source = f"{flattened_source}\n\n// Part: {part_name}\n\n{source}"
+
+            # Top level contract, defines compiler and license
             build_json = self._build
             version = build_json["compiler"]["version"]
             version_short = re.findall(r"^[^+]+", version)[0]
             offset = slice(*build_json["offset"])
+            used_offsets[build_json["source"]].append((offset.start, offset.stop))
             source = self._slice_source(build_json["source"], offset)
             file_name = Path(build_json["sourcePath"]).parts[-1]
             licenses = re.findall(
@@ -173,10 +191,31 @@ class _ContractBase:
                 has_abiencoder = (
                     len(re.findall(abiencoder_re, build_json["source"][: offset.start])) > 0
                 )
+
+            # find global structs and enums
+            global_structs = set()
+            global_enums = set()
+            for src, offsets in used_offsets.items():
+                offsets = sorted(offsets)
+                offsets.append((len(src), len(src)))
+                start = 0
+                for offset in offsets:
+                    cleaned_section = remove_comments(src[start:offset[0]])
+                    global_structs.update(re.findall(r"(\w*struct [^}]+})", cleaned_section))
+                    global_enums.update(re.findall(r"(\w*enum [^}]+})", cleaned_section))
+                    start = offset[1]
+
+            # combine to final flattened source
+            lb = "\n"
+            abiencoder_str = "\npragma experimental ABIEncoderV2;"
+            is_global = len(global_enums) + len(global_structs) > 0
+            global_str = "// Global Enums and Structs\n\n" if is_global else ""
             flattened_source = (
                 f"// SPDX-License-Identifier: {license_identifier}\n\n"
                 f"pragma solidity {version_short};"
-                f"{abiencoder_str if has_abiencoder else ''}{flattened_source}\n\n"
+                f"{abiencoder_str if has_abiencoder else ''}\n\n{global_str}"
+                f"{lb.join(global_enums)}\n\n{lb.join(global_structs)}"
+                f"{flattened_source}\n\n"
                 f"// File: {file_name}\n\n{source}\n"
             )
 
@@ -1761,3 +1800,30 @@ def _contract_method_autosuggest(args: List, is_transaction: bool, is_payable: b
         tx_hint = [" {'from': Account}"]
 
     return [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params] + tx_hint
+
+
+def remove_comments(text: str) -> str:
+    """
+    Strip all comments from a (multiline) string.
+    """
+    comment_re = re.compile(
+        r'(^)?[^\S\n]*/(?:\*(.*?)\*/[^\S\n]*|/[^\n]*)($)?',
+        re.DOTALL | re.MULTILINE
+    )
+    return comment_re.sub(_comment_slicer, text)
+
+
+def _comment_slicer(match: re.Match) -> str:
+    start, mid, end = match.group(1, 2, 3)
+    if mid is None:
+        # single line comment
+        return ''
+    elif start is not None or end is not None:
+        # multi line comment at start or end of a line
+        return ''
+    elif '\n' in mid:
+        # multi line comment with line break
+        return '\n'
+    else:
+        # multi line comment without line break
+        return ' '
