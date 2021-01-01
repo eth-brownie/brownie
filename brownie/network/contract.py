@@ -159,11 +159,7 @@ class _ContractBase:
                 offset = slice(*build_json["offset"])
                 used_offsets[build_json["source"]].append(tuple(build_json["offset"]))
                 source = self._slice_source(build_json["source"], offset)
-                if "sourcePath" in build_json:
-                    part_name = Path(build_json["sourcePath"]).parts[-1]
-                else:
-                    part_name = f"{build_json['contractName']}"
-                code_fragments[name] = [source, part_name]
+                code_fragments[name] = [source, name]
                 if not has_abiencoder:
                     has_abiencoder = (
                         len(re.findall(abiencoder_re, build_json["source"][: offset.start])) > 0
@@ -232,14 +228,24 @@ class _ContractBase:
             raise TypeError(f"Unsupported language for source verification: {language}")
 
     def _slice_source(self, source: str, offset: slice) -> str:
-        """Slice the source of the contract, including any comments above the first line."""
+        """Slice the source of the contract, preserving any comments above the first line."""
         offset_start: int = int(offset.start) if offset.start else 0
         top_source = source[:offset_start]
         top_lines = top_source.split("\n")[::-1]
+        comment_open = False
         for line in top_lines:
             stripped = line.strip()
-            if not stripped or stripped.startswith(("//", "/*", "*", "*/")):
+            if (
+                not stripped
+                or stripped.startswith(("//", "/*", "*"))
+                or stripped.endswith("*/")
+                or comment_open
+            ):
                 offset_start = offset_start - len(line) - 1
+                if stripped.endswith("*/"):
+                    comment_open = True
+                elif stripped.startswith("/*"):
+                    comment_open = False
             else:
                 # Stop on the first non-empty, non-comment line
                 break
@@ -383,7 +389,9 @@ class ContractConstructor:
     def __repr__(self) -> str:
         return f"<{type(self).__name__} '{self._name}.constructor({_inputs(self.abi)})'>"
 
-    def __call__(self, *args: Tuple, **kwargs: Dict) -> Union["Contract", TransactionReceiptType]:
+    def __call__(
+        self, *args: Tuple, publish_source: bool = False
+    ) -> Union["Contract", TransactionReceiptType]:
         """Deploys a contract.
 
         Args:
@@ -409,7 +417,7 @@ class ContractConstructor:
             gas_price=tx["gasPrice"],
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
-            publish_source="publish_source" in kwargs and kwargs["publish_source"] is True,
+            publish_source=publish_source,
         )
 
     @staticmethod
