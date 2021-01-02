@@ -989,7 +989,7 @@ def _get_mix_default_branch(mix_name: str) -> str:
             msg = "".join(msg_lines)
         raise ConnectionError(msg)
     elif "default_branch" not in r.json():
-        msg = "API results did not include {}'s default branch".format(mix_name)
+        msg = f"API results did not include {mix_name}'s default branch"
         raise KeyError(msg)
 
     return r.json()["default_branch"]
