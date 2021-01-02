@@ -974,7 +974,7 @@ def _get_mix_default_branch(mix_name: str) -> str:
     str
         The default branch name on github.
     """
-    REPO_GH_API = "https://api.github.com/repos/brownie-mix/{}-mix".format(mix_name)
+    REPO_GH_API = f"https://api.github.com/repos/brownie-mix/{mix_name}-mix"
     r = requests.get(REPO_GH_API, headers=REQUEST_HEADERS)
     if r.status_code != 200:
         status, repo, message = r.status_code, f"brownie-mix/{mix_name}", r.json()["message"]
