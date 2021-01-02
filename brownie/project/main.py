@@ -598,9 +598,7 @@ def from_brownie_mix(
 
     print(f"Downloading from {url}...")
     _stream_download(url, str(project_path.parent))
-    project_path.parent.joinpath(project_name + "-mix-{}".format(default_branch)).rename(
-        project_path
-    )
+    project_path.parent.joinpath(f"{project_name}-mix-{default_branch}").rename(project_path)
     _create_folders(project_path)
     _create_gitfiles(project_path)
     _add_to_sys_path(project_path)
@@ -979,17 +977,18 @@ def _get_mix_default_branch(mix_name: str) -> str:
     REPO_GH_API = "https://api.github.com/repos/brownie-mix/{}-mix".format(mix_name)
     r = requests.get(REPO_GH_API, headers=REQUEST_HEADERS)
     if r.status_code != 200:
-        msg = "Status {} when retrieving repo brownie-mix/{} information from GHAPI: '{}'".format(
-            r.status_code, mix_name, r.json()["message"]
-        )
+        status, repo, message = r.status_code, f"brownie-mix/{mix_name}", r.json()["message"]
+        msg = f"Status {status} when retrieving repo {repo} information from GHAPI: '{message}'"
         if r.status_code == 403:
-            msg += (
-                "\n\nIf this issue persists, generate a Github API token and store"
-                " it as the environment variable `GITHUB_TOKEN`:\n"
-                "https://github.blog/2013-05-16-personal-api-tokens/"
+            msg_lines = (
+                msg,
+                "\n\nIf this issue persists, generate a Github API token and store",
+                " it as the environment variable `GITHUB_TOKEN`:\n",
+                "https://github.blog/2013-05-16-personal-api-tokens/",
             )
+            msg = "".join(msg_lines)
         raise ConnectionError(msg)
-    elif r.json().get("default_branch") is None:
+    elif "default_branch" not in r.json():
         msg = "API results did not include {}'s default branch".format(mix_name)
         raise KeyError(msg)
 
