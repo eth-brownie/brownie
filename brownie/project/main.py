@@ -53,7 +53,7 @@ from brownie.project.sources import Sources, get_pragma_spec
 from brownie.utils import notify
 
 BUILD_FOLDERS = ["contracts", "deployments", "interfaces"]
-MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/master.zip"
+MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"
 
 GITIGNORE = """__pycache__
 .history
@@ -588,7 +588,8 @@ def from_brownie_mix(
     Returns the path to the project as a string.
     """
     project_name = str(project_name).lower().replace("-mix", "")
-    url = MIXES_URL.format(project_name)
+    default_branch = _get_mix_default_branch(project_name)
+    url = MIXES_URL.format(project_name, default_branch)
     if project_path is None:
         project_path = Path(".").joinpath(project_name)
     project_path = Path(project_path).resolve()
@@ -597,7 +598,7 @@ def from_brownie_mix(
 
     print(f"Downloading from {url}...")
     _stream_download(url, str(project_path.parent))
-    project_path.parent.joinpath(project_name + "-mix-master").rename(project_path)
+    project_path.parent.joinpath(f"{project_name}-mix-{default_branch}").rename(project_path)
     _create_folders(project_path)
     _create_gitfiles(project_path)
     _add_to_sys_path(project_path)
@@ -958,3 +959,37 @@ def _stream_download(download_url: str, target_path: str) -> None:
 
     with zipfile.ZipFile(BytesIO(content)) as zf:
         zf.extractall(target_path)
+
+
+def _get_mix_default_branch(mix_name: str) -> str:
+    """Get the default branch for a brownie-mix repository.
+
+    Arguments
+    ---------
+    mix_name : str
+        Name of a brownie-mix repository without -mix appended.
+
+    Returns
+    -------
+    str
+        The default branch name on github.
+    """
+    REPO_GH_API = f"https://api.github.com/repos/brownie-mix/{mix_name}-mix"
+    r = requests.get(REPO_GH_API, headers=REQUEST_HEADERS)
+    if r.status_code != 200:
+        status, repo, message = r.status_code, f"brownie-mix/{mix_name}", r.json()["message"]
+        msg = f"Status {status} when retrieving repo {repo} information from GHAPI: '{message}'"
+        if r.status_code == 403:
+            msg_lines = (
+                msg,
+                "\n\nIf this issue persists, generate a Github API token and store",
+                " it as the environment variable `GITHUB_TOKEN`:\n",
+                "https://github.blog/2013-05-16-personal-api-tokens/",
+            )
+            msg = "".join(msg_lines)
+        raise ConnectionError(msg)
+    elif "default_branch" not in r.json():
+        msg = f"API results did not include {mix_name}'s default branch"
+        raise KeyError(msg)
+
+    return r.json()["default_branch"]
