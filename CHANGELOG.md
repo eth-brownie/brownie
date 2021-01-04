@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.12.4](https://github.com/eth-brownie/brownie/tree/v1.12.4) - 2021-01-03
+### Changed
+- Use `ReturnType` instead of `list` for some `_EventItem` return values ([#919](https://github.com/eth-brownie/brownie/pull/919))
+- Only decode events in reverting transactions upon request ([#920](https://github.com/eth-brownie/brownie/pull/920))
+
+### Fixed
+- Correctly handle malformed calldata in subcalls ([#913](https://github.com/eth-brownie/brownie/pull/913))
+- Brownie bake uses the default branch instead of assuming `master` ([#917](https://github.com/eth-brownie/brownie/pull/917))
+
 ## [1.12.3](https://github.com/eth-brownie/brownie/tree/v1.12.3) - 2020-12-26
 ### Added
 - Exposed `chain_id` and `network_id` ganache-cli parameters. Forked networks retain `chain_id`. ([#908](https://github.com/eth-brownie/brownie/pull/908))
