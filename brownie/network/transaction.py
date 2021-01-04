@@ -202,8 +202,12 @@ class TransactionReceipt:
 
     @trace_property
     def events(self) -> Optional[EventDict]:
-        if not self.status:
+        if not self.status and self._events is None:
             self._get_trace()
+            # get events from the trace - handled lazily so that other
+            # trace operations are not blocked in case of a decoding error
+            initial_address = str(self.receiver or self.contract_address)
+            self._events = _decode_trace(self._raw_trace, initial_address)  # type: ignore
         return self._events
 
     @trace_property
@@ -603,8 +607,6 @@ class TransactionReceipt:
 
     def _reverted_trace(self, trace: Sequence,) -> None:
         self._modified_state = False
-        # get events from trace
-        self._events = _decode_trace(trace, str(self.receiver or self.contract_address))
         if self.contract_address:
             step = next((i for i in trace if i["op"] == "CODECOPY"), None)
             if step is not None and int(step["stack"][-3], 16) > 24577:
