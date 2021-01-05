@@ -7,7 +7,7 @@ from pathlib import Path
 from brownie import network, project
 from brownie._cli.console import Console
 from brownie._config import CONFIG, _update_argv_from_docopt
-from brownie.project.scripts import _get_path, run, get_available_scripts
+from brownie.project.scripts import _get_path, get_available_scripts, run
 from brownie.test.output import _build_gas_profile_output
 from brownie.utils import color
 from brownie.utils.docopt import docopt
@@ -36,7 +36,6 @@ def main():
         active_project = project.load()
         active_project.load_config()
         print(f"{active_project._name} is the active project.")
-
     if len(sys.argv) < 3:
         print(get_available_scripts())
     args = docopt(__doc__)

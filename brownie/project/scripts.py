@@ -4,7 +4,6 @@ import ast
 import importlib
 import sys
 import warnings
-import os
 from hashlib import sha1
 from pathlib import Path
 from types import ModuleType
@@ -141,15 +140,10 @@ def _get_ast_hash(path: str) -> str:
 
 def get_available_scripts() -> str:
     # Returns a string of available scripts
-    output_scripts = ''
+    indent = " " * 4
+    output_scripts = "All scripts: \n"
     for project in get_loaded_projects():
-        for dirpath, dirnames, filenames in os.walk(project._structure["scripts"]):
-            directory_level = dirpath.replace(project._structure["scripts"], "")
-            directory_level = directory_level.count(os.sep)
-            indent = " " * 4
-            output_scripts = output_scripts + \
-                "{}{}/\n".format(indent * directory_level, os.path.basename(dirpath))
-            for f in filenames:
-                output_scripts = output_scripts + \
-                    ("{}{}\n".format(indent * (directory_level + 1), f))
+        scripts_path = Path(project._structure["scripts"])
+        for script_path in scripts_path.glob("**/*.py"):
+            output_scripts = output_scripts + indent + script_path.parts[-1:][0] + "\n"
     return output_scripts

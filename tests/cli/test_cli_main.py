@@ -181,7 +181,8 @@ def test_cli_pm(cli_tester):
     cli_tester.run_and_test_parameters("pm list", None)
 
 
-def test_cli_run_without_scripts(cli_tester, testproject):
+def test_cli_run_without_scripts(cli_tester, testproject, capfd):
     with pytest.raises(SystemExit):
         cli_tester.run_and_test_parameters("run", None)
-        assert 'token.py' in capfd.readouterr()[0].strip()
+    assert "token.py" in capfd.readouterr()[0].strip()
+    assert "fake_script_name_not_a_script.py" not in capfd.readouterr()[0].strip()
