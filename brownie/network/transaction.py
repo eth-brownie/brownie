@@ -4,7 +4,6 @@ import functools
 import sys
 import threading
 import time
-from collections import OrderedDict
 from enum import IntEnum
 from hashlib import sha1
 from pathlib import Path
@@ -21,6 +20,7 @@ from brownie.convert import EthAddress, Wei
 from brownie.exceptions import RPCRequestError
 from brownie.project import build
 from brownie.project import main as project_main
+from brownie.project.compiler.solidity import SOLIDITY_ERROR_CODES
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie.utils import color
@@ -202,8 +202,12 @@ class TransactionReceipt:
 
     @trace_property
     def events(self) -> Optional[EventDict]:
-        if not self.status:
+        if not self.status and self._events is None:
             self._get_trace()
+            # get events from the trace - handled lazily so that other
+            # trace operations are not blocked in case of a decoding error
+            initial_address = str(self.receiver or self.contract_address)
+            self._events = _decode_trace(self._raw_trace, initial_address)  # type: ignore
         return self._events
 
     @trace_property
@@ -315,7 +319,7 @@ class TransactionReceipt:
             raise ValueError("Transaction has already confirmed")
 
         if increment is not None:
-            gas_price = Wei(self.gas_price * 1.1)
+            gas_price = Wei(self.gas_price * increment)
 
         if silent is None:
             silent = self._silent
@@ -603,8 +607,6 @@ class TransactionReceipt:
 
     def _reverted_trace(self, trace: Sequence,) -> None:
         self._modified_state = False
-        # get events from trace
-        self._events = _decode_trace(trace, str(self.receiver or self.contract_address))
         if self.contract_address:
             step = next((i for i in trace if i["op"] == "CODECOPY"), None)
             if step is not None and int(step["stack"][-3], 16) > 24577:
@@ -618,8 +620,15 @@ class TransactionReceipt:
         for step in (i for i in trace[::-1] if i["op"] in ("REVERT", "INVALID")):
             if step["op"] == "REVERT" and int(step["stack"][-2], 16):
                 # get returned error string from stack
-                data = _get_memory(step, -1)[4:]
-                self._revert_msg = decode_abi(["string"], data)[0]
+                data = _get_memory(step, -1)
+                if data[:4].hex() == "0x4e487b71":  # keccak of Panic(uint256)
+                    error_code = int(data[4:].hex(), 16)
+                    if error_code in SOLIDITY_ERROR_CODES:
+                        self._revert_msg = SOLIDITY_ERROR_CODES[error_code]
+                    else:
+                        self._revert_msg = f"Panic (error code: {error_code})"
+                else:
+                    self._revert_msg = decode_abi(["string"], data[4:])[0]
 
             elif self.contract_address:
                 self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
@@ -636,17 +645,49 @@ class TransactionReceipt:
                 # if none is found, expand the trace and get it from the pcMap
                 self._expand_trace()
                 try:
-                    pc_map = state._find_contract(step["address"])._build["pcMap"]
+                    contract = state._find_contract(step["address"])
+                    pc_map = contract._build["pcMap"]
                     # if this is the function selector revert, check for a jump
                     if "first_revert" in pc_map[step["pc"]]:
-                        i = trace.index(step) - 4
-                        if trace[i]["pc"] != step["pc"] - 4:
-                            step = trace[i]
-                    self._dev_revert_msg = pc_map[step["pc"]]["dev"]
+                        idx = trace.index(step) - 4
+                        if trace[idx]["pc"] != step["pc"] - 4:
+                            step = trace[idx]
+
+                    # if this is the optimizer revert, find the actual source
+                    if "optimizer_revert" in pc_map[step["pc"]]:
+                        idx = trace.index(step)
+                        while trace[idx]["op"] != "JUMPDEST":
+                            # look for the most recent jump
+                            idx -= 1
+                        idx -= 1
+                        while not trace[idx]["source"]:
+                            # now we're in a yul optimization, keep stepping back
+                            # until we find a source offset
+                            idx -= 1
+                        # at last we have the real location of the revert
+                        step["source"] = trace[idx]["source"]
+                        step = trace[idx]
+
+                    if "dev" in pc_map[step["pc"]]:
+                        self._dev_revert_msg = pc_map[step["pc"]]["dev"]
+                    else:
+                        # extract the dev revert string from the source code
+                        # TODO this technique appears superior to `_get_dev_revert`, and
+                        # changes in solc 0.8.0 have necessitated it. the old approach
+                        # of building a dev revert map should be refactored out in favor
+                        # of this one.
+                        source = contract._sources.get(step["source"]["filename"])
+                        offset = step["source"]["offset"][1]
+                        line = source[offset:].split("\n")[0]
+                        marker = "//" if contract._build["language"] == "Solidity" else "#"
+                        revert_str = line[line.index(marker) + len(marker) :].strip()
+                        if revert_str.startswith("dev:"):
+                            self._dev_revert_msg = revert_str
+
                     if self._revert_msg is None:
                         self._revert_msg = self._dev_revert_msg
                     return
-                except (KeyError, AttributeError, TypeError):
+                except (KeyError, AttributeError, TypeError, ValueError):
                     pass
 
             if self._revert_msg is not None:
@@ -737,11 +778,13 @@ class TransactionReceipt:
                     self._subcalls[-1]["value"] = int(step["stack"][-3], 16)
                 if calldata and last_map[trace[i]["depth"]].get("function"):
                     fn = last_map[trace[i]["depth"]]["function"]
-                    zip_ = zip(fn.abi["inputs"], fn.decode_input(calldata))
-                    self._subcalls[-1].update(
-                        inputs={i[0]["name"]: i[1] for i in zip_},  # type:ignore
-                        function=fn._input_sig,
-                    )
+                    self._subcalls[-1]["function"] = fn._input_sig
+                    try:
+                        zip_ = zip(fn.abi["inputs"], fn.decode_input(calldata))
+                        inputs = {i[0]["name"]: i[1] for i in zip_}  # type: ignore
+                        self._subcalls[-1]["inputs"] = inputs
+                    except Exception:
+                        self._subcalls[-1]["calldata"] = calldata.hex()
                 elif calldata:
                     self._subcalls[-1]["calldata"] = calldata.hex()
 
@@ -852,41 +895,48 @@ class TransactionReceipt:
 
     def info(self) -> None:
         """Displays verbose information about the transaction, including decoded event logs."""
-        status = ""
-        if not self.status:
-            status = f"({color('bright red')}{self.revert_msg or 'reverted'}{color})"
-
-        result = (
-            f"Transaction was Mined {status}\n---------------------\n"
-            f"Tx Hash: {color('bright blue')}{self.txid}\n"
-            f"From: {color('bright blue')}{self.sender}\n"
-        )
-
+        result = f"Tx Hash: {self.txid}\nFrom: {self.sender}\n"
         if self.contract_address and self.status:
-            result += (
-                f"New {self.contract_name} address: {color('bright blue')}{self.contract_address}\n"
-            )
+            result += f"New {self.contract_name} address: {self.contract_address}\n"
         else:
-            result += (
-                f"To: {color('bright blue')}{self.receiver}{color}\n"
-                f"Value: {color('bright blue')}{self.value}\n"
-            )
+            result += f"To: {self.receiver}\n" f"Value: {self.value}\n"
             if self.input != "0x" and int(self.input, 16):
-                result += f"Function: {color('bright blue')}{self._full_name()}\n"
+                result += f"Function: {self._full_name()}\n"
 
         result += (
-            f"Block: {color('bright blue')}{self.block_number}{color}\nGas Used: "
-            f"{color('bright blue')}{self.gas_used}{color} / {color('bright blue')}{self.gas_limit}"
-            f"{color} ({color('bright blue')}{self.gas_used / self.gas_limit:.1%}{color})\n"
+            f"Block: {self.block_number}\nGas Used: "
+            f"{self.gas_used} / {self.gas_limit} "
+            f"({self.gas_used / self.gas_limit:.1%})\n"
         )
 
         if self.events:
-            result += "\n   Events In This Transaction\n   --------------------------"
-            for event in self.events:  # type: ignore
-                result += f"\n   {color('bright yellow')}{event.name}{color}"  # type: ignore
-                for key, value in event.items():  # type: ignore
-                    result += f"\n      {key}: {color('bright blue')}{value}{color}"
-        print(result)
+            events = list(self.events)
+            call_tree: List = ["--------------------------"]
+            while events:
+                idx = next(
+                    (events.index(i) for i in events if i.address != events[0].address), len(events)
+                )
+                contract = state._find_contract(events[0].address)
+                if contract:
+                    try:
+                        name = contract.name()
+                    except Exception:
+                        name = contract._name
+                    sub_tree: List = [f"{name} ({events[0].address})"]
+                else:
+                    sub_tree = [f"{events[0].address}"]
+                for event in events[:idx]:
+                    sub_tree.append([event.name, *(f"{k}: {v}" for k, v in event.items())])
+                call_tree.append(sub_tree)
+                events = events[idx:]
+            event_tree = build_tree([call_tree], multiline_pad=0, pad_depth=[0, 1])
+            result = f"{result}\nEvents In This Transaction\n{event_tree}"
+
+        result = color.highlight(result)
+        status = ""
+        if not self.status:
+            status = f"({color('bright red')}{self.revert_msg or 'reverted'}{color})"
+        print(f"Transaction was Mined {status}\n---------------------\n{result}")
 
     def _get_trace_gas(self, start: int, stop: int) -> Tuple[int, int]:
         total_gas = 0
@@ -954,8 +1004,8 @@ class TransactionReceipt:
             trace[0], trace[-1], 0, len(trace), self._get_trace_gas(0, len(self.trace))
         )
 
-        call_tree: OrderedDict = OrderedDict({key: OrderedDict()})
-        active_tree = [call_tree[key]]
+        call_tree: List = [[key]]
+        active_tree: List = [call_tree[0]]
 
         # (index, depth, jumpDepth) for relevent steps in the trace
         trace_index = [(0, 0, 0)] + [
@@ -1005,8 +1055,8 @@ class TransactionReceipt:
                     trace[idx], trace[end - 1], idx, end, (total_gas, internal_gas)
                 )
 
-            active_tree[-1][key] = OrderedDict()
-            active_tree.append(active_tree[-1][key])
+            active_tree[-1].append([key])
+            active_tree.append(active_tree[-1][-1])
 
         print(
             f"Call trace for '{color('bright blue')}{self.txid}{color}':\n"
@@ -1156,10 +1206,10 @@ def _step_internal(
             gas_str = f"{color('bright yellow')}{gas[0]} gas"
         else:
             gas_str = f"{color('bright yellow')}{gas[0]} / {gas[1]} gas"
-        key = f"{key}  {left_bracket}{gas_str}{right_bracket}"
+        key = f"{key}  {left_bracket}{gas_str}{right_bracket}{color}"
 
     if last_step["op"] == "SELFDESTRUCT":
-        key = f"{key}  {left_bracket}{color('bright red')}SELFDESTRUCT{right_bracket}"
+        key = f"{key}  {left_bracket}{color('bright red')}SELFDESTRUCT{right_bracket}{color}"
 
     return key
 
@@ -1199,36 +1249,35 @@ def _step_external(
     if not expand:
         return key
 
-    result: OrderedDict = OrderedDict({key: {}})
-    result[key][f"address: {step['address']}"] = None
+    result: List = [key, f"address: {step['address']}"]
 
     if "value" in subcall:
-        result[key][f"value: {subcall['value']}"] = None
+        result.append(f"value: {subcall['value']}")
 
     if "inputs" not in subcall:
-        result[key][f"calldata: {subcall.get('calldata')}"] = None
+        result.append(f"calldata: {subcall.get('calldata')}")
     elif subcall["inputs"]:
-        result[key]["input arguments:"] = [
-            f"{k}: {_format(v)}" for k, v in subcall["inputs"].items()
-        ]
+        result.append(
+            ["input arguments:", *(f"{k}: {_format(v)}" for k, v in subcall["inputs"].items())]
+        )
     else:
-        result[key]["input arguments: None"] = None
+        result.append("input arguments: None")
 
     if "return_value" in subcall:
         value = subcall["return_value"]
         if isinstance(value, tuple) and len(value) > 1:
-            result[key]["return values:"] = [_format(i) for i in value]
+            result.append(["return values:", *(_format(i) for i in value)])
         else:
             if isinstance(value, tuple):
                 value = value[0]
-            result[key][f"return value: {_format(value)}"] = None
+            result.append(f"return value: {_format(value)}")
     elif "returndata" in subcall:
-        result[key][f"returndata: {subcall['returndata']}"] = None
+        result.append(f"returndata: {subcall['returndata']}")
 
     if "revert_msg" in subcall:
-        result[key][f"revert reason: {color('bright red')}{subcall['revert_msg']}{color}"] = None
+        result.append(f"revert reason: {color('bright red')}{subcall['revert_msg']}{color}")
 
-    return build_tree(result, multiline_pad=0).rstrip()
+    return build_tree([result], multiline_pad=0).rstrip()
 
 
 def _get_memory(step: Dict, idx: int) -> HexBytes:

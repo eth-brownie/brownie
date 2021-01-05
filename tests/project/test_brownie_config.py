@@ -4,6 +4,7 @@ import pytest
 import yaml
 
 from brownie._config import _get_data_folder, _load_config
+from brownie.network import web3
 from brownie.network.rpc import _validate_cmd_settings
 
 
@@ -21,6 +22,8 @@ def settings_proj(testproject):
             reverting_tx_gas_limit: 8765432
             default_contract_owner: false
             cmd_settings:
+                network_id: 777
+                chain_id: 666
                 gas_limit: 7654321
                 block_time: 5
                 default_balance: 15 milliether
@@ -85,11 +88,19 @@ def test_rpc_project_cmd_settings(devnetwork, testproject, config, settings_proj
     assert "0x16Fb96a5fa0427Af0C8F7cF1eB4870231c8154B6" == accounts[-2].address
     assert "0x81431b69B1e0E334d4161A13C2955e0f3599381e" == accounts[-1].address
 
+    # Test if gas limit and price are loaded from the config
     tx = accounts[0].transfer(accounts[1], 0)
     assert tx.gas_limit == settings_proj["gas_limit"]
     assert tx.gas_price == settings_proj["gas_price"]
 
+    # Test if chain ID and network ID can be properly queried
+    assert web3.isConnected()
+    assert web3.eth.chainId == 666
+    assert web3.net.version == "777"
+
+    # Test if evm version is returned properly
     assert devnetwork.rpc.evm_version() == cmd_settings_proj["evm_version"]
+
     devnetwork.rpc.kill()
 
 
@@ -98,6 +109,8 @@ def test_validate_cmd_settings():
         port: 1
         gas_limit: 2
         block_time: 3
+        chain_id: 555
+        network_id: 444
         time: 2019-04-05T14:30:11
         accounts: 4
         evm_version: istanbul

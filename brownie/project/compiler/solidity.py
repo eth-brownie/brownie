@@ -26,6 +26,20 @@ solcx_logger.addHandler(sh)
 
 AVAILABLE_SOLC_VERSIONS = None
 
+# error codes used in Solidity >=0.8.0
+# docs.soliditylang.org/en/v0.8.0/control-structures.html#panic-via-assert-and-error-via-require
+SOLIDITY_ERROR_CODES = {
+    1: "Failed assertion",
+    17: "Integer overflow",
+    18: "Division or modulo by zero",
+    33: "Conversion to enum out of bounds",
+    24: "Access to storage byte array that is incorrectly encoded",
+    49: "Pop from empty array",
+    50: "Index out of range",
+    65: "Attempted to allocate too much memory",
+    81: "Call to zero-initialized variable of internal function type",
+}
+
 
 def get_version() -> Version:
     return solcx.get_solc_version().truncate()
@@ -326,6 +340,8 @@ def _generate_coverage_data(
     revert_map: Dict = {}
     fallback_hexstr: str = "unassigned"
 
+    optimizer_revert = False if get_version() >= Version("0.8.0") else True
+
     active_source_node: Optional[NodeBase] = None
     active_fn_node: Optional[NodeBase] = None
     active_fn_name: Optional[str] = None
@@ -366,6 +382,12 @@ def _generate_coverage_data(
 
         # set contract path (-1 means none)
         contract_id = str(source[2])
+        if contract_id not in source_nodes:
+            # In Solidity >=0.7.2 contract ID can reference an AST within the YUL-optimization
+            # "generatedSources". Brownie does not support coverage evaluation within these
+            # sources, so we consider to this to be unmapped.
+            continue
+
         active_source_node = source_nodes[contract_id]
         pc_list[-1]["path"] = contract_id
 
@@ -374,6 +396,26 @@ def _generate_coverage_data(
             continue
         offset = (source[0], source[0] + source[1])
         pc_list[-1]["offset"] = offset
+
+        if pc_list[-1]["op"] == "REVERT" and not optimizer_revert:
+            # In Solidity >=0.8.0, an optimization is applied to reverts with an error string
+            # such that all reverts appear to happen at the same point in the source code.
+            # We mark this REVERT as the "optimizer revert" so that when it's encountered in
+            # a trace we know to look back to find the actual revert location.
+            fn_node = active_source_node.children(
+                include_parents=False,
+                include_children=True,
+                required_offset=offset,
+                filters=(
+                    {"nodeType": "FunctionCall", "expression.name": "revert"},
+                    {"nodeType": "FunctionCall", "expression.name": "require"},
+                ),
+            )
+            if fn_node:
+                args = len(fn_node[0].arguments)
+                if args == 2 or (fn_node[0].expression.name == "revert" and args):
+                    optimizer_revert = True
+                    pc_list[-1]["optimizer_revert"] = True
 
         # add error messages for INVALID opcodes
         if pc_list[-1]["op"] == "INVALID":

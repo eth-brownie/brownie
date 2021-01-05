@@ -9,9 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `brownie run` without paramters now prints the scripts directory ([#891](https://github.com/eth-brownie/brownie/issues/891))
+
 ### Fixed
-- Typo in link to mixes ([#886](https://github.com/eth-brownie/brownie/pull/886))
 - Fixed breaking proxy tests ([#899](https://github.com/eth-brownie/brownie/issues/899))
+## [1.12.4](https://github.com/eth-brownie/brownie/tree/v1.12.4) - 2021-01-03
+### Changed
+- Use `ReturnType` instead of `list` for some `_EventItem` return values ([#919](https://github.com/eth-brownie/brownie/pull/919))
+- Only decode events in reverting transactions upon request ([#920](https://github.com/eth-brownie/brownie/pull/920))
+
+### Fixed
+- Correctly handle malformed calldata in subcalls ([#913](https://github.com/eth-brownie/brownie/pull/913))
+- Brownie bake uses the default branch instead of assuming `master` ([#917](https://github.com/eth-brownie/brownie/pull/917))
+
+## [1.12.3](https://github.com/eth-brownie/brownie/tree/v1.12.3) - 2020-12-26
+### Added
+- Exposed `chain_id` and `network_id` ganache-cli parameters. Forked networks retain `chain_id`. ([#908](https://github.com/eth-brownie/brownie/pull/908))
+- Show more information about events in `TransactionReceipt.info` ([#898](https://github.com/eth-brownie/brownie/pull/898))
+- Support for Solidity error codes ([#906](https://github.com/eth-brownie/brownie/pull/906))
+- `TxHistory.wait` to wait for all pending transactions ([#910](https://github.com/eth-brownie/brownie/pull/910))
+
+### Fixed
+- Handle missing source nodes due to Yul optimizer ([#895](https://github.com/eth-brownie/brownie/pull/895))
+- Typo in link to mixes ([#886](https://github.com/eth-brownie/brownie/pull/886))
+- Fixes for tracebacks and dev revert strings in Solidity 0.8.x ([#907](https://github.com/eth-brownie/brownie/pull/907))
+- Console output for automatically repriced transactions ([#909](https://github.com/eth-brownie/brownie/pull/909))
 
 ## [1.12.2](https://github.com/eth-brownie/brownie/tree/v1.12.2) - 2020-12-04
 ### Added
@@ -22,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Build artifacts for dependencies are now saved at `build/contracts/dependencies` ([#878](https://github.com/eth-brownie/brownie/pull/878))
 
-#### Fixed
+### Fixed
 - Ensure receiver address is checksummed when calling `eth_estimateGas` ([#880](https://github.com/eth-brownie/brownie/pull/880))
 
 ## [1.12.1](https://github.com/eth-brownie/brownie/tree/v1.12.1) - 2020-11-28

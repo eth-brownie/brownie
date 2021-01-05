@@ -39,6 +39,8 @@ CLI_FLAGS = {
     "default_balance": "--defaultBalanceEther",
     "time": "--time",
     "unlock": "--unlock",
+    "network_id": "--networkId",
+    "chain_id": "--chainId",
 }
 
 EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
@@ -275,6 +277,8 @@ def _validate_cmd_settings(cmd_settings: dict) -> dict:
         "mnemonic": str,
         "account_keys_path": str,
         "fork": str,
+        "network_id": int,
+        "chain_id": int,
     }
     for cmd, value in cmd_settings.items():
         if (

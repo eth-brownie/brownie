@@ -163,7 +163,7 @@ def test_nonpayable(tester, evmtester, console_mode):
 def test_solidity_invalid_opcodes(evmtester):
     with pytest.raises(VirtualMachineError) as exc:
         evmtester.invalidOpcodes(0, 0)
-    assert exc.value.revert_msg == "invalid opcode"
+    assert exc.value.revert_msg in ("Failed assertion", "invalid opcode")
     with pytest.raises(VirtualMachineError) as exc:
         evmtester.invalidOpcodes(1, 0)
     assert exc.value.revert_msg == "dev: foobar"
@@ -172,10 +172,10 @@ def test_solidity_invalid_opcodes(evmtester):
     assert exc.value.revert_msg == "Index out of range"
     with pytest.raises(VirtualMachineError) as exc:
         evmtester.invalidOpcodes(2, 0)
-    assert exc.value.revert_msg == "Division by zero"
+    assert exc.value.revert_msg in ("Division or modulo by zero", "Division by zero")
     with pytest.raises(VirtualMachineError) as exc:
         evmtester.modulusByZero(2, 0)
-    assert exc.value.revert_msg == "Modulus by zero"
+    assert exc.value.revert_msg in ("Division or modulo by zero", "Modulus by zero")
 
 
 def test_vyper_revert_reasons(vypertester, console_mode):
