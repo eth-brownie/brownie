@@ -150,12 +150,26 @@ class _ContractBase:
             dependency_tree["__root_node__"] = set(self._build["dependencies"])
             code_fragments: Dict = {}
 
+            import_aliases = defaultdict(list)
             used_offsets: Dict = defaultdict(list)  # aggregate all used offsets per source file
 
             for name in self._build["dependencies"]:
                 build_json = self._project._build.get(name)
                 if "dependencies" in build_json:
                     dependency_tree[name].update(build_json["dependencies"])
+
+                # Find import directive nodes with symbolAliases
+                for node in build_json["ast"]["nodes"]:
+                    if (
+                        node["nodeType"] == "ImportDirective" and
+                        len(node["symbolAliases"]) > 0
+                    ):
+                        for symbol_alias in node["symbolAliases"]:
+                            if symbol_alias["local"] is not None:
+                                import_aliases[symbol_alias["foreign"]["name"]].append(
+                                    symbol_alias["local"]
+                                )
+
                 offset = slice(*build_json["offset"])
                 used_offsets[build_json["source"]].append(tuple(build_json["offset"]))
                 source = self._slice_source(build_json["source"], offset)
@@ -169,6 +183,18 @@ class _ContractBase:
                 if name == "__root_node__":
                     continue
                 source, part_name = code_fragments[name]
+                # Create a duplicate entry for each import alias
+                part_name_short = part_name
+                if "/" in part_name:
+                    part_name_short = part_name.split("/")[-1]
+                if part_name_short in import_aliases.keys():
+                    for a in import_aliases[part_name_short]:
+                        new_source = re.sub(
+                            rf"(library|contract|interface)\s+({part_name_short})",
+                            rf"\1 {a}", source
+                        )
+                        flattened_source = f"{flattened_source}\n\n// Part: {a}\n\n{new_source}"
+                # Add the source without alias
                 flattened_source = f"{flattened_source}\n\n// Part: {part_name}\n\n{source}"
 
             # Top level contract, defines compiler and license
