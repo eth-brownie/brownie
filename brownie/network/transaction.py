@@ -324,7 +324,18 @@ class TransactionReceipt:
         if silent is None:
             silent = self._silent
 
-        return self.sender.transfer(  # type: ignore
+        sender = self.sender
+        if isinstance(sender, EthAddress):
+            # if the transaction wasn't broadcast during this brownie session,
+            # check if the sender is unlocked - we might be able to replace anyway
+            from brownie import accounts
+
+            if sender in accounts:
+                sender = accounts.at(sender)
+            else:
+                raise ValueError("Sender address not in `accounts`")
+
+        return sender.transfer(  # type: ignore
             self.receiver,
             self.value,
             gas_limit=self.gas_limit,
