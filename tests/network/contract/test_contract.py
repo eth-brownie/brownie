@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 from copy import deepcopy
 
 import pytest
@@ -291,23 +290,13 @@ def test_autofetch_missing(network, config, mocker):
     assert requests.get.call_count == 2
 
 
-@pytest.mark.parametrize(
-    "original,impl",
-    [
-        [
-            "0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b",
-            "0x7d47d3f06A9C10576bc5DC87ceFbf3288F96Ea04",
-        ],
-        [
-            "0x87a3eF113C210Ab35AFebe820fF9880bf0DD4bfC",
-            "0x1BA2F447E620E3Ec027992d20234A9715a124041",
-        ],
-    ],
-)
-def test_as_proxy_for(network, original, impl):
-    network.connect("mainnet")
-    original = Contract.from_explorer(original)
-    proxy = Contract.from_explorer(original, as_proxy_for=impl)
+def test_as_proxy_for(network):
+    proxy = "0xAfE212AEDf1c8dCd0E470d73B3B4035D32A75Efd"
+    impl = "0x098DCb095318A8B5321c5f2DB3fA04a55A780A20"
+    network.connect("ropsten")
+
+    original = Contract.from_explorer(proxy)
+    proxy = Contract.from_explorer(proxy, as_proxy_for=impl)
     implementation = Contract(impl)
 
     assert original.abi == proxy.abi
@@ -315,3 +304,64 @@ def test_as_proxy_for(network, original, impl):
 
     assert proxy.abi == implementation.abi
     assert proxy.address != implementation.address
+
+
+# @pytest.mark.parametrize(
+#     "original",
+#     [
+#         "0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b",  # comptroller
+#         "0xEd0bEdA6991Ac426de442C84cee19d75aB78d2CE",  # aaragondao
+#     ],
+# )
+# def test_as_proxy_for(network, original):
+#     network.connect("mainnet")
+#     original = Contract.from_explorer(original)
+#
+#     # fetch implementation from etherscan
+#     API_URL = "https://api.etherscan.io/api"
+#     params = {
+#         "apikey": os.getenv("ETHERSCAN_TOKEN"),
+#         "address": original,
+#         "module": "contract",
+#         "action": "verifyproxycontract",
+#     }
+#     response = requests.post(API_URL, params=params, headers=REQUEST_HEADERS)
+#     if response.json()["status"] == "1":
+#         guid = response.json()["result"]
+#     else:
+#         raise ValueError("Could not fetch proxy implementation.")
+#
+#     # wait for result
+#     params = {
+#         "apikey": os.getenv("ETHERSCAN_TOKEN"),
+#         "guid": guid,
+#         "module": "contract",
+#         "action": "checkproxyverification",
+#     }
+#     impl = None
+#     for _ in range(5):
+#         response = requests.get(API_URL, params=params, headers=REQUEST_HEADERS)
+#         data = response.json()
+#         print(data)
+#         if data["status"] == "1":
+#             addresses = re.findall(r"0x[a-fA-F0-9]{40}", data["result"])
+#             if len(addresses) < 2:
+#                 raise ValueError("Could not fetch proxy implementation.")
+#             impl = addresses[1]
+#             break
+#         elif data["result"] != "Pending in queue":
+#             raise ValueError("Could not fetch proxy implementation.")
+#         time.sleep(10)
+#
+#     if not impl:
+#         raise ValueError("Could not fetch proxy implementation.")
+#
+#     # compare abis
+#     proxy = Contract.from_explorer(original, as_proxy_for=impl)
+#     implementation = Contract(impl)
+#
+#     assert original.abi == proxy.abi
+#     assert original.address == proxy.address
+#
+#     assert proxy.abi == implementation.abi
+#     assert proxy.address != implementation.address
