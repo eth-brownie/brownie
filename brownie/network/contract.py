@@ -150,7 +150,7 @@ class _ContractBase:
             dependency_tree["__root_node__"] = set(self._build["dependencies"])
             code_fragments: Dict = {}
 
-            import_aliases = defaultdict(list)
+            import_aliases: Dict = defaultdict(list)
             used_offsets: Dict = defaultdict(list)  # aggregate all used offsets per source file
 
             for name in self._build["dependencies"]:
@@ -160,10 +160,7 @@ class _ContractBase:
 
                 # Find import directive nodes with symbolAliases
                 for node in build_json["ast"]["nodes"]:
-                    if (
-                        node["nodeType"] == "ImportDirective" and
-                        len(node["symbolAliases"]) > 0
-                    ):
+                    if node["nodeType"] == "ImportDirective" and len(node["symbolAliases"]) > 0:
                         for symbol_alias in node["symbolAliases"]:
                             if symbol_alias["local"] is not None:
                                 import_aliases[symbol_alias["foreign"]["name"]].append(
@@ -191,7 +188,8 @@ class _ContractBase:
                     for a in import_aliases[part_name_short]:
                         new_source = re.sub(
                             rf"(library|contract|interface)\s+({part_name_short})",
-                            rf"\1 {a}", source
+                            rf"\1 {a}",
+                            source,
                         )
                         flattened_source = f"{flattened_source}\n\n// Part: {a}\n\n{new_source}"
                 # Add the source without alias
