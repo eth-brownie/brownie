@@ -69,11 +69,20 @@ class Rpc(metaclass=_Singleton):
 
     def __init__(self) -> None:
         self._rpc: Any = None
+        self._more_rpc: [Any] = []
         atexit.register(self._at_exit)
 
     def _at_exit(self) -> None:
         if not self.is_active():
             return
+
+        for rpc in self._more_rpc:
+            if getattr(rpc, "stdout", None) is not None:
+                rpc.stdout.close()
+            if getattr(rpc, "stderr", None) is not None:
+                rpc.stderr.close()
+            self.kill_more(rpc)
+
         if self._rpc.parent() == psutil.Process():
             if getattr(self._rpc, "stdout", None) is not None:
                 self._rpc.stdout.close()
@@ -81,12 +90,12 @@ class Rpc(metaclass=_Singleton):
                 self._rpc.stderr.close()
             self.kill(False)
 
-    def launch(self, cmd: str, **kwargs: Dict) -> None:
+    def launch(self, cmd: str, extra=False, **kwargs: Dict) -> None:
         """Launches the RPC client.
 
         Args:
             cmd: command string to execute as subprocess"""
-        if self.is_active():
+        if self.is_active() and not extra:
             raise SystemError("RPC is already active.")
         if sys.platform == "win32" and not cmd.split(" ")[0].endswith(".cmd"):
             if " " in cmd:
@@ -117,7 +126,13 @@ class Rpc(metaclass=_Singleton):
                     )
         print(f"\nLaunching '{' '.join(cmd_list)}'...")
         out = DEVNULL if sys.platform == "win32" else PIPE
-        self._rpc = psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
+        rpc = psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
+
+        if extra:
+            self._more_rpc.append(self._rpc)
+
+        self._rpc = rpc
+
         # check that web3 can connect
         if not web3.provider:
             chain._network_disconnected()
@@ -158,7 +173,35 @@ class Rpc(metaclass=_Singleton):
             ) from None
         print(f"Attached to local RPC client listening at '{laddr[0]}:{laddr[1]}'...")
         self._rpc = psutil.Process(proc.pid)
+
+        # TODO: do something with _more_rpc?
+
         chain._network_connected()
+
+    def kill_more(self, rpc: Any, exc: bool = True) -> None:
+        """Terminates an extra RPC process and all children with SIGKILL.
+
+        Args:
+            exc: if True, raises SystemError if subprocess is not active."""
+        if rpc is None:
+            return
+
+        if rpc not in self._more_rpc:
+            if not exc:
+                return
+            raise SystemError("RPC is not active.")
+
+        print("Terminating local forked RPC client...")
+
+        for child in rpc.children():
+            try:
+                child.kill()
+            except psutil.NoSuchProcess:
+                pass
+        rpc.kill()
+        rpc.wait()
+
+        self._more_rpc.remove(rpc)
 
     def kill(self, exc: bool = True) -> None:
         """Terminates the RPC process and all children with SIGKILL.
@@ -170,10 +213,11 @@ class Rpc(metaclass=_Singleton):
                 return
             raise SystemError("RPC is not active.")
 
-        try:
-            print("Terminating local RPC client...")
-        except ValueError:
-            pass
+        print("Terminating local RPC client...")
+
+        for more_rpc in self._more_rpc:
+            self.kill_more(more_rpc)
+
         for child in self._rpc.children():
             try:
                 child.kill()

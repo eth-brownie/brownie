@@ -34,6 +34,7 @@ class Web3(_Web3):
         self._chain_uri: Optional[str] = None
         self._custom_middleware: Set = set()
         self._supports_traces = None
+        self._uri = None
 
     def connect(self, uri: str, timeout: int = 30) -> None:
         """Connects to a provider"""
@@ -42,19 +43,20 @@ class Web3(_Web3):
         self._custom_middleware.clear()
         self.provider = None
 
-        uri = _expand_environment_vars(uri)
+        self._uri = _expand_environment_vars(uri)
+
         try:
-            if Path(uri).exists():
-                self.provider = IPCProvider(uri, timeout=timeout)
+            if Path(self._uri).exists():
+                self.provider = IPCProvider(self._uri, timeout=timeout)
         except OSError:
             pass
 
         if self.provider is None:
-            if uri.startswith("ws"):
-                self.provider = WebsocketProvider(uri, {"close_timeout": timeout})
-            elif uri.startswith("http"):
+            if self._uri.startswith("ws"):
+                self.provider = WebsocketProvider(self._uri, {"close_timeout": timeout})
+            elif self._uri.startswith("http"):
 
-                self.provider = HTTPProvider(uri, {"timeout": timeout})
+                self.provider = HTTPProvider(self._uri, {"timeout": timeout})
             else:
                 raise ValueError(
                     "Unknown URI - must be a path to an IPC socket, a websocket "

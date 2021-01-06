@@ -47,7 +47,7 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
                     )
                 rpc.attach(host)
             else:
-                rpc.launch(active["cmd"], **active["cmd_settings"])
+                rpc.launch(active["cmd"], force=False, **active["cmd_settings"])
         else:
             Accounts()._reset()
         if CONFIG.network_type == "live" or CONFIG.settings["dev_deployment_artifacts"]:
