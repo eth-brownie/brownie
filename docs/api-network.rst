@@ -297,7 +297,7 @@ Account Methods
         >>> accounts[0].balance() == "100 ether"
         True
 
-.. py:classmethod:: Account.deploy(contract, *args, amount=None, gas_limit=None, gas_price=None, nonce=None, required_confs=1)
+.. py:classmethod:: Account.deploy(contract, *args, amount=None, gas_limit=None, gas_price=None, nonce=None, required_confs=1, allow_revert=False, silent=False, publish_source=False,)
 
     Deploys a contract.
 
@@ -309,6 +309,9 @@ Account Methods
     * ``gas_price``: Gas price for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using :attr:`web3.eth.gasPrice <web3.eth.Eth.gasPrice>`.
     * ``nonce``: Nonce for the transaction. If none is given, the nonce is set using :meth:`web3.eth.getTransactionCount <web3.eth.Eth.getTransactionCount>` while also considering any pending transactions of the Account.
     * ``required_confs``: The required :attr:`confirmations<TransactionReceipt.confirmations>` before the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is processed. If none is given, defaults to 1 confirmation.  If 0 is given, immediately returns a pending :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` instead of a :func:`Contract <brownie.network.contract.Contract>` instance, while waiting for a confirmation in a separate thread.
+    * ``allow_revert``: When ``True``, forces the deployment of a contract, even if a revert reason is detected.
+    * ``silent``: When ``True``, suppresses any console output for the deployment.
+    * ``publish_source``: When ``True``, attempts to verify the source code on etherscan.io.
 
     Returns a :func:`Contract <brownie.network.contract.Contract>` instance upon success. If the transaction reverts or you do not wait for a confirmation, a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is returned instead.
 
@@ -706,11 +709,12 @@ ContractContainer Attributes
 ContractContainer Methods
 *************************
 
-.. py:classmethod:: ContractContainer.deploy(*args)
+.. py:classmethod:: ContractContainer.deploy(*args, publish_source=False)
 
     Deploys the contract.
 
     * ``*args``: Contract constructor arguments.
+    * ``publish_source``: When ``True``, attempts to verify the source code on etherscan.io.
 
     You can optionally include a :py:class:`dict` of :ref:`transaction parameters<transaction-parameters>` as the final argument. If you omit this or do not specify a ``'from'`` value, the transaction will be sent from the same address that deployed the contract.
 

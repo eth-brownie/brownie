@@ -89,6 +89,27 @@ The following actions WILL remove locally stored deployment data within your pro
 
 To restore a deleted :func:`ProjectContract <brownie.network.contract.ProjectContract>` instance, or generate one for a deployment that was handled outside of Brownie, use the :func:`ContractContainer.at <ContractContainer.at>` method.
 
+Verifying Deployments on Etherscan
+==========================================
+
+Brownie features automatic source code verification for solidity contracts on all networks supported by etherscan. To verify a contract while deploying it, add the ``publish_source=True`` argument:
+
+.. code-block:: python
+
+    acct = accounts.load('deployment_account')
+    Token.deploy("My Real Token", "RLT", 18, 1e28, {'from': acct}, publish_source=True)
+
+Verifying already deployed contracts is also possible as long as you set the identical compiler settings:
+
+.. code-block:: python
+
+    token = Token.at("0x114A107C1931de1d5023594B14fc19d077FC4dfD")
+    token.publish_source()
+
+
+.. warning::
+
+        Make sure all your source files use the same compiler version, otherwise the verification will fail.
 
 Saving Deployments on Development Networks
 ==========================================
