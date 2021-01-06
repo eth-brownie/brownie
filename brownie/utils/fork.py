@@ -85,16 +85,19 @@ def fork(block=None, **cmd_settings):
     # launch a new rpc that forks the currently active rpc
     forked_rpc = network.rpc.launch(cmd, extra=True, **network_settings['cmd_settings'])
 
-    # wait for ganache to start
-    wait_for_port(fork_port)
-
     try:
+        # wait for ganache to start
+        wait_for_port(fork_port)
+
         network.web3.connect(f"http://localhost:{fork_port}", timeout)
 
         print("Now using network:", network.web3._uri, "@", network.chain.height)
 
         yield network_settings
     finally:
+        # kill this rpc and put the previous back
+        network.rpc.kill_more(forked_rpc, False)
+
         # TODO: put the global state back
         # CONFIG.set_active_network(old_network)
         network.web3.connect(old_uri, timeout)

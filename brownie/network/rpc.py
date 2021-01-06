@@ -128,7 +128,7 @@ class Rpc(metaclass=_Singleton):
         out = DEVNULL if sys.platform == "win32" else PIPE
         rpc = psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
 
-        if extra:
+        if extra and self._rpc:
             self._more_rpc.append(self._rpc)
 
         self._rpc = rpc
@@ -203,6 +203,9 @@ class Rpc(metaclass=_Singleton):
 
         self._more_rpc.remove(rpc)
 
+        if rpc == self._rpc:
+            self._rpc = self._more_rpc[-1]
+
     def kill(self, exc: bool = True) -> None:
         """Terminates the RPC process and all children with SIGKILL.
 
@@ -215,9 +218,6 @@ class Rpc(metaclass=_Singleton):
 
         print("Terminating local RPC client...")
 
-        for more_rpc in self._more_rpc:
-            self.kill_more(more_rpc)
-
         for child in self._rpc.children():
             try:
                 child.kill()
@@ -227,6 +227,9 @@ class Rpc(metaclass=_Singleton):
         self._rpc.wait()
         self._rpc = None
         chain._network_disconnected()
+
+        for more_rpc in self._more_rpc:
+            self.kill_more(more_rpc)
 
     def is_active(self) -> bool:
         """Returns True if Rpc client is currently active."""
