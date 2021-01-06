@@ -57,6 +57,7 @@ def fork(block=None, **cmd_settings):
 
     # TODO: get the currently active network
     old_network = network.show_active()
+    old_history = network.history.copy()
 
     network_settings = CONFIG.set_active_network(old_network)
 
@@ -67,8 +68,7 @@ def fork(block=None, **cmd_settings):
 
     fork_port = find_open_port()
 
-    # add customizations to cmd_settings
-    # TODO: do something so that nesting these remembers
+    # add our cmd_settings on top of the active network's settings
     if 'cmd_settings' in network_settings:
         network_settings['cmd_settings'].update(cmd_settings)
     else:
@@ -102,7 +102,8 @@ def fork(block=None, **cmd_settings):
         # CONFIG.set_active_network(old_network)
         network.web3.connect(old_uri, timeout)
 
-        # TODO: account nonces, txhistory, etc.
+        network.history._list = old_history
         network.accounts._reset()
+        # TODO: reset more
 
         print("Returned to network:", network.web3._uri, "@", network.chain.height)
