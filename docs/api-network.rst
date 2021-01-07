@@ -769,6 +769,14 @@ ContractContainer Methods
             raise ValueError("No contract deployed at {}".format(address))
         ValueError: No contract deployed at 0xefb1336a2E6B5dfD83D4f3a8F3D2f85b7bfb61DC
 
+.. py:classmethod:: ContractContainer.publish_source(contract, silent=False)
+
+    Verifies the source code on etherscan.io for a :func:`Project Contract <brownie.network.contract.ProjectContract>` belonging to the container.
+
+    * ``contract``: The :func:`Project Contract <brownie.network.contract.ProjectContract>` you intend to verify
+    * ``silent``: When True, suppresses all console output of the call.
+
+
 .. py:classmethod:: ContractContainer.decode_input(calldata)
 
     Given the call data of a transaction, returns the function signature as a string and the decoded input arguments.

@@ -130,6 +130,118 @@ class _ContractBase:
 
         return function_sig, input_args
 
+
+class ContractContainer(_ContractBase):
+
+    """List-like container class that holds all Contract instances of the same
+    type, and is used to deploy new instances of that contract.
+
+    Attributes:
+        abi: Complete contract ABI.
+        bytecode: Bytecode used to deploy the contract.
+        signatures: Dictionary of {'function name': "bytes4 signature"}
+        topics: Dictionary of {'event name': "bytes32 topic"}"""
+
+    def __init__(self, project: Any, build: Dict) -> None:
+        self.tx = None
+        self.bytecode = build["bytecode"]
+        self._contracts: List["ProjectContract"] = []
+        super().__init__(project, build, project._sources)
+        self.deploy = ContractConstructor(self, self._name)
+        _revert_register(self)
+
+    def __iter__(self) -> Iterator:
+        return iter(self._contracts)
+
+    def __getitem__(self, i: Any) -> "ProjectContract":
+        return self._contracts[i]
+
+    def __delitem__(self, key: Any) -> None:
+        item = self._contracts[key]
+        self.remove(item)
+
+    def __len__(self) -> int:
+        return len(self._contracts)
+
+    def __repr__(self) -> str:
+        if CONFIG.argv["cli"] == "console":
+            return str(self._contracts)
+        return super().__repr__()
+
+    def _reset(self) -> None:
+        for contract in self._contracts:
+            _remove_contract(contract)
+            contract._reverted = True
+        self._contracts.clear()
+
+    def _revert(self, height: int) -> None:
+        reverted = [
+            i
+            for i in self._contracts
+            if (i.tx and i.tx.block_number is not None and i.tx.block_number > height)
+            or len(web3.eth.getCode(i.address).hex()) <= 4
+        ]
+        for contract in reverted:
+            self.remove(contract)
+            contract._reverted = True
+
+    def remove(self, contract: "ProjectContract") -> None:
+        """Removes a contract from the container.
+
+        Args:
+            contract: Contract instance of address string of the contract."""
+        if contract not in self._contracts:
+            raise TypeError("Object is not in container.")
+        self._contracts.remove(contract)
+        contract._delete_deployment()
+        _remove_contract(contract)
+
+    def at(
+        self,
+        address: str,
+        owner: Optional[AccountsType] = None,
+        tx: Optional[TransactionReceiptType] = None,
+    ) -> "ProjectContract":
+        """Returns a contract address.
+
+        Raises ValueError if no bytecode exists at the address.
+
+        Args:
+            address: Address string of the contract.
+            owner: Default Account instance to send contract transactions from.
+            tx: Transaction ID of the contract creation."""
+        address = _resolve_address(address)
+        contract = _find_contract(address)
+        if isinstance(contract, ProjectContract):
+            if contract._name == self._name and contract._project == self._project:
+                return contract
+            raise ContractExists(
+                f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
+            )
+
+        build = self._build
+        contract = ProjectContract(self._project, build, address, owner, tx)
+        if not _verify_deployed_code(address, build["deployedBytecode"], build["language"]):
+            # prevent trace attempts when the bytecode doesn't match
+            del contract._build["pcMap"]
+
+        contract._save_deployment()
+        _add_contract(contract)
+        self._contracts.append(contract)
+        if CONFIG.network_type == "live":
+            _add_deployment(contract)
+
+        return contract
+
+    def _add_from_tx(self, tx: TransactionReceiptType) -> None:
+        tx._confirmed.wait()
+        if tx.status and tx.contract_address is not None:
+            try:
+                self.at(tx.contract_address, tx.sender, tx)
+            except ContractNotFound:
+                # if the contract self-destructed during deployment
+                pass
+
     def get_verification_info(self) -> Dict:
         """
         Return a dict with flattened source code for this contract
@@ -251,6 +363,151 @@ class _ContractBase:
         else:
             raise TypeError(f"Unsupported language for source verification: {language}")
 
+    def publish_source(self, contract: Any, silent: bool = False) -> bool:
+        """Flatten contract and publish source on the selected explorer"""
+
+        # Check required conditions for verifying
+        url = CONFIG.active_network.get("explorer")
+        if url is None:
+            raise ValueError("Explorer API not set for this network")
+        if "etherscan" not in url:
+            raise ValueError(
+                "Publishing source is only supported on etherscan, change the Explorer API"
+            )
+
+        if os.getenv("ETHERSCAN_TOKEN"):
+            api_key = os.getenv("ETHERSCAN_TOKEN")
+        else:
+            raise ValueError(
+                "An Etherscan API token is required to verify contract source code. "
+                "Visit https://etherscan.io/register to obtain a token, and then store it "
+                "as the environment variable $ETHERSCAN_TOKEN"
+            )
+
+        address = _resolve_address(contract.address)
+
+        # Get flattened source code and contract/compiler information
+        contract_info = self.get_verification_info()
+
+        # Select matching license code (https://etherscan.io/contract-license-types)
+        license_code = 1
+        identifier = contract_info["license_identifier"].lower()
+        if "unlicensed" in identifier:
+            license_code = 2
+        elif "mit" in identifier:
+            license_code = 3
+        elif "agpl" in identifier and "3.0" in identifier:
+            license_code = 13
+        elif "lgpl" in identifier:
+            if "2.1" in identifier:
+                license_code = 6
+            elif "3.0" in identifier:
+                license_code = 7
+        elif "gpl" in identifier:
+            if "2.0" in identifier:
+                license_code = 4
+            elif "3.0" in identifier:
+                license_code = 5
+        elif "bsd-2-clause" in identifier:
+            license_code = 8
+        elif "bsd-3-clause" in identifier:
+            license_code = 9
+        elif "mpl" in identifier and "2.0" in identifier:
+            license_code = 10
+        elif identifier.startswith("osl") and "3.0" in identifier:
+            license_code = 11
+        elif "apache" in identifier and "2.0" in identifier:
+            license_code = 12
+
+        # get constructor arguments
+        params_tx: Dict = {
+            "apikey": api_key,
+            "module": "account",
+            "action": "txlist",
+            "address": address,
+            "page": 1,
+            "sort": "asc",
+            "offset": 1,
+        }
+        i = 0
+        while True:
+            response = requests.get(url, params=params_tx, headers=REQUEST_HEADERS)
+            if response.status_code != 200:
+                raise ConnectionError(
+                    f"Status {response.status_code} when querying {url}: {response.text}"
+                )
+            data = response.json()
+            if int(data["status"]) == 1:
+                # Constructor arguments received
+                break
+            else:
+                # Wait for contract to be recognized by etherscan
+                # This takes a few seconds after the contract is deployed
+                # After 10 loops we throw with the API result message (includes address)
+                if i >= 10:
+                    raise ValueError(f"API request failed with: {data['result']}")
+                elif i == 0 and not silent:
+                    print("Waiting for etherscan to process contract...")
+                i += 1
+                time.sleep(10)
+
+        if data["message"] == "OK":
+            constructor_arguments = data["result"][0]["input"][contract_info["bytecode_len"] + 2 :]
+        else:
+            constructor_arguments = ""
+
+        # Submit verification
+        payload_verification: Dict = {
+            "apikey": api_key,
+            "module": "contract",
+            "action": "verifysourcecode",
+            "contractaddress": address,
+            "sourceCode": contract_info["flattened_source"],
+            "codeformat": "solidity-single-file",
+            "contractname": contract_info["contract_name"],
+            "compilerversion": f"v{contract_info['compiler_version']}",
+            "optimizationUsed": 1 if contract_info["optimizer_enabled"] else 0,
+            "runs": contract_info["optimizer_runs"],
+            "constructorArguements": constructor_arguments,
+            "licenseType": license_code,
+        }
+        response = requests.post(url, data=payload_verification, headers=REQUEST_HEADERS)
+        if response.status_code != 200:
+            raise ConnectionError(
+                f"Status {response.status_code} when querying {url}: {response.text}"
+            )
+        data = response.json()
+        if int(data["status"]) != 1:
+            raise ValueError(f"Failed to submit verification request: {data['result']}")
+
+        # Status of request
+        guid = data["result"]
+        if not silent:
+            print("Verification submitted successfully. Waiting for result...")
+        time.sleep(10)
+        params_status: Dict = {
+            "apikey": api_key,
+            "module": "contract",
+            "action": "checkverifystatus",
+            "guid": guid,
+        }
+        while True:
+            response = requests.get(url, params=params_status, headers=REQUEST_HEADERS)
+            if response.status_code != 200:
+                raise ConnectionError(
+                    f"Status {response.status_code} when querying {url}: {response.text}"
+                )
+            data = response.json()
+            if data["result"] == "Pending in queue":
+                if not silent:
+                    print("Verification pending...")
+            else:
+                if not silent:
+                    col = "bright green" if data["message"] == "OK" else "bright red"
+                    print(f"Verification complete. Result: {color(col)}{data['result']}{color}")
+                return data["message"] == "OK"
+            time.sleep(10)
+
     def _slice_source(self, source: str, offset: slice) -> str:
         """Slice the source of the contract, preserving any comments above the first line."""
         offset_start: int = int(offset.start) if offset.start else 0
@@ -276,118 +533,6 @@ class _ContractBase:
         offset_start = max(0, offset_start)
         offset = slice(offset_start, offset.stop, None)
         return source[offset].strip()
-
-
-class ContractContainer(_ContractBase):
-
-    """List-like container class that holds all Contract instances of the same
-    type, and is used to deploy new instances of that contract.
-
-    Attributes:
-        abi: Complete contract ABI.
-        bytecode: Bytecode used to deploy the contract.
-        signatures: Dictionary of {'function name': "bytes4 signature"}
-        topics: Dictionary of {'event name': "bytes32 topic"}"""
-
-    def __init__(self, project: Any, build: Dict) -> None:
-        self.tx = None
-        self.bytecode = build["bytecode"]
-        self._contracts: List["ProjectContract"] = []
-        super().__init__(project, build, project._sources)
-        self.deploy = ContractConstructor(self, self._name)
-        _revert_register(self)
-
-    def __iter__(self) -> Iterator:
-        return iter(self._contracts)
-
-    def __getitem__(self, i: Any) -> "ProjectContract":
-        return self._contracts[i]
-
-    def __delitem__(self, key: Any) -> None:
-        item = self._contracts[key]
-        self.remove(item)
-
-    def __len__(self) -> int:
-        return len(self._contracts)
-
-    def __repr__(self) -> str:
-        if CONFIG.argv["cli"] == "console":
-            return str(self._contracts)
-        return super().__repr__()
-
-    def _reset(self) -> None:
-        for contract in self._contracts:
-            _remove_contract(contract)
-            contract._reverted = True
-        self._contracts.clear()
-
-    def _revert(self, height: int) -> None:
-        reverted = [
-            i
-            for i in self._contracts
-            if (i.tx and i.tx.block_number is not None and i.tx.block_number > height)
-            or len(web3.eth.getCode(i.address).hex()) <= 4
-        ]
-        for contract in reverted:
-            self.remove(contract)
-            contract._reverted = True
-
-    def remove(self, contract: "ProjectContract") -> None:
-        """Removes a contract from the container.
-
-        Args:
-            contract: Contract instance of address string of the contract."""
-        if contract not in self._contracts:
-            raise TypeError("Object is not in container.")
-        self._contracts.remove(contract)
-        contract._delete_deployment()
-        _remove_contract(contract)
-
-    def at(
-        self,
-        address: str,
-        owner: Optional[AccountsType] = None,
-        tx: Optional[TransactionReceiptType] = None,
-    ) -> "ProjectContract":
-        """Returns a contract address.
-
-        Raises ValueError if no bytecode exists at the address.
-
-        Args:
-            address: Address string of the contract.
-            owner: Default Account instance to send contract transactions from.
-            tx: Transaction ID of the contract creation."""
-        address = _resolve_address(address)
-        contract = _find_contract(address)
-        if isinstance(contract, ProjectContract):
-            if contract._name == self._name and contract._project == self._project:
-                return contract
-            raise ContractExists(
-                f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
-            )
-
-        build = self._build
-        contract = ProjectContract(self._project, build, address, owner, tx)
-        if not _verify_deployed_code(address, build["deployedBytecode"], build["language"]):
-            # prevent trace attempts when the bytecode doesn't match
-            del contract._build["pcMap"]
-
-        contract._save_deployment()
-        _add_contract(contract)
-        self._contracts.append(contract)
-        if CONFIG.network_type == "live":
-            _add_deployment(contract)
-
-        return contract
-
-    def _add_from_tx(self, tx: TransactionReceiptType) -> None:
-        tx._confirmed.wait()
-        if tx.status and tx.contract_address is not None:
-            try:
-                self.at(tx.contract_address, tx.sender, tx)
-            except ContractNotFound:
-                # if the contract self-destructed during deployment
-                pass
 
 
 class ContractConstructor:
@@ -683,151 +828,6 @@ class _DeployedContractBase(_ContractBase):
         """Returns the current ether balance of the contract, in wei."""
         balance = web3.eth.getBalance(self.address)
         return Wei(balance)
-
-    def publish_source(self, silent: bool = False) -> bool:
-        """Flatten contract and publish source on the selected explorer"""
-
-        # Check required conditions for verifying
-        url = CONFIG.active_network.get("explorer")
-        if url is None:
-            raise ValueError("Explorer API not set for this network")
-        if "etherscan" not in url:
-            raise ValueError(
-                "Publishing source is only supported on etherscan, change the Explorer API"
-            )
-
-        if os.getenv("ETHERSCAN_TOKEN"):
-            api_key = os.getenv("ETHERSCAN_TOKEN")
-        else:
-            raise ValueError(
-                "An Etherscan API token is required to verify contract source code. "
-                "Visit https://etherscan.io/register to obtain a token, and then store it "
-                "as the environment variable $ETHERSCAN_TOKEN"
-            )
-
-        address = _resolve_address(self.address)
-
-        # Get flattened source code and contract/compiler information
-        contract_info = self.get_verification_info()
-
-        # Select matching license code (https://etherscan.io/contract-license-types)
-        license_code = 1
-        identifier = contract_info["license_identifier"].lower()
-        if "unlicensed" in identifier:
-            license_code = 2
-        elif "mit" in identifier:
-            license_code = 3
-        elif "agpl" in identifier and "3.0" in identifier:
-            license_code = 13
-        elif "lgpl" in identifier:
-            if "2.1" in identifier:
-                license_code = 6
-            elif "3.0" in identifier:
-                license_code = 7
-        elif "gpl" in identifier:
-            if "2.0" in identifier:
-                license_code = 4
-            elif "3.0" in identifier:
-                license_code = 5
-        elif "bsd-2-clause" in identifier:
-            license_code = 8
-        elif "bsd-3-clause" in identifier:
-            license_code = 9
-        elif "mpl" in identifier and "2.0" in identifier:
-            license_code = 10
-        elif identifier.startswith("osl") and "3.0" in identifier:
-            license_code = 11
-        elif "apache" in identifier and "2.0" in identifier:
-            license_code = 12
-
-        # get constructor arguments
-        params_tx: Dict = {
-            "apikey": api_key,
-            "module": "account",
-            "action": "txlist",
-            "address": address,
-            "page": 1,
-            "sort": "asc",
-            "offset": 1,
-        }
-        i = 0
-        while True:
-            response = requests.get(url, params=params_tx, headers=REQUEST_HEADERS)
-            if response.status_code != 200:
-                raise ConnectionError(
-                    f"Status {response.status_code} when querying {url}: {response.text}"
-                )
-            data = response.json()
-            if int(data["status"]) == 1:
-                # Constructor arguments received
-                break
-            else:
-                # Wait for contract to be recognized by etherscan
-                # This takes a few seconds after the contract is deployed
-                # After 10 loops we throw with the API result message (includes address)
-                if i >= 10:
-                    raise ValueError(f"API request failed with: {data['result']}")
-                elif i == 0 and not silent:
-                    print("Waiting for etherscan to process contract...")
-                i += 1
-                time.sleep(10)
-
-        if data["message"] == "OK":
-            constructor_arguments = data["result"][0]["input"][contract_info["bytecode_len"] + 2 :]
-        else:
-            constructor_arguments = ""
-
-        # Submit verification
-        payload_verification: Dict = {
-            "apikey": api_key,
-            "module": "contract",
-            "action": "verifysourcecode",
-            "contractaddress": address,
-            "sourceCode": contract_info["flattened_source"],
-            "codeformat": "solidity-single-file",
-            "contractname": contract_info["contract_name"],
-            "compilerversion": f"v{contract_info['compiler_version']}",
-            "optimizationUsed": 1 if contract_info["optimizer_enabled"] else 0,
-            "runs": contract_info["optimizer_runs"],
-            "constructorArguements": constructor_arguments,
-            "licenseType": license_code,
-        }
-        response = requests.post(url, data=payload_verification, headers=REQUEST_HEADERS)
-        if response.status_code != 200:
-            raise ConnectionError(
-                f"Status {response.status_code} when querying {url}: {response.text}"
-            )
-        data = response.json()
-        if int(data["status"]) != 1:
-            raise ValueError(f"Failed to submit verification request: {data['result']}")
-
-        # Status of request
-        guid = data["result"]
-        if not silent:
-            print("Verification submitted successfully. Waiting for result...")
-        time.sleep(10)
-        params_status: Dict = {
-            "apikey": api_key,
-            "module": "contract",
-            "action": "checkverifystatus",
-            "guid": guid,
-        }
-        while True:
-            response = requests.get(url, params=params_status, headers=REQUEST_HEADERS)
-            if response.status_code != 200:
-                raise ConnectionError(
-                    f"Status {response.status_code} when querying {url}: {response.text}"
-                )
-            data = response.json()
-            if data["result"] == "Pending in queue":
-                if not silent:
-                    print("Verification pending...")
-            else:
-                if not silent:
-                    col = "bright green" if data["message"] == "OK" else "bright red"
-                    print(f"Verification complete. Result: {color(col)}{data['result']}{color}")
-                return data["message"] == "OK"
-            time.sleep(10)
 
     def _deployment_path(self) -> Optional[Path]:
         if not self._project._path or (

@@ -514,7 +514,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         try:
             deployed_contract = contract.at(receipt.contract_address)
             if publish_source:
-                deployed_contract.publish_source(silent=silent)
+                contract.publish_source(deployed_contract, silent=silent)
             return deployed_contract
         except ContractNotFound:
             # if the contract self-destructed during deployment

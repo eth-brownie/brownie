@@ -104,7 +104,7 @@ Verifying already deployed contracts is also possible as long as you set the ide
 .. code-block:: python
 
     token = Token.at("0x114A107C1931de1d5023594B14fc19d077FC4dfD")
-    token.publish_source()
+    Token.publish_source(token)
 
 
 .. warning::
