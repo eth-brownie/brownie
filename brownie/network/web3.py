@@ -89,6 +89,8 @@ class Web3(_Web3):
     def disconnect(self) -> None:
         """Disconnects from a provider"""
         if self.provider:
+            # TODO: if the provider is a websocket provider, we need to do more cleanup
+
             self.provider = None
             self._genesis_hash = None
             self._chain_uri = None
