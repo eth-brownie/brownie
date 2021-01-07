@@ -661,19 +661,20 @@ class _PrivateKeyAccount(PublicKeyAccount):
             gas_strategy.run(receipt, gas_iter)  # type: ignore
 
         if required_confs == 0:
+            # set 0-conf tx's as silent to hide the confirmation output
             receipt._silent = True
             return receipt
 
         try:
             receipt._confirmed.wait()
-        except KeyboardInterrupt:
+        except KeyboardInterrupt as exc:
             # set related transactions as silent
             receipt._silent = True
             for receipt in history.filter(
                 sender=self, nonce=receipt.nonce, key=lambda k: k.status != -2
             ):
                 receipt._silent = True
-            raise
+            raise exc.with_traceback(None)
 
         if receipt.status != -2:
             return receipt

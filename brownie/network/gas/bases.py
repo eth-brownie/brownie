@@ -47,6 +47,11 @@ class ScalingGasABC(GasABC):
         raise NotImplementedError
 
     def _loop(self, receipt: Any, gas_iter: Iterator) -> None:
+        # retain the initial `silent` setting - tx's with required_confs=0 are set to
+        # silent prior to confirmation, so if we don't do this the console output is
+        # silenced by the 2nd replacement
+        silent = receipt._silent
+
         while web3.eth.getTransactionCount(str(receipt.sender)) < receipt.nonce:
             # do not run scaling strategy while prior tx's are still pending
             time.sleep(5)
@@ -60,7 +65,7 @@ class ScalingGasABC(GasABC):
                 gas_price = next(gas_iter)
                 if gas_price >= int(receipt.gas_price * 1.1):
                     try:
-                        receipt = receipt.replace(gas_price=gas_price)
+                        receipt = receipt.replace(gas_price=gas_price, silent=silent)
                         latest_interval = self.interval()
                     except ValueError:
                         pass
