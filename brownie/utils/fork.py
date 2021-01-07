@@ -49,6 +49,7 @@ def wait_for_port(port, host='localhost', timeout=5.0):
 
 @contextmanager
 def fork(block=None, **cmd_settings):
+    """TODO: Partly incompatible with websockets."""
     print("Forking network:", network.web3._uri, "@", block or "latest")
 
     # TODO: setup snapshots
