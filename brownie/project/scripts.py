@@ -8,7 +8,7 @@ from hashlib import sha1
 from inspect import getmembers, isfunction
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Generator, Optional, Tuple
 
 from brownie.exceptions import ProjectNotFound
 from brownie.project.main import Project, check_for_project, get_loaded_projects
@@ -159,7 +159,7 @@ def _get_ast_hash(path: str) -> str:
     return sha1(dump.encode()).hexdigest()
 
 
-def get_method_list(module):
+def get_method_list(module: ModuleType) -> list:
     methods = [
         method
         for method in getmembers(module)
@@ -174,7 +174,7 @@ tee = "├── "
 last = "└── "
 
 
-def tree(dir_path: Path, prefix: str = ""):
+def tree(dir_path: Path, prefix: str = "") -> Generator:
     # A recursive generator from https://stackoverflow.com/a/59109706
     contents = list(dir_path.iterdir())
     contents = list(filter(lambda path: not path.name.startswith("__"), contents))
@@ -211,7 +211,7 @@ def tree(dir_path: Path, prefix: str = ""):
             yield from tree(path, prefix=prefix + extension)
 
 
-def create_string_tree(path_name):
+def create_string_tree(path_name: str) -> str:
     string_tree = ""
     tree_generator = tree(Path(path_name))
     for line in tree_generator:
