@@ -82,28 +82,39 @@ def fork(block=None, **cmd_settings):
     # TODO: allow overriding this?
     cmd = "ganache-cli"
 
-    # launch a new rpc that forks the currently active rpc
-    forked_rpc = network.rpc.launch(cmd, extra=True, **network_settings['cmd_settings'])
+    forked_rpc = None
 
     try:
+        # launch a new rpc that forks the currently active rpc
+        forked_rpc = network.rpc.launch(cmd, extra=True, **network_settings['cmd_settings'])
+
         # wait for ganache to start
         wait_for_port(fork_port)
 
+        # disconnect from the parent rpc
+        network.web3.disconnect()
+
+        # connect to our forked rpc
         network.web3.connect(f"http://localhost:{fork_port}", timeout)
 
         print("Now using network:", network.web3._uri, "@", network.chain.height)
 
         yield network_settings
     finally:
-        # kill this rpc and put the previous back
-        network.rpc.kill_more(forked_rpc, False)
+        # disconnect from the forked rpc
+        network.web3.disconnect()
 
-        # TODO: put the global state back
-        # CONFIG.set_active_network(old_network)
+        if forked_rpc:
+            # kill this rpc and put the previous back
+            network.rpc.kill_more(forked_rpc, False)
+
+        # connect to the previous rpc. this might be another fork
         network.web3.connect(old_uri, timeout)
 
+        # TODO: put the global state back
+        # ? CONFIG.set_active_network(old_network) ?
         network.history._list = old_history
         network.accounts._reset()
-        # TODO: reset more
+        # TODO: reset more?
 
         print("Returned to network:", network.web3._uri, "@", network.chain.height)
