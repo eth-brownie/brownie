@@ -145,5 +145,5 @@ def get_available_scripts() -> str:
     for project in get_loaded_projects():
         scripts_path = Path(project._structure["scripts"])
         for script_path in scripts_path.glob("**/*.py"):
-            output_scripts = output_scripts + indent + script_path.parts[-1:][0] + "\n"
+            output_scripts = f"{output_scripts}{indent}{script_path.parts[-1:][0]}\n"
     return output_scripts
