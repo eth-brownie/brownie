@@ -6,4 +6,6 @@ def test_verification_info(BrownieTester, brownie_tester_flat):
     assert v["optimizer_runs"] == 200
     assert v["license_identifier"] == "NONE"
     assert v["bytecode_len"] == 9842
-    assert v["flattened_source"] == brownie_tester_flat
+
+    # skip version pragma, because it is inconsistent
+    assert v["flattened_source"][58:] == brownie_tester_flat[58:]
