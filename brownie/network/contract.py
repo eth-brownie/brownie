@@ -1266,11 +1266,13 @@ class OverloadedMethod:
         self._name = name
         self._owner = owner
         self.methods: Dict = {}
+        self.natspec: Dict = {}
 
     def _add_fn(self, abi: Dict, natspec: Dict) -> None:
         fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
         key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
         self.methods[key] = fn
+        self.natspec.update(natspec)
 
     def _get_fn_from_args(self, args: Tuple) -> "_ContractMethod":
         input_length = len(args)
@@ -1410,6 +1412,17 @@ class OverloadedMethod:
         raise ValueError(
             "Data cannot be decoded using any output signatures of functions of this name"
         )
+
+    def info(self) -> None:
+        """
+        Display NatSpec documentation for this method.
+        """
+        fn_sigs = []
+        for fn in self.methods.values():
+            fn_sigs.append(f"{fn.abi['name']}({_inputs(fn.abi)})")
+        for sig in sorted(fn_sigs, key=lambda k: len(k)):
+            print(sig)
+        _print_natspec(self.natspec)
 
 
 class _ContractMethod:
