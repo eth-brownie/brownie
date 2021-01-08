@@ -73,12 +73,12 @@ def test_generate_input_json(solc5source):
 
 
 def test_generate_input_json_evm(solc5source, monkeypatch):
-    monkeypatch.setattr("solcx.get_solc_version", lambda x: Version("0.5.5"))
+    monkeypatch.setattr("solcx.get_solc_version", lambda **x: Version("0.5.5"))
     fn = functools.partial(compiler.generate_input_json, {"path.sol": solc5source})
     assert fn()["settings"]["evmVersion"] == "petersburg"
     assert fn(evm_version="byzantium")["settings"]["evmVersion"] == "byzantium"
     assert fn(evm_version="petersburg")["settings"]["evmVersion"] == "petersburg"
-    monkeypatch.setattr("solcx.get_solc_version", lambda x: Version("0.5.4"))
+    monkeypatch.setattr("solcx.get_solc_version", lambda **x: Version("0.5.4"))
     assert fn()["settings"]["evmVersion"] == "byzantium"
     assert fn(evm_version="byzantium")["settings"]["evmVersion"] == "byzantium"
     assert fn(evm_version="petersburg")["settings"]["evmVersion"] == "petersburg"
