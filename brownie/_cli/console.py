@@ -49,6 +49,7 @@ def main():
         print(f"{active_project._name} is the active project.")
     else:
         active_project = None
+        sys.path.insert(0, "")
         print("No project was loaded.")
 
     network.connect(CONFIG.argv["network"])
