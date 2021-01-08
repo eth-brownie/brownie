@@ -271,27 +271,20 @@ class ContractContainer(_ContractBase):
             global_enums = set()
             import_aliases: Dict = defaultdict(list)
             for n, src in [ns.values() for ns in nodes_source]:
-                pragmas = n.children(filters={"nodeType": "PragmaDirective"})
-                for pragma in pragmas:
-                    src_offsets = [int(x) for x in pragma.get("src").split(":")]
-                    pragma_statements.add(src[src_offsets[0] : src_offsets[0] + src_offsets[1]])
+                for pragma in n.children(filters={"nodeType": "PragmaDirective"}):
+                    pragma_statements.add(src[slice(*pragma.offset)])
 
-                enums = n.children(filters={"nodeType": "EnumDefinition"})
-                for enum in enums:
+                for enum in n.children(filters={"nodeType": "EnumDefinition"}):
                     if enum.parent() == n:
                         # parent == source node -> global enum
-                        src_offsets = [int(x) for x in enum.get("src").split(":")]
-                        global_enums.add(src[src_offsets[0] : src_offsets[0] + src_offsets[1]])
+                        global_enums.add(src[slice(*enum.offset)])
 
-                structs = n.children(filters={"nodeType": "StructDefinition"})
-                for struct in structs:
+                for struct in n.children(filters={"nodeType": "StructDefinition"}):
                     if struct.parent() == n:
                         # parent == source node -> global struct
-                        src_offsets = [int(x) for x in struct.get("src").split(":")]
-                        global_structs.add(src[src_offsets[0] : src_offsets[0] + src_offsets[1]])
+                        global_structs.add(src[(slice(*struct.offset))])
 
-                imports = n.children(filters={"nodeType": "ImportDirective"})
-                for imp in imports:
+                for imp in n.children(filters={"nodeType": "ImportDirective"}):
                     if isinstance(imp.get("symbolAliases"), list):
                         for symbol_alias in imp.get("symbolAliases"):
                             if symbol_alias["local"] is not None:
@@ -323,8 +316,8 @@ class ContractContainer(_ContractBase):
                         # slice to contract definition and replace contract name
                         a_source = build_json["source"][offset[0] :]
                         a_source = re.sub(
-                            rf"^(abstract)?(\s*)({build_json['type']})\s+({contract_name})",
-                            rf"\1\2\3 {alias}",
+                            rf"^(abstract)?(\s*)({build_json['type']})(\s+)({contract_name})",
+                            rf"\1\2\3\4{alias}",
                             a_source,
                         )
                         # restore source, adjust offsets and slice source
