@@ -1266,11 +1266,13 @@ class OverloadedMethod:
         self._name = name
         self._owner = owner
         self.methods: Dict = {}
+        self.natspec: Dict = {}
 
     def _add_fn(self, abi: Dict, natspec: Dict) -> None:
         fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
         key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
         self.methods[key] = fn
+        self.natspec.update(natspec)
 
     def _get_fn_from_args(self, args: Tuple) -> "_ContractMethod":
         input_length = len(args)
@@ -1367,6 +1369,60 @@ class OverloadedMethod:
         """
         fn = self._get_fn_from_args(args)
         return fn.encode_input(*args)
+
+    def decode_input(self, hexstr: str) -> List:
+        """
+        Decode input call data for this method.
+
+        Arguments
+        ---------
+        hexstr : str
+            Hexstring of input call data
+
+        Returns
+        -------
+        Decoded values
+        """
+        selector = HexBytes(hexstr)[:4].hex()
+        fn = next((i for i in self.methods.values() if i == selector), None)
+        if fn is None:
+            raise ValueError(
+                "Data cannot be decoded using any input signatures of functions of this name"
+            )
+        return fn.decode_input(hexstr)
+
+    def decode_output(self, hexstr: str) -> Tuple:
+        """
+        Decode hexstring data returned by this method.
+
+        Arguments
+        ---------
+        hexstr : str
+            Hexstring of returned call data
+
+        Returns
+        -------
+        Decoded values
+        """
+        for fn in self.methods.values():
+            try:
+                return fn.decode_output(hexstr)
+            except Exception:
+                pass
+        raise ValueError(
+            "Data cannot be decoded using any output signatures of functions of this name"
+        )
+
+    def info(self) -> None:
+        """
+        Display NatSpec documentation for this method.
+        """
+        fn_sigs = []
+        for fn in self.methods.values():
+            fn_sigs.append(f"{fn.abi['name']}({_inputs(fn.abi)})")
+        for sig in sorted(fn_sigs, key=lambda k: len(k)):
+            print(sig)
+        _print_natspec(self.natspec)
 
 
 class _ContractMethod:
