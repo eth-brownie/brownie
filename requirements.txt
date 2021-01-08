@@ -10,8 +10,8 @@ hypothesis==5.41.3
 prompt-toolkit==3.0.8
 psutil>=5.7.3,<6.0.0
 py>=1.5.0
-py-solc-ast>=1.2.7,<2.0.0
-py-solc-x>=1.0.2,<2.0.0
+py-solc-ast>=1.2.8,<2.0.0
+py-solc-x>=1.1.0,<2.0.0
 pygments==2.6.1
 pygments_lexer_solidity==0.5.1
 pytest==6.0.1

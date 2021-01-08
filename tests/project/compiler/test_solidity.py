@@ -58,11 +58,11 @@ def msolc(monkeypatch):
 
 def test_set_solc_version():
     compiler.set_solc_version("0.5.7")
-    assert solcx.get_solc_version().truncate() == compiler.solidity.get_version()
-    assert solcx.get_solc_version().truncate() == Version("0.5.7")
+    assert solcx.get_solc_version(with_commit_hash=True) == compiler.solidity.get_version()
+    assert solcx.get_solc_version(with_commit_hash=True).truncate() == Version("0.5.7")
     compiler.set_solc_version("0.4.25")
-    assert solcx.get_solc_version().truncate() == compiler.solidity.get_version()
-    assert solcx.get_solc_version().truncate() == Version("0.4.25")
+    assert solcx.get_solc_version(with_commit_hash=True) == compiler.solidity.get_version()
+    assert solcx.get_solc_version(with_commit_hash=True).truncate() == Version("0.4.25")
 
 
 def test_generate_input_json(solc5source):
@@ -73,12 +73,12 @@ def test_generate_input_json(solc5source):
 
 
 def test_generate_input_json_evm(solc5source, monkeypatch):
-    monkeypatch.setattr("solcx.get_solc_version", lambda: Version("0.5.5"))
+    monkeypatch.setattr("solcx.get_solc_version", lambda **x: Version("0.5.5"))
     fn = functools.partial(compiler.generate_input_json, {"path.sol": solc5source})
     assert fn()["settings"]["evmVersion"] == "petersburg"
     assert fn(evm_version="byzantium")["settings"]["evmVersion"] == "byzantium"
     assert fn(evm_version="petersburg")["settings"]["evmVersion"] == "petersburg"
-    monkeypatch.setattr("solcx.get_solc_version", lambda: Version("0.5.4"))
+    monkeypatch.setattr("solcx.get_solc_version", lambda **x: Version("0.5.4"))
     assert fn()["settings"]["evmVersion"] == "byzantium"
     assert fn(evm_version="byzantium")["settings"]["evmVersion"] == "byzantium"
     assert fn(evm_version="petersburg")["settings"]["evmVersion"] == "petersburg"

@@ -417,6 +417,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         required_confs: int = 1,
         allow_revert: bool = None,
         silent: bool = None,
+        publish_source: bool = False,
     ) -> Any:
         """Deploys a contract.
 
@@ -511,7 +512,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         add_thread.join()
         try:
-            return contract.at(receipt.contract_address)
+            deployed_contract = contract.at(receipt.contract_address)
+            if publish_source:
+                contract.publish_source(deployed_contract, silent=silent)
+            return deployed_contract
         except ContractNotFound:
             # if the contract self-destructed during deployment
             return receipt

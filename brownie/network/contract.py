@@ -3,14 +3,17 @@
 import json
 import os
 import re
+import time
 import warnings
+from collections import defaultdict
 from pathlib import Path
 from textwrap import TextWrapper
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterator, List, Match, Optional, Set, Tuple, Union
 from urllib.parse import urlparse
 
 import eth_abi
 import requests
+import solcast
 import solcx
 from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
@@ -37,6 +40,7 @@ from brownie.exceptions import (
 from brownie.project import compiler, ethpm
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
+from brownie.utils.toposort import toposort_flatten
 
 from . import accounts, chain
 from .event import _add_deployment_topics, _get_topics
@@ -239,6 +243,302 @@ class ContractContainer(_ContractBase):
                 # if the contract self-destructed during deployment
                 pass
 
+    def get_verification_info(self) -> Dict:
+        """
+        Return a dict with flattened source code for this contract
+        and further information needed for verification
+        """
+        language = self._build["language"]
+        if language == "Vyper":
+            raise TypeError(
+                "Etherscan does not support API verification of source code "
+                "for vyper contracts. You need to verify the source manually"
+            )
+        elif language == "Solidity":
+            # Scan the AST tree for needed information
+            nodes_source = [
+                {"node": solcast.from_ast(self._build["ast"]), "src": self._build["source"]}
+            ]
+            for name in self._build["dependencies"]:
+                build_json = self._project._build.get(name)
+                if "ast" in build_json:
+                    nodes_source.append(
+                        {"node": solcast.from_ast(build_json["ast"]), "src": build_json["source"]}
+                    )
+
+            pragma_statements = set()
+            global_structs = set()
+            global_enums = set()
+            import_aliases: Dict = defaultdict(list)
+            for n, src in [ns.values() for ns in nodes_source]:
+                for pragma in n.children(filters={"nodeType": "PragmaDirective"}):
+                    pragma_statements.add(src[slice(*pragma.offset)])
+
+                for enum in n.children(filters={"nodeType": "EnumDefinition"}):
+                    if enum.parent() == n:
+                        # parent == source node -> global enum
+                        global_enums.add(src[slice(*enum.offset)])
+
+                for struct in n.children(filters={"nodeType": "StructDefinition"}):
+                    if struct.parent() == n:
+                        # parent == source node -> global struct
+                        global_structs.add(src[(slice(*struct.offset))])
+
+                for imp in n.children(filters={"nodeType": "ImportDirective"}):
+                    if isinstance(imp.get("symbolAliases"), list):
+                        for symbol_alias in imp.get("symbolAliases"):
+                            if symbol_alias["local"] is not None:
+                                import_aliases[imp.get("absolutePath")].append(
+                                    symbol_alias["local"],
+                                )
+            has_abiencoder = "pragma experimental ABIEncoderV2;" in pragma_statements
+
+            # build dependency tree
+            dependency_tree: Dict = defaultdict(set)
+            dependency_tree["__root_node__"] = set(self._build["dependencies"])
+            for name in self._build["dependencies"]:
+                build_json = self._project._build.get(name)
+                if "dependencies" in build_json:
+                    dependency_tree[name].update(build_json["dependencies"])
+
+            # sort dependencies, process them and insert them into the flattened file
+            flattened_source = ""
+            for name in toposort_flatten(dependency_tree):
+                if name == "__root_node__":
+                    continue
+                build_json = self._project._build.get(name)
+                offset = build_json["offset"]
+                contract_name = build_json["contractName"]
+                source = self._slice_source(build_json["source"], offset)
+                # Check for import aliases and duplicate the contract with different name
+                if "sourcePath" in build_json:
+                    for alias in import_aliases[build_json["sourcePath"]]:
+                        # slice to contract definition and replace contract name
+                        a_source = build_json["source"][offset[0] :]
+                        a_source = re.sub(
+                            rf"^(abstract)?(\s*)({build_json['type']})(\s+)({contract_name})",
+                            rf"\1\2\3\4{alias}",
+                            a_source,
+                        )
+                        # restore source, adjust offsets and slice source
+                        a_source = f"{build_json['source'][:offset[0]]}{a_source}"
+                        a_offset = [offset[0], offset[1] + (len(alias) - len(contract_name))]
+                        a_source = self._slice_source(a_source, a_offset)
+                        # add alias source to flattened file
+                        a_name = f"{name} (Alias import as {alias})"
+                        flattened_source = f"{flattened_source}\n\n// Part: {a_name}\n\n{a_source}"
+
+                flattened_source = f"{flattened_source}\n\n// Part: {name}\n\n{source}"
+
+            # Top level contract, defines compiler and license
+            build_json = self._build
+            version = build_json["compiler"]["version"]
+            version_short = re.findall(r"^[^+]+", version)[0]
+            offset = build_json["offset"]
+            source = self._slice_source(build_json["source"], offset)
+            file_name = Path(build_json["sourcePath"]).parts[-1]
+            licenses = re.findall(
+                r"SPDX-License-Identifier:(.*)\n", build_json["source"][: offset[0]]
+            )
+            license_identifier = licenses[0].strip() if len(licenses) >= 1 else "NONE"
+
+            # combine to final flattened source
+            lb = "\n"
+            abiencoder_str = "\npragma experimental ABIEncoderV2;"
+            is_global = len(global_enums) + len(global_structs) > 0
+            global_str = "// Global Enums and Structs\n\n" if is_global else ""
+            enum_structs = f"{lb.join(global_enums)}\n\n{lb.join(global_structs)}"
+            flattened_source = (
+                f"// SPDX-License-Identifier: {license_identifier}\n\n"
+                f"pragma solidity {version_short};"
+                f"{abiencoder_str if has_abiencoder else ''}\n\n{global_str}"
+                f"{enum_structs if is_global else ''}"
+                f"{flattened_source}\n\n"
+                f"// File: {file_name}\n\n{source}\n"
+            )
+
+            return {
+                "flattened_source": flattened_source,
+                "contract_name": build_json["contractName"],
+                "compiler_version": version,
+                "optimizer_enabled": build_json["compiler"]["optimizer"]["enabled"],
+                "optimizer_runs": build_json["compiler"]["optimizer"]["runs"],
+                "license_identifier": license_identifier,
+                "bytecode_len": len(build_json["bytecode"]),
+            }
+        else:
+            raise TypeError(f"Unsupported language for source verification: {language}")
+
+    def publish_source(self, contract: Any, silent: bool = False) -> bool:
+        """Flatten contract and publish source on the selected explorer"""
+
+        # Check required conditions for verifying
+        url = CONFIG.active_network.get("explorer")
+        if url is None:
+            raise ValueError("Explorer API not set for this network")
+        if "etherscan" not in url:
+            raise ValueError(
+                "Publishing source is only supported on etherscan, change the Explorer API"
+            )
+
+        if os.getenv("ETHERSCAN_TOKEN"):
+            api_key = os.getenv("ETHERSCAN_TOKEN")
+        else:
+            raise ValueError(
+                "An Etherscan API token is required to verify contract source code. "
+                "Visit https://etherscan.io/register to obtain a token, and then store it "
+                "as the environment variable $ETHERSCAN_TOKEN"
+            )
+
+        address = _resolve_address(contract.address)
+
+        # Get flattened source code and contract/compiler information
+        contract_info = self.get_verification_info()
+
+        # Select matching license code (https://etherscan.io/contract-license-types)
+        license_code = 1
+        identifier = contract_info["license_identifier"].lower()
+        if "unlicensed" in identifier:
+            license_code = 2
+        elif "mit" in identifier:
+            license_code = 3
+        elif "agpl" in identifier and "3.0" in identifier:
+            license_code = 13
+        elif "lgpl" in identifier:
+            if "2.1" in identifier:
+                license_code = 6
+            elif "3.0" in identifier:
+                license_code = 7
+        elif "gpl" in identifier:
+            if "2.0" in identifier:
+                license_code = 4
+            elif "3.0" in identifier:
+                license_code = 5
+        elif "bsd-2-clause" in identifier:
+            license_code = 8
+        elif "bsd-3-clause" in identifier:
+            license_code = 9
+        elif "mpl" in identifier and "2.0" in identifier:
+            license_code = 10
+        elif identifier.startswith("osl") and "3.0" in identifier:
+            license_code = 11
+        elif "apache" in identifier and "2.0" in identifier:
+            license_code = 12
+
+        # get constructor arguments
+        params_tx: Dict = {
+            "apikey": api_key,
+            "module": "account",
+            "action": "txlist",
+            "address": address,
+            "page": 1,
+            "sort": "asc",
+            "offset": 1,
+        }
+        i = 0
+        while True:
+            response = requests.get(url, params=params_tx, headers=REQUEST_HEADERS)
+            if response.status_code != 200:
+                raise ConnectionError(
+                    f"Status {response.status_code} when querying {url}: {response.text}"
+                )
+            data = response.json()
+            if int(data["status"]) == 1:
+                # Constructor arguments received
+                break
+            else:
+                # Wait for contract to be recognized by etherscan
+                # This takes a few seconds after the contract is deployed
+                # After 10 loops we throw with the API result message (includes address)
+                if i >= 10:
+                    raise ValueError(f"API request failed with: {data['result']}")
+                elif i == 0 and not silent:
+                    print("Waiting for etherscan to process contract...")
+                i += 1
+                time.sleep(10)
+
+        if data["message"] == "OK":
+            constructor_arguments = data["result"][0]["input"][contract_info["bytecode_len"] + 2 :]
+        else:
+            constructor_arguments = ""
+
+        # Submit verification
+        payload_verification: Dict = {
+            "apikey": api_key,
+            "module": "contract",
+            "action": "verifysourcecode",
+            "contractaddress": address,
+            "sourceCode": contract_info["flattened_source"],
+            "codeformat": "solidity-single-file",
+            "contractname": contract_info["contract_name"],
+            "compilerversion": f"v{contract_info['compiler_version']}",
+            "optimizationUsed": 1 if contract_info["optimizer_enabled"] else 0,
+            "runs": contract_info["optimizer_runs"],
+            "constructorArguements": constructor_arguments,
+            "licenseType": license_code,
+        }
+        response = requests.post(url, data=payload_verification, headers=REQUEST_HEADERS)
+        if response.status_code != 200:
+            raise ConnectionError(
+                f"Status {response.status_code} when querying {url}: {response.text}"
+            )
+        data = response.json()
+        if int(data["status"]) != 1:
+            raise ValueError(f"Failed to submit verification request: {data['result']}")
+
+        # Status of request
+        guid = data["result"]
+        if not silent:
+            print("Verification submitted successfully. Waiting for result...")
+        time.sleep(10)
+        params_status: Dict = {
+            "apikey": api_key,
+            "module": "contract",
+            "action": "checkverifystatus",
+            "guid": guid,
+        }
+        while True:
+            response = requests.get(url, params=params_status, headers=REQUEST_HEADERS)
+            if response.status_code != 200:
+                raise ConnectionError(
+                    f"Status {response.status_code} when querying {url}: {response.text}"
+                )
+            data = response.json()
+            if data["result"] == "Pending in queue":
+                if not silent:
+                    print("Verification pending...")
+            else:
+                if not silent:
+                    col = "bright green" if data["message"] == "OK" else "bright red"
+                    print(f"Verification complete. Result: {color(col)}{data['result']}{color}")
+                return data["message"] == "OK"
+            time.sleep(10)
+
+    def _slice_source(self, source: str, offset: list) -> str:
+        """Slice the source of the contract, preserving any comments above the first line."""
+        offset_start = offset[0]
+        top_source = source[:offset_start]
+        top_lines = top_source.split("\n")[::-1]
+        comment_open = False
+        for line in top_lines:
+            stripped = line.strip()
+            if (
+                not stripped
+                or stripped.startswith(("//", "/*", "*"))
+                or stripped.endswith("*/")
+                or comment_open
+            ):
+                offset_start = offset_start - len(line) - 1
+                if stripped.endswith("*/"):
+                    comment_open = True
+                elif stripped.startswith("/*"):
+                    comment_open = False
+            else:
+                # Stop on the first non-empty, non-comment line
+                break
+        offset_start = max(0, offset_start)
+        return source[offset_start : offset[1]].strip()
+
 
 class ContractConstructor:
 
@@ -263,7 +563,9 @@ class ContractConstructor:
     def __repr__(self) -> str:
         return f"<{type(self).__name__} '{self._name}.constructor({_inputs(self.abi)})'>"
 
-    def __call__(self, *args: Tuple) -> Union["Contract", TransactionReceiptType]:
+    def __call__(
+        self, *args: Tuple, publish_source: bool = False
+    ) -> Union["Contract", TransactionReceiptType]:
         """Deploys a contract.
 
         Args:
@@ -280,6 +582,7 @@ class ContractConstructor:
                 "Final argument must be a dict of transaction parameters that "
                 "includes a `from` field specifying the address to deploy from"
             )
+
         return tx["from"].deploy(
             self._parent,
             *args,
@@ -288,6 +591,7 @@ class ContractConstructor:
             gas_price=tx["gasPrice"],
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
+            publish_source=publish_source,
         )
 
     @staticmethod
@@ -1535,3 +1839,19 @@ def _contract_method_autosuggest(args: List, is_transaction: bool, is_payable: b
         tx_hint = [" {'from': Account}"]
 
     return [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params] + tx_hint
+
+
+def _comment_slicer(match: Match) -> str:
+    start, mid, end = match.group(1, 2, 3)
+    if mid is None:
+        # single line comment
+        return ""
+    elif start is not None or end is not None:
+        # multi line comment at start or end of a line
+        return ""
+    elif "\n" in mid:
+        # multi line comment with line break
+        return "\n"
+    else:
+        # multi line comment without line break
+        return " "

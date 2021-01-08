@@ -49,6 +49,9 @@ class Build:
         contract_name = alias or build_json["contractName"]
         if contract_name in self._contracts and build_json["type"] == "interface":
             return
+        if build_json["sourcePath"].startswith("interface"):
+            # interfaces should generate artifact in /build/interfaces/ not /build/contracts/
+            return
         self._contracts[contract_name] = build_json
         if "pcMap" not in build_json:
             # no pcMap means build artifact is for an interface
