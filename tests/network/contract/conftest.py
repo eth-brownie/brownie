@@ -1,5 +1,6 @@
 import pytest
 
+
 @pytest.fixture
 def brownie_tester_flat():
     yield """// SPDX-License-Identifier: NONE
