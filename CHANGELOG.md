@@ -6,10 +6,10 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
-
-## [1.12.4](https://github.com/eth-brownie/brownie/tree/v1.12.4) - 2021-01-03
 ### Added
 - Automatic source code verification on etherscan ([#919](https://github.com/eth-brownie/brownie/pull/914))
+
+## [1.12.4](https://github.com/eth-brownie/brownie/tree/v1.12.4) - 2021-01-03
 ### Changed
 - Use `ReturnType` instead of `list` for some `_EventItem` return values ([#919](https://github.com/eth-brownie/brownie/pull/919))
 - Only decode events in reverting transactions upon request ([#920](https://github.com/eth-brownie/brownie/pull/920))

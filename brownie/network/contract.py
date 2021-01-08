@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 
 import eth_abi
 import requests
+import solcast
 import solcx
 from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
@@ -254,99 +255,111 @@ class ContractContainer(_ContractBase):
                 "for vyper contracts. You need to verify the source manually"
             )
         elif language == "Solidity":
-            flattened_source = ""
-            has_abiencoder = False
-            abiencoder_re = r"(^|\r|\n|\r\n)\s*pragma experimental ABIEncoderV2;"
+            # Scan the AST tree for needed information
+            nodes_source = [
+                {"node": solcast.from_ast(self._build["ast"]), "src": self._build["source"]}
+            ]
+            for name in self._build["dependencies"]:
+                build_json = self._project._build.get(name)
+                if "ast" in build_json:
+                    nodes_source.append(
+                        {"node": solcast.from_ast(build_json["ast"]), "src": build_json["source"]}
+                    )
 
+            pragma_statements = set()
+            global_structs = set()
+            global_enums = set()
+            import_aliases: Dict = defaultdict(list)
+            for n, src in [ns.values() for ns in nodes_source]:
+                pragmas = n.children(filters={"nodeType": "PragmaDirective"})
+                for pragma in pragmas:
+                    src_offsets = [int(x) for x in pragma.get("src").split(":")]
+                    pragma_statements.add(src[src_offsets[0] : src_offsets[0] + src_offsets[1]])
+
+                enums = n.children(filters={"nodeType": "EnumDefinition"})
+                for enum in enums:
+                    if enum.parent() == n:
+                        # parent == source node -> global enum
+                        src_offsets = [int(x) for x in enum.get("src").split(":")]
+                        global_enums.add(src[src_offsets[0] : src_offsets[0] + src_offsets[1]])
+
+                structs = n.children(filters={"nodeType": "StructDefinition"})
+                for struct in structs:
+                    if struct.parent() == n:
+                        # parent == source node -> global struct
+                        src_offsets = [int(x) for x in struct.get("src").split(":")]
+                        global_structs.add(src[src_offsets[0] : src_offsets[0] + src_offsets[1]])
+
+                imports = n.children(filters={"nodeType": "ImportDirective"})
+                for imp in imports:
+                    if isinstance(imp.get("symbolAliases"), list):
+                        for symbol_alias in imp.get("symbolAliases"):
+                            if symbol_alias["local"] is not None:
+                                import_aliases[imp.get("absolutePath")].append(
+                                    symbol_alias["local"],
+                                )
+            has_abiencoder = "pragma experimental ABIEncoderV2;" in pragma_statements
+
+            # build dependency tree
             dependency_tree: Dict = defaultdict(set)
             dependency_tree["__root_node__"] = set(self._build["dependencies"])
-            code_fragments: Dict = {}
-
-            import_aliases: Dict = defaultdict(list)
-            used_offsets: Dict = defaultdict(list)  # aggregate all used offsets per source file
-
             for name in self._build["dependencies"]:
                 build_json = self._project._build.get(name)
                 if "dependencies" in build_json:
                     dependency_tree[name].update(build_json["dependencies"])
 
-                # Find import directive nodes with symbolAliases
-                for node in build_json["ast"]["nodes"]:
-                    if node["nodeType"] == "ImportDirective" and len(node["symbolAliases"]) > 0:
-                        for symbol_alias in node["symbolAliases"]:
-                            if symbol_alias["local"] is not None:
-                                import_aliases[symbol_alias["foreign"]["name"]].append(
-                                    symbol_alias["local"]
-                                )
-
-                offset = slice(*build_json["offset"])
-                used_offsets[build_json["source"]].append(tuple(build_json["offset"]))
-                source = self._slice_source(build_json["source"], offset)
-                code_fragments[name] = [source, name]
-                if not has_abiencoder:
-                    has_abiencoder = (
-                        len(re.findall(abiencoder_re, build_json["source"][: offset.start])) > 0
-                    )
-
+            # sort dependencies, process them and insert them into the flattened file
+            flattened_source = ""
             for name in toposort_flatten(dependency_tree):
                 if name == "__root_node__":
                     continue
-                source, part_name = code_fragments[name]
-                # Create a duplicate entry for each import alias
-                part_name_short = part_name
-                if "/" in part_name:
-                    part_name_short = part_name.split("/")[-1]
-                if part_name_short in import_aliases.keys():
-                    for a in import_aliases[part_name_short]:
-                        new_source = re.sub(
-                            rf"(library|contract|interface)\s+({part_name_short})",
-                            rf"\1 {a}",
-                            source,
+                build_json = self._project._build.get(name)
+                offset = build_json["offset"]
+                contract_name = build_json["contractName"]
+                source = self._slice_source(build_json["source"], offset)
+                # Check for import aliases and duplicate the contract with different name
+                if "sourcePath" in build_json:
+                    for alias in import_aliases[build_json["sourcePath"]]:
+                        # slice to contract definition and replace contract name
+                        a_source = build_json["source"][offset[0] :]
+                        a_source = re.sub(
+                            rf"^(abstract)?(\s*)({build_json['type']})\s+({contract_name})",
+                            rf"\1\2\3 {alias}",
+                            a_source,
                         )
-                        flattened_source = f"{flattened_source}\n\n// Part: {a}\n\n{new_source}"
-                # Add the source without alias
-                flattened_source = f"{flattened_source}\n\n// Part: {part_name}\n\n{source}"
+                        # restore source, adjust offsets and slice source
+                        a_source = f"{build_json['source'][:offset[0]]}{a_source}"
+                        a_offset = [offset[0], offset[1] + (len(alias) - len(contract_name))]
+                        a_source = self._slice_source(a_source, a_offset)
+                        # add alias source to flattened file
+                        a_name = f"{name} (Alias import as {alias})"
+                        flattened_source = f"{flattened_source}\n\n// Part: {a_name}\n\n{a_source}"
+
+                flattened_source = f"{flattened_source}\n\n// Part: {name}\n\n{source}"
 
             # Top level contract, defines compiler and license
             build_json = self._build
             version = build_json["compiler"]["version"]
             version_short = re.findall(r"^[^+]+", version)[0]
-            offset = slice(*build_json["offset"])
-            used_offsets[build_json["source"]].append(tuple(build_json["offset"]))
+            offset = build_json["offset"]
             source = self._slice_source(build_json["source"], offset)
             file_name = Path(build_json["sourcePath"]).parts[-1]
             licenses = re.findall(
-                r"SPDX-License-Identifier:(.*)\n", build_json["source"][: offset.start]
+                r"SPDX-License-Identifier:(.*)\n", build_json["source"][: offset[0]]
             )
-            license_identifier = licenses[0].strip() if len(licenses) == 1 else "NONE"
-            if not has_abiencoder:
-                has_abiencoder = (
-                    len(re.findall(abiencoder_re, build_json["source"][: offset.start])) > 0
-                )
-
-            # find global structs and enums
-            global_structs = set()
-            global_enums = set()
-            for src, offsets in used_offsets.items():
-                offsets = sorted(offsets)
-                offsets.append((len(src), len(src)))
-                start = 0
-                for o in offsets:
-                    cleaned_section = remove_comments(src[start : o[0]])
-                    global_structs.update(re.findall(r"(\w*struct [^}]+})", cleaned_section))
-                    global_enums.update(re.findall(r"(\w*enum [^}]+})", cleaned_section))
-                    start = o[1]
+            license_identifier = licenses[0].strip() if len(licenses) >= 1 else "NONE"
 
             # combine to final flattened source
             lb = "\n"
             abiencoder_str = "\npragma experimental ABIEncoderV2;"
             is_global = len(global_enums) + len(global_structs) > 0
             global_str = "// Global Enums and Structs\n\n" if is_global else ""
+            enum_structs = f"{lb.join(global_enums)}\n\n{lb.join(global_structs)}"
             flattened_source = (
                 f"// SPDX-License-Identifier: {license_identifier}\n\n"
                 f"pragma solidity {version_short};"
                 f"{abiencoder_str if has_abiencoder else ''}\n\n{global_str}"
-                f"{lb.join(global_enums)}\n\n{lb.join(global_structs)}"
+                f"{enum_structs if is_global else ''}"
                 f"{flattened_source}\n\n"
                 f"// File: {file_name}\n\n{source}\n"
             )
@@ -508,9 +521,9 @@ class ContractContainer(_ContractBase):
                 return data["message"] == "OK"
             time.sleep(10)
 
-    def _slice_source(self, source: str, offset: slice) -> str:
+    def _slice_source(self, source: str, offset: list) -> str:
         """Slice the source of the contract, preserving any comments above the first line."""
-        offset_start: int = int(offset.start) if offset.start else 0
+        offset_start = offset[0]
         top_source = source[:offset_start]
         top_lines = top_source.split("\n")[::-1]
         comment_open = False
@@ -531,8 +544,7 @@ class ContractContainer(_ContractBase):
                 # Stop on the first non-empty, non-comment line
                 break
         offset_start = max(0, offset_start)
-        offset = slice(offset_start, offset.stop, None)
-        return source[offset].strip()
+        return source[offset_start : offset[1]].strip()
 
 
 class ContractConstructor:
@@ -1834,16 +1846,6 @@ def _contract_method_autosuggest(args: List, is_transaction: bool, is_payable: b
         tx_hint = [" {'from': Account}"]
 
     return [f" {i[1]}{' '+i[0] if i[0] else ''}" for i in params] + tx_hint
-
-
-def remove_comments(text: str) -> str:
-    """
-    Strip all comments from a (multiline) string.
-    """
-    comment_re = re.compile(
-        r"(^)?[^\S\n]*/(?:\*(.*?)\*/[^\S\n]*|/[^\n]*)($)?", re.DOTALL | re.MULTILINE
-    )
-    return comment_re.sub(_comment_slicer, text)
 
 
 def _comment_slicer(match: Match) -> str:

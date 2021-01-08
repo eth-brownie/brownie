@@ -445,9 +445,9 @@ def get_abi(
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
         source_nodes = solcast.from_standard_output(output_json)
-        output_json = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+        abi_json = {k: v for k, v in output_json["contracts"].items() if k in path_list}
 
-        for path, name, data in [(k, x, y) for k, v in output_json.items() for x, y in v.items()]:
+        for path, name, data in [(k, x, y) for k, v in abi_json.items() for x, y in v.items()]:
             contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
             dependencies = []
             for node in [
@@ -459,6 +459,7 @@ def get_abi(
 
             final_output[name] = {
                 "abi": data["abi"],
+                "ast": output_json["sources"][path]["ast"],
                 "contractName": name,
                 "dependencies": dependencies,
                 "type": "interface",
