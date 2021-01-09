@@ -6,8 +6,15 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.13.0](https://github.com/eth-brownie/brownie/tree/v1.13.0) - 2021-01-09
 ### Added
-- Automatic source code verification on etherscan ([#919](https://github.com/eth-brownie/brownie/pull/914))
+- Automatic source code verification on Etherscan ([#914](https://github.com/eth-brownie/brownie/pull/914))
+- Allow replacing transactions that were broadcasted outside of Brownie ([#922](https://github.com/eth-brownie/brownie/pull/922))
+- Add `decode_input`, `decode_output` and `info` methods to `OverloadedMethod` object ([#925](https://github.com/eth-brownie/brownie/pull/925))
+
+### Changed
+- Lazily decode events for confirmed transactions ([#926](https://github.com/eth-brownie/brownie/pull/926))
 
 ## [1.12.4](https://github.com/eth-brownie/brownie/tree/v1.12.4) - 2021-01-03
 ### Changed
