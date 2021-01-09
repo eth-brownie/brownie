@@ -235,7 +235,7 @@ def _decode_logs(logs: List) -> EventDict:
             try:
                 events.extend(eth_event.decode_logs([item], topics_map, allow_undecoded=True))
             except EventError as exc:
-                warnings.warn(str(exc))
+                warnings.warn(f"{address}: {exc}")
 
         if log_slice[-1] == logs[-1]:
             break
