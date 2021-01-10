@@ -6,8 +6,9 @@ import click
 
 from brownie import network, project
 from brownie._cli.console import cli as console_cli
-from brownie._config import CONFIG
+from brownie._config import CONFIG, _update_argv_from_docopt
 from brownie.project.scripts import _get_path, run
+from brownie.test.output import _build_gas_profile_output
 from brownie.utils import color
 
 
@@ -22,7 +23,6 @@ from brownie.utils import color
     show_default=True,
     help="Use a specific network",
 )
-# TODO: This doesn't do anything
 @click.option(
     "--silent", default=False, is_flag=True, help="Suppress console output for transactions"
 )
@@ -41,7 +41,6 @@ from brownie.utils import color
     is_flag=True,
     help="Display gas profile for function calls",
 )
-# TODO: This doesn't do anything
 @click.option(
     "-t",
     "--traceback",
@@ -61,11 +60,17 @@ def cli(
     interactions, or for other needs like gas profiling.
     """
 
+    _update_argv_from_docopt({
+        'gas': display_gas,
+        'silent': silent,
+        'tb': show_traceback,
+    })
+
     active_project = None
     if project.check_for_project():
         active_project = project.load()
         active_project.load_config()
-        click.echo(f"{active_project._name} is the active project.")
+        print(f"{active_project._name} is the active project.")
 
     network.connect(selected_network)
 
@@ -76,9 +81,12 @@ def cli(
         return_value = run(filename, method_name=function or "main")
         extra_locals = {"_": return_value}
     except Exception as e:
-        click.echo(color.format_tb(e))
+        print(color.format_tb(e))
         frame = next(
-            (i.frame for i in inspect.trace()[::-1] if Path(i.filename).as_posix() == path_str),
+            (
+                i.frame for i in inspect.trace()[::-1]
+                if path_str.endswith(Path(i.filename).as_posix())  # fix for windows paths
+             ),
             None,
         )
         if frame is None:
@@ -89,8 +97,20 @@ def cli(
         globals_dict = {k: v for k, v in frame.f_globals.items() if not k.startswith("__")}
         extra_locals = {**globals_dict, **frame.f_locals}
 
-    if interactive:
-        ctx.forward(console_cli)
-        ctx.invoke(
-            console_cli, selected_network, show_traceback, ipython_args={"namespace": extra_locals}
-        )
+    try:
+        if interactive:
+            pass
+            ctx.invoke(
+                console_cli,
+                selected_network=selected_network,
+                show_traceback=show_traceback,
+                extra_locals=extra_locals,
+                active_project=active_project,
+                banner="\nInteractive mode enabled. Use quit() to close."
+            )
+    finally:
+        # the console terminates from a SystemExit - make sure we still deliver the final gas report
+        if display_gas:
+            print("\n======= Gas profile =======")
+            for line in _build_gas_profile_output():
+                print(line)
