@@ -12,7 +12,7 @@ from brownie.utils import color
 
 
 @click.command(short_help="Run a script in the `scripts/` folder")
-@click.argument("filename", type=click.Path(exists=True, dir_okay=False))
+@click.argument("filename", type=str)
 @click.argument("function", default="main", type=str)
 @click.option(
     "--network",
