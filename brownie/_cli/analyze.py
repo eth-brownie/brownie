@@ -43,7 +43,7 @@ Visit https://mythx.io/ to learn more about MythX and sign up for an account.
     "--interval", type=int, default=3, show_default=True, help="Result polling interval in seconds"
 )
 @click.option(
-    "--async", "async_", default=False, help="Do not poll for results, click.echo job IDs and exit"
+    "--async", "async_", default=False, help="Do not poll for results, print job IDs and exit"
 )
 @click.option(
     "--api-key",
@@ -74,21 +74,21 @@ def cli(gui, mode, interval, async_, api_key):
     build = project.load()._build
     submission = SubmissionPipeline(build)
 
-    click.echo("Preparing project data for submission to MythX...")
+    print("Preparing project data for submission to MythX...")
     submission.prepare_requests()
 
-    click.echo("Sending analysis requests to MythX...")
+    print("Sending analysis requests to MythX...")
     submission.send_requests()
 
     # exit if user wants an async analysis run
     if async_:
-        click.echo(
+        print(
             "\nAll contracts were submitted successfully. Check the dashboard at "
             "https://dashboard.mythx.io/ for the progress and results of your analyses"
         )
         return
 
-    click.echo("\nWaiting for results...")
+    print("\nWaiting for results...")
 
     submission.wait_for_jobs()
     submission.generate_stdout_report()
@@ -109,7 +109,7 @@ def cli(gui, mode, interval, async_, api_key):
 
     # Launch GUI if user requested it
     if gui:
-        click.echo("Launching the Brownie GUI")
+        print("Launching the Brownie GUI")
         importlib.import_module("brownie._gui").Gui().mainloop()
 
 
@@ -249,11 +249,11 @@ class SubmissionPipeline:
         for contract_name, request in self.requests.items():
             response = self.client.analyze(payload=request)
             self.responses[contract_name] = response
-            click.echo(
+            print(
                 f"Submitted analysis {color('bright blue')}{response.uuid}{color} for "
                 f"contract {color('bright magenta')}{request.contract_name}{color})"
             )
-            click.echo(f"You can also check the results at {DASHBOARD_BASE_URL}{response.uuid}\n")
+            print(f"You can also check the results at {DASHBOARD_BASE_URL}{response.uuid}\n")
         self.client.seal_group(group_id=group_resp.group.identifier)
         self.client.handler.middlewares.pop(-1)
 
@@ -291,7 +291,7 @@ class SubmissionPipeline:
 
         source_to_name = {d["sourcePath"]: d["contractName"] for _, d in self.build.items()}
         for idx, (contract_name, issue_report) in enumerate(self.reports.items()):
-            click.echo(
+            print(
                 "Generating report for {}{}{} ({}/{})".format(
                     color("bright blue"), contract_name, color, idx, len(self.reports)
                 )
@@ -332,7 +332,7 @@ class SubmissionPipeline:
         """Generated a stdout report overview from a MythX issue report.
 
         This will convert a MythX issue report into a Brownie report that is
-        click.echoed on stdout when analysis results have been received. It iterates
+        printed on stdout when analysis results have been received. It iterates
         over the internal :code:`reports` dictionary and fills the
         :code:`highlight_report` instance variable.
 
@@ -347,9 +347,9 @@ class SubmissionPipeline:
 
 
 def print_console_report(stdout_report) -> None:
-    """Highlight and click.echo a given stdout report to the console.
+    """Highlight and print a given stdout report to the console.
 
-    This adds color formatting to the given stdout report and click.echos
+    This adds color formatting to the given stdout report and prints
     a summary of the vulnerabilities MythX has detected.
 
     :return: None
@@ -367,9 +367,9 @@ def print_console_report(stdout_report) -> None:
             "WARNING", f"Found {total_issues} issues including {total_high_severity} high severity!"
         )
     else:
-        click.echo(f"Found {total_issues} issues:")
+        print(f"Found {total_issues} issues:")
     for name in sorted(stdout_report):
-        click.echo(f"\n  contract: {color('bright magenta')}{name}{color}")
+        print(f"\n  contract: {color('bright magenta')}{name}{color}")
         for key in [i for i in ("HIGH", "MEDIUM", "LOW") if i in stdout_report[name]]:
             c = color("bright red" if key == "HIGH" else "bright yellow")
-            click.echo(f"    {key.title()}: {c}{stdout_report[name][key]}{color}")
+            print(f"    {key.title()}: {c}{stdout_report[name][key]}{color}")

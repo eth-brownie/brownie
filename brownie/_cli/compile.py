@@ -53,7 +53,7 @@ def cli(contracts, compile_all, display_size):
     proj = project.load()
 
     if display_size:
-        click.echo("============ Deployment Bytecode Sizes ============")
+        print("============ Deployment Bytecode Sizes ============")
         codesize = []
         for contract in proj:
             bytecode = contract._build["deployedBytecode"]
@@ -63,7 +63,7 @@ def cli(contracts, compile_all, display_size):
         for name, size in sorted(codesize, key=lambda k: k[1], reverse=True):
             pct = size / 24577
             pct_color = color(next((i[1] for i in CODESIZE_COLORS if pct >= i[0]), ""))
-            click.echo(f"  {name:<{indent}}  -  {size:>6,}B  ({pct_color}{pct:.2%}{color})")
-        click.echo()
+            print(f"  {name:<{indent}}  -  {size:>6,}B  ({pct_color}{pct:.2%}{color})")
+        print()
 
-    click.echo(f"Project has been compiled. Build artifacts saved at {contract_artifact_path}")
+    print(f"Project has been compiled. Build artifacts saved at {contract_artifact_path}")

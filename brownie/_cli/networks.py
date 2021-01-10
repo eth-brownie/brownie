@@ -53,10 +53,10 @@ def list(verbose):
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
 
-    click.echo("The following networks are declared:")
+    print("The following networks are declared:")
 
     for chain in networks["live"]:
-        click.echo(f"\n{chain['name']}")
+        print(f"\n{chain['name']}")
         for value in chain["networks"]:
             is_last = value == chain["networks"][-1]
             if verbose:
@@ -64,7 +64,7 @@ def list(verbose):
             else:
                 _print_simple_network_description(value, is_last)
 
-    click.echo("\nDevelopment")
+    print("\nDevelopment")
     for value in networks["development"]:
         is_last = value == networks["development"][-1]
         if verbose:
@@ -294,7 +294,7 @@ def _parse_args(args):
 
 def _print_simple_network_description(network_dict, is_last):
     u = "\u2514" if is_last else "\u251c"
-    click.echo(
+    print(
         f"{color('bright black')}  {u}\u2500{color}{network_dict['name']}:"
         f" {color('green')}{network_dict['id']}{color}"
     )
@@ -304,7 +304,7 @@ def _print_verbose_network_description(network_dict, is_last, indent=0):
     u = "\u2514" if is_last else "\u251c"
     v = " " if is_last else "\u2502"
     if "name" in network_dict:
-        click.echo(f"{color('bright black')}  {u}\u2500{color}{network_dict.pop('name')}")
+        print(f"{color('bright black')}  {u}\u2500{color}{network_dict.pop('name')}")
 
     obj_keys = sorted(network_dict)
     if "id" in obj_keys:
@@ -318,7 +318,7 @@ def _print_verbose_network_description(network_dict, is_last, indent=0):
         if indent:
             u = (" " * indent) + u
         c = color("green") if key == "id" else ""
-        click.echo(f"{color('bright black')}  {v} {u}\u2500{color}{key}: {c}{value}{color}")
+        print(f"{color('bright black')}  {v} {u}\u2500{color}{key}: {c}{value}{color}")
 
 
 def _validate_network(network, required):

@@ -24,6 +24,6 @@ def cli():
        are shown via different colors of text highlight.
     """
     project.load()
-    click.echo("Loading Brownie GUI...")
+    print("Loading Brownie GUI...")
     Gui().mainloop()
-    click.echo("GUI was terminated.")
+    print("GUI was terminated.")

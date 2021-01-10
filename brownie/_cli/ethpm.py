@@ -36,22 +36,22 @@ def list():
     installed, modified = ethpm.get_installed_packages(project_path)
     package_list = sorted(installed + modified)
     if not package_list:
-        click.echo("No packages are currently installed in this project.")
+        print("No packages are currently installed in this project.")
         return
     if modified:
         notify(
             "WARNING",
             f"One or more files in {len(modified)} packages have been modified since installation.",
         )
-        click.echo("Unlink or reinstall them to silence this warning.")
-        click.echo(
+        print("Unlink or reinstall them to silence this warning.")
+        print(
             f"Modified packages name are highlighted in {color('bright blue')}blue{color}.\n"
         )
-    click.echo(f"Found {color('bright magenta')}{len(package_list)}{color} installed packages:")
+    print(f"Found {color('bright magenta')}{len(package_list)}{color} installed packages:")
     for name in package_list:
         u = "\u2514" if name == package_list[-1] else "\u251c"
         c = color("bright blue") if name in modified else color("bright white")
-        click.echo(
+        print(
             f" {color('bright black')}{u}\u2500{c}{name[0]}{color}@"
             f"{color('bright white')}{name[1]}{color}"
         )
@@ -75,7 +75,7 @@ def install(uri, replace):
         if replace.lower() not in ("true", "false"):
             raise ValueError("Invalid command for 'overwrite', must be True or False")
         replace = eval(replace.capitalize())
-    click.echo(f'Attempting to install package at "{color("bright magenta")}{uri}{color}"...')
+    print(f'Attempting to install package at "{color("bright magenta")}{uri}{color}"...')
     name = ethpm.install_package(project_path, uri, replace)
     notify("SUCCESS", f'The "{color("bright magenta")}{name}{color}" package was installed.')
 
@@ -110,14 +110,14 @@ def remove(name):
 )
 def create(manifest_pathstr):
     project_path = check_for_project(".")
-    click.echo("Generating a manifest based on configuration settings in ethpm-config.yaml...")
+    print("Generating a manifest based on configuration settings in ethpm-config.yaml...")
     with project_path.joinpath("ethpm-config.yaml").open() as fp:
         project_config = yaml.safe_load(fp)
     try:
         manifest = ethpm.create_manifest(project_path, project_config)[0]
     except Exception as e:
         notify("ERROR", f"{type(e).__name__}: {e}")
-        click.echo(
+        print(
             "Ensure that all package configuration settings are correct in ethpm-config.yaml"
         )
         return
@@ -137,7 +137,7 @@ def release(registry, sender):
     network.connect("mainnet")
     with project_path.joinpath("ethpm-config.yaml").open() as fp:
         project_config = yaml.safe_load(fp)
-    click.echo("Generating manifest and pinning assets to IPFS...")
+    print("Generating manifest and pinning assets to IPFS...")
     manifest, uri = ethpm.create_manifest(project_path, project_config, True, False)
     if sender in accounts:
         account = accounts.at(sender)
@@ -147,14 +147,14 @@ def release(registry, sender):
         except FileNotFoundError:
             raise UnknownAccount(f"Unknown account '{sender}'")
     name = f'{manifest["package_name"]}@{manifest["version"]}'
-    click.echo(f'Releasing {name} on "{registry}"...')
+    print(f'Releasing {name} on "{registry}"...')
     try:
         tx = ethpm.release_package(
             registry, account, manifest["package_name"], manifest["version"], uri
         )
         if tx.status == 1:
             notify("SUCCESS", f"{name} has been released!")
-            click.echo(f"\nURI: {color('bright magenta')}ethpm://{registry}:1/{name}{color}")
+            print(f"\nURI: {color('bright magenta')}ethpm://{registry}:1/{name}{color}")
             return
     except Exception:
         pass
@@ -165,28 +165,28 @@ def release(registry, sender):
 def all():
     ethpm_folder = _get_data_folder().joinpath("ethpm")
     if not list(ethpm_folder.glob("*")):
-        click.echo("No local packages are currently available.")
+        print("No local packages are currently available.")
     for path in sorted(ethpm_folder.glob("*")):
         package_list = sorted(path.glob("*"))
         if not package_list:
             path.unlink()
             continue
-        click.echo(f"{color('bright magenta')}ethpm://{path.name}{color}")
+        print(f"{color('bright magenta')}ethpm://{path.name}{color}")
         for package_path in package_list:
             u = "\u2514" if package_path == package_list[-1] else "\u251c"
             versions = sorted(package_path.glob("*.json"))
             if len(versions) == 1:
-                click.echo(
+                print(
                     f" {color('bright black')}{u}\u2500{color('bright white')}{package_path.stem}"
                     f"{color}@{color('bright white')}{versions[0].stem}{color}"
                 )
                 continue
-            click.echo(
+            print(
                 f" {color('bright black')}{u}\u2500{color('bright white')}"
                 f"{package_path.stem}{color}"
             )
             for v in versions:
                 u = "\u2514" if v == versions[-1] else "\u251c"
-                click.echo(
+                print(
                     f"   {color('bright black')}{u}\u2500{color('bright white')}{v.stem}{color}"
                 )

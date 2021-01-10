@@ -31,17 +31,17 @@ def list():
             org_names.append(path)
 
     if not org_names:
-        click.echo("No packages are currently installed.")
+        print("No packages are currently installed.")
     else:
-        click.echo("The following packages are currently installed:")
+        print("The following packages are currently installed:")
 
     for org_path in org_names:
         packages = [p for p in org_path.iterdir()]
-        click.echo(f"\n{color('bright magenta')}{org_path.name}{color}")
+        print(f"\n{color('bright magenta')}{org_path.name}{color}")
         for path in packages:
             u = "\u2514" if path == packages[-1] else "\u251c"
             name, version = path.name.rsplit("@", maxsplit=1)
-            click.echo(
+            print(
                 f" {color('bright black')}{u}\u2500{_format_pkg(org_path.name, name, version)}"
             )
 
