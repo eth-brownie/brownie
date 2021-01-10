@@ -14,7 +14,7 @@ from brownie.utils import color, notify
 def cli():
     """
     Command-line helper for managing local accounts. You can unlock local accounts from
-    scripts or the console using the Accounts.load method.
+    scripts or the console using the Accounts.load() method.
     """
 
 
@@ -22,15 +22,18 @@ def cli():
 @cli.command(name="list", short_help="List available accounts")
 def _list():
     account_paths = sorted(_get_data_folder().glob("accounts/*.json"))
-    click.echo(f"Found {len(account_paths)} account{'s' if len(account_paths)!=1 else ''}:")
-    for path in account_paths:
-        u = "\u2514" if path == account_paths[-1] else "\u251c"
-        with path.open() as fp:
-            data = json.load(fp)
-        click.echo(
-            f" {color('bright black')}{u}\u2500{color('bright blue')}{path.stem}{color}"
-            f": {color('bright magenta')}{to_address(data['address'])}{color}"
-        )
+    if len(account_paths) == 0:
+        print("No accounts found.")
+    else:
+        print(f"Found {len(account_paths)} account{'s' if len(account_paths)!=1 else ''}:")
+        for path in account_paths:
+            u = "\u2514" if path == account_paths[-1] else "\u251c"
+            with path.open() as fp:
+                data = json.load(fp)
+            print(
+                f" {color('bright black')}{u}\u2500{color('bright blue')}{path.stem}{color}"
+                f": {color('bright magenta')}{to_address(data['address'])}{color}"
+            )
 
 
 @cli.command(short_help="Add a new account by entering a private key")
@@ -49,7 +52,7 @@ def new(id):
 @cli.command(short_help="Add a new account with a random private key")
 @click.argument("id")
 def generate(id):
-    click.echo("Generating a new private key...")
+    print("Generating a new private key...")
     a = accounts.add()
     a.save(id)
     notify(
