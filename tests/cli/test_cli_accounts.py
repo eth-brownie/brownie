@@ -6,17 +6,11 @@ import pytest
 
 from brownie._cli import accounts as cli_accounts
 from brownie._config import _get_data_folder
-from click.testing import CliRunner
 
 
 @pytest.fixture(autouse=True)
 def no_pass(monkeypatch):
     monkeypatch.setattr("brownie.network.account.getpass", lambda x: "")
-
-
-@pytest.fixture()
-def runner():
-    yield CliRunner()
 
 
 def test_new_account(monkeypatch, runner):
@@ -91,7 +85,7 @@ def test_password(monkeypatch, accounts, runner):
     runner.invoke(cli_accounts.generate, ["pw-test"])
     passwords = ["xxx", "xxx", ""]
     monkeypatch.setattr("brownie.network.account.getpass", lambda x: passwords.pop())
-    result = runner.invoke(cli_accounts.password, ["pw-test"])
+    runner.invoke(cli_accounts.password, ["pw-test"])
     accounts.load("pw-test")
 
 

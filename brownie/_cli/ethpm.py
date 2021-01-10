@@ -30,8 +30,8 @@ def cli():
         )
 
 
-@cli.command(short_help="List installed packages")
-def list():
+@cli.command(name="list", short_help="List installed packages")
+def _list():
     project_path = check_for_project(".")
     installed, modified = ethpm.get_installed_packages(project_path)
     package_list = sorted(installed + modified)
