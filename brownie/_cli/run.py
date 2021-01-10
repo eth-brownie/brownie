@@ -60,11 +60,7 @@ def cli(
     interactions, or for other needs like gas profiling.
     """
 
-    _update_argv_from_docopt({
-        'gas': display_gas,
-        'silent': silent,
-        'tb': show_traceback,
-    })
+    _update_argv_from_docopt({"gas": display_gas, "silent": silent, "tb": show_traceback})
 
     active_project = None
     if project.check_for_project():
@@ -84,9 +80,10 @@ def cli(
         print(color.format_tb(e))
         frame = next(
             (
-                i.frame for i in inspect.trace()[::-1]
+                i.frame
+                for i in inspect.trace()[::-1]
                 if path_str.endswith(Path(i.filename).as_posix())  # fix for windows paths
-             ),
+            ),
             None,
         )
         if frame is None:
@@ -106,7 +103,7 @@ def cli(
                 show_traceback=show_traceback,
                 extra_locals=extra_locals,
                 active_project=active_project,
-                banner="\nInteractive mode enabled. Use quit() to close."
+                banner="\nInteractive mode enabled. Use quit() to close.",
             )
     finally:
         # the console terminates from a SystemExit - make sure we still deliver the final gas report

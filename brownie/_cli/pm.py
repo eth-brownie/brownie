@@ -41,9 +41,7 @@ def list():
         for path in packages:
             u = "\u2514" if path == packages[-1] else "\u251c"
             name, version = path.name.rsplit("@", maxsplit=1)
-            print(
-                f" {color('bright black')}{u}\u2500{_format_pkg(org_path.name, name, version)}"
-            )
+            print(f" {color('bright black')}{u}\u2500{_format_pkg(org_path.name, name, version)}")
 
 
 @cli.command(short_help="Make a copy of an installed package")

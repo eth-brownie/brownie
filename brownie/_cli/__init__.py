@@ -7,7 +7,11 @@ cli_folder = Path(__file__).parent.absolute()
 
 class BrownieCLI(click.MultiCommand):
     def list_commands(self, ctx):
-        return list(sorted(f.stem for f in cli_folder.glob("*.py") if f.stem != "__init__"))
+        return list(
+            sorted(
+                f.stem for f in cli_folder.glob("*.py") if f.stem not in ["__init__", "__main__"]
+            )
+        )
 
     def get_command(self, ctx, name):
         ns = {}

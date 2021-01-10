@@ -44,9 +44,7 @@ def list():
             f"One or more files in {len(modified)} packages have been modified since installation.",
         )
         print("Unlink or reinstall them to silence this warning.")
-        print(
-            f"Modified packages name are highlighted in {color('bright blue')}blue{color}.\n"
-        )
+        print(f"Modified packages name are highlighted in {color('bright blue')}blue{color}.\n")
     print(f"Found {color('bright magenta')}{len(package_list)}{color} installed packages:")
     for name in package_list:
         u = "\u2514" if name == package_list[-1] else "\u251c"
@@ -117,9 +115,7 @@ def create(manifest_pathstr):
         manifest = ethpm.create_manifest(project_path, project_config)[0]
     except Exception as e:
         notify("ERROR", f"{type(e).__name__}: {e}")
-        print(
-            "Ensure that all package configuration settings are correct in ethpm-config.yaml"
-        )
+        print("Ensure that all package configuration settings are correct in ethpm-config.yaml")
         return
     with project_path.joinpath(manifest_pathstr).open("w") as fp:
         json.dump(manifest, fp, sort_keys=True, indent=2)
@@ -187,6 +183,4 @@ def all():
             )
             for v in versions:
                 u = "\u2514" if v == versions[-1] else "\u251c"
-                print(
-                    f"   {color('bright black')}{u}\u2500{color('bright white')}{v.stem}{color}"
-                )
+                print(f"   {color('bright black')}{u}\u2500{color('bright white')}{v.stem}{color}")

@@ -1,5 +1,3 @@
-import click
-
 import code
 import importlib
 import inspect
@@ -8,6 +6,7 @@ import tokenize
 from collections.abc import Iterable
 from io import StringIO
 
+import click
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
 from prompt_toolkit.completion import Completer, Completion
@@ -24,7 +23,6 @@ import brownie
 from brownie import network, project
 from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
 from brownie.utils import color
-
 
 _parser_cache: dict = {}
 
@@ -52,9 +50,7 @@ def cli(selected_network, show_traceback, extra_locals=None, active_project=None
     Connects to the selected network and opens the brownie console.
     """
 
-    _update_argv_from_docopt({
-        'tb': show_traceback,
-    })
+    _update_argv_from_docopt({"tb": show_traceback})
 
     if not active_project:
         if project.check_for_project():
