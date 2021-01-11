@@ -8,7 +8,6 @@ from brownie.utils import notify
 @click.option(
     "--path",
     default=".",
-    type=click.Path(exists=True, file_okay=False),
     help="Path to initialize (default is the current path)",
 )
 @click.option(

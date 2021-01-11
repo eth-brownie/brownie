@@ -9,7 +9,6 @@ from brownie.utils import notify
 @click.option(
     "--path",
     default=None,
-    type=click.Path(exists=True, file_okay=False),
     help="Path to initialize (default is the name of the mix)",
 )
 @click.option("--force", default=False, is_flag=True, help="Allow init inside a project subfolder")
