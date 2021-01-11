@@ -7,9 +7,7 @@ from brownie.utils import notify
 @click.command(short_help="Initialize a new brownie project")
 @click.argument("mix", type=str)
 @click.option(
-    "--path",
-    default=None,
-    help="Path to initialize (default is the name of the mix)",
+    "--path", default=None, help="Path to initialize (default is the name of the mix)",
 )
 @click.option("--force", default=False, is_flag=True, help="Allow init inside a project subfolder")
 def cli(mix, path, force):

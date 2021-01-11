@@ -33,6 +33,8 @@ def cli():
 @cli.command(name="list", short_help="List installed packages")
 def _list():
     project_path = check_for_project(".")
+    if project_path is None:
+        raise ProjectNotFound
     installed, modified = ethpm.get_installed_packages(project_path)
     package_list = sorted(installed + modified)
     if not package_list:

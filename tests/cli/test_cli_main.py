@@ -3,6 +3,7 @@
 from brownie._cli import analyze as cli_analyze
 from brownie._cli import bake as cli_bake
 from brownie._cli import compile as cli_compile
+from brownie._cli import ethpm as cli_ethpm
 from brownie._cli import init as cli_init
 from brownie._cli import run as cli_run
 from brownie._cli import test as cli_test
@@ -76,39 +77,15 @@ def test_cli_run_with_missing_file(mocker, runner):
     assert mocked_connect.call_count == 1
 
 
-# def test_cli_ethpm(cli_tester, testproject):
-#     cli_tester.monkeypatch.setattr("brownie._cli.ethpm._list", cli_tester.mock_subroutines)
-#
-#     args = (testproject._path,)
-#     kwargs = {}
-#     parameters = (args, kwargs)
-#     cli_tester.run_and_test_parameters("ethpm list", parameters)
-#     cli_tester.run_and_test_parameters("ethpm foo", parameters)
-#
-#     assert cli_tester.mock_subroutines.called is True
-#     assert cli_tester.mock_subroutines.call_count == 1
+def test_cli_ethpm(testproject, runner):
+    result = runner.invoke(cli_ethpm._list)
+    assert result.exception is None
+    assert "No packages" in result.output
 
 
-# def test_cli_ethpm_with_projectnotfound_exception(cli_tester):
-#     cli_tester.monkeypatch.setattr("brownie._cli.ethpm._list", cli_tester.mock_subroutines)
-#
-#     with pytest.raises(SystemExit):
-#         cli_tester.run_and_test_parameters("ethpm list", parameters=None)
-#
-#     assert cli_tester.mock_subroutines.called is False
-#     assert cli_tester.mock_subroutines.call_count == 0
-#
-#
-# def test_cli_ethpm_with_type_error_exception(cli_tester, testproject):
-#     cli_tester.monkeypatch.setattr(
-#         "brownie._cli.ethpm._list",
-#         lambda project_path: cli_tester.raise_type_error_exception("foobar"),
-#     )
-#
-#     cli_tester.run_and_test_parameters("ethpm list", parameters=None)
-#
-#     assert cli_tester.mock_subroutines.called is False
-#     assert cli_tester.mock_subroutines.call_count == 0
+def test_cli_ethpm_with_projectnotfound_exception(runner):
+    result = runner.invoke(cli_ethpm._list)
+    assert isinstance(result.exception, ProjectNotFound) is True
 
 
 def test_test_no_args(mocker, testproject, runner):
@@ -120,25 +97,4 @@ def test_test_no_args(mocker, testproject, runner):
 def test_test_args(mocker, testproject, runner):
     mocked_test = mocker.patch("pytest.main")
     runner.invoke(cli_test.cli, ["tests/test_foo.py", "--gas", "-n", "1"])
-    # TODO: Verify that arguments work
     assert mocked_test.call_count == 1
-
-
-# def test_cli_incorrect(cli_tester):
-#     with pytest.raises(SystemExit):
-#         cli_tester.run_and_test_parameters("foo")
-#
-#
-# def test_levenshtein(cli_tester):
-#     with pytest.raises(SystemExit, match="Did you mean 'brownie accounts'"):
-#         cli_tester.run_and_test_parameters("account")
-
-
-# def test_no_args_shows_help(cli_tester, capfd):
-#     with pytest.raises(SystemExit):
-#         cli_tester.run_and_test_parameters()
-#     assert cli_main.__doc__ in capfd.readouterr()[0].strip()
-
-
-# def test_cli_pm(cli_tester):
-#     cli_tester.run_and_test_parameters("pm list", None)

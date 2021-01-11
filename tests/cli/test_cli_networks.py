@@ -103,7 +103,9 @@ def test_add_dev_missing_field(runner):
 
 
 def test_add_dev_unknown_field(runner):
-    result = runner.invoke(cli_networks.add, ["development", "tester", "cmd=foo", "host=127.0.0.1" "chainid=411"])
+    result = runner.invoke(
+        cli_networks.add, ["development", "tester", "cmd=foo", "host=127.0.0.1" "chainid=411"]
+    )
     assert isinstance(result.exception, ValueError) is True
 
 

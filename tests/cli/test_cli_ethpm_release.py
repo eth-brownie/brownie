@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import json
-from pathlib import Path
 
 import pytest
 

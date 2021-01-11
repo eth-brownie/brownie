@@ -6,9 +6,7 @@ from brownie.utils import notify
 
 @click.command(short_help="Initialize a new brownie project")
 @click.option(
-    "--path",
-    default=".",
-    help="Path to initialize (default is the current path)",
+    "--path", default=".", help="Path to initialize (default is the current path)",
 )
 @click.option(
     "--force",
