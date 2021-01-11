@@ -32,14 +32,16 @@ def mocker_spy(mocker):
 
 
 def test_release_localaccount(registry, accounts, tp_path, monkeypatch, tmpdir, runner):
-
     monkeypatch.setattr("brownie.network.account.getpass", lambda x: "")
     a = accounts.add()
     a.save(tmpdir + "/release_tester.json")
     accounts[0].transfer(a, "1 ether")
     accounts._reset()
-    # cli_ethpm._release(tp_path, registry.address, tmpdir + "/release_tester.json")
-    runner.invoke(cli_ethpm.release, [tp_path, registry.address, tmpdir + "/release_tester.json"])
+
+    result = runner.invoke(cli_ethpm.release, [registry.address, f"{tmpdir}/release_tester.json"])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
+
     assert ethpm.create_manifest.call_count == 1
     assert ethpm.verify_manifest.call_count == 1
     assert ethpm.release_package.call_count == 1
@@ -48,9 +50,10 @@ def test_release_localaccount(registry, accounts, tp_path, monkeypatch, tmpdir, 
 
 
 def test_release_account(registry, accounts, tp_path, runner):
+    result = runner.invoke(cli_ethpm.release, [registry.address, accounts[0].address])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
 
-    # cli_ethpm._release(tp_path, registry.address, accounts[0].address)
-    runner.invoke(cli_ethpm.release, [tp_path, registry.address, accounts[0].address])
     assert ethpm.create_manifest.call_count == 1
     assert ethpm.verify_manifest.call_count == 1
     assert ethpm.release_package.call_count == 1
@@ -59,11 +62,11 @@ def test_release_account(registry, accounts, tp_path, runner):
 
 
 def test_release_unknown_account(registry, accounts, tp_path, runner):
-    with pytest.raises(UnknownAccount):
-        # cli_ethpm._release(tp_path, registry.address, "0x2a8638962741B4fA728983A6C0F57080522aa73a")
-        result = runner.invoke(cli_ethpm.release, [tp_path, registry.address, "0x2a8638962741B4fA728983A6C0F57080522aa73a"])
-        if result.exception:
-            raise result.exception
+    result = runner.invoke(
+        cli_ethpm.release, [registry.address, "0x2a8638962741B4fA728983A6C0F57080522aa73a"]
+    )
+    assert isinstance(result.exception, UnknownAccount)
+    assert "SUCCESS" not in result.output
 
 
 def raise_exception(e):
@@ -78,7 +81,6 @@ def test_exceptions(registry, accounts, tp_path, monkeypatch, runner):
         ),
     )
 
-    # cli_ethpm._release(tp_path, registry.address, accounts[0].address)
-    runner.invoke(cli_ethpm.release, [tp_path, registry.address, accounts[0].address])
+    runner.invoke(cli_ethpm.release, [registry.address, accounts[0].address])
     assert ethpm.create_manifest.call_count == 1
     assert ethpm.verify_manifest.call_count == 0

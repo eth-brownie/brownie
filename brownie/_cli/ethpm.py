@@ -126,11 +126,10 @@ def create(manifest_pathstr):
 
 
 @cli.command(short_help="Generate a manifest and publish to an ethPM registry")
-@click.argument("project_path", type=click.Path(exists=False, dir_okay=False))
 @click.argument("registry")
-@click.argument("sender", type=click.Choice(accounts.list_local()))
-def release(project_path, registry, sender):
-    # project_path = check_for_project(".")
+@click.argument("sender")
+def release(registry, sender):
+    project_path = check_for_project(".")
     network.connect("mainnet")
     with project_path.joinpath("ethpm-config.yaml").open() as fp:
         project_config = yaml.safe_load(fp)
