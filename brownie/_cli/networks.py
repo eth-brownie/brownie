@@ -269,7 +269,7 @@ def export(path):
     path = Path(path)
     if path.is_dir():
         path = path.joinpath("network-config.yaml")
-    elif path.suffix not in ("yaml", "yml"):
+    elif path.suffix not in (".yaml", ".yml"):
         raise ValueError(f"'{path}' must be a yaml file")
 
     shutil.copy(_get_data_folder().joinpath("network-config.yaml"), path)

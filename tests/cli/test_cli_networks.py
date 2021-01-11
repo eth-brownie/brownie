@@ -16,6 +16,7 @@ def isolation():
 
 def test_list(config, runner):
     result = runner.invoke(cli_networks.list)
+    assert result.exception is None
 
     assert "chainid" not in result.output
     for key in config.networks:
@@ -24,6 +25,7 @@ def test_list(config, runner):
 
 def test_list_verbose(config, runner):
     result = runner.invoke(cli_networks.list, ["--verbose"])
+    assert result.exception is None
 
     assert "chainid" in result.output
     for key in config.networks:
@@ -31,7 +33,9 @@ def test_list_verbose(config, runner):
 
 
 def test_add(runner):
-    runner.invoke(cli_networks.add, ["ethereum", "tester", "host=127.0.0.1", "chainid=42"])
+    result = runner.invoke(cli_networks.add, ["ethereum", "tester", "host=127.0.0.1", "chainid=42"])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -44,7 +48,9 @@ def test_add(runner):
 
 
 def test_add_new_env(runner):
-    runner.invoke(cli_networks.add, ["FooChain", "tester", "host=127.0.0.1", "chainid=42"])
+    result = runner.invoke(cli_networks.add, ["FooChain", "tester", "host=127.0.0.1", "chainid=42"])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -55,7 +61,9 @@ def test_add_new_env(runner):
 
 
 def test_add_exists(runner):
-    result = runner.invoke(cli_networks.add,["FooChain", "development", "host=127.0.0.1", "chainid=42"])
+    result = runner.invoke(
+        cli_networks.add, ["FooChain", "development", "host=127.0.0.1", "chainid=42"]
+    )
     assert isinstance(result.exception, ValueError) is True
 
 
@@ -65,12 +73,18 @@ def test_add_missing_field(runner):
 
 
 def test_add_unknown_field(runner):
-    result = runner.invoke(cli_networks.add, ["FooChain", "tester", "host=127.0.0.1", "chainid=42", "foo=bar"])
+    result = runner.invoke(
+        cli_networks.add, ["FooChain", "tester", "host=127.0.0.1", "chainid=42", "foo=bar"]
+    )
     assert isinstance(result.exception, ValueError) is True
 
 
 def test_add_dev(runner):
-    runner.invoke(cli_networks.add, ["development", "tester", "host=127.0.0.1", "cmd=foo", "port=411"])
+    result = runner.invoke(
+        cli_networks.add, ["development", "tester", "host=127.0.0.1", "cmd=foo", "port=411"]
+    )
+    assert result.exception is None
+    assert "SUCCESS" in result.output
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -94,7 +108,10 @@ def test_add_dev_unknown_field(runner):
 
 
 def test_modify(runner):
-    runner.invoke(cli_networks.modify, ["mainnet", "chainid=3"])
+    result = runner.invoke(cli_networks.modify, ["mainnet", "chainid=3"])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
+
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
 
@@ -105,7 +122,9 @@ def test_modify_id(runner):
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         mainnet = yaml.safe_load(fp)["live"][0]["networks"][0]
 
-    runner.invoke(cli_networks.modify, ["mainnet", "id=foo"])
+    result = runner.invoke(cli_networks.modify, ["mainnet", "id=foo"])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         foo = yaml.safe_load(fp)["live"][0]["networks"][0]
@@ -115,7 +134,10 @@ def test_modify_id(runner):
 
 
 def test_modify_remove(runner):
-    runner.invoke(cli_networks.modify, ["development", "port=None"])
+    result = runner.invoke(cli_networks.modify, ["development", "port=None"])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
+
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
 
@@ -123,7 +145,10 @@ def test_modify_remove(runner):
 
 
 def test_modify_add(runner):
-    runner.invoke(cli_networks.modify, ["development", "fork=true"])
+    result = runner.invoke(cli_networks.modify, ["development", "fork=true"])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
+
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
 
@@ -141,7 +166,9 @@ def test_modify_remove_required(runner):
 
 
 def test_delete_live(runner):
-    runner.invoke(cli_networks.delete, ["mainnet"])
+    result = runner.invoke(cli_networks.delete, ["mainnet"])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -150,8 +177,13 @@ def test_delete_live(runner):
 
 
 def test_delete_development(runner):
-    runner.invoke(cli_networks.delete, ["development"])
-    runner.invoke(cli_networks.delete, ["mainnet-fork"])
+    result = runner.invoke(cli_networks.delete, ["development"])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
+
+    result = runner.invoke(cli_networks.delete, ["mainnet-fork"])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -160,8 +192,13 @@ def test_delete_development(runner):
 
 
 def test_delete_all_networks_in_prod_environment(runner):
-    runner.invoke(cli_networks.delete, ["etc"])
-    runner.invoke(cli_networks.delete, ["kotti"])
+    result = runner.invoke(cli_networks.delete, ["etc"])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
+
+    result = runner.invoke(cli_networks.delete, ["kotti"])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -171,7 +208,10 @@ def test_delete_all_networks_in_prod_environment(runner):
 
 def test_export(tmp_path, runner):
     path = tmp_path.joinpath("exported.yaml")
-    runner.invoke(cli_networks.export, [path.as_posix()])
+
+    result = runner.invoke(cli_networks.export, [path.as_posix()])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -193,7 +233,9 @@ def test_import_from_nothing(tmp_path, config, runner):
         runner.invoke(cli_networks.delete, [key])
     config.networks = {}
 
-    runner.invoke(cli_networks.import_, [path.as_posix()])
+    result = runner.invoke(cli_networks.import_, [path.as_posix()])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -220,7 +262,9 @@ def test_import(tmp_path, runner):
             fp,
         )
 
-    runner.invoke(cli_networks.import_, [path.as_posix()])
+    result = runner.invoke(cli_networks.import_, [path.as_posix()])
+    assert result.exception is None
+    assert "SUCCESS" in result.output
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -248,4 +292,3 @@ def test_import_id_exists(tmp_path, runner):
 
     result = runner.invoke(cli_networks.import_, [path.as_posix()])
     assert isinstance(result.exception, ValueError) is True
-
