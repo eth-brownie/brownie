@@ -367,7 +367,7 @@ def _generate_coverage_data(
             pc_list[-1]["jump"] = source[3]
 
         pc += 1
-        if opcodes[0][:2] == "0x":
+        if pc_list[-1]["op"].startswith("PUSH") and opcodes[0][:2] == "0x":
             pc_list[-1]["value"] = opcodes.popleft()
             pc += int(pc_list[-1]["op"][4:])
 
