@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.13.1](https://github.com/eth-brownie/brownie/tree/v1.13.1) - 2021-01-31
+### Fixed
+- Verify that instruction is `PUSH` before popping pushed bytes ([#935](https://github.com/eth-brownie/brownie/pull/935))
+- Handle empty return value from `eth_getStorageAt` ([#946](https://github.com/eth-brownie/brownie/pull/946))
+- Do not decode event logs immediately ([#947](https://github.com/eth-brownie/brownie/pull/947))
+
 ## [1.13.0](https://github.com/eth-brownie/brownie/tree/v1.13.0) - 2021-01-09
 ### Added
 - Automatic source code verification on Etherscan ([#914](https://github.com/eth-brownie/brownie/pull/914))
