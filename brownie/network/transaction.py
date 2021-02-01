@@ -536,8 +536,6 @@ class TransactionReceipt:
         )
         self.coverage_hash = sha1(base.encode()).hexdigest()
 
-        if self.status:
-            self._events = _decode_logs(receipt["logs"])
         if self.fn_name:
             state.TxHistory()._gas(self._full_name(), receipt["gasUsed"])
 
