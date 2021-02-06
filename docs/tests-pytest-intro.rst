@@ -338,7 +338,7 @@ You can achieve a similar effect with the ``@given`` decorator to automatically 
 
     from brownie.test import given, strategy
 
-    @given(amount=strategy('uint', max_value=1000)
+    @given(amount=strategy('uint', max_value=1000))
     def test_transferFrom_reverts(token, accounts, amount):
         token.approve(accounts[1], amount, {'from': accounts[0]})
         assert token.allowance(accounts[0], accounts[1]) == amount
