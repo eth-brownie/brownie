@@ -463,7 +463,7 @@ def _generate_coverage_data(
         # necessary because sometimes solidity returns an incomplete source map
         pc_list.append({"op": opcodes.popleft(), "pc": pc})
         pc += 1
-        if opcodes and opcodes[0][:2] == "0x":
+        if pc_list[-1]["op"].startswith("PUSH") and opcodes[0][:2] == "0x":
             pc_list[-1]["value"] = opcodes.popleft()
             pc += int(pc_list[-1]["op"][4:])
 
