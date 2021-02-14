@@ -2,7 +2,7 @@ black==19.10b0
 colorama>=0.4.1;platform_system=='Windows'
 eth-abi==2.1.1
 eth-account==0.5.2
-eth-event>=1.2.0,<2.0.0
+eth-event>=1.2.1,<2.0.0
 eth-hash[pycryptodome]==0.2.0
 eth-utils==1.9.5
 hexbytes==0.2.1
