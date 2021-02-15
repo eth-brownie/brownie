@@ -796,7 +796,7 @@ def _install_from_github(package_id: str) -> str:
     install_path.mkdir(exist_ok=True)
 
     # Sanitize version removing paths For example UMA's ""@uma/core@1.2.0"
-    version_sanitized = version.replace(os.path.sep, '')
+    version_sanitized = version.replace(os.path.sep, "")
     install_path = install_path.joinpath(f"{repo}@{version_sanitized}")
     if install_path.exists():
         raise FileExistsError("Package is aleady installed")
