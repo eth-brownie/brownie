@@ -75,9 +75,9 @@ def _list(verbose=False):
     if isinstance(verbose, str):
         try:
             verbose = eval(verbose.capitalize())
-        except:
+        except (NameError, SyntaxError) as e:
             print("Please pass 'True' or 'False'.")
-            raise
+            raise e
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
