@@ -38,6 +38,18 @@ live:
         id: kotti
         host: https://www.ethercluster.com/kotti
         explorer: https://blockscout.com/etc/kotti/api
+  - name: Binance Smart Chain
+    networks:
+      - name: bsc-test
+        chainid: 97
+        id: bsc-test
+        host: https://data-seed-prebsc-1-s1.binance.org:8545
+        explorer: https://api-testnet.bscscan.com/api
+      - name: bsc-main
+        chainid: 56
+        id: bsc-main
+        host: https://bsc-dataseed.binance.org
+        explorer: https://api.bscscan.com/api
 
 development:
   - name: Ganache-CLI
@@ -62,3 +74,15 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: mainnet
+  - name: Ganache-CLI (BSC-Mainnet Fork)
+    id: bsc-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 12000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: bsc-main

@@ -775,8 +775,13 @@ class _DeployedContractBase(_ContractBase):
                 BrownieEnvironmentWarning,
             )
         elif hasattr(self, name):
-            raise AttributeError(f"Namespace collision: '{self._name}.{name}'")
-        setattr(self, name, obj)
+            warnings.warn(
+                f"WARNING: Namespace collision: '{self._name}.{name}'\n"
+                f"You will not be able to call _name() on {self._name}",
+                BrownieEnvironmentWarning,
+            )
+        else:
+            setattr(self, name, obj)
 
     def __hash__(self) -> int:
         return hash(f"{self._name}{self.address}{self._project}")
@@ -1831,7 +1836,7 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
         raise ValueError(f"Source for {address} has not been verified")
 
     params: Dict = {"module": "contract", "action": action, "address": address}
-    if "etherscan" in url:
+    if "etherscan" in url or "bscscan" in url:
         if os.getenv("ETHERSCAN_TOKEN"):
             params["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
         elif not silent:
