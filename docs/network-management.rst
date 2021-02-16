@@ -185,14 +185,14 @@ Running your Own Node
 
 Clients such as `Geth <https://geth.ethereum.org/>`_ or `Parity <https://www.parity.io/ethereum/>`_ can be used to run your own Ethereum node, that Brownie can then connect to. Having your node gives you complete control over which RPC endpoints are available and ensures you have a private and dedicated connection to the network. Unfortunately, keeping a node operating and synced can be a challenging task.
 
-If you wish to learn more about running a node, ethereum.org provides a `list of resources <https://ethereum.org/developers/#testnets-and-faucets>`_ that you can use to get started.
+If you wish to learn more about running a node, ethereum.org provides a `list of resources <https://ethereum.org/en/developers/docs/nodes-and-clients/>`_ that you can use to get started.
 
 Using a Hosted Node
 *******************
 
 Services such as `Infura <https://infura.io>`_ provide public access to Ethereum nodes. This is a much simpler option than running your own, but it is not without limitations:
 
-    1. Some RPC endpoints may be unavailable. In particular, Infura does not provide access to the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ method. For this reason, Brownie's :ref:`debugging tools<debug>` will not work when connected via Infura.
+    1. Some RPC endpoints may be unavailable. In particular, Infura does not provide access to the `debug_traceTransaction <https://geth.ethereum.org/docs/rpc/ns-debug#debug_tracetransaction>`_ method. For this reason, Brownie's :ref:`debugging tools<debug>` will not work when connected via Infura.
     2. Hosted nodes do not provide access to accounts - this would be a major security hazard! You will have to manually unlock your own :ref:`local account<local-accounts>` before you can make a transaction.
 
 Using Infura

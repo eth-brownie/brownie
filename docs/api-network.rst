@@ -2428,7 +2428,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.trace
 
-    An expanded `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#user-content-basic-traces>`_ structLog, returned from the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ RPC endpoint. If you are using Infura this attribute is not available.
+    An expanded `transaction trace <https://geth.ethereum.org/docs/dapp/tracing#basic-traces>`_ structLog, returned from the `debug_traceTransaction <https://geth.ethereum.org/docs/rpc/ns-debug#debug_tracetransaction>`_ RPC endpoint. If you are using Infura this attribute is not available.
 
     Along with the standard data, the structLog also contains the following additional information:
 
@@ -2752,7 +2752,7 @@ Web3 Attributes
 
 .. py:classmethod:: Web3.supports_traces
 
-    Boolean indicating if the currently connected node client supports the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ RPC endpoint.
+    Boolean indicating if the currently connected node client supports the `debug_traceTransaction <https://geth.ethereum.org/docs/rpc/ns-debug#debug_tracetransaction>`_ RPC endpoint.
 
     .. code-block:: python
 
