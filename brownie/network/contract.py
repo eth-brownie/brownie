@@ -376,9 +376,9 @@ class ContractContainer(_ContractBase):
         url = CONFIG.active_network.get("explorer")
         if url is None:
             raise ValueError("Explorer API not set for this network")
-        if "etherscan" not in url:
+        if not any(allowed_explorer in url for allowed_explorer in ["etherscan", "bscscan"]):
             raise ValueError(
-                "Publishing source is only supported on etherscan, change the Explorer API"
+                "Publishing source is only supported on etherscan/bscscan, change the Explorer API"
             )
 
         if os.getenv("ETHERSCAN_TOKEN"):
