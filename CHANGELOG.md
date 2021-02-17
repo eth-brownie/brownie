@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Fixed
 - Bump dependency version for [eth-event](https://github.com/iamdefinitelyahuman/eth-event) to [1.2.1](https://github.com/iamdefinitelyahuman/eth-event/releases/tag/v1.2.1) to mitigate the topic generation bug for events with dynamic/fixed size tuple array inputs ([#957](https://github.com/eth-brownie/brownie/pull/957))
+### Added
+- Automatic source code verification on BscScan
 
 ## [1.13.1](https://github.com/eth-brownie/brownie/tree/v1.13.1) - 2021-01-31
 ### Fixed
