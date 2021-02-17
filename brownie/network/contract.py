@@ -379,7 +379,8 @@ class ContractContainer(_ContractBase):
             raise ValueError("Explorer API not set for this network")
         if not any(allowed_explorer in url for allowed_explorer in allowed_explorers):
             raise ValueError(
-                f"Publishing source is only supported on {allowed_explorers}, change the Explorer API"
+                f"Publishing source is only supported on {allowed_explorers},"
+                "change the Explorer API"
             )
 
         if os.getenv("ETHERSCAN_TOKEN"):
