@@ -45,6 +45,7 @@ console:
     color_style: monokai
     auto_suggest: true
     completions: true
+    editing_mode: emacs
 
 reports:
     exclude_paths: null

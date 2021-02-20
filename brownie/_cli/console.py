@@ -15,6 +15,7 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.defaults import load_key_bindings
 from prompt_toolkit.keys import Keys
+from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from pygments.lexers import PythonLexer
@@ -128,6 +129,8 @@ class Console(code.InteractiveConsole):
             kwargs["auto_suggest"] = ConsoleAutoSuggest(self, locals_dict)
         if console_settings["completions"]:
             kwargs["completer"] = ConsoleCompleter(self, locals_dict)
+        if console_settings["editing_mode"]:
+            kwargs["editing_mode"] = EditingMode(console_settings["editing_mode"].upper())
 
         self.compile_mode = "single"
         self.prompt_session = PromptSession(
