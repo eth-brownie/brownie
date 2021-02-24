@@ -704,9 +704,15 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
                 "which is different from the current working directory",
                 BrownieEnvironmentWarning,
             )
+    else:
+        project_path = Path(project_path)
+        if project_path.resolve() != check_for_project(project_path):
+            packages_path = _get_data_folder().joinpath("packages")
+            if not project_path.is_absolute() and packages_path.joinpath(project_path).exists():
+                project_path = packages_path.joinpath(project_path)
+            else:
+                project_path = None
 
-    elif Path(project_path).resolve() != check_for_project(project_path):
-        project_path = None
     if project_path is None:
         raise ProjectNotFound("Could not find Brownie project")
 
