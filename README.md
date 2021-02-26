@@ -122,6 +122,34 @@ For example, to run the tests in `brownie/tests/test_format_input.py`:
 docker-compose exec sandbox bash -c 'python -m pytest tests/convert/test_format_input.py'
 ```
 
+#### Attaching to dockerized RPC clients
+
+You can also attach to a RPC client already running inside a docker container.
+
+For example for running ganache-cli you could just startup the official ganache-cli docker image:
+
+```bash
+docker run -p 8545:8545 trufflesuite/ganache-cli
+```
+
+Then in another terminal on your host you could connect to it:
+
+```bash
+brownie console
+```
+
+If you have your RPC client bound to a specific hostname e.g. `ganache` you could create a separate brownie network for it:
+
+```bash
+brownie networks add Development dev cmd=ganache-cli host=http://ganache:8545
+```
+
+Then connect to it with:
+
+```bash
+brownie console --network dev
+```
+
 ## Contributing
 
 Help is always appreciated! Feel free to open an issue if you find a problem, or a pull request if you've solved an issue.

@@ -2,6 +2,7 @@
 
 import atexit
 import datetime
+import socket
 import sys
 import time
 import warnings
@@ -149,15 +150,13 @@ class Rpc(metaclass=_Singleton):
             if not o.port:
                 raise ValueError("No RPC port given")
             laddr = (o.hostname, o.port)
-        try:
-            proc = next(i for i in psutil.process_iter() if _check_connections(i, laddr))
-        except StopIteration:
-            raise ProcessLookupError(
-                "Could not attach to RPC process. If this issue persists, try killing "
-                "the RPC and let Brownie launch it as a child process."
-            ) from None
+
+        ip = socket.gethostbyname(laddr[0])
+        resolved_addr = (ip, laddr[1])
+        pid = _find_rpc_process_pid(resolved_addr)
+
         print(f"Attached to local RPC client listening at '{laddr[0]}:{laddr[1]}'...")
-        self._rpc = psutil.Process(proc.pid)
+        self._rpc = psutil.Process(pid)
         chain._network_connected()
 
     def kill(self, exc: bool = True) -> None:
@@ -255,7 +254,24 @@ class Rpc(metaclass=_Singleton):
         return chain.reset()
 
 
-def _check_connections(proc: psutil.Process, laddr: Tuple) -> bool:
+def _find_rpc_process_pid(laddr: Tuple) -> int:
+    try:
+        proc = next(i for i in psutil.process_iter() if _check_proc_connections(i, laddr))
+        return proc.pid
+    except StopIteration:
+        try:
+            proc = next(
+                i for i in psutil.net_connections(kind="tcp") if _check_net_connections(i, laddr)
+            )
+            return proc.pid
+        except StopIteration:
+            raise ProcessLookupError(
+                "Could not attach to RPC process. If this issue persists, try killing "
+                "the RPC and let Brownie launch it as a child process."
+            ) from None
+
+
+def _check_proc_connections(proc: psutil.Process, laddr: Tuple) -> bool:
     try:
         return laddr in [i.laddr for i in proc.connections()]
     except psutil.AccessDenied:
@@ -263,6 +279,17 @@ def _check_connections(proc: psutil.Process, laddr: Tuple) -> bool:
     except psutil.ZombieProcess:
         return False
     except psutil.NoSuchProcess:
+        return False
+
+
+def _check_net_connections(connection: Any, laddr: Tuple) -> bool:
+    if connection.pid is None:
+        return False
+    if connection.laddr == laddr:
+        return True
+    elif connection.raddr == laddr:
+        return True
+    else:
         return False
 
 
