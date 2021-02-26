@@ -89,7 +89,7 @@ The following actions WILL remove locally stored deployment data within your pro
 
 To restore a deleted :func:`ProjectContract <brownie.network.contract.ProjectContract>` instance, or generate one for a deployment that was handled outside of Brownie, use the :func:`ContractContainer.at <ContractContainer.at>` method.
 
-Verifying Deployments on Etherscan/BscScan
+Verifying Deployment Source Code
 ==========================================
 
 Brownie features automatic source code verification for solidity contracts on all networks supported by etherscan. To verify a contract while deploying it, add the ``publish_source=True`` argument:
