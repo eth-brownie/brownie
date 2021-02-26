@@ -32,7 +32,7 @@ Contracts may be written in Solidity (with a ``.sol`` extension) or Vyper (with 
 
 The ``interfaces`` folder holds interface source files that may be referenced by contract sources, but which are not considered to be primary components of the project. Adding or modifying an interface source onlys triggers a recompile if the interface is required by a contract.
 
-Interfaces may be written in `Solidity <https://solidity.readthedocs.io/en/latest/contracts.html#interfaces>`_ (``.sol``) or `Vyper <https://vyper.readthedocs.io/en/latest/structure-of-a-contract.html#contract-interfaces>`_ (``.vy``), or supplied as a `JSON encoded ABI <https://solidity.readthedocs.io/en/latest/abi-spec.html#json>`_ (``.json``).
+Interfaces may be written in `Solidity <https://solidity.readthedocs.io/en/latest/contracts.html#interfaces>`_ (``.sol``) or `Vyper <https://vyper.readthedocs.io/en/latest/structure-of-a-contract.html#interfaces>`_ (``.vy``), or supplied as a `JSON encoded ABI <https://solidity.readthedocs.io/en/latest/abi-spec.html#json>`_ (``.json``).
 
 ``scripts/``
 ============

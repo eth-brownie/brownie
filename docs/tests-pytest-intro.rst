@@ -165,7 +165,7 @@ To apply an isolation fixture to all tests in a module, require it in another fi
     def shared_setup(module_isolation):
         pass
 
-You can also place this fixture in a `conftest.py <https://docs.pytest.org/en/latest/fixture.html#conftest-py-sharing-fixture-functions>`_ file to apply it across many modules.
+You can also place this fixture in a `conftest.py <https://docs.pytest.org/en/latest/fixture.html#conftest-py-sharing-fixtures-across-multiple-files>`_ file to apply it across many modules.
 
 Defining a Shared Initial State
 -------------------------------

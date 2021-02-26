@@ -163,7 +163,7 @@ Debugging Failed Transactions
 
 .. note::
 
-    Debugging functionality relies on the `debug_traceTransaction <https://github.com/ethereum/go-ethereum/wiki/Management-APIs#user-content-debug_tracetransaction>`_ RPC method. If you are using Infura this endpoint is unavailable. Attempts to access this functionality will raise an ``RPCRequestError``.
+    Debugging functionality relies on the `debug_traceTransaction <https://geth.ethereum.org/docs/rpc/ns-debug#debug_tracetransaction>`_ RPC method. If you are using Infura this endpoint is unavailable. Attempts to access this functionality will raise an ``RPCRequestError``.
 
 When a transaction reverts in the console you are still returned a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, but it will show as reverted. If an error string is given, it will be displayed in brackets and highlighted in red.
 
@@ -208,7 +208,7 @@ Inspecting the Trace
 The Trace Object
 ----------------
 
-The best way to understand exactly happened in a transaction is to generate and examine a `transaction trace <https://github.com/ethereum/go-ethereum/wiki/Tracing:-Introduction#user-content-basic-traces>`_. This is available as a list of dictionaries at :func:`TransactionReceipt.trace <TransactionReceipt.trace>`, with several fields added to make it easier to understand.
+The best way to understand exactly happened in a transaction is to generate and examine a `transaction trace <https://geth.ethereum.org/docs/dapp/tracing#basic-traces>`_. This is available as a list of dictionaries at :func:`TransactionReceipt.trace <TransactionReceipt.trace>`, with several fields added to make it easier to understand.
 
 Each step in the trace includes the following data:
 

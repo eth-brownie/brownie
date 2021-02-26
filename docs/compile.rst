@@ -32,7 +32,7 @@ The ``interfaces/`` folder is of particular use in the following situations:
 1. When using Vyper, where interfaces are not necessarily compilable source code and so cannot be included in the ``contracts/`` folder.
 2. When using Solidity and Vyper in the same project, or multiple versions of Solidity, where compatibility issues prevent contracts from directly referencing one another.
 
-Interfaces may be written in `Solidity <https://solidity.readthedocs.io/en/latest/contracts.html#interfaces>`_ (``.sol``) or `Vyper <https://vyper.readthedocs.io/en/latest/structure-of-a-contract.html#contract-interfaces>`_ (``.vy``). Vyper contracts are also able to directly import `JSON encoded ABI <https://solidity.readthedocs.io/en/latest/abi-spec.html#json>`_ (``.json``) files.
+Interfaces may be written in `Solidity <https://solidity.readthedocs.io/en/latest/contracts.html#interfaces>`_ (``.sol``) or `Vyper <https://vyper.readthedocs.io/en/latest/structure-of-a-contract.html#interfaces>`_ (``.vy``). Vyper contracts are also able to directly import `JSON encoded ABI <https://solidity.readthedocs.io/en/latest/abi-spec.html#json>`_ (``.json``) files.
 
 .. _compile_settings:
 
