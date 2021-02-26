@@ -120,7 +120,7 @@ To copy the Aragon package to the current folder:
 
 .. code-block:: bash
 
-    $ brownie pm export aragon/aragonOS@4.0.0
+    $ brownie pm clone aragon/aragonOS@4.0.0
 
 Using Packages in your Project
 ==============================
