@@ -1,53 +1,31 @@
-#!/usr/bin/python3
-
 import shutil
-import sys
 from pathlib import Path
+
+import click
 
 from brownie import project
 from brownie._config import _get_data_folder
 from brownie.utils import color, notify
-from brownie.utils.docopt import docopt
-
-__doc__ = """Usage: brownie pm <command> [<arguments> ...] [options]
-
-Commands:
-  list                          List available accounts
-  install <uri> [version]       Install a new package
-  clone <id> [path]             Make a copy of an installed package
-  delete <id>                   Delete an installed package
-
-Options:
-  --help -h                     Display this message
-
-Manager for packages installed from ethPM and Github. Installed packages can
-be added as dependencies and imported into your own projects.
-
-See https://eth-brownie.readthedocs.io/en/stable/package-manager.html for
-more information on how to install and use packages.
-"""
 
 
-def main():
-    args = docopt(__doc__)
-    try:
-        fn = getattr(sys.modules[__name__], f"_{args['<command>']}")
-    except AttributeError:
-        print("Invalid command. Try brownie pm --help")
-        return
-    try:
-        fn(*args["<arguments>"])
-    except TypeError:
-        print(f"Invalid arguments for command '{args['<command>']}'. Try brownie pm --help")
-        return
+@click.group(short_help="Install and manage external packages")
+def cli():
+    """
+    Manager for packages installed from ethPM and Github. Installed packages can
+    be added as dependencies and imported into your own projects.
+
+    See https://eth-brownie.readthedocs.io/en/stable/package-manager.html for
+    more information on how to install and use packages.
+    """
 
 
-def _list():
+@cli.command(short_help="List installed packages")
+def list():
     org_names = []
     for path in _get_data_folder().joinpath("packages").iterdir():
         if not path.is_dir():
             continue
-        elif not list(i for i in path.iterdir() if i.is_dir() and "@" in i.name):
+        elif not any(i for i in path.iterdir() if i.is_dir() and "@" in i.name):
             shutil.rmtree(path)
         else:
             org_names.append(path)
@@ -58,7 +36,7 @@ def _list():
         print("The following packages are currently installed:")
 
     for org_path in org_names:
-        packages = list(org_path.iterdir())
+        packages = [p for p in org_path.iterdir()]
         print(f"\n{color('bright magenta')}{org_path.name}{color}")
         for path in packages:
             u = "\u2514" if path == packages[-1] else "\u251c"
@@ -66,12 +44,20 @@ def _list():
             print(f" {color('bright black')}{u}\u2500{_format_pkg(org_path.name, name, version)}")
 
 
-def _clone(package_id, path_str="."):
+@cli.command(short_help="Make a copy of an installed package")
+@click.argument("package_id")
+@click.argument("path", default=".")
+def clone(package_id, path):
+    """
+    Copy PACKAGE_ID to PATH
+
+    Default PATH is local directory
+    """
     org, repo, version = _split_id(package_id)
     source_path = _get_data_folder().joinpath(f"packages/{org}/{repo}@{version}")
     if not source_path.exists():
         raise FileNotFoundError(f"Package '{_format_pkg(org, repo, version)}' is not installed")
-    dest_path = Path(path_str)
+    dest_path = Path(path)
     if dest_path.exists():
         if not dest_path.is_dir():
             raise FileExistsError("Destination path already exists")
@@ -80,7 +66,12 @@ def _clone(package_id, path_str="."):
     notify("SUCCESS", f"Package '{_format_pkg(org, repo, version)}' was cloned at {dest_path}")
 
 
-def _delete(package_id):
+@cli.command(short_help="Delete an installed package")
+@click.argument("package_id")
+def delete(package_id):
+    """
+    Deletes PACKAGE_ID from installed pacakges
+    """
     org, repo, version = _split_id(package_id)
     source_path = _get_data_folder().joinpath(f"packages/{org}/{repo}@{version}")
     if not source_path.exists():
@@ -89,7 +80,12 @@ def _delete(package_id):
     notify("SUCCESS", f"Package '{_format_pkg(org, repo, version)}' has been deleted")
 
 
-def _install(uri):
+@cli.command(short_help="Install a new package")
+@click.argument("uri")
+def install(uri):
+    """
+    Installs package from URI
+    """
     package_id = project.main.install_package(uri)
     org, repo, version = _split_id(package_id)
     notify("SUCCESS", f"Package '{_format_pkg(org, repo, version)}' has been installed")

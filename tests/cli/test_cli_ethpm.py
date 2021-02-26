@@ -7,7 +7,7 @@ import pytest
 from brownie._cli import ethpm as cli_ethpm
 from brownie.project import ethpm
 
-pytestmark = pytest.mark.skip(reason="deprecated, must be updated for ethpmv3")
+pytestmark = pytest.mark.skip(reason="deprecated, must be updated for ethpmv3 and click")
 
 ETHPM_CONFIG = {
     "package_name": "testpackage",
@@ -18,10 +18,10 @@ ETHPM_CONFIG = {
 ERC1319_URI = "ethpm://zeppelin.snakecharmers.eth:1/access@1.0.0"
 
 
-def test_all(np_path):
-    cli_ethpm._all(np_path)
+def test_all(np_path, runner):
+    runner.invoke(cli_ethpm.all, [np_path])
     ethpm.install_package(np_path, ERC1319_URI)
-    cli_ethpm._all(np_path)
+    runner.invoke(cli_ethpm.all, [np_path])
 
 
 def test_list(ipfs_mock, np_path, mocker):

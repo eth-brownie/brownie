@@ -26,60 +26,59 @@ def _mk_repo_path(*folder_names):
     return path
 
 
-def test_list_no_installed(capfd):
-    cli_pm._list()
-    assert "No packages are currently installed." in capfd.readouterr()[0]
+def test_list_no_installed(runner):
+    result = runner.invoke(cli_pm.list)
+    assert "No packages are currently installed." in result.output
 
 
-def test_list_installed(capfd):
+def test_list_installed(runner):
     _mk_repo_path("testorg", "testrepo@1.0.0")
     _mk_repo_path("testorg", "testrepo@1.0.1")
 
-    cli_pm._list()
-    stdout = capfd.readouterr()[0]
-    assert "1.0.0" in stdout
-    assert "1.0.1" in stdout
+    result = runner.invoke(cli_pm.list)
+    assert "1.0.0" in result.output
+    assert "1.0.1" in result.output
 
 
-def test_list_remove_spurious_files(capfd):
+def test_list_remove_spurious_files(runner):
     bad_path1 = _mk_repo_path("emptynothing")
     bad_path2 = _mk_repo_path("bad-repo", "package-without-version")
     with bad_path2.parent.joinpath("package-as-file@1.0.0").open("w") as fp:
         fp.write("i'm a file!")
 
-    cli_pm._list()
-    assert "No packages are currently installed." in capfd.readouterr()[0]
+    result = runner.invoke(cli_pm.list)
+    assert "No packages are currently installed." in result.output
     assert not bad_path1.exists()
     assert not bad_path2.exists()
 
 
-def test_clone(tmp_path):
+def test_clone(tmp_path, runner):
     _mk_repo_path("testorg", "testrepo@1.0.0")
-    cli_pm._clone("testorg/testrepo@1.0.0", tmp_path.as_posix())
+    runner.invoke(cli_pm.clone, ["testorg/testrepo@1.0.0", tmp_path.as_posix()])
 
     assert tmp_path.joinpath("testorg").exists()
 
 
-def test_clone_not_installed(tmp_path):
-    with pytest.raises(FileNotFoundError):
-        cli_pm._clone("testorg/testrepo@1.0.0", tmp_path.as_posix())
+def test_clone_not_installed(tmp_path, runner):
+    result = runner.invoke(cli_pm.clone, ["testorg/testrepo@1.0.0", tmp_path.as_posix()])
+    assert isinstance(result.exception, FileNotFoundError) is True
 
 
-def test_clone_already_exists(tmp_path):
+def test_clone_already_exists(tmp_path, runner):
     _mk_repo_path("testorg", "testrepo@1.0.0")
-    cli_pm._clone("testorg/testrepo@1.0.0", tmp_path.as_posix())
+    runner.invoke(cli_pm.clone, ["testorg/testrepo@1.0.0", tmp_path.as_posix()])
 
-    with pytest.raises(FileExistsError):
-        cli_pm._clone("testorg/testrepo@1.0.0", tmp_path.as_posix())
+    result = runner.invoke(cli_pm.clone, ["testorg/testrepo@1.0.0", tmp_path.as_posix()])
+    assert isinstance(result.exception, FileExistsError) is True
 
 
-def test_delete(tmp_path):
+def test_delete(tmp_path, runner):
     path = _mk_repo_path("testorg", "testrepo@1.0.0")
-    cli_pm._delete("testorg/testrepo@1.0.0")
+    runner.invoke(cli_pm.delete, ["testorg/testrepo@1.0.0"])
 
     assert not path.exists()
 
 
-def test_delete_not_installed(tmp_path):
-    with pytest.raises(FileNotFoundError):
-        cli_pm._delete("testorg/testrepo@1.0.0")
+def test_delete_not_installed(tmp_path, runner):
+    result = runner.invoke(cli_pm.delete, ["testorg/testrepo@1.0.0"])
+    assert isinstance(result.exception, FileNotFoundError) is True

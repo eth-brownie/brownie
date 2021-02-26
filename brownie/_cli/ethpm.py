@@ -1,9 +1,7 @@
-#!/usr/bin/python3
-
 import json
 import shutil
-import sys
 
+import click
 import yaml
 
 from brownie import accounts, network
@@ -11,35 +9,17 @@ from brownie._config import BROWNIE_FOLDER, _get_data_folder
 from brownie.exceptions import ProjectNotFound, UnknownAccount
 from brownie.project import check_for_project, ethpm
 from brownie.utils import color, notify
-from brownie.utils.docopt import docopt
-
-__doc__ = """Usage: brownie ethpm <command> [<arguments> ...] [options]
-
-Commands:
-  list                             List installed packages
-  install <uri> [overwrite=False]  Install a new package
-  unlink <name>                    Unlink an installed package
-  remove <name>                    Remove an installed package
-  create [filename]                Generate a manifest
-  release <registry> <account>     Generate a manifest and publish to an ethPM registry
-  all                              List all locally available packages
-
-Options:
-  --help -h                        Display this message
-
-ethPM is a decentralized package manager used to distribute EVM smart contracts
-and projects. See https://eth-brownie.readthedocs.io/en/stable/ethpm.html for more
-information on how to use it within Brownie.
-"""
 
 
-def main():
-    args = docopt(__doc__)
-    try:
-        fn = getattr(sys.modules[__name__], f"_{args['<command>']}")
-    except AttributeError:
-        print("Invalid command. Try brownie ethpm --help")
-        return
+@click.group(short_help="Install, manage, and create ethPM manifests")
+def cli():
+    """
+    ethPM is a decentralized package manager used to distribute EVM smart contracts
+    and projects.
+
+    See https://eth-brownie.readthedocs.io/en/stable/ethpm.html for more
+    information on how to use it within Brownie.
+    """
     project_path = check_for_project(".")
     if project_path is None:
         raise ProjectNotFound
@@ -48,14 +28,13 @@ def main():
             BROWNIE_FOLDER.joinpath("data/ethpm-config.yaml"),
             project_path.joinpath("ethpm-config.yaml"),
         )
-    try:
-        fn(project_path, *args["<arguments>"])
-    except TypeError:
-        print(f"Invalid arguments for command '{args['<command>']}'. Try brownie ethpm --help")
-        return
 
 
-def _list(project_path):
+@cli.command(name="list", short_help="List installed packages")
+def _list():
+    project_path = check_for_project(".")
+    if project_path is None:
+        raise ProjectNotFound
     installed, modified = ethpm.get_installed_packages(project_path)
     package_list = sorted(installed + modified)
     if not package_list:
@@ -78,7 +57,20 @@ def _list(project_path):
         )
 
 
-def _install(project_path, uri, replace=False):
+@cli.command(short_help="Install a new package")
+@click.argument("uri")
+@click.option(
+    "-R",
+    "--replace",
+    default=False,
+    is_flag=True,
+    help="Overwrite the previously installed package of same name",
+)
+def install(uri, replace):
+    """
+    Install package from EthPM v2 (ERC1319) compliant URI
+    """
+    project_path = check_for_project(".")
     if replace:
         if replace.lower() not in ("true", "false"):
             raise ValueError("Invalid command for 'overwrite', must be True or False")
@@ -88,21 +80,36 @@ def _install(project_path, uri, replace=False):
     notify("SUCCESS", f'The "{color("bright magenta")}{name}{color}" package was installed.')
 
 
-def _unlink(project_path, name):
+@cli.command(short_help="Unlink an installed package")
+@click.argument("name")
+def unlink(name):
+    project_path = check_for_project(".")
     if ethpm.remove_package(project_path, name, False):
         notify("SUCCESS", f'The "{color("bright magenta")}{name}{color}" package was unlinked.')
         return
     notify("ERROR", f'"{color("bright magenta")}{name}{color}" is not installed in this project.')
 
 
-def _remove(project_path, name):
+@cli.command(short_help="Remove an installed package")
+@click.argument("name")
+def remove(name):
+    project_path = check_for_project(".")
     if ethpm.remove_package(project_path, name, True):
         notify("SUCCESS", f'The "{color("bright magenta")}{name}{color}" package was removed.')
         return
     notify("ERROR", f'"{color("bright magenta")}{name}{color}" is not installed in this project.')
 
 
-def _create(project_path, manifest_pathstr="manifest.json"):
+@cli.command(short_help="Generate a manifest")
+@click.option(
+    "-p",
+    "--path",
+    "manifest_pathstr",
+    default="manifest.json",
+    type=click.Path(exists=False, dir_okay=False),
+)
+def create(manifest_pathstr):
+    project_path = check_for_project(".")
     print("Generating a manifest based on configuration settings in ethpm-config.yaml...")
     with project_path.joinpath("ethpm-config.yaml").open() as fp:
         project_config = yaml.safe_load(fp)
@@ -120,7 +127,11 @@ def _create(project_path, manifest_pathstr="manifest.json"):
     )
 
 
-def _release(project_path, registry_address, sender):
+@cli.command(short_help="Generate a manifest and publish to an ethPM registry")
+@click.argument("registry")
+@click.argument("sender")
+def release(registry, sender):
+    project_path = check_for_project(".")
     network.connect("mainnet")
     with project_path.joinpath("ethpm-config.yaml").open() as fp:
         project_config = yaml.safe_load(fp)
@@ -134,26 +145,23 @@ def _release(project_path, registry_address, sender):
         except FileNotFoundError:
             raise UnknownAccount(f"Unknown account '{sender}'")
     name = f'{manifest["package_name"]}@{manifest["version"]}'
-    print(f'Releasing {name} on "{registry_address}"...')
+    print(f'Releasing {name} on "{registry}"...')
     try:
         tx = ethpm.release_package(
-            registry_address, account, manifest["package_name"], manifest["version"], uri
+            registry, account, manifest["package_name"], manifest["version"], uri
         )
         if tx.status == 1:
             notify("SUCCESS", f"{name} has been released!")
-            print(f"\nURI: {color('bright magenta')}ethpm://{registry_address}:1/{name}{color}")
+            print(f"\nURI: {color('bright magenta')}ethpm://{registry}:1/{name}{color}")
             return
     except Exception:
         pass
-    notify("ERROR", f'Transaction reverted when releasing {name} on "{registry_address}"')
+    notify("ERROR", f'Transaction reverted when releasing {name} on "{registry}"')
 
 
-def _all(project_path):
+@cli.command(short_help="List all locally available packages")
+def all():
     ethpm_folder = _get_data_folder().joinpath("ethpm")
-    print(
-        f"Visit {color('bright magenta')}https://explorer.ethpm.com/{color}"
-        " for a list of ethPM registries and packages.\n"
-    )
     if not list(ethpm_folder.glob("*")):
         print("No local packages are currently available.")
     for path in sorted(ethpm_folder.glob("*")):

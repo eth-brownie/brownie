@@ -1,34 +1,37 @@
-#!/usr/bin/python3
-
 import shutil
+
+import click
 
 from brownie import project
 from brownie._config import _load_project_structure_config
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color
-from brownie.utils.docopt import docopt
 
 CODESIZE_COLORS = [(1, "bright red"), (0.8, "bright yellow")]
 
-__doc__ = """Usage: brownie compile [<contract> ...] [options]
 
-Arguments
-  [<contract> ...]       Optional list of contract names to compile.
+@click.command(short_help="Compile the contract source files")
+@click.argument("contracts", type=str, nargs=-1)
+@click.option(
+    "-a", "--all", "compile_all", default=False, is_flag=True, help="Recompile all contracts"
+)
+@click.option(
+    "-s",
+    "--size",
+    "display_size",
+    default=False,
+    is_flag=True,
+    help="Show deployed bytecode sizes contracts",
+)
+def cli(contracts, compile_all, display_size):
+    """
+    Compiles the contract source files for this project and saves the results
+    in the build/contracts/ folder.
 
-Options:
-  --all -a              Recompile all contracts
-  --size -s             Show deployed bytecode sizes contracts
-  --help -h             Display this message
+    An optional list of specific CONTRACTS can be provided.
 
-Compiles the contract source files for this project and saves the results
-in the build/contracts/ folder.
-
-Note that Brownie automatically recompiles any changed contracts each time
-a project is loaded. You do not have to manually trigger a recompile."""
-
-
-def main():
-    args = docopt(__doc__)
+    Note that Brownie automatically recompiles any changed contracts each time
+    a project is loaded. You do not have to manually trigger a recompile."""
     project_path = project.check_for_project(".")
     if project_path is None:
         raise ProjectNotFound
@@ -38,18 +41,18 @@ def main():
     contract_artifact_path = build_path.joinpath("contracts")
     interface_artifact_path = build_path.joinpath("interfaces")
 
-    if args["--all"]:
+    if compile_all:
         shutil.rmtree(contract_artifact_path, ignore_errors=True)
         shutil.rmtree(interface_artifact_path, ignore_errors=True)
-    elif args["<contract>"]:
-        for name in args["<contract>"]:
+    elif contracts:
+        for name in contracts:
             path = contract_artifact_path.joinpath(f"{name}.json")
             if path.exists():
                 path.unlink()
 
     proj = project.load()
 
-    if args["--size"]:
+    if display_size:
         print("============ Deployment Bytecode Sizes ============")
         codesize = []
         for contract in proj:

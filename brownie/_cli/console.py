@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 import code
 import importlib
 import inspect
@@ -8,6 +6,7 @@ import tokenize
 from collections.abc import Iterable
 from io import StringIO
 
+import click
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
 from prompt_toolkit.completion import Completer, Completion
@@ -24,38 +23,54 @@ import brownie
 from brownie import network, project
 from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
 from brownie.utils import color
-from brownie.utils.docopt import docopt
-
-__doc__ = f"""Usage: brownie console [options]
-
-Options:
-  --network <name>        Use a specific network (default {CONFIG.settings['networks']['default']})
-  --tb -t                 Show entire python traceback on exceptions
-  --help -h               Display this message
-
-Connects to the network and opens the brownie console.
-"""
 
 _parser_cache: dict = {}
 
 
-def main():
-    args = docopt(__doc__)
-    _update_argv_from_docopt(args)
+@click.command(short_help="Load the console")
+@click.option(
+    "--network",
+    "selected_network",
+    default=CONFIG.settings["networks"]["default"],
+    type=click.Choice(CONFIG.networks.keys()),
+    show_default=True,
+    help="Use a specific network",
+)
+@click.option(
+    "-t",
+    "--traceback",
+    "show_traceback",
+    default=False,
+    is_flag=True,
+    help="Show entire python traceback on exceptions",
+)
+# @click.argument("ipython_args", nargs=-1, type=click.UNPROCESSED)
+def cli(selected_network, show_traceback, extra_locals=None, active_project=None, banner=None):
+    """
+    Connects to the selected network and opens the brownie console.
+    """
 
-    if project.check_for_project():
-        active_project = project.load()
-        active_project.load_config()
-        print(f"{active_project._name} is the active project.")
-    else:
-        active_project = None
-        sys.path.insert(0, "")
-        print("No project was loaded.")
+    _update_argv_from_docopt({"tb": show_traceback})
 
-    network.connect(CONFIG.argv["network"])
+    if not active_project:
+        if project.check_for_project():
+            active_project = project.load()
+            active_project.load_config()
+            print(f"{active_project._name} is the active project.")
+        else:
+            active_project = None
+            sys.path.insert(0, "")
+            print("No project was loaded.")
 
-    shell = Console(active_project)
-    shell.interact(banner="Brownie environment is ready.", exitmsg="")
+    if network.show_active() != selected_network:
+        if network.is_connected():
+            network.disconnect()
+        network.connect(selected_network)
+
+    shell = Console(active_project, extra_locals)
+    if not banner:
+        banner = "Brownie environment is ready."
+    shell.interact(banner=banner, exitmsg="")
 
 
 class _Quitter:
