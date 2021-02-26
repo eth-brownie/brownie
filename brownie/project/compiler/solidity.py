@@ -347,6 +347,12 @@ def _generate_coverage_data(
     active_fn_name: Optional[str] = None
     first_source = source_map[0]
 
+    while source_map and source_map[-1][2] == -1:
+        # trim the end of the source map where there are no contracts associated
+        # this is required because sometimes the source map is too long
+        # likely a side effect of the YUL optimizer ¯\_(ツ)_/¯
+        source_map.pop()
+
     while source_map:
         # format of source_map is [start, stop, contract_id, jump code]
         source = source_map.popleft()
