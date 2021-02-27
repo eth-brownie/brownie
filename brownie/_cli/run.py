@@ -46,9 +46,10 @@ def main():
     path_str = path.absolute().as_posix()
 
     try:
-        return_value = run(args["<filename>"], method_name=args["<function>"] or "main")
+        return_value, frame = run(
+            args["<filename>"], method_name=args["<function>"] or "main", _include_frame=True
+        )
         exit_code = 0
-        extra_locals = {"_": return_value}
     except Exception as e:
         print(color.format_tb(e))
         frame = next(
@@ -58,14 +59,14 @@ def main():
         if frame is None:
             # exception was an internal brownie issue - do not open the console
             sys.exit(1)
-
-        # when exception occurs in the script, open console with the namespace of the failing frame
         exit_code = 1
-        globals_dict = {k: v for k, v in frame.f_globals.items() if not k.startswith("__")}
-        extra_locals = {**globals_dict, **frame.f_locals}
+        return_value = None
 
     try:
         if args["--interactive"]:
+            # filter internal objects from the namespace prior to opening the console
+            globals_dict = {k: v for k, v in frame.f_globals.items() if not k.startswith("__")}
+            extra_locals = {"_": return_value, **globals_dict, **frame.f_locals}
             shell = Console(active_project, extra_locals)
             shell.interact(banner="\nInteractive mode enabled. Use quit() to close.", exitmsg="")
     finally:
