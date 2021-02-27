@@ -1100,9 +1100,9 @@ class Contract(_DeployedContractBase):
             # always check for an EIP1822 proxy - https://eips.ethereum.org/EIPS/eip-1822
             implementation_eip1822 = web3.eth.getStorageAt(address, web3.keccak(text="PROXIABLE"))
             if len(implementation_eip1967) > 0 and int(implementation_eip1967.hex(), 16):
-                as_proxy_for = _resolve_address(implementation_eip1967[12:])
+                as_proxy_for = _resolve_address(implementation_eip1967[-20:])
             elif len(implementation_eip1822) > 0 and int(implementation_eip1822.hex(), 16):
-                as_proxy_for = _resolve_address(implementation_eip1822[12:])
+                as_proxy_for = _resolve_address(implementation_eip1822[-20:])
             elif data["result"][0].get("Implementation"):
                 # for other proxy patterns, we only check if etherscan indicates
                 # the contract is a proxy. otherwise we could have a false positive
