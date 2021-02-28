@@ -892,6 +892,8 @@ class Contract(_DeployedContractBase):
             Contract owner. If set, transactions without a `from` field
             will be performed using this account.
         """
+        address_or_alias = address_or_alias.strip()
+
         if args or kwargs:
             warnings.warn(
                 "Initializing `Contract` in this manner is deprecated."
@@ -917,9 +919,9 @@ class Contract(_DeployedContractBase):
                 or not CONFIG.active_network.get("explorer")
             ):
                 if not address:
-                    raise ValueError(f"Unknown alias: {address_or_alias}")
+                    raise ValueError(f"Unknown alias: '{address_or_alias}'")
                 else:
-                    raise ValueError(f"Unknown contract address: {address}")
+                    raise ValueError(f"Unknown contract address: '{address}'")
             contract = self.from_explorer(address, owner=owner, silent=True)
             build, sources = contract._build, contract._sources
             address = contract.address
