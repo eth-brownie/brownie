@@ -228,6 +228,12 @@ Console
 
     default value: ``true``
 
+.. py:attribute:: editing_mode
+
+    Choose between ``emacs`` and ``vi`` console editing modes.
+
+    default value: ``emacs``
+
 .. _config-reports:
 
 Reports
