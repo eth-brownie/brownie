@@ -40,12 +40,12 @@ live:
         explorer: https://blockscout.com/etc/kotti/api
   - name: Binance Smart Chain
     networks:
-      - name: bsc-test
+      - name: Testnet
         chainid: 97
         id: bsc-test
         host: https://data-seed-prebsc-1-s1.binance.org:8545
         explorer: https://api-testnet.bscscan.com/api
-      - name: bsc-main
+      - name: Mainnet
         chainid: 56
         id: bsc-main
         host: https://bsc-dataseed.binance.org
