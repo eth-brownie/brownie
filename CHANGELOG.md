@@ -7,11 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Fixed
-- Bump dependency version for [eth-event](https://github.com/iamdefinitelyahuman/eth-event) to [1.2.1](https://github.com/iamdefinitelyahuman/eth-event/releases/tag/v1.2.1) to mitigate the topic generation bug for events with dynamic/fixed size tuple array inputs ([#957](https://github.com/eth-brownie/brownie/pull/957))
+- Strip whitespace from `address_or_alias` ([#978](https://github.com/eth-brownie/brownie/pull/978))
+- Automatic source code verification on BscScan ([#962](https://github.com/eth-brownie/brownie/pull/962))
+
+## [1.13.2](https://github.com/eth-brownie/brownie/tree/v1.13.2) - 2021-02-28
 ### Added
-- Iterate over network connections instead of local process list to support RPC-attaching with host-based and dockerized RPC clients.
-- Resolve hostnames provided in host network field to the actual IP when RPC-attaching,
-- Automatic source code verification on BscScan.
+- Load installed packages via `project.load` ([#971](https://github.com/eth-brownie/brownie/pull/971))
+
+### Changed
+- `brownie run --interactive` enters the console with the namespace of the successfully executed function ([#976](https://github.com/eth-brownie/brownie/pull/976))
+
+### Fixed
+- Bump dependency version for [eth-event](https://github.com/iamdefinitelyahuman/eth-event) to [1.2.1](https://github.com/iamdefinitelyahuman/eth-event/releases/tag/v1.2.1) to mitigate the topic generation bug for events with dynamic/fixed size tuple array inputs ([#957](https://github.com/eth-brownie/brownie/pull/957))
+- Iterate over network connections instead of local process list to support RPC-attaching with host-based and dockerized RPC clients ([#972](https://github.com/eth-brownie/brownie/pull/972))
+- Resolve hostnames provided in host network field to the actual IP when RPC-attaching ([#972](https://github.com/eth-brownie/brownie/pull/972))
+- Correctly handle non-push instructions when parsing compiler outputs ([#952](https://github.com/eth-brownie/brownie/pull/952))
+- Issue with implementation contract addresses pulled from `eth_getStorageAt` using Ganache `v6.12.2` ([#974](https://github.com/eth-brownie/brownie/pull/974))
 
 ## [1.13.1](https://github.com/eth-brownie/brownie/tree/v1.13.1) - 2021-01-31
 ### Fixed

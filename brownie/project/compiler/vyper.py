@@ -312,6 +312,15 @@ def _generate_coverage_data(
 
         # set source offset (-1 means none)
         if source[0] == -1:
+            if (
+                len(pc_list) > 6
+                and pc_list[-7]["op"] == "CALLVALUE"
+                and pc_list[-1]["op"] == "REVERT"
+            ):
+                # special case - initial nonpayable check on vyper >=0.2.5
+                pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
+                # hackiness to prevent the source highlight from showing the entire contract
+                pc_list[-2].update(path="0", offset=[0, 0])
             continue
         offset = (source[0], source[0] + source[1])
         pc_list[-1]["path"] = "0"
@@ -368,12 +377,6 @@ def _generate_coverage_data(
 
     pc_list[0]["path"] = "0"
     pc_list[0]["offset"] = [0, _convert_src(ast_json[-1]["src"])[1]]
-
-    if len(pc_list) > 7 and pc_list[0]["op"] == "CALLVALUE" and pc_list[6]["op"] == "REVERT":
-        # special case - initial nonpayable check on vyper >=0.2.5
-        pc_list[6]["dev"] = "Cannot send ether to nonpayable function"
-        # hackiness to prevent the source highlight from showing the entire contract
-        pc_list[5].update(path="0", offset=[0, 0])
 
     pc_map = dict((i.pop("pc"), i) for i in pc_list)
 
