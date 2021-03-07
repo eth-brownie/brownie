@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Fixed
 - Strip whitespace from `address_or_alias` ([#978](https://github.com/eth-brownie/brownie/pull/978))
+- Automatic source code verification on BscScan ([#962](https://github.com/eth-brownie/brownie/pull/962))
 
 ## [1.13.2](https://github.com/eth-brownie/brownie/tree/v1.13.2) - 2021-02-28
 ### Added

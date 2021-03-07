@@ -373,12 +373,14 @@ class ContractContainer(_ContractBase):
         """Flatten contract and publish source on the selected explorer"""
 
         # Check required conditions for verifying
+        allowed_explorers = ["etherscan", "bscscan"]
         url = CONFIG.active_network.get("explorer")
         if url is None:
             raise ValueError("Explorer API not set for this network")
-        if "etherscan" not in url:
+        if not any(allowed_explorer in url for allowed_explorer in allowed_explorers):
             raise ValueError(
-                "Publishing source is only supported on etherscan, change the Explorer API"
+                f"Publishing source is only supported on {allowed_explorers},"
+                "change the Explorer API"
             )
 
         if os.getenv("ETHERSCAN_TOKEN"):
@@ -453,7 +455,7 @@ class ContractContainer(_ContractBase):
                 if i >= 10:
                     raise ValueError(f"API request failed with: {data['result']}")
                 elif i == 0 and not silent:
-                    print("Waiting for etherscan to process contract...")
+                    print(f"Waiting for {url} to process contract...")
                 i += 1
                 time.sleep(10)
 
