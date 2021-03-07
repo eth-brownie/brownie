@@ -6,9 +6,15 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.13.3](https://github.com/eth-brownie/brownie/tree/v1.13.3) - 2021-03-08
+### Added
+- Option to choose console editting mode ([#970](https://github.com/eth-brownie/brownie/pull/970))
+
 ### Fixed
 - Strip whitespace from `address_or_alias` ([#978](https://github.com/eth-brownie/brownie/pull/978))
 - Automatic source code verification on BscScan ([#962](https://github.com/eth-brownie/brownie/pull/962))
+- Heuristic for nonpayable function revert in Vyper `v0.2.11` ([#979](https://github.com/eth-brownie/brownie/pull/979))
 
 ## [1.13.2](https://github.com/eth-brownie/brownie/tree/v1.13.2) - 2021-02-28
 ### Added

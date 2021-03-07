@@ -62,7 +62,7 @@ Dependencies
 Brownie has the following dependencies:
 
 * `python3 <https://www.python.org/downloads/release/python-368/>`_ version 3.6 or greater, python3-dev
-* `ganache-cli <https://github.com/trufflesuite/ganache-cli>`_ - tested with version `6.11.0 <https://github.com/trufflesuite/ganache-cli/releases/tag/v6.11.0>`_
+* `ganache-cli <https://github.com/trufflesuite/ganache-cli>`_ - tested with version `6.12.2 <https://github.com/trufflesuite/ganache-cli/releases/tag/v6.12.2>`_
 
 .. _install-tk:
 
