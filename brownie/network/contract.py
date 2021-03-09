@@ -1834,6 +1834,17 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     if address in _unverified_addresses:
         raise ValueError(f"Source for {address} has not been verified")
 
+    code = web3.eth.getCode(address).hex()[2:]
+    # EIP-1167: Minimal Proxy Contract
+    if code[:20] == "363d3d373d3d3d363d73" and code[60:] == "5af43d82803e903d91602b57fd5bf3":
+        address = _resolve_address(code[20:60])
+    # Vyper <0.2.9 `create_forwarder_to`
+    elif (
+        code[:30] == "366000600037611000600036600073"
+        and code[70:] == "5af4602c57600080fd5b6110006000f3"
+    ):
+        address = _resolve_address(code[30:70])
+
     params: Dict = {"module": "contract", "action": action, "address": address}
     if "etherscan" in url:
         if os.getenv("ETHERSCAN_TOKEN"):
