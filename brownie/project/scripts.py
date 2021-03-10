@@ -6,9 +6,10 @@ import inspect
 import sys
 import warnings
 from hashlib import sha1
+from inspect import getmembers, isfunction
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Generator, Optional, Tuple
 
 from brownie.exceptions import ProjectNotFound
 from brownie.project.main import Project, check_for_project, get_loaded_projects
@@ -39,6 +40,9 @@ def run(
         args = tuple()
     if kwargs is None:
         kwargs = {}
+    # modify sys.path to ensure script can be imported
+    root_path = Path(".").resolve().root
+    sys.path.insert(0, root_path)
 
     script, project = _get_path(script_path)
 
@@ -46,17 +50,24 @@ def run(
     if project is not None:
         project._add_to_main_namespace()
 
-    # modify sys.path to ensure script can be imported
-    root_path = Path(".").resolve().root
-    sys.path.insert(0, root_path)
-
     try:
         module = _import_from_path(script)
 
         name = module.__name__
 
         if not hasattr(module, method_name):
-            raise AttributeError(f"Module '{name}' has no method '{method_name}'")
+            module_methods = get_method_list(module)
+            available_methods_string = ""
+            for method in module_methods:
+                available_methods_string += (
+                    f"{color('green')}{method[0]}{color} brownie run {script_path} {method[0]}\n"
+                )
+
+            raise AttributeError(
+                f"Module '{name}' has no method '{method_name}'\n"
+                f"Available methods:\n"
+                f"{available_methods_string}"
+            )
         try:
             module_path = Path(module.__file__).relative_to(Path(".").absolute())
         except ValueError:
@@ -105,6 +116,9 @@ def run(
 
 def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
     # Returns path to a python module
+    root_path = Path(".").resolve().root
+    # modify sys.path to ensure script can be imported
+    sys.path.insert(0, root_path)
     path = Path(path_str).with_suffix(".py")
 
     if not get_loaded_projects():
@@ -120,10 +134,16 @@ def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
                 script_path = project._path.joinpath(project._structure["scripts"]).joinpath(path)
             if script_path.exists():
                 return script_path.resolve(), project
-        raise FileNotFoundError(f"Cannot find {path_str}")
+        string_tree = create_string_tree("scripts")
+        raise FileNotFoundError(
+            f"Cannot find {path_str}\n" f"Available scripts:\n" f"{string_tree}"
+        )
 
     if not path.exists():
-        raise FileNotFoundError(f"Cannot find {path_str}")
+        string_tree = create_string_tree("scripts")
+        raise FileNotFoundError(
+            f"Cannot find {path_str}\n" f"Available scripts:\n" f"{string_tree}"
+        )
 
     try:
         project = next(i for i in get_loaded_projects() if path_str.startswith(i._path.as_posix()))
@@ -169,3 +189,63 @@ def _get_ast_hash(path: str) -> str:
 
     dump = "\n".join(ast.dump(i) for i in ast_list)
     return sha1(dump.encode()).hexdigest()
+
+
+def get_method_list(module: ModuleType) -> list:
+    methods = [
+        method
+        for method in getmembers(module)
+        if isfunction(method[1]) and not method[0].startswith("_")
+    ]
+    return methods
+
+
+space = "    "
+branch = "│   "
+tee = "├── "
+last = "└── "
+
+
+def tree(dir_path: Path, prefix: str = "") -> Generator:
+    # A recursive generator from https://stackoverflow.com/a/59109706
+    contents = list(dir_path.iterdir())
+    contents = list(filter(lambda path: not path.name.startswith("__"), contents))
+
+    pointers = [tee] * (len(contents) - 1) + [last]
+
+    for pointer, path in zip(pointers, contents):
+        if path.name.endswith(".py"):
+            try:
+
+                module = _import_from_path(path.absolute())
+                method_list = get_method_list(module)
+                if len(method_list) == 0:
+                    yield prefix + pointer + path.name + "    No available methods"
+                else:
+                    yield prefix + pointer + path.name
+
+                    extension = branch if pointer == tee else space
+                    for i in range(len(method_list)):
+                        method_prefix = last if i == len(method_list) - 1 else tee
+                        method_name = method_list[i][0]
+                        full_prefix = prefix + extension + method_prefix
+                        colored_method = f'{color("green")}{method_name}{color}'
+                        command = "    brownie run " + path.as_posix()[:-3] + " " + method_name
+                        yield full_prefix + colored_method + command
+
+            except Exception:
+                path_with_prefix = prefix + pointer + path.name
+                yield path_with_prefix + f'{color("red")}    Error while importing a module{color}'
+
+        if path.is_dir():
+            yield prefix + pointer + path.name
+            extension = branch if pointer == tee else space
+            yield from tree(path, prefix=prefix + extension)
+
+
+def create_string_tree(path_name: str) -> str:
+    string_tree = ""
+    tree_generator = tree(Path(path_name))
+    for line in tree_generator:
+        string_tree += line + "\n"
+    return string_tree
