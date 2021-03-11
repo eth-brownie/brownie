@@ -249,7 +249,7 @@ def _decode_logs(logs: List, contracts: Optional[Dict] = None) -> EventDict:
     return EventDict(events)
 
 
-def _decode_ds_note(log, contract):
+def _decode_ds_note(log, contract):  # type: ignore
     # ds-note encodes function selector as the first topic
     selector, tail = log.topics[0][:4], log.topics[0][4:]
     if selector.hex() not in contract.selectors or sum(tail):
