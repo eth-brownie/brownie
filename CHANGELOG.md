@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+### Added
+- Detect EIP-1167 and Vyper minimal proxies ([#984](https://github.com/eth-brownie/brownie/pull/984))
+- Decode ds-note events ([#985](https://github.com/eth-brownie/brownie/pull/985))
+
 ## [1.13.3](https://github.com/eth-brownie/brownie/tree/v1.13.3) - 2021-03-08
 ### Added
 - Option to choose console editting mode ([#970](https://github.com/eth-brownie/brownie/pull/970))
