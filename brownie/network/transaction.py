@@ -204,7 +204,11 @@ class TransactionReceipt:
     def events(self) -> Optional[EventDict]:
         if self._events is None:
             if self.status:
-                self._events = _decode_logs(self.logs)  # type: ignore
+                # relay contract map so we can decode ds-note logs
+                contracts = {
+                    addr: state._find_contract(addr) for addr in {log.address for log in self.logs}
+                }
+                self._events = _decode_logs(self.logs, contracts=contracts)  # type: ignore
             else:
                 self._get_trace()
                 # get events from the trace - handled lazily so that other
