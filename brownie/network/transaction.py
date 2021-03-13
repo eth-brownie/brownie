@@ -120,7 +120,7 @@ class TransactionReceipt:
     contract_name = None
     fn_name = None
     gas_used = None
-    logs = None
+    logs: Optional[List] = None
     nonce = None
     sender = None
     txid: str
@@ -204,7 +204,10 @@ class TransactionReceipt:
     def events(self) -> Optional[EventDict]:
         if self._events is None:
             if self.status:
-                self._events = _decode_logs(self.logs)  # type: ignore
+                # relay contract map so we can decode ds-note logs
+                addrs = {log.address for log in self.logs} if self.logs else set()
+                contracts = {addr: state._find_contract(addr) for addr in addrs}
+                self._events = _decode_logs(self.logs, contracts=contracts)  # type: ignore
             else:
                 self._get_trace()
                 # get events from the trace - handled lazily so that other

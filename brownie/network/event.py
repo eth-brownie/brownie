@@ -215,7 +215,7 @@ def _add_deployment_topics(address: str, abi: List) -> None:
     _deployment_topics[address] = eth_event.get_topic_map(abi)
 
 
-def _decode_logs(logs: List) -> EventDict:
+def _decode_logs(logs: List, contracts: Optional[Dict] = None) -> EventDict:
     if not logs:
         return EventDict()
 
@@ -232,6 +232,11 @@ def _decode_logs(logs: List) -> EventDict:
 
         topics_map = _deployment_topics.get(address, _topics)
         for item in log_slice:
+            if contracts and contracts[item.address]:
+                note = _decode_ds_note(item, contracts[item.address])
+                if note:
+                    events.append(note)
+                    continue
             try:
                 events.extend(eth_event.decode_logs([item], topics_map, allow_undecoded=True))
             except EventError as exc:
@@ -242,6 +247,30 @@ def _decode_logs(logs: List) -> EventDict:
 
     events = [format_event(i) for i in events]
     return EventDict(events)
+
+
+def _decode_ds_note(log, contract):  # type: ignore
+    # ds-note encodes function selector as the first topic
+    selector, tail = log.topics[0][:4], log.topics[0][4:]
+    if selector.hex() not in contract.selectors or sum(tail):
+        return
+    name = contract.selectors[selector.hex()]
+    data = bytes.fromhex(log.data[2:])
+    # data uses ABI encoding of [uint256, bytes] or [bytes] in different versions
+    # instead of trying them all, assume the payload starts from selector
+    try:
+        func, args = contract.decode_input(data[data.index(selector) :])
+    except ValueError:
+        return
+    return {
+        "name": name,
+        "address": log.address,
+        "decoded": True,
+        "data": [
+            {"name": abi["name"], "type": abi["type"], "value": arg, "decoded": True}
+            for arg, abi in zip(args, contract.get_method_object(selector.hex()).abi["inputs"])
+        ],
+    }
 
 
 def _decode_trace(trace: Sequence, initial_address: str) -> EventDict:
