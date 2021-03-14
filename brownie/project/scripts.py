@@ -2,13 +2,12 @@
 
 import ast
 import importlib
-import inspect
 import sys
 import warnings
 from hashlib import sha1
 from pathlib import Path
-from types import ModuleType
-from typing import Any, Dict, Optional, Tuple
+from types import FunctionType, ModuleType
+from typing import Any, Dict, List, Optional, Tuple
 
 from brownie.exceptions import ProjectNotFound
 from brownie.project.main import Project, check_for_project, get_loaded_projects
@@ -52,10 +51,10 @@ def run(
 
     try:
         module = _import_from_path(script)
-
         name = module.__name__
 
-        if not hasattr(module, method_name):
+        func = getattr(module, method_name, None)
+        if not isinstance(func, FunctionType):
             raise AttributeError(f"Module '{name}' has no method '{method_name}'")
         try:
             module_path = Path(module.__file__).relative_to(Path(".").absolute())
@@ -65,7 +64,7 @@ def run(
             f"\nRunning '{color('bright blue')}{module_path}{color}::"
             f"{color('bright cyan')}{method_name}{color}'..."
         )
-        func = getattr(module, method_name)
+
         if not _include_frame:
             return func(*args, **kwargs)
 
@@ -74,8 +73,16 @@ def run(
         # namespace as the function that it just ran.
 
         # first, we extract the source code from the function and parse it to an AST
-        source = inspect.getsource(func)
+        # we generate the AST from the entire module to preserve line numbers
+        with Path(module.__file__).open() as fp:
+            source = fp.read()
         func_ast = ast.parse(source)
+
+        # use the last function with the correct name, consistent with how python handles
+        func_nodes: List = [
+            i for i in func_ast.body if isinstance(i, ast.FunctionDef) and i.name == method_name
+        ]
+        func_ast.body = func_nodes[-1:]
 
         # next, we insert some new logic into the beginning of the function. this imports
         # the sys module and assigns the current frame to a global var `__brownie_frame`
@@ -87,7 +94,7 @@ def run(
         # so that we have access to all the required imports and other objects
         f_locals: Dict = module.__dict__.copy()
         del f_locals[method_name]
-        func_code = compile(func_ast, "", "exec")
+        func_code = compile(func_ast, module.__file__, "exec")
         exec(func_code, f_locals)
 
         # finally, we execute our new function from inside the copied globals dict. the frame
