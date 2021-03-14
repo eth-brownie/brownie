@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.13.4](https://github.com/eth-brownie/brownie/tree/v1.13.4) - 2021-03-14
 ### Added
 - Detect EIP-1167 and Vyper minimal proxies ([#984](https://github.com/eth-brownie/brownie/pull/984))
 - Decode ds-note events ([#985](https://github.com/eth-brownie/brownie/pull/985))
+
+### Changed
+- During pytest interactive debugging , `continue` now exits the console to run the next test ([#989](https://github.com/eth-brownie/brownie/pull/989))
+
+### Fixed
+- Issue around the "optimizer revert" in solidity 0.8.2 ([#988](https://github.com/eth-brownie/brownie/pull/988))
 
 ## [1.13.3](https://github.com/eth-brownie/brownie/tree/v1.13.3) - 2021-03-08
 ### Added
