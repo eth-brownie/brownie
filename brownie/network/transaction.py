@@ -670,11 +670,16 @@ class TransactionReceipt:
 
                     # if this is the optimizer revert, find the actual source
                     if "optimizer_revert" in pc_map[step["pc"]]:
-                        idx = trace.index(step)
-                        while trace[idx]["op"] != "JUMPDEST":
-                            # look for the most recent jump
+                        idx = trace.index(step) - 1
+
+                        # look for the most recent jump
+                        while trace[idx + 1]["op"] != "JUMPDEST":
+                            if trace[idx]["source"] != step["source"]:
+                                # if we find another line with a differing source offset prior
+                                # to a JUMPDEST, the optimizer revert is also the actual revert
+                                idx = trace.index(step)
+                                break
                             idx -= 1
-                        idx -= 1
                         while not trace[idx]["source"]:
                             # now we're in a yul optimization, keep stepping back
                             # until we find a source offset
@@ -683,6 +688,7 @@ class TransactionReceipt:
                         step["source"] = trace[idx]["source"]
                         step = trace[idx]
 
+                    # breakpoint()
                     if "dev" in pc_map[step["pc"]]:
                         self._dev_revert_msg = pc_map[step["pc"]]["dev"]
                     else:
