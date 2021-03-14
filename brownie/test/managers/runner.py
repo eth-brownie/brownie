@@ -466,13 +466,15 @@ class PytestBrownieRunner(PytestBrownieBase):
 
             try:
                 CONFIG.argv["cli"] = "console"
-                shell = Console(self.project, extra_locals=namespace)
-                shell.interact(
-                    banner="\nInteractive mode enabled. Use quit() to continue running tests.",
-                    exitmsg="",
+                shell = Console(self.project, extra_locals=namespace, exit_on_continue=True)
+                banner = (
+                    "\nInteractive mode enabled. Type `continue` to"
+                    " resume testing or `quit()` to halt execution."
                 )
-            except SystemExit:
-                pass
+                shell.interact(banner=banner, exitmsg="")
+            except SystemExit as exc:
+                if exc.code != "continue":
+                    pytest.exit("Test execution halted due to SystemExit")
             finally:
                 CONFIG.argv["cli"] = "test"
 
