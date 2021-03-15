@@ -19,7 +19,6 @@ from brownie._singleton import _Singleton
 from brownie.convert import EthAddress, Wei, to_address
 from brownie.exceptions import (
     ContractNotFound,
-    IncompatibleEVMVersion,
     TransactionError,
     UnknownAccount,
     VirtualMachineError,
@@ -440,11 +439,6 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if gas_limit and gas_buffer:
             raise ValueError("Cannot set gas_limit and gas_buffer together")
 
-        evm = contract._build["compiler"]["evm_version"]
-        if rpc.is_active() and not rpc.evm_compatible(evm):
-            raise IncompatibleEVMVersion(
-                f"Local RPC using '{rpc.evm_version()}' but contract was compiled for '{evm}'"
-            )
         data = contract.deploy.encode_input(*args)
         if silent is None:
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
