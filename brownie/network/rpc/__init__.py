@@ -49,9 +49,9 @@ def internal(fn: Callable) -> Callable:
 
 
 class Rpc(metaclass=_Singleton):
-    def __init__(self):
-        self.process = None
-        self.backend = ganache
+    def __init__(self) -> None:
+        self.process: Union[psutil.Popen, psutil.Process] = None
+        self.backend: Any = ganache
         atexit.register(self._at_exit)
 
     def _at_exit(self) -> None:
@@ -175,7 +175,7 @@ class Rpc(metaclass=_Singleton):
         return self.backend.snapshot()
 
     @internal
-    def revert(self, snapshot_id) -> int:
+    def revert(self, snapshot_id: int) -> int:
         self.backend.revert(snapshot_id)
         return web3.eth.blockNumber
 

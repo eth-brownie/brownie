@@ -73,7 +73,7 @@ def launch(cmd: str, **kwargs: Dict) -> None:
     return psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
 
 
-def on_connection():
+def on_connection() -> None:
     pass
 
 
