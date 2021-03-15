@@ -82,6 +82,7 @@ class Rpc(metaclass=_Singleton):
         for i in range(100):
             if web3.isConnected():
                 chain._network_connected()
+                self.backend.on_connection()
                 return
             time.sleep(0.1)
             if isinstance(self.process, psutil.Popen):
@@ -114,11 +115,12 @@ class Rpc(metaclass=_Singleton):
         self.process = psutil.Process(pid)
 
         for key, module in ATTACH_BACKENDS.items():
-            if web3.clientVersion.startswith(key):
+            if web3.clientVersion.lower().startswith(key):
                 self.backend = module
                 break
 
         chain._network_connected()
+        self.backend.on_connection()
 
     def kill(self, exc: bool = True) -> None:
         """Terminates the RPC process and all children with SIGKILL.

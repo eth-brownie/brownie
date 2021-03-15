@@ -73,6 +73,10 @@ def launch(cmd: str, **kwargs: Dict) -> None:
     return psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
 
 
+def on_connection():
+    pass
+
+
 def _request(method: str, args: List) -> int:
     try:
         response = web3.provider.make_request(method, args)  # type: ignore
