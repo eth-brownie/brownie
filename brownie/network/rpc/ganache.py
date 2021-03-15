@@ -100,8 +100,12 @@ def snapshot() -> int:
     return _request("evm_snapshot", [])
 
 
-def revert(snapshot_id):
+def revert(snapshot_id: int) -> None:
     _request("evm_revert", [snapshot_id])
+
+
+def unlock_account(address: str) -> None:
+    web3.provider.make_request("evm_unlockUnknownAccount", [address])  # type: ignore
 
 
 def _validate_cmd_settings(cmd_settings: dict) -> dict:

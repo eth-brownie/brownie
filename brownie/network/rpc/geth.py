@@ -44,5 +44,9 @@ def snapshot() -> int:
     raise NotImplementedError("Geth dev does not support snapshots or rewinds")
 
 
-def revert(snapshot_id):
+def revert(snapshot_id: int) -> None:
     raise NotImplementedError("Geth dev does not support snapshots or rewinds")
+
+
+def unlock_account(address: str) -> None:
+    raise NotImplementedError("Geth dev does not support unlocking accounts")

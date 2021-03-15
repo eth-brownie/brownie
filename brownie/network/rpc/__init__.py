@@ -27,6 +27,7 @@ ATTACH_BACKENDS = {
 LAUNCH_BACKENDS = {
     "ganache": ganache,
     "ethnode": geth,
+    "geth": geth,
 }
 
 
@@ -177,6 +178,9 @@ class Rpc(metaclass=_Singleton):
     def revert(self, snapshot_id) -> int:
         self.backend.revert(snapshot_id)
         return web3.eth.blockNumber
+
+    def unlock_account(self, address: str) -> None:
+        self.backend.unlock_account(address)
 
 
 def _find_rpc_process_pid(laddr: Tuple) -> int:
