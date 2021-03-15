@@ -304,7 +304,11 @@ class Chain(metaclass=_Singleton):
 
     def _network_connected(self) -> None:
         self._reset_id = None
-        self.reset()
+        try:
+            self.reset()
+        except NotImplementedError:
+            # required for geth dev
+            _notify_registry(0)
 
     def _network_disconnected(self) -> None:
         self._undo_buffer.clear()

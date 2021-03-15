@@ -41,7 +41,7 @@ def mine(timestamp: Optional[int] = None) -> None:
 
 
 def snapshot() -> int:
-    raise NotImplementedError("Geth dev does not support snapshots or rewinds")
+    return 0
 
 
 def revert(snapshot_id: int) -> None:
