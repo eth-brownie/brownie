@@ -1,11 +1,16 @@
 #!/usr/bin/python3
-
+import os
 from setuptools import find_packages, setup
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-with open("requirements.txt", "r") as f:
+if os.environ.get("BROWNIE_LIB", "0") == "1":
+    requirements_filename = "requirements.in"
+else:
+    requirements_filename = "requirements.txt"
+
+with open(requirements_filename, "r") as f:
     requirements = list(map(str.strip, f.read().split("\n")))[:-1]
 
 setup(

@@ -1,0 +1,15 @@
+-r requirements.in
+
+bumpversion
+coverage
+flake8
+isort
+mypy
+pip-tools
+pytest-cov
+pytest-mock
+sphinx
+sphinx_rtd_theme
+tox
+twine
+wheel
