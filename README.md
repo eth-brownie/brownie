@@ -85,6 +85,7 @@ There are extra tools that are helpful when developing:
 git clone https://github.com/eth-brownie/brownie.git
 cd brownie
 python3 -m venv venv
+./venv/bin/pip install wheel
 ./venv/bin/pip install -e . -r requirements-dev.txt
 ```
 
@@ -92,6 +93,7 @@ Upgrading the pinned versions of dependencies is easy:
 ```
 ./venv/bin/pip-compile --upgrade
 ./venv/bin/pip-compile --upgrade requirements-dev.in
+./venv/bin/pip-compile --upgrade requirements-windows.in
 ```
 
 Even small upgrades of patch versions have broken things in the past, so be sure to run all tests after upgrading things!

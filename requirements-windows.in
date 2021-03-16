@@ -1,0 +1,3 @@
+-r requirements.in
+
+colorama>=0.4.1,<1
