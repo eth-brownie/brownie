@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+### Changed
+- `export BROWNIE_LIB=1` to install brownie with soft pins. Also ensured hard pins for all dependencies are set. ([#993](https://github.com/eth-brownie/brownie/pull/993))
+
 ## [1.13.4](https://github.com/eth-brownie/brownie/tree/v1.13.4) - 2021-03-14
 ### Added
 - Detect EIP-1167 and Vyper minimal proxies ([#984](https://github.com/eth-brownie/brownie/pull/984))
