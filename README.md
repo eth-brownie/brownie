@@ -119,7 +119,7 @@ If you have any questions about how to use Brownie, feel free to ask on [Ethereu
 To run the tests, first install the developer dependencies:
 
 ```bash
-pip install -e -r requirements-dev.txt
+pip install -e . -r requirements-dev.txt
 ```
 
 Then use [`tox`](https://github.com/tox-dev/tox) to run the complete suite against the full set of build targets, or [`pytest`](https://github.com/pytest-dev/pytest) to run tests against a specific version of Python. If you are using [`pytest`](https://github.com/pytest-dev/pytest) you must include the `-p no:pytest-brownie` flag to prevent it from loading the Brownie plugin.
