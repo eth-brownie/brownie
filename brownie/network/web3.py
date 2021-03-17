@@ -4,19 +4,18 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Set
+from typing import Dict, Optional, Set
 
 from ens import ENS
 from web3 import HTTPProvider, IPCProvider
 from web3 import Web3 as _Web3
 from web3 import WebsocketProvider
-from web3.exceptions import ExtraDataLengthError
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
-from web3.middleware import geth_poa_middleware
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
+from brownie.network.middlewares import get_middlewares
 
 _chain_uri_cache: Dict = {}
 
@@ -35,11 +34,18 @@ class Web3(_Web3):
         self._custom_middleware: Set = set()
         self._supports_traces = None
 
+    def _remove_middlewares(self) -> None:
+        for middleware in self._custom_middleware:
+            try:
+                self.middleware_onion.remove(middleware)
+            except ValueError:
+                pass
+            middleware.uninstall()
+        self._custom_middleware.clear()
+
     def connect(self, uri: str, timeout: int = 30) -> None:
         """Connects to a provider"""
-        for middleware in self._custom_middleware:
-            self.middleware_onion.remove(middleware)
-        self._custom_middleware.clear()
+        self._remove_middlewares()
         self.provider = None
 
         uri = _expand_environment_vars(uri)
@@ -68,21 +74,22 @@ class Web3(_Web3):
             # checking an invalid connection sometimes raises on windows systems
             return
 
-        # add middlewares
-        try:
-            if "fork" in CONFIG.active_network["cmd_settings"]:
-                self._custom_middleware.add(_ForkMiddleware)
-                self.middleware_onion.add(_ForkMiddleware)
-        except (ConnectionError, KeyError):
-            pass
+        # # add middlewares
+        middleware_layers = get_middlewares(self, CONFIG.network_type)
 
-        try:
-            self.eth.getBlock("latest")
-        except ExtraDataLengthError:
-            self._custom_middleware.add(geth_poa_middleware)
-            self.middleware_onion.inject(geth_poa_middleware, layer=0)
-        except ConnectionError:
-            pass
+        # middlewares with a layer below zero are injected
+        to_inject = sorted((i for i in middleware_layers if i < 0), reverse=True)
+        for layer, obj in [(k, x) for k in to_inject for x in middleware_layers[k]]:
+            middleware = obj(self)
+            self.middleware_onion.inject(middleware, layer=0)
+            self._custom_middleware.add(middleware)
+
+        # middlewares with a layer of zero or greater are added
+        to_add = sorted(i for i in middleware_layers if i >= 0)
+        for layer, obj in [(k, x) for k in to_add for x in middleware_layers[k]]:
+            middleware = obj(self)
+            self.middleware_onion.add(middleware)
+            self._custom_middleware.add(middleware)
 
     def disconnect(self) -> None:
         """Disconnects from a provider"""
@@ -91,6 +98,7 @@ class Web3(_Web3):
             self._genesis_hash = None
             self._chain_uri = None
             self._supports_traces = None
+            self._remove_middlewares()
 
     def isConnected(self) -> bool:
         if not self.provider:
@@ -145,32 +153,6 @@ class Web3(_Web3):
             chain_uri = f"blockchain://{self.genesis_hash}/block/{block_hash}"
             _chain_uri_cache[self.genesis_hash] = chain_uri
         return _chain_uri_cache[self.genesis_hash]
-
-
-class _ForkMiddleware:
-
-    """
-    Web3 middleware for raising more expressive exceptions when a forked local network
-    cannot access archival states.
-    """
-
-    def __init__(self, make_request: Callable, w3: _Web3):
-        self.w3 = w3
-        self.make_request = make_request
-
-    def __call__(self, method: str, params: List) -> Dict:
-        response = self.make_request(method, params)
-        err_msg = response.get("error", {}).get("message", "")
-        if (
-            err_msg == "Returned error: project ID does not have access to archive state"
-            or err_msg.startswith("Returned error: missing trie node")
-        ):
-            raise ValueError(
-                "Local fork was created more than 128 blocks ago and you do not"
-                " have access to archival states. Please restart your session."
-            )
-
-        return response
 
 
 def _expand_environment_vars(uri: str) -> str:
