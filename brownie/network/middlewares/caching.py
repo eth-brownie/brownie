@@ -4,9 +4,18 @@ import time
 from collections import OrderedDict
 from typing import Callable, Dict, List, Optional
 
+from hexbytes import HexBytes
 from web3 import Web3
 
+from brownie._config import CONFIG, _get_data_folder
 from brownie.network.middlewares import BrownieMiddlewareABC
+from brownie.utils.sql import Cursor
+
+# calls to the following RPC endpoints are stored in a persistent cache
+# if the returned data evaluates true when passed into the lambda
+LONGTERM_CACHE = {
+    "eth_getCode": lambda data: len(data) and b"\xff" not in HexBytes(data),
+}
 
 
 class RequestCachingMiddleware(BrownieMiddlewareABC):
@@ -17,6 +26,10 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     def __init__(self, w3: Web3) -> None:
         self.w3 = w3
+
+        self.table_key = f"chain{CONFIG.active_network['chainid']}"
+        self.cur = Cursor(_get_data_folder().joinpath("cache.db"))
+        self.cur.execute(f"CREATE TABLE IF NOT EXISTS {self.table_key} (method, params, result)")
 
         latest = w3.eth.getBlock("latest")
         self.last_block = latest.hash
@@ -48,7 +61,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                 if self.time_since > 60:
                     self.block_cache.clear()
                     self.event.clear()
-            while self.time_since > 60:
+            if self.time_since > 60:
                 self.event.wait(min(self.time_since / 10, 60))
 
             # query the filter for new blocks
@@ -83,6 +96,19 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
         # try to return a cached value
         param_str = json.dumps(params, separators=(",", ""), default=str)
+
+        # check if the value is available within the long-term cache
+        if method in LONGTERM_CACHE:
+            row = self.cur.fetchone(
+                f"SELECT result FROM {self.table_key} WHERE method=? AND params=?",
+                (method, param_str),
+            )
+            if row:
+                data = row[0]
+                if isinstance(data, bytes):
+                    data = HexBytes(data)
+                return {"id": "cache", "jsonrpc": "2.0", "result": data}
+
         with self.lock:
             self.last_request = time.time()
             self.event.set()
@@ -96,6 +122,15 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             response = make_request(method, params)
             self.block_cache.setdefault(self.last_block, {}).setdefault(method, {})
             self.block_cache[self.last_block][method][param_str] = response
+
+        # check if the value can be added to long-term cache
+        if "result" in response and method in LONGTERM_CACHE:
+            result = response["result"]
+            if LONGTERM_CACHE[method](result):
+                if isinstance(result, (dict, list, tuple)):
+                    result = json.dumps(response, separators=(",", ""), default=str)
+                self.cur.insert(self.table_key, method, param_str, result)
+
         return response
 
     def uninstall(self) -> None:
