@@ -152,8 +152,8 @@ def test_delete_live():
 
 
 def test_delete_development():
-    cli_networks._delete("development")
-    cli_networks._delete("mainnet-fork")
+    for network_name in ("development", "mainnet-fork", "bsc-main-fork"):
+        cli_networks._delete(network_name)
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -162,13 +162,16 @@ def test_delete_development():
 
 
 def test_delete_all_networks_in_prod_environment():
+    with _get_data_folder().joinpath("network-config.yaml").open() as fp:
+        networks = yaml.safe_load(fp)
+    initial_networks = len(networks["live"])
+
     cli_networks._delete("etc")
     cli_networks._delete("kotti")
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
-
-    assert len(networks["live"]) == 1
+    assert len(networks["live"]) == initial_networks - 1
 
 
 def test_export(tmp_path):
