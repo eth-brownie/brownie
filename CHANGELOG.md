@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.14.0](https://github.com/eth-brownie/brownie/tree/v1.14.0) - 2021-03-18
+### Added
+- Generalized RPC logic allowing (limited) use of `geth --dev` as a local test network ([#998](https://github.com/eth-brownie/brownie/pull/998))
+- RPC call caching via web3 middleware ([#997](https://github.com/eth-brownie/brownie/pull/997))
+- Allow tests to target project outside the current working directory via `--brownie-project` cli flag ([#996](https://github.com/eth-brownie/brownie/pull/996))
+- Add BSC mainnet and fork-mode to default networks ([#961](https://github.com/eth-brownie/brownie/pull/961))
+
 ### Changed
 - `export BROWNIE_LIB=1` to install brownie with soft pins. Also ensured hard pins for all dependencies are set. ([#993](https://github.com/eth-brownie/brownie/pull/993))
 
