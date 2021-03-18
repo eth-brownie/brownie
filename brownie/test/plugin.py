@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from typing import Optional
 
 import pytest
 
@@ -12,9 +13,28 @@ from brownie.test.managers import PytestBrownieMaster, PytestBrownieRunner, Pyte
 from brownie.utils import color
 
 
+def _get_project_path() -> Optional[Path]:
+    key = next((i for i in sys.argv if i.startswith("--brownie-project")), "")
+    if key == "--brownie-project":
+        idx = sys.argv.index(key)
+        project_path = Path(sys.argv[idx + 1]).absolute()
+    elif key.startswith("--brownie-project="):
+        project_path = Path(key[18:]).absolute()
+    else:
+        return project.check_for_project(".")
+
+    if project_path != project.check_for_project(project_path):
+        raise pytest.UsageError(f"Unable to load project at '{sys.argv[idx + 1]}'")
+    return project_path
+
+
 # set commandline options
 def pytest_addoption(parser):
-    if project.check_for_project("."):
+    parser.addoption(
+        "--brownie-project", nargs=1, default=".", help="Load a brownie project at the given path"
+    )
+
+    if _get_project_path():
         parser.addoption(
             "--coverage", "-C", action="store_true", help="Evaluate contract test coverage"
         )
@@ -58,11 +78,13 @@ def pytest_addoption(parser):
 
 def pytest_load_initial_conftests(early_config):
     capsys = early_config.pluginmanager.get_plugin("capturemanager")
-    if project.check_for_project("."):
+
+    project_path = _get_project_path()
+    if project_path:
         # suspend stdout capture to display compilation data
         capsys.suspend()
         try:
-            active_project = project.load()
+            active_project = project.load(project_path)
 
             active_project.load_config()
             active_project._add_to_main_namespace()
@@ -75,7 +97,7 @@ def pytest_load_initial_conftests(early_config):
 
 
 def pytest_configure(config):
-    if project.check_for_project("."):
+    if _get_project_path():
 
         if not config.getoption("showinternal"):
             # do not include brownie internals in tracebacks
