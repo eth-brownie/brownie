@@ -776,7 +776,8 @@ class _DeployedContractBase(_ContractBase):
             )
         elif hasattr(self, name):
             warnings.warn(
-                f"WARNING: Namespace collision: '{self._name}.{name}'\n"
+                "Namespace collision between contract function and "
+                f"brownie `Contract` class member: '{self._name}.{name}'\n"
                 f"The {name} function will not be available when interacting with {self._name}",
                 BrownieEnvironmentWarning,
             )
