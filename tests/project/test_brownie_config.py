@@ -5,7 +5,7 @@ import yaml
 
 from brownie._config import _get_data_folder, _load_config
 from brownie.network import web3
-from brownie.network.rpc import _validate_cmd_settings
+from brownie.network.rpc.ganache import _validate_cmd_settings
 
 
 @pytest.fixture
@@ -97,9 +97,6 @@ def test_rpc_project_cmd_settings(devnetwork, testproject, config, settings_proj
     assert web3.isConnected()
     assert web3.eth.chainId == 666
     assert web3.net.version == "777"
-
-    # Test if evm version is returned properly
-    assert devnetwork.rpc.evm_version() == cmd_settings_proj["evm_version"]
 
     devnetwork.rpc.kill()
 

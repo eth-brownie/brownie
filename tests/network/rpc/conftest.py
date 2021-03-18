@@ -20,9 +20,9 @@ def original_port(xdist_id):
 def _no_rpc_setup(rpc, chain, web3, temp_port, original_port):
     CONFIG.networks["development"]["cmd_settings"]["port"] = temp_port
     web3.connect(f"http://127.0.0.1:{temp_port}")
-    proc = rpc._rpc
+    proc = rpc.process
     reset_id = chain._reset_id
-    rpc._rpc = None
+    rpc.process = None
     chain._reset_id = False
     # rpc._launch = rpc.launch
     # rpc.launch = _launch
@@ -33,7 +33,7 @@ def _no_rpc_setup(rpc, chain, web3, temp_port, original_port):
     # rpc.launch = rpc._launch
     rpc.kill(False)
     _notify_registry(0)
-    rpc._rpc = proc
+    rpc.process = proc
     chain._reset_id = reset_id
     chain._current_id = reset_id
 
@@ -45,6 +45,6 @@ def no_rpc(_no_rpc_setup, rpc):
 
 @pytest.fixture
 def temp_rpc(no_rpc, temp_port):
-    if not no_rpc._rpc or not no_rpc.is_active():
+    if not no_rpc.process or not no_rpc.is_active():
         no_rpc.launch("ganache-cli", port=temp_port)
     yield no_rpc

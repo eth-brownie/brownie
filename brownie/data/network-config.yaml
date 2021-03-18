@@ -62,6 +62,12 @@ development:
       accounts: 10
       evm_version: istanbul
       mnemonic: brownie
+  - name: Geth Dev
+    id: geth-dev
+    cmd: ethnode
+    host: http://127.0.0.1
+    cmd_settings:
+      port: 8545
   - name: Ganache-CLI (Mainnet Fork)
     id: mainnet-fork
     cmd: ganache-cli

@@ -3,7 +3,7 @@
 import pytest
 
 from brownie import compile_source
-from brownie.exceptions import IncompatibleEVMVersion, VirtualMachineError
+from brownie.exceptions import VirtualMachineError
 from brownie.network.contract import ProjectContract
 from brownie.network.transaction import TransactionReceipt
 
@@ -117,12 +117,6 @@ def test_raises_on_wrong_nonce(BrownieTester, accounts, nonce):
     assert accounts[0].nonce == 0
     with pytest.raises(ValueError):
         accounts[0].deploy(BrownieTester, True, nonce=nonce)
-
-
-def test_evm_version(BrownieTester, accounts, monkeypatch):
-    monkeypatch.setattr("psutil.Popen.cmdline", lambda s: ["-k", "byzantium"])
-    with pytest.raises(IncompatibleEVMVersion):
-        accounts[0].deploy(BrownieTester, True)
 
 
 def test_selfdestruct_during_deploy(accounts):

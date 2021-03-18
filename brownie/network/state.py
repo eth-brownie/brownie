@@ -9,13 +9,13 @@ from sqlite3 import OperationalError
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 from hexbytes import HexBytes
-from requests.exceptions import ConnectionError as RequestsConnectionError
 from web3.types import BlockData
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
-from brownie.exceptions import BrownieEnvironmentError, RPCRequestError
+from brownie.exceptions import BrownieEnvironmentError
+from brownie.network import rpc
 from brownie.project.build import DEPLOYMENT_KEYS
 from brownie.utils.sql import Cursor
 
@@ -278,25 +278,17 @@ class Chain(metaclass=_Singleton):
             self._block_gas_time = block["timestamp"]
         return Wei(self._block_gas_limit)
 
-    def _request(self, method: str, args: List) -> int:
-        try:
-            response = web3.provider.make_request(method, args)  # type: ignore
-            if "result" in response:
-                return response["result"]
-        except (AttributeError, RequestsConnectionError):
-            raise RPCRequestError("Web3 is not connected.")
-        raise RPCRequestError(response["error"]["message"])
-
-    def _snap(self) -> int:
-        return self._request("evm_snapshot", [])
-
     def _revert(self, id_: int) -> int:
+        rpc_client = rpc.Rpc()
         if web3.isConnected() and not web3.eth.blockNumber and not self._time_offset:
             _notify_registry(0)
-            return self._snap()
-        self._request("evm_revert", [id_])
-        id_ = self._snap()
-        self.sleep(0)
+            return rpc_client.snapshot()
+        rpc_client.revert(id_)
+        id_ = rpc_client.snapshot()
+        try:
+            self.sleep(0)
+        except NotImplementedError:
+            pass
         _notify_registry()
         return id_
 
@@ -308,11 +300,15 @@ class Chain(metaclass=_Singleton):
                 self._redo_buffer.pop()
             else:
                 self._redo_buffer.clear()
-            self._current_id = self._snap()
+            self._current_id = rpc.Rpc().snapshot()
 
     def _network_connected(self) -> None:
         self._reset_id = None
-        self.reset()
+        try:
+            self.reset()
+        except NotImplementedError:
+            # required for geth dev
+            _notify_registry(0)
 
     def _network_disconnected(self) -> None:
         self._undo_buffer.clear()
@@ -347,11 +343,11 @@ class Chain(metaclass=_Singleton):
         """
         if not isinstance(seconds, int):
             raise TypeError("seconds must be an integer value")
-        self._time_offset = self._request("evm_increaseTime", [seconds])
+        self._time_offset = rpc.Rpc().sleep(seconds)
 
         if seconds:
             self._redo_buffer.clear()
-            self._current_id = self._snap()
+            self._current_id = rpc.Rpc().snapshot()
 
     def mine(self, blocks: int = 1, timestamp: int = None, timedelta: int = None) -> int:
         """
@@ -393,13 +389,13 @@ class Chain(metaclass=_Singleton):
             params = [[round(now + duration * i)] for i in range(blocks)]
 
         for i in range(blocks):
-            self._request("evm_mine", params[i])
+            rpc.Rpc().mine(*params[i])
 
         if timestamp is not None:
             self.sleep(0)
 
         self._redo_buffer.clear()
-        self._current_id = self._snap()
+        self._current_id = rpc.Rpc().snapshot()
         return web3.eth.blockNumber
 
     def snapshot(self) -> None:
@@ -410,7 +406,7 @@ class Chain(metaclass=_Singleton):
         """
         self._undo_buffer.clear()
         self._redo_buffer.clear()
-        self._snapshot_id = self._current_id = self._snap()
+        self._snapshot_id = self._current_id = rpc.Rpc().snapshot()
 
     def revert(self) -> int:
         """
@@ -445,7 +441,7 @@ class Chain(metaclass=_Singleton):
         self._undo_buffer.clear()
         self._redo_buffer.clear()
         if self._reset_id is None:
-            self._reset_id = self._current_id = self._snap()
+            self._reset_id = self._current_id = rpc.Rpc().snapshot()
             _notify_registry(0)
         else:
             self._reset_id = self._current_id = self._revert(self._reset_id)
