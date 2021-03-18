@@ -40,6 +40,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
         self.lock = threading.Lock()
         self.event = threading.Event()
+        self.is_killed = False
         threading.Thread(target=self.block_filter_loop, daemon=True).start()
 
     @classmethod
@@ -54,7 +55,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         return time.time() - self.last_request
 
     def block_filter_loop(self) -> None:
-        while True:
+        while not self.is_killed:
             # if the last RPC request was > 60 seconds ago, reduce the rate of updates.
             # we eventually settle at one query per minute after 10 minutes of no requests.
             with self.lock:
@@ -68,8 +69,14 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             with self.lock:
                 try:
                     new_blocks = self.block_filter.get_new_entries()
-                except AttributeError:
-                    return
+                except (AttributeError, ValueError):
+                    # web3 has disconnected, or the filter has expired from inactivity
+                    if self.w3.isConnected():
+                        self.block_filter = self.w3.eth.filter("latest")
+                        continue
+                    else:
+                        return
+
                 if new_blocks:
                     self.block_cache[new_blocks[-1]] = {}
                     self.last_block = new_blocks[-1]
@@ -91,7 +98,8 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
         # do not apply this middleware to filter updates or we'll die recursion death
-        if method in ("eth_getFilterChanges", "eth_uninstallFilter"):
+        # clientVersion is used to check connectivity so we also don't cache that
+        if method in ("eth_getFilterChanges", "eth_uninstallFilter", "web3_clientVersion"):
             return make_request(method, params)
 
         # try to return a cached value
@@ -134,5 +142,6 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         return response
 
     def uninstall(self) -> None:
-        if self.w3.provider:
+        self.is_killed = True
+        if self.w3.isConnected():
             self.w3.eth.uninstallFilter(self.block_filter.filter_id)
