@@ -777,8 +777,14 @@ class _DeployedContractBase(_ContractBase):
                 BrownieEnvironmentWarning,
             )
         elif hasattr(self, name):
-            raise AttributeError(f"Namespace collision: '{self._name}.{name}'")
-        setattr(self, name, obj)
+            warnings.warn(
+                "Namespace collision between contract function and "
+                f"brownie `Contract` class member: '{self._name}.{name}'\n"
+                f"The {name} function will not be available when interacting with {self._name}",
+                BrownieEnvironmentWarning,
+            )
+        else:
+            setattr(self, name, obj)
 
     def __hash__(self) -> int:
         return hash(f"{self._name}{self.address}{self._project}")
@@ -1846,7 +1852,7 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
         address = _resolve_address(code[30:70])
 
     params: Dict = {"module": "contract", "action": action, "address": address}
-    if "etherscan" in url:
+    if "etherscan" in url or "bscscan" in url:
         if os.getenv("ETHERSCAN_TOKEN"):
             params["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
         elif not silent:

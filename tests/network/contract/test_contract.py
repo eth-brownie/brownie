@@ -5,7 +5,7 @@ import pytest
 import requests
 
 from brownie import Wei
-from brownie.exceptions import BrownieCompilerWarning, ContractNotFound
+from brownie.exceptions import BrownieCompilerWarning, BrownieEnvironmentWarning, ContractNotFound
 from brownie.network.contract import (
     Contract,
     ContractCall,
@@ -47,7 +47,7 @@ def test_namespace_collision(tester, build):
             "type": "function",
         }
     )
-    with pytest.raises(AttributeError):
+    with pytest.warns(BrownieEnvironmentWarning):
         Contract.from_abi(None, tester.address, build["abi"])
 
 
