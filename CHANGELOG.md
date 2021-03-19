@@ -6,6 +6,7 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+- Attaching to dockerized RPC-clients works on OSX without sudo ([#995](https://github.com/eth-brownie/brownie/pull/995))
 ## [1.14.1](https://github.com/eth-brownie/brownie/tree/v1.14.1) - 2021-03-19
 ### Fixed
 - Improve logic around `eth_getCode` caching to consider selfdestruct via delegate call ([#1002](https://github.com/eth-brownie/brownie/pull/1002))
