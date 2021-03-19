@@ -68,13 +68,20 @@ class Web3(_Web3):
                 )
 
         try:
-            if not self.isConnected():
-                return
+            if self.isConnected():
+                self.reset_middlewares()
         except Exception:
             # checking an invalid connection sometimes raises on windows systems
-            return
+            pass
 
-        # # add middlewares
+    def reset_middlewares(self) -> None:
+        """
+        Uninstall and reinject all custom middlewares.
+        """
+        if self.provider is None:
+            raise ConnectionError("web3 is not currently connected")
+        self._remove_middlewares()
+
         middleware_layers = get_middlewares(self, CONFIG.network_type)
 
         # middlewares with a layer below zero are injected
