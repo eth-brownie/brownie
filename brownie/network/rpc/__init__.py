@@ -82,8 +82,9 @@ class Rpc(metaclass=_Singleton):
         uri = web3.provider.endpoint_uri if web3.provider else None
         for i in range(100):
             if web3.isConnected():
-                chain._network_connected()
+                web3.reset_middlewares()
                 self.backend.on_connection()
+                chain._network_connected()
                 return
             time.sleep(0.1)
             if isinstance(self.process, psutil.Popen):
@@ -120,8 +121,9 @@ class Rpc(metaclass=_Singleton):
                 self.backend = module
                 break
 
-        chain._network_connected()
+        web3.reset_middlewares()
         self.backend.on_connection()
+        chain._network_connected()
 
     def kill(self, exc: bool = True) -> None:
         """Terminates the RPC process and all children with SIGKILL.
