@@ -14,8 +14,73 @@ from brownie.utils.sql import Cursor
 # calls to the following RPC endpoints are stored in a persistent cache
 # if the returned data evaluates true when passed into the lambda
 LONGTERM_CACHE = {
-    "eth_getCode": lambda data: len(data) and b"\xff" not in HexBytes(data),
+    "eth_getCode": lambda w3, data: is_cacheable_bytecode(w3, data),
 }
+
+
+def _strip_push_data(bytecode: HexBytes) -> HexBytes:
+    idx = 0
+    while idx < len(bytecode):
+        # if instruction is between PUSH1 and PUSH32
+        if 0x60 <= bytecode[idx] <= 0x7F:
+            offset = idx + 1
+            length = bytecode[idx] - 0x5F
+            bytecode = HexBytes(bytecode[:offset] + bytecode[offset + length :])
+        idx += 1
+    return bytecode
+
+
+def is_cacheable_bytecode(web3: Web3, bytecode: HexBytes) -> bool:
+    """
+    Check if bytecode can safely by cached.
+
+    To safely cache bytecode we verify that the code cannot be removed via a
+    SELFDESTRUCT operation, or a SELFDESTRUCT triggered via a DELEGATECALL.
+
+    Arguments
+    ---------
+    web3 : Web3
+        Web3 object connected to the same network that the bytecode exists on.
+    bytecode : HexBytes
+        Deployed bytecode to be analyzed.
+
+    Returns
+    -------
+    bool
+        Can this bytecode be cached?
+    """
+    if not bytecode:
+        # do not cache empty code, something might be deployed there later!
+        return False
+
+    bytecode = HexBytes(bytecode)
+    opcodes = _strip_push_data(bytecode)
+    if 0xFF in opcodes:
+        # cannot cache if the code contains a SELFDESTRUCT instruction
+        return False
+    for idx in [i for i in range(len(opcodes)) if opcodes[i] == 0xF4]:
+        # cannot cache if the code performs a DELEGATECALL to a not-fixed address
+        if idx < 2:
+            return False
+        if opcodes[idx - 2 : idx] != HexBytes("0x735A"):
+            # if the instruction not is immediately preceded by PUSH20 GAS
+            # the target was not hardcoded and we cannot cache
+            return False
+
+    # check if the target code of each delegatecall is also cachable
+    # if yes then we can cache this contract as well
+    push20_indexes = [
+        i for i in range(len(bytecode) - 22) if bytecode[i] == 0x73 and bytecode[i + 22] == 0xF4
+    ]
+    for address in [bytecode[i + 1 : i + 21] for i in push20_indexes]:
+        if not int(address.hex(), 16):
+            # if the delegatecall targets 0x00 this is a factory pattern, we can ignore
+            continue
+        target_bytecode = web3.eth.getCode(address)
+        if not is_cacheable_bytecode(web3, target_bytecode):
+            return False
+
+    return True
 
 
 class RequestCachingMiddleware(BrownieMiddlewareABC):
@@ -134,7 +199,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         # check if the value can be added to long-term cache
         if "result" in response and method in LONGTERM_CACHE:
             result = response["result"]
-            if LONGTERM_CACHE[method](result):
+            if LONGTERM_CACHE[method](self.w3, result):
                 if isinstance(result, (dict, list, tuple)):
                     result = json.dumps(response, separators=(",", ""), default=str)
                 self.cur.insert(self.table_key, method, param_str, result)
