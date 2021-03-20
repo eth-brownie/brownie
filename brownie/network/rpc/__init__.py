@@ -2,6 +2,7 @@
 
 import atexit
 import inspect
+import platform
 import socket
 import time
 import warnings
@@ -111,7 +112,7 @@ class Rpc(metaclass=_Singleton):
 
         ip = socket.gethostbyname(laddr[0])
         resolved_addr = (ip, laddr[1])
-        pid = _find_rpc_process_pid(resolved_addr)
+        pid = self._find_rpc_process_pid(resolved_addr)
 
         print(f"Attached to local RPC client listening at '{laddr[0]}:{laddr[1]}'...")
         self.process = psutil.Process(pid)
@@ -184,41 +185,74 @@ class Rpc(metaclass=_Singleton):
     def unlock_account(self, address: str) -> None:
         self.backend.unlock_account(address)
 
+    def _find_rpc_process_pid(self, laddr: Tuple) -> int:
+        try:
+            # default case with an already running local RPC process
+            return self._get_pid_from_connections(laddr)
+        except ProcessLookupError:
+            # if no local RPC process could be found we can try to find a dockerized one
+            if platform.system() == "Darwin":
+                return self._get_pid_from_docker_backend()
+            else:
+                return self._get_pid_from_net_connections(laddr)
 
-def _find_rpc_process_pid(laddr: Tuple) -> int:
-    try:
-        proc = next(i for i in psutil.process_iter() if _check_proc_connections(i, laddr))
-        return proc.pid
-    except StopIteration:
+    def _check_proc_connections(self, proc: psutil.Process, laddr: Tuple) -> bool:
+        try:
+            return laddr in [i.laddr for i in proc.connections()]
+        except psutil.AccessDenied:
+            return False
+        except psutil.ZombieProcess:
+            return False
+        except psutil.NoSuchProcess:
+            return False
+
+    def _check_net_connections(self, connection: Any, laddr: Tuple) -> bool:
+        if connection.pid is None:
+            return False
+        if connection.laddr == laddr:
+            return True
+        elif connection.raddr == laddr:
+            return True
+        else:
+            return False
+
+    def _get_pid_from_connections(self, laddr: Tuple) -> int:
+        try:
+            proc = next(i for i in psutil.process_iter() if self._check_proc_connections(i, laddr))
+            return self._get_proc_pid(proc)
+        except StopIteration:
+            raise ProcessLookupError(
+                "Could not attach to RPC process by querying 'proc.connections()'"
+            ) from None
+
+    def _get_pid_from_net_connections(self, laddr: Tuple) -> int:
         try:
             proc = next(
-                i for i in psutil.net_connections(kind="tcp") if _check_net_connections(i, laddr)
+                i
+                for i in psutil.net_connections(kind="tcp")
+                if self._check_net_connections(i, laddr)
             )
-            return proc.pid
+            return self._get_proc_pid(proc)
         except StopIteration:
+            raise ProcessLookupError(
+                "Could not attach to RPC process by querying 'proc.net_connections()'"
+            ) from None
+
+    def _get_pid_from_docker_backend(self) -> int:
+        # OSX workaround for https://github.com/giampaolo/psutil/issues/1219
+        proc = self._find_proc_by_name("com.docker.backend")
+        return self._get_proc_pid(proc)
+
+    def _get_proc_pid(self, proc: psutil.Process) -> int:
+        if proc:
+            return proc.pid
+        else:
             raise ProcessLookupError(
                 "Could not attach to RPC process. If this issue persists, try killing "
                 "the RPC and let Brownie launch it as a child process."
             ) from None
 
-
-def _check_proc_connections(proc: psutil.Process, laddr: Tuple) -> bool:
-    try:
-        return laddr in [i.laddr for i in proc.connections()]
-    except psutil.AccessDenied:
-        return False
-    except psutil.ZombieProcess:
-        return False
-    except psutil.NoSuchProcess:
-        return False
-
-
-def _check_net_connections(connection: Any, laddr: Tuple) -> bool:
-    if connection.pid is None:
-        return False
-    if connection.laddr == laddr:
-        return True
-    elif connection.raddr == laddr:
-        return True
-    else:
-        return False
+    def _find_proc_by_name(self, process_name: str) -> psutil.Process:
+        for proc in psutil.process_iter():
+            if process_name.lower() in proc.name().lower():
+                return proc
