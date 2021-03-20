@@ -169,8 +169,8 @@ class Rpc(metaclass=_Singleton):
         return self.backend.sleep(seconds)
 
     @internal
-    def mine(self, blocks: int = 1) -> int:
-        self.backend.mine(blocks)
+    def mine(self, timestamp: int = None) -> int:
+        self.backend.mine(timestamp)
         return web3.eth.blockNumber
 
     @internal
