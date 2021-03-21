@@ -111,6 +111,12 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
         if network_type == "live":
+            try:
+                # ensure that the node client supports filters
+                block_filter = w3.eth.filter("latest")
+                block_filter.get_new_entries()
+            except ValueError:
+                return None
             return 0
         else:
             return None
