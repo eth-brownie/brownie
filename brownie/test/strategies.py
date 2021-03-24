@@ -11,6 +11,8 @@ from brownie import network, project
 from brownie.convert import Fixed, Wei
 from brownie.convert.utils import get_int_bounds
 
+from brownie._config import CONFIG
+
 TYPE_STR_TRANSLATIONS = {"byte": "bytes1", "decimal": "fixed168x10"}
 
 ArrayLengthType = Union[int, list, None]
@@ -158,6 +160,14 @@ def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
     if type_str == "fixed168x10":
         return _decimal_strategy(**kwargs)
     if type_str == "address":
+        network.connect(CONFIG.argv["network"])
+        if 'exclude' in kwargs:
+            exclude = []
+            for each in kwargs['exclude']:
+                address = network.accounts[int(each)].address
+                exclude.append(address)
+                kwargs['exclude'] = exclude
+        network.disconnect()
         return _address_strategy(**kwargs)
     if type_str == "bool":
         return st.booleans(**kwargs)  # type: ignore
