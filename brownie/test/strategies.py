@@ -161,12 +161,12 @@ def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
         return _decimal_strategy(**kwargs)
     if type_str == "address":
         network.connect(CONFIG.argv["network"])
-        if 'exclude' in kwargs:
+        if "exclude" in kwargs:
             exclude = []
-            for each in kwargs['exclude']:
+            for each in kwargs["exclude"]:
                 address = network.accounts[int(each)].address
                 exclude.append(address)
-                kwargs['exclude'] = exclude
+                kwargs["exclude"] = exclude
         network.disconnect()
         return _address_strategy(**kwargs)
     if type_str == "bool":
