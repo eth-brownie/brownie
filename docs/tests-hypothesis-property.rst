@@ -81,7 +81,7 @@ It is possible to supply multiple strategies via ``@given``. In the following ex
     from brownie.test import given, strategy
 
     @given(
-        to=strategy('address', exclude=accounts[0]),
+        to=strategy('address', exclude=[0]),
         value=strategy('uint256', max_value=10000),
     )
     def test_transfer_amount(token, to, value):
