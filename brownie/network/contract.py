@@ -291,7 +291,11 @@ class ContractContainer(_ContractBase):
                                 import_aliases[imp.get("absolutePath")].append(
                                     symbol_alias["local"],
                                 )
-            has_abiencoder = "pragma experimental ABIEncoderV2;" in pragma_statements
+
+            abiencoder_str = ""
+            for pragma in ("pragma experimental ABIEncoderV2;", "pragma abicoder v2;"):
+                if pragma in pragma_statements:
+                    abiencoder_str = f"{abiencoder_str}\n{pragma}"
 
             # build dependency tree
             dependency_tree: Dict = defaultdict(set)
@@ -344,14 +348,13 @@ class ContractContainer(_ContractBase):
 
             # combine to final flattened source
             lb = "\n"
-            abiencoder_str = "\npragma experimental ABIEncoderV2;"
             is_global = len(global_enums) + len(global_structs) > 0
             global_str = "// Global Enums and Structs\n\n" if is_global else ""
             enum_structs = f"{lb.join(global_enums)}\n\n{lb.join(global_structs)}"
             flattened_source = (
                 f"// SPDX-License-Identifier: {license_identifier}\n\n"
                 f"pragma solidity {version_short};"
-                f"{abiencoder_str if has_abiencoder else ''}\n\n{global_str}"
+                f"{abiencoder_str}\n\n{global_str}"
                 f"{enum_structs if is_global else ''}"
                 f"{flattened_source}\n\n"
                 f"// File: {file_name}\n\n{source}\n"
