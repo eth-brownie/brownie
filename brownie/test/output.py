@@ -108,8 +108,8 @@ def _build_gas_profile_output():
             values["avg"] = int(values["avg"])
             values = {k: str(v).rjust(padding[k]) for k, v in values.items()}
             lines.append(
-                f"   {prefix} {fn_name} -  avg: {values['avg']}"
-                f"  low: {values['low']}  high: {values['high']}"
+                f"   {prefix} {fn_name} -  avg: {values['avg']}  avg (confirmed):"
+                f" {values['avg_success']}  low: {values['low']}  high: {values['high']}"
             )
 
     return lines + [""]

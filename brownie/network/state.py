@@ -148,24 +148,30 @@ class TxHistory(metaclass=_Singleton):
         """Returns a list of transactions where account is the sender or receiver"""
         return [i for i in self._list if i.receiver == account or i.sender == account]
 
-    def _gas(self, fn_name: str, gas_used: int) -> None:
-        if fn_name not in self.gas_profile:
-            self.gas_profile[fn_name] = {
-                "avg": gas_used,
-                "high": gas_used,
-                "low": gas_used,
-                "count": 1,
-            }
+    def _gas(self, fn_name: str, gas_used: int, is_success: bool) -> None:
+        gas = self.gas_profile.setdefault(fn_name, {})
+        if not gas:
+            gas.update(
+                avg=gas_used, high=gas_used, low=gas_used, count=1, count_success=0, avg_success=0
+            )
+            if is_success:
+                gas["count_success"] = 1
+                gas["avg_success"] = gas_used
             return
-        gas = self.gas_profile[fn_name]
         gas.update(
-            {
-                "avg": (gas["avg"] * gas["count"] + gas_used) // (gas["count"] + 1),
-                "high": max(gas["high"], gas_used),
-                "low": min(gas["low"], gas_used),
-            }
+            avg=(gas["avg"] * gas["count"] + gas_used) // (gas["count"] + 1),
+            high=max(gas["high"], gas_used),
+            low=min(gas["low"], gas_used),
         )
         gas["count"] += 1
+        if is_success:
+            count = gas["count_success"]
+            gas["count_success"] += 1
+            if not gas["avg_success"]:
+                gas["avg_success"] = gas_used
+            else:
+                avg = gas["avg_success"]
+                gas["avg_success"] = (avg * count + gas_used) // (count + 1)
 
 
 class Chain(metaclass=_Singleton):
