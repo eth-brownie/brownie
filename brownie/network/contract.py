@@ -376,23 +376,25 @@ class ContractContainer(_ContractBase):
         """Flatten contract and publish source on the selected explorer"""
 
         # Check required conditions for verifying
-        allowed_explorers = ["etherscan", "bscscan"]
+        explorer_tokens = {"etherscan": "ETHERSCAN_TOKEN", "bscscan": "BSCSCAN_TOKEN"}
         url = CONFIG.active_network.get("explorer")
         if url is None:
             raise ValueError("Explorer API not set for this network")
-        if not any(allowed_explorer in url for allowed_explorer in allowed_explorers):
+        env_token = next((v for k, v in explorer_tokens.items() if k in url), None)
+        if env_token is None:
             raise ValueError(
-                f"Publishing source is only supported on {allowed_explorers},"
+                f"Publishing source is only supported on {', '.join(explorer_tokens)},"
                 "change the Explorer API"
             )
 
-        if os.getenv("ETHERSCAN_TOKEN"):
-            api_key = os.getenv("ETHERSCAN_TOKEN")
+        if os.getenv(env_token):
+            api_key = os.getenv(env_token)
         else:
+            host = urlparse(url).netloc
+            host = host[host.index(".") + 1 :]
             raise ValueError(
-                "An Etherscan API token is required to verify contract source code. "
-                "Visit https://etherscan.io/register to obtain a token, and then store it "
-                "as the environment variable $ETHERSCAN_TOKEN"
+                f"An API token is required to verify contract source code. Visit https://{host}/ "
+                f"to obtain a token, and then store it as the environment variable ${env_token}"
             )
 
         address = _resolve_address(contract.address)
