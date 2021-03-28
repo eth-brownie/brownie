@@ -267,6 +267,12 @@ Settings related to reports such as coverage data and gas profiles.
                 - SafeMath
                 - Owned
 
+.. py:attribute:: only_include_project
+
+    If ``false``, reports also include contracts imported from outside the active project (such as those compiled via :func:`compile_source <main.compile_source>`).
+
+    default value: ``true``
+
 .. _config-hypothesis:
 
 Hypothesis
