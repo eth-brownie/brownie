@@ -8,10 +8,9 @@ from hypothesis.strategies import SearchStrategy
 from hypothesis.strategies._internal.deferred import DeferredStrategy
 
 from brownie import network, project
+from brownie._config import CONFIG
 from brownie.convert import Fixed, Wei
 from brownie.convert.utils import get_int_bounds
-
-from brownie._config import CONFIG
 
 TYPE_STR_TRANSLATIONS = {"byte": "bytes1", "decimal": "fixed168x10"}
 
