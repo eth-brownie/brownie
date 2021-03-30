@@ -540,7 +540,7 @@ class TransactionReceipt:
         self.coverage_hash = sha1(base.encode()).hexdigest()
 
         if self.fn_name:
-            state.TxHistory()._gas(self._full_name(), receipt["gasUsed"])
+            state.TxHistory()._gas(self._full_name(), receipt["gasUsed"], self.status == Status(1))
 
     def _confirm_output(self) -> str:
         status = ""

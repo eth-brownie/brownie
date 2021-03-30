@@ -291,7 +291,11 @@ class ContractContainer(_ContractBase):
                                 import_aliases[imp.get("absolutePath")].append(
                                     symbol_alias["local"],
                                 )
-            has_abiencoder = "pragma experimental ABIEncoderV2;" in pragma_statements
+
+            abiencoder_str = ""
+            for pragma in ("pragma experimental ABIEncoderV2;", "pragma abicoder v2;"):
+                if pragma in pragma_statements:
+                    abiencoder_str = f"{abiencoder_str}\n{pragma}"
 
             # build dependency tree
             dependency_tree: Dict = defaultdict(set)
@@ -344,14 +348,13 @@ class ContractContainer(_ContractBase):
 
             # combine to final flattened source
             lb = "\n"
-            abiencoder_str = "\npragma experimental ABIEncoderV2;"
             is_global = len(global_enums) + len(global_structs) > 0
             global_str = "// Global Enums and Structs\n\n" if is_global else ""
             enum_structs = f"{lb.join(global_enums)}\n\n{lb.join(global_structs)}"
             flattened_source = (
                 f"// SPDX-License-Identifier: {license_identifier}\n\n"
                 f"pragma solidity {version_short};"
-                f"{abiencoder_str if has_abiencoder else ''}\n\n{global_str}"
+                f"{abiencoder_str}\n\n{global_str}"
                 f"{enum_structs if is_global else ''}"
                 f"{flattened_source}\n\n"
                 f"// File: {file_name}\n\n{source}\n"
@@ -373,23 +376,25 @@ class ContractContainer(_ContractBase):
         """Flatten contract and publish source on the selected explorer"""
 
         # Check required conditions for verifying
-        allowed_explorers = ["etherscan", "bscscan"]
+        explorer_tokens = {"etherscan": "ETHERSCAN_TOKEN", "bscscan": "BSCSCAN_TOKEN"}
         url = CONFIG.active_network.get("explorer")
         if url is None:
             raise ValueError("Explorer API not set for this network")
-        if not any(allowed_explorer in url for allowed_explorer in allowed_explorers):
+        env_token = next((v for k, v in explorer_tokens.items() if k in url), None)
+        if env_token is None:
             raise ValueError(
-                f"Publishing source is only supported on {allowed_explorers},"
+                f"Publishing source is only supported on {', '.join(explorer_tokens)},"
                 "change the Explorer API"
             )
 
-        if os.getenv("ETHERSCAN_TOKEN"):
-            api_key = os.getenv("ETHERSCAN_TOKEN")
+        if os.getenv(env_token):
+            api_key = os.getenv(env_token)
         else:
+            host = urlparse(url).netloc
+            host = host[host.index(".") + 1 :]
             raise ValueError(
-                "An Etherscan API token is required to verify contract source code. "
-                "Visit https://etherscan.io/register to obtain a token, and then store it "
-                "as the environment variable $ETHERSCAN_TOKEN"
+                f"An API token is required to verify contract source code. Visit https://{host}/ "
+                f"to obtain a token, and then store it as the environment variable ${env_token}"
             )
 
         address = _resolve_address(contract.address)

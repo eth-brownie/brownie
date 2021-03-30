@@ -50,6 +50,7 @@ console:
 reports:
     exclude_paths: null
     exclude_contracts: null
+    only_include_project: true
 
 hypothesis:
     deadline: null

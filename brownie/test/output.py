@@ -74,6 +74,7 @@ def _build_gas_profile_output():
 
     lines = [""]
 
+    only_include_project = CONFIG.settings["reports"]["only_include_project"]
     for full_name, values in sorted_gas:
         contract, function = full_name.split(".", 1)
 
@@ -82,7 +83,8 @@ def _build_gas_profile_output():
                 continue
         except (AttributeError, KeyError):
             # filters contracts that are not part of the project
-            continue
+            if only_include_project:
+                continue
         if contract in exclude_contracts:
             continue
 
@@ -108,8 +110,8 @@ def _build_gas_profile_output():
             values["avg"] = int(values["avg"])
             values = {k: str(v).rjust(padding[k]) for k, v in values.items()}
             lines.append(
-                f"   {prefix} {fn_name} -  avg: {values['avg']}"
-                f"  low: {values['low']}  high: {values['high']}"
+                f"   {prefix} {fn_name} -  avg: {values['avg']}  avg (confirmed):"
+                f" {values['avg_success']}  low: {values['low']}  high: {values['high']}"
             )
 
     return lines + [""]

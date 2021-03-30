@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.14.3](https://github.com/eth-brownie/brownie/tree/v1.14.3) - 2021-03-27
+### Added
+- Support for `BSCSCAN_TOKEN` env var ([#1017](https://github.com/eth-brownie/brownie/pull/1017))
+
+### Fixed
+- Ensure node client supports filters before enabling caching middleware ([#1009](https://github.com/eth-brownie/brownie/pull/1009))
+- Support `abicoder v2` pragma when verifying source code ([#1018](https://github.com/eth-brownie/brownie/pull/1018))
+
 ## [1.14.2](https://github.com/eth-brownie/brownie/tree/v1.14.2) - 2021-03-20
 ### Fixed
 - Attaching to dockerized RPC-clients works on OSX without sudo ([#995](https://github.com/eth-brownie/brownie/pull/995))
