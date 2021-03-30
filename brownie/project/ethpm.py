@@ -605,7 +605,7 @@ def verify_manifest(package_name: str, version: str, uri: str) -> None:
 
 
 def release_package(
-    registry_address: str, account: AccountsType, package_name: str, version: str, uri: str
+    registry_address: str, account: selleraccounts, package_name: str, version: str, uri: str
 ) -> TransactionReceiptType:
 
     """
