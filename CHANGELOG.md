@@ -6,6 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Fixed
+- Support `hypothesis` strategies now accept `address` `exclude` ([#1013](https://github.com/eth-brownie/brownie/pull/1013))
 
 ## [1.14.3](https://github.com/eth-brownie/brownie/tree/v1.14.3) - 2021-03-27
 ### Added
