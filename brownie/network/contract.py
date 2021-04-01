@@ -778,9 +778,10 @@ class _DeployedContractBase(_ContractBase):
         if name == "balance":
             warnings.warn(
                 f"'{self._name}' defines a 'balance' function, "
-                f"'{self._name}.balance' is unavailable",
+                f"'{self._name}.balance' is available as {self._name}.wei_balance",
                 BrownieEnvironmentWarning,
             )
+            setattr(self, "wei_balance", self.balance)
         elif hasattr(self, name):
             warnings.warn(
                 "Namespace collision between contract function and "
@@ -788,8 +789,8 @@ class _DeployedContractBase(_ContractBase):
                 f"The {name} function will not be available when interacting with {self._name}",
                 BrownieEnvironmentWarning,
             )
-        else:
-            setattr(self, name, obj)
+            return
+        setattr(self, name, obj)
 
     def __hash__(self) -> int:
         return hash(f"{self._name}{self.address}{self._project}")
