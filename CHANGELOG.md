@@ -6,8 +6,19 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.14.4](https://github.com/eth-brownie/brownie/tree/v1.14.4) - 2021-04-05
 ### Added
 - Support for environment variables in brownie config ([#1012](https://github.com/eth-brownie/brownie/pull/1012))
+- Add Fantom to default networks ([#980](https://github.com/eth-brownie/brownie/pull/980))
+
+### Changed
+- Gas report also shows average price for only confirmed txs ([#1020](https://github.com/eth-brownie/brownie/pull/1020))
+
+### Fixed
+- Add project to brownie namespace within console ([#1029](https://github.com/eth-brownie/brownie/pull/1029))
+- Balance contract member override ([#1030](https://github.com/eth-brownie/brownie/pull/1030))
+- Correct frame in pytest interactive debug mode ([#1034](https://github.com/eth-brownie/brownie/pull/1034))
 
 ## [1.14.3](https://github.com/eth-brownie/brownie/tree/v1.14.3) - 2021-03-27
 ### Added
