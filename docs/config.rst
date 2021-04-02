@@ -10,6 +10,8 @@ The configuration file must be saved as ``brownie-config.yaml``. If saved in the
 
 All configuration fields are optional. You can copy from the examples below and modify the settings as required.
 
+Configuration values can also be set using environment variables, as well as by specifying the `dotenv` top-level key.
+
 Default Configuration
 =====================
 
@@ -19,6 +21,23 @@ The following example shows all configuration settings and their default values:
     :linenos:
     :lines: 8-
     :language: yaml
+
+Variable Expansion
+==================
+
+Brownie supports POSIX-style variable expansion for environment variables.
+
+.. code-block:: yaml
+
+    networks:
+        default: ${DEFAULT_NETWORK}
+
+You can also provide defaults.
+
+    .. code-block:: yaml
+
+    networks:
+        default: ${DEFAULT_NETWORK:-mainnet}
 
 Settings
 ========
@@ -325,3 +344,11 @@ Other Settings
     This is useful if another application, such as a front end framework, needs access to deployment artifacts while you are on a development network.
 
     default value: ``false``
+
+.. py:attribute:: dotenv
+
+    If present, Brownie will load the .env file, resolving the file relative to the project root. Will fail loudly if .env file is missing.
+
+    .. code-block:: yaml
+
+        dotenv: .env

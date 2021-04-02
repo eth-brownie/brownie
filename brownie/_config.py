@@ -11,11 +11,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
+from dotenv import dotenv_values
 from hypothesis import Phase
 from hypothesis import settings as hp_settings
 from hypothesis.database import DirectoryBasedExampleDatabase
 
 from brownie._singleton import _Singleton
+from brownie._expansion import expand_posix_vars
 
 __version__ = "1.14.3"
 
@@ -187,6 +189,17 @@ def _load_project_config(project_path: Path) -> None:
     """Loads configuration settings from a project's brownie-config.yaml"""
     config_path = project_path.joinpath("brownie-config")
     config_data = _load_config(config_path)
+    config_vars = _load_project_envvars(project_path)
+
+    if "dotenv" in config_data:
+        if not isinstance(config_data["dotenv"], str):
+            raise ValueError(f'Invalid value passed to dotenv: {config_data["dotenv"]}')
+        env_path = project_path.joinpath(config_data["dotenv"])
+        if not env_path.is_file():
+            raise ValueError(f"Dotenv specified in config but not found at path: {env_path}")
+        config_vars.update(dotenv_values(dotenv_path=env_path))  # type: ignore
+        config_data = expand_posix_vars(config_data, config_vars)
+
     if not config_data:
         return
 
@@ -217,6 +230,8 @@ def _load_project_config(project_path: Path) -> None:
 
     CONFIG.settings._unlock()
     _recursive_update(CONFIG.settings, config_data)
+    _recursive_update(CONFIG.settings, expand_posix_vars(CONFIG.settings, config_vars))
+
     CONFIG.settings._lock()
     if "hypothesis" in config_data:
         _modify_hypothesis_settings(config_data["hypothesis"], "brownie", "brownie-base")
@@ -231,6 +246,19 @@ def _load_project_compiler_config(project_path: Optional[Path]) -> Dict:
     _recursive_update(compiler_data, project_data)
 
     return compiler_data
+
+
+def _load_project_envvars(project_path):
+    config_vars = dict(os.environ)
+    if CONFIG.settings.get("dotenv"):
+        dotenv_path = CONFIG.settings["dotenv"]
+        if not isinstance(dotenv_path, str):
+            raise ValueError(f"Invalid value passed to dotenv: {dotenv_path}")
+        env_path = project_path.joinpath(dotenv_path)
+        if not env_path.is_file():
+            raise ValueError(f"Dotenv specified in config but not found at path: {env_path}")
+        config_vars.update(dotenv_values(dotenv_path=env_path))  # type: ignore
+    return config_vars
 
 
 def _load_project_structure_config(project_path):
