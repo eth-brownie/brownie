@@ -47,6 +47,7 @@ def main():
     if project.check_for_project():
         active_project = project.load()
         active_project.load_config()
+        active_project._add_to_main_namespace()
         print(f"{active_project._name} is the active project.")
     else:
         active_project = None
