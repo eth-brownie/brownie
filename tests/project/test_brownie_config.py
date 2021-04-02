@@ -170,14 +170,11 @@ def project_settings_with_dotenv(testproject, env_file):
     yield conf
 
 
-def test_dotenv_imports(testproject, env_file, project_settings_with_dotenv):
-    # Env vars shouldn't be parsed yet, make sure it's still the literal variable placeholder
-    assert project_settings_with_dotenv["networks"]["default"] == "${DEFAULT_NETWORK}"
-
+def test_dotenv_imports(config, testproject, env_file, project_settings_with_dotenv):
     config_path = _get_data_folder().joinpath("brownie-config.yaml")
     _load_config(config_path)
     testproject.load_config()
 
-    assert project_settings_with_dotenv["networks"]["default"] == "dentacoin"
-    assert project_settings_with_dotenv["console"]["show_colors"] == True  # noqa: E712
-    assert project_settings_with_dotenv["dev_deployment_artifacts"] == True  # noqa: E712
+    assert config.settings["networks"]["default"] == "dentacoin"
+    assert config.settings["console"]["show_colors"] == True  # noqa: E712
+    assert config.settings["dev_deployment_artifacts"] == True  # noqa: E712

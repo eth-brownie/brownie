@@ -16,8 +16,8 @@ from hypothesis import Phase
 from hypothesis import settings as hp_settings
 from hypothesis.database import DirectoryBasedExampleDatabase
 
-from brownie._singleton import _Singleton
 from brownie._expansion import expand_posix_vars
+from brownie._singleton import _Singleton
 
 __version__ = "1.14.3"
 
