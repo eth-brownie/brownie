@@ -1,22 +1,25 @@
 import re
+from typing import Any, Mapping, Optional, Text
 
 from dotenv.variables import parse_variables
 
 
-def expand_posix_vars(dct, variables):
-    """expand_posix_vars performs recursive POSIX-style variable expansion on a dictionary
+def expand_posix_vars(obj: Any, variables: Mapping[Text, Optional[Any]]) -> Any:
+    """expand_posix_vars recursively expands POSIX values in an object.
 
-    This supports nested dictionaries.
+    Args:
+        obj (any): object in which to interpolate variables.
+        variables (dict): dictionary that maps variable names to their value
     """
-    if isinstance(dct, (dict,)):
-        for key, val in dct.items():
-            dct[key] = expand_posix_vars(val, variables)
-    elif isinstance(dct, (list,)):
-        for index in range(len(dct)):
-            dct[index] = expand_posix_vars(dct[index], variables)
-    elif isinstance(dct, (str,)):
-        dct = _str_to_python_value(_expand(dct, variables))
-    return dct
+    if isinstance(obj, (dict,)):
+        for key, val in obj.items():
+            obj[key] = expand_posix_vars(val, variables)
+    elif isinstance(obj, (list,)):
+        for index in range(len(obj)):
+            obj[index] = expand_posix_vars(obj[index], variables)
+    elif isinstance(obj, (str,)):
+        obj = _str_to_python_value(_expand(obj, variables))
+    return obj
 
 
 def _expand(value, variables={}):
@@ -30,9 +33,7 @@ def _expand(value, variables={}):
     python-dotenv assumes you want to use os.environ.
     """
 
-    if value is None:
-        return None
-    if not isinstance(value, (str)):
+    if not isinstance(value, (str,)):
         return value
     atoms = parse_variables(value)
     return "".join([str(atom.resolve(variables)) for atom in atoms])

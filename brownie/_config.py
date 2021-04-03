@@ -248,7 +248,7 @@ def _load_project_compiler_config(project_path: Optional[Path]) -> Dict:
     return compiler_data
 
 
-def _load_project_envvars(project_path):
+def _load_project_envvars(project_path: Path) -> Dict:
     config_vars = dict(os.environ)
     if CONFIG.settings.get("dotenv"):
         dotenv_path = CONFIG.settings["dotenv"]
