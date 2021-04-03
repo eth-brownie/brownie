@@ -135,7 +135,8 @@ def test_raise_validate_cmd_settings(invalid_setting):
 
 
 DOTENV_CONTNENTS = """
-DEFAULT_NETWORK=dentacoin
+DEFAULT_BALANCE="42 miliether"
+SHOW_COLORS=false
 """.strip()
 
 
@@ -153,11 +154,10 @@ def project_settings_with_dotenv(testproject, env_file):
 
     project_config = copy.deepcopy(BASE_PROJECT_CONFIG)
     project_config["dotenv"] = str(env_file)
-    project_config["networks"]["default"] = "${DEFAULT_NETWORK}"
+    project_config["networks"]["development"]["default_balance"] = "${DEFAULT_BALANCE}"
     if "console" not in project_config:
         project_config["console"] = {}
-    project_config["console"]["show_colors"] = "${SHOW_COLORS:-true}"
-    project_config["dev_deployment_artifacts"] = "${DEV_DEPLOYMENT_ARTIFACTS:-true}"
+    project_config["console"]["show_colors"] = "${SHOW_COLORS}"
 
     # Save the project config as "brownie-config.yaml" in the testproject root
     with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
@@ -174,7 +174,5 @@ def test_dotenv_imports(config, testproject, env_file, project_settings_with_dot
     config_path = _get_data_folder().joinpath("brownie-config.yaml")
     _load_config(config_path)
     testproject.load_config()
-
-    assert config.settings["networks"]["default"] == "dentacoin"
-    assert config.settings["console"]["show_colors"] == True  # noqa: E712
-    assert config.settings["dev_deployment_artifacts"] == True  # noqa: E712
+    assert config.settings["console"]["show_colors"] == False  # noqa: E712
+    assert config.settings["networks"]["development"]["default_balance"] == "42 miliether"
