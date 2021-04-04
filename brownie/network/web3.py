@@ -3,6 +3,7 @@
 import json
 import os
 import time
+import warnings
 from pathlib import Path
 from typing import Dict, Optional, Set
 
@@ -168,6 +169,11 @@ def _expand_environment_vars(uri: str) -> str:
     expanded = os.path.expandvars(uri)
     if uri != expanded:
         return expanded
+    if uri.endswith("WEB3_INFURA_PROJECT_ID"):
+        warnings.warn(
+            """Did you set WEB3_INFURA_PROJECT_ID? See
+            "https://eth-brownie.readthedocs.io/en/stable/network-management.html#using-infura"""
+        )
     raise ValueError(f"Unable to expand environment variable in host setting: '{uri}'")
 
 
