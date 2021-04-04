@@ -190,6 +190,9 @@ class Color:
         return pygments.highlight(text, lexer, formatter)
 
 
+color = Color()
+
+
 def notify(type_, msg):
     """Prepends a message with a colored tag and outputs it to the console."""
     color = Color()

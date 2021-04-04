@@ -9,8 +9,8 @@ from typing import Dict, List, Optional, Tuple
 from semantic_version import NpmSpec
 from vvm.utils.convert import to_vyper_version
 
+from brownie._colors import color
 from brownie.exceptions import NamespaceCollision, PragmaError
-from brownie.utils import color
 
 
 class Sources:

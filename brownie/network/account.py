@@ -14,6 +14,7 @@ import rlp
 from eth_utils import keccak
 from hexbytes import HexBytes
 
+from brownie._colors import color
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import EthAddress, Wei, to_address
@@ -23,7 +24,6 @@ from brownie.exceptions import (
     UnknownAccount,
     VirtualMachineError,
 )
-from brownie.utils import color
 
 from .gas.bases import GasABC
 from .rpc import Rpc

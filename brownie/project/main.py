@@ -22,6 +22,7 @@ from solcx.exceptions import SolcNotInstalled
 from tqdm import tqdm
 from vvm.exceptions import VyperNotInstalled
 
+from brownie._colors import notify
 from brownie._config import (
     CONFIG,
     REQUEST_HEADERS,
@@ -50,7 +51,6 @@ from brownie.project import compiler, ethpm
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_pragma_spec
-from brownie.utils import notify
 
 BUILD_FOLDERS = ["contracts", "deployments", "interfaces"]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"

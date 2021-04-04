@@ -23,8 +23,8 @@ from pygments.styles import get_style_by_name
 
 import brownie
 from brownie import network, project
+from brownie._colors import color
 from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
-from brownie.utils import color
 from brownie.utils.docopt import docopt
 
 __doc__ = f"""Usage: brownie console [options]

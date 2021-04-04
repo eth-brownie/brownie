@@ -6,10 +6,10 @@ from pathlib import Path
 
 from brownie import network, project
 from brownie._cli.console import Console
+from brownie._colors import color
 from brownie._config import CONFIG, _update_argv_from_docopt
 from brownie.project.scripts import _get_path, run
 from brownie.test.output import _build_gas_profile_output
-from brownie.utils import color
 from brownie.utils.docopt import docopt
 
 __doc__ = f"""Usage: brownie run <filename> [<function>] [options]

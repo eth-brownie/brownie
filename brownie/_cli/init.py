@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from brownie import project
-from brownie.utils import notify
+from brownie._colors import notify
 from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie init [<path>] [options]

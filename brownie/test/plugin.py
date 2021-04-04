@@ -7,10 +7,10 @@ from typing import Optional
 import pytest
 
 from brownie import project
+from brownie._colors import color
 from brownie._config import CONFIG, _modify_hypothesis_settings
 from brownie.test.fixtures import PytestBrownieFixtures
 from brownie.test.managers import PytestBrownieMaster, PytestBrownieRunner, PytestBrownieXdistRunner
-from brownie.utils import color
 
 
 def _get_project_path() -> Optional[Path]:

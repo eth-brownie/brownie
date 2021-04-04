@@ -9,9 +9,9 @@ from pathlib import Path
 from types import FunctionType, ModuleType
 from typing import Any, Dict, List, Optional, Tuple
 
+from brownie._colors import color
 from brownie.exceptions import ProjectNotFound
 from brownie.project.main import Project, check_for_project, get_loaded_projects
-from brownie.utils import color
 
 _import_cache: Dict = {}
 

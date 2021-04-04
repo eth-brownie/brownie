@@ -21,6 +21,7 @@ from semantic_version import Version
 from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
 
+from brownie._colors import color
 from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
@@ -39,7 +40,6 @@ from brownie.exceptions import (
 )
 from brownie.project import compiler, ethpm
 from brownie.typing import AccountsType, TransactionReceiptType
-from brownie.utils import color
 from brownie.utils.toposort import toposort_flatten
 
 from . import accounts, chain

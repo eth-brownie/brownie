@@ -13,12 +13,12 @@ from ethpm._utils.ipfs import generate_file_hash
 from ethpm.backends.ipfs import InfuraIPFSBackend
 
 from brownie import network
+from brownie._colors import color
 from brownie._config import _get_data_folder
 from brownie.convert import to_address
 from brownie.exceptions import InvalidManifest
 from brownie.network.web3 import web3
 from brownie.typing import AccountsType, TransactionReceiptType
-from brownie.utils import color
 
 from . import compiler
 

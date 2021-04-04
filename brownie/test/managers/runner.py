@@ -12,11 +12,11 @@ from _pytest._io import TerminalWriter
 
 import brownie
 from brownie._cli.console import Console
+from brownie._colors import color
 from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
 from brownie.test import coverage, output
-from brownie.utils import color
 
 from .base import PytestBrownieBase
 from .utils import convert_outcome

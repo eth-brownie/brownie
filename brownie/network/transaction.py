@@ -15,6 +15,7 @@ from eth_abi import decode_abi
 from hexbytes import HexBytes
 from web3.exceptions import TimeExhausted, TransactionNotFound
 
+from brownie._colors import color
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
 from brownie.exceptions import RPCRequestError
@@ -23,7 +24,6 @@ from brownie.project import main as project_main
 from brownie.project.compiler.solidity import SOLIDITY_ERROR_CODES
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
-from brownie.utils import color
 from brownie.utils.output import build_tree
 
 from . import state

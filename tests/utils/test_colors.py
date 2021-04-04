@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie.utils import color
+from brownie._colors import color
 
 
 @pytest.fixture
@@ -10,8 +10,8 @@ def colorpatch(monkeypatch):
     def patched(*args):
         return ""
 
-    monkeypatch.setattr("brownie.utils.Color.__call__", patched)
-    monkeypatch.setattr("brownie.utils.Color.__str__", patched)
+    monkeypatch.setattr("brownie._colors.Color.__call__", patched)
+    monkeypatch.setattr("brownie._colors.Color.__str__", patched)
     yield
 
 

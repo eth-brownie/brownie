@@ -6,8 +6,8 @@ from pathlib import Path
 
 import yaml
 
+from brownie._colors import color, notify
 from brownie._config import CONFIG, _get_data_folder
-from brownie.utils import color, notify
 from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie networks <command> [<arguments> ...] [options]

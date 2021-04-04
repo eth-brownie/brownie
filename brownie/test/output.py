@@ -4,11 +4,11 @@ import json
 import warnings
 from pathlib import Path
 
+from brownie._colors import color
 from brownie._config import CONFIG
 from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
-from brownie.utils import color
 
 COVERAGE_COLORS = [(0.8, "bright red"), (0.9, "bright yellow"), (1, "bright green")]
 

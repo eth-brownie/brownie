@@ -11,7 +11,7 @@ from hypothesis import stateful as sf
 from hypothesis.strategies import SearchStrategy
 
 import brownie
-from brownie.utils import color
+from brownie._colors import color
 
 sf.__tracebackhide__ = True
 

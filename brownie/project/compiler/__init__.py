@@ -10,6 +10,7 @@ import solcast
 from eth_utils import remove_0x_prefix
 from semantic_version import Version
 
+from brownie._colors import notify
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
 from brownie.project import sources
@@ -21,7 +22,6 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
 )
 from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
-from brownie.utils import notify
 
 from . import solidity, vyper
 

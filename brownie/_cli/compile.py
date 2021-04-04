@@ -3,9 +3,9 @@
 import shutil
 
 from brownie import project
+from brownie._colors import color
 from brownie._config import _load_project_structure_config
 from brownie.exceptions import ProjectNotFound
-from brownie.utils import color
 from brownie.utils.docopt import docopt
 
 CODESIZE_COLORS = [(1, "bright red"), (0.8, "bright yellow")]

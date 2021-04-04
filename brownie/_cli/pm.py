@@ -5,8 +5,8 @@ import sys
 from pathlib import Path
 
 from brownie import project
+from brownie._colors import color, notify
 from brownie._config import _get_data_folder
-from brownie.utils import color, notify
 from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie pm <command> [<arguments> ...] [options]

@@ -4,7 +4,7 @@ import time as time
 from threading import Thread
 from typing import Callable, Dict, List, Tuple, Union
 
-from brownie.utils import color
+from brownie._colors import color
 
 __console_dir__ = ["Alert", "new", "show", "stop_all"]
 _instances = set()

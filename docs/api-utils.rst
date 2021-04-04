@@ -6,7 +6,7 @@ Utils API
 
 The ``utils`` package contains utility classes and methods that are used throughout Brownie.
 
-``brownie.utils.color``
+``brownie._color``
 =======================
 
 The ``color`` module contains the ``Color`` class, used for to apply color and formatting to text before printing.
@@ -14,15 +14,15 @@ The ``color`` module contains the ``Color`` class, used for to apply color and f
 Color
 -----
 
-.. py:class:: brownie.utils.color.Color
+.. py:class:: brownie._color.Color
 
-    The ``Color`` class is used to apply color and formatting to text before displaying it to the user. It is primarily used within the console. An instance of ``Color`` is available at ``brownie.utils.color``:
+    The ``Color`` class is used to apply color and formatting to text before displaying it to the user. It is primarily used within the console. An instance of ``Color`` is available at ``brownie._color``:
 
     .. code-block:: python
 
-        >>> from brownie.utils import color
+        >>> from brownie._colors import color
         >>> color
-        <brownie.utils.color.Color object at 0x7fa9ec851ba8>
+        <brownie._color.Color object at 0x7fa9ec851ba8>
 
     ``Color`` is designed for use in `formatted string literals <https://docs.python.org/3.6/reference/lexical_analysis.html#f-strings>`_. When called it returns an `ANSI escape code <https://en.wikipedia.org/wiki/ANSI_escape_code#Colors>`_ for the given color:
 
