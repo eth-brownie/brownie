@@ -88,13 +88,6 @@ hypothesis==5.41.3
     # via -r requirements.in
 idna==2.10
     # via requests
-importlib-metadata==3.10.0
-    # via
-    #   jsonschema
-    #   pluggy
-    #   pytest
-importlib-resources==5.1.2
-    # via netaddr
 inflection==0.5.0
     # via
     #   mythx-models
@@ -147,7 +140,7 @@ pycryptodome==3.10.1
     #   vyper
 pygments-lexer-solidity==0.5.1
     # via -r requirements.in
-pygments==2.6.1
+pygments==2.7.4
     # via
     #   -r requirements.in
     #   pygments-lexer-solidity
@@ -218,10 +211,6 @@ tqdm==4.53.0
     # via -r requirements.in
 typed-ast==1.4.2
     # via black
-typing-extensions==3.7.4.3
-    # via
-    #   importlib-metadata
-    #   web3
 urllib3==1.26.4
     # via requests
 varint==1.0.2
@@ -236,10 +225,6 @@ web3==5.11.1
     # via -r requirements.in
 websockets==8.1
     # via web3
-zipp==3.4.1
-    # via
-    #   importlib-metadata
-    #   importlib-resources
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

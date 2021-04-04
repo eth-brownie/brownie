@@ -36,6 +36,8 @@ bumpversion==0.6.0
     # via -r requirements-dev.in
 certifi==2020.12.5
     # via requests
+cffi==1.14.5
+    # via cryptography
 chardet==3.0.4
     # via requests
 click==7.1.2
@@ -46,6 +48,8 @@ coverage==5.2.1
     # via
     #   -r requirements-dev.in
     #   pytest-cov
+cryptography==3.4.7
+    # via secretstorage
 cytoolz==0.11.0
     # via
     #   eth-keyfile
@@ -133,6 +137,10 @@ ipfshttpclient==0.7.0a1
     # via web3
 isort==4.3.21
     # via -r requirements-dev.in
+jeepney==0.6.0
+    # via
+    #   keyring
+    #   secretstorage
 jinja2==2.11.3
     # via sphinx
 jsonschema==3.2.0
@@ -195,6 +203,8 @@ py==1.10.0
     #   tox
 pycodestyle==2.6.0
     # via flake8
+pycparser==2.20
+    # via cffi
 pycryptodome==3.10.1
     # via
     #   eth-hash
@@ -206,7 +216,7 @@ pyflakes==2.2.0
     # via flake8
 pygments-lexer-solidity==0.5.1
     # via -r requirements.in
-pygments==2.8.1
+pygments==2.7.4
     # via
     #   -r requirements.in
     #   pygments-lexer-solidity
@@ -237,6 +247,8 @@ python-dateutil==2.8.1
     # via
     #   mythx-models
     #   pythx
+python-dotenv==0.16.0
+    # via -r requirements.in
 pythx==1.7.1
     # via -r requirements.in
 pytz==2021.1
@@ -265,6 +277,8 @@ rlp==1.2.0
     #   -r requirements.in
     #   eth-account
     #   eth-rlp
+secretstorage==3.3.1
+    # via keyring
 semantic-version==2.8.5
     # via
     #   -r requirements.in
