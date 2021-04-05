@@ -147,7 +147,7 @@ pycryptodome==3.10.1
     #   vyper
 pygments-lexer-solidity==0.5.1
     # via -r requirements.in
-pygments==2.6.1
+pygments==2.8.1
     # via
     #   -r requirements.in
     #   pygments-lexer-solidity
