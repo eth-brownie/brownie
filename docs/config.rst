@@ -34,7 +34,7 @@ Brownie supports POSIX-style variable expansion for environment variables.
 
 You can also provide defaults.
 
-    .. code-block:: yaml
+.. code-block:: yaml
 
     networks:
         default: ${DEFAULT_NETWORK:-mainnet}
