@@ -111,6 +111,19 @@ development:
     host: http://127.0.0.1
     cmd_settings:
       port: 8545
+  - name: Hardhat
+    id: hardhat
+    cmd: npx hardhat node
+    host: http://127.0.0.1
+    cmd_settings:
+      port: 8545
+  - name: Hardhat (Mainnet Fork)
+    id: hardhat-fork
+    cmd: npx hardhat node
+    host: http://127.0.0.1
+    cmd_settings:
+      port: 8545
+      fork: mainnet
   - name: Ganache-CLI (Mainnet Fork)
     id: mainnet-fork
     cmd: ganache-cli
