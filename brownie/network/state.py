@@ -354,7 +354,7 @@ class Chain(metaclass=_Singleton):
         """
         if not isinstance(seconds, int):
             raise TypeError("seconds must be an integer value")
-        self._time_offset = rpc.Rpc().sleep(seconds)
+        self._time_offset = int(rpc.Rpc().sleep(seconds))
 
         if seconds:
             self._redo_buffer.clear()
