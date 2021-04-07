@@ -12,6 +12,7 @@ from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
 from brownie.network.web3 import web3
 
 CLI_FLAGS = {"port": "--port", "fork": "--fork", "fork_block": "--fork-block-number"}
+IGNORED_SETTINGS = ["chain_id"]
 
 
 def launch(cmd: str, **kwargs: Dict) -> None:
@@ -25,7 +26,7 @@ def launch(cmd: str, **kwargs: Dict) -> None:
     #     else:
     #         cmd += ".cmd"
     cmd_list = cmd.split(" ")
-    for key, value in [(k, v) for k, v in kwargs.items() if v]:
+    for key, value in [(k, v) for k, v in kwargs.items() if v and k not in IGNORED_SETTINGS]:
         try:
             cmd_list.extend([CLI_FLAGS[key], str(value)])
         except KeyError:
