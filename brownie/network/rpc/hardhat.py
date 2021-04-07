@@ -2,6 +2,7 @@
 
 import sys
 import warnings
+from pathlib import Path
 from subprocess import DEVNULL, PIPE
 from typing import Dict, List, Optional
 
@@ -37,6 +38,12 @@ def launch(cmd: str, **kwargs: Dict) -> None:
             )
     print(f"\nLaunching '{' '.join(cmd_list)}'...")
     out = DEVNULL if sys.platform == "win32" else PIPE
+
+    # required so hardhat considers the folder to be a hardhat project
+    # once hardhat network releases, we should be able to remove
+    hardhat_config = Path("hardhat.config.js")
+    if not hardhat_config.exists():
+        hardhat_config.touch()
 
     return psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
 
