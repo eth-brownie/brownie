@@ -19,14 +19,15 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
         # modify Hardhat transaction error to mimick the format that Ganache uses
         if method == "eth_sendTransaction" and "error" in result:
             message = result["error"]["message"]
-            if not message.startswith("VM Exception"):
-                return result
-            txid = self.w3.eth.getBlock("latest")["transactions"][0]
-            data: Dict = {}
-            result["error"]["data"] = {txid.hex(): data}
-            message = message.split(": ", maxsplit=1)[-1]
-            if message.startswith("revert"):
-                data.update(error="revert", reason=message[7:])
-            else:
-                data["error"] = message
+            if message.startswith("VM Exception") or message.startswith("Transaction reverted"):
+                txid = self.w3.eth.getBlock("latest")["transactions"][0]
+                data: Dict = {}
+                result["error"]["data"] = {txid.hex(): data}
+                message = message.split(": ", maxsplit=1)[-1]
+                if message == "Transaction reverted without a reason":
+                    data.update({"error": "revert", "reason": None})
+                elif message.startswith("revert"):
+                    data.update({"error": "revert", "reason": message[7:]})
+                else:
+                    data["error"] = message
         return result
