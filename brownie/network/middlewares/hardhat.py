@@ -17,9 +17,10 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
         result = make_request(method, params)
 
         # modify Hardhat transaction error to mimick the format that Ganache uses
-        if method == "eth_sendTransaction" and "error" in result:
+        if method in ("eth_call", "eth_sendTransaction") and "error" in result:
             message = result["error"]["message"]
             if message.startswith("VM Exception") or message.startswith("Transaction reverted"):
+                # FIXME: this doesn't play well with parallel tests
                 txid = self.w3.eth.getBlock("latest")["transactions"][0]
                 data: Dict = {}
                 result["error"]["data"] = {txid.hex(): data}
