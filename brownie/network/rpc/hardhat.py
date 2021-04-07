@@ -2,6 +2,7 @@
 
 import sys
 import warnings
+from pathlib import Path
 from subprocess import DEVNULL, PIPE
 from typing import Dict, List, Optional
 
@@ -12,6 +13,16 @@ from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
 from brownie.network.web3 import web3
 
 CLI_FLAGS = {"port": "--port", "fork": "--fork", "fork_block": "--fork-block-number"}
+
+DEFAULT_HARDHAT_CONFIG = """\
+module.exports = {
+  networks: {
+    hardhat: {
+        blockGasLimit: 15000000
+    }
+  }
+}
+"""
 
 
 def launch(cmd: str, **kwargs: Dict) -> None:
@@ -36,6 +47,10 @@ def launch(cmd: str, **kwargs: Dict) -> None:
             )
     print(f"\nLaunching '{' '.join(cmd_list)}'...")
     out = DEVNULL if sys.platform == "win32" else PIPE
+
+    hardhat_config = Path("hardhat.config.js")
+    if not hardhat_config.exists():
+        hardhat_config.write_text(DEFAULT_HARDHAT_CONFIG)
 
     return psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
 
