@@ -42,7 +42,8 @@ def launch(cmd: str, **kwargs: Dict) -> None:
 
 
 def on_connection() -> None:
-    pass
+    gas_limit = web3.eth.getBlock("latest").gasLimit
+    web3.provider.make_request("evm_setBlockGasLimit", [hex(gas_limit)])  # type: ignore
 
 
 def _request(method: str, args: List) -> int:
