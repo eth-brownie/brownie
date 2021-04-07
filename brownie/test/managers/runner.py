@@ -531,9 +531,11 @@ class PytestBrownieXdistRunner(PytestBrownieRunner):
 
     def __init__(self, config, project):
         self.workerid = int("".join(i for i in config.workerinput["workerid"] if i.isdigit()))
-        # TODO fix me
-        key = CONFIG.argv["network"] or CONFIG.settings["networks"]["default"]
-        CONFIG.networks[key]["cmd_settings"]["port"] += self.workerid
+
+        # network ID is passed to the worker via `pytest_configure_node` in the master
+        network_id = config.workerinput["network"] or CONFIG.settings["networks"]["default"]
+        CONFIG.networks[network_id]["cmd_settings"]["port"] += self.workerid
+
         super().__init__(config, project)
 
     def pytest_collection_modifyitems(self, items):
