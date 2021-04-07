@@ -29,8 +29,10 @@ from brownie._config import (
     _load_project_compiler_config,
     _load_project_config,
     _load_project_dependencies,
+    _load_project_envvars,
     _load_project_structure_config,
 )
+from brownie._expansion import expand_posix_vars
 from brownie.exceptions import (
     BrownieEnvironmentWarning,
     InvalidPackage,
@@ -167,7 +169,10 @@ class Project(_ProjectBase):
 
     def __init__(self, name: str, project_path: Path) -> None:
         self._path: Path = project_path
-        self._structure = _load_project_structure_config(project_path)
+        self._envvars = _load_project_envvars(project_path)
+        self._structure = expand_posix_vars(
+            _load_project_structure_config(project_path), self._envvars
+        )
         self._build_path: Path = project_path.joinpath(self._structure["build"])
 
         self._name = name
@@ -221,7 +226,9 @@ class Project(_ProjectBase):
             self._build._add_interface(build_json)
             interface_hashes[path.stem] = build_json["sha1"]
 
-        self._compiler_config = _load_project_compiler_config(self._path)
+        self._compiler_config = expand_posix_vars(
+            _load_project_compiler_config(self._path), self._envvars
+        )
 
         # compile updated sources, update build
         changed = self._get_changed_contracts(interface_hashes)

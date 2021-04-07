@@ -152,7 +152,13 @@ def test_delete_live():
 
 
 def test_delete_development():
-    for network_name in ("development", "mainnet-fork", "bsc-main-fork", "geth-dev"):
+    for network_name in (
+        "development",
+        "mainnet-fork",
+        "bsc-main-fork",
+        "ftm-main-fork",
+        "geth-dev",
+    ):
         cli_networks._delete(network_name)
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
