@@ -237,6 +237,8 @@ python-dateutil==2.8.1
     # via
     #   mythx-models
     #   pythx
+python-dotenv==0.16.0
+    # via -r requirements.in
 pythx==1.7.1
     # via -r requirements.in
 pytz==2021.1
@@ -340,7 +342,7 @@ vyper==0.2.11
     # via -r requirements.in
 wcwidth==0.2.5
     # via prompt-toolkit
-web3==5.17.0
+web3==5.18.0
     # via -r requirements.in
 webencodings==0.5.1
     # via bleach
