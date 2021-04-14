@@ -24,7 +24,7 @@ black==19.10b0
     # via -r requirements.in
 certifi==2020.12.5
     # via requests
-chardet==4.0.0
+chardet==3.0.4
     # via requests
 click==7.1.2
     # via black
@@ -88,7 +88,7 @@ hypothesis==5.41.3
     # via -r requirements.in
 idna==2.10
     # via requests
-inflection==0.5.0
+inflection==0.5.1
     # via
     #   mythx-models
     #   pythx
@@ -106,7 +106,7 @@ more-itertools==8.7.0
     # via pytest
 multiaddr==0.0.9
     # via ipfshttpclient
-mythx-models==1.9.1
+mythx-models==2.0.1
     # via pythx
 netaddr==0.8.0
     # via multiaddr
@@ -138,6 +138,8 @@ pycryptodome==3.10.1
     #   eth-hash
     #   eth-keyfile
     #   vyper
+pydantic==1.7.3
+    # via mythx-models
 pygments-lexer-solidity==0.5.1
     # via -r requirements.in
 pygments==2.8.1
@@ -165,13 +167,13 @@ python-dateutil==2.8.1
     #   pythx
 python-dotenv==0.16.0
     # via -r requirements.in
-pythx==1.6.1
+pythx==1.7.1
     # via -r requirements.in
 pyyaml==5.4.1
     # via -r requirements.in
 regex==2020.11.13
     # via black
-requests==2.25.1
+requests==2.25.0
     # via
     #   -r requirements.in
     #   ipfshttpclient
