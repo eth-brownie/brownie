@@ -824,9 +824,10 @@ def _install_from_github(package_id: str) -> str:
         msg = "Status {} when getting package versions from Github: '{}'".format(
             response.status_code, response.json()["message"]
         )
-        if response.status_code == 403:
+        if response.status_code in (403, 404):
             msg += (
-                "\n\nIf this issue persists, generate a Github API token and store"
+                "\n\nMissing or forbidden.\n"
+                "If this issue persists, generate a Github API token and store"
                 " it as the environment variable `GITHUB_TOKEN`:\n"
                 "https://github.blog/2013-05-16-personal-api-tokens/"
             )
@@ -996,10 +997,11 @@ def _get_mix_default_branch(mix_name: str) -> str:
     if r.status_code != 200:
         status, repo, message = r.status_code, f"brownie-mix/{mix_name}", r.json()["message"]
         msg = f"Status {status} when retrieving repo {repo} information from GHAPI: '{message}'"
-        if r.status_code == 403:
+        if r.status_code in (403, 404):
             msg_lines = (
                 msg,
-                "\n\nIf this issue persists, generate a Github API token and store",
+                "\n\nMissing or forbidden.\n",
+                "If this issue persists, generate a Github API token and store",
                 " it as the environment variable `GITHUB_TOKEN`:\n",
                 "https://github.blog/2013-05-16-personal-api-tokens/",
             )

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed a formatting issue on the new [environment variable section](https://eth-brownie.readthedocs.io/en/stable/config.html?highlight=POSIX-style#variable-expansion) ([#1038](https://github.com/eth-brownie/brownie/pull/1038))
+- Adjusted Github API token error message so that it correctly emits when auth failure occurs ([#1052](https://github.com/eth-brownie/brownie/pull/1052))
 
 ## [1.14.4](https://github.com/eth-brownie/brownie/tree/v1.14.4) - 2021-04-05
 ### Added
