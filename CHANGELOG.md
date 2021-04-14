@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+### Added
+
+- Added documentation detailing how private Github repositories can be used as a package installation source.
+
 ### Fixed
 
 - Fixed a formatting issue on the new [environment variable section](https://eth-brownie.readthedocs.io/en/stable/config.html?highlight=POSIX-style#variable-expansion) ([#1038](https://github.com/eth-brownie/brownie/pull/1038))
