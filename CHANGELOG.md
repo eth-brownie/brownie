@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed a formatting issue on the new [environment variable section](https://eth-brownie.readthedocs.io/en/stable/config.html?highlight=POSIX-style#variable-expansion) ([#1038](https://github.com/eth-brownie/brownie/pull/1038))
+- Fixed Github package installation failing for private repositories ([#1055](https://github.com/eth-brownie/brownie/pull/1055)).
 
 ## [1.14.4](https://github.com/eth-brownie/brownie/tree/v1.14.4) - 2021-04-05
 ### Added
