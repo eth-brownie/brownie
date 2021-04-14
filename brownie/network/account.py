@@ -140,7 +140,7 @@ class Accounts(metaclass=_Singleton):
         return account
 
     def from_mnemonic(
-        self, mnemonic: str, count: int = 1, offset: int = 0
+        self, mnemonic: str, count: int = 1, offset: int = 0, passphrase: str = ""
     ) -> Union["LocalAccount", List["LocalAccount"]]:
         """
         Generate one or more `LocalAccount` objects from a seed phrase.
@@ -153,12 +153,14 @@ class Accounts(metaclass=_Singleton):
             The number of `LocalAccount` objects to create
         offset : int, optional
             The initial account index to create accounts from
+        passphrase : str, optional
+            Additional passphrase to combine with the mnemonnic
         """
         new_accounts = []
 
         for i in range(offset, offset + count):
             w3account = eth_account.Account.from_mnemonic(
-                mnemonic, account_path=f"m/44'/60'/0'/0/{i}"
+                mnemonic, passphrase=passphrase, account_path=f"m/44'/60'/0'/0/{i}"
             )
 
             account = LocalAccount(w3account.address, w3account, w3account.key)
