@@ -18,8 +18,21 @@ else:
     else:
         requirements_filename = "requirements.txt"
 
-with open(requirements_filename, "r") as f:
-    requirements = list(map(str.strip, f.read().split("\n")))[:-1]
+requirements = []
+with open("requirements.in", "r") as f:
+    for r in f.readlines():
+        r = r.strip()
+
+        if r.startswith("#"):
+            continue
+
+        if "#egg=" in r:
+            _, r = r.split("#egg=")
+        elif r.startswith("-e"):
+            # TODO: dont just skip this. grab the package name from the path
+            continue
+
+        requirements.append(r)
 
 setup(
     name="eth-brownie",
