@@ -173,7 +173,7 @@ pyyaml==5.4.1
     # via -r requirements.in
 regex==2020.11.13
     # via black
-requests==2.25.0
+requests==2.25.1
     # via
     #   -r requirements.in
     #   ipfshttpclient
