@@ -6,28 +6,16 @@
 #
 alabaster==0.7.12
     # via sphinx
-apipkg==1.5
-    # via execnet
 appdirs==1.4.4
     # via
-    #   black
+    #   -c requirements.txt
     #   virtualenv
-asttokens==2.0.4
-    # via vyper
 attrs==20.3.0
     # via
-    #   black
-    #   hypothesis
-    #   jsonschema
+    #   -c requirements.txt
     #   pytest
 babel==2.9.0
     # via sphinx
-base58==2.1.0
-    # via multiaddr
-bitarray==1.2.2
-    # via eth-account
-black==19.10b0
-    # via -r requirements.in
 bleach==3.3.0
     # via readme-renderer
 bump2version==1.0.1
@@ -35,138 +23,78 @@ bump2version==1.0.1
 bumpversion==0.6.0
     # via -r requirements-dev.in
 certifi==2020.12.5
-    # via requests
-chardet==3.0.4
-    # via requests
+    # via
+    #   -c requirements.txt
+    #   requests
+cffi==1.14.5
+    # via cryptography
+chardet==4.0.0
+    # via
+    #   -c requirements.txt
+    #   requests
 click==7.1.2
     # via
-    #   black
+    #   -c requirements.txt
     #   pip-tools
 coverage==5.2.1
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cytoolz==0.11.0
-    # via
-    #   eth-keyfile
-    #   eth-utils
+cryptography==3.4.7
+    # via secretstorage
 distlib==0.3.1
     # via virtualenv
 docutils==0.16
     # via
     #   readme-renderer
     #   sphinx
-eth-abi==2.1.1
-    # via
-    #   -r requirements.in
-    #   eth-account
-    #   eth-event
-    #   web3
-eth-account==0.5.4
-    # via
-    #   -r requirements.in
-    #   web3
-eth-event==1.2.3
-    # via -r requirements.in
-eth-hash[pycryptodome]==0.3.1
-    # via
-    #   -r requirements.in
-    #   eth-event
-    #   eth-utils
-    #   web3
-eth-keyfile==0.5.1
-    # via eth-account
-eth-keys==0.3.3
-    # via
-    #   eth-account
-    #   eth-keyfile
-eth-rlp==0.2.1
-    # via eth-account
-eth-typing==2.2.2
-    # via
-    #   eth-abi
-    #   eth-keys
-    #   eth-utils
-    #   web3
-eth-utils==1.10.0
-    # via
-    #   -r requirements.in
-    #   eth-abi
-    #   eth-account
-    #   eth-event
-    #   eth-hash
-    #   eth-keyfile
-    #   eth-keys
-    #   eth-rlp
-    #   rlp
-    #   web3
-execnet==1.8.0
-    # via pytest-xdist
 filelock==3.0.12
     # via
     #   tox
     #   virtualenv
 flake8==3.8.3
     # via -r requirements-dev.in
-hexbytes==0.2.1
-    # via
-    #   -r requirements.in
-    #   eth-account
-    #   eth-event
-    #   eth-rlp
-    #   web3
-hypothesis==5.49.0
-    # via -r requirements.in
 idna==2.10
-    # via requests
+    # via
+    #   -c requirements.txt
+    #   requests
 imagesize==1.2.0
     # via sphinx
 importlib-metadata==3.7.3
     # via keyring
-inflection==0.5.1
-    # via
-    #   mythx-models
-    #   pythx
 iniconfig==1.1.1
-    # via pytest
-ipfshttpclient==0.7.0a1
-    # via web3
+    # via
+    #   -c requirements.txt
+    #   pytest
 isort==4.3.21
     # via -r requirements-dev.in
+jeepney==0.6.0
+    # via
+    #   keyring
+    #   secretstorage
 jinja2==2.11.3
     # via sphinx
-jsonschema==3.2.0
-    # via
-    #   mythx-models
-    #   web3
 keyring==23.0.0
     # via twine
-lru-dict==1.1.7
-    # via web3
 markupsafe==1.1.1
     # via jinja2
 mccabe==0.6.1
     # via flake8
-multiaddr==0.0.9
-    # via ipfshttpclient
+more-itertools==8.7.0
+    # via
+    #   -c requirements.txt
+    #   pytest
 mypy-extensions==0.4.3
     # via mypy
 mypy==0.720
     # via -r requirements-dev.in
-mythx-models==2.0.1
-    # via pythx
-netaddr==0.8.0
-    # via multiaddr
 packaging==20.9
     # via
+    #   -c requirements.txt
     #   bleach
     #   pytest
     #   sphinx
     #   tox
-parsimonious==0.8.1
-    # via eth-abi
-pathspec==0.8.1
-    # via black
 pep517==0.10.0
     # via pip-tools
 pip-tools==6.0.1
@@ -175,119 +103,61 @@ pkginfo==1.7.0
     # via twine
 pluggy==0.13.1
     # via
+    #   -c requirements.txt
     #   pytest
     #   tox
-prompt-toolkit==3.0.17
-    # via -r requirements.in
-protobuf==3.15.6
-    # via web3
-psutil==5.8.0
-    # via -r requirements.in
-py-solc-ast==1.2.8
-    # via -r requirements.in
-py-solc-x==1.1.0
-    # via -r requirements.in
 py==1.10.0
     # via
-    #   -r requirements.in
+    #   -c requirements.txt
     #   pytest
-    #   pytest-forked
     #   tox
 pycodestyle==2.6.0
     # via flake8
-pycryptodome==3.10.1
-    # via
-    #   eth-hash
-    #   eth-keyfile
-    #   vyper
-pydantic==1.7.3
-    # via mythx-models
+pycparser==2.20
+    # via cffi
 pyflakes==2.2.0
     # via flake8
-pygments-lexer-solidity==0.5.1
-    # via -r requirements.in
 pygments==2.8.1
     # via
-    #   -r requirements.in
-    #   pygments-lexer-solidity
+    #   -c requirements.txt
     #   readme-renderer
     #   sphinx
-pyjwt==1.7.1
-    # via pythx
 pyparsing==2.4.7
-    # via packaging
-pyrsistent==0.17.3
-    # via jsonschema
+    # via
+    #   -c requirements.txt
+    #   packaging
 pytest-cov==2.10.1
     # via -r requirements-dev.in
-pytest-forked==1.3.0
-    # via pytest-xdist
 pytest-mock==3.3.1
     # via -r requirements-dev.in
-pytest-xdist==1.34.0
-    # via -r requirements.in
-pytest==6.2.2
+pytest==6.0.1
     # via
-    #   -r requirements.in
+    #   -c requirements.txt
     #   pytest-cov
-    #   pytest-forked
     #   pytest-mock
-    #   pytest-xdist
-python-dateutil==2.8.1
-    # via
-    #   mythx-models
-    #   pythx
-pythx==1.7.1
-    # via -r requirements.in
 pytz==2021.1
     # via babel
-pyyaml==5.4.1
-    # via -r requirements.in
 readme-renderer==29.0
     # via twine
-regex==2020.11.13
-    # via black
 requests-toolbelt==0.9.1
     # via twine
-requests==2.25.0
+requests==2.25.1
     # via
-    #   -r requirements.in
-    #   ipfshttpclient
-    #   py-solc-x
-    #   pythx
+    #   -c requirements.txt
     #   requests-toolbelt
     #   sphinx
     #   twine
-    #   vvm
-    #   web3
-rlp==1.2.0
-    # via
-    #   -r requirements.in
-    #   eth-account
-    #   eth-rlp
-semantic-version==2.8.5
-    # via
-    #   -r requirements.in
-    #   py-solc-x
-    #   vvm
-    #   vyper
+secretstorage==3.3.1
+    # via keyring
 six==1.15.0
     # via
-    #   asttokens
+    #   -c requirements.txt
     #   bleach
-    #   jsonschema
-    #   multiaddr
-    #   parsimonious
-    #   protobuf
-    #   pytest-xdist
-    #   python-dateutil
     #   readme-renderer
     #   tox
     #   virtualenv
 snowballstemmer==2.1.0
     # via sphinx
-sortedcontainers==2.3.0
-    # via hypothesis
 sphinx-rtd-theme==0.5.0
     # via -r requirements-dev.in
 sphinx==3.2.1
@@ -308,44 +178,32 @@ sphinxcontrib-serializinghtml==1.1.4
     # via sphinx
 toml==0.10.2
     # via
-    #   black
+    #   -c requirements.txt
     #   pep517
     #   pytest
     #   tox
-toolz==0.11.1
-    # via cytoolz
 tox==3.19.0
     # via -r requirements-dev.in
-tqdm==4.59.0
+tqdm==4.53.0
     # via
-    #   -r requirements.in
+    #   -c requirements.txt
     #   twine
 twine==3.1.1
     # via -r requirements-dev.in
 typed-ast==1.4.2
     # via
-    #   black
+    #   -c requirements.txt
     #   mypy
 typing-extensions==3.7.4.3
     # via mypy
 urllib3==1.26.4
-    # via requests
-varint==1.0.2
-    # via multiaddr
+    # via
+    #   -c requirements.txt
+    #   requests
 virtualenv==20.4.3
     # via tox
-vvm==0.1.0
-    # via -r requirements.in
-vyper==0.2.12
-    # via -r requirements.in
-wcwidth==0.2.5
-    # via prompt-toolkit
-web3==5.17.0
-    # via -r requirements.in
 webencodings==0.5.1
     # via bleach
-websockets==8.1
-    # via web3
 wheel==0.35.1
     # via -r requirements-dev.in
 zipp==3.4.1
