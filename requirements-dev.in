@@ -1,4 +1,4 @@
--r requirements.in
+-c requirements.txt
 
 bumpversion
 coverage
