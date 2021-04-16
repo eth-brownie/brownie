@@ -762,5 +762,6 @@ class LocalAccount(_PrivateKeyAccount):
             allow_revert = bool(CONFIG.network_type == "development")
         if not allow_revert:
             self._check_for_revert(tx)
+        tx["chainId"] = web3.chain_id
         signed_tx = self._acct.sign_transaction(tx).rawTransaction  # type: ignore
         return web3.eth.sendRawTransaction(signed_tx)
