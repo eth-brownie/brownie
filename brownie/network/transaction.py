@@ -716,8 +716,8 @@ class TransactionReceipt:
                     self._dev_revert_msg = ""
                 return
 
-        step = next(i for i in trace[::-1] if i["op"] in ("REVERT", "INVALID"))
-        self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
+        op = next((i["op"] for i in trace[::-1] if i["op"] in ("REVERT", "INVALID")), None)
+        self._revert_msg = "invalid opcode" if op == "INVALID" else ""
 
     def _expand_trace(self) -> None:
         """Adds the following attributes to each step of the stack trace:
@@ -1101,7 +1101,10 @@ class TransactionReceipt:
         except StopIteration:
             return ""
 
-        result = [next(i for i in trace_range if trace[i]["source"])]
+        try:
+            result = [next(i for i in trace_range if trace[i]["source"])]
+        except StopIteration:
+            return ""
         depth, jump_depth = trace[idx]["depth"], trace[idx]["jumpDepth"]
 
         while True:
