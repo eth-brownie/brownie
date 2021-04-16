@@ -7,16 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.14.5](https://github.com/eth-brownie/brownie/tree/v1.14.5) - 2021-04-16
 ### Added
-
 - Added documentation detailing how private Github repositories can be used as a package installation source.
+- Add passphrase kwarg to `Account.from_mnemonic` ([#1050](https://github.com/eth-brownie/brownie/pull/1050))
+
+### Changed
+- Include `chainId` field when signing transactions ([#1056](https://github.com/eth-brownie/brownie/pull/1056))
 
 ### Fixed
-
 - Fixed a formatting issue on the new [environment variable section](https://eth-brownie.readthedocs.io/en/stable/config.html?highlight=POSIX-style#variable-expansion) ([#1038](https://github.com/eth-brownie/brownie/pull/1038))
 - Fixed Github package installation failing for private repositories ([#1055](https://github.com/eth-brownie/brownie/pull/1055)).
 - Adjusted Github API token error message so that it correctly emits when auth failure occurs ([#1052](https://github.com/eth-brownie/brownie/pull/1052))
-
+- Remove `__ret_value__` prior to writing console output ([#1057](https://github.com/eth-brownie/brownie/pull/1057))
+- Handle missing contract when generating transaction receipt ([#1058](https://github.com/eth-brownie/brownie/pull/1058))
+- `StopIteration` issues within receipts ([#1059](https://github.com/eth-brownie/brownie/pull/1059))
+- Do not cache `eth_newBlockFilter` ([#1061](https://github.com/eth-brownie/brownie/pull/1061))
 
 ## [1.14.4](https://github.com/eth-brownie/brownie/tree/v1.14.4) - 2021-04-05
 ### Added
