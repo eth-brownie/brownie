@@ -87,21 +87,21 @@ def test_nonce(accounts):
 def test_balance_int(accounts, web3, chain):
     """transfers use the correct balance"""
     balance = accounts[0].balance()
-    assert web3.eth.getBalance(accounts[0].address) == balance
+    assert web3.eth.get_balance(accounts[0].address) == balance
     accounts[1].transfer(accounts[0], 1000)
     assert accounts[0].balance() == balance + 1000
     chain.reset()
-    assert web3.eth.getBalance(accounts[0].address) == balance
+    assert web3.eth.get_balance(accounts[0].address) == balance
 
 
 def test_balance_wei(accounts, web3, chain):
     """transfer balances are converted using wei"""
     balance = accounts[0].balance()
-    assert web3.eth.getBalance(accounts[0].address) == balance
+    assert web3.eth.get_balance(accounts[0].address) == balance
     accounts[1].transfer(accounts[0], "1 ether")
     assert accounts[0].balance() == balance + 1000000000000000000
     chain.reset()
-    assert web3.eth.getBalance(accounts[0].address) == balance
+    assert web3.eth.get_balance(accounts[0].address) == balance
 
 
 def test_gas_price_manual(accounts):
@@ -114,11 +114,11 @@ def test_gas_price_manual(accounts):
 
 @pytest.mark.parametrize("auto", (True, False, None, "auto"))
 def test_gas_price_automatic(accounts, config, web3, auto):
-    """gas price is set correctly using web3.eth.gasPrice"""
+    """gas price is set correctly using web3.eth.gas_price"""
     config.active_network["settings"]["gas_price"] = auto
     balance = accounts[0].balance()
     tx = accounts[0].transfer(accounts[1], 0)
-    assert tx.gas_price == web3.eth.gasPrice
+    assert tx.gas_price == web3.eth.gas_price
     assert accounts[0].balance() == balance - (tx.gas_price * 21000)
 
 
@@ -164,7 +164,7 @@ def test_gas_buffer_send_to_eoa(accounts, config):
 @pytest.mark.parametrize("gas_limit", (True, False, None, "auto"))
 @pytest.mark.parametrize("gas_buffer", (1, 1.25))
 def test_gas_limit_automatic(accounts, config, gas_limit, gas_buffer):
-    """gas limit is set correctly using web3.eth.estimateGas"""
+    """gas limit is set correctly using web3.eth.estimate_gas"""
     config.active_network["settings"]["gas_limit"] = gas_limit
     config.active_network["settings"]["gas_buffer"] = gas_buffer
     foo = compile_source(code).Foo.deploy({"from": accounts[0]})
@@ -221,7 +221,7 @@ def test_deploy_via_transfer(accounts, web3):
     bytecode = "0x3660006000376110006000366000732157a7894439191e520825fe9399ab8655e0f7085af41558576110006000f3"  # NOQA: E501
     tx = accounts[0].transfer(data=bytecode)
     assert tx.contract_name == "UnknownContract"
-    assert web3.eth.getCode(tx.contract_address)
+    assert web3.eth.get_code(tx.contract_address)
 
 
 def test_gas_limit_and_buffer(accounts):

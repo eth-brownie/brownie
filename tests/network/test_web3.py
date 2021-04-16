@@ -65,7 +65,7 @@ def test_disconnect(web3):
 
 
 def test_genesis_hash(web3, devnetwork):
-    assert web3.genesis_hash == web3.eth.getBlock(0)["hash"].hex()[2:]
+    assert web3.genesis_hash == web3.eth.get_block(0)["hash"].hex()[2:]
 
 
 def test_genesis_hash_different_networks(devnetwork, web3):
@@ -99,7 +99,7 @@ def test_rinkeby(web3, network):
     network.connect("rinkeby")
 
     # this should work because we automatically add the POA middleware
-    web3.eth.getBlock("latest")
+    web3.eth.get_block("latest")
 
 
 def test_supports_traces_development(web3, devnetwork):

@@ -114,9 +114,9 @@ These fixtures provide quick access to Brownie objects that are frequently used 
             :linenos:
 
             def test_account_balance(accounts, web3):
-                height = web3.eth.blockNumber
+                height = web3.eth.block_number
                 accounts[0].transfer(accounts[1], "10 ether")
-                assert web3.eth.blockNumber == height + 1
+                assert web3.eth.block_number == height + 1
 
 Contract Fixtures
 =================

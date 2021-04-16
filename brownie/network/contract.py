@@ -180,7 +180,7 @@ class ContractContainer(_ContractBase):
             i
             for i in self._contracts
             if (i.tx and i.tx.block_number is not None and i.tx.block_number > height)
-            or len(web3.eth.getCode(i.address).hex()) <= 4
+            or len(web3.eth.get_code(i.address).hex()) <= 4
         ]
         for contract in reverted:
             self.remove(contract)
@@ -745,7 +745,7 @@ class _DeployedContractBase(_ContractBase):
         self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
     ) -> None:
         address = _resolve_address(address)
-        self.bytecode = web3.eth.getCode(address).hex()[2:]
+        self.bytecode = web3.eth.get_code(address).hex()[2:]
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
         self._owner = owner
@@ -845,7 +845,7 @@ class _DeployedContractBase(_ContractBase):
 
     def balance(self) -> Wei:
         """Returns the current ether balance of the contract, in wei."""
-        balance = web3.eth.getBalance(self.address)
+        balance = web3.eth.get_balance(self.address)
         return Wei(balance)
 
     def _deployment_path(self) -> Optional[Path]:
@@ -867,7 +867,7 @@ class _DeployedContractBase(_ContractBase):
         deployment_build["deployment"] = {
             "address": self.address,
             "chainid": chainid,
-            "blockHeight": web3.eth.blockNumber,
+            "blockHeight": web3.eth.block_number,
         }
         if path:
             self._project._add_to_deployment_map(self)
@@ -1110,11 +1110,11 @@ class Contract(_DeployedContractBase):
 
         if as_proxy_for is None:
             # always check for an EIP1967 proxy - https://eips.ethereum.org/EIPS/eip-1967
-            implementation_eip1967 = web3.eth.getStorageAt(
+            implementation_eip1967 = web3.eth.get_storage_at(
                 address, int(web3.keccak(text="eip1967.proxy.implementation").hex(), 16) - 1
             )
             # always check for an EIP1822 proxy - https://eips.ethereum.org/EIPS/eip-1822
-            implementation_eip1822 = web3.eth.getStorageAt(address, web3.keccak(text="PROXIABLE"))
+            implementation_eip1822 = web3.eth.get_storage_at(address, web3.keccak(text="PROXIABLE"))
             if len(implementation_eip1967) > 0 and int(implementation_eip1967.hex(), 16):
                 as_proxy_for = _resolve_address(implementation_eip1967[-20:])
             elif len(implementation_eip1822) > 0 and int(implementation_eip1822.hex(), 16):
@@ -1791,7 +1791,7 @@ def _inputs(abi: Dict) -> str:
 
 
 def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -> bool:
-    actual_bytecode = web3.eth.getCode(address).hex()[2:]
+    actual_bytecode = web3.eth.get_code(address).hex()[2:]
     expected_bytecode = remove_0x_prefix(expected_bytecode)  # type: ignore
 
     if expected_bytecode.startswith("730000000000000000000000000000000000000000"):
@@ -1846,7 +1846,7 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     if address in _unverified_addresses:
         raise ValueError(f"Source for {address} has not been verified")
 
-    code = web3.eth.getCode(address).hex()[2:]
+    code = web3.eth.get_code(address).hex()[2:]
     # EIP-1167: Minimal Proxy Contract
     if code[:20] == "363d3d373d3d3d363d73" and code[60:] == "5af43d82803e903d91602b57fd5bf3":
         address = _resolve_address(code[20:60])

@@ -59,7 +59,7 @@ def test_forwarder_to_good_code(accounts, web3):
     target = compile_source(good_code).Vyper.deploy({"from": accounts[0]})
     tx = factory.make_forwarder(target, {"from": accounts[0]})
 
-    bytecode = web3.eth.getCode(tx.return_value)
+    bytecode = web3.eth.get_code(tx.return_value)
     assert is_cacheable_bytecode(web3, bytecode)
 
 
@@ -68,5 +68,5 @@ def test_forwarder_to_bad_code(accounts, web3):
     target = compile_source(selfdestruct_code).Boom.deploy({"from": accounts[0]})
     tx = factory.make_forwarder(target, {"from": accounts[0]})
 
-    bytecode = web3.eth.getCode(tx.return_value)
+    bytecode = web3.eth.get_code(tx.return_value)
     assert not is_cacheable_bytecode(web3, bytecode)

@@ -171,7 +171,7 @@ class Rpc(metaclass=_Singleton):
     @internal
     def mine(self, timestamp: int = None) -> int:
         self.backend.mine(timestamp)
-        return web3.eth.blockNumber
+        return web3.eth.block_number
 
     @internal
     def snapshot(self) -> int:
@@ -180,7 +180,7 @@ class Rpc(metaclass=_Singleton):
     @internal
     def revert(self, snapshot_id: int) -> int:
         self.backend.revert(snapshot_id)
-        return web3.eth.blockNumber
+        return web3.eth.block_number
 
     def unlock_account(self, address: str) -> None:
         self.backend.unlock_account(address)

@@ -31,11 +31,11 @@ def test_time_exceptions(devnetwork, chain):
 
 
 def test_mine(devnetwork, chain, web3):
-    height = web3.eth.blockNumber
+    height = web3.eth.block_number
     chain.mine()
-    assert web3.eth.blockNumber == height + 1
+    assert web3.eth.block_number == height + 1
     chain.mine(5)
-    assert web3.eth.blockNumber == height + 6
+    assert web3.eth.block_number == height + 6
 
 
 def test_mine_exceptions(devnetwork, chain):
@@ -46,18 +46,18 @@ def test_mine_exceptions(devnetwork, chain):
 
 
 def test_snapshot_revert(BrownieTester, accounts, chain, web3):
-    height = web3.eth.blockNumber
+    height = web3.eth.block_number
     balance = accounts[0].balance()
     count = len(BrownieTester)
     chain.snapshot()
     accounts[0].transfer(accounts[1], "1 ether")
     BrownieTester.deploy(True, {"from": accounts[0]})
     chain.revert()
-    assert height == web3.eth.blockNumber
+    assert height == web3.eth.block_number
     assert balance == accounts[0].balance()
     assert count == len(BrownieTester)
     chain.revert()
-    assert height == web3.eth.blockNumber
+    assert height == web3.eth.block_number
     assert balance == accounts[0].balance()
     assert count == len(BrownieTester)
 
@@ -72,6 +72,6 @@ def test_reset(BrownieTester, accounts, chain, web3):
     accounts[0].transfer(accounts[1], "1 ether")
     BrownieTester.deploy(True, {"from": accounts[0]})
     chain.reset()
-    assert web3.eth.blockNumber == 0
+    assert web3.eth.block_number == 0
     assert accounts[0].balance() == 100000000000000000000
     assert len(BrownieTester) == 0

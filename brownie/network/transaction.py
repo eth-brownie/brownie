@@ -283,13 +283,13 @@ class TransactionReceipt:
     def timestamp(self) -> Optional[int]:
         if self.status < 0:
             return None
-        return web3.eth.getBlock(self.block_number)["timestamp"]
+        return web3.eth.get_block(self.block_number)["timestamp"]
 
     @property
     def confirmations(self) -> int:
         if not self.block_number:
             return 0
-        return web3.eth.blockNumber - self.block_number + 1
+        return web3.eth.block_number - self.block_number + 1
 
     def replace(
         self,
@@ -361,11 +361,11 @@ class TransactionReceipt:
 
         while True:
             try:
-                tx: Dict = web3.eth.getTransaction(self.txid)
+                tx: Dict = web3.eth.get_transaction(self.txid)
                 break
             except TransactionNotFound:
                 if self.nonce is not None:
-                    sender_nonce = web3.eth.getTransactionCount(str(self.sender))
+                    sender_nonce = web3.eth.get_transaction_count(str(self.sender))
                     if sender_nonce > self.nonce:
                         self.status = Status(-2)
                         self._confirmed.set()
@@ -398,7 +398,7 @@ class TransactionReceipt:
         # await tx showing in mempool
         while True:
             try:
-                tx: Dict = web3.eth.getTransaction(HexBytes(self.txid))
+                tx: Dict = web3.eth.get_transaction(HexBytes(self.txid))
                 break
             except (TransactionNotFound, ValueError):
                 if self.sender is None:
@@ -406,7 +406,7 @@ class TransactionReceipt:
                     # not broadcasted locally and so likely doesn't exist
                     raise
                 if self.nonce is not None:
-                    sender_nonce = web3.eth.getTransactionCount(str(self.sender))
+                    sender_nonce = web3.eth.get_transaction_count(str(self.sender))
                     if sender_nonce > self.nonce:
                         self.status = Status(-2)
                         return
@@ -444,10 +444,10 @@ class TransactionReceipt:
         # await first confirmation
         while True:
             # if sender nonce is greater than tx nonce, the tx should be confirmed
-            sender_nonce = web3.eth.getTransactionCount(str(self.sender))
+            sender_nonce = web3.eth.get_transaction_count(str(self.sender))
             expect_confirmed = bool(sender_nonce > self.nonce)  # type: ignore
             try:
-                receipt = web3.eth.waitForTransactionReceipt(
+                receipt = web3.eth.wait_for_transaction_receipt(
                     HexBytes(self.txid), timeout=15, poll_latency=1
                 )
                 break
@@ -463,14 +463,14 @@ class TransactionReceipt:
         remaining_confs = required_confs
         while remaining_confs > 0 and required_confs > 1:
             try:
-                receipt = web3.eth.getTransactionReceipt(self.txid)
+                receipt = web3.eth.get_transaction_receipt(self.txid)
                 self.block_number = receipt["blockNumber"]
             except TransactionNotFound:
                 if not self._silent:
                     sys.stdout.write(f"\r{color('red')}Transaction was lost...{color}{' ' * 8}")
                     sys.stdout.flush()
                 # check if tx is still in mempool, this will raise otherwise
-                tx = web3.eth.getTransaction(self.txid)
+                tx = web3.eth.get_transaction(self.txid)
                 self.block_number = None
                 return self._await_confirmation(tx["blockNumber"], required_confs)
             if required_confs - self.confirmations != remaining_confs:

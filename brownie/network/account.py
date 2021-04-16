@@ -293,7 +293,7 @@ class PublicKeyAccount:
 
     def balance(self) -> Wei:
         """Returns the current balance at the address, in wei."""
-        balance = web3.eth.getBalance(self.address)
+        balance = web3.eth.get_balance(self.address)
         return Wei(balance)
 
     @property
@@ -303,7 +303,7 @@ class PublicKeyAccount:
 
     @property
     def nonce(self) -> int:
-        return web3.eth.getTransactionCount(self.address)
+        return web3.eth.get_transaction_count(self.address)
 
     def get_deployment_address(self, nonce: Optional[int] = None) -> EthAddress:
         """
@@ -391,7 +391,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             return gas_price, None, None
 
         if isinstance(gas_price, bool) or gas_price in (None, "auto"):
-            return web3.eth.generateGasPrice(), None, None
+            return web3.eth.generate_gas_price(), None, None
 
         return Wei(gas_price), None, None
 
@@ -547,11 +547,11 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if gas_price is not None:
             tx["gasPrice"] = gas_price
         try:
-            return web3.eth.estimateGas(tx)
+            return web3.eth.estimate_gas(tx)
         except ValueError as exc:
             revert_gas_limit = CONFIG.active_network["settings"]["reverting_tx_gas_limit"]
             if revert_gas_limit == "max":
-                revert_gas_limit = web3.eth.getBlock("latest")["gasLimit"]
+                revert_gas_limit = web3.eth.get_block("latest")["gasLimit"]
                 CONFIG.active_network["settings"]["reverting_tx_gas_limit"] = revert_gas_limit
             if revert_gas_limit:
                 return revert_gas_limit
@@ -708,7 +708,7 @@ class Account(_PrivateKeyAccount):
             allow_revert = bool(CONFIG.network_type == "development")
         if not allow_revert:
             self._check_for_revert(tx)
-        return web3.eth.sendTransaction(tx)
+        return web3.eth.send_transaction(tx)
 
 
 class LocalAccount(_PrivateKeyAccount):
@@ -764,4 +764,4 @@ class LocalAccount(_PrivateKeyAccount):
             self._check_for_revert(tx)
         tx["chainId"] = web3.chain_id
         signed_tx = self._acct.sign_transaction(tx).rawTransaction  # type: ignore
-        return web3.eth.sendRawTransaction(signed_tx)
+        return web3.eth.send_raw_transaction(signed_tx)
