@@ -1858,7 +1858,7 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
         address = _resolve_address(code[30:70])
 
     params: Dict = {"module": "contract", "action": action, "address": address}
-    if "etherscan" in url or "bscscan" in url:
+    if "etherscan" in url:
         if os.getenv("ETHERSCAN_TOKEN"):
             params["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
         elif not silent:
@@ -1866,6 +1866,16 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
                 "No Etherscan API token set. You may experience issues with rate limiting. "
                 "Visit https://etherscan.io/register to obtain a token, and then store it "
                 "as the environment variable $ETHERSCAN_TOKEN",
+                BrownieEnvironmentWarning,
+            )
+    elif "bscscan" in url:
+        if os.getenv("BSCSCAN_TOKEN"):
+            params["apiKey"] = os.getenv("BSCSCAN_TOKEN")
+        elif not silent:
+            warnings.warn(
+                "No BSCScan API token set. You may experience issues with rate limiting. "
+                "Visit https://bscscan.com/register to obtain a token, and then store it "
+                "as the environment variable $BSCSCAN_TOKEN",
                 BrownieEnvironmentWarning,
             )
 
@@ -1880,7 +1890,7 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
         raise ConnectionError(f"Status {response.status_code} when querying {url}: {response.text}")
     data = response.json()
     if int(data["status"]) != 1:
-        raise ValueError(f"Failed to retrieve data from API: {data['result']}")
+        raise ValueError(f"Failed to retrieve data from API: {data}")
 
     return data
 
