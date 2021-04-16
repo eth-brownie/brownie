@@ -599,7 +599,9 @@ def from_brownie_mix(
     Returns the path to the project as a string.
     """
     project_name = str(project_name).lower().replace("-mix", "")
-    default_branch = _get_mix_default_branch(project_name)
+    headers = REQUEST_HEADERS.copy()
+    headers.update(_maybe_retrieve_github_auth())
+    default_branch = _get_mix_default_branch(project_name, headers)
     url = MIXES_URL.format(project_name, default_branch)
     if project_path is None:
         project_path = Path(".").joinpath(project_name)
@@ -608,7 +610,7 @@ def from_brownie_mix(
         raise FileExistsError(f"Folder already exists - {project_path}")
 
     print(f"Downloading from {url}...")
-    _stream_download(url, str(project_path.parent))
+    _stream_download(url, str(project_path.parent), headers)
     project_path.parent.joinpath(f"{project_name}-mix-{default_branch}").rename(project_path)
     _create_folders(project_path)
     _create_gitfiles(project_path)
@@ -795,6 +797,18 @@ def _install_from_ethpm(uri: str) -> str:
     return f"{org}/{repo}@{version}"
 
 
+def _maybe_retrieve_github_auth() -> Dict[str, str]:
+    """Returns appropriate github authorization headers.
+
+    Otherwise returns an empty dict if no auth token is present.
+    """
+    token = os.getenv("GITHUB_TOKEN")
+    if token:
+        auth = b64encode(token.encode()).decode()
+        return {"Authorization": f"Basic {auth}"}
+    return {}
+
+
 def _install_from_github(package_id: str) -> str:
     try:
         path, version = package_id.split("@")
@@ -813,9 +827,7 @@ def _install_from_github(package_id: str) -> str:
         raise FileExistsError("Package is aleady installed")
 
     headers = REQUEST_HEADERS.copy()
-    if os.getenv("GITHUB_TOKEN"):
-        auth = b64encode(os.environ["GITHUB_TOKEN"].encode()).decode()
-        headers.update({"Authorization": "Basic {}".format(auth)})
+    headers.update(_maybe_retrieve_github_auth())
 
     response = requests.get(
         f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100", headers=headers
@@ -846,7 +858,7 @@ def _install_from_github(package_id: str) -> str:
     download_url = next(i["zipball_url"] for i in data if i["name"].lstrip("v") == version)
 
     existing = list(install_path.parent.iterdir())
-    _stream_download(download_url, str(install_path.parent))
+    _stream_download(download_url, str(install_path.parent), headers)
 
     installed = next(i for i in install_path.parent.iterdir() if i not in existing)
     shutil.move(installed, install_path)
@@ -952,8 +964,10 @@ def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
     return contract_sources
 
 
-def _stream_download(download_url: str, target_path: str) -> None:
-    response = requests.get(download_url, stream=True, headers=REQUEST_HEADERS)
+def _stream_download(
+    download_url: str, target_path: str, headers: Dict[str, str] = REQUEST_HEADERS
+) -> None:
+    response = requests.get(download_url, stream=True, headers=headers)
 
     if response.status_code == 404:
         raise ConnectionError(
@@ -979,7 +993,7 @@ def _stream_download(download_url: str, target_path: str) -> None:
         zf.extractall(target_path)
 
 
-def _get_mix_default_branch(mix_name: str) -> str:
+def _get_mix_default_branch(mix_name: str, headers: Dict[str, str] = REQUEST_HEADERS) -> str:
     """Get the default branch for a brownie-mix repository.
 
     Arguments
@@ -993,7 +1007,7 @@ def _get_mix_default_branch(mix_name: str) -> str:
         The default branch name on github.
     """
     REPO_GH_API = f"https://api.github.com/repos/brownie-mix/{mix_name}-mix"
-    r = requests.get(REPO_GH_API, headers=REQUEST_HEADERS)
+    r = requests.get(REPO_GH_API, headers=headers)
     if r.status_code != 200:
         status, repo, message = r.status_code, f"brownie-mix/{mix_name}", r.json()["message"]
         msg = f"Status {status} when retrieving repo {repo} information from GHAPI: '{message}'"

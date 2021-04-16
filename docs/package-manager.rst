@@ -37,6 +37,16 @@ To install a package from Github you must use a package ID. A package ID is comp
 
     [ORGANIZATION]/[REPOSITORY]@[VERSION]
 
+It is possible to install from a private Github repository using an API access token like a `personal access token <https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token>`_.
+This can be provided to Brownie via the ``GITHUB_TOKEN`` environment variable in the form of ``username:ghp_token_secret``.
+See also https://docs.github.com/en/rest/overview/other-authentication-methods#basic-authentication.
+
+.. note::
+
+    Be careful to avoid exposing your API token in your command history or otherwise, and don't grant it more permissions than necessary!
+    In this case **repo** permissions should be sufficient.
+
+
 Examples
 ********
 
