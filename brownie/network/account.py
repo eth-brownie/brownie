@@ -402,7 +402,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             msg = exc.args[0]["message"] if isinstance(exc.args[0], dict) else str(exc)
             raise ValueError(
                 f"Execution reverted during call: '{msg}'. This transaction will likely revert. "
-                "If you wish to broadcast, include `allow_revert=True` as a transaction parameter.",
+                "If you wish to broadcast, include `allow_revert:True` as a transaction parameter.",
             ) from None
 
     def deploy(
@@ -762,5 +762,6 @@ class LocalAccount(_PrivateKeyAccount):
             allow_revert = bool(CONFIG.network_type == "development")
         if not allow_revert:
             self._check_for_revert(tx)
+        tx["chainId"] = web3.chain_id
         signed_tx = self._acct.sign_transaction(tx).rawTransaction  # type: ignore
         return web3.eth.sendRawTransaction(signed_tx)

@@ -17,7 +17,7 @@ from web3.exceptions import TimeExhausted, TransactionNotFound
 
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
-from brownie.exceptions import RPCRequestError
+from brownie.exceptions import ContractNotFound, RPCRequestError
 from brownie.project import build
 from brownie.project import main as project_main
 from brownie.project.compiler.solidity import SOLIDITY_ERROR_CODES
@@ -516,10 +516,18 @@ class TransactionReceipt:
         self.nonce = tx["nonce"]
 
         # if receiver is a known contract, set function name
-        if not self.fn_name and state._find_contract(tx["to"]) is not None:
+        if self.fn_name:
+            return
+        try:
             contract = state._find_contract(tx["to"])
-            self.contract_name = contract._name
-            self.fn_name = contract.get_method(tx["input"])
+            if contract is not None:
+                self.contract_name = contract._name
+                self.fn_name = contract.get_method(tx["input"])
+        except ContractNotFound:
+            # required in case the contract has self destructed
+            # other aspects of functionality will be broken, but this way we
+            # can at least return a receipt
+            pass
 
     def _set_from_receipt(self, receipt: Dict) -> None:
         """Sets object attributes based on the transaction reciept."""
@@ -716,8 +724,8 @@ class TransactionReceipt:
                     self._dev_revert_msg = ""
                 return
 
-        step = next(i for i in trace[::-1] if i["op"] in ("REVERT", "INVALID"))
-        self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
+        op = next((i["op"] for i in trace[::-1] if i["op"] in ("REVERT", "INVALID")), None)
+        self._revert_msg = "invalid opcode" if op == "INVALID" else ""
 
     def _expand_trace(self) -> None:
         """Adds the following attributes to each step of the stack trace:
@@ -1101,7 +1109,10 @@ class TransactionReceipt:
         except StopIteration:
             return ""
 
-        result = [next(i for i in trace_range if trace[i]["source"])]
+        try:
+            result = [next(i for i in trace_range if trace[i]["source"])]
+        except StopIteration:
+            return ""
         depth, jump_depth = trace[idx]["depth"], trace[idx]["jumpDepth"]
 
         while True:

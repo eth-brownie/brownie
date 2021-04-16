@@ -33,6 +33,7 @@ class Web3(_Web3):
         self._chain_uri: Optional[str] = None
         self._custom_middleware: Set = set()
         self._supports_traces = None
+        self._chain_id: Optional[int] = None
 
     def _remove_middlewares(self) -> None:
         for middleware in self._custom_middleware:
@@ -105,6 +106,7 @@ class Web3(_Web3):
             self._genesis_hash = None
             self._chain_uri = None
             self._supports_traces = None
+            self._chain_id = None
             self._remove_middlewares()
 
     def isConnected(self) -> bool:
@@ -160,6 +162,16 @@ class Web3(_Web3):
             chain_uri = f"blockchain://{self.genesis_hash}/block/{block_hash}"
             _chain_uri_cache[self.genesis_hash] = chain_uri
         return _chain_uri_cache[self.genesis_hash]
+
+    @property
+    def chain_id(self) -> int:
+        # chain ID is needed each time we a sign a transaction, however we
+        # cache it after the first request to avoid redundant RPC calls
+        if self.provider is None:
+            raise ConnectionError("web3 is not currently connected")
+        if self._chain_id is None:
+            self._chain_id = self.eth.chainId
+        return self._chain_id
 
 
 def _expand_environment_vars(uri: str) -> str:
