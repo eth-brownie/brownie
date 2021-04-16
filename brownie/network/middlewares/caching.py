@@ -170,7 +170,12 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
     def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
         # do not apply this middleware to filter updates or we'll die recursion death
         # clientVersion is used to check connectivity so we also don't cache that
-        if method in ("eth_getFilterChanges", "eth_uninstallFilter", "web3_clientVersion"):
+        if method in (
+            "eth_getFilterChanges",
+            "eth_newBlockFilter",
+            "eth_uninstallFilter",
+            "web3_clientVersion",
+        ):
             return make_request(method, params)
 
         # try to return a cached value
