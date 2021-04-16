@@ -44,7 +44,7 @@ eth-account==0.5.4
     # via
     #   -r requirements.in
     #   web3
-eth-event==1.2.1
+eth-event==1.2.3
     # via -r requirements.in
 eth-hash[pycryptodome]==0.3.1
     # via
@@ -218,7 +218,7 @@ varint==1.0.2
     # via multiaddr
 vvm==0.1.0
     # via -r requirements.in
-vyper==0.2.11
+vyper==0.2.12
     # via -r requirements.in
 wcwidth==0.2.5
     # via prompt-toolkit
