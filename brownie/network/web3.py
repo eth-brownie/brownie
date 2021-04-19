@@ -207,7 +207,7 @@ def _resolve_address(domain: str) -> str:
 
 
 web3 = Web3()
-web3.eth.setGasPriceStrategy(rpc_gas_price_strategy)
+web3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
 
 try:
     with _get_path().open() as fp:
