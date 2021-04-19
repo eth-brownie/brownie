@@ -106,7 +106,7 @@ def test_hash(tester):
 
 def test_timestamp(accounts, web3):
     tx = accounts[0].transfer(accounts[1], "1 ether")
-    assert tx.timestamp == web3.eth.getBlock(web3.eth.blockNumber)["timestamp"]
+    assert tx.timestamp == web3.eth.get_block(web3.eth.block_number)["timestamp"]
 
 
 def test_timestamp_pending(accounts, web3):

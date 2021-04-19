@@ -149,7 +149,7 @@ class Web3(_Web3):
         if self.provider is None:
             raise ConnectionError("web3 is not currently connected")
         if self._genesis_hash is None:
-            self._genesis_hash = self.eth.getBlock(0)["hash"].hex()[2:]
+            self._genesis_hash = self.eth.get_block(0)["hash"].hex()[2:]
         return self._genesis_hash
 
     @property
@@ -157,8 +157,8 @@ class Web3(_Web3):
         if self.provider is None:
             raise ConnectionError("web3 is not currently connected")
         if self.genesis_hash not in _chain_uri_cache:
-            block_number = max(self.eth.blockNumber - 16, 0)
-            block_hash = self.eth.getBlock(block_number)["hash"].hex()[2:]
+            block_number = max(self.eth.block_number - 16, 0)
+            block_hash = self.eth.get_block(block_number)["hash"].hex()[2:]
             chain_uri = f"blockchain://{self.genesis_hash}/block/{block_hash}"
             _chain_uri_cache[self.genesis_hash] = chain_uri
         return _chain_uri_cache[self.genesis_hash]
@@ -170,7 +170,7 @@ class Web3(_Web3):
         if self.provider is None:
             raise ConnectionError("web3 is not currently connected")
         if self._chain_id is None:
-            self._chain_id = self.eth.chainId
+            self._chain_id = self.eth.chain_id
         return self._chain_id
 
 

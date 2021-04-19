@@ -9,7 +9,7 @@ def test_redo(accounts, chain, web3):
     result = accounts[0].balance()
     chain.undo()
     chain.redo()
-    assert web3.eth.blockNumber == 1
+    assert web3.eth.block_number == 1
     assert accounts[0].balance() == result
 
 

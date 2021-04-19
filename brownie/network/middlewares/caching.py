@@ -76,7 +76,7 @@ def is_cacheable_bytecode(web3: Web3, bytecode: HexBytes) -> bool:
         if not int(address.hex(), 16):
             # if the delegatecall targets 0x00 this is a factory pattern, we can ignore
             continue
-        target_bytecode = web3.eth.getCode(address)
+        target_bytecode = web3.eth.get_code(address)
         if not is_cacheable_bytecode(web3, target_bytecode):
             return False
 
@@ -96,7 +96,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         self.cur = Cursor(_get_data_folder().joinpath("cache.db"))
         self.cur.execute(f"CREATE TABLE IF NOT EXISTS {self.table_key} (method, params, result)")
 
-        latest = w3.eth.getBlock("latest")
+        latest = w3.eth.get_block("latest")
         self.last_block = latest.hash
         self.last_block_seen = latest.timestamp
         self.last_request = 0.0

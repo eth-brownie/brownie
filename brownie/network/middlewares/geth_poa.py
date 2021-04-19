@@ -11,7 +11,7 @@ class GethPOAMiddleware(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
         try:
-            w3.eth.getBlock("latest")
+            w3.eth.get_block("latest")
             return None
         except ExtraDataLengthError:
             return -1

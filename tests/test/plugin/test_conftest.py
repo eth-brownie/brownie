@@ -17,9 +17,9 @@ def brownie_tester(request):
 def test_call_and_transact(brownie_tester, accounts, web3, fn_isolation):
     c = accounts[0].deploy(brownie_tester, True)
     c.setNum(12, {'from': accounts[0]})
-    assert web3.eth.blockNumber == 2
+    assert web3.eth.block_number == 2
     c.getTuple(accounts[0])
-    assert web3.eth.blockNumber == 2"""
+    assert web3.eth.block_number == 2"""
     )
 
     result = plugintester.runpytest("-n 2")

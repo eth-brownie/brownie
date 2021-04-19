@@ -30,22 +30,22 @@ def test_timestamp_multiple_blocks(devnetwork, chain):
 
 def test_getitem_negative_index(devnetwork, accounts, chain, web3):
     block = chain[-1]
-    assert block == web3.eth.getBlock("latest")
+    assert block == web3.eth.get_block("latest")
 
     accounts[0].transfer(accounts[1], 1000)
 
     assert chain[-1] != block
-    assert chain[-1] == web3.eth.getBlock("latest")
+    assert chain[-1] == web3.eth.get_block("latest")
 
 
 def test_getitem_positive_index(devnetwork, accounts, chain, web3):
     block = chain[0]
-    assert block == web3.eth.getBlock("latest")
+    assert block == web3.eth.get_block("latest")
 
     accounts[0].transfer(accounts[1], 1000)
 
     assert chain[0] == block
-    assert chain[0] != web3.eth.getBlock("latest")
+    assert chain[0] != web3.eth.get_block("latest")
 
 
 def test_mine_timestamp(devnetwork, chain):
