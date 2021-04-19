@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
-from dotenv import dotenv_values
+from dotenv import dotenv_values, load_dotenv
 from hypothesis import Phase
 from hypothesis import settings as hp_settings
 from hypothesis.database import DirectoryBasedExampleDatabase
@@ -198,6 +198,7 @@ def _load_project_config(project_path: Path) -> None:
         if not env_path.is_file():
             raise ValueError(f"Dotenv specified in config but not found at path: {env_path}")
         config_vars.update(dotenv_values(dotenv_path=env_path))  # type: ignore
+        load_dotenv(dotenv_path=env_path)
         config_data = expand_posix_vars(config_data, config_vars)
 
     if not config_data:
