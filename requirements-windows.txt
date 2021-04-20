@@ -19,7 +19,6 @@ asttokens==2.0.4
 attrs==20.3.0
     # via
     #   -r requirements.txt
-    #   black
     #   hypothesis
     #   jsonschema
     #   pytest
@@ -31,7 +30,7 @@ bitarray==1.2.2
     # via
     #   -r requirements.txt
     #   eth-account
-black==19.10b0
+black==20.8b1
     # via -r requirements.txt
 certifi==2020.12.5
     # via
@@ -64,7 +63,7 @@ eth-account==0.5.4
     #   web3
 eth-event==1.2.3
     # via -r requirements.txt
-eth-hash[pycryptodome]==0.2.0
+eth-hash[pycryptodome]==0.3.1
     # via
     #   -r requirements.txt
     #   eth-event
@@ -90,12 +89,13 @@ eth-typing==2.2.2
     #   eth-keys
     #   eth-utils
     #   web3
-eth-utils==1.9.5
+eth-utils==1.10.0
     # via
     #   -r requirements.txt
     #   eth-abi
     #   eth-account
     #   eth-event
+    #   eth-hash
     #   eth-keyfile
     #   eth-keys
     #   eth-rlp
@@ -144,6 +144,10 @@ multiaddr==0.0.9
     # via
     #   -r requirements.txt
     #   ipfshttpclient
+mypy-extensions==0.4.3
+    # via
+    #   -r requirements.txt
+    #   black
 mythx-models==1.9.1
     # via
     #   -r requirements.txt
@@ -168,9 +172,9 @@ pluggy==0.13.1
     # via
     #   -r requirements.txt
     #   pytest
-prompt-toolkit==3.0.8
+prompt-toolkit==3.0.18
     # via -r requirements.txt
-protobuf==3.15.6
+protobuf==3.15.8
     # via
     #   -r requirements.txt
     #   web3
@@ -191,7 +195,7 @@ pycryptodome==3.10.1
     #   eth-hash
     #   eth-keyfile
     #   vyper
-pygments-lexer-solidity==0.5.1
+pygments-lexer-solidity==0.7.0
     # via -r requirements.txt
 pygments==2.8.1
     # via
@@ -231,7 +235,7 @@ pythx==1.6.1
     # via -r requirements.txt
 pyyaml==5.4.1
     # via -r requirements.txt
-regex==2020.11.13
+regex==2021.4.4
     # via
     #   -r requirements.txt
     #   black
@@ -277,9 +281,13 @@ toolz==0.11.1
     # via
     #   -r requirements.txt
     #   cytoolz
-tqdm==4.53.0
+tqdm==4.60.0
     # via -r requirements.txt
-typed-ast==1.4.2
+typed-ast==1.4.3
+    # via
+    #   -r requirements.txt
+    #   black
+typing-extensions==3.7.4.3
     # via
     #   -r requirements.txt
     #   black

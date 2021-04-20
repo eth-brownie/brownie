@@ -35,7 +35,7 @@ class Wei(int):
         * a large float in scientific notation, where direct conversion to int
           would cause inaccuracy: 8.3e32
         * bytes: b'\xff\xff'
-        * hex strings: "0x330124\""""
+        * hex strings: "0x330124\" """
 
     # Known typing error: https://github.com/python/mypy/issues/4290
     def __new__(cls, value: Any) -> Any:  # type: ignore

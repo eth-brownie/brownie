@@ -628,7 +628,7 @@ class TransactionReceipt:
             fn = contract.get_method_object(self.input)
             self._return_value = fn.decode_output(data)
 
-    def _reverted_trace(self, trace: Sequence,) -> None:
+    def _reverted_trace(self, trace: Sequence) -> None:
         self._modified_state = False
         if self.contract_address:
             step = next((i for i in trace if i["op"] == "CODECOPY"), None)

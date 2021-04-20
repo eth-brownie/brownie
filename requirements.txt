@@ -12,7 +12,6 @@ asttokens==2.0.4
     # via vyper
 attrs==20.3.0
     # via
-    #   black
     #   hypothesis
     #   jsonschema
     #   pytest
@@ -20,7 +19,7 @@ base58==2.1.0
     # via multiaddr
 bitarray==1.2.2
     # via eth-account
-black==19.10b0
+black==20.8b1
     # via -r requirements.in
 certifi==2020.12.5
     # via requests
@@ -44,7 +43,7 @@ eth-account==0.5.4
     #   web3
 eth-event==1.2.3
     # via -r requirements.in
-eth-hash[pycryptodome]==0.2.0
+eth-hash[pycryptodome]==0.3.1
     # via
     #   -r requirements.in
     #   eth-event
@@ -64,12 +63,13 @@ eth-typing==2.2.2
     #   eth-keys
     #   eth-utils
     #   web3
-eth-utils==1.9.5
+eth-utils==1.10.0
     # via
     #   -r requirements.in
     #   eth-abi
     #   eth-account
     #   eth-event
+    #   eth-hash
     #   eth-keyfile
     #   eth-keys
     #   eth-rlp
@@ -104,6 +104,8 @@ lru-dict==1.1.7
     # via web3
 multiaddr==0.0.9
     # via ipfshttpclient
+mypy-extensions==0.4.3
+    # via black
 mythx-models==1.9.1
     # via pythx
 netaddr==0.8.0
@@ -116,9 +118,9 @@ pathspec==0.8.1
     # via black
 pluggy==0.13.1
     # via pytest
-prompt-toolkit==3.0.8
+prompt-toolkit==3.0.18
     # via -r requirements.in
-protobuf==3.15.6
+protobuf==3.15.8
     # via web3
 psutil==5.8.0
     # via -r requirements.in
@@ -136,7 +138,7 @@ pycryptodome==3.10.1
     #   eth-hash
     #   eth-keyfile
     #   vyper
-pygments-lexer-solidity==0.5.1
+pygments-lexer-solidity==0.7.0
     # via -r requirements.in
 pygments==2.8.1
     # via
@@ -167,7 +169,7 @@ pythx==1.6.1
     # via -r requirements.in
 pyyaml==5.4.1
     # via -r requirements.in
-regex==2020.11.13
+regex==2021.4.4
     # via black
 requests==2.25.1
     # via
@@ -205,9 +207,11 @@ toml==0.10.2
     #   pytest
 toolz==0.11.1
     # via cytoolz
-tqdm==4.53.0
+tqdm==4.60.0
     # via -r requirements.in
-typed-ast==1.4.2
+typed-ast==1.4.3
+    # via black
+typing-extensions==3.7.4.3
     # via black
 urllib3==1.26.4
     # via requests

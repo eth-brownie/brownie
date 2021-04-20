@@ -1,4 +1,4 @@
-black==19.10b0
+black==20.8b1
 eth-abi<3
 eth-account<1
 eth-event>=1.2.1,<2
@@ -16,7 +16,7 @@ pygments<3
 pytest-xdist<2
 pytest<7
 python-dotenv>=0.16.0,<0.17.0
-pythx<2
+pythx<=1.6.1
 pyyaml>=5.3.0,<6
 requests>=2.25.0,<3
 rlp<2
