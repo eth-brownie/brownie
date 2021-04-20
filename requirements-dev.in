@@ -4,7 +4,7 @@ bumpversion
 coverage
 flake8
 isort
-mypy
+mypy==0.720
 pip-tools
 pytest-cov
 pytest-mock
