@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.14.6](https://github.com/eth-brownie/brownie/tree/v1.14.5) - 2021-04-20
+### Changed
 - Upgraded web3 dependency to version 5.18.0 ([#1064](https://github.com/eth-brownie/brownie/pull/1064))
 - Upgraded pytest dependency to version 6.2.3 ([#1065](https://github.com/eth-brownie/brownie/pull/1065))
 - Upgraded hypothesis dependency to version 6.10.0 ([#1066](https://github.com/eth-brownie/brownie/pull/1066))
+
+### Fixed
+- Issue with `BSCSCAN_TOKEN` ([#1062](https://github.com/eth-brownie/brownie/pull/1062))
+- Correctly load `.env` values ([#1063](https://github.com/eth-brownie/brownie/pull/1063))
 
 ## [1.14.5](https://github.com/eth-brownie/brownie/tree/v1.14.5) - 2021-04-16
 ### Added
