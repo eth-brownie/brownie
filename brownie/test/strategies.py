@@ -38,7 +38,7 @@ def _exclude_filter(fn: Callable) -> Callable:
         strat = strat.filter(lambda k: k not in exclude)
         # make the filter repr more readable
         repr_ = strat.__repr__().rsplit(").filter", maxsplit=1)[0]
-        strat._cached_repr = f"{repr_}, exclude={exclude})"
+        strat._LazyStrategy__representation = f"{repr_}, exclude={exclude})"
         return strat
 
     return wrapper
