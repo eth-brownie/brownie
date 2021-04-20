@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+- Upgraded web3 dependency to version 5.18.0 ([#1064](https://github.com/eth-brownie/brownie/pull/1064))
+- Upgraded pytest dependency to version 6.2.3 ([#1065](https://github.com/eth-brownie/brownie/pull/1065))
+- Upgraded hypothesis dependency to version 6.10.0 ([#1066](https://github.com/eth-brownie/brownie/pull/1066))
+
 ## [1.14.5](https://github.com/eth-brownie/brownie/tree/v1.14.5) - 2021-04-16
 ### Added
 - Added documentation detailing how private Github repositories can be used as a package installation source.

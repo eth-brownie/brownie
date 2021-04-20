@@ -1,11 +1,11 @@
-from hypothesis import assume, given, settings
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 from brownie import compile_source
 
 
 @given(st_privkey=st.binary(min_size=32, max_size=32))
-@settings(max_examples=25)
+@settings(max_examples=25, suppress_health_check=[HealthCheck.function_scoped_fixture])
 def test_get_deployment_address(accounts, st_privkey):
     assume(int(st_privkey.hex(), 16))
 
