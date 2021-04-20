@@ -5,7 +5,7 @@ eth-event>=1.2.1,<2
 eth-hash[pycryptodome]<1
 eth-utils<2
 hexbytes<1
-hypothesis<6
+hypothesis<7
 prompt-toolkit<4
 psutil>=5.7.3,<6
 py-solc-ast>=1.2.8,<2

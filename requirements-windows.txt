@@ -112,7 +112,7 @@ hexbytes==0.2.1
     #   eth-event
     #   eth-rlp
     #   web3
-hypothesis==5.41.3
+hypothesis==6.10.0
     # via -r requirements.txt
 idna==2.10
     # via
