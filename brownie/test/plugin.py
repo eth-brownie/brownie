@@ -60,7 +60,7 @@ def pytest_addoption(parser):
             help="Only run or skip stateful tests (default: run all tests)",
         )
         parser.addoption(
-            "--failfast", action="store_true", help="Fail hypothesis tests quickly (no shrinking)",
+            "--failfast", action="store_true", help="Fail hypothesis tests quickly (no shrinking)"
         )
         parser.addoption(
             "--network",

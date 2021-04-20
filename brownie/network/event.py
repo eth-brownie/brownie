@@ -124,7 +124,7 @@ class _EventItem:
     def __getitem__(self, key: Union[int, str]) -> List:
         """if key is int: returns the n'th event that was fired with this name
         if key is str: returns the value of data field 'key' from the 1st event
-        within the container """
+        within the container"""
         if not isinstance(key, (int, str)):
             raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
         if isinstance(key, int):

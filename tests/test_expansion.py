@@ -25,7 +25,10 @@ class TestExpandDict(unittest.TestCase):
             "arr": [{"a": False, "b": False}, {"a": True, "b": "${FOO}"}],
         }
         variables = {"FOO": self.v, "NUM": 314}
-        self.res = expand_posix_vars(self.input, variables,)
+        self.res = expand_posix_vars(
+            self.input,
+            variables,
+        )
 
     def test_basic_string(self):
         assert self.res["non"] == "b"
