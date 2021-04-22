@@ -165,7 +165,7 @@ python-dateutil==2.8.1
     #   pythx
 python-dotenv==0.16.0
     # via -r requirements.in
-git+https://github.com/dmuhs/pythx#egg=pythx
+pythx==1.6.1
     # via -r requirements.in
 pyyaml==5.4.1
     # via -r requirements.in
