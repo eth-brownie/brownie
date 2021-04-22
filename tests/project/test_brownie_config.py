@@ -99,7 +99,7 @@ def test_rpc_project_cmd_settings(devnetwork, testproject, config, project_setti
 
     # Test if chain ID and network ID can be properly queried
     assert web3.isConnected()
-    assert web3.eth.chainId == 666
+    assert web3.eth.chain_id == 666
     assert web3.net.version == "777"
 
     devnetwork.rpc.kill()

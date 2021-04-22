@@ -140,11 +140,11 @@ Transaction Parameters
 When executing a transaction to a contract, you can optionally include a :py:class:`dict` of transaction parameters as the final input. It may contain the following values:
 
     * ``from``: the :func:`Account <brownie.network.account.Account>` that the transaction it sent from. If not given, the transaction is sent from the account that deployed the contract.
-    * ``gas_limit``: The amount of gas provided for transaction execution, in wei. If not given, the gas limit is determined using :meth:`web3.eth.estimateGas <web3.eth.Eth.estimateGas>`.
-    * ``gas_buffer``: A multiplier applied to :meth:`web3.eth.estimateGas <web3.eth.Eth.estimateGas>` when setting gas limit automatically. ``gas_limit`` and ``gas_buffer`` cannot be given at the same time.
-    * ``gas_price``: The gas price for the transaction, in wei. If not given, the gas price is set according to :attr:`web3.eth.gasPrice <web3.eth.Eth.gasPrice>`.
+    * ``gas_limit``: The amount of gas provided for transaction execution, in wei. If not given, the gas limit is determined using :meth:`web3.eth.estimate_gas <web3.eth.Eth.estimateGas>`.
+    * ``gas_buffer``: A multiplier applied to :meth:`web3.eth.estimate_gas <web3.eth.Eth.estimateGas>` when setting gas limit automatically. ``gas_limit`` and ``gas_buffer`` cannot be given at the same time.
+    * ``gas_price``: The gas price for the transaction, in wei. If not given, the gas price is set according to :attr:`web3.eth.gas_price <web3.eth.Eth.gasPrice>`.
     * ``amount``: The amount of Ether to include with the transaction, in wei.
-    * ``nonce``: The nonce for the transaction. If not given, the nonce is set according to :meth:`web3.eth.getTransactionCount <web3.eth.Eth.getTransactionCount>` while taking pending transactions from the sender into account.
+    * ``nonce``: The nonce for the transaction. If not given, the nonce is set according to :meth:`web3.eth.get_transaction_count <web3.eth.Eth.getTransactionCount>` while taking pending transactions from the sender into account.
     * ``required_confs``: The required :attr:`confirmations<TransactionReceipt.confirmations>` before the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is processed. If none is given, defaults to 1 confirmation.  If 0 is given, immediately returns a pending :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, while waiting for a confirmation in a separate thread.
     * ``allow_revert``: Boolean indicating whether the transaction should be broadacsted when it is expected to revert. If not set, the default behaviour is to allow reverting transactions in development and disallow them in a live environment.
 

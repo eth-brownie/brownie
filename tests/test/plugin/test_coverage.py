@@ -9,17 +9,17 @@ import pytest
 def test_call_and_transact(BrownieTester, accounts, web3, fn_isolation):
     c = accounts[0].deploy(BrownieTester, True)
     c.setNum(12, {'from': accounts[0]})
-    assert web3.eth.blockNumber == 2
+    assert web3.eth.block_number == 2
     c.getTuple(accounts[0])
-    assert web3.eth.blockNumber == 2
+    assert web3.eth.block_number == 2
 
 
 def test_call_and_transact_without_decorator(BrownieTester, accounts, web3, fn_isolation):
     c = accounts[0].deploy(BrownieTester, True)
     c.setNum(12, {'from': accounts[0]})
-    assert web3.eth.blockNumber == 2
+    assert web3.eth.block_number == 2
     c.getTuple(accounts[0])
-    assert web3.eth.blockNumber == 2
+    assert web3.eth.block_number == 2
     """
 
 

@@ -75,7 +75,7 @@ def compile_from_input_json(
             print(f"  EVM Version: {input_json['settings']['evmVersion'].capitalize()}")
 
     try:
-        return solcx.compile_standard(input_json, allow_paths=allow_paths,)
+        return solcx.compile_standard(input_json, allow_paths=allow_paths)
     except solcx.exceptions.SolcError as e:
         raise CompilerError(e, "solc")
 

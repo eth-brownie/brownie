@@ -203,7 +203,7 @@ class Chain(metaclass=_Singleton):
         """
         Return the current number of blocks.
         """
-        return web3.eth.blockNumber + 1
+        return web3.eth.block_number + 1
 
     def __getitem__(self, block_number: int) -> BlockData:
         """
@@ -224,15 +224,15 @@ class Chain(metaclass=_Singleton):
         if not isinstance(block_number, int):
             raise TypeError("Block height must be given as an integer")
         if block_number < 0:
-            block_number = web3.eth.blockNumber + 1 + block_number
-        block = web3.eth.getBlock(block_number)
+            block_number = web3.eth.block_number + 1 + block_number
+        block = web3.eth.get_block(block_number)
         if block["timestamp"] > self._block_gas_time:
             self._block_gas_limit = block["gasLimit"]
             self._block_gas_time = block["timestamp"]
         return block
 
     def __iter__(self) -> Iterator:
-        return iter(web3.eth.getBlock(i) for i in range(web3.eth.blockNumber + 1))
+        return iter(web3.eth.get_block(i) for i in range(web3.eth.block_number + 1))
 
     def new_blocks(self, height_buffer: int = 0, poll_interval: int = 5) -> Iterator:
         """
@@ -255,9 +255,9 @@ class Chain(metaclass=_Singleton):
         last_poll = 0.0
 
         while True:
-            if last_poll + poll_interval < time.time() or last_height != web3.eth.blockNumber:
-                last_height = web3.eth.blockNumber
-                block = web3.eth.getBlock(last_height - height_buffer)
+            if last_poll + poll_interval < time.time() or last_height != web3.eth.block_number:
+                last_height = web3.eth.block_number
+                block = web3.eth.get_block(last_height - height_buffer)
                 last_poll = time.time()
 
                 if block != last_block:
@@ -268,25 +268,25 @@ class Chain(metaclass=_Singleton):
 
     @property
     def height(self) -> int:
-        return web3.eth.blockNumber
+        return web3.eth.block_number
 
     @property
     def id(self) -> int:
         if self._chainid is None:
-            self._chainid = web3.eth.chainId
+            self._chainid = web3.eth.chain_id
         return self._chainid
 
     @property
     def block_gas_limit(self) -> Wei:
         if time.time() > self._block_gas_time + 3600:
-            block = web3.eth.getBlock("latest")
+            block = web3.eth.get_block("latest")
             self._block_gas_limit = block["gasLimit"]
             self._block_gas_time = block["timestamp"]
         return Wei(self._block_gas_limit)
 
     def _revert(self, id_: int) -> int:
         rpc_client = rpc.Rpc()
-        if web3.isConnected() and not web3.eth.blockNumber and not self._time_offset:
+        if web3.isConnected() and not web3.eth.block_number and not self._time_offset:
             _notify_registry(0)
             return rpc_client.snapshot()
         rpc_client.revert(id_)
@@ -402,7 +402,7 @@ class Chain(metaclass=_Singleton):
 
         self._redo_buffer.clear()
         self._current_id = rpc.Rpc().snapshot()
-        return web3.eth.blockNumber
+        return web3.eth.block_number
 
     def snapshot(self) -> None:
         """
@@ -430,7 +430,7 @@ class Chain(metaclass=_Singleton):
         self._undo_buffer.clear()
         self._redo_buffer.clear()
         self._snapshot_id = self._current_id = self._revert(self._snapshot_id)
-        return web3.eth.blockNumber
+        return web3.eth.block_number
 
     def reset(self) -> int:
         """
@@ -451,7 +451,7 @@ class Chain(metaclass=_Singleton):
             _notify_registry(0)
         else:
             self._reset_id = self._current_id = self._revert(self._reset_id)
-        return web3.eth.blockNumber
+        return web3.eth.block_number
 
     def undo(self, num: int = 1) -> int:
         """
@@ -480,7 +480,7 @@ class Chain(metaclass=_Singleton):
                 self._redo_buffer.append((fn, args, kwargs))
 
             self._current_id = self._revert(id_)
-            return web3.eth.blockNumber
+            return web3.eth.block_number
 
     def redo(self, num: int = 1) -> int:
         """
@@ -508,7 +508,7 @@ class Chain(metaclass=_Singleton):
                 fn, args, kwargs = self._redo_buffer.pop()
                 fn(*args, **kwargs)
 
-            return web3.eth.blockNumber
+            return web3.eth.block_number
 
 
 # objects that will update whenever the RPC is reset or reverted must register
@@ -521,7 +521,7 @@ def _revert_register(obj: object) -> None:
 def _notify_registry(height: int = None) -> None:
     gc.collect()
     if height is None:
-        height = web3.eth.blockNumber
+        height = web3.eth.block_number
     for ref in _revert_refs.copy():
         obj = ref()
         if obj is None:

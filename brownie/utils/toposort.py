@@ -51,11 +51,10 @@ class CircularDependencyError(ValueError):
 
 def toposort(data):
     """Dependencies are expressed as a dictionary whose keys are items
-and whose values are a set of dependent items. Output is a list of
-sets in topological order. The first set consists of items with no
-dependences, each subsequent set consists of items that depend upon
-items in the preceeding sets.
-"""
+    and whose values are a set of dependent items. Output is a list of
+    sets in topological order. The first set consists of items with no
+    dependences, each subsequent set consists of items that depend upon
+    items in the preceeding sets."""
 
     # Special case empty input.
     if len(data) == 0:
@@ -83,8 +82,8 @@ items in the preceeding sets.
 
 def toposort_flatten(data, sort=True):
     """Returns a single list of dependencies. For any set returned by
-toposort(), those items are sorted and appended to the result (just to
-make the results deterministic)."""
+    toposort(), those items are sorted and appended to the result (just to
+    make the results deterministic)."""
 
     result = []
     for d in toposort(data):

@@ -82,7 +82,7 @@ def test_gas_price_manual(devnetwork, accounts):
 def test_gas_price_auto(devnetwork, accounts, web3):
     devnetwork.gas_price(None)
     tx = accounts[0].transfer(accounts[1], 0)
-    assert tx.gas_price == web3.eth.gasPrice
+    assert tx.gas_price == web3.eth.gas_price
 
 
 def test_gas_price_raises(devnetwork):

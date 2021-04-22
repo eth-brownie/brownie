@@ -52,13 +52,13 @@ class ScalingGasABC(GasABC):
         # silenced by the 2nd replacement
         silent = receipt._silent
 
-        while web3.eth.getTransactionCount(str(receipt.sender)) < receipt.nonce:
+        while web3.eth.get_transaction_count(str(receipt.sender)) < receipt.nonce:
             # do not run scaling strategy while prior tx's are still pending
             time.sleep(5)
 
         latest_interval = self.interval()
         while True:
-            if web3.eth.getTransactionCount(str(receipt.sender)) > receipt.nonce:
+            if web3.eth.get_transaction_count(str(receipt.sender)) > receipt.nonce:
                 break
 
             if self.interval() - latest_interval >= self.duration:
@@ -122,7 +122,7 @@ class BlockGasStrategy(ScalingGasABC):
         self.duration = block_duration
 
     def interval(self) -> int:
-        return web3.eth.blockNumber
+        return web3.eth.block_number
 
     @abstractmethod
     def get_gas_price(self) -> Generator[int, None, None]:

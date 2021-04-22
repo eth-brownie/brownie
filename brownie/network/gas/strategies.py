@@ -98,9 +98,7 @@ class ExponentialScalingStrategy(TimeGasStrategy):
         Number of seconds between transactions
     """
 
-    def __init__(
-        self, initial_gas_price: int, max_gas_price: int, time_duration: int = 30,
-    ):
+    def __init__(self, initial_gas_price: int, max_gas_price: int, time_duration: int = 30):
         super().__init__(time_duration)
         self.initial_gas_price = initial_gas_price
         self.max_gas_price = max_gas_price

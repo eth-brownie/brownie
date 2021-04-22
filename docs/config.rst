@@ -135,7 +135,7 @@ Networks
 
     .. py:attribute:: gas_limit
 
-        The default gas limit for all transactions. If set to ``auto`` the gas limit is determined using ``web3.eth.estimateGas``. If set to ``max``, the block gas limit is used.
+        The default gas limit for all transactions. If set to ``auto`` the gas limit is determined using ``web3.eth.estimate_gas``. If set to ``max``, the block gas limit is used.
 
         development default: ``max``
 
@@ -143,7 +143,7 @@ Networks
 
     .. py:attribute:: gas_buffer
 
-        A modifier applied to ``web3.eth.estimateGas`` when determining gas price automatically.
+        A modifier applied to ``web3.eth.estimate_gas`` when determining gas price automatically.
 
         development default: ``1``
 
@@ -151,7 +151,7 @@ Networks
 
     .. py:attribute:: gas_price
 
-        The default gas price for all transactions. If set to ``auto`` the gas price is determined using ``web3.eth.gasPrice``.
+        The default gas price for all transactions. If set to ``auto`` the gas price is determined using ``web3.eth.gas_price``.
 
         development default: ``0``
 

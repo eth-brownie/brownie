@@ -37,17 +37,17 @@ The :func:`Chain <brownie.network.state.Chain>` object, available as ``chain``, 
         'uncles': [],
     })
 
-    >>> web3.eth.blockNumber
+    >>> web3.eth.block_number
     10451202
 
     >>> len(chain)
     10451203  # always +1 to the current block number, because the first block is zero
 
-    >>> chain[0] == web3.eth.getBlock(0)
+    >>> chain[0] == web3.eth.get_block(0)
     True
 
     # for negative index values, the block returned is relative to the most recently mined block
-    >>> chain[-1] == web3.eth.getBlock('latest')
+    >>> chain[-1] == web3.eth.get_block('latest')
     True
 
 Accessing Transaction Data
@@ -102,11 +102,11 @@ Ganache's default behavior is to mine a new block each time you broadcast a tran
 
 .. code-block:: python
 
-    >>> web3.eth.blockNumber
+    >>> web3.eth.block_number
     0
     >>> chain.mine(50)
     50
-    >>> web3.eth.blockNumber
+    >>> web3.eth.block_number
     50
 
 Time Travel
@@ -164,10 +164,10 @@ To return to the genesis state, use :func:`chain.reset <Chain.reset>`.
 
 .. code-block:: python
 
-    >>> web3.eth.blockNumber
+    >>> web3.eth.block_number
     6
     >>> chain.reset()
-    >>> web3.eth.blockNumber
+    >>> web3.eth.block_number
     0
 
 Undo / Redo

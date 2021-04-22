@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import pytest
-from hypothesis import given
+from hypothesis import HealthCheck, given, settings
 from hypothesis.strategies._internal.deferred import DeferredStrategy
 
 from brownie.network.contract import ProjectContract
@@ -22,5 +22,6 @@ def test_does_not_exist():
 
 
 @given(contract=contract_strategy("BrownieTester"))
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
 def test_given(tester, contract):
     assert isinstance(contract, ProjectContract)
