@@ -652,14 +652,20 @@ class TransactionReceipt:
             if step["op"] == "REVERT" and int(step["stack"][-2], 16):
                 # get returned error string from stack
                 data = _get_memory(step, -1)
-                if data[:4].hex() == "0x4e487b71":  # keccak of Panic(uint256)
+
+                selector = data[:4].hex()
+
+                if selector == "0x4e487b71":  # keccak of Panic(uint256)
                     error_code = int(data[4:].hex(), 16)
                     if error_code in SOLIDITY_ERROR_CODES:
                         self._revert_msg = SOLIDITY_ERROR_CODES[error_code]
                     else:
                         self._revert_msg = f"Panic (error code: {error_code})"
-                else:
+                elif selector == "0x08c379a0":
                     self._revert_msg = decode_abi(["string"], data[4:])[0]
+                else:
+                    # TODO: actually parse the data
+                    self._revert_msg = f"typed error: {data.hex()}"
 
             elif self.contract_address:
                 self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
