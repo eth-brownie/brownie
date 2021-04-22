@@ -141,12 +141,18 @@ def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
 
 
 def _import_from_path(path: Path) -> ModuleType:
-    # Imports a module from the given path
-    import_str = ".".join(path.parts[1:-1] + (path.stem,))
+    import_str = str(path)
+
     if import_str in _import_cache:
         importlib.reload(_import_cache[import_str])
     else:
-        _import_cache[import_str] = importlib.import_module(import_str)
+        moduleName = path.stem
+        spec = importlib.util.spec_from_file_location(moduleName, path)
+        module = importlib.util.module_from_spec(spec)
+        _import_cache[import_str] = module
+        sys.modules[moduleName] = module
+        spec.loader.exec_module(module)
+
     return _import_cache[import_str]
 
 
