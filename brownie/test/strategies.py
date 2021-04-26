@@ -77,9 +77,25 @@ def _decimal_strategy(
 
 
 @_exclude_filter
-def _address_strategy(length: Optional[int] = None) -> SearchStrategy:
+def _address_strategy(length: Optional[int] = None, exclude_by_index = None) -> SearchStrategy:
+
+    #add new argument - exclude indices maybe?
+    #keep exclude as it is - but then i need to populate that new keyword argument
+    # can define function inside another function
+    def filter_by_exclude_list(address):
+        if exclude_by_index is None:
+            breakpoint()
+            return True
+        index = list(network.accounts).index(address)
+        if index in exclude_by_index:
+            return False
+        return True
+    #todo: exclude by index correctly sized (outside of range)
+    #todo: fix error where zero is not excluded
+    #todo: no duplicates and no negative numbers
+
     return _DeferredStrategyRepr(
-        lambda: st.sampled_from(list(network.accounts)[:length]), "accounts"
+        lambda: st.sampled_from(list(network.accounts)[:length]).filter(filter_by_exclude_list), "accounts"
     )
 
 
@@ -159,15 +175,6 @@ def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
     if type_str == "fixed168x10":
         return _decimal_strategy(**kwargs)
     if type_str == "address":
-        if "exclude" in kwargs:
-            if not network.is_connected():
-                network.connect(CONFIG.argv["network"])
-            exclude = []
-            for each in kwargs["exclude"]:
-                address = network.accounts[int(each)].address
-                exclude.append(address)
-                kwargs["exclude"] = exclude
-            network.disconnect()
         return _address_strategy(**kwargs)
     if type_str == "bool":
         return st.booleans(**kwargs)  # type: ignore
