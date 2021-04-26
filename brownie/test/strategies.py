@@ -84,7 +84,6 @@ def _address_strategy(length: Optional[int] = None, exclude_by_index = None) -> 
     # can define function inside another function
     def filter_by_exclude_list(address):
         if exclude_by_index is None:
-            breakpoint()
             return True
         index = list(network.accounts).index(address)
         if index in exclude_by_index:
