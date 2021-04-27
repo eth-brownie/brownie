@@ -78,20 +78,19 @@ def _decimal_strategy(
 @_exclude_filter
 def _address_strategy(length: Optional[int] = None, exclude_by_index=None) -> SearchStrategy:
 
-    # add new argument - exclude indices maybe?
-    # keep exclude as it is - but then i need to populate that new keyword argument
-    # can define function inside another function
+    if min(exclude_by_index) < 0:
+        raise ValueError("Can't use negative indices")
+
+    if len(set(exclude_by_index)) < exclude_by_index:
+        raise ValueError("Duplicates in list")
+
     def filter_by_exclude_list(address):
         if exclude_by_index is None:
             return True
         index = list(network.accounts).index(address)
-        if index in exclude_by_index:
-            return False
-        return True
+        return index not in exclude_by_index
 
-    # todo: exclude by index correctly sized (outside of range)
-    # todo: fix error where zero is not excluded
-    # todo: no duplicates and no negative numbers
+    ## note: if exclude_by_index includes indices not in network.accounts they will be ignored.
 
     return _DeferredStrategyRepr(
         lambda: st.sampled_from(list(network.accounts)[:length]).filter(filter_by_exclude_list),
