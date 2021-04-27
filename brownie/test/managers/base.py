@@ -5,7 +5,6 @@ from hashlib import sha1
 from pathlib import Path
 
 import hypothesis
-from py.path import local
 
 import brownie
 from brownie._config import CONFIG
@@ -27,7 +26,7 @@ class PytestBrownieBase:
 
         self.config = config
         # required when brownie project is in a subfolder of another project
-        config.rootdir = local(project._path)
+        config._rootpath = Path(project._path)
 
         self.project = project
         self.project_path = project._path

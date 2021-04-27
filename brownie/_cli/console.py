@@ -248,8 +248,8 @@ class Console(code.InteractiveConsole):
             pass
         self.runcode(code)
         if "__ret_value__" in self.locals and self.locals["__ret_value__"] is not None:
-            self._console_write(self.locals["__ret_value__"])
-            del self.locals["__ret_value__"]
+            return_value = self.locals.pop("__ret_value__")
+            self._console_write(return_value)
         return False
 
     def paste_event(self, event):

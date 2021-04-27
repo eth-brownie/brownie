@@ -7,7 +7,7 @@ def test_undo(accounts, chain, web3):
     initial = accounts[0].balance()
     accounts[0].transfer(accounts[1], "1 ether")
     chain.undo()
-    assert web3.eth.blockNumber == 0
+    assert web3.eth.block_number == 0
     assert accounts[0].balance() == initial
 
 
@@ -64,7 +64,7 @@ def test_does_not_undo_sleep(accounts, chain):
 def test_does_not_undo_mining(accounts, chain, web3):
     accounts[0].transfer(accounts[1], 100)
     chain.mine()
-    height = web3.eth.blockNumber
+    height = web3.eth.block_number
     accounts[0].transfer(accounts[1], 100)
     chain.undo()
-    assert web3.eth.blockNumber == height
+    assert web3.eth.block_number == height

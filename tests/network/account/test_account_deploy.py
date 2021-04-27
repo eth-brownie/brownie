@@ -46,11 +46,11 @@ def test_gas_price_manual(BrownieTester, accounts):
 
 @pytest.mark.parametrize("auto", (True, False, None, "auto"))
 def test_gas_price_automatic(BrownieTester, accounts, config, web3, auto):
-    """gas price is set correctly using web3.eth.gasPrice"""
+    """gas price is set correctly using web3.eth.gas_price"""
     config.active_network["settings"]["gas_price"] = auto
     balance = accounts[0].balance()
     tx = accounts[0].deploy(BrownieTester, True).tx
-    assert tx.gas_price == web3.eth.gasPrice
+    assert tx.gas_price == web3.eth.gas_price
     assert accounts[0].balance() == balance - (tx.gas_price * tx.gas_used)
 
 
@@ -80,7 +80,7 @@ def test_gas_limit_manual(BrownieTester, accounts):
 
 @pytest.mark.parametrize("auto", (True, False, None, "auto"))
 def test_gas_limit_automatic(BrownieTester, accounts, config, auto):
-    """gas limit is set correctly using web3.eth.estimateGas"""
+    """gas limit is set correctly using web3.eth.estimate_gas"""
     config.active_network["settings"]["gas_limit"] = auto
     tx = accounts[0].deploy(BrownieTester, True).tx
     assert tx.gas_limit == tx.gas_used

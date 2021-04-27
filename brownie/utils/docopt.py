@@ -591,7 +591,7 @@ def parse_seq(tokens: Tokens, options: List[Option]) -> List[Pattern]:
 
 def parse_atom(tokens: Tokens, options: List[Option]) -> List[Pattern]:
     """atom ::= '(' expr ')' | '[' expr ']' | 'options'
-             | longer | shorts | argument | command ;
+    | longer | shorts | argument | command ;
     """
     token = tokens.current()
     if not token:

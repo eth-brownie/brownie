@@ -65,7 +65,7 @@ def test_init_receives_args_and_kwargs(SMTestBase):
 def test_rpc_reverts_between_runs(SMTestBase, accounts, web3):
     class StateMachine(SMTestBase):
         def initialize_one(self):
-            assert web3.eth.blockNumber == 1
+            assert web3.eth.block_number == 1
             accounts[0].transfer(accounts[1], 100)
 
     accounts[0].transfer(accounts[1], 100)
