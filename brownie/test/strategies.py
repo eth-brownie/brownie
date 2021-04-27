@@ -77,10 +77,10 @@ def _decimal_strategy(
 
 
 @_exclude_filter
-def _address_strategy(length: Optional[int] = None, exclude_by_index = None) -> SearchStrategy:
+def _address_strategy(length: Optional[int] = None, exclude_by_index=None) -> SearchStrategy:
 
-    #add new argument - exclude indices maybe?
-    #keep exclude as it is - but then i need to populate that new keyword argument
+    # add new argument - exclude indices maybe?
+    # keep exclude as it is - but then i need to populate that new keyword argument
     # can define function inside another function
     def filter_by_exclude_list(address):
         if exclude_by_index is None:
@@ -89,12 +89,14 @@ def _address_strategy(length: Optional[int] = None, exclude_by_index = None) -> 
         if index in exclude_by_index:
             return False
         return True
-    #todo: exclude by index correctly sized (outside of range)
-    #todo: fix error where zero is not excluded
-    #todo: no duplicates and no negative numbers
+
+    # todo: exclude by index correctly sized (outside of range)
+    # todo: fix error where zero is not excluded
+    # todo: no duplicates and no negative numbers
 
     return _DeferredStrategyRepr(
-        lambda: st.sampled_from(list(network.accounts)[:length]).filter(filter_by_exclude_list), "accounts"
+        lambda: st.sampled_from(list(network.accounts)[:length]).filter(filter_by_exclude_list),
+        "accounts",
     )
 
 
