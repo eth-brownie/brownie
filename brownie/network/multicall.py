@@ -41,16 +41,16 @@ class Result(ObjectProxy):
 
 
 @contextmanager
-def multicall_context(block_identifier=None):
+def multicall(block_identifier=None):
     """
-    with multicall_context() as caller:
+    with multicall() as caller:
         response = caller(contract).func(args)
     """
     queue = []
     yield partial(Caller, queue)
 
-    multicall = Contract("0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696")
-    results = multicall.tryAggregate.call(
+    multicall2 = Contract("0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696")
+    results = multicall2.tryAggregate.call(
         False, [request.call for request in queue], block_identifier=block_identifier
     )
 
