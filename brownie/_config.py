@@ -94,6 +94,19 @@ class ConfigContainer:
 
             network["cmd_settings"]["fork"] = os.path.expandvars(network["cmd_settings"]["fork"])
 
+        if (
+            key == "live"
+            and id_ in self.settings["networks"]
+        ):
+            overwrite_settings = self.settings["networks"][id_]
+
+            if "host" in overwrite_settings:
+                # overwrite the host settings
+                network["host"] = overwrite_settings["host"]
+
+            if "explorer" in overwrite_settings:
+                network["explorer"] = overwrite_settings["explorer"]
+
         self._active_network = network
         return network
 
