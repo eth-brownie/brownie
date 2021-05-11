@@ -372,6 +372,11 @@ def vypertester(testproject, devnetwork, accounts):
     return testproject.VyperTester.deploy({"from": accounts[0]})
 
 
+@pytest.fixture
+def multicall2(testproject, devnetwork, accounts):
+    return testproject.Multicall2.deploy({"from": accounts[0]})
+
+
 # ipfs fixtures
 
 
