@@ -6,6 +6,7 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+- Add multicall support through context manager which intercepts contract function calls ([#1077](https://github.com/eth-brownie/brownie/pull/1077))
 
 ## [1.14.6](https://github.com/eth-brownie/brownie/tree/v1.14.5) - 2021-04-20
 ### Changed
