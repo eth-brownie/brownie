@@ -2775,3 +2775,32 @@ Internal Methods
 .. py:method:: brownie.network.web3._resolve_address(address)
 
     Used internally for standardizing address inputs. If ``address`` is a string containing a ``.`` Brownie will attempt to resolve an `ENS domain name <https://ens.domains/>`_ address. Otherwise, returns the result of :func:`convert.to_address <brownie.convert.to_address>`.
+
+``brownie.network.multicall``
+=============================
+
+The ``multicall`` module offers a special context manager which can be used to batch and atomically read on-chain data in a single call, significantly reducing RPC calls to be made.
+
+
+.. py:function:: brownie.network.multicall.multicall(address, block_identifier=None)
+
+    Provides a wrapper object to be applied to contracts. The wrapper intercepts contract function calls producing proxies instead of values. These proxies will update to the call's return value when the context exits.
+    
+    .. code-block:: python
+
+        >>> from brownie import multicall, ERC20
+        >>> import pandas as pd
+        >>> tokens = ("0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e",)
+        >>> with multicall("0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696") as call:
+        ...     records = []
+        ...     for addr in tokens:
+        ...         token = ERC20.at(addr)
+        ...         name = call(token).name()
+        ...         symbol = call(token).symbol()
+        ...         total_supply = call(token).totalSupply()
+        ...         records.append([token.address, name, symbol, total_supply])
+        ... df = pd.DataFrame.from_records(records, columns=["addr", "name", "symb", "totalSupply"])
+        ... print(df)
+                                                addr           name    symb              totalSupply
+        0  0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e  yearn.finance    YFI  36666000000000000000000
+
