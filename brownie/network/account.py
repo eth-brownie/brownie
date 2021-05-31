@@ -334,7 +334,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         super().__init__(addr)
 
     def _pending_nonce(self) -> int:
-        tx_from_sender = history.from_sender(self.address)
+        tx_from_sender = sorted(history.from_sender(self.address), key=lambda k: k.nonce)
         if len(tx_from_sender) == 0:
             return self.nonce
 
