@@ -31,9 +31,14 @@ cytoolz==0.11.0
     # via
     #   eth-keyfile
     #   eth-utils
+dataclassy==0.10.2
+    # via eip712
+eip712==0.1.0
+    # via -r requirements.in
 eth-abi==2.1.1
     # via
     #   -r requirements.in
+    #   eip712
     #   eth-account
     #   eth-event
     #   web3
@@ -59,6 +64,7 @@ eth-rlp==0.2.1
     # via eth-account
 eth-typing==2.2.2
     # via
+    #   eip712
     #   eth-abi
     #   eth-keys
     #   eth-utils
@@ -66,6 +72,7 @@ eth-typing==2.2.2
 eth-utils==1.10.0
     # via
     #   -r requirements.in
+    #   eip712
     #   eth-abi
     #   eth-account
     #   eth-event
@@ -80,6 +87,7 @@ execnet==1.8.0
 hexbytes==0.2.1
     # via
     #   -r requirements.in
+    #   eip712
     #   eth-account
     #   eth-event
     #   eth-rlp
@@ -135,6 +143,7 @@ py==1.10.0
     #   pytest-forked
 pycryptodome==3.10.1
     # via
+    #   eip712
     #   eth-hash
     #   eth-keyfile
     #   vyper

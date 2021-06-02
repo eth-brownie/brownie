@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add polygon network integration ([#1119](https://github.com/eth-brownie/brownie/pull/1119))
 - Fixed subcalls to empty accounts not appearing in the subcalls property of TransactionReceipts ([#1106](https://github.com/eth-brownie/brownie/pull/1106))
 
+### Added
+- Added `LocalAccount.sign_message` method to sign `EIP712Message` objects ([#1097](https://github.com/eth-brownie/brownie/pull/1097))
+
 ## [1.14.6](https://github.com/eth-brownie/brownie/tree/v1.14.5) - 2021-04-20
 ### Changed
 - Upgraded web3 dependency to version 5.18.0 ([#1064](https://github.com/eth-brownie/brownie/pull/1064))

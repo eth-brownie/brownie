@@ -94,6 +94,30 @@ To do so, add the account to the ``unlock`` setting in a project's :ref:`configu
 The unlocked accounts are automatically added to the :func:`Accounts <brownie.network.account.Accounts>` container.
 Note that you might need to fund the unlocked accounts manually.
 
+Signing Messages
+================
+
+To sign an `EIP712Message <https://pypi.org/project/eip712/>`_, use the :func:`LocalAccount.sign_message <brownie.network.account.LocalAccount.sign_message>` method to produce an ``eth_account`` `SignableMessage <https://eth-account.readthedocs.io/en/stable/eth_account.html#eth_account.messages.SignableMessage>`_ object:
+
+.. code-block:: python
+
+    >>> from eip712.messages import EIP712Message, EIP712Type
+    >>> local = accounts.add(private_key="0x416b8a7d9290502f5661da81f0cf43893e3d19cb9aea3c426cfb36e8186e9c09")
+    >>> class TestSubType(EIP712Type):
+    ...     inner: "uint256"
+    ...
+    >>> class TestMessage(EIP712Message):
+    ...     _name_: "string" = "Brownie Test Message"
+    ...     outer: "uint256"
+    ...     sub: TestSubType
+    ...
+    >>> msg = TestMessage(outer=1, sub=TestSubType(inner=2))
+    >>> signed = local.sign_message(msg)
+    >>> type(signed)
+    <class 'eth_account.datastructures.SignedMessage'>
+    >>> signed.messageHash.hex()
+    '0x2a180b353c317ae903c063141592ec360b25be9f75c60ae16ca19f5578f70a50'
+
 Using a Hardware Wallet
 =======================
 
