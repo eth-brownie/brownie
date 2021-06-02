@@ -172,7 +172,7 @@ class Accounts(metaclass=_Singleton):
             return new_accounts[0]
         return new_accounts
 
-    def load(self, filename: str = None) -> Union[List, "LocalAccount"]:
+    def load(self, filename: str = None, password: str = None) -> Union[List, "LocalAccount"]:
         """
         Load a local account from a keystore file.
 
@@ -180,6 +180,9 @@ class Accounts(metaclass=_Singleton):
         ---------
         filename: str
             Keystore filename. If `None`, returns a list of available keystores.
+        password: str
+            Password to unlock the keystore. If `None`, password is entered via
+            a getpass prompt.
 
         Returns
         -------
@@ -192,7 +195,7 @@ class Accounts(metaclass=_Singleton):
         filename = str(filename)
         json_file = Path(filename).expanduser()
 
-        if not json_file.exists():
+        if not json_file.exists() or json_file.is_dir():
             temp_json_file = json_file.with_suffix(".json")
             if temp_json_file.exists():
                 json_file = temp_json_file
@@ -206,7 +209,8 @@ class Accounts(metaclass=_Singleton):
 
         with json_file.open() as fp:
             priv_key = web3.eth.account.decrypt(
-                json.load(fp), getpass("Enter the password to unlock this account: ")
+                json.load(fp),
+                password or getpass(f'Enter password for "{json_file.stem}": '),
             )
         return self.add(priv_key)
 
