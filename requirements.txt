@@ -213,7 +213,7 @@ typed-ast==1.4.3
     # via black
 typing-extensions==3.7.4.3
     # via black
-urllib3==1.26.4
+urllib3==1.26.5
     # via requests
 varint==1.0.2
     # via multiaddr
