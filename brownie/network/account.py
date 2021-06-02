@@ -195,7 +195,7 @@ class Accounts(metaclass=_Singleton):
         filename = str(filename)
         json_file = Path(filename).expanduser()
 
-        if not json_file.exists():
+        if not json_file.exists() or json_file.is_dir():
             temp_json_file = json_file.with_suffix(".json")
             if temp_json_file.exists():
                 json_file = temp_json_file
