@@ -228,6 +228,30 @@ Accounts Methods
 
         >>> accounts.remove('0xc1826925377b4103cC92DeeCDF6F96A03142F37a')
 
+.. py:classmethod:: Accounts.connect_to_clef(uri=None, timeout=120)
+
+    Connect to clef and add unlocked accounts to the container as :func:`ClefAccount <brownie.network.account.ClefAccount>` objects.
+
+    `Clef <https://geth.ethereum.org/docs/clef/tutorial>`_ is an account signing utility packaged with Geth, which can be used to interact with hardware wallets in Brownie. Before calling this function, Clef must be running and unlocked in another command prompt.
+
+    * ``uri``: IPC path or http url to use to connect to clef. If ``None``, uses clef's default IPC path on Unix systems or ``http://localhost:8550/`` on Windows.
+    * ``timeout``: The number of seconds to wait for clef to respond to a request before raising a ``TimeoutError``.
+
+    .. code-block:: python
+
+        >>> accounts
+        []
+        >>> accounts.connect_to_clef()
+        >>> accounts
+        [<ClefAccount object '0x716E8419F2926d6AcE07442675F476ace972C580'>]
+
+.. py:classmethod:: Accounts.disconnect_from_clef()
+
+    Disconnect from Clef.
+
+    Removes all :func:`ClefAccount <brownie.network.account.ClefAccount>` objects from the container.
+
+
 Accounts Internal Methods
 *************************
 
@@ -454,6 +478,21 @@ LocalAccount Methods
         >>> accounts[-1].save('~/my_account.json')
         Enter the password to encrypt this account with:
         /home/computer/my_account.json
+
+ClefAccount
+------------
+
+.. py:class:: brownie.network.account.ClefAccount
+
+    Functionally identical to :func:`Account <brownie.network.account.Account>`. A ``ClefAccount`` object is used for accounts that have been unlocked via `clef <https://geth.ethereum.org/docs/clef/tutorial>`_, and where signing of transactions is handled externally from brownie. This is useful for hardware wallets.
+
+    .. code-block:: python
+
+        >>> accounts
+        []
+        >>> accounts.connect_to_clef()
+        >>> accounts
+        [<ClefAccount object '0x716E8419F2926d6AcE07442675F476ace972C580'>]
 
 PublicKeyAccount
 ----------------

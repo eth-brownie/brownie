@@ -93,3 +93,22 @@ To do so, add the account to the ``unlock`` setting in a project's :ref:`configu
 
 The unlocked accounts are automatically added to the :func:`Accounts <brownie.network.account.Accounts>` container.
 Note that you might need to fund the unlocked accounts manually.
+
+Using a Hardware Wallet
+=======================
+
+Brownie allows the use of hardware wallets via `Clef <https://geth.ethereum.org/docs/clef/tutorial>`_, an account management tool included within `Geth <https://geth.ethereum.org/>`_.
+
+To use a hardware wallet in Brownie, start by `installing Geth <https://geth.ethereum.org/docs/install-and-build/installing-geth>`_. Once finished, type the following command and follow the on-screen prompts to set of Clef:
+
+    ::
+
+        clef init
+
+Once Clef is configured, run Brownie in one command prompt and Clef in another. From within Brownie:
+
+    .. code-block:: python
+
+        >>> accounts.connect_to_clef()
+
+Again, follow the prompts in Clef to unlock the accounts in Brownie. You can now use the unlocked accounts as you would any other account.  Note that you will have to authorize each transaction made with a :func:`ClefAccount <brownie.network.account.ClefAccount>` from within clef.
