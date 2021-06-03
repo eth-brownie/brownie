@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import sys
 import threading
 import time
 from collections.abc import Iterator
@@ -14,6 +15,7 @@ import rlp
 from eth_utils import keccak
 from eth_utils.applicators import apply_formatters_to_dict
 from hexbytes import HexBytes
+from web3 import HTTPProvider, IPCProvider
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
@@ -267,6 +269,54 @@ class Accounts(metaclass=_Singleton):
         Empty the container.
         """
         self._accounts.clear()
+
+    def connect_to_clef(self, uri: str = None, timeout: int = 120) -> None:
+        """
+        Connect to Clef and import open accounts.
+
+        Clef is an account signing utility packaged with Geth, which can be
+        used to interact with HW wallets in Brownie. Before calling this
+        function, Clef must be running in another command prompt.
+
+        Arguments
+        ---------
+        uri : str
+            IPC path or http url to use to connect to clef. If None is given,
+            uses the default IPC path on Unix systems or localhost on Windows.
+        timeout : int
+            The number of seconds to wait on a clef request before raising a
+            timeout exception.
+        """
+        provider = None
+        if uri is None:
+            if sys.platform == "win32":
+                uri = "http://localhost:8550/"
+            else:
+                uri = Path.home().joinpath(".clef/clef.ipc").as_posix()
+        try:
+            if Path(uri).exists():
+                provider = IPCProvider(uri, timeout=timeout)
+        except OSError:
+            if uri is not None and uri.startswith("http"):
+                provider = HTTPProvider(uri, {"timeout": timeout})
+        if provider is None:
+            raise ValueError("Unknown URI, must be IPC socket path or URL starting with 'http'")
+
+        response = provider.make_request("account_list", [])
+        if "error" in response:
+            raise ValueError(response["error"]["message"])
+
+        for address in response["result"]:
+            if to_address(address) not in self._accounts:
+                self._accounts.append(ClefAccount(address, provider))
+
+    def disconnect_from_clef(self) -> None:
+        """
+        Disconnect from Clef.
+
+        Removes all `ClefAccount` objects from the container.
+        """
+        self._accounts = [i for i in self._accounts if not isinstance(i, ClefAccount)]
 
 
 class PublicKeyAccount:
