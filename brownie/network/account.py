@@ -12,6 +12,7 @@ import eth_account
 import eth_keys
 import rlp
 from eth_utils import keccak
+from eth_utils.applicators import apply_formatters_to_dict
 from hexbytes import HexBytes
 
 from brownie._config import CONFIG, _get_data_folder
@@ -769,3 +770,40 @@ class LocalAccount(_PrivateKeyAccount):
         tx["chainId"] = web3.chain_id
         signed_tx = self._acct.sign_transaction(tx).rawTransaction  # type: ignore
         return web3.eth.send_raw_transaction(signed_tx)
+
+
+class ClefAccount(_PrivateKeyAccount):
+
+    """
+    Class for interacting with an Ethereum account where signing is handled in Clef.
+    """
+
+    def __init__(self, address: str, provider: Union[HTTPProvider, IPCProvider]) -> None:
+        self._provider = provider
+        super().__init__(address)
+
+    def _transact(self, tx: Dict, allow_revert: bool) -> None:
+        if allow_revert is None:
+            allow_revert = bool(CONFIG.network_type == "development")
+        if not allow_revert:
+            self._check_for_revert(tx)
+
+        formatters = {
+            "nonce": web3.toHex,
+            "gasPrice": web3.toHex,
+            "gas": web3.toHex,
+            "value": web3.toHex,
+            "chainId": web3.toHex,
+            "data": web3.toHex,
+            "from": to_address,
+        }
+        if "to" in tx:
+            formatters["to"] = to_address
+
+        tx["chainId"] = web3.chain_id
+        tx = apply_formatters_to_dict(formatters, tx)
+
+        response = self._provider.make_request("account_signTransaction", [tx])
+        if "error" in response:
+            raise ValueError(response["error"]["message"])
+        return web3.eth.send_raw_transaction(response["result"]["raw"])
