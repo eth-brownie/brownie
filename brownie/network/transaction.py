@@ -781,9 +781,10 @@ class TransactionReceipt:
         last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
         coverage_eval: Dict = {last_map[0]["name"]: {}}
 
+        call_opcodes = ("CALL", "STATICCALL", "DELEGATECALL")
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
-            if trace[i]["depth"] > trace[i - 1]["depth"]:
+            if trace[i]["depth"] > trace[i - 1]["depth"] or trace[i - 1]["op"] in call_opcodes:
                 step = trace[i - 1]
                 if step["op"] in ("CREATE", "CREATE2"):
                     # creating a new contract
