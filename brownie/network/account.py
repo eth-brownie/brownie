@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import sys
 import threading
 import time
 from collections.abc import Iterator
@@ -12,7 +13,9 @@ import eth_account
 import eth_keys
 import rlp
 from eth_utils import keccak
+from eth_utils.applicators import apply_formatters_to_dict
 from hexbytes import HexBytes
+from web3 import HTTPProvider, IPCProvider
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
@@ -266,6 +269,54 @@ class Accounts(metaclass=_Singleton):
         Empty the container.
         """
         self._accounts.clear()
+
+    def connect_to_clef(self, uri: str = None, timeout: int = 120) -> None:
+        """
+        Connect to Clef and import open accounts.
+
+        Clef is an account signing utility packaged with Geth, which can be
+        used to interact with HW wallets in Brownie. Before calling this
+        function, Clef must be running in another command prompt.
+
+        Arguments
+        ---------
+        uri : str
+            IPC path or http url to use to connect to clef. If None is given,
+            uses the default IPC path on Unix systems or localhost on Windows.
+        timeout : int
+            The number of seconds to wait on a clef request before raising a
+            timeout exception.
+        """
+        provider = None
+        if uri is None:
+            if sys.platform == "win32":
+                uri = "http://localhost:8550/"
+            else:
+                uri = Path.home().joinpath(".clef/clef.ipc").as_posix()
+        try:
+            if Path(uri).exists():
+                provider = IPCProvider(uri, timeout=timeout)
+        except OSError:
+            if uri is not None and uri.startswith("http"):
+                provider = HTTPProvider(uri, {"timeout": timeout})
+        if provider is None:
+            raise ValueError("Unknown URI, must be IPC socket path or URL starting with 'http'")
+
+        response = provider.make_request("account_list", [])
+        if "error" in response:
+            raise ValueError(response["error"]["message"])
+
+        for address in response["result"]:
+            if to_address(address) not in self._accounts:
+                self._accounts.append(ClefAccount(address, provider))
+
+    def disconnect_from_clef(self) -> None:
+        """
+        Disconnect from Clef.
+
+        Removes all `ClefAccount` objects from the container.
+        """
+        self._accounts = [i for i in self._accounts if not isinstance(i, ClefAccount)]
 
 
 class PublicKeyAccount:
@@ -769,3 +820,40 @@ class LocalAccount(_PrivateKeyAccount):
         tx["chainId"] = web3.chain_id
         signed_tx = self._acct.sign_transaction(tx).rawTransaction  # type: ignore
         return web3.eth.send_raw_transaction(signed_tx)
+
+
+class ClefAccount(_PrivateKeyAccount):
+
+    """
+    Class for interacting with an Ethereum account where signing is handled in Clef.
+    """
+
+    def __init__(self, address: str, provider: Union[HTTPProvider, IPCProvider]) -> None:
+        self._provider = provider
+        super().__init__(address)
+
+    def _transact(self, tx: Dict, allow_revert: bool) -> None:
+        if allow_revert is None:
+            allow_revert = bool(CONFIG.network_type == "development")
+        if not allow_revert:
+            self._check_for_revert(tx)
+
+        formatters = {
+            "nonce": web3.toHex,
+            "gasPrice": web3.toHex,
+            "gas": web3.toHex,
+            "value": web3.toHex,
+            "chainId": web3.toHex,
+            "data": web3.toHex,
+            "from": to_address,
+        }
+        if "to" in tx:
+            formatters["to"] = to_address
+
+        tx["chainId"] = web3.chain_id
+        tx = apply_formatters_to_dict(formatters, tx)
+
+        response = self._provider.make_request("account_signTransaction", [tx])
+        if "error" in response:
+            raise ValueError(response["error"]["message"])
+        return web3.eth.send_raw_transaction(response["result"]["raw"])
