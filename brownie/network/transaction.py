@@ -781,6 +781,7 @@ class TransactionReceipt:
         last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
         coverage_eval: Dict = {last_map[0]["name"]: {}}
 
+        datacopy_precompile = "0x0000000000000000000000000000000000000004"
         call_opcodes = ("CALL", "STATICCALL", "DELEGATECALL")
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
@@ -823,6 +824,10 @@ class TransactionReceipt:
                         self._subcalls[-1]["calldata"] = calldata.hex()
                 elif calldata:
                     self._subcalls[-1]["calldata"] = calldata.hex()
+
+                if str(self._subcalls[-1]["from"]) == datacopy_precompile:
+                    caller = self._subcalls.pop(-2)["from"]
+                    self._subcalls[-1]["from"] = caller
 
             # update trace from last_map
             last = last_map[trace[i]["depth"]]
