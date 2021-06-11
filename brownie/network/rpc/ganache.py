@@ -74,7 +74,7 @@ def launch(cmd: str, **kwargs: Dict) -> None:
         p = psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
     except FileNotFoundError:
         print("Error: Failed to start ganache-cli. Check installation!!")
-        print("Insturctions https://github.com/trufflesuite/ganache-cli")
+        print("Instructions: https://github.com/trufflesuite/ganache-cli")
         sys.exit(2)
 
     return p
