@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import functools
+import re
 import sys
 import threading
 import time
@@ -271,7 +272,7 @@ class TransactionReceipt:
     def subcalls(self) -> Optional[List]:
         if self._subcalls is None:
             self._expand_trace()
-        subcalls = filter(lambda s: not _is_call_to_data_copy(s), self._subcalls)  # type: ignore
+        subcalls = filter(lambda s: not _is_call_to_precompile(s), self._subcalls)  # type: ignore
         return list(subcalls)
 
     @trace_property
@@ -781,8 +782,7 @@ class TransactionReceipt:
         # last_map gives a quick reference of previous values at each depth
         last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
         coverage_eval: Dict = {last_map[0]["name"]: {}}
-
-        datacopy_precompile = "0x0000000000000000000000000000000000000004"
+        precompile_contract = re.compile(r"0x0{38}(?:0[1-9]|1[0-8])")
         call_opcodes = ("CALL", "STATICCALL", "DELEGATECALL")
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
@@ -829,7 +829,7 @@ class TransactionReceipt:
                 elif calldata or is_subcall:
                     self._subcalls[-1]["calldata"] = calldata.hex()  # type: ignore
 
-                if str(self._subcalls[-1]["from"]) == datacopy_precompile:
+                if precompile_contract.search(str(self._subcalls[-1]["from"])) is not None:
                     caller = self._subcalls.pop(-2)["from"]
                     self._subcalls[-1]["from"] = caller
 
@@ -1365,5 +1365,6 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
     return last_map
 
 
-def _is_call_to_data_copy(subcall: dict) -> bool:
-    return str(subcall["to"]) == "0x0000000000000000000000000000000000000004"
+def _is_call_to_precompile(subcall: dict) -> bool:
+    precompile_contract = re.compile(r"0x0{38}(?:0[1-9]|1[0-8])")
+    return True if precompile_contract.search(str(subcall["to"])) is not None else False
