@@ -6,6 +6,7 @@ from typing import Dict, Generator
 
 import requests
 
+from brownie.convert import Wei
 from brownie.exceptions import RPCRequestError
 from brownie.network.web3 import web3
 
@@ -59,22 +60,22 @@ class LinearScalingStrategy(TimeGasStrategy):
 
     def __init__(
         self,
-        initial_gas_price: int,
-        max_gas_price: int,
+        initial_gas_price: Wei,
+        max_gas_price: Wei,
         increment: float = 1.125,
         time_duration: int = 30,
     ):
         super().__init__(time_duration)
-        self.initial_gas_price = initial_gas_price
-        self.max_gas_price = max_gas_price
+        self.initial_gas_price = Wei(initial_gas_price)
+        self.max_gas_price = Wei(max_gas_price)
         self.increment = increment
 
-    def get_gas_price(self) -> Generator[int, None, None]:
+    def get_gas_price(self) -> Generator[Wei, None, None]:
         last_gas_price = self.initial_gas_price
         yield last_gas_price
 
         while True:
-            last_gas_price = min(int(last_gas_price * self.increment), self.max_gas_price)
+            last_gas_price = min(Wei(last_gas_price * self.increment), self.max_gas_price)
             yield last_gas_price
 
 
@@ -88,9 +89,9 @@ class ExponentialScalingStrategy(TimeGasStrategy):
 
     Arguments
     ---------
-    initial_gas_price : int
+    initial_gas_price : Wei
         The initial gas price to use in the first transaction
-    max_gas_price : int
+    max_gas_price : Wei
         The maximum gas price to use
     increment : float
         Multiplier applied to the previous gas price in order to determine the new gas price
@@ -98,17 +99,17 @@ class ExponentialScalingStrategy(TimeGasStrategy):
         Number of seconds between transactions
     """
 
-    def __init__(self, initial_gas_price: int, max_gas_price: int, time_duration: int = 30):
+    def __init__(self, initial_gas_price: Wei, max_gas_price: Wei, time_duration: int = 30):
         super().__init__(time_duration)
-        self.initial_gas_price = initial_gas_price
-        self.max_gas_price = max_gas_price
+        self.initial_gas_price = Wei(initial_gas_price)
+        self.max_gas_price = Wei(max_gas_price)
 
-    def get_gas_price(self) -> Generator[int, None, None]:
+    def get_gas_price(self) -> Generator[Wei, None, None]:
         last_gas_price = self.initial_gas_price
         yield last_gas_price
 
         for i in itertools.count(1):
-            last_gas_price = int(last_gas_price * 1.1 ** i)
+            last_gas_price = Wei(last_gas_price * 1.1 ** i)
             yield min(last_gas_price, self.max_gas_price)
 
 
