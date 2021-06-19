@@ -36,7 +36,7 @@ These fixtures provide quick access to Brownie objects that are frequently used 
 
 .. py:attribute:: chain
 
-    Yields an :func:`Chain <brownie.network.state.Chain>` object, used to access block data and interact with the local test chain.
+    Yields a :func:`Chain <brownie.network.state.Chain>` object, used to access block data and interact with the local test chain.
 
         .. code-block:: python
             :linenos:
@@ -136,7 +136,7 @@ For example - if your project contains a contract named ``Token``, there will be
 Isolation Fixtures
 ==================
 
-Isolation fixtures are used ensure a clean test environment when running tests, and to prevent the results of a test from affecting subsequent tests. See :ref:`pytest-fixtures-isolation` for information on how to use these fixtures.
+Isolation fixtures are used to ensure a clean test environment when running tests, and to prevent the results of a test from affecting subsequent tests. See :ref:`pytest-fixtures-isolation` for information on how to use these fixtures.
 
 .. py:attribute:: module_isolation
 
