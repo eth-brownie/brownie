@@ -225,3 +225,19 @@ In this mode, you can use :func:`Contract.from_explorer <Contract.from_explorer>
 
     Forking from Infura can be *very slow*. If you are using this mode
     extensively, it may be useful to run your own Geth node.
+
+Native EVM-Compatible Chain Integrations
+========================================
+
+Brownie natively supports the following collection of EVM-compatible chains:
+
+* Ethereum Classic
+* Binance Smart Chain
+* Fantom Opera
+* Polygon Network
+
+In order to enable native support for an EVM-compatible chain, there are 2 requirements. The chain must have a JSON-RPC endpoint which is publicly accessible (free in cost, sign-up may be required), and it should have a block explorer with API support for fetching contract sources and ABIs.
+
+.. note::
+
+    Although an EVM-compatible chain/network may not be natively supported, it can still be manually added to the local network list for developing on. See :ref:`Adding a New Network`
