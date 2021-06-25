@@ -7,6 +7,7 @@ eth-hash[pycryptodome]<1
 eth-utils<2
 hexbytes<1
 hypothesis<7
+lazy-object-proxy>=1.6.0,<2
 prompt-toolkit<4
 psutil>=5.7.3,<6
 py-solc-ast>=1.2.8,<2
@@ -26,3 +27,4 @@ tqdm<5
 vvm>=0.1.0,<1
 vyper>=0.2.11,<1
 web3<6
+wrapt>=1.12.1,<2

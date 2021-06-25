@@ -63,10 +63,17 @@ idna==2.10
     #   requests
 imagesize==1.2.0
     # via sphinx
-importlib-metadata==4.0.0
+importlib-metadata==4.5.0
     # via
+    #   -c requirements.txt
+    #   flake8
     #   keyring
+    #   pep517
+    #   pluggy
+    #   pytest
+    #   tox
     #   twine
+    #   virtualenv
 iniconfig==1.1.1
     # via
     #   -c requirements.txt
@@ -202,6 +209,7 @@ typed-ast==1.4.3
 typing-extensions==3.7.4.3
     # via
     #   -c requirements.txt
+    #   importlib-metadata
     #   mypy
 urllib3==1.26.5
     # via
@@ -214,7 +222,10 @@ webencodings==0.5.1
 wheel==0.36.2
     # via -r requirements-dev.in
 zipp==3.4.1
-    # via importlib-metadata
+    # via
+    #   -c requirements.txt
+    #   importlib-metadata
+    #   pep517
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
