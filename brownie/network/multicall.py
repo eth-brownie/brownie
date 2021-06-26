@@ -31,7 +31,7 @@ class Result(ObjectProxy):
         return repr(self.__wrapped__)
 
 
-class Multicall2:
+class Multicall:
     def __init__(
         self, address: str = None, block_identifier: Union[int, str, bytes] = None
     ) -> None:
@@ -106,7 +106,7 @@ class Multicall2:
         ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
         return result
 
-    def __enter__(self) -> "Multicall2":
+    def __enter__(self) -> "Multicall":
         """Enter the Context Manager and substitute `ContractCall.__call__`"""
         # we set the code objects on ContractCall class so we can grab them later
         if not hasattr(ContractCall, "__original_call_code"):
