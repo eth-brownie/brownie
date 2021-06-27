@@ -31,12 +31,17 @@ class Result(ObjectProxy):
         return repr(self.__wrapped__)
 
 
+class LazyResult(Proxy):
+    """A proxy object to be updated with the result of a multicall."""
+
+    def __repr__(self) -> str:
+        return repr(self.__wrapped__)
+
+
 class Multicall:
     def __init__(
         self, address: str = None, block_identifier: Union[int, str, bytes] = None
     ) -> None:
-        super().__init__()
-
         self.address = address
         self.block_identifier = block_identifier or chain.height
         self._pending_calls: List[Call] = []
@@ -99,7 +104,7 @@ class Multicall:
         result = Result(call_obj)
         self._pending_calls.append(result)
 
-        return Proxy(lambda: self._flush(result))
+        return LazyResult(lambda: self._flush(result))
 
     @staticmethod
     def _proxy_call(*args: Tuple, **kwargs: Dict[str, Any]) -> Any:
