@@ -45,7 +45,7 @@ class Multicall:
         self.address = address
         self.block_identifier = block_identifier or chain.height
         self._pending_calls: List[Call] = []
-        self._complete = False
+        self._complete = True
 
         if address is None:
             active_network = CONFIG.active_network

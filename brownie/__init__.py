@@ -14,7 +14,6 @@ ETH_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 config = _CONFIG.settings
-multicall = Multicall
 
 __all__ = [
     "Contract",
@@ -24,7 +23,7 @@ __all__ = [
     "alert",
     "chain",
     "history",  # history is a TxHistory singleton
-    "multicall",
+    "Multicall",
     "network",
     "rpc",  # rpc is a Rpc singleton
     "web3",  # web3 is a Web3 instance
