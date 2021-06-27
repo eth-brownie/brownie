@@ -1,8 +1,10 @@
 import inspect
 
+import pytest
 from lazy_object_proxy import Proxy
 
 import brownie
+from brownie.exceptions import ContractNotFound
 
 
 def test_auto_deploy_on_testnet(config, devnetwork):
@@ -100,3 +102,34 @@ def test_double_multicall(accounts, tester):
             assert len(mc2._pending_calls) == 1
         assert len(mc1._pending_calls) == 1
         assert len(mc2._pending_calls) == 0
+
+
+def test_raises_for_ancient_block_identifier(accounts, tester):
+    addr = accounts[1]
+    value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
+    tx = tester.setTuple(value)
+
+    with pytest.raises(ContractNotFound):
+        # block identifier is before multicall existed
+        with brownie.multicall(block_identifier=tx.block_number):
+            pass
+
+
+def test_deploy_classmethod(accounts, config):
+    multicall = brownie.multicall.deploy({"from": accounts[0]})
+    assert config.active_network["multicall2"] == multicall.address
+
+
+def test_using_block_identifier(accounts, tester):
+    # need to deploy before progressing chain
+    brownie.multicall.deploy({"from": accounts[0]})
+
+    addr = accounts[1]
+    old_value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
+    tx = tester.setTuple(old_value)
+    new_value = ["fooo", addr, ["nonono", "0x4321"]]
+    tester.setTuple(new_value)
+
+    with brownie.multicall(block_identifier=tx.block_number) as m:
+        assert tester.getTuple(addr, {"from": m}) == old_value
+    assert tester.getTuple(addr) == new_value
