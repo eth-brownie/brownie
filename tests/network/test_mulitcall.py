@@ -133,3 +133,18 @@ def test_using_block_identifier(accounts, tester):
     with brownie.multicall(block_identifier=tx.block_number) as m:
         assert tester.getTuple(addr, {"from": m}) == old_value
     assert tester.getTuple(addr) == new_value
+
+
+def test_all_values_come_from_the_same_block(chain, devnetwork):
+    with brownie.multicall() as m:
+        first_call = m._contract.getBlockNumber({"from": m})
+        chain.mine(10)
+        second_call = m._contract.getBlockNumber({"from": m})
+        assert first_call == second_call
+        # pending calls have been flushed
+        third_call = m._contract.getBlockNumber({"from": m})
+        chain.mine(10)
+        fourth_call = m._contract.getBlockNumber({"from": m})
+        assert first_call == second_call == third_call == fourth_call
+
+    assert m._contract.getBlockNumber() == first_call + 20
