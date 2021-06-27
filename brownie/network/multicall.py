@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple, Union
 from lazy_object_proxy import Proxy
 from wrapt import ObjectProxy
 
-from brownie import accounts, web3
+from brownie import accounts, chain, web3
 from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.exceptions import ContractNotFound
 from brownie.network.contract import Contract, ContractCall
@@ -38,7 +38,7 @@ class Multicall:
         super().__init__()
 
         self.address = address
-        self.block_identifier = block_identifier
+        self.block_identifier = block_identifier or chain.height
         self._pending_calls: List[Call] = []
         self._complete = False
 
@@ -48,16 +48,23 @@ class Multicall:
             if "multicall2" in active_network:
                 self.address = active_network["multicall2"]
             elif "cmd" in active_network:
-                self.address = self.deploy({"from": accounts[0]}).address
+                if block_identifier is not None:
+                    raise ContractNotFound(
+                        f"Must deploy Multicall2 before block {self.block_identifier}. "
+                        "Use `Multicall2.deploy` classmethod to deploy an instance of Multicall2."
+                    )
+                deployment = self.deploy({"from": accounts[0]})
+                self.address = deployment.address
+                self.block_identifier = deployment.tx.block_number  # type: ignore
             else:
                 # live network and no address
                 raise ContractNotFound("Must provide Multicall2 address as argument")
 
-        if not web3.eth.get_code(self.address, block_identifier):
+        if not web3.eth.get_code(self.address, self.block_identifier):
             # TODO: Handle deploying multicall in a test network without breaking the expected chain
             # For Geth client's we can use state override to have multicall at any arbitrary address
             raise ContractNotFound(
-                f"Multicall2 at `{self.address}` not available at block `{block_identifier}`"
+                f"Multicall2 at `{self.address}` not available at block `{self.block_identifier}`"
             )
 
         contract = Contract.from_abi("Multicall2", self.address, MULTICALL2_ABI)  # type: ignore
