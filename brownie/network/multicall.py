@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple, Union
 from lazy_object_proxy import Proxy
 from wrapt import ObjectProxy
 
-from brownie import accounts
+from brownie import accounts, web3
 from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.exceptions import ContractNotFound
 from brownie.network.contract import Contract, ContractCall
@@ -48,13 +48,17 @@ class Multicall:
             if "multicall2" in active_network:
                 self.address = active_network["multicall2"]
             elif "cmd" in active_network:
-                # development or forked network
-                project = compile_source(MULTICALL2_SOURCE)
-                deployment = project.Multicall2.deploy({"from": accounts[-1]})  # type: ignore
-                self.address = active_network["multicall2"] = deployment.address
+                self.address = self.deploy({"from": accounts[0]}).address
             else:
                 # live network and no address
                 raise ContractNotFound("Must provide Multicall2 address as argument")
+
+        if not web3.eth.get_code(self.address, block_identifier):
+            # TODO: Handle deploying multicall in a test network without breaking the expected chain
+            # For Geth client's we can use state override to have multicall at any arbitrary address
+            raise ContractNotFound(
+                f"Multicall2 at `{self.address}` not available at block `{block_identifier}`"
+            )
 
         contract = Contract.from_abi("Multicall2", self.address, MULTICALL2_ABI)  # type: ignore
         self._contract = contract
@@ -66,7 +70,9 @@ class Multicall:
             return future_result
         ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
         results = self._contract.tryAggregate(
-            False, [_call.calldata for _call in self._pending_calls]
+            False,
+            [_call.calldata for _call in self._pending_calls],
+            block_identifier=self.block_identifier,
         )
         if not self._complete:
             ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
@@ -122,3 +128,10 @@ class Multicall:
         self.flush()
         self._complete = True
         ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
+
+    @classmethod
+    def deploy(cls, tx_params: Dict) -> Contract:
+        project = compile_source(MULTICALL2_SOURCE)
+        deployment = project.Multicall2.deploy(tx_params)  # type: ignore
+        CONFIG.active_network["multicall2"] = deployment.address
+        return deployment
