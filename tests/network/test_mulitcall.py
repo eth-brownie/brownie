@@ -148,3 +148,32 @@ def test_all_values_come_from_the_same_block(chain, devnetwork):
         assert first_call == second_call == third_call == fourth_call
 
     assert m._contract.getBlockNumber() == first_call + 20
+
+
+def test_block_number_getter_setter(chain, devnetwork):
+    multicall = brownie.Multicall()
+
+    assert multicall.block_number == chain.height
+    chain.mine(10)
+    multicall.block_number += 10
+    assert multicall.block_number == chain.height
+
+
+def test_reusing_multicall(accounts, chain, tester):
+    addr = accounts[1]
+    value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
+    tester.setTuple(value)
+
+    multicall = brownie.Multicall()
+
+    with multicall as m:
+        assert tester.getTuple(addr, {"from": m}) == value
+
+    chain.mine(9)
+    new_value = ["fooo", addr, ["nonono", "0x4321"]]
+    tester.setTuple(new_value)
+
+    multicall.block_number += 10
+
+    with multicall as m:
+        assert tester.getTuple(addr, {"from": m}) == new_value
