@@ -1526,7 +1526,7 @@ Internal Methods
 ``brownie.network.gas``
 =======================
 
-The ``gas`` module contains gas strategy classes, as well as abstract base classes for buiding your own gas strategies.
+The ``gas`` module contains gas strategy classes, as well as abstract base classes for building your own gas strategies.
 
 Gas Strategies
 --------------
