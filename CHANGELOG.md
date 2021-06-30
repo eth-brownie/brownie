@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add polygon network integration ([#1119](https://github.com/eth-brownie/brownie/pull/1119))
 - Fixed subcalls to empty accounts not appearing in the subcalls property of TransactionReceipts ([#1106](https://github.com/eth-brownie/brownie/pull/1106))
 - Add support for `POLYGONSCAN_TOKEN` env var ([#1135](https://github.com/eth-brownie/brownie/pull/1135))
+- Add Multicall context manager ([#1125](https://github.com/eth-brownie/brownie/pull/1125))
 
 ### Added
 - Added `LocalAccount.sign_message` method to sign `EIP712Message` objects ([#1097](https://github.com/eth-brownie/brownie/pull/1097))
