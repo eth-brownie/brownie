@@ -100,7 +100,8 @@ def test_double_multicall(accounts, tester):
             mc2._contract.getCurrentBlockTimestamp({"from": mc2})
             assert len(mc1._pending_calls) == 1
             assert len(mc2._pending_calls) == 1
-        assert len(mc1._pending_calls) == 1
+        tester.getTuple(addr, {"from": mc1})
+        assert len(mc1._pending_calls) == 2
         assert len(mc2._pending_calls) == 0
 
 
