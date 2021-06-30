@@ -188,6 +188,7 @@ def test_from_explorer_unverified(network):
         Contract.from_explorer("0x0000000000000000000000000000000000000000")
 
 
+@pytest.mark.xfail
 def test_from_explorer_etc(network):
     network.connect("etc")
     with pytest.warns(BrownieCompilerWarning):
