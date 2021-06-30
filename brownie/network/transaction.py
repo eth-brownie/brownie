@@ -390,6 +390,12 @@ class TransactionReceipt:
             source = self._traceback_string()
         else:
             source = self._error_string(1)
+            contract = state._find_contract(self.receiver)
+            marker = "//" if contract._build["language"] == "Solidity" else "#"
+            line = self._traceback_string().split("\n")[-1]
+            if marker + " dev: " in line:
+                self._dev_revert_msg = line[line.index(marker) + len(marker) : -5].strip()
+
         raise exc._with_attr(
             source=source, revert_msg=self._revert_msg, dev_revert_msg=self._dev_revert_msg
         )
