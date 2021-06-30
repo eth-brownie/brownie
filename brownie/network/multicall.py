@@ -47,7 +47,6 @@ class Multicall:
         self.address = address
         self._block_identifier = block_identifier or chain.height
         self._pending_calls: List[Call] = []
-        self._complete = True
 
         if address is None:
             active_network = CONFIG.active_network
@@ -88,8 +87,7 @@ class Multicall:
             [_call.calldata for _call in self._pending_calls],
             block_identifier=self._block_identifier,
         )
-        if not self._complete:
-            ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
+        ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
         for _call, result in zip(self._pending_calls, results):
             _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None  # type: ignore
         self._pending_calls = []  # empty the pending calls
@@ -134,14 +132,11 @@ class Multicall:
             setattr(ContractCall, "__proxy_call_code", self._proxy_call.__code__)
         ContractCall.__call__.__code__ = self._proxy_call.__code__
         self.flush()
-        self._complete = False
         return self
 
     def __exit__(self, exc_type: Exception, exc_val: Any, exc_tb: TracebackType) -> None:
         """Exit the Context Manager and reattach original `ContractCall.__call__` code"""
         self.flush()
-        self._complete = True
-        ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
 
     @property
     def block_number(self) -> Union[int, str, bytes]:
