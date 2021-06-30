@@ -114,6 +114,9 @@ class VirtualMachineError(Exception):
             self.dev_revert_msg = brownie.project.build._get_dev_revert(self.pc)
             if self.revert_msg is None and self.revert_type in ("revert", "invalid opcode"):
                 self.revert_msg = self.dev_revert_msg
+            elif self.revert_msg == "Failed assertion":
+                self.revert_msg = self.dev_revert_msg or self.revert_msg
+
         else:
             raise ValueError(str(exc)) from None
 
@@ -130,6 +133,8 @@ class VirtualMachineError(Exception):
     def _with_attr(self, **kwargs) -> "VirtualMachineError":
         for key, value in kwargs.items():
             setattr(self, key, value)
+        if self.revert_msg == "Failed assertion":
+            self.revert_msg = self.dev_revert_msg or self.revert_msg  # type: ignore
         return self
 
 
