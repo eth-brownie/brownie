@@ -39,7 +39,21 @@ class LazyResult(Proxy):
 
 
 class Multicall:
-    """Context manager for batching multiple calls to constant contract functions."""
+    """Context manager for batching multiple calls to constant contract functions.
+
+    Args:
+        address: The address of an instance of the `Mulitcall2` contract. If `None`, uses
+            the default address in the network config, under the optional key `multicall2`.
+        block_identifier: The block number which to aggregate calls from, defaults to the
+            current block number at the moment of instantiation.
+
+    Attributes:
+        block_number: The block number calls will be aggregated from
+
+    Raises:
+        ContractNotFound: If `Multicall2` was not deployed at `address` at the block number
+            specified by `block_identifier`.
+    """
 
     def __init__(
         self, address: str = None, block_identifier: Union[int, str, bytes] = None
@@ -94,6 +108,7 @@ class Multicall:
         return future_result
 
     def flush(self) -> Any:
+        """Flush the pending queue of calls, retrieving all the results."""
         return self._flush()
 
     def _call_contract(self, call: ContractCall, *args: Tuple, **kwargs: Dict[str, Any]) -> Proxy:
@@ -140,6 +155,7 @@ class Multicall:
 
     @property
     def block_number(self) -> Union[int, str, bytes]:
+        """The block number calls are aggregated from."""
         return self._block_identifier
 
     @block_number.setter
@@ -153,6 +169,12 @@ class Multicall:
 
     @classmethod
     def deploy(cls, tx_params: Dict) -> Contract:
+        """Deploy an instance of the `Multicall2` contract.
+
+        Args:
+            tx_params: parameters passed to the `deploy` method of the `Multicall2` contract
+                container.
+        """
         project = compile_source(MULTICALL2_SOURCE)
         deployment = project.Multicall2.deploy(tx_params)  # type: ignore
         CONFIG.active_network["multicall2"] = deployment.address
