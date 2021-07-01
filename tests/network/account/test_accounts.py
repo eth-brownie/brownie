@@ -1,6 +1,7 @@
 #!/usr/bin/python3
-
 import pytest
+from eip712.messages import EIP712Message, EIP712Type
+from eth_account.datastructures import SignedMessage
 
 from brownie.exceptions import UnknownAccount
 from brownie.network.account import LocalAccount
@@ -131,3 +132,23 @@ def test_mnemonic_offset_multiple(accounts):
         "0x44302d4c1e535b4FB77bc390e3053586ecA411b0",
         "0x1F413d7E7B85E557D9997E6714479C7848A9Ea07",
     ]
+
+
+def test_sign_message(accounts):
+    class TestSubType(EIP712Type):
+        inner: "uint256"  # type: ignore # noqa: F821
+
+    class TestMessage(EIP712Message):
+        _name_: "string" = "Brownie Tests"  # type: ignore # noqa: F821
+        value: "uint256"  # type: ignore # noqa: F821
+        default_value: "address" = "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF"  # type: ignore # noqa: F821,E501
+        sub: TestSubType
+
+    local = accounts.add(priv_key)
+    msg = TestMessage(value=1, sub=TestSubType(inner=2))
+    signed = local.sign_message(msg)
+    assert isinstance(signed, SignedMessage)
+    assert (
+        signed.messageHash.hex()
+        == "0x131c497d4b815213752a2a00564dcf667c3bf3f85a410ef8cb50050b51959c26"
+    )

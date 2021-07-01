@@ -12,6 +12,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import eth_account
 import eth_keys
 import rlp
+from eip712.messages import EIP712Message, _hash_eip191_message
+from eth_account._utils.signing import sign_message_hash
+from eth_account.datastructures import SignedMessage
 from eth_utils import keccak
 from eth_utils.applicators import apply_formatters_to_dict
 from hexbytes import HexBytes
@@ -811,6 +814,30 @@ class LocalAccount(_PrivateKeyAccount):
         with json_file.open("w") as fp:
             json.dump(encrypted, fp)
         return str(json_file)
+
+    def sign_message(self, message: EIP712Message) -> SignedMessage:
+        """Signs an `EIP712Message` using this account's private key.
+
+        Args:
+            message: An `EIP712Message` instance.
+
+        Returns:
+            An eth_account `SignedMessage` instance.
+        """
+        # some of this code is from:
+        # https://github.com/ethereum/eth-account/blob/00e7b10/eth_account/account.py#L577
+        # https://github.com/ethereum/eth-account/blob/00e7b10/eth_account/account.py#L502
+        msg_hash_bytes = HexBytes(_hash_eip191_message(message.signable_message))
+        assert len(msg_hash_bytes) == 32, "The message hash must be exactly 32-bytes"
+        eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
+        (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
+        return SignedMessage(
+            messageHash=msg_hash_bytes,
+            r=r,
+            s=s,
+            v=v,
+            signature=HexBytes(eth_signature_bytes),
+        )
 
     def _transact(self, tx: Dict, allow_revert: bool) -> None:
         if allow_revert is None:
