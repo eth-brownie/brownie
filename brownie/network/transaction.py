@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import functools
+import re
 import sys
 import threading
 import time
@@ -271,7 +272,8 @@ class TransactionReceipt:
     def subcalls(self) -> Optional[List]:
         if self._subcalls is None:
             self._expand_trace()
-        return self._subcalls
+        subcalls = filter(lambda s: not _is_call_to_precompile(s), self._subcalls)  # type: ignore
+        return list(subcalls)
 
     @trace_property
     def trace(self) -> Optional[List]:
@@ -780,10 +782,13 @@ class TransactionReceipt:
         # last_map gives a quick reference of previous values at each depth
         last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
         coverage_eval: Dict = {last_map[0]["name"]: {}}
-
+        precompile_contract = re.compile(r"0x0{38}(?:0[1-9]|1[0-8])")
+        call_opcodes = ("CALL", "STATICCALL", "DELEGATECALL")
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
-            if trace[i]["depth"] > trace[i - 1]["depth"]:
+            is_depth_increase = trace[i]["depth"] > trace[i - 1]["depth"]
+            is_subcall = trace[i - 1]["op"] in call_opcodes
+            if is_depth_increase or is_subcall:
                 step = trace[i - 1]
                 if step["op"] in ("CREATE", "CREATE2"):
                     # creating a new contract
@@ -803,15 +808,16 @@ class TransactionReceipt:
                     sig = calldata[:4].hex()
                     address = step["stack"][-2][-40:]
 
-                last_map[trace[i]["depth"]] = _get_last_map(address, sig)
-                coverage_eval.setdefault(last_map[trace[i]["depth"]]["name"], {})
+                if is_depth_increase:
+                    last_map[trace[i]["depth"]] = _get_last_map(address, sig)
+                    coverage_eval.setdefault(last_map[trace[i]["depth"]]["name"], {})
 
                 self._subcalls.append(
                     {"from": step["address"], "to": EthAddress(address), "op": step["op"]}
                 )
                 if step["op"] in ("CALL", "CALLCODE"):
                     self._subcalls[-1]["value"] = int(step["stack"][-3], 16)
-                if calldata and last_map[trace[i]["depth"]].get("function"):
+                if is_depth_increase and calldata and last_map[trace[i]["depth"]].get("function"):
                     fn = last_map[trace[i]["depth"]]["function"]
                     self._subcalls[-1]["function"] = fn._input_sig
                     try:
@@ -820,8 +826,12 @@ class TransactionReceipt:
                         self._subcalls[-1]["inputs"] = inputs
                     except Exception:
                         self._subcalls[-1]["calldata"] = calldata.hex()
-                elif calldata:
-                    self._subcalls[-1]["calldata"] = calldata.hex()
+                elif calldata or is_subcall:
+                    self._subcalls[-1]["calldata"] = calldata.hex()  # type: ignore
+
+                if precompile_contract.search(str(self._subcalls[-1]["from"])) is not None:
+                    caller = self._subcalls.pop(-2)["from"]
+                    self._subcalls[-1]["from"] = caller
 
             # update trace from last_map
             last = last_map[trace[i]["depth"]]
@@ -1353,3 +1363,8 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
         last_map.update(contract=None, internal_calls=[f"<UnknownContract>.{sig}"], pc_map=None)
 
     return last_map
+
+
+def _is_call_to_precompile(subcall: dict) -> bool:
+    precompile_contract = re.compile(r"0x0{38}(?:0[1-9]|1[0-8])")
+    return True if precompile_contract.search(str(subcall["to"])) is not None else False
