@@ -113,11 +113,12 @@ class _ContractBase:
         if not isinstance(calldata, HexBytes):
             calldata = HexBytes(calldata)
 
+        fn_selector = calldata[:4].hex()  # type: ignore
         abi = next(
             (
                 i
                 for i in self.abi
-                if i["type"] == "function" and build_function_selector(i) == calldata[:4].hex()
+                if i["type"] == "function" and build_function_selector(i) == fn_selector
             ),
             None,
         )
@@ -713,11 +714,12 @@ class InterfaceConstructor:
         if not isinstance(calldata, HexBytes):
             calldata = HexBytes(calldata)
 
+        fn_selector = calldata[:4].hex()  # type: ignore
         abi = next(
             (
                 i
                 for i in self.abi
-                if i["type"] == "function" and build_function_selector(i) == calldata[:4].hex()
+                if i["type"] == "function" and build_function_selector(i) == fn_selector
             ),
             None,
         )
@@ -1893,7 +1895,6 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
                 "as the environment variable $POLYGONSCAN_TOKEN",
                 BrownieEnvironmentWarning,
             )
-
     if not silent:
         print(
             f"Fetching source of {color('bright blue')}{address}{color} "
