@@ -1176,6 +1176,14 @@ class Contract(_DeployedContractBase):
                     BrownieCompilerWarning,
                 )
             return cls.from_abi(name, address, abi, owner)
+        elif data["result"][0]["OptimizationUsed"] in ("true", "false"):
+            if not silent:
+                warnings.warn(
+                    f"Blockscout explorer API has limited support by Brownie. "  # noqa
+                    "Some debugging functionality will not be available.",
+                    BrownieCompilerWarning,
+                )
+            return cls.from_abi(name, address, abi, owner)
 
         optimizer = {
             "enabled": bool(int(data["result"][0]["OptimizationUsed"])),
