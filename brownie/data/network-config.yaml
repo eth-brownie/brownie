@@ -64,9 +64,9 @@ live:
         explorer: https://api.ftmscan.com/api
   - name: Polygon
     networks:
-      - name: Mainnet
+      - name: Mainnet (Infura)
         chainid: 137
-        id: polygon-main (Infura)
+        id: polygon-main
         host: https://polygon-mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
         explorer: https://api.polygonscan.com/api
       - name: Mumbai Testnet (Infura)
