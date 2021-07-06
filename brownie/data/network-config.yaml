@@ -62,6 +62,18 @@ live:
         id: ftm-main
         host: https://rpcapi.fantom.network
         explorer: https://api.ftmscan.com/api
+  - name: Polygon
+    networks:
+      - name: Mainnet
+        chainid: 137
+        id: polygon-main (Infura)
+        host: https://polygon-mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api.polygonscan.com/api
+      - name: Mumbai Testnet (Infura)
+        chainid: 80001
+        id: polygon-test
+        host: https://polygon-mumbai.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-testnet.polygonscan.com/api
 
 development:
   - name: Ganache-CLI
@@ -116,3 +128,15 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: ftm-main
+  - name: Ganache-CLI (Polygon-Mainnet Fork)
+    id: polygon-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: polygon-main
