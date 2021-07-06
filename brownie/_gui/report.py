@@ -1,19 +1,41 @@
 #!/usr/bin/python3
 
 import warnings
+from pathlib import Path
 
 from .bases import SelectBox
 
 
 class ReportSelect(SelectBox):
     def __init__(self, parent):
-        super().__init__(parent, "(No Reports)", [])
+        super().__init__(parent, "", [])
+
+    def show(self):
+        self.grid()
+
+    def hide(self):
+        self.grid_remove()
+
+    def set_values(self, contract):
         reports = self._root().reports
-        if not reports:
+        values = []
+        for report in sorted(reports):
+            if contract in reports[report][report]:
+                values.append(report)
+
+        if not values:
+            self.set("(No Reports)")
             self.config(state="disabled")
+            self.root.toolbar.highlight_select.hide()
             return
-        self["values"] = ["None"] + sorted(reports)
-        self.set("Select Report")
+
+        self["values"] = ["None"] + values
+        self.config(state="readonly")
+        if self.root.report_key:
+            self.set(self.root.report_key)
+            self.root.toolbar.highlight_select.show()
+        else:
+            self.set("Select Report")
 
     def _select(self, event):
         value = super()._select()
@@ -53,7 +75,7 @@ class HighlightSelect(SelectBox):
             self.set("Report Type")
             return
         self.root.highlight_key = value
-        contract = self.root.get_active_contract()
+        contract = Path(self.root.main.note.active_frame()._label).stem.strip()
         if contract not in self.root.active_report[value]:
             return
         report = self.root.active_report[value][contract]

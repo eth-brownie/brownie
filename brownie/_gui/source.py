@@ -29,6 +29,7 @@ class SourceNoteBook(ttk.Notebook):
             if path.suffix in (".sol", ".vy"):
                 self.add(path)
         self.set_visible([])
+        self.bind("<<NotebookTabChanged>>", self.on_tab_change)
 
     def add(self, path):
         path = Path(path)
@@ -61,6 +62,11 @@ class SourceNoteBook(ttk.Notebook):
             return
         frame._visible = True
         super().add(frame, text=f"   {label}   ")
+
+    def on_tab_change(self, event):
+        if self.select():
+            tab = event.widget.tab("current")["text"]
+            self.root.toolbar.report.set_values(Path(tab).stem.strip())
 
     def set_visible(self, labels):
         labels = [Path(i).name for i in labels]

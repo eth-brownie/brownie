@@ -63,9 +63,6 @@ class Root(tk.Tk):
     def active_report(self):
         return self.reports[self.report_key]["highlights"]
 
-    def get_active_contract(self):
-        return self.toolbar.combo.get()
-
     def set_active_contract(self, contract_name):
         build_json = self.active_project._build.get(contract_name)
         self.main.note.set_visible(sorted(build_json["allSourcePaths"].values()))
@@ -76,6 +73,8 @@ class Root(tk.Tk):
         for value in (v for v in self.pcMap.values() if "path" in v):
             if value["path"] not in self.pathMap:
                 value["path"] = self.pathMap[value["path"]]
+        self.toolbar.report.show()
+        self.toolbar.report.set_values(contract_name)
 
     def destroy(self):
         super().destroy()
@@ -131,6 +130,7 @@ class ToolbarFrame(ttk.Frame):
 
         self.report = ReportSelect(self)
         self.report.grid(row=0, column=9, sticky="nsew", padx=10)
+        self.report.hide()
         ToolTip(self.report, "Select a report to overlay onto the source code")
 
         # contract selection
