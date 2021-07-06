@@ -34,6 +34,8 @@ class ReportSelect(SelectBox):
         if self.root.report_key:
             self.set(self.root.report_key)
             self.root.toolbar.highlight_select.show()
+            if self.root.highlight_key:
+                self.root.toolbar.highlight_select.update_highlights(self.root.highlight_key)
         else:
             self.set("Select Report")
 
@@ -70,6 +72,9 @@ class HighlightSelect(SelectBox):
 
     def _select(self, event):
         value = super()._select()
+        self.update_highlights(value)
+
+    def update_highlights(self, value):
         self.toggle_off()
         if value == "None":
             self.set("Report Type")
