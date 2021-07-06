@@ -90,7 +90,7 @@ def _address_strategy(length: Optional[int] = None, exclude_by_index=None) -> Se
         index = list(network.accounts).index(address)
         return index not in exclude_by_index
 
-    ## note: if exclude_by_index includes indices not in network.accounts they will be ignored.
+    # note: if exclude_by_index includes indices not in network.accounts they will be ignored.
 
     return _DeferredStrategyRepr(
         lambda: st.sampled_from(list(network.accounts)[:length]).filter(filter_by_exclude_list),
