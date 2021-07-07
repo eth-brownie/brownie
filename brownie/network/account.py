@@ -460,6 +460,44 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 "If you wish to broadcast, include `allow_revert:True` as a transaction parameter.",
             ) from None
 
+    def deploy_raw(self, contract_name: str, hex_str: str):
+        with self._lock:
+            try:
+                gas_price = 0
+                gas_limit = Wei(12000000)
+
+                txid = self._transact(  # type: ignore
+                    {
+                        "from": self.address,
+                        "value": Wei(0),
+                        "nonce": self._pending_nonce(),
+                        "gasPrice": gas_price,
+                        "gas": gas_limit,
+                        "data": HexBytes(hex_str),
+                    },
+                    False,
+                )
+                exc, revert_data = None, None
+            except ValueError as e:
+                exc = VirtualMachineError(e)
+                if not hasattr(exc, "txid"):
+                    raise exc from None
+                txid = exc.txid
+                revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
+
+            receipt = TransactionReceipt(
+                txid,
+                self,
+                silent=False,
+                required_confs=1,
+                is_blocking=False,
+                name=contract_name,
+                revert_data=revert_data,
+            )
+
+        receipt = self._await_confirmation(receipt, 1, None, None)
+        return receipt
+
     def deploy(
         self,
         contract: Any,
