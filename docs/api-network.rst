@@ -1667,6 +1667,10 @@ To implement a scaling strategy, subclass one of the above ABCs and implement th
 
 The ``multicall`` module contains the :func:`Multicall <brownie.network.multicall.Multicall>` context manager, which allows for the batching of multiple constant contract function calls via ``Multicall2``.
 
+.. note::
+
+    The :func:`Multicall <brownie.network.multicall.Multicall>` context manager is not meant to be instantiated, and instead should be used via ``brownie.multicall``
+
 Multicall
 ---------
 
@@ -1678,12 +1682,11 @@ Multicall
 
     Features:
 
-        1. Uses a modified but familiar call API
-        2. Lazy fetching of results
-        3. Auto-deployment on development networks (on first use).
-        4. Uses ``multicall2`` key in network-config as pre-defined multicall contract address
-        5. Can specify/modify block number to make calls at particular block heights
-        6. Calls which fail return ``None`` instad of causing all calls to fail 
+        1. Lazy fetching of results
+        2. Auto-deployment on development networks (on first use).
+        3. Uses ``multicall2`` key in network-config as pre-defined multicall contract address
+        4. Can specify/modify block number to make calls at particular block heights
+        5. Calls which fail return ``None`` instad of causing all calls to fail 
 
     .. code-block:: python
 
@@ -1691,10 +1694,10 @@ Multicall
         >>> from brownie import Contract
         >>> addr_provider = Contract("0x0000000022D53366457F9d5E68Ec105046FC4383")
         >>> registry = Contract(addr_provider.get_registry())
-        >>> with brownie.Multicall() as m:
-        ...     pool_count = registry.pool_count()  # standard call, no batching
-        ...     pools = [registry.pool_list(i, {"from": m}) for i in range(pool_count)]  # batched
-        ...     gauges = [registry.get_gauges(pool, {"from": m}) for pool in pools]  # batched
+        >>> with brownie.multicall:
+        ...     pool_count = registry.pool_count.call()  # standard call, no batching
+        ...     pools = [registry.pool_list(i) for i in range(pool_count)]  # batched
+        ...     gauges = [registry.get_gauges(pool) for pool in pools]  # batched
         ... print(*zip(pools, gauges), sep="\n")
 
 Multicall Attributes
@@ -1706,9 +1709,9 @@ Multicall Attributes
 
     .. code-block:: python
 
-        >>> Multicall().address
+        >>> brownie.multicall.address
         0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696
-        >>> Multicall("0xc8E51042792d7405184DfCa245F2d27B94D013b6").address
+        >>> brownie.multicall(address="0xc8E51042792d7405184DfCa245F2d27B94D013b6").address
         0xc8E51042792d7405184DfCa245F2d27B94D013b6
 
 .. py:attribute:: Multicall.block_number
@@ -1719,14 +1722,10 @@ Multicall Attributes
 
         ``Multicall`` relies on an instance of ``Multicall2`` being available for aggregating results. If you set the block_height before the ``Multicall2`` instance you are using was deployed a ``ContractNotFound`` error will be raised.
     
-    .. note::
-
-        You can modify the block height used within the context manager, this will flush the queue of currently pending calls, and then adjust to the new block height 
-    
     .. code-block:: python
 
-        >>> m = Multicall()
-        >>> m.block_number
+        >>> with brownie.multicall(block_identifier=12733683):
+        ...     brownie.multicall.block_number
         12733683
 
 Multicall Methods
@@ -1738,7 +1737,7 @@ Multicall Methods
 
     .. code-block:: python
 
-        >>> multicall2 = Multicall.deploy({"from": alice})
+        >>> multicall2 = brownie.multicall.deploy({"from": alice})
         <Multicall2 Contract object '0x5419710735c2D6c3e4db8F30EF2d361F70a4b380'>
 
 .. py:classmethod:: Multicall.flush
@@ -1748,10 +1747,10 @@ Multicall Methods
     >>> results = []
     >>> long_list_of_addresses = [...]
     >>> token = Contract(...)
-    >>> with Multicall() as m:
+    >>> with brownie.multicall:
     ...     for i, addr in enumerate(long_list_of_addresses):
     ...         if i % 1_000:
-    ...             m.flush()
+    ...             brownie.multicall.flush()
     ...         results.append(token.balanceOf(addr))
 
 Multicall Internal Attributes
