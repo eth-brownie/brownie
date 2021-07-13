@@ -45,8 +45,8 @@ class Multicall:
     """Context manager for batching multiple calls to constant contract functions."""
 
     def __init__(self) -> None:
-        self._address = None
-        self._block_identifier = None
+        self.address = None
+        self.block_number = None
         self._contract = None
         self._pending_calls: List[Call] = []
 
@@ -58,8 +58,8 @@ class Multicall:
     def __call__(
         self, address: str = None, block_identifier: Union[str, bytes, int] = None
     ) -> "Multicall":
-        self._address = address
-        self._block_identifier = block_identifier
+        self.address = address
+        self.block_number = block_identifier
         return self
 
     def _flush(self, future_result: Result = None) -> Any:
@@ -71,7 +71,7 @@ class Multicall:
         results = self._contract.tryAggregate(
             False,
             [_call.calldata for _call in self._pending_calls],
-            block_identifier=self._block_identifier,
+            block_identifier=self.block_number,
         )
         ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
         for _call, result in zip(self._pending_calls, results):
@@ -119,24 +119,24 @@ class Multicall:
         active_network = CONFIG.active_network
 
         if "multicall2" in active_network:
-            self._address = active_network["multicall2"]
+            self.address = active_network["multicall2"]
         elif "cmd" in active_network:
             deployment = self.deploy({"from": accounts[0]})
-            self._address = deployment.address
-            self._block_identifier = deployment.tx.block_number
+            self.address = deployment.address
+            self.block_number = deployment.tx.block_number
 
-        self._block_identifier = self._block_identifier or web3.eth.get_block_number()
+        self.block_number = self.block_number or web3.eth.get_block_number()
 
-        if self._address == None:
+        if self.address == None:
             raise ContractNotFound(
                 "Must set Multicall address via `brownie.multicall(address=...)`"
             )
-        elif not web3.eth.get_code(self._address, block_identifier=self._block_identifier):
+        elif not web3.eth.get_code(self.address, block_identifier=self.block_number):
             raise ContractNotFound(
-                f"Multicall at address {self._address} does not exist at block {self._block_identifier}"
+                f"Multicall at address {self.address} does not exist at block {self.block_number}"
             )
 
-        self._contract = Contract.from_abi("Multicall", self._address, MULTICALL2_ABI)
+        self._contract = Contract.from_abi("Multicall", self.address, MULTICALL2_ABI)
         getattr(ContractCall, "__multicall")[get_ident()] = self
 
     def __exit__(self, exc_type: Exception, exc_val: Any, exc_tb: TracebackType) -> None:
