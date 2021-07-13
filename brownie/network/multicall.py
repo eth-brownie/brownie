@@ -10,6 +10,8 @@ from brownie import accounts, chain, web3
 from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.exceptions import ContractNotFound
 from brownie.network.contract import Contract, ContractCall
+from threading import get_ident
+from collections import defaultdict
 from brownie.project import compile_source
 
 DATA_DIR = BROWNIE_FOLDER.joinpath("data")
@@ -55,6 +57,16 @@ class Multicall:
             deployment = self.deploy({"from": accounts[0]})
             self._address = deployment.address
 
+        ContractCall.__original_call_code = ContractCall.__call__.__code__
+        ContractCall.__proxy_call_code = self._proxy_call.__code__
+        ContractCall.__call__.__code__ = self._proxy_call.__code__
+        ContractCall.__multicall = defaultdict(lambda: None)
+
+    def __call__(self, address: str, block_identifer: Union[str, bytes, int] = None) -> "Multicall":
+        self._address = address
+        self._block_identifier = block_identifer
+        return self
+
     def _flush(self, future_result: Result = None) -> Any:
         if not self._pending_calls:
             # either all calls have already been made
@@ -93,9 +105,10 @@ class Multicall:
         This makes constant contract calls look more like transactions since we require
         users to specify a dictionary as the last argument with the from field
         being the multicall2 instance being used."""
-        if args and isinstance(args[-1], dict):
-            args, tx = args[:-1], args[-1]
-            self = tx["from"]
+        from threading import get_ident
+
+        self = ContractCall.__multicall[get_ident()]
+        if self:
             return self._call_contract(*args, **kwargs)
 
         # standard call we let pass through
@@ -107,33 +120,25 @@ class Multicall:
     def __enter__(self) -> "Multicall":
         """Enter the Context Manager and substitute `ContractCall.__call__`"""
         # we set the code objects on ContractCall class so we can grab them later
-        if not hasattr(ContractCall, "__original_call_code"):
-            setattr(ContractCall, "__original_call_code", ContractCall.__call__.__code__)
-            setattr(ContractCall, "__proxy_call_code", self._proxy_call.__code__)
-        ContractCall.__call__.__code__ = self._proxy_call.__code__
-        self.flush()
-        return self
+        self._block_identifier = self._block_identifier or web3.eth.get_block_number()
+
+        if self._address == None:
+            raise ContractNotFound(
+                "Must set Multicall address via `brownie.multicall(address=...)`"
+            )
+        elif not web3.eth.get_code(self._address, block_identifier=self._block_identifier):
+            raise ContractNotFound(
+                f"Multicall at address {self._address} does not exit at block {self._block_identifier}"
+            )
+
+        self._contract = Contract.from_abi("Multicall", self._address, MULTICALL2_ABI)
 
     def __exit__(self, exc_type: Exception, exc_val: Any, exc_tb: TracebackType) -> None:
         """Exit the Context Manager and reattach original `ContractCall.__call__` code"""
         self.flush()
 
-    @property
-    def block_number(self) -> Union[int, str, bytes]:
-        """The block number calls are aggregated from."""
-        return self._block_identifier
-
-    @block_number.setter
-    def block_number(self, value: Union[int, str, bytes]) -> None:
-        self.flush()
-        if not web3.eth.get_code(self.address, self._block_identifier):
-            raise ContractNotFound(
-                f"Multicall2 at `{self.address}` not available at block `{value}`"
-            )
-        self._block_identifier = value
-
-    @classmethod
-    def deploy(cls, tx_params: Dict) -> Contract:
+    @staticmethod
+    def deploy(tx_params: Dict) -> Contract:
         """Deploy an instance of the `Multicall2` contract.
 
         Args:
