@@ -39,56 +39,21 @@ class LazyResult(Proxy):
 
 
 class Multicall:
-    """Context manager for batching multiple calls to constant contract functions.
+    """Context manager for batching multiple calls to constant contract functions."""
 
-    Args:
-        address: The address of an instance of the `Mulitcall2` contract. If `None`, uses
-            the default address in the network config, under the optional key `multicall2`.
-        block_identifier: The block number which to aggregate calls from, defaults to the
-            current block number at the moment of instantiation.
-
-    Attributes:
-        block_number: The block number calls will be aggregated from
-
-    Raises:
-        ContractNotFound: If `Multicall2` was not deployed at `address` at the block number
-            specified by `block_identifier`.
-    """
-
-    def __init__(
-        self, address: str = None, block_identifier: Union[int, str, bytes] = None
-    ) -> None:
-        self.address = address
-        self._block_identifier = block_identifier or chain.height
+    def __init__(self) -> None:
+        self._address = None
+        self._block_identifier = None
+        self._contract = None
         self._pending_calls: List[Call] = []
 
-        if address is None:
-            active_network = CONFIG.active_network
+        active_network = CONFIG.active_network
 
-            if "multicall2" in active_network:
-                self.address = active_network["multicall2"]
-            elif "cmd" in active_network:
-                if block_identifier is not None:
-                    raise ContractNotFound(
-                        f"Must deploy Multicall2 before block {self._block_identifier}. "
-                        "Use `Multicall2.deploy` classmethod to deploy an instance of Multicall2."
-                    )
-                deployment = self.deploy({"from": accounts[0]})
-                self.address = deployment.address
-                self._block_identifier = deployment.tx.block_number  # type: ignore
-            else:
-                # live network and no address
-                raise ContractNotFound("Must provide Multicall2 address as argument")
-
-        if not web3.eth.get_code(self.address, self._block_identifier):
-            # TODO: Handle deploying multicall in a test network without breaking the expected chain
-            # For Geth client's we can use state override to have multicall at any arbitrary address
-            raise ContractNotFound(
-                f"Multicall2 at `{self.address}` not available at block `{self._block_identifier}`"
-            )
-
-        contract = Contract.from_abi("Multicall2", self.address, MULTICALL2_ABI)  # type: ignore
-        self._contract = contract
+        if "multicall2" in active_network:
+            self._address = active_network["multicall2"]
+        elif "cmd" in active_network:
+            deployment = self.deploy({"from": accounts[0]})
+            self._address = deployment.address
 
     def _flush(self, future_result: Result = None) -> Any:
         if not self._pending_calls:
