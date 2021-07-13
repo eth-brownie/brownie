@@ -132,10 +132,12 @@ class Multicall:
             )
 
         self._contract = Contract.from_abi("Multicall", self._address, MULTICALL2_ABI)
+        ContractCall.__multicall[get_ident()] = self
 
     def __exit__(self, exc_type: Exception, exc_val: Any, exc_tb: TracebackType) -> None:
         """Exit the Context Manager and reattach original `ContractCall.__call__` code"""
         self.flush()
+        ContractCall.__multicall[get_ident()] = None
 
     @staticmethod
     def deploy(tx_params: Dict) -> Contract:
