@@ -8,12 +8,12 @@ from brownie.exceptions import ContractNotFound
 
 
 def test_auto_deploy_on_testnet(config, devnetwork):
-    with brownie.Multicall():
+    with brownie.multicall:
         # gets deployed on init
         assert "multicall2" in config.active_network
         addr = config.active_network["multicall2"]
 
-    with brownie.Multicall():
+    with brownie.multicall:
         # uses the previously deployed instance
         assert config.active_network["multicall2"] == addr
 
@@ -23,11 +23,11 @@ def test_proxy_object_is_returned_from_calls(accounts, tester):
     value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
     tester.setTuple(value)
 
-    with brownie.Multicall() as m:
+    with brownie.multicall:
         # the value hasn't been fetched so ret_value is just the proxy
         # but if we access ret_val again it will update
         # so use getattr_static to see it has yet to update
-        ret_val = tester.getTuple(addr, {"from": m})
+        ret_val = tester.getTuple(addr)
         assert inspect.getattr_static(ret_val, "__wrapped__") != value
         assert isinstance(ret_val, Proxy)
         assert ret_val.__wrapped__ == value
@@ -38,11 +38,11 @@ def test_flush_mid_execution(accounts, tester):
     value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
     tester.setTuple(value)
 
-    with brownie.Multicall() as m:
-        tester.getTuple(addr, {"from": m})
-        assert len(m._pending_calls) == 1
-        m.flush()
-        assert len(m._pending_calls) == 0
+    with brownie.multicall:
+        tester.getTuple(addr)
+        assert len(brownie.multicall._pending_calls) == 1
+        brownie.multicall.flush()
+        assert len(brownie.multicall._pending_calls) == 0
 
 
 def test_proxy_object_fetches_on_next_use(accounts, tester):
@@ -50,12 +50,12 @@ def test_proxy_object_fetches_on_next_use(accounts, tester):
     value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
     tester.setTuple(value)
 
-    with brownie.Multicall() as m:
-        ret_val = tester.getTuple(addr, {"from": m})
-        assert len(m._pending_calls) == 1
+    with brownie.multicall:
+        ret_val = tester.getTuple(addr)
+        assert len(brownie.multicall._pending_calls) == 1
         # ret_val is now fetched
         assert ret_val == value
-        assert len(m._pending_calls) == 0
+        assert len(brownie.multicall._pending_calls) == 0
 
 
 def test_proxy_object_updates_on_exit(accounts, tester):
@@ -63,8 +63,8 @@ def test_proxy_object_updates_on_exit(accounts, tester):
     value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
     tester.setTuple(value)
 
-    with brownie.Multicall() as m:
-        ret_val = tester.getTuple(addr, {"from": m})
+    with brownie.multicall:
+        ret_val = tester.getTuple(addr)
 
     assert ret_val == value
 
@@ -74,8 +74,9 @@ def test_standard_calls_passthrough(accounts, tester):
     value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
     tester.setTuple(value)
 
-    with brownie.Multicall():
-        assert tester.getTuple(addr) == value
+    with brownie.multicall:
+        assert tester.getTuple.call(addr) == value
+        assert not isinstance(tester.getTuple.call(addr), Proxy)
 
 
 def test_standard_calls_work_after_context(accounts, tester):
@@ -83,47 +84,21 @@ def test_standard_calls_work_after_context(accounts, tester):
     value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
     tester.setTuple(value)
 
-    with brownie.Multicall():
+    with brownie.multicall:
         assert tester.getTuple(addr) == value
 
     assert tester.getTuple(addr) == value
+    assert not isinstance(tester.getTuple(addr), Proxy)
 
 
-def test_double_multicall(accounts, tester):
-    addr = accounts[1]
-    value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
-    tester.setTuple(value)
-
-    with brownie.Multicall() as mc1:
-        tester.getTuple(addr, {"from": mc1})
-        with brownie.Multicall() as mc2:
-            mc2._contract.getCurrentBlockTimestamp({"from": mc2})
-            assert len(mc1._pending_calls) == 1
-            assert len(mc2._pending_calls) == 1
-        tester.getTuple(addr, {"from": mc1})
-        assert len(mc1._pending_calls) == 2
-        assert len(mc2._pending_calls) == 0
-
-
-def test_raises_for_ancient_block_identifier(accounts, tester):
-    addr = accounts[1]
-    value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
-    tx = tester.setTuple(value)
-
-    with pytest.raises(ContractNotFound):
-        # block identifier is before multicall existed
-        with brownie.Multicall(block_identifier=tx.block_number):
-            pass
-
-
-def test_deploy_classmethod(accounts, config):
-    multicall = brownie.Multicall.deploy({"from": accounts[0]})
+def test_deploy_staticmethod(accounts, config):
+    multicall = brownie.multicall.deploy({"from": accounts[0]})
     assert config.active_network["multicall2"] == multicall.address
 
 
 def test_using_block_identifier(accounts, tester):
     # need to deploy before progressing chain
-    brownie.Multicall.deploy({"from": accounts[0]})
+    brownie.multicall.deploy({"from": accounts[0]})
 
     addr = accounts[1]
     old_value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
@@ -131,50 +106,21 @@ def test_using_block_identifier(accounts, tester):
     new_value = ["fooo", addr, ["nonono", "0x4321"]]
     tester.setTuple(new_value)
 
-    with brownie.Multicall(block_identifier=tx.block_number) as m:
-        assert tester.getTuple(addr, {"from": m}) == old_value
+    with brownie.multicall(block_identifier=tx.block_number):
+        assert tester.getTuple(addr) == old_value
     assert tester.getTuple(addr) == new_value
 
 
 def test_all_values_come_from_the_same_block(chain, devnetwork):
-    with brownie.Multicall() as m:
-        first_call = m._contract.getBlockNumber({"from": m})
+    with brownie.multicall:
+        first_call = brownie.multicall._contract.getBlockNumber()
         chain.mine(10)
-        second_call = m._contract.getBlockNumber({"from": m})
+        second_call = brownie.multicall._contract.getBlockNumber()
         assert first_call == second_call
         # pending calls have been flushed
-        third_call = m._contract.getBlockNumber({"from": m})
+        third_call = brownie.multicall._contract.getBlockNumber()
         chain.mine(10)
-        fourth_call = m._contract.getBlockNumber({"from": m})
+        fourth_call = brownie.multicall._contract.getBlockNumber()
         assert first_call == second_call == third_call == fourth_call
 
-    assert m._contract.getBlockNumber() == first_call + 20
-
-
-def test_block_number_getter_setter(chain, devnetwork):
-    multicall = brownie.Multicall()
-
-    assert multicall.block_number == chain.height
-    chain.mine(10)
-    multicall.block_number += 10
-    assert multicall.block_number == chain.height
-
-
-def test_reusing_multicall(accounts, chain, tester):
-    addr = accounts[1]
-    value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
-    tester.setTuple(value)
-
-    multicall = brownie.Multicall()
-
-    with multicall as m:
-        assert tester.getTuple(addr, {"from": m}) == value
-
-    chain.mine(9)
-    new_value = ["fooo", addr, ["nonono", "0x4321"]]
-    tester.setTuple(new_value)
-
-    multicall.block_number += 10
-
-    with multicall as m:
-        assert tester.getTuple(addr, {"from": m}) == new_value
+    assert brownie.multicall._contract.getBlockNumber() == first_call + 20
