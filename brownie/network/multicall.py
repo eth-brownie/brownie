@@ -1,18 +1,17 @@
 import json
+from collections import defaultdict
 from dataclasses import dataclass
+from threading import get_ident
 from types import FunctionType, TracebackType
 from typing import Any, Dict, List, Tuple, Union
 
 from lazy_object_proxy import Proxy
-from toolz.itertoolz import get
 from wrapt import ObjectProxy
 
-from brownie.network import accounts, web3
 from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.exceptions import ContractNotFound
+from brownie.network import accounts, web3
 from brownie.network.contract import Contract, ContractCall
-from threading import get_ident
-from collections import defaultdict
 from brownie.project import compile_source
 
 DATA_DIR = BROWNIE_FOLDER.joinpath("data")
@@ -127,7 +126,7 @@ class Multicall:
 
         self.block_number = self.block_number or web3.eth.get_block_number()
 
-        if self.address == None:
+        if self.address is None:
             raise ContractNotFound(
                 "Must set Multicall address via `brownie.multicall(address=...)`"
             )
