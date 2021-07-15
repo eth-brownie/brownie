@@ -376,7 +376,11 @@ class ContractContainer(_ContractBase):
         """Flatten contract and publish source on the selected explorer"""
 
         # Check required conditions for verifying
-        explorer_tokens = {"etherscan": "ETHERSCAN_TOKEN", "bscscan": "BSCSCAN_TOKEN"}
+        explorer_tokens = {
+            "etherscan": "ETHERSCAN_TOKEN",
+            "bscscan": "BSCSCAN_TOKEN",
+            "polygonscan": "POLYGONSCAN_TOKEN",
+        }
         url = CONFIG.active_network.get("explorer")
         if url is None:
             raise ValueError("Explorer API not set for this network")
@@ -1876,6 +1880,16 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
                 "No BSCScan API token set. You may experience issues with rate limiting. "
                 "Visit https://bscscan.com/register to obtain a token, and then store it "
                 "as the environment variable $BSCSCAN_TOKEN",
+                BrownieEnvironmentWarning,
+            )
+    elif "polygonscan" in url:
+        if os.getenv("POLYGONSCAN_TOKEN"):
+            params["apiKey"] = os.getenv("POLYGONSCAN_TOKEN")
+        elif not silent:
+            warnings.warn(
+                "No PolygonScan API token set. You may experience issues with rate limiting. "
+                "Visit https://polygonscan.com/register to obtain a token, and then store it "
+                "as the environment variable $POLYGONSCAN_TOKEN",
                 BrownieEnvironmentWarning,
             )
 
