@@ -118,6 +118,12 @@ idna==2.10
     # via
     #   -r requirements.txt
     #   requests
+importlib-metadata==4.5.0
+    # via
+    #   -r requirements.txt
+    #   jsonschema
+    #   pluggy
+    #   pytest
 inflection==0.5.0
     # via
     #   -r requirements.txt
@@ -136,6 +142,8 @@ jsonschema==3.2.0
     #   -r requirements.txt
     #   mythx-models
     #   web3
+lazy-object-proxy==1.6.0
+    # via -r requirements.txt
 lru-dict==1.1.7
     # via
     #   -r requirements.txt
@@ -291,6 +299,8 @@ typing-extensions==3.7.4.3
     # via
     #   -r requirements.txt
     #   black
+    #   importlib-metadata
+    #   web3
 urllib3==1.26.5
     # via
     #   -r requirements.txt
@@ -313,6 +323,12 @@ websockets==8.1
     # via
     #   -r requirements.txt
     #   web3
+wrapt==1.12.1
+    # via -r requirements.txt
+zipp==3.4.1
+    # via
+    #   -r requirements.txt
+    #   importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

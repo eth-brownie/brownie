@@ -5,6 +5,7 @@ include requirements*.in
 include requirements*.txt
 include brownie/data/*.yaml
 include brownie/data/interfaces/*.json
+include brownie/data/contracts/*.sol
 
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
