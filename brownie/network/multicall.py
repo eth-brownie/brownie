@@ -3,7 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from threading import get_ident
 from types import FunctionType, TracebackType
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from lazy_object_proxy import Proxy
 from wrapt import ObjectProxy
@@ -55,10 +55,10 @@ class Multicall:
         ContractCall.__call__.__code__ = self._proxy_call.__code__
 
     def __call__(
-        self, address: str = None, block_identifier: Union[str, bytes, int] = None
+        self, address: Optional[str] = None, block_identifier: Union[str, bytes, int, None] = None
     ) -> "Multicall":
-        self.address = address
-        self.block_number = block_identifier
+        self.address = address  # type: ignore
+        self.block_number = block_identifier  # type: ignore
         return self
 
     def _flush(self, future_result: Result = None) -> Any:
@@ -67,7 +67,7 @@ class Multicall:
             # or this result has already been retrieved
             return future_result
         ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
-        results = self._contract.tryAggregate(
+        results = self._contract.tryAggregate(  # type: ignore
             False,
             [_call.calldata for _call in self._pending_calls],
             block_identifier=self.block_number,
@@ -121,8 +121,8 @@ class Multicall:
             self.address = active_network["multicall2"]
         elif "cmd" in active_network:
             deployment = self.deploy({"from": accounts[0]})
-            self.address = deployment.address
-            self.block_number = deployment.tx.block_number
+            self.address = deployment.address  # type: ignore
+            self.block_number = deployment.tx.block_number  # type: ignore
 
         self.block_number = self.block_number or web3.eth.get_block_number()
 
