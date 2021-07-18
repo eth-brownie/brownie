@@ -8,6 +8,7 @@ import warnings
 from collections import defaultdict
 from pathlib import Path
 from textwrap import TextWrapper
+from threading import get_ident  # noqa
 from typing import Any, Dict, Iterator, List, Match, Optional, Set, Tuple, Union
 from urllib.parse import urlparse
 

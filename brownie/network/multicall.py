@@ -94,13 +94,7 @@ class Multicall:
 
     @staticmethod
     def _proxy_call(*args: Tuple, **kwargs: Dict[str, Any]) -> Any:
-        """Proxy code which substitutes `ContractCall.__call__`
-
-        This makes constant contract calls look more like transactions since we require
-        users to specify a dictionary as the last argument with the from field
-        being the multicall2 instance being used."""
-        from threading import get_ident
-
+        """Proxy code which substitutes `ContractCall.__call__"""
         self = getattr(ContractCall, "__multicall", {}).get(get_ident())
         if self:
             return self._call_contract(*args, **kwargs)
