@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed subcalls to empty accounts not appearing in the subcalls property of TransactionReceipts ([#1106](https://github.com/eth-brownie/brownie/pull/1106))
 - Add support for `POLYGONSCAN_TOKEN` env var ([#1135](https://github.com/eth-brownie/brownie/pull/1135))
 - Add Multicall context manager ([#1125](https://github.com/eth-brownie/brownie/pull/1125))
+- Add initial support for Solidity 0.8's typed errors ([#1110](https://github.com/eth-brownie/brownie/pull/1110))
 
 ### Added
 - Added `LocalAccount.sign_message` method to sign `EIP712Message` objects ([#1097](https://github.com/eth-brownie/brownie/pull/1097))
