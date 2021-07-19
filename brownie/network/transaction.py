@@ -661,7 +661,7 @@ class TransactionReceipt:
                         self._revert_msg = SOLIDITY_ERROR_CODES[error_code]
                     else:
                         self._revert_msg = f"Panic (error code: {error_code})"
-                elif selector == "0x08c379a0":
+                elif selector == "0x08c379a0":  # keccak of Error(string)
                     self._revert_msg = decode_abi(["string"], data[4:])[0]
                 else:
                     # TODO: actually parse the data
