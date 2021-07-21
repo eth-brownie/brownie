@@ -1363,7 +1363,7 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
         if isinstance(contract._project, project_main.Project):
             # only evaluate coverage for contracts that are part of a `Project`
             last_map["coverage"] = True
-            if contract._build["language"] == "Solidity":
+            if contract._build.get("language") == "Solidity":
                 last_map["active_branches"] = set()
     else:
         last_map.update(contract=None, internal_calls=[f"<UnknownContract>.{sig}"], pc_map=None)
