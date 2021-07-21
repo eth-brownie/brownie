@@ -6,6 +6,7 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+- Add support remapping with a sub-folder (like OpenZeppelin/openzeppelin-contracts-upgradeable, ref: [#1137](https://github.com/eth-brownie/brownie/issues/1137))
 - Add polygon network integration ([#1119](https://github.com/eth-brownie/brownie/pull/1119))
 - Fixed subcalls to empty accounts not appearing in the subcalls property of TransactionReceipts ([#1106](https://github.com/eth-brownie/brownie/pull/1106))
 - Add support for `POLYGONSCAN_TOKEN` env var ([#1135](https://github.com/eth-brownie/brownie/pull/1135))
