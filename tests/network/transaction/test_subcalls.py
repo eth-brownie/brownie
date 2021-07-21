@@ -24,7 +24,7 @@ contract Foo {
 
 
 vyper_source = """
-# @version 0.2.13
+# @version 0.2.14
 
 
 TARGET: constant(address) = 0xD0660cD418a64a1d44E9214ad8e459324D8157f1
