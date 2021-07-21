@@ -113,11 +113,12 @@ class _ContractBase:
         if not isinstance(calldata, HexBytes):
             calldata = HexBytes(calldata)
 
+        fn_selector = calldata[:4].hex()  # type: ignore
         abi = next(
             (
                 i
                 for i in self.abi
-                if i["type"] == "function" and build_function_selector(i) == calldata[:4].hex()
+                if i["type"] == "function" and build_function_selector(i) == fn_selector
             ),
             None,
         )
@@ -713,11 +714,12 @@ class InterfaceConstructor:
         if not isinstance(calldata, HexBytes):
             calldata = HexBytes(calldata)
 
+        fn_selector = calldata[:4].hex()  # type: ignore
         abi = next(
             (
                 i
                 for i in self.abi
-                if i["type"] == "function" and build_function_selector(i) == calldata[:4].hex()
+                if i["type"] == "function" and build_function_selector(i) == fn_selector
             ),
             None,
         )
@@ -1171,6 +1173,14 @@ class Contract(_DeployedContractBase):
                 warnings.warn(
                     f"{address}: target compiler '{compiler_str}' cannot be installed or is not "
                     "supported by Brownie. Some debugging functionality will not be available.",
+                    BrownieCompilerWarning,
+                )
+            return cls.from_abi(name, address, abi, owner)
+        elif data["result"][0]["OptimizationUsed"] in ("true", "false"):
+            if not silent:
+                warnings.warn(
+                    f"Blockscout explorer API has limited support by Brownie. "  # noqa
+                    "Some debugging functionality will not be available.",
                     BrownieCompilerWarning,
                 )
             return cls.from_abi(name, address, abi, owner)
@@ -1893,7 +1903,6 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
                 "as the environment variable $POLYGONSCAN_TOKEN",
                 BrownieEnvironmentWarning,
             )
-
     if not silent:
         print(
             f"Fetching source of {color('bright blue')}{address}{color} "

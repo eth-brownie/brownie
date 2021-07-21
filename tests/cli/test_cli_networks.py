@@ -158,6 +158,7 @@ def test_delete_development():
         "bsc-main-fork",
         "ftm-main-fork",
         "polygon-main-fork",
+        "xdai-main-fork",
         "geth-dev",
     ):
         cli_networks._delete(network_name)

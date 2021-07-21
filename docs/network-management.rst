@@ -235,6 +235,7 @@ Brownie natively supports the following collection of EVM-compatible chains:
 * Binance Smart Chain
 * Fantom Opera
 * Polygon Network
+* XDai Network
 
 In order to enable native support for an EVM-compatible chain, there are 2 requirements. The chain must have a JSON-RPC endpoint which is publicly accessible (free in cost, sign-up may be required), and it should have a block explorer with API support for fetching contract sources and ABIs.
 
