@@ -278,6 +278,10 @@ def _get_dependencies(ast_json: List) -> List:
     return sorted(set([i["name"].split(".")[-1] for i in import_nodes]))
 
 
+def _is_revert_jump(pc_list: List, revert_pc: int) -> bool:
+    return pc_list[-1]["op"] == "JUMPI" and int(pc_list[-2].get("value", "0"), 16) == revert_pc
+
+
 def _generate_coverage_data(
     source_map_str: str, opcodes_str: str, contract_name: str, ast_json: List
 ) -> Tuple:
@@ -296,6 +300,14 @@ def _generate_coverage_data(
 
     pc_list: List = []
     count, pc = 0, 0
+
+    revert_pc = -1
+    if opcodes[-5] == "JUMPDEST" and opcodes[-1] == "REVERT":
+        # starting in vyper 0.2.14, reverts without a reason string are optimized with a jump
+        # to the end of the bytecode. if the bytecode ends with this pattern, we set `revert_pc`
+        # as the program counter of the jumpdest so we can identify these optimizer reverts
+        # within traces.
+        revert_pc = len(opcodes) - 5
 
     while opcodes:
         # format of source is [start, stop, contract_id, jump code]
@@ -316,6 +328,10 @@ def _generate_coverage_data(
                 len(pc_list) > 6
                 and pc_list[-7]["op"] == "CALLVALUE"
                 and pc_list[-1]["op"] == "REVERT"
+            ) or (
+                len(pc_list) > 2
+                and pc_list[-3]["op"] == "CALLVALUE"
+                and _is_revert_jump(pc_list[-2:], revert_pc)
             ):
                 # special case - initial nonpayable check on vyper >=0.2.5
                 pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
@@ -345,7 +361,7 @@ def _generate_coverage_data(
             continue
 
         node = _find_node_by_offset(ast_json, offset)
-        if pc_list[-1]["op"] == "REVERT":
+        if pc_list[-1]["op"] == "REVERT" or _is_revert_jump(pc_list[-2:], revert_pc):
             # custom revert error strings
             if node["ast_type"] == "FunctionDef" and pc_list[-7]["op"] == "CALLVALUE":
                 pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
@@ -377,6 +393,8 @@ def _generate_coverage_data(
 
     pc_list[0]["path"] = "0"
     pc_list[0]["offset"] = [0, _convert_src(ast_json[-1]["src"])[1]]
+    if revert_pc != -1:
+        pc_list[-1]["optimizer_revert"] = True
 
     pc_map = dict((i.pop("pc"), i) for i in pc_list)
 
