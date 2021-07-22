@@ -6,18 +6,28 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.15.0](https://github.com/eth-brownie/brownie/tree/v1.15.0) - 2021-07-22
+### Added
 - Add support remapping with a sub-folder (like OpenZeppelin/openzeppelin-contracts-upgradeable, ref: [#1137](https://github.com/eth-brownie/brownie/issues/1137))
 - Add polygon network integration ([#1119](https://github.com/eth-brownie/brownie/pull/1119))
-- Fixed subcalls to empty accounts not appearing in the subcalls property of TransactionReceipts ([#1106](https://github.com/eth-brownie/brownie/pull/1106))
 - Add support for `POLYGONSCAN_TOKEN` env var ([#1135](https://github.com/eth-brownie/brownie/pull/1135))
 - Add Multicall context manager ([#1125](https://github.com/eth-brownie/brownie/pull/1125))
 - Add initial support for Solidity 0.8's typed errors ([#1110](https://github.com/eth-brownie/brownie/pull/1110))
 - Add xdai network integration ([#1136](https://github.com/eth-brownie/brownie/pull/1136))
-
-### Added
 - Added `LocalAccount.sign_message` method to sign `EIP712Message` objects ([#1097](https://github.com/eth-brownie/brownie/pull/1097))
+- Accept password as a kwarg in `Account.load` ([#1099](https://github.com/eth-brownie/brownie/pull/1099))
+- Basic support for clef as an account manager (allows hardware wallets) ([#1104](https://github.com/eth-brownie/brownie/pull/1104))
+- Updates to support Vyper `v0.2.14` ([#1155](https://github.com/eth-brownie/brownie/pull/1155))
 
-## [1.14.6](https://github.com/eth-brownie/brownie/tree/v1.14.5) - 2021-04-20
+### Fixed
+- Fixed subcalls to empty accounts not appearing in the subcalls property of `TransactionReceipts` ([#1106](https://github.com/eth-brownie/brownie/pull/1106))
+- Alert message bug ([#1094](https://github.com/eth-brownie/brownie/pull/1094))
+- Do not assume latest nonce is highest nonce when handling multiple pending tx's ([#1098](https://github.com/eth-brownie/brownie/pull/1098))
+- Accept `Wei` objects in gas strategies ([#1113](https://github.com/eth-brownie/brownie/pull/1113))
+- Do not warn when using `no_call_coverage` as a pytest mark ([#1150](https://github.com/eth-brownie/brownie/pull/1150))
+
+## [1.14.6](https://github.com/eth-brownie/brownie/tree/v1.14.6) - 2021-04-20
 ### Changed
 - Upgraded web3 dependency to version 5.18.0 ([#1064](https://github.com/eth-brownie/brownie/pull/1064))
 - Upgraded pytest dependency to version 6.2.3 ([#1065](https://github.com/eth-brownie/brownie/pull/1065))
