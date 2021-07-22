@@ -512,8 +512,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         "from": self.address,
                         "value": Wei(amount),
                         "nonce": nonce if nonce is not None else self._pending_nonce(),
-                        "gasPrice": gas_price,
-                        "gas": gas_limit,
+                        "gasPrice": web3.toHex(gas_price),
+                        "gas": web3.toHex(gas_limit),
                         "data": HexBytes(data),
                     },
                     allow_revert,
@@ -603,7 +603,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             "data": HexBytes(data or ""),
         }
         if gas_price is not None:
-            tx["gasPrice"] = gas_price
+            tx["gasPrice"] = web3.toHex(gas_price)
         try:
             return web3.eth.estimate_gas(tx)
         except ValueError as exc:
@@ -660,8 +660,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 "from": self.address,
                 "value": Wei(amount),
                 "nonce": nonce if nonce is not None else self._pending_nonce(),
-                "gasPrice": gas_price,
-                "gas": gas_limit,
+                "gasPrice": web3.toHex(gas_price),
+                "gas": web3.toHex(gas_limit),
                 "data": HexBytes(data or ""),
             }
             if to:

@@ -710,7 +710,6 @@ class TransactionReceipt:
                         step["source"] = trace[idx]["source"]
                         step = trace[idx]
 
-                    # breakpoint()
                     if "dev" in pc_map[step["pc"]]:
                         self._dev_revert_msg = pc_map[step["pc"]]["dev"]
                     else:
@@ -728,7 +727,7 @@ class TransactionReceipt:
                             self._dev_revert_msg = revert_str
 
                     if self._revert_msg is None:
-                        self._revert_msg = self._dev_revert_msg
+                        self._revert_msg = self._dev_revert_msg or ""
                     return
                 except (KeyError, AttributeError, TypeError, ValueError):
                     pass
