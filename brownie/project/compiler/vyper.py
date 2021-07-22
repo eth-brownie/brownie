@@ -303,11 +303,11 @@ def _generate_coverage_data(
 
     revert_pc = -1
     if opcodes[-5] == "JUMPDEST" and opcodes[-1] == "REVERT":
-        # starting in vyper 0.2.14, reverts without a reason string are optimized with a jump
-        # to the end of the bytecode. if the bytecode ends with this pattern, we set `revert_pc`
-        # as the program counter of the jumpdest so we can identify these optimizer reverts
-        # within traces.
-        revert_pc = len(opcodes) - 5
+        # starting in vyper 0.2.14, reverts without a reason string are optimized
+        # with a jump to the end of the bytecode. if the bytecode ends with this
+        # pattern, we set `revert_pc` as the program counter of the jumpdest so
+        # we can identify these optimizer reverts within traces.
+        revert_pc = len(opcodes) + sum(int(i[4:]) - 1 for i in opcodes if i.startswith("PUSH")) - 5
 
     while opcodes:
         # format of source is [start, stop, contract_id, jump code]
@@ -336,7 +336,12 @@ def _generate_coverage_data(
                 # special case - initial nonpayable check on vyper >=0.2.5
                 pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
                 # hackiness to prevent the source highlight from showing the entire contract
-                pc_list[-2].update(path="0", offset=[0, 0])
+                if pc_list[-1]["op"] == "REVERT":
+                    # for REVERT, apply to the previous opcode
+                    pc_list[-2].update(path="0", offset=[0, 0])
+                else:
+                    # for JUMPI we need the mapping on the actual opcode
+                    pc_list[-1].update(path="0", offset=[0, 0])
             continue
         offset = (source[0], source[0] + source[1])
         pc_list[-1]["path"] = "0"
@@ -363,8 +368,11 @@ def _generate_coverage_data(
         node = _find_node_by_offset(ast_json, offset)
         if pc_list[-1]["op"] == "REVERT" or _is_revert_jump(pc_list[-2:], revert_pc):
             # custom revert error strings
-            if node["ast_type"] == "FunctionDef" and pc_list[-7]["op"] == "CALLVALUE":
-                pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
+            if node["ast_type"] == "FunctionDef":
+                if (pc_list[-1]["op"] == "REVERT" and pc_list[-7]["op"] == "CALLVALUE") or (
+                    pc_list[-1]["op"] == "JUMPI" and pc_list[-3]["op"] == "CALLVALUE"
+                ):
+                    pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
             elif node["ast_type"] == "Subscript":
                 pc_list[-1]["dev"] = "Index out of range"
             elif node["ast_type"] in ("AugAssign", "BinOp"):
