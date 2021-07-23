@@ -2,7 +2,7 @@ import json
 import threading
 import time
 from collections import OrderedDict
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from hexbytes import HexBytes
 from web3 import Web3
@@ -83,6 +83,16 @@ def is_cacheable_bytecode(web3: Web3, bytecode: HexBytes) -> bool:
     return True
 
 
+def _new_filter(w3: Web3) -> Any:
+    # returns a filter if the client is connected and supports filtering
+    try:
+        block_filter = w3.eth.filter("latest")
+        block_filter.get_new_entries()
+        return block_filter
+    except (AttributeError, ValueError):
+        return None
+
+
 class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     """
@@ -110,13 +120,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
-        if network_type == "live":
-            try:
-                # ensure that the node client supports filters
-                block_filter = w3.eth.filter("latest")
-                block_filter.get_new_entries()
-            except ValueError:
-                return None
+        if network_type == "live" and _new_filter(w3) is not None:
             return 0
         else:
             return None
@@ -142,11 +146,12 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                     new_blocks = self.block_filter.get_new_entries()
                 except (AttributeError, ValueError):
                     # web3 has disconnected, or the filter has expired from inactivity
-                    if self.w3.isConnected():
-                        self.block_filter = self.w3.eth.filter("latest")
-                        continue
-                    else:
+                    # some public nodes allow a filter initially, but block it several seconds later
+                    block_filter = _new_filter(self.w3)
+                    if block_filter is None:
                         return
+                    self.block_filter = block_filter
+                    continue
 
                 if new_blocks:
                     self.block_cache[new_blocks[-1]] = {}
