@@ -168,13 +168,18 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                 time.sleep(1)
 
     def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
-        # do not apply this middleware to filter updates or we'll die recursion death
-        # clientVersion is used to check connectivity so we also don't cache that
         if method in (
+            # caching any of these means we die of recursion death so let's not do that
             "eth_getFilterChanges",
             "eth_newBlockFilter",
             "eth_uninstallFilter",
+            # used to check connectivity
             "web3_clientVersion",
+            # caching these causes weirdness with transaction replacement
+            "eth_sendTransaction",
+            "eth_sendRawTransaction",
+            "eth_sign",
+            "eth_signTransaction",
         ):
             return make_request(method, params)
 
