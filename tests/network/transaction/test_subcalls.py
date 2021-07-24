@@ -24,7 +24,7 @@ contract Foo {
 
 
 vyper_source = """
-# @version 0.2.14
+# @version 0.2.15
 
 
 TARGET: constant(address) = 0xD0660cD418a64a1d44E9214ad8e459324D8157f1
@@ -54,7 +54,7 @@ def solidity_contract(accounts):
 
 @pytest.fixture()
 def vyper_contract(accounts):
-    container = compile_source(vyper_source, vyper_version="0.2.14").Vyper
+    container = compile_source(vyper_source, vyper_version="0.2.15").Vyper
     return container.deploy({"from": accounts[0]})
 
 
