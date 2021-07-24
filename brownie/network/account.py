@@ -15,6 +15,7 @@ import rlp
 from eip712.messages import EIP712Message, _hash_eip191_message
 from eth_account._utils.signing import sign_message_hash
 from eth_account.datastructures import SignedMessage
+from eth_account.messages import defunct_hash_message
 from eth_utils import keccak
 from eth_utils.applicators import apply_formatters_to_dict
 from hexbytes import HexBytes
@@ -814,6 +815,26 @@ class LocalAccount(_PrivateKeyAccount):
         with json_file.open("w") as fp:
             json.dump(encrypted, fp)
         return str(json_file)
+
+    def sign_defunct_message(self, message: str) -> SignedMessage:
+        """Signs an `EIP-191` using this account's private key.
+
+        Args:
+            message: An text
+
+        Returns:
+            An eth_account `SignedMessage` instance.
+        """
+        msg_hash_bytes = defunct_hash_message(text=message)
+        eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
+        (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
+        return SignedMessage(
+            messageHash=msg_hash_bytes,
+            r=r,
+            s=s,
+            v=v,
+            signature=HexBytes(eth_signature_bytes),
+        )
 
     def sign_message(self, message: EIP712Message) -> SignedMessage:
         """Signs an `EIP712Message` using this account's private key.

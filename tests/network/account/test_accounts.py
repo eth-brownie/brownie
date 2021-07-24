@@ -152,3 +152,13 @@ def test_sign_message(accounts):
         signed.messageHash.hex()
         == "0x131c497d4b815213752a2a00564dcf667c3bf3f85a410ef8cb50050b51959c26"
     )
+
+
+def test_sign_defunct_message(accounts):
+    local = accounts.add(priv_key)
+    msg = f"I authorize Foundation to migrate my account to {local.address.lower()}"
+    signed = local.sign_defunct_message(msg)
+    assert (
+        signed.messageHash.hex()
+        == "0xb9bb14ce5c17b2b7217cfa638031a542b95fc25b18d42a61409066001d01351d"
+    )

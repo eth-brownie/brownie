@@ -94,6 +94,20 @@ To do so, add the account to the ``unlock`` setting in a project's :ref:`configu
 The unlocked accounts are automatically added to the :func:`Accounts <brownie.network.account.Accounts>` container.
 Note that you might need to fund the unlocked accounts manually.
 
+Signing Raw Text Messages (EIP-191)
+================
+
+To sign an EIP-191 message, use the :func:`LocalAccount.sign_defunct_message <brownie.network.account.LocalAccount.sign_defunct_message>` method to produce an ``eth_account`` `SignableMessage <https://eth-account.readthedocs.io/en/stable/eth_account.html#eth_account.messages.SignableMessage>`_ object:
+
+.. code-block:: python
+
+    >>> msg = f"It is my permission to spent 1000 SHIB from {local.address.lower()}"
+    >>> signed = local.sign_defunct_message(msg)
+    >>> type(signed)
+    <class 'eth_account.datastructures.SignedMessage'>
+    >>> signed.messageHash.hex()
+    '0x2a180b353c317ae903c063141592ec360b25be9f75c60ae16ca19f5578f70a50'
+
 Signing Messages
 ================
 
