@@ -239,7 +239,7 @@ varint==1.0.2
     # via multiaddr
 vvm==0.1.0
     # via -r requirements.in
-vyper==0.2.14
+vyper==0.2.15
     # via -r requirements.in
 wcwidth==0.2.5
     # via prompt-toolkit

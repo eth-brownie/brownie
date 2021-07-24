@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.15.1](https://github.com/eth-brownie/brownie/tree/v1.15.1) - 2021-07-23
+### Fixed
+- Bugfix with caching `eth_sendTransaction` and related RPC calls ([#1160](https://github.com/eth-brownie/brownie/pull/1160))
+
 ## [1.15.0](https://github.com/eth-brownie/brownie/tree/v1.15.0) - 2021-07-22
 ### Added
 - Add support remapping with a sub-folder (like OpenZeppelin/openzeppelin-contracts-upgradeable, ref: [#1137](https://github.com/eth-brownie/brownie/issues/1137))
