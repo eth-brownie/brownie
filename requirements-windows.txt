@@ -207,7 +207,7 @@ protobuf==3.17.3
     #   web3
 psutil==5.8.0
     # via -r requirements.txt
-py-solc-ast==1.2.8
+py-solc-ast==1.2.9
     # via -r requirements.txt
 py-solc-x==1.1.0
     # via -r requirements.txt
