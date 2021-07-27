@@ -8,9 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Fixed
 - Recursively kill all RPC child processes on exit ([#1200](https://github.com/eth-brownie/brownie/pull/1200))
-
-### Fixed
 - Issue with testing reverted contracts not found in deployment map ([#1195](https://github.com/eth-brownie/brownie/pull/1195))
+- Fix issue with missing contracts in coverage report ([#1178](https://github.com/eth-brownie/brownie/pull/1178))
 
 ## [1.16.0](https://github.com/eth-brownie/brownie/tree/v1.16.0) - 2021-08-08
 ### Added
