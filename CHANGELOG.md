@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 - Added `LocalAccount.sign_defunct_message` method to sign `EIP-191` text messages ([#1163](https://github.com/eth-brownie/brownie/pull/1163))
 
+## [1.15.2](https://github.com/eth-brownie/brownie/tree/v1.15.2) - 2021-07-26
+### Fixed
+- Bump `py-solc-ast` version to fix AST issues with solc `>=0.8.3` ([#1165](https://github.com/eth-brownie/brownie/pull/1165))
+
 ## [1.15.1](https://github.com/eth-brownie/brownie/tree/v1.15.1) - 2021-07-23
 ### Fixed
 - Bugfix with caching `eth_sendTransaction` and related RPC calls ([#1160](https://github.com/eth-brownie/brownie/pull/1160))
