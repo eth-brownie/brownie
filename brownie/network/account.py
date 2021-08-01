@@ -502,23 +502,25 @@ class _PrivateKeyAccount(PublicKeyAccount):
         data = contract.deploy.encode_input(*args)
         if silent is None:
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
+
+        try:
+            gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
+            gas_limit = Wei(gas_limit) or self._gas_limit(None, amount, gas_price, gas_buffer, data)
+        except ValueError as e:
+            raise VirtualMachineError(e) from None
+
         with self._lock:
+            # we use a lock here to prevent nonce issues when sending many tx's at once
+            tx = {
+                "from": self.address,
+                "value": Wei(amount),
+                "nonce": nonce if nonce is not None else self._pending_nonce(),
+                "gasPrice": web3.toHex(gas_price),
+                "gas": web3.toHex(gas_limit),
+                "data": HexBytes(data),
+            }
             try:
-                gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
-                gas_limit = Wei(gas_limit) or self._gas_limit(
-                    None, amount, gas_price, gas_buffer, data
-                )
-                txid = self._transact(  # type: ignore
-                    {
-                        "from": self.address,
-                        "value": Wei(amount),
-                        "nonce": nonce if nonce is not None else self._pending_nonce(),
-                        "gasPrice": web3.toHex(gas_price),
-                        "gas": web3.toHex(gas_limit),
-                        "data": HexBytes(data),
-                    },
-                    allow_revert,
-                )
+                txid = self._transact(tx, allow_revert)  # type: ignore
                 exc, revert_data = None, None
             except ValueError as e:
                 exc = VirtualMachineError(e)
@@ -527,16 +529,15 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 txid = exc.txid
                 revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
 
-            receipt = TransactionReceipt(
-                txid,
-                self,
-                silent=silent,
-                required_confs=required_confs,
-                is_blocking=False,
-                name=contract._name + ".constructor",
-                revert_data=revert_data,
-            )
-
+        receipt = TransactionReceipt(
+            txid,
+            self,
+            silent=silent,
+            required_confs=required_confs,
+            is_blocking=False,
+            name=contract._name + ".constructor",
+            revert_data=revert_data,
+        )
         receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
 
         add_thread = threading.Thread(target=contract._add_from_tx, args=(receipt,), daemon=True)
@@ -654,9 +655,15 @@ class _PrivateKeyAccount(PublicKeyAccount):
             raise ValueError("Cannot set gas_limit and gas_buffer together")
         if silent is None:
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
-        with self._lock:
+
+        try:
             gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
             gas_limit = Wei(gas_limit) or self._gas_limit(to, amount, gas_price, gas_buffer, data)
+        except ValueError as e:
+            raise VirtualMachineError(e) from None
+
+        with self._lock:
+            # we use a lock here to prevent nonce issues when sending many tx's at once
             tx = {
                 "from": self.address,
                 "value": Wei(amount),
@@ -677,14 +684,14 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 txid = exc.txid
                 revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
 
-            receipt = TransactionReceipt(
-                txid,
-                self,
-                required_confs=required_confs,
-                is_blocking=False,
-                silent=silent,
-                revert_data=revert_data,
-            )
+        receipt = TransactionReceipt(
+            txid,
+            self,
+            required_confs=required_confs,
+            is_blocking=False,
+            silent=silent,
+            revert_data=revert_data,
+        )
 
         receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
 
