@@ -156,6 +156,7 @@ class GasNowScalingStrategy(BlockGasStrategy):
         max_speed: str = "rapid",
         increment: float = 1.125,
         block_duration: int = 2,
+        max_gas_price: Wei = None,
     ):
         super().__init__(block_duration)
         if initial_speed not in ("rapid", "fast", "standard", "slow"):
@@ -163,6 +164,7 @@ class GasNowScalingStrategy(BlockGasStrategy):
         self.initial_speed = initial_speed
         self.max_speed = max_speed
         self.increment = increment
+        self.max_gas_price = Wei(max_gas_price) or 2 ** 256 - 1
 
     def get_gas_price(self) -> Generator[int, None, None]:
         last_gas_price = _fetch_gasnow(self.initial_speed)
@@ -177,7 +179,7 @@ class GasNowScalingStrategy(BlockGasStrategy):
 
             # do not exceed the current `max_speed` price
             max_gas_price = _fetch_gasnow(self.max_speed)
-            last_gas_price = min(max_gas_price, new_gas_price)
+            last_gas_price = min(max_gas_price, new_gas_price, self.max_gas_price)
             yield last_gas_price
 
 
@@ -193,12 +195,19 @@ class GethMempoolStrategy(BlockGasStrategy):
     A position of 200 or less should place it within the next block.
     """
 
-    def __init__(self, position: int = 500, graphql_endpoint: str = None, block_duration: int = 2):
+    def __init__(
+        self,
+        position: int = 500,
+        graphql_endpoint: str = None,
+        block_duration: int = 2,
+        max_gas_price: Wei = None,
+    ):
         super().__init__(block_duration)
         self.position = position
         if graphql_endpoint is None:
             graphql_endpoint = f"{web3.provider.endpoint_uri}/graphql"  # type: ignore
         self.graphql_endpoint = graphql_endpoint
+        self.max_gas_price = Wei(max_gas_price) or 2 ** 256 - 1
 
     def get_gas_price(self) -> Generator[int, None, None]:
         query = "{ pending { transactions { gasPrice }}}"
@@ -212,4 +221,5 @@ class GethMempoolStrategy(BlockGasStrategy):
             data = response.json()["data"]["pending"]["transactions"]
 
             prices = sorted((int(x["gasPrice"], 16) for x in data), reverse=True)
-            yield prices[: self.position][-1]
+
+            yield min(prices[: self.position][-1], self.max_gas_price)
