@@ -447,9 +447,17 @@ class TransactionReceipt:
 
     def _await_confirmation(self, block_number: int = None, required_confs: int = 1) -> None:
         # await first confirmation
-        nonce_time = 0
         block_number = block_number or self.block_number
+        nonce_time = 0.0
+        sender_nonce = 0
         while True:
+            # every 15 seconds, check if the nonce increased without a confirmation of
+            # this specific transaction. if this happens, the tx has likely dropped
+            # and we should stop waiting.
+            if time.time() - nonce_time > 15:
+                sender_nonce = web3.eth.get_transaction_count(str(self.sender))
+                nonce_time = time.time()
+
             try:
                 receipt = web3.eth.get_transaction_receipt(HexBytes(self.txid))
             except TransactionNotFound:
@@ -459,15 +467,13 @@ class TransactionReceipt:
             if receipt is not None and receipt["blockHash"] is not None:
                 break
 
-            # every 15 seconds check if the nonce increased without a confirmation of
-            # this specific transaction. if this happens, the tx has likely dropped
-            # and we should stop waiting.
-            if time.time() - nonce_time > 15:
-                sender_nonce = web3.eth.get_transaction_count(str(self.sender))
-                if sender_nonce > self.nonce:
-                    self.status = Status(-2)
-                    self._confirmed.set()
-                    return
+            # continuation of the nonce logic 2 sections prior. we must check the receipt
+            # after querying the nonce, because in the other order there is a chance that
+            # the tx would confirm after checking the receipt but before checking the nonce
+            if sender_nonce > self.nonce:  # type: ignore
+                self.status = Status(-2)
+                self._confirmed.set()
+                return
 
             if not block_number and not self._silent and required_confs > 0:
                 if required_confs == 1:
