@@ -24,6 +24,7 @@ from web3 import HTTPProvider, IPCProvider
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import EthAddress, Wei, to_address
+from web3.exceptions import InvalidTransaction, TransactionTypeMismatch
 from brownie.exceptions import (
     ContractNotFound,
     TransactionError,
@@ -912,3 +913,37 @@ class ClefAccount(_PrivateKeyAccount):
         if "error" in response:
             raise ValueError(response["error"]["message"])
         return web3.eth.send_raw_transaction(response["result"]["raw"])
+
+
+def _apply_fee_to_tx(
+        tx: Dict,
+        gas_price: Optional[int] = None,
+        max_fee: Optional[int] = None,
+        priority_fee: Optional[int] = None,
+    ):
+    tx = tx.copy()
+
+    # gas_price and (max_fee, priority_fee) are mutually exclusive
+    if gas_price is not None and (max_fee or priority_fee):
+        raise TransactionTypeMismatch()
+
+    elif max_fee is not None and priority_fee is not None:
+        if priority_fee > max_fee:
+            raise InvalidTransaction('priority_fee must not exceed max_fee')
+
+    # no max_fee specified, infer from base_fee
+    elif max_fee is None and priority_fee is not None:
+        base_fee = Chain().base_fee
+        max_fee = base_fee * 2 + priority_fee
+    
+    elif max_fee is not None and priority_fee is None:
+        raise InvalidTransaction('priority_fee must be defined')
+    
+    if gas_price is not None:
+        tx['gasPrice'] = web3.toHex(gas_price)
+    else:
+        tx['maxFeePerGas'] = web3.toHex(max_fee)
+        tx['maxPriorityFeePerGas'] = web3.toHex(priority_fee)
+        tx['type'] = web3.toHex(2)
+
+    return tx
