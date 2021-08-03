@@ -38,6 +38,7 @@ from brownie.exceptions import (
     UndeployedLibrary,
     VirtualMachineError,
 )
+from brownie.network.account import _apply_fee_to_tx
 from brownie.project import compiler, ethpm
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
@@ -601,7 +602,9 @@ class ContractConstructor:
             *args,
             amount=tx["value"],
             gas_limit=tx["gas"],
-            gas_price=tx["gasPrice"],
+            gas_price=tx.get("gasPrice"),
+            max_fee=tx.get("max_fee"),
+            priority_fee=tx.get("priority_fee"),
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
             publish_source=publish_source,
@@ -652,9 +655,7 @@ class ContractConstructor:
                 "includes a `from` field specifying the sender of the transaction"
             )
 
-        return tx["from"].estimate_gas(
-            amount=tx["value"], gas_price=tx["gasPrice"], data=self.encode_input(*args)
-        )
+        return tx["from"].estimate_gas(amount=tx["value"], data=self.encode_input(*args))
 
 
 class InterfaceContainer:
@@ -1566,8 +1567,10 @@ class _ContractMethod:
             self._address,
             tx["value"],
             gas_limit=tx["gas"],
-            gas_buffer=tx["gas_buffer"],
-            gas_price=tx["gasPrice"],
+            gas_buffer=tx.get("gas_buffer"),
+            gas_price=tx.get("gasPrice"),
+            max_fee=tx.get("max_fee"),
+            priority_fee=tx.get("priority_fee"),
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
             data=self.encode_input(*args),
@@ -1655,7 +1658,6 @@ class _ContractMethod:
         return tx["from"].estimate_gas(
             to=self._address,
             amount=tx["value"],
-            gas_price=tx["gasPrice"],
             data=self.encode_input(*args),
         )
 
@@ -1762,7 +1764,6 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
         "value": 0,
         "gas": None,
         "gas_buffer": None,
-        "gasPrice": None,
         "nonce": None,
         "required_confs": 1,
         "allow_revert": None,
@@ -1770,9 +1771,12 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
     if args and isinstance(args[-1], dict):
         tx.update(args[-1])
         args = args[:-1]
-        for key, target in [("amount", "value"), ("gas_limit", "gas"), ("gas_price", "gasPrice")]:
+        for key, target in [("amount", "value"), ("gas_limit", "gas")]:
             if key in tx:
                 tx[target] = tx[key]
+        tx = _apply_fee_to_tx(
+            tx, tx.get("gas_price"), tx.get("max_fee"), tx.get("priority_fee")  # type: ignore
+        )
 
     # enable the magic of ganache's `evm_unlockUnknownAccount`
     if isinstance(tx["from"], str):
