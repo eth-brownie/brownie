@@ -20,11 +20,11 @@ from eth_utils import keccak
 from eth_utils.applicators import apply_formatters_to_dict
 from hexbytes import HexBytes
 from web3 import HTTPProvider, IPCProvider
+from web3.exceptions import InvalidTransaction
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import EthAddress, Wei, to_address
-from web3.exceptions import InvalidTransaction, TransactionTypeMismatch
 from brownie.exceptions import (
     ContractNotFound,
     TransactionError,
@@ -473,6 +473,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
         gas_limit: Optional[int] = None,
         gas_buffer: Optional[float] = None,
         gas_price: Optional[int] = None,
+        max_fee: Optional[int] = None,
+        priority_fee: Optional[int] = None,
         nonce: Optional[int] = None,
         required_confs: int = 1,
         allow_revert: bool = None,
@@ -490,7 +492,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
             amount: Amount of ether to send with transaction, in wei.
             gas_limit: Gas limit of the transaction.
             gas_buffer: Multiplier to apply to gas limit.
-            gas_price: Gas price of the transaction.
+            gas_price: Gas price of legacy transaction.
+            max_fee: Max fee per gas of EIP-1559 transaction.
+            priority_fee: Max priority fee per gas of EIP-1559 transaction.
             nonce: Nonce to use for the transaction.
 
         Returns:
@@ -505,8 +509,13 @@ class _PrivateKeyAccount(PublicKeyAccount):
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
 
         try:
-            gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
-            gas_limit = Wei(gas_limit) or self._gas_limit(None, amount, gas_price, gas_buffer, data)
+            if gas_price is not None:
+                gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
+            else:
+                gas_strategy, gas_iter = None, None
+            gas_limit = Wei(gas_limit) or self._gas_limit(
+                None, amount, gas_price or max_fee, gas_buffer, data
+            )
         except ValueError as e:
             raise VirtualMachineError(e) from None
 
@@ -516,10 +525,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 "from": self.address,
                 "value": Wei(amount),
                 "nonce": nonce if nonce is not None else self._pending_nonce(),
-                "gasPrice": web3.toHex(gas_price),
                 "gas": web3.toHex(gas_limit),
                 "data": HexBytes(data),
             }
+            tx = _apply_fee_to_tx(tx, gas_price, max_fee, priority_fee)
             try:
                 txid = self._transact(tx, allow_revert)  # type: ignore
                 exc, revert_data = None, None
@@ -630,6 +639,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
         gas_limit: Optional[int] = None,
         gas_buffer: Optional[float] = None,
         gas_price: Optional[int] = None,
+        max_fee: Optional[int] = None,
+        priority_fee: Optional[int] = None,
         data: str = None,
         nonce: Optional[int] = None,
         required_confs: int = 1,
@@ -644,7 +655,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
             amount: Amount of ether to send, in wei.
             gas_limit: Gas limit of the transaction.
             gas_buffer: Multiplier to apply to gas limit.
-            gas_price: Gas price of the transaction.
+            gas_price: Gas price of legacy transaction.
+            max_fee: Max fee per gas of EIP-1559 transaction.
+            priority_fee: Max priority fee per gas of EIP-1559 transaction.
             nonce: Nonce to use for the transaction.
             data: Hexstring of data to include in transaction.
             silent: Toggles console verbosity.
@@ -652,14 +665,20 @@ class _PrivateKeyAccount(PublicKeyAccount):
         Returns:
             TransactionReceipt object
         """
+
         if gas_limit and gas_buffer:
             raise ValueError("Cannot set gas_limit and gas_buffer together")
         if silent is None:
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
 
         try:
-            gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
-            gas_limit = Wei(gas_limit) or self._gas_limit(to, amount, gas_price, gas_buffer, data)
+            if gas_price is not None:
+                gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
+            else:
+                gas_strategy, gas_iter = None, None
+            gas_limit = Wei(gas_limit) or self._gas_limit(
+                to, amount, gas_price or max_fee, gas_buffer, data
+            )
         except ValueError as e:
             raise VirtualMachineError(e) from None
 
@@ -669,10 +688,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 "from": self.address,
                 "value": Wei(amount),
                 "nonce": nonce if nonce is not None else self._pending_nonce(),
-                "gasPrice": web3.toHex(gas_price),
                 "gas": web3.toHex(gas_limit),
                 "data": HexBytes(data or ""),
             }
+            tx = _apply_fee_to_tx(tx, gas_price, max_fee, priority_fee)
             if to:
                 tx["to"] = to_address(str(to))
             try:
@@ -916,34 +935,33 @@ class ClefAccount(_PrivateKeyAccount):
 
 
 def _apply_fee_to_tx(
-        tx: Dict,
-        gas_price: Optional[int] = None,
-        max_fee: Optional[int] = None,
-        priority_fee: Optional[int] = None,
-    ):
+    tx: Dict,
+    gas_price: Optional[int] = None,
+    max_fee: Optional[int] = None,
+    priority_fee: Optional[int] = None,
+):
     tx = tx.copy()
 
-    # gas_price and (max_fee, priority_fee) are mutually exclusive
     if gas_price is not None and (max_fee or priority_fee):
-        raise TransactionTypeMismatch()
+        raise ValueError("gas_price and (max_fee, priority_fee) are mutually exclusive")
 
     elif max_fee is not None and priority_fee is not None:
         if priority_fee > max_fee:
-            raise InvalidTransaction('priority_fee must not exceed max_fee')
+            raise InvalidTransaction("priority_fee must not exceed max_fee")
 
     # no max_fee specified, infer from base_fee
     elif max_fee is None and priority_fee is not None:
         base_fee = Chain().base_fee
         max_fee = base_fee * 2 + priority_fee
-    
+
     elif max_fee is not None and priority_fee is None:
-        raise InvalidTransaction('priority_fee must be defined')
-    
+        raise InvalidTransaction("priority_fee must be defined")
+
     if gas_price is not None:
-        tx['gasPrice'] = web3.toHex(gas_price)
+        tx["gasPrice"] = web3.toHex(gas_price)
     else:
-        tx['maxFeePerGas'] = web3.toHex(max_fee)
-        tx['maxPriorityFeePerGas'] = web3.toHex(priority_fee)
-        tx['type'] = web3.toHex(2)
+        tx["maxFeePerGas"] = web3.toHex(max_fee)
+        tx["maxPriorityFeePerGas"] = web3.toHex(priority_fee)
+        tx["type"] = web3.toHex(2)
 
     return tx

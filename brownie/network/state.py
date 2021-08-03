@@ -284,6 +284,11 @@ class Chain(metaclass=_Singleton):
             self._block_gas_time = block["timestamp"]
         return Wei(self._block_gas_limit)
 
+    @property
+    def base_fee(self) -> Wei:
+        block = web3.eth.get_block("latest")
+        return Wei(block.baseFeePerGas)
+
     def _revert(self, id_: int) -> int:
         rpc_client = rpc.Rpc()
         if web3.isConnected() and not web3.eth.block_number and not self._time_offset:
