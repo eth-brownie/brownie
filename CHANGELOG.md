@@ -6,6 +6,7 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+- Added `LocalAccount.sign_defunct_message` method to sign `EIP-191` text messages ([#1163](https://github.com/eth-brownie/brownie/pull/1163))
 
 ## [1.15.2](https://github.com/eth-brownie/brownie/tree/v1.15.2) - 2021-07-26
 ### Fixed
