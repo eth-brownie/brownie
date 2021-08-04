@@ -422,7 +422,7 @@ class TransactionReceipt:
                         self.status = Status(-2)
                         return
                 if not self._silent:
-                    sys.stdout.write(f"\r  Awaiting transaction in the mempool... {_marker[0]}")
+                    sys.stdout.write(f"  Awaiting transaction in the mempool... {_marker[0]}\r")
                     sys.stdout.flush()
                     _marker.rotate(1)
                 time.sleep(1)
@@ -431,7 +431,7 @@ class TransactionReceipt:
 
         if not self._silent:
             print(
-                f"\r  Gas price: {color('bright blue')}{self.gas_price / 10 ** 9}{color} gwei"
+                f"  Gas price: {color('bright blue')}{self.gas_price / 10 ** 9}{color} gwei"
                 f"   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
                 f"   Nonce: {color('bright blue')}{self.nonce}{color}"
             )
@@ -477,15 +477,21 @@ class TransactionReceipt:
 
             if not block_number and not self._silent and required_confs > 0:
                 if required_confs == 1:
-                    sys.stdout.write(f"\rWaiting for confirmation... {_marker[0]}")
+                    sys.stdout.write(f"  Waiting for confirmation... {_marker[0]}\r")
                 else:
                     sys.stdout.write(
-                        f"\rRequired confirmations: {color('bright yellow')}0/"
-                        f"{required_confs}{color}   {_marker[0]}"
+                        f"  Required confirmations: {color('bright yellow')}0/"
+                        f"{required_confs}{color}   {_marker[0]}\r"
                     )
                 _marker.rotate(1)
                 sys.stdout.flush()
                 time.sleep(1)
+
+        # silence other dropped tx's immediately after confirmation to avoid output weirdness
+        for dropped_tx in state.TxHistory().filter(
+            sender=self.sender, nonce=self.nonce, key=lambda k: k != self
+        ):
+            dropped_tx._silent = True
 
         self.block_number = receipt["blockNumber"]
         # wait for more confirmations if required and handle uncle blocks
