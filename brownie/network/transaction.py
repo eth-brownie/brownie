@@ -129,6 +129,7 @@ class TransactionReceipt:
     sender = None
     txid: str
     txindex = None
+    type: int
 
     def __init__(
         self,
@@ -430,9 +431,18 @@ class TransactionReceipt:
         self._set_from_tx(tx)
 
         if not self._silent:
+            if self.type == 2:
+                max_gas = tx["maxFeePerGas"] / 10 ** 9
+                priority_gas = tx["maxPriorityFeePerGas"] / 10 ** 9
+                output_str = (
+                    f"  Max fee: {color('bright blue')}{max_gas}{color} gwei"
+                    f"   Priority fee: {color('bright blue')}{priority_gas}{color} gwei"
+                )
+            else:
+                gas_price = self.gas_price / 10 ** 9
+                output_str = f"  Gas price: {color('bright blue')}{gas_price}{color} gwei"
             print(
-                f"  Gas price: {color('bright blue')}{self.gas_price / 10 ** 9}{color} gwei"
-                f"   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
+                f"{output_str}   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
                 f"   Nonce: {color('bright blue')}{self.nonce}{color}"
             )
 
@@ -549,6 +559,7 @@ class TransactionReceipt:
         self.gas_limit = tx["gas"]
         self.input = tx["input"]
         self.nonce = tx["nonce"]
+        self.type = int(HexBytes(tx.get("type", 0)).hex(), 16)
 
         # if receiver is a known contract, set function name
         if self.fn_name:
@@ -571,6 +582,8 @@ class TransactionReceipt:
         self.gas_used = receipt["gasUsed"]
         self.logs = receipt["logs"]
         self.status = Status(receipt["status"])
+        if "effectiveGasPrice" in receipt:
+            self.gas_price = receipt["effectiveGasPrice"]
 
         self.contract_address = receipt["contractAddress"]
         if self.contract_address and not self.contract_name:
@@ -591,11 +604,13 @@ class TransactionReceipt:
             revert_msg = self.revert_msg if web3.supports_traces else None
             status = f"({color('bright red')}{revert_msg or 'reverted'}{color}) "
         result = (
-            f"\r  {self._full_name()} confirmed {status}- "
+            f"\r  {self._full_name()} confirmed {status}  "
             f"Block: {color('bright blue')}{self.block_number}{color}   "
             f"Gas used: {color('bright blue')}{self.gas_used}{color} "
             f"({color('bright blue')}{self.gas_used / self.gas_limit:.2%}{color})"
         )
+        if self.type == 2:
+            result += f"   Gas price: {color('bright blue')}{self.gas_price / 10 ** 9}{color} gwei"
         if self.status and self.contract_address:
             result += (
                 f"\n  {self.contract_name} deployed at: "
