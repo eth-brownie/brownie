@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import builtins
 import code
 import importlib
 import inspect
@@ -77,6 +78,42 @@ class _Quitter:
 
     def __call__(self, code=None):
         raise SystemExit(code)
+
+
+class ConsolePrinter:
+    """
+    Custom printer during console input.
+
+    Ensures that stdout of the active prompt buffer is preserved when the console
+    is written to during user imnut.
+    """
+
+    _builtins_print = builtins.print
+
+    def __init__(self, console):
+        self.console = console
+
+    def start(self):
+        builtins.print = self
+
+    def __call__(self, *values, sep=" ", end="\n", file=sys.stdout, flush=False):
+        if file != sys.stdout:
+            self._builtins_print(*values, sep=sep, end=end, file=file, flush=flush)
+            return
+
+        ps = sys.ps2 if self.console.buffer else sys.ps1
+        line = f"{ps}{self.console.prompt_session.app.current_buffer.text}"
+
+        # overwrite the prompt output with whitespace, in case the printed data is shorter
+        self.console.write(f"\r{' ' * len(line)}\r")
+
+        if not end.endswith("\n"):
+            end = "{end}\n"
+        text = f"{sep.join(str(i) for i in values)}{end}{line}"
+        self.console.write(text)
+
+    def finish(self):
+        builtins.print = self._builtins_print
 
 
 class Console(code.InteractiveConsole):
@@ -172,6 +209,7 @@ class Console(code.InteractiveConsole):
 
             colorama.init()
 
+        self.console_printer = ConsolePrinter(self)
         super().__init__(locals_dict)
 
     def _dir(self, obj=None):
@@ -208,7 +246,11 @@ class Console(code.InteractiveConsole):
             CONFIG.argv["cli"] = cli_mode
 
     def raw_input(self, prompt=""):
-        return self.prompt_session.prompt(prompt)
+        self.console_printer.start()
+        try:
+            return self.prompt_session.prompt(prompt)
+        finally:
+            self.console_printer.finish()
 
     def showsyntaxerror(self, filename):
         tb = color.format_tb(sys.exc_info()[1])
