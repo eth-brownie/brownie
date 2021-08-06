@@ -689,7 +689,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
 
         try:
-            if gas_price is not None:
+            if max_fee is None and priority_fee is None:
                 gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
             else:
                 gas_strategy, gas_iter = None, None
@@ -944,26 +944,24 @@ def _apply_fee_to_tx(
 ):
     tx = tx.copy()
 
-    if gas_price is not None and (max_fee or priority_fee):
-        raise ValueError("gas_price and (max_fee, priority_fee) are mutually exclusive")
+    if gas_price is not None:
+        if max_fee or priority_fee:
+            raise ValueError("gas_price and (max_fee, priority_fee) are mutually exclusive")
+        tx["gasPrice"] = web3.toHex(gas_price)
+        return tx
 
-    elif max_fee is not None and priority_fee is not None:
-        if priority_fee > max_fee:
-            raise InvalidTransaction("priority_fee must not exceed max_fee")
+    if priority_fee is None:
+        raise InvalidTransaction("priority_fee must be defined")
 
     # no max_fee specified, infer from base_fee
-    elif max_fee is None and priority_fee is not None:
+    if max_fee is None:
         base_fee = Chain().base_fee
         max_fee = base_fee * 2 + priority_fee
 
-    elif max_fee is not None and priority_fee is None:
-        raise InvalidTransaction("priority_fee must be defined")
+    if priority_fee > max_fee:
+        raise InvalidTransaction("priority_fee must not exceed max_fee")
 
-    if gas_price is not None:
-        tx["gasPrice"] = web3.toHex(gas_price)
-    else:
-        tx["maxFeePerGas"] = web3.toHex(max_fee)
-        tx["maxPriorityFeePerGas"] = web3.toHex(priority_fee)
-        tx["type"] = web3.toHex(2)
-
+    tx["maxFeePerGas"] = web3.toHex(max_fee)
+    tx["maxPriorityFeePerGas"] = web3.toHex(priority_fee)
+    tx["type"] = web3.toHex(2)
     return tx
