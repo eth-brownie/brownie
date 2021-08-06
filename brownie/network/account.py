@@ -952,11 +952,14 @@ def _apply_fee_to_tx(
 
     if priority_fee is None:
         raise InvalidTransaction("priority_fee must be defined")
+    priority_fee = Wei(priority_fee)
 
     # no max_fee specified, infer from base_fee
     if max_fee is None:
         base_fee = Chain().base_fee
         max_fee = base_fee * 2 + priority_fee
+    else:
+        max_fee = Wei(max_fee)
 
     if priority_fee > max_fee:
         raise InvalidTransaction("priority_fee must not exceed max_fee")
