@@ -5,6 +5,7 @@ import re
 import sys
 import threading
 import time
+from collections import deque
 from enum import IntEnum
 from hashlib import sha1
 from pathlib import Path
@@ -14,7 +15,7 @@ import black
 import requests
 from eth_abi import decode_abi
 from hexbytes import HexBytes
-from web3.exceptions import TimeExhausted, TransactionNotFound
+from web3.exceptions import TransactionNotFound
 
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
@@ -30,6 +31,8 @@ from brownie.utils.output import build_tree
 from . import state
 from .event import EventDict, _decode_logs, _decode_trace
 from .web3 import web3
+
+_marker = deque("-/|\\-/|\\")
 
 
 def trace_property(fn: Callable) -> Any:
@@ -418,6 +421,10 @@ class TransactionReceipt:
                     if sender_nonce > self.nonce:
                         self.status = Status(-2)
                         return
+                if not self._silent:
+                    sys.stdout.write(f"  Awaiting transaction in the mempool... {_marker[0]}\r")
+                    sys.stdout.flush()
+                    _marker.rotate(1)
                 time.sleep(1)
 
         self._set_from_tx(tx)
@@ -439,32 +446,52 @@ class TransactionReceipt:
             confirm_thread.join()
 
     def _await_confirmation(self, block_number: int = None, required_confs: int = 1) -> None:
-        block_number = block_number or self.block_number
-        if not block_number and not self._silent and required_confs > 0:
-            if required_confs == 1:
-                sys.stdout.write("\rWaiting for confirmation... ")
-            else:
-                sys.stdout.write(
-                    f"\rRequired confirmations: {color('bright yellow')}0/{required_confs}{color}"
-                )
-            sys.stdout.flush()
-
         # await first confirmation
+        block_number = block_number or self.block_number
+        nonce_time = 0.0
+        sender_nonce = 0
         while True:
-            # if sender nonce is greater than tx nonce, the tx should be confirmed
-            sender_nonce = web3.eth.get_transaction_count(str(self.sender))
-            expect_confirmed = bool(sender_nonce > self.nonce)  # type: ignore
+            # every 15 seconds, check if the nonce increased without a confirmation of
+            # this specific transaction. if this happens, the tx has likely dropped
+            # and we should stop waiting.
+            if time.time() - nonce_time > 15:
+                sender_nonce = web3.eth.get_transaction_count(str(self.sender))
+                nonce_time = time.time()
+
             try:
-                receipt = web3.eth.wait_for_transaction_receipt(
-                    HexBytes(self.txid), timeout=15, poll_latency=1
-                )
+                receipt = web3.eth.get_transaction_receipt(HexBytes(self.txid))
+            except TransactionNotFound:
+                receipt = None
+            # the null blockHash check is required for older versions of Parity
+            # taken from `web3._utils.transactions.wait_for_transaction_receipt`
+            if receipt is not None and receipt["blockHash"] is not None:
                 break
-            except TimeExhausted:
-                if expect_confirmed:
-                    # if we expected confirmation based on the nonce, tx likely dropped
-                    self.status = Status(-2)
-                    self._confirmed.set()
-                    return
+
+            # continuation of the nonce logic 2 sections prior. we must check the receipt
+            # after querying the nonce, because in the other order there is a chance that
+            # the tx would confirm after checking the receipt but before checking the nonce
+            if sender_nonce > self.nonce:  # type: ignore
+                self.status = Status(-2)
+                self._confirmed.set()
+                return
+
+            if not block_number and not self._silent and required_confs > 0:
+                if required_confs == 1:
+                    sys.stdout.write(f"  Waiting for confirmation... {_marker[0]}\r")
+                else:
+                    sys.stdout.write(
+                        f"  Required confirmations: {color('bright yellow')}0/"
+                        f"{required_confs}{color}   {_marker[0]}\r"
+                    )
+                _marker.rotate(1)
+                sys.stdout.flush()
+                time.sleep(1)
+
+        # silence other dropped tx's immediately after confirmation to avoid output weirdness
+        for dropped_tx in state.TxHistory().filter(
+            sender=self.sender, nonce=self.nonce, key=lambda k: k != self
+        ):
+            dropped_tx._silent = True
 
         self.block_number = receipt["blockNumber"]
         # wait for more confirmations if required and handle uncle blocks
