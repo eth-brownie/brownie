@@ -457,7 +457,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
     def _check_for_revert(self, tx: Dict) -> None:
         try:
-            web3.eth.call(dict((k, v) for k, v in tx.items() if v))
+            # remove `gasPrice` to avoid issues post-EIP1559
+            # https://github.com/ethereum/go-ethereum/pull/23027
+            web3.eth.call(dict((k, v) for k, v in tx.items() if k != "gasPrice" and v))
         except ValueError as exc:
             msg = exc.args[0]["message"] if isinstance(exc.args[0], dict) else str(exc)
             raise ValueError(
