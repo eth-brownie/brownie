@@ -414,7 +414,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         self,
         to: Optional["Account"],
         amount: int,
-        gas_price: int,
+        gas_price: Optional[int],
         gas_buffer: Optional[float],
         data: Optional[str] = None,
     ) -> int:
@@ -424,7 +424,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         if isinstance(gas_limit, bool) or gas_limit in (None, "auto"):
             gas_buffer = gas_buffer or CONFIG.active_network["settings"]["gas_buffer"]
-            gas_limit = self.estimate_gas(to, amount, gas_price, data or "")
+            gas_limit = self.estimate_gas(to, amount, 0, data or "")
             if gas_limit > 21000 and gas_buffer != 1:
                 gas_limit = Wei(gas_limit * gas_buffer)
                 return min(gas_limit, Chain().block_gas_limit)
@@ -501,54 +501,22 @@ class _PrivateKeyAccount(PublicKeyAccount):
             * Contract instance if the transaction confirms and the contract exists
             * TransactionReceipt if the transaction is pending or reverts
         """
-        if gas_limit and gas_buffer:
-            raise ValueError("Cannot set gas_limit and gas_buffer together")
-
         data = contract.deploy.encode_input(*args)
-        if silent is None:
-            silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
-
-        try:
-            if gas_price is not None:
-                gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
-            else:
-                gas_strategy, gas_iter = None, None
-            gas_limit = Wei(gas_limit) or self._gas_limit(
-                None, amount, gas_price or max_fee, gas_buffer, data
-            )
-        except ValueError as e:
-            raise VirtualMachineError(e) from None
-
-        with self._lock:
-            # we use a lock here to prevent nonce issues when sending many tx's at once
-            tx = {
-                "from": self.address,
-                "value": Wei(amount),
-                "nonce": nonce if nonce is not None else self._pending_nonce(),
-                "gas": web3.toHex(gas_limit),
-                "data": HexBytes(data),
-            }
-            tx = _apply_fee_to_tx(tx, gas_price, max_fee, priority_fee)
-            try:
-                txid = self._transact(tx, allow_revert)  # type: ignore
-                exc, revert_data = None, None
-            except ValueError as e:
-                exc = VirtualMachineError(e)
-                if not hasattr(exc, "txid"):
-                    raise exc from None
-                txid = exc.txid
-                revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
-
-        receipt = TransactionReceipt(
-            txid,
-            self,
-            silent=silent,
-            required_confs=required_confs,
-            is_blocking=False,
-            name=contract._name + ".constructor",
-            revert_data=revert_data,
+        receipt, exc = self._make_transaction(
+            None,
+            amount,
+            gas_limit,
+            gas_buffer,
+            gas_price,
+            max_fee,
+            priority_fee,
+            data,
+            nonce,
+            contract._name + ".constructor",
+            required_confs,
+            allow_revert,
+            silent,
         )
-        receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
 
         add_thread = threading.Thread(target=contract._add_from_tx, args=(receipt,), daemon=True)
         add_thread.start()
@@ -666,6 +634,55 @@ class _PrivateKeyAccount(PublicKeyAccount):
             TransactionReceipt object
         """
 
+        receipt, exc = self._make_transaction(
+            to,
+            amount,
+            gas_limit,
+            gas_buffer,
+            gas_price,
+            max_fee,
+            priority_fee,
+            data or "",
+            nonce,
+            "",
+            required_confs,
+            allow_revert,
+            silent,
+        )
+
+        if rpc.is_active():
+            undo_thread = threading.Thread(
+                target=Chain()._add_to_undo_buffer,
+                args=(
+                    receipt,
+                    self.transfer,
+                    (to, amount, gas_limit, gas_buffer, gas_price, data, None),
+                    {},
+                ),
+                daemon=True,
+            )
+            undo_thread.start()
+
+        receipt._raise_if_reverted(exc)
+        return receipt
+
+    def _make_transaction(
+        self,
+        to: Optional["Account"],
+        amount: int,
+        gas_limit: Optional[int],
+        gas_buffer: Optional[float],
+        gas_price: Optional[int],
+        max_fee: Optional[int],
+        priority_fee: Optional[int],
+        data: Optional[str],
+        nonce: Optional[int],
+        fn_name: str,
+        required_confs: int,
+        allow_revert: Optional[bool],
+        silent: Optional[bool],
+    ) -> Tuple[TransactionReceipt, Optional[Exception]]:
+        # shared logic for `transfer` and `deploy`
         if gas_limit and gas_buffer:
             raise ValueError("Cannot set gas_limit and gas_buffer together")
         if silent is None:
@@ -689,11 +706,11 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 "value": Wei(amount),
                 "nonce": nonce if nonce is not None else self._pending_nonce(),
                 "gas": web3.toHex(gas_limit),
-                "data": HexBytes(data or ""),
+                "data": HexBytes(data),
             }
-            tx = _apply_fee_to_tx(tx, gas_price, max_fee, priority_fee)
             if to:
                 tx["to"] = to_address(str(to))
+            tx = _apply_fee_to_tx(tx, gas_price, max_fee, priority_fee)
             try:
                 txid = self._transact(tx, allow_revert)  # type: ignore
                 exc, revert_data = None, None
@@ -707,29 +724,14 @@ class _PrivateKeyAccount(PublicKeyAccount):
         receipt = TransactionReceipt(
             txid,
             self,
+            silent=silent,
             required_confs=required_confs,
             is_blocking=False,
-            silent=silent,
+            name=fn_name,
             revert_data=revert_data,
         )
-
         receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
-
-        if rpc.is_active():
-            undo_thread = threading.Thread(
-                target=Chain()._add_to_undo_buffer,
-                args=(
-                    receipt,
-                    self.transfer,
-                    (to, amount, gas_limit, gas_buffer, gas_price, data, None),
-                    {},
-                ),
-                daemon=True,
-            )
-            undo_thread.start()
-
-        receipt._raise_if_reverted(exc)
-        return receipt
+        return receipt, exc
 
     def _await_confirmation(
         self,
