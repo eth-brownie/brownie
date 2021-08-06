@@ -677,7 +677,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         gas_price: Optional[int],
         max_fee: Optional[int],
         priority_fee: Optional[int],
-        data: Optional[str],
+        data: str,
         nonce: Optional[int],
         fn_name: str,
         required_confs: int,
@@ -943,7 +943,7 @@ def _apply_fee_to_tx(
     gas_price: Optional[int] = None,
     max_fee: Optional[int] = None,
     priority_fee: Optional[int] = None,
-):
+) -> Dict:
     tx = tx.copy()
 
     if gas_price is not None:
