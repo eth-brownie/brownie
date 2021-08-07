@@ -1,3 +1,5 @@
+import copy
+
 import pytest
 import yaml
 
@@ -6,10 +8,10 @@ from brownie._config import _get_data_folder
 
 
 @pytest.fixture(autouse=True)
-def isolation():
+def networks_yaml():
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
-    yield
+    yield copy.deepcopy(networks)
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         networks = yaml.dump(networks, fp)
 
@@ -151,17 +153,9 @@ def test_delete_live():
     assert "mainnet" not in [i["id"] for i in networks["live"][0]["networks"]]
 
 
-def test_delete_development():
-    for network_name in (
-        "development",
-        "mainnet-fork",
-        "bsc-main-fork",
-        "ftm-main-fork",
-        "polygon-main-fork",
-        "xdai-main-fork",
-        "geth-dev",
-    ):
-        cli_networks._delete(network_name)
+def test_delete_development(networks_yaml):
+    for network_name in networks_yaml["development"]:
+        cli_networks._delete(network_name["id"])
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)

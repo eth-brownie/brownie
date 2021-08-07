@@ -312,6 +312,8 @@ class Chain(metaclass=_Singleton):
             else:
                 self._redo_buffer.clear()
             self._current_id = rpc.Rpc().snapshot()
+            # ensure the local time offset is correct, in case it was modified by the transaction
+            self.sleep(0)
 
     def _network_connected(self) -> None:
         self._reset_id = None
@@ -354,7 +356,7 @@ class Chain(metaclass=_Singleton):
         """
         if not isinstance(seconds, int):
             raise TypeError("seconds must be an integer value")
-        self._time_offset = rpc.Rpc().sleep(seconds)
+        self._time_offset = int(rpc.Rpc().sleep(seconds))
 
         if seconds:
             self._redo_buffer.clear()
