@@ -52,11 +52,15 @@ def launch(cmd: str, **kwargs: Dict) -> None:
     print(f"\nLaunching '{' '.join(cmd_list)}'...")
     out = DEVNULL if sys.platform == "win32" else PIPE
 
-    # required so hardhat considers the folder to be a hardhat project
-    # once hardhat network releases, we should be able to remove
-    hardhat_config = Path("hardhat.config.js")
-    if not hardhat_config.exists():
-        with hardhat_config.open("w") as fp:
+    # check parent folders for existence of a hardhat config, so this folder is
+    # considered a hardhat project. if none is found, create one.
+    config_exists = False
+    for path in Path("hardhat.config.js").absolute().parents:
+        if path.joinpath("hardhat.config.js").exists():
+            config_exists = True
+            break
+    if not config_exists:
+        with Path("hardhat.config.js").open("w") as fp:
             fp.write(HARDHAT_CONFIG)
 
     return psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
