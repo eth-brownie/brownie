@@ -16,11 +16,11 @@ def send_and_wait_for_tx():
 
 
 @pytest.fixture
-def block_time_network(devnetwork, config):
+def block_time_network(devnetwork, config, network_name):
     """Provide a network with fixed block mining time of 1 second."""
-    config.networks["development"]["cmd_settings"]["block_time"] = 1
+    config.networks[network_name]["cmd_settings"]["block_time"] = 1
     devnetwork.disconnect()
-    devnetwork.connect("development")
+    devnetwork.connect(network_name)
     yield devnetwork
     devnetwork.disconnect()
 

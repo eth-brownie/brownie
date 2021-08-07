@@ -69,13 +69,13 @@ def test_load_project_cmd_settings(config, testproject, project_settings):
             assert cmd_settings_config[k] == v
 
 
-def test_rpc_project_cmd_settings(devnetwork, testproject, config, project_settings):
+def test_rpc_project_cmd_settings(devnetwork, testproject, config, project_settings, network_name):
     """Test if project specific settings are properly passed on to the RPC."""
     if devnetwork.rpc.is_active():
         devnetwork.rpc.kill()
     cmd_project_settings = project_settings["cmd_settings"]
     testproject.load_config()
-    devnetwork.connect("development")
+    devnetwork.connect(network_name)
 
     # Check if rpc time is roughly the start time in the config file
     # Use diff < 25h to dodge potential timezone differences

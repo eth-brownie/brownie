@@ -1,6 +1,6 @@
 on: ["push", "pull_request"]
 
-name: brownie workflow
+name: core (ganache)
 
 env:
   ETHERSCAN_TOKEN: 9MKURTHE8FNA9NRUUJBHMUEVY6IQ5K1EGY
@@ -8,118 +8,6 @@ env:
   WEB3_INFURA_PROJECT_ID: 44c6300c5e5b4b2da5fc42b06bf18a8e
 
 jobs:
-
-  linting:
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        job: [lint, docs-local]
-        experimental: [false]
-        include:
-          - job: docs-external
-            experimental: true
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Setup Python 3.6
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-
-    - name: Install Tox
-      run: pip install tox
-
-    - name: Run Tox
-      run: tox -e ${{ matrix.job }}
-      continue-on-error: ${{ matrix.experimental }}
-
-
-  functionality:
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        job: [plugintest, pmtest]
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Cache Solidity Installations
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.solcx
-          ~/.vvm
-        key: ${{ runner.os }}-compiler-cache
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v1
-
-    - name: Install Ganache
-      run: npm install -g ganache-cli@6.12.2
-
-    - name: Setup Python 3.8
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-
-    - name: Install Tox
-      run: pip install tox
-
-    - name: Run Tox
-      run: tox -e ${{ matrix.job }}
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
-      with:
-        file: ./coverage.xml
-
-
-  evm:
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        job: [evm-byzantium, evm-petersburg, evm-istanbul, evm-latest]
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Cache Solidity Installations
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.solcx
-          ~/.vvm
-        key: ${{ runner.os }}-compiler-cache
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v1
-
-    - name: Install Ganache
-      run: npm install -g ganache-cli@6.12.2
-
-    - name: Setup Python 3.8
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-
-    - name: Install Tox
-      run: pip install tox
-
-    - name: Run Tox
-      run: tox -e ${{ matrix.job }}
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
-      with:
-        file: ./coverage.xml
-
 
   py38core:
     runs-on: ${{ matrix.os }}
