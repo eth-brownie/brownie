@@ -193,6 +193,7 @@ def test_dependencies_modified_source(dep_project):
         ethpm.create_manifest(dep_project._path, package_config)
 
 
+@pytest.mark.skip
 def test_deployments_ropsten(tp_path, deployments, ropsten_uri):
     package_config = ETHPM_CONFIG.copy()
     package_config["settings"]["deployment_networks"] = "ropsten"
@@ -201,6 +202,7 @@ def test_deployments_ropsten(tp_path, deployments, ropsten_uri):
     assert manifest["deployments"] == {ropsten_uri: DEPLOYMENTS_ROPSTEN}
 
 
+@pytest.mark.skip
 def test_deployments_mainnet(tp_path, deployments, mainnet_uri):
     package_config = ETHPM_CONFIG.copy()
     package_config["settings"]["deployment_networks"] = ["mainnet"]
@@ -209,6 +211,7 @@ def test_deployments_mainnet(tp_path, deployments, mainnet_uri):
     assert manifest["deployments"] == {mainnet_uri: DEPLOYMENTS_MAINNET}
 
 
+@pytest.mark.skip
 def test_deployments_all(tp_path, deployments, mainnet_uri, ropsten_uri):
     package_config = ETHPM_CONFIG.copy()
     package_config["settings"]["deployment_networks"] = "*"
@@ -223,6 +226,7 @@ def test_deployments_all(tp_path, deployments, mainnet_uri, ropsten_uri):
     assert manifest["deployments"], uri == ethpm.create_manifest(tp_path, package_config)
 
 
+@pytest.mark.skip
 def test_deployments_unknown_network(tp_path, deployments):
     package_config = ETHPM_CONFIG.copy()
     package_config["settings"]["deployment_networks"] = ["potatonet"]
@@ -231,6 +235,7 @@ def test_deployments_unknown_network(tp_path, deployments):
     assert "deployments" not in manifest
 
 
+@pytest.mark.skip
 def test_deployments_changed_source(tp_path, deployments, mainnet_uri):
     address = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
     path = tp_path.joinpath(f"build/deployments/mainnet/{address}.json")
@@ -271,6 +276,7 @@ def test_deployments_of_dependencies(dep_project, config, accounts):
     assert manifest["build_dependencies"] == {"utils": "ipfs://testipfs-utils"}
 
 
+@pytest.mark.skip
 def test_pin_and_get(dep_project):
     package_config = ETHPM_CONFIG.copy()
     package_config["settings"]["include_dependencies"] = False
