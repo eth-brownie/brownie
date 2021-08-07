@@ -19,13 +19,15 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
         # modify Hardhat transaction error to mimick the format that Ganache uses
         if method in ("eth_call", "eth_sendTransaction") and "error" in result:
             message = result["error"]["message"]
-            if message.startswith("VM Exception") or message.startswith("Transaction reverted"):
+            if message.startswith("Error: VM Exception") or message.startswith(
+                "Error: Transaction reverted"
+            ):
                 if method == "eth_call":
                     # ganache returns a txid even on a failed eth_call, which is weird,
                     # but we still mimick it here for the sake of consistency
                     txid = "0x"
                 else:
-                    txid = self.w3.eth.getBlock("latest")["transactions"][0].hex()
+                    txid = result["error"]["data"]["txHash"]
                 data: Dict = {}
                 result["error"]["data"] = {txid: data}
                 message = message.split(": ", maxsplit=1)[-1]
