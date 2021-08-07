@@ -535,6 +535,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         "gas_limit": gas_limit,
                         "gas_buffer": gas_buffer,
                         "gas_price": gas_price,
+                        "max_fee": max_fee,
+                        "priority_fee": priority_fee,
                     },
                 ),
                 daemon=True,
@@ -658,8 +660,17 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 args=(
                     receipt,
                     self.transfer,
-                    (to, amount, gas_limit, gas_buffer, gas_price, data, None),
-                    {},
+                    [],
+                    {
+                        "to": to,
+                        "amount": amount,
+                        "gas_limit": gas_limit,
+                        "gas_buffer": gas_buffer,
+                        "gas_price": gas_price,
+                        "max_fee": max_fee,
+                        "priority_fee": priority_fee,
+                        "data": data,
+                    },
                 ),
                 daemon=True,
             )
