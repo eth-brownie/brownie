@@ -321,7 +321,7 @@ Account Methods
         >>> accounts[0].balance() == "100 ether"
         True
 
-.. py:classmethod:: Account.deploy(contract, *args, amount=None, gas_limit=None, gas_price=None, nonce=None, required_confs=1, allow_revert=False, silent=False, publish_source=False,)
+.. py:classmethod:: Account.deploy(contract, *args, amount=None, gas_limit=None, gas_price=None, max_fee=None, priority_fee=None, nonce=None, required_confs=1, allow_revert=False, silent=False, publish_source=False,)
 
     Deploys a contract.
 
@@ -330,7 +330,9 @@ Account Methods
     * ``amount``: Amount of ether to send with the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`.
     * ``gas_limit``: Gas limit for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using :meth:`web3.eth.estimate_gas <web3.eth.Eth.estimateGas>`.
     * ``gas_buffer``: A multiplier applied to :meth:`web3.eth.estimate_gas <web3.eth.Eth.estimateGas>` when setting gas limit automatically. ``gas_limit`` and ``gas_buffer`` cannot be given at the same time.
-    * ``gas_price``: Gas price for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using :attr:`web3.eth.gas_price <web3.eth.Eth.gasPrice>`.
+    * ``gas_price``: Gas price for legacy transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using :attr:`web3.eth.gas_price <web3.eth.Eth.gasPrice>`.
+    * ``max_fee``: Max fee per gas of dynamic fee transaction.
+    * ``priority_fee``: Max priority fee per gas of dynamic fee transaction.
     * ``nonce``: Nonce for the transaction. If none is given, the nonce is set using :meth:`web3.eth.get_transaction_count <web3.eth.Eth.getTransactionCount>` while also considering any pending transactions of the Account.
     * ``required_confs``: The required :attr:`confirmations<TransactionReceipt.confirmations>` before the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is processed. If none is given, defaults to 1 confirmation.  If 0 is given, immediately returns a pending :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` instead of a :func:`Contract <brownie.network.contract.Contract>` instance, while waiting for a confirmation in a separate thread.
     * ``allow_revert``: When ``True``, forces the deployment of a contract, even if a revert reason is detected.
@@ -384,7 +386,7 @@ Account Methods
         >>> accounts[0].get_deployment_address()
         '0xd495633B90a237de510B4375c442C0469D3C161C'
 
-.. py:classmethod:: Account.transfer(self, to=None, amount=0, gas_limit=None, gas_price=None, data=None, nonce=None, required_confs=1, allow_revert=None, silent=False)
+.. py:classmethod:: Account.transfer(self, to=None, amount=0, gas_limit=None, gas_price=None, max_fee=None, priority_fee=None, data=None, nonce=None, required_confs=1, allow_revert=None, silent=False)
 
     Broadcasts a transaction from this account.
 
@@ -392,7 +394,9 @@ Account Methods
     * ``amount``: Amount of ether to send. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`.
     * ``gas_limit``: Gas limit for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using :meth:`web3.eth.estimate_gas <web3.eth.Eth.estimateGas>`.
     * ``gas_buffer``: A multiplier applied to :meth:`web3.eth.estimate_gas <web3.eth.Eth.estimateGas>` when setting gas limit automatically. ``gas_limit`` and ``gas_buffer`` cannot be given at the same time.
-    * ``gas_price``: Gas price for the transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using :attr:`web3.eth.gas_price <web3.eth.Eth.gasPrice>`.
+    * ``gas_price``: Gas price for legacy transaction. The given value is converted to :func:`Wei <brownie.convert.datatypes.Wei>`. If none is given, the price is set using :attr:`web3.eth.gas_price <web3.eth.Eth.gasPrice>`.
+    * ``max_fee``: Max fee per gas of dynamic fee transaction.
+    * ``priority_fee``: Max priority fee per gas of dynamic fee transaction.
     * ``data``: Transaction data hexstring.
     * ``nonce``: Nonce for the transaction. If none is given, the nonce is set using :meth:`web3.eth.get_transaction_count <web3.eth.Eth.getTransactionCount>` while also considering any pending transactions of the Account.
     * ``required_confs``: The required :attr:`confirmations<TransactionReceipt.confirmations>` before the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is processed. If none is given, defaults to 1 confirmation.  If 0 is given, immediately returns a pending :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, while waiting for a confirmation in a separate thread.
@@ -2358,7 +2362,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.gas_price
 
-    The gas price of the transaction, in wei as an ``int``.
+    The effective gas price of the transaction, in wei as an ``int``.
 
     .. code-block:: python
 

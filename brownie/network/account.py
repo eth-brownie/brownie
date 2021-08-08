@@ -495,8 +495,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
             gas_limit: Gas limit of the transaction.
             gas_buffer: Multiplier to apply to gas limit.
             gas_price: Gas price of legacy transaction.
-            max_fee: Max fee per gas of EIP-1559 transaction.
-            priority_fee: Max priority fee per gas of EIP-1559 transaction.
+            max_fee: Max fee per gas of dynamic fee transaction.
+            priority_fee: Max priority fee per gas of dynamic fee transaction.
             nonce: Nonce to use for the transaction.
 
         Returns:
@@ -628,8 +628,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
             gas_limit: Gas limit of the transaction.
             gas_buffer: Multiplier to apply to gas limit.
             gas_price: Gas price of legacy transaction.
-            max_fee: Max fee per gas of EIP-1559 transaction.
-            priority_fee: Max priority fee per gas of EIP-1559 transaction.
+            max_fee: Max fee per gas of dynamic fee transaction.
+            priority_fee: Max priority fee per gas of dynamic fee transaction.
             nonce: Nonce to use for the transaction.
             data: Hexstring of data to include in transaction.
             silent: Toggles console verbosity.

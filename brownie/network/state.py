@@ -289,6 +289,10 @@ class Chain(metaclass=_Singleton):
         block = web3.eth.get_block("latest")
         return Wei(block.baseFeePerGas)
 
+    @property
+    def priority_fee(self) -> Wei:
+        return Wei(web3.eth.max_priority_fee)
+
     def _revert(self, id_: int) -> int:
         rpc_client = rpc.Rpc()
         if web3.isConnected() and not web3.eth.block_number and not self._time_offset:
