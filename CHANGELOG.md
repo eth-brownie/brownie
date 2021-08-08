@@ -6,7 +6,16 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.16.0](https://github.com/eth-brownie/brownie/tree/v1.16.0) - 2021-08-08
+### Added
+- Initial support for [Hardhat Network](https://hardhat.org/hardhat-network/) as an alternative to Ganache ([#1043](https://github.com/eth-brownie/brownie/pull/1043))
+- Support for [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) transactions ([#1179](https://github.com/eth-brownie/brownie/pull/1179))
 - Added `LocalAccount.sign_defunct_message` method to sign `EIP-191` text messages ([#1163](https://github.com/eth-brownie/brownie/pull/1163))
+
+### Fixed
+-Preserve active input when writing to the console ([#1181](https://github.com/eth-brownie/brownie/pull/1181))
+-Modifications to internal flow when handling transactions, fixes some threadlock issues ([#1182](https://github.com/eth-brownie/brownie/pull/1182))
 
 ## [1.15.2](https://github.com/eth-brownie/brownie/tree/v1.15.2) - 2021-07-26
 ### Fixed
