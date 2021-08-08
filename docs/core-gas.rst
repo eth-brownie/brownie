@@ -1,5 +1,26 @@
 .. _core-accounts:
 
+========================
+Dynamic Fee Transactions
+========================
+
+If the network you are interacting with implements EIP-1559, you can use a better fee model when sending transactions. Instead of specifying ``gas_price``, you specify ``priority_fee`` and an optional ``max_fee``.
+
+* ``priority_fee`` detrmines ``maxPriorityFeePerGas``, which is tipped to the miner. The recommended priority fee can be read from ``chain.priority_fee``.
+
+* ``max_fee`` determines ``maxFeePerGas``, which includes the base fee, which is the same for all transactions in the block and is burned, and your priority fee. The current base fee can be read from ``chain.base_fee``.
+
+Brownie uses ``base_fee * 2 + priority_fee`` as ``max_fee`` if you only specify the priority fee.
+
+.. code-block:: python
+
+    >>> accounts[0].transfer(accounts[1], priority_fee='2 gwei')
+    Transaction sent: 0x090755e0b75648d12b1ada31fa5957a07aadcbe8a34b8f9af59098f1890d1063
+      Max fee: 4.0 gwei   Priority fee: 2.0 gwei   Gas limit: 30000000   Nonce: 0
+      Transaction confirmed   Block: 1   Gas used: 21000 (0.07%)   Gas price: 2.875 gwei
+
+Dynamic fee transactions do not support (and arguably don't need) gas strategies. The section below only applies to legacy transactions which use ``gas_price``. 
+
 ==============
 Gas Strategies
 ==============
