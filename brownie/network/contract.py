@@ -8,6 +8,7 @@ import warnings
 from collections import defaultdict
 from pathlib import Path
 from textwrap import TextWrapper
+from threading import get_ident  # noqa
 from typing import Any, Dict, Iterator, List, Match, Optional, Set, Tuple, Union
 from urllib.parse import urlparse
 
@@ -112,11 +113,12 @@ class _ContractBase:
         if not isinstance(calldata, HexBytes):
             calldata = HexBytes(calldata)
 
+        fn_selector = calldata[:4].hex()  # type: ignore
         abi = next(
             (
                 i
                 for i in self.abi
-                if i["type"] == "function" and build_function_selector(i) == calldata[:4].hex()
+                if i["type"] == "function" and build_function_selector(i) == fn_selector
             ),
             None,
         )
@@ -376,7 +378,11 @@ class ContractContainer(_ContractBase):
         """Flatten contract and publish source on the selected explorer"""
 
         # Check required conditions for verifying
-        explorer_tokens = {"etherscan": "ETHERSCAN_TOKEN", "bscscan": "BSCSCAN_TOKEN"}
+        explorer_tokens = {
+            "etherscan": "ETHERSCAN_TOKEN",
+            "bscscan": "BSCSCAN_TOKEN",
+            "polygonscan": "POLYGONSCAN_TOKEN",
+        }
         url = CONFIG.active_network.get("explorer")
         if url is None:
             raise ValueError("Explorer API not set for this network")
@@ -595,7 +601,9 @@ class ContractConstructor:
             *args,
             amount=tx["value"],
             gas_limit=tx["gas"],
-            gas_price=tx["gasPrice"],
+            gas_price=tx.get("gas_price"),
+            max_fee=tx.get("max_fee"),
+            priority_fee=tx.get("priority_fee"),
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
             publish_source=publish_source,
@@ -646,9 +654,7 @@ class ContractConstructor:
                 "includes a `from` field specifying the sender of the transaction"
             )
 
-        return tx["from"].estimate_gas(
-            amount=tx["value"], gas_price=tx["gasPrice"], data=self.encode_input(*args)
-        )
+        return tx["from"].estimate_gas(amount=tx["value"], data=self.encode_input(*args))
 
 
 class InterfaceContainer:
@@ -708,11 +714,12 @@ class InterfaceConstructor:
         if not isinstance(calldata, HexBytes):
             calldata = HexBytes(calldata)
 
+        fn_selector = calldata[:4].hex()  # type: ignore
         abi = next(
             (
                 i
                 for i in self.abi
-                if i["type"] == "function" and build_function_selector(i) == calldata[:4].hex()
+                if i["type"] == "function" and build_function_selector(i) == fn_selector
             ),
             None,
         )
@@ -1169,6 +1176,14 @@ class Contract(_DeployedContractBase):
                     BrownieCompilerWarning,
                 )
             return cls.from_abi(name, address, abi, owner)
+        elif data["result"][0]["OptimizationUsed"] in ("true", "false"):
+            if not silent:
+                warnings.warn(
+                    f"Blockscout explorer API has limited support by Brownie. "  # noqa
+                    "Some debugging functionality will not be available.",
+                    BrownieCompilerWarning,
+                )
+            return cls.from_abi(name, address, abi, owner)
 
         optimizer = {
             "enabled": bool(int(data["result"][0]["OptimizationUsed"])),
@@ -1551,8 +1566,10 @@ class _ContractMethod:
             self._address,
             tx["value"],
             gas_limit=tx["gas"],
-            gas_buffer=tx["gas_buffer"],
-            gas_price=tx["gasPrice"],
+            gas_buffer=tx.get("gas_buffer"),
+            gas_price=tx.get("gas_price"),
+            max_fee=tx.get("max_fee"),
+            priority_fee=tx.get("priority_fee"),
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
             data=self.encode_input(*args),
@@ -1640,7 +1657,6 @@ class _ContractMethod:
         return tx["from"].estimate_gas(
             to=self._address,
             amount=tx["value"],
-            gas_price=tx["gasPrice"],
             data=self.encode_input(*args),
         )
 
@@ -1747,7 +1763,6 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
         "value": 0,
         "gas": None,
         "gas_buffer": None,
-        "gasPrice": None,
         "nonce": None,
         "required_confs": 1,
         "allow_revert": None,
@@ -1755,6 +1770,7 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
     if args and isinstance(args[-1], dict):
         tx.update(args[-1])
         args = args[:-1]
+        # key substitution to provide compatibility with web3.py
         for key, target in [("amount", "value"), ("gas_limit", "gas"), ("gas_price", "gasPrice")]:
             if key in tx:
                 tx[target] = tx[key]
@@ -1878,7 +1894,16 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
                 "as the environment variable $BSCSCAN_TOKEN",
                 BrownieEnvironmentWarning,
             )
-
+    elif "polygonscan" in url:
+        if os.getenv("POLYGONSCAN_TOKEN"):
+            params["apiKey"] = os.getenv("POLYGONSCAN_TOKEN")
+        elif not silent:
+            warnings.warn(
+                "No PolygonScan API token set. You may experience issues with rate limiting. "
+                "Visit https://polygonscan.com/register to obtain a token, and then store it "
+                "as the environment variable $POLYGONSCAN_TOKEN",
+                BrownieEnvironmentWarning,
+            )
     if not silent:
         print(
             f"Fetching source of {color('bright blue')}{address}{color} "

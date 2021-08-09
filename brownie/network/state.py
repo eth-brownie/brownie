@@ -284,6 +284,15 @@ class Chain(metaclass=_Singleton):
             self._block_gas_time = block["timestamp"]
         return Wei(self._block_gas_limit)
 
+    @property
+    def base_fee(self) -> Wei:
+        block = web3.eth.get_block("latest")
+        return Wei(block.baseFeePerGas)
+
+    @property
+    def priority_fee(self) -> Wei:
+        return Wei(web3.eth.max_priority_fee)
+
     def _revert(self, id_: int) -> int:
         rpc_client = rpc.Rpc()
         if web3.isConnected() and not web3.eth.block_number and not self._time_offset:
@@ -307,6 +316,8 @@ class Chain(metaclass=_Singleton):
             else:
                 self._redo_buffer.clear()
             self._current_id = rpc.Rpc().snapshot()
+            # ensure the local time offset is correct, in case it was modified by the transaction
+            self.sleep(0)
 
     def _network_connected(self) -> None:
         self._reset_id = None
@@ -349,7 +360,7 @@ class Chain(metaclass=_Singleton):
         """
         if not isinstance(seconds, int):
             raise TypeError("seconds must be an integer value")
-        self._time_offset = rpc.Rpc().sleep(seconds)
+        self._time_offset = int(rpc.Rpc().sleep(seconds))
 
         if seconds:
             self._redo_buffer.clear()

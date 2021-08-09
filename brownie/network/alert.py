@@ -83,8 +83,8 @@ class Alert:
                 if value == start_value:
                     continue
                 if msg:
-                    msg = msg.format(start_value, value)
-                    print(f"{color('bright red')}ALERT{color}: {msg}")
+                    fmt_msg = msg.format(start_value, value)
+                    print(f"{color('bright red')}ALERT{color}: {fmt_msg}")
                 if callback:
                     callback(start_value, value)
                 start_value = value

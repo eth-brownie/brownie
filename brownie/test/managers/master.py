@@ -18,6 +18,15 @@ class PytestBrownieMaster(PytestBrownieBase):
     Hooks in this class are loaded by the master process when using xdist.
     """
 
+    def pytest_configure_node(self, node):
+        """
+        Configure node information before it gets instantiated.
+
+        Here we can pass arbitrary information to xdist workers via the
+        `workerinput` dict.
+        """
+        node.workerinput["network"] = CONFIG.argv["network"]
+
     def pytest_xdist_make_scheduler(self, config, log):
         """
         Return a node scheduler implementation.

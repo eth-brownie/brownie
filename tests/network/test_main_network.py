@@ -3,10 +3,10 @@
 import pytest
 
 
-def test_connect(network, rpc, web3):
-    network.connect()
+def test_connect(network, rpc, web3, network_name):
+    network.connect(network_name)
     assert network.is_connected()
-    assert network.show_active() == "development"
+    assert network.show_active() == network_name
     assert rpc.is_active()
     assert web3.isConnected()
 

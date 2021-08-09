@@ -91,10 +91,10 @@ class Wei(int):
 
 def _to_wei(value: WeiInputTypes) -> int:
     original = value
-    if value is None:
-        return 0
     if isinstance(value, bytes):
         value = HexBytes(value).hex()
+    if value is None or value == "0x":
+        return 0
     if isinstance(value, float) and "e+" in str(value):
         num_str, dec = str(value).split("e+")
         num = num_str.split(".") if "." in num_str else [num_str, ""]

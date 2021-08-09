@@ -82,3 +82,28 @@ You can use the following command to check that Tk has been correctly installed:
 This should open a simple window and display the installed version number.
 
 For installation instructions read `Installing TK <https://tkdocs.com/tutorial/install.html>`_ within the TK Documentation.
+
+Using Brownie with Hardhat
+==========================
+
+`Hardhat <https://github.com/nomiclabs/hardhat>`_ is an Ethereum development environment with similar functionality to Brownie. Hardhat includes the `Hardhat Network <https://hardhat.org/hardhat-network/>`_, a local development node similar to `Ganache <https://github.com/trufflesuite/ganache-cli>`_. The Hardhat Network may be used as an alternative to Ganache within Brownie.
+
+    .. note::
+
+        Hardhat integration within Brownie is a new feature and still under development. Functionality should be on-par with Ganache, however there may still be bugs. Please open an issue on Github if you run into any inconsistencies or missing functionality.
+
+To use the Hardhat network with Brownie you must first install Hardhat. This can either be done in the root directory of each Brownie project, or once in your home directory:
+
+    .. code-block:: bash
+
+        npm install --save-dev hardhat
+
+See the `Hardhat documentation <https://hardhat.org/getting-started/#installation>`_ for more information on installing Hardhat.
+
+Once installed, include the ``--network hardhat`` flag to run Brownie with Hardhat. For example, to launch the console:
+
+    .. code-block:: bash
+
+        brownie console --network hardhat
+
+The first time you use Hardhat within a Brownie project, a ``hardhat.config.js`` `configuration file <https://hardhat.org/config/>`_ is generated. You should not modify any of the settings within this file as they are required for compatibility.

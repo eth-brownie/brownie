@@ -100,6 +100,9 @@ class PytestBrownieBase:
         config.addinivalue_line(
             "markers", "skip_coverage: skips a test when coverage evaluation is active"
         )
+        config.addinivalue_line(
+            "markers", "no_call_coverage: do not evaluate coverage for calls made during a test"
+        )
 
         for key in ("coverage", "always_transact"):
             CONFIG.argv[key] = config.getoption("--coverage")

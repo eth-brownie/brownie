@@ -6,6 +6,7 @@ from typing import Dict, Generator
 
 import requests
 
+from brownie.convert import Wei
 from brownie.exceptions import RPCRequestError
 from brownie.network.web3 import web3
 
@@ -59,22 +60,22 @@ class LinearScalingStrategy(TimeGasStrategy):
 
     def __init__(
         self,
-        initial_gas_price: int,
-        max_gas_price: int,
+        initial_gas_price: Wei,
+        max_gas_price: Wei,
         increment: float = 1.125,
         time_duration: int = 30,
     ):
         super().__init__(time_duration)
-        self.initial_gas_price = initial_gas_price
-        self.max_gas_price = max_gas_price
+        self.initial_gas_price = Wei(initial_gas_price)
+        self.max_gas_price = Wei(max_gas_price)
         self.increment = increment
 
-    def get_gas_price(self) -> Generator[int, None, None]:
+    def get_gas_price(self) -> Generator[Wei, None, None]:
         last_gas_price = self.initial_gas_price
         yield last_gas_price
 
         while True:
-            last_gas_price = min(int(last_gas_price * self.increment), self.max_gas_price)
+            last_gas_price = min(Wei(last_gas_price * self.increment), self.max_gas_price)
             yield last_gas_price
 
 
@@ -88,9 +89,9 @@ class ExponentialScalingStrategy(TimeGasStrategy):
 
     Arguments
     ---------
-    initial_gas_price : int
+    initial_gas_price : Wei
         The initial gas price to use in the first transaction
-    max_gas_price : int
+    max_gas_price : Wei
         The maximum gas price to use
     increment : float
         Multiplier applied to the previous gas price in order to determine the new gas price
@@ -98,17 +99,17 @@ class ExponentialScalingStrategy(TimeGasStrategy):
         Number of seconds between transactions
     """
 
-    def __init__(self, initial_gas_price: int, max_gas_price: int, time_duration: int = 30):
+    def __init__(self, initial_gas_price: Wei, max_gas_price: Wei, time_duration: int = 30):
         super().__init__(time_duration)
-        self.initial_gas_price = initial_gas_price
-        self.max_gas_price = max_gas_price
+        self.initial_gas_price = Wei(initial_gas_price)
+        self.max_gas_price = Wei(max_gas_price)
 
-    def get_gas_price(self) -> Generator[int, None, None]:
+    def get_gas_price(self) -> Generator[Wei, None, None]:
         last_gas_price = self.initial_gas_price
         yield last_gas_price
 
         for i in itertools.count(1):
-            last_gas_price = int(last_gas_price * 1.1 ** i)
+            last_gas_price = Wei(last_gas_price * 1.1 ** i)
             yield min(last_gas_price, self.max_gas_price)
 
 
@@ -155,6 +156,7 @@ class GasNowScalingStrategy(BlockGasStrategy):
         max_speed: str = "rapid",
         increment: float = 1.125,
         block_duration: int = 2,
+        max_gas_price: Wei = None,
     ):
         super().__init__(block_duration)
         if initial_speed not in ("rapid", "fast", "standard", "slow"):
@@ -162,6 +164,7 @@ class GasNowScalingStrategy(BlockGasStrategy):
         self.initial_speed = initial_speed
         self.max_speed = max_speed
         self.increment = increment
+        self.max_gas_price = Wei(max_gas_price) or 2 ** 256 - 1
 
     def get_gas_price(self) -> Generator[int, None, None]:
         last_gas_price = _fetch_gasnow(self.initial_speed)
@@ -176,7 +179,7 @@ class GasNowScalingStrategy(BlockGasStrategy):
 
             # do not exceed the current `max_speed` price
             max_gas_price = _fetch_gasnow(self.max_speed)
-            last_gas_price = min(max_gas_price, new_gas_price)
+            last_gas_price = min(max_gas_price, new_gas_price, self.max_gas_price)
             yield last_gas_price
 
 
@@ -192,12 +195,19 @@ class GethMempoolStrategy(BlockGasStrategy):
     A position of 200 or less should place it within the next block.
     """
 
-    def __init__(self, position: int = 500, graphql_endpoint: str = None, block_duration: int = 2):
+    def __init__(
+        self,
+        position: int = 500,
+        graphql_endpoint: str = None,
+        block_duration: int = 2,
+        max_gas_price: Wei = None,
+    ):
         super().__init__(block_duration)
         self.position = position
         if graphql_endpoint is None:
             graphql_endpoint = f"{web3.provider.endpoint_uri}/graphql"  # type: ignore
         self.graphql_endpoint = graphql_endpoint
+        self.max_gas_price = Wei(max_gas_price) or 2 ** 256 - 1
 
     def get_gas_price(self) -> Generator[int, None, None]:
         query = "{ pending { transactions { gasPrice }}}"
@@ -211,4 +221,5 @@ class GethMempoolStrategy(BlockGasStrategy):
             data = response.json()["data"]["pending"]["transactions"]
 
             prices = sorted((int(x["gasPrice"], 16) for x in data), reverse=True)
-            yield prices[: self.position][-1]
+
+            yield min(prices[: self.position][-1], self.max_gas_price)
