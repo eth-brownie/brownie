@@ -6,16 +6,13 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
-<<<<<<< HEAD
 ### Fixed
 - Support `hypothesis` strategies now accept `address` `exclude` ([#1013](https://github.com/eth-brownie/brownie/pull/1013))
-=======
 - Add polygon network integration ([#1119](https://github.com/eth-brownie/brownie/pull/1119))
 - Fixed subcalls to empty accounts not appearing in the subcalls property of TransactionReceipts ([#1106](https://github.com/eth-brownie/brownie/pull/1106))
 
 ### Added
 - Added `LocalAccount.sign_message` method to sign `EIP712Message` objects ([#1097](https://github.com/eth-brownie/brownie/pull/1097))
->>>>>>> 4a399b1323b75226a801c16af1cc170273506bef
 
 ## [1.14.6](https://github.com/eth-brownie/brownie/tree/v1.14.5) - 2021-04-20
 ### Changed
