@@ -206,15 +206,19 @@ def _get_solc_remappings(remappings: Optional[list]) -> list:
         remap_dict = dict([remappings.split("=")])
     else:
         remap_dict = dict(i.split("=") for i in remappings)
-
-    for path in _get_data_folder().joinpath("packages").iterdir():
+    remapped_dict = {}
+    packages = _get_data_folder().joinpath("packages")
+    for path in packages.iterdir():
         key = next((k for k, v in remap_dict.items() if v.startswith(path.name)), None)
         if key:
-            remap_dict[key] = path.parent.joinpath(remap_dict[key]).as_posix()
+            remapped_dict[key] = path.parent.joinpath(remap_dict.pop(key)).as_posix()
         else:
-            remap_dict[path.name] = path.as_posix()
+            remapped_dict[path.name] = path.as_posix()
+    for (k, v) in remap_dict.items():
+        if packages.joinpath(v).exists():
+            remapped_dict[k] = packages.joinpath(v).as_posix()
 
-    return [f"{k}={v}" for k, v in remap_dict.items()]
+    return [f"{k}={v}" for k, v in dict(remap_dict, **remapped_dict).items()]
 
 
 def _get_allow_paths(allow_paths: Optional[str], remappings: list) -> str:

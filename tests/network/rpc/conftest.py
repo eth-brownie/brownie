@@ -17,8 +17,8 @@ def original_port(xdist_id):
 
 
 @pytest.fixture(scope="module")
-def _no_rpc_setup(rpc, chain, web3, temp_port, original_port):
-    CONFIG.networks["development"]["cmd_settings"]["port"] = temp_port
+def _no_rpc_setup(rpc, chain, web3, temp_port, original_port, network_name):
+    CONFIG.networks[network_name]["cmd_settings"]["port"] = temp_port
     web3.connect(f"http://127.0.0.1:{temp_port}")
     proc = rpc.process
     reset_id = chain._reset_id
@@ -28,7 +28,7 @@ def _no_rpc_setup(rpc, chain, web3, temp_port, original_port):
     # rpc.launch = _launch
     _notify_registry(0)
     yield
-    CONFIG.networks["development"]["cmd_settings"]["port"] = original_port
+    CONFIG.networks[network_name]["cmd_settings"]["port"] = original_port
     web3.connect(f"http://127.0.0.1:{original_port}")
     # rpc.launch = rpc._launch
     rpc.kill(False)

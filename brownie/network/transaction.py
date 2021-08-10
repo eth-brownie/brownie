@@ -5,6 +5,7 @@ import re
 import sys
 import threading
 import time
+from collections import deque
 from enum import IntEnum
 from hashlib import sha1
 from pathlib import Path
@@ -14,7 +15,7 @@ import black
 import requests
 from eth_abi import decode_abi
 from hexbytes import HexBytes
-from web3.exceptions import TimeExhausted, TransactionNotFound
+from web3.exceptions import TransactionNotFound
 
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
@@ -30,6 +31,8 @@ from brownie.utils.output import build_tree
 from . import state
 from .event import EventDict, _decode_logs, _decode_trace
 from .web3 import web3
+
+_marker = deque("-/|\\-/|\\")
 
 
 def trace_property(fn: Callable) -> Any:
@@ -126,6 +129,7 @@ class TransactionReceipt:
     sender = None
     txid: str
     txindex = None
+    type: int
 
     def __init__(
         self,
@@ -418,14 +422,27 @@ class TransactionReceipt:
                     if sender_nonce > self.nonce:
                         self.status = Status(-2)
                         return
+                if not self._silent:
+                    sys.stdout.write(f"  Awaiting transaction in the mempool... {_marker[0]}\r")
+                    sys.stdout.flush()
+                    _marker.rotate(1)
                 time.sleep(1)
 
         self._set_from_tx(tx)
 
         if not self._silent:
+            if self.type == 2:
+                max_gas = tx["maxFeePerGas"] / 10 ** 9
+                priority_gas = tx["maxPriorityFeePerGas"] / 10 ** 9
+                output_str = (
+                    f"  Max fee: {color('bright blue')}{max_gas}{color} gwei"
+                    f"   Priority fee: {color('bright blue')}{priority_gas}{color} gwei"
+                )
+            else:
+                gas_price = self.gas_price / 10 ** 9
+                output_str = f"  Gas price: {color('bright blue')}{gas_price}{color} gwei"
             print(
-                f"  Gas price: {color('bright blue')}{self.gas_price / 10 ** 9}{color} gwei"
-                f"   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
+                f"{output_str}   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
                 f"   Nonce: {color('bright blue')}{self.nonce}{color}"
             )
 
@@ -439,32 +456,52 @@ class TransactionReceipt:
             confirm_thread.join()
 
     def _await_confirmation(self, block_number: int = None, required_confs: int = 1) -> None:
-        block_number = block_number or self.block_number
-        if not block_number and not self._silent and required_confs > 0:
-            if required_confs == 1:
-                sys.stdout.write("\rWaiting for confirmation... ")
-            else:
-                sys.stdout.write(
-                    f"\rRequired confirmations: {color('bright yellow')}0/{required_confs}{color}"
-                )
-            sys.stdout.flush()
-
         # await first confirmation
+        block_number = block_number or self.block_number
+        nonce_time = 0.0
+        sender_nonce = 0
         while True:
-            # if sender nonce is greater than tx nonce, the tx should be confirmed
-            sender_nonce = web3.eth.get_transaction_count(str(self.sender))
-            expect_confirmed = bool(sender_nonce > self.nonce)  # type: ignore
+            # every 15 seconds, check if the nonce increased without a confirmation of
+            # this specific transaction. if this happens, the tx has likely dropped
+            # and we should stop waiting.
+            if time.time() - nonce_time > 15:
+                sender_nonce = web3.eth.get_transaction_count(str(self.sender))
+                nonce_time = time.time()
+
             try:
-                receipt = web3.eth.wait_for_transaction_receipt(
-                    HexBytes(self.txid), timeout=15, poll_latency=1
-                )
+                receipt = web3.eth.get_transaction_receipt(HexBytes(self.txid))
+            except TransactionNotFound:
+                receipt = None
+            # the null blockHash check is required for older versions of Parity
+            # taken from `web3._utils.transactions.wait_for_transaction_receipt`
+            if receipt is not None and receipt["blockHash"] is not None:
                 break
-            except TimeExhausted:
-                if expect_confirmed:
-                    # if we expected confirmation based on the nonce, tx likely dropped
-                    self.status = Status(-2)
-                    self._confirmed.set()
-                    return
+
+            # continuation of the nonce logic 2 sections prior. we must check the receipt
+            # after querying the nonce, because in the other order there is a chance that
+            # the tx would confirm after checking the receipt but before checking the nonce
+            if sender_nonce > self.nonce:  # type: ignore
+                self.status = Status(-2)
+                self._confirmed.set()
+                return
+
+            if not block_number and not self._silent and required_confs > 0:
+                if required_confs == 1:
+                    sys.stdout.write(f"  Waiting for confirmation... {_marker[0]}\r")
+                else:
+                    sys.stdout.write(
+                        f"  Required confirmations: {color('bright yellow')}0/"
+                        f"{required_confs}{color}   {_marker[0]}\r"
+                    )
+                _marker.rotate(1)
+                sys.stdout.flush()
+                time.sleep(1)
+
+        # silence other dropped tx's immediately after confirmation to avoid output weirdness
+        for dropped_tx in state.TxHistory().filter(
+            sender=self.sender, nonce=self.nonce, key=lambda k: k != self
+        ):
+            dropped_tx._silent = True
 
         self.block_number = receipt["blockNumber"]
         # wait for more confirmations if required and handle uncle blocks
@@ -518,10 +555,12 @@ class TransactionReceipt:
             self.sender = EthAddress(tx["from"])
         self.receiver = EthAddress(tx["to"]) if tx["to"] else None
         self.value = Wei(tx["value"])
-        self.gas_price = tx["gasPrice"]
+        if "gasPrice" in tx:
+            self.gas_price = tx["gasPrice"]
         self.gas_limit = tx["gas"]
         self.input = tx["input"]
         self.nonce = tx["nonce"]
+        self.type = int(HexBytes(tx.get("type", 0)).hex(), 16)
 
         # if receiver is a known contract, set function name
         if self.fn_name:
@@ -544,6 +583,8 @@ class TransactionReceipt:
         self.gas_used = receipt["gasUsed"]
         self.logs = receipt["logs"]
         self.status = Status(receipt["status"])
+        if "effectiveGasPrice" in receipt:
+            self.gas_price = receipt["effectiveGasPrice"]
 
         self.contract_address = receipt["contractAddress"]
         if self.contract_address and not self.contract_name:
@@ -564,11 +605,13 @@ class TransactionReceipt:
             revert_msg = self.revert_msg if web3.supports_traces else None
             status = f"({color('bright red')}{revert_msg or 'reverted'}{color}) "
         result = (
-            f"\r  {self._full_name()} confirmed {status}- "
+            f"\r  {self._full_name()} confirmed {status}  "
             f"Block: {color('bright blue')}{self.block_number}{color}   "
             f"Gas used: {color('bright blue')}{self.gas_used}{color} "
             f"({color('bright blue')}{self.gas_used / self.gas_limit:.2%}{color})"
         )
+        if self.type == 2:
+            result += f"   Gas price: {color('bright blue')}{self.gas_price / 10 ** 9}{color} gwei"
         if self.status and self.contract_address:
             result += (
                 f"\n  {self.contract_name} deployed at: "
@@ -652,14 +695,20 @@ class TransactionReceipt:
             if step["op"] == "REVERT" and int(step["stack"][-2], 16):
                 # get returned error string from stack
                 data = _get_memory(step, -1)
-                if data[:4].hex() == "0x4e487b71":  # keccak of Panic(uint256)
+
+                selector = data[:4].hex()
+
+                if selector == "0x4e487b71":  # keccak of Panic(uint256)
                     error_code = int(data[4:].hex(), 16)
                     if error_code in SOLIDITY_ERROR_CODES:
                         self._revert_msg = SOLIDITY_ERROR_CODES[error_code]
                     else:
                         self._revert_msg = f"Panic (error code: {error_code})"
-                else:
+                elif selector == "0x08c379a0":  # keccak of Error(string)
                     self._revert_msg = decode_abi(["string"], data[4:])[0]
+                else:
+                    # TODO: actually parse the data
+                    self._revert_msg = f"typed error: {data.hex()}"
 
             elif self.contract_address:
                 self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
@@ -704,7 +753,6 @@ class TransactionReceipt:
                         step["source"] = trace[idx]["source"]
                         step = trace[idx]
 
-                    # breakpoint()
                     if "dev" in pc_map[step["pc"]]:
                         self._dev_revert_msg = pc_map[step["pc"]]["dev"]
                     else:
@@ -722,7 +770,7 @@ class TransactionReceipt:
                             self._dev_revert_msg = revert_str
 
                     if self._revert_msg is None:
-                        self._revert_msg = self._dev_revert_msg
+                        self._revert_msg = self._dev_revert_msg or ""
                     return
                 except (KeyError, AttributeError, TypeError, ValueError):
                     pass
@@ -1357,7 +1405,7 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
         if isinstance(contract._project, project_main.Project):
             # only evaluate coverage for contracts that are part of a `Project`
             last_map["coverage"] = True
-            if contract._build["language"] == "Solidity":
+            if contract._build.get("language") == "Solidity":
                 last_map["active_branches"] = set()
     else:
         last_map.update(contract=None, internal_calls=[f"<UnknownContract>.{sig}"], pc_map=None)

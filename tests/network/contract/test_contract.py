@@ -132,6 +132,7 @@ def test_from_explorer(network):
     assert len(contract._sources) == 1
 
 
+@pytest.mark.xfail
 def test_from_explorer_only_abi(network):
     network.connect("mainnet")
     # uniswap DAI market - ABI is available but source is not

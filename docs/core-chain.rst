@@ -12,36 +12,40 @@ The :func:`Chain <brownie.network.state.Chain>` object, available as ``chain``, 
 .. code-block:: python
 
     >>> chain
-    <Chain object (chainid=1, height=10451202)>
+    <Chain object (chainid=1, height=12965000)>
 
-    >>> chain[2000000]
+    >>> chain[12965000]
     AttributeDict({
-        'difficulty': 49824742724615,
-        'extraData': '0xe4b883e5bda9e7a59ee4bb99e9b1bc',
-        'gasLimit': 4712388,
-        'gasUsed': 21000,
-        'hash': '0xc0f4906fea23cf6f3cce98cb44e8e1449e455b28d684dfa9ff65426495584de6',
-        'logsBloom': '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-        'miner': '0x61c808d82a3ac53231750dadc13c777b59310bd9',
-        'nonce': '0x3b05c6d5524209f1',
-        'number': 2000000,
-        'parentHash': '0x57ebf07eb9ed1137d41447020a25e51d30a0c272b5896571499c82c33ecb7288',
-        'receiptRoot': '0x84aea4a7aad5c5899bd5cfc7f309cc379009d30179316a2a7baa4a2ea4a438ac',
-        'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347',
-        'size': 650,
-        'stateRoot': '0x96dbad955b166f5119793815c36f11ffa909859bbfeb64b735cca37cbf10bef1',
-        'timestamp': 1470173578,
-        'totalDifficulty': 44010101827705409388,
-        'transactions': ['0xc55e2b90168af6972193c1f86fa4d7d7b31a29c156665d15b9cd48618b5177ef'],
-        'transactionsRoot': '0xb31f174d27b99cdae8e746bd138a01ce60d8dd7b224f7c60845914def05ecc58',
-        'uncles': [],
+        'baseFeePerGas': 1000000000,
+        'difficulty': 7742494561645080,
+        'extraData': HexBytes('0x68747470733a2f2f7777772e6b7279707465782e6f7267'),
+        'gasLimit': 30029122,
+        'gasUsed': 30025257,
+        'hash': HexBytes('0x9b83c12c69edb74f6c8dd5d052765c1adf940e320bd1291696e6fa07829eee71'),
+        'logsBloom': HexBytes('0x24e74ad77d9a2b27bdb8f6d6f7f1cffdd8cfb47fdebd433f011f7dfcfbb7db638fadd5ff66ed134ede2879ce61149797fbcdf7b74f6b7de153ec61bdaffeeb7b59c3ed771a2fe9eaed8ac70e335e63ff2bfe239eaff8f94ca642fdf7ee5537965be99a440f53d2ce057dbf9932be9a7b9a82ffdffe4eeee1a66c4cfb99fe4540fbff936f97dde9f6bfd9f8cefda2fc174d23dfdb7d6f7dfef5f754fe6a7eec92efdbff779b5feff3beafebd7fd6e973afebe4f5d86f3aafb1f73bf1e1d0cdd796d89827edeffe8fb6ae6d7bf639ec5f5ff4c32f31f6b525b676c7cdf5e5c75bfd5b7bd1928b6f43aac7fa0f6336576e5f7b7dfb9e8ebbe6f6efe2f9dfe8b3f56'),
+        'miner': '0x7777788200B672A42421017F65EDE4Fc759564C8',
+        'mixHash': HexBytes('0x9620b46a81a4795cf4449d48e3270419f58b09293a5421205f88179b563f815a'),
+        'nonce': HexBytes('0xb223da049adf2216'),
+        'number': 12965000,
+        'parentHash': HexBytes('0x3de6bb3849a138e6ab0b83a3a00dc7433f1e83f7fd488e4bba78f2fe2631a633'),
+        'receiptsRoot': HexBytes('0x8a8865cd785e2e9dfce7da83aca010b10b9af2abbd367114b236f149534c821d'),
+        'sha3Uncles': HexBytes('0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347'),
+        'size': 137049,
+        'stateRoot': HexBytes('0x41cf6e8e60fd087d2b00360dc29e5bfb21959bce1f4c242fd1ad7c4da968eb87'),
+        'timestamp': 1628166822,
+        'totalDifficulty': 28494409340649014490153,
+        'transactions': [
+            ...
+        ],
+        'transactionsRoot': HexBytes('0xdfcb68d3a3c41096f4a77569db7956e0a0e750fad185948e54789ea0e51779cb'),
+        'uncles': []
     })
 
     >>> web3.eth.block_number
-    10451202
+    12965000
 
     >>> len(chain)
-    10451203  # always +1 to the current block number, because the first block is zero
+    12965001  # always +1 to the current block number, because the first block is zero
 
     >>> chain[0] == web3.eth.get_block(0)
     True

@@ -107,7 +107,7 @@ class VirtualMachineError(Exception):
             self.source: str = ""
             self.revert_type: str = data["error"]
             self.pc: Optional[str] = data.get("program_counter")
-            if self.revert_type == "revert":
+            if self.pc and self.revert_type == "revert":
                 self.pc -= 1
 
             self.revert_msg: Optional[str] = data.get("reason")
