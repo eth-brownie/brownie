@@ -76,7 +76,7 @@ def _decimal_strategy(
 
 
 @_exclude_filter
-def _address_strategy(length: Optional[int] = None, exclude_by_index=None) -> SearchStrategy:
+def _address_strategy(length: Optional[int] = None, exclude_by_index: Optional[List[int]]=None) -> SearchStrategy:
 
     if min(exclude_by_index) < 0:
         raise ValueError("Can't use negative indices")
