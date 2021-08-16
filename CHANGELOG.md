@@ -6,6 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Fixed
+- Recursively kill all RPC child processes on exit ([#1200](https://github.com/eth-brownie/brownie/pull/1200))
 
 ## [1.16.0](https://github.com/eth-brownie/brownie/tree/v1.16.0) - 2021-08-08
 ### Added
