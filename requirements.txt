@@ -28,7 +28,7 @@ certifi==2021.5.30
     # via requests
 chardet==4.0.0
     # via aiohttp
-charset-normalizer==2.0.3
+charset-normalizer==2.0.4
     # via requests
 click==8.0.1
     # via black
@@ -97,7 +97,7 @@ hexbytes==0.2.1
     #   eth-event
     #   eth-rlp
     #   web3
-hypothesis==6.14.3
+hypothesis==6.14.7
     # via -r requirements.in
 idna==3.2
     # via
@@ -162,7 +162,7 @@ pycryptodome==3.10.1
     #   vyper
 pygments-lexer-solidity==0.7.0
     # via -r requirements.in
-pygments==2.9.0
+pygments==2.10.0
     # via
     #   -r requirements.in
     #   pygments-lexer-solidity
@@ -191,7 +191,7 @@ pythx==1.6.1
     # via -r requirements.in
 pyyaml==5.4.1
     # via -r requirements.in
-regex==2021.7.6
+regex==2021.8.3
     # via black
 requests==2.26.0
     # via
@@ -225,11 +225,11 @@ sortedcontainers==2.4.0
     # via hypothesis
 toml==0.10.2
     # via pytest
-tomli==1.0.4
+tomli==1.2.1
     # via black
 toolz==0.11.1
     # via cytoolz
-tqdm==4.61.2
+tqdm==4.62.1
     # via -r requirements.in
 typing-extensions==3.10.0.0
     # via aiohttp
@@ -243,7 +243,7 @@ vyper==0.2.15
     # via -r requirements.in
 wcwidth==0.2.5
     # via prompt-toolkit
-web3==5.22.0
+web3==5.23.0
     # via -r requirements.in
 websockets==9.1
     # via web3

@@ -2,7 +2,16 @@
 
 
 from .account import Accounts
-from .main import connect, disconnect, gas_limit, gas_price, is_connected, show_active  # NOQA 401
+from .main import (  # NOQA 401
+    connect,
+    disconnect,
+    gas_limit,
+    gas_price,
+    is_connected,
+    max_fee,
+    priority_fee,
+    show_active,
+)
 from .rpc import Rpc
 from .state import Chain, TxHistory
 from .web3 import web3
