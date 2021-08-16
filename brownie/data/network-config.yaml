@@ -121,6 +121,7 @@ development:
     id: hardhat-fork
     cmd: npx hardhat node
     host: http://127.0.0.1
+    timeout: 120
     cmd_settings:
       port: 8545
       fork: mainnet
