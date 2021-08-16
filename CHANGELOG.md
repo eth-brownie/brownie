@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Recursively kill all RPC child processes on exit ([#1200](https://github.com/eth-brownie/brownie/pull/1200))
 
+### Fixed
+- Issue with testing reverted contracts not found in deployment map ([#1195](https://github.com/eth-brownie/brownie/pull/1195))
+
 ## [1.16.0](https://github.com/eth-brownie/brownie/tree/v1.16.0) - 2021-08-08
 ### Added
 - Initial support for [Hardhat Network](https://hardhat.org/hardhat-network/) as an alternative to Ganache ([#1043](https://github.com/eth-brownie/brownie/pull/1043))
