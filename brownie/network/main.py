@@ -166,14 +166,17 @@ def priority_fee(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
     """
     Gets and optionally sets the default max priority fee per gas.
 
+    * If set to 'auto', the fee is set using `eth_maxPriorityFeePerGas`.
     * If a Wei value is given, this will be the default max fee.
     * If set to None or False, transactions will default to using gas price.
     """
     if not is_connected():
         raise ConnectionError("Not connected to any network")
     if args:
-        if args[0] is None:
+        if args[0] in (None, False):
             CONFIG.active_network["settings"]["priority_fee"] = None
+        elif args[0] == "auto":
+            CONFIG.active_network["settings"]["priority_fee"] = "auto"
         else:
             try:
                 price = Wei(args[0])
