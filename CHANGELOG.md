@@ -6,10 +6,17 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.16.1](https://github.com/eth-brownie/brownie/tree/v1.16.1) - 2021-08-16
+### Added
+- Set default values for `max_fee` and `priority_fee` ([#1206](https://github.com/eth-brownie/brownie/pull/1206))
+
 ### Fixed
 - Recursively kill all RPC child processes on exit ([#1200](https://github.com/eth-brownie/brownie/pull/1200))
 - Issue with testing reverted contracts not found in deployment map ([#1195](https://github.com/eth-brownie/brownie/pull/1195))
 - Fix issue with missing contracts in coverage report ([#1178](https://github.com/eth-brownie/brownie/pull/1178))
+- Use `eth.get_block` to avoid deprecated method warning ([#1203](https://github.com/eth-brownie/brownie/pull/1203))
+- Correctly handle functions outside contracts when generating pcMap ([#1205](https://github.com/eth-brownie/brownie/pull/1205))
 
 ## [1.16.0](https://github.com/eth-brownie/brownie/tree/v1.16.0) - 2021-08-08
 ### Added
