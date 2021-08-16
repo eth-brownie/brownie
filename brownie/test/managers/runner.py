@@ -95,11 +95,21 @@ class RevertContextManager:
                 ) from None
 
         if self.revert_msg or self.revert_pattern:
-            actual = exc_value.revert_msg
+            actual = exc_value if exc_value.revert_msg is None else exc_value.revert_msg
             if (
                 actual is None
                 or (self.revert_pattern and not re.fullmatch(self.revert_pattern, actual))
-                or (self.revert_msg and self.revert_msg != actual)
+                or (
+                    self.revert_msg
+                    and (
+                        self.revert_msg != actual
+                        and f"{actual}"
+                        != (
+                            "VM Exception while processing transaction:"
+                            f" reverted with reason string '{self.revert_msg}'"
+                        )
+                    )
+                )
             ):
                 raise AssertionError(
                     f"Unexpected revert string '{actual}'\n{exc_value.source}"
