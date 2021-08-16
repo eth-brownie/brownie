@@ -138,7 +138,7 @@ class Rpc(metaclass=_Singleton):
             print("Terminating local RPC client...")
         except ValueError:
             pass
-        for child in self.process.children():
+        for child in self.process.children(recursive=True):
             try:
                 child.kill()
             except psutil.NoSuchProcess:
