@@ -942,8 +942,6 @@ class ClefAccount(_PrivateKeyAccount):
 
         formatters = {
             "nonce": web3.toHex,
-            "gasPrice": web3.toHex,
-            "gas": web3.toHex,
             "value": web3.toHex,
             "chainId": web3.toHex,
             "data": web3.toHex,
