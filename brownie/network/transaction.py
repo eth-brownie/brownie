@@ -705,7 +705,11 @@ class TransactionReceipt:
                     else:
                         self._revert_msg = f"Panic (error code: {error_code})"
                 elif selector == "0x08c379a0":  # keccak of Error(string)
-                    self._revert_msg = decode_abi(["string"], data[4:])[0]
+                    try:
+                        self._revert_msg = decode_abi(["string"], data[4:])[0]
+                    except Exception:
+                        # print this one as bytes instead of hex because it probably has a string in it
+                        self._revert_msg = f"unparsed string error: {data[4:]}"
                 else:
                     # TODO: actually parse the data
                     self._revert_msg = f"typed error: {data.hex()}"
