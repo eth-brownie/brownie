@@ -28,10 +28,10 @@ Brownie
 
     core-accounts.rst
     core-contracts.rst
+    core-gas.rst
     core-chain.rst
     core-transactions.rst
     core-types.rst
-    core-gas.rst
 
 
 .. toctree::

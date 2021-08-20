@@ -19,7 +19,7 @@ from hypothesis.database import DirectoryBasedExampleDatabase
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
 
-__version__ = "1.16.0"
+__version__ = "1.16.1"
 
 BROWNIE_FOLDER = Path(__file__).parent
 DATA_FOLDER = Path.home().joinpath(".brownie")

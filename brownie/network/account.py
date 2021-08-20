@@ -702,7 +702,18 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if silent is None:
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
 
+        if gas_price is None:
+            # if gas price is not explicitly set, load the default max fee and priority fee
+            if max_fee is None:
+                max_fee = CONFIG.active_network["settings"]["max_fee"] or None
+            if priority_fee is None:
+                priority_fee = CONFIG.active_network["settings"]["priority_fee"] or None
+
+        if priority_fee == "auto":
+            priority_fee = Chain().priority_fee
+
         try:
+            # if max fee and priority fee are not set, use gas price
             if max_fee is None and priority_fee is None:
                 gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
             else:
@@ -831,13 +842,14 @@ class LocalAccount(_PrivateKeyAccount):
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
 
-    def save(self, filename: str, overwrite: bool = False) -> str:
+    def save(self, filename: str, overwrite: bool = False, password = None) -> str:
         """Encrypts the private key and saves it in a keystore json.
 
         Attributes:
             filename: path to keystore file. If no folder is given, saved in
                       ~/.brownie/accounts
             overwrite: if True, will overwrite an existing file.
+            password: Password used to encrypt the account. If none provided, you will be prompted for one
 
         Returns the absolute path to the keystore file as a string.
         """
@@ -852,8 +864,12 @@ class LocalAccount(_PrivateKeyAccount):
             json_file = Path(filename).expanduser().resolve()
         if not overwrite and json_file.exists():
             raise FileExistsError("Account with this identifier already exists")
+            
+        if password is None:
+            password = getpass("Enter the password to encrypt this account with: ")
+            
         encrypted = web3.eth.account.encrypt(
-            self.private_key, getpass("Enter the password to encrypt this account with: ")
+            self.private_key, password
         )
         with json_file.open("w") as fp:
             json.dump(encrypted, fp)
@@ -931,8 +947,6 @@ class ClefAccount(_PrivateKeyAccount):
 
         formatters = {
             "nonce": web3.toHex,
-            "gasPrice": web3.toHex,
-            "gas": web3.toHex,
             "value": web3.toHex,
             "chainId": web3.toHex,
             "data": web3.toHex,
