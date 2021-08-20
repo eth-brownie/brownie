@@ -593,6 +593,12 @@ def _get_active_fn(source_node: NodeBase, offset: Tuple[int, int]) -> Tuple[Node
             name = "<constructor>"
         else:
             name = "<fallback>"
+
+    parent = fn_node.parent()
+    if parent.nodeType == "SourceUnit":
+        # the function exists outside a contract
+        return fn_node, name
+
     return fn_node, f"{fn_node.parent().name}.{name}"
 
 

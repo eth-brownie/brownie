@@ -702,7 +702,18 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if silent is None:
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
 
+        if gas_price is None:
+            # if gas price is not explicitly set, load the default max fee and priority fee
+            if max_fee is None:
+                max_fee = CONFIG.active_network["settings"]["max_fee"] or None
+            if priority_fee is None:
+                priority_fee = CONFIG.active_network["settings"]["priority_fee"] or None
+
+        if priority_fee == "auto":
+            priority_fee = Chain().priority_fee
+
         try:
+            # if max fee and priority fee are not set, use gas price
             if max_fee is None and priority_fee is None:
                 gas_price, gas_strategy, gas_iter = self._gas_price(gas_price)
             else:
@@ -931,8 +942,6 @@ class ClefAccount(_PrivateKeyAccount):
 
         formatters = {
             "nonce": web3.toHex,
-            "gasPrice": web3.toHex,
-            "gas": web3.toHex,
             "value": web3.toHex,
             "chainId": web3.toHex,
             "data": web3.toHex,

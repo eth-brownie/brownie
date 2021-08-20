@@ -62,7 +62,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
 
     * If no argument is given, the current default is displayed.
     * If an integer value is given, this will be the default gas limit.
-    * If set to ``auto``, the gas limit is determined automatically via :meth:`web3.eth.estimate_gas <web3.eth.Eth.estimateGas>`.
+    * If set to ``"auto"``, the gas limit is determined automatically via :meth:`web3.eth.estimate_gas <web3.eth.Eth.estimate_gas>`.
 
     Returns ``False`` if the gas limit is set automatically, or an ``int`` if it is set to a fixed value.
 
@@ -99,7 +99,7 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
     Gets and optionally sets the default gas price.
 
     * If an integer value is given, this will be the default gas price.
-    * If set to ``auto``, the gas price is determined automatically via :attr:`web3.eth.gas_price <web3.eth.Eth.gasPrice>`.
+    * If set to ``"auto"``, the gas price is determined automatically via :attr:`web3.eth.gas_price <web3.eth.Eth.gas_price>`.
 
     Returns ``False`` if the gas price is set automatically, or an ``int`` if it is set to a fixed value.
 
@@ -114,6 +114,41 @@ The ``main`` module contains methods for conncting to or disconnecting from the 
         1200000000
         >>> network.gas_price("auto")
         False
+
+.. py:method:: main.max_fee(*args)
+
+    Gets and optionally sets the default max fee per gas.
+
+    * If an integer value is given, this will be the default max fee.
+    * If set to ``None`` or ``False``, transactions will instead default to using a legacy-style ``gas_price``.
+
+    .. code-block:: python
+
+        >>> from brownie import network
+        >>> network.max_fee()
+        None
+        >>> network.max_fee(10000000000)
+        10000000000
+        >>> network.max_fee("45 gwei")
+        45000000000
+
+.. py:method:: main.priority_fee(*args)
+
+    Gets and optionally sets the default max priority fee per gas.
+
+    * If an integer value is given, this will be the default priority fee.
+    * If set to ``"auto"``, the fee is determined automatically via :attr:`web3.eth.max_priority_fee <web3.eth.Eth.max_priority_fee>`.
+    * If set to ``None`` or ``False``, transactions will instead default to using a legacy-style ``gas_price``.
+
+    .. code-block:: python
+
+        >>> from brownie import network
+        >>> network.priority_fee()
+        None
+        >>> network.priority_fee(4000000000)
+        4000000000
+        >>> network.priority_fee("2 gwei")
+        2000000000
 
 ``brownie.network.account``
 ===========================
@@ -1690,7 +1725,7 @@ Multicall
         2. Auto-deployment on development networks (on first use).
         3. Uses ``multicall2`` key in network-config as pre-defined multicall contract address
         4. Can specify/modify block number to make calls at particular block heights
-        5. Calls which fail return ``None`` instad of causing all calls to fail 
+        5. Calls which fail return ``None`` instad of causing all calls to fail
 
     .. code-block:: python
 
@@ -1725,7 +1760,7 @@ Multicall Attributes
     .. note::
 
         ``Multicall`` relies on an instance of ``Multicall2`` being available for aggregating results. If you set the block_height before the ``Multicall2`` instance you are using was deployed a ``ContractNotFound`` error will be raised.
-    
+
     .. code-block:: python
 
         >>> with brownie.multicall(block_identifier=12733683):

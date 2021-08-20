@@ -113,6 +113,8 @@ Networks
                 gas_limit: max
                 gas_buffer: 1
                 gas_price: 0
+                max_fee: null
+                priority_fee: null
                 reverting_tx_gas_limit: max
                 default_contract_owner: true
                 cmd_settings:
@@ -156,6 +158,18 @@ Networks
         development default: ``0``
 
         live default: ``auto``
+
+    .. py:attribute:: max_fee
+
+        The default max fee per gas for all transactions. If set to ``null``, transactions will default to legacy-style (using ``gas_price``).
+
+        default: ``null``
+
+    .. py:attribute:: priority_fee
+
+        The default max priority fee per gas for all transactions. If set to ``null``, transactions will default to legacy-style (using ``gas_price``).
+
+        default: ``null``
 
     .. py:attribute:: default_contract_owner
 

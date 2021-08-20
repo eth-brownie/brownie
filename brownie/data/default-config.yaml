@@ -19,6 +19,8 @@ networks:
         gas_limit: max
         gas_buffer: 1
         gas_price: 0
+        max_fee: null
+        priority_fee: null
         reverting_tx_gas_limit: max
         default_contract_owner: true
         cmd_settings: null
@@ -26,6 +28,8 @@ networks:
         gas_limit: auto
         gas_buffer: 1.1
         gas_price: auto
+        max_fee: null
+        priority_fee: null
         reverting_tx_gas_limit: false
         default_contract_owner: false
 
