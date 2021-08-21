@@ -842,7 +842,7 @@ class LocalAccount(_PrivateKeyAccount):
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
 
-    def save(self, filename: str, overwrite: bool = False, password = None) -> str:
+    def save(self, filename: str, overwrite: bool = False, password=None) -> str:
         """Encrypts the private key and saves it in a keystore json.
 
         Attributes:
@@ -864,13 +864,11 @@ class LocalAccount(_PrivateKeyAccount):
             json_file = Path(filename).expanduser().resolve()
         if not overwrite and json_file.exists():
             raise FileExistsError("Account with this identifier already exists")
-            
+
         if password is None:
             password = getpass("Enter the password to encrypt this account with: ")
-            
-        encrypted = web3.eth.account.encrypt(
-            self.private_key, password
-        )
+
+        encrypted = web3.eth.account.encrypt(self.private_key, password)
         with json_file.open("w") as fp:
             json.dump(encrypted, fp)
         return str(json_file)
