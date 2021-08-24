@@ -131,7 +131,7 @@ hexbytes==0.2.1
     #   eth-event
     #   eth-rlp
     #   web3
-hypothesis==6.14.7
+hypothesis==6.15.0
     # via -r requirements.txt
 idna==3.2
     # via
@@ -199,7 +199,7 @@ pluggy==0.13.1
     # via
     #   -r requirements.txt
     #   pytest
-prompt-toolkit==3.0.19
+prompt-toolkit==3.0.20
     # via -r requirements.txt
 protobuf==3.17.3
     # via
@@ -263,7 +263,7 @@ pythx==1.6.1
     # via -r requirements.txt
 pyyaml==5.4.1
     # via -r requirements.txt
-regex==2021.8.3
+regex==2021.8.21
     # via
     #   -r requirements.txt
     #   black
@@ -312,7 +312,7 @@ toolz==0.11.1
     # via
     #   -r requirements.txt
     #   cytoolz
-tqdm==4.62.1
+tqdm==4.62.2
     # via -r requirements.txt
 typing-extensions==3.10.0.0
     # via
