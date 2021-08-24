@@ -1,3 +1,4 @@
+import re
 from typing import Callable, Dict, List, Optional
 
 from web3 import Web3
@@ -35,6 +36,8 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
                     data.update({"error": "revert", "reason": None})
                 elif message.startswith("revert"):
                     data.update({"error": "revert", "reason": message[7:]})
+                elif "reverted with reason string '" in message:
+                    data.update(error="revert", reason=re.findall(".*?'(.*)'$", message)[0])
                 else:
                     data["error"] = message
         return result
