@@ -842,7 +842,7 @@ class LocalAccount(_PrivateKeyAccount):
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
 
-    def save(self, filename: str, overwrite: bool = False, password=None) -> str:
+    def save(self, filename: str, overwrite: bool = False, password: Optional[str] = None) -> str:
         """Encrypts the private key and saves it in a keystore json.
 
         Attributes:
