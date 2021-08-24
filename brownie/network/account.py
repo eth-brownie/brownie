@@ -849,7 +849,7 @@ class LocalAccount(_PrivateKeyAccount):
             filename: path to keystore file. If no folder is given, saved in
                       ~/.brownie/accounts
             overwrite: if True, will overwrite an existing file.
-            password: Password used to encrypt the account. If none provided, you will be prompted for one
+            password: Password used to encrypt the account. If none, you will be prompted
 
         Returns the absolute path to the keystore file as a string.
         """
