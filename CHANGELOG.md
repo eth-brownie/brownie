@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.16.2](https://github.com/eth-brownie/brownie/tree/v1.16.2) - 2021-08-24
+### Added
+- Allow specifying password when saving an account ([#1216](https://github.com/eth-brownie/brownie/pull/1216))
+
+### Fixed
+- Hardhat revert string format ([#1218](https://github.com/eth-brownie/brownie/pull/1218))
+- Clef formatter for EIP-1559 transactions ([#1211](https://github.com/eth-brownie/brownie/pull/1211))
+
 ## [1.16.1](https://github.com/eth-brownie/brownie/tree/v1.16.1) - 2021-08-16
 ### Added
 - Set default values for `max_fee` and `priority_fee` ([#1206](https://github.com/eth-brownie/brownie/pull/1206))
