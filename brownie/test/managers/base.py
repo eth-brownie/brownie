@@ -187,6 +187,7 @@ class PytestBrownieBase:
                 path, test_id = self._test_id(report.nodeid)
                 idx = self.node_map[path].index(test_id)
                 report.outcome = convert_outcome(self.results[path][idx])
+                report.longrepr = (path, None, "Skipped")  # File path, line no., reason
                 return "skipped", "s", "SKIPPED"
             return "", "", ""
         if hasattr(report, "wasxfail"):
