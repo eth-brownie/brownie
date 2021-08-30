@@ -972,7 +972,8 @@ class ClefAccount(_PrivateKeyAccount):
         """
         msg_hash_bytes = HexBytes(_hash_eip191_message(message.signable_message))
         assert len(msg_hash_bytes) == 32, "The message hash must be exactly 32-bytes"
-        response = self._provider.make_request("account_signTypedData", [self.address, message.body_data])
+        response = self._provider.make_request(
+            "account_signTypedData", [self.address, message.body_data])
         if "error" in response:
             raise ValueError(response["error"]["message"])
         return SignedMessage(
