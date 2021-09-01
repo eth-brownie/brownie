@@ -317,7 +317,10 @@ class Chain(metaclass=_Singleton):
                 self._redo_buffer.clear()
             self._current_id = rpc.Rpc().snapshot()
             # ensure the local time offset is correct, in case it was modified by the transaction
-            self.sleep(0)
+            try:
+                self.sleep(0)
+            except NotImplementedError:
+                pass
 
     def _network_connected(self) -> None:
         self._reset_id = None
