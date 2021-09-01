@@ -312,9 +312,12 @@ class TransactionReceipt:
         ---------
         increment : float, optional
             Multiplier applied to the gas price of this transaction in order
-            to determine the new gas price
+            to determine the new gas price. For EIP1559 transactions the multiplier
+            is applied to the max_fee, the priority_fee is incremented by 1.1.
         gas_price : Wei, optional
-            Absolute gas price to use in the replacement transaction
+            Absolute gas price to use in the replacement transaction. For EIP1559
+            transactions this is the new max_fee, the priority_fee is incremented
+            by 1.1.
         silent : bool, optional
             Toggle console verbosity (default is same setting as this transaction)
 
@@ -332,6 +335,14 @@ class TransactionReceipt:
 
         if increment is not None:
             gas_price = Wei(self.gas_price * increment)
+        else:
+            gas_price = Wei(gas_price)
+
+        max_fee, priority_fee = None, None
+        if self.max_fee is not None and self.priority_fee is not None:
+            max_fee = gas_price
+            priority_fee = Wei(self.priority_fee * 1.1)
+            gas_price = None
 
         if silent is None:
             silent = self._silent
@@ -351,7 +362,9 @@ class TransactionReceipt:
             self.receiver,
             self.value,
             gas_limit=self.gas_limit,
-            gas_price=Wei(gas_price),
+            gas_price=gas_price,
+            max_fee=max_fee,
+            priority_fee=priority_fee,
             data=self.input,
             nonce=self.nonce,
             required_confs=0,
