@@ -556,8 +556,9 @@ class TransactionReceipt:
             self.sender = EthAddress(tx["from"])
         self.receiver = EthAddress(tx["to"]) if tx["to"] else None
         self.value = Wei(tx["value"])
-        if "gasPrice" in tx:
-            self.gas_price = tx["gasPrice"]
+        self.gas_price = tx["gasPrice"]
+        self.max_fee = tx.get("maxFeePerGas")
+        self.priority_fee = tx.get("maxPriorityFeePerGas")
         self.gas_limit = tx["gas"]
         self.input = tx["input"]
         self.nonce = tx["nonce"]
