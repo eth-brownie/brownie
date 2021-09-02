@@ -1,7 +1,7 @@
 import json
 from collections import defaultdict
 from dataclasses import dataclass
-from threading import get_ident
+from threading import Lock, get_ident
 from types import FunctionType, TracebackType
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -43,6 +43,8 @@ class LazyResult(Proxy):
 class Multicall:
     """Context manager for batching multiple calls to constant contract functions."""
 
+    _lock = Lock()
+
     def __init__(self) -> None:
         self.address = None
         self.block_number = None
@@ -62,17 +64,18 @@ class Multicall:
         return self
 
     def _flush(self, future_result: Result = None) -> Any:
-        if not self._pending_calls:
-            # either all calls have already been made
-            # or this result has already been retrieved
-            return future_result
-        ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
-        results = self._contract.tryAggregate(  # type: ignore
-            False,
-            [_call.calldata for _call in self._pending_calls],
-            block_identifier=self.block_number,
-        )
-        ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
+        with self._lock:
+            if not self._pending_calls:
+                # either all calls have already been made
+                # or this result has already been retrieved
+                return future_result
+            ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
+            results = self._contract.tryAggregate(  # type: ignore
+                False,
+                [_call.calldata for _call in self._pending_calls],
+                block_identifier=self.block_number,
+            )
+            ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
         for _call, result in zip(self._pending_calls, results):
             _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None  # type: ignore
         self._pending_calls = []  # empty the pending calls
