@@ -40,7 +40,7 @@ def test_to_account_sleep_raises(accounts, rpc, monkeypatch):
     assert(rpc.is_active())
     monkeypatch.setattr(rpc, "sleep", _raises)
     tx = accounts[0].transfer(accounts[1], 10000)
-    assert str(tx.receiver == accounts[1].address)
+    assert str(tx.receiver) == accounts[1].address
     # The transfer method spawns a daemon thread (undo_thread)
     # to handle the undo buffer, and the exception (if any) will
     # be raised in this thread. To be able to catch it, we will
