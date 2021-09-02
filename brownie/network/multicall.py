@@ -64,18 +64,17 @@ class Multicall:
         return self
 
     def _flush(self, future_result: Result = None) -> Any:
-        with self._lock:
-            if not self._pending_calls:
-                # either all calls have already been made
-                # or this result has already been retrieved
-                return future_result
-            ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
-            results = self._contract.tryAggregate(  # type: ignore
-                False,
-                [_call.calldata for _call in self._pending_calls],
-                block_identifier=self.block_number,
-            )
-            ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
+        if not self._pending_calls:
+            # either all calls have already been made
+            # or this result has already been retrieved
+            return future_result
+        ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
+        results = self._contract.tryAggregate(  # type: ignore
+            False,
+            [_call.calldata for _call in self._pending_calls],
+            block_identifier=self.block_number,
+        )
+        ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
         for _call, result in zip(self._pending_calls, results):
             _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None  # type: ignore
         self._pending_calls = []  # empty the pending calls
@@ -112,6 +111,7 @@ class Multicall:
         """Enter the Context Manager and substitute `ContractCall.__call__`"""
         # we set the code objects on ContractCall class so we can grab them later
 
+        self._lock.acquire()
         active_network = CONFIG.active_network
 
         if "multicall2" in active_network:
@@ -139,6 +139,7 @@ class Multicall:
         """Exit the Context Manager and reattach original `ContractCall.__call__` code"""
         self.flush()
         getattr(ContractCall, "__multicall")[get_ident()] = None
+        self._lock.release()
 
     @staticmethod
     def deploy(tx_params: Dict) -> Contract:
