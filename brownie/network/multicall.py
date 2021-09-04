@@ -57,7 +57,7 @@ class Multicall:
         ContractCall.__call__.__code__ = self._proxy_call.__code__
 
     @property
-    def block_number(self):
+    def block_number(self) -> int:
         return self._block_number[get_ident()]
 
     def __call__(
