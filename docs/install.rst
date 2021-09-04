@@ -107,3 +107,5 @@ Once installed, include the ``--network hardhat`` flag to run Brownie with Hardh
         brownie console --network hardhat
 
 The first time you use Hardhat within a Brownie project, a ``hardhat.config.js`` `configuration file <https://hardhat.org/config/>`_ is generated. You should not modify any of the settings within this file as they are required for compatibility.
+
+If you have updated your brownie version from older versions, hardhat networks will be missing. You have to update ``~/.brownie/network-config.yaml``. It can be updated using the one `here <https://github.com/eth-brownie/brownie/blob/master/brownie/data/network-config.yaml>`_
