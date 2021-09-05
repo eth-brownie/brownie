@@ -43,6 +43,13 @@ live:
         id: kotti
         host: https://www.ethercluster.com/kotti
         explorer: https://blockscout.com/etc/kotti/api
+  - name: Arbitrum
+    networks:
+      - name: Mainnet
+        chainid: 42161
+        id: arbitrum-main
+        host: https://arb1.arbitrum.io/rpc
+        explorer:  https://api.arbiscan.io/api
   - name: Binance Smart Chain
     networks:
       - name: Testnet
