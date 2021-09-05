@@ -38,9 +38,9 @@ def test_flush_mid_execution(accounts, tester):
 
     with brownie.multicall:
         tester.getTuple(addr)
-        assert len(brownie.multicall._pending_calls) == 1
+        assert len([x for v in brownie.multicall._pending_calls.values() for x in v]) == 1
         brownie.multicall.flush()
-        assert len(brownie.multicall._pending_calls) == 0
+        assert len([x for v in brownie.multicall._pending_calls.values() for x in v]) == 0
 
 
 def test_proxy_object_fetches_on_next_use(accounts, tester):
@@ -50,10 +50,10 @@ def test_proxy_object_fetches_on_next_use(accounts, tester):
 
     with brownie.multicall:
         ret_val = tester.getTuple(addr)
-        assert len(brownie.multicall._pending_calls) == 1
+        assert len([x for v in brownie.multicall._pending_calls.values() for x in v]) == 1
         # ret_val is now fetched
         assert ret_val == value
-        assert len(brownie.multicall._pending_calls) == 0
+        assert len([x for v in brownie.multicall._pending_calls.values() for x in v]) == 0
 
 
 def test_proxy_object_updates_on_exit(accounts, tester):

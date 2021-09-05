@@ -47,38 +47,46 @@ class Multicall:
 
     def __init__(self) -> None:
         self.address = None
-        self.block_number = None
+        self._block_number = defaultdict(lambda: None)  # type: ignore
         self._contract = None
-        self._pending_calls: List[Call] = []
+        self._pending_calls: Dict[int, List[Call]] = defaultdict(list)
 
         setattr(ContractCall, "__original_call_code", ContractCall.__call__.__code__)
         setattr(ContractCall, "__proxy_call_code", self._proxy_call.__code__)
         setattr(ContractCall, "__multicall", defaultdict(lambda: None))
         ContractCall.__call__.__code__ = self._proxy_call.__code__
 
+    @property
+    def block_number(self) -> int:
+        return self._block_number[get_ident()]
+
     def __call__(
         self, address: Optional[str] = None, block_identifier: Union[str, bytes, int, None] = None
     ) -> "Multicall":
         self.address = address  # type: ignore
-        self.block_number = block_identifier  # type: ignore
+        self._block_number[get_ident()] = block_identifier  # type: ignore
         return self
 
     def _flush(self, future_result: Result = None) -> Any:
+        pending_calls = self._pending_calls[get_ident()]
+        self._pending_calls[get_ident()] = []
+
+        if not pending_calls:
+            # either all calls have already been made
+            # or this result has already been retrieved
+            return future_result
         with self._lock:
-            if not self._pending_calls:
-                # either all calls have already been made
-                # or this result has already been retrieved
-                return future_result
             ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
             results = self._contract.tryAggregate(  # type: ignore
                 False,
-                [_call.calldata for _call in self._pending_calls],
-                block_identifier=self.block_number,
+                [_call.calldata for _call in pending_calls],
+                block_identifier=self._block_number[get_ident()],
             )
             ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
-        for _call, result in zip(self._pending_calls, results):
+
+        for _call, result in zip(pending_calls, results):
             _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None  # type: ignore
-        self._pending_calls = []  # empty the pending calls
+
         return future_result
 
     def flush(self) -> Any:
@@ -91,7 +99,7 @@ class Multicall:
         call_obj = Call(calldata, call.decode_output)  # type: ignore
         # future result
         result = Result(call_obj)
-        self._pending_calls.append(result)
+        self._pending_calls[get_ident()].append(result)
 
         return LazyResult(lambda: self._flush(result))
 
@@ -119,9 +127,11 @@ class Multicall:
         elif "cmd" in active_network:
             deployment = self.deploy({"from": accounts[0]})
             self.address = deployment.address  # type: ignore
-            self.block_number = deployment.tx.block_number  # type: ignore
+            self._block_number[get_ident()] = deployment.tx.block_number  # type: ignore
 
-        self.block_number = self.block_number or web3.eth.get_block_number()
+        self._block_number[get_ident()] = (
+            self._block_number[get_ident()] or web3.eth.get_block_number()
+        )
 
         if self.address is None:
             raise ContractNotFound(
