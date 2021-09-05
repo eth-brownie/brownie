@@ -382,6 +382,7 @@ class ContractContainer(_ContractBase):
             "etherscan": "ETHERSCAN_TOKEN",
             "bscscan": "BSCSCAN_TOKEN",
             "polygonscan": "POLYGONSCAN_TOKEN",
+            "ftmscan": "FTMSCAN_TOKEN",
         }
         url = CONFIG.active_network.get("explorer")
         if url is None:
@@ -1902,6 +1903,16 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
                 "No PolygonScan API token set. You may experience issues with rate limiting. "
                 "Visit https://polygonscan.com/register to obtain a token, and then store it "
                 "as the environment variable $POLYGONSCAN_TOKEN",
+                BrownieEnvironmentWarning,
+            )
+    elif "ftmscan" in url:
+        if os.getenv("FTMSCAN_TOKEN"):
+            params["apiKey"] = os.getenv("FTMSCAN_TOKEN")
+        elif not silent:
+            warnings.warn(
+                "No Ftmscan API token set. You may experience issues with rate limiting. "
+                "Visit https://ftmscan.com/register to obtain a token, and then store it "
+                "as the environment variable $FTMSCAN_TOKEN",
                 BrownieEnvironmentWarning,
             )
     if not silent:

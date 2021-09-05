@@ -6,6 +6,7 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+- Prevent brownie from crashing when skipping tests with -s ([#1220](https://github.com/eth-brownie/brownie/pull/1220))
 
 ## [1.16.2](https://github.com/eth-brownie/brownie/tree/v1.16.2) - 2021-08-24
 ### Added
