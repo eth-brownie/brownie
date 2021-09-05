@@ -4,7 +4,7 @@ import sys
 from collections import deque
 from inspect import getmembers
 from types import FunctionType
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from hypothesis import settings as hp_settings
 from hypothesis import stateful as sf
@@ -70,7 +70,7 @@ def _generate_state_machine(rules_object: type) -> type:
 
     bases = (_BrownieStateMachine, rules_object, sf.RuleBasedStateMachine)
     machine = type("BrownieStateMachine", bases, {})
-    strategies = {k: v for k, v in getmembers(rules_object) if isinstance(v, SearchStrategy)}
+    strategies: Dict = {k: v for k, v in getmembers(rules_object) if isinstance(v, SearchStrategy)}
 
     for attr, fn in filter(_member_filter, getmembers(machine)):
         varnames = [[i] for i in fn.__code__.co_varnames[1 : fn.__code__.co_argcount]]

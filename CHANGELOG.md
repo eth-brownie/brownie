@@ -6,7 +6,15 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.16.3](https://github.com/eth-brownie/brownie/tree/v1.16.3) - 2021-09-04
+### Added
+- Add API token to verify sources on ftmscan ([#1226](https://github.com/eth-brownie/brownie/pull/1226))
+- Add `arbitrum-main` to default networks in `network-config.yaml` ([#1235](https://github.com/eth-brownie/brownie/pull/1235))
+
+### Fixed
 - Prevent brownie from crashing when skipping tests with -s ([#1220](https://github.com/eth-brownie/brownie/pull/1220))
+- Thread safety for `multicall` ([#1233](https://github.com/eth-brownie/brownie/pull/1233))
 
 ## [1.16.2](https://github.com/eth-brownie/brownie/tree/v1.16.2) - 2021-08-24
 ### Added
