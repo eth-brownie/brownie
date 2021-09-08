@@ -10,6 +10,7 @@ from enum import IntEnum
 from hashlib import sha1
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+import warnings
 
 import black
 import requests
@@ -839,6 +840,11 @@ class TransactionReceipt:
             is_subcall = trace[i - 1]["op"] in call_opcodes
             if is_depth_increase or is_subcall:
                 step = trace[i - 1]
+
+                # different nodes return this hex in different formats
+                # we need 32 bytes (64 characters) without the 0x prefix
+                step["stack"] = [HexBytes(s).hex()[2:].zfill(64) for s in step["stack"]]
+
                 if step["op"] in ("CREATE", "CREATE2"):
                     # creating a new contract
                     out = next(x for x in trace[i:] if x["depth"] == step["depth"])
@@ -864,6 +870,7 @@ class TransactionReceipt:
                 self._subcalls.append(
                     {"from": step["address"], "to": EthAddress(address), "op": step["op"]}
                 )
+
                 if step["op"] in ("CALL", "CALLCODE"):
                     self._subcalls[-1]["value"] = int(step["stack"][-3], 16)
                 if is_depth_increase and calldata and last_map[trace[i]["depth"]].get("function"):
@@ -978,8 +985,12 @@ class TransactionReceipt:
         )
 
     def _add_internal_xfer(self, from_: str, to: str, value: str) -> None:
+        if not value.startswith("0x"):
+            # TODO: this seems wrong
+            value = f"0x{value}"
+
         self._internal_transfers.append(  # type: ignore
-            {"from": EthAddress(from_), "to": EthAddress(to), "value": Wei(f"0x{value}")}
+            {"from": EthAddress(from_), "to": EthAddress(to), "value": Wei(value)}
         )
 
     def _full_name(self) -> str:
