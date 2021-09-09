@@ -869,7 +869,6 @@ class TransactionReceipt:
                 self._subcalls.append(
                     {"from": step["address"], "to": EthAddress(address), "op": step["op"]}
                 )
-
                 if step["op"] in ("CALL", "CALLCODE"):
                     self._subcalls[-1]["value"] = int(step["stack"][-3], 16)
                 if is_depth_increase and calldata and last_map[trace[i]["depth"]].get("function"):
