@@ -377,6 +377,7 @@ def _sources_dict(original: Dict, language: str) -> Dict:
 
 def get_abi(
     contract_sources: Dict[str, str],
+    solc_version: Optional[str] = None,
     allow_paths: Optional[str] = None,
     remappings: Optional[list] = None,
     silent: bool = True,
@@ -388,6 +389,7 @@ def get_abi(
     ---------
     contract_sources : dict
         a dictionary in the form of {'path': "source code"}
+    solc_version: solc version to compile with (use None to set via pragmas)
     allow_paths : str, optional
         Compiler allowed filesystem import path
     remappings : list, optional
@@ -438,7 +440,10 @@ def get_abi(
     if not solc_sources:
         return final_output
 
-    compiler_targets = find_solc_versions(solc_sources, install_needed=True, silent=silent)
+    if solc_version:
+        compiler_targets = {solc_version: list(solc_sources)}
+    else:
+        compiler_targets = find_solc_versions(solc_sources, install_needed=True, silent=silent)
 
     for version, path_list in compiler_targets.items():
         to_compile = {k: v for k, v in contract_sources.items() if k in path_list}

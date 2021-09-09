@@ -315,6 +315,7 @@ class Project(_ProjectBase):
         changed_sources = {i: self._sources.get(i) for i in changed_paths}
         abi_json = compiler.get_abi(
             changed_sources,
+            solc_version=self._compiler_config["solc"].get("version", None),
             allow_paths=self._path.as_posix(),
             remappings=self._compiler_config["solc"].get("remappings", []),
         )
