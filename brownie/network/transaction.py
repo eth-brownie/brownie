@@ -10,7 +10,6 @@ from enum import IntEnum
 from hashlib import sha1
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
-import warnings
 
 import black
 import requests
@@ -985,12 +984,8 @@ class TransactionReceipt:
         )
 
     def _add_internal_xfer(self, from_: str, to: str, value: str) -> None:
-        if not value.startswith("0x"):
-            # TODO: this seems wrong
-            value = f"0x{value}"
-
         self._internal_transfers.append(  # type: ignore
-            {"from": EthAddress(from_), "to": EthAddress(to), "value": Wei(value)}
+            {"from": EthAddress(from_), "to": EthAddress(to), "value": Wei(f"0x{value}")}
         )
 
     def _full_name(self) -> str:
