@@ -658,15 +658,17 @@ class TransactionReceipt:
             self._modified_state = False
             return
 
-        # different nodes return their values in slightly different formats. its really fun to handle
-
-        # check to see if need to fix the values on the stack
+        # different nodes return slightly different formats. its really fun to handle
+        # geth/nethermind returns unprefixed and with 0-padding for stack and memory
+        # erigon returns 0x-prefixed and without padding (but their memory values are like geth)
         fix_stack = False
         for step in trace:
             if not step["stack"]:
                 continue
             check = step["stack"][0]
-            if not (len(check) == 64 and check.isnumeric()):
+            if not isinstance(check, str):
+                break
+            if check.startswith("0x"):
                 fix_stack = True
                 break
 
@@ -674,12 +676,9 @@ class TransactionReceipt:
 
         if fix_stack or fix_gas:
             for step in trace:
-                # for stack values, we need 32 bytes (64 characters) without the 0x prefix
-                # geth/nethermind returns unprefixed and with padding
-                # erigon returns 0x-prefixed and without padding (but their memory values are like geth)
                 if fix_stack:
+                    # for stack values, we need 32 bytes (64 chars) without the 0x prefix
                     step["stack"] = [HexBytes(s).hex()[2:].zfill(64) for s in step["stack"]]
-
                 if fix_gas:
                     # handle traces where numeric values are returned as hex (Nethermind)
                     step["gas"] = int(step["gas"], 16)
