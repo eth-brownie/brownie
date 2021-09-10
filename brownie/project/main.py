@@ -58,6 +58,7 @@ BUILD_FOLDERS = ["contracts", "deployments", "interfaces"]
 MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"
 
 GITIGNORE = """__pycache__
+.env
 .history
 .hypothesis/
 build/
