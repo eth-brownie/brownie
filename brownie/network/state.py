@@ -14,7 +14,7 @@ from web3.types import BlockData
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
-from brownie.exceptions import BrownieEnvironmentError
+from brownie.exceptions import BrownieEnvironmentError, CompilerError
 from brownie.network import rpc
 from brownie.project.build import DEPLOYMENT_KEYS
 from brownie.utils.sql import Cursor
@@ -555,7 +555,7 @@ def _find_contract(address: Any) -> Any:
             from brownie.network.contract import Contract
 
             return Contract(address)
-        except ValueError:
+        except (ValueError, CompilerError):
             pass
 
 

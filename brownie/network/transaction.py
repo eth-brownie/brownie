@@ -10,6 +10,7 @@ from enum import IntEnum
 from hashlib import sha1
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from warnings import warn
 
 import black
 import requests
@@ -657,12 +658,33 @@ class TransactionReceipt:
             self._modified_state = False
             return
 
-        if isinstance(trace[0]["gas"], str):
-            # handle traces where numeric values are returned as hex (Nethermind)
+        # different nodes return their values in slightly different formats. its really fun to handle
+
+        # check to see if need to fix the values on the stack
+        fix_stack = False
+        for step in trace:
+            if not step["stack"]:
+                continue
+            check = step["stack"][0]
+            if not (len(check) == 64 and check.isnumeric()):
+                fix_stack = True
+                break
+
+        fix_gas = isinstance(trace[0]["gas"], str)
+
+        if fix_stack or fix_gas:
             for step in trace:
-                step["gas"] = int(step["gas"], 16)
-                step["gasCost"] = int.from_bytes(HexBytes(step["gasCost"]), "big", signed=True)
-                step["pc"] = int(step["pc"], 16)
+                # for stack values, we need 32 bytes (64 characters) without the 0x prefix
+                # geth/nethermind returns unprefixed and with padding
+                # erigon returns 0x-prefixed and without padding (but their memory values are like geth)
+                if fix_stack:
+                    step["stack"] = [HexBytes(s).hex()[2:].zfill(64) for s in step["stack"]]
+
+                if fix_gas:
+                    # handle traces where numeric values are returned as hex (Nethermind)
+                    step["gas"] = int(step["gas"], 16)
+                    step["gasCost"] = int.from_bytes(HexBytes(step["gasCost"]), "big", signed=True)
+                    step["pc"] = int(step["pc"], 16)
 
         if self.status:
             self._confirmed_trace(trace)
@@ -678,6 +700,9 @@ class TransactionReceipt:
         if contract:
             data = _get_memory(trace[-1], -1)
             fn = contract.get_method_object(self.input)
+            if not fn:
+                warn(f"Unable to find function on {contract} for input {self.input}")
+                return
             self._return_value = fn.decode_output(data)
 
     def _reverted_trace(self, trace: Sequence) -> None:
@@ -839,11 +864,6 @@ class TransactionReceipt:
             is_subcall = trace[i - 1]["op"] in call_opcodes
             if is_depth_increase or is_subcall:
                 step = trace[i - 1]
-
-                # different nodes return this hex in different formats
-                # we need 32 bytes (64 characters) without the 0x prefix
-                step["stack"] = [HexBytes(s).hex()[2:].zfill(64) for s in step["stack"]]
-
                 if step["op"] in ("CREATE", "CREATE2"):
                     # creating a new contract
                     out = next(x for x in trace[i:] if x["depth"] == step["depth"])
@@ -983,8 +1003,11 @@ class TransactionReceipt:
         )
 
     def _add_internal_xfer(self, from_: str, to: str, value: str) -> None:
+        if not value.startswith("0x"):
+            value = f"0x{value}"
+
         self._internal_transfers.append(  # type: ignore
-            {"from": EthAddress(from_), "to": EthAddress(to), "value": Wei(f"0x{value}")}
+            {"from": EthAddress(from_), "to": EthAddress(to), "value": Wei(value)}
         )
 
     def _full_name(self) -> str:
