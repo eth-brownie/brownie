@@ -77,8 +77,19 @@ class TxHistory(metaclass=_Singleton):
         if tx not in self._list:
             self._list.append(tx)
 
-    def clear(self) -> None:
-        self._list.clear()
+    def clear(self, only_confirmed: bool = False) -> None:
+        """
+        Clear the list.
+
+        Arguments
+        ---------
+        only_confirmed : bool, optional
+            If True, transactions which are still marked as pending will not be removed.
+        """
+        if only_confirmed:
+            self._list = [i for i in self._list if i.status == -1]
+        else:
+            self._list.clear()
 
     def copy(self) -> List:
         """Returns a shallow copy of the object as a list"""
