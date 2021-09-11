@@ -2693,6 +2693,8 @@ TransactionReceipt Methods
     * ``increment``: Multiplier applied to the gas price of the current transaction in order to determine a new gas price
     * ``gas_price``: Absolute gas price to use in the replacement transaction
 
+    For EIP-1559 transactions, the modification is applied to ``max_fee``. The ``priority_fee`` is always multiplied by 1.1 (the minimum increase required to be accepted by a node).
+
     Returns a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` object.
 
     .. code-block:: python
