@@ -133,7 +133,7 @@ Brownie provides a :func:`ContractContainer <brownie.network.contract.ContractCo
     >>> Token.deploy
     <ContractConstructor object 'Token.constructor(string _symbol, string _name, uint256 _decimals, uint256 _totalSupply)'>
 
-    >>> t = Token.deploy("Test Token", "TST", 18, 1e20, {'from': accounts[1]})
+    >>> t = Token.deploy("Test Token", "TST", 18, 1e21, {'from': accounts[1]})
 
     Transaction sent: 0x2e3cab83342edda14141714ced002e1326ecd8cded4cd0cf14b2f037b690b976
     Transaction confirmed - block: 1   gas spent: 594186
