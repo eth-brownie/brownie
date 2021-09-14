@@ -49,7 +49,8 @@ live:
         chainid: 42161
         id: arbitrum-main
         host: https://arb1.arbitrum.io/rpc
-        explorer:  https://api.arbiscan.io/api
+        explorer: https://api.arbiscan.io/api
+        multicall2: "0x5B5CFE992AdAC0C9D48E05854B2d91C73a003858"
   - name: Binance Smart Chain
     networks:
       - name: Testnet
