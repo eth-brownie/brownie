@@ -735,7 +735,7 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
         name = project_path.name
         if not name.lower().endswith("project"):
             name += " project"
-        name = "".join(i for i in name.title() if i.isalpha())
+        name = "".join(i for i in name.title() if i.isalnum())
     if next((True for i in _loaded_projects if i._name == name), False):
         raise ProjectAlreadyLoaded("There is already a project loaded with this name")
 
