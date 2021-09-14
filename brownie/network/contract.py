@@ -1875,44 +1875,19 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
         address = _resolve_address(code[30:70])
 
     params: Dict = {"module": "contract", "action": action, "address": address}
-    if "etherscan" in url:
-        if os.getenv("ETHERSCAN_TOKEN"):
-            params["apiKey"] = os.getenv("ETHERSCAN_TOKEN")
+    explorer = next(
+        (i for i in ("etherscan", "bscscan", "polygonscan", "ftmscan", "arbiscan") if i in url),
+        None,
+    )
+    if explorer is not None:
+        env_key = f"{explorer.upper()}_TOKEN"
+        if os.getenv(env_key):
+            params["apiKey"] = os.getenv(env_key)
         elif not silent:
             warnings.warn(
-                "No Etherscan API token set. You may experience issues with rate limiting. "
-                "Visit https://etherscan.io/register to obtain a token, and then store it "
-                "as the environment variable $ETHERSCAN_TOKEN",
-                BrownieEnvironmentWarning,
-            )
-    elif "bscscan" in url:
-        if os.getenv("BSCSCAN_TOKEN"):
-            params["apiKey"] = os.getenv("BSCSCAN_TOKEN")
-        elif not silent:
-            warnings.warn(
-                "No BSCScan API token set. You may experience issues with rate limiting. "
-                "Visit https://bscscan.com/register to obtain a token, and then store it "
-                "as the environment variable $BSCSCAN_TOKEN",
-                BrownieEnvironmentWarning,
-            )
-    elif "polygonscan" in url:
-        if os.getenv("POLYGONSCAN_TOKEN"):
-            params["apiKey"] = os.getenv("POLYGONSCAN_TOKEN")
-        elif not silent:
-            warnings.warn(
-                "No PolygonScan API token set. You may experience issues with rate limiting. "
-                "Visit https://polygonscan.com/register to obtain a token, and then store it "
-                "as the environment variable $POLYGONSCAN_TOKEN",
-                BrownieEnvironmentWarning,
-            )
-    elif "ftmscan" in url:
-        if os.getenv("FTMSCAN_TOKEN"):
-            params["apiKey"] = os.getenv("FTMSCAN_TOKEN")
-        elif not silent:
-            warnings.warn(
-                "No Ftmscan API token set. You may experience issues with rate limiting. "
-                "Visit https://ftmscan.com/register to obtain a token, and then store it "
-                "as the environment variable $FTMSCAN_TOKEN",
+                f"No {explorer} API token set. You may experience issues with rate limiting. "
+                f"Visit https://{explorer}.io/register to obtain a token, and then store it "
+                f"as the environment variable ${env_key}",
                 BrownieEnvironmentWarning,
             )
     if not silent:
