@@ -51,7 +51,7 @@ def main():
 
     for x in args["<arg>"]:
         if "=" in x:
-            key, value = x.split("=")
+            key, value = x.split("=", 1)
 
             fn_kwargs[key] = value
         else:
