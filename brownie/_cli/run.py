@@ -12,11 +12,12 @@ from brownie.test.output import _build_gas_profile_output
 from brownie.utils import color
 from brownie.utils.docopt import docopt
 
-__doc__ = f"""Usage: brownie run <filename> [<function>] [options]
+__doc__ = f"""Usage: brownie run <filename> [<function>] [<arg>...] [options]
 
 Arguments:
   <filename>              The name of the script to run
   [<function>]            The function to call (default is main)
+  [<arg>]                 Extra argument to pass to the function. For kwargs, do "kwarg=value"
 
 Options:
   --network [name]        Use a specific network (default {CONFIG.settings['networks']['default']})
@@ -31,7 +32,7 @@ interactions, or for gas profiling."""
 
 
 def main():
-    args = docopt(__doc__)
+    args = docopt(__doc__, more_magic=True)
     _update_argv_from_docopt(args)
 
     active_project = None
@@ -45,9 +46,24 @@ def main():
     path, _ = _get_path(args["<filename>"])
     path_str = path.absolute().as_posix()
 
+    fn_args = []
+    fn_kwargs = {}
+
+    for x in args["arg"]:
+        if "=" in x:
+            key, value = x.split(x, "=")
+
+            fn_kwargs[key] = value
+        else:
+            fn_args.append(x)
+
     try:
         return_value, frame = run(
-            args["<filename>"], method_name=args["<function>"] or "main", _include_frame=True
+            args["<filename>"],
+            method_name=args["<function>"] or "main",
+            args=fn_args,
+            kwargs=fn_kwargs,
+            _include_frame=True,
         )
         exit_code = 0
     except Exception as e:
