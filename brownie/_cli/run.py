@@ -49,9 +49,9 @@ def main():
     fn_args = []
     fn_kwargs = {}
 
-    for x in args["arg"]:
+    for x in args["<arg>"]:
         if "=" in x:
-            key, value = x.split(x, "=")
+            key, value = x.split("=")
 
             fn_kwargs[key] = value
         else:
