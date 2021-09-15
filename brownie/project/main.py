@@ -39,6 +39,7 @@ from brownie.exceptions import (
     PragmaError,
     ProjectAlreadyLoaded,
     ProjectNotFound,
+    BadProjectName,
 )
 from brownie.network import web3
 from brownie.network.contract import (
@@ -735,6 +736,8 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
         name = project_path.name
         if not name.lower().endswith("project"):
             name += " project"
+        if not name[0].isalpha():
+            raise BadProjectName("Project must start with an alphabetic character")
         name = "".join(i for i in name.title() if i.isalnum())
     if next((True for i in _loaded_projects if i._name == name), False):
         raise ProjectAlreadyLoaded("There is already a project loaded with this name")
