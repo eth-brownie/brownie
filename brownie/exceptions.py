@@ -168,6 +168,7 @@ class ProjectAlreadyLoaded(Exception):
 class ProjectNotFound(Exception):
     pass
 
+
 class BadProjectName(Exception):
     pass
 
