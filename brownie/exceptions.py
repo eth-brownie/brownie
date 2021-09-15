@@ -168,6 +168,9 @@ class ProjectAlreadyLoaded(Exception):
 class ProjectNotFound(Exception):
     pass
 
+class BadProjectName(Exception):
+    pass
+
 
 class CompilerError(Exception):
     def __init__(self, e: Type[psutil.Popen], compiler: str = "Compiler") -> None:
