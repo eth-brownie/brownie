@@ -34,12 +34,12 @@ from brownie._config import (
 )
 from brownie._expansion import expand_posix_vars
 from brownie.exceptions import (
+    BadProjectName,
     BrownieEnvironmentWarning,
     InvalidPackage,
     PragmaError,
     ProjectAlreadyLoaded,
     ProjectNotFound,
-    BadProjectName,
 )
 from brownie.network import web3
 from brownie.network.contract import (
