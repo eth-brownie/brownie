@@ -46,23 +46,11 @@ def main():
     path, _ = _get_path(args["<filename>"])
     path_str = path.absolute().as_posix()
 
-    fn_args = []
-    fn_kwargs = {}
-
-    for x in args["<arg>"]:
-        if "=" in x:
-            key, value = x.split("=", 1)
-
-            fn_kwargs[key] = value
-        else:
-            fn_args.append(x)
-
     try:
         return_value, frame = run(
             args["<filename>"],
             method_name=args["<function>"] or "main",
-            args=fn_args,
-            kwargs=fn_kwargs,
+            args=args["<arg>"],
             _include_frame=True,
         )
         exit_code = 0
