@@ -1,4 +1,5 @@
 __pycache__
+*.swp
 .vscode
 .history
 .coverage
