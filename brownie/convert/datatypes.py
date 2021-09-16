@@ -74,6 +74,15 @@ class Wei(int):
     def __sub__(self, other: Any) -> "Wei":
         return Wei(super().__sub__(_to_wei(other)))
 
+    def __floordiv__(self, other: Any) -> "Wei":
+        return Wei(super().__floordiv__(_to_wei(other)))
+
+    def __truediv__(self, other: Any) -> "Wei":
+        return self // _to_wei(other)
+
+    def __mul__(self, other: Any) -> "Wei":
+        return Wei(super().__mul__(_to_wei(other)))
+
     def to(self, unit: str) -> "Fixed":
         """
         Returns a converted denomination of the stored wei value.
@@ -84,7 +93,7 @@ class Wei(int):
         :return: A 'Fixed' type number in the specified denomination
         """
         try:
-            return Fixed(self * Fixed(10) ** -UNITS[unit])
+            return Fixed(Fixed(self) * Fixed(10) ** -UNITS[unit])
         except KeyError:
             raise TypeError(f'Cannot convert wei to unknown unit: "{unit}". ') from None
 
