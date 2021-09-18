@@ -953,6 +953,9 @@ def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
     if project_path.joinpath("brownie_hooks.py").exists():
         hooks = importlib.import_module("brownie_hooks")
 
+    if hasattr(hooks, "pre_hook"):
+        hooks.pre_hook()
+
     for path in project_path.glob(f"{subfolder}/**/*"):
         if path.suffix not in suffixes:
             continue
@@ -966,6 +969,10 @@ def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
 
         path_str: str = path.relative_to(project_path).as_posix()
         contract_sources[path_str] = source
+
+    if hasattr(hooks, "post_hook"):
+        hooks.pre_hook()
+
     return contract_sources
 
 
