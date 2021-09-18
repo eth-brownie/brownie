@@ -239,3 +239,19 @@ Alternatively, :func:`Contract.set_alias <Contract.set_alias>` allows you to cre
 
     >>> Contract('dai')
     <Dai Contract '0x6B175474E89094C44Da98b954EedeAC495271d0F'>
+
+Compilation hooks
+-------------------------------------
+
+A project can define additional compile steps in the file `brownie_hooks.py`. These functions will be called from brownie:
+
+```
+def pre_hook():
+# steps before compilation
+
+def post_hook():
+# steps after compilation
+
+def brownie_load_source(path, source):
+# this function will be called for each function
+```
