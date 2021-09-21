@@ -6,6 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Added
+- Arguments from the command line can now be passed to brownie scripts. ([#398](https://github.com/eth-brownie/brownie/issues/398))
 
 ## [1.16.3](https://github.com/eth-brownie/brownie/tree/v1.16.3) - 2021-09-04
 ### Added
