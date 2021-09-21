@@ -17,7 +17,7 @@ __doc__ = f"""Usage: brownie run <filename> [<function>] [<arg>...] [options]
 Arguments:
   <filename>              The name of the script to run
   [<function>]            The function to call (default is main)
-  [<arg>]                 Extra argument to pass to the function. For kwargs, do "kwarg=value"
+  [<arg>]                 Extra argument to pass to the function
 
 Options:
   --network [name]        Use a specific network (default {CONFIG.settings['networks']['default']})
