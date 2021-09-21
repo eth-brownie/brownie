@@ -20,13 +20,13 @@ base58==2.1.0
     # via multiaddr
 bitarray==1.2.2
     # via eth-account
-black==21.8b0
+black==21.9b0
     # via -r requirements.in
 certifi==2021.5.30
     # via requests
 chardet==4.0.0
     # via aiohttp
-charset-normalizer==2.0.4
+charset-normalizer==2.0.6
     # via requests
 click==8.0.1
     # via black
@@ -94,7 +94,7 @@ hexbytes==0.2.2
     #   eth-event
     #   eth-rlp
     #   web3
-hypothesis==6.17.4
+hypothesis==6.21.6
     # via -r requirements.in
 idna==3.2
     # via
@@ -140,7 +140,7 @@ pluggy==1.0.0
     # via pytest
 prompt-toolkit==3.0.20
     # via -r requirements.in
-protobuf==3.17.3
+protobuf==3.18.0
     # via web3
 psutil==5.8.0
     # via -r requirements.in
@@ -217,7 +217,6 @@ six==1.16.0
     #   jsonschema
     #   multiaddr
     #   parsimonious
-    #   protobuf
     #   pytest-xdist
     #   python-dateutil
 sortedcontainers==2.4.0
@@ -228,7 +227,7 @@ tomli==1.2.1
     # via black
 toolz==0.11.1
     # via cytoolz
-tqdm==4.62.2
+tqdm==4.62.3
     # via -r requirements.in
 typing-extensions==3.10.0.2
     # via

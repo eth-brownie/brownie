@@ -45,9 +45,9 @@ class _BrownieStateMachine:
             type(self)._failed = True
             raise
 
-    def check_invariants(self):
+    def check_invariants(self, settings):
         try:
-            super().check_invariants()
+            super().check_invariants(settings)
         except Exception:
             type(self)._failed = True
             raise
