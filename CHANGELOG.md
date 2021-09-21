@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.16.4](https://github.com/eth-brownie/brownie/tree/v1.16.4) - 2021-09-21
+### Added
+- Add `only_confirmed` as an optional kwarg for `history.clear` ([#1251](https://github.com/eth-brownie/brownie/pull/1251))
+- Add `.env` to default project gitignore ([#1249](https://github.com/eth-brownie/brownie/pull/1249))
+
+### Changed
+- Allow numbers in project names ([#1254](https://github.com/eth-brownie/brownie/pull/1254))
+
+### Fixed
+- Various Arbitrum related fixes ([#1255](https://github.com/eth-brownie/brownie/pull/1255))
+- Pass solc version when compiling ABI ([#1243](https://github.com/eth-brownie/brownie/pull/1243))
+- Correctly handle Erigon traces ([#1245](https://github.com/eth-brownie/brownie/pull/1245))
+- Replace EIP1559 tx's with the same tx type ([#1250](https://github.com/eth-brownie/brownie/pull/1250))
+
 ## [1.16.3](https://github.com/eth-brownie/brownie/tree/v1.16.3) - 2021-09-04
 ### Added
 - Add API token to verify sources on ftmscan ([#1226](https://github.com/eth-brownie/brownie/pull/1226))
