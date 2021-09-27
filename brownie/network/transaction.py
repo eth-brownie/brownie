@@ -1038,11 +1038,12 @@ class TransactionReceipt:
             if self.input != "0x" and int(self.input, 16):
                 result += f"Function: {self._full_name()}\n"
 
-        result += (
-            f"Block: {self.block_number}\nGas Used: "
-            f"{self.gas_used} / {self.gas_limit} "
-            f"({self.gas_used / self.gas_limit:.1%})\n"
-        )
+        if (self.gas_used):
+            result += (
+                f"Block: {self.block_number}\nGas Used: "
+                f"{self.gas_used} / {self.gas_limit} "
+                f"({self.gas_used / self.gas_limit:.1%})\n"
+            )
 
         if self.events:
             events = list(self.events)

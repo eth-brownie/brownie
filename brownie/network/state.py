@@ -7,6 +7,7 @@ import weakref
 from hashlib import sha1
 from sqlite3 import OperationalError
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from warnings import warn
 
 from hexbytes import HexBytes
 from web3.types import BlockData
@@ -636,6 +637,12 @@ def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
     all_sources = {}
     for key, path in contract._build.get("allSourcePaths", {}).items():
         source = contract._sources.get(path)
+
+        if not source:
+            # https://github.com/eth-brownie/brownie/issues/1047
+            warn(f"Missing source! This is a bug! key={key}, path={path}")
+            continue
+
         hash_ = sha1(source.encode()).hexdigest()
         cur.insert("sources", hash_, source)
         all_sources[key] = [hash_, path]
