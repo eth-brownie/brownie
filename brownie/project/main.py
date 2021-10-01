@@ -169,7 +169,7 @@ class Project(_ProjectBase):
         _build: project Build object
     """
 
-    def __init__(self, name: str, project_path: Path) -> None:
+    def __init__(self, name: str, project_path: Path, activate: bool = True) -> None:
         self._path: Path = project_path
         self._envvars = _load_project_envvars(project_path)
         self._structure = expand_posix_vars(
@@ -179,18 +179,29 @@ class Project(_ProjectBase):
 
         self._name = name
         self._active = False
-        self.load()
+        self._initialized = False
+
+        self._compiler_config = expand_posix_vars(
+            _load_project_compiler_config(self._path), self._envvars
+        )
+
+        contract_sources = _load_sources(self._path, self._structure["contracts"], False)
+        interface_sources = _load_sources(self._path, self._structure["interfaces"], True)
+        self._sources = Sources(contract_sources, interface_sources)
+        self._build = Build(self._sources)
+
+        if activate:
+            self.load()
+
+    def compile_contract(self, contract_path: Path) -> None:
+        source_code = open(contract_path, "r").read()
+        self._compile({contract_path: source_code}, self._compiler_config, silent=False)
 
     def load(self) -> None:
         """Compiles the project contracts, creates ContractContainer objects and
         populates the namespace."""
         if self._active:
             raise ProjectAlreadyLoaded("Project is already active")
-
-        contract_sources = _load_sources(self._path, self._structure["contracts"], False)
-        interface_sources = _load_sources(self._path, self._structure["interfaces"], True)
-        self._sources = Sources(contract_sources, interface_sources)
-        self._build = Build(self._sources)
 
         contract_list = self._sources.get_contract_list()
         for path in list(self._build_path.glob("contracts/*.json")):
@@ -227,10 +238,6 @@ class Project(_ProjectBase):
                 continue
             self._build._add_interface(build_json)
             interface_hashes[path.stem] = build_json["sha1"]
-
-        self._compiler_config = expand_posix_vars(
-            _load_project_compiler_config(self._path), self._envvars
-        )
 
         # compile updated sources, update build
         changed = self._get_changed_contracts(interface_hashes)
@@ -699,7 +706,9 @@ def compile_source(
         raise exc
 
 
-def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None) -> "Project":
+def load(
+    project_path: Union[Path, str, None] = None, name: Optional[str] = None, activate: bool = True
+) -> "Project":
     """Loads a project and instantiates various related objects.
 
     Args:
@@ -747,7 +756,7 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
     _add_to_sys_path(project_path)
 
     # load sources and build
-    return Project(name, project_path)
+    return Project(name, project_path, activate=activate)
 
 
 def _install_dependencies(path: Path) -> None:

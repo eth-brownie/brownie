@@ -38,20 +38,31 @@ def main():
     contract_artifact_path = build_path.joinpath("contracts")
     interface_artifact_path = build_path.joinpath("interfaces")
 
+    if args["--all"] and args["<contract>"]:
+        raise ValueError("Provided contradictory instructions: --all together with <contract>")
+
     if args["--all"]:
         shutil.rmtree(contract_artifact_path, ignore_errors=True)
         shutil.rmtree(interface_artifact_path, ignore_errors=True)
-    elif args["<contract>"]:
+
+    if args["<contract>"]:
+        proj = project.load(activate=False)
         for name in args["<contract>"]:
             path = contract_artifact_path.joinpath(f"{name}.json")
             if path.exists():
                 path.unlink()
-
-    proj = project.load()
+            # Compile contract
+            proj.compile_contract(name)
+    else:
+        proj = project.load(activate=True)  # this compiles all contracts
 
     if args["--size"]:
         print("============ Deployment Bytecode Sizes ============")
         codesize = []
+        if args["<contract>"]:
+            # We have to create contractContainers to get the size of the recently
+            # compiled contracts
+            proj._create_containers()
         for contract in proj:
             bytecode = contract._build["deployedBytecode"]
             if bytecode:
