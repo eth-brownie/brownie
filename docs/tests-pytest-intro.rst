@@ -152,7 +152,7 @@ Brownie provides two fixtures that are used to handle isolation:
     * :func:`module_isolation <fixtures.module_isolation>` is a module scoped fixture. It resets the local chain before and after completion of the module, ensuring a clean environment for this module and that the results of it will not affect subsequent modules.
     * :func:`fn_isolation <fixtures.fn_isolation>` is function scoped. It additionally takes a snapshot of the chain before running each test, and reverts to it when the test completes. This allows you to define a common state for each test, reducing repetitive transactions.
 
-Isolation fixtures are **always the first fixture within their scope to execute**. You can be certain that any action performed within a fuction-scoped fixture will happend `after` the isolation snapshot.
+Isolation fixtures are **always the first fixture within their scope to execute**. You can be certain that any action performed within a fuction-scoped fixture will happen `after` the isolation snapshot.
 
 To apply an isolation fixture to all tests in a module, require it in another fixture and include the ``autouse`` parameter:
 
