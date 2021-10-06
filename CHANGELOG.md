@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Arguments from the command line can now be passed to brownie scripts. ([#398](https://github.com/eth-brownie/brownie/issues/398))
 - Fix etherscan verification w/ new solidity flattener ([#1283](https://github.com/eth-brownie/brownie/pull/1283))
 - Drop py36 support and add py39 to CI/dev tooling ([#1289](https://github.com/eth-brownie/brownie/pull/1289))
+- Bump vyper dependency `0.2.16` -> `0.3.0` ([#1277](https://github.com/eth-brownie/brownie/pull/1277))
 
 ## [1.16.4](https://github.com/eth-brownie/brownie/tree/v1.16.4) - 2021-09-21
 ### Added
