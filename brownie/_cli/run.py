@@ -12,11 +12,12 @@ from brownie.test.output import _build_gas_profile_output
 from brownie.utils import color
 from brownie.utils.docopt import docopt
 
-__doc__ = f"""Usage: brownie run <filename> [<function>] [options]
+__doc__ = f"""Usage: brownie run <filename> [<function>] [<arg>...] [options]
 
 Arguments:
   <filename>              The name of the script to run
   [<function>]            The function to call (default is main)
+  [<arg>]                 Extra argument to pass to the function
 
 Options:
   --network [name]        Use a specific network (default {CONFIG.settings['networks']['default']})
@@ -31,7 +32,7 @@ interactions, or for gas profiling."""
 
 
 def main():
-    args = docopt(__doc__)
+    args = docopt(__doc__, more_magic=True)
     _update_argv_from_docopt(args)
 
     active_project = None
@@ -47,7 +48,10 @@ def main():
 
     try:
         return_value, frame = run(
-            args["<filename>"], method_name=args["<function>"] or "main", _include_frame=True
+            args["<filename>"],
+            method_name=args["<function>"] or "main",
+            args=args["<arg>"],
+            _include_frame=True,
         )
         exit_code = 0
     except Exception as e:
