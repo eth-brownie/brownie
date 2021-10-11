@@ -152,6 +152,20 @@ class ContractContainer(_ContractBase):
         self.deploy = ContractConstructor(self, self._name)
         _revert_register(self)
 
+        source_fp = Path(self._project._path).joinpath(build["sourcePath"]).resolve().as_posix()
+        config = self._project._compiler_config
+        remaps = dict(
+            map(
+                lambda s: s.split("=", 1),
+                compiler._get_solc_remappings(config["solc"]["remappings"]),
+            )
+        )
+        compiler_settings = {
+            "evmVersion": config["evm_version"],
+            "optimizer": config["solc"]["optimizer"],
+        }
+        self._flattener = Flattener(source_fp, self._name, remaps, compiler_settings)
+
     def __iter__(self) -> Iterator:
         return iter(self._contracts)
 
@@ -257,25 +271,15 @@ class ContractContainer(_ContractBase):
             )
         elif language == "Solidity":
             build_json = self._build
-            fp = Path(self._project._path).joinpath(build_json["sourcePath"]).resolve().as_posix()
-            remaps = dict(
-                map(
-                    lambda s: s.split("=", 1),
-                    compiler._get_solc_remappings(
-                        self._project._compiler_config["solc"]["remappings"]
-                    ),
-                )
-            )
-            flattener = Flattener(fp, build_json["contractName"], remaps, {})
             version = build_json["compiler"]["version"]
             version_short = re.findall(r"^[^+]+", version)[0]
-            license_identifier = flattener.license
+            license_identifier = self._flattener.license
 
             # combine to final flattened source
             flattened_source = (
                 f"// SPDX-License-Identifier: {license_identifier}\n\n"
                 f"pragma solidity {version_short};\n"
-                f"{flattener.flattened_source}\n\n"
+                f"{self._flattener.flattened_source}\n\n"
             )
 
             return {
