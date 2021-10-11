@@ -75,6 +75,13 @@ live:
         id: ftm-main
         host: https://rpcapi.fantom.network
         explorer: https://api.ftmscan.com/api
+  - name: Harmony
+    networks:
+      - name: Mainnet (Shard 0)
+        chainid: 1666600000
+        host: https://api.harmony.one
+        id: harmony-main
+        multicall2: "0x3E01dD8a5E1fb3481F0F589056b428Fc308AF0Fb"
   - name: Polygon
     networks:
       - name: Mainnet (Infura)
