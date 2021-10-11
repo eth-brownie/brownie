@@ -21,6 +21,7 @@ class Flattener:
         self.dependencies = defaultdict(set)
         self.compiler_settings = compiler_settings
         self.contract_name = contract_name
+        self.contract_file = Path(primary_source_fp).name
         self.remappings = remappings
 
         self.traverse(primary_source_fp)
