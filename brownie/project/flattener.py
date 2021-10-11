@@ -1,8 +1,8 @@
 import re
-from pathlib import Path
-from brownie.utils.toposort import toposort_flatten
-
 from collections import defaultdict
+from pathlib import Path
+
+from brownie.utils.toposort import toposort_flatten
 
 # Patten matching Solidity `import-directive`, capturing path component
 # https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityParser.importDirective
@@ -46,12 +46,14 @@ class Flattener:
         source = fp_obj.read_text()
 
         # path sanitization lambda fn
-        sanitize = lambda path: self.make_import_absolute(
+        sanitize = lambda path: self.make_import_absolute(  # noqa: E731
             self.remap_import(path), fp_obj.parent.as_posix()
         )
         # replacement function for re.sub, we just sanitize the path
-        repl = (
-            lambda m: f'import{m.group("prefix")}"{Path(sanitize(m.group("path"))).name}"{m.group("suffix")}'
+        repl = (  # noqa: E731
+            lambda m: f'import{m.group("prefix")}'
+            + f'"{Path(sanitize(m.group("path"))).name}"'
+            + f'{m.group("suffix")}'
         )
 
         self.sources[fp_obj.name] = IMPORT_PATTERN.sub(repl, source)
@@ -73,7 +75,7 @@ class Flattener:
         # version is used via the build info
         pragmas = set((match.strip() for src in sources for match in PRAGMA_PATTERN.findall(src)))
         # now we go thorugh and remove all imports/pragmas/license stuff
-        wipe = lambda src: PRAGMA_PATTERN.sub(
+        wipe = lambda src: PRAGMA_PATTERN.sub(  # noqa: E731
             "", LICENSE_PATTERN.sub("", IMPORT_PATTERN.sub("", src))
         )
 

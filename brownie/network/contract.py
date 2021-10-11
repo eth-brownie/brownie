@@ -5,7 +5,6 @@ import os
 import re
 import time
 import warnings
-from collections import defaultdict
 from pathlib import Path
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
@@ -14,7 +13,6 @@ from urllib.parse import urlparse
 
 import eth_abi
 import requests
-import solcast
 import solcx
 from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
@@ -43,7 +41,6 @@ from brownie.project.compiler.solidity import SOLIDITY_ERROR_CODES
 from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
-
 
 from . import accounts, chain
 from .event import _add_deployment_topics, _get_topics
