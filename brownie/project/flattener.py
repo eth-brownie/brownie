@@ -55,6 +55,8 @@ class Flattener:
         )
 
         self.sources[fp_obj.name] = IMPORT_PATTERN.sub(repl, source)
+        if fp_obj.name not in self.dependencies:
+            self.dependencies[fp_obj.name] = set()
 
         # traverse dependency files - can circular imports happen?
         for m in IMPORT_PATTERN.finditer(source):
