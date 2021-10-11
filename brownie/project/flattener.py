@@ -25,7 +25,8 @@ class Flattener:
 
         self.traverse(primary_source_fp)
 
-        self.license = LICENSE_PATTERN.search(self.sources[Path(primary_source_fp).name]).group(1)
+        license_search = LICENSE_PATTERN.search(self.sources[Path(primary_source_fp).name])
+        self.license = license_search.group(1) if license_search else "NONE"
 
     def traverse(self, fp: str) -> None:
         """Traverse a contract source files dependencies.
