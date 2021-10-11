@@ -31,7 +31,7 @@ STANDARD_JSON: Dict = {
     "settings": {
         "outputSelection": {
             "*": {
-                "*": ["abi", "devdoc", "evm.bytecode", "evm.deployedBytecode", "userdoc", "metadata"],
+                "*": ["abi", "devdoc", "evm.bytecode", "evm.deployedBytecode", "userdoc"],
                 "": ["ast"],
             }
         },
@@ -193,6 +193,7 @@ def generate_input_json(
     if interface_sources:
         if language == "Solidity":
             input_json["sources"].update(_sources_dict(interface_sources, language))
+            input_json["settings"]["outputSelection"]["*"]["*"].append("metadata")
         else:
             input_json["interfaces"] = _sources_dict(interface_sources, language)
 
@@ -320,6 +321,7 @@ def generate_build_json(
                 statement_nodes,
                 branch_nodes,
                 next((True for i in abi if i["type"] == "fallback"), False),
+                output_json["contracts"][path_str][contract_name]["metadata"],
             )
 
         else:
@@ -348,7 +350,6 @@ def generate_build_json(
                 "source": source,
                 "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
                 "sourcePath": path_str,
-                'metadata': output_json['contracts'][path_str][contract_name]['metadata'],
             }
         )
         size = len(remove_0x_prefix(output_evm["deployedBytecode"]["object"])) / 2  # type: ignore
