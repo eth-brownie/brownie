@@ -334,10 +334,11 @@ class TransactionReceipt:
         if self.status > -1:
             raise ValueError("Transaction has already confirmed")
 
-        if increment is not None:
-            gas_price = Wei(self.gas_price * increment)
-        else:
-            gas_price = Wei(gas_price)
+        if self.gas_price is not None:
+            if increment is not None:
+                gas_price = Wei(self.gas_price * increment)
+            else:
+                gas_price = Wei(gas_price)
 
         max_fee, priority_fee = None, None
         if self.max_fee is not None and self.priority_fee is not None:
@@ -446,6 +447,7 @@ class TransactionReceipt:
         self._set_from_tx(tx)
 
         if not self._silent:
+            output_str = ""
             if self.type == 2:
                 max_gas = tx["maxFeePerGas"] / 10 ** 9
                 priority_gas = tx["maxPriorityFeePerGas"] / 10 ** 9
@@ -453,7 +455,7 @@ class TransactionReceipt:
                     f"  Max fee: {color('bright blue')}{max_gas}{color} gwei"
                     f"   Priority fee: {color('bright blue')}{priority_gas}{color} gwei"
                 )
-            else:
+            elif self.gas_price is not None:
                 gas_price = self.gas_price / 10 ** 9
                 output_str = f"  Gas price: {color('bright blue')}{gas_price}{color} gwei"
             print(
@@ -570,7 +572,7 @@ class TransactionReceipt:
             self.sender = EthAddress(tx["from"])
         self.receiver = EthAddress(tx["to"]) if tx["to"] else None
         self.value = Wei(tx["value"])
-        self.gas_price = tx["gasPrice"]
+        self.gas_price = tx.get("gasPrice")
         self.max_fee = tx.get("maxFeePerGas")
         self.priority_fee = tx.get("maxPriorityFeePerGas")
         self.gas_limit = tx["gas"]
@@ -626,7 +628,7 @@ class TransactionReceipt:
             f"Gas used: {color('bright blue')}{self.gas_used}{color} "
             f"({color('bright blue')}{self.gas_used / self.gas_limit:.2%}{color})"
         )
-        if self.type == 2:
+        if self.type == 2 and self.gas_price is not None:
             result += f"   Gas price: {color('bright blue')}{self.gas_price / 10 ** 9}{color} gwei"
         if self.status and self.contract_address:
             result += (
