@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import io
 import json
 import os
 import re
@@ -160,10 +161,7 @@ class ContractContainer(_ContractBase):
                 compiler._get_solc_remappings(config["solc"]["remappings"]),
             )
         )
-        compiler_settings = {
-            "evmVersion": config["evm_version"],
-            "optimizer": config["solc"]["optimizer"],
-        }
+        compiler_settings = {"optimizer": config["solc"]["optimizer"]}
         self._flattener = Flattener(source_fp, self._name, remaps, compiler_settings)
 
     def __iter__(self) -> Iterator:
@@ -402,9 +400,9 @@ class ContractContainer(_ContractBase):
             "module": "contract",
             "action": "verifysourcecode",
             "contractaddress": address,
-            "sourceCode": contract_info["flattened_source"],
-            "codeformat": "solidity-single-file",
-            "contractname": contract_info["contract_name"],
+            "sourceCode": io.StringIO(json.dumps(self._flattener.standard_input_json)),
+            "codeformat": "solidity-standard-json-input",
+            "contractname": f"{self._flattener.contract_file}:{self._flattener.contract_name}",
             "compilerversion": f"v{contract_info['compiler_version']}",
             "optimizationUsed": 1 if contract_info["optimizer_enabled"] else 0,
             "runs": contract_info["optimizer_runs"],
