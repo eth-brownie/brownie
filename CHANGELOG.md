@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix etherscan verification w/ new solidity flattener ([#1283](https://github.com/eth-brownie/brownie/pull/1283))
 - Drop py36 support and add py39 to CI/dev tooling ([#1289](https://github.com/eth-brownie/brownie/pull/1289))
 - Bump dependencies ([#1277](https://github.com/eth-brownie/brownie/pull/1277))
+- Fix missing source in source object, grab from filesystem ([#1290](https://github.com/eth-brownie/brownie/pull/1290))
 
 ## [1.16.4](https://github.com/eth-brownie/brownie/tree/v1.16.4) - 2021-09-21
 ### Added

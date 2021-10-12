@@ -5,6 +5,7 @@ import threading
 import time
 import weakref
 from hashlib import sha1
+from pathlib import Path
 from sqlite3 import OperationalError
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
@@ -636,6 +637,8 @@ def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
     all_sources = {}
     for key, path in contract._build.get("allSourcePaths", {}).items():
         source = contract._sources.get(path)
+        if source is None:
+            source = Path(path).read_text()
         hash_ = sha1(source.encode()).hexdigest()
         cur.insert("sources", hash_, source)
         all_sources[key] = [hash_, path]
