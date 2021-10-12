@@ -14,46 +14,46 @@ babel==2.9.1
     # via sphinx
 backports.entry-points-selectable==1.1.0
     # via virtualenv
-bleach==3.3.1
+bleach==4.1.0
     # via readme-renderer
 bump2version==1.0.1
     # via bumpversion
 bumpversion==0.6.0
     # via -r requirements-dev.in
-certifi==2021.5.30
+certifi==2021.10.8
     # via
     #   -c requirements.txt
     #   requests
 cffi==1.14.6
     # via cryptography
-charset-normalizer==2.0.6
+charset-normalizer==2.0.7
     # via
     #   -c requirements.txt
     #   requests
-click==8.0.1
+click==8.0.3
     # via
     #   -c requirements.txt
     #   pip-tools
 colorama==0.4.4
     # via twine
-coverage==5.5
+coverage[toml]==6.0.2
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cryptography==3.4.7
+cryptography==35.0.0
     # via secretstorage
-distlib==0.3.2
+distlib==0.3.3
     # via virtualenv
-docutils==0.16
+docutils==0.17.1
     # via
     #   readme-renderer
     #   sphinx
     #   sphinx-rtd-theme
-filelock==3.0.12
+filelock==3.3.0
     # via
     #   tox
     #   virtualenv
-flake8==3.9.2
+flake8==4.0.1
     # via -r requirements-dev.in
 idna==3.2
     # via
@@ -61,7 +61,7 @@ idna==3.2
     #   requests
 imagesize==1.2.0
     # via sphinx
-importlib-metadata==4.6.1
+importlib-metadata==4.8.1
     # via
     #   keyring
     #   twine
@@ -69,15 +69,15 @@ iniconfig==1.1.1
     # via
     #   -c requirements.txt
     #   pytest
-isort==5.9.2
+isort==5.9.3
     # via -r requirements-dev.in
-jeepney==0.7.0
+jeepney==0.7.1
     # via
     #   keyring
     #   secretstorage
-jinja2==3.0.1
+jinja2==3.0.2
     # via sphinx
-keyring==23.0.1
+keyring==23.2.1
     # via twine
 markupsafe==2.0.1
     # via jinja2
@@ -98,11 +98,11 @@ packaging==21.0
     #   tox
 pep517==0.11.0
     # via pip-tools
-pip-tools==6.2.0
+pip-tools==6.4.0
     # via -r requirements-dev.in
 pkginfo==1.7.1
     # via twine
-platformdirs==2.3.0
+platformdirs==2.4.0
     # via
     #   -c requirements.txt
     #   virtualenv
@@ -116,11 +116,11 @@ py==1.10.0
     #   -c requirements.txt
     #   pytest
     #   tox
-pycodestyle==2.7.0
+pycodestyle==2.8.0
     # via flake8
 pycparser==2.20
     # via cffi
-pyflakes==2.3.1
+pyflakes==2.4.0
     # via flake8
 pygments==2.10.0
     # via
@@ -136,13 +136,13 @@ pytest==6.2.5
     #   -c requirements.txt
     #   pytest-cov
     #   pytest-mock
-pytest-cov==2.12.1
+pytest-cov==3.0.0
     # via -r requirements-dev.in
 pytest-mock==3.6.1
     # via -r requirements-dev.in
-pytz==2021.1
+pytz==2021.3
     # via babel
-readme-renderer==29.0
+readme-renderer==30.0
     # via twine
 requests==2.26.0
     # via
@@ -160,16 +160,15 @@ six==1.16.0
     # via
     #   -c requirements.txt
     #   bleach
-    #   readme-renderer
     #   tox
     #   virtualenv
 snowballstemmer==2.1.0
     # via sphinx
-sphinx==4.1.1
+sphinx==4.2.0
     # via
     #   -r requirements-dev.in
     #   sphinx-rtd-theme
-sphinx-rtd-theme==0.5.2
+sphinx-rtd-theme==1.0.0
     # via -r requirements-dev.in
 sphinxcontrib-applehelp==1.0.2
     # via sphinx
@@ -187,13 +186,13 @@ toml==0.10.2
     # via
     #   -c requirements.txt
     #   pytest
-    #   pytest-cov
     #   tox
 tomli==1.2.1
     # via
     #   -c requirements.txt
+    #   coverage
     #   pep517
-tox==3.24.0
+tox==3.24.4
     # via -r requirements-dev.in
 tqdm==4.62.3
     # via
@@ -207,19 +206,19 @@ typing-extensions==3.10.0.2
     # via
     #   -c requirements.txt
     #   mypy
-urllib3==1.26.6
+urllib3==1.26.7
     # via
     #   -c requirements.txt
     #   requests
-virtualenv==20.6.0
+virtualenv==20.8.1
     # via tox
 webencodings==0.5.1
     # via bleach
-wheel==0.36.2
+wheel==0.37.0
     # via
     #   -r requirements-dev.in
     #   pip-tools
-zipp==3.5.0
+zipp==3.6.0
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
