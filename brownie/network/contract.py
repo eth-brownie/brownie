@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
+import io
 import json
 import os
 import re
 import time
 import warnings
-from collections import defaultdict
 from pathlib import Path
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
@@ -14,7 +14,6 @@ from urllib.parse import urlparse
 
 import eth_abi
 import requests
-import solcast
 import solcx
 from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
@@ -40,9 +39,9 @@ from brownie.exceptions import (
 )
 from brownie.project import compiler, ethpm
 from brownie.project.compiler.solidity import SOLIDITY_ERROR_CODES
+from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
-from brownie.utils.toposort import toposort_flatten
 
 from . import accounts, chain
 from .event import _add_deployment_topics, _get_topics
@@ -154,6 +153,10 @@ class ContractContainer(_ContractBase):
         self.deploy = ContractConstructor(self, self._name)
         _revert_register(self)
 
+        # messes with tests if it is created on init
+        # instead we create when it's requested, but still define it here
+        self._flattener: Flattener = None  # type: ignore
+
     def __iter__(self) -> Iterator:
         return iter(self._contracts)
 
@@ -258,118 +261,35 @@ class ContractContainer(_ContractBase):
                 "for vyper contracts. You need to verify the source manually"
             )
         elif language == "Solidity":
-            # Scan the AST tree for needed information
-            nodes_source = [
-                {"node": solcast.from_ast(self._build["ast"]), "src": self._build["source"]}
-            ]
-            for name in self._build["dependencies"]:
-                build_json = self._project._build.get(name)
-                if "ast" in build_json:
-                    nodes_source.append(
-                        {"node": solcast.from_ast(build_json["ast"]), "src": build_json["source"]}
+            if self._flattener is None:
+                source_fp = (
+                    Path(self._project._path)
+                    .joinpath(self._build["sourcePath"])
+                    .resolve()
+                    .as_posix()
+                )
+                config = self._project._compiler_config
+                remaps = dict(
+                    map(
+                        lambda s: s.split("=", 1),
+                        compiler._get_solc_remappings(config["solc"]["remappings"]),
                     )
+                )
+                compiler_settings = {
+                    "evmVersion": self._build["compiler"]["evm_version"],
+                    "optimizer": config["solc"]["optimizer"],
+                }
+                self._flattener = Flattener(source_fp, self._name, remaps, compiler_settings)
 
-            pragma_statements = set()
-            global_structs = set()
-            global_enums = set()
-            import_aliases: Dict = defaultdict(list)
-            for n, src in [ns.values() for ns in nodes_source]:
-                for pragma in n.children(filters={"nodeType": "PragmaDirective"}):
-                    pragma_statements.add(src[slice(*pragma.offset)])
-
-                for enum in n.children(filters={"nodeType": "EnumDefinition"}):
-                    if enum.parent() == n:
-                        # parent == source node -> global enum
-                        global_enums.add(src[slice(*enum.offset)])
-
-                for struct in n.children(filters={"nodeType": "StructDefinition"}):
-                    if struct.parent() == n:
-                        # parent == source node -> global struct
-                        global_structs.add(src[(slice(*struct.offset))])
-
-                for imp in n.children(filters={"nodeType": "ImportDirective"}):
-                    if isinstance(imp.get("symbolAliases"), list):
-                        for symbol_alias in imp.get("symbolAliases"):
-                            if symbol_alias["local"] is not None:
-                                import_aliases[imp.get("absolutePath")].append(
-                                    symbol_alias["local"],
-                                )
-
-            abiencoder_str = ""
-            for pragma in ("pragma experimental ABIEncoderV2;", "pragma abicoder v2;"):
-                if pragma in pragma_statements:
-                    abiencoder_str = f"{abiencoder_str}\n{pragma}"
-
-            # build dependency tree
-            dependency_tree: Dict = defaultdict(set)
-            dependency_tree["__root_node__"] = set(self._build["dependencies"])
-            for name in self._build["dependencies"]:
-                build_json = self._project._build.get(name)
-                if "dependencies" in build_json:
-                    dependency_tree[name].update(build_json["dependencies"])
-
-            # sort dependencies, process them and insert them into the flattened file
-            flattened_source = ""
-            for name in toposort_flatten(dependency_tree):
-                if name == "__root_node__":
-                    continue
-                build_json = self._project._build.get(name)
-                offset = build_json["offset"]
-                contract_name = build_json["contractName"]
-                source = self._slice_source(build_json["source"], offset)
-                # Check for import aliases and duplicate the contract with different name
-                if "sourcePath" in build_json:
-                    for alias in import_aliases[build_json["sourcePath"]]:
-                        # slice to contract definition and replace contract name
-                        a_source = build_json["source"][offset[0] :]
-                        a_source = re.sub(
-                            rf"^(abstract)?(\s*)({build_json['type']})(\s+)({contract_name})",
-                            rf"\1\2\3\4{alias}",
-                            a_source,
-                        )
-                        # restore source, adjust offsets and slice source
-                        a_source = f"{build_json['source'][:offset[0]]}{a_source}"
-                        a_offset = [offset[0], offset[1] + (len(alias) - len(contract_name))]
-                        a_source = self._slice_source(a_source, a_offset)
-                        # add alias source to flattened file
-                        a_name = f"{name} (Alias import as {alias})"
-                        flattened_source = f"{flattened_source}\n\n// Part: {a_name}\n\n{a_source}"
-
-                flattened_source = f"{flattened_source}\n\n// Part: {name}\n\n{source}"
-
-            # Top level contract, defines compiler and license
             build_json = self._build
-            version = build_json["compiler"]["version"]
-            version_short = re.findall(r"^[^+]+", version)[0]
-            offset = build_json["offset"]
-            source = self._slice_source(build_json["source"], offset)
-            file_name = Path(build_json["sourcePath"]).parts[-1]
-            licenses = re.findall(
-                r"SPDX-License-Identifier:(.*)\n", build_json["source"][: offset[0]]
-            )
-            license_identifier = licenses[0].strip() if len(licenses) >= 1 else "NONE"
-
-            # combine to final flattened source
-            lb = "\n"
-            is_global = len(global_enums) + len(global_structs) > 0
-            global_str = "// Global Enums and Structs\n\n" if is_global else ""
-            enum_structs = f"{lb.join(global_enums)}\n\n{lb.join(global_structs)}"
-            flattened_source = (
-                f"// SPDX-License-Identifier: {license_identifier}\n\n"
-                f"pragma solidity {version_short};"
-                f"{abiencoder_str}\n\n{global_str}"
-                f"{enum_structs if is_global else ''}"
-                f"{flattened_source}\n\n"
-                f"// File: {file_name}\n\n{source}\n"
-            )
 
             return {
-                "flattened_source": flattened_source,
+                "standard_json_input": self._flattener.standard_input_json,
                 "contract_name": build_json["contractName"],
-                "compiler_version": version,
+                "compiler_version": build_json["compiler"]["version"],
                 "optimizer_enabled": build_json["compiler"]["optimizer"]["enabled"],
                 "optimizer_runs": build_json["compiler"]["optimizer"]["runs"],
-                "license_identifier": license_identifier,
+                "license_identifier": self._flattener.license,
                 "bytecode_len": len(build_json["bytecode"]),
             }
         else:
@@ -407,7 +327,7 @@ class ContractContainer(_ContractBase):
 
         address = _resolve_address(contract.address)
 
-        # Get flattened source code and contract/compiler information
+        # Get source code and contract/compiler information
         contract_info = self.get_verification_info()
 
         # Select matching license code (https://etherscan.io/contract-license-types)
@@ -483,9 +403,9 @@ class ContractContainer(_ContractBase):
             "module": "contract",
             "action": "verifysourcecode",
             "contractaddress": address,
-            "sourceCode": contract_info["flattened_source"],
-            "codeformat": "solidity-single-file",
-            "contractname": contract_info["contract_name"],
+            "sourceCode": io.StringIO(json.dumps(self._flattener.standard_input_json)),
+            "codeformat": "solidity-standard-json-input",
+            "contractname": f"{self._flattener.contract_file}:{self._flattener.contract_name}",
             "compilerversion": f"v{contract_info['compiler_version']}",
             "optimizationUsed": 1 if contract_info["optimizer_enabled"] else 0,
             "runs": contract_info["optimizer_runs"],

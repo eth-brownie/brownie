@@ -15,7 +15,6 @@ from _pytest.monkeypatch import MonkeyPatch
 from ethpm._utils.ipfs import dummy_ipfs_pin
 from ethpm.backends.ipfs import BaseIPFSBackend
 from prompt_toolkit.input.defaults import create_pipe_input
-from semantic_version import Version
 
 import brownie
 from brownie._cli.console import Console
@@ -94,27 +93,6 @@ def pytest_generate_tests(metafunc):
     if "evmtester" in metafunc.fixturenames and evm_config:
         params = list(itertools.product(*evm_config))
         metafunc.parametrize("evmtester", params, indirect=True)
-
-
-# travis cannot call github ethereum/solidity API, so this method is patched
-def pytest_sessionstart(session):
-    if not session.config.getoption("--evm"):
-        monkeypatch_session = MonkeyPatch()
-        monkeypatch_session.setattr(
-            "solcx.get_installable_solc_versions",
-            lambda: [
-                Version("0.6.7"),
-                Version("0.6.2"),
-                Version("0.6.0"),
-                Version("0.5.15"),
-                Version("0.5.8"),
-                Version("0.5.7"),
-                Version("0.5.0"),
-                Version("0.4.25"),
-                Version("0.4.24"),
-                Version("0.4.22"),
-            ],
-        )
 
 
 @pytest.fixture(scope="session")
