@@ -1,6 +1,7 @@
 import re
 from collections import defaultdict
 from pathlib import Path
+from typing import DefaultDict, Dict, Set
 
 from brownie.utils.toposort import toposort_flatten
 
@@ -17,8 +18,8 @@ class Flattener:
     def __init__(
         self, primary_source_fp: str, contract_name: str, remappings: dict, compiler_settings: dict
     ) -> None:
-        self.sources = {}
-        self.dependencies = defaultdict(set)
+        self.sources: Dict[str, str] = {}
+        self.dependencies: DefaultDict[str, Set[str]] = defaultdict(set)
         self.compiler_settings = compiler_settings
         self.contract_name = contract_name
         self.contract_file = Path(primary_source_fp).name
@@ -68,7 +69,7 @@ class Flattener:
             self.traverse(import_path)
 
     @property
-    def flattened_source(self):
+    def flattened_source(self) -> str:
         """The flattened source code for use verifying."""
         # all source files in the correct order for concatenation
         sources = [self.sources[k] for k in toposort_flatten(self.dependencies)]
@@ -95,7 +96,7 @@ class Flattener:
         return re.sub(r"\n{3,}", "\n\n", flat)
 
     @property
-    def standard_input_json(self):
+    def standard_input_json(self) -> Dict:
         """Useful for etherscan verification via solidity-standard-json-input mode.
 
         Sadly programmatic upload of this isn't available at the moment (2021-10-11)
@@ -131,8 +132,8 @@ class Flattener:
         Returns:
             str: The import path string in absolute form.
         """
-        import_path: Path = Path(import_path)
-        if import_path.is_absolute():
-            return import_path.as_posix()
+        path: Path = Path(import_path)
+        if path.is_absolute():
+            return path.as_posix()
 
-        return (Path(source_file_dir) / import_path).resolve().as_posix()
+        return (Path(source_file_dir) / path).resolve().as_posix()
