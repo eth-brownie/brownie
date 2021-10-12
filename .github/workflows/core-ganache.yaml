@@ -52,12 +52,7 @@ jobs:
 
 
   py38core:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -91,6 +86,7 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
+
 
   py37core:
     runs-on: ubuntu-latest
