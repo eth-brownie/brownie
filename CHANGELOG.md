@@ -6,12 +6,19 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.17.0](https://github.com/eth-brownie/brownie/tree/v1.17.0) - 2021-10-13
 ### Added
 - Arguments from the command line can now be passed to brownie scripts. ([#398](https://github.com/eth-brownie/brownie/issues/398))
 - Fix etherscan verification w/ new solidity flattener ([#1283](https://github.com/eth-brownie/brownie/pull/1283))
 - Drop py36 support and add py39 to CI/dev tooling ([#1289](https://github.com/eth-brownie/brownie/pull/1289))
 - Bump dependencies ([#1277](https://github.com/eth-brownie/brownie/pull/1277))
 - Fix missing source in source object, grab from filesystem ([#1290](https://github.com/eth-brownie/brownie/pull/1290))
+- Add harmony mainnet to default network config([#1286](https://github.com/eth-brownie/brownie/pull/1286))
+- Better panic messages for contract calls ([#1275](https://github.com/eth-brownie/brownie/pull/1275))
+
+### Fixed
+- Handle missing `gasPrice` in `eth_getTransaction` ([#1285](https://github.com/eth-brownie/brownie/pull/1285))
 
 ## [1.16.4](https://github.com/eth-brownie/brownie/tree/v1.16.4) - 2021-09-21
 ### Added
