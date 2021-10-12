@@ -9,6 +9,48 @@ env:
 
 jobs:
 
+  py39core:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Cache Solidity Installations
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.solcx
+          ~/.vvm
+        key: ${{ runner.os }}-compiler-cache
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v1
+
+    - name: Install Ganache
+      run: npm install -g ganache-cli@6.12.2
+
+    - name: Setup Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+
+    - name: Install Tox
+      run: pip install tox
+
+    - name: Run Tox
+      run: tox -e py39
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
+
+
   py38core:
     runs-on: ${{ matrix.os }}
 
