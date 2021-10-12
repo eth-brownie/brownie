@@ -1,12 +1,26 @@
-def test_verification_info(BrownieTester, brownie_tester_flat):
-    v = BrownieTester.get_verification_info()
-    assert v["contract_name"] == "BrownieTester"
-    assert v["compiler_version"].startswith("0.5.")
-    assert v["optimizer_enabled"] is True
-    assert v["optimizer_runs"] == 200
-    assert v["license_identifier"] == "NONE"
-    assert v["bytecode_len"] == 9842
+import solcx
 
-    # skip version pragma, because it is inconsistent
-    # new line formatting and etc. ....
-    # assert v["flattened_source"][58:] == brownie_tester_flat[58:]
+
+def test_verification_info(testproject):
+    ImportTester = testproject.ImportTester
+    input_data = ImportTester.get_verification_info()["standard_json_input"]
+
+    # output selection isn't included in the verification info because
+    # etherscan replaces it regardless. Here we just replicate with what they
+    # would include
+    input_data["settings"]["outputSelection"] = {
+        "*": {"*": ["evm.bytecode", "evm.deployedBytecode", "abi"]}
+    }
+
+    compiler_version, _ = ImportTester._build["compiler"]["version"].split("+")
+    output_data = solcx.compile_standard(input_data, solc_version=compiler_version)
+    # keccak256 = 0xd61b13a841b15bc814760b36086983db80788946ca38aa90a06bebf287a67205
+    build_info = output_data["contracts"]["ImportTester.sol"]["ImportTester"]
+
+    assert build_info["abi"] == ImportTester.abi
+    # ignore the metadata at the end of the bytecode, etherscan does the same
+    assert build_info["evm"]["bytecode"]["object"][:-96] == ImportTester.bytecode[:-96]
+    assert (
+        build_info["evm"]["deployedBytecode"]["object"][:-96]
+        == ImportTester._build["deployedBytecode"][:-96]
+    )
