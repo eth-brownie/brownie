@@ -153,19 +153,9 @@ class ContractContainer(_ContractBase):
         self.deploy = ContractConstructor(self, self._name)
         _revert_register(self)
 
-        source_fp = Path(self._project._path).joinpath(build["sourcePath"]).resolve().as_posix()
-        config = self._project._compiler_config
-        remaps = dict(
-            map(
-                lambda s: s.split("=", 1),
-                compiler._get_solc_remappings(config["solc"]["remappings"]),
-            )
-        )
-        compiler_settings = {
-            "evmVersion": self._build["compiler"]["evm_version"],
-            "optimizer": config["solc"]["optimizer"],
-        }
-        self._flattener = Flattener(source_fp, self._name, remaps, compiler_settings)
+        # messes with tests if it is created on init
+        # instead we create when it's requested, but still define it here
+        self._flattener: Flattener = None  # type: ignore
 
     def __iter__(self) -> Iterator:
         return iter(self._contracts)
@@ -271,6 +261,26 @@ class ContractContainer(_ContractBase):
                 "for vyper contracts. You need to verify the source manually"
             )
         elif language == "Solidity":
+            if self._flattener is None:
+                source_fp = (
+                    Path(self._project._path)
+                    .joinpath(self._build["sourcePath"])
+                    .resolve()
+                    .as_posix()
+                )
+                config = self._project._compiler_config
+                remaps = dict(
+                    map(
+                        lambda s: s.split("=", 1),
+                        compiler._get_solc_remappings(config["solc"]["remappings"]),
+                    )
+                )
+                compiler_settings = {
+                    "evmVersion": self._build["compiler"]["evm_version"],
+                    "optimizer": config["solc"]["optimizer"],
+                }
+                self._flattener = Flattener(source_fp, self._name, remaps, compiler_settings)
+
             build_json = self._build
 
             return {
