@@ -53,6 +53,21 @@ def msolc(monkeypatch):
     ]
     monkeypatch.setattr("solcx.get_installed_solc_versions", lambda: installed)
     monkeypatch.setattr("solcx.install_solc", lambda k, **z: installed.append(k))
+    monkeypatch.setattr(
+        "solcx.get_installable_solc_versions",
+        lambda: [
+            Version("0.6.7"),
+            Version("0.6.2"),
+            Version("0.6.0"),
+            Version("0.5.15"),
+            Version("0.5.8"),
+            Version("0.5.7"),
+            Version("0.5.0"),
+            Version("0.4.25"),
+            Version("0.4.24"),
+            Version("0.4.22"),
+        ],
+    )
     yield installed
 
 
@@ -157,12 +172,12 @@ def test_find_solc_versions_install(find_version, msolc):
     assert Version("0.4.25") not in msolc
     assert Version("0.5.10") not in msolc
     find_version("^0.4.24", install_needed=True)
-    assert msolc.pop() == Version("0.4.25")
+    assert msolc.pop() == Version("0.4.26")
     find_version("^0.4.22", install_latest=True)
-    assert msolc.pop() == Version("0.4.25")
-    find_version("^0.4.24 || >=0.5.10", install_needed=True)
+    assert msolc.pop() == Version("0.4.26")
+    find_version("^0.4.24 || >=0.5.10 <=0.6.7", install_needed=True)
     assert msolc.pop() == Version("0.6.7")
-    find_version(">=0.4.24", install_latest=True)
+    find_version(">=0.4.24 <=0.6.7", install_latest=True)
     assert msolc.pop() == Version("0.6.7")
 
 
