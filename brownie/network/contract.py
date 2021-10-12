@@ -161,7 +161,10 @@ class ContractContainer(_ContractBase):
                 compiler._get_solc_remappings(config["solc"]["remappings"]),
             )
         )
-        compiler_settings = {"optimizer": config["solc"]["optimizer"]}
+        compiler_settings = {
+            "evmVersion": self._build["compiler"]["evm_version"],
+            "optimizer": config["solc"]["optimizer"],
+        }
         self._flattener = Flattener(source_fp, self._name, remaps, compiler_settings)
 
     def __iter__(self) -> Iterator:
@@ -269,24 +272,14 @@ class ContractContainer(_ContractBase):
             )
         elif language == "Solidity":
             build_json = self._build
-            version = build_json["compiler"]["version"]
-            version_short = re.findall(r"^[^+]+", version)[0]
-            license_identifier = self._flattener.license
-
-            # combine to final flattened source
-            flattened_source = (
-                f"// SPDX-License-Identifier: {license_identifier}\n\n"
-                f"pragma solidity {version_short};\n"
-                f"{self._flattener.flattened_source}\n\n"
-            )
 
             return {
-                "flattened_source": flattened_source,
+                "standard_json_input": self._flattener.standard_input_json,
                 "contract_name": build_json["contractName"],
-                "compiler_version": version,
+                "compiler_version": build_json["compiler"]["version"],
                 "optimizer_enabled": build_json["compiler"]["optimizer"]["enabled"],
                 "optimizer_runs": build_json["compiler"]["optimizer"]["runs"],
-                "license_identifier": license_identifier,
+                "license_identifier": self._flattener.license,
                 "bytecode_len": len(build_json["bytecode"]),
             }
         else:
@@ -324,7 +317,7 @@ class ContractContainer(_ContractBase):
 
         address = _resolve_address(contract.address)
 
-        # Get flattened source code and contract/compiler information
+        # Get source code and contract/compiler information
         contract_info = self.get_verification_info()
 
         # Select matching license code (https://etherscan.io/contract-license-types)
