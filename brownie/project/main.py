@@ -3,6 +3,7 @@
 import importlib
 import json
 import os
+import re
 import shutil
 import sys
 import warnings
@@ -834,33 +835,10 @@ def _install_from_github(package_id: str) -> str:
     headers = REQUEST_HEADERS.copy()
     headers.update(_maybe_retrieve_github_auth())
 
-    response = requests.get(
-        f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100", headers=headers
-    )
-    if response.status_code != 200:
-        msg = "Status {} when getting package versions from Github: '{}'".format(
-            response.status_code, response.json()["message"]
-        )
-        if response.status_code in (403, 404):
-            msg += (
-                "\n\nMissing or forbidden.\n"
-                "If this issue persists, generate a Github API token and store"
-                " it as the environment variable `GITHUB_TOKEN`:\n"
-                "https://github.blog/2013-05-16-personal-api-tokens/"
-            )
-        raise ConnectionError(msg)
-
-    data = response.json()
-    if not data:
-        raise ValueError("Github repository has no tags set")
-    org, repo = data[0]["zipball_url"].split("/")[3:5]
-    tags = [i["name"].lstrip("v") for i in data]
-    if version not in tags:
-        raise ValueError(
-            "Invalid version for this package. Available versions are:\n" + ", ".join(tags)
-        ) from None
-
-    download_url = next(i["zipball_url"] for i in data if i["name"].lstrip("v") == version)
+    if re.match(r"^[0-9a-f]+$", version):
+        download_url = f"https://api.github.com/repos/{org}/{repo}/zipball/{version}"
+    else:
+        download_url = _get_download_url_from_tag(org, repo, version, headers)
 
     existing = list(install_path.parent.iterdir())
     _stream_download(download_url, str(install_path.parent), headers)
@@ -906,6 +884,36 @@ def _install_from_github(package_id: str) -> str:
         )
 
     return f"{org}/{repo}@{version}"
+
+
+def _get_download_url_from_tag(org, repo, version, headers):
+    response = requests.get(
+        f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100", headers=headers
+    )
+    if response.status_code != 200:
+        msg = "Status {} when getting package versions from Github: '{}'".format(
+            response.status_code, response.json()["message"]
+        )
+        if response.status_code in (403, 404):
+            msg += (
+                "\n\nMissing or forbidden.\n"
+                "If this issue persists, generate a Github API token and store"
+                " it as the environment variable `GITHUB_TOKEN`:\n"
+                "https://github.blog/2013-05-16-personal-api-tokens/"
+            )
+        raise ConnectionError(msg)
+
+    data = response.json()
+    if not data:
+        raise ValueError("Github repository has no tags set")
+    org, repo = data[0]["zipball_url"].split("/")[3:5]
+    tags = [i["name"].lstrip("v") for i in data]
+    if version not in tags:
+        raise ValueError(
+            "Invalid version for this package. Available versions are:\n" + ", ".join(tags)
+        ) from None
+
+    return next(i["zipball_url"] for i in data if i["name"].lstrip("v") == version)
 
 
 def _create_gitfiles(project_path: Path) -> None:
