@@ -1,8 +1,33 @@
+from pathlib import Path
+
 import solcx
 
+from brownie.project import load, new
 
-def test_verification_info(testproject):
-    ImportTester = testproject.ImportTester
+import_tester_source = """
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+import {PackageRegistry} from "./PackageRegistry.sol";
+
+contract ImportTester is PackageRegistry {}
+"""
+
+
+def test_verification_info(testproject, tmp_path_factory):
+
+    # setup directory
+    dir: Path = tmp_path_factory.mktemp("verify-project")
+    # initialize brownie project
+    new(dir.as_posix())
+
+    with dir.joinpath("contracts/ImportTester.sol").open("w") as f:
+        f.write(import_tester_source)
+    with dir.joinpath("contracts/PackageRegistry.sol").open("w") as f:
+        f.write(testproject.PackageRegistry._build["source"])
+
+    project = load(dir, "TestImportProject")
+    ImportTester = project.ImportTester
     input_data = ImportTester.get_verification_info()["standard_json_input"]
 
     # output selection isn't included in the verification info because
