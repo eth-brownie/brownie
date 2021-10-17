@@ -752,7 +752,15 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
                         break
                 try:
-                    web3.eth.get_transaction(HexBytes(txid))
+                    receipt = TransactionReceipt(
+                        txid,
+                        self,
+                        silent=silent,
+                        required_confs=required_confs,
+                        is_blocking=False,
+                        name=fn_name,
+                        revert_data=revert_data,
+                    )
                     break
                 except (TransactionNotFound, ValueError):
                     if not silent:
@@ -761,15 +769,6 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         _marker.rotate(1)
                     time.sleep(1)
 
-        receipt = TransactionReceipt(
-            txid,
-            self,
-            silent=silent,
-            required_confs=required_confs,
-            is_blocking=False,
-            name=fn_name,
-            revert_data=revert_data,
-        )
         receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
         return receipt, exc
 
