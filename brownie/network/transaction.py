@@ -489,7 +489,8 @@ class TransactionReceipt:
                     )
                 _marker.rotate(1)
                 sys.stdout.flush()
-                time.sleep(1)
+
+            time.sleep(1)
 
         # silence other dropped tx's immediately after confirmation to avoid output weirdness
         for dropped_tx in state.TxHistory().filter(
