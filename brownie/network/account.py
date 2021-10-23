@@ -741,16 +741,20 @@ class _PrivateKeyAccount(PublicKeyAccount):
             txid = None
             while True:
                 try:
-                    txid = self._transact(tx, allow_revert)  # type: ignore
+                    response = self._transact(tx, allow_revert)  # type: ignore
                     exc, revert_data = None, None
+                    if txid is None:
+                        txid = HexBytes(response).hex()
+                        if not silent:
+                            print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
                 except ValueError as e:
                     if txid is None:
                         exc = VirtualMachineError(e)
                         if not hasattr(exc, "txid"):
                             raise exc from None
                         txid = exc.txid
+                        print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
                         revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
-                        break
                 try:
                     receipt = TransactionReceipt(
                         txid,
@@ -760,7 +764,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         is_blocking=False,
                         name=fn_name,
                         revert_data=revert_data,
-                    )
+                    )  # type: ignore
                     break
                 except (TransactionNotFound, ValueError):
                     if not silent:

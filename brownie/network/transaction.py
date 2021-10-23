@@ -158,8 +158,6 @@ class TransactionReceipt:
 
         if isinstance(txid, bytes):
             txid = HexBytes(txid).hex()
-        if not self._silent:
-            print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
 
         # this event is set once the transaction is confirmed or dropped
         # it is used to waiting during blocking transaction actions
