@@ -196,6 +196,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             "eth_sign",
             "eth_signTransaction",
             "eth_getTransactionByHash",
+            "eth_getTransactionReceipt",
             "eth_chainId",
         ):
             return make_request(method, params)
