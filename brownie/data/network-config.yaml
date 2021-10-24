@@ -129,13 +129,13 @@ development:
   - name: Hardhat
     id: hardhat
     cmd: npx hardhat node
-    host: http://127.0.0.1
+    host: http://localhost
     cmd_settings:
       port: 8545
   - name: Hardhat (Mainnet Fork)
     id: hardhat-fork
     cmd: npx hardhat node
-    host: http://127.0.0.1
+    host: http://localhost
     timeout: 120
     cmd_settings:
       port: 8545
