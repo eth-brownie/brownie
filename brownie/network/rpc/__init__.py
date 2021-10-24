@@ -145,7 +145,6 @@ class Rpc(metaclass=_Singleton):
                 pass
         self.process.kill()
         self.process.wait()
-        self.process = None
         chain._network_disconnected()
 
     def is_active(self) -> bool:
