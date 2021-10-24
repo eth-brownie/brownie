@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from copy import deepcopy
-from decimal import Decimal, getcontext
+from decimal import Context, Decimal
 from typing import Any, Dict, ItemsView, KeysView, List, Optional, Sequence, TypeVar, Union
 
 import eth_utils
@@ -182,11 +182,11 @@ def _to_fixed(value: Any) -> Decimal:
         except TypeError:
             pass
     try:
-        ctx = getcontext()
+        ctx = Context()
         ctx.prec = 100
         return Decimal(value, context=ctx)
-    except Exception:
-        raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to decimal.")
+    except Exception as e:
+        raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to decimal.") from e
 
 
 class EthAddress(str):
