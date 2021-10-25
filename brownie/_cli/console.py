@@ -232,8 +232,8 @@ class Console(code.InteractiveConsole):
                 text = color.pretty_sequence(obj)
         except (SyntaxError, NameError):
             pass
-        if CONFIG.settings["console"]["show_colors"]:
-            text = color.highlight(text) if CONFIG.settings["console"]["show_colors"] else text + '\n'
+        
+        text = color.highlight(text) if CONFIG.settings["console"]["show_colors"] else text + '\n'
         self.write(text)
 
     def interact(self, *args, **kwargs):
