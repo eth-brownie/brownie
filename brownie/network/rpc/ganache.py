@@ -16,6 +16,7 @@ from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
 from brownie.network.web3 import web3
 
 CLI_FLAGS = {
+    "host", "--host",
     "port": "--port",
     "gas_limit": "--gasLimit",
     "accounts": "--accounts",
