@@ -886,7 +886,7 @@ def _install_from_github(package_id: str) -> str:
     return f"{org}/{repo}@{version}"
 
 
-def _get_download_url_from_tag(org, repo, version, headers):
+def _get_download_url_from_tag(org: str, repo: str, version: str, headers: dict) -> str:
     response = requests.get(
         f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100", headers=headers
     )
