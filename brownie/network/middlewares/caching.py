@@ -123,7 +123,10 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         if network_type != "live":
             # do not cache on development chains
             return None
-        latest = w3.eth.get_block("latest")
+        try:
+            latest = w3.eth.get_block("latest")
+        except Exception:
+            return None
         if latest.timestamp - w3.eth.get_block(latest.number - 50).timestamp < 250:
             # do not cache on chains with an average block time of less than 5 seconds
             return None
@@ -236,5 +239,6 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     def uninstall(self) -> None:
         self.is_killed = True
+        self.block_cache.clear()
         if self.w3.isConnected():
             self.w3.eth.uninstallFilter(self.block_filter.filter_id)
