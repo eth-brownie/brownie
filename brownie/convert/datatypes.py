@@ -1,8 +1,13 @@
 #!/usr/bin/python3
 
 from copy import deepcopy
-from decimal import Context, Decimal
+from decimal import Decimal, getcontext
 from typing import Any, Dict, ItemsView, KeysView, List, Optional, Sequence, TypeVar, Union
+
+try:
+    from vyper.exceptions import DecimalOverrideException
+except ImportError:
+    DecimalOverrideException = BaseException  # regular catch blocks shouldn't catch
 
 import eth_utils
 from hexbytes import HexBytes
@@ -182,9 +187,13 @@ def _to_fixed(value: Any) -> Decimal:
         except TypeError:
             pass
     try:
-        ctx = Context()
-        ctx.prec = 100
-        return Decimal(value, context=ctx)
+        try:
+            # until vyper v0.3.1 we can mess with the precision
+            ctx = getcontext()
+            ctx.prec = 78
+        except DecimalOverrideException:
+            pass  # vyper set the precision, do nothing.
+        return Decimal(value)
     except Exception as e:
         raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to decimal.") from e
 
