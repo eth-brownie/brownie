@@ -120,10 +120,20 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
-        if network_type == "live" and _new_filter(w3) is not None:
-            return 0
-        else:
+        if network_type != "live":
+            # do not cache on development chains
             return None
+        try:
+            latest = w3.eth.get_block("latest")
+        except Exception:
+            return None
+        if latest.timestamp - w3.eth.get_block(latest.number - 50).timestamp < 250:
+            # do not cache on chains with an average block time of less than 5 seconds
+            return None
+        if _new_filter(w3) is None:
+            # do not cache if we cannot create a filter for new blocks
+            return None
+        return 0
 
     @property
     def time_since(self) -> float:
@@ -229,5 +239,6 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     def uninstall(self) -> None:
         self.is_killed = True
+        self.block_cache.clear()
         if self.w3.isConnected():
             self.w3.eth.uninstallFilter(self.block_filter.filter_id)
