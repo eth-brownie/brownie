@@ -2,7 +2,7 @@
 
 bumpversion
 coverage
-flake8
+flake8==3.9.1
 isort
 mypy==0.720
 pip-tools
