@@ -6,6 +6,7 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+- Add support for `ARBISCAN_TOKEN` env var ([#1319](https://github.com/eth-brownie/brownie/pull/1319))
 
 ## [1.17.0](https://github.com/eth-brownie/brownie/tree/v1.17.0) - 2021-10-13
 ### Added
