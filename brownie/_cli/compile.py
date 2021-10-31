@@ -16,9 +16,10 @@ Arguments
   [<contract> ...]       Optional list of contract names to compile.
 
 Options:
-  --all -a              Recompile all contracts
-  --size -s             Show deployed bytecode sizes contracts
-  --help -h             Display this message
+  --all -a                   Recompile all contracts
+  --size -s                  Show deployed bytecode sizes contracts
+  --interface-artifacts -i   Keep interfaces artifacts with contracts in build/contracts/ folder
+  --help -h                  Display this message
 
 Compiles the contract source files for this project and saves the results
 in the build/contracts/ folder.
@@ -38,6 +39,10 @@ def main():
     contract_artifact_path = build_path.joinpath("contracts")
     interface_artifact_path = build_path.joinpath("interfaces")
 
+    combine_artifacts = False
+    if args["--interface-artifacts"]:
+        combine_artifacts = True
+
     if args["--all"]:
         shutil.rmtree(contract_artifact_path, ignore_errors=True)
         shutil.rmtree(interface_artifact_path, ignore_errors=True)
@@ -47,7 +52,7 @@ def main():
             if path.exists():
                 path.unlink()
 
-    proj = project.load()
+    proj = project.load(combine_artifacts=combine_artifacts)
 
     if args["--size"]:
         print("============ Deployment Bytecode Sizes ============")

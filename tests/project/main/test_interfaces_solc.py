@@ -53,6 +53,19 @@ def test_contract_requires_interface(newproject, contract_type, import_path):
     assert not hasattr(newproject, "Foo")
 
 
+@pytest.mark.parametrize("import_path", ("../", ""))
+@pytest.mark.parametrize("contract_type", ("contract", "interface"))
+def test_contract_requires_interface_combining_artifacts(newproject, contract_type, import_path):
+    with newproject._path.joinpath("interfaces/Foo.sol").open("w") as fp:
+        fp.write(INTERFACE.format(contract_type))
+    with newproject._path.joinpath("contracts/Bar.sol").open("w") as fp:
+        fp.write(CONTRACT.format(import_path))
+    newproject.load(combine_artifacts=True)
+    assert newproject._path.joinpath("build/interfaces/Foo.json").exists()
+    assert newproject._path.joinpath("build/contracts/Foo.json").exists()
+    assert not hasattr(newproject, "Foo")
+
+
 def test_incompatible_interface_version(newproject):
     with newproject._path.joinpath("interfaces/Foo.sol").open("w") as fp:
         fp.write(INTERFACE.format("interface"))
