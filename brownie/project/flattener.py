@@ -7,7 +7,9 @@ from brownie.utils.toposort import toposort_flatten
 
 # Patten matching Solidity `import-directive`, capturing path component
 # https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityParser.importDirective
-IMPORT_PATTERN = re.compile(r"(?<=\n)?import(?P<prefix>.*)\"(?P<path>.*)\"(?P<suffix>.*)(?=\n)")
+IMPORT_PATTERN = re.compile(
+    r"(?<=\n)?import(?P<prefix>.*)(?P<quote>[\"'])(?P<path>.*)(?P=quote)(?P<suffix>.*)(?=\n)"
+)
 PRAGMA_PATTERN = re.compile(r"^pragma.*;$", re.MULTILINE)
 LICENSE_PATTERN = re.compile(r"^// SPDX-License-Identifier: (.*)$", re.MULTILINE)
 

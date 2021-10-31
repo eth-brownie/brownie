@@ -35,7 +35,7 @@ contract Baz {}
         "contracts/Bar.sol",
         """
 import {Foo as FooSomething} from "./Foo.sol";
-import "./Baz.sol";
+import './Baz.sol';
 
 struct Helper {
     address x;
