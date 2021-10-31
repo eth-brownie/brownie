@@ -6,7 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
-
+### Added
+- Option to keep compiled interface files in `build/contract/` to make brownie compatible with tools like [slither](https://github.com/crytic/slither). ([#941](https://github.com/eth-brownie/brownie/issues/941))
 ## [1.17.0](https://github.com/eth-brownie/brownie/tree/v1.17.0) - 2021-10-13
 ### Added
 - Arguments from the command line can now be passed to brownie scripts. ([#398](https://github.com/eth-brownie/brownie/issues/398))
