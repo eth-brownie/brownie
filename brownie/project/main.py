@@ -115,7 +115,8 @@ class _ProjectBase:
         for alias, data in build_json.items():
             if self._build_path is not None:
                 # interfaces should generate artifact in /build/interfaces/ not /build/contracts/
-                # if we specificall
+                # unless we explicitly ask to keep the interfaces artifacts in the /build/contracts/
+                # folder
                 if not combine_artifacts and data["sourcePath"].startswith("interface"):
                     continue
                 if alias == data["contractName"]:
