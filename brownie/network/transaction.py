@@ -158,8 +158,6 @@ class TransactionReceipt:
 
         if isinstance(txid, bytes):
             txid = HexBytes(txid).hex()
-        if not self._silent:
-            print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
 
         # this event is set once the transaction is confirmed or dropped
         # it is used to waiting during blocking transaction actions
@@ -197,7 +195,34 @@ class TransactionReceipt:
         if self._revert_pc is not None:
             self._dev_revert_msg = build._get_dev_revert(self._revert_pc) or None
 
-        self._await_transaction(required_confs, is_blocking)
+        tx: Dict = web3.eth.get_transaction(HexBytes(self.txid))
+        self._set_from_tx(tx)
+
+        if not self._silent:
+            output_str = ""
+            if self.type == 2:
+                max_gas = tx["maxFeePerGas"] / 10 ** 9
+                priority_gas = tx["maxPriorityFeePerGas"] / 10 ** 9
+                output_str = (
+                    f"  Max fee: {color('bright blue')}{max_gas}{color} gwei"
+                    f"   Priority fee: {color('bright blue')}{priority_gas}{color} gwei"
+                )
+            elif self.gas_price is not None:
+                gas_price = self.gas_price / 10 ** 9
+                output_str = f"  Gas price: {color('bright blue')}{gas_price}{color} gwei"
+            print(
+                f"{output_str}   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
+                f"   Nonce: {color('bright blue')}{self.nonce}{color}"
+            )
+
+        # await confirmation of tx in a separate thread which is blocking if
+        # required_confs > 0 or tx has already confirmed (`blockNumber` != None)
+        confirm_thread = threading.Thread(
+            target=self._await_confirmation, args=(tx["blockNumber"], required_confs), daemon=True
+        )
+        confirm_thread.start()
+        if is_blocking and (required_confs > 0 or tx["blockNumber"]):
+            confirm_thread.join()
 
     def __repr__(self) -> str:
         color_str = {-2: "dark white", -1: "bright yellow", 0: "bright red", 1: ""}[self.status]
@@ -422,56 +447,6 @@ class TransactionReceipt:
             source=source, revert_msg=self._revert_msg, dev_revert_msg=self._dev_revert_msg
         )
 
-    def _await_transaction(self, required_confs: int, is_blocking: bool) -> None:
-        # await tx showing in mempool
-        while True:
-            try:
-                tx: Dict = web3.eth.get_transaction(HexBytes(self.txid))
-                break
-            except (TransactionNotFound, ValueError):
-                if self.sender is None:
-                    # if sender was not explicitly set, this transaction was
-                    # not broadcasted locally and so likely doesn't exist
-                    raise
-                if self.nonce is not None:
-                    sender_nonce = web3.eth.get_transaction_count(str(self.sender))
-                    if sender_nonce > self.nonce:
-                        self.status = Status(-2)
-                        return
-                if not self._silent:
-                    sys.stdout.write(f"  Awaiting transaction in the mempool... {_marker[0]}\r")
-                    sys.stdout.flush()
-                    _marker.rotate(1)
-                time.sleep(1)
-
-        self._set_from_tx(tx)
-
-        if not self._silent:
-            output_str = ""
-            if self.type == 2:
-                max_gas = tx["maxFeePerGas"] / 10 ** 9
-                priority_gas = tx["maxPriorityFeePerGas"] / 10 ** 9
-                output_str = (
-                    f"  Max fee: {color('bright blue')}{max_gas}{color} gwei"
-                    f"   Priority fee: {color('bright blue')}{priority_gas}{color} gwei"
-                )
-            elif self.gas_price is not None:
-                gas_price = self.gas_price / 10 ** 9
-                output_str = f"  Gas price: {color('bright blue')}{gas_price}{color} gwei"
-            print(
-                f"{output_str}   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
-                f"   Nonce: {color('bright blue')}{self.nonce}{color}"
-            )
-
-        # await confirmation of tx in a separate thread which is blocking if
-        # required_confs > 0 or tx has already confirmed (`blockNumber` != None)
-        confirm_thread = threading.Thread(
-            target=self._await_confirmation, args=(tx["blockNumber"], required_confs), daemon=True
-        )
-        confirm_thread.start()
-        if is_blocking and (required_confs > 0 or tx["blockNumber"]):
-            confirm_thread.join()
-
     def _await_confirmation(self, block_number: int = None, required_confs: int = 1) -> None:
         # await first confirmation
         block_number = block_number or self.block_number
@@ -512,7 +487,8 @@ class TransactionReceipt:
                     )
                 _marker.rotate(1)
                 sys.stdout.flush()
-                time.sleep(1)
+
+            time.sleep(1)
 
         # silence other dropped tx's immediately after confirmation to avoid output weirdness
         for dropped_tx in state.TxHistory().filter(

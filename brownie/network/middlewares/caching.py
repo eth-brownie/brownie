@@ -190,11 +190,14 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             "eth_uninstallFilter",
             # used to check connectivity
             "web3_clientVersion",
-            # caching these causes weirdness with transaction replacement
+            # caching these causes weirdness with transaction broadcasting and replacement
             "eth_sendTransaction",
             "eth_sendRawTransaction",
             "eth_sign",
             "eth_signTransaction",
+            "eth_getTransactionByHash",
+            "eth_getTransactionReceipt",
+            "eth_chainId",
         ):
             return make_request(method, params)
 

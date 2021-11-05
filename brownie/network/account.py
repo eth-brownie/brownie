@@ -4,6 +4,7 @@ import json
 import sys
 import threading
 import time
+from collections import deque
 from collections.abc import Iterator
 from getpass import getpass
 from pathlib import Path
@@ -20,7 +21,7 @@ from eth_utils import keccak
 from eth_utils.applicators import apply_formatters_to_dict
 from hexbytes import HexBytes
 from web3 import HTTPProvider, IPCProvider
-from web3.exceptions import InvalidTransaction
+from web3.exceptions import InvalidTransaction, TransactionNotFound
 
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
@@ -43,6 +44,7 @@ history = TxHistory()
 rpc = Rpc()
 
 eth_account.Account.enable_unaudited_hdwallet_features()
+_marker = deque("-/|\\-/|\\")
 
 
 class Accounts(metaclass=_Singleton):
@@ -736,25 +738,41 @@ class _PrivateKeyAccount(PublicKeyAccount):
             if to:
                 tx["to"] = to_address(str(to))
             tx = _apply_fee_to_tx(tx, gas_price, max_fee, priority_fee)
-            try:
-                txid = self._transact(tx, allow_revert)  # type: ignore
-                exc, revert_data = None, None
-            except ValueError as e:
-                exc = VirtualMachineError(e)
-                if not hasattr(exc, "txid"):
-                    raise exc from None
-                txid = exc.txid
-                revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
+            txid = None
+            while True:
+                try:
+                    response = self._transact(tx, allow_revert)  # type: ignore
+                    exc, revert_data = None, None
+                    if txid is None:
+                        txid = HexBytes(response).hex()
+                        if not silent:
+                            print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
+                except ValueError as e:
+                    if txid is None:
+                        exc = VirtualMachineError(e)
+                        if not hasattr(exc, "txid"):
+                            raise exc from None
+                        txid = exc.txid
+                        print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
+                        revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
+                try:
+                    receipt = TransactionReceipt(
+                        txid,
+                        self,
+                        silent=silent,
+                        required_confs=required_confs,
+                        is_blocking=False,
+                        name=fn_name,
+                        revert_data=revert_data,
+                    )  # type: ignore
+                    break
+                except (TransactionNotFound, ValueError):
+                    if not silent:
+                        sys.stdout.write(f"  Awaiting transaction in the mempool... {_marker[0]}\r")
+                        sys.stdout.flush()
+                        _marker.rotate(1)
+                    time.sleep(1)
 
-        receipt = TransactionReceipt(
-            txid,
-            self,
-            silent=silent,
-            required_confs=required_confs,
-            is_blocking=False,
-            name=fn_name,
-            revert_data=revert_data,
-        )
         receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
         return receipt, exc
 
