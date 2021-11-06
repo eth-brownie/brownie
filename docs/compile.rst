@@ -10,7 +10,7 @@ To compile all of the contract sources within the ``contracts/`` subfolder of a 
 
     $ brownie compile
 
-Each time the compiler runs, Brownie compares hashes of each contract source against hashes of the existing compiled versions. If a contract has not changed it is not recompiled. If you wish to force a recompile of the entire project, use ``brownie compile --all``.
+Each time the compiler runs, Brownie compares hashes of each contract source against hashes of the existing compiled versions. If a contract has not changed it is not recompiled. If you wish to force a recompile of the entire project, use ``brownie compile --all``. If you want to be able to run the compiled code through tools like `slither <https://github.com/crytic/slither>`_, use ``brownie compile --interface-artifacts``.
 
 If one or more contracts are unable to compile, Brownie raises an exception with information about why the compilation failed. You cannot use Brownie with a project as long as compilation is failing. You can temporarily exclude a file or folder from compilation by adding an underscore (``_``) to the start of the name.
 

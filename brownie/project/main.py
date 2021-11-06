@@ -81,7 +81,13 @@ class _ProjectBase:
     _sources: Sources
     _build: Build
 
-    def _compile(self, contract_sources: Dict, compiler_config: Dict, silent: bool) -> None:
+    def _compile(
+        self,
+        contract_sources: Dict,
+        compiler_config: Dict,
+        silent: bool,
+        combine_artifacts: bool = False,
+    ) -> None:
         compiler_config.setdefault("solc", {})
 
         allow_paths = None
@@ -108,8 +114,12 @@ class _ProjectBase:
             os.chdir(cwd)
 
         for alias, data in build_json.items():
-            if self._build_path is not None and not data["sourcePath"].startswith("interface"):
+            if self._build_path is not None:
                 # interfaces should generate artifact in /build/interfaces/ not /build/contracts/
+                # unless we explicitly ask to keep the interfaces artifacts in the /build/contracts/
+                # folder
+                if not combine_artifacts and data["sourcePath"].startswith("interface"):
+                    continue
                 if alias == data["contractName"]:
                     # if the alias == contract name, this is a part of the core project
                     path = self._build_path.joinpath(f"contracts/{alias}.json")
@@ -170,7 +180,7 @@ class Project(_ProjectBase):
         _build: project Build object
     """
 
-    def __init__(self, name: str, project_path: Path) -> None:
+    def __init__(self, name: str, project_path: Path, combine_artifacts: bool = False) -> None:
         self._path: Path = project_path
         self._envvars = _load_project_envvars(project_path)
         self._structure = expand_posix_vars(
@@ -180,9 +190,9 @@ class Project(_ProjectBase):
 
         self._name = name
         self._active = False
-        self.load()
+        self.load(combine_artifacts=combine_artifacts)
 
-    def load(self) -> None:
+    def load(self, combine_artifacts: bool = False) -> None:
         """Compiles the project contracts, creates ContractContainer objects and
         populates the namespace."""
         if self._active:
@@ -235,7 +245,7 @@ class Project(_ProjectBase):
 
         # compile updated sources, update build
         changed = self._get_changed_contracts(interface_hashes)
-        self._compile(changed, self._compiler_config, False)
+        self._compile(changed, self._compiler_config, False, combine_artifacts=combine_artifacts)
         self._compile_interfaces(interface_hashes)
         self._load_dependency_artifacts()
 
@@ -700,7 +710,11 @@ def compile_source(
         raise exc
 
 
-def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None) -> "Project":
+def load(
+    project_path: Union[Path, str, None] = None,
+    name: Optional[str] = None,
+    combine_artifacts: bool = False,
+) -> "Project":
     """Loads a project and instantiates various related objects.
 
     Args:
@@ -748,7 +762,7 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
     _add_to_sys_path(project_path)
 
     # load sources and build
-    return Project(name, project_path)
+    return Project(name, project_path, combine_artifacts)
 
 
 def _install_dependencies(path: Path) -> None:
