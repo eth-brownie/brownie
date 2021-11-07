@@ -57,6 +57,15 @@ from .web3 import _resolve_address, web3
 
 _unverified_addresses: Set = set()
 
+_explorer_tokens = {
+    "etherscan": "ETHERSCAN_TOKEN",
+    "bscscan": "BSCSCAN_TOKEN",
+    "polygonscan": "POLYGONSCAN_TOKEN",
+    "ftmscan": "FTMSCAN_TOKEN",
+    "arbiscan": "ARBISCAN_TOKEN",
+    "snowtrace": "SNOWTRACE_TOKEN",
+}
+
 
 class _ContractBase:
 
@@ -299,20 +308,13 @@ class ContractContainer(_ContractBase):
         """Flatten contract and publish source on the selected explorer"""
 
         # Check required conditions for verifying
-        explorer_tokens = {
-            "etherscan": "ETHERSCAN_TOKEN",
-            "bscscan": "BSCSCAN_TOKEN",
-            "polygonscan": "POLYGONSCAN_TOKEN",
-            "ftmscan": "FTMSCAN_TOKEN",
-            "arbiscan": "ARBISCAN_TOKEN",
-        }
         url = CONFIG.active_network.get("explorer")
         if url is None:
             raise ValueError("Explorer API not set for this network")
-        env_token = next((v for k, v in explorer_tokens.items() if k in url), None)
+        env_token = next((v for k, v in _explorer_tokens.items() if k in url), None)
         if env_token is None:
             raise ValueError(
-                f"Publishing source is only supported on {', '.join(explorer_tokens)},"
+                f"Publishing source is only supported on {', '.join(_explorer_tokens)},"
                 "change the Explorer API"
             )
 
@@ -1805,12 +1807,10 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
         address = _resolve_address(code[30:70])
 
     params: Dict = {"module": "contract", "action": action, "address": address}
-    explorer = next(
-        (i for i in ("etherscan", "bscscan", "polygonscan", "ftmscan", "arbiscan") if i in url),
-        None,
+    explorer, env_key = next(
+        ((k, v) for k, v in _explorer_tokens.items() if k in url), (None, None)
     )
-    if explorer is not None:
-        env_key = f"{explorer.upper()}_TOKEN"
+    if env_key is not None:
         if os.getenv(env_key):
             params["apiKey"] = os.getenv(env_key)
         elif not silent:
