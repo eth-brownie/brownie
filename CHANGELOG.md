@@ -6,7 +6,20 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.17.1](https://github.com/eth-brownie/brownie/tree/v1.17.1) - 2021-11-07
+### Added
 - Add support for `ARBISCAN_TOKEN` env var ([#1319](https://github.com/eth-brownie/brownie/pull/1319))
+- Add Avalanche to default networks and support for snowtrace ([#1332](https://github.com/eth-brownie/brownie/pull/1332))
+
+### Changed
+- Transactions are rebroadcasted until they appear in the mempool ([#1327](https://github.com/eth-brownie/brownie/pull/1327))
+- Avoid caching on chains with short blocktimes ([#1297](https://github.com/eth-brownie/brownie/pull/1297))
+
+### Fixed
+- Match single/double quote paths in source verification ([#1323](https://github.com/eth-brownie/brownie/pull/1323))
+- Change use of `getcontext()` ([#1310](https://github.com/eth-brownie/brownie/pull/1310))
+- IPv6-aware Hardhat ([#1309](https://github.com/eth-brownie/brownie/pull/1309))
 
 ## [1.17.0](https://github.com/eth-brownie/brownie/tree/v1.17.0) - 2021-10-13
 ### Added
