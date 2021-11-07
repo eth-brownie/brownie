@@ -51,6 +51,17 @@ live:
         host: https://arb1.arbitrum.io/rpc
         explorer: https://api.arbiscan.io/api
         multicall2: "0x5B5CFE992AdAC0C9D48E05854B2d91C73a003858"
+  - name: Avalanche
+    networks:
+      - chainid: 43114
+        explorer:  https://api.snowtrace.io/api
+        host: https://api.avax.network/ext/bc/C/rpc
+        id: avax-main
+        name: Mainnet
+      - chainid: 43113
+        host: https://api.avax-test.network/ext/bc/C/rpc
+        id: avax-test
+        name: Testnet
   - name: Binance Smart Chain
     networks:
       - name: Testnet
@@ -200,3 +211,15 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: xdai-main
+  - name: Ganache-CLI (Avax-Mainnet Fork)
+    id: avax-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: avax-main
