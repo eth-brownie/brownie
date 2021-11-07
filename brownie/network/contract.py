@@ -304,6 +304,7 @@ class ContractContainer(_ContractBase):
             "bscscan": "BSCSCAN_TOKEN",
             "polygonscan": "POLYGONSCAN_TOKEN",
             "ftmscan": "FTMSCAN_TOKEN",
+            "arbiscan": "ARBISCAN_TOKEN",
         }
         url = CONFIG.active_network.get("explorer")
         if url is None:
