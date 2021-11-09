@@ -219,12 +219,8 @@ class ContractContainer(_ContractBase):
             tx: Transaction ID of the contract creation."""
         address = _resolve_address(address)
         contract = _find_contract(address)
-        if isinstance(contract, ProjectContract):
-            if contract._name == self._name and contract._project == self._project:
-                return contract
-            raise ContractExists(
-                f"'{contract._name}' declared at {address} in project '{contract._project._name}'"
-            )
+        if isinstance(contract, ProjectContract) and contract._name == self._name and contract._project == self._project:
+            return contract
 
         build = self._build
         contract = ProjectContract(self._project, build, address, owner, tx)
