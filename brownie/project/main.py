@@ -817,7 +817,7 @@ def _maybe_retrieve_github_auth() -> Dict[str, str]:
 
 def _install_from_github(package_id: str) -> str:
     try:
-        path, version = package_id.split("@")
+        path, version = package_id.split("@", 1)
         org, repo = path.split("/")
     except ValueError:
         raise ValueError(
