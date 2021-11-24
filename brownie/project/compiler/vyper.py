@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import vvm
 import vyper
+from hexbytes import HexBytes
 from requests.exceptions import ConnectionError
 from semantic_version import Version
 from vyper.cli import vyper_json
@@ -30,6 +31,21 @@ _active_version = Version(vyper.__version__)
 
 def get_version() -> Version:
     return _active_version
+
+
+def vyper_proxy_init_code(target: Union[str, int, bytes]) -> bytes:
+    """Calculate the EIP1167 initcode used by Vyper to deploy proxies.
+
+    https://eips.ethereum.org/EIPS/eip-1167
+    https://github.com/vyperlang/vyper/blob/master/vyper/builtin_functions/functions.py#L1587
+
+    Arguments:
+        target: The target implementation address
+    """
+    addr = HexBytes(target)
+    pre = HexBytes("0x602D3D8160093D39F3363d3d373d3d3d363d73")
+    post = HexBytes("0x5af43d82803e903d91602b57fd5bf3")
+    return HexBytes(pre + (addr + HexBytes(0) * (20 - len(addr))) + post)
 
 
 def set_vyper_version(version: Union[str, Version]) -> str:
