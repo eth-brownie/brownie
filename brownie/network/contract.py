@@ -812,7 +812,13 @@ class _DeployedContractBase(_ContractBase):
     def calculate_deterministic_address(
         self, salt: Union[str, bytes, int], init_code: Union[str, bytes]
     ) -> EthAddress:
-        """Calculate the address of a contract deployed from this account using CREATE2."""
+        """Calculate the address of a contract deployed from this account using CREATE2.
+
+        Arguments
+        ---------
+        salt: a 32 byte value
+        init_code: The creation bytecode (not the runtime bytecode) for deploying a contract.
+        """
         prefix = HexBytes("0xff")
         addr = HexBytes(self.address)
         salt = HexBytes(salt)
