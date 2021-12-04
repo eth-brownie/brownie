@@ -1017,6 +1017,19 @@ Contract Attributes
         >>> Token[0].bytecode
         '6080604052600436106100985763ffffffff7c010000000000000000000000000000000000000000000000000000000060003504166306fdde03811461009d578063095ea7b31461012757806318160ddd1461015f57806323b872dd14610186578063313ce567146101b057806370a08231146101c557806395d89b41...
 
+.. py:attribute:: Contract.nonce
+
+    The nonce of a deployed contract, this value is only incremented when a contract creates another contract (via the `CREATE` opcode).
+
+    .. note::
+        
+        After EIP-161 contract nonces always start at 1.
+
+    .. code-block:: python
+
+        >>> token.nonce
+        1
+
 .. py:attribute:: Contract.tx
 
     The :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` of the transaction that deployed the contract. If the contract was not deployed during this instance of brownie, it will be ``None``.
@@ -1038,6 +1051,23 @@ Contract Methods
         >>> Token[0].balance
         0
 
+.. py:classmethod:: Contract.get_deployment_address(nonce)
+
+    Return the address where a contract will be deployed from this contract, if the deployment transaction uses the given nonce.
+
+    .. code-block:: python
+
+        >>> Token[0].get_deployment_address(3)
+        '0x7Be8076f4EA4A4AD08075C2508e481d6C946D12b'
+
+.. py:classmethod:: Contract.calculate_deterministic_address(salt, init_code)
+
+    Return the address where a contract will be deployed from this contract (via `CREATE2`).
+
+    .. code-block:: python
+
+        >>> Token[0].calculate_deterministic_address("0xdeadbeef", Token.deploy.encode_input())
+        '0xf64e6fB725f04042b5197e2529b84be4a925902C'
 
 .. py:classmethod:: Contract.set_alias(alias)
 

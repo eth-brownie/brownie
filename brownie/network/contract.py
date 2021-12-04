@@ -14,6 +14,7 @@ from urllib.parse import urlparse
 
 import eth_abi
 import requests
+import rlp
 import solcx
 from eth_utils import remove_0x_prefix
 from hexbytes import HexBytes
@@ -22,6 +23,7 @@ from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
 
 from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS
+from brownie.convert import EthAddress
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
 from brownie.convert.utils import (
@@ -778,6 +780,50 @@ class _DeployedContractBase(_ContractBase):
         if isinstance(fn, OverloadedMethod):
             return next((v for v in fn.methods.values() if v.signature == sig), None)
         return fn
+
+    @property
+    def nonce(self) -> int:
+        """Query the deployment nonce of a contract account.
+
+        Contract accounts start with a nonce of 1, for more information
+        see https://eips.ethereum.org/EIPS/eip-161.
+        """
+        return web3.eth.get_transaction_count(self.address)
+
+    def get_deployment_address(self, nonce: Optional[int] = None) -> EthAddress:
+        """
+        Return the address of a contract deployed from this account at the given nonce.
+
+        Arguments
+        ---------
+        nonce : int, optional
+            The nonce of the deployment transaction. If not given, the nonce of the next
+            transaction is used.
+        """
+        if nonce is None:
+            nonce = self.nonce
+
+        address = HexBytes(self.address)
+        raw = rlp.encode([address, nonce])
+        deployment_address = web3.keccak(raw)[12:]
+
+        return EthAddress(deployment_address)
+
+    def calculate_deterministic_address(
+        self, salt: Union[str, bytes, int], init_code: Union[str, bytes]
+    ) -> EthAddress:
+        """Calculate the address of a contract deployed from this account using CREATE2.
+
+        Arguments
+        ---------
+        salt: a 32 byte value
+        init_code: The creation bytecode (not the runtime bytecode) for deploying a contract.
+        """
+        prefix = HexBytes("0xff")
+        addr = HexBytes(self.address)
+        salt = HexBytes(salt)
+        init_code_hash = web3.keccak(HexBytes(init_code))
+        return EthAddress(web3.keccak(prefix + addr + salt + init_code_hash)[12:])
 
     def balance(self) -> Wei:
         """Returns the current ether balance of the contract, in wei."""
