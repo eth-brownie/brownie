@@ -6,7 +6,7 @@ eth-event>=1.2.1,<2
 eth-hash[pycryptodome]<1
 eth-utils<2
 hexbytes<1
-hypothesis<7
+hypothesis<6.28.0
 lazy-object-proxy>=1.6.0,<2
 prompt-toolkit<4
 psutil>=5.7.3,<6
@@ -28,4 +28,3 @@ vvm>=0.1.0,<1
 vyper>=0.2.11,<1
 web3>=5.22.0,<6
 wrapt>=1.12.1,<2
-websockets>=10.1

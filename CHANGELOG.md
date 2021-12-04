@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.17.2](https://github.com/eth-brownie/brownie/tree/v1.17.2) - 2021-12-04
+### Changed
+- Bump deps to support vyper `v0.3.1`
+
+### Fixed
+- Support linked libraries in source verification ([#1335](https://github.com/eth-brownie/brownie/pull/1335))
+- Check for regex match when locating contract names in source ([#1363](https://github.com/eth-brownie/brownie/pull/1363))
+
 ## [1.17.1](https://github.com/eth-brownie/brownie/tree/v1.17.1) - 2021-11-07
 ### Added
 - Add support for `ARBISCAN_TOKEN` env var ([#1319](https://github.com/eth-brownie/brownie/pull/1319))
