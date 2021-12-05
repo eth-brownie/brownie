@@ -815,6 +815,26 @@ def _maybe_retrieve_github_auth() -> Dict[str, str]:
     return {}
 
 
+def _latest_tag(tags: List[str]) -> str:
+    if not tags:
+        raise ValueError("empty")
+
+    # Regexp taken from https://semver.org/ .
+    pattern = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
+
+    def f(x: str) -> int:
+        match = pattern.match(x.strip().lstrip("v"))
+        if match:
+            a = int(match.group(1)) * 1_000_000
+            b = int(match.group(2)) * 1_000
+            c = int(match.group(3)) * 1
+            return a + b + c
+        return 0
+
+    xs = sorted(tags, key=f)
+    return xs[-1]
+
+
 def _install_from_github(package_id: str) -> str:
     try:
         path, version = package_id.split("@")
@@ -825,20 +845,23 @@ def _install_from_github(package_id: str) -> str:
             "\ne.g. 'OpenZeppelin/openzeppelin-contracts@v2.5.0'"
         ) from None
 
-    base_install_path = _get_data_folder().joinpath("packages")
-    install_path = base_install_path.joinpath(f"{org}")
-    install_path.mkdir(exist_ok=True)
-    install_path = install_path.joinpath(f"{repo}@{version}")
-    if install_path.exists():
-        raise FileExistsError("Package is aleady installed")
-
     headers = REQUEST_HEADERS.copy()
     headers.update(_maybe_retrieve_github_auth())
 
     if re.match(r"^[0-9a-f]+$", version):
         download_url = f"https://api.github.com/repos/{org}/{repo}/zipball/{version}"
     else:
-        download_url = _get_download_url_from_tag(org, repo, version, headers)
+        # If version==latest, we also update the `version` variable to
+        # the latest tag available.
+        download_url, version = _get_download_url_from_tag(org, repo, version, headers)
+
+    # Once version is eventually updated, we form the install path.
+    base_install_path = _get_data_folder().joinpath("packages")
+    install_path = base_install_path.joinpath(f"{org}")
+    install_path.mkdir(exist_ok=True)
+    install_path = install_path.joinpath(f"{repo}@{version}")
+    if install_path.exists():
+        raise FileExistsError("Package is aleady installed")
 
     existing = list(install_path.parent.iterdir())
     _stream_download(download_url, str(install_path.parent), headers)
@@ -886,7 +909,7 @@ def _install_from_github(package_id: str) -> str:
     return f"{org}/{repo}@{version}"
 
 
-def _get_download_url_from_tag(org: str, repo: str, version: str, headers: dict) -> str:
+def _get_download_url_from_tag(org: str, repo: str, version: str, headers: dict) -> Tuple[str, str]:
     response = requests.get(
         f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100", headers=headers
     )
@@ -908,12 +931,18 @@ def _get_download_url_from_tag(org: str, repo: str, version: str, headers: dict)
         raise ValueError("Github repository has no tags set")
     org, repo = data[0]["zipball_url"].split("/")[3:5]
     tags = [i["name"].lstrip("v") for i in data]
+
+    # In case version is latest, set it to the latest tag.
+    if version == "latest":
+        version = _latest_tag(tags)
+
     if version not in tags:
         raise ValueError(
             "Invalid version for this package. Available versions are:\n" + ", ".join(tags)
         ) from None
 
-    return next(i["zipball_url"] for i in data if i["name"].lstrip("v") == version)
+    url = next(i["zipball_url"] for i in data if i["name"].lstrip("v") == version)
+    return url, version
 
 
 def _create_gitfiles(project_path: Path) -> None:
