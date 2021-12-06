@@ -292,7 +292,13 @@ class ContractContainer(_ContractBase):
                         Path(source_fp).name: {lib: self._project[lib][-1].address for lib in libs}
                     },
                 }
-                self._flattener = Flattener(source_fp, self._name, remaps, compiler_settings)
+                self._flattener = Flattener(
+                    source_fp,
+                    self._name,
+                    remaps,
+                    compiler_settings,
+                    project_root_path=str(self._project._path),
+                )
 
             build_json = self._build
 
