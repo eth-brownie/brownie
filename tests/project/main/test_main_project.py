@@ -45,6 +45,12 @@ def test_load_raises_already_loaded(project, newproject):
         newproject.load()
 
 
+def test_load_does_not_raise_when_raise_if_loaded_is_false(project, newproject):
+    newproject.load()
+    project.load(newproject._path, "NewProject", raise_if_loaded=False)
+    newproject.load(raise_if_loaded=False)
+
+
 def test_load_raises_cannot_find(project, tmp_path):
     with pytest.raises(ProjectNotFound):
         x = project.load(tmp_path)

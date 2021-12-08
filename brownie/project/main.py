@@ -182,11 +182,13 @@ class Project(_ProjectBase):
         self._active = False
         self.load()
 
-    def load(self) -> None:
+    def load(self, raise_if_loaded: bool = True) -> None:
         """Compiles the project contracts, creates ContractContainer objects and
         populates the namespace."""
         if self._active:
-            raise ProjectAlreadyLoaded("Project is already active")
+            if raise_if_loaded:
+                raise ProjectAlreadyLoaded("Project is already active")
+            return None
 
         contract_sources = _load_sources(self._path, self._structure["contracts"], False)
         interface_sources = _load_sources(self._path, self._structure["interfaces"], True)
@@ -700,7 +702,11 @@ def compile_source(
         raise exc
 
 
-def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None) -> "Project":
+def load(
+    project_path: Union[Path, str, None] = None,
+    name: Optional[str] = None,
+    raise_if_loaded: bool = True,
+) -> "Project":
     """Loads a project and instantiates various related objects.
 
     Args:
@@ -740,8 +746,16 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
         if not name[0].isalpha():
             raise BadProjectName("Project must start with an alphabetic character")
         name = "".join(i for i in name.title() if i.isalnum())
-    if next((True for i in _loaded_projects if i._name == name), False):
-        raise ProjectAlreadyLoaded("There is already a project loaded with this name")
+
+    already_loaded_project: Optional[Project] = None
+    for loaded_project in _loaded_projects:
+        if loaded_project._name == name:
+            already_loaded_project = loaded_project
+
+    if already_loaded_project is not None:
+        if raise_if_loaded:
+            raise ProjectAlreadyLoaded("There is already a project loaded with this name")
+        return already_loaded_project
 
     # paths
     _create_folders(project_path)
