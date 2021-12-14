@@ -6,6 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Changed
+- Force files to be opened as UTF-8
 
 ## [1.17.2](https://github.com/eth-brownie/brownie/tree/v1.17.2) - 2021-12-04
 ### Changed
