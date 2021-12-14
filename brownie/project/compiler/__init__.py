@@ -294,7 +294,7 @@ def generate_build_json(
         if path_str in input_json["sources"]:
             source = input_json["sources"][path_str]["content"]
         else:
-            with Path(path_str).open() as fp:
+            with Path(path_str).open(encoding="utf-8") as fp:
                 source = fp.read()
             contract_alias = _get_alias(contract_name, path_str)
 
