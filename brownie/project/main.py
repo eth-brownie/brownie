@@ -747,15 +747,11 @@ def load(
             raise BadProjectName("Project must start with an alphabetic character")
         name = "".join(i for i in name.title() if i.isalnum())
 
-    already_loaded_project: Optional[Project] = None
     for loaded_project in _loaded_projects:
         if loaded_project._name == name:
-            already_loaded_project = loaded_project
-
-    if already_loaded_project is not None:
-        if raise_if_loaded:
-            raise ProjectAlreadyLoaded("There is already a project loaded with this name")
-        return already_loaded_project
+            if raise_if_loaded:
+                raise ProjectAlreadyLoaded("There is already a project loaded with this name")
+            return loaded_project
 
     # paths
     _create_folders(project_path)
