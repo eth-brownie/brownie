@@ -21,7 +21,7 @@ from semantic_version import Version
 from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
 
-from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS
+from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS, _load_project_compiler_config
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
 from brownie.convert.utils import (
@@ -1089,6 +1089,14 @@ class Contract(_DeployedContractBase):
         else:
             try:
                 version = Version(compiler_str.lstrip("v")).truncate()
+                compiler_config = _load_project_compiler_config(Path(os.getcwd()))
+                solc_config = compiler_config["solc"]
+                if "use_latest_patch" in solc_config and solc_config["use_latest_patch"] is True:
+                    versions = [Version(str(i)) for i in solcx.get_installable_solc_versions()]
+                    for v in filter(lambda l: l < version.next_minor(), versions):
+                        if v > version:
+                            version = v
+
                 is_compilable = (
                     version >= Version("0.4.22")
                     and version

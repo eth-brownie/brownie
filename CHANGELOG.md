@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Changed
 - Force files to be opened as UTF-8
+- Added a new solidity compiler setting `use_latest_patch` in brownie-config.yaml to use the latest patch version of a compiler based on the pragma version of the contract.
 
 ## [1.17.2](https://github.com/eth-brownie/brownie/tree/v1.17.2) - 2021-12-04
 ### Changed

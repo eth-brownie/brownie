@@ -3,6 +3,7 @@ from copy import deepcopy
 
 import pytest
 import requests
+import yaml
 
 from brownie import Wei
 from brownie.exceptions import BrownieCompilerWarning, BrownieEnvironmentWarning, ContractNotFound
@@ -306,6 +307,45 @@ def test_as_proxy_for(network):
 
     assert proxy.abi == implementation.abi
     assert proxy.address != implementation.address
+
+
+def test_solc_use_latest_patch_true(testproject, network):
+    network.connect("mainnet")
+    solc_config = {"compiler": {"solc": {"use_latest_patch": True}}}
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(solc_config, fp)
+
+    # chainlink contract specifies version pragma ^0.4.16 which doesn't support overloaded
+    # events (>= 0.4.17)
+    c = Contract.from_explorer("0x514910771AF9Ca656af840dff83E8264EcF986CA")
+    transfer_events = list(filter(lambda l: "name" in l and l["name"] == "Transfer", c.abi))
+    assert len(transfer_events) == 2
+
+
+def test_solc_use_latest_patch_false(testproject, network):
+    network.connect("mainnet")
+    solc_config = {"compiler": {"solc": {"use_latest_patch": False}}}
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(solc_config, fp)
+
+    # chainlink contract specifies version pragma ^0.4.16 which doesn't support overloaded
+    # events (>= 0.4.17)
+    c = Contract.from_explorer("0x514910771AF9Ca656af840dff83E8264EcF986CA")
+    transfer_events = list(filter(lambda l: "name" in l and l["name"] == "Transfer", c.abi))
+    assert len(transfer_events) == 1
+
+
+def test_solc_use_latest_patch_missing(testproject, network):
+    network.connect("mainnet")
+    solc_config = {"compiler": {"solc": {}}}
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(solc_config, fp)
+
+    # chainlink contract specifies version pragma ^0.4.16 which doesn't support overloaded
+    # events (>= 0.4.17)
+    c = Contract.from_explorer("0x514910771AF9Ca656af840dff83E8264EcF986CA")
+    transfer_events = list(filter(lambda l: "name" in l and l["name"] == "Transfer", c.abi))
+    assert len(transfer_events) == 1
 
 
 # @pytest.mark.parametrize(

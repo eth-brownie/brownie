@@ -222,6 +222,10 @@ Compiler settings. See :ref:`compiler settings<compile_settings>` for more infor
               - zeppelin=/usr/local/lib/open-zeppelin/contracts/
               - github.com/ethereum/dapp-bin/=/usr/local/lib/dapp-bin/
 
+    .. py:attribute:: use_latest_patch
+
+        Optional boolean to use the latest patch semver compiler version. E.g. the if the contract has pragma version `0.4.16` and the latest available patch for `0.4` is `0.4.22` it will use this instead for compilations.
+
 .. py:attribute:: compiler.vyper
 
     Settings specific to the Vyper compiler.
