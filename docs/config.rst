@@ -224,7 +224,20 @@ Compiler settings. See :ref:`compiler settings<compile_settings>` for more infor
 
     .. py:attribute:: use_latest_patch
 
-        Optional boolean to use the latest patch semver compiler version. E.g. the if the contract has pragma version `0.4.16` and the latest available patch for `0.4` is `0.4.22` it will use this instead for compilations.
+        Optional boolean or array contract list to use the latest patch semver compiler version. E.g. the if the contract has pragma version `0.4.16` and the latest available patch for `0.4` is `0.4.22` it will use this instead for compilations.
+
+        Enable for all contracts:
+        .. code-block:: yaml
+            compiler:
+                solc:
+                    use_latest_patch: true
+
+        Enable for only specific contracts:
+        .. code-block:: yaml
+            compiler:
+                solc:
+                    use_latest_patch:
+                        - '0x514910771AF9Ca656af840dff83E8264EcF986CA'
 
 .. py:attribute:: compiler.vyper
 

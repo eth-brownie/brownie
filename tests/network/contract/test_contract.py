@@ -348,6 +348,36 @@ def test_solc_use_latest_patch_missing(testproject, network):
     assert len(transfer_events) == 1
 
 
+def test_solc_use_latest_patch_specific_not_included(testproject, network):
+    network.connect("mainnet")
+    solc_config = {
+        "compiler": {"solc": {"use_latest_patch": ["0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e"]}}
+    }
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(solc_config, fp)
+
+    # chainlink contract specifies version pragma ^0.4.16 which doesn't support overloaded
+    # events (>= 0.4.17)
+    c = Contract.from_explorer("0x514910771AF9Ca656af840dff83E8264EcF986CA")
+    transfer_events = list(filter(lambda l: "name" in l and l["name"] == "Transfer", c.abi))
+    assert len(transfer_events) == 1
+
+
+def test_solc_use_latest_patch_specific_included(testproject, network):
+    network.connect("mainnet")
+    solc_config = {
+        "compiler": {"solc": {"use_latest_patch": ["0x514910771AF9Ca656af840dff83E8264EcF986CA"]}}
+    }
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(solc_config, fp)
+
+    # chainlink contract specifies version pragma ^0.4.16 which doesn't support overloaded
+    # events (>= 0.4.17)
+    c = Contract.from_explorer("0x514910771AF9Ca656af840dff83E8264EcF986CA")
+    transfer_events = list(filter(lambda l: "name" in l and l["name"] == "Transfer", c.abi))
+    assert len(transfer_events) == 2
+
+
 # @pytest.mark.parametrize(
 #     "original",
 #     [
