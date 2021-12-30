@@ -84,7 +84,7 @@ live:
       - name: Mainnet
         chainid: 250
         id: ftm-main
-        host: https://rpcapi.fantom.network
+        host: https://rpc.ftm.tools
         explorer: https://api.ftmscan.com/api
   - name: Harmony
     networks:
