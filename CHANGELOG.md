@@ -6,6 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Added
+- Add support for Ganache 7 CLI flags
 ### Changed
 - Force files to be opened as UTF-8
 - Added a new solidity compiler setting `use_latest_patch` in brownie-config.yaml to use the latest patch version of a compiler based on the pragma version of the contract.
