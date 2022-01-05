@@ -66,4 +66,7 @@ def main():
         notify("ERROR", "Brownie environment has not been initiated for this folder.")
         sys.exit("Type 'brownie init' to create the file structure.")
     except Exception as e:
-        sys.exit(color.format_tb(e))
+        if "-r" in sys.argv:
+            raise e
+        else:
+            sys.exit(color.format_tb(e))
