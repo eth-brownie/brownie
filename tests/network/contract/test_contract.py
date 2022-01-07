@@ -4,6 +4,7 @@ from copy import deepcopy
 import pytest
 import requests
 import yaml
+from semantic_version import Version
 
 from brownie import Wei
 from brownie.exceptions import BrownieCompilerWarning, BrownieEnvironmentWarning, ContractNotFound
@@ -315,11 +316,9 @@ def test_solc_use_latest_patch_true(testproject, network):
     with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
         yaml.dump(solc_config, fp)
 
-    # chainlink contract specifies version pragma ^0.4.16 which doesn't support overloaded
-    # events (>= 0.4.17)
-    c = Contract.from_explorer("0x514910771AF9Ca656af840dff83E8264EcF986CA")
-    transfer_events = list(filter(lambda l: "name" in l and l["name"] == "Transfer", c.abi))
-    assert len(transfer_events) == 2
+    assert Contract.get_solc_version(
+        "v0.4.16", "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    ) == Version("0.4.26")
 
 
 def test_solc_use_latest_patch_false(testproject, network):
@@ -328,11 +327,9 @@ def test_solc_use_latest_patch_false(testproject, network):
     with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
         yaml.dump(solc_config, fp)
 
-    # chainlink contract specifies version pragma ^0.4.16 which doesn't support overloaded
-    # events (>= 0.4.17)
-    c = Contract.from_explorer("0x514910771AF9Ca656af840dff83E8264EcF986CA")
-    transfer_events = list(filter(lambda l: "name" in l and l["name"] == "Transfer", c.abi))
-    assert len(transfer_events) == 1
+    assert Contract.get_solc_version(
+        "v0.4.16", "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    ) == Version("0.4.16")
 
 
 def test_solc_use_latest_patch_missing(testproject, network):
@@ -341,11 +338,9 @@ def test_solc_use_latest_patch_missing(testproject, network):
     with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
         yaml.dump(solc_config, fp)
 
-    # chainlink contract specifies version pragma ^0.4.16 which doesn't support overloaded
-    # events (>= 0.4.17)
-    c = Contract.from_explorer("0x514910771AF9Ca656af840dff83E8264EcF986CA")
-    transfer_events = list(filter(lambda l: "name" in l and l["name"] == "Transfer", c.abi))
-    assert len(transfer_events) == 1
+    assert Contract.get_solc_version(
+        "v0.4.16", "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    ) == Version("0.4.16")
 
 
 def test_solc_use_latest_patch_specific_not_included(testproject, network):
@@ -356,11 +351,9 @@ def test_solc_use_latest_patch_specific_not_included(testproject, network):
     with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
         yaml.dump(solc_config, fp)
 
-    # chainlink contract specifies version pragma ^0.4.16 which doesn't support overloaded
-    # events (>= 0.4.17)
-    c = Contract.from_explorer("0x514910771AF9Ca656af840dff83E8264EcF986CA")
-    transfer_events = list(filter(lambda l: "name" in l and l["name"] == "Transfer", c.abi))
-    assert len(transfer_events) == 1
+    assert Contract.get_solc_version(
+        "v0.4.16", "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    ) == Version("0.4.16")
 
 
 def test_solc_use_latest_patch_specific_included(testproject, network):
@@ -371,11 +364,9 @@ def test_solc_use_latest_patch_specific_included(testproject, network):
     with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
         yaml.dump(solc_config, fp)
 
-    # chainlink contract specifies version pragma ^0.4.16 which doesn't support overloaded
-    # events (>= 0.4.17)
-    c = Contract.from_explorer("0x514910771AF9Ca656af840dff83E8264EcF986CA")
-    transfer_events = list(filter(lambda l: "name" in l and l["name"] == "Transfer", c.abi))
-    assert len(transfer_events) == 2
+    assert Contract.get_solc_version(
+        "v0.4.16", "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    ) == Version("0.4.26")
 
 
 # @pytest.mark.parametrize(

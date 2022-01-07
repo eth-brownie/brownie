@@ -1088,16 +1088,7 @@ class Contract(_DeployedContractBase):
                 is_compilable = False
         else:
             try:
-                version = Version(compiler_str.lstrip("v")).truncate()
-                compiler_config = _load_project_compiler_config(Path(os.getcwd()))
-                solc_config = compiler_config["solc"]
-                if "use_latest_patch" in solc_config:
-                    use_latest_patch = solc_config["use_latest_patch"]
-                    if use_latest_patch is True or address in use_latest_patch:
-                        versions = [Version(str(i)) for i in solcx.get_installable_solc_versions()]
-                        for v in filter(lambda l: l < version.next_minor(), versions):
-                            if v > version:
-                                version = v
+                version = cls.get_solc_version(compiler_str, address)
 
                 is_compilable = (
                     version >= Version("0.4.22")
@@ -1183,6 +1174,33 @@ class Contract(_DeployedContractBase):
         _DeployedContractBase.__init__(self, address, owner)
         _add_deployment(self)
         return self
+
+    @classmethod
+    def get_solc_version(cls, compiler_str: str, address: str) -> Version:
+        """
+        Return the solc compiler version either from the passed compiler string
+        or try to find the latest available patch semver compiler version.
+
+        Arguments
+        ---------
+        compiler_str: str
+            The compiler string passed from the contract metadata.
+        address: str
+            The contract address to check for.
+        """
+        version = Version(compiler_str.lstrip("v")).truncate()
+
+        compiler_config = _load_project_compiler_config(Path(os.getcwd()))
+        solc_config = compiler_config["solc"]
+        if "use_latest_patch" in solc_config:
+            use_latest_patch = solc_config["use_latest_patch"]
+            if use_latest_patch is True or address in use_latest_patch:
+                versions = [Version(str(i)) for i in solcx.get_installable_solc_versions()]
+                for v in filter(lambda l: l < version.next_minor(), versions):
+                    if v > version:
+                        version = v
+
+        return version
 
     def set_alias(self, alias: Optional[str]) -> None:
         """
