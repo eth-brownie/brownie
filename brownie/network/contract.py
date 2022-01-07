@@ -1194,7 +1194,13 @@ class Contract(_DeployedContractBase):
         solc_config = compiler_config["solc"]
         if "use_latest_patch" in solc_config:
             use_latest_patch = solc_config["use_latest_patch"]
-            if use_latest_patch is True or address in use_latest_patch:
+            needs_patch_version = False
+            if isinstance(use_latest_patch, bool):
+                needs_patch_version = use_latest_patch
+            elif isinstance(use_latest_patch, list):
+                needs_patch_version = address in use_latest_patch
+
+            if needs_patch_version:
                 versions = [Version(str(i)) for i in solcx.get_installable_solc_versions()]
                 for v in filter(lambda l: l < version.next_minor(), versions):
                     if v > version:
