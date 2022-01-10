@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Changed
 - Force files to be opened as UTF-8
+- Add the interfaces compilation artifacts into build/contracts ([#941](https://github.com/eth-brownie/brownie/issues/941))
 
 ## [1.17.2](https://github.com/eth-brownie/brownie/tree/v1.17.2) - 2021-12-04
 ### Changed
