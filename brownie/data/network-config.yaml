@@ -93,6 +93,20 @@ live:
         host: https://api.harmony.one
         id: harmony-main
         multicall2: "0x3E01dD8a5E1fb3481F0F589056b428Fc308AF0Fb"
+  - name: Optimistic Ethereum
+    networks:
+      - name: Mainnet
+        chainid: 10
+        id: optimism-main
+        host: https://mainnet.optimism.io
+        explorer: https://api-optimistic.etherscan.io/api
+        multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
+      - name: Kovan
+        chainid: 69
+        id: optimism-test
+        host: https://kovan.optimism.io
+        explorer: https://api-kovan-optimistic.etherscan.io/api
+        multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
   - name: Polygon
     networks:
       - name: Mainnet (Infura)
