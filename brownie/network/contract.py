@@ -21,7 +21,7 @@ from semantic_version import Version
 from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
 
-from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS
+from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS, _load_project_compiler_config
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
 from brownie.convert.utils import (
@@ -1088,7 +1088,8 @@ class Contract(_DeployedContractBase):
                 is_compilable = False
         else:
             try:
-                version = Version(compiler_str.lstrip("v")).truncate()
+                version = cls.get_solc_version(compiler_str, address)
+
                 is_compilable = (
                     version >= Version("0.4.22")
                     and version
@@ -1173,6 +1174,39 @@ class Contract(_DeployedContractBase):
         _DeployedContractBase.__init__(self, address, owner)
         _add_deployment(self)
         return self
+
+    @classmethod
+    def get_solc_version(cls, compiler_str: str, address: str) -> Version:
+        """
+        Return the solc compiler version either from the passed compiler string
+        or try to find the latest available patch semver compiler version.
+
+        Arguments
+        ---------
+        compiler_str: str
+            The compiler string passed from the contract metadata.
+        address: str
+            The contract address to check for.
+        """
+        version = Version(compiler_str.lstrip("v")).truncate()
+
+        compiler_config = _load_project_compiler_config(Path(os.getcwd()))
+        solc_config = compiler_config["solc"]
+        if "use_latest_patch" in solc_config:
+            use_latest_patch = solc_config["use_latest_patch"]
+            needs_patch_version = False
+            if isinstance(use_latest_patch, bool):
+                needs_patch_version = use_latest_patch
+            elif isinstance(use_latest_patch, list):
+                needs_patch_version = address in use_latest_patch
+
+            if needs_patch_version:
+                versions = [Version(str(i)) for i in solcx.get_installable_solc_versions()]
+                for v in filter(lambda l: l < version.next_minor(), versions):
+                    if v > version:
+                        version = v
+
+        return version
 
     def set_alias(self, alias: Optional[str]) -> None:
         """

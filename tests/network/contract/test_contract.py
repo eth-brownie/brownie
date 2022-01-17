@@ -3,6 +3,8 @@ from copy import deepcopy
 
 import pytest
 import requests
+import yaml
+from semantic_version import Version
 
 from brownie import Wei
 from brownie.exceptions import BrownieCompilerWarning, BrownieEnvironmentWarning, ContractNotFound
@@ -306,6 +308,65 @@ def test_as_proxy_for(network):
 
     assert proxy.abi == implementation.abi
     assert proxy.address != implementation.address
+
+
+def test_solc_use_latest_patch_true(testproject, network):
+    network.connect("mainnet")
+    solc_config = {"compiler": {"solc": {"use_latest_patch": True}}}
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(solc_config, fp)
+
+    assert Contract.get_solc_version(
+        "v0.4.16", "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    ) == Version("0.4.26")
+
+
+def test_solc_use_latest_patch_false(testproject, network):
+    network.connect("mainnet")
+    solc_config = {"compiler": {"solc": {"use_latest_patch": False}}}
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(solc_config, fp)
+
+    assert Contract.get_solc_version(
+        "v0.4.16", "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    ) == Version("0.4.16")
+
+
+def test_solc_use_latest_patch_missing(testproject, network):
+    network.connect("mainnet")
+    solc_config = {"compiler": {"solc": {}}}
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(solc_config, fp)
+
+    assert Contract.get_solc_version(
+        "v0.4.16", "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    ) == Version("0.4.16")
+
+
+def test_solc_use_latest_patch_specific_not_included(testproject, network):
+    network.connect("mainnet")
+    solc_config = {
+        "compiler": {"solc": {"use_latest_patch": ["0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e"]}}
+    }
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(solc_config, fp)
+
+    assert Contract.get_solc_version(
+        "v0.4.16", "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    ) == Version("0.4.16")
+
+
+def test_solc_use_latest_patch_specific_included(testproject, network):
+    network.connect("mainnet")
+    solc_config = {
+        "compiler": {"solc": {"use_latest_patch": ["0x514910771AF9Ca656af840dff83E8264EcF986CA"]}}
+    }
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(solc_config, fp)
+
+    assert Contract.get_solc_version(
+        "v0.4.16", "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    ) == Version("0.4.26")
 
 
 # @pytest.mark.parametrize(
