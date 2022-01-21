@@ -105,6 +105,7 @@ The following optional fields may be given for development networks, which are p
     * ``default_balance``: The starting balance for all unlocked accounts. Can be given as unit string like "1000 ether" or "50 gwei" or as an number **in Ether**. Will default to 100 ether.
     * ``time``: Date (ISO 8601) that the first block should start. Use this feature, along with :func:`Chain.sleep <Chain.sleep>` to test time-dependent code. Defaults to the current time.
     * ``unlock``: A single address or a list of addresses to unlock. These accounts are added to the :func:`Accounts <brownie.network.account.Accounts>` container and can be used as if the private key is known. Also works in combination with ``fork`` to send transactions from any account.
+    * ``unlimited_contract_size``: Allows deployed contracts to be over the maximum limit of 24675 bytes. The value should be either `true` or `false`.
 
 .. note::
     These optional commandline fields can also be specified on a project level in the project's ``brownie-config.yaml`` file. See the :ref:`configuration files<config>`.
