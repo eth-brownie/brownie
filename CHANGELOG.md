@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a new solidity compiler setting `use_latest_patch` in brownie-config.yaml to use the latest patch version of a compiler based on the pragma version of the contract.
 - Add cli flag `-r` for raising exceptions to the caller instead of doing a system exit.
 
+### Fixed
+- Improve support for Ganache 7 reverted transactions
+
 ## [1.17.2](https://github.com/eth-brownie/brownie/tree/v1.17.2) - 2021-12-04
 ### Changed
 - Bump deps to support vyper `v0.3.1`
