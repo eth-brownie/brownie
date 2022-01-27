@@ -9,13 +9,14 @@ import warnings
 from pathlib import Path
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
-from typing import Any, Dict, Iterator, List, Match, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterator, List, Match, Optional, Set, Tuple, Union, Callable
 from urllib.parse import urlparse
 
 import eth_abi
 import requests
 import solcx
-from eth_utils import remove_0x_prefix
+from eth_utils import combomethod, remove_0x_prefix
+from eth_typing import ChecksumAddress
 from hexbytes import HexBytes
 from semantic_version import Version
 from vvm import get_installable_vyper_versions
@@ -43,7 +44,7 @@ from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
-from . import accounts, chain
+from . import accounts, chain, alert
 from .event import _add_deployment_topics, _get_topics
 from .state import (
     _add_contract,
@@ -53,7 +54,10 @@ from .state import (
     _remove_contract,
     _revert_register,
 )
-from .web3 import _resolve_address, web3
+from web3._utils import filters
+from web3.datastructures import AttributeDict
+from web3.types import ABI, LogReceipt
+from .web3 import Web3, _ContractEvents, ContractEvent, _resolve_address, web3
 
 _unverified_addresses: Set = set()
 
@@ -687,6 +691,7 @@ class _DeployedContractBase(_ContractBase):
         self._owner = owner
         self.tx = tx
         self.address = address
+        self.events = ContractEvents(self.abi, web3, self.address)
         _add_deployment_topics(address, self.abi)
 
         fn_names = [i["name"] for i in self.abi if i["type"] == "function"]
@@ -1218,6 +1223,73 @@ class ProjectContract(_DeployedContractBase):
     ) -> None:
         _ContractBase.__init__(self, project, build, project._sources)
         _DeployedContractBase.__init__(self, address, owner, tx)
+
+
+class ContractEvents(_ContractEvents):
+    def __init__(self, contract: _DeployedContractBase):
+        self.linked_contract = contract
+        self.subscriptions = list()
+
+        _ContractEvents.__init__(self, contract.abi, web3, contract.address)
+
+    def subscribe(self, event_name: str, callback: Callable[[AttributeDict]], delay: float = 2.0):
+        target_event: ContractEvent = self.__getitem__(event_name)
+        latests_events_getter = self._get_latests_events_generator(target_event)
+
+        def _callback_container(_, event_logs: List[AttributeDict] | None):
+            """Receives the list of events as parameter and executes the callback function for each of them.
+
+            Args:
+                event_logs (List[AttributeDict]): List of events logs.
+            """
+            if event_logs == None:
+                return
+            for event_log in event_logs:
+                callback(event_log)
+
+        self.subscriptions.append(alert.new(
+            fn=next,
+            args=(latests_events_getter,),
+            callback=_callback_container,
+            delay=delay,
+            repeat=True
+        ))
+
+    def get_sequence(self, from_block: int, to_block: int = None, event_type: ContractEvent = None):
+        if not to_block:
+            to_block = web3.eth.block_number
+        # Returns event sequence for the specified event
+        if not event_type:
+            return self._retrieve_contract_events(event_type, from_block, to_block)
+        # Returns event sequence for all contract events
+        events_logbook = {}
+        for event in self:
+            events_logbook[event.event_name] = self._retrieve_contract_events(event, from_block, to_block)
+        return events_logbook
+
+    @combomethod
+    def _retrieve_contract_events(self, event_type: ContractEvent, from_block: int = None, to_block: int = None) -> List[LogReceipt]:
+        if not to_block:
+            to_block = web3.eth.block_number
+        if not from_block:
+            from_block = to_block - 10
+
+        event_filter: filters.LogFilter = event_type.createFilter(
+            fromBlock=from_block, toBlock=to_block
+        )
+        return event_filter.get_all_entries()
+
+    @combomethod
+    def _get_latests_events_generator(self, event_type: ContractEvent, from_block: int = None):
+        to_block = web3.eth.block_number
+        from_block = from_block if from_block != None else (to_block - 10)
+
+        while True:
+            yield self._retrieve_contract_events(event_type, from_block, to_block)
+
+            # Update block to look at on new call
+            from_block = to_block
+            to_block = web3.eth.block_number
 
 
 class OverloadedMethod:
