@@ -1157,6 +1157,10 @@ class Contract(_DeployedContractBase):
             )
 
         build_json = build_json[name]
+        if not silent:
+            lang = build_json["language"]
+            version = build_json["version"]
+            print(f"Successfully compiled {address} with {lang} compiler version {version}")
         if as_proxy_for is not None:
             build_json.update(abi=abi, natspec=implementation_contract._build.get("natspec"))
 
