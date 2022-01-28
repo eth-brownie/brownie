@@ -1296,11 +1296,15 @@ class OverloadedMethod:
     def __len__(self) -> int:
         return len(self.methods)
 
-    def __call__(self, *args: Tuple) -> Any:
+    def __call__(
+        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+    ) -> Any:
         fn = self._get_fn_from_args(args)
-        return fn(*args)  # type: ignore
+        return fn(*args, block_identifier=block_identifier, override=override)  # type: ignore
 
-    def call(self, *args: Tuple, block_identifier: Union[int, str, bytes] = None) -> Any:
+    def call(
+        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+    ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
 
@@ -1317,13 +1321,16 @@ class OverloadedMethod:
             A block number or hash that the call is executed at. If not given, the
             latest block used. Raises `ValueError` if this value is too far in the
             past and you are not using an archival node.
+        override : dict, optional
+            A mapping from addresses to balance, nonce, code, state, stateDiff
+            overrides for the context of the call.
 
         Returns
         -------
             Contract method return value(s).
         """
         fn = self._get_fn_from_args(args)
-        return fn.call(*args, block_identifier=block_identifier)
+        return fn.call(*args, block_identifier=block_identifier, override=override)
 
     def transact(self, *args: Tuple) -> TransactionReceiptType:
         """
@@ -1464,7 +1471,9 @@ class _ContractMethod:
         print(f"{self.abi['name']}({_inputs(self.abi)})")
         _print_natspec(self.natspec)
 
-    def call(self, *args: Tuple, block_identifier: Union[int, str, bytes] = None) -> Any:
+    def call(
+        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+    ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
 
@@ -1477,6 +1486,9 @@ class _ContractMethod:
             A block number or hash that the call is executed at. If not given, the
             latest block used. Raises `ValueError` if this value is too far in the
             past and you are not using an archival node.
+        override : dict, optional
+            A mapping from addresses to balance, nonce, code, state, stateDiff
+            overrides for the context of the call.
 
         Returns
         -------
@@ -1490,7 +1502,7 @@ class _ContractMethod:
         tx.update({"to": self._address, "data": self.encode_input(*args)})
 
         try:
-            data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier)
+            data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier, override)
         except ValueError as e:
             raise VirtualMachineError(e) from None
 
@@ -1676,7 +1688,9 @@ class ContractCall(_ContractMethod):
         Bytes4 method signature.
     """
 
-    def __call__(self, *args: Tuple, block_identifier: Union[int, str, bytes] = None) -> Any:
+    def __call__(
+        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+    ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
 
@@ -1689,6 +1703,9 @@ class ContractCall(_ContractMethod):
             A block number or hash that the call is executed at. If not given, the
             latest block used. Raises `ValueError` if this value is too far in the
             past and you are not using an archival node.
+        override : dict, optional
+            A mapping from addresses to balance, nonce, code, state, stateDiff
+            overrides for the context of the call.
 
         Returns
         -------
@@ -1696,7 +1713,7 @@ class ContractCall(_ContractMethod):
         """
 
         if not CONFIG.argv["always_transact"] or block_identifier is not None:
-            return self.call(*args, block_identifier=block_identifier)
+            return self.call(*args, block_identifier=block_identifier, override=override)
 
         args, tx = _get_tx(self._owner, args)
         tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
