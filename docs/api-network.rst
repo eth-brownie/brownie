@@ -1065,12 +1065,13 @@ Contract Internal Attributes
 ContractCall
 ------------
 
-.. py:class:: brownie.network.contract.ContractCall(*args, block_identifier=None)
+.. py:class:: brownie.network.contract.ContractCall(*args, block_identifier=None, override=None)
 
     Calls a non state-changing contract method without broadcasting a transaction, and returns the result. ``args`` must match the required inputs for the method.
 
     * ``args``: Input arguments for the call. The expected inputs are shown in the method's ``__repr__`` value.
     * ``block_identifier``: A block number or hash that the call is executed at. If ``None``, the latest block is used. Raises `ValueError` if this value is too far in the past and you are not using an archival node.
+    *  ``override``: A mapping from addresses to balance, nonce, code, state, stateDiff overrides for the context of the call.
 
     Inputs and return values are formatted via methods in the :ref:`convert<api-convert>` module. Multiple values are returned inside a :func:`ReturnValue <brownie.convert.datatypes.ReturnValue>`.
 
@@ -1080,6 +1081,8 @@ ContractCall
         <ContractCall object 'allowance(address,address)'>
         >>> Token[0].allowance(accounts[0], accounts[2])
         0
+
+    For override see :ref:`ContractTx.call<override>` docs.
 
 ContractCall Attributes
 ***********************
@@ -1197,12 +1200,14 @@ ContractTx Attributes
 ContractTx Methods
 ******************
 
-.. py:classmethod:: ContractTx.call(*args, block_identifier=None)
+
+.. py:classmethod:: ContractTx.call(*args, block_identifier=None, override=None)
 
     Calls the contract method without broadcasting a transaction, and returns the result.
 
     * ``args``: Input arguments for the call. The expected inputs are shown in the method's ``__repr__`` value.
     * ``block_identifier``: A block number or hash that the call is executed at. If ``None``, the latest block is used. Raises `ValueError` if this value is too far in the past and you are not using an archival node.
+    * ``override``: A mapping from addresses to balance, nonce, code, state, stateDiff overrides for the context of the call.
 
     Inputs and return values are formatted via methods in the :ref:`convert<api-convert>` module. Multiple values are returned inside a :func:`ReturnValue <brownie.convert.datatypes.ReturnValue>`.
 
@@ -1210,6 +1215,30 @@ ContractTx Methods
 
         >>> Token[0].transfer.call(accounts[2], 10000, {'from': accounts[0]})
         True
+
+    .. _override:
+
+    The override argument allows replacing balance, nonce and code associated with an address, as well as overwriting individual storage slot value.
+    See `Geth docs <https://geth.ethereum.org/docs/rpc/ns-eth>`_ for more details.
+
+    For example, you can query an exchange rate of an imbalanced Curve pool if it had a different A parameter:
+
+    .. code-block:: python
+
+        >>> for A in [300, 1000, 2000]:
+                override = {
+                    "0x5a6A4D54456819380173272A5E8E9B9904BdF41B": {
+                        "stateDiff": {
+                            "0x0000000000000000000000000000000000000000000000000000000000000009": hex(A * 100),
+                        }
+                    }
+                }
+                result = pool.get_dy_underlying(0, 1, 1e18, override=override)
+                print(A, result.to("ether"))
+        
+        300 0.884657790783695579
+        1000 0.961374099348799411
+        2000 0.979998831913646748
 
 .. py:classmethod:: ContractTx.decode_input(hexstr)
 
