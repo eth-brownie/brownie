@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Force files to be opened as UTF-8
 - Added a new solidity compiler setting `use_latest_patch` in brownie-config.yaml to use the latest patch version of a compiler based on the pragma version of the contract.
 - Add cli flag `-r` for raising exceptions to the caller instead of doing a system exit.
+- Add `override` argument to contract methods which allows changing the state before the call, including overwriting balance, nonce, code, and storage of any address.
 
 ## [1.17.2](https://github.com/eth-brownie/brownie/tree/v1.17.2) - 2021-12-04
 ### Changed
