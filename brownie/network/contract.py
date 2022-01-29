@@ -1135,7 +1135,8 @@ class Contract(_DeployedContractBase):
                 compiler.generate_input_json(sources, optimizer=optimizer, evm_version=evm_version)
             )
             output_json = compiler.compile_from_input_json(input_json)
-            build_json = compiler.generate_build_json(input_json, output_json)
+            compiler_data = {"version": str(version)}
+            build_json = compiler.generate_build_json(input_json, output_json, compiler_data)
         else:
             if source_str.startswith("{"):
                 # source was submitted as multiple files
