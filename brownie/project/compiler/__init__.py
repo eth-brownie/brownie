@@ -47,6 +47,100 @@ EVM_SOLC_VERSIONS = [
 ]
 
 
+def try_compile_and_format(
+    contract_sources: Dict[str, str],
+    solc_version: Optional[str] = None,
+    vyper_version: Optional[str] = None,
+    optimize: bool = True,
+    runs: int = 200,
+    evm_version: Optional[str] = None,
+    silent: bool = True,
+    allow_paths: Optional[str] = None,
+    interface_sources: Optional[Dict[str, str]] = None,
+    remappings: Optional[list] = None,
+    optimizer: Optional[Dict] = None,
+) -> Dict:
+
+    exceptions = []
+    build_json = None
+    try:
+        build_json = compile_and_format(
+            contract_sources=contract_sources,
+            solc_version=solc_version,
+            vyper_version=vyper_version,
+            optimize=optimize,
+            runs=runs,
+            evm_version=evm_version,
+            silent=silent,
+            allow_paths=allow_paths,
+            interface_sources=interface_sources,
+            remappings=remappings,
+            optimizer=optimizer,
+            install_latest=False,
+        )
+    except Exception as e1:
+        if not solc_version and not vyper_version:
+            raise
+
+        exceptions.append(e1)
+        if not silent:
+            warnings.warn(
+                "Re-trying compilation with the latest installed version.",
+                BrownieCompilerWarning,
+            )
+        # now try one more time with the latest installed one
+        try:
+            build_json = compile_and_format(
+                contract_sources=contract_sources,
+                runs=runs,
+                evm_version=evm_version,
+                silent=silent,
+                allow_paths=allow_paths,
+                interface_sources=interface_sources,
+                remappings=remappings,
+                optimizer=optimizer,
+                optimize=optimize,
+                install_latest=False,
+            )
+        except Exception as e2:
+            exceptions.append(e2)
+            if not silent:
+                warnings.warn(
+                    "Re-trying compilation with the latest available version.",
+                    BrownieCompilerWarning,
+                )
+            try:
+                # now try one more time with the latest available one
+                build_json = compile_and_format(
+                    contract_sources=contract_sources,
+                    runs=runs,
+                    evm_version=evm_version,
+                    silent=silent,
+                    allow_paths=allow_paths,
+                    interface_sources=interface_sources,
+                    remappings=remappings,
+                    optimizer=optimizer,
+                    optimize=optimize,
+                    install_latest=True,
+                )
+            except Exception as e3:
+                exceptions.append(e3)
+
+    for e in exceptions:
+        print("Got exception during compilation:")
+        print(color.format_tb(e))
+        print("\n")
+
+    if not build_json:
+        # if it's still failing to compile raise
+        if len(exceptions) > 0:
+            raise exceptions[-1]
+        else:
+            raise Exception("Compilation failed!")
+
+    return build_json
+
+
 def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
@@ -59,7 +153,6 @@ def compile_and_format(
     interface_sources: Optional[Dict[str, str]] = None,
     remappings: Optional[list] = None,
     optimizer: Optional[Dict] = None,
-    use_strict: bool = True,
     install_latest: bool = False,
 ) -> Dict:
     """Compiles contracts and returns build data.
@@ -75,7 +168,6 @@ def compile_and_format(
         interface_sources: dictionary of interfaces as {'path': "source code"}
         remappings: list of solidity path remappings
         optimizer: dictionary of solidity optimizer settings
-        use_strict: boolean that toggles if only the given version should be used for compilation
         install_latest: boolean that toggles if the latest installable version should be downloaded
 
     Returns:
@@ -97,7 +189,7 @@ def compile_and_format(
     vyper_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".vy"}
     if vyper_sources:
         # TODO add `vyper_version` input arg to manually specify, support in config file
-        if vyper_version is None or not use_strict:
+        if vyper_version is None:
             compiler_targets.update(
                 find_vyper_versions(
                     vyper_sources, install_needed=True, install_latest=install_latest, silent=silent
@@ -107,7 +199,7 @@ def compile_and_format(
             compiler_targets[vyper_version] = list(vyper_sources)
     solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
     if solc_sources:
-        if solc_version is None or not use_strict:
+        if solc_version is None:
             compiler_targets.update(
                 find_solc_versions(
                     solc_sources, install_needed=True, install_latest=install_latest, silent=silent
@@ -120,97 +212,37 @@ def compile_and_format(
             optimizer = {"enabled": optimize, "runs": runs if optimize else 0}
 
     for version, path_list in compiler_targets.items():
-        try:
-            compiler_data: Dict = {}
-            if path_list[0].endswith(".vy"):
-                set_vyper_version(version)
-                language = "Vyper"
-                compiler_data["version"] = str(vyper.get_version())
-                interfaces = {
-                    k: v for k, v in interface_sources.items() if Path(k).suffix != ".sol"
-                }
-            else:
-                set_solc_version(version)
-                language = "Solidity"
-                compiler_data["version"] = str(solidity.get_version())
-                interfaces = {
-                    k: v
-                    for k, v in interface_sources.items()
-                    if Path(k).suffix == ".sol"
-                    and Version(version) in sources.get_pragma_spec(v, k)
-                }
+        compiler_data: Dict = {}
+        if path_list[0].endswith(".vy"):
+            set_vyper_version(version)
+            language = "Vyper"
+            compiler_data["version"] = str(vyper.get_version())
+            interfaces = {
+                k: v for k, v in interface_sources.items() if Path(k).suffix != ".sol"
+            }
+        else:
+            set_solc_version(version)
+            language = "Solidity"
+            compiler_data["version"] = str(solidity.get_version())
+            interfaces = {
+                k: v
+                for k, v in interface_sources.items()
+                if Path(k).suffix == ".sol"
+                and Version(version) in sources.get_pragma_spec(v, k)
+            }
 
-            to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
+        to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
 
-            input_json = generate_input_json(
-                to_compile,
-                evm_version=evm_version[language] if isinstance(evm_version, dict) else evm_version,
-                language=language,
-                interface_sources=interfaces,
-                remappings=remappings,
-                optimizer=optimizer,
-            )
-            output_json = compile_from_input_json(input_json, silent, allow_paths)
-            build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
-
-        except Exception as e:
-            if not silent:
-                warnings.warn(
-                    f"Compilation failed with {language} compiler version {version}.",
-                    BrownieCompilerWarning,
-                )
-            if use_strict:
-                if not silent:
-                    warnings.warn(
-                        "Re-trying with the latest installed version.",
-                        BrownieCompilerWarning,
-                    )
-                    print(color.format_tb(e))
-                # current exception was caused by using the passed version passed,
-                # now try one more time with the latest installed one
-                return compile_and_format(
-                    contract_sources,
-                    solc_version,
-                    vyper_version,
-                    optimize,
-                    runs,
-                    evm_version,
-                    silent,
-                    allow_paths,
-                    interface_sources,
-                    remappings,
-                    optimizer,
-                    use_strict=False,
-                    install_latest=False,
-                )
-            elif not use_strict and not install_latest:
-                if not silent:
-                    warnings.warn(
-                        "Re-trying with the latest available version.",
-                        BrownieCompilerWarning,
-                    )
-                    print(color.format_tb(e))
-
-                # current exception was caused by using the latest installed version,
-                # now try one more time with the latest available one
-                return compile_and_format(
-                    contract_sources,
-                    solc_version,
-                    vyper_version,
-                    optimize,
-                    runs,
-                    evm_version,
-                    silent,
-                    allow_paths,
-                    interface_sources,
-                    remappings,
-                    optimizer,
-                    use_strict=False,
-                    install_latest=True,
-                )
-
-            # if it's still failing to compile
-            raise
+        input_json = generate_input_json(
+            to_compile,
+            evm_version=evm_version[language] if isinstance(evm_version, dict) else evm_version,
+            language=language,
+            interface_sources=interfaces,
+            remappings=remappings,
+            optimizer=optimizer,
+        )
+        output_json = compile_from_input_json(input_json, silent, allow_paths)
+        build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
 
     return build_json
 

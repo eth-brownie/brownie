@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import functools
+from unittest.mock import MagicMock
 
 import pytest
 import solcx
@@ -225,3 +226,35 @@ contract Foo {{ function foo() external returns (bool) {{
 }}"""
     compiler.compile_and_format({"foo.sol": code})
     assert "exceeds EIP-170 limit of 24577" in capfd.readouterr()[0]
+
+
+def test_compiler_retries_latest_installed(monkeypatch, msolc, solc8source):
+    mock = MagicMock(side_effect=[Exception("0.8.7"), {"contract_alias": {"version": "0.8.9"}}])
+    monkeypatch.setattr("brownie.project.compiler.compile_and_format", mock)
+
+    build_json = compiler.try_compile_and_format({"path.sol": solc8source}, solc_version="0.8.7")
+    assert build_json["contract_alias"]["version"] == "0.8.9"
+
+
+def test_compiler_retries_latest_available(monkeypatch, msolc, solc8source):
+    mock = MagicMock(
+        side_effect=[
+            Exception("0.8.7"),
+            Exception("0.8.9"),
+            {"contract_alias": {"version": "0.8.11"}},
+        ]
+    )
+    monkeypatch.setattr("brownie.project.compiler.compile_and_format", mock)
+
+    build_json = compiler.try_compile_and_format({"path.sol": solc8source}, solc_version="0.8.7")
+    assert build_json["contract_alias"]["version"] == "0.8.11"
+
+
+def test_compiler_retries_finally_raises(monkeypatch, msolc, solc8source):
+    mock = MagicMock(side_effect=[Exception("0.8.7"), Exception("0.8.9"), Exception("0.8.11")])
+    monkeypatch.setattr("brownie.project.compiler.compile_and_format", mock)
+
+    with pytest.raises(Exception) as execinfo:
+        compiler.try_compile_and_format({"path.sol": solc8source}, solc_version="0.8.7")
+
+    assert str(execinfo.value) == "0.8.11"

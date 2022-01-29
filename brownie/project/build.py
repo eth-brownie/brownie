@@ -31,6 +31,7 @@ BUILD_KEYS = [
     "sha1",
     "source",
     "sourcePath",
+    "version",
 ] + DEPLOYMENT_KEYS
 
 _revert_map: Dict = {}

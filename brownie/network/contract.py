@@ -1148,7 +1148,7 @@ class Contract(_DeployedContractBase):
                     path_str = f"{name}-flattened.sol"
                 sources = {path_str: source_str}
 
-            build_json = compiler.compile_and_format(
+            build_json = compiler.try_compile_and_format(
                 sources,
                 solc_version=str(version),
                 vyper_version=str(version),

@@ -34,6 +34,11 @@ def btsource():
 
 
 @pytest.fixture(scope="session")
+def solc8source():
+    return test_source.replace("[VERSION]", "^0.8.7")
+
+
+@pytest.fixture(scope="session")
 def solc6source():
     return test_source.replace("[VERSION]", "^0.6.0")
 
