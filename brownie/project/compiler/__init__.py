@@ -4,7 +4,7 @@ import json
 from copy import deepcopy
 from hashlib import sha1
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import solcast
 from eth_utils import remove_0x_prefix
@@ -52,7 +52,7 @@ def compile_and_format(
     vyper_version: Optional[str] = None,
     optimize: bool = True,
     runs: int = 200,
-    evm_version: Optional[str] = None,
+    evm_version: Optional[Union[str, Dict[str, str]]] = None,
     silent: bool = True,
     allow_paths: Optional[str] = None,
     interface_sources: Optional[Dict[str, str]] = None,
@@ -131,7 +131,7 @@ def compile_and_format(
 
         input_json = generate_input_json(
             to_compile,
-            evm_version=evm_version,
+            evm_version=evm_version[language] if isinstance(evm_version, dict) else evm_version,
             language=language,
             interface_sources=interfaces,
             remappings=remappings,
