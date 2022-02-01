@@ -1,130 +1,129 @@
 live:
-    - name: Ethereum
-      networks:
-          - name: Mainnet (Infura)
-            chainid: 1
-            id: mainnet
-            host: https://mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-            explorer: https://api.etherscan.io/api
-            multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
-            provider: infura
-          - name: Ropsten (Infura)
-            chainid: 3
-            id: ropsten
-            host: https://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-            explorer: https://api-ropsten.etherscan.io/api
-            multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
-            provider: infura
-          - name: Rinkeby (Infura)
-            chainid: 4
-            id: rinkeby
-            host: https://rinkeby.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-            explorer: https://api-rinkeby.etherscan.io/api
-            multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
-            provider: infura
-          - name: Goerli (Infura)
-            chainid: 5
-            id: goerli
-            host: https://goerli.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-            explorer: https://api-goerli.etherscan.io/api
-            multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
-            provider: infura
-          - name: Kovan (Infura)
-            chainid: 42
-            id: kovan
-            host: https://kovan.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-            explorer: https://api-kovan.etherscan.io/api
-            multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
-            provider: infura
-    - name: Ethereum Classic
-      networks:
-          - name: Mainnet
-            chainid: 61
-            id: etc
-            host: https://www.ethercluster.com/etc
-            explorer: https://blockscout.com/etc/mainnet/api
-          - name: Kotti
-            chainid: 6
-            id: kotti
-            host: https://www.ethercluster.com/kotti
-            explorer: https://blockscout.com/etc/kotti/api
-    - name: Arbitrum
-      networks:
-          - name: Mainnet
-            chainid: 42161
-            id: arbitrum-main
-            host: https://arb1.arbitrum.io/rpc
-            explorer: https://api.arbiscan.io/api
-            multicall2: "0x5B5CFE992AdAC0C9D48E05854B2d91C73a003858"
-    - name: Avalanche
-      networks:
-          - chainid: 43114
-            explorer: https://api.snowtrace.io/api
-            host: https://api.avax.network/ext/bc/C/rpc
-            id: avax-main
-            name: Mainnet
-          - chainid: 43113
-            host: https://api.avax-test.network/ext/bc/C/rpc
-            id: avax-test
-            name: Testnet
-    - name: Binance Smart Chain
-      networks:
-          - name: Testnet
-            chainid: 97
-            id: bsc-test
-            host: https://data-seed-prebsc-1-s1.binance.org:8545
-            explorer: https://api-testnet.bscscan.com/api
-          - name: Mainnet
-            chainid: 56
-            id: bsc-main
-            host: https://bsc-dataseed.binance.org
-            explorer: https://api.bscscan.com/api
-    - name: Fantom Opera
-      networks:
-          - name: Testnet
-            chainid: 0xfa2
-            id: ftm-test
-            host: https://rpc.testnet.fantom.network
-            explorer: https://explorer.testnet.fantom.network
-          - name: Mainnet
-            chainid: 250
-            id: ftm-main
-            host: https://rpcapi.fantom.network
-            explorer: https://api.ftmscan.com/api
-    - name: Harmony
-      networks:
-          - name: Mainnet (Shard 0)
-            chainid: 1666600000
-            host: https://api.harmony.one
-            id: harmony-main
-            multicall2: "0x3E01dD8a5E1fb3481F0F589056b428Fc308AF0Fb"
-    - name: Polygon
-      networks:
-          - name: Mainnet (Infura)
-            chainid: 137
-            id: polygon-main
-            host: https://polygon-mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-            explorer: https://api.polygonscan.com/api
-            multicall2: "0xc8E51042792d7405184DfCa245F2d27B94D013b6"
-          - name: Mumbai Testnet (Infura)
-            chainid: 80001
-            id: polygon-test
-            host: https://polygon-mumbai.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-            explorer: https://api-testnet.polygonscan.com/api
-            multicall2: "0x6842E0412AC1c00464dc48961330156a07268d14"
-    - name: XDai
-      networks:
-          - name: Mainnet
-            chainid: 100
-            id: xdai-main
-            host: https://xdai.poanetwork.dev
-            explorer: https://blockscout.com/xdai/mainnet/api
-          - name: Testnet
-            chainid: 77
-            id: xdai-test
-            host: https://sokol.poa.network
-            explorer: https://blockscout.com/poa/sokol/api
-
+  - name: Ethereum
+    networks:
+      - name: Mainnet (Infura)
+        chainid: 1
+        id: mainnet
+        host: https://mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api.etherscan.io/api
+        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+        provider: infura
+      - name: Ropsten (Infura)
+        chainid: 3
+        id: ropsten
+        host: https://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-ropsten.etherscan.io/api
+        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+        provider: infura
+      - name: Rinkeby (Infura)
+        chainid: 4
+        id: rinkeby
+        host: https://rinkeby.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-rinkeby.etherscan.io/api
+        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+        provider: infura
+      - name: Goerli (Infura)
+        chainid: 5
+        id: goerli
+        host: https://goerli.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-goerli.etherscan.io/api
+        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+        provider: infura
+      - name: Kovan (Infura)
+        chainid: 42
+        id: kovan
+        host: https://kovan.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-kovan.etherscan.io/api
+        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+        provider: infura
+  - name: Ethereum Classic
+    networks:
+      - name: Mainnet
+        chainid: 61
+        id: etc
+        host: https://www.ethercluster.com/etc
+        explorer: https://blockscout.com/etc/mainnet/api
+      - name: Kotti
+        chainid: 6
+        id: kotti
+        host: https://www.ethercluster.com/kotti
+        explorer: https://blockscout.com/etc/kotti/api
+  - name: Arbitrum
+    networks:
+      - name: Mainnet
+        chainid: 42161
+        id: arbitrum-main
+        host: https://arb1.arbitrum.io/rpc
+        explorer: https://api.arbiscan.io/api
+        multicall2: "0x5B5CFE992AdAC0C9D48E05854B2d91C73a003858"
+  - name: Avalanche
+    networks:
+      - chainid: 43114
+        explorer: https://api.snowtrace.io/api
+        host: https://api.avax.network/ext/bc/C/rpc
+        id: avax-main
+        name: Mainnet
+      - chainid: 43113
+        host: https://api.avax-test.network/ext/bc/C/rpc
+        id: avax-test
+        name: Testnet
+  - name: Binance Smart Chain
+    networks:
+      - name: Testnet
+        chainid: 97
+        id: bsc-test
+        host: https://data-seed-prebsc-1-s1.binance.org:8545
+        explorer: https://api-testnet.bscscan.com/api
+      - name: Mainnet
+        chainid: 56
+        id: bsc-main
+        host: https://bsc-dataseed.binance.org
+        explorer: https://api.bscscan.com/api
+  - name: Fantom Opera
+    networks:
+      - name: Testnet
+        chainid: 0xfa2
+        id: ftm-test
+        host: https://rpc.testnet.fantom.network
+        explorer: https://explorer.testnet.fantom.network
+      - name: Mainnet
+        chainid: 250
+        id: ftm-main
+        host: https://rpc.ftm.tools
+        explorer: https://api.ftmscan.com/api
+  - name: Harmony
+    networks:
+      - name: Mainnet (Shard 0)
+        chainid: 1666600000
+        host: https://api.harmony.one
+        id: harmony-main
+        multicall2: "0x3E01dD8a5E1fb3481F0F589056b428Fc308AF0Fb"
+  - name: Polygon
+    networks:
+      - name: Mainnet (Infura)
+        chainid: 137
+        id: polygon-main
+        host: https://polygon-mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api.polygonscan.com/api
+        multicall2: "0xc8E51042792d7405184DfCa245F2d27B94D013b6"
+      - name: Mumbai Testnet (Infura)
+        chainid: 80001
+        id: polygon-test
+        host: https://polygon-mumbai.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-testnet.polygonscan.com/api
+        multicall2: "0x6842E0412AC1c00464dc48961330156a07268d14"
+  - name: XDai
+    networks:
+      - name: Mainnet
+        chainid: 100
+        id: xdai-main
+        host: https://xdai.poanetwork.dev
+        explorer: https://blockscout.com/xdai/mainnet/api
+      - name: Testnet
+        chainid: 77
+        id: xdai-test
+        host: https://sokol.poa.network
+        explorer: https://blockscout.com/poa/sokol/api
 development:
     - name: Ganache-CLI
       id: development

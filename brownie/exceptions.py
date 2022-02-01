@@ -12,6 +12,8 @@ import brownie
 
 # network
 
+ERROR_SIG = "0x08c379a0"
+
 
 class UnknownAccount(Exception):
     pass
@@ -75,50 +77,70 @@ class VirtualMachineError(Exception):
     """
 
     def __init__(self, exc: ValueError) -> None:
+        self.txid: str = ""
+        self.source: str = ""
+        self.revert_type: str = ""
+        self.pc: Optional[int] = None
+        self.revert_msg: Optional[str] = None
+        self.dev_revert_msg: Optional[str] = None
+
         try:
             exc = exc.args[0]
         except Exception:
             pass
 
-        if isinstance(exc, dict) and "message" in exc:
-            if "data" not in exc:
-                raise ValueError(exc["message"]) from None
+        if not (isinstance(exc, dict) and "message" in exc):
+            raise ValueError(str(exc)) from None
 
-            self.message: str = exc["message"].rstrip(".")
+        if "data" not in exc:
+            raise ValueError(exc["message"]) from None
 
-            if isinstance(exc["data"], str):
-                # handle parity exceptions - this logic probably is not perfect
-                if "0x08c379a0" in exc["data"]:
-                    revert_type, err_msg = [i.strip() for i in exc["data"].split("0x08c379a0", 1)]
-                    err_msg = eth_abi.decode_abi(["string"], HexBytes(err_msg))
-                    err_msg = f"{revert_type} '{err_msg}'"
-                elif exc["data"].endswith("0x"):
+        self.message: str = exc["message"].rstrip(".")
+
+        if isinstance(exc["data"], str):
+            # handle parity exceptions - this logic probably is not perfect
+            if not exc["data"].startswith(ERROR_SIG):
+                err_msg = exc["data"]
+                if err_msg.endswith("0x"):
                     err_msg = exc["data"][:-2].strip()
-                else:
-                    err_msg = exc["data"]
                 raise ValueError(f"{self.message}: {err_msg}") from None
 
-            try:
-                txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
-            except StopIteration:
+            self.revert_type = "revert"
+            err_msg = exc["data"][len(ERROR_SIG) :]
+            (err_msg,) = eth_abi.decode_abi(["string"], HexBytes(err_msg))
+            self.revert_msg = err_msg
+
+            return
+
+        try:
+            txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
+            self.revert_type = data["error"]
+        except StopIteration:
+            data = exc["data"]
+            result = data.get("result")
+            if (
+                not isinstance(result, str)
+                or not result.startswith(ERROR_SIG)
+                or "message" not in data
+            ):
                 raise ValueError(exc["message"]) from None
+            txid = ""
+            self.revert_type = data["message"]
+            if "programCounter" in data:
+                data["program_counter"] = data["programCounter"]
 
-            self.txid: str = txid
-            self.source: str = ""
-            self.revert_type: str = data["error"]
-            self.pc: Optional[str] = data.get("program_counter")
-            if self.pc and self.revert_type == "revert":
-                self.pc -= 1
+        self.txid = txid
+        self.source = ""
+        self.pc = data.get("program_counter")
+        if self.pc and self.revert_type == "revert":
+            self.pc -= 1
 
-            self.revert_msg: Optional[str] = data.get("reason")
-            self.dev_revert_msg = brownie.project.build._get_dev_revert(self.pc)
-            if self.revert_msg is None and self.revert_type in ("revert", "invalid opcode"):
-                self.revert_msg = self.dev_revert_msg
-            elif self.revert_msg == "Failed assertion":
-                self.revert_msg = self.dev_revert_msg or self.revert_msg
-
-        else:
-            raise ValueError(str(exc)) from None
+        self.revert_msg = data.get("reason")
+        self.dev_revert_msg = brownie.project.build._get_dev_revert(self.pc)
+        if self.revert_msg is None and self.revert_type in ("revert", "invalid opcode"):
+            self.revert_msg = self.dev_revert_msg
+        elif self.revert_msg == "Failed assertion":
+            self.revert_msg = self.dev_revert_msg or self.revert_msg
 
     def __str__(self) -> str:
         if not hasattr(self, "revert_type"):
