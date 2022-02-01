@@ -98,6 +98,20 @@ live:
         host: https://api.harmony.one
         id: harmony-main
         multicall2: "0x3E01dD8a5E1fb3481F0F589056b428Fc308AF0Fb"
+  - name: Optimistic Ethereum
+    networks:
+      - name: Mainnet
+        chainid: 10
+        id: optimism-main
+        host: https://mainnet.optimism.io
+        explorer: https://api-optimistic.etherscan.io/api
+        multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
+      - name: Kovan
+        chainid: 69
+        id: optimism-test
+        host: https://kovan.optimism.io
+        explorer: https://api-kovan-optimistic.etherscan.io/api
+        multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
   - name: Polygon
     networks:
       - name: Mainnet (Infura)
@@ -124,106 +138,107 @@ live:
         id: xdai-test
         host: https://sokol.poa.network
         explorer: https://blockscout.com/poa/sokol/api
+
 development:
-    - name: Ganache-CLI
-      id: development
-      cmd: ganache-cli
-      host: http://127.0.0.1
-      cmd_settings:
-          port: 8545
-          gas_limit: 12000000
-          accounts: 10
-          evm_version: istanbul
-          mnemonic: brownie
-    - name: Geth Dev
-      id: geth-dev
-      cmd: ethnode
-      host: http://127.0.0.1
-      cmd_settings:
-          port: 8545
-    - name: Hardhat
-      id: hardhat
-      cmd: npx hardhat node
-      host: http://localhost
-      cmd_settings:
-          port: 8545
-    - name: Hardhat (Mainnet Fork)
-      id: hardhat-fork
-      cmd: npx hardhat node
-      host: http://localhost
-      timeout: 120
-      cmd_settings:
-          port: 8545
-          fork: mainnet
-    - name: Ganache-CLI (Mainnet Fork)
-      id: mainnet-fork
-      cmd: ganache-cli
-      host: http://127.0.0.1
-      timeout: 120
-      cmd_settings:
-          port: 8545
-          gas_limit: 12000000
-          accounts: 10
-          evm_version: istanbul
-          mnemonic: brownie
-          fork: mainnet
-    - name: Ganache-CLI (BSC-Mainnet Fork)
-      id: bsc-main-fork
-      cmd: ganache-cli
-      host: http://127.0.0.1
-      timeout: 120
-      cmd_settings:
-          port: 8545
-          gas_limit: 12000000
-          accounts: 10
-          evm_version: istanbul
-          mnemonic: brownie
-          fork: bsc-main
-    - name: Ganache-CLI (FTM-Mainnet Fork)
-      id: ftm-main-fork
-      cmd: ganache-cli
-      host: http://127.0.0.1
-      timeout: 120
-      cmd_settings:
-          port: 8545
-          gas_limit: 12000000
-          accounts: 10
-          evm_version: istanbul
-          mnemonic: brownie
-          fork: ftm-main
-    - name: Ganache-CLI (Polygon-Mainnet Fork)
-      id: polygon-main-fork
-      cmd: ganache-cli
-      host: http://127.0.0.1
-      timeout: 120
-      cmd_settings:
-          port: 8545
-          gas_limit: 20000000
-          accounts: 10
-          evm_version: istanbul
-          mnemonic: brownie
-          fork: polygon-main
-    - name: Ganache-CLI (XDai-Mainnet Fork)
-      id: xdai-main-fork
-      cmd: ganache-cli
-      host: http://127.0.0.1
-      timeout: 120
-      cmd_settings:
-          port: 8545
-          gas_limit: 20000000
-          accounts: 10
-          evm_version: istanbul
-          mnemonic: brownie
-          fork: xdai-main
-    - name: Ganache-CLI (Avax-Mainnet Fork)
-      id: avax-main-fork
-      cmd: ganache-cli
-      host: http://127.0.0.1
-      timeout: 120
-      cmd_settings:
-          port: 8545
-          gas_limit: 20000000
-          accounts: 10
-          evm_version: istanbul
-          mnemonic: brownie
-          fork: avax-main
+  - name: Ganache-CLI
+    id: development
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    cmd_settings:
+      port: 8545
+      gas_limit: 12000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+  - name: Geth Dev
+    id: geth-dev
+    cmd: ethnode
+    host: http://127.0.0.1
+    cmd_settings:
+      port: 8545
+  - name: Hardhat
+    id: hardhat
+    cmd: npx hardhat node
+    host: http://localhost
+    cmd_settings:
+      port: 8545
+  - name: Hardhat (Mainnet Fork)
+    id: hardhat-fork
+    cmd: npx hardhat node
+    host: http://localhost
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      fork: mainnet
+  - name: Ganache-CLI (Mainnet Fork)
+    id: mainnet-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 12000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: mainnet
+  - name: Ganache-CLI (BSC-Mainnet Fork)
+    id: bsc-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 12000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: bsc-main
+  - name: Ganache-CLI (FTM-Mainnet Fork)
+    id: ftm-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 12000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: ftm-main
+  - name: Ganache-CLI (Polygon-Mainnet Fork)
+    id: polygon-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: polygon-main
+  - name: Ganache-CLI (XDai-Mainnet Fork)
+    id: xdai-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: xdai-main
+  - name: Ganache-CLI (Avax-Mainnet Fork)
+    id: avax-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: avax-main
