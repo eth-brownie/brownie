@@ -130,6 +130,7 @@ Networks
                     default_balance: 100
                     time: 2020-05-08T14:54:08+0000
                     unlock: null
+                    no_vm_errors_on_rpc_response: true
 
 .. py:attribute:: networks.live
 

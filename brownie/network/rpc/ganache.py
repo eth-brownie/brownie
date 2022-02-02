@@ -29,6 +29,7 @@ CLI_FLAGS = {
     "unlock": "--unlock",
     "network_id": "--networkId",
     "chain_id": "--chainId",
+    "no_vm_errors_on_rpc_response": "--noVMErrorsOnRPCResponse",
 }
 
 EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
@@ -51,7 +52,9 @@ def launch(cmd: str, **kwargs: Dict) -> None:
         kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]  # type: ignore
     kwargs = _validate_cmd_settings(kwargs)
     for key, value in [(k, v) for k, v in kwargs.items() if v]:
-        if key == "unlock":
+        if key == "no_vm_errors_on_rpc_response" and value:
+            cmd_list.append(CLI_FLAGS[key])
+        elif key == "unlock":
             if not isinstance(value, list):
                 value = [value]  # type: ignore
             for address in value:
