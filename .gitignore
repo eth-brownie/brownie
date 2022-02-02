@@ -16,3 +16,4 @@ env/
 .idea/
 .DS_Store
 .hypothesis/
+.env

@@ -691,7 +691,7 @@ class _DeployedContractBase(_ContractBase):
         self._owner = owner
         self.tx = tx
         self.address = address
-        self.events = ContractEvents(self.abi, web3, self.address)
+        self.events = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
 
         fn_names = [i["name"] for i in self.abi if i["type"] == "function"]
@@ -1232,11 +1232,11 @@ class ContractEvents(_ContractEvents):
 
         _ContractEvents.__init__(self, contract.abi, web3, contract.address)
 
-    def subscribe(self, event_name: str, callback: Callable[[AttributeDict]], delay: float = 2.0):
+    def subscribe(self, event_name: str, callback: Callable[[AttributeDict], None], delay: float = 2.0):
         target_event: ContractEvent = self.__getitem__(event_name)
         latests_events_getter = self._get_latests_events_generator(target_event)
 
-        def _callback_container(_, event_logs: List[AttributeDict] | None):
+        def _callback_container(_, event_logs: List[AttributeDict]):
             """Receives the list of events as parameter and executes the callback function for each of them.
 
             Args:

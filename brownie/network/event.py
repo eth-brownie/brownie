@@ -9,18 +9,10 @@ from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Union, Value
 import eth_event
 from eth_event import EventError
 
-from web3._utils import filters, datatypes
-from web3.datastructures import AttributeDict
-
-from brownie import web3
 from brownie._config import _get_data_folder
 from brownie.convert.datatypes import ReturnValue
 from brownie.convert.normalize import format_event
 from brownie.exceptions import EventLookupError
-
-from . import alert
-from .contract import Contract, ProjectContract
-from .web3 import ContractEvent
 
 
 class EventDict:
