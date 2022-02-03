@@ -2,7 +2,7 @@
 
 import pytest
 
-from brownie import compile_source
+from brownie import Contract, compile_source
 from brownie.exceptions import EventLookupError
 from brownie.network.event import EventDict, _EventItem
 
@@ -120,3 +120,7 @@ def test_same_topic_different_abi(accounts):
     assert len(tx.events) == 2
     assert tx.events[0].values() == [1, 2, 3]
     assert tx.events[1].values() == [4, 5, 6]
+
+
+def test_subscription_to_event(accounts, tester: Contract):
+    pass

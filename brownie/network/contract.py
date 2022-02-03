@@ -1258,14 +1258,15 @@ class ContractEvents(_ContractEvents):
                 callback(event_log)
 
         # For parameters info, see brownie alert documentation.
-        new_subscription = alert.new(
-            fn=next,
-            args=(latests_events_getter,),
-            callback=_callback_container,
-            delay=delay,
-            repeat=True,
+        self.subscriptions.append(
+            alert.new(
+                fn=next,
+                args=(latests_events_getter,),
+                callback=_callback_container,
+                delay=delay,
+                repeat=True,
+            )
         )
-        self.subscriptions.append(new_subscription)
 
     def get_sequence(self, from_block: int, to_block: int = None, event_type: ContractEvent = None):
         """Returns the log of events of type 'event_type' that occurred between the
