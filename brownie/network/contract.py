@@ -9,18 +9,20 @@ import warnings
 from pathlib import Path
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
-from typing import Any, Dict, Iterator, List, Match, Optional, Set, Tuple, Union, Callable
+from typing import Any, Callable, Dict, Iterator, List, Match, Optional, Set, Tuple, Union
 from urllib.parse import urlparse
 
 import eth_abi
 import requests
 import solcx
 from eth_utils import combomethod, remove_0x_prefix
-from eth_typing import ChecksumAddress
 from hexbytes import HexBytes
 from semantic_version import Version
 from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
+from web3._utils import filters
+from web3.datastructures import AttributeDict
+from web3.types import LogReceipt
 
 from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS
 from brownie.convert.datatypes import Wei
@@ -44,7 +46,7 @@ from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
-from . import accounts, chain, alert
+from . import accounts, alert, chain
 from .event import _add_deployment_topics, _get_topics
 from .state import (
     _add_contract,
@@ -54,10 +56,7 @@ from .state import (
     _remove_contract,
     _revert_register,
 )
-from web3._utils import filters
-from web3.datastructures import AttributeDict
-from web3.types import ABI, LogReceipt
-from .web3 import Web3, _ContractEvents, ContractEvent, _resolve_address, web3
+from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
 _unverified_addresses: Set = set()
 
@@ -1228,50 +1227,87 @@ class ProjectContract(_DeployedContractBase):
 class ContractEvents(_ContractEvents):
     def __init__(self, contract: _DeployedContractBase):
         self.linked_contract = contract
-        self.subscriptions = list()
+        self.subscriptions: List[alert.Alert] = list()
 
         _ContractEvents.__init__(self, contract.abi, web3, contract.address)
 
-    def subscribe(self, event_name: str, callback: Callable[[AttributeDict], None], delay: float = 2.0):
+    def subscribe(
+        self, event_name: str, callback: Callable[[AttributeDict], None], delay: float = 2.0
+    ):
+        """Subscribe to event with a name matching 'event_name',
+        calling the 'callback' function on new occurence.
+
+        Args:
+            event_name (str): Name of the event to subscribe to.
+            callback (Callable[[AttributeDict], None]): Function called whenever an event occurs.
+            delay (float, optional): Delay between each check for new events. Defaults to 2.0.
+        """
         target_event: ContractEvent = self.__getitem__(event_name)
         latests_events_getter = self._get_latests_events_generator(target_event)
 
         def _callback_container(_, event_logs: List[AttributeDict]):
-            """Receives the list of events as parameter and executes the callback function for each of them.
+            """Receives the list of events as parameter and executes
+            the callback function for each of them.
 
             Args:
                 event_logs (List[AttributeDict]): List of events logs.
             """
-            if event_logs == None:
+            if event_logs is None:
                 return
             for event_log in event_logs:
                 callback(event_log)
 
-        self.subscriptions.append(alert.new(
+        # For parameters info, see brownie alert documentation.
+        new_subscription = alert.new(
             fn=next,
             args=(latests_events_getter,),
             callback=_callback_container,
             delay=delay,
-            repeat=True
-        ))
+            repeat=True,
+        )
+        self.subscriptions.append(new_subscription)
 
     def get_sequence(self, from_block: int, to_block: int = None, event_type: ContractEvent = None):
-        if not to_block:
+        """Returns the log of events of type 'event_type' that occurred between the
+        blocks 'from_block' and 'to_block'. If 'event_type' is not specified,
+        it retrieves the occurrences of all events in the contract.
+
+        Args:
+            from_block (int): The block from which to search for events that have occurred.
+            to_block (int, optional): The block on which to stop searching for events,
+            if not specified, it is set to the most recently mined block (web3.eth.block_number).
+            Defaults to None.
+            event_type (ContractEvent, optional): Type of event to be searched between the
+            specified blocks. Defaults to None.
+
+        Returns:
+            if 'event_type' is specified:
+                [list]: List of events of type 'event_type' that occured between
+                'from_block' and 'to_block'.
+            else:
+                event_logbook [dict]: Dictionnary of events of the contract that occured
+                between 'from_block' and 'to_block'.
+        """
+        if to_block is None:
             to_block = web3.eth.block_number
         # Returns event sequence for the specified event
-        if not event_type:
+        if event_type is None:
             return self._retrieve_contract_events(event_type, from_block, to_block)
         # Returns event sequence for all contract events
         events_logbook = {}
         for event in self:
-            events_logbook[event.event_name] = self._retrieve_contract_events(event, from_block, to_block)
+            events_logbook[event.event_name] = self._retrieve_contract_events(
+                event, from_block, to_block
+            )
         return events_logbook
 
     @combomethod
-    def _retrieve_contract_events(self, event_type: ContractEvent, from_block: int = None, to_block: int = None) -> List[LogReceipt]:
-        if not to_block:
+    def _retrieve_contract_events(
+        self, event_type: ContractEvent, from_block: int = None, to_block: int = None
+    ) -> List[LogReceipt]:
+        if to_block is None:
             to_block = web3.eth.block_number
-        if not from_block:
+        if from_block is None and isinstance(to_block, int):
             from_block = to_block - 10
 
         event_filter: filters.LogFilter = event_type.createFilter(
@@ -1282,7 +1318,7 @@ class ContractEvents(_ContractEvents):
     @combomethod
     def _get_latests_events_generator(self, event_type: ContractEvent, from_block: int = None):
         to_block = web3.eth.block_number
-        from_block = from_block if from_block != None else (to_block - 10)
+        from_block = from_block if from_block is not None else (to_block - 10)
 
         while True:
             yield self._retrieve_contract_events(event_type, from_block, to_block)
