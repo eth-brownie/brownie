@@ -140,6 +140,7 @@ development:
     cmd: ganache-cli
     host: http://127.0.0.1
     cmd_settings:
+      host: 127.0.0.1
       port: 8545
       gas_limit: 12000000
       accounts: 10
@@ -171,6 +172,7 @@ development:
     host: http://127.0.0.1
     timeout: 120
     cmd_settings:
+      host: 127.0.0.1
       port: 8545
       gas_limit: 12000000
       accounts: 10
@@ -183,6 +185,7 @@ development:
     host: http://127.0.0.1
     timeout: 120
     cmd_settings:
+      host: 127.0.0.1
       port: 8545
       gas_limit: 12000000
       accounts: 10
@@ -195,6 +198,7 @@ development:
     host: http://127.0.0.1
     timeout: 120
     cmd_settings:
+      host: 127.0.0.1
       port: 8545
       gas_limit: 12000000
       accounts: 10
@@ -207,6 +211,7 @@ development:
     host: http://127.0.0.1
     timeout: 120
     cmd_settings:
+      host: 127.0.0.1
       port: 8545
       gas_limit: 20000000
       accounts: 10
@@ -219,6 +224,7 @@ development:
     host: http://127.0.0.1
     timeout: 120
     cmd_settings:
+      host: 127.0.0.1
       port: 8545
       gas_limit: 20000000
       accounts: 10
