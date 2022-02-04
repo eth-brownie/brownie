@@ -151,7 +151,7 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
 
         build_json = compiler.compile_and_format(
             manifest["sources"],
-            solc_version=version,
+            version=version,
             interface_sources=_get_json_interfaces(manifest["contract_types"]),
         )
         for key, build in build_json.items():

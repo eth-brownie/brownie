@@ -60,7 +60,7 @@ from foo import bar
 
 
 def test_compile_empty():
-    compiler.compile_and_format({"empty.vy": ""}, vyper_version="0.2.4")
+    compiler.compile_and_format({"empty.vy": ""}, version="0.2.4")
 
 
 def test_get_abi():
@@ -81,5 +81,5 @@ def test_get_abi():
 
 def test_size_limit(capfd):
     code = f"@external\ndef baz():\n    assert msg.sender != ZERO_ADDRESS, '{'blah'*10000}'"
-    compiler.compile_and_format({"foo.vy": code}, vyper_version="0.2.4")
+    compiler.compile_and_format({"foo.vy": code}, version="0.2.4")
     assert "exceeds EIP-170 limit of 24577" in capfd.readouterr()[0]

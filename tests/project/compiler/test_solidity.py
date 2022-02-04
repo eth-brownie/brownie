@@ -72,6 +72,15 @@ def msolc(monkeypatch):
     yield installed
 
 
+@pytest.fixture
+def compiler_targets(msolc, solc8source):
+    yield [
+        {"version": "0.8.7", "language": "Solidity", "to_compile": {"path.sol": solc8source}},
+        {"version": "0.8.9", "language": "Solidity", "to_compile": {"path.sol": solc8source}},
+        {"version": "0.8.11", "language": "Solidity", "to_compile": {"path.sol": solc8source}},
+    ]
+
+
 def test_set_solc_version():
     compiler.set_solc_version("0.5.7")
     assert solcx.get_solc_version(with_commit_hash=True) == compiler.solidity.get_version()
@@ -124,11 +133,11 @@ def test_build_json_keys(solc5source):
 
 
 def test_build_json_unlinked_libraries(solc4source, solc5source, solc6source):
-    build_json = compiler.compile_and_format({"path.sol": solc4source}, solc_version="0.4.25")
+    build_json = compiler.compile_and_format({"path.sol": solc4source}, version="0.4.25")
     assert "__Bar__" in build_json["Foo"]["bytecode"]
-    build_json = compiler.compile_and_format({"path.sol": solc5source}, solc_version="0.5.7")
+    build_json = compiler.compile_and_format({"path.sol": solc5source}, version="0.5.7")
     assert "__Bar__" in build_json["Foo"]["bytecode"]
-    build_json = compiler.compile_and_format({"path.sol": solc6source}, solc_version="0.6.2")
+    build_json = compiler.compile_and_format({"path.sol": solc6source}, version="0.6.2")
     assert "__Bar__" in build_json["Foo"]["bytecode"]
 
 
@@ -143,9 +152,9 @@ def test_format_link_references(solc4json, solc5json, solc6json):
 
 def test_compiler_errors(solc4source, solc5source):
     with pytest.raises(CompilerError):
-        compiler.compile_and_format({"path.sol": solc4source}, solc_version="0.5.7")
+        compiler.compile_and_format({"path.sol": solc4source}, version="0.5.7")
     with pytest.raises(CompilerError):
-        compiler.compile_and_format({"path.sol": solc5source}, solc_version="0.4.25")
+        compiler.compile_and_format({"path.sol": solc5source}, version="0.4.25")
 
 
 def test_min_version():
@@ -198,7 +207,7 @@ def test_first_revert(BrownieTester, ExternalCallTester):
 
 
 def test_compile_empty():
-    compiler.compile_and_format({"empty.sol": ""}, solc_version="0.4.25")
+    compiler.compile_and_format({"empty.sol": ""}, version="0.4.25")
 
 
 def test_get_abi():
@@ -228,15 +237,23 @@ contract Foo {{ function foo() external returns (bool) {{
     assert "exceeds EIP-170 limit of 24577" in capfd.readouterr()[0]
 
 
-def test_compiler_retries_latest_installed(monkeypatch, msolc, solc8source):
-    mock = MagicMock(side_effect=[Exception("0.8.7"), {"contract_alias": {"version": "0.8.9"}}])
-    monkeypatch.setattr("brownie.project.compiler.compile_and_format", mock)
-
-    build_json = compiler.try_compile_and_format({"path.sol": solc8source}, solc_version="0.8.7")
+def test_compiler_retries_latest_installed(monkeypatch, compiler_targets, solc8source):
+    mock = MagicMock(
+        side_effect=[
+            Exception("0.8.7"),
+            {"contract_alias": {"version": "0.8.9"}},
+        ]
+    )
+    monkeypatch.setattr(
+        "brownie.project.compiler.prepare_compilers",
+        MagicMock(return_value=(compiler_targets, None, None)),
+    )
+    monkeypatch.setattr("brownie.project.compiler.prepared_compile_and_format", mock)
+    build_json = compiler.compile_and_format({"path.sol": solc8source}, retry=True)
     assert build_json["contract_alias"]["version"] == "0.8.9"
 
 
-def test_compiler_retries_latest_available(monkeypatch, msolc, solc8source):
+def test_compiler_retries_latest_available(monkeypatch, compiler_targets, solc8source):
     mock = MagicMock(
         side_effect=[
             Exception("0.8.7"),
@@ -244,17 +261,30 @@ def test_compiler_retries_latest_available(monkeypatch, msolc, solc8source):
             {"contract_alias": {"version": "0.8.11"}},
         ]
     )
-    monkeypatch.setattr("brownie.project.compiler.compile_and_format", mock)
-
-    build_json = compiler.try_compile_and_format({"path.sol": solc8source}, solc_version="0.8.7")
+    monkeypatch.setattr(
+        "brownie.project.compiler.prepare_compilers",
+        MagicMock(return_value=(compiler_targets, None, None)),
+    )
+    monkeypatch.setattr("brownie.project.compiler.prepared_compile_and_format", mock)
+    build_json = compiler.compile_and_format({"path.sol": solc8source}, retry=True)
     assert build_json["contract_alias"]["version"] == "0.8.11"
 
 
-def test_compiler_retries_finally_raises(monkeypatch, msolc, solc8source):
-    mock = MagicMock(side_effect=[Exception("0.8.7"), Exception("0.8.9"), Exception("0.8.11")])
-    monkeypatch.setattr("brownie.project.compiler.compile_and_format", mock)
+def test_compiler_retries_finally_raises(monkeypatch, compiler_targets, solc8source):
+    mock = MagicMock(
+        side_effect=[
+            Exception("0.8.7"),
+            Exception("0.8.9"),
+            Exception("0.8.11"),
+        ]
+    )
+    monkeypatch.setattr(
+        "brownie.project.compiler.prepare_compilers",
+        MagicMock(return_value=(compiler_targets, None, None)),
+    )
+    monkeypatch.setattr("brownie.project.compiler.prepared_compile_and_format", mock)
 
     with pytest.raises(Exception) as execinfo:
-        compiler.try_compile_and_format({"path.sol": solc8source}, solc_version="0.8.7")
+        compiler.compile_and_format({"path.sol": solc8source}, retry=True)
 
     assert str(execinfo.value) == "0.8.11"

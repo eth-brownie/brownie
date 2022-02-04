@@ -97,10 +97,12 @@ class _ProjectBase:
                 "Solidity": compiler_config["solc"].get("evm_version", project_evm_version),
                 "Vyper": compiler_config["vyper"].get("evm_version", project_evm_version),
             }
+            version = compiler_config["solc"].get("version", None)
+            if not version:
+                version = compiler_config["vyper"].get("version", None)
             build_json = compiler.compile_and_format(
                 contract_sources,
-                solc_version=compiler_config["solc"].get("version", None),
-                vyper_version=compiler_config["vyper"].get("version", None),
+                version=version,
                 optimize=compiler_config["solc"].get("optimize", None),
                 runs=compiler_config["solc"].get("runs", None),
                 evm_version=evm_version,

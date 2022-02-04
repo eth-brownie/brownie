@@ -1130,13 +1130,17 @@ class Contract(_DeployedContractBase):
             sources = {k: v["content"] for k, v in input_json["sources"].items()}
             evm_version = input_json["settings"].get("evmVersion", evm_version)
 
-            compiler.set_solc_version(str(version))
-            input_json.update(
-                compiler.generate_input_json(sources, optimizer=optimizer, evm_version=evm_version)
+            compiler_targets = [
+                {"version": str(version), "language": "Solidity", "to_compile": list(sources)}
+            ]
+            build_json = compiler.compile_and_format(
+                sources,
+                version=str(version),
+                optimizer=optimizer,
+                evm_version=evm_version,
+                compiler_targets=compiler_targets,
+                silent=silent,
             )
-            output_json = compiler.compile_from_input_json(input_json)
-            compiler_data = {"version": str(version)}
-            build_json = compiler.generate_build_json(input_json, output_json, compiler_data)
         else:
             if source_str.startswith("{"):
                 # source was submitted as multiple files
@@ -1149,12 +1153,12 @@ class Contract(_DeployedContractBase):
                     path_str = f"{name}-flattened.sol"
                 sources = {path_str: source_str}
 
-            build_json = compiler.try_compile_and_format(
+            build_json = compiler.compile_and_format(
                 sources,
-                solc_version=str(version),
-                vyper_version=str(version),
+                version=str(version),
                 optimizer=optimizer,
                 evm_version=evm_version,
+                silent=silent,
             )
 
         build_json = build_json[name]
