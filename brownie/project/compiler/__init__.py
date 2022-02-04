@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import os
 import warnings
 from copy import deepcopy
 from hashlib import sha1
@@ -11,7 +12,7 @@ import solcast
 from eth_utils import remove_0x_prefix
 from semantic_version import Version
 
-from brownie._config import _get_data_folder
+from brownie._config import _get_data_folder, _load_project_compiler_config
 from brownie.exceptions import BrownieCompilerWarning, UnsupportedLanguage
 from brownie.project import sources
 from brownie.project.compiler.solidity import (  # NOQA: F401
@@ -611,3 +612,20 @@ def get_abi(
             }
 
     return final_output
+
+    def get_retry_compiler_config(self) -> bool:
+        """
+        Return the compiler boolean flag 'retry' which toggles if the compilation
+        should be retried with the next compatible compiler in case of an exception.
+
+        If this is set to `True`, it will use compiler versions in the following order:
+        `[ contract_version, latest_installed_version, latest_available_version ]`
+
+        The first compilation that is not throwing an exception will be returned.
+        If all compilers throw an exception, the exeption will be raised.
+
+        If this is set to `False` or the key is missing, no retries will be performed
+        and the first compilation result will be returned or the exception raised.
+        """
+        compiler_config = _load_project_compiler_config(Path(os.getcwd()))
+        return compiler_config.get("retry", False)

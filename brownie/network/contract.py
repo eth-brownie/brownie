@@ -1140,6 +1140,7 @@ class Contract(_DeployedContractBase):
                 evm_version=evm_version,
                 compiler_targets=compiler_targets,
                 silent=silent,
+                retry=compiler.get_retry(),
             )
         else:
             if source_str.startswith("{"):
@@ -1159,6 +1160,7 @@ class Contract(_DeployedContractBase):
                 optimizer=optimizer,
                 evm_version=evm_version,
                 silent=silent,
+                retry=compiler.get_retry(),
             )
 
         build_json = build_json[name]

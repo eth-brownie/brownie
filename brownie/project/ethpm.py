@@ -153,6 +153,7 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
             manifest["sources"],
             version=version,
             interface_sources=_get_json_interfaces(manifest["contract_types"]),
+            retry=compiler.get_retry(),
         )
         for key, build in build_json.items():
             manifest["contract_types"].setdefault(key, {"contract_name": key})
