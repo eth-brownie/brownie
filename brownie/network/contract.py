@@ -1286,13 +1286,13 @@ class ContractEvents(_ContractEvents):
     def get_sequence(
         self, from_block: int, to_block: int = None, event_type: Union[ContractEvent, str] = None
     ) -> Union[List[AttributeDict], AttributeDict]:
-        """Returns the log of events of type 'event_type' that occurred between the
+        """Returns the logs of events of type 'event_type' that occurred between the
         blocks 'from_block' and 'to_block'. If 'event_type' is not specified,
         it retrieves the occurrences of all events in the contract.
 
         Args:
             from_block (int): The block from which to search for events that have occurred.
-            to_block (int, optional): The block on which to stop searching for events,
+            to_block (int, optional): The block on which to stop searching for events.
             if not specified, it is set to the most recently mined block (web3.eth.block_number).
             Defaults to None.
             event_type (ContractEvent, str, optional): Type or name of the event to be searched

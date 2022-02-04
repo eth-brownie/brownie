@@ -1026,6 +1026,16 @@ Contract Attributes
         >>> Token[0].tx
         <Transaction object '0xcede03c7e06d2b4878438b08cd0cf4515942b3ba06b3cfd7019681d18bb8902c'>
 
+
+.. py:attribute:: Contract.events
+
+    The :func:`ContractEvents <brownie.network.contract.ContractEvents>` instance linked to the deployed contract.
+
+    .. code-block:: python
+
+        >>> Token[0].events
+        <brownie.network.contract.ContractEvents object at 0x000001CF03C8BB50>
+
 Contract Methods
 ****************
 
@@ -1061,6 +1071,56 @@ Contract Internal Attributes
 .. py:attribute:: Contract._reverted
 
     Boolean. Once set to to ``True``, any attempt to interact with the object raises a :func:`ContractNotFound <brownie.exceptions.ContractNotFound>` exception. Set as a result of a call to :func:`state._notify_registry <brownie.network.state._notify_registry>`.
+
+ContractEvents
+--------------
+
+:func:`ContractEvents <brownie.network.contract.ContractEvents>` is used to interact with the events of a :func:`Contract <brownie.network.contract.Contract>` or a :func:`ProjectContract <brownie.network.contract.ProjectContract>`.
+
+.. py:class:: brownie.network.contract.ContractEvents(contract=brownie.network.contract.Contract)
+
+    ``ContractEvents`` instances allow to retrieve and interact with the events of a contract.
+    This class inherits from the :func:`web3.py ContractEvents <https://web3py.readthedocs.io/en/stable/contracts.html?highlight=ContractEvents#web3.contract.ContractEvents>` class.
+
+ContractEvents Classmethods
+***************************
+
+.. py:classmethod:: ContractEvents.subscribe(event_name, callback, delay=2.0)
+
+    Subscribe to the contract event whose name matches the ``event_name`` parameter.
+
+    * ``event_name``: Name of the event to subscribe to.
+    * ``callback``: Function called on each event occurence, it **must** take one and only one argument.
+    * ``delay``: Delay in seconds between each check for new events.
+
+    New events are detected using the :func:`Alert <brownie.network.alert.Alert>` class.
+    Each time a new event of this type is detected, triggers the ``callback`` function passing the event logs as parameter.
+    This function creates a new thread running the alert.
+
+.. py:classmethod:: ContractEvents.get_sequence(from_block, to_block=None, event_type=None)
+
+    Retrieves events emitted by the contract between two blocks.
+
+    * ``from_block``: The block from which to search for events that have occurred.
+    * ``to_block``: The block on which to stop searching for events. Defaults to None
+    * ``event_type``: Type or name of the event to be searched between the specified blocks. Defaults to None.
+
+    If ``to_block`` is not specified, retrieves events between ``from_block`` and the latest mined block.
+    The ``event_type`` parameter can either be a string containing the name of the event to search for or the event type itself (using `your_contract.events.your_event_name`)
+
+ContractEvents Attributes
+*************************
+
+.. py:attribute:: ContractEvents.linked_contract
+
+    The ``Contract`` object from which the ``ContractEvents`` instance is reading the events.
+
+    .. code-block:: python
+
+        >>> tester
+        <BrownieTester Contract '0x3194cBDC3dbcd3E11a07892e7bA5c3394048Cc87'>
+        >>> tester.events.linked_contract
+        <BrownieTester Contract '0x3194cBDC3dbcd3E11a07892e7bA5c3394048Cc87'>
 
 ContractCall
 ------------
