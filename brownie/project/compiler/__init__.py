@@ -613,19 +613,20 @@ def get_abi(
 
     return final_output
 
-    def get_retry_compiler_config(self) -> bool:
-        """
-        Return the compiler boolean flag 'retry' which toggles if the compilation
-        should be retried with the next compatible compiler in case of an exception.
 
-        If this is set to `True`, it will use compiler versions in the following order:
-        `[ contract_version, latest_installed_version, latest_available_version ]`
+def get_retry(self) -> bool:
+    """
+    Return the compiler boolean flag 'retry' which toggles if the compilation
+    should be retried with the next compatible compiler in case of an exception.
 
-        The first compilation that is not throwing an exception will be returned.
-        If all compilers throw an exception, the exeption will be raised.
+    If this is set to `True`, it will use compiler versions in the following order:
+    `[ contract_version, latest_installed_version, latest_available_version ]`
 
-        If this is set to `False` or the key is missing, no retries will be performed
-        and the first compilation result will be returned or the exception raised.
-        """
-        compiler_config = _load_project_compiler_config(Path(os.getcwd()))
-        return compiler_config.get("retry", False)
+    The first compilation that is not throwing an exception will be returned.
+    If all compilers throw an exception, the exeption will be raised.
+
+    If this is set to `False` or the key is missing, no retries will be performed
+    and the first compilation result will be returned or the exception raised.
+    """
+    compiler_config = _load_project_compiler_config(Path(os.getcwd()))
+    return compiler_config.get("retry", False)
