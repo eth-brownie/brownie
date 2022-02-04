@@ -1242,6 +1242,8 @@ class ContractEvents(_ContractEvents):
             callback (Callable[[AttributeDict], None]): Function called whenever an event occurs.
             delay (float, optional): Delay between each check for new events. Defaults to 2.0.
         """
+        if not callable(callback):
+            raise TypeError("Argument 'callback' must be of type Callable.")
         target_event: ContractEvent = self.__getitem__(event_name)
         latests_events_getter = self._get_latests_events_generator(target_event)
 
@@ -1258,17 +1260,19 @@ class ContractEvents(_ContractEvents):
                 callback(event_log)
 
         # For parameters info, see brownie alert documentation.
-        self.subscriptions.append(
-            alert.new(
-                fn=next,
-                args=(latests_events_getter,),
-                callback=_callback_container,
-                delay=delay,
-                repeat=True,
-            )
+        new_subscription = alert.new(
+            fn=next,
+            args=(latests_events_getter,),
+            callback=_callback_container,
+            delay=delay,
+            repeat=True,
         )
+        self.subscriptions.append(new_subscription)
+        return new_subscription
 
-    def get_sequence(self, from_block: int, to_block: int = None, event_type: ContractEvent = None):
+    def get_sequence(
+        self, from_block: int, to_block: int = None, event_type: Union[ContractEvent, str] = None
+    ) -> Union[List[AttributeDict], AttributeDict]:
         """Returns the log of events of type 'event_type' that occurred between the
         blocks 'from_block' and 'to_block'. If 'event_type' is not specified,
         it retrieves the occurrences of all events in the contract.
@@ -1278,8 +1282,8 @@ class ContractEvents(_ContractEvents):
             to_block (int, optional): The block on which to stop searching for events,
             if not specified, it is set to the most recently mined block (web3.eth.block_number).
             Defaults to None.
-            event_type (ContractEvent, optional): Type of event to be searched between the
-            specified blocks. Defaults to None.
+            event_type (ContractEvent, str, optional): Type or name of the event to be searched
+            between the specified blocks. Defaults to None.
 
         Returns:
             if 'event_type' is specified:
@@ -1289,18 +1293,20 @@ class ContractEvents(_ContractEvents):
                 event_logbook [dict]: Dictionnary of events of the contract that occured
                 between 'from_block' and 'to_block'.
         """
-        if to_block is None:
+        if to_block is None or to_block > web3.eth.block_number:
             to_block = web3.eth.block_number
         # Returns event sequence for the specified event
-        if event_type is None:
+        if event_type is not None:
+            if isinstance(event_type, str):
+                event_type = self.__getitem__(event_type)
             return self._retrieve_contract_events(event_type, from_block, to_block)
         # Returns event sequence for all contract events
-        events_logbook = {}
+        events_logbook = dict()
         for event in self:
             events_logbook[event.event_name] = self._retrieve_contract_events(
                 event, from_block, to_block
             )
-        return events_logbook
+        return AttributeDict(events_logbook)
 
     @combomethod
     def _retrieve_contract_events(
