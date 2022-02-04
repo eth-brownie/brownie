@@ -10,7 +10,8 @@ from ens import ENS
 from web3 import HTTPProvider, IPCProvider
 from web3 import Web3 as _Web3
 from web3 import WebsocketProvider
-from web3.contract import ContractEvents as _ContractEvents, ContractEvent
+from web3.contract import ContractEvent  # noqa
+from web3.contract import ContractEvents as _ContractEvents  # noqa
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
 
 from brownie._config import CONFIG, _get_data_folder

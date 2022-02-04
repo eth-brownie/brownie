@@ -9,7 +9,19 @@ import warnings
 from pathlib import Path
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
-from typing import Any, Callable, Dict, Iterator, List, Match, Optional, Set, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Iterator,
+    List,
+    Match,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 from urllib.parse import urlparse
 
 import eth_abi
@@ -1229,11 +1241,12 @@ class ContractEvents(_ContractEvents):
         self.linked_contract = contract
         self.subscriptions: List[alert.Alert] = list()
 
-        _ContractEvents.__init__(self, contract.abi, web3, contract.address)
+        # Ignoring type since ChecksumAddress type is an alias for string
+        _ContractEvents.__init__(self, contract.abi, web3, contract.address)  # type: ignore
 
     def subscribe(
         self, event_name: str, callback: Callable[[AttributeDict], None], delay: float = 2.0
-    ):
+    ) -> alert.Alert:
         """Subscribe to event with a name matching 'event_name',
         calling the 'callback' function on new occurence.
 
@@ -1244,10 +1257,10 @@ class ContractEvents(_ContractEvents):
         """
         if not callable(callback):
             raise TypeError("Argument 'callback' must be of type Callable.")
-        target_event: ContractEvent = self.__getitem__(event_name)
+        target_event: ContractEvent = self.__getitem__(event_name)  # type: ignore
         latests_events_getter = self._get_latests_events_generator(target_event)
 
-        def _callback_container(_, event_logs: List[AttributeDict]):
+        def _callback_container(_: Any, event_logs: List[AttributeDict]) -> None:
             """Receives the list of events as parameter and executes
             the callback function for each of them.
 
@@ -1295,14 +1308,17 @@ class ContractEvents(_ContractEvents):
         """
         if to_block is None or to_block > web3.eth.block_number:
             to_block = web3.eth.block_number
+
         # Returns event sequence for the specified event
         if event_type is not None:
             if isinstance(event_type, str):
-                event_type = self.__getitem__(event_type)
+                # If 'event_type' is a string, search for an event with a name matching it.
+                event_type = self.__getitem__(event_type)  # type: ignore
             return self._retrieve_contract_events(event_type, from_block, to_block)
+
         # Returns event sequence for all contract events
         events_logbook = dict()
-        for event in self:
+        for event in ContractEvents.__iter__(self):
             events_logbook[event.event_name] = self._retrieve_contract_events(
                 event, from_block, to_block
             )
@@ -1323,7 +1339,9 @@ class ContractEvents(_ContractEvents):
         return event_filter.get_all_entries()
 
     @combomethod
-    def _get_latests_events_generator(self, event_type: ContractEvent, from_block: int = None):
+    def _get_latests_events_generator(
+        self, event_type: ContractEvent, from_block: int = None
+    ) -> Generator:
         to_block = web3.eth.block_number
         from_block = from_block if from_block is not None else (to_block - 10)
 
