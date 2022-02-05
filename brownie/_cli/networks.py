@@ -19,6 +19,10 @@ Commands:
   import <path> <replace=False>    Import network settings
   export <path>                    Export network settings
   delete <id>                      Delete an existing network
+  update_provider <name> <url>     Adds or modifies a new network provider
+  delete_provider <name>           Removes a network provider
+  set_provider <name>              Sets a provider from the list of providers
+  list_providers                   List available providers
 
 Options:
   --help -h                        Display this message
@@ -39,7 +43,7 @@ as well as possible data fields when declaring new networks."""
 
 DEV_REQUIRED = ("id", "host", "cmd", "cmd_settings")
 PROD_REQUIRED = ("id", "host", "chainid")
-OPTIONAL = ("name", "explorer", "timeout", "multicall2")
+OPTIONAL = ("name", "explorer", "timeout", "multicall2", "provider")
 
 DEV_CMD_SETTINGS = (
     "port",
@@ -160,7 +164,6 @@ def _modify(id_, *args):
         target = next(i for i in networks["development"] if i["id"] == id_)
     else:
         target = next(x for i in networks["live"] for x in i["networks"] if x["id"] == id_)
-
     for key, value in args.items():
         t = target
         if key in DEV_CMD_SETTINGS and is_dev:
@@ -270,6 +273,77 @@ def _export(path_str):
     notify("SUCCESS", f"Network settings exported as '{color('bright magenta')}{path}{color}'")
 
 
+def _update_provider(name, url):
+    with _get_data_folder().joinpath("providers-config.yaml").open() as fp:
+        providers = yaml.safe_load(fp)
+
+    providers[name] = {"host": url}
+
+    with _get_data_folder().joinpath("providers-config.yaml").open("w") as fp:
+        yaml.dump(providers, fp)
+
+    notify("SUCCESS", f"Provider '{color('bright magenta')}{name}{color}' has been updated")
+
+
+def _delete_provider(name):
+    with _get_data_folder().joinpath("providers-config.yaml").open() as fp:
+        providers = yaml.safe_load(fp)
+
+    if name not in providers.keys():
+        raise ValueError(f"Provider '{color('bright magenta')}{name}{color}' does not exist")
+
+    del providers[name]
+
+    with _get_data_folder().joinpath("providers-config.yaml").open("w") as fp:
+        yaml.dump(providers, fp)
+
+    notify("SUCCESS", f"Provider '{color('bright magenta')}{name}{color}' has been deleted")
+
+
+def _set_provider(name):
+    with _get_data_folder().joinpath("providers-config.yaml").open() as fp:
+        providers = yaml.safe_load(fp)
+
+    if name not in providers.keys():
+        raise ValueError(f"Provider '{color('bright magenta')}{name}{color}' does not exist")
+
+    with _get_data_folder().joinpath("network-config.yaml").open() as fp:
+        networks = yaml.safe_load(fp)
+
+    for blockchain in networks["live"]:
+        for network in blockchain["networks"]:
+            if "provider" in network.keys() and network["provider"]:
+                new_network_name = network["name"].replace(
+                    network["provider"].capitalize(), name.capitalize()
+                )
+
+                new_host = providers[name]["host"].format(network["id"])
+                _modify(
+                    network["id"],
+                    f"name={new_network_name}",
+                    f"provider={name}",
+                    f"host={new_host}",
+                )
+
+
+def _list_providers(verbose=False):
+    if isinstance(verbose, str):
+        try:
+            verbose = eval(verbose.capitalize())
+        except (NameError, SyntaxError) as e:
+            print("Please pass 'True' or 'False'.")
+            raise e
+
+    with _get_data_folder().joinpath("providers-config.yaml").open() as fp:
+        providers = yaml.safe_load(fp)
+
+    print("The following providers are declared:")
+    if verbose:
+        _print_verbose_providers_description(providers)
+    else:
+        _print_simple_providers_description(providers)
+
+
 def _parse_args(args):
     try:
         args = dict(i.split("=") for i in args)
@@ -283,6 +357,18 @@ def _parse_args(args):
             args[key] = eval(args[key].capitalize())
 
     return args
+
+
+def _print_verbose_providers_description(providers):
+    u = "\u251c"
+    for provider in providers:
+        print(f"{color('bright black')}  {u}\u2500{color}provider: {provider}:")
+        print(f"{color('bright black')}  {u}\u2500{color}   host: {providers[provider]}:")
+
+
+def _print_simple_providers_description(providers):
+    u = "\u251c"
+    print(f"{color('bright black')}  {u}\u2500{color}{providers.keys()}:")
 
 
 def _print_simple_network_description(network_dict, is_last):

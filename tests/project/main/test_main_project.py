@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
-from brownie.project.main import Project, TempProject, _ProjectBase
+from brownie.project.main import Project, TempProject, _ProjectBase, load, new
 
 
 def test_object(newproject):
@@ -43,6 +43,13 @@ def test_load_raises_already_loaded(project, newproject):
         project.load(newproject._path, "NewProject")
     with pytest.raises(ProjectAlreadyLoaded):
         newproject.load()
+
+
+def test_load_does_not_raise_when_raise_if_loaded_is_false(project, newproject):
+    newproject.load()
+    loaded_project = project.load(newproject._path, "NewProject", raise_if_loaded=False)
+    assert loaded_project is newproject
+    newproject.load(raise_if_loaded=False)
 
 
 def test_load_raises_cannot_find(project, tmp_path):

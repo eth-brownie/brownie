@@ -187,11 +187,13 @@ class Project(_ProjectBase):
         self._active = False
         self.load()
 
-    def load(self) -> None:
+    def load(self, raise_if_loaded: bool = True) -> None:
         """Compiles the project contracts, creates ContractContainer objects and
         populates the namespace."""
         if self._active:
-            raise ProjectAlreadyLoaded("Project is already active")
+            if raise_if_loaded:
+                raise ProjectAlreadyLoaded("Project is already active")
+            return None
 
         contract_sources = _load_sources(self._path, self._structure["contracts"], False)
         interface_sources = _load_sources(self._path, self._structure["interfaces"], True)
@@ -296,16 +298,18 @@ class Project(_ProjectBase):
         if build_json["sha1"] != sha1(source.encode()).hexdigest():
             return True
         # compare compiler settings
-        if _compare_settings(config, build_json["compiler"]):
-            return True
         if build_json["language"] == "Solidity":
             # compare solc-specific compiler settings
             solc_config = config["solc"].copy()
             solc_config["remappings"] = None
-            if _compare_settings(solc_config, build_json["compiler"]):
+            if not _solidity_compiler_equal(solc_config, build_json["compiler"]):
                 return True
             # compare solc pragma against compiled version
             if Version(build_json["compiler"]["version"]) not in get_pragma_spec(source):
+                return True
+        else:
+            vyper_config = config["vyper"].copy()
+            if not _vyper_compiler_equal(vyper_config, build_json["compiler"]):
                 return True
         return False
 
@@ -705,7 +709,11 @@ def compile_source(
         raise exc
 
 
-def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None) -> "Project":
+def load(
+    project_path: Union[Path, str, None] = None,
+    name: Optional[str] = None,
+    raise_if_loaded: bool = True,
+) -> "Project":
     """Loads a project and instantiates various related objects.
 
     Args:
@@ -745,8 +753,12 @@ def load(project_path: Union[Path, str, None] = None, name: Optional[str] = None
         if not name[0].isalpha():
             raise BadProjectName("Project must start with an alphabetic character")
         name = "".join(i for i in name.title() if i.isalnum())
-    if next((True for i in _loaded_projects if i._name == name), False):
-        raise ProjectAlreadyLoaded("There is already a project loaded with this name")
+
+    for loaded_project in _loaded_projects:
+        if loaded_project._name == name:
+            if raise_if_loaded:
+                raise ProjectAlreadyLoaded("There is already a project loaded with this name")
+            return loaded_project
 
     # paths
     _create_folders(project_path)
@@ -953,6 +965,22 @@ def _compare_settings(left: Dict, right: Dict) -> bool:
         (True for k, v in left.items() if v and not isinstance(v, dict) and v != right.get(k)),
         False,
     )
+
+
+def _normalize_solidity_version(version: str) -> str:
+    return version.split("+")[0]
+
+
+def _solidity_compiler_equal(config: dict, build: dict) -> bool:
+    return (
+        config["version"] is None
+        or _normalize_solidity_version(config["version"])
+        == _normalize_solidity_version(build["version"])
+    ) and config["optimizer"] == build["optimizer"]
+
+
+def _vyper_compiler_equal(config: dict, build: dict) -> bool:
+    return config["version"] is None or config["version"] == build["version"]
 
 
 def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:

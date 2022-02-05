@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import datetime
+import re
 import sys
 import warnings
 from subprocess import DEVNULL, PIPE
@@ -16,19 +17,36 @@ from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
 from brownie.network.web3 import web3
 
 CLI_FLAGS = {
-    "port": "--port",
-    "gas_limit": "--gasLimit",
-    "accounts": "--accounts",
-    "evm_version": "--hardfork",
-    "fork": "--fork",
-    "mnemonic": "--mnemonic",
-    "account_keys_path": "--acctKeys",
-    "block_time": "--blockTime",
-    "default_balance": "--defaultBalanceEther",
-    "time": "--time",
-    "unlock": "--unlock",
-    "network_id": "--networkId",
-    "chain_id": "--chainId",
+    "7": {
+        "port": "--server.port",
+        "gas_limit": "--miner.blockGasLimit",
+        "accounts": "--wallet.totalAccounts",
+        "evm_version": "--hardfork",
+        "fork": "--fork.url",
+        "mnemonic": "--wallet.mnemonic",
+        "account_keys_path": "--wallet.accountKeysPath",
+        "block_time": "--miner.blockTime",
+        "default_balance": "--wallet.defaultBalance",
+        "time": "--chain.time",
+        "unlock": "--wallet.unlockedAccounts",
+        "network_id": "--chain.networkId",
+        "chain_id": "--chain.chainId",
+    },
+    "<=6": {
+        "port": "--port",
+        "gas_limit": "--gasLimit",
+        "accounts": "--accounts",
+        "evm_version": "--hardfork",
+        "fork": "--fork",
+        "mnemonic": "--mnemonic",
+        "account_keys_path": "--acctKeys",
+        "block_time": "--blockTime",
+        "default_balance": "--defaultBalanceEther",
+        "time": "--time",
+        "unlock": "--unlock",
+        "network_id": "--networkId",
+        "chain_id": "--chainId",
+    },
 }
 
 EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
@@ -46,6 +64,13 @@ def launch(cmd: str, **kwargs: Dict) -> None:
         else:
             cmd += ".cmd"
     cmd_list = cmd.split(" ")
+    ganache_version = get_ganache_version(cmd_list[0])
+
+    if ganache_version <= 6:
+        cli_flags = CLI_FLAGS["<=6"]
+    else:
+        cli_flags = CLI_FLAGS["7"]
+
     kwargs.setdefault("evm_version", EVM_DEFAULT)  # type: ignore
     if kwargs["evm_version"] in EVM_EQUIVALENTS:
         kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]  # type: ignore
@@ -57,10 +82,10 @@ def launch(cmd: str, **kwargs: Dict) -> None:
             for address in value:
                 if isinstance(address, int):
                     address = HexBytes(address.to_bytes(20, "big")).hex()
-                cmd_list.extend([CLI_FLAGS[key], address])
+                cmd_list.extend([cli_flags[key], address])
         else:
             try:
-                cmd_list.extend([CLI_FLAGS[key], str(value)])
+                cmd_list.extend([cli_flags[key], str(value)])
             except KeyError:
                 warnings.warn(
                     f"Ignoring invalid commandline setting for ganache-cli: "
@@ -71,6 +96,15 @@ def launch(cmd: str, **kwargs: Dict) -> None:
     out = DEVNULL if sys.platform == "win32" else PIPE
 
     return psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
+
+
+def get_ganache_version(ganache_executable: str) -> int:
+    ganache_version_proc = psutil.Popen([ganache_executable, "--version"], stdout=PIPE)
+    ganache_version_stdout, _ = ganache_version_proc.communicate()
+    ganache_version_match = re.search(r"v([0-9]+)\.", ganache_version_stdout.decode())
+    if not ganache_version_match:
+        raise ValueError("could not read ganache version: {}".format(ganache_version_stdout))
+    return int(ganache_version_match.group(1))
 
 
 def on_connection() -> None:
@@ -109,6 +143,8 @@ def unlock_account(address: str) -> None:
 
 
 def _validate_cmd_settings(cmd_settings: dict) -> dict:
+    ganache_keys = set(k for f in CLI_FLAGS.values() for k in f.keys())
+
     CMD_TYPES = {
         "port": int,
         "gas_limit": int,
@@ -124,7 +160,7 @@ def _validate_cmd_settings(cmd_settings: dict) -> dict:
     }
     for cmd, value in cmd_settings.items():
         if (
-            cmd in CLI_FLAGS.keys()
+            cmd in ganache_keys
             and cmd in CMD_TYPES.keys()
             and not isinstance(value, CMD_TYPES[cmd])
         ):
