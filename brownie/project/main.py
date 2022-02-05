@@ -291,16 +291,18 @@ class Project(_ProjectBase):
         if build_json["sha1"] != sha1(source.encode()).hexdigest():
             return True
         # compare compiler settings
-        if _compare_settings(config, build_json["compiler"]):
-            return True
         if build_json["language"] == "Solidity":
             # compare solc-specific compiler settings
             solc_config = config["solc"].copy()
             solc_config["remappings"] = None
-            if _compare_settings(solc_config, build_json["compiler"]):
+            if not _solidity_compiler_equal(solc_config, build_json["compiler"]):
                 return True
             # compare solc pragma against compiled version
             if Version(build_json["compiler"]["version"]) not in get_pragma_spec(source):
+                return True
+        else:
+            vyper_config = config["vyper"].copy()
+            if not _vyper_compiler_equal(vyper_config, build_json["compiler"]):
                 return True
         return False
 
@@ -948,6 +950,22 @@ def _compare_settings(left: Dict, right: Dict) -> bool:
         (True for k, v in left.items() if v and not isinstance(v, dict) and v != right.get(k)),
         False,
     )
+
+
+def _normalize_solidity_version(version: str) -> str:
+    return version.split("+")[0]
+
+
+def _solidity_compiler_equal(config: dict, build: dict) -> bool:
+    return (
+        config["version"] is None
+        or _normalize_solidity_version(config["version"])
+        == _normalize_solidity_version(build["version"])
+    ) and config["optimizer"] == build["optimizer"]
+
+
+def _vyper_compiler_equal(config: dict, build: dict) -> bool:
+    return config["version"] is None or config["version"] == build["version"]
 
 
 def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
