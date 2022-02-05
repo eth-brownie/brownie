@@ -26,7 +26,7 @@ certifi==2021.10.8
     #   requests
 cffi==1.15.0
     # via cryptography
-charset-normalizer==2.0.7
+charset-normalizer==2.0.9
     # via
     #   -c requirements.txt
     #   requests
@@ -61,7 +61,7 @@ idna==3.3
     #   requests
 imagesize==1.2.0
     # via sphinx
-importlib-metadata==4.8.1
+importlib-metadata==4.8.2
     # via
     #   keyring
     #   twine
@@ -89,7 +89,7 @@ mypy-extensions==0.4.3
     # via
     #   -c requirements.txt
     #   mypy
-packaging==21.0
+packaging==21.3
     # via
     #   -c requirements.txt
     #   bleach
@@ -111,7 +111,7 @@ pluggy==1.0.0
     #   -c requirements.txt
     #   pytest
     #   tox
-py==1.10.0
+py==1.11.0
     # via
     #   -c requirements.txt
     #   pytest
@@ -127,7 +127,7 @@ pygments==2.10.0
     #   -c requirements.txt
     #   readme-renderer
     #   sphinx
-pyparsing==3.0.3
+pyparsing==3.0.6
     # via
     #   -c requirements.txt
     #   packaging

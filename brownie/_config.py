@@ -333,6 +333,12 @@ def _make_data_folders(data_folder: Path) -> None:
             data_folder.joinpath("network-config.yaml"),
         )
 
+    if not data_folder.joinpath("providers-config.yaml").exists():
+        shutil.copyfile(
+            BROWNIE_FOLDER.joinpath("data/providers-config.yaml"),
+            data_folder.joinpath("providers-config.yaml"),
+        )
+
 
 warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 

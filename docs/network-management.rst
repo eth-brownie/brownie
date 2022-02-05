@@ -187,16 +187,68 @@ Clients such as `Geth <https://geth.ethereum.org/>`_ or `Parity <https://www.par
 
 If you wish to learn more about running a node, ethereum.org provides a `list of resources <https://ethereum.org/en/developers/docs/nodes-and-clients/>`_ that you can use to get started.
 
-Using a Hosted Node
-*******************
+Using a Hosted Node / Providers
+========================================
 
-Services such as `Infura <https://infura.io>`_ provide public access to Ethereum nodes. This is a much simpler option than running your own, but it is not without limitations:
+Services such as `Alchemy <https://www.alchemy.com>`_ and `Infura <https://infura.io>`_ provide public access to Ethereum nodes. This is a much simpler option than running your own, but it is not without limitations:
 
     1. Some RPC endpoints may be unavailable. In particular, Infura does not provide access to the `debug_traceTransaction <https://geth.ethereum.org/docs/rpc/ns-debug#debug_tracetransaction>`_ method. For this reason, Brownie's :ref:`debugging tools<debug>` will not work when connected via Infura.
     2. Hosted nodes do not provide access to accounts - this would be a major security hazard! You will have to manually unlock your own :ref:`local account<local-accounts>` before you can make a transaction.
 
-Using Infura
-^^^^^^^^^^^^
+Brownie allows you to bulk modify the provider you use by setting the `provider` field in the networks, and the associated provider. 
+
+::
+
+    $ brownie networks providers_list
+
+    Brownie v1.17.2 - Python development framework for Ethereum
+
+    The following providers are declared:
+    ├─dict_keys(['infura', 'alchemy']):
+
+or
+
+::
+
+    $ brownie networks providers_list True
+
+    Brownie v1.17.2 - Python development framework for Ethereum
+
+    The following providers are declared:
+    ├─provider: infura:
+    ├─   host: {'host': 'https://{}.infura.io/v3/$WEB3_INFURA_PROJECT_ID'}:
+    ├─provider: alchemy:
+    ├─   host: {'host': 'https://eth-{}.alchemyapi.io/v2/$WEB3_ALCHEMY_PROJECT_ID'}:
+
+
+Any `network` that has a `provider` set will be able to be swapped to the format of another provider. For example, to swap all provider-based networks to Alchemy, run:
+
+::
+
+    $ brownie networks set_provider alchemy
+
+
+And it'll print out all the valid networks to swap to the Alchemy format. If you don't have a `provider` set, you can set one with:
+
+::
+
+    $ brownie networks modify mainnet provider=alchemy
+
+
+Adding Providers
+----------------
+
+To add or update a provider, run: 
+
+::
+
+    $ brownie networks update_provider alchemy https://eth-{}.alchemyapi.io/v2/$WEB3_ALCHEMY_PROJECT_ID
+
+
+This URL will allow brownie to swap out the {} with whatever network it's on, and you'll set a `WEB3_ALCHEMY_PROJECT_ID` environment variable as your Alchemy key. 
+
+Using Infura 
+************
 
 To Infura you need to `register for an account <https://infura.io/register>`_. Once you have signed up, login and create a new project. You will be provided with a project ID, as well as API URLs that can be leveraged to access the network.
 
@@ -205,6 +257,26 @@ To connect to Infura using Brownie, store your project ID as an environment vari
 ::
 
     $ export WEB3_INFURA_PROJECT_ID=YourProjectID
+
+Or adding `export WEB3_INFURA_PROJECT_ID=YourProjectID` to your `.env` and adding `dotenv: .env` to your `brownie-config.yaml`. 
+
+
+Using Alchemy
+*************
+
+To Alchemy you need to `signup for an account <https://auth.alchemyapi.io/signup>`_. Once you have signed up, login and create a new project. You will be provided with a URL that can be leveraged to access the network.
+
+Hit the `view key` button, and you'll be given a URL. You can just use the section after the last slash as your `WEB3_ALCHEMY_PROJECT_ID`. For example if your full key is: `https://eth-mainnet.alchemyapi.io/v2/1234`, your `WEB3_ALCHEMY_PROJECT_ID` would be `1234`.
+Note, this only works well with ETH networks at the moment, but you can modify your providers list at any time. 
+
+You can set your `WEB3_ALCHEMY_PROJECT_ID` with the following command
+::
+
+    $ export WEB3_ALCHEMY_PROJECT_ID=YourProjectID
+
+Or adding `export WEB3_ALCHEMY_PROJECT_ID=YourProjectID` to your `.env` and adding `dotenv: .env` to your `brownie-config.yaml`. 
+
+To connect with other non-ethereum networks through alchemy, you'll have to follow the normal network adding process. 
 
 .. _network-management-fork:
 
