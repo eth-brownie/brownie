@@ -92,13 +92,18 @@ class _ProjectBase:
             os.chdir(self._path)
 
         try:
+            project_evm_version = compiler_config["evm_version"]
+            evm_version = {
+                "Solidity": compiler_config["solc"].get("evm_version", project_evm_version),
+                "Vyper": compiler_config["vyper"].get("evm_version", project_evm_version),
+            }
             build_json = compiler.compile_and_format(
                 contract_sources,
                 solc_version=compiler_config["solc"].get("version", None),
                 vyper_version=compiler_config["vyper"].get("version", None),
                 optimize=compiler_config["solc"].get("optimize", None),
                 runs=compiler_config["solc"].get("runs", None),
-                evm_version=compiler_config["evm_version"],
+                evm_version=evm_version,
                 silent=silent,
                 allow_paths=allow_paths,
                 remappings=compiler_config["solc"].get("remappings", []),
