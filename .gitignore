@@ -17,4 +17,3 @@ env/
 .DS_Store
 .hypothesis/
 .env
-c_pytest.py
