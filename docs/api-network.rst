@@ -1080,7 +1080,7 @@ ContractEvents
 .. py:class:: brownie.network.contract.ContractEvents(contract=brownie.network.contract.Contract)
 
     ``ContractEvents`` instances allow to retrieve and interact with the events of a contract.
-    This class inherits from the :func:`web3.py ContractEvents <https://web3py.readthedocs.io/en/stable/contracts.html?highlight=ContractEvents#web3.contract.ContractEvents>` class.
+    This class inherits from the :ref:`web3.py ContractEvents <https://web3py.readthedocs.io/en/stable/contracts.html?highlight=ContractEvents#web3.contract.ContractEvents>` class.
 
 ContractEvents Classmethods
 ***************************
@@ -1094,7 +1094,9 @@ ContractEvents Classmethods
     * ``delay``: Delay in seconds between each check for new events.
 
     New events are detected using the :func:`Alert <brownie.network.alert.Alert>` class.
+
     Each time a new event of this type is detected, triggers the ``callback`` function passing the event logs as parameter.
+
     This function creates a new thread running the alert.
 
 .. py:classmethod:: ContractEvents.get_sequence(from_block, to_block=None, event_type=None)
@@ -1106,7 +1108,10 @@ ContractEvents Classmethods
     * ``event_type``: Type or name of the event to be searched between the specified blocks. Defaults to None.
 
     If ``to_block`` is not specified, retrieves events between ``from_block`` and the latest mined block.
-    The ``event_type`` parameter can either be a string containing the name of the event to search for or the event type itself (using `your_contract.events.your_event_name`)
+
+    The ``event_type`` parameter can either be a string containing the name of the event to search for or the event type itself (using ``your_contract.events.your_event_name``)  
+
+    If ``event_type`` is not passed, retrieves all contract events between the two blocks.
 
 ContractEvents Attributes
 *************************
