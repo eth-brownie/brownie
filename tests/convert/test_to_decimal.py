@@ -28,12 +28,12 @@ def test_incorrect_type():
 
 
 def test_bounds():
-    to_decimal(-(2 ** 127))
+    to_decimal(-(2**127))
     with pytest.raises(OverflowError):
-        to_decimal(-(2 ** 127) - 1)
-    to_decimal(2 ** 127 - 1)
+        to_decimal(-(2**127) - 1)
+    to_decimal(2**127 - 1)
     with pytest.raises(OverflowError):
-        to_decimal(2 ** 127)
+        to_decimal(2**127)
 
 
 def test_decimal_points():
