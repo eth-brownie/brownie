@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from brownie.exceptions import ProjectAlreadyLoaded, ProjectNotFound
-from brownie.project.main import Project, TempProject, _ProjectBase, load, new
+from brownie.project.main import Project, TempProject, _ProjectBase
 
 
 def test_object(newproject):
