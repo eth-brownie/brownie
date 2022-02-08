@@ -1300,7 +1300,9 @@ class OverloadedMethod:
         self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
     ) -> Any:
         fn = self._get_fn_from_args(args)
-        return fn(*args, block_identifier=block_identifier, override=override)  # type: ignore
+        kwargs = {"block_identifier": block_identifier, "override": override}
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+        return fn(*args, **kwargs)  # type: ignore
 
     def call(
         self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
