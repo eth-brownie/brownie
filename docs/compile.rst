@@ -168,5 +168,5 @@ If you wish to manually install a different version of ``solc`` or ``vyper``:
 
 .. code-block:: python
 
-    >>> from brownie.project.compiler import install_vyper
+    >>> from brownie.project.compiler.vyper import install_vyper
     >>> install_vyper("0.2.4")
