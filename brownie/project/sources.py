@@ -213,11 +213,13 @@ def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     Returns: NpmSpec object
     """
 
-    pragma_match = next(re.finditer(r"pragma +solidity([^;]*);", source), None)
-    if pragma_match is not None:
-        pragma_string = pragma_match.groups()[0]
-        pragma_string = " ".join(pragma_string.split())
-        return NpmSpec(pragma_string)
+    matches = re.findall(r"(.*)pragma +solidity([^;]*);", source)
+    if len(matches) != 0 or matches is not None:
+        for match in matches:
+            if match[0].strip() != "":
+                continue
+            pragma_match = " ".join(match[1].split())
+            return NpmSpec(pragma_match)
     if path:
         raise PragmaError(f"No version pragma in '{path}'")
     raise PragmaError("String does not contain a version pragma")
