@@ -1135,7 +1135,8 @@ class Contract(_DeployedContractBase):
             ]
             build_json = compiler.compile_and_format(
                 sources,
-                version=str(version),
+                solc_version=str(version),
+                vyper_version=str(version),
                 optimizer=optimizer,
                 evm_version=evm_version,
                 compiler_targets=compiler_targets,
@@ -1156,7 +1157,8 @@ class Contract(_DeployedContractBase):
 
             build_json = compiler.compile_and_format(
                 sources,
-                version=str(version),
+                solc_version=str(version),
+                vyper_version=str(version),
                 optimizer=optimizer,
                 evm_version=evm_version,
                 silent=silent,

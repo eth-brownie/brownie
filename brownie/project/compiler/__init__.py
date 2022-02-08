@@ -53,12 +53,16 @@ def get_compiler_targets(
     find_version_func: Callable,
     language: str,
     version: str = None,
+    evm_version: Optional[Union[str, Dict[str, str]]] = None,
     retry: bool = False,
     silent: bool = True,
-) -> List[Dict[str, Collection[str]]]:
+) -> List[Dict[str, Optional[Collection[str]]]]:
 
     compiler_targets = []
     versions = []
+    evm_version = (
+        evm_version[language] if evm_version and isinstance(evm_version, dict) else evm_version
+    )
     # TODO add `vyper_version` input arg to manually specify, support in config file
     if version:
         # add the compiler matching the passed version
@@ -67,6 +71,7 @@ def get_compiler_targets(
                 "language": language,
                 "version": version,
                 "to_compile": contract_sources,
+                "evm_version": evm_version,
             }
         )
         if not retry:
@@ -88,6 +93,7 @@ def get_compiler_targets(
                         "language": language,
                         "version": v,
                         "to_compile": contract_sources,
+                        "evm_version": evm_version,
                     }
                 )
 
@@ -102,6 +108,7 @@ def get_compiler_targets(
                         "language": language,
                         "version": v,
                         "to_compile": contract_sources,
+                        "evm_version": evm_version,
                     }
                 )
 
@@ -111,14 +118,15 @@ def get_compiler_targets(
 def prepare_compilers(
     contract_sources: Dict[str, str],
     interface_sources: Dict[str, str],
-    version: Optional[str] = None,
+    solc_version: Optional[str] = None,
+    vyper_version: Optional[str] = None,
     optimize: bool = True,
     optimizer: Optional[Dict] = None,
     runs: int = 200,
-    evm_version: Optional[str] = None,
+    evm_version: Optional[Union[str, Dict[str, str]]] = None,
     retry: bool = False,
     silent: bool = True,
-) -> Tuple[List[Dict], Optional[Dict], Optional[Dict], Optional[str]]:
+) -> Tuple[List[Dict], Optional[Dict], Optional[Dict]]:
 
     compiler_targets: List[Dict] = []
     interfaces: Dict = {}
@@ -129,7 +137,8 @@ def prepare_compilers(
         language = "Vyper"
         compiler_targets = get_compiler_targets(
             contract_sources=vyper_sources,
-            version=version,
+            version=vyper_version,
+            evm_version=evm_version,
             find_version_func=find_vyper_versions,
             language=language,
             retry=retry,
@@ -140,7 +149,8 @@ def prepare_compilers(
         language = "Solidity"
         compiler_targets = get_compiler_targets(
             contract_sources=solc_sources,
-            version=version,
+            version=solc_version,
+            evm_version=evm_version,
             find_version_func=find_solc_versions,
             language=language,
             retry=retry,
@@ -149,13 +159,12 @@ def prepare_compilers(
         interfaces = {
             k: v
             for k, v in interface_sources.items()
-            if Path(k).suffix == ".sol" and Version(version) in sources.get_pragma_spec(v, k)
+            if Path(k).suffix == ".sol" and Version(solc_version) in sources.get_pragma_spec(v, k)
         }
         if optimizer is None:
             optimizer = {"enabled": optimize, "runs": runs if optimize else 0}
-    
-    evm_version = evm_version[language] if isinstance(evm_version, dict) else evm_version
-    return compiler_targets, interfaces, optimizer, evm_version
+
+    return compiler_targets, interfaces, optimizer
 
 
 def prepared_compile_and_format(
@@ -194,7 +203,8 @@ def prepared_compile_and_format(
 
 def compile_and_format(
     contract_sources: Dict[str, str],
-    version: Optional[str] = None,
+    solc_version: Optional[str] = None,
+    vyper_version: Optional[str] = None,
     optimize: bool = True,
     runs: int = 200,
     evm_version: Optional[Union[str, Dict[str, str]]] = None,
@@ -240,10 +250,11 @@ def compile_and_format(
         raise UnsupportedLanguage("Interface suffixes must be one of ('.sol', '.vy', '.json')")
 
     if len(compiler_targets) == 0:
-        compiler_targets, interfaces, optimizer, evm_version = prepare_compilers(
+        compiler_targets, interfaces, optimizer = prepare_compilers(
             contract_sources=contract_sources,
             interface_sources=interface_sources,
-            version=version,
+            solc_version=solc_version,
+            vyper_version=vyper_version,
             optimizer=optimizer,
             evm_version=evm_version,
             silent=silent,
@@ -252,19 +263,18 @@ def compile_and_format(
 
     for i, compiler_target in enumerate(compiler_targets):
         try:
-            v = compiler_target["version"]
-            language = compiler_target["language"]
-            to_compile = compiler_target["to_compile"]
             return prepared_compile_and_format(
-                to_compile=to_compile,
-                version=v,
-                language=language,
+                to_compile=compiler_target["to_compile"],
+                version=compiler_target["version"],
+                language=compiler_target["language"],
                 interface_sources=interfaces,
                 optimizer=optimizer,
-                evm_version=evm_version,
+                evm_version=compiler_target.get("evm_version", None),
                 silent=silent,
             )
         except Exception as e:
+            language = compiler_target["language"]
+            version = compiler_target["version"]
             if retry:
                 warnings.warn(
                     f"Got exception during compilation with {language} compiler version {version}",
@@ -614,7 +624,7 @@ def get_abi(
     return final_output
 
 
-def get_retry(self) -> bool:
+def get_retry() -> bool:
     """
     Return the compiler boolean flag 'retry' which toggles if the compilation
     should be retried with the next compatible compiler in case of an exception.
