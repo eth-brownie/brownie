@@ -58,6 +58,7 @@ DEV_CMD_SETTINGS = (
     "time",
     "network_id",
     "chain_id",
+    "unlimited_contract_size",
 )
 
 

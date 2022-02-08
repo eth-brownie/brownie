@@ -31,6 +31,7 @@ CLI_FLAGS = {
         "unlock": "--wallet.unlockedAccounts",
         "network_id": "--chain.networkId",
         "chain_id": "--chain.chainId",
+        "unlimited_contract_size": "--chain.allowUnlimitedContractSize",
     },
     "<=6": {
         "port": "--port",
@@ -46,6 +47,7 @@ CLI_FLAGS = {
         "unlock": "--unlock",
         "network_id": "--networkId",
         "chain_id": "--chainId",
+        "unlimited_contract_size": "--allowUnlimitedContractSize",
     },
 }
 
@@ -85,7 +87,10 @@ def launch(cmd: str, **kwargs: Dict) -> None:
                 cmd_list.extend([cli_flags[key], address])
         else:
             try:
-                cmd_list.extend([cli_flags[key], str(value)])
+                if value is True:
+                    cmd_list.append(cli_flags[key])
+                elif value is not False:
+                    cmd_list.extend([cli_flags[key], str(value)])
             except KeyError:
                 warnings.warn(
                     f"Ignoring invalid commandline setting for ganache-cli: "
