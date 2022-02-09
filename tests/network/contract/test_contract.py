@@ -370,28 +370,12 @@ def test_solc_use_latest_patch_specific_included(testproject, network):
     ) == Version("0.4.26")
 
 
-def test_abi_deployment_enabled_by_default(network, build):
-    network.connect("mainnet")
-    address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
-    Contract.from_abi("abiTester", address, build["abi"])
-
-    assert _get_deployment(address) != (None, None)
-
-
 def test_abi_deployment_disabled(network, build):
     network.connect("mainnet")
     address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
     Contract.from_abi("abiTester", address, build["abi"], persist=False)
 
     assert _get_deployment(address) == (None, None)
-
-
-def test_from_explorer_deployment_enabled_by_default(network):
-    network.connect("mainnet")
-    address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
-    Contract.from_explorer(address)
-
-    assert _get_deployment(address) != (None, None)
 
 
 def test_from_explorer_deployment_disabled(network):
