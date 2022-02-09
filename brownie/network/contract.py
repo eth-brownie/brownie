@@ -1225,7 +1225,16 @@ class Contract(_DeployedContractBase):
     def remove_deployment(
         cls, address: str, alias: str = None
     ) -> Tuple[Optional[Dict], Optional[Dict]]:
+        """
+        Removes this contract from the internal deployments db.
 
+        Arguments
+        ---------
+        address: str
+            An address to apply
+        alias: str | None
+            An alias to apply
+        """
         return _remove_deployment(address, alias)
 
     def set_alias(self, alias: Optional[str], persist: bool = True) -> None:
