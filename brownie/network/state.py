@@ -647,7 +647,9 @@ def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
     cur.insert(name, address, alias, all_sources, *values)
 
 
-def _remove_deployment(address: str, alias: str = None) -> Tuple[Optional[Dict], Optional[Dict]]:
+def _remove_deployment(
+    address: str = None, alias: str = None
+) -> Tuple[Optional[Dict], Optional[Dict]]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:
@@ -662,15 +664,16 @@ def _remove_deployment(address: str, alias: str = None) -> Tuple[Optional[Dict],
         raise BrownieEnvironmentError("Functionality not available in local environment") from None
 
     build_json, sources = _get_deployment(address, alias)
-    contract = _find_contract(address)
     # delete entry from chain{n}
     cur.execute(f"DELETE FROM {name} WHERE {query}")
     # delete all entries from sources matching the contract's source hashes
-    for key, path in contract._build.get("allSourcePaths", {}).items():
-        source = contract._sources.get(path)
-        if source is None:
-            source = Path(path).read_text()
-        hash_ = sha1(source.encode()).hexdigest()
-        cur.execute(f"DELETE FROM sources WHERE hash='{hash_}'")
+    contract = _find_contract(address)
+    if contract:
+        for key, path in contract._build.get("allSourcePaths", {}).items():
+            source = contract._sources.get(path)
+            if source is None:
+                source = Path(path).read_text()
+            hash_ = sha1(source.encode()).hexdigest()
+            cur.execute(f"DELETE FROM sources WHERE hash='{hash_}'")
 
     return build_json, sources
