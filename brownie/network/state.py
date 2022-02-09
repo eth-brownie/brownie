@@ -645,3 +645,32 @@ def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
 
     values = [contract._build.get(i) for i in DEPLOYMENT_KEYS]
     cur.insert(name, address, alias, all_sources, *values)
+
+
+def _remove_deployment(address: str, alias: str = None) -> Tuple[Optional[Dict], Optional[Dict]]:
+    if address and alias:
+        raise
+    if address:
+        address = _resolve_address(address)
+        query = f"address='{address}'"
+    elif alias:
+        query = f"alias='{alias}'"
+
+    try:
+        name = f"chain{CONFIG.active_network['chainid']}"
+    except KeyError:
+        raise BrownieEnvironmentError("Functionality not available in local environment") from None
+
+    build_json, sources = _get_deployment(address, alias)
+    contract = _find_contract(address)
+    # delete entry from chain{n}
+    cur.execute(f"DELETE FROM {name} WHERE {query}")
+    # delete all entries from sources matching the contract's source hashes
+    for key, path in contract._build.get("allSourcePaths", {}).items():
+        source = contract._sources.get(path)
+        if source is None:
+            source = Path(path).read_text()
+        hash_ = sha1(source.encode()).hexdigest()
+        cur.execute(f"DELETE FROM sources WHERE hash='{hash_}'")
+
+    return build_json, sources
