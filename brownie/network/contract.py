@@ -51,6 +51,7 @@ from .state import (
     _find_contract,
     _get_deployment,
     _remove_contract,
+    _remove_deployment,
     _revert_register,
 )
 from .web3 import _resolve_address, web3
@@ -1219,6 +1220,13 @@ class Contract(_DeployedContractBase):
                         version = v
 
         return version
+
+    @classmethod
+    def remove_deployment(
+        cls, address: str, alias: str = None
+    ) -> Tuple[Optional[Dict], Optional[Dict]]:
+
+        return _remove_deployment(address, alias)
 
     def set_alias(self, alias: Optional[str], persist: bool = True) -> None:
         """
