@@ -1223,14 +1223,15 @@ class Contract(_DeployedContractBase):
 
     @classmethod
     def remove_deployment(
-        cls, address: str, alias: str = None
+        cls, address: str = None, alias: str = None
     ) -> Tuple[Optional[Dict], Optional[Dict]]:
         """
-        Removes this contract from the internal deployments db.
+        Removes this contract from the internal deployments db
+        with the passed address or alias.
 
         Arguments
         ---------
-        address: str
+        address: str | None
             An address to apply
         alias: str | None
             An alias to apply
