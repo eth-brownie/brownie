@@ -590,7 +590,7 @@ def _get_deployment(
     address: str = None, alias: str = None
 ) -> Tuple[Optional[Dict], Optional[Dict]]:
     if address and alias:
-        raise
+        raise ValueError("Passed both params address and alias, should be only one!")
     if address:
         address = _resolve_address(address)
         query = f"address='{address}'"
@@ -649,7 +649,7 @@ def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
 
 def _remove_deployment(address: str, alias: str = None) -> Tuple[Optional[Dict], Optional[Dict]]:
     if address and alias:
-        raise
+        raise ValueError("Passed both params address and alias, should be only one!")
     if address:
         address = _resolve_address(address)
         query = f"address='{address}'"
