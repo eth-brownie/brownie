@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add cli flag `-r` for raising exceptions to the caller instead of doing a system exit.
 - Added support for alchemy out of the box with a `WEB3_ALCHEMY_PROJECT_ID` after running `brownie networks set_provider alchemy`. 
 - Add `override` argument to contract methods which allows changing the state before the call, including overwriting balance, nonce, code, and storage of any address.
+- Add `persist` argument (default=`True`) to contract methods that controls if the contract should be added to the deployments db. Disabled the deployments for interfaces to make them ephemereal ([#1092](https://github.com/eth-brownie/brownie/issues/1092)). Added a `Contract.remove_deployment(address)` class helper method.
 
 ### Fixed
 - Improve support for Ganache 7 reverted transactions

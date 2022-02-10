@@ -14,6 +14,7 @@ from brownie.network.contract import (
     ContractTx,
     ProjectContract,
     _DeployedContractBase,
+    _get_deployment,
 )
 
 
@@ -367,6 +368,61 @@ def test_solc_use_latest_patch_specific_included(testproject, network):
     assert Contract.get_solc_version(
         "v0.4.16", "0x514910771AF9Ca656af840dff83E8264EcF986CA"
     ) == Version("0.4.26")
+
+
+def test_abi_deployment_enabled_by_default(network, build):
+    network.connect("mainnet")
+    address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
+    Contract.from_abi("abiTester", address, build["abi"])
+
+    assert _get_deployment(address) != (None, None)
+    # cleanup
+    Contract.remove_deployment(address)
+
+
+def test_abi_deployment_disabled(network, build):
+    network.connect("mainnet")
+    address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
+    Contract.from_abi("abiTester", address, build["abi"], persist=False)
+
+    assert _get_deployment(address) == (None, None)
+
+
+def test_from_explorer_deployment_enabled_by_default(network):
+    network.connect("mainnet")
+    address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
+    Contract.from_explorer(address)
+
+    assert _get_deployment(address) != (None, None)
+    # cleanup
+    Contract.remove_deployment(address)
+
+
+def test_from_explorer_deployment_disabled(network):
+    network.connect("mainnet")
+    address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
+    Contract.from_explorer(address, persist=False)
+
+    assert _get_deployment(address) == (None, None)
+
+
+def test_remove_deployment(network):
+    network.connect("mainnet")
+    address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
+    Contract.from_explorer(address)
+    Contract.remove_deployment(address)
+
+    assert _get_deployment(address) == (None, None)
+
+
+def test_remove_deployment_returns(network):
+    network.connect("mainnet")
+    address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
+    Contract.from_explorer(address)
+    build_json, sources = _get_deployment(address)
+
+    assert (build_json, sources) != (None, None)
+    assert (build_json, sources) == (Contract.remove_deployment(address))
 
 
 # @pytest.mark.parametrize(

@@ -51,6 +51,7 @@ from .state import (
     _find_contract,
     _get_deployment,
     _remove_contract,
+    _remove_deployment,
     _revert_register,
 )
 from .web3 import _resolve_address, web3
@@ -217,6 +218,7 @@ class ContractContainer(_ContractBase):
         address: str,
         owner: Optional[AccountsType] = None,
         tx: Optional[TransactionReceiptType] = None,
+        persist: bool = True,
     ) -> "ProjectContract":
         """Returns a contract address.
 
@@ -245,7 +247,8 @@ class ContractContainer(_ContractBase):
         _add_contract(contract)
         self._contracts.append(contract)
         if CONFIG.network_type == "live":
-            _add_deployment(contract)
+            if persist:
+                _add_deployment(contract)
 
         return contract
 
@@ -619,7 +622,7 @@ class InterfaceConstructor:
         }
 
     def __call__(self, address: str, owner: Optional[AccountsType] = None) -> "Contract":
-        return Contract.from_abi(self._name, address, self.abi, owner)
+        return Contract.from_abi(self._name, address, self.abi, owner, persist=False)
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} '{self._name}'>"
@@ -916,7 +919,12 @@ class Contract(_DeployedContractBase):
 
     @classmethod
     def from_abi(
-        cls, name: str, address: str, abi: List, owner: Optional[AccountsType] = None
+        cls,
+        name: str,
+        address: str,
+        abi: List,
+        owner: Optional[AccountsType] = None,
+        persist: bool = True,
     ) -> "Contract":
         """
         Create a new `Contract` object from an ABI.
@@ -939,7 +947,8 @@ class Contract(_DeployedContractBase):
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build, {})  # type: ignore
         _DeployedContractBase.__init__(self, address, owner, None)
-        _add_deployment(self)
+        if persist:
+            _add_deployment(self)
         return self
 
     @classmethod
@@ -949,6 +958,7 @@ class Contract(_DeployedContractBase):
         manifest_uri: str,
         address: Optional[str] = None,
         owner: Optional[AccountsType] = None,
+        persist: bool = True,
     ) -> "Contract":
         """
         Create a new `Contract` object from an ethPM manifest.
@@ -995,7 +1005,8 @@ class Contract(_DeployedContractBase):
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build, manifest["sources"])  # type: ignore
         _DeployedContractBase.__init__(self, address, owner)
-        _add_deployment(self)
+        if persist:
+            _add_deployment(self)
         return self
 
     @classmethod
@@ -1005,6 +1016,7 @@ class Contract(_DeployedContractBase):
         as_proxy_for: Optional[str] = None,
         owner: Optional[AccountsType] = None,
         silent: bool = False,
+        persist: bool = True,
     ) -> "Contract":
         """
         Create a new `Contract` object with source code queried from a block explorer.
@@ -1172,7 +1184,8 @@ class Contract(_DeployedContractBase):
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build_json, sources)  # type: ignore
         _DeployedContractBase.__init__(self, address, owner)
-        _add_deployment(self)
+        if persist:
+            _add_deployment(self)
         return self
 
     @classmethod
@@ -1208,7 +1221,24 @@ class Contract(_DeployedContractBase):
 
         return version
 
-    def set_alias(self, alias: Optional[str]) -> None:
+    @classmethod
+    def remove_deployment(
+        cls, address: str = None, alias: str = None
+    ) -> Tuple[Optional[Dict], Optional[Dict]]:
+        """
+        Removes this contract from the internal deployments db
+        with the passed address or alias.
+
+        Arguments
+        ---------
+        address: str | None
+            An address to apply
+        alias: str | None
+            An alias to apply
+        """
+        return _remove_deployment(address, alias)
+
+    def set_alias(self, alias: Optional[str], persist: bool = True) -> None:
         """
         Apply a unique alias this object. The alias can be used to restore the
         object in future sessions.
@@ -1230,7 +1260,8 @@ class Contract(_DeployedContractBase):
                     raise ValueError("Alias is already in use on another contract")
                 return
 
-        _add_deployment(self, alias)
+        if persist:
+            _add_deployment(self, alias)
         self._build["alias"] = alias
 
     @property
