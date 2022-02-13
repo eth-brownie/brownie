@@ -213,7 +213,7 @@ def test_localaccount(accounts):
     accounts[0].transfer(local, "10 ether")
     assert local.balance() == "10 ether"
     local.transfer(accounts[1], "1 ether")
-    assert accounts[1].balance() == "101 ether"
+    assert accounts[1].balance() == "1001 ether"
     assert local.nonce == 1
 
 
