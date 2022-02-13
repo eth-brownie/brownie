@@ -74,6 +74,7 @@ live:
         id: aurora-main
         host: https://mainnet.aurora.dev
         explorer: https://api.aurorascan.dev/api
+        multicall2: "0xace58a26b8Db90498eF0330fDC9C2655db0C45E2"
       - name: Testnet
         chainid: 1313161555
         id: aurora-test
