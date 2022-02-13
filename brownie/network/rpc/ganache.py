@@ -147,7 +147,14 @@ def revert(snapshot_id: int) -> None:
 
 
 def unlock_account(address: str) -> None:
-    web3.provider.make_request("evm_unlockUnknownAccount", [address])  # type: ignore
+    if web3.clientVersion.lower().startswith("ganache/v7"):
+        web3.provider.make_request("evm_addAccount", [address, ""])  # type: ignore
+        web3.provider.make_request(  # type: ignore
+            "personal_unlockAccount",
+            [address, "", 9999999999],
+        )
+    else:
+        web3.provider.make_request("evm_unlockUnknownAccount", [address])  # type: ignore
 
 
 def _validate_cmd_settings(cmd_settings: dict) -> dict:
