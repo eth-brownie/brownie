@@ -72,6 +72,9 @@ def launch(cmd: str, **kwargs: Dict) -> None:
         cli_flags = CLI_FLAGS["<=6"]
     else:
         cli_flags = CLI_FLAGS["7"]
+        # this flag must be true so that reverting tx's return a
+        # more verbose output similar to what ganache 6 produced
+        cmd_list.extend(["--chain.vmErrorsOnRPCResponse", "true"])
 
     kwargs.setdefault("evm_version", EVM_DEFAULT)  # type: ignore
     if kwargs["evm_version"] in EVM_EQUIVALENTS:
