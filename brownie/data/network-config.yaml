@@ -67,6 +67,19 @@ live:
         host: https://api.avax-test.network/ext/bc/C/rpc
         id: avax-test
         name: Testnet
+  - name: Aurora
+    networks:
+      - name: Mainnet
+        chainid: 1313161554
+        id: aurora-main
+        host: https://mainnet.aurora.dev
+        explorer: https://api.aurorascan.dev/api
+        multicall2: "0xace58a26b8Db90498eF0330fDC9C2655db0C45E2"
+      - name: Testnet
+        chainid: 1313161555
+        id: aurora-test
+        host: https://testnet.aurora.dev
+        explorer: https://testnet.aurorascan.dev/api
   - name: Binance Smart Chain
     networks:
       - name: Testnet
@@ -242,3 +255,15 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: avax-main
+  - name: Ganache-CLI (Aurora-Mainnet Fork)
+    id: aurora-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: aurora-main
