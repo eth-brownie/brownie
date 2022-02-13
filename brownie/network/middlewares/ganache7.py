@@ -31,7 +31,7 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
         # the older version of ganache. but doing so will cause unexpected issues
         # in projects that are still pinned to the old verion, so for now we support
         # both and simply raise a warning of a pending deprecation.
-        if method == "eth_sendTransaction" and "error" in result:
+        if method in ("eth_sendTransaction", "eth_sendRawTransaction") and "error" in result:
             data = result["error"]["data"]
             data["error"] = data.pop("message")
             result["error"]["data"] = {data.pop("hash"): data}

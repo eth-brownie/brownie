@@ -18,7 +18,10 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
         result = make_request(method, params)
 
         # modify Hardhat transaction error to mimick the format that Ganache uses
-        if method in ("eth_call", "eth_sendTransaction") and "error" in result:
+        if (
+            method in ("eth_call", "eth_sendTransaction", "eth_sendRawTransaction")
+            and "error" in result
+        ):
             message = result["error"]["message"]
             if message.startswith("Error: VM Exception") or message.startswith(
                 "Error: Transaction reverted"
