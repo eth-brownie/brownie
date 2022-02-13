@@ -539,6 +539,7 @@ class ContractConstructor:
             priority_fee=tx.get("priority_fee"),
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
+            allow_revert=tx.get("allow_revert"),
             publish_source=publish_source,
         )
 
