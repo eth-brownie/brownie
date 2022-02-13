@@ -162,3 +162,12 @@ def test_sign_defunct_message(accounts):
         signed.messageHash.hex()
         == "0xb9bb14ce5c17b2b7217cfa638031a542b95fc25b18d42a61409066001d01351d"
     )
+
+
+def test_force_unlock(accounts):
+    acct = accounts.at("0x0000000000000000000000000000000000001337", True)
+    accounts[0].transfer(acct, "1 ether")
+    acct.transfer(accounts[0], "0.4 ether")
+
+    assert acct.nonce == 1
+    assert acct.balance() == "0.6 ether"
