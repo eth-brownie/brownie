@@ -55,11 +55,28 @@ def test_mine_timestamp(devnetwork, chain):
     assert chain.time() - 999999999999 < 3
 
 
+def test_mine_timestamp_next_block(devnetwork, chain):
+    chain.mine(timestamp=999999999999)
+    chain.mine()
+
+    assert chain[-1].timestamp >= 999999999999
+    assert chain.time() >= 999999999999
+
+
 def test_mine_timedelta(devnetwork, chain):
     now = chain.time()
     chain.mine(timedelta=12345)
 
     assert 0 <= chain[-1].timestamp - 12345 - now <= 1
+
+
+def test_mine_timedelta_next_block(devnetwork, chain):
+    now = chain.time()
+    chain.mine(timedelta=12345)
+    chain.mine()
+
+    assert chain[-1].timestamp >= now + 12345
+    assert chain.time() >= now + 12345
 
 
 def test_mine_multiple_timestamp(devnetwork, chain):
