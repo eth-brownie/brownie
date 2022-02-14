@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow to override EVM version per language
 - Add support for Ganache 7 CLI flags
 - Support Ganache unlimited contract size
+- Allow retrieval of past events through a contract instance
+- Allow subscription (with callback) to specific events through a contract instance
 
 ### Changed
 - Force files to be opened as UTF-8
