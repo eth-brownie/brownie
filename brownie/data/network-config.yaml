@@ -111,6 +111,14 @@ live:
         host: https://api.harmony.one
         id: harmony-main
         multicall2: "0x3E01dD8a5E1fb3481F0F589056b428Fc308AF0Fb"
+  - name: Moonbeam
+    networks:
+      - name: Mainnet
+        chainid: 1284
+        id: moonbeam-main
+        host: https://moonbeam.api.onfinality.io/public
+        explorer: https://api-moonbeam.moonscan.io/api
+        multicall2: "0x1337BedC9D22ecbe766dF105c9623922A27963EC"
   - name: Optimistic Ethereum
     networks:
       - name: Mainnet

@@ -11,12 +11,11 @@ Brownie is a Python-based development and testing framework for smart contracts 
 * Property-based and stateful testing via [`hypothesis`](https://github.com/HypothesisWorks/hypothesis/tree/master/hypothesis-python)
 * Powerful debugging tools, including python-style tracebacks and custom error strings
 * Built-in console for quick project interaction
-* Support for [ethPM](https://www.ethpm.com) packages
 
 ## Dependencies
 
-* [python3](https://www.python.org/downloads/release/python-368/) version 3.6 or greater, python3-dev
-* [ganache-cli](https://github.com/trufflesuite/ganache-cli) - tested with version [6.12.2](https://github.com/trufflesuite/ganache-cli/releases/tag/v6.12.2)
+* [python3](https://www.python.org/downloads/release/python-3910/) version 3.7 or greater, python3-dev
+* [ganache](https://github.com/trufflesuite/ganache) - tested with version [7.0.2](https://github.com/trufflesuite/ganache/releases/tag/v7.0.2)
 
 ## Installation
 

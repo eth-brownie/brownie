@@ -31,11 +31,11 @@ def test_invalid_min_max():
     with pytest.raises(ValueError):
         strategy("uint", min_value=-1)
     with pytest.raises(ValueError):
-        strategy("int", min_value=-(2 ** 255) - 1)
+        strategy("int", min_value=-(2**255) - 1)
 
     # max too high
     with pytest.raises(ValueError):
-        strategy("uint", max_value=2 ** 256)
+        strategy("uint", max_value=2**256)
 
     # min > max
     with pytest.raises(ValueError):
@@ -49,7 +49,7 @@ def test_invalid_min_max():
 @given(value=strategy("uint"))
 def test_uint_given(value):
     assert type(value) is int
-    assert 0 <= value <= 2 ** 256 - 1
+    assert 0 <= value <= 2**256 - 1
 
 
 @given(value=strategy("uint8"))
@@ -60,7 +60,7 @@ def test_uint8_given(value):
 
 @given(value=strategy("int"))
 def test_int_given(value):
-    assert -(2 ** 255) <= value <= 2 ** 255 - 1
+    assert -(2**255) <= value <= 2**255 - 1
 
 
 @given(value=strategy("int8"))

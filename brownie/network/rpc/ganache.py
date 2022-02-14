@@ -72,6 +72,9 @@ def launch(cmd: str, **kwargs: Dict) -> None:
         cli_flags = CLI_FLAGS["<=6"]
     else:
         cli_flags = CLI_FLAGS["7"]
+        # this flag must be true so that reverting tx's return a
+        # more verbose output similar to what ganache 6 produced
+        cmd_list.extend(["--chain.vmErrorsOnRPCResponse", "true"])
 
     kwargs.setdefault("evm_version", EVM_DEFAULT)  # type: ignore
     if kwargs["evm_version"] in EVM_EQUIVALENTS:
@@ -144,7 +147,14 @@ def revert(snapshot_id: int) -> None:
 
 
 def unlock_account(address: str) -> None:
-    web3.provider.make_request("evm_unlockUnknownAccount", [address])  # type: ignore
+    if web3.clientVersion.lower().startswith("ganache/v7"):
+        web3.provider.make_request("evm_addAccount", [address, ""])  # type: ignore
+        web3.provider.make_request(  # type: ignore
+            "personal_unlockAccount",
+            [address, "", 9999999999],
+        )
+    else:
+        web3.provider.make_request("evm_unlockUnknownAccount", [address])  # type: ignore
 
 
 def _validate_cmd_settings(cmd_settings: dict) -> dict:
