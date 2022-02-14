@@ -28,6 +28,7 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
         ):
             data = result["error"]["data"]
             data["error"] = data.pop("message")
+            data["program_counter"] = data.pop("programCounter")
             result["error"]["data"] = {data.pop("hash"): data}
 
         if method == "eth_call" and "error" in result:
