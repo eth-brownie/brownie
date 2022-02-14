@@ -14,16 +14,6 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
             return None
 
     def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
-        if method == "eth_sendTransaction" and "nonce" in params[0]:
-            # ganache 7 allows broadcasting tx's with a too-high nonce, which then
-            # leaves brownie waiting forever for a tx that doesn't confirm
-            actual = int(params[0]["nonce"], 16)
-            expected = self.w3.eth.get_transaction_count(params[0]["from"])
-            if expected < actual:
-                raise ValueError(
-                    f"Nonce too high. Expected nonce to be {expected} but got {actual}."
-                )
-
         result = make_request(method, params)
 
         # reformat failed eth_call / eth_sendTransaction output to mimick that of Ganache 6.x
