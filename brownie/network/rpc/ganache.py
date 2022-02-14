@@ -136,6 +136,10 @@ def sleep(seconds: int) -> int:
 def mine(timestamp: Optional[int] = None) -> None:
     params = [timestamp] if timestamp else []
     _request("evm_mine", params)
+    if timestamp and web3.clientVersion.lower().startswith("ganache/v7"):
+        # ganache v7 does not modify the internal time when mining new blocks
+        # so we also set the time to maintain consistency with v6 behavior
+        _request("evm_setTime", [(timestamp + 1) * 1000])
 
 
 def snapshot() -> int:
