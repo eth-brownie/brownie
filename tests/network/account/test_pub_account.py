@@ -23,8 +23,8 @@ def test_eq(accounts):
 
 def test_balance(accounts):
     balance = PublicKeyAccount(accounts[0]).balance()
-    assert type(balance) is Wei
-    assert balance == "100 ether"
+    assert isinstance(balance, Wei)
+    assert balance == "1000 ether"
 
 
 def test_transfer(accounts, chain):

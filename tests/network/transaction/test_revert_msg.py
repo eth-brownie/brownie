@@ -181,7 +181,7 @@ def test_solidity_invalid_opcodes(evmtester):
 def test_vyper_revert_reasons(vypertester, console_mode):
     tx = vypertester.outOfBounds(6, 31337)
     assert tx.revert_msg == "Index out of range"
-    tx = vypertester.overflow(6, 2 ** 255)
+    tx = vypertester.overflow(6, 2**255)
     assert tx.revert_msg == "Integer overflow"
     tx = vypertester.underflow(6, 8)
     assert tx.revert_msg == "Integer underflow"

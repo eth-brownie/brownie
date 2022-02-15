@@ -116,18 +116,7 @@ class VirtualMachineError(Exception):
             txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
             self.revert_type = data["error"]
         except StopIteration:
-            data = exc["data"]
-            result = data.get("result")
-            if (
-                not isinstance(result, str)
-                or not result.startswith(ERROR_SIG)
-                or "message" not in data
-            ):
-                raise ValueError(exc["message"]) from None
-            txid = ""
-            self.revert_type = data["message"]
-            if "programCounter" in data:
-                data["program_counter"] = data["programCounter"]
+            raise ValueError(exc["message"]) from None
 
         self.txid = txid
         self.source = ""
