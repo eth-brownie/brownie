@@ -30,19 +30,6 @@ def test_attach(attachable_rpc, temp_port):
     assert attachable_rpc.is_active()
 
 
-def test_kill(attachable_rpc, temp_port):
-    attachable_rpc.attach(f"http://127.0.0.1:{temp_port}")
-    attachable_rpc.kill()
-    with pytest.raises(SystemError):
-        attachable_rpc.kill()
-    attachable_rpc.kill(False)
-
-
-def test_no_port(rpc):
-    with pytest.raises(ValueError):
-        rpc.attach("http://127.0.0.1")
-
-
 def test_no_docker(rpc):
     with patch("brownie.network.rpc._get_pid_from_connections", MagicMock(value=1337)):
         with patch(

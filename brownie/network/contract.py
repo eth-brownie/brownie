@@ -36,7 +36,7 @@ from web3._utils import filters
 from web3.datastructures import AttributeDict
 from web3.types import LogReceipt
 
-from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS
+from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS, _load_project_compiler_config
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
 from brownie.convert.utils import (
@@ -66,6 +66,7 @@ from .state import (
     _find_contract,
     _get_deployment,
     _remove_contract,
+    _remove_deployment,
     _revert_register,
 )
 from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
@@ -79,6 +80,7 @@ _explorer_tokens = {
     "ftmscan": "FTMSCAN_TOKEN",
     "arbiscan": "ARBISCAN_TOKEN",
     "snowtrace": "SNOWTRACE_TOKEN",
+    "aurorascan": "AURORASCAN_TOKEN",
 }
 
 
@@ -232,6 +234,7 @@ class ContractContainer(_ContractBase):
         address: str,
         owner: Optional[AccountsType] = None,
         tx: Optional[TransactionReceiptType] = None,
+        persist: bool = True,
     ) -> "ProjectContract":
         """Returns a contract address.
 
@@ -260,7 +263,8 @@ class ContractContainer(_ContractBase):
         _add_contract(contract)
         self._contracts.append(contract)
         if CONFIG.network_type == "live":
-            _add_deployment(contract)
+            if persist:
+                _add_deployment(contract)
 
         return contract
 
@@ -550,6 +554,7 @@ class ContractConstructor:
             priority_fee=tx.get("priority_fee"),
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
+            allow_revert=tx.get("allow_revert"),
             publish_source=publish_source,
         )
 
@@ -634,7 +639,7 @@ class InterfaceConstructor:
         }
 
     def __call__(self, address: str, owner: Optional[AccountsType] = None) -> "Contract":
-        return Contract.from_abi(self._name, address, self.abi, owner)
+        return Contract.from_abi(self._name, address, self.abi, owner, persist=False)
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} '{self._name}'>"
@@ -932,7 +937,12 @@ class Contract(_DeployedContractBase):
 
     @classmethod
     def from_abi(
-        cls, name: str, address: str, abi: List, owner: Optional[AccountsType] = None
+        cls,
+        name: str,
+        address: str,
+        abi: List,
+        owner: Optional[AccountsType] = None,
+        persist: bool = True,
     ) -> "Contract":
         """
         Create a new `Contract` object from an ABI.
@@ -955,7 +965,8 @@ class Contract(_DeployedContractBase):
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build, {})  # type: ignore
         _DeployedContractBase.__init__(self, address, owner, None)
-        _add_deployment(self)
+        if persist:
+            _add_deployment(self)
         return self
 
     @classmethod
@@ -965,6 +976,7 @@ class Contract(_DeployedContractBase):
         manifest_uri: str,
         address: Optional[str] = None,
         owner: Optional[AccountsType] = None,
+        persist: bool = True,
     ) -> "Contract":
         """
         Create a new `Contract` object from an ethPM manifest.
@@ -1011,7 +1023,8 @@ class Contract(_DeployedContractBase):
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build, manifest["sources"])  # type: ignore
         _DeployedContractBase.__init__(self, address, owner)
-        _add_deployment(self)
+        if persist:
+            _add_deployment(self)
         return self
 
     @classmethod
@@ -1021,6 +1034,7 @@ class Contract(_DeployedContractBase):
         as_proxy_for: Optional[str] = None,
         owner: Optional[AccountsType] = None,
         silent: bool = False,
+        persist: bool = True,
     ) -> "Contract":
         """
         Create a new `Contract` object with source code queried from a block explorer.
@@ -1104,7 +1118,8 @@ class Contract(_DeployedContractBase):
                 is_compilable = False
         else:
             try:
-                version = Version(compiler_str.lstrip("v")).truncate()
+                version = cls.get_solc_version(compiler_str, address)
+
                 is_compilable = (
                     version >= Version("0.4.22")
                     and version
@@ -1187,10 +1202,61 @@ class Contract(_DeployedContractBase):
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build_json, sources)  # type: ignore
         _DeployedContractBase.__init__(self, address, owner)
-        _add_deployment(self)
+        if persist:
+            _add_deployment(self)
         return self
 
-    def set_alias(self, alias: Optional[str]) -> None:
+    @classmethod
+    def get_solc_version(cls, compiler_str: str, address: str) -> Version:
+        """
+        Return the solc compiler version either from the passed compiler string
+        or try to find the latest available patch semver compiler version.
+
+        Arguments
+        ---------
+        compiler_str: str
+            The compiler string passed from the contract metadata.
+        address: str
+            The contract address to check for.
+        """
+        version = Version(compiler_str.lstrip("v")).truncate()
+
+        compiler_config = _load_project_compiler_config(Path(os.getcwd()))
+        solc_config = compiler_config["solc"]
+        if "use_latest_patch" in solc_config:
+            use_latest_patch = solc_config["use_latest_patch"]
+            needs_patch_version = False
+            if isinstance(use_latest_patch, bool):
+                needs_patch_version = use_latest_patch
+            elif isinstance(use_latest_patch, list):
+                needs_patch_version = address in use_latest_patch
+
+            if needs_patch_version:
+                versions = [Version(str(i)) for i in solcx.get_installable_solc_versions()]
+                for v in filter(lambda l: l < version.next_minor(), versions):
+                    if v > version:
+                        version = v
+
+        return version
+
+    @classmethod
+    def remove_deployment(
+        cls, address: str = None, alias: str = None
+    ) -> Tuple[Optional[Dict], Optional[Dict]]:
+        """
+        Removes this contract from the internal deployments db
+        with the passed address or alias.
+
+        Arguments
+        ---------
+        address: str | None
+            An address to apply
+        alias: str | None
+            An alias to apply
+        """
+        return _remove_deployment(address, alias)
+
+    def set_alias(self, alias: Optional[str], persist: bool = True) -> None:
         """
         Apply a unique alias this object. The alias can be used to restore the
         object in future sessions.
@@ -1212,7 +1278,8 @@ class Contract(_DeployedContractBase):
                     raise ValueError("Alias is already in use on another contract")
                 return
 
-        _add_deployment(self, alias)
+        if persist:
+            _add_deployment(self, alias)
         self._build["alias"] = alias
 
     @property
@@ -1395,11 +1462,17 @@ class OverloadedMethod:
     def __len__(self) -> int:
         return len(self.methods)
 
-    def __call__(self, *args: Tuple) -> Any:
+    def __call__(
+        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+    ) -> Any:
         fn = self._get_fn_from_args(args)
-        return fn(*args)  # type: ignore
+        kwargs = {"block_identifier": block_identifier, "override": override}
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+        return fn(*args, **kwargs)  # type: ignore
 
-    def call(self, *args: Tuple, block_identifier: Union[int, str, bytes] = None) -> Any:
+    def call(
+        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+    ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
 
@@ -1416,13 +1489,16 @@ class OverloadedMethod:
             A block number or hash that the call is executed at. If not given, the
             latest block used. Raises `ValueError` if this value is too far in the
             past and you are not using an archival node.
+        override : dict, optional
+            A mapping from addresses to balance, nonce, code, state, stateDiff
+            overrides for the context of the call.
 
         Returns
         -------
             Contract method return value(s).
         """
         fn = self._get_fn_from_args(args)
-        return fn.call(*args, block_identifier=block_identifier)
+        return fn.call(*args, block_identifier=block_identifier, override=override)
 
     def transact(self, *args: Tuple) -> TransactionReceiptType:
         """
@@ -1563,7 +1639,9 @@ class _ContractMethod:
         print(f"{self.abi['name']}({_inputs(self.abi)})")
         _print_natspec(self.natspec)
 
-    def call(self, *args: Tuple, block_identifier: Union[int, str, bytes] = None) -> Any:
+    def call(
+        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+    ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
 
@@ -1576,6 +1654,9 @@ class _ContractMethod:
             A block number or hash that the call is executed at. If not given, the
             latest block used. Raises `ValueError` if this value is too far in the
             past and you are not using an archival node.
+        override : dict, optional
+            A mapping from addresses to balance, nonce, code, state, stateDiff
+            overrides for the context of the call.
 
         Returns
         -------
@@ -1589,7 +1670,7 @@ class _ContractMethod:
         tx.update({"to": self._address, "data": self.encode_input(*args)})
 
         try:
-            data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier)
+            data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier, override)
         except ValueError as e:
             raise VirtualMachineError(e) from None
 
@@ -1775,7 +1856,9 @@ class ContractCall(_ContractMethod):
         Bytes4 method signature.
     """
 
-    def __call__(self, *args: Tuple, block_identifier: Union[int, str, bytes] = None) -> Any:
+    def __call__(
+        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+    ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
 
@@ -1788,6 +1871,9 @@ class ContractCall(_ContractMethod):
             A block number or hash that the call is executed at. If not given, the
             latest block used. Raises `ValueError` if this value is too far in the
             past and you are not using an archival node.
+        override : dict, optional
+            A mapping from addresses to balance, nonce, code, state, stateDiff
+            overrides for the context of the call.
 
         Returns
         -------
@@ -1795,7 +1881,7 @@ class ContractCall(_ContractMethod):
         """
 
         if not CONFIG.argv["always_transact"] or block_identifier is not None:
-            return self.call(*args, block_identifier=block_identifier)
+            return self.call(*args, block_identifier=block_identifier, override=override)
 
         args, tx = _get_tx(self._owner, args)
         tx.update({"gas_price": 0, "from": self._owner or accounts[0]})

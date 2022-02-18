@@ -59,9 +59,9 @@ def test_multiline_commands(accounts, history, console):
         ],
     )
     assert len(history) == 3
-    assert accounts[1].balance() == "101 ether"
-    assert accounts[2].balance() == "105 ether"
-    assert accounts[3].balance() == "107 ether"
+    assert accounts[1].balance() == "1001 ether"
+    assert accounts[2].balance() == "1005 ether"
+    assert accounts[3].balance() == "1007 ether"
 
 
 def test_fn(accounts, history, console):
@@ -77,7 +77,7 @@ def test_fn(accounts, history, console):
         ],
     )
     assert len(history) == 2
-    assert accounts[1].balance() == "103 ether"
+    assert accounts[1].balance() == "1003 ether"
 
 
 def test_exceptions(console):

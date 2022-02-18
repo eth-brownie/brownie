@@ -774,6 +774,23 @@ class _PrivateKeyAccount(PublicKeyAccount):
                     time.sleep(1)
 
         receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
+        if receipt.status != 1 and exc is None:
+            error_data = {
+                "message": (
+                    f"VM Exception while processing transaction: revert {receipt.revert_msg}"
+                ),
+                "code": -32000,
+                "data": {
+                    receipt.txid: {
+                        "error": "revert",
+                        "program_counter": receipt._revert_pc,
+                        "return": receipt.return_value,
+                        "reason": receipt.revert_msg,
+                    },
+                },
+            }
+            exc = VirtualMachineError(ValueError(error_data))
+
         return receipt, exc
 
     def _await_confirmation(

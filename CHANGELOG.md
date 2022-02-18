@@ -6,8 +6,29 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Added
+- Allow retrieval of past events through a contract instance
+- Allow subscription (with callback) to specific events through a contract instance
+
+## [1.18.1](https://github.com/eth-brownie/brownie/tree/v1.18.1) - 2022-02-15
+### Fixed
+- Correctly modify chain time when using `chain.mine` with Ganache v7 ([#1438](https://github.com/eth-brownie/brownie/pull/1438))
+
+## [1.18.0](https://github.com/eth-brownie/brownie/tree/v1.18.0) - 2022-02-14
+### Added
+- Support for Ganache v7 ([#1409](https://github.com/eth-brownie/brownie/pull/1409), [#1410](https://github.com/eth-brownie/brownie/pull/1410))
+- Add `override` argument to contract methods which allows changing the state before the call ([#1412](https://github.com/eth-brownie/brownie/pull/1412))
+- Allow to override EVM version per language ([#1418](https://github.com/eth-brownie/brownie/pull/1418))
+- Support for Alchemy via `WEB3_ALCHEMY_PROJECT_ID` environment var ([#1401](https://github.com/eth-brownie/brownie/pull/1401))
+- Support Ganache unlimited contract size ([#1424](https://github.com/eth-brownie/brownie/pull/1424))
+
 ### Changed
-- Force files to be opened as UTF-8
+- Added a new solidity compiler setting `use_latest_patch` in `brownie-config.yaml` to use the latest patch version of a compiler based on the pragma version of the contract ([#1383](https://github.com/eth-brownie/brownie/pull/1383))
+- Add cli flag `-r` for raising exceptions to the caller instead of doing a system exit ([#1394](https://github.com/eth-brownie/brownie/pull/1394))
+
+### Fixed
+- Force files to be opened as UTF-8 ([#1377](https://github.com/eth-brownie/brownie/pull/1377))
+- Fix incremental compilation failing because of mismatching compiler versions ([#1411](https://github.com/eth-brownie/brownie/pull/1411))
 
 ## [1.17.2](https://github.com/eth-brownie/brownie/tree/v1.17.2) - 2021-12-04
 ### Changed

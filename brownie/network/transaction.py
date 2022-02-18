@@ -201,14 +201,14 @@ class TransactionReceipt:
         if not self._silent:
             output_str = ""
             if self.type == 2:
-                max_gas = tx["maxFeePerGas"] / 10 ** 9
-                priority_gas = tx["maxPriorityFeePerGas"] / 10 ** 9
+                max_gas = tx["maxFeePerGas"] / 10**9
+                priority_gas = tx["maxPriorityFeePerGas"] / 10**9
                 output_str = (
                     f"  Max fee: {color('bright blue')}{max_gas}{color} gwei"
                     f"   Priority fee: {color('bright blue')}{priority_gas}{color} gwei"
                 )
             elif self.gas_price is not None:
-                gas_price = self.gas_price / 10 ** 9
+                gas_price = self.gas_price / 10**9
                 output_str = f"  Gas price: {color('bright blue')}{gas_price}{color} gwei"
             print(
                 f"{output_str}   Gas limit: {color('bright blue')}{self.gas_limit}{color}"

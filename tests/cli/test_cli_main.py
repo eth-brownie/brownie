@@ -108,6 +108,20 @@ def test_cli_run_with_missing_file(cli_tester):
     assert cli_tester.mock_subroutines.call_count == 1
 
 
+def test_cli_run_with_raise_flag(cli_tester):
+    cli_tester.monkeypatch.setattr("brownie.run", cli_tester.mock_subroutines)
+
+    subtargets = ("brownie.network.connect",)
+    for target in subtargets:
+        cli_tester.monkeypatch.setattr(target, cli_tester.mock_subroutines)
+
+    with pytest.raises(FileNotFoundError):
+        cli_tester.run_and_test_parameters("run testfile -r", parameters=None)
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == 1
+
+
 def test_cli_ethpm(cli_tester, testproject):
     cli_tester.monkeypatch.setattr("brownie._cli.ethpm._list", cli_tester.mock_subroutines)
 

@@ -23,6 +23,7 @@ Options:
   --network [name]        Use a specific network (default {CONFIG.settings['networks']['default']})
   --silent                Suppress console output for transactions
   --interactive -I        Open an interactive console when the script completes or raises
+  --raise -r              Raise exceptions occured in the script to the caller
   --gas -g                Display gas profile for function calls
   --tb -t                 Show entire python traceback on exceptions
   --help -h               Display this message
@@ -55,7 +56,11 @@ def main():
         )
         exit_code = 0
     except Exception as e:
+        if args["--raise"]:
+            raise e
+
         print(color.format_tb(e))
+
         frame = next(
             (i.frame for i in inspect.trace()[::-1] if Path(i.filename).as_posix() == path_str),
             None,

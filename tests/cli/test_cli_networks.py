@@ -255,3 +255,102 @@ def test_import_id_exists(tmp_path):
 
     with pytest.raises(ValueError):
         cli_networks._import(path.as_posix())
+
+
+def test_update_provider():
+    name = "infura"
+    url = "test_url"
+    cli_networks._update_provider(name, url)
+    with _get_data_folder().joinpath("providers-config.yaml").open() as fp:
+        providers = yaml.safe_load(fp)
+    assert providers[name]["host"] == url
+
+
+def test_delete_provider():
+    cli_networks._delete_provider("infura")
+
+    with _get_data_folder().joinpath("providers-config.yaml").open() as fp:
+        providers = yaml.safe_load(fp)
+
+    assert "infura" not in [providers.keys()]
+
+
+def test_delete_provider_reverts_on_unsuccessful_delete():
+    with pytest.raises(ValueError):
+        cli_networks._delete_provider("adsfasdfasdfasdfasdfsadfasdfasdfas")
+
+
+def test_set_provider():
+    cli_networks._set_provider("alchemy")
+
+    with _get_data_folder().joinpath("network-config.yaml").open() as fp:
+        networks = yaml.safe_load(fp)
+
+    assert (
+        networks["live"][0]["networks"][0]["host"]
+        == "https://eth-mainnet.alchemyapi.io/v2/$WEB3_ALCHEMY_PROJECT_ID"
+    )
+    assert networks["live"][0]["networks"][0]["name"] == "Mainnet (Alchemy)"
+    assert networks["live"][0]["networks"][0]["provider"] == "alchemy"
+
+
+def test_set_provider_fail():
+    with pytest.raises(ValueError):
+        cli_networks._set_provider("adsfasdfasdfasdfasdfsadfasdfasdfas")
+
+
+def test_set_provider_ignore_non_provider_networks():
+    with _get_data_folder().joinpath("network-config.yaml").open() as fp:
+        networks = yaml.safe_load(fp)
+
+    cli_networks._set_provider("alchemy")
+
+    with _get_data_folder().joinpath("network-config.yaml").open() as fp:
+        updated_networks = yaml.safe_load(fp)
+
+    assert (
+        networks["live"][1]["networks"][0]["name"]
+        == updated_networks["live"][1]["networks"][0]["name"]
+    )
+    assert (
+        networks["live"][1]["networks"][0]["host"]
+        == updated_networks["live"][1]["networks"][0]["host"]
+    )
+
+
+def test_set_provider_ignore_false_provider_networks():
+    with _get_data_folder().joinpath("network-config.yaml").open() as fp:
+        networks = yaml.safe_load(fp)
+
+    cli_networks._modify("mainnet", "provider=false")
+    cli_networks._set_provider("alchemy")
+
+    with _get_data_folder().joinpath("network-config.yaml").open() as fp:
+        updated_networks = yaml.safe_load(fp)
+
+    assert (
+        networks["live"][0]["networks"][0]["name"]
+        == updated_networks["live"][0]["networks"][0]["name"]
+    )
+    assert (
+        networks["live"][0]["networks"][0]["host"]
+        == updated_networks["live"][0]["networks"][0]["host"]
+    )
+
+
+def test_list_simple_providers(capfd):
+    cli_networks._list_providers()
+
+    output = capfd.readouterr()[0]
+
+    assert "host" not in output
+    assert "alchemy" in output
+
+
+def test_list_verbose_providers(capfd):
+    cli_networks._list_providers(True)
+
+    output = capfd.readouterr()[0]
+
+    assert "host" in output
+    assert ".alchemyapi.io" in output

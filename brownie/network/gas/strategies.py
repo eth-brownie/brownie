@@ -109,7 +109,7 @@ class ExponentialScalingStrategy(TimeGasStrategy):
         yield last_gas_price
 
         for i in itertools.count(1):
-            last_gas_price = Wei(last_gas_price * 1.1 ** i)
+            last_gas_price = Wei(last_gas_price * 1.1**i)
             yield min(last_gas_price, self.max_gas_price)
 
 
@@ -164,7 +164,7 @@ class GasNowScalingStrategy(BlockGasStrategy):
         self.initial_speed = initial_speed
         self.max_speed = max_speed
         self.increment = increment
-        self.max_gas_price = Wei(max_gas_price) or 2 ** 256 - 1
+        self.max_gas_price = Wei(max_gas_price) or 2**256 - 1
 
     def get_gas_price(self) -> Generator[int, None, None]:
         last_gas_price = _fetch_gasnow(self.initial_speed)
@@ -207,7 +207,7 @@ class GethMempoolStrategy(BlockGasStrategy):
         if graphql_endpoint is None:
             graphql_endpoint = f"{web3.provider.endpoint_uri}/graphql"  # type: ignore
         self.graphql_endpoint = graphql_endpoint
-        self.max_gas_price = Wei(max_gas_price) or 2 ** 256 - 1
+        self.max_gas_price = Wei(max_gas_price) or 2**256 - 1
 
     def get_gas_price(self) -> Generator[int, None, None]:
         query = "{ pending { transactions { gasPrice }}}"

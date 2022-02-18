@@ -1,9 +1,10 @@
 black>=20.8b1
 eip712<0.2.0
 eth-abi<3
-eth-account<1
+eth-account<0.6.0
 eth-event>=1.2.1,<2
 eth-hash[pycryptodome]<1
+eth-rlp<0.3.0
 eth-utils<2
 hexbytes<1
 hypothesis<6.28.0
