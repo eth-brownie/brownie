@@ -1407,17 +1407,12 @@ class ContractEvents(_ContractEvents):
 
     @combomethod
     def _get_latests_events_generator(
-        self, event_type: ContractEvent, from_block: int = None
+        self, event_type: ContractEvent, from_block: int
     ) -> Generator:
-        to_block = web3.eth.block_number
-        from_block = from_block if from_block is not None else (to_block - 10)
+        event_filter: filters.LogFilter = event_type.createFilter(fromBlock=from_block)
 
         while True:
-            yield self._retrieve_contract_events(event_type, from_block, to_block)
-
-            # Update block to look at on new call
-            from_block = to_block
-            to_block = web3.eth.block_number
+            yield event_filter.get_new_entries()
 
 
 class OverloadedMethod:
