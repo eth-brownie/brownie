@@ -1313,7 +1313,7 @@ class ContractEvents(_ContractEvents):
         if event_type is not None:
             if isinstance(event_type, str):
                 # If 'event_type' is a string, search for an event with a name matching it.
-                event_type = self.__getitem__(event_type)  # type: ignore
+                event_type: ContractEvent = self.__getitem__(event_type)  # type: ignore
             return self._retrieve_contract_events(event_type, from_block, to_block)
 
         # Returns event sequence for all contract events
