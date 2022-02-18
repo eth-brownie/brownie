@@ -1409,9 +1409,11 @@ class ContractEvents(_ContractEvents):
 
     @combomethod
     def _get_latests_events_generator(
-        self, event_type: ContractEvent, from_block: int
+        self, event_type: ContractEvent, from_block: int = None
     ) -> Generator:
-        event_filter: filters.LogFilter = event_type.createFilter(fromBlock=from_block)
+        event_filter: filters.LogFilter = event_type.createFilter(
+            fromBlock=(from_block if from_block is not None else web3.eth.block_number)
+        )
 
         while True:
             yield event_filter.get_new_entries()
