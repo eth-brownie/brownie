@@ -207,10 +207,11 @@ def test_can_subscribe_to_event(tester: Contract):
     tx = tester.emitEvents("unused string", callback_expected_values[0])
     if tx.confirmations == 0:
         tx.wait(1)
-    subscription.wait(timeout=2.0)
+    subscription.wait(timeout=2)
+    subscription.stop(wait=True)
 
     # Assert
-    assert subscription.is_alive()
+    assert not subscription.is_alive()
     assert callback_trigger_count == callback_expected_trigger_count
     assert callback_values == callback_expected_values
 
@@ -240,12 +241,16 @@ def test_can_subscribe_to_multiple_events(tester: Contract):
 
     # Set subscription
     debug_sub = tester.events.subscribe("Debug", callback=_debug_callback, delay=0.5)
-    tester.events.subscribe("IndexedEvent", callback=_indexed_event_callback, delay=0.5)
+    indexed_sub = tester.events.subscribe(
+        "IndexedEvent", callback=_indexed_event_callback, delay=0.5
+    )
     # Fire events
     tx = tester.emitEvents("", expected_debug_event_values[0])
     if tx.confirmations == 0:
         tx.wait(1)
-    debug_sub.wait(timeout=2.0)
+    debug_sub.wait(timeout=2)
+    debug_sub.stop(wait=True)
+    indexed_sub.stop(wait=True)
 
     # Assert
     assert debug_event_callback_trigger_count == expected_debug_event_callback_trigger_count
