@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+### Fixed
+- Allow to reset gas_price to zero on development network [#1445](https://github.com/eth-brownie/brownie/pull/1445)
+
 ## [1.18.1](https://github.com/eth-brownie/brownie/tree/v1.18.1) - 2022-02-15
 ### Fixed
 - Correctly modify chain time when using `chain.mine` with Ganache v7 ([#1438](https://github.com/eth-brownie/brownie/pull/1438))
