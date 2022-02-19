@@ -117,7 +117,8 @@ def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
     if args:
         if isinstance(args[0], GasABC):
             CONFIG.active_network["settings"]["gas_price"] = args[0]
-        elif args[0] in (None, False, True, "auto"):
+        # `args[0] is x` ensures both the type and value match
+        elif any(args[0] is x for x in (None, False, True, "auto")):
             CONFIG.active_network["settings"]["gas_price"] = False
         else:
             try:
