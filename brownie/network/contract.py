@@ -1325,9 +1325,7 @@ class ContractEvents(_ContractEvents):
         if not callable(callback):
             raise TypeError("Argument 'callback' must be of type Callable.")
         target_event: ContractEvent = self.__getitem__(event_name)  # type: ignore
-        latests_events_getter = self._get_latests_events_generator(
-            target_event, from_block=web3.eth.block_number
-        )
+        latests_events_getter = self._get_latests_events_generator(target_event)
 
         def _callback_container(_: Any, event_logs: List[AttributeDict]) -> None:
             """Receives the list of events as parameter and executes
