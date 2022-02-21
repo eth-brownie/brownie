@@ -9,19 +9,7 @@ import warnings
 from pathlib import Path
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    Iterator,
-    List,
-    Match,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import Any, Callable, Dict, Iterator, List, Match, Optional, Set, Tuple, Union
 from urllib.parse import urlparse
 
 import eth_abi
@@ -1313,7 +1301,7 @@ class ContractEvents(_ContractEvents):
 
     def subscribe(
         self, event_name: str, callback: Callable[[AttributeDict], None], delay: float = 2.0
-    ) -> alert.Alert:
+    ) -> None:
         """Subscribe to event with a name matching 'event_name',
         calling the 'callback' function on new occurence.
 
@@ -1322,33 +1310,8 @@ class ContractEvents(_ContractEvents):
             callback (Callable[[AttributeDict], None]): Function called whenever an event occurs.
             delay (float, optional): Delay between each check for new events. Defaults to 2.0.
         """
-        if not callable(callback):
-            raise TypeError("Argument 'callback' must be of type Callable.")
         target_event: ContractEvent = self.__getitem__(event_name)  # type: ignore
-        latests_events_getter = self._get_latests_events_generator(target_event)
-
-        def _callback_container(_: Any, event_logs: List[AttributeDict]) -> None:
-            """Receives the list of events as parameter and executes
-            the callback function for each of them.
-
-            Args:
-                event_logs (List[AttributeDict]): List of events logs.
-            """
-            if event_logs is None:
-                return
-            for event_log in event_logs:
-                callback(event_log)
-
-        # For parameters info, see brownie alert documentation.
-        new_subscription = alert.new(
-            fn=next,
-            args=(latests_events_getter,),
-            callback=_callback_container,
-            delay=delay,
-            repeat=True,
-        )
-        self.subscriptions.append(new_subscription)
-        return new_subscription
+        alert.event_watcher.add_event_callback(event=target_event, callback=callback, delay=delay)
 
     def get_sequence(
         self, from_block: int, to_block: int = None, event_type: Union[ContractEvent, str] = None
@@ -1404,17 +1367,6 @@ class ContractEvents(_ContractEvents):
             fromBlock=from_block, toBlock=to_block
         )
         return event_filter.get_all_entries()
-
-    @combomethod
-    def _get_latests_events_generator(
-        self, event_type: ContractEvent, from_block: int = None
-    ) -> Generator:
-        event_filter: filters.LogFilter = event_type.createFilter(
-            fromBlock=(from_block if from_block is not None else web3.eth.block_number)
-        )
-
-        while True:
-            yield event_filter.get_new_entries()
 
 
 class OverloadedMethod:

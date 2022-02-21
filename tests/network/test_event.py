@@ -1,11 +1,14 @@
 #!/usr/bin/python3
 
+import time
+
 import pytest
 from web3.datastructures import AttributeDict
 from web3.exceptions import ABIEventFunctionNotFound
 
 from brownie import Contract, compile_source
 from brownie.exceptions import EventLookupError
+from brownie.network.alert import event_watcher
 from brownie.network.event import EventDict, _EventItem
 
 
@@ -189,71 +192,15 @@ def test_cannot_subscribe_to_event_with_invalid_callback(tester: Contract):
 
 
 def test_can_subscribe_to_event(tester: Contract):
-    # Initialisation
-    callback_expected_trigger_count = 2
-    callback_expected_values = [10, 12]
-    callback_trigger_count: int = 0
-    callback_values = []
+    print("[MAIN] - Starting...")
 
-    def _callback(event_logs):
-        nonlocal callback_trigger_count, callback_values
+    def _callback(data):
+        print(f"[CALLBACK] - Event received with value {data['a']}")
 
-        callback_values.append(event_logs["args"]["a"])
-        callback_trigger_count += 1
-
-    # Set subscription
-    subscription = tester.events.subscribe("Debug", callback=_callback, delay=0.5)
-    # Fire events
-    tx = tester.emitEvents("unused string", callback_expected_values[0])
-    if tx.confirmations == 0:
-        tx.wait(1)
-    subscription.wait(timeout=2)
-    subscription.stop(wait=True)
-
-    # Assert
-    assert not subscription.is_alive()
-    assert callback_trigger_count == callback_expected_trigger_count
-    assert callback_values == callback_expected_values
-
-
-def test_can_subscribe_to_multiple_events(tester: Contract):
-    # Initialisation
-    expected_debug_event_callback_trigger_count = 2
-    expected_debug_event_values = [10, 12]
-    debug_event_callback_trigger_count = 0
-    debug_event_values = []
-
-    expected_indexed_event_callback_trigger_count = 1
-    indexed_event_callback_trigger_count = 0
-    indexed_event_num = None
-
-    def _debug_callback(event_logs):
-        nonlocal debug_event_callback_trigger_count, debug_event_values
-
-        debug_event_values.append(event_logs["args"].get("a"))
-        debug_event_callback_trigger_count += 1
-
-    def _indexed_event_callback(event_logs):
-        nonlocal indexed_event_callback_trigger_count, indexed_event_num
-
-        indexed_event_num = event_logs["args"].get("num")
-        indexed_event_callback_trigger_count += 1
-
-    # Set subscription
-    debug_sub = tester.events.subscribe("Debug", callback=_debug_callback, delay=0.5)
-    indexed_sub = tester.events.subscribe(
-        "IndexedEvent", callback=_indexed_event_callback, delay=0.5
-    )
-    # Fire events
-    tx = tester.emitEvents("", expected_debug_event_values[0])
-    if tx.confirmations == 0:
-        tx.wait(1)
-    debug_sub.wait(timeout=2)
-    debug_sub.stop(wait=True)
-    indexed_sub.stop(wait=True)
-
-    # Assert
-    assert debug_event_callback_trigger_count == expected_debug_event_callback_trigger_count
-    assert indexed_event_callback_trigger_count == expected_indexed_event_callback_trigger_count
-    assert debug_event_values == expected_debug_event_values
-    assert indexed_event_num == expected_debug_event_values[0]
+    tester.events.subscribe("IndexedEvent", callback=_callback)
+    for i in range(25):
+        # tester.emitEvents("", i)
+        time.sleep(5)
+    print("[MAIN] - Stopping...")
+    event_watcher.stop()
+    print("[MAIN] - Done !")
