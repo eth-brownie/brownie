@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import asyncio
 import io
 import json
 import os
@@ -9,7 +10,19 @@ import warnings
 from pathlib import Path
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
-from typing import Any, Callable, Dict, Iterator, List, Match, Optional, Set, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    Iterator,
+    List,
+    Match,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 from urllib.parse import urlparse
 
 import eth_abi
@@ -1352,6 +1365,31 @@ class ContractEvents(_ContractEvents):
                 event, from_block, to_block
             )
         return AttributeDict(events_logbook)
+
+    def listen(self, event_name: str, timeout: float = 0) -> Coroutine:
+        _triggered: bool = False
+        _received_data: Union[AttributeDict, None] = None
+
+        def _event_callback(event_data: AttributeDict) -> None:
+            nonlocal _triggered, _received_data
+            _received_data = event_data
+            _triggered = True
+
+        _listener_end_time = time.time() + timeout
+
+        async def _listening_task() -> Union[AttributeDict, None]:
+            nonlocal _triggered, _received_data, _listener_end_time
+            while not _triggered:
+                if timeout > 0 and _listener_end_time <= time.time():
+                    break
+                await asyncio.sleep(0.1)
+            return _received_data
+
+        target_event: ContractEvent = self.__getitem__(event_name)  # type: ignore
+        event_watcher.add_event_callback(
+            event=target_event, callback=_event_callback, delay=0.2, repeat=False
+        )
+        return _listening_task()
 
     @combomethod
     def _retrieve_contract_events(

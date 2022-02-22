@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import asyncio
 import time
 
 import pytest
@@ -190,17 +191,27 @@ def test_cannot_subscribe_to_event_with_invalid_callback(tester: Contract):
         tester.events.subscribe("Debug", callback=None)  # type: ignore
 
 
-# @pytest.mark.skip(reason="Test not fully programmed")
+@pytest.mark.skip(reason="Test not fully programmed")
 def test_can_subscribe_to_event(tester: Contract):
-    print("[MAIN] - Starting...")
+    # print("[MAIN] - Starting...")
 
     def _callback(data):
         print("[CALLBACK] - Event received with value {}".format(data["args"]["num"]))
 
-    tester.events.subscribe("IndexedEvent", callback=_callback)
-    for i in range(25):
-        tester.emitEvents("", i)
-        time.sleep(5)
+    tester.events.subscribe("IndexedEvent", callback=_callback, delay=0.7)
+    tester.emitEvents("", 480935)
+    time.sleep(30)
     print("[MAIN] - Stopping...")
     event_watcher.stop()
-    print("[MAIN] - Done !")
+
+
+def test_can_listen_for_event(tester: Contract):
+    expected_num = round(time.time()) % 100  # between 0 and 99
+    listener = tester.events.listen("IndexedEvent", timeout=10.0)
+
+    tester.emitEvents("", expected_num)
+
+    result = asyncio.run(listener)
+
+    assert result is not None, "Event listener timed out."
+    assert expected_num == result["args"]["num"]

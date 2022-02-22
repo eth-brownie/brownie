@@ -2,6 +2,7 @@
 
 import json
 import queue
+import threading
 import time
 import warnings
 from collections import OrderedDict
@@ -275,6 +276,7 @@ class EventWatcher:
 
     def _start_threads(self) -> None:
         # Starts two new Thread running the _watch_loop and the _execute_callbacks method.
+        print("[MAIN] - Running in thread {}".format(threading.get_ident()))
         self._watcher_thread.start()
         self._callback_thread.start()
         self._has_started = True
@@ -297,6 +299,7 @@ class EventWatcher:
         self.target_list_lock.release()  # unlock
 
     def _execute_callbacks(self) -> None:
+        print("[EXECUTER] - Running in thread {}".format(threading.get_ident()))
         while not self._kill:
             try:
                 while self._queue.qsize() > 0:
@@ -315,18 +318,16 @@ class EventWatcher:
             time.sleep(0.1)
 
     def _watch_loop(self) -> None:
+        print("[WATCHER] - Running in thread {}".format(threading.get_ident()))
         while not self._kill:
             try:
-                # print("[WATCHER] - Awake ! Checking...")
                 sleep_time: float = 2.0  # Max sleep time.
                 self.target_list_lock.acquire()  # lock
                 for elem in self.target_events_watch_data:
-                    # print(f"[WATCHER] - Watching event {elem.event.event_name}")
                     # If cooldown is not over, skip.
                     if elem.cooldown_time_over is False:
                         sleep_time = min(sleep_time, elem.check_timer())
                         continue
-                    # print("[WATCHER] - Cooldown reached ! Checking for new events...")
                     # Check for new events & execute callback async if some are found
                     latest_events = elem.get_new_events()
                     if len(latest_events) != 0:
@@ -338,6 +339,10 @@ class EventWatcher:
                         )
                     sleep_time = min(sleep_time, elem.delay)
             finally:
+                # Remove not repeating subscriptions
+                self.target_events_watch_data = list(
+                    filter(lambda x: x.repeat, self.target_events_watch_data)
+                )
                 self.target_list_lock.release()  # unlock
                 time.sleep(sleep_time)
 
