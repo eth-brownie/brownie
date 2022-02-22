@@ -16,5 +16,7 @@ env/
 .idea/
 .DS_Store
 .hypothesis/
+
+# Personnal
 .env
 c_pytest.py

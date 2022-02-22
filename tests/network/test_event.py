@@ -191,15 +191,16 @@ def test_cannot_subscribe_to_event_with_invalid_callback(tester: Contract):
         tester.events.subscribe("Debug", callback=None)  # type: ignore
 
 
+@pytest.mark.skip(reason="Test not fully programmed")
 def test_can_subscribe_to_event(tester: Contract):
     print("[MAIN] - Starting...")
 
     def _callback(data):
-        print(f"[CALLBACK] - Event received with value {data['a']}")
+        print("[CALLBACK] - Event received with value {}".format(data["args"]["num"]))
 
     tester.events.subscribe("IndexedEvent", callback=_callback)
     for i in range(25):
-        # tester.emitEvents("", i)
+        tester.emitEvents("", i)
         time.sleep(5)
     print("[MAIN] - Stopping...")
     event_watcher.stop()
