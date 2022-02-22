@@ -46,8 +46,8 @@ from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
-from . import accounts, alert, chain
-from .event import _add_deployment_topics, _get_topics
+from . import accounts, chain
+from .event import _add_deployment_topics, _get_topics, event_watcher
 from .state import (
     _add_contract,
     _add_deployment,
@@ -1294,7 +1294,6 @@ class ProjectContract(_DeployedContractBase):
 class ContractEvents(_ContractEvents):
     def __init__(self, contract: _DeployedContractBase):
         self.linked_contract = contract
-        self.subscriptions: List[alert.Alert] = list()
 
         # Ignoring type since ChecksumAddress type is an alias for string
         _ContractEvents.__init__(self, contract.abi, web3, contract.address)  # type: ignore
@@ -1311,7 +1310,7 @@ class ContractEvents(_ContractEvents):
             delay (float, optional): Delay between each check for new events. Defaults to 2.0.
         """
         target_event: ContractEvent = self.__getitem__(event_name)  # type: ignore
-        alert.event_watcher.add_event_callback(event=target_event, callback=callback, delay=delay)
+        event_watcher.add_event_callback(event=target_event, callback=callback, delay=delay)
 
     def get_sequence(
         self, from_block: int, to_block: int = None, event_type: Union[ContractEvent, str] = None

@@ -8,8 +8,7 @@ from web3.exceptions import ABIEventFunctionNotFound
 
 from brownie import Contract, compile_source
 from brownie.exceptions import EventLookupError
-from brownie.network.alert import event_watcher
-from brownie.network.event import EventDict, _EventItem
+from brownie.network.event import EventDict, _EventItem, event_watcher
 
 
 @pytest.fixture
@@ -191,7 +190,7 @@ def test_cannot_subscribe_to_event_with_invalid_callback(tester: Contract):
         tester.events.subscribe("Debug", callback=None)  # type: ignore
 
 
-@pytest.mark.skip(reason="Test not fully programmed")
+# @pytest.mark.skip(reason="Test not fully programmed")
 def test_can_subscribe_to_event(tester: Contract):
     print("[MAIN] - Starting...")
 
