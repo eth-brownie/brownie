@@ -1377,13 +1377,16 @@ class ContractEvents(_ContractEvents):
 
         _listener_end_time = time.time() + timeout
 
-        async def _listening_task() -> Union[AttributeDict, None]:
+        async def _listening_task() -> AttributeDict:
             nonlocal _triggered, _received_data, _listener_end_time
+            timed_out: bool = False
+
             while not _triggered:
                 if timeout > 0 and _listener_end_time <= time.time():
+                    timed_out = True
                     break
-                await asyncio.sleep(0.1)
-            return _received_data
+                await asyncio.sleep(0.05)
+            return AttributeDict({"event_data": _received_data, "timed_out": timed_out})
 
         target_event: ContractEvent = self.__getitem__(event_name)  # type: ignore
         event_watcher.add_event_callback(

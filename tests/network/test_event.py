@@ -9,13 +9,18 @@ from web3.exceptions import ABIEventFunctionNotFound
 
 from brownie import Contract, compile_source
 from brownie.exceptions import EventLookupError
-from brownie.network.event import EventDict, _EventItem, event_watcher
+from brownie.network.event import EventDict, EventWatcher, _EventItem, event_watcher
 
 
 @pytest.fixture
 def event(accounts, tester):
     tx = tester.emitEvents("foo bar", 42)
     return tx.events
+
+
+@pytest.fixture
+def event_watcher_instance():
+    return event_watcher
 
 
 def test_tuple_values(accounts, tester):
@@ -191,27 +196,55 @@ def test_cannot_subscribe_to_event_with_invalid_callback(tester: Contract):
         tester.events.subscribe("Debug", callback=None)  # type: ignore
 
 
-@pytest.mark.skip(reason="Test not fully programmed")
-def test_can_subscribe_to_event(tester: Contract):
-    # print("[MAIN] - Starting...")
+class TestEventWatcher:
+    """
+    Class testing the event subscription feature using
+    brownie.network.event.event_watcher which is multi-threaded
+    and needs to be reset between each test.
+    """
 
-    def _callback(data):
-        print("[CALLBACK] - Event received with value {}".format(data["args"]["num"]))
+    @pytest.fixture(scope="function", autouse=True)
+    def event_watcher_reset(self, event_watcher_instance: EventWatcher):
+        event_watcher_instance.reset()
 
-    tester.events.subscribe("IndexedEvent", callback=_callback, delay=0.7)
-    tester.emitEvents("", 480935)
-    time.sleep(30)
-    print("[MAIN] - Stopping...")
-    event_watcher.stop()
+    def test_can_subscribe_to_event_with_callback(_, tester: Contract):
+        expected_num: int = round(time.time()) % 100  # between 0 and 99
+        received_num: int = -1
+        callback_was_triggered: bool = False
 
+        def _callback(data):
+            nonlocal received_num, callback_was_triggered
+            received_num = data["args"]["num"]
+            callback_was_triggered = True
 
-def test_can_listen_for_event(tester: Contract):
-    expected_num = round(time.time()) % 100  # between 0 and 99
-    listener = tester.events.listen("IndexedEvent", timeout=10.0)
+        tester.events.subscribe("IndexedEvent", callback=_callback, delay=0.5)
+        tx = tester.emitEvents("", expected_num)
+        if tx.confirmations == 0:
+            tx.wait(1)
+        # Wait for event to be caught.
+        time.sleep(2)
 
-    tester.emitEvents("", expected_num)
+        assert callback_was_triggered is True, "Callback was not triggered."
+        assert expected_num == received_num, "Callback was not triggered with the right event"
 
-    result = asyncio.run(listener)
+    def test_event_listener_can_timeout(_, tester: Contract):
+        task = tester.events.listen("IndexedEvent", timeout=1.0)
 
-    assert result is not None, "Event listener timed out."
-    assert expected_num == result["args"]["num"]
+        # Using asyncio.wait_for to avoid infinite loop.
+        result = asyncio.run(asyncio.wait_for(task, timeout=1.2))
+
+        assert result["event_data"] is None, "Listener was triggered during test."
+        assert result["timed_out"] is True, "Listener did not timed out."
+
+    def test_can_listen_for_event(_, tester: Contract):
+        expected_num = round(time.time()) % 100  # between 0 and 99
+        listener = tester.events.listen("IndexedEvent", timeout=10.0)
+
+        tx = tester.emitEvents("", expected_num)
+        if tx.confirmations == 0:
+            tx.wait(1)
+
+        result = asyncio.run(listener)
+
+        assert result.timed_out is False, "Event listener timed out."
+        assert expected_num == result.event_data["args"]["num"]
