@@ -5,6 +5,7 @@ import queue
 import time
 import warnings
 from collections import OrderedDict
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from threading import Lock, Thread
 from typing import Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union, ValuesView
@@ -339,10 +340,10 @@ class EventWatcher:
     def _execute_callbacks(self) -> None:
         """
         Executes the callbacks instructions stored in 'self._queue'
-        !!! Might need to be recoded (see comment below) !!!
         """
-        # @dev (@todo) : Since we don't know if the callback can be executed quickly
-        # (might be a loop or something), we should probably start a new thread for each callback
+        # Open ThreadPool with 4 workers to execute callbacks
+        thread_pool = ThreadPool(processes=4)
+
         while not self._kill_callbacks:
             try:
                 while self._queue.qsize() > 0:
@@ -350,17 +351,18 @@ class EventWatcher:
                     #   @see: https://docs.python.org/3/library/queue.html#queue.Queue.get
                     # Raises queue.Empty exception if queue is empty
                     task_data = self._queue.get_nowait()
-                    try:
-                        # Execute callbacks with new events data
-                        task_data["function"](task_data["events_data"])
-                    except Exception as e:
-                        # Prevents thread from crashing when a callback raises an exception
-                        print("[Callback raised {}] - {}".format(type(e), str(e)))
+                    # Execute callbacks with new events data
+                    thread_pool.apply_async(
+                        func=task_data["function"], args=(task_data["events_data"],)
+                    )
             except queue.Empty:
                 pass
             # Sleep a few before checking for new events
             # (avoids looping at max computer speed when self._queue is empty)
             time.sleep(0.05)
+        # Force close and join threads within ThreadPool
+        thread_pool.terminate()
+        thread_pool.join()
 
     def _watch_loop(self) -> None:
         """
