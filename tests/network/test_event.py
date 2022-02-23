@@ -198,13 +198,14 @@ def test_cannot_subscribe_to_event_with_invalid_callback(tester: Contract):
 
 class TestEventWatcher:
     """
-    Class testing the event subscription feature using
-    brownie.network.event.event_watcher which is multi-threaded
-    and needs to be reset between each test.
+    Class testing the event subscription feature using the
+    brownie.network.event.event_watcher global variable
+    which is multi-threaded and needs to be reset between each test.
     """
 
     @pytest.fixture(scope="function", autouse=True)
     def event_watcher_reset(self, event_watcher_instance: EventWatcher):
+        """Resets the event_watcher instance between each test in the class"""
         event_watcher_instance.reset()
 
     def test_can_subscribe_to_event_with_callback(_, tester: Contract):
