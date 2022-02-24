@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 
 import json
-import queue
 import time
 import warnings
 from collections import OrderedDict
-from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from threading import Lock, Thread
 from typing import Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union, ValuesView
@@ -250,12 +248,12 @@ class EventWatcher:
     def __init__(self) -> None:
         self.target_list_lock: Lock = Lock()
         self.target_events_watch_data: List[EventWatchData] = []
-        self._queue: queue.Queue = queue.Queue()
+        # self._queue: queue.Queue = queue.Queue()
         self._kill: bool = False
         self._kill_callbacks: bool = False
         self._has_started: bool = False
         self._watcher_thread = Thread(target=self._watch_loop, daemon=True)
-        self._callback_thread = Thread(target=self._execute_callbacks, daemon=True)
+        # self._callback_thread = Thread(target=self._execute_callbacks, daemon=True)
 
     def __del__(self) -> None:
         self.stop()
@@ -273,9 +271,9 @@ class EventWatcher:
         if wait is True and self._watcher_thread.is_alive():
             self._watcher_thread.join()
         # Kill callback executer thread.
-        self._kill_callbacks = True
-        if wait is True and self._callback_thread.is_alive():
-            self._callback_thread.join()
+        # self._kill_callbacks = True
+        # if wait is True and self._callback_thread.is_alive():
+        #     self._callback_thread.join()
         self._has_started = False
 
     def reset(self) -> None:
@@ -324,51 +322,53 @@ class EventWatcher:
         self.target_list_lock.acquire()
         self.target_events_watch_data.clear()
         self.target_list_lock.release()
-        self._queue = queue.Queue()
+        # self._queue = queue.Queue()
         self._kill = False
         self._kill_callbacks = False
         self._has_started = False
         self._watcher_thread = Thread(target=self._watch_loop, daemon=True)
-        self._callback_thread = Thread(target=self._execute_callbacks, daemon=True)
+        # self._callback_thread = Thread(target=self._execute_callbacks, daemon=True)
 
     def _start_threads(self) -> None:
         """Starts two new Thread running the _watch_loop and the _execute_callbacks method."""
         self._watcher_thread.start()
-        self._callback_thread.start()
+        # self._callback_thread.start()
         self._has_started = True
 
-    def _execute_callbacks(self) -> None:
-        """
-        Executes the callbacks instructions stored in 'self._queue'
-        """
-        # Open ThreadPool with 4 workers to execute callbacks
-        thread_pool = ThreadPool(processes=4)
+    # def _execute_callbacks(self) -> None:
+    #     """
+    #     Executes the callbacks instructions stored in 'self._queue'
+    #     """
+    #     # Open ThreadPool with 4 workers to execute callbacks
+    #     thread_pool = ThreadPool(processes=4)
 
-        while not self._kill_callbacks:
-            try:
-                while self._queue.qsize() > 0:
-                    # @dev: Not using Queue.get method for cross-platform reasons.
-                    #   @see: https://docs.python.org/3/library/queue.html#queue.Queue.get
-                    # Raises queue.Empty exception if queue is empty
-                    task_data = self._queue.get_nowait()
-                    # Execute callbacks with new events data
-                    thread_pool.apply_async(
-                        func=task_data["function"], args=(task_data["events_data"],)
-                    )
-            except queue.Empty:
-                pass
-            # Sleep a few before checking for new events
-            # (avoids looping at max computer speed when self._queue is empty)
-            time.sleep(0.05)
-        # Force close and join threads within ThreadPool
-        thread_pool.terminate()
-        thread_pool.join()
+    #     while not self._kill_callbacks:
+    #         try:
+    #             while self._queue.qsize() > 0:
+    #                 # @dev: Not using Queue.get method for cross-platform reasons.
+    #                 #   @see: https://docs.python.org/3/library/queue.html#queue.Queue.get
+    #                 # Raises queue.Empty exception if queue is empty
+    #                 task_data = self._queue.get_nowait()
+    #                 # Execute callbacks with new events data
+    #                 thread_pool.apply_async(
+    #                     func=task_data["function"], args=(task_data["events_data"],)
+    #                 )
+    #         except queue.Empty:
+    #             pass
+    #         # Sleep a few before checking for new events
+    #         # (avoids looping at max computer speed when self._queue is empty)
+    #         time.sleep(0.05)
+    #     # Force close and join threads within ThreadPool
+    #     thread_pool.terminate()
+    #     thread_pool.join()
 
     def _watch_loop(self) -> None:
         """
         Watches for new events, whenever new events are detected, stores the instruction
         to use callback on the detected events data in self._queue.
         """
+        workers_list: List[Thread] = []
+
         while not self._kill:
             try:
                 sleep_time: float = 1.0  # Max sleep time.
@@ -383,12 +383,14 @@ class EventWatcher:
                     # Check for new events & execute callback async if some are found
                     latest_events = elem.get_new_events()
                     if len(latest_events) != 0:
-                        self._queue.put(
-                            {
-                                "function": elem._trigger_callback,
-                                "events_data": latest_events,
-                            }
+                        workers_list.append(
+                            Thread(
+                                target=elem._trigger_callback,
+                                name="Callback Executor",
+                                args=(latest_events,),
+                            )
                         )
+                        workers_list[-1].start()
                     elem.reset_timer()
                     # after elem.reset_timer elem.time_left is approximately elem.delay
                     sleep_time = min(sleep_time, elem.time_left)
@@ -397,8 +399,12 @@ class EventWatcher:
                 self.target_events_watch_data = list(
                     filter(lambda x: x.repeat, self.target_events_watch_data)
                 )
+                workers_list = list(filter(lambda x: x.is_alive(), workers_list))
                 self.target_list_lock.release()  # unlock
                 time.sleep(sleep_time)
+        # Join running threads
+        for worker_instance in workers_list:
+            worker_instance.join()
 
 
 def __get_path() -> Path:
