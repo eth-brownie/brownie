@@ -1314,8 +1314,9 @@ class ContractEvents(_ContractEvents):
     def subscribe(
         self, event_name: str, callback: Callable[[AttributeDict], None], delay: float = 2.0
     ) -> None:
-        """Subscribe to event with a name matching 'event_name',
-        calling the 'callback' function on new occurence.
+        """
+        Subscribe to event with a name matching 'event_name', calling the 'callback'
+        function on new occurence giving as parameter the event log receipt.
 
         Args:
             event_name (str): Name of the event to subscribe to.
@@ -1367,22 +1368,46 @@ class ContractEvents(_ContractEvents):
         return AttributeDict(events_logbook)
 
     def listen(self, event_name: str, timeout: float = 0) -> Coroutine:
+        """
+        Creates a listening Coroutine object returning whenever an event matching
+        'event_name' occurs. If timeout is superior to zero, the Coroutine may end
+        when the timeout is reached.
+
+        The Coroutine return value is an AttributeDict filled with the following fileds :
+            - 'event_data' (AttributeDict): The event log receipt that was caught.
+            - 'timed_out' (bool): False if the event did not timeout, else True
+
+        If the 'timeout' parameter is not passed or is inferior or equal to 0,
+        the Coroutine listens indefinitely.
+
+        Args:
+            event_name (str): Name of the event to be listen to.
+            timeout (float, optional): Timeout value in seconds. Defaults to 0.
+
+        Returns:
+            Coroutine: Awaitable object listening for the event matching 'event_name'.
+        """
         _triggered: bool = False
         _received_data: Union[AttributeDict, None] = None
 
         def _event_callback(event_data: AttributeDict) -> None:
+            """
+            Fills the nonlocal varialbe '_received_data' with the received
+            argument 'event_data' and sets the nonlocal '_triggered' variable to True
+            """
             nonlocal _triggered, _received_data
             _received_data = event_data
             _triggered = True
 
         _listener_end_time = time.time() + timeout
 
-        async def _listening_task() -> AttributeDict:
-            nonlocal _triggered, _received_data, _listener_end_time
+        async def _listening_task(is_timeout: bool, end_time: float) -> AttributeDict:
+            """Generates and returns a coroutine listening for an event"""
+            nonlocal _triggered, _received_data
             timed_out: bool = False
 
             while not _triggered:
-                if timeout > 0 and _listener_end_time <= time.time():
+                if is_timeout and end_time <= time.time():
                     timed_out = True
                     break
                 await asyncio.sleep(0.05)
@@ -1392,12 +1417,15 @@ class ContractEvents(_ContractEvents):
         event_watcher.add_event_callback(
             event=target_event, callback=_event_callback, delay=0.2, repeat=False
         )
-        return _listening_task()
+        return _listening_task(bool(timeout > 0), _listener_end_time)
 
     @combomethod
     def _retrieve_contract_events(
         self, event_type: ContractEvent, from_block: int = None, to_block: int = None
     ) -> List[LogReceipt]:
+        """
+        Retrieves all log receipts from 'event_type' between 'from_block' and 'to_block' blocks
+        """
         if to_block is None:
             to_block = web3.eth.block_number
         if from_block is None and isinstance(to_block, int):
