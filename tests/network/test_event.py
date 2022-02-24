@@ -237,7 +237,8 @@ class TestEventWatcher:
         assert result["event_data"] is None, "Listener was triggered during test."
         assert result["timed_out"] is True, "Listener did not timed out."
 
-    def xtest_can_listen_for_event(_, tester: Contract):
+    @pytest.mark.skip(reason="For dev testing purpose")
+    def test_can_listen_for_event(_, tester: Contract):
         expected_num = round(time.time()) % 100  # between 0 and 99
         listener = tester.events.listen("IndexedEvent", timeout=10.0)
 
