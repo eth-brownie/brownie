@@ -326,7 +326,6 @@ class EventWatcher:
 
     def _setup(self) -> None:
         """Sets up the EventWatcher instance member variables so it is ready to run"""
-
         self.target_list_lock.acquire()
         self.target_events_watch_data.clear()
         self.target_list_lock.release()

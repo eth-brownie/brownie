@@ -164,7 +164,7 @@ def test_can_retrieve_contract_events_on_previously_mined_blocks(tester: Contrac
     )
 
 
-# Why are blocks 0 & 1 automatically skipped :(
+# Blocks 0 and 1 are automatically skipped
 def test_can_retrieve_specified_events_on_previously_mined_blocks(tester: Contract):
     number_of_events_to_fire = 15
     event_name = "IndexedEvent"
@@ -218,15 +218,54 @@ class TestEventWatcher:
             received_num = data["args"]["num"]
             callback_was_triggered = True
 
-        tester.events.subscribe("IndexedEvent", callback=_callback, delay=0.5)
+        tester.events.subscribe("IndexedEvent", callback=_callback, delay=0.05)
         tx = tester.emitEvents("", expected_num)
         if tx.confirmations == 0:
             tx.wait(1)
-        # Wait for event to be caught.
         time.sleep(2)
 
         assert callback_was_triggered is True, "Callback was not triggered."
         assert expected_num == received_num, "Callback was not triggered with the right event"
+
+    def test_can_subscribe_to_event_with_multiple_callbacks(_, tester: Contract):
+        callback_trigger_1: bool = False
+        callback_trigger_2: bool = False
+
+        def _cb1(_):
+            nonlocal callback_trigger_1
+            callback_trigger_1 = True
+
+        def _cb2(_):
+            nonlocal callback_trigger_2
+            callback_trigger_2 = True
+
+        tester.events.subscribe("IndexedEvent", callback=_cb1, delay=0.05)
+        tester.events.subscribe("IndexedEvent", callback=_cb2, delay=0.05)
+        tx = tester.emitEvents("", 0)
+        if tx.confirmations == 0:
+            tx.wait(1)
+        time.sleep(2)
+
+        assert callback_trigger_1 is True, "Callback 1 was not triggered"
+        assert callback_trigger_2 is True, "Callback 2 was not triggered"
+
+    def test_callback_can_be_triggered_multiple_times(_, tester: Contract):
+        callback_trigger_count = 0
+        expected_callback_trigger_count = 2
+
+        def _cb(_):
+            nonlocal callback_trigger_count
+            callback_trigger_count += 1
+
+        tester.events.subscribe("Debug", callback=_cb, delay=0.05)
+        tx = tester.emitEvents("", 0)
+        if tx.confirmations == 0:
+            tx.wait(1)
+        time.sleep(2)
+
+        assert (
+            callback_trigger_count == expected_callback_trigger_count
+        ), "Callback was not triggered the exact number of time it should have"
 
     def test_event_listener_can_timeout(_, tester: Contract):
         task = tester.events.listen("IndexedEvent", timeout=1.0)
@@ -237,7 +276,6 @@ class TestEventWatcher:
         assert result["event_data"] is None, "Listener was triggered during test."
         assert result["timed_out"] is True, "Listener did not timed out."
 
-    @pytest.mark.skip(reason="For dev testing purpose")
     def test_can_listen_for_event(_, tester: Contract):
         expected_num = round(time.time()) % 100  # between 0 and 99
         listener = tester.events.listen("IndexedEvent", timeout=10.0)
