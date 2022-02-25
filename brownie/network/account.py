@@ -739,8 +739,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
             while True:
                 try:
                     tx = _apply_fee_to_tx(
-                        tx, gas_price, max_fee, 
-                        (Chain().priority_fee if priority_fee == "auto" else priority_fee)
+                        tx,
+                        gas_price,
+                        max_fee,
+                        (Chain().priority_fee if priority_fee == "auto" else priority_fee),
                     )
                     response = self._transact(tx, allow_revert)  # type: ignore
                     exc, revert_data = None, None
