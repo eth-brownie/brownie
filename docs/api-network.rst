@@ -1525,22 +1525,24 @@ EventWatcher
 
 .. py:class:: brownie.network.event.EventWatcher
 
-    Class containing methods to set callbacks on user-specified events.
+    Singleton used to set callbacks on user-specified events.
 
     This class uses multiple threads:
+
         * The main thread (original process) starts a sub-thread and can be used to add callback instructions on events occurrences.
         * The sub-thread looks for new events among the ones with callback instructions.
         * When a new event is found, creates a new thread to run the callback instructions passing the event data as parameter.
 
-.. py:classmethod:: EventWatcher.add_event_callback(event, callback, delay=2.0, repeat=True, from_block=None)
+.. py:classmethod:: EventWatcher.add_event_callback(event, callback, delay=2.0, repeat=True)
 
     Adds a callback instruction for the specified event.
 
     * ``event``: The ContractEvent instance to watch for.
-    * ``callback``: The function to be called when a new ``event`` is detected.
-    * ``delay``: The delay between each check for new ``event``(s). Defaults to 2.0.
-    * ``repeat``: Wether to repeat the callback or not (if ``False``, the callback will be called once only). Defaults to ``True``.
-    * ``from_block``: The first block in which to look for ``event``(s). Defaults to None.
+    * ``callback``: The function to be called when a new ``event`` is detected. It MUST take one and only one parameter, which will be the event data.
+    * ``delay``: The delay between each check for new ``event`` (s). Defaults to 2.
+    * ``repeat``: Wether to repeat the callback or not (if ``False``, the callback instructions will only be called the first time events are detected). Defaults to ``True``.
+
+    If the function is called with the same ``event`` more than once, the delay between each check for this ``event`` will take the minimum value between the already set delay and the one passed as parameter.
 
     This function raises a ``TypeError`` if the ``callback`` parameter is not a callable object.
 
@@ -1552,11 +1554,12 @@ EventWatcher
 
     If that is your goal, check the :func:`EventWatcher.reset <brownie.network.event.EventWatcher.reset>` method.
 
-    * ``wait``: Wether to wait for threads to join within the function. Defaults to True.
+    * ``wait``: Wether to wait for threads to join within the function. Defaults to ``True``.
 
 .. py:classmethod:: EventWatcher.reset
 
     Uses the :func:`EventWatcher.stop <brownie.network.event.EventWatcher.stop>` function to stop the running threads.
+
     After stopping, resets the instance to its default state.
 
 Internal Classes and Methods

@@ -284,17 +284,14 @@ class _EventWatchData:
 
 
 class EventWatcher(metaclass=_Singleton):
-    # @YerimB to-fix or add :
-    # - Fix the multiple callback problem using a callback list for each
-    #   EventWatchData element.
     """
     Singleton class containing methods to set callbacks on user-specified events.
     This class is multi-threaded :
         - The main thread (original process) activates a sub-thread and can be used
         to add callback instructions on specific events.
         - The sub-thread looks for new events among the ones with a callback set.
-        When found, creates a new thread to run the callback instruction with the event data
-        as a parameter.
+        When found, calls a method that creates new threads to run the callback
+        instructions with the event(s) data as a parameter.
     """
 
     def __init__(self) -> None:
