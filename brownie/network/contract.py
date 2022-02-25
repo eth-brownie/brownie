@@ -1369,9 +1369,9 @@ class ContractEvents(_ContractEvents):
 
     def listen(self, event_name: str, timeout: float = 0) -> Coroutine:
         """
-        Creates a listening Coroutine object returning whenever an event matching
-        'event_name' occurs. If timeout is superior to zero, the Coroutine may end
-        when the timeout is reached.
+        Creates a listening Coroutine object ending whenever an event matching
+        'event_name' occurs. If timeout is superior to zero and no event matching
+        'event_name' has occured, the Coroutine ends when the timeout is reached.
 
         The Coroutine return value is an AttributeDict filled with the following fileds :
             - 'event_data' (AttributeDict): The event log receipt that was caught.
@@ -1381,7 +1381,7 @@ class ContractEvents(_ContractEvents):
         the Coroutine listens indefinitely.
 
         Args:
-            event_name (str): Name of the event to be listen to.
+            event_name (str): Name of the event to be listened to.
             timeout (float, optional): Timeout value in seconds. Defaults to 0.
 
         Returns:

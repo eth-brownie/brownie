@@ -14,6 +14,7 @@ from web3._utils import filters
 from web3.datastructures import AttributeDict
 
 from brownie._config import _get_data_folder
+from brownie._singleton import _Singleton
 from brownie.convert.datatypes import ReturnValue
 from brownie.convert.normalize import format_event
 from brownie.exceptions import EventLookupError
@@ -189,7 +190,7 @@ class _EventItem:
         return ReturnValue(self._ordered[0].values())
 
 
-class EventWatchData:
+class _EventWatchData:
     """
     Class containing the data needed to check, time, and execute callbacks on a specified event.
     """
@@ -200,19 +201,18 @@ class EventWatchData:
         callback: Callable[[AttributeDict], None],
         delay: float = 2.0,
         repeat: bool = True,
-        from_block: int = None,
     ) -> None:
         # Args
-        self.event = event
-        self.callback = callback
-        self.delay = delay
-        self.repeat = repeat
+        self.event: ContractEvent = event
+        self._callbacks_list: List[dict] = []
+        self.delay: float = delay
         # Members
         self._event_filter: filters.LogFilter = event.createFilter(
-            fromBlock=(from_block if from_block is not None else web3.eth.block_number - 1)
+            fromBlock=(web3.eth.block_number - 1)
         )
         self._cooldown_time_over: bool = False
         self.timer = time.time()
+        self.add_callback(callback, repeat)
 
     def get_new_events(self) -> List["filters.LogReceipt"]:
         """Retrieves and return the events that occured between now and the last function call.
@@ -226,16 +226,50 @@ class EventWatchData:
         """Resets the 'self.timer' member variable"""
         self.timer = time.time()
 
-    def _trigger_callback(self, events_data: List[AttributeDict]) -> None:
-        """Given a list of event as a parameter, loops over it and calls the 'self.callback'
-        function for each element of the list.
+    def add_callback(self, callback: Callable[[AttributeDict], None], repeat: bool = True):
+        """Adds a new callback instruction to execute on new events"""
+        if not callable(callback):
+            raise TypeError("'callback' argument MUST be a callable object.")
+        self._callbacks_list.append({"function": callback, "repeat": repeat})
+
+    def update_delay(self, new_delay: float):
+        """
+        Changes the 'delay' member variable if the 'new_delay'
+        parameter is inferior to the current one
+        """
+        self.delay = min(self.delay, new_delay)
+
+    def _trigger_callbacks(self, events_data: List[AttributeDict]) -> List[Thread]:
+        """
+        Given a list of event as a parameter, creates a thread for each callback
+        present in 'self._callbacks_list', stores the thread in a list which is returned.
+        Removes non-repeating callbacks from the callback list
 
         Args:
             events_data (List[AttributeDict]): The list of event to iterate on.
         """
+
+        def _map_callback_on_list(callback: Callable, data_to_map: List[AttributeDict]) -> None:
+            list(map(callback, data_to_map))
+
         self.cooldown_time_over = False
-        for data in events_data:
-            self.callback(data)
+        threads: List[Thread] = []
+        for callback in self._callbacks_list:
+            # Creates a thread for each callback
+            threads.append(
+                Thread(
+                    target=_map_callback_on_list,
+                    args=(
+                        callback["function"],
+                        events_data,
+                    ),
+                    daemon=True,
+                )
+            )
+            threads[-1].start()
+        # Remove non-repeating callbacks from list
+        self._callbacks_list = list(filter(lambda x: x.get("repeat"), self._callbacks_list))
+        return threads
 
     @property
     def time_left(self) -> float:
@@ -249,9 +283,12 @@ class EventWatchData:
         return max(float(0), self.delay - (time.time() - self.timer))
 
 
-class EventWatcher:
+class EventWatcher(metaclass=_Singleton):
+    # @YerimB to-fix or add :
+    # - Fix the multiple callback problem using a callback list for each
+    #   EventWatchData element.
     """
-    Class containing methods to set callbacks on some specific events.
+    Singleton class containing methods to set callbacks on user-specified events.
     This class is multi-threaded :
         - The main thread (original process) activates a sub-thread and can be used
         to add callback instructions on specific events.
@@ -262,7 +299,7 @@ class EventWatcher:
 
     def __init__(self) -> None:
         self.target_list_lock: Lock = Lock()
-        self.target_events_watch_data: List[EventWatchData] = []
+        self.target_events_watch_data: Dict[str, _EventWatchData] = {}
         self._kill: bool = False
         self._has_started: bool = False
         self._watcher_thread = Thread(target=self._loop, daemon=True)
@@ -271,7 +308,8 @@ class EventWatcher:
         self.stop()
 
     def stop(self, wait: bool = True) -> None:
-        """Stops the running threads. This function does not reset the instance
+        """
+        Stops the running threads. This function does not reset the instance
         to its initial state. If that is your goal, check the 'reset' method.
 
         Args:
@@ -294,7 +332,6 @@ class EventWatcher:
         callback: Callable[[AttributeDict], None],
         delay: float = 2.0,
         repeat: bool = True,
-        from_block: int = None,
     ) -> None:
         """
         Adds a callback instruction for the specified event.
@@ -307,22 +344,33 @@ class EventWatcher:
                 Defaults to 2.0.
             repeat (bool, optional): Wether to repeat the callback or not (if False,
                 the callback will be called once only). Defaults to True.
-            from_block (int, optional): The first block in which to look for 'event'(s).
-                Defaults to None.
 
         Raises:
             TypeError: Raises when the parameter 'callback' is not a callable object.
         """
-        if self._has_started is False:
-            self._start_watch()
         if not callable(callback):
             raise TypeError("Argument 'callback' argument must be a callable.")
         delay = max(delay, 0.05)
         self.target_list_lock.acquire()  # lock
-        self.target_events_watch_data.append(
-            EventWatchData(event, callback, delay, repeat, from_block)
-        )
+        # Key refering to this specific event (event.address is the address
+        # of the contract to which the event is linked)
+        event_watch_data_key = str(event.address) + "+" + event.event_name
+        if self.target_events_watch_data.get(event_watch_data_key) is None:
+            # If the _EventWatchData for 'event' does not exist, creates it.
+            self.target_events_watch_data[event_watch_data_key] = _EventWatchData(
+                event, callback, delay, repeat
+            )
+        else:
+            # Adds a new callback to the already existing _EventWatchData.
+            self.target_events_watch_data[event_watch_data_key].add_callback(callback, repeat)
+            if repeat is True:
+                # Updates the delay between each check calling the
+                # _EventWatchData.update_delay function
+                self.target_events_watch_data[event_watch_data_key].update_delay(delay)
         self.target_list_lock.release()  # unlock
+        # Start watch if not done
+        if self._has_started is False:
+            self._start_watch()
 
     def _setup(self) -> None:
         """Sets up the EventWatcher instance member variables so it is ready to run"""
@@ -340,8 +388,9 @@ class EventWatcher:
 
     def _loop(self) -> None:
         """
-        Watches for new events, whenever new events are detected, creates a new thread
-        to run the callback instruction on the detected events data.
+        Watches for new events. Whenever new events are detected, calls the
+        '_EventWatchData._trigger_callbacks' function to run the callbacks instructions
+        (in separate threads) on the detected events data.
         """
         workers_list: List[Thread] = []
 
@@ -349,7 +398,7 @@ class EventWatcher:
             try:
                 sleep_time: float = 1.0  # Max sleep time.
                 self.target_list_lock.acquire()  # lock
-                for elem in self.target_events_watch_data:
+                for _, elem in self.target_events_watch_data.items():
                     # If cooldown is not over :
                     #   skip and store time left before next check if needed.
                     time_left = elem.time_left
@@ -359,21 +408,13 @@ class EventWatcher:
                     # Check for new events & execute callback async if some are found
                     latest_events = elem.get_new_events()
                     if len(latest_events) != 0:
-                        workers_list.append(
-                            Thread(
-                                target=elem._trigger_callback, args=(latest_events,), daemon=True
-                            )
-                        )
-                        workers_list[-1].start()
+                        workers_list += elem._trigger_callbacks(latest_events)
                     elem.reset_timer()
                     # after elem.reset_timer elem.time_left is approximately elem.delay
                     sleep_time = min(sleep_time, elem.time_left)
             finally:
-                # Remove not repeating subscriptions
-                self.target_events_watch_data = list(
-                    filter(lambda x: x.repeat, self.target_events_watch_data)
-                )
                 self.target_list_lock.release()  # unlock
+                # Remove dead threads from the workers_list
                 workers_list = list(filter(lambda x: x.is_alive(), workers_list))
                 time.sleep(sleep_time)
 

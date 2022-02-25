@@ -10,6 +10,7 @@ from web3.exceptions import ABIEventFunctionNotFound
 from brownie import Contract, compile_source
 from brownie.exceptions import EventLookupError
 from brownie.network.event import EventDict, EventWatcher, _EventItem, event_watcher
+from brownie.network.transaction import TransactionReceipt
 
 
 @pytest.fixture
@@ -21,6 +22,11 @@ def event(accounts, tester):
 @pytest.fixture
 def event_watcher_instance():
     return event_watcher
+
+
+def wait_for_tx(tx: TransactionReceipt, n: int = 1):
+    if tx.confirmations != n:
+        tx.wait(n)
 
 
 def test_tuple_values(accounts, tester):
@@ -219,10 +225,8 @@ class TestEventWatcher:
             callback_was_triggered = True
 
         tester.events.subscribe("IndexedEvent", callback=_callback, delay=0.05)
-        tx = tester.emitEvents("", expected_num)
-        if tx.confirmations == 0:
-            tx.wait(1)
-        time.sleep(2)
+        wait_for_tx(tester.emitEvents("", expected_num))
+        time.sleep(0.1)
 
         assert callback_was_triggered is True, "Callback was not triggered."
         assert expected_num == received_num, "Callback was not triggered with the right event"
@@ -241,10 +245,8 @@ class TestEventWatcher:
 
         tester.events.subscribe("IndexedEvent", callback=_cb1, delay=0.05)
         tester.events.subscribe("IndexedEvent", callback=_cb2, delay=0.05)
-        tx = tester.emitEvents("", 0)
-        if tx.confirmations == 0:
-            tx.wait(1)
-        time.sleep(2)
+        wait_for_tx(tester.emitEvents("", 0))
+        time.sleep(0.1)
 
         assert callback_trigger_1 is True, "Callback 1 was not triggered"
         assert callback_trigger_2 is True, "Callback 2 was not triggered"
@@ -258,10 +260,8 @@ class TestEventWatcher:
             callback_trigger_count += 1
 
         tester.events.subscribe("Debug", callback=_cb, delay=0.05)
-        tx = tester.emitEvents("", 0)
-        if tx.confirmations == 0:
-            tx.wait(1)
-        time.sleep(2)
+        wait_for_tx(tester.emitEvents("", 0))
+        time.sleep(0.1)
 
         assert (
             callback_trigger_count == expected_callback_trigger_count
@@ -280,11 +280,56 @@ class TestEventWatcher:
         expected_num = round(time.time()) % 100  # between 0 and 99
         listener = tester.events.listen("IndexedEvent", timeout=10.0)
 
-        tx = tester.emitEvents("", expected_num)
-        if tx.confirmations == 0:
-            tx.wait(1)
+        wait_for_tx(tester.emitEvents("", expected_num))
 
-        result = asyncio.run(listener)
+        result: AttributeDict = asyncio.run(listener)
 
-        assert result.timed_out is False, "Event listener timed out."
+        assert result.get("timed_out") is False, "Event listener timed out."
         assert expected_num == result.event_data["args"]["num"]
+
+    def test_not_repeating_callback_is_removed_after_triggered(_, tester: Contract):
+        expected_trigger_count: int = 1
+        trigger_count: int = 0
+
+        def _cb(_):
+            nonlocal trigger_count
+            trigger_count += 1
+
+        event_watcher.add_event_callback(
+            event=tester.events.IndexedEvent, callback=_cb, delay=0.05, repeat=False
+        )
+
+        wait_for_tx(tester.emitEvents("", 0))
+        time.sleep(0.1)
+        wait_for_tx(tester.emitEvents("", 0))
+        time.sleep(0.1)
+
+        assert trigger_count == expected_trigger_count
+
+    def test_can_set_both_repeating_and_not_repeating_callback_on_the_same_event(
+        _, tester: Contract
+    ):
+        expected_trigger_count: int = 3
+        trigger_count: int = 0
+
+        def _cb(_):
+            nonlocal trigger_count
+            trigger_count += 1
+
+        event_watcher.add_event_callback(
+            event=tester.events.IndexedEvent, callback=_cb, delay=0.05, repeat=False
+        )
+        event_watcher.add_event_callback(
+            event=tester.events.IndexedEvent, callback=_cb, delay=0.05, repeat=True
+        )
+
+        wait_for_tx(tester.emitEvents("", 0))
+        time.sleep(0.1)
+        wait_for_tx(tester.emitEvents("", 0))
+        time.sleep(0.1)
+
+        assert trigger_count == expected_trigger_count
+
+    @pytest.mark.skip(reason="For developping purpose")
+    def test_scripting(_, tester: Contract):
+        pass
