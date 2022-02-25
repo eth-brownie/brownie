@@ -1079,7 +1079,7 @@ ContractEvents
 
 .. py:class:: brownie.network.contract.ContractEvents(contract=brownie.network.contract.Contract)
 
-    ``ContractEvents`` instances allow to retrieve and interact with the events of a contract.
+    ``ContractEvents`` instances allows you to : subscribe to, listen for or retrieve the different events of a contract.
     This class inherits from the :ref:`web3.py ContractEvents <https://web3py.readthedocs.io/en/stable/contracts.html?highlight=ContractEvents#web3.contract.ContractEvents>` class.
 
 ContractEvents Classmethods
@@ -1089,15 +1089,13 @@ ContractEvents Classmethods
 
     Subscribe to the contract event whose name matches the ``event_name`` parameter.
 
-    * ``event_name``: Name of the event to subscribe to.
-    * ``callback``: Function called on each event occurence, it **must** take one and only one argument.
-    * ``delay``: Delay in seconds between each check for new events.
+    * ``event_name``: Name of the event to subscribe to. Must match the exact event name.
+    * ``callback``: Function called whenever an event matching 'event_name' occurs, it **must** take one and only one argument which will be the event log receipt.
+    * ``delay``: Delay in seconds between each check for new events matching 'event_name'.
 
-    New events are detected using the :func:`Alert <brownie.network.alert.Alert>` class.
+    New events are detected and callbacks instructions are executed in sub-threads.
 
-    Each time a new event of this type is detected, triggers the ``callback`` function passing the event logs as parameter.
-
-    This function creates a new thread running the alert.
+    Each time a new event of this type is detected, creates a new sub-thread to run the ``callback`` function passing the event logs as parameter.
 
 .. py:classmethod:: ContractEvents.get_sequence(from_block, to_block=None, event_type=None)
 
@@ -1111,7 +1109,22 @@ ContractEvents Classmethods
 
     The ``event_type`` parameter can either be a string containing the name of the event to search for or the event type itself (using ``your_contract.events.your_event_name``)  
 
-    If ``event_type`` is not passed, retrieves all contract events between the two blocks.
+    If ``event_type`` is not passed as parameter, retrieves all contract events between the two blocks.
+
+.. py:classmethod:: ContractEvents.listen(event_name, timeout=0)
+
+    Creates a listening Coroutine object ending whenever an event matching 'event_name' occurs.
+    If timeout is superior to zero and no event matching 'event_name' has occured, the Coroutine ends when the timeout is reached.
+
+    * ``event_name``: Name of the event to be listened to.
+    * ``timeout``: Timeout value in seconds. Defaults to 0.
+
+    The Coroutine return value is an AttributeDict filled with the following fields :
+        - 'event_data' (AttributeDict): The event log receipt that was caught. If no event was caught, evaluates to ``None``
+        - 'timed_out' (bool): False if the event did not timeout, else True
+
+    If the 'timeout' parameter is not passed or is inferior or equal to 0, the Coroutine listens until an event occurs.
+
 
 ContractEvents Attributes
 *************************
@@ -1502,9 +1515,49 @@ EventDict
 
     Returns a set-like object providing a view on the object's keys.
 
+
 .. py:classmethod:: EventDict.values
 
     Returns an object providing a view on the object's values.
+
+EventWatcher
+------------
+
+.. py:class:: brownie.network.event.EventWatcher
+
+    Class containing methods to set callbacks on user-specified events.
+
+    This class uses multiple threads:
+        * The main thread (original process) starts a sub-thread and can be used to add callback instructions on events occurrences.
+        * The sub-thread looks for new events among the ones with callback instructions.
+        * When a new event is found, creates a new thread to run the callback instructions passing the event data as parameter.
+
+.. py:classmethod:: EventWatcher.add_event_callback(event, callback, delay=2.0, repeat=True, from_block=None)
+
+    Adds a callback instruction for the specified event.
+
+    * ``event``: The ContractEvent instance to watch for.
+    * ``callback``: The function to be called when a new ``event`` is detected.
+    * ``delay``: The delay between each check for new ``event``(s). Defaults to 2.0.
+    * ``repeat``: Wether to repeat the callback or not (if ``False``, the callback will be called once only). Defaults to ``True``.
+    * ``from_block``: The first block in which to look for ``event``(s). Defaults to None.
+
+    This function raises a ``TypeError`` if the ``callback`` parameter is not a callable object.
+
+.. py:classmethod:: EventWatcher.stop(wait=True)
+
+    Sends the instruction to stop to the running threads.
+
+    This function does not reset the instance to its initial state.
+
+    If that is your goal, check the :func:`EventWatcher.reset <brownie.network.event.EventWatcher.reset>` method.
+
+    * ``wait``: Wether to wait for threads to join within the function. Defaults to True.
+
+.. py:classmethod:: EventWatcher.reset
+
+    Uses the :func:`EventWatcher.stop <brownie.network.event.EventWatcher.stop>` function to stop the running threads.
+    After stopping, resets the instance to its default state.
 
 Internal Classes and Methods
 ----------------------------
