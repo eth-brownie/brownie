@@ -215,7 +215,8 @@ class _EventWatchData:
         self.add_callback(callback, repeat)
 
     def get_new_events(self) -> List["filters.LogReceipt"]:
-        """Retrieves and return the events that occured between now and the last function call.
+        """
+        Retrieves and return the events that occured between now and the last function call.
 
         Returns:
             [List[LogReceipt]]: List of the retrieved events
@@ -223,7 +224,7 @@ class _EventWatchData:
         return self._event_filter.get_new_entries()
 
     def reset_timer(self) -> None:
-        """Resets the 'self.timer' member variable"""
+        """Resets the 'self.timer' member variable to the current time."""
         self.timer = time.time()
 
     def add_callback(self, callback: Callable[[AttributeDict], None], repeat: bool = True):
