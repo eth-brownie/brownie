@@ -250,7 +250,7 @@ class _EventWatchData:
             events_data (List[AttributeDict]): The list of event to iterate on.
         """
 
-        def _map_callback_on_list(callback: Callable, data_to_map: List[AttributeDict]) -> None:
+        def _map_callback_on_list(callback: Callable, data_to_map: List[filters.LogReceipt]) -> None:
             list(map(callback, data_to_map))
 
         self.cooldown_time_over = False
