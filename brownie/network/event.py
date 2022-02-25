@@ -227,20 +227,20 @@ class _EventWatchData:
         """Resets the 'self.timer' member variable to the current time."""
         self.timer = time.time()
 
-    def add_callback(self, callback: Callable[[AttributeDict], None], repeat: bool = True):
+    def add_callback(self, callback: Callable[[AttributeDict], None], repeat: bool = True) -> None:
         """Adds a new callback instruction to execute on new events"""
         if not callable(callback):
             raise TypeError("'callback' argument MUST be a callable object.")
         self._callbacks_list.append({"function": callback, "repeat": repeat})
 
-    def update_delay(self, new_delay: float):
+    def update_delay(self, new_delay: float) -> None:
         """
         Changes the 'delay' member variable if the 'new_delay'
         parameter is inferior to the current one
         """
         self.delay = min(self.delay, new_delay)
 
-    def _trigger_callbacks(self, events_data: List[AttributeDict]) -> List[Thread]:
+    def _trigger_callbacks(self, events_data: List[filters.LogReceipt]) -> List[Thread]:
         """
         Given a list of event as a parameter, creates a thread for each callback
         present in 'self._callbacks_list', stores the thread in a list which is returned.
