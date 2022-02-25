@@ -711,9 +711,6 @@ class _PrivateKeyAccount(PublicKeyAccount):
             if priority_fee is None:
                 priority_fee = CONFIG.active_network["settings"]["priority_fee"] or None
 
-        if priority_fee == "auto":
-            priority_fee = Chain().priority_fee
-
         try:
             # if max fee and priority fee are not set, use gas price
             if max_fee is None and priority_fee is None:
@@ -737,10 +734,14 @@ class _PrivateKeyAccount(PublicKeyAccount):
             }
             if to:
                 tx["to"] = to_address(str(to))
-            tx = _apply_fee_to_tx(tx, gas_price, max_fee, priority_fee)
+
             txid = None
             while True:
                 try:
+                    tx = _apply_fee_to_tx(
+                        tx, gas_price, max_fee, 
+                        (Chain().priority_fee if priority_fee == "auto" else priority_fee)
+                    )
                     response = self._transact(tx, allow_revert)  # type: ignore
                     exc, revert_data = None, None
                     if txid is None:
