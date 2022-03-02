@@ -202,10 +202,6 @@ twine==3.4.2
     # via -r requirements-dev.in
 typed-ast==1.4.3
     # via mypy
-typing-extensions==3.10.0.2
-    # via
-    #   -c requirements.txt
-    #   mypy
 urllib3==1.26.7
     # via
     #   -c requirements.txt
