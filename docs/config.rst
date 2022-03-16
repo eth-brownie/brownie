@@ -104,7 +104,7 @@ Networks
 
         Additional commandline parameters, which are passed into Ganache as commandline arguments. These settings will update the network specific settings defined in :ref:`network management<adding-network>` whenever the project with this configuration file is active.
 
-        The following example shows all commandline settings with their default value. ``fork`` and ``unlock`` have no default values. ``network_id`` and ``time`` will default to the current timestamp or time respectively. See :ref:`adding a development network<adding-network>` for more details on the arguments.
+        The following example shows all commandline settings with their default value. ``fork``, ``disable_cache`` and ``unlock`` have no default values. ``network_id`` and ``time`` will default to the current timestamp or time respectively. See :ref:`adding a development network<adding-network>` for more details on the arguments.
 
     .. code-block:: yaml
 
@@ -125,6 +125,7 @@ Networks
                     network_id: 1588949648
                     evm_version: istanbul
                     fork: null
+                    disable_cache: null
                     mnemonic: brownie
                     block_time: 0
                     default_balance: 100
