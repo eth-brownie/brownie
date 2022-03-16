@@ -51,6 +51,7 @@ DEV_CMD_SETTINGS = (
     "accounts",
     "evm_version",
     "fork",
+    "disable_cache",
     "mnemonic",
     "account_keys_path",
     "block_time",
