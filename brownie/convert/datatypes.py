@@ -401,5 +401,5 @@ def _convert_str(value: Any) -> Wei:
         return value
     try:
         return Wei(value)
-    except ValueError:
+    except (ValueError, TypeError):
         return value
