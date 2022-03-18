@@ -5,7 +5,7 @@ import pytest
 from brownie.convert.datatypes import EthAddress, HexString, ReturnValue, Wei
 from brownie.project import compile_source
 
-string_fixture = "bar"
+string_fixture = "bar baz"
 
 
 @pytest.fixture
