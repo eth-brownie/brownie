@@ -93,7 +93,8 @@ class Multicall:
             call_kwargs["override"] = self.state_override
 
         with self._lock:
-            results = self._contract.tryAggregate.call(  # type: ignore
+            # TODO: something isn't right about this
+            results = self._contract.tryAggregate.__call__(  # type: ignore
                 False, [_call.calldata for _call in pending_calls], **call_kwargs
             )
 

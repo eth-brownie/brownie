@@ -634,7 +634,7 @@ class TransactionReceipt:
                 "debug_traceTransaction", (self.txid, {"disableStorage": CONFIG.mode != "console"})
             )
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            msg = f"Encountered a {type(e).__name__} while requesting "
+            msg = f"Encountered a {type(e).__name__} ({str(e)}) while requesting "
             msg += "`debug_traceTransaction`. The local RPC client has likely crashed."
             if CONFIG.argv["coverage"]:
                 msg += " If the error persists, add the `skip_coverage` marker to this test."

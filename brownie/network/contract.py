@@ -92,7 +92,11 @@ class _ContractBase:
 
     @property
     def _name(self) -> str:
-        return self._build["contractName"]
+        # TODO: why do we need this?
+        try:
+            return self._build["contractName"]
+        except AttributeError:
+            return None
 
     def info(self) -> None:
         """
@@ -762,7 +766,8 @@ class _DeployedContractBase(_ContractBase):
         try:
             return super().__getattribute__(name)
         except AttributeError:
-            raise AttributeError(f"Contract '{self._name}' object has no attribute '{name}'")
+            contract_name = getattr(self, "_name", "UnnamedContract")
+            raise AttributeError(f"Contract '{contract_name}' object has no attribute '{name}'")
 
     def __setattr__(self, name: str, value: Any) -> None:
         if self._initialized and hasattr(self, name):
