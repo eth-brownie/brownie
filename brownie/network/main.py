@@ -26,9 +26,9 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
 
     Network information is retrieved from brownie-config.json"""
     if is_connected():
-        raise ConnectionError(f"Already connected to network '{CONFIG.active_network['id']}'")
+        raise ConnectionError(f"Already connected to network '{CONFIG.active_network['id']}'")  # @UndefinedVariable
     try:
-        active = CONFIG.set_active_network(network)
+        active = CONFIG.set_active_network(network)  # @UndefinedVariable
         host = active["host"]
 
         if ":" not in host.split("//", maxsplit=1)[-1]:
@@ -38,7 +38,7 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
                 pass
 
         web3.connect(host, active.get("timeout", 30))
-        if CONFIG.network_type == "development" and launch_rpc and not rpc.is_active():
+        if CONFIG.network_type == "development" and launch_rpc and not rpc.is_active():  # @UndefinedVariable
             if is_connected():
                 if web3.eth.block_number != 0:
                     warnings.warn(
@@ -50,12 +50,12 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
                 rpc.launch(active["cmd"], **active["cmd_settings"])
         else:
             Accounts()._reset()
-        if CONFIG.network_type == "live" or CONFIG.settings["dev_deployment_artifacts"]:
+        if CONFIG.network_type == "live" or CONFIG.settings["dev_deployment_artifacts"]:  # @UndefinedVariable
             for p in project.get_loaded_projects():
                 p._load_deployments()
 
     except Exception:
-        CONFIG.clear_active()
+        CONFIG.clear_active()  # @UndefinedVariable
         web3.disconnect()
         raise
 
@@ -64,7 +64,7 @@ def disconnect(kill_rpc: bool = True) -> None:
     """Disconnects from the network."""
     if not is_connected():
         raise ConnectionError("Not connected to any network")
-    CONFIG.clear_active()
+    CONFIG.clear_active()  # @UndefinedVariable
     if kill_rpc and rpc.is_active():
         if rpc.is_child():
             rpc.kill()
@@ -76,7 +76,7 @@ def show_active() -> Optional[str]:
     """Returns the name of the currently active network"""
     if not web3.provider:
         return None
-    return CONFIG.active_network["id"]
+    return CONFIG.active_network["id"]  # @UndefinedVariable
 
 
 def is_connected() -> bool:
@@ -94,7 +94,7 @@ def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
         raise ConnectionError("Not connected to any network")
     if args:
         if args[0] in (None, False, True, "auto"):
-            CONFIG.active_network["settings"]["gas_limit"] = False
+            CONFIG.active_network["settings"]["gas_limit"] = False  # @UndefinedVariable
         else:
             try:
                 limit: int = int(args[0])  # type: ignore
@@ -102,8 +102,8 @@ def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
                 raise TypeError(f"Invalid gas limit '{args[0]}'")
             if limit < 21000:
                 raise ValueError("Minimum gas limit is 21000")
-            CONFIG.active_network["settings"]["gas_limit"] = limit
-    return CONFIG.active_network["settings"]["gas_limit"]
+            CONFIG.active_network["settings"]["gas_limit"] = limit  # @UndefinedVariable
+    return CONFIG.active_network["settings"]["gas_limit"]  # @UndefinedVariable
 
 
 def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
@@ -116,16 +116,16 @@ def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
         raise ConnectionError("Not connected to any network")
     if args:
         if isinstance(args[0], GasABC):
-            CONFIG.active_network["settings"]["gas_price"] = args[0]
+            CONFIG.active_network["settings"]["gas_price"] = args[0]  # @UndefinedVariable
         elif args[0] in (None, False, True, "auto"):
-            CONFIG.active_network["settings"]["gas_price"] = False
+            CONFIG.active_network["settings"]["gas_price"] = False  # @UndefinedVariable
         else:
             try:
                 price = Wei(args[0])
             except ValueError:
                 raise TypeError(f"Invalid gas price '{args[0]}'")
-            CONFIG.active_network["settings"]["gas_price"] = price
-    return CONFIG.active_network["settings"]["gas_price"]
+            CONFIG.active_network["settings"]["gas_price"] = price  # @UndefinedVariable
+    return CONFIG.active_network["settings"]["gas_price"]  # @UndefinedVariable
 
 
 def gas_buffer(*args: Tuple[float, None]) -> Union[float, None]:
@@ -133,12 +133,12 @@ def gas_buffer(*args: Tuple[float, None]) -> Union[float, None]:
         raise ConnectionError("Not connected to any network")
     if args:
         if args[0] is None:
-            CONFIG.active_network["settings"]["gas_buffer"] = 1
+            CONFIG.active_network["settings"]["gas_buffer"] = 1  # @UndefinedVariable
         elif isinstance(args[0], (float, int)):
-            CONFIG.active_network["settings"]["gas_buffer"] = args[0]
+            CONFIG.active_network["settings"]["gas_buffer"] = args[0]  # @UndefinedVariable
         else:
             raise TypeError("Invalid gas buffer - must be given as a float, int or None")
-    return CONFIG.active_network["settings"]["gas_buffer"]
+    return CONFIG.active_network["settings"]["gas_buffer"]  # @UndefinedVariable
 
 
 def max_fee(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
@@ -152,14 +152,14 @@ def max_fee(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
         raise ConnectionError("Not connected to any network")
     if args:
         if args[0] in (None, False):
-            CONFIG.active_network["settings"]["max_fee"] = None
+            CONFIG.active_network["settings"]["max_fee"] = None  # @UndefinedVariable
         else:
             try:
                 price = Wei(args[0])
             except ValueError:
                 raise TypeError(f"Invalid max fee '{args[0]}'")
-            CONFIG.active_network["settings"]["max_fee"] = price
-    return CONFIG.active_network["settings"]["max_fee"]
+            CONFIG.active_network["settings"]["max_fee"] = price  # @UndefinedVariable
+    return CONFIG.active_network["settings"]["max_fee"]  # @UndefinedVariable
 
 
 def priority_fee(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
@@ -174,13 +174,13 @@ def priority_fee(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
         raise ConnectionError("Not connected to any network")
     if args:
         if args[0] in (None, False):
-            CONFIG.active_network["settings"]["priority_fee"] = None
+            CONFIG.active_network["settings"]["priority_fee"] = None  # @UndefinedVariable
         elif args[0] == "auto":
-            CONFIG.active_network["settings"]["priority_fee"] = "auto"
+            CONFIG.active_network["settings"]["priority_fee"] = "auto"  # @UndefinedVariable
         else:
             try:
                 price = Wei(args[0])
             except ValueError:
                 raise TypeError(f"Invalid priority fee '{args[0]}'")
-            CONFIG.active_network["settings"]["priority_fee"] = price
-    return CONFIG.active_network["settings"]["priority_fee"]
+            CONFIG.active_network["settings"]["priority_fee"] = price  # @UndefinedVariable
+    return CONFIG.active_network["settings"]["priority_fee"]  # @UndefinedVariable

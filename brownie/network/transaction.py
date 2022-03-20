@@ -421,7 +421,7 @@ class TransactionReceipt:
         self._await_confirmation(tx["blockNumber"], required_confs)
 
     def _raise_if_reverted(self, exc: Any) -> None:
-        if self.status or CONFIG.mode == "console":
+        if self.status or CONFIG.mode == "console":  # @UndefinedVariable
             return
         if not web3.supports_traces:
             # if traces are not available, do not attempt to determine the revert reason
@@ -631,7 +631,7 @@ class TransactionReceipt:
             raise RPCRequestError("Node client does not support `debug_traceTransaction`")
         try:
             trace = web3.provider.make_request(  # type: ignore
-                "debug_traceTransaction", (self.txid, {"disableStorage": CONFIG.mode != "console"})
+                "debug_traceTransaction", (self.txid, {"disableStorage": CONFIG.mode != "console"})  # @UndefinedVariable
             )
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
             msg = f"Encountered a {type(e).__name__} while requesting "
@@ -1045,7 +1045,7 @@ class TransactionReceipt:
             event_tree = build_tree([call_tree], multiline_pad=0, pad_depth=[0, 1])
             result = f"{result}\nEvents In This Transaction\n{event_tree}"
 
-        result = color.highlight(result)
+        result = color.highlight(result)  # @UndefinedVariable
         status = ""
         if not self.status:
             status = f"({color('bright red')}{self.revert_msg or 'reverted'}{color})"

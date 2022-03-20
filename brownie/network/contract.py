@@ -264,7 +264,7 @@ class ContractContainer(_ContractBase):
         contract._save_deployment()
         _add_contract(contract)
         self._contracts.append(contract)
-        if CONFIG.network_type == "live":
+        if CONFIG.network_type == "live":  # @UndefinedVariable
             if persist:
                 _add_deployment(contract)
 
@@ -333,7 +333,7 @@ class ContractContainer(_ContractBase):
         """Flatten contract and publish source on the selected explorer"""
 
         # Check required conditions for verifying
-        url = CONFIG.active_network.get("explorer")
+        url = CONFIG.active_network.get("explorer")  # @UndefinedVariable
         if url is None:
             raise ValueError("Explorer API not set for this network")
         env_token = next((v for k, v in _explorer_tokens.items() if k in url), None)
@@ -809,18 +809,18 @@ class _DeployedContractBase(_ContractBase):
 
     def _deployment_path(self) -> Optional[Path]:
         if not self._project._path or (
-            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]
+            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]  # @UndefinedVariable
         ):
             return None
 
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
         path = self._project._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         return path.joinpath(f"{self.address}.json")
 
     def _save_deployment(self) -> None:
         path = self._deployment_path()
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
         deployment_build = self._build.copy()
 
         deployment_build["deployment"] = {
@@ -888,8 +888,8 @@ class Contract(_DeployedContractBase):
         if build is None or sources is None:
             if (
                 not address
-                or not CONFIG.settings.get("autofetch_sources")
-                or not CONFIG.active_network.get("explorer")
+                or not CONFIG.settings.get("autofetch_sources")  # @UndefinedVariable
+                or not CONFIG.active_network.get("explorer")  # @UndefinedVariable
             ):
                 if not address:
                     raise ValueError(f"Unknown alias: '{address_or_alias}'")
@@ -1269,7 +1269,7 @@ class Contract(_DeployedContractBase):
         alias: str | None
             An alias to apply. If `None`, any existing alias is removed.
         """
-        if "chainid" not in CONFIG.active_network:
+        if "chainid" not in CONFIG.active_network:  # @UndefinedVariable
             raise ValueError("Cannot set aliases in a development environment")
 
         if alias is not None:
@@ -1928,8 +1928,8 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
     # set / remove default sender
     if owner is None:
         owner = accounts.default
-    default_owner = CONFIG.active_network["settings"]["default_contract_owner"]
-    if CONFIG.mode == "test" and default_owner is False:
+    default_owner = CONFIG.active_network["settings"]["default_contract_owner"]  # @UndefinedVariable
+    if CONFIG.mode == "test" and default_owner is False:  # @UndefinedVariable
         owner = None
 
     # seperate contract inputs from tx dict and set default tx values
@@ -2030,7 +2030,7 @@ def _print_natspec(natspec: Dict) -> None:
 
 
 def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
-    url = CONFIG.active_network.get("explorer")
+    url = CONFIG.active_network.get("explorer")  # @UndefinedVariable
     if url is None:
         raise ValueError("Explorer API not set for this network")
 

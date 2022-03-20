@@ -77,7 +77,7 @@ class Accounts(metaclass=_Singleton):
 
         # Check if accounts were manually unlocked and add them
         try:
-            unlocked_accounts = CONFIG.active_network["cmd_settings"]["unlock"]
+            unlocked_accounts = CONFIG.active_network["cmd_settings"]["unlock"]  # @UndefinedVariable
             if not isinstance(unlocked_accounts, list):
                 unlocked_accounts = [unlocked_accounts]
             for address in unlocked_accounts:
@@ -247,7 +247,7 @@ class Accounts(metaclass=_Singleton):
         if acct is None and (address in web3.eth.accounts or force):
             acct = Account(address)
 
-            if CONFIG.network_type == "development" and address not in web3.eth.accounts:
+            if CONFIG.network_type == "development" and address not in web3.eth.accounts:  # @UndefinedVariable
                 rpc.unlock_account(address)
 
             self._accounts.append(acct)
@@ -420,12 +420,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
         gas_buffer: Optional[float],
         data: Optional[str] = None,
     ) -> int:
-        gas_limit = CONFIG.active_network["settings"]["gas_limit"]
+        gas_limit = CONFIG.active_network["settings"]["gas_limit"]  # @UndefinedVariable
         if gas_limit == "max":
             return Chain().block_gas_limit
 
         if isinstance(gas_limit, bool) or gas_limit in (None, "auto"):
-            gas_buffer = gas_buffer or CONFIG.active_network["settings"]["gas_buffer"]
+            gas_buffer = gas_buffer or CONFIG.active_network["settings"]["gas_buffer"]  # @UndefinedVariable
             gas_limit = self.estimate_gas(to, amount, 0, data or "")
             if gas_limit > 21000 and gas_buffer != 1:
                 gas_limit = Wei(gas_limit * gas_buffer)
@@ -436,7 +436,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
     def _gas_price(self, gas_price: Any = None) -> Tuple[Wei, Optional[GasABC], Optional[Iterator]]:
         # returns the gas price, gas strategy object, and active gas strategy iterator
         if gas_price is None:
-            gas_price = CONFIG.active_network["settings"]["gas_price"]
+            gas_price = CONFIG.active_network["settings"]["gas_price"]  # @UndefinedVariable
 
         if isinstance(gas_price, GasABC):
             value = gas_price.get_gas_price()
@@ -594,10 +594,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
         try:
             return web3.eth.estimate_gas(tx)
         except ValueError as exc:
-            revert_gas_limit = CONFIG.active_network["settings"]["reverting_tx_gas_limit"]
+            revert_gas_limit = CONFIG.active_network["settings"]["reverting_tx_gas_limit"]  # @UndefinedVariable
             if revert_gas_limit == "max":
                 revert_gas_limit = web3.eth.get_block("latest")["gasLimit"]
-                CONFIG.active_network["settings"]["reverting_tx_gas_limit"] = revert_gas_limit
+                CONFIG.active_network["settings"]["reverting_tx_gas_limit"] = revert_gas_limit  # @UndefinedVariable
             if revert_gas_limit:
                 return revert_gas_limit
 
@@ -702,14 +702,14 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if gas_limit and gas_buffer:
             raise ValueError("Cannot set gas_limit and gas_buffer together")
         if silent is None:
-            silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
+            silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])  # @UndefinedVariable
 
         if gas_price is None:
             # if gas price is not explicitly set, load the default max fee and priority fee
             if max_fee is None:
-                max_fee = CONFIG.active_network["settings"]["max_fee"] or None
+                max_fee = CONFIG.active_network["settings"]["max_fee"] or None  # @UndefinedVariable
             if priority_fee is None:
-                priority_fee = CONFIG.active_network["settings"]["priority_fee"] or None
+                priority_fee = CONFIG.active_network["settings"]["priority_fee"] or None  # @UndefinedVariable
 
         try:
             # if max fee and priority fee are not set, use gas price
@@ -856,7 +856,7 @@ class Account(_PrivateKeyAccount):
 
     def _transact(self, tx: Dict, allow_revert: bool) -> Any:
         if allow_revert is None:
-            allow_revert = bool(CONFIG.network_type == "development")
+            allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
             self._check_for_revert(tx)
         return web3.eth.send_transaction(tx)
@@ -957,7 +957,7 @@ class LocalAccount(_PrivateKeyAccount):
 
     def _transact(self, tx: Dict, allow_revert: bool) -> None:
         if allow_revert is None:
-            allow_revert = bool(CONFIG.network_type == "development")
+            allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
             self._check_for_revert(tx)
         tx["chainId"] = web3.chain_id
@@ -977,7 +977,7 @@ class ClefAccount(_PrivateKeyAccount):
 
     def _transact(self, tx: Dict, allow_revert: bool) -> None:
         if allow_revert is None:
-            allow_revert = bool(CONFIG.network_type == "development")
+            allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
             self._check_for_revert(tx)
 
