@@ -81,23 +81,66 @@ class Multicall:
             # or this result has already been retrieved
             return future_result
 
-        ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
-
-        block_identifier = self._block_number[get_ident()]
-
-        call_kwargs = {
-            "block_identifier": block_identifier,
-        }
-        if self.state_override:
-            # TODO: this only works on geth
-            call_kwargs["override"] = self.state_override
-
         with self._lock:
-            # TODO: something isn't right about this
-            results = self._contract.tryAggregate.__call__(  # type: ignore
-                False, [_call.calldata for _call in pending_calls], **call_kwargs
+            block_identifier = self._block_number[get_ident()]
+
+            target_data = self._contract.tryAggregate.encode_input(
+                False,
+                [_call.calldata for _call in pending_calls],
             )
 
+            data = {"to": self._contract.address, "data": target_data}
+
+            if self.state_override:
+                # TODO: if `ValueError: {'code': -32602, 'message': 'Expected between 1 and 2 arguments and got 3'}` try all the queries without multicall
+                try:
+                    results = web3.eth.call(data, block_identifier, self.state_override)
+                except ValueError as e:
+                    if (
+                        str(e)
+                        == "{'code': -32602, 'message': 'Expected between 1 and 2 arguments and got 3'}"
+                    ):
+                        results = None
+                    else:
+                        raise
+            else:
+                results = web3.eth.call(data, block_identifier)
+
+            if results is None:
+                """
+                warn(
+                    f"Multicall does not exist at block {block_identifier} and client does not support call state overrides"
+                )
+                for _call in pending_calls:
+                    target, targetData = _call.calldata
+
+                    data = {"to": target, "data": targetData}
+
+                    try:
+                        result = web3.eth.call(data, block_identifier)
+                    except Exception as e:
+                        # print(f"split call {i} failed: {data} {e}")
+                        # TODO: what exceptions should we catch?
+                        result = None
+
+                    _call.__wrapped__ = result
+                """
+                # TODO: figure out the above code. it almost worked. we got back a response, but the values are not what i expected
+                raise NotImplementedError(
+                    f"Multicall does not exist at block {block_identifier} and client does not support call state overrides"
+                )
+
+        ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
+
+        results = self._contract.tryAggregate.decode_output(results)
+
+        # TODO: if this fails with InsufficientDataBytes, try again without using state override
+        for _call, result in zip(pending_calls, results):
+            _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None  # type: ignore
+
+        return future_result
+
+        """
         try:
             for _call, result in zip(pending_calls, results):
                 _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None  # type: ignore
@@ -127,6 +170,7 @@ class Multicall:
         ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
 
         return future_result
+        """
 
     def flush(self) -> Any:
         """Flush the pending queue of calls, retrieving all the results."""
@@ -174,15 +218,20 @@ class Multicall:
             self._block_number[get_ident()] or web3.eth.get_block_number()
         )
 
-        if self.address is None or not web3.eth.get_code(
-            self.address, block_identifier=self.block_number
-        ):
+        if self.address is None:
+            # default to the multicall3 address
+            self.address = "0xcA11bde05977b3631167028862bE2a173976CA11"
+
+        if not web3.eth.get_code(self.address, block_identifier=self.block_number):
+            # the multicall contract isn't deployed. use state overrides
             self.state_override = {
                 self.address: {
+                    # TODO: change this to multicall3 bytecode
                     "code": MULTICALL2_BYTECODE,
-                }
+                },
             }
 
+        # TODO: change this to the multicall3 abi
         self._contract = Contract.from_abi("Multicall", self.address, MULTICALL2_ABI)
         getattr(ContractCall, "__multicall")[get_ident()] = self
 

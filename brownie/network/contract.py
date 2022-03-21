@@ -835,7 +835,13 @@ class Contract(_DeployedContractBase):
     """
 
     def __init__(
-        self, address_or_alias: str, *args: Any, as_proxy_for: Optional[str] = None, owner: Optional[AccountsType] = None, silent: bool = False, **kwargs: Any
+        self,
+        address_or_alias: str,
+        *args: Any,
+        as_proxy_for: Optional[str] = None,
+        owner: Optional[AccountsType] = None,
+        silent: bool = False,
+        **kwargs: Any,
     ) -> None:
         """
         Recreate a `Contract` object from the local database.
@@ -882,7 +888,9 @@ class Contract(_DeployedContractBase):
                     raise ValueError(f"Unknown alias: '{address_or_alias}'")
                 else:
                     raise ValueError(f"Unknown contract address: '{address}'")
-            contract = self.from_explorer(address, as_proxy_for=as_proxy_for, owner=owner, silent=silent)
+            contract = self.from_explorer(
+                address, as_proxy_for=as_proxy_for, owner=owner, silent=silent
+            )
             build, sources = contract._build, contract._sources
             address = contract.address
 
