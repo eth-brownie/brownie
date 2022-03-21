@@ -134,38 +134,6 @@ class Multicall:
 
         return future_result
 
-        """
-        try:
-            for _call, result in zip(pending_calls, results):
-                _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None  # type: ignore
-        except InsufficientDataBytes:
-            # if tryAggregate didn't raise an exception, but the decoders don't have anything to process, state_override must not be supported
-            # fallback to splitting the multicall into its seperate calls
-            warn(
-                f"Multicall does not exist at block {block_identifier} and client does not support call state overrides"
-            )
-
-            # TODO: do we need this lock?
-            with self._lock:
-                for (i, _call) in enumerate(pending_calls):
-                    target, targetData = _call.calldata
-
-                    data = {"to": target, "data": targetData}
-
-                    try:
-                        result = web3.eth.call(data, block_identifier)
-                    except Exception as e:
-                        # print(f"split call {i} failed: {data} {e}")
-                        # TODO: what exceptions should we catch?
-                        result = None
-
-                    _call.__wrapped__ = result
-
-        ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
-
-        return future_result
-        """
-
     def flush(self) -> Any:
         """Flush the pending queue of calls, retrieving all the results."""
         return self._flush()
