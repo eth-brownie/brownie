@@ -84,6 +84,7 @@ class Multicall:
         with self._lock:
             block_identifier = self._block_number[get_ident()]
 
+            # we encode_input and do a web3.eth.call here instead of using __call__ because that catches errors that we need to intercept here
             target_data = self._contract.tryAggregate.encode_input(
                 False,
                 [_call.calldata for _call in pending_calls],
@@ -92,7 +93,6 @@ class Multicall:
             data = {"to": self._contract.address, "data": target_data}
 
             if self.state_override:
-                # TODO: if `ValueError: {'code': -32602, 'message': 'Expected between 1 and 2 arguments and got 3'}` try all the queries without multicall
                 try:
                     results = web3.eth.call(data, block_identifier, self.state_override)
                 except ValueError as e:
@@ -100,6 +100,7 @@ class Multicall:
                         str(e)
                         == "{'code': -32602, 'message': 'Expected between 1 and 2 arguments and got 3'}"
                     ):
+                        # eth_call did not expect the third "state_override" option. not all clients do so this is not unexpected
                         results = None
                     else:
                         raise
@@ -107,7 +108,6 @@ class Multicall:
                 results = web3.eth.call(data, block_identifier)
 
             if results is None:
-                """
                 warn(
                     f"Multicall does not exist at block {block_identifier} and client does not support call state overrides"
                 )
@@ -119,23 +119,17 @@ class Multicall:
                     try:
                         result = web3.eth.call(data, block_identifier)
                     except Exception as e:
-                        # print(f"split call {i} failed: {data} {e}")
                         # TODO: what exceptions should we catch?
                         result = None
 
-                    _call.__wrapped__ = result
-                """
-                # TODO: figure out the above code. it almost worked. we got back a response, but the values are not what i expected
-                raise NotImplementedError(
-                    f"Multicall does not exist at block {block_identifier} and client does not support call state overrides"
-                )
+                    _call.__wrapped__ = _call.decoder(result) if result is not None else None
 
-        ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
+                return future_result
 
         results = self._contract.tryAggregate.decode_output(results)
 
-        # TODO: if this fails with InsufficientDataBytes, try again without using state override
         for _call, result in zip(pending_calls, results):
+            # TODO: check result[0] is not None?
             _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None  # type: ignore
 
         return future_result
