@@ -6,13 +6,11 @@ from types import FunctionType, TracebackType
 from typing import Any, Dict, List, Optional, Tuple, Union
 from warnings import warn
 
-from eth_abi.exceptions import InsufficientDataBytes
 from lazy_object_proxy import Proxy
 from wrapt import ObjectProxy
 
 from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.network import accounts, web3
-from brownie.network.account import Account
 from brownie.network.contract import Contract, ContractCall
 from brownie.project import compile_source
 
