@@ -119,6 +119,18 @@ live:
         host: https://moonbeam.api.onfinality.io/public
         explorer: https://api-moonbeam.moonscan.io/api
         multicall2: "0x1337BedC9D22ecbe766dF105c9623922A27963EC"
+      - name: Moonbase Alpha
+        chainid: 1287 
+        id: moonbeam-test
+        host: https://moonbeam-alpha.api.onfinality.io/public
+        explorer: https://api-moonbeam.moonscan.io/api
+  - name: Moonriver
+    networks:
+      - name: Mainnet
+        chainid: 1285
+        id: moonriver-main
+        host: https://moonriver.api.onfinality.io/public
+        explorer: https://api-moonriver.moonscan.io/api
   - name: Optimistic Ethereum
     networks:
       - name: Mainnet
