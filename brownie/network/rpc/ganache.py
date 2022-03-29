@@ -176,6 +176,8 @@ def _validate_cmd_settings(cmd_settings: dict) -> dict:
         "mnemonic": str,
         "account_keys_path": str,
         "fork": str,
+        "fork_block": int,
+        "fork_requests_per_second": int,
         "network_id": int,
         "chain_id": int,
     }
