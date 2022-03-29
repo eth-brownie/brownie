@@ -24,6 +24,7 @@ CLI_FLAGS = {
         "evm_version": "--hardfork",
         "fork": "--fork.url",
         "fork_block": "--fork.blockNumber",
+        "fork_requests_per_second": "--fork.requestsPerSecond",
         "mnemonic": "--wallet.mnemonic",
         "account_keys_path": "--wallet.accountKeysPath",
         "block_time": "--miner.blockTime",
