@@ -78,6 +78,9 @@ def launch(cmd: str, **kwargs: Dict) -> None:
         # more verbose output similar to what ganache 6 produced
         cmd_list.extend(["--chain.vmErrorsOnRPCResponse", "true"])
 
+    # TODO: remove this when done debugging
+    print("cli_flags:", cli_flags)
+
     kwargs.setdefault("evm_version", EVM_DEFAULT)  # type: ignore
     if kwargs["evm_version"] in EVM_EQUIVALENTS:
         kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]  # type: ignore
