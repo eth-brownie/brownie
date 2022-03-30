@@ -6,7 +6,11 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
-
+### Added
+- Support for passing library address via `brownie-config.yaml`
+- Match multiline import syntax during `standard_input_json` generation
+### Fixed
+- Fixed file name collision during flattening ([#1461](https://github.com/eth-brownie/brownie/issues/1461))
 ## [1.18.1](https://github.com/eth-brownie/brownie/tree/v1.18.1) - 2022-02-15
 ### Fixed
 - Correctly modify chain time when using `chain.mine` with Ganache v7 ([#1438](https://github.com/eth-brownie/brownie/pull/1438))
