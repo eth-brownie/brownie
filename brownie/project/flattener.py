@@ -3,15 +3,22 @@ from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Dict, Set
 
+from eth_hash.auto import keccak
+
+from brownie._config import _load_project_structure_config
 from brownie.utils.toposort import toposort_flatten
 
 # Patten matching Solidity `import-directive`, capturing path component
 # https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityParser.importDirective
 IMPORT_PATTERN = re.compile(
-    r"(?<=\n)?import(?P<prefix>.*)(?P<quote>[\"'])(?P<path>.*)(?P=quote)(?P<suffix>.*)(?=\n)"
+    r"^[ \t\r\f\v]*import\s+[^'\"]*['\"](?P<path>.+)['\"][^;]*;", re.MULTILINE
 )
 PRAGMA_PATTERN = re.compile(r"^pragma.*;$", re.MULTILINE)
 LICENSE_PATTERN = re.compile(r"^// SPDX-License-Identifier: (.*)$", re.MULTILINE)
+
+
+class SourceKeyCollision(Exception):
+    pass
 
 
 class Flattener:
@@ -27,10 +34,36 @@ class Flattener:
         self.contract_file = Path(primary_source_fp).name
         self.remappings = remappings
 
+        self._libraries = compiler_settings.get("libraries", {})
+
+        self._contracts_dir = (
+            Path(".").joinpath(_load_project_structure_config(Path("."))["contracts"]).resolve()
+        )
+
         self.traverse(primary_source_fp)
 
-        license_search = LICENSE_PATTERN.search(self.sources[Path(primary_source_fp).name])
+        license_search = LICENSE_PATTERN.search(
+            self.sources[self._get_primary_source_key(Path(primary_source_fp))]
+        )
         self.license = license_search.group(1) if license_search else "NONE"
+
+    def _is_sources_collision(self, key: str, new_source: str) -> bool:
+        """Check if try to set `self.sources[key]` with different content
+        In such case some files will be missed
+        """
+        return keccak(self.sources.get(key, "").encode("utf-8")) != keccak(
+            new_source.encode("utf-8")
+        )
+
+    def _prepare_key_for_sources(self, source_file_path: str) -> str:
+        """Prepare key for `self.sources` dict"""
+        for key, value in self.remappings.items():
+            if source_file_path.startswith(value):
+                return Path(key).joinpath(Path(source_file_path).relative_to(value)).as_posix()
+        return self._get_primary_source_key(Path(source_file_path))
+
+    def _get_primary_source_key(self, primary_source_path: Path) -> str:
+        return primary_source_path.resolve().relative_to(self._contracts_dir).as_posix()
 
     def traverse(self, fp: str) -> None:
         """Traverse a contract source files dependencies.
@@ -41,33 +74,33 @@ class Flattener:
         Args:
             fp: The contract source file to traverse, if it's already been traversed, return early.
         """
-        # if already traversed file, return early
-        fp_obj = Path(fp)
-        if fp_obj.name in self.sources:
-            return
 
+        fp_obj = Path(fp)
         # read in the source file
         source = fp_obj.read_text()
 
-        # path sanitization lambda fn
+        source_key = self._prepare_key_for_sources(fp_obj.as_posix())
+
+        # if already traversed file, return early
+        if source_key in self.sources:
+            # check potential key name collision
+            if self._is_sources_collision(source_key, source):
+                raise SourceKeyCollision(f"Collision with key name '{source_key}' in {fp_obj}")
+            return
+
+        self.sources[source_key] = source
+
         sanitize = lambda path: self.make_import_absolute(  # noqa: E731
             self.remap_import(path), fp_obj.parent.as_posix()
         )
-        # replacement function for re.sub, we just sanitize the path
-        repl = (  # noqa: E731
-            lambda m: f'import{m.group("prefix")}'
-            + f'"{Path(sanitize(m.group("path"))).name}"'
-            + f'{m.group("suffix")}'
-        )
 
-        self.sources[fp_obj.name] = IMPORT_PATTERN.sub(repl, source)
-        if fp_obj.name not in self.dependencies:
-            self.dependencies[fp_obj.name] = set()
+        if source_key not in self.dependencies:
+            self.dependencies[source_key] = set()
 
         # traverse dependency files - can circular imports happen?
         for m in IMPORT_PATTERN.finditer(source):
             import_path = sanitize(m.group("path"))
-            self.dependencies[fp_obj.name].add(Path(import_path).name)
+            self.dependencies[source_key].add(self._prepare_key_for_sources(import_path))
             self.traverse(import_path)
 
     @property
@@ -103,11 +136,15 @@ class Flattener:
 
         Sadly programmatic upload of this isn't available at the moment (2021-10-11)
         """
-        return {
+        input_json = {
             "language": "Solidity",
             "sources": {k: {"content": v} for k, v in self.sources.items()},
             "settings": self.compiler_settings,
         }
+        if self._libraries:
+            input_json["settings"]["libraries"] = self._prepare_library_dict_to_json_input()  # type: ignore  # noqa
+
+        return input_json
 
     def remap_import(self, import_path: str) -> str:
         """Remap imports in a solidity source file.
@@ -139,3 +176,17 @@ class Flattener:
             return path.as_posix()
 
         return (Path(source_file_dir) / path).resolve().as_posix()
+
+    def _prepare_library_dict_to_json_input(self) -> Dict[str, Dict[str, str]]:
+        output_dict: dict = {}
+        # find in raw string of source code
+        lib = re.compile(r"[\\n]?[ ]*library[\\n ]*(?P<lib>[^\\n ]+)[\\n ]*{")
+        for key, source in self.sources.items():
+            for match in lib.finditer(source):
+                lib_name = match.group("lib")
+                if lib_name in self._libraries:
+                    if key not in output_dict:
+                        output_dict[key] = {lib_name: self._libraries[lib_name]}
+                    else:
+                        output_dict[key][lib_name] = self._libraries[lib_name]
+        return output_dict

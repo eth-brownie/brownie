@@ -293,6 +293,9 @@ def _format_link_references(evm: Dict) -> str:
     references = [
         (k, x) for v in evm["bytecode"].get("linkReferences", {}).values() for k, x in v.items()
     ]
+    for ref in references:
+        assert len(ref[0]) < 37, f"Library name '{ref[0]}' is too long"
+        assert not ref[0].endswith("_"), f"Library name '{ref[0]}' cannot end with '_'"
     for n, loc in [(i[0], x["start"] * 2) for i in references for x in i[1]]:
         bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"
     return bytecode
