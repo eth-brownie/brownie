@@ -12,7 +12,8 @@ class GethPOAMiddleware(BrownieMiddlewareABC):
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
         try:
             latest = w3.eth.get_block("latest").number
-            # ganache sometimes injects a block of their own which doesn't have the extra data that we are checking for
+            # ganache sometimes injects a block of their own 
+            # it doesn't have the extra data that we are checking for
             w3.eth.get_block(latest - 2)
             return None
         except ExtraDataLengthError:
