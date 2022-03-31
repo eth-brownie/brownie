@@ -13,7 +13,7 @@ class GethPOAMiddleware(BrownieMiddlewareABC):
         try:
             latest = w3.eth.get_block("latest").number
             # ganache sometimes injects a block of their own which doesn't have the extra data that we are checking for
-            w3.eth.get_block(latest - 2)
+            w3.eth.get_block(latest - 6)
             return None
         except ExtraDataLengthError:
             return -1
