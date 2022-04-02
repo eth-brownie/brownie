@@ -168,10 +168,6 @@ class Multicall:
         # that way, if we don't have a client that supports state overrides, we can still query older blocks
         if "multicall3" in active_network:
             self.address = active_network["multicall3"]
-        elif "cmd" in active_network:
-            deployment = self.deploy({"from": accounts[0]})
-            self.address = deployment.address  # type: ignore
-            self._block_number[get_ident()] = deployment.tx.block_number  # type: ignore
 
         self._block_number[get_ident()] = (
             self._block_number[get_ident()] or web3.eth.get_block_number()
