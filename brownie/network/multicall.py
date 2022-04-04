@@ -89,10 +89,13 @@ class Multicall:
 
             data = {"to": self._contract.address, "data": target_data}
 
-            if self.state_override:
+            if self.state_override is NotImplemented:
+                results = None
+            elif self.state_override:
                 try:
                     results = web3.eth.call(data, block_identifier, self.state_override)
                 except ValueError as e:
+                    # TODO: this is annoying. every site seems to do it different
                     if (
                         str(e)
                         == "{'code': -32602, 'message': 'Expected between 1 and 2 arguments and got 3'}"
@@ -179,11 +182,15 @@ class Multicall:
 
         if not web3.eth.get_code(self.address, block_identifier=self.block_number):
             # the multicall contract isn't deployed. use state overrides
-            self.state_override = {
-                self.address: {
-                    "code": MULTICALL3_BYTECODE,
-                },
-            }
+            if "ganache" in CONFIG.active_network.get("cmd", ""):
+                # depends on https://github.com/trufflesuite/ganache/pull/2565 (slated for ganache v7.1.0)
+                self.state_override = NotImplemented
+            else:
+                self.state_override = {
+                    self.address: {
+                        "code": MULTICALL3_BYTECODE,
+                    },
+                }
 
         self._contract = Contract.from_abi("Multicall", self.address, MULTICALL3_ABI)
         getattr(ContractCall, "__multicall")[get_ident()] = self
