@@ -479,7 +479,10 @@ class Project(_ProjectBase):
 
         # remove contracts
         for contract in [x for v in self._containers.values() for x in v._contracts]:
-            _remove_contract(contract)
+            try:
+                _remove_contract(contract)
+            except KeyError:
+                warnings.warn(f"Unable to remove {contract}")
         for container in self._containers.values():
             container._contracts.clear()
         self._containers.clear()
