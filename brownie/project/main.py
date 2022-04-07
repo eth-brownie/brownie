@@ -949,11 +949,16 @@ def _create_folders(project_path: Path) -> None:
     for path in structure.values():
         full_path = project_path.joinpath(path)
         # we check exists to better handle symlinks
-        if not full_path.exists():
+        try:
             project_path.joinpath(path).mkdir(exist_ok=True)
+        except FileExistsError:
+            pass
     build_path = project_path.joinpath(structure["build"])
     for path in BUILD_FOLDERS:
-        build_path.joinpath(path).mkdir(exist_ok=True)
+        try:
+            build_path.joinpath(path).mkdir(exist_ok=True)
+        except FileExistsError:
+            pass
 
 
 def _add_to_sys_path(project_path: Path) -> None:
