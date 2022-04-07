@@ -947,18 +947,10 @@ def _create_gitfiles(project_path: Path) -> None:
 def _create_folders(project_path: Path) -> None:
     structure = _load_project_structure_config(project_path)
     for path in structure.values():
-        full_path = project_path.joinpath(path)
-        # we check exists to better handle symlinks
-        try:
-            project_path.joinpath(path).mkdir(exist_ok=True)
-        except (FileExistsError, FileNotFoundError) as _:
-            pass
+        project_path.joinpath(path).mkdir(exist_ok=True, parents=True)
     build_path = project_path.joinpath(structure["build"])
     for path in BUILD_FOLDERS:
-        try:
-            build_path.joinpath(path).mkdir(exist_ok=True)
-        except (FileExistsError, FileNotFoundError) as _:
-            pass
+        build_path.joinpath(path).mkdir(exist_ok=True, parents=True)
 
 
 def _add_to_sys_path(project_path: Path) -> None:
