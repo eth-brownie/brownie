@@ -951,13 +951,13 @@ def _create_folders(project_path: Path) -> None:
         # we check exists to better handle symlinks
         try:
             project_path.joinpath(path).mkdir(exist_ok=True)
-        except FileExistsError:
+        except (FileExistsError, FileNotFoundError) as _:
             pass
     build_path = project_path.joinpath(structure["build"])
     for path in BUILD_FOLDERS:
         try:
             build_path.joinpath(path).mkdir(exist_ok=True)
-        except FileExistsError:
+        except (FileExistsError, FileNotFoundError) as _:
             pass
 
 
