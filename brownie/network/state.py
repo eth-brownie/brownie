@@ -583,7 +583,8 @@ def _add_contract(contract: Any) -> None:
 
 
 def _remove_contract(contract: Any) -> None:
-    del _contract_map[contract.address]
+    if contract.address in _contract_map:
+        del _contract_map[contract.address]
 
 
 def _get_deployment(
