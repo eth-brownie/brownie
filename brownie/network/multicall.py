@@ -180,8 +180,11 @@ class Multicall:
             # default to the [multicall3 address](https://github.com/mds1/multicall/)
             self.address = "0xcA11bde05977b3631167028862bE2a173976CA11"
 
-        if not web3.eth.get_code(self.address, block_identifier=self.block_number):
+        if web3.eth.get_code(self.address, block_identifier=self.block_number):
+            allow_no_bytecode = False
+        else:
             # the multicall contract isn't deployed. use state overrides
+            allow_no_bytecode = True
             if "ganache" in CONFIG.active_network.get("cmd", ""):
                 # depends on https://github.com/trufflesuite/ganache/pull/2565 (slated for ganache v7.1.0)
                 self.state_override = NotImplemented
@@ -194,7 +197,9 @@ class Multicall:
 
         # TODO: this gives an error about "no contract deployed" when we fork from an old block
         # TODO: but if we have state overrides, it doesn't matter. how do we make brownie okay with this?
-        self._contract = Contract.from_abi("Multicall", self.address, MULTICALL3_ABI)
+        self._contract = Contract.from_abi(
+            "Multicall", self.address, MULTICALL3_ABI, allow_no_bytecode=True
+        )
         getattr(ContractCall, "__multicall")[get_ident()] = self
 
     def __exit__(self, exc_type: Exception, exc_val: Any, exc_tb: TracebackType) -> None:

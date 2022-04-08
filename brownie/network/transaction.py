@@ -874,7 +874,9 @@ class TransactionReceipt:
                     address = step["stack"][-2][-40:]
 
                 if is_depth_increase:
-                    last_map[trace[i]["depth"]] = _get_last_map(address, sig, step["op"] == "DELEGATECALL")
+                    last_map[trace[i]["depth"]] = _get_last_map(
+                        address, sig, step["op"] == "DELEGATECALL"
+                    )
                     coverage_eval.setdefault(last_map[trace[i]["depth"]]["name"], {})
 
                 self._subcalls.append(
@@ -1413,7 +1415,13 @@ def _get_memory(step: Dict, idx: int) -> HexBytes:
 
 def _get_last_map(address: EthAddress, sig: str, delegated: bool) -> Dict:
     contract = state._find_contract(address)
-    last_map = {"address": EthAddress(address), "jumpDepth": 0, "name": None, "coverage": False, "delegated": delegated}
+    last_map = {
+        "address": EthAddress(address),
+        "jumpDepth": 0,
+        "name": None,
+        "coverage": False,
+        "delegated": delegated,
+    }
 
     if contract:
         if contract.get_method(sig):
