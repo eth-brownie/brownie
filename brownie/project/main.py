@@ -811,6 +811,7 @@ def _install_from_ethpm(uri: str) -> str:
     try:
         new(str(install_path), ignore_existing=True)
         ethpm.install_package(install_path, uri)
+        Path.touch(install_path / ".env")
         project = load(install_path)
         project.close()
     except Exception as e:
@@ -887,6 +888,8 @@ def _install_from_github(package_id: str) -> str:
 
             with install_path.joinpath("brownie-config.yaml").open("w") as fp:
                 yaml.dump(brownie_config, fp)
+
+            Path.touch(install_path / ".env")
 
         project = load(install_path)
         project.close()
