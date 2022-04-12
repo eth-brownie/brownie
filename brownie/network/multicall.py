@@ -203,7 +203,7 @@ class Multicall:
         # TODO: this gives an error about "no contract deployed" when we fork from an old block
         # TODO: but if we have state overrides, it doesn't matter. how do we make brownie okay with this?
         self._contract = Contract.from_abi(
-            "Multicall", self.address, MULTICALL2_ABI, allow_no_bytecode=True
+            "Multicall", self.address, MULTICALL2_ABI, allow_no_bytecode=allow_no_bytecode
         )
         getattr(ContractCall, "__multicall")[get_ident()] = self
 
