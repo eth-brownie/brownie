@@ -186,7 +186,8 @@ class Multicall:
             self.address = "0xcA11bde05977b3631167028862bE2a173976CA11"
 
         if web3.eth.get_code(self.address, block_identifier=self.block_number):
-            allow_no_bytecode = False
+            # since we just checked bytecode, we don't need to bother checking again
+            allow_no_bytecode = True
         else:
             # the multicall contract isn't deployed. use state overrides
             allow_no_bytecode = True
