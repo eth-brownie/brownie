@@ -175,7 +175,7 @@ class Project(_ProjectBase):
         _build: project Build object
     """
 
-    def __init__(self, name: str, project_path: Path) -> None:
+    def __init__(self, name: str, project_path: Path, compile: bool = True) -> None:
         self._path: Path = project_path
         self._envvars = _load_project_envvars(project_path)
         self._structure = expand_posix_vars(
@@ -185,9 +185,9 @@ class Project(_ProjectBase):
 
         self._name = name
         self._active = False
-        self.load()
+        self.load(compile=compile)
 
-    def load(self, raise_if_loaded: bool = True) -> None:
+    def load(self, raise_if_loaded: bool = True, compile: bool = True) -> None:
         """Compiles the project contracts, creates ContractContainer objects and
         populates the namespace."""
         if self._active:
@@ -236,14 +236,15 @@ class Project(_ProjectBase):
             self._build._add_interface(build_json)
             interface_hashes[path.stem] = build_json["sha1"]
 
-        self._compiler_config = expand_posix_vars(
-            _load_project_compiler_config(self._path), self._envvars
-        )
+        if compile:
+            self._compiler_config = expand_posix_vars(
+                _load_project_compiler_config(self._path), self._envvars
+            )
 
-        # compile updated sources, update build
-        changed = self._get_changed_contracts(interface_hashes)
-        self._compile(changed, self._compiler_config, False)
-        self._compile_interfaces(interface_hashes)
+            # compile updated sources, update build
+            changed = self._get_changed_contracts(interface_hashes)
+            self._compile(changed, self._compiler_config, False)
+            self._compile_interfaces(interface_hashes)
         self._load_dependency_artifacts()
 
         self._create_containers()
@@ -713,6 +714,7 @@ def load(
     project_path: Union[Path, str, None] = None,
     name: Optional[str] = None,
     raise_if_loaded: bool = True,
+    compile: bool = True
 ) -> "Project":
     """Loads a project and instantiates various related objects.
 
@@ -765,7 +767,7 @@ def load(
     _add_to_sys_path(project_path)
 
     # load sources and build
-    return Project(name, project_path)
+    return Project(name, project_path, compile=compile)
 
 
 def _install_dependencies(path: Path) -> None:
