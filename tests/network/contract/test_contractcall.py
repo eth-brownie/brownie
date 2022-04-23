@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-import pytest
 
 from brownie import compile_source
 
@@ -91,12 +90,15 @@ def test_nonce_manual_transact(tester, accounts):
     assert accounts[0].nonce == nonce + 1
 
 
-@pytest.mark.parametrize("nonce", (-1, 1, 15))
-def test_rasises_on_incorrect_nonce_manual_transact(tester, accounts, nonce):
-    """raises on incorrect manual nonce with transact"""
-    nonce += accounts[0].nonce
-    with pytest.raises(ValueError):
-        tester.getTuple.transact(accounts[0], {"from": accounts[0], "nonce": nonce})
+# this behaviour changed in ganache7, if the test suite is updated to work
+# in hardhat we should still include it
+
+# @pytest.mark.parametrize("nonce", (-1, 1, 15))
+# def test_rasises_on_incorrect_nonce_manual_transact(tester, accounts, nonce):
+#     """raises on incorrect manual nonce with transact"""
+#     nonce += accounts[0].nonce
+#     with pytest.raises(ValueError):
+#         tester.getTuple.transact(accounts[0], {"from": accounts[0], "nonce": nonce})
 
 
 def test_tuples(tester, accounts):

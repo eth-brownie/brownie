@@ -12,7 +12,12 @@ from requests.exceptions import ConnectionError as RequestsConnectionError
 from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
 from brownie.network.web3 import web3
 
-CLI_FLAGS = {"port": "--port", "fork": "--fork", "fork_block": "--fork-block-number"}
+CLI_FLAGS = {
+    "port": "--port",
+    "host": "--hostname",
+    "fork": "--fork",
+    "fork_block": "--fork-block-number",
+}
 IGNORED_SETTINGS = ["chain_id"]
 
 HARDHAT_CONFIG = """

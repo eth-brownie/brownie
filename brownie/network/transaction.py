@@ -10,6 +10,7 @@ from enum import IntEnum
 from hashlib import sha1
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from warnings import warn
 
 import black
 import requests
@@ -157,8 +158,6 @@ class TransactionReceipt:
 
         if isinstance(txid, bytes):
             txid = HexBytes(txid).hex()
-        if not self._silent:
-            print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
 
         # this event is set once the transaction is confirmed or dropped
         # it is used to waiting during blocking transaction actions
@@ -196,7 +195,34 @@ class TransactionReceipt:
         if self._revert_pc is not None:
             self._dev_revert_msg = build._get_dev_revert(self._revert_pc) or None
 
-        self._await_transaction(required_confs, is_blocking)
+        tx: Dict = web3.eth.get_transaction(HexBytes(self.txid))
+        self._set_from_tx(tx)
+
+        if not self._silent:
+            output_str = ""
+            if self.type == 2:
+                max_gas = tx["maxFeePerGas"] / 10**9
+                priority_gas = tx["maxPriorityFeePerGas"] / 10**9
+                output_str = (
+                    f"  Max fee: {color('bright blue')}{max_gas}{color} gwei"
+                    f"   Priority fee: {color('bright blue')}{priority_gas}{color} gwei"
+                )
+            elif self.gas_price is not None:
+                gas_price = self.gas_price / 10**9
+                output_str = f"  Gas price: {color('bright blue')}{gas_price}{color} gwei"
+            print(
+                f"{output_str}   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
+                f"   Nonce: {color('bright blue')}{self.nonce}{color}"
+            )
+
+        # await confirmation of tx in a separate thread which is blocking if
+        # required_confs > 0 or tx has already confirmed (`blockNumber` != None)
+        confirm_thread = threading.Thread(
+            target=self._await_confirmation, args=(tx["blockNumber"], required_confs), daemon=True
+        )
+        confirm_thread.start()
+        if is_blocking and (required_confs > 0 or tx["blockNumber"]):
+            confirm_thread.join()
 
     def __repr__(self) -> str:
         color_str = {-2: "dark white", -1: "bright yellow", 0: "bright red", 1: ""}[self.status]
@@ -312,9 +338,12 @@ class TransactionReceipt:
         ---------
         increment : float, optional
             Multiplier applied to the gas price of this transaction in order
-            to determine the new gas price
+            to determine the new gas price. For EIP1559 transactions the multiplier
+            is applied to the max_fee, the priority_fee is incremented by 1.1.
         gas_price : Wei, optional
-            Absolute gas price to use in the replacement transaction
+            Absolute gas price to use in the replacement transaction. For EIP1559
+            transactions this is the new max_fee, the priority_fee is incremented
+            by 1.1.
         silent : bool, optional
             Toggle console verbosity (default is same setting as this transaction)
 
@@ -330,8 +359,17 @@ class TransactionReceipt:
         if self.status > -1:
             raise ValueError("Transaction has already confirmed")
 
-        if increment is not None:
-            gas_price = Wei(self.gas_price * increment)
+        if self.gas_price is not None:
+            if increment is not None:
+                gas_price = Wei(self.gas_price * increment)
+            else:
+                gas_price = Wei(gas_price)
+
+        max_fee, priority_fee = None, None
+        if self.max_fee is not None and self.priority_fee is not None:
+            max_fee = gas_price
+            priority_fee = Wei(self.priority_fee * 1.1)
+            gas_price = None
 
         if silent is None:
             silent = self._silent
@@ -351,7 +389,9 @@ class TransactionReceipt:
             self.receiver,
             self.value,
             gas_limit=self.gas_limit,
-            gas_price=Wei(gas_price),
+            gas_price=gas_price,
+            max_fee=max_fee,
+            priority_fee=priority_fee,
             data=self.input,
             nonce=self.nonce,
             required_confs=0,
@@ -407,55 +447,6 @@ class TransactionReceipt:
             source=source, revert_msg=self._revert_msg, dev_revert_msg=self._dev_revert_msg
         )
 
-    def _await_transaction(self, required_confs: int, is_blocking: bool) -> None:
-        # await tx showing in mempool
-        while True:
-            try:
-                tx: Dict = web3.eth.get_transaction(HexBytes(self.txid))
-                break
-            except (TransactionNotFound, ValueError):
-                if self.sender is None:
-                    # if sender was not explicitly set, this transaction was
-                    # not broadcasted locally and so likely doesn't exist
-                    raise
-                if self.nonce is not None:
-                    sender_nonce = web3.eth.get_transaction_count(str(self.sender))
-                    if sender_nonce > self.nonce:
-                        self.status = Status(-2)
-                        return
-                if not self._silent:
-                    sys.stdout.write(f"  Awaiting transaction in the mempool... {_marker[0]}\r")
-                    sys.stdout.flush()
-                    _marker.rotate(1)
-                time.sleep(1)
-
-        self._set_from_tx(tx)
-
-        if not self._silent:
-            if self.type == 2:
-                max_gas = tx["maxFeePerGas"] / 10 ** 9
-                priority_gas = tx["maxPriorityFeePerGas"] / 10 ** 9
-                output_str = (
-                    f"  Max fee: {color('bright blue')}{max_gas}{color} gwei"
-                    f"   Priority fee: {color('bright blue')}{priority_gas}{color} gwei"
-                )
-            else:
-                gas_price = self.gas_price / 10 ** 9
-                output_str = f"  Gas price: {color('bright blue')}{gas_price}{color} gwei"
-            print(
-                f"{output_str}   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
-                f"   Nonce: {color('bright blue')}{self.nonce}{color}"
-            )
-
-        # await confirmation of tx in a separate thread which is blocking if
-        # required_confs > 0 or tx has already confirmed (`blockNumber` != None)
-        confirm_thread = threading.Thread(
-            target=self._await_confirmation, args=(tx["blockNumber"], required_confs), daemon=True
-        )
-        confirm_thread.start()
-        if is_blocking and (required_confs > 0 or tx["blockNumber"]):
-            confirm_thread.join()
-
     def _await_confirmation(self, block_number: int = None, required_confs: int = 1) -> None:
         # await first confirmation
         block_number = block_number or self.block_number
@@ -496,7 +487,8 @@ class TransactionReceipt:
                     )
                 _marker.rotate(1)
                 sys.stdout.flush()
-                time.sleep(1)
+
+            time.sleep(1)
 
         # silence other dropped tx's immediately after confirmation to avoid output weirdness
         for dropped_tx in state.TxHistory().filter(
@@ -556,8 +548,9 @@ class TransactionReceipt:
             self.sender = EthAddress(tx["from"])
         self.receiver = EthAddress(tx["to"]) if tx["to"] else None
         self.value = Wei(tx["value"])
-        if "gasPrice" in tx:
-            self.gas_price = tx["gasPrice"]
+        self.gas_price = tx.get("gasPrice")
+        self.max_fee = tx.get("maxFeePerGas")
+        self.priority_fee = tx.get("maxPriorityFeePerGas")
         self.gas_limit = tx["gas"]
         self.input = tx["input"]
         self.nonce = tx["nonce"]
@@ -611,7 +604,7 @@ class TransactionReceipt:
             f"Gas used: {color('bright blue')}{self.gas_used}{color} "
             f"({color('bright blue')}{self.gas_used / self.gas_limit:.2%}{color})"
         )
-        if self.type == 2:
+        if self.type == 2 and self.gas_price is not None:
             result += f"   Gas price: {color('bright blue')}{self.gas_price / 10 ** 9}{color} gwei"
         if self.status and self.contract_address:
             result += (
@@ -657,12 +650,32 @@ class TransactionReceipt:
             self._modified_state = False
             return
 
-        if isinstance(trace[0]["gas"], str):
-            # handle traces where numeric values are returned as hex (Nethermind)
+        # different nodes return slightly different formats. its really fun to handle
+        # geth/nethermind returns unprefixed and with 0-padding for stack and memory
+        # erigon returns 0x-prefixed and without padding (but their memory values are like geth)
+        fix_stack = False
+        for step in trace:
+            if not step["stack"]:
+                continue
+            check = step["stack"][0]
+            if not isinstance(check, str):
+                break
+            if check.startswith("0x"):
+                fix_stack = True
+                break
+
+        fix_gas = isinstance(trace[0]["gas"], str)
+
+        if fix_stack or fix_gas:
             for step in trace:
-                step["gas"] = int(step["gas"], 16)
-                step["gasCost"] = int.from_bytes(HexBytes(step["gasCost"]), "big", signed=True)
-                step["pc"] = int(step["pc"], 16)
+                if fix_stack:
+                    # for stack values, we need 32 bytes (64 chars) without the 0x prefix
+                    step["stack"] = [HexBytes(s).hex()[2:].zfill(64) for s in step["stack"]]
+                if fix_gas:
+                    # handle traces where numeric values are returned as hex (Nethermind)
+                    step["gas"] = int(step["gas"], 16)
+                    step["gasCost"] = int.from_bytes(HexBytes(step["gasCost"]), "big", signed=True)
+                    step["pc"] = int(step["pc"], 16)
 
         if self.status:
             self._confirmed_trace(trace)
@@ -678,6 +691,9 @@ class TransactionReceipt:
         if contract:
             data = _get_memory(trace[-1], -1)
             fn = contract.get_method_object(self.input)
+            if not fn:
+                warn(f"Unable to find function on {contract} for input {self.input}")
+                return
             self._return_value = fn.decode_output(data)
 
     def _reverted_trace(self, trace: Sequence) -> None:
@@ -982,8 +998,11 @@ class TransactionReceipt:
         )
 
     def _add_internal_xfer(self, from_: str, to: str, value: str) -> None:
+        if not value.startswith("0x"):
+            value = f"0x{value}"
+
         self._internal_transfers.append(  # type: ignore
-            {"from": EthAddress(from_), "to": EthAddress(to), "value": Wei(f"0x{value}")}
+            {"from": EthAddress(from_), "to": EthAddress(to), "value": Wei(value)}
         )
 
     def _full_name(self) -> str:

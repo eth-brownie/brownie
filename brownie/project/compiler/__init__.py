@@ -4,7 +4,7 @@ import json
 from copy import deepcopy
 from hashlib import sha1
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import solcast
 from eth_utils import remove_0x_prefix
@@ -52,7 +52,7 @@ def compile_and_format(
     vyper_version: Optional[str] = None,
     optimize: bool = True,
     runs: int = 200,
-    evm_version: Optional[str] = None,
+    evm_version: Optional[Union[str, Dict[str, str]]] = None,
     silent: bool = True,
     allow_paths: Optional[str] = None,
     interface_sources: Optional[Dict[str, str]] = None,
@@ -131,7 +131,7 @@ def compile_and_format(
 
         input_json = generate_input_json(
             to_compile,
-            evm_version=evm_version,
+            evm_version=evm_version[language] if isinstance(evm_version, dict) else evm_version,
             language=language,
             interface_sources=interfaces,
             remappings=remappings,
@@ -294,7 +294,7 @@ def generate_build_json(
         if path_str in input_json["sources"]:
             source = input_json["sources"][path_str]["content"]
         else:
-            with Path(path_str).open() as fp:
+            with Path(path_str).open(encoding="utf-8") as fp:
                 source = fp.read()
             contract_alias = _get_alias(contract_name, path_str)
 
@@ -377,6 +377,7 @@ def _sources_dict(original: Dict, language: str) -> Dict:
 
 def get_abi(
     contract_sources: Dict[str, str],
+    solc_version: Optional[str] = None,
     allow_paths: Optional[str] = None,
     remappings: Optional[list] = None,
     silent: bool = True,
@@ -388,6 +389,7 @@ def get_abi(
     ---------
     contract_sources : dict
         a dictionary in the form of {'path': "source code"}
+    solc_version: solc version to compile with (use None to set via pragmas)
     allow_paths : str, optional
         Compiler allowed filesystem import path
     remappings : list, optional
@@ -438,7 +440,10 @@ def get_abi(
     if not solc_sources:
         return final_output
 
-    compiler_targets = find_solc_versions(solc_sources, install_needed=True, silent=silent)
+    if solc_version:
+        compiler_targets = {solc_version: list(solc_sources)}
+    else:
+        compiler_targets = find_solc_versions(solc_sources, install_needed=True, silent=silent)
 
     for version, path_list in compiler_targets.items():
         to_compile = {k: v for k, v in contract_sources.items() if k in path_list}

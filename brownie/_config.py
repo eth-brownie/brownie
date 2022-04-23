@@ -19,7 +19,7 @@ from hypothesis.database import DirectoryBasedExampleDatabase
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
 
-__version__ = "1.16.2"
+__version__ = "1.18.1"
 
 BROWNIE_FOLDER = Path(__file__).parent
 DATA_FOLDER = Path.home().joinpath(".brownie")
@@ -331,6 +331,12 @@ def _make_data_folders(data_folder: Path) -> None:
         shutil.copyfile(
             BROWNIE_FOLDER.joinpath("data/network-config.yaml"),
             data_folder.joinpath("network-config.yaml"),
+        )
+
+    if not data_folder.joinpath("providers-config.yaml").exists():
+        shutil.copyfile(
+            BROWNIE_FOLDER.joinpath("data/providers-config.yaml"),
+            data_folder.joinpath("providers-config.yaml"),
         )
 
 

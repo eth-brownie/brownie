@@ -73,5 +73,5 @@ def test_reset(BrownieTester, accounts, chain, web3):
     BrownieTester.deploy(True, {"from": accounts[0]})
     chain.reset()
     assert web3.eth.block_number == 0
-    assert accounts[0].balance() == 100000000000000000000
+    assert accounts[0].balance() == 1000000000000000000000
     assert len(BrownieTester) == 0

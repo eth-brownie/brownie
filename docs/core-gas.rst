@@ -31,7 +31,7 @@ You can use :func:`network.priority_fee <main.max_fee>` to set a default priorit
 
     .. code-block:: python
 
-        >>> from brownie.network import gas_price
+        >>> from brownie.network import priority_fee
         >>> priority_fee("2 gwei")
 
 Setting the default to ``"auto"`` will dynamically determine the priority fee using :attr:`web3.eth.max_priority_fee <web3.eth.Eth.max_priority_fee>`. Seting to ``None`` will return to legacy-style transactions.

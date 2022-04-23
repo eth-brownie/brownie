@@ -12,16 +12,18 @@ from brownie.test.output import _build_gas_profile_output
 from brownie.utils import color
 from brownie.utils.docopt import docopt
 
-__doc__ = f"""Usage: brownie run <filename> [<function>] [options]
+__doc__ = f"""Usage: brownie run <filename> [<function>] [<arg>...] [options]
 
 Arguments:
   <filename>              The name of the script to run
   [<function>]            The function to call (default is main)
+  [<arg>]                 Extra argument to pass to the function
 
 Options:
   --network [name]        Use a specific network (default {CONFIG.settings['networks']['default']})
   --silent                Suppress console output for transactions
   --interactive -I        Open an interactive console when the script completes or raises
+  --raise -r              Raise exceptions occured in the script to the caller
   --gas -g                Display gas profile for function calls
   --tb -t                 Show entire python traceback on exceptions
   --help -h               Display this message
@@ -31,7 +33,7 @@ interactions, or for gas profiling."""
 
 
 def main():
-    args = docopt(__doc__)
+    args = docopt(__doc__, more_magic=True)
     _update_argv_from_docopt(args)
 
     active_project = None
@@ -47,11 +49,18 @@ def main():
 
     try:
         return_value, frame = run(
-            args["<filename>"], method_name=args["<function>"] or "main", _include_frame=True
+            args["<filename>"],
+            method_name=args["<function>"] or "main",
+            args=args["<arg>"],
+            _include_frame=True,
         )
         exit_code = 0
     except Exception as e:
+        if args["--raise"]:
+            raise e
+
         print(color.format_tb(e))
+
         frame = next(
             (i.frame for i in inspect.trace()[::-1] if Path(i.filename).as_posix() == path_str),
             None,

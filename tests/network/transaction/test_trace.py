@@ -32,6 +32,7 @@ def test_revert_msg_get_trace_no_revert_map(console_mode, tester, norevertmap):
     assert tx._expand_trace.call_count
 
 
+@pytest.mark.xfail(reason="Issue with ganache 7, should be fixed but not critical")
 def test_revert_msg(console_mode, tester):
     """dev revert string comments should not query the trace"""
     tx = tester.revertStrings(0)
@@ -52,6 +53,7 @@ def test_revert_msg(console_mode, tester):
     assert not tx._expand_trace.call_count
 
 
+@pytest.mark.xfail(reason="Issue with ganache 7, should be fixed but not critical")
 def test_error_get_trace(console_mode, tester, capfd):
     """getting the error should not query the trace"""
     tx = tester.doNothing()

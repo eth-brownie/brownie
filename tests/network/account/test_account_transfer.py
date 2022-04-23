@@ -191,12 +191,15 @@ def test_nonce_manual(accounts):
     assert tx.nonce == 1
 
 
-@pytest.mark.parametrize("nonce", (1, -1, 15))
-def test_raises_on_wrong_nonce(accounts, nonce):
-    """raises if invalid manual nonce is provided"""
-    assert accounts[0].nonce == 0
-    with pytest.raises(ValueError):
-        accounts[0].transfer(accounts[1], 1000, nonce=nonce)
+# this behaviour changed in ganache7, if the test suite is updated to work
+# in hardhat we should still include it
+
+# @pytest.mark.parametrize("nonce", (1, -1, 15))
+# def test_raises_on_wrong_nonce(accounts, nonce):
+#     """raises if invalid manual nonce is provided"""
+#     assert accounts[0].nonce == 0
+#     with pytest.raises(ValueError):
+#         accounts[0].transfer(accounts[1], 1000, nonce=nonce)
 
 
 def test_data(accounts):
@@ -213,7 +216,7 @@ def test_localaccount(accounts):
     accounts[0].transfer(local, "10 ether")
     assert local.balance() == "10 ether"
     local.transfer(accounts[1], "1 ether")
-    assert accounts[1].balance() == "101 ether"
+    assert accounts[1].balance() == "1001 ether"
     assert local.nonce == 1
 
 

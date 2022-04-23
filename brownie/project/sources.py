@@ -191,11 +191,13 @@ def get_contract_names(full_source: str) -> List:
 
     contract_names = []
     for source in contracts:
-        type_, name, _ = re.findall(
+        matches = re.findall(
             r"(abstract contract|contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)",
             source,
-        )[0]
-        contract_names.append((name, type_))
+        )
+        if matches:
+            type_, name, _ = matches[0]
+            contract_names.append((name, type_))
     return contract_names
 
 

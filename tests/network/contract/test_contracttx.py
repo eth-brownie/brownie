@@ -151,12 +151,12 @@ def test_nonce_manual(tester, accounts):
     assert tx.nonce == nonce
 
 
-@pytest.mark.parametrize("nonce", (-1, 1, 15))
-def test_raises_on_invalid_nonce_manual(tester, accounts, nonce):
-    """raises if invalid nonce is specified"""
-    nonce += accounts[0].nonce
-    with pytest.raises(ValueError):
-        tester.doNothing({"from": accounts[0], "nonce": nonce})
+# @pytest.mark.parametrize("nonce", (-1, 1, 15))
+# def test_raises_on_invalid_nonce_manual(tester, accounts, nonce):
+#     """raises if invalid nonce is specified"""
+#     nonce += accounts[0].nonce
+#     with pytest.raises(ValueError):
+#         tester.doNothing({"from": accounts[0], "nonce": nonce})
 
 
 def test_repr(tester):

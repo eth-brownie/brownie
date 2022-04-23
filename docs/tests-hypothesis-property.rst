@@ -354,7 +354,7 @@ The mechanism for doing this is the :py:class:`hypothesis.settings <hypothesis.s
 .. code-block:: python
 
     from brownie.test import given
-    from hypothesis settings
+    from hypothesis import settings
 
     @given(strategy('uint256'))
     @settings(max_examples=500)
