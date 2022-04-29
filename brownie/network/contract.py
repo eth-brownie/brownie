@@ -1895,6 +1895,13 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
         and code[70:] == "5af4602c57600080fd5b6110006000f3"
     ):
         address = _resolve_address(code[30:70])
+    # 0xSplits Clones
+    elif (
+        code[:120]
+        == "36603057343d52307f830d2d700a97af574b186c80d40429385d24241565b08a7c559ba283a964d9b160203da23d3df35b3d3d3d3d363d3d37363d73"
+        and code[160:] == "5af43d3d93803e605b57fd5bf3"
+    ):
+        address = _resolve_address(code[120:160])
 
     params: Dict = {"module": "contract", "action": action, "address": address}
     explorer, env_key = next(
