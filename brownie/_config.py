@@ -340,6 +340,11 @@ def _make_data_folders(data_folder: Path) -> None:
         )
 
 
+def _load_project_libraries(project_path: Path) -> Dict[str, str]:
+    data = _load_config(project_path.joinpath("brownie-config"))
+    return data.get("libraries", {})
+
+
 warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 
 # create data folders

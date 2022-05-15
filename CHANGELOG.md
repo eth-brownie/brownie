@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Added
+- Support for passing library address via `brownie-config.yaml`
+- Match multiline import syntax during `standard_input_json` generation
 - Allow to subscribe to events, with callbacks, using the corresponding contract instance.
 - Allow to retrieve events that have occurred between two blocks using the corresponding contract instance.
 - Allow listening for an event using the associated contract instance.
@@ -15,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix download of dependencies with special characters in tag/version ([#1470](https://github.com/eth-brownie/brownie/pull/1470))
 - Deepcopy config so that disconnecting and reconnecting to networks works fully ([#1466](https://github.com/eth-brownie/brownie/pull/1466))
 - hardhat integration on windows ([#1482](https://github.com/eth-brownie/brownie/pull/1482))
+- Fixed file name collision during flattening ([#1461](https://github.com/eth-brownie/brownie/issues/1461))
 
 ## [1.18.1](https://github.com/eth-brownie/brownie/tree/v1.18.1) - 2022-02-15
 ### Fixed

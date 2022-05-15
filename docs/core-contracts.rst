@@ -56,7 +56,16 @@ Calling :func:`ContractContainer.deploy <ContractContainer.deploy>` returns a :f
 Unlinked Libraries
 ------------------
 
-If a contract requires a `library <https://solidity.readthedocs.io/en/v0.6.0/contracts.html#libraries>`_, Brownie will automatically link to the most recently deployed one. If the required library has not been deployed yet an :func:`UndeployedLibrary <brownie.exceptions.UndeployedLibrary>` exception is raised.
+If a contract requires a `library <https://solidity.readthedocs.io/en/v0.6.0/contracts.html#libraries>`_, Brownie will automatically link to the most recently deployed one or read needed info from ``brownie-config.yaml`` file. There is only
+need to pass address of library as follow.
+
+.. code-block:: yaml
+
+    libraries:
+      LibName: '0x123456789ABCDEFabcdef987654321...'
+
+
+If the required library has not been deployed yet nor inserted in ``brownie-config.yaml`` file an :func:`UndeployedLibrary <brownie.exceptions.UndeployedLibrary>` exception is raised.
 
 .. code-block:: python
 

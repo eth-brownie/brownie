@@ -239,3 +239,7 @@ class BrownieTestWarning(Warning):
 
 class BrownieConfigWarning(Warning):
     pass
+
+
+class BrownieConfigError(Exception):
+    pass

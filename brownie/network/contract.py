@@ -85,6 +85,8 @@ _explorer_tokens = {
     "moonscan": "MOONSCAN_TOKEN",
 }
 
+LIBRARY_PATTERN = re.compile(r"__(?P<lib>[^\s]{1,36})__")
+
 
 class _ContractBase:
 
@@ -305,12 +307,14 @@ class ContractContainer(_ContractBase):
                         compiler._get_solc_remappings(config["solc"]["remappings"]),
                     )
                 )
-                libs = {lib.strip("_") for lib in re.findall("_{1,}[^_]*_{1,}", self.bytecode)}
+                libs = {
+                    m.group("lib").rstrip("_") for m in re.finditer(LIBRARY_PATTERN, self.bytecode)
+                }
                 compiler_settings = {
                     "evmVersion": self._build["compiler"]["evm_version"],
                     "optimizer": config["solc"]["optimizer"],
                     "libraries": {
-                        Path(source_fp).name: {lib: self._project[lib][-1].address for lib in libs}
+                        lib: "0x" + _get_library_address(self._project, lib) for lib in libs
                     },
                 }
                 self._flattener = Flattener(source_fp, self._name, remaps, compiler_settings)
@@ -567,14 +571,10 @@ class ContractConstructor:
     def encode_input(self, *args: tuple) -> str:
         bytecode = self._parent.bytecode
         # find and replace unlinked library pointers in bytecode
-        for marker in re.findall("_{1,}[^_]*_{1,}", bytecode):
-            library = marker.strip("_")
-            if not self._parent._project[library]:
-                raise UndeployedLibrary(
-                    f"Contract requires '{library}' library, but it has not been deployed yet"
-                )
-            address = self._parent._project[library][-1].address[-40:]
-            bytecode = bytecode.replace(marker, address)
+        for match in re.finditer(LIBRARY_PATTERN, bytecode):
+            library = match.group("lib").rstrip("_")
+            address = _get_library_address(self._parent._project, library)
+            bytecode = bytecode.replace(match.group(), address)
 
         data = format_input(self.abi, args)
         types_list = get_type_strings(self.abi["inputs"])
@@ -2097,6 +2097,25 @@ def _call_autosuggest(method: Any) -> List:
 def _transact_autosuggest(method: Any) -> List:
     method = method.__reduce__()[1][0]
     return _contract_method_autosuggest(method.abi["inputs"], True, method.payable)
+
+
+def _get_library_address(project: Any, library: str) -> str:
+    contract_lib = None
+    libs = getattr(project, "_libraries", {})
+    try:
+        contract_lib = project[library]
+    except KeyError:
+        if library not in libs:
+            raise UndeployedLibrary(
+                f"Contract requires '{library}' library, but it has not been deployed yet"
+            )
+    if contract_lib:
+        return contract_lib[-1].address[-40:]
+    elif library in libs:
+        return libs[library][2:]
+    raise UndeployedLibrary(
+        f"Contract requires '{library}' library, but it has not been deployed yet"
+    )
 
 
 # assign the autosuggest functionality to various methods

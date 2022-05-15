@@ -31,11 +31,13 @@ from brownie._config import (
     _load_project_config,
     _load_project_dependencies,
     _load_project_envvars,
+    _load_project_libraries,
     _load_project_structure_config,
 )
 from brownie._expansion import expand_posix_vars
 from brownie.exceptions import (
     BadProjectName,
+    BrownieConfigError,
     BrownieEnvironmentWarning,
     InvalidPackage,
     PragmaError,
@@ -266,6 +268,7 @@ class Project(_ProjectBase):
 
         self._active = True
         _loaded_projects.append(self)
+        self._libraries = self._load_libraries()
 
     def _get_changed_contracts(self, compiled_hashes: Dict) -> Dict:
         # get list of changed interfaces and contracts
@@ -348,6 +351,23 @@ class Project(_ProjectBase):
                 self._build._add_contract(build_json, contract_alias)
             else:
                 path.unlink()
+
+    def _load_libraries(self) -> Dict[str, str]:
+        libs = _load_project_libraries(self._path)
+        if not libs:
+            return {}
+        addresses: dict = {}
+        for name, address in libs.items():
+            if not re.match(r"^0x[0-9a-fA-F]{40}$", address):
+                raise BrownieConfigError(
+                    f"Wrong libraries address in config. Passed {name} with '{address}'"
+                )
+            if address in addresses:
+                raise BrownieConfigError(
+                    f"Address '{address}' is the same for '{addresses[address]}' and '{name}'"
+                )
+            addresses[address] = name
+        return libs
 
     def _load_deployments(self) -> None:
         if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
