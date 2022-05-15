@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+import copy
 import json
 import os
 import re
@@ -73,7 +73,7 @@ class ConfigContainer:
         if id_ is None:
             id_ = self.settings["networks"]["default"]
 
-        network = self.networks[id_].copy()
+        network = copy.deepcopy(self.networks[id_])
         key = "development" if "cmd" in network else "live"
         network["settings"] = self.settings["networks"][key].copy()
 
