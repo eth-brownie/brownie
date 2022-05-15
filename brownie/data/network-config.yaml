@@ -92,6 +92,20 @@ live:
         id: bsc-main
         host: https://bsc-dataseed.binance.org
         explorer: https://api.bscscan.com/api
+  - name: Boba
+    networks:
+      - name: Testnet
+        chainid: 28
+        id: boba-test
+        host: https://rinkeby.boba.network
+        explorer: https://blockexplorer.rinkeby.boba.network/api
+        multicall2: "0xeD188A73c442Df375b19b7b8f394a15a2b851BB5"
+      - name: Mainnet
+        chainid: 288
+        id: boba-main
+        host: https://mainnet.boba.network
+        explorer: https://blockexplorer.boba.network/api
+        multicall2: "0xbe2Be647F8aC42808E67431B4E1D6c19796bF586"
   - name: Fantom Opera
     networks:
       - name: Testnet
@@ -119,6 +133,20 @@ live:
         host: https://moonbeam.api.onfinality.io/public
         explorer: https://api-moonbeam.moonscan.io/api
         multicall2: "0x1337BedC9D22ecbe766dF105c9623922A27963EC"
+      - name: Moonbase Alpha
+        chainid: 1287 
+        id: moonbeam-test
+        host: https://moonbeam-alpha.api.onfinality.io/public
+        explorer: https://api-moonbeam.moonscan.io/api
+        multicall2: "0x37084d0158C68128d6Bc3E5db537Be996f7B6979"
+  - name: Moonriver
+    networks:
+      - name: Mainnet
+        chainid: 1285
+        id: moonriver-main
+        host: https://moonriver.api.onfinality.io/public
+        explorer: https://api-moonriver.moonscan.io/api
+        multicall2: "0xaef00a0cf402d9dedd54092d9ca179be6f9e5ce3"
   - name: Optimistic Ethereum
     networks:
       - name: Mainnet

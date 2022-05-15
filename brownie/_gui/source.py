@@ -159,7 +159,7 @@ class SourceNoteBook(ttk.Notebook):
                 k
                 for k, v in self.root.pcMap.items()
                 if "path" in v
-                and frame._label in v["path"]
+                and frame._label in self.root.pathMap[v["path"]]
                 and is_inside_offset((start, stop), v["offset"])
             ]
         if not pc:
