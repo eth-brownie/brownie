@@ -347,7 +347,7 @@ def _list_providers(verbose=False):
 
 def _parse_args(args):
     try:
-        args = dict(i.split("=") for i in args)
+        args = dict(i.split("=", maxsplit=1) for i in args)
     except ValueError:
         raise ValueError("Arguments must be given as key=value") from None
 
