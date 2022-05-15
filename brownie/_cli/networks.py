@@ -121,12 +121,15 @@ def _add(env, id_, *args):
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
     if env.lower() == "development":
-        new = {
-            "name": args.pop("name"),
-            "id": id_,
-            "cmd": args.pop("cmd"),
-            "host": args.pop("host"),
-        }
+        try:
+            new = {
+                "name": args.pop("name"),
+                "id": id_,
+                "cmd": args.pop("cmd"),
+                "host": args.pop("host"),
+            }
+        except KeyError as exc:
+            raise ValueError(f"Missing field: {exc.args[0]}")
         if "timeout" in args:
             new["timeout"] = args.pop("timeout")
         new["cmd_settings"] = args
