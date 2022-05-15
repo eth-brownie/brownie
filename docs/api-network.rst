@@ -9,7 +9,7 @@ The ``network`` package holds classes for interacting with the Ethereum blockcha
 ``brownie.network.main``
 ========================
 
-The ``main`` module contains methods for conncting to or disconnecting from the network. All of these methods are available directly from ``brownie.network``.
+The ``main`` module contains methods for connecting to or disconnecting from the network. All of these methods are available directly from ``brownie.network``.
 
 .. py:method:: main.connect(network = None, launch_rpc = True)
 
@@ -453,7 +453,7 @@ Account Methods
     .. code-block:: python
 
         >>> deployment_bytecode = "0x6103f056600035601c52740100..."
-        >>> accounts[0].transer(data=deployment_bytecode)
+        >>> accounts[0].transfer(data=deployment_bytecode)
         Transaction sent: 0x2b33315f7f9ec86d27112ea6dffb69b6eea1e582d4b6352245c0ac8e614fe06f
           Gas price: 0.0 gwei   Gas limit: 6721975
           Transaction confirmed - Block: 1   Gas used: 268460 (3.99%)
