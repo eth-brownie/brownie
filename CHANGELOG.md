@@ -6,6 +6,10 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Added
+- Allow to subscribe to events, with callbacks, using the corresponding contract instance.
+- Allow to retrieve events that have occurred between two blocks using the corresponding contract instance.
+- Allow listening for an event using the associated contract instance.
 
 ## [1.18.1](https://github.com/eth-brownie/brownie/tree/v1.18.1) - 2022-02-15
 ### Fixed
