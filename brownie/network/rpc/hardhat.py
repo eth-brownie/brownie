@@ -42,11 +42,11 @@ def launch(cmd: str, **kwargs: Dict) -> None:
 
     Args:
         cmd: command string to execute as subprocess"""
-    # if sys.platform == "win32" and not cmd.split(" ")[0].endswith(".cmd"):
-    #     if " " in cmd:
-    #         cmd = cmd.replace(" ", ".cmd ", 1)
-    #     else:
-    #         cmd += ".cmd"
+    if sys.platform == "win32" and not cmd.split(" ")[0].endswith(".cmd"):
+        if " " in cmd:
+            cmd = cmd.replace(" ", ".cmd ", 1)
+        else:
+            cmd += ".cmd"
     cmd_list = cmd.split(" ")
     for key, value in [(k, v) for k, v in kwargs.items() if v and k not in IGNORED_SETTINGS]:
         try:

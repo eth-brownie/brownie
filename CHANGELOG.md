@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fix download of dependencies with special characters in tag/version ([#1470](https://github.com/eth-brownie/brownie/pull/1470))
 - Deepcopy config so that disconnecting and reconnecting to networks works fully ([#1466](https://github.com/eth-brownie/brownie/pull/1466))
+- hardhat integration on windows ([#1482](https://github.com/eth-brownie/brownie/pull/1482))
 
 ## [1.18.1](https://github.com/eth-brownie/brownie/tree/v1.18.1) - 2022-02-15
 ### Fixed
