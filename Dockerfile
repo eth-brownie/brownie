@@ -5,12 +5,12 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 # Install linux dependencies
-RUN apt-get update && apt-get install -y libssl-dev
+RUN apt-get update \
+ && apt-get install -y libssl-dev npm
 
-RUN apt-get update && apt-get install -y \
-    npm
-
-RUN npm install -g ganache-cli
+RUN npm install n -g \
+ && npm install -g npm@latest
+RUN npm install -g ganache
 
 COPY requirements.txt .
 COPY requirements-dev.txt .

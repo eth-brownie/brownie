@@ -179,7 +179,7 @@ def _load_config(project_path: Path) -> Dict:
 
     with path.open() as fp:
         if path.suffix in (".yaml", ".yml"):
-            return yaml.safe_load(fp)
+            return yaml.safe_load(fp) or {}
         raw_json = fp.read()
     valid_json = re.sub(r'\/\/[^"]*?(?=\n|$)', "", raw_json)
     return json.loads(valid_json)

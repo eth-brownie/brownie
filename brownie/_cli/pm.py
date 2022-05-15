@@ -12,7 +12,7 @@ from brownie.utils.docopt import docopt
 __doc__ = """Usage: brownie pm <command> [<arguments> ...] [options]
 
 Commands:
-  list                          List available accounts
+  list                          List installed packages
   install <uri> [version]       Install a new package
   clone <id> [path]             Make a copy of an installed package
   delete <id>                   Delete an installed package

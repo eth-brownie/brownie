@@ -5,7 +5,8 @@ import importlib
 import sys
 import warnings
 from hashlib import sha1
-from pathlib import Path
+from importlib.machinery import SourceFileLoader
+from pathlib import Path, WindowsPath
 from types import FunctionType, ModuleType
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -46,7 +47,13 @@ def run(
         project._add_to_main_namespace()
 
     # modify sys.path to ensure script can be imported
-    root_path = Path(".").resolve().root
+    if type(script) == WindowsPath:
+        # far from elegant but just works
+        root_path = str(Path(".").resolve())
+        script = script.relative_to(Path("..").resolve())
+    else:
+        root_path = Path(".").resolve().root
+
     sys.path.insert(0, root_path)
 
     try:
@@ -74,8 +81,8 @@ def run(
 
         # first, we extract the source code from the function and parse it to an AST
         # we generate the AST from the entire module to preserve line numbers
-        with Path(module.__file__).open() as fp:
-            source = fp.read()
+        assert isinstance(module.__loader__, SourceFileLoader)
+        source = module.__loader__.get_source(module.__name__) or ""
         func_ast = ast.parse(source)
 
         # use the last function with the correct name, consistent with how python handles

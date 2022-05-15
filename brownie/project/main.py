@@ -806,7 +806,7 @@ def _install_from_ethpm(uri: str) -> str:
     install_path.mkdir(exist_ok=True)
     install_path = install_path.joinpath(f"{repo}@{version}")
     if install_path.exists():
-        raise FileExistsError("Package is aleady installed")
+        raise FileExistsError("Package is already installed")
 
     try:
         new(str(install_path), ignore_existing=True)
