@@ -14,7 +14,7 @@ from io import BytesIO
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import requests
 import yaml
@@ -806,11 +806,12 @@ def _install_from_ethpm(uri: str) -> str:
     install_path.mkdir(exist_ok=True)
     install_path = install_path.joinpath(f"{repo}@{version}")
     if install_path.exists():
-        raise FileExistsError("Package is aleady installed")
+        raise FileExistsError("Package is already installed")
 
     try:
         new(str(install_path), ignore_existing=True)
         ethpm.install_package(install_path, uri)
+        Path.touch(install_path / ".env")
         project = load(install_path)
         project.close()
     except Exception as e:
@@ -858,7 +859,18 @@ def _install_from_github(package_id: str) -> str:
         download_url = _get_download_url_from_tag(org, repo, version, headers)
 
     existing = list(install_path.parent.iterdir())
-    _stream_download(download_url, str(install_path.parent), headers)
+
+    # Some versions contain special characters and github api seems to display url without
+    # encoding them.
+    # It results in a ConnectionError exception because the actual download url is encoded.
+    # In this case we try to sanitize the version in url and download again.
+    try:
+        _stream_download(download_url, str(install_path.parent), headers)
+    except ConnectionError:
+        download_url = (
+            f"https://api.github.com/repos/{org}/{repo}/zipball/refs/tags/{quote(version)}"
+        )
+        _stream_download(download_url, str(install_path.parent), headers)
 
     installed = next(i for i in install_path.parent.iterdir() if i not in existing)
     shutil.move(installed, install_path)
@@ -887,6 +899,8 @@ def _install_from_github(package_id: str) -> str:
 
             with install_path.joinpath("brownie-config.yaml").open("w") as fp:
                 yaml.dump(brownie_config, fp)
+
+            Path.touch(install_path / ".env")
 
         project = load(install_path)
         project.close()
