@@ -31,7 +31,7 @@ The easiest way to install a package is from a Github repository. Brownie consid
 
 A repository does not have to implement Brownie in order to function as a package. Many popular projects using frameworks such as Truffle or Embark can be added as Brownie packages.
 
-To install a package from Github you must use a package ID. A package ID is comprised of the name of an organization, a repository, and a version tag. Package IDs are not not case sensitive.
+To install a package from Github you must use a package ID. A package ID is comprised of the name of an organization, a repository, and a version tag. Package IDs are not case sensitive.
 
 .. code-block:: bash
 

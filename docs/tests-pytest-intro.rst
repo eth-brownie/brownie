@@ -94,7 +94,7 @@ Fixtures can also be included as dependencies of other fixtures:
 Brownie Pytest Fixtures
 -----------------------
 
-Brownie provides fixtures that simplify interact with and testing your project. Most core Brownie functionality can be accessed via a fixture rather than an import statement. For example, here is the previous example using Brownie fixtures rather than imports:
+Brownie provides fixtures that simplify interacting with and testing your project. Most core Brownie functionality can be accessed via a fixture rather than an import statement. For example, here is the previous example using Brownie fixtures rather than imports:
 
 .. code-block:: python
     :linenos:
