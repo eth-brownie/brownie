@@ -66,6 +66,7 @@ _explorer_tokens = {
     "arbiscan": "ARBISCAN_TOKEN",
     "snowtrace": "SNOWTRACE_TOKEN",
     "aurorascan": "AURORASCAN_TOKEN",
+    "moonscan": "MOONSCAN_TOKEN",
 }
 
 
