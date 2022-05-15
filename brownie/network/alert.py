@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import time as time
+import time
 from threading import Thread
 from typing import Callable, Dict, List, Tuple, Union
 

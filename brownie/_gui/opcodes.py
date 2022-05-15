@@ -118,7 +118,8 @@ class OpcodeList(ttk.Treeview):
         if "path" not in pcMap:
             note.active_frame().clear_highlight()
             return
-        note.set_active(pcMap["path"])
+        label = self.root.pathMap[pcMap["path"]]
+        note.set_active(label)
         note.active_frame().highlight(*pcMap["offset"])
 
     def _seek(self, event):
