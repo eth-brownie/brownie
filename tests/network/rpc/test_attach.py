@@ -18,15 +18,15 @@ def test_attach_lookup_error(no_rpc):
         no_rpc.attach("http://127.0.0.1:7545")
 
 
-def test_already_active(temp_rpc, temp_port):
+def test_already_active(temp_rpc, temp_port, temp_host):
     with pytest.raises(SystemError):
-        temp_rpc.attach(f"http://127.0.0.1:{temp_port}")
+        temp_rpc.attach(f"http://{temp_host}:{temp_port}")
 
 
-def test_attach(attachable_rpc, temp_port):
-    attachable_rpc.attach(f"http://127.0.0.1:{temp_port}")
+def test_attach(attachable_rpc, temp_port, temp_host):
+    attachable_rpc.attach(f"http://{temp_host}:{temp_port}")
     attachable_rpc.process = None
-    attachable_rpc.attach(("127.0.0.1", temp_port))
+    attachable_rpc.attach((f"{temp_host}", temp_port))
     assert attachable_rpc.is_active()
 
 
