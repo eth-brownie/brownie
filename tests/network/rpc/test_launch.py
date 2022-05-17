@@ -16,19 +16,20 @@ def test_launch_process_fails(no_rpc):
         no_rpc.launch("ganache-cli --help")
 
 
-def test_launch(no_rpc, temp_port):
+def test_launch(no_rpc, temp_port, temp_host):
     assert not no_rpc.is_active()
     assert not no_rpc.is_child()
-    no_rpc.launch("ganache-cli", port=temp_port)
+    no_rpc.launch("ganache-cli", port=temp_port, host=temp_host)
     assert no_rpc.is_active()
     assert no_rpc.is_child()
 
 
-def test_launch_with_mnemonic(no_rpc, temp_port):
+def test_launch_with_mnemonic(no_rpc, temp_port, temp_host):
     no_rpc.kill(False)
     no_rpc.launch(
         "ganache-cli",
         port=temp_port,
+        host=temp_host,
         mnemonic="patient rude simple dog close planet oval animal hunt sketch suspect slim",
     )
     assert brownie.network.accounts[0] == "0x7cB87a59C85a0c6d8E2953ed54f1c9E4C28E25E5"
