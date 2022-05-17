@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
 ### Fixed
-- Pass the network host parameter to local RPC networks (this allows hostname configuration, for example, for use with dockerized RPC clients).
+- Pass the network host parameter when launching local RPC networks (to enable use with dockerized RPC clients) ([#1534](https://github.com/eth-brownie/brownie/pull/1534))
 
 ## [1.18.2](https://github.com/eth-brownie/brownie/tree/v1.18.2) - 2022-05-15
 ### Added
