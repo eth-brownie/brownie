@@ -6,12 +6,37 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+<<<<<<< HEAD
 ### Fixed
 - Deepcopy config so that disconnecting and reconnecting to networks works fully ([#1466](https://github.com/eth-brownie/brownie/pull/1466))
+=======
+### Added
+- Initial support for [Anvil](https://github.com/foundry-rs/foundry/tree/master/anvil), a blazing-fast local testnet node implementation in Rust ([#1541](https://github.com/eth-brownie/brownie/pull/1541))
+
+
+## [1.18.2](https://github.com/eth-brownie/brownie/tree/v1.18.2) - 2022-05-15
+### Added
+- Subscribe to events, with callbacks, using the corresponding contract instance ([#1453](https://github.com/eth-brownie/brownie/pull/1453))
+- Retrieve events that have occurred between two blocks using the corresponding contract instance ([#1453](https://github.com/eth-brownie/brownie/pull/1453))
+- Listening for an event using the associated contract instance ([#1453](https://github.com/eth-brownie/brownie/pull/1453))
+- Allow cache disabling when forking with ganache ([#1473](https://github.com/eth-brownie/brownie/pull/1473))
+- Detect 0xsplits clone proxies ([#1524](https://github.com/eth-brownie/brownie/pull/1524))
+
+### Fixed
+- Fix download of dependencies with special characters in tag/version ([#1470](https://github.com/eth-brownie/brownie/pull/1470))
+- Deepcopy config so that disconnecting and reconnecting to networks works fully ([#1466](https://github.com/eth-brownie/brownie/pull/1466))
+- Hardhat integration on Windows ([#1482](https://github.com/eth-brownie/brownie/pull/1482))
+- Handle equal sign in network RPC address ([#1450](https://github.com/eth-brownie/brownie/pull/1450))
+- `ReturnValue` comparison on tuples containing strings ([#1476](https://github.com/eth-brownie/brownie/pull/1476))
+- Ensure `.env` file exists on installed packages ([#1504](https://github.com/eth-brownie/brownie/pull/1504))
+- Bug when highlighting source code in GUI ([#1512](https://github.com/eth-brownie/brownie/pull/1512))
+- Bug when highlighting opcodes in GUI ([#1513](https://github.com/eth-brownie/brownie/pull/1513))
+>>>>>>> upstream/anvil
 
 ## [1.18.1](https://github.com/eth-brownie/brownie/tree/v1.18.1) - 2022-02-15
 ### Fixed
 - Correctly modify chain time when using `chain.mine` with Ganache v7 ([#1438](https://github.com/eth-brownie/brownie/pull/1438))
+- Ensure `.env` file exists for installed packages ([#1504](https://github.com/eth-brownie/brownie/pull/1504))
 
 ## [1.18.0](https://github.com/eth-brownie/brownie/tree/v1.18.0) - 2022-02-14
 ### Added

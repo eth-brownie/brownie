@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import asyncio
 import io
 import json
 import os
@@ -9,17 +10,32 @@ import warnings
 from pathlib import Path
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
-from typing import Any, Dict, Iterator, List, Match, Optional, Set, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    Iterator,
+    List,
+    Match,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 from urllib.parse import urlparse
 
 import eth_abi
 import requests
 import solcx
-from eth_utils import remove_0x_prefix
+from eth_utils import combomethod, remove_0x_prefix
 from hexbytes import HexBytes
 from semantic_version import Version
 from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
+from web3._utils import filters
+from web3.datastructures import AttributeDict
+from web3.types import LogReceipt
 
 from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS, _load_project_compiler_config
 from brownie.convert.datatypes import Wei
@@ -44,7 +60,7 @@ from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
 from . import accounts, chain
-from .event import _add_deployment_topics, _get_topics
+from .event import _add_deployment_topics, _get_topics, event_watcher
 from .state import (
     _add_contract,
     _add_deployment,
@@ -54,7 +70,7 @@ from .state import (
     _remove_deployment,
     _revert_register,
 )
-from .web3 import _resolve_address, web3
+from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
 _unverified_addresses: Set = set()
 
@@ -66,6 +82,7 @@ _explorer_tokens = {
     "arbiscan": "ARBISCAN_TOKEN",
     "snowtrace": "SNOWTRACE_TOKEN",
     "aurorascan": "AURORASCAN_TOKEN",
+    "moonscan": "MOONSCAN_TOKEN",
 }
 
 
@@ -700,6 +717,7 @@ class _DeployedContractBase(_ContractBase):
         self._owner = owner
         self.tx = tx
         self.address = address
+        self.events = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
 
         fn_names = [i["name"] for i in self.abi if i["type"] == "function"]
@@ -1315,6 +1333,139 @@ class ProjectContract(_DeployedContractBase):
         _DeployedContractBase.__init__(self, address, owner, tx)
 
 
+class ContractEvents(_ContractEvents):
+    def __init__(self, contract: _DeployedContractBase):
+        self.linked_contract = contract
+
+        # Ignoring type since ChecksumAddress type is an alias for string
+        _ContractEvents.__init__(self, contract.abi, web3, contract.address)  # type: ignore
+
+    def subscribe(
+        self, event_name: str, callback: Callable[[AttributeDict], None], delay: float = 2.0
+    ) -> None:
+        """
+        Subscribe to event with a name matching 'event_name', calling the 'callback'
+        function on new occurence giving as parameter the event log receipt.
+
+        Args:
+            event_name (str): Name of the event to subscribe to.
+            callback (Callable[[AttributeDict], None]): Function called whenever an event occurs.
+            delay (float, optional): Delay between each check for new events. Defaults to 2.0.
+        """
+        target_event: ContractEvent = self.__getitem__(event_name)  # type: ignore
+        event_watcher.add_event_callback(event=target_event, callback=callback, delay=delay)
+
+    def get_sequence(
+        self, from_block: int, to_block: int = None, event_type: Union[ContractEvent, str] = None
+    ) -> Union[List[AttributeDict], AttributeDict]:
+        """Returns the logs of events of type 'event_type' that occurred between the
+        blocks 'from_block' and 'to_block'. If 'event_type' is not specified,
+        it retrieves the occurrences of all events in the contract.
+
+        Args:
+            from_block (int): The block from which to search for events that have occurred.
+            to_block (int, optional): The block on which to stop searching for events.
+            if not specified, it is set to the most recently mined block (web3.eth.block_number).
+            Defaults to None.
+            event_type (ContractEvent, str, optional): Type or name of the event to be searched
+            between the specified blocks. Defaults to None.
+
+        Returns:
+            if 'event_type' is specified:
+                [list]: List of events of type 'event_type' that occured between
+                'from_block' and 'to_block'.
+            else:
+                event_logbook [dict]: Dictionnary of events of the contract that occured
+                between 'from_block' and 'to_block'.
+        """
+        if to_block is None or to_block > web3.eth.block_number:
+            to_block = web3.eth.block_number
+
+        # Returns event sequence for the specified event
+        if event_type is not None:
+            if isinstance(event_type, str):
+                # If 'event_type' is a string, search for an event with a name matching it.
+                event_type: ContractEvent = self.__getitem__(event_type)  # type: ignore
+            return self._retrieve_contract_events(event_type, from_block, to_block)
+
+        # Returns event sequence for all contract events
+        events_logbook = dict()
+        for event in ContractEvents.__iter__(self):
+            events_logbook[event.event_name] = self._retrieve_contract_events(
+                event, from_block, to_block
+            )
+        return AttributeDict(events_logbook)
+
+    def listen(self, event_name: str, timeout: float = 0) -> Coroutine:
+        """
+        Creates a listening Coroutine object ending whenever an event matching
+        'event_name' occurs. If timeout is superior to zero and no event matching
+        'event_name' has occured, the Coroutine ends when the timeout is reached.
+
+        The Coroutine return value is an AttributeDict filled with the following fileds :
+            - 'event_data' (AttributeDict): The event log receipt that was caught.
+            - 'timed_out' (bool): False if the event did not timeout, else True
+
+        If the 'timeout' parameter is not passed or is inferior or equal to 0,
+        the Coroutine listens indefinitely.
+
+        Args:
+            event_name (str): Name of the event to be listened to.
+            timeout (float, optional): Timeout value in seconds. Defaults to 0.
+
+        Returns:
+            Coroutine: Awaitable object listening for the event matching 'event_name'.
+        """
+        _triggered: bool = False
+        _received_data: Union[AttributeDict, None] = None
+
+        def _event_callback(event_data: AttributeDict) -> None:
+            """
+            Fills the nonlocal varialbe '_received_data' with the received
+            argument 'event_data' and sets the nonlocal '_triggered' variable to True
+            """
+            nonlocal _triggered, _received_data
+            _received_data = event_data
+            _triggered = True
+
+        _listener_end_time = time.time() + timeout
+
+        async def _listening_task(is_timeout: bool, end_time: float) -> AttributeDict:
+            """Generates and returns a coroutine listening for an event"""
+            nonlocal _triggered, _received_data
+            timed_out: bool = False
+
+            while not _triggered:
+                if is_timeout and end_time <= time.time():
+                    timed_out = True
+                    break
+                await asyncio.sleep(0.05)
+            return AttributeDict({"event_data": _received_data, "timed_out": timed_out})
+
+        target_event: ContractEvent = self.__getitem__(event_name)  # type: ignore
+        event_watcher.add_event_callback(
+            event=target_event, callback=_event_callback, delay=0.2, repeat=False
+        )
+        return _listening_task(bool(timeout > 0), _listener_end_time)
+
+    @combomethod
+    def _retrieve_contract_events(
+        self, event_type: ContractEvent, from_block: int = None, to_block: int = None
+    ) -> List[LogReceipt]:
+        """
+        Retrieves all log receipts from 'event_type' between 'from_block' and 'to_block' blocks
+        """
+        if to_block is None:
+            to_block = web3.eth.block_number
+        if from_block is None and isinstance(to_block, int):
+            from_block = to_block - 10
+
+        event_filter: filters.LogFilter = event_type.createFilter(
+            fromBlock=from_block, toBlock=to_block
+        )
+        return event_filter.get_all_entries()
+
+
 class OverloadedMethod:
     def __init__(self, address: str, name: str, owner: Optional[AccountsType]):
         self._address = address
@@ -1923,6 +2074,13 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
         and code[70:] == "5af4602c57600080fd5b6110006000f3"
     ):
         address = _resolve_address(code[30:70])
+    # 0xSplits Clones
+    elif (
+        code[:120]
+        == "36603057343d52307f830d2d700a97af574b186c80d40429385d24241565b08a7c559ba283a964d9b160203da23d3df35b3d3d3d3d363d3d37363d73"  # noqa e501
+        and code[160:] == "5af43d3d93803e605b57fd5bf3"
+    ):
+        address = _resolve_address(code[120:160])
 
     params: Dict = {"module": "contract", "action": action, "address": address}
     explorer, env_key = next(

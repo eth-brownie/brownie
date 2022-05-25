@@ -19,7 +19,7 @@ from hypothesis.database import DirectoryBasedExampleDatabase
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
 
-__version__ = "1.18.1"
+__version__ = "1.18.2"
 
 BROWNIE_FOLDER = Path(__file__).parent
 DATA_FOLDER = Path.home().joinpath(".brownie")
@@ -179,7 +179,7 @@ def _load_config(project_path: Path) -> Dict:
 
     with path.open() as fp:
         if path.suffix in (".yaml", ".yml"):
-            return yaml.safe_load(fp)
+            return yaml.safe_load(fp) or {}
         raw_json = fp.read()
     valid_json = re.sub(r'\/\/[^"]*?(?=\n|$)', "", raw_json)
     return json.loads(valid_json)
