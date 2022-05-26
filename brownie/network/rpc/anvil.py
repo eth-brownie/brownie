@@ -2,7 +2,6 @@
 
 import sys
 import warnings
-from pathlib import Path
 from subprocess import DEVNULL, PIPE
 from typing import Dict, List, Optional
 
