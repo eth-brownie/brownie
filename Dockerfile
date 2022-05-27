@@ -20,9 +20,12 @@ RUN --mount=type=cache,target=/root/.cache \
 RUN --mount=type=cache,target=/root/.cache \
     npm install --verbose --global "ganache@7.2.0"
 
+# (hardhat is installed with npx if needed)
+
 # prepare python dependencies
+ENV PIP_NO_WARN_ABOUT_ROOT_USER 0
 RUN --mount=type=cache,target=/root/.cache \
-    pip install --upgrade pip wheel setuptools
+    pip install --upgrade pip setuptools wheel
 
 # install anvil
 COPY --from=foundry /usr/local/bin/anvil /usr/local/bin/
