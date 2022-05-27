@@ -753,7 +753,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         if not hasattr(exc, "txid"):
                             raise exc from None
                         txid = exc.txid
-                        print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
+                        if not silent:
+                            print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
                         revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
                 try:
                     receipt = TransactionReceipt(

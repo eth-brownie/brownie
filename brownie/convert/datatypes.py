@@ -226,7 +226,7 @@ class EthAddress(str):
 def _address_compare(a: Any, b: Any) -> bool:
     b = str(b)
     if not b.startswith("0x") or not eth_utils.is_hex(b) or len(b) != 42:
-        raise TypeError(f"Invalid type for comparison: '{b}' is not a valid address")
+        return False
     return a.lower() == b.lower()
 
 

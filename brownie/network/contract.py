@@ -109,7 +109,11 @@ class _ContractBase:
 
     @property
     def _name(self) -> str:
-        return self._build["contractName"]
+        # TODO: why do we need this?
+        try:
+            return self._build["contractName"]
+        except AttributeError:
+            return None
 
     def info(self) -> None:
         """
@@ -700,11 +704,15 @@ class _DeployedContractBase(_ContractBase):
     _initialized = False
 
     def __init__(
-        self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
+        self,
+        address: str,
+        owner: Optional[AccountsType] = None,
+        tx: TransactionReceiptType = None,
+        allow_no_bytecode=False,
     ) -> None:
         address = _resolve_address(address)
         self.bytecode = web3.eth.get_code(address).hex()[2:]
-        if not self.bytecode:
+        if not self.bytecode and not allow_no_bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
         self._owner = owner
         self.tx = tx
@@ -780,7 +788,8 @@ class _DeployedContractBase(_ContractBase):
         try:
             return super().__getattribute__(name)
         except AttributeError:
-            raise AttributeError(f"Contract '{self._name}' object has no attribute '{name}'")
+            contract_name = getattr(self, "_name", "UnnamedContract")
+            raise AttributeError(f"Contract '{contract_name}' object has no attribute '{name}'")
 
     def __setattr__(self, name: str, value: Any) -> None:
         if self._initialized and hasattr(self, name):
@@ -848,7 +857,14 @@ class Contract(_DeployedContractBase):
     """
 
     def __init__(
-        self, address_or_alias: str, *args: Any, owner: Optional[AccountsType] = None, **kwargs: Any
+        self,
+        address_or_alias: str,
+        *args: Any,
+        as_proxy_for: Optional[str] = None,
+        owner: Optional[AccountsType] = None,
+        silent: bool = False,
+        allow_no_bytecode: bool = False,
+        **kwargs: Any,
     ) -> None:
         """
         Recreate a `Contract` object from the local database.
@@ -864,6 +880,8 @@ class Contract(_DeployedContractBase):
         owner : Account, optional
             Contract owner. If set, transactions without a `from` field
             will be performed using this account.
+        allow_no_bytecode : bool
+            if False, will raise an exception if there is no contract bytecode at the given address
         """
         address_or_alias = address_or_alias.strip()
 
@@ -895,12 +913,14 @@ class Contract(_DeployedContractBase):
                     raise ValueError(f"Unknown alias: '{address_or_alias}'")
                 else:
                     raise ValueError(f"Unknown contract address: '{address}'")
-            contract = self.from_explorer(address, owner=owner, silent=True)
+            contract = self.from_explorer(
+                address, as_proxy_for=as_proxy_for, owner=owner, silent=silent
+            )
             build, sources = contract._build, contract._sources
             address = contract.address
 
         _ContractBase.__init__(self, None, build, sources)
-        _DeployedContractBase.__init__(self, address, owner)
+        _DeployedContractBase.__init__(self, address, owner, allow_no_bytecode=allow_no_bytecode)
 
     def _deprecated_init(
         self,
@@ -945,6 +965,7 @@ class Contract(_DeployedContractBase):
         abi: List,
         owner: Optional[AccountsType] = None,
         persist: bool = True,
+        allow_no_bytecode: bool = False,
     ) -> "Contract":
         """
         Create a new `Contract` object from an ABI.
@@ -960,14 +981,21 @@ class Contract(_DeployedContractBase):
         owner : Account, optional
             Contract owner. If set, transactions without a `from` field
             will be performed using this account.
+        persist : bool
+            save the contract to brownie's deployments.db
+        allow_no_bytecode : bool
+            if False, will raise an exception if there is no contract bytecode at the given address
+
         """
         address = _resolve_address(address)
         build = {"abi": abi, "address": address, "contractName": name, "type": "contract"}
 
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build, {})  # type: ignore
-        _DeployedContractBase.__init__(self, address, owner, None)
-        if persist:
+        _DeployedContractBase.__init__(
+            self, address, owner, None, allow_no_bytecode=allow_no_bytecode
+        )
+        if persist and self.bytecode:
             _add_deployment(self)
         return self
 

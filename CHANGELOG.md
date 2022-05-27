@@ -6,6 +6,13 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+<<<<<<< HEAD
+### Fixed
+- Deepcopy config so that disconnecting and reconnecting to networks works fully ([#1466](https://github.com/eth-brownie/brownie/pull/1466))
+=======
+### Added
+- Initial support for [Anvil](https://github.com/foundry-rs/foundry/tree/master/anvil), a blazing-fast local testnet node implementation in Rust ([#1541](https://github.com/eth-brownie/brownie/pull/1541))
+
 
 ## [1.18.2](https://github.com/eth-brownie/brownie/tree/v1.18.2) - 2022-05-15
 ### Added
@@ -24,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ensure `.env` file exists on installed packages ([#1504](https://github.com/eth-brownie/brownie/pull/1504))
 - Bug when highlighting source code in GUI ([#1512](https://github.com/eth-brownie/brownie/pull/1512))
 - Bug when highlighting opcodes in GUI ([#1513](https://github.com/eth-brownie/brownie/pull/1513))
+>>>>>>> upstream/anvil
 
 ## [1.18.1](https://github.com/eth-brownie/brownie/tree/v1.18.1) - 2022-02-15
 ### Fixed

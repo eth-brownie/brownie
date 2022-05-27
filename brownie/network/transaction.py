@@ -634,7 +634,7 @@ class TransactionReceipt:
                 "debug_traceTransaction", (self.txid, {"disableStorage": CONFIG.mode != "console"})
             )
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            msg = f"Encountered a {type(e).__name__} while requesting "
+            msg = f"Encountered a {type(e).__name__} ({str(e)}) while requesting "
             msg += "`debug_traceTransaction`. The local RPC client has likely crashed."
             if CONFIG.argv["coverage"]:
                 msg += " If the error persists, add the `skip_coverage` marker to this test."
@@ -722,7 +722,11 @@ class TransactionReceipt:
                     else:
                         self._revert_msg = f"Panic (error code: {error_code})"
                 elif selector == "0x08c379a0":  # keccak of Error(string)
-                    self._revert_msg = decode_abi(["string"], data[4:])[0]
+                    try:
+                        self._revert_msg = decode_abi(["string"], data[4:])[0]
+                    except Exception:
+                        # print this one as bytes instead of hex because it probably has a string in it
+                        self._revert_msg = f"unparsed string error: {data[4:]}"
                 else:
                     # TODO: actually parse the data
                     self._revert_msg = f"typed error: {data.hex()}"
@@ -845,7 +849,7 @@ class TransactionReceipt:
                 self._call_cost = self.gas_used - trace[0]["gas"] + trace[-1]["gas"]
 
         # last_map gives a quick reference of previous values at each depth
-        last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
+        last_map = {0: _get_last_map(self.receiver, self.input[:10], False)}  # type: ignore
         coverage_eval: Dict = {last_map[0]["name"]: {}}
         precompile_contract = re.compile(r"0x0{38}(?:0[1-9]|1[0-8])")
         call_opcodes = ("CALL", "STATICCALL", "DELEGATECALL")
@@ -874,7 +878,9 @@ class TransactionReceipt:
                     address = step["stack"][-2][-40:]
 
                 if is_depth_increase:
-                    last_map[trace[i]["depth"]] = _get_last_map(address, sig)
+                    last_map[trace[i]["depth"]] = _get_last_map(
+                        address, sig, step["op"] == "DELEGATECALL"
+                    )
                     coverage_eval.setdefault(last_map[trace[i]["depth"]]["name"], {})
 
                 self._subcalls.append(
@@ -910,8 +916,14 @@ class TransactionReceipt:
 
             opcode = trace[i]["op"]
             if opcode == "CALL" and int(trace[i]["stack"][-3], 16):
+                # if last["address"] was delegatecalled, `last["address"]` is not the from. we need to keep going up
+                from_data = last
+                from_depth = trace[i]["depth"]
+                while from_data["delegated"]:
+                    from_depth -= 1
+                    from_data = last_map[from_depth]
                 self._add_internal_xfer(
-                    last["address"], trace[i]["stack"][-2][-40:], trace[i]["stack"][-3]
+                    from_data["address"], trace[i]["stack"][-2][-40:], trace[i]["stack"][-3]
                 )
 
             try:
@@ -1405,9 +1417,15 @@ def _get_memory(step: Dict, idx: int) -> HexBytes:
     return data
 
 
-def _get_last_map(address: EthAddress, sig: str) -> Dict:
+def _get_last_map(address: EthAddress, sig: str, delegated: bool) -> Dict:
     contract = state._find_contract(address)
-    last_map = {"address": EthAddress(address), "jumpDepth": 0, "name": None, "coverage": False}
+    last_map = {
+        "address": EthAddress(address),
+        "jumpDepth": 0,
+        "name": None,
+        "coverage": False,
+        "delegated": delegated,
+    }
 
     if contract:
         if contract.get_method(sig):
