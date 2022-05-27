@@ -190,16 +190,13 @@ class Multicall:
             allow_no_bytecode = True
         else:
             # the multicall contract isn't deployed. use state overrides
+            # TODO: if we are using anvil, set a permanent override here?
             allow_no_bytecode = True
-            if "ganache" in CONFIG.active_network.get("cmd", ""):
-                # depends on https://github.com/trufflesuite/ganache/pull/2565 (slated for ganache v7.1.0)
-                self.state_override = NotImplemented
-            else:
-                self.state_override = {
-                    self.address: {
-                        "code": MULTICALL2_BYTECODE,
-                    },
-                }
+            self.state_override = {
+                self.address: {
+                    "code": MULTICALL2_BYTECODE,
+                },
+            }
 
         # TODO: this gives an error about "no contract deployed" when we fork from an old block
         # TODO: but if we have state overrides, it doesn't matter. how do we make brownie okay with this?
