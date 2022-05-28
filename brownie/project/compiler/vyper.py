@@ -365,7 +365,12 @@ def _generate_coverage_data(
         if pc_list[-1]["op"] not in ("JUMPI", "REVERT"):
             continue
 
-        node = _find_node_by_offset(ast_json, offset)
+        try:
+            node = _find_node_by_offset(ast_json, offset)
+        except StopIteration:
+            # TODO in vyper >0.3.3 this sometimes fails - unsure if the issue is in brownie or vyper
+            continue
+
         if pc_list[-1]["op"] == "REVERT" or _is_revert_jump(pc_list[-2:], revert_pc):
             # custom revert error strings
             if node["ast_type"] == "FunctionDef":
