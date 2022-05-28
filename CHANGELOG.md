@@ -6,6 +6,9 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Added
+- Initial support for [Anvil](https://github.com/foundry-rs/foundry/tree/master/anvil), a blazing-fast local testnet node implementation in Rust ([#1541](https://github.com/eth-brownie/brownie/pull/1541))
+
 
 ## [1.18.2](https://github.com/eth-brownie/brownie/tree/v1.18.2) - 2022-05-15
 ### Added

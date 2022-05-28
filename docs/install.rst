@@ -109,3 +109,19 @@ Once installed, include the ``--network hardhat`` flag to run Brownie with Hardh
 The first time you use Hardhat within a Brownie project, a ``hardhat.config.js`` `configuration file <https://hardhat.org/config/>`_ is generated. You should not modify any of the settings within this file as they are required for compatibility.
 
 If you have updated your brownie version from older versions, hardhat networks will be missing. You have to update ``~/.brownie/network-config.yaml``. It can be updated using the one `here <https://github.com/eth-brownie/brownie/blob/master/brownie/data/network-config.yaml>`_
+
+
+Using Brownie with Anvil
+==========================
+
+`Anvil <https://github.com/foundry-rs/foundry/tree/master/anvil>`_ is a blazing-fast local testnet node implementation in Rust. Anvil may be used as an alternative to Ganache within Brownie.
+
+To use Anvil with Brownie, you must first `follow their steps to install Anvil <https://github.com/foundry-rs/foundry/tree/master/anvil#installation>`_.
+
+Once installed, include the ``--network anvil`` or ``--network anvil-fork`` flag to run Brownie with Anvil. For example, to launch the console:
+
+    .. code-block:: bash
+
+        brownie console --network anvil
+
+If you have updated your brownie version from older versions, anvil networks will be missing. You have to update ``~/.brownie/network-config.yaml``. It can be updated using the one `here <https://github.com/eth-brownie/brownie/blob/master/brownie/data/network-config.yaml>`_

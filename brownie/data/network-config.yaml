@@ -189,6 +189,19 @@ live:
         explorer: https://blockscout.com/poa/sokol/api
 
 development:
+  - name: Anvil
+    id: anvil
+    cmd: anvil
+    host: http://127.0.0.1
+    cmd_settings:
+      port: 8545
+  - name: Anvil (Mainnet Fork)
+    id: anvil-fork
+    cmd: anvil
+    host: http://127.0.0.1
+    cmd_settings:
+      fork: mainnet
+      port: 8545
   - name: Ganache-CLI
     id: development
     cmd: ganache-cli
