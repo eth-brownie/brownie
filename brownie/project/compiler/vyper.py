@@ -365,10 +365,8 @@ def _generate_coverage_data(
         if pc_list[-1]["op"] not in ("JUMPI", "REVERT"):
             continue
 
-        try:
-            node = _find_node_by_offset(ast_json, offset)
-        except StopIteration:
-            # TODO in vyper >0.3.3 this sometimes fails - unsure if the issue is in brownie or vyper
+        node = _find_node_by_offset(ast_json, offset)
+        if node is None:
             continue
 
         if pc_list[-1]["op"] == "REVERT" or _is_revert_jump(pc_list[-2:], revert_pc):
@@ -421,15 +419,19 @@ def _convert_src(src: str) -> Tuple[int, int]:
     return src_int[0], src_int[0] + src_int[1]
 
 
-def _find_node_by_offset(ast_json: List, offset: Tuple) -> Dict:
-    node = next(i for i in ast_json if is_inside_offset(offset, _convert_src(i["src"])))
-    if _convert_src(node["src"]) == offset:
-        return node
-    node_list = [i for i in node.values() if isinstance(i, dict) and "ast_type" in i]
-    node_list.extend([x for i in node.values() if isinstance(i, list) for x in i])
-    if node_list:
-        return _find_node_by_offset(node_list, offset)
-    return _find_node_by_offset(ast_json[ast_json.index(node) + 1 :], offset)
+def _find_node_by_offset(ast_json: List, offset: Tuple) -> Optional[Dict]:
+    for node in [i for i in ast_json if is_inside_offset(offset, _convert_src(i["src"]))]:
+        if _convert_src(node["src"]) == offset:
+            return node
+        node_list = [i for i in node.values() if isinstance(i, dict) and "ast_type" in i]
+        node_list.extend([x for i in node.values() if isinstance(i, list) for x in i])
+        if node_list:
+            result = _find_node_by_offset(node_list, offset)
+        else:
+            result = _find_node_by_offset(ast_json[ast_json.index(node) + 1 :], offset)
+        if result is not None:
+            return result
+    return None
 
 
 def _get_statement_nodes(ast_json: List) -> List:
