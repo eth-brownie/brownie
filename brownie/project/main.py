@@ -835,18 +835,23 @@ def _maybe_retrieve_github_auth() -> Dict[str, str]:
 
 def _install_from_github(package_id: str) -> str:
     try:
-        path, version = package_id.split("@")
+        split = package_id.split("@")
+        path = split[0]
+        version = "@".join(split[1:])
         org, repo = path.split("/")
     except ValueError:
         raise ValueError(
             "Invalid package ID. Must be given as [ORG]/[REPO]@[VERSION]"
-            "\ne.g. 'OpenZeppelin/openzeppelin-contracts@v2.5.0'"
+            "\ne.g. 'OpenZeppelin/openzeppelin-contracts@v3.1.0'"
         ) from None
 
     base_install_path = _get_data_folder().joinpath("packages")
     install_path = base_install_path.joinpath(f"{org}")
     install_path.mkdir(exist_ok=True)
-    install_path = install_path.joinpath(f"{repo}@{version}")
+
+    # Sanitize version removing paths For example UMA's ""@uma/core@1.2.0"
+    version_sanitized = version.replace(os.path.sep, "")
+    install_path = install_path.joinpath(f"{repo}@{version_sanitized}")
     if install_path.exists():
         raise FileExistsError("Package is aleady installed")
 
