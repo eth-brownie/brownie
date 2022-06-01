@@ -784,7 +784,7 @@ class _DeployedContractBase(_ContractBase):
 
     def __getattribute__(self, name: str) -> Any:
         if super().__getattribute__("_reverted"):
-            raise ContractNotFound("This contract no longer exists.")
+            raise ContractNotFound(f"This contract no longer exists at {self.address}")
         try:
             return super().__getattribute__(name)
         except AttributeError:
