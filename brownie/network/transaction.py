@@ -438,7 +438,7 @@ class TransactionReceipt:
             source = self._error_string(1)
             contract = state._find_contract(self.receiver)
             if contract:
-                marker = "//" if contract._build["language"] == "Solidity" else "#"
+                marker = "//" if contract._build.get("language") == "Solidity" else "#"
                 line = self._traceback_string().split("\n")[-1]
                 if marker + " dev: " in line:
                     self._dev_revert_msg = line[line.index(marker) + len(marker) : -5].strip()
@@ -781,7 +781,7 @@ class TransactionReceipt:
                         source = contract._sources.get(step["source"]["filename"])
                         offset = step["source"]["offset"][1]
                         line = source[offset:].split("\n")[0]
-                        marker = "//" if contract._build["language"] == "Solidity" else "#"
+                        marker = "//" if contract._build.get("language") == "Solidity" else "#"
                         revert_str = line[line.index(marker) + len(marker) :].strip()
                         if revert_str.startswith("dev:"):
                             self._dev_revert_msg = revert_str
