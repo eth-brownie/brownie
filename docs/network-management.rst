@@ -201,7 +201,7 @@ Brownie allows you to bulk modify the provider you use by setting the `provider`
 
 ::
 
-    $ brownie networks providers_list
+    $ brownie networks list_providers
 
     Brownie v1.17.2 - Python development framework for Ethereum
 
@@ -212,7 +212,7 @@ or
 
 ::
 
-    $ brownie networks providers_list True
+    $ brownie networks list_providers True
 
     Brownie v1.17.2 - Python development framework for Ethereum
 
