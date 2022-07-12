@@ -435,7 +435,7 @@ Account Methods
     * ``data``: Transaction data hexstring.
     * ``nonce``: Nonce for the transaction. If none is given, the nonce is set using :meth:`web3.eth.get_transaction_count <web3.eth.Eth.getTransactionCount>` while also considering any pending transactions of the Account.
     * ``required_confs``: The required :attr:`confirmations<TransactionReceipt.confirmations>` before the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is processed. If none is given, defaults to 1 confirmation.  If 0 is given, immediately returns a pending :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, while waiting for a confirmation in a separate thread.
-    * ``allow_revert``: Boolean indicating whether the transaction should be broadacsted when it is expected to revert. If not set, the default behaviour is to allow reverting transactions in development and disallow them in a live environment.
+    * ``allow_revert``: Boolean indicating whether the transaction should be broadcasted when it is expected to revert. If not set, the default behaviour is to allow reverting transactions in development and disallow them in a live environment.
     * ``silent``: Toggles console verbosity. If ``True`` is given, suppresses all console output for this transaction.
 
     Returns a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` instance.
@@ -1107,7 +1107,7 @@ ContractEvents Classmethods
 
     If ``to_block`` is not specified, retrieves events between ``from_block`` and the latest mined block.
 
-    The ``event_type`` parameter can either be a string containing the name of the event to search for or the event type itself (using ``your_contract.events.your_event_name``)  
+    The ``event_type`` parameter can either be a string containing the name of the event to search for or the event type itself (using ``your_contract.events.your_event_name``)
 
     If ``event_type`` is not passed as parameter, retrieves all contract events between the two blocks.
 
@@ -1313,7 +1313,7 @@ ContractTx Methods
                 }
                 result = pool.get_dy_underlying(0, 1, 1e18, override=override)
                 print(A, result.to("ether"))
-        
+
         300 0.884657790783695579
         1000 0.961374099348799411
         2000 0.979998831913646748
