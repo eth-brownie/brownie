@@ -6,6 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Fixed
+- Handle version bytecode for Vyper `>=0.3.4` ([#1578](https://github.com/eth-brownie/brownie/pull/1578))
 
 ## [1.19.0](https://github.com/eth-brownie/brownie/tree/v1.19.0) - 2022-05-29
 ### Added
