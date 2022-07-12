@@ -35,14 +35,14 @@ or launching the console, use the commandline flag `--network [id]`.
 To add a network you must specify an environment and id, as well as required fields.
 For example, to add a network "mainnet" to the "Ethereum" environment:
 
-  brownie networks add Ethereum mainnet host=https://mainnet.infura.io/ chainid=1
+  brownie networks add Ethereum mainnet host=https://mainnet.infura.io/ chain_id=1
 
 Use `brownie networks list true` to see a detailed view of available networks
 as well as possible data fields when declaring new networks."""
 
 
 DEV_REQUIRED = ("id", "host", "cmd", "cmd_settings")
-PROD_REQUIRED = ("id", "host", "chainid")
+PROD_REQUIRED = ("id", "host", "chain_id")
 OPTIONAL = ("name", "explorer", "timeout", "multicall2", "provider")
 
 DEV_CMD_SETTINGS = (
