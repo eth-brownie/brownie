@@ -201,13 +201,13 @@ class Chain(metaclass=_Singleton):
         self._undo_lock = threading.Lock()
         self._undo_buffer: List = []
         self._redo_buffer: List = []
-        self._chainid: Optional[int] = None
+        self._chain_id: Optional[int] = None
         self._block_gas_time: int = -1
         self._block_gas_limit: int = 0
 
     def __repr__(self) -> str:
         try:
-            return f"<Chain object (chainid={self.id}, height={self.height})>"
+            return f"<Chain object (chain_id={self.id}, height={self.height})>"
         except Exception:
             return "<Chain object (disconnected)>"
 
@@ -284,9 +284,9 @@ class Chain(metaclass=_Singleton):
 
     @property
     def id(self) -> int:
-        if self._chainid is None:
-            self._chainid = web3.eth.chain_id
-        return self._chainid
+        if self._chain_id is None:
+            self._chain_id = web3.eth.chain_id
+        return self._chain_id
 
     @property
     def block_gas_limit(self) -> Wei:
@@ -345,7 +345,7 @@ class Chain(metaclass=_Singleton):
         self._snapshot_id = None
         self._reset_id = None
         self._current_id = None
-        self._chainid = None
+        self._chain_id = None
         _notify_registry(0)
 
     def get_transaction(self, txid: Union[str, bytes]) -> TransactionReceipt:
@@ -562,7 +562,7 @@ def _find_contract(address: Any) -> Any:
     address = _resolve_address(address)
     if address in _contract_map:
         return _contract_map[address]
-    if "chainid" in CONFIG.active_network:
+    if "chain_id" in CONFIG.active_network:
         try:
             from brownie.network.contract import Contract
 
@@ -598,7 +598,7 @@ def _get_deployment(
         query = f"alias='{alias}'"
 
     try:
-        name = f"chain{CONFIG.active_network['chainid']}"
+        name = f"chain{CONFIG.active_network['chain_id']}"
     except KeyError:
         raise BrownieEnvironmentError("Functionality not available in local environment") from None
     try:
@@ -623,11 +623,11 @@ def _get_deployment(
 
 
 def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
-    if "chainid" not in CONFIG.active_network:
+    if "chain_id" not in CONFIG.active_network:
         return
 
     address = _resolve_address(contract.address)
-    name = f"chain{CONFIG.active_network['chainid']}"
+    name = f"chain{CONFIG.active_network['chain_id']}"
 
     cur.execute(
         f"CREATE TABLE IF NOT EXISTS {name} "
@@ -659,7 +659,7 @@ def _remove_deployment(
         query = f"alias='{alias}'"
 
     try:
-        name = f"chain{CONFIG.active_network['chainid']}"
+        name = f"chain{CONFIG.active_network['chain_id']}"
     except KeyError:
         raise BrownieEnvironmentError("Functionality not available in local environment") from None
 

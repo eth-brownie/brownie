@@ -2094,7 +2094,7 @@ Chain
         >>> from brownie.network.state import Chain
         >>> chain = Chain()
         >>> chain
-        <Chain object (chainid=1, height=10451202)>
+        <Chain object (chain_id=1, height=10451202)>
 
     You can use list indexing the access specific blocks. For negative index values, the block returned is relative to the most recently mined block. For example, ``chain[-1]`` returns the most recently mined block.
 

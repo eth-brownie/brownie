@@ -352,8 +352,8 @@ class Project(_ProjectBase):
     def _load_deployments(self) -> None:
         if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
             return
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
-        path = self._build_path.joinpath(f"deployments/{chainid}")
+        chain_id = CONFIG.active_network["chain_id"] if CONFIG.network_type == "live" else "dev"
+        path = self._build_path.joinpath(f"deployments/{chain_id}")
         path.mkdir(exist_ok=True)
         deployments = list(path.glob("*.json"))
         deployments.sort(key=lambda k: k.stat().st_mtime)
@@ -378,7 +378,7 @@ class Project(_ProjectBase):
             container._contracts.append(contract)
 
             # update deployment map for the current chain
-            instances = deployment_map.setdefault(chainid, {}).setdefault(contract_name, [])
+            instances = deployment_map.setdefault(chain_id, {}).setdefault(contract_name, [])
             if build_json.stem in instances:
                 instances.remove(build_json.stem)
             instances.insert(0, build_json.stem)
@@ -400,14 +400,14 @@ class Project(_ProjectBase):
     def _remove_from_deployment_map(self, contract: ProjectContract) -> None:
         if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
             return
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chain_id = CONFIG.active_network["chain_id"] if CONFIG.network_type == "live" else "dev"
         deployment_map = self._load_deployment_map()
         try:
-            deployment_map[chainid][contract._name].remove(contract.address)
-            if not deployment_map[chainid][contract._name]:
-                del deployment_map[chainid][contract._name]
-            if not deployment_map[chainid]:
-                del deployment_map[chainid]
+            deployment_map[chain_id][contract._name].remove(contract.address)
+            if not deployment_map[chain_id][contract._name]:
+                del deployment_map[chain_id][contract._name]
+            if not deployment_map[chain_id]:
+                del deployment_map[chain_id]
         except (KeyError, ValueError):
             pass
 
@@ -417,13 +417,13 @@ class Project(_ProjectBase):
         if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
             return
 
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chain_id = CONFIG.active_network["chain_id"] if CONFIG.network_type == "live" else "dev"
         deployment_map = self._load_deployment_map()
         try:
-            deployment_map[chainid][contract._name].remove(contract.address)
+            deployment_map[chain_id][contract._name].remove(contract.address)
         except (ValueError, KeyError):
             pass
-        deployment_map.setdefault(chainid, {}).setdefault(contract._name, []).insert(
+        deployment_map.setdefault(chain_id, {}).setdefault(contract._name, []).insert(
             0, contract.address
         )
         self._save_deployment_map(deployment_map)

@@ -12,7 +12,7 @@ The :func:`Chain <brownie.network.state.Chain>` object, available as ``chain``, 
 .. code-block:: python
 
     >>> chain
-    <Chain object (chainid=1, height=12965000)>
+    <Chain object (chain_id=1, height=12965000)>
 
     >>> chain[12965000]
     AttributeDict({
