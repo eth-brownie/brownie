@@ -102,7 +102,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
     def __init__(self, w3: Web3) -> None:
         self.w3 = w3
 
-        self.table_key = f"chain{CONFIG.active_network['chainid']}"
+        self.table_key = f"chain{CONFIG.active_network['chain_id']}"
         self.cur = Cursor(_get_data_folder().joinpath("cache.db"))
         self.cur.execute(f"CREATE TABLE IF NOT EXISTS {self.table_key} (method, params, result)")
 
