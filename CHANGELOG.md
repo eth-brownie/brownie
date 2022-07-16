@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Handle version bytecode for Vyper `>=0.3.4` ([#1578](https://github.com/eth-brownie/brownie/pull/1578))
 
+### Fixed
+- Handle null value of `to` field in transaction receipt so that contract deploying with Anvil works properly ([#1573](https://github.com/eth-brownie/brownie/pull/1573))
+
 ## [1.19.0](https://github.com/eth-brownie/brownie/tree/v1.19.0) - 2022-05-29
 ### Added
 - Initial support for [Anvil](https://github.com/foundry-rs/foundry/tree/master/anvil), a blazing-fast local testnet node implementation in Rust ([#1541](https://github.com/eth-brownie/brownie/pull/1541))

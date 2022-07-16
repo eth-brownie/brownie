@@ -546,7 +546,7 @@ class TransactionReceipt:
     def _set_from_tx(self, tx: Dict) -> None:
         if not self.sender:
             self.sender = EthAddress(tx["from"])
-        self.receiver = EthAddress(tx["to"]) if tx["to"] else None
+        self.receiver = EthAddress(tx["to"]) if tx.get("to", None) else None
         self.value = Wei(tx["value"])
         self.gas_price = tx.get("gasPrice")
         self.max_fee = tx.get("maxFeePerGas")
@@ -560,7 +560,7 @@ class TransactionReceipt:
         if self.fn_name:
             return
         try:
-            contract = state._find_contract(tx["to"])
+            contract = state._find_contract(tx.get("to"))
             if contract is not None:
                 self.contract_name = contract._name
                 self.fn_name = contract.get_method(tx["input"])
