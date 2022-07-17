@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.19.0](https://github.com/eth-brownie/brownie/tree/v1.19.0) - 2022-05-29
 ### Added
 - Initial support for [Anvil](https://github.com/foundry-rs/foundry/tree/master/anvil), a blazing-fast local testnet node implementation in Rust ([#1541](https://github.com/eth-brownie/brownie/pull/1541))
+- Support configurable initial wallet balance, chain id, and gas limit.
 
 ### Fixed
 - `StopIteration` when compiling some Vyper `v0.3.3` contracts ([#1547](https://github.com/eth-brownie/brownie/pull/1547))
