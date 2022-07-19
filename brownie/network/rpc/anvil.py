@@ -17,6 +17,8 @@ CLI_FLAGS = {
     "fork": "--fork-url",
     "fork_block": "--fork-block-number",
     "chain_id": "--chain-id",
+    "default_balance": "--balance",
+    "gas_limit": "--gas-limit",
 }
 
 

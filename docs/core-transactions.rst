@@ -237,7 +237,7 @@ Each step in the trace includes the following data:
 Call Traces
 -----------
 
-When dealing with complex transactions the trace can be may thousands of steps long - it can be challenging to know where to begin examining it. Brownie provides the :func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` method to view a complete map of every jump that occured in the transaction:
+When dealing with complex transactions the trace can be thousands of steps long - it can be challenging to know where to begin examining it. Brownie provides the :func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` method to view a complete map of every jump that occured in the transaction:
 
 .. code-block:: python
 

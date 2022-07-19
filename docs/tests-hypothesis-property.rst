@@ -169,7 +169,7 @@ All ``bytes`` strategies accept the following keyword arguments:
 
     * ``excludes``: An object, iterable or callable used to filter strategy results.
 
-For `fixed length values <https://solidity.readthedocs.io/en/latest/types.html#fixed-size-byte-arrays>`_ (``bytes1`...``bytes32``) the strategy always generates bytes of exactly the given length. For `dynamic bytes arrays <https://solidity.readthedocs.io/en/latest/types.html#bytes-and-strings-as-arrays>`_ (``bytes``), the minimum and maximum length may be specified using keyord arguments:
+For `fixed length values <https://solidity.readthedocs.io/en/latest/types.html#fixed-size-byte-arrays>`_ (``bytes1`` ... ``bytes32``) the strategy always generates bytes of exactly the given length. For `dynamic bytes arrays <https://solidity.readthedocs.io/en/latest/types.html#bytes-and-strings-as-arrays>`_ (``bytes``), the minimum and maximum length may be specified using keyord arguments:
 
     * ``min_size``: Minimum length for each returned value. The default value is ``1``.
     * ``max_size``: Maximum length for each returned value. The default value is ``64``.

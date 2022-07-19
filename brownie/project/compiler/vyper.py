@@ -310,6 +310,10 @@ def _generate_coverage_data(
         revert_pc = len(opcodes) + sum(int(i[4:]) - 1 for i in opcodes if i.startswith("PUSH")) - 5
 
     while opcodes:
+        # ignore vyper version bytecode for >= 0.3.4
+        if len(source_map) == 0 and opcodes[0] == "PUSH6" and opcodes[1] == "0x767970657283":
+            break
+
         # format of source is [start, stop, contract_id, jump code]
         source = source_map.popleft()
         pc_list.append({"op": opcodes.popleft(), "pc": pc})
