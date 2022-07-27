@@ -311,8 +311,8 @@ def _generate_coverage_data(
 
     while opcodes:
         # ignore vyper version bytecode for >= 0.3.4
-        if len(source_map) == 0 and opcodes[0] == "PUSH6" and opcodes[1] == "0x767970657283":
-            break
+        if get_version() >= Version("0.3.4"):
+            return {}, {}, {}
 
         # format of source is [start, stop, contract_id, jump code]
         source = source_map.popleft()
