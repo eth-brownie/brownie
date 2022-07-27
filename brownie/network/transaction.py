@@ -631,7 +631,8 @@ class TransactionReceipt:
             raise RPCRequestError("Node client does not support `debug_traceTransaction`")
         try:
             trace = web3.provider.make_request(  # type: ignore
-                "debug_traceTransaction", (self.txid, {"disableStorage": CONFIG.mode != "console"})
+                "debug_traceTransaction",
+                (self.txid, {"enableMemory": True, "disableStorage": CONFIG.mode != "console"}),
             )
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
             msg = f"Encountered a {type(e).__name__} while requesting "
