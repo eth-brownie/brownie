@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Fixed
 - Handle version bytecode for Vyper `>=0.3.4` ([#1578](https://github.com/eth-brownie/brownie/pull/1578))
+- Handle Vyper `>=0.3.4` coverage data generation breaking project compilation ([#1586](https://github.com/eth-brownie/brownie/pull/1586))
 
 ### Fixed
 - Handle null value of `to` field in transaction receipt so that contract deploying with Anvil works properly ([#1573](https://github.com/eth-brownie/brownie/pull/1573))
