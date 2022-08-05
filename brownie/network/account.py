@@ -681,6 +681,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         receipt._raise_if_reverted(exc)
         return receipt
+    
+    def _format_gwei(self, value):
+        return value.to("gwei") if isinstance(value, Wei) else value
 
     def _make_transaction(
         self,
@@ -704,12 +707,20 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if silent is None:
             silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])  # @UndefinedVariable
 
+        priority_fee_increment = 1.1
+        
         if gas_price is None:
+            network_settings = (
+                CONFIG.settings["networks"][CONFIG.active_network["id"]] # @UndefinedVariable
+                    if CONFIG.active_network["id"] in CONFIG.settings["networks"]  # @UndefinedVariable
+                else CONFIG.active_network["settings"]  # @UndefinedVariable
+            )
             # if gas price is not explicitly set, load the default max fee and priority fee
             if max_fee is None:
-                max_fee = CONFIG.active_network["settings"]["max_fee"] or None  # @UndefinedVariable
+                max_fee = network_settings.get("max_fee") or None
             if priority_fee is None:
-                priority_fee = CONFIG.active_network["settings"]["priority_fee"] or None  # @UndefinedVariable
+                priority_fee = network_settings.get("priority_fee") or None
+            priority_fee_increment = network_settings.get("priority_fee_incr") or 1.1
 
         try:
             # if max fee and priority fee are not set, use gas price
@@ -736,13 +747,33 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 tx["to"] = to_address(str(to))
 
             txid = None
+            priority_fee_to_send = (
+                Wei(
+                    Wei("30 gwei") / priority_fee_increment + Wei(1)
+                ) if priority_fee == "auto" else priority_fee)
             while True:
+                if priority_fee == "auto":
+                    priority_fee_to_send: Wei = max(
+                        Chain().priority_fee, 
+                        Wei(priority_fee_to_send * priority_fee_increment)
+                    )
+                    if (max_fee is not None and max_fee > priority_fee_to_send):
+                        priority_fee_to_send = Wei(max_fee)
+                    
                 try:
+                    print(
+                        f"""Setting Gas Fee(
+   nonce={tx['nonce']}, 
+   gas_price={self._format_gwei(gas_price)}, 
+   max_fee={self._format_gwei(max_fee)}, 
+   priority_fee={self._format_gwei(priority_fee_to_send)},
+)"""
+                    )
                     tx = _apply_fee_to_tx(
                         tx,
                         gas_price,
                         max_fee,
-                        (Chain().priority_fee if priority_fee == "auto" else priority_fee),
+                        priority_fee_to_send,
                     )
                     response = self._transact(tx, allow_revert)  # type: ignore
                     exc, revert_data = None, None
