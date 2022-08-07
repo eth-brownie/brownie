@@ -201,14 +201,18 @@ class Project(_ProjectBase):
         self._build = Build(self._sources)
 
         contract_list = self._sources.get_contract_list()
+        potential_dependencies = []
         for path in list(self._build_path.glob("contracts/*.json")):
             try:
                 with path.open() as fp:
                     build_json = json.load(fp)
             except json.JSONDecodeError:
                 build_json = {}
-            if not set(BUILD_KEYS).issubset(build_json) or path.stem not in contract_list:
+            if not set(BUILD_KEYS).issubset(build_json):
                 path.unlink()
+                continue
+            if path.stem not in contract_list:
+                potential_dependencies.append((path, build_json))
                 continue
             if isinstance(build_json["allSourcePaths"], list):
                 # this handles the format change in v1.7.0, it can be removed in a future release
@@ -221,6 +225,14 @@ class Project(_ProjectBase):
                 path.unlink()
                 continue
             self._build._add_contract(build_json)
+
+        for path, build_json in potential_dependencies:
+            dependents = self._build.get_dependents(path.stem)
+            is_dependency = len(set(dependents) & set(contract_list)) > 0
+            if is_dependency:
+                self._build._add_contract(build_json)
+            else:
+                path.unlink()
 
         interface_hashes = {}
         interface_list = self._sources.get_interface_list()
