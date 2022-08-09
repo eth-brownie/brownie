@@ -175,18 +175,13 @@ live:
         host: https://polygon-mumbai.infura.io/v3/$WEB3_INFURA_PROJECT_ID
         explorer: https://api-testnet.polygonscan.com/api
         multicall2: "0x6842E0412AC1c00464dc48961330156a07268d14"
-  - name: XDai
+  - name: Gnosis
     networks:
       - name: Mainnet
         chainid: 100
-        id: xdai-main
-        host: https://xdai.poanetwork.dev
-        explorer: https://blockscout.com/xdai/mainnet/api
-      - name: Testnet
-        chainid: 77
-        id: xdai-test
-        host: https://sokol.poa.network
-        explorer: https://blockscout.com/poa/sokol/api
+        id: gnosis-main
+        host: https://rpc.gnosischain.com/
+        explorer: https://api.gnosisscan.io/api
 
 development:
   - name: Anvil
@@ -280,8 +275,8 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: polygon-main
-  - name: Ganache-CLI (XDai-Mainnet Fork)
-    id: xdai-main-fork
+  - name: Ganache-CLI (Gnosis-Mainnet Fork)
+    id: gnosis-main-fork
     cmd: ganache-cli
     host: http://127.0.0.1
     timeout: 120
@@ -291,7 +286,7 @@ development:
       accounts: 10
       evm_version: istanbul
       mnemonic: brownie
-      fork: xdai-main
+      fork: gnosis-main
   - name: Ganache-CLI (Avax-Mainnet Fork)
     id: avax-main-fork
     cmd: ganache-cli
