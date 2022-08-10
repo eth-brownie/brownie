@@ -1161,10 +1161,11 @@ class Contract(_DeployedContractBase):
             input_json = json.loads(source_str[1:-1])
             sources = {k: v["content"] for k, v in input_json["sources"].items()}
             evm_version = input_json["settings"].get("evmVersion", evm_version)
+            remappings = input_json["settings"].get("remappings", [])
 
             compiler.set_solc_version(str(version))
             input_json.update(
-                compiler.generate_input_json(sources, optimizer=optimizer, evm_version=evm_version)
+                compiler.generate_input_json(sources, optimizer=optimizer, evm_version=evm_version, remappings=remappings)
             )
             output_json = compiler.compile_from_input_json(input_json)
             build_json = compiler.generate_build_json(input_json, output_json)
