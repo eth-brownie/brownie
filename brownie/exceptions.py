@@ -109,10 +109,10 @@ class VirtualMachineError(Exception):
             pass
 
         if not (isinstance(exc, dict) and "message" in exc):
-            raise e
+            raise ValueError(str(exc)) from exc
 
         if "data" not in exc:
-            raise e
+            raise ValueError(exc["message"]) from exc
 
         self.message: str = exc["message"].rstrip(".")
 
@@ -125,7 +125,7 @@ class VirtualMachineError(Exception):
             txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
             self.revert_type = data["error"]
         except StopIteration:
-            raise e
+            raise ValueError(exc["message"]) from exc
 
         self.txid = txid
         self.source = ""
