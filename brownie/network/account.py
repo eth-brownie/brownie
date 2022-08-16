@@ -784,8 +784,11 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 except ValueError as e:
                     if txid is None:
                         exc = VirtualMachineError(e)
+                        if exc.message == "replacement transaction underpriced":
+                            print(f"Caught ${exc}, trying again")
+                            continue
                         if not hasattr(exc, "txid"):
-                            raise exc from None
+                            raise exc from e
                         txid = exc.txid
                         print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
                         revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
