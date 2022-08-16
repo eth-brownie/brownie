@@ -90,10 +90,10 @@ class VirtualMachineError(Exception):
             pass
 
         if not (isinstance(exc, dict) and "message" in exc):
-            raise ValueError(str(exc)) from None
+            raise ValueError(str(exc)) from exc
 
         if "data" not in exc:
-            raise ValueError(exc["message"]) from None
+            raise ValueError(exc["message"]) from exc
 
         self.message: str = exc["message"].rstrip(".")
 
@@ -103,7 +103,7 @@ class VirtualMachineError(Exception):
                 err_msg = exc["data"]
                 if err_msg.endswith("0x"):
                     err_msg = exc["data"][:-2].strip()
-                raise ValueError(f"{self.message}: {err_msg}") from None
+                raise ValueError(f"{self.message}: {err_msg}") from exc
 
             self.revert_type = "revert"
             err_msg = exc["data"][len(ERROR_SIG) :]
@@ -116,7 +116,7 @@ class VirtualMachineError(Exception):
             txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
             self.revert_type = data["error"]
         except StopIteration:
-            raise ValueError(exc["message"]) from None
+            raise ValueError(exc["message"]) from exc
 
         self.txid = txid
         self.source = ""
@@ -125,7 +125,7 @@ class VirtualMachineError(Exception):
             self.pc -= 1
 
         self.revert_msg = data.get("reason")
-        self.dev_revert_msg = brownie.project.build._get_dev_revert(self.pc)
+        self.dev_revert_msg = brownie.project.build._get_dev_revert(self.pc)  # @UndefinedVariable
         if self.revert_msg is None and self.revert_type in ("revert", "invalid opcode"):
             self.revert_msg = self.dev_revert_msg
         elif self.revert_msg == "Failed assertion":
