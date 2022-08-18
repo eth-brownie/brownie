@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 import psutil
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
+from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
 from brownie.network.web3 import web3
 
@@ -19,8 +20,10 @@ CLI_FLAGS = {
     "chain_id": "--chain-id",
     "default_balance": "--balance",
     "gas_limit": "--gas-limit",
+    "evm_version": "--hardfork",
 }
 
+EVM_DEFAULT = "istanbul"
 
 def launch(cmd: str, **kwargs: Dict) -> None:
     """Launches the RPC client.
@@ -33,6 +36,9 @@ def launch(cmd: str, **kwargs: Dict) -> None:
         else:
             cmd += ".cmd"
     cmd_list = cmd.split(" ")
+    kwargs.setdefault("evm_version", EVM_DEFAULT)  # type: ignore
+    if kwargs["evm_version"] in EVM_EQUIVALENTS:
+        kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]  # type: ignore
     for key, value in [(k, v) for k, v in kwargs.items() if v]:
         try:
             cmd_list.extend([CLI_FLAGS[key], str(value)])
