@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+- Add anvil hardfork parameter support ([1598](https://github.com/eth-brownie/brownie/pull/1598))
+
 ## [1.19.1](https://github.com/eth-brownie/brownie/tree/v1.19.1) - 2022-08-07
 ### Fixed
 - Handle version bytecode for Vyper `>=0.3.4` ([#1578](https://github.com/eth-brownie/brownie/pull/1578))

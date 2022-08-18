@@ -25,6 +25,7 @@ CLI_FLAGS = {
 
 EVM_DEFAULT = "istanbul"
 
+
 def launch(cmd: str, **kwargs: Dict) -> None:
     """Launches the RPC client.
 
