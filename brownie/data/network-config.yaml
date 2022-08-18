@@ -195,6 +195,7 @@ development:
     host: http://127.0.0.1
     cmd_settings:
       port: 8545
+      evm_version: istanbul
   - name: Anvil (Mainnet Fork)
     id: anvil-fork
     cmd: anvil
