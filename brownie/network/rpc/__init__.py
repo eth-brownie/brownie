@@ -254,7 +254,7 @@ class Rpc(metaclass=_Singleton):
         for proc in psutil.process_iter():
             try:
                 proc_name = proc.name().lower()
-            except psutil.NoSuchProcess:
+            except (psutil.NoSuchProcess, psutil.ZombieProcess):
                 continue
 
             if process_name.lower() in proc_name:
