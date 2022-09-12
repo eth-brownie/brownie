@@ -84,16 +84,17 @@ class VirtualMachineError(Exception):
         self.revert_msg: Optional[str] = None
         self.dev_revert_msg: Optional[str] = None
 
+        e = exc
         try:
             exc = exc.args[0]
         except Exception:
             pass
 
         if not (isinstance(exc, dict) and "message" in exc):
-            raise ValueError(str(exc)) from exc
+            raise ValueError(str(exc)) from e
 
         if "data" not in exc:
-            raise ValueError(exc["message"]) from exc
+            raise ValueError(exc["message"]) from e
 
         self.message: str = exc["message"].rstrip(".")
 
@@ -103,7 +104,7 @@ class VirtualMachineError(Exception):
                 err_msg = exc["data"]
                 if err_msg.endswith("0x"):
                     err_msg = exc["data"][:-2].strip()
-                raise ValueError(f"{self.message}: {err_msg}") from exc
+                raise ValueError(f"{self.message}: {err_msg}") from e
 
             self.revert_type = "revert"
             err_msg = exc["data"][len(ERROR_SIG) :]
@@ -116,7 +117,7 @@ class VirtualMachineError(Exception):
             txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
             self.revert_type = data["error"]
         except StopIteration:
-            raise ValueError(exc["message"]) from exc
+            raise ValueError(exc["message"]) from e
 
         self.txid = txid
         self.source = ""
