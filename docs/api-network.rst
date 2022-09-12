@@ -1865,7 +1865,7 @@ Multicall
 
 .. py:class:: brownie.network.multicall.Multicall(address=None, block_identifier=None)
 
-    Instances of ``Multicall`` allow for the batching of constant contract function calls through a modified version of the standart Brownie call API.
+    Instances of ``Multicall`` allow for the batching of constant contract function calls through a modified version of the standard Brownie call API.
 
     The only syntatic difference between a multicall and a standard brownie contract function call is the final argument for a multicall, is a dictionary with the ``from`` key being the instance of ``Multicall`` being used.
 
