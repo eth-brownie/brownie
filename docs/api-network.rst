@@ -1875,7 +1875,7 @@ Multicall
         2. Auto-deployment on development networks (on first use).
         3. Uses ``multicall2`` key in network-config as pre-defined multicall contract address
         4. Can specify/modify block number to make calls at particular block heights
-        5. Calls which fail return ``None`` instad of causing all calls to fail
+        5. Calls which fail return ``None`` instead of causing all calls to fail
 
     .. code-block:: python
 
