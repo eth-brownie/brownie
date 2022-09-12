@@ -1922,7 +1922,7 @@ Multicall Methods
 
 .. py:classmethod:: Multicall.deploy
 
-    Deploys an instance of ``Multicall2``, especially useful when creating fixutes for testing.
+    Deploys an instance of ``Multicall2``, especially useful when creating fixtures for testing.
 
     .. code-block:: python
 
