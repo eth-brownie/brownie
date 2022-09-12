@@ -2031,7 +2031,7 @@ TxHistory Methods
         >>> history.filter(sender=accounts[0], value="1 ether")
         [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
 
-    You can also use ``key`` to prodive a function or lambda. It should receive one argument, a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, and return a boolean indicating if the object is to be included in the result.
+    You can also use ``key`` to provide a function or lambda. It should receive one argument, a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, and return a boolean indicating if the object is to be included in the result.
 
     .. code-block:: python
 
