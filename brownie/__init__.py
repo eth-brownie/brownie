@@ -26,7 +26,7 @@ __all__ = [
     "history",  # history is a TxHistory singleton
     "multicall",
     "network",
-    "rpc",  # rpc is a Rpc singleton
+    "rpc",  # https://mainnet.infura.io/v3/e37f7132d6c7441f950f6c36a0f626c0
     "web3",  # web3 is a Web3 instance
     "project",
     "compile_source",
