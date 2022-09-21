@@ -5,10 +5,14 @@ import pytest
 from brownie.convert.datatypes import EthAddress, HexString, ReturnValue, Wei
 from brownie.project import compile_source
 
+string_fixture = "bar baz"
+
 
 @pytest.fixture
 def return_value(accounts, tester):
-    yield tester.manyValues(88, [False, False, False], accounts[2], [("0x1234", "0x6666")])
+    yield tester.manyValues(
+        88, [False, False, False], accounts[2], [("0x1234", "0x6666")], string_fixture
+    )
 
 
 def test_type(return_value):
@@ -22,7 +26,7 @@ def test_type(return_value):
 
 
 def test_len(return_value):
-    assert len(return_value) == 4
+    assert len(return_value) == 5
 
 
 def test_count(return_value):
@@ -53,7 +57,7 @@ def test_contains_conversions(accounts, return_value):
 
 
 def test_eq_conversions(accounts, return_value):
-    data = [88, [False, False, False], accounts[2], [("0x1234", "0x6666")]]
+    data = [88, [False, False, False], accounts[2], [("0x1234", "0x6666")], string_fixture]
     assert return_value == data
     assert return_value == tuple(data)
     data[1] = tuple(data[1])
@@ -62,7 +66,7 @@ def test_eq_conversions(accounts, return_value):
 
 
 def test_ne_conversions(accounts, return_value):
-    data = [88, [False, False, False], accounts[2], [("0x1234", "0x6666")]]
+    data = [88, [False, False, False], accounts[2], [("0x1234", "0x6666")], string_fixture]
     assert not return_value != data
     assert not return_value != tuple(data)
     data[1] = tuple(data[1])
@@ -73,14 +77,14 @@ def test_ne_conversions(accounts, return_value):
 def test_dict(accounts, return_value):
     d = return_value.dict()
     assert isinstance(d, dict)
-    assert len(d) == 4
+    assert len(d) == 5
     assert len(d["_bool"]) == 3
-    assert sorted(d) == ["_addr", "_bool", "_bytes", "_num"]
+    assert sorted(d) == ["_addr", "_bool", "_bytes", "_num", "_string"]
     assert d["_addr"] == accounts[2]
 
 
 def test_keys(return_value):
-    assert list(return_value.keys()) == ["_num", "_bool", "_addr", "_bytes"]
+    assert list(return_value.keys()) == ["_num", "_bool", "_addr", "_bytes", "_string"]
 
 
 def test_items(return_value):

@@ -309,7 +309,8 @@ def _generate_coverage_data(
         # we can identify these optimizer reverts within traces.
         revert_pc = len(opcodes) + sum(int(i[4:]) - 1 for i in opcodes if i.startswith("PUSH")) - 5
 
-    while opcodes:
+    while opcodes and source_map:
+
         # format of source is [start, stop, contract_id, jump code]
         source = source_map.popleft()
         pc_list.append({"op": opcodes.popleft(), "pc": pc})
@@ -366,6 +367,9 @@ def _generate_coverage_data(
             continue
 
         node = _find_node_by_offset(ast_json, offset)
+        if node is None:
+            continue
+
         if pc_list[-1]["op"] == "REVERT" or _is_revert_jump(pc_list[-2:], revert_pc):
             # custom revert error strings
             if node["ast_type"] == "FunctionDef":
@@ -416,15 +420,19 @@ def _convert_src(src: str) -> Tuple[int, int]:
     return src_int[0], src_int[0] + src_int[1]
 
 
-def _find_node_by_offset(ast_json: List, offset: Tuple) -> Dict:
-    node = next(i for i in ast_json if is_inside_offset(offset, _convert_src(i["src"])))
-    if _convert_src(node["src"]) == offset:
-        return node
-    node_list = [i for i in node.values() if isinstance(i, dict) and "ast_type" in i]
-    node_list.extend([x for i in node.values() if isinstance(i, list) for x in i])
-    if node_list:
-        return _find_node_by_offset(node_list, offset)
-    return _find_node_by_offset(ast_json[ast_json.index(node) + 1 :], offset)
+def _find_node_by_offset(ast_json: List, offset: Tuple) -> Optional[Dict]:
+    for node in [i for i in ast_json if is_inside_offset(offset, _convert_src(i["src"]))]:
+        if _convert_src(node["src"]) == offset:
+            return node
+        node_list = [i for i in node.values() if isinstance(i, dict) and "ast_type" in i]
+        node_list.extend([x for i in node.values() if isinstance(i, list) for x in i])
+        if node_list:
+            result = _find_node_by_offset(node_list, offset)
+        else:
+            result = _find_node_by_offset(ast_json[ast_json.index(node) + 1 :], offset)
+        if result is not None:
+            return result
+    return None
 
 
 def _get_statement_nodes(ast_json: List) -> List:

@@ -9,7 +9,7 @@ The ``network`` package holds classes for interacting with the Ethereum blockcha
 ``brownie.network.main``
 ========================
 
-The ``main`` module contains methods for conncting to or disconnecting from the network. All of these methods are available directly from ``brownie.network``.
+The ``main`` module contains methods for connecting to or disconnecting from the network. All of these methods are available directly from ``brownie.network``.
 
 .. py:method:: main.connect(network = None, launch_rpc = True)
 
@@ -435,7 +435,7 @@ Account Methods
     * ``data``: Transaction data hexstring.
     * ``nonce``: Nonce for the transaction. If none is given, the nonce is set using :meth:`web3.eth.get_transaction_count <web3.eth.Eth.getTransactionCount>` while also considering any pending transactions of the Account.
     * ``required_confs``: The required :attr:`confirmations<TransactionReceipt.confirmations>` before the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is processed. If none is given, defaults to 1 confirmation.  If 0 is given, immediately returns a pending :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, while waiting for a confirmation in a separate thread.
-    * ``allow_revert``: Boolean indicating whether the transaction should be broadacsted when it is expected to revert. If not set, the default behaviour is to allow reverting transactions in development and disallow them in a live environment.
+    * ``allow_revert``: Boolean indicating whether the transaction should be broadcasted when it is expected to revert. If not set, the default behaviour is to allow reverting transactions in development and disallow them in a live environment.
     * ``silent``: Toggles console verbosity. If ``True`` is given, suppresses all console output for this transaction.
 
     Returns a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` instance.
@@ -453,7 +453,7 @@ Account Methods
     .. code-block:: python
 
         >>> deployment_bytecode = "0x6103f056600035601c52740100..."
-        >>> accounts[0].transer(data=deployment_bytecode)
+        >>> accounts[0].transfer(data=deployment_bytecode)
         Transaction sent: 0x2b33315f7f9ec86d27112ea6dffb69b6eea1e582d4b6352245c0ac8e614fe06f
           Gas price: 0.0 gwei   Gas limit: 6721975
           Transaction confirmed - Block: 1   Gas used: 268460 (3.99%)
@@ -1026,6 +1026,16 @@ Contract Attributes
         >>> Token[0].tx
         <Transaction object '0xcede03c7e06d2b4878438b08cd0cf4515942b3ba06b3cfd7019681d18bb8902c'>
 
+
+.. py:attribute:: Contract.events
+
+    The :func:`ContractEvents <brownie.network.contract.ContractEvents>` instance linked to the deployed contract.
+
+    .. code-block:: python
+
+        >>> Token[0].events
+        <brownie.network.contract.ContractEvents object at 0x000001CF03C8BB50>
+
 Contract Methods
 ****************
 
@@ -1061,6 +1071,74 @@ Contract Internal Attributes
 .. py:attribute:: Contract._reverted
 
     Boolean. Once set to to ``True``, any attempt to interact with the object raises a :func:`ContractNotFound <brownie.exceptions.ContractNotFound>` exception. Set as a result of a call to :func:`state._notify_registry <brownie.network.state._notify_registry>`.
+
+ContractEvents
+--------------
+
+:func:`ContractEvents <brownie.network.contract.ContractEvents>` is used to interact with the events of a :func:`Contract <brownie.network.contract.Contract>` or a :func:`ProjectContract <brownie.network.contract.ProjectContract>`.
+
+.. py:class:: brownie.network.contract.ContractEvents(contract=brownie.network.contract.Contract)
+
+    ``ContractEvents`` instances allows you to : subscribe to, listen for or retrieve the different events of a contract.
+    This class inherits from the :ref:`web3.py ContractEvents <https://web3py.readthedocs.io/en/stable/contracts.html?highlight=ContractEvents#web3.contract.ContractEvents>` class.
+
+ContractEvents Classmethods
+***************************
+
+.. py:classmethod:: ContractEvents.subscribe(event_name, callback, delay=2.0)
+
+    Subscribe to the contract event whose name matches the ``event_name`` parameter.
+
+    * ``event_name``: Name of the event to subscribe to. Must match the exact event name.
+    * ``callback``: Function called whenever an event matching 'event_name' occurs, it **must** take one and only one argument which will be the event log receipt.
+    * ``delay``: Delay in seconds between each check for new events matching 'event_name'.
+
+    New events are detected and callbacks instructions are executed in sub-threads.
+
+    Each time a new event of this type is detected, creates a new sub-thread to run the ``callback`` function passing the event logs as parameter.
+
+.. py:classmethod:: ContractEvents.get_sequence(from_block, to_block=None, event_type=None)
+
+    Retrieves events emitted by the contract between two blocks.
+
+    * ``from_block``: The block from which to search for events that have occurred.
+    * ``to_block``: The block on which to stop searching for events. Defaults to None
+    * ``event_type``: Type or name of the event to be searched between the specified blocks. Defaults to None.
+
+    If ``to_block`` is not specified, retrieves events between ``from_block`` and the latest mined block.
+
+    The ``event_type`` parameter can either be a string containing the name of the event to search for or the event type itself (using ``your_contract.events.your_event_name``)
+
+    If ``event_type`` is not passed as parameter, retrieves all contract events between the two blocks.
+
+.. py:classmethod:: ContractEvents.listen(event_name, timeout=0)
+
+    Creates a listening Coroutine object ending whenever an event matching 'event_name' occurs.
+    If timeout is superior to zero and no event matching 'event_name' has occured, the Coroutine ends when the timeout is reached.
+
+    * ``event_name``: Name of the event to be listened to.
+    * ``timeout``: Timeout value in seconds. Defaults to 0.
+
+    The Coroutine return value is an AttributeDict filled with the following fields :
+        - 'event_data' (AttributeDict): The event log receipt that was caught. If no event was caught, evaluates to ``None``
+        - 'timed_out' (bool): False if the event did not timeout, else True
+
+    If the 'timeout' parameter is not passed or is inferior or equal to 0, the Coroutine listens until an event occurs.
+
+
+ContractEvents Attributes
+*************************
+
+.. py:attribute:: ContractEvents.linked_contract
+
+    The ``Contract`` object from which the ``ContractEvents`` instance is reading the events.
+
+    .. code-block:: python
+
+        >>> tester
+        <BrownieTester Contract '0x3194cBDC3dbcd3E11a07892e7bA5c3394048Cc87'>
+        >>> tester.events.linked_contract
+        <BrownieTester Contract '0x3194cBDC3dbcd3E11a07892e7bA5c3394048Cc87'>
 
 ContractCall
 ------------
@@ -1235,7 +1313,7 @@ ContractTx Methods
                 }
                 result = pool.get_dy_underlying(0, 1, 1e18, override=override)
                 print(A, result.to("ether"))
-        
+
         300 0.884657790783695579
         1000 0.961374099348799411
         2000 0.979998831913646748
@@ -1437,9 +1515,52 @@ EventDict
 
     Returns a set-like object providing a view on the object's keys.
 
+
 .. py:classmethod:: EventDict.values
 
     Returns an object providing a view on the object's values.
+
+EventWatcher
+------------
+
+.. py:class:: brownie.network.event.EventWatcher
+
+    Singleton used to set callbacks on user-specified events.
+
+    This class uses multiple threads:
+
+        * The main thread (original process) starts a sub-thread and can be used to add callback instructions on events occurrences.
+        * The sub-thread looks for new events among the ones with callback instructions.
+        * When a new event is found, creates a new thread to run the callback instructions passing the event data as parameter.
+
+.. py:classmethod:: EventWatcher.add_event_callback(event, callback, delay=2.0, repeat=True)
+
+    Adds a callback instruction for the specified event.
+
+    * ``event``: The ContractEvent instance to watch for.
+    * ``callback``: The function to be called when a new ``event`` is detected. It MUST take one and only one parameter, which will be the event data.
+    * ``delay``: The delay between each check for new ``event`` (s). Defaults to 2.
+    * ``repeat``: Wether to repeat the callback or not (if ``False``, the callback instructions will only be called the first time events are detected). Defaults to ``True``.
+
+    If the function is called with the same ``event`` more than once, the delay between each check for this ``event`` will take the minimum value between the already set delay and the one passed as parameter.
+
+    This function raises a ``TypeError`` if the ``callback`` parameter is not a callable object.
+
+.. py:classmethod:: EventWatcher.stop(wait=True)
+
+    Sends the instruction to stop to the running threads.
+
+    This function does not reset the instance to its initial state.
+
+    If that is your goal, check the :func:`EventWatcher.reset <brownie.network.event.EventWatcher.reset>` method.
+
+    * ``wait``: Wether to wait for threads to join within the function. Defaults to ``True``.
+
+.. py:classmethod:: EventWatcher.reset
+
+    Uses the :func:`EventWatcher.stop <brownie.network.event.EventWatcher.stop>` function to stop the running threads.
+
+    After stopping, resets the instance to its default state.
 
 Internal Classes and Methods
 ----------------------------

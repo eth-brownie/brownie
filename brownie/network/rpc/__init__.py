@@ -16,13 +16,14 @@ from brownie.exceptions import RPCConnectionError, RPCProcessError
 from brownie.network.state import Chain
 from brownie.network.web3 import web3
 
-from . import ganache, geth, hardhat
+from . import anvil, ganache, geth, hardhat
 
 chain = Chain()
 
 ATTACH_BACKENDS = {"ethereumjs testrpc": ganache, "geth": geth, "hardhat": hardhat}
 
 LAUNCH_BACKENDS = {
+    "anvil": anvil,
     "ganache": ganache,
     "ethnode": geth,
     "geth": geth,

@@ -23,6 +23,7 @@ CLI_FLAGS = {
         "accounts": "--wallet.totalAccounts",
         "evm_version": "--hardfork",
         "fork": "--fork.url",
+        "disable_cache": "--fork.disableCache",
         "mnemonic": "--wallet.mnemonic",
         "account_keys_path": "--wallet.accountKeysPath",
         "block_time": "--miner.blockTime",
@@ -174,6 +175,7 @@ def _validate_cmd_settings(cmd_settings: dict) -> dict:
         "mnemonic": str,
         "account_keys_path": str,
         "fork": str,
+        "disable_cache": bool,
         "network_id": int,
         "chain_id": int,
     }

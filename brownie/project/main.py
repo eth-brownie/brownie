@@ -14,7 +14,7 @@ from io import BytesIO
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import requests
 import yaml
@@ -201,14 +201,18 @@ class Project(_ProjectBase):
         self._build = Build(self._sources)
 
         contract_list = self._sources.get_contract_list()
+        potential_dependencies = []
         for path in list(self._build_path.glob("contracts/*.json")):
             try:
                 with path.open() as fp:
                     build_json = json.load(fp)
             except json.JSONDecodeError:
                 build_json = {}
-            if not set(BUILD_KEYS).issubset(build_json) or path.stem not in contract_list:
+            if not set(BUILD_KEYS).issubset(build_json):
                 path.unlink()
+                continue
+            if path.stem not in contract_list:
+                potential_dependencies.append((path, build_json))
                 continue
             if isinstance(build_json["allSourcePaths"], list):
                 # this handles the format change in v1.7.0, it can be removed in a future release
@@ -221,6 +225,14 @@ class Project(_ProjectBase):
                 path.unlink()
                 continue
             self._build._add_contract(build_json)
+
+        for path, build_json in potential_dependencies:
+            dependents = self._build.get_dependents(path.stem)
+            is_dependency = len(set(dependents) & set(contract_list)) > 0
+            if is_dependency:
+                self._build._add_contract(build_json)
+            else:
+                path.unlink()
 
         interface_hashes = {}
         interface_list = self._sources.get_interface_list()
@@ -806,11 +818,12 @@ def _install_from_ethpm(uri: str) -> str:
     install_path.mkdir(exist_ok=True)
     install_path = install_path.joinpath(f"{repo}@{version}")
     if install_path.exists():
-        raise FileExistsError("Package is aleady installed")
+        raise FileExistsError("Package is already installed")
 
     try:
         new(str(install_path), ignore_existing=True)
         ethpm.install_package(install_path, uri)
+        Path.touch(install_path / ".env")
         project = load(install_path)
         project.close()
     except Exception as e:
@@ -834,7 +847,7 @@ def _maybe_retrieve_github_auth() -> Dict[str, str]:
 
 def _install_from_github(package_id: str) -> str:
     try:
-        path, version = package_id.split("@")
+        path, version = package_id.split("@", 1)
         org, repo = path.split("/")
     except ValueError:
         raise ValueError(
@@ -858,7 +871,18 @@ def _install_from_github(package_id: str) -> str:
         download_url = _get_download_url_from_tag(org, repo, version, headers)
 
     existing = list(install_path.parent.iterdir())
-    _stream_download(download_url, str(install_path.parent), headers)
+
+    # Some versions contain special characters and github api seems to display url without
+    # encoding them.
+    # It results in a ConnectionError exception because the actual download url is encoded.
+    # In this case we try to sanitize the version in url and download again.
+    try:
+        _stream_download(download_url, str(install_path.parent), headers)
+    except ConnectionError:
+        download_url = (
+            f"https://api.github.com/repos/{org}/{repo}/zipball/refs/tags/{quote(version)}"
+        )
+        _stream_download(download_url, str(install_path.parent), headers)
 
     installed = next(i for i in install_path.parent.iterdir() if i not in existing)
     shutil.move(installed, install_path)
@@ -887,6 +911,8 @@ def _install_from_github(package_id: str) -> str:
 
             with install_path.joinpath("brownie-config.yaml").open("w") as fp:
                 yaml.dump(brownie_config, fp)
+
+            Path.touch(install_path / ".env")
 
         project = load(install_path)
         project.close()
