@@ -47,7 +47,19 @@ To use lastest master or another branch as version:
 pipx install git+https://github.com/eth-brownie/brownie.git@master
 ```
 
+
+
+
+
+
+
 ### via `pip`
+
+#### Requirements 
+
+- 
+-
+- 
 
 You can install the latest release via [`pip`](https://pypi.org/project/pip/):
 
