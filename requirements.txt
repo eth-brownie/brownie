@@ -149,7 +149,7 @@ pluggy==1.0.0
     # via pytest
 prompt-toolkit==3.0.30
     # via -r requirements.in
-protobuf==3.20.1
+protobuf==3.20.2
     # via web3
 psutil==5.9.1
     # via -r requirements.in
