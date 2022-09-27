@@ -147,7 +147,7 @@ live:
         host: https://moonriver.api.onfinality.io/public
         explorer: https://api-moonriver.moonscan.io/api
         multicall2: "0xaef00a0cf402d9dedd54092d9ca179be6f9e5ce3"
-  - name: Optimistic Ethereum
+  - name: Optimism
     networks:
       - name: Mainnet
         chainid: 10
