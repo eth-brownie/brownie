@@ -160,7 +160,7 @@ live:
         id: optimism-test
         host: https://goerli.optimism.io
         explorer: https://api-goerli-optimism.etherscan.io/api
-        # multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
+        multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
   - name: Polygon
     networks:
       - name: Mainnet (Infura)
