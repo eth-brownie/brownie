@@ -155,12 +155,12 @@ live:
         host: https://mainnet.optimism.io
         explorer: https://api-optimistic.etherscan.io/api
         multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
-      - name: Kovan
-        chainid: 69
+      - name: Goerli
+        chainid: 420
         id: optimism-test
-        host: https://kovan.optimism.io
-        explorer: https://api-kovan-optimistic.etherscan.io/api
-        multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
+        host: https://goerli.optimism.io
+        explorer: https://api-goerli-optimism.etherscan.io/api
+        # multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
   - name: Polygon
     networks:
       - name: Mainnet (Infura)
