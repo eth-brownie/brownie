@@ -525,7 +525,7 @@ class TransactionReceipt:
                     # check if tx is still in mempool, this will raise otherwise
                     tx = web3.eth.get_transaction(self.txid)
                     self.block_number = None
-                    return self._await_confirmation(tx["blockNumber"], required_confs)
+                    return self._await_confirmation(tx.get("blockNumber"), required_confs)
                 except Exception as ex:
                     print(f"Caught exception {ex} in tx._await_confirmation")
                     self.status = Status.Reverted
