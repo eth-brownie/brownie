@@ -208,22 +208,22 @@ class Project(_ProjectBase):
                     build_json = json.load(fp)
             except json.JSONDecodeError:
                 build_json = {}
-            if not set(BUILD_KEYS).issubset(build_json):
-                path.unlink()
-                continue
-            if path.stem not in contract_list:
-                potential_dependencies.append((path, build_json))
-                continue
-            if isinstance(build_json["allSourcePaths"], list):
-                # this handles the format change in v1.7.0, it can be removed in a future release
-                path.unlink()
-                test_path = self._build_path.joinpath("tests.json")
-                if test_path.exists():
-                    test_path.unlink()
-                continue
-            if not self._path.joinpath(build_json["sourcePath"]).exists():
-                path.unlink()
-                continue
+            # if not set(BUILD_KEYS).issubset(build_json):
+            #     path.unlink()
+            #     continue
+            # if path.stem not in contract_list:
+            #     potential_dependencies.append((path, build_json))
+            #     continue
+            # if isinstance(build_json["allSourcePaths"], list):
+            #     # this handles the format change in v1.7.0, it can be removed in a future release
+            #     path.unlink()
+            #     test_path = self._build_path.joinpath("tests.json")
+            #     if test_path.exists():
+            #         test_path.unlink()
+            #     continue
+            # if not self._path.joinpath(build_json["sourcePath"]).exists():
+            #     path.unlink()
+            #     continue
             self._build._add_contract(build_json)
 
         for path, build_json in potential_dependencies:
@@ -354,12 +354,13 @@ class Project(_ProjectBase):
         dep_build_path = self._build_path.joinpath("contracts/dependencies/")
         for path in list(dep_build_path.glob("**/*.json")):
             contract_alias = path.relative_to(dep_build_path).with_suffix("").as_posix()
-            if self._build.get_dependents(contract_alias):
-                with path.open() as fp:
-                    build_json = json.load(fp)
-                self._build._add_contract(build_json, contract_alias)
-            else:
-                path.unlink()
+            # if self._build.get_dependents(contract_alias):
+            self._build.get_dependents(contract_alias)
+            with path.open() as fp:
+                build_json = json.load(fp)
+            self._build._add_contract(build_json, contract_alias)
+            # else:
+            #     path.unlink()
 
     def _load_deployments(self) -> None:
         if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:  # @UndefinedVariable
