@@ -31,7 +31,7 @@ STANDARD_JSON: Dict = {
     "settings": {
         "outputSelection": {
             "*": {
-                "*": ["abi", "devdoc", "evm.bytecode", "evm.deployedBytecode", "userdoc"],
+                "*": ["abi", "devdoc", "evm.bytecode", "evm.deployedBytecode", "userdoc", "metadata"],
                 "": ["ast"],
             }
         },
@@ -348,6 +348,7 @@ def generate_build_json(
                 "source": source,
                 "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
                 "sourcePath": path_str,
+                "metadata": output_json["contracts"][path_str][contract_name]["metadata"]
             }
         )
         size = len(remove_0x_prefix(output_evm["deployedBytecode"]["object"])) / 2  # type: ignore
