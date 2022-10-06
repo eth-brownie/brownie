@@ -379,7 +379,7 @@ Or to run a specific test:
 
     $ brownie test tests/test_transfer.py
 
-Test results are saved at ``build/tests.json``. This file holds the results of each test, coverage analysis data, and hashes that are used to determine if any related files have changed since the tests last ran. If you abort test execution early via a ``KeyboardInterrupt``, results are only be saved for modules that fully completed.
+Test results are saved at ``build/tests.json``. This file holds the results of each test, coverage analysis data, and hashes that are used to determine if any related files have changed since the tests last ran. If you abort test execution early via a ``KeyboardInterrupt``, results are only saved for modules that fully completed.
 
 Only Running Updated Tests
 --------------------------
