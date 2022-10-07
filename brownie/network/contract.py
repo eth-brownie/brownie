@@ -2005,6 +2005,11 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
         idx = -(int(expected_bytecode[-4:], 16) + 2) * 2
         expected_bytecode = expected_bytecode[:idx]
 
+    if language == "Vyper":
+        # don't check immutables section
+        # TODO actually grab data section length from layout.
+        return actual_bytecode.startswith(expected_bytecode)
+
     return actual_bytecode == expected_bytecode
 
 
