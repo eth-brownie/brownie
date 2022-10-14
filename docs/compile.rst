@@ -99,7 +99,7 @@ Values given under ``compiler.solc.optimizer`` in the project :ref:`configuratio
                     cse: true
                     yul: true
 
-See the Solidity documentation for information on the `optimizer <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_ and it's `available settings <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_.
+See the Solidity documentation for information on the `optimizer <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_ and its `available settings <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_.
 
 .. _compile-remap:
 
