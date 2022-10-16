@@ -6,6 +6,13 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.19.2](https://github.com/eth-brownie/brownie/tree/v1.19.2) - 2022-10-16
+### Added
+- Support for remappings in `from_explorer` ([#1596](https://github.com/eth-brownie/brownie/pull/1596))
+
+### Fixed
+- Handle Vyper immutables ([#1623](https://github.com/eth-brownie/brownie/pull/1623))
 - Correct Moonscan API for Moonbase Alpha testnet([#1611](https://github.com/eth-brownie/brownie/pull/1611))
 
 ## [1.19.1](https://github.com/eth-brownie/brownie/tree/v1.19.1) - 2022-08-07
