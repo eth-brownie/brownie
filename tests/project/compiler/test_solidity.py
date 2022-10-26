@@ -119,7 +119,9 @@ def test_compile_input_json_evm_translates(solc5source, original, translated):
 
 def test_build_json_keys(solc5source):
     build_json = compiler.compile_and_format({"path.sol": solc5source})
-    assert set(build.BUILD_KEYS) == set(build_json["Foo"])
+    build_keys = set(build.BUILD_KEYS)
+    build_keys.add("metadata")
+    assert build_keys == set(build_json["Foo"])
 
 
 def test_build_json_unlinked_libraries(solc4source, solc5source, solc6source):

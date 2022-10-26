@@ -246,7 +246,12 @@ def _get_solc_version_list() -> Tuple[List, List]:
 
 
 def _get_unique_build_json(
-    output_evm: Dict, contract_node: Any, stmt_nodes: Dict, branch_nodes: Dict, has_fallback: bool
+    output_evm: Dict,
+    contract_node: Any,
+    stmt_nodes: Dict,
+    branch_nodes: Dict,
+    has_fallback: bool,
+    metadata: str,
 ) -> Dict:
     paths = {
         str(i.contract_id): i.parent().absolutePath
@@ -284,6 +289,7 @@ def _get_unique_build_json(
         "offset": contract_node.offset,
         "pcMap": pc_map,
         "type": contract_node.contractKind,
+        "metadata": metadata,
     }
 
 

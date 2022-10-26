@@ -139,6 +139,7 @@ def compile_and_format(
         )
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
+        print(input_json, output_json)
         build_json.update(generate_build_json(input_json, output_json, compiler_data, silent))
 
     return build_json
@@ -188,6 +189,7 @@ def generate_input_json(
     if language == "Solidity":
         input_json["settings"]["optimizer"] = optimizer
         input_json["settings"]["remappings"] = _get_solc_remappings(remappings)
+        input_json["settings"]["outputSelection"]["*"]["*"].append("metadata")
     input_json["sources"] = _sources_dict(contract_sources, language)
 
     if interface_sources:
@@ -320,6 +322,7 @@ def generate_build_json(
                 statement_nodes,
                 branch_nodes,
                 next((True for i in abi if i["type"] == "fallback"), False),
+                output_json["contracts"][path_str][contract_name]["metadata"],
             )
 
         else:
