@@ -137,7 +137,7 @@ live:
         chainid: 1287 
         id: moonbeam-test
         host: https://moonbeam-alpha.api.onfinality.io/public
-        explorer: https://api-moonbeam.moonscan.io/api
+        explorer: https://api-moonbase.moonscan.io/api
         multicall2: "0x37084d0158C68128d6Bc3E5db537Be996f7B6979"
   - name: Moonriver
     networks:

@@ -1865,7 +1865,7 @@ Multicall
 
 .. py:class:: brownie.network.multicall.Multicall(address=None, block_identifier=None)
 
-    Instances of ``Multicall`` allow for the batching of constant contract function calls through a modified version of the standart Brownie call API.
+    Instances of ``Multicall`` allow for the batching of constant contract function calls through a modified version of the standard Brownie call API.
 
     The only syntatic difference between a multicall and a standard brownie contract function call is the final argument for a multicall, is a dictionary with the ``from`` key being the instance of ``Multicall`` being used.
 
@@ -1875,7 +1875,7 @@ Multicall
         2. Auto-deployment on development networks (on first use).
         3. Uses ``multicall2`` key in network-config as pre-defined multicall contract address
         4. Can specify/modify block number to make calls at particular block heights
-        5. Calls which fail return ``None`` instad of causing all calls to fail
+        5. Calls which fail return ``None`` instead of causing all calls to fail
 
     .. code-block:: python
 
@@ -1922,7 +1922,7 @@ Multicall Methods
 
 .. py:classmethod:: Multicall.deploy
 
-    Deploys an instance of ``Multicall2``, especially useful when creating fixutes for testing.
+    Deploys an instance of ``Multicall2``, especially useful when creating fixtures for testing.
 
     .. code-block:: python
 
@@ -2031,7 +2031,7 @@ TxHistory Methods
         >>> history.filter(sender=accounts[0], value="1 ether")
         [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
 
-    You can also use ``key`` to prodive a function or lambda. It should receive one argument, a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, and return a boolean indicating if the object is to be included in the result.
+    You can also use ``key`` to provide a function or lambda. It should receive one argument, a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, and return a boolean indicating if the object is to be included in the result.
 
     .. code-block:: python
 
