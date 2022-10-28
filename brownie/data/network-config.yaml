@@ -180,8 +180,13 @@ live:
       - name: Mainnet
         chainid: 100
         id: gnosis-main
-        host: https://rpc.gnosischain.com/
+        host: https://rpc.gnosischain.com
         explorer: https://api.gnosisscan.io/api
+      - name: Chiado Testnet
+        chainid: 10200
+        id: chiado-testnet
+        host: https://rpc.chiadochain.net
+        explorer: https://blockscout.chiadochain.net/api
 
 development:
   - name: Anvil
