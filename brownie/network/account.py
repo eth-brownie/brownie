@@ -757,8 +757,6 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         Chain().priority_fee, 
                         Wei(priority_fee_to_send * priority_fee_increment)
                     )
-                    if (max_fee is not None and max_fee > priority_fee_to_send):
-                        priority_fee_to_send = Wei(max_fee)
                     
                 try:
                     print(
