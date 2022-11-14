@@ -139,6 +139,7 @@ class Rpc(metaclass=_Singleton):
             print("Terminating local RPC client...")
         except ValueError:
             pass
+        time.sleep(1)
         for child in self.process.children(recursive=True):
             try:
                 child.kill()
