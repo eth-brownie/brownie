@@ -527,7 +527,7 @@ class ContractConstructor:
         return f"<{type(self).__name__} '{self._name}.constructor({_inputs(self.abi)})'>"
 
     def __call__(
-        self, *args: Tuple, publish_source: bool = False
+        self, *args: Tuple, publish_source: bool = False, silent: bool = False
     ) -> Union["Contract", TransactionReceiptType]:
         """Deploys a contract.
 
@@ -558,6 +558,7 @@ class ContractConstructor:
             required_confs=tx["required_confs"],
             allow_revert=tx.get("allow_revert"),
             publish_source=publish_source,
+            silent=silent
         )
 
     @staticmethod
@@ -1711,7 +1712,7 @@ class _ContractMethod:
             raise ValueError("No data was returned - the call likely reverted")
         return self.decode_output(data)
 
-    def transact(self, *args: Tuple) -> TransactionReceiptType:
+    def transact(self,  silent: bool = False, *args: Tuple) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1746,6 +1747,7 @@ class _ContractMethod:
             required_confs=tx["required_confs"],
             data=self.encode_input(*args),
             allow_revert=tx["allow_revert"],
+            silent=silent
         )
 
     def decode_input(self, hexstr: str) -> List:
@@ -1845,7 +1847,7 @@ class ContractTx(_ContractMethod):
         Bytes4 method signature.
     """
 
-    def __call__(self, *args: Tuple) -> TransactionReceiptType:
+    def __call__(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1861,7 +1863,7 @@ class ContractTx(_ContractMethod):
             Object representing the broadcasted transaction.
         """
 
-        return self.transact(*args)
+        return self.transact(silent, *args)
 
 
 class ContractCall(_ContractMethod):
