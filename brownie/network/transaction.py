@@ -14,7 +14,7 @@ from warnings import warn
 
 import black
 import requests
-from eth_abi import decode_abi
+from eth_abi import decode
 from hexbytes import HexBytes
 from web3.exceptions import TransactionNotFound
 
@@ -722,7 +722,7 @@ class TransactionReceipt:
                     else:
                         self._revert_msg = f"Panic (error code: {error_code})"
                 elif selector == "0x08c379a0":  # keccak of Error(string)
-                    self._revert_msg = decode_abi(["string"], data[4:])[0]
+                    self._revert_msg = decode(["string"], data[4:])[0]
                 else:
                     # TODO: actually parse the data
                     self._revert_msg = f"typed error: {data.hex()}"
@@ -945,7 +945,7 @@ class TransactionReceipt:
                         data = _get_memory(trace[i], -1)
                         if len(data) > 4:
                             try:
-                                subcall["revert_msg"] = decode_abi(["string"], data[4:])[0]
+                                subcall["revert_msg"] = decode(["string"], data[4:])[0]
                             except Exception:
                                 subcall["revert_msg"] = data.hex()
                     if "revert_msg" not in subcall and "dev" in pc:
