@@ -94,4 +94,3 @@ You can expand the console by clicking the ``Console`` button in the top left (o
 
 .. image:: gui5.png
    :alt: Security Report GUI
-

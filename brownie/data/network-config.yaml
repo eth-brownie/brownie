@@ -134,7 +134,7 @@ live:
         explorer: https://api-moonbeam.moonscan.io/api
         multicall2: "0x1337BedC9D22ecbe766dF105c9623922A27963EC"
       - name: Moonbase Alpha
-        chainid: 1287 
+        chainid: 1287
         id: moonbeam-test
         host: https://moonbeam-alpha.api.onfinality.io/public
         explorer: https://api-moonbase.moonscan.io/api
