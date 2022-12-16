@@ -1238,7 +1238,7 @@ class Contract(_DeployedContractBase):
 
             if needs_patch_version:
                 versions = [Version(str(i)) for i in solcx.get_installable_solc_versions()]
-                for v in filter(lambda l: l < version.next_minor(), versions):
+                for v in filter(lambda x: x < version.next_minor(), versions):
                     if v > version:
                         version = v
 
