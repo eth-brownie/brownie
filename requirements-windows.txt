@@ -31,7 +31,7 @@ base58==2.1.1
     # via
     #   -r requirements.txt
     #   multiaddr
-bitarray==2.6.0
+bitarray>=2.6.0,<3
     # via
     #   -r requirements.txt
     #   eth-account
