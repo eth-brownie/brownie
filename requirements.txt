@@ -20,7 +20,7 @@ attrs==22.1.0
     #   pytest
 base58==2.1.1
     # via multiaddr
-bitarray==2.6.0
+bitarray>=2.6.0,<3
     # via eth-account
 black==22.10.0
     # via -r requirements.in
