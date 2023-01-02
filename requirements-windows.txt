@@ -343,7 +343,7 @@ wheel==0.37.1
     #   vyper
 wrapt==1.14.1
     # via -r requirements.txt
-yarl==1.8.1
+yarl==1.8.2
     # via
     #   -r requirements.txt
     #   aiohttp
