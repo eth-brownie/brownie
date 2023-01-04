@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+### Fixed
+- Add missing functions to code coverage report ([#1657](https://github.com/eth-brownie/brownie/pull/1657))
+
 ## [1.19.2](https://github.com/eth-brownie/brownie/tree/v1.19.2) - 2022-10-16
 ### Added
 - Support for remappings in `from_explorer` ([#1596](https://github.com/eth-brownie/brownie/pull/1596))
