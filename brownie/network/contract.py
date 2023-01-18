@@ -471,10 +471,11 @@ class ContractContainer(_ContractBase):
                 if not silent:
                     print("Verification pending...")
             else:
+                success = (data["message"] == "OK" or data["message"] == "Already Verified")
                 if not silent:
-                    col = "bright green" if data["message"] == "OK" else "bright red"
+                    col = "bright green" if success else "bright red"
                     print(f"Verification complete. Result: {color(col)}{data['result']}{color}")
-                return data["message"] == "OK"
+                return success
             time.sleep(10)
 
     def _slice_source(self, source: str, offset: list) -> str:
