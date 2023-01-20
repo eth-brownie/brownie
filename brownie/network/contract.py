@@ -330,7 +330,7 @@ class ContractContainer(_ContractBase):
             raise TypeError(f"Unsupported language for source verification: {language}")
 
     def publish_source(
-        self, contract: Any, silent: bool = False, constructor_args: bytes = None
+        self, contract: Any, silent: bool = False, constructor_args: str = None
     ) -> bool:
         """Flatten contract and publish source on the selected explorer"""
 
