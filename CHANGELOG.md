@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Anvil support, you can now access trace, events and return_value for anvil transactions.
+- Removes `eth-abi` depreciation warnings
+- Bump web3.py dep to support async provider in threaded applications
 
 ## [1.19.2](https://github.com/eth-brownie/brownie/tree/v1.19.2) - 2022-10-16
 ### Added

@@ -107,7 +107,7 @@ class VirtualMachineError(Exception):
 
             self.revert_type = "revert"
             err_msg = exc["data"][len(ERROR_SIG) :]
-            (err_msg,) = eth_abi.decode_abi(["string"], HexBytes(err_msg))
+            (err_msg,) = eth_abi.decode(["string"], HexBytes(err_msg))
             self.revert_msg = err_msg
 
             return
