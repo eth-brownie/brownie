@@ -156,7 +156,7 @@ class _ContractBase:
         function_sig = build_function_signature(abi)
 
         types_list = get_type_strings(abi["inputs"])
-        result = eth_abi.decode_abi(types_list, calldata[4:])
+        result = eth_abi.decode(types_list, calldata[4:])
         input_args = format_input(abi, result)
 
         return function_sig, input_args
@@ -578,7 +578,7 @@ class ContractConstructor:
 
         data = format_input(self.abi, args)
         types_list = get_type_strings(self.abi["inputs"])
-        return bytecode + eth_abi.encode_abi(types_list, data).hex()
+        return bytecode + eth_abi.encode(types_list, data).hex()
 
     def estimate_gas(self, *args: Tuple) -> int:
         """
@@ -680,7 +680,7 @@ class InterfaceConstructor:
         function_sig = build_function_signature(abi)
 
         types_list = get_type_strings(abi["inputs"])
-        result = eth_abi.decode_abi(types_list, calldata[4:])
+        result = eth_abi.decode(types_list, calldata[4:])
         input_args = format_input(abi, result)
 
         return function_sig, input_args
@@ -1698,7 +1698,7 @@ class _ContractMethod:
         selector = HexBytes(data)[:4].hex()
 
         if selector == "0x08c379a0":
-            revert_str = eth_abi.decode_abi(["string"], HexBytes(data)[4:])[0]
+            revert_str = eth_abi.decode(["string"], HexBytes(data)[4:])[0]
             raise ValueError(f"Call reverted: {revert_str}")
         elif selector == "0x4e487b71":
             error_code = int(HexBytes(data)[4:].hex(), 16)
@@ -1762,7 +1762,7 @@ class _ContractMethod:
         Decoded values
         """
         types_list = get_type_strings(self.abi["inputs"])
-        result = eth_abi.decode_abi(types_list, HexBytes(hexstr)[4:])
+        result = eth_abi.decode(types_list, HexBytes(hexstr)[4:])
         return format_input(self.abi, result)
 
     def encode_input(self, *args: Tuple) -> str:
@@ -1781,7 +1781,7 @@ class _ContractMethod:
         """
         data = format_input(self.abi, args)
         types_list = get_type_strings(self.abi["inputs"])
-        return self.signature + eth_abi.encode_abi(types_list, data).hex()
+        return self.signature + eth_abi.encode(types_list, data).hex()
 
     def decode_output(self, hexstr: str) -> Tuple:
         """
@@ -1797,7 +1797,7 @@ class _ContractMethod:
         Decoded values
         """
         types_list = get_type_strings(self.abi["outputs"])
-        result = eth_abi.decode_abi(types_list, HexBytes(hexstr))
+        result = eth_abi.decode(types_list, HexBytes(hexstr))
         result = format_output(self.abi, result)
         if len(result) == 1:
             result = result[0]
