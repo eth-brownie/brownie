@@ -631,7 +631,9 @@ class TransactionReceipt:
             raise RPCRequestError("Node client does not support `debug_traceTransaction`")
         try:
             trace = web3.provider.make_request(  # type: ignore
-                "debug_traceTransaction", (self.txid, {"disableStorage": CONFIG.mode != "console"})
+                # Set enableMemory to all RPC as anvil return the memory key
+                "debug_traceTransaction", (self.txid, {
+                                           "disableStorage": CONFIG.mode != "console", "enableMemory": True})
             )
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
             msg = f"Encountered a {type(e).__name__} while requesting "
@@ -674,8 +676,12 @@ class TransactionReceipt:
                 if fix_gas:
                     # handle traces where numeric values are returned as hex (Nethermind)
                     step["gas"] = int(step["gas"], 16)
-                    step["gasCost"] = int.from_bytes(HexBytes(step["gasCost"]), "big", signed=True)
-                    step["pc"] = int(step["pc"], 16)
+                    # Check if gasCost is  hex before converting.
+                    if isinstance(step["gasCost"], str):
+                        step["gasCost"] = int.from_bytes(
+                            HexBytes(step["gasCost"]), "big", signed=True)
+                    if isinstance(step["pc"], str):  # Check if pc is hex before converting.
+                        step["pc"] = int(step["pc"], 16)
 
         if self.status:
             self._confirmed_trace(trace)
