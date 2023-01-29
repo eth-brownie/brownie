@@ -27,5 +27,6 @@ semantic-version<3
 tqdm<5
 vvm>=0.1.0,<1
 vyper>=0.2.11,<1
-web3>=5.22.0,<6
+# web3 versions 5.29.0 thru 5.31.2 have a bug when using the async provider in subthreads. This is relevant for some ecosystem libs downstream from brownie.
+web3>=5.22.0,!=5.29.*,!=5.30.*,!=5.31.1,!=5.31.2,<6
 wrapt>=1.12.1,<2
