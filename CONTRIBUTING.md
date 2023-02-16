@@ -8,11 +8,14 @@ git clone https://github.com/eth-brownie/brownie.git
 cd brownie
 
 # create and load a virtual environment
-python3 -m venv venv
-source venv/bin/activate
+py -m venv venv
+#use py-2 or py-3 if that doesn't work
+
+venv\Scripts\activate
 
 # install brownie into the virtual environment
-python setup.py install
+py setup.py install
+#use py-2 or py-3 if that doesn't work
 
 # install the developer dependencies
 pip install -r requirements-dev.txt
