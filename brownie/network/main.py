@@ -40,11 +40,14 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
         web3.connect(host, active.get("timeout", 30))
         if CONFIG.network_type == "development" and launch_rpc and not rpc.is_active():  # @UndefinedVariable
             if is_connected():
-                if web3.eth.block_number != 0:
-                    warnings.warn(
-                        f"Development network has a block height of {web3.eth.block_number}",
-                        BrownieEnvironmentWarning,
-                    )
+                # Why is this a warning? I could not give less of a shit what the block number is 
+                # when I connect to my development network.
+                #
+                # if web3.eth.block_number != 0:
+                #     warnings.warn(
+                #         f"Development network has a block height of {web3.eth.block_number}",
+                #         BrownieEnvironmentWarning,
+                #     )
                 rpc.attach(host)
             else:
                 rpc.launch(active["cmd"], **active["cmd_settings"])

@@ -534,6 +534,8 @@ class Chain(metaclass=_Singleton):
             return web3.eth.block_number
 
 
+chain = Chain()
+
 # objects that will update whenever the RPC is reset or reverted must register
 # by calling to this function. The must also include _revert and _reset methods
 # to recieve notifications from this object

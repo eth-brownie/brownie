@@ -6,8 +6,11 @@ isort:skip_file
 from brownie.project import compile_source, run
 from brownie._config import CONFIG as _CONFIG
 from brownie.convert import Fixed, Wei
-from brownie.network import accounts, alert, chain, history, rpc, web3
+# from brownie.network import accounts, alert, chain, history, rpc, web3
+from brownie.network import alert, history, rpc, web3
+from brownie.network.account import accounts
 from brownie.network.contract import Contract  # NOQA: F401
+from brownie.network.state import chain
 from brownie.network import multicall as _multicall
 
 ETH_ADDRESS = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"

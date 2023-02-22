@@ -249,8 +249,8 @@ def devnetwork(network, rpc, chain, network_name):
 
 @pytest.fixture
 def accounts(devnetwork):
-    yield brownie.network.accounts
-    brownie.network.accounts.default = None
+    yield brownie.network.account.accounts
+    brownie.network.account.accounts.default = None
 
 
 @pytest.fixture(scope="session")
@@ -274,7 +274,7 @@ def rpc():
 
 @pytest.fixture(scope="session")
 def chain():
-    return brownie.network.chain
+    return brownie.network.state.chain
 
 
 @pytest.fixture(scope="session")

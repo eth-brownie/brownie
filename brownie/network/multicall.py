@@ -10,7 +10,9 @@ from wrapt import ObjectProxy
 
 from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.exceptions import ContractNotFound
-from brownie.network import accounts, web3
+# from brownie.network import accounts, web3
+from brownie.network import web3
+from brownie.network.account import accounts
 from brownie.network.contract import Contract, ContractCall
 from brownie.project import compile_source
 

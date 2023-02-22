@@ -59,9 +59,11 @@ from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
-from . import accounts, chain
+# from . import accounts, chain
+from .account import accounts
 from .event import _add_deployment_topics, _get_topics, event_watcher
 from .state import (
+    chain,
     _add_contract,
     _add_deployment,
     _find_contract,

@@ -324,6 +324,8 @@ class Accounts(metaclass=_Singleton):
         Removes all `ClefAccount` objects from the container.
         """
         self._accounts = [i for i in self._accounts if not isinstance(i, ClefAccount)]
+        
+accounts = Accounts()
 
 
 class PublicKeyAccount:

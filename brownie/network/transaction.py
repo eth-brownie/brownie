@@ -378,7 +378,8 @@ class TransactionReceipt:
         if isinstance(sender, EthAddress):
             # if the transaction wasn't broadcast during this brownie session,
             # check if the sender is unlocked - we might be able to replace anyway
-            from brownie import accounts
+            # from brownie import accounts
+            from brownie.network.account import accounts
 
             if sender in accounts:
                 sender = accounts.at(sender)
