@@ -491,7 +491,7 @@ class Project(_ProjectBase):
                 del dict_[key]
 
         # remove contracts
-        for contract in [x for v in self._containers.values() for x in v._contracts]:
+        for contract in {x for v in self._containers.values() for x in v._contracts}:
             _remove_contract(contract)
         for container in self._containers.values():
             container._contracts.clear()
