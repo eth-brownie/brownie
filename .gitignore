@@ -20,3 +20,7 @@ env/
 # Personnal
 .env
 c_pytest.py
+
+.project
+.pydevproject
+.vscode
