@@ -34,6 +34,7 @@ python_version = (
 )
 REQUEST_HEADERS = {"User-Agent": f"Brownie/{__version__} (Python/{python_version})"}
 
+disable_namespace_collisions = False
 
 class ConfigContainer:
     def __init__(self):
