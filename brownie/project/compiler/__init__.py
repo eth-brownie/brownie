@@ -58,6 +58,7 @@ def compile_and_format(
     interface_sources: Optional[Dict[str, str]] = None,
     remappings: Optional[list] = None,
     optimizer: Optional[Dict] = None,
+    viaIR: Optional[bool] = None,
 ) -> Dict:
     """Compiles contracts and returns build data.
 
@@ -72,6 +73,7 @@ def compile_and_format(
         interface_sources: dictionary of interfaces as {'path': "source code"}
         remappings: list of solidity path remappings
         optimizer: dictionary of solidity optimizer settings
+        viaIR: enable compilation pipeline to go through the Yul intermediate representation
 
     Returns:
         build data dict
@@ -136,6 +138,7 @@ def compile_and_format(
             interface_sources=interfaces,
             remappings=remappings,
             optimizer=optimizer,
+            viaIR=viaIR,
         )
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
@@ -153,6 +156,7 @@ def generate_input_json(
     interface_sources: Optional[Dict[str, str]] = None,
     remappings: Optional[list] = None,
     optimizer: Optional[Dict] = None,
+    viaIR: Optional[bool] = None,
 ) -> Dict:
 
     """Formats contracts to the standard solc input json.
@@ -166,6 +170,7 @@ def generate_input_json(
         interface_sources: dictionary of interfaces as {'path': "source code"}
         remappings: list of solidity path remappings
         optimizer: dictionary of solidity optimizer settings
+        viaIR: enable compilation pipeline to go through the Yul intermediate representation
 
     Returns: dict
     """
@@ -188,6 +193,8 @@ def generate_input_json(
     if language == "Solidity":
         input_json["settings"]["optimizer"] = optimizer
         input_json["settings"]["remappings"] = _get_solc_remappings(remappings)
+        if viaIR is not None:
+            input_json["settings"]["viaIR"] = viaIR
     input_json["sources"] = _sources_dict(contract_sources, language)
 
     if interface_sources:
