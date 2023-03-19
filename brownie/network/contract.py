@@ -329,7 +329,9 @@ class ContractContainer(_ContractBase):
         else:
             raise TypeError(f"Unsupported language for source verification: {language}")
 
-    def publish_source(self, contract: Any, silent: bool = False) -> bool:
+    def publish_source(
+        self, contract: Any, silent: bool = False, constructor_args: str = None
+    ) -> bool:
         """Flatten contract and publish source on the selected explorer"""
 
         # Check required conditions for verifying
@@ -388,42 +390,47 @@ class ContractContainer(_ContractBase):
         elif "apache" in identifier and "2.0" in identifier:
             license_code = 12
 
-        # get constructor arguments
-        params_tx: Dict = {
-            "apikey": api_key,
-            "module": "account",
-            "action": "txlist",
-            "address": address,
-            "page": 1,
-            "sort": "asc",
-            "offset": 1,
-        }
-        i = 0
-        while True:
-            response = requests.get(url, params=params_tx, headers=REQUEST_HEADERS)
-            if response.status_code != 200:
-                raise ConnectionError(
-                    f"Status {response.status_code} when querying {url}: {response.text}"
-                )
-            data = response.json()
-            if int(data["status"]) == 1:
-                # Constructor arguments received
-                break
-            else:
-                # Wait for contract to be recognized by etherscan
-                # This takes a few seconds after the contract is deployed
-                # After 10 loops we throw with the API result message (includes address)
-                if i >= 10:
-                    raise ValueError(f"API request failed with: {data['result']}")
-                elif i == 0 and not silent:
-                    print(f"Waiting for {url} to process contract...")
-                i += 1
-                time.sleep(10)
-
-        if data["message"] == "OK":
-            constructor_arguments = data["result"][0]["input"][contract_info["bytecode_len"] + 2 :]
+        if constructor_args:
+            constructor_arguments = constructor_args
         else:
-            constructor_arguments = ""
+            # get constructor arguments
+            params_tx: Dict = {
+                "apikey": api_key,
+                "module": "account",
+                "action": "txlist",
+                "address": address,
+                "page": 1,
+                "sort": "asc",
+                "offset": 1,
+            }
+            i = 0
+            while True:
+                response = requests.get(url, params=params_tx, headers=REQUEST_HEADERS)
+                if response.status_code != 200:
+                    raise ConnectionError(
+                        f"Status {response.status_code} when querying {url}: {response.text}"
+                    )
+                data = response.json()
+                if int(data["status"]) == 1:
+                    # Constructor arguments received
+                    break
+                else:
+                    # Wait for contract to be recognized by etherscan
+                    # This takes a few seconds after the contract is deployed
+                    # After 10 loops we throw with the API result message (includes address)
+                    if i >= 10:
+                        raise ValueError(f"API request failed with: {data['result']}")
+                    elif i == 0 and not silent:
+                        print(f"Waiting for {url} to process contract...")
+                    i += 1
+                    time.sleep(10)
+
+            if data["message"] == "OK":
+                constructor_arguments = data["result"][0]["input"][
+                    contract_info["bytecode_len"] + 2 :
+                ]
+            else:
+                constructor_arguments = ""
 
         # Submit verification
         payload_verification: Dict = {
