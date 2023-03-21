@@ -1,4 +1,4 @@
--c requirements.txt
+-c requirements.in
 
 bumpversion
 coverage
@@ -8,6 +8,8 @@ mypy==0.720
 pip-tools
 pytest-cov
 pytest-mock
+pytest-xdist<2
+pytest<7
 sphinx
 sphinx_rtd_theme
 tox
