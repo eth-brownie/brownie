@@ -1,11 +1,10 @@
 -r requirements.txt
 
-black>=20.8b1
 bumpversion
 coverage
-flake8==3.9.1
+flake8>=3.9.1
 isort
-mypy==0.720
+mypy>=0.720
 pip-tools
 pytest-cov
 pytest-mock
