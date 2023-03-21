@@ -29,6 +29,7 @@ import eth_abi
 import requests
 import solcx
 from eth_utils import combomethod, remove_0x_prefix
+from eth_utils.abi import function_abi_to_4byte_selector, collapse_if_tuple
 from hexbytes import HexBytes
 from semantic_version import Version
 from vvm import get_installable_vyper_versions
@@ -1831,6 +1832,31 @@ class _ContractMethod:
             amount=tx["value"],
             data=self.encode_input(*args),
         )
+    
+    def encode_custom_error(self, err_name: str, params: list) -> str:
+        """
+        Used to identify custom errors in testing
+        """
+        contract_abi = self.abi
+
+        for error in [abi for abi in contract_abi if abi["type"] == "error"]:
+            # Get error signature components
+            name = error["name"]
+            data_types = [collapse_if_tuple(abi_input) for abi_input in error.get("inputs", [])]
+            error_signature_hex = function_abi_to_4byte_selector(error).hex()
+
+            if err_name == name:
+                encoded_params = ''
+                for param in params:
+                    if(type(param)==str):
+                        return('typed error: 0x'+error_signature_hex+param.zfill(66)[2:])
+                    elif(type(param)==int):
+                        val = "{0:#0{1}x}".format(param,66)
+                        val = val[2:]
+                    else:
+                        return 'Unsported type'
+                    encoded_params = encoded_params + val
+                return('typed error: 0x'+error_signature_hex+encoded_params)
 
 
 class ContractTx(_ContractMethod):
