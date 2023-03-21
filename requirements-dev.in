@@ -1,5 +1,6 @@
--c requirements.in
+-r requirements.txt
 
+black>=20.8b1
 bumpversion
 coverage
 flake8==3.9.1
