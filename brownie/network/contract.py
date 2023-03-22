@@ -1857,8 +1857,8 @@ class _ContractMethod:
                         return 'Unsported type'
                     encoded_params = encoded_params + val
                 return('typed error: 0x'+error_signature_hex+encoded_params)
-             else:
-                return 'error not found' 
+             
+         return 'error not found' 
 
 
 class ContractTx(_ContractMethod):
