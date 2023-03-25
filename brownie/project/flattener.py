@@ -24,12 +24,12 @@ class Flattener:
         self.dependencies: DefaultDict[str, Set[str]] = defaultdict(set)
         self.compiler_settings = compiler_settings
         self.contract_name = contract_name
-        self.contract_file = Path(primary_source_fp).name
+        self.contract_file = self.path_to_name(primary_source_fp)
         self.remappings = remappings
 
         self.traverse(primary_source_fp)
 
-        license_search = LICENSE_PATTERN.search(self.sources[Path(primary_source_fp).name])
+        license_search = LICENSE_PATTERN.search(self.path_to_name(primary_source_fp))
         self.license = license_search.group(1) if license_search else "NONE"
 
     @classmethod
