@@ -189,9 +189,14 @@ class CompilerError(Exception):
     def __init__(self, e: Type[psutil.Popen], compiler: str = "Compiler") -> None:
         self.compiler = compiler
 
-        err_json = yaml.safe_load(e.stdout_data)
-        err = [i.get("formattedMessage") or i["message"] for i in err_json["errors"]]
-        super().__init__(f"{compiler} returned the following errors:\n\n" + "\n".join(err))
+        raw_error = e.stdout_data
+
+        try:
+            err_json = yaml.safe_load(raw_error)
+            err = [i.get("formattedMessage") or i["message"] for i in err_json["errors"]]
+            super().__init__(f"{compiler} returned the following errors:\n\n" + "\n".join(err))
+        except:
+            super().__init__(f"{compiler} returned the following errors:\n\n{raw_error}")
 
 
 class IncompatibleSolcVersion(Exception):
