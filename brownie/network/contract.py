@@ -1736,6 +1736,8 @@ class _ContractMethod:
                 "Final argument must be a dict of transaction parameters that "
                 "includes a `from` field specifying the sender of the transaction"
             )
+        
+        print(f"{tx['from'].address}: calling {self._name}{args}")
 
         return tx["from"].transfer(
             self._address,
