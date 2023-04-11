@@ -74,7 +74,7 @@ class Build:
             for k, v in pcMap.items()
             if v["op"] in ("REVERT", "INVALID") or "jump_revert" in v
         ):
-            if "path" not in data:
+            if "path" not in data or data["path"] == None:
                 continue
             path_str = source_map[data["path"]]
 

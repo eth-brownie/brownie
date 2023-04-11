@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.19.3](https://github.com/eth-brownie/brownie/tree/v1.19.3) - 2023-01-29
+### Added
+- Ganache 7.7.x support ([#1652](https://github.com/eth-brownie/brownie/pull/1652))
+
+### Fixed
+- Anvil support, you can now access trace, events and return_value for anvil transactions ([#1652](https://github.com/eth-brownie/brownie/pull/1652))
+- Removes `eth-abi` depreciation warnings ([#1639](https://github.com/eth-brownie/brownie/pull/1639))
+- Bump web3.py dep to support async provider in threaded applications ([#1664](https://github.com/eth-brownie/brownie/pull/1664))
+
 ## [1.19.2](https://github.com/eth-brownie/brownie/tree/v1.19.2) - 2022-10-16
 ### Added
 - Support for remappings in `from_explorer` ([#1596](https://github.com/eth-brownie/brownie/pull/1596))

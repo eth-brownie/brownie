@@ -14,7 +14,7 @@ from warnings import warn
 
 import black
 import requests
-from eth_abi import decode_abi
+from eth_abi import decode
 from hexbytes import HexBytes
 from web3.exceptions import TransactionNotFound
 
@@ -648,7 +648,9 @@ class TransactionReceipt:
             raise RPCRequestError("Node client does not support `debug_traceTransaction`")
         try:
             trace = web3.provider.make_request(  # type: ignore
-                "debug_traceTransaction", (self.txid, {"disableStorage": CONFIG.mode != "console"})  # @UndefinedVariable
+                # Set enableMemory to all RPC as anvil return the memory key
+                "debug_traceTransaction", (self.txid, {
+                                           "disableStorage": CONFIG.mode != "console", "enableMemory": True})  # @UndefinedVariable
             )
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
             msg = f"Encountered a {type(e).__name__} while requesting "
@@ -691,8 +693,12 @@ class TransactionReceipt:
                 if fix_gas:
                     # handle traces where numeric values are returned as hex (Nethermind)
                     step["gas"] = int(step["gas"], 16)
-                    step["gasCost"] = int.from_bytes(HexBytes(step["gasCost"]), "big", signed=True)
-                    step["pc"] = int(step["pc"], 16)
+                    # Check if gasCost is  hex before converting.
+                    if isinstance(step["gasCost"], str):
+                        step["gasCost"] = int.from_bytes(
+                            HexBytes(step["gasCost"]), "big", signed=True)
+                    if isinstance(step["pc"], str):  # Check if pc is hex before converting.
+                        step["pc"] = int(step["pc"], 16)
 
         if self.status:
             self._confirmed_trace(trace)
@@ -739,7 +745,7 @@ class TransactionReceipt:
                     else:
                         self._revert_msg = f"Panic (error code: {error_code})"
                 elif selector == "0x08c379a0":  # keccak of Error(string)
-                    self._revert_msg = decode_abi(["string"], data[4:])[0]
+                    self._revert_msg = decode(["string"], data[4:])[0]
                 else:
                     # TODO: actually parse the data
                     self._revert_msg = f"typed error: {data.hex()}"
@@ -962,7 +968,7 @@ class TransactionReceipt:
                         data = _get_memory(trace[i], -1)
                         if len(data) > 4:
                             try:
-                                subcall["revert_msg"] = decode_abi(["string"], data[4:])[0]
+                                subcall["revert_msg"] = decode(["string"], data[4:])[0]
                             except Exception:
                                 subcall["revert_msg"] = data.hex()
                     if "revert_msg" not in subcall and "dev" in pc:
