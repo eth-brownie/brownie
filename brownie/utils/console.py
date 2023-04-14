@@ -60,7 +60,8 @@ class LogReader(threading.Thread):
         'Gas usage:', 'Block time:', 'Contract created', 'eth_getTransactionByHash',
         'eth_getCode', 'eth_getTransactionReceipt', 'eth_sendTransaction', 'evm_snapshot',
         'Saved snapshot', 'eth_blockNumber', 'evm_increaseTime', 'eth_accounts', 'web3_clientVersion',
-        'evm_addAccount', 'personal_unlockAccount','evm_setAccountBalance', 'Contract call:']
+        'evm_addAccount', 'personal_unlockAccount','evm_setAccountBalance', 'Contract call:',
+        'eth_getBalance', 'debug_traceTransaction']
 
         print(color("yellow"),'\r',"Potential Console.log:",color("normal"))
         while not self._stop_event.is_set():
