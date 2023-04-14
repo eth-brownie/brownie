@@ -146,8 +146,7 @@ def log(*args, **kwargs):
                 duration = kwargs['duration']
 
             else:
-                kwargs = {'duration': 7}
-                duration = kwargs['duration']
+                duration = 7
 
         logger_thread = threading.Thread(target=getConsoleLog, args=[nline], kwargs={'duration':duration},daemon=True)
         logger_thread.start()
