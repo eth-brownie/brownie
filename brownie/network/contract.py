@@ -75,6 +75,7 @@ from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 _unverified_addresses: Set = set()
 
 _explorer_tokens = {
+    "optimistic": "OPTIMISMSCAN_TOKEN",
     "etherscan": "ETHERSCAN_TOKEN",
     "bscscan": "BSCSCAN_TOKEN",
     "polygonscan": "POLYGONSCAN_TOKEN",
