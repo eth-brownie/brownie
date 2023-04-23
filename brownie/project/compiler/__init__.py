@@ -180,7 +180,7 @@ def generate_input_json(
         if language == "Solidity":
             evm_version = next(i[0] for i in EVM_SOLC_VERSIONS if solidity.get_version() >= i[1])
         else:
-            evm_version = "istanbul"
+            evm_version = "paris"
 
     input_json: Dict = deepcopy(STANDARD_JSON)
     input_json["language"] = language
