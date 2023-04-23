@@ -187,6 +187,14 @@ live:
         id: xdai-test
         host: https://sokol.poa.network
         explorer: https://blockscout.com/poa/sokol/api
+  - name: Gnosis Chain
+    networks:
+      - chainid: 100
+        explorer: https://api.gnosisscan.io/api
+        host: https://rpc.gnosischain.com/
+        id: gnosis-main
+        name: Mainnet
+
 
 development:
   - name: Anvil
@@ -316,3 +324,15 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: aurora-main
+  - name: Ganache-CLI (Gnosis-Mainnet Fork)
+    id: gnosis-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: gnosis-main
