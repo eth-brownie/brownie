@@ -4,11 +4,42 @@ import pytest
 from semantic_version import NpmSpec
 
 from brownie import compile_source
-from brownie.exceptions import NamespaceCollision
+from brownie.exceptions import NamespaceCollision, PragmaError
 from brownie.project import sources
 
 MESSY_SOURCE = """
   pragma  solidity>=0.4.22   <0.7.0  ;contract Foo{} interface Bar
+    {} enum Struct { Contract }
+abstract contract Baz is Foo {} struct  Interface  { uint256 Abstract;
+}    library   Potato{} pragma     solidity    ^0.6.0;  contract Foo2 is
+Foo{ enum E {a, b}  struct S {bool b;
+}}  library Bar2{}"""
+
+GET_PRAGMA_SPEC_SOURCE__OneVersion = """
+// pragma solidity ^0.6.0;
+//         pragma solidity ^1.6.0;
+pragma solidity ^4.2.0;
+contract Foo{} interface Bar
+    {} enum Struct { Contract }
+abstract contract Baz is Foo {} struct  Interface  { uint256 Abstract;
+}    library   Potato{} pragma     solidity    ^0.6.0;  contract Foo2 is
+Foo{ enum E {a, b}  struct S {bool b;
+}}  library Bar2{}"""
+
+GET_PRAGMA_SPEC_SOURCE__BetweenVersions = """
+// pragma solidity ^0.6.0;
+//         pragma solidity ^1.6.0;
+pragma solidity >=0.4.22       <0.7.0;
+contract Foo{} interface Bar
+    {} enum Struct { Contract }
+abstract contract Baz is Foo {} struct  Interface  { uint256 Abstract;
+}    library   Potato{} pragma     solidity    ^0.6.0;  contract Foo2 is
+Foo{ enum E {a, b}  struct S {bool b;
+}}  library Bar2{}"""
+
+GET_PRAGMA_SPEC_SOURCE__NoVersion = """
+// No Pragma version
+contract Foo{} interface Bar
     {} enum Struct { Contract }
 abstract contract Baz is Foo {} struct  Interface  { uint256 Abstract;
 }    library   Potato{} pragma     solidity    ^0.6.0;  contract Foo2 is
@@ -77,8 +108,19 @@ def test_load_messy_project():
     assert list(project.keys()) == ["Bar2", "Foo", "Foo2", "Potato"]
 
 
-def test_get_pragma_spec():
-    assert sources.get_pragma_spec(MESSY_SOURCE) == NpmSpec(">=0.4.22 <0.7.0")
+def test_get_pragma_spec__one_version():
+    assert sources.get_pragma_spec(GET_PRAGMA_SPEC_SOURCE__OneVersion) == NpmSpec("^4.2.0")
+
+
+def test_get_pragma_spec__between_versions():
+    assert sources.get_pragma_spec(GET_PRAGMA_SPEC_SOURCE__BetweenVersions) == NpmSpec(
+        ">=0.4.22 <0.7.0"
+    )
+
+
+def test_get_pragma_spec__no_version():
+    with pytest.raises(PragmaError):
+        sources.get_pragma_spec(GET_PRAGMA_SPEC_SOURCE__NoVersion)
 
 
 @pytest.mark.parametrize(
