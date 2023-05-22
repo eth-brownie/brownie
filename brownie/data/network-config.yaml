@@ -23,8 +23,8 @@ live:
         multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
         provider: infura
       - name: Sepolia (Infura)
-        chainid: 5
-        id: goerli
+        chainid: 11155111
+        id: sepolia
         host: https://sepolia.infura.io/v3/$WEB3_INFURA_PROJECT_ID
         explorer: https://api-sepolia.etherscan.io/
         provider: infura
