@@ -22,6 +22,12 @@ live:
         explorer: https://api-rinkeby.etherscan.io/api
         multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
         provider: infura
+      - name: Sepolia (Infura)
+        chainid: 5
+        id: goerli
+        host: https://sepolia.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-sepolia.etherscan.io/
+        provider: infura
       - name: Goerli (Infura)
         chainid: 5
         id: goerli
@@ -187,6 +193,21 @@ live:
         id: xdai-test
         host: https://sokol.poa.network
         explorer: https://blockscout.com/poa/sokol/api
+  - name: Gnosis Chain
+    networks:
+      - chainid: 100
+        explorer: https://api.gnosisscan.io/api
+        host: https://rpc.gnosischain.com/
+        id: gnosis-main
+        name: Mainnet
+  - name: Polygon zkEVM
+    networks:
+      - chainid: 1101
+        explorer: https://api-zkevm.polygonscan.com
+        host: https://zkevm-rpc.com
+        id: zkevm-main
+        name: Polygon zkEVM mainnet
+
 
 development:
   - name: Anvil
@@ -316,3 +337,15 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: aurora-main
+  - name: Ganache-CLI (Gnosis-Mainnet Fork)
+    id: gnosis-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: gnosis-main

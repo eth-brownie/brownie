@@ -78,6 +78,7 @@ _explorer_tokens = {
     "optimistic": "OPTIMISMSCAN_TOKEN",
     "etherscan": "ETHERSCAN_TOKEN",
     "bscscan": "BSCSCAN_TOKEN",
+    "zkevm": "ZKEVMSCAN_TOKEN",
     "polygonscan": "POLYGONSCAN_TOKEN",
     "ftmscan": "FTMSCAN_TOKEN",
     "arbiscan": "ARBISCAN_TOKEN",
