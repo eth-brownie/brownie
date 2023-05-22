@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Added
-- Better support for Optimism and Gnosischain API keys
-  - GNOSISSCAN_TOKEN & OPTIMISIMSCAN_TOKEN
-- Moved Optimism to using infura rpc by default & added gnosis-main and gnosis-main-fork
+- Added functional support for the following new chains:
+- Sepolia
+- Polygon zkEVM
+- Optimisim (fixed explorer support)
+- Gnosis Chain
 
 ## [1.19.3](https://github.com/eth-brownie/brownie/tree/v1.19.3) - 2023-01-29
 ### Added

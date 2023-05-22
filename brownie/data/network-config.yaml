@@ -22,6 +22,12 @@ live:
         explorer: https://api-rinkeby.etherscan.io/api
         multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
         provider: infura
+      - name: Sepolia (Infura)
+        chainid: 5
+        id: goerli
+        host: https://sepolia.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-sepolia.etherscan.io/
+        provider: infura
       - name: Goerli (Infura)
         chainid: 5
         id: goerli
@@ -194,6 +200,14 @@ live:
         host: https://rpc.gnosischain.com/
         id: gnosis-main
         name: Mainnet
+  - name: Polygon zkEVM
+    networks:
+      - chainid: 1101
+        explorer: https://api-zkevm.polygonscan.com
+        host: https://zkevm-rpc.com
+        id: zkevm-main
+        name: Polygon zkEVM mainnet
+
 
 
 development:
