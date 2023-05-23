@@ -350,3 +350,15 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: gnosis-main
+  - name: Ganache-CLI (zkEVM-Mainnet Fork)
+    id: zkevm-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: zkevm-main
