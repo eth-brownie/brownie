@@ -39,11 +39,7 @@ STANDARD_JSON: Dict = {
         "remappings": [],
     },
 }
-EVM_SOLC_VERSIONS = [
-    ("istanbul", Version("0.5.13")),
-    ("petersburg", Version("0.5.5")),
-    ("byzantium", Version("0.4.0")),
-]
+
 
 
 def compile_and_format(
@@ -177,10 +173,8 @@ def generate_input_json(
         optimizer = {"enabled": optimize, "runs": runs if optimize else 0}
 
     if evm_version is None:
-        if language == "Solidity":
-            evm_version = next(i[0] for i in EVM_SOLC_VERSIONS if solidity.get_version() >= i[1])
-        else:
-            evm_version = "paris"
+        _module = solidity if language == "Solidity" else vyper
+        evm_version = next(i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1])
 
     input_json: Dict = deepcopy(STANDARD_JSON)
     input_json["language"] = language
