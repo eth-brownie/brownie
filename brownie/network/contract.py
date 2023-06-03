@@ -425,13 +425,17 @@ class ContractContainer(_ContractBase):
         else:
             constructor_arguments = ""
 
+        standard_input_json_with_libraries = self._flatten_libraries_for_file(
+            self._flattener.standard_input_json
+        )
+
         # Submit verification
         payload_verification: Dict = {
             "apikey": api_key,
             "module": "contract",
             "action": "verifysourcecode",
             "contractaddress": address,
-            "sourceCode": io.StringIO(json.dumps(self._flattener.standard_input_json)),
+            "sourceCode": io.StringIO(json.dumps(standard_input_json_with_libraries)),
             "codeformat": "solidity-standard-json-input",
             "contractname": f"{self._flattener.contract_file}:{self._flattener.contract_name}",
             "compilerversion": f"v{contract_info['compiler_version']}",
@@ -501,6 +505,36 @@ class ContractContainer(_ContractBase):
                 break
         offset_start = max(0, offset_start)
         return source[offset_start : offset[1]].strip()
+
+    def _get_stripped_library(self, library_source_name, sources):
+        library_source = sources[library_source_name]["content"].split("\n")
+        lines = []
+        for line in library_source:
+            if "pragma" in line:
+                continue
+            if "license" in line.lower():
+                continue
+            lines.append(line)
+        return "\n".join(lines)
+
+    def _flatten_libraries_for_file(self, standard_validation_json):
+        sources = standard_validation_json["sources"]
+        libraries = standard_validation_json["settings"]["libraries"]
+        files_requiring_libraries = list(libraries.keys())
+        file_to_flatten = files_requiring_libraries[0]
+        libraries_files = [name.replace(".sol", "") + ".sol" for name in libraries[file_to_flatten]]
+        processed_lines = []
+        contract_source = sources[file_to_flatten]["content"].split("\n")
+        for line in contract_source:
+            if "import" in line and any(file_name in line for file_name in libraries_files):
+                file_name = [name for name in libraries_files if name in line][0]
+                line = self._get_stripped_library(file_name, sources)
+            processed_lines.append(line)
+        new_source = "\n".join(processed_lines)
+        standard_validation_json["sources"][file_to_flatten] = {"content": new_source}
+        for library_name in libraries_files:
+            standard_validation_json["sources"].pop(library_name)
+        return standard_validation_json
 
 
 class ContractConstructor:
