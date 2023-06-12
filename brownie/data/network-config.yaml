@@ -8,13 +8,6 @@ live:
         explorer: https://api.etherscan.io/api
         multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
         provider: infura
-      - name: Ropsten (Infura)
-        chainid: 3
-        id: ropsten
-        host: https://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-        explorer: https://api-ropsten.etherscan.io/api
-        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
-        provider: infura
       - name: Rinkeby (Infura)
         chainid: 4
         id: rinkeby
@@ -35,11 +28,11 @@ live:
         explorer: https://api-goerli.etherscan.io/api
         multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
         provider: infura
-      - name: Kovan (Infura)
-        chainid: 42
-        id: kovan
-        host: https://kovan.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-        explorer: https://api-kovan.etherscan.io/api
+      - name: Sepolia (Infura)
+        chainid: 11155111
+        id: sepolia
+        host: https://sepolia.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-sepolia.etherscan.io/api
         multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
         provider: infura
   - name: Ethereum Classic
