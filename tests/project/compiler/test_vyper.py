@@ -23,7 +23,7 @@ def test_generate_input_json(vysource):
 
 def test_generate_input_json_evm(vysource):
     fn = functools.partial(compiler.generate_input_json, {"path.vy": vysource}, language="Vyper")
-    assert fn()["settings"]["evmVersion"] == "istanbul"
+    assert fn()["settings"]["evmVersion"] == "paris"
     assert fn(evm_version="byzantium")["settings"]["evmVersion"] == "byzantium"
     assert fn(evm_version="petersburg")["settings"]["evmVersion"] == "petersburg"
 

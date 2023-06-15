@@ -203,7 +203,7 @@ live:
   - name: Polygon zkEVM
     networks:
       - chainid: 1101
-        explorer: https://api-zkevm.polygonscan.com
+        explorer: https://api-zkevm.polygonscan.com/api
         host: https://zkevm-rpc.com
         id: zkevm-main
         name: Polygon zkEVM mainnet

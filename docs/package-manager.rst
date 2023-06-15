@@ -124,7 +124,7 @@ Use ``brownie pm list`` to view currently installed packages. After installing a
 Cloning a Package
 -------------------
 
-Use ``brownie pm clone [path]`` to copy the contents of a package into another folder. The package will be cloned to the current directory if [path] is ommited. This is useful for exploring the filestructure of a package, or when you wish to build a project on top of an existing package.
+Use ``brownie pm clone [path]`` to copy the contents of a package into another folder. The package will be cloned to the current directory if [path] is omitted. This is useful for exploring the filestructure of a package, or when you wish to build a project on top of an existing package.
 
 To copy the Aragon package to the current folder:
 

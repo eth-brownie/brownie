@@ -26,6 +26,12 @@ solcx_logger.addHandler(sh)
 
 AVAILABLE_SOLC_VERSIONS = None
 
+EVM_VERSION_MAPPING = [
+    ("istanbul", Version("0.5.13")),
+    ("petersburg", Version("0.5.5")),
+    ("byzantium", Version("0.4.0")),
+]
+
 # error codes used in Solidity >=0.8.0
 # docs.soliditylang.org/en/v0.8.0/control-structures.html#panic-via-assert-and-error-via-require
 SOLIDITY_ERROR_CODES = {
