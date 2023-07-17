@@ -202,7 +202,7 @@ def generate_input_json(
 
 def _get_solc_remappings(remappings: Optional[list]) -> list:
     if remappings is None:
-        remap_dict: Dict = {}
+        return []
     elif isinstance(remappings, str):
         remap_dict = dict([remappings.split("=")])
     else:
