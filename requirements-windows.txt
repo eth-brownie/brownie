@@ -31,7 +31,7 @@ base58==2.1.1
     # via
     #   -r requirements.txt
     #   multiaddr
-bitarray==2.6.0
+bitarray>=2.6.0,<3
     # via
     #   -r requirements.txt
     #   eth-account
@@ -343,7 +343,7 @@ wheel==0.37.1
     #   vyper
 wrapt==1.14.1
     # via -r requirements.txt
-yarl==1.8.1
+yarl==1.8.2
     # via
     #   -r requirements.txt
     #   aiohttp

@@ -28,6 +28,14 @@ AVAILABLE_VYPER_VERSIONS = None
 _active_version = Version(vyper.__version__)
 
 
+EVM_VERSION_MAPPING = [
+    ("shanghai", Version("0.3.9")),
+    ("paris", Version("0.3.7")),
+    ("berlin", Version("0.2.12")),
+    ("istanbul", Version("0.1.0")),
+]
+
+
 def get_version() -> Version:
     return _active_version
 
