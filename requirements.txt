@@ -24,7 +24,7 @@ bitarray>=2.6.0,<3
     # via eth-account
 black==22.10.0
     # via -r requirements.in
-certifi==2022.9.24
+certifi==2023.7.22
     # via requests
 charset-normalizer==2.1.1
     # via
