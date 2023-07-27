@@ -118,7 +118,7 @@ class Flattener:
         Returns:
             str: The import path string correctly remapped.
         """
-        for k, v in self.remappings.items():
+        for k, v in sorted(self.remappings.items(), key=lambda x: len(x[0]), reverse=True):
             if import_path.startswith(k):
                 return import_path.replace(k, v, 1)
         return import_path
