@@ -6,14 +6,12 @@ import pytest
 @pytest.fixture
 def tx(accounts, testproject, tester):
     other = accounts[0].deploy(testproject.ExternalCallTester)
-    tx = tester.makeExternalCall(other, 42)
-    return tx
+    return tester.makeExternalCall(other, 42)
 
 
 @pytest.fixture
 def reverted_tx(accounts, tester, console_mode):
-    tx = tester.revertStrings(1, {"from": accounts[0]})
-    return tx
+    return tester.revertStrings(1, {"from": accounts[0]})
 
 
 def test_traceback(tx, reverted_tx, capfd):

@@ -12,7 +12,7 @@ def test_adds_tx(accounts, history):
 
 
 def test_resets(accounts, history, chain):
-    for i in range(3):
+    for _ in range(3):
         accounts[0].transfer(accounts[1], "1 ether")
     assert len(history) == 3
     chain.reset()
@@ -21,11 +21,11 @@ def test_resets(accounts, history, chain):
 
 
 def test_reverts(accounts, history, chain):
-    for i in range(3):
+    for _ in range(3):
         accounts[0].transfer(accounts[1], "1 ether")
     chain.snapshot()
     assert len(history) == 3
-    for i in range(3):
+    for _ in range(3):
         accounts[0].transfer(accounts[1], "1 ether")
     assert len(history) == 6
     tx = history[-1]

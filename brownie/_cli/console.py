@@ -139,7 +139,7 @@ class Console(code.InteractiveConsole):
         """
         console_settings = CONFIG.settings["console"]
 
-        locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
+        locals_dict = {i: getattr(brownie, i) for i in brownie.__all__}
         locals_dict.update(
             _dir=dir, dir=self._dir, exit=_Quitter("exit"), quit=_Quitter("quit"), _console=self
         )
@@ -160,7 +160,7 @@ class Console(code.InteractiveConsole):
             pass
 
         if extra_locals:
-            locals_dict.update(extra_locals)
+            locals_dict |= extra_locals
 
         # create prompt session object
         history_file = str(_get_data_folder().joinpath(".history").absolute())
@@ -318,9 +318,7 @@ def _dir_color(obj):
         return color("brownie blue")
     if hasattr(obj, "_dir_color"):
         return color(obj._dir_color)
-    if not callable(obj):
-        return color("bright blue")
-    return color("bright cyan")
+    return color("bright blue") if not callable(obj) else color("bright cyan")
 
 
 class SanitizedFileHistory(FileHistory):

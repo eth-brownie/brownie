@@ -60,23 +60,21 @@ class Color:
         if not CONFIG.settings["console"]["show_colors"]:
             return ""
         if not color_str:
-            return BASE + "m"
+            return f"{BASE}m"
         try:
             if " " not in color_str:
                 return f"{BASE}{COLORS[color_str]}m"
             modifier, color_str = color_str.split()
             return f"{BASE}{MODIFIERS[modifier]}{COLORS[color_str]}m"
         except (KeyError, ValueError):
-            return BASE + "m"
+            return f"{BASE}m"
 
     def __str__(self):
-        return BASE + "m"
+        return f"{BASE}m"
 
     # format dicts for console printing
     def pretty_dict(self, value: Dict, _indent: int = 0) -> str:
-        text = ""
-        if not _indent:
-            text = "{"
+        text = "{" if not _indent else ""
         _indent += 4
         for c, k in enumerate(sorted(value.keys(), key=lambda k: str(k))):
             if c:

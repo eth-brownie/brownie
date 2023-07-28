@@ -48,7 +48,7 @@ def test_type():
 
 def test_eq():
     assert Fixed("1") == 1
-    assert not Fixed("123") == "obviously not a number"
+    assert Fixed("123") != "obviously not a number"
     with pytest.raises(TypeError):
         Fixed("1.0") == 1.0
 

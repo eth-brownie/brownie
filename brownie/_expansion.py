@@ -49,9 +49,9 @@ def _str_to_python_value(val):
     """
     if not isinstance(val, (str,)):
         return val
-    elif val == "true" or val == "True" or val == "on":
+    elif val in ["true", "True", "on"]:
         return True
-    elif val == "false" or val == "False" or val == "off":
+    elif val in ["false", "False", "off"]:
         return False
     elif INT_REGEX.match(val):
         return int(val)

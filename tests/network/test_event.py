@@ -154,19 +154,15 @@ def test_can_retrieve_contract_events_on_previously_mined_blocks(tester: Contrac
     # Assert
     assert isinstance(result, AttributeDict)
     assert all(
-        [
-            (
-                result["Debug"][i * 2]["blockNumber"] == from_block + i  # noqa
-                and result["Debug"][i * 2 + 1]["blockNumber"] == from_block + i
-            )
-            for i in range(to_block - from_block)
-        ]
+        (
+            result["Debug"][i * 2]["blockNumber"] == from_block + i  # noqa
+            and result["Debug"][i * 2 + 1]["blockNumber"] == from_block + i
+        )
+        for i in range(to_block - from_block)
     )
     assert all(
-        [
-            (result["IndexedEvent"][i]["blockNumber"] == from_block + i)
-            for i in range(to_block - from_block)
-        ]
+        result["IndexedEvent"][i]["blockNumber"] == from_block + i
+        for i in range(to_block - from_block)
     )
 
 
@@ -228,7 +224,7 @@ class TestEventWatcher:
         wait_for_tx(tester.emitEvents("", expected_num))
         time.sleep(0.1)
 
-        assert callback_was_triggered is True, "Callback was not triggered."
+        assert callback_was_triggered, "Callback was not triggered."
         assert expected_num == received_num, "Callback was not triggered with the right event"
 
     def test_can_subscribe_to_event_with_multiple_callbacks(_, tester: Contract):
@@ -248,8 +244,8 @@ class TestEventWatcher:
         wait_for_tx(tester.emitEvents("", 0))
         time.sleep(0.1)
 
-        assert callback_trigger_1 is True, "Callback 1 was not triggered"
-        assert callback_trigger_2 is True, "Callback 2 was not triggered"
+        assert callback_trigger_1, "Callback 1 was not triggered"
+        assert callback_trigger_2, "Callback 2 was not triggered"
 
     def test_callback_can_be_triggered_multiple_times(_, tester: Contract):
         callback_trigger_count = 0

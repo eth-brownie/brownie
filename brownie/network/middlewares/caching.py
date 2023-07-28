@@ -130,10 +130,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         if latest.timestamp - w3.eth.get_block(latest.number - 50).timestamp < 250:
             # do not cache on chains with an average block time of less than 5 seconds
             return None
-        if _new_filter(w3) is None:
-            # do not cache if we cannot create a filter for new blocks
-            return None
-        return 0
+        return None if _new_filter(w3) is None else 0
 
     @property
     def time_since(self) -> float:
@@ -183,14 +180,11 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                 time.sleep(1)
 
     def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
-        if method in (
-            # caching any of these means we die of recursion death so let's not do that
+        if method in {
             "eth_getFilterChanges",
             "eth_newBlockFilter",
             "eth_uninstallFilter",
-            # used to check connectivity
             "web3_clientVersion",
-            # caching these causes weirdness with transaction broadcasting and replacement
             "eth_sendTransaction",
             "eth_sendRawTransaction",
             "eth_sign",
@@ -198,7 +192,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             "eth_getTransactionByHash",
             "eth_getTransactionReceipt",
             "eth_chainId",
-        ):
+        }:
             return make_request(method, params)
 
         # try to return a cached value
@@ -206,11 +200,10 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
         # check if the value is available within the long-term cache
         if method in LONGTERM_CACHE:
-            row = self.cur.fetchone(
+            if row := self.cur.fetchone(
                 f"SELECT result FROM {self.table_key} WHERE method=? AND params=?",
                 (method, param_str),
-            )
-            if row:
+            ):
                 data = row[0]
                 if isinstance(data, bytes):
                     data = HexBytes(data)

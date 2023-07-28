@@ -56,11 +56,7 @@ def pytest_collection_modifyitems(config, items):
         global _dev_network
         _dev_network = config.getoption("--network")
 
-    if config.getoption("--evm"):
-        target = "evm"
-    else:
-        target = config.getoption("--target")
-
+    target = "evm" if config.getoption("--evm") else config.getoption("--target")
     for flag, fixture in TARGET_OPTS.items():
         if target == flag:
             continue
@@ -103,9 +99,7 @@ def network_name():
 # worker ID for xdist process, as an integer
 @pytest.fixture(scope="session")
 def xdist_id(worker_id):
-    if worker_id == "master":
-        return 0
-    return int(worker_id.lstrip("gw"))
+    return 0 if worker_id == "master" else int(worker_id.lstrip("gw"))
 
 
 # ensure a clean data folder, and set unique ganache ports for each xdist worker
@@ -311,7 +305,7 @@ def config():
 @pytest.fixture
 def argv():
     initial = {}
-    initial.update(brownie._config.CONFIG.argv)
+    initial |= brownie._config.CONFIG.argv
     yield brownie._config.CONFIG.argv
     brownie._config.CONFIG.argv.clear()
     brownie._config.CONFIG.argv.update(initial)

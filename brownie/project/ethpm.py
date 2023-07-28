@@ -145,8 +145,11 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
     # compile sources to expand contract_types
     if manifest["sources"]:
         version: Optional[str] = None
-        solc_sources = {k: v for k, v in manifest["sources"].items() if Path(k).suffix == ".sol"}
-        if solc_sources:
+        if solc_sources := {
+            k: v
+            for k, v in manifest["sources"].items()
+            if Path(k).suffix == ".sol"
+        }:
             version = compiler.find_best_solc_version(solc_sources, install_needed=True)
 
         build_json = compiler.compile_and_format(
@@ -167,9 +170,9 @@ def process_manifest(manifest: Dict, uri: Optional[str] = None) -> Dict:
             )
 
     # delete contract_types with no source or ABI, we can't do much with them
-    manifest["contract_types"] = dict(
-        (k, v) for k, v in manifest["contract_types"].items() if "abi" in v
-    )
+    manifest["contract_types"] = {
+        k: v for k, v in manifest["contract_types"].items() if "abi" in v
+    }
 
     # resolve or delete deployments
     for chain_uri in list(manifest["deployments"]):
@@ -452,9 +455,10 @@ def create_manifest(
             )
         if installed:
             packages_json = _load_packages_json(project_path)
-            manifest["build_dependencies"] = dict(
-                (k, v["manifest_uri"]) for k, v in packages_json["packages"].items()
-            )
+            manifest["build_dependencies"] = {
+                k: v["manifest_uri"]
+                for k, v in packages_json["packages"].items()
+            }
 
     # add sources
     path_list = _get_path_list(project_path, "contracts", False)
@@ -506,9 +510,9 @@ def create_manifest(
             }
             manifest["contract_types"][name] = _get_contract_type(build_json, "")
 
-    # add deployments
-    deployment_networks = package_config["settings"]["deployment_networks"]
-    if deployment_networks:
+    if deployment_networks := package_config["settings"][
+        "deployment_networks"
+    ]:
         active_network = network.show_active()
         if active_network:
             network.disconnect()

@@ -34,11 +34,11 @@ def test_release_localaccount(registry, accounts, tp_path, monkeypatch, tmpdir):
 
     monkeypatch.setattr("brownie.network.account.getpass", lambda x: "")
     a = accounts.add()
-    a.save(tmpdir + "/release_tester.json")
+    a.save(f"{tmpdir}/release_tester.json")
     accounts[0].transfer(a, "1 ether")
     accounts._reset()
 
-    cli_ethpm._release(tp_path, registry.address, tmpdir + "/release_tester.json")
+    cli_ethpm._release(tp_path, registry.address, f"{tmpdir}/release_tester.json")
     assert ethpm.create_manifest.call_count == 1
     assert ethpm.verify_manifest.call_count == 1
     assert ethpm.release_package.call_count == 1

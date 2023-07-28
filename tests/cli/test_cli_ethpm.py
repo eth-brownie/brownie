@@ -38,7 +38,6 @@ def test_list_with_modified_packages(ipfs_mock, np_path, mocker, monkeypatch):
         "brownie.project.ethpm.get_installed_packages", lambda project_path: [[], ["P1"]]
     )
     cli_ethpm._list(np_path)
-    assert True
 
 
 def test_install(ipfs_mock, np_path, mocker):

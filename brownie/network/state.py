@@ -119,9 +119,7 @@ class TxHistory(metaclass=_Singleton):
             A filtered list of TransactionReceipt objects.
         """
         result = [i for i in self._list if all(getattr(i, k) == v for k, v in kwargs.items())]
-        if key is None:
-            return result
-        return [i for i in result if key(i)]
+        return result if key is None else [i for i in result if key(i)]
 
     def wait(self, key: Optional[Callable] = None, **kwargs: Optional[Any]) -> None:
         """
@@ -402,14 +400,14 @@ class Chain(metaclass=_Singleton):
         if not isinstance(blocks, int):
             raise TypeError("`blocks` must be an integer value")
 
-        if timedelta is not None and timestamp is not None:
-            raise ValueError("Cannot use both `timestamp` and `timedelta`")
-
         if timedelta is not None:
+            if timestamp is not None:
+                raise ValueError("Cannot use both `timestamp` and `timedelta`")
+
             timestamp = self.time() + timedelta
 
         if timestamp is None:
-            params: List = [[] for i in range(blocks)]
+            params: List = [[] for _ in range(blocks)]
         elif blocks == 1:
             params = [[timestamp]]
         else:
@@ -498,7 +496,7 @@ class Chain(metaclass=_Singleton):
             if num > len(self._undo_buffer):
                 raise ValueError(f"Undo buffer contains {len(self._undo_buffer)} items")
 
-            for i in range(num):
+            for _ in range(num):
                 id_, fn, args, kwargs = self._undo_buffer.pop()
                 self._redo_buffer.append((fn, args, kwargs))
 
@@ -527,7 +525,7 @@ class Chain(metaclass=_Singleton):
             if num > len(self._redo_buffer):
                 raise ValueError(f"Redo buffer contains {len(self._redo_buffer)} items")
 
-            for i in range(num):
+            for _ in range(num):
                 fn, args, kwargs = self._redo_buffer.pop()
                 fn(*args, **kwargs)
 
@@ -572,7 +570,7 @@ def _find_contract(address: Any) -> Any:
 
 
 def _get_current_dependencies() -> List:
-    dependencies = set(v._name for v in _contract_map.values())
+    dependencies = {v._name for v in _contract_map.values()}
     for contract in _contract_map.values():
         dependencies.update(contract._build.get("dependencies", []))
     return sorted(dependencies)
@@ -609,7 +607,7 @@ def _get_deployment(
         return None, None
 
     keys = ["address", "alias", "paths"] + DEPLOYMENT_KEYS
-    build_json = {k: v for k, v in zip(keys, row)}
+    build_json = dict(zip(keys, row))
     path_map = build_json.pop("paths")
     sources = {
         i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]
@@ -617,7 +615,7 @@ def _get_deployment(
     }
     build_json["allSourcePaths"] = {k: v[1] for k, v in path_map.items()}
     if isinstance(build_json["pcMap"], dict):
-        build_json["pcMap"] = dict((int(k), v) for k, v in build_json["pcMap"].items())
+        build_json["pcMap"] = {int(k): v for k, v in build_json["pcMap"].items()}
 
     return build_json, sources
 
@@ -666,9 +664,7 @@ def _remove_deployment(
     build_json, sources = _get_deployment(address, alias)
     # delete entry from chain{n}
     cur.execute(f"DELETE FROM {name} WHERE {query}")
-    # delete all entries from sources matching the contract's source hashes
-    contract = _find_contract(address)
-    if contract:
+    if contract := _find_contract(address):
         for key, path in contract._build.get("allSourcePaths", {}).items():
             source = contract._sources.get(path)
             if source is None:

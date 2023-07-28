@@ -67,11 +67,11 @@ def test_eq_conversions(accounts, return_value):
 
 def test_ne_conversions(accounts, return_value):
     data = [88, [False, False, False], accounts[2], [("0x1234", "0x6666")], string_fixture]
-    assert not return_value != data
-    assert not return_value != tuple(data)
+    assert return_value == data
+    assert return_value == tuple(data)
     data[1] = tuple(data[1])
     data[3] = tuple(data[3])
-    assert not return_value != tuple(data)
+    assert return_value == tuple(data)
 
 
 def test_dict(accounts, return_value):
@@ -129,8 +129,8 @@ def test_hexstring_length():
 
 
 def test_hashable():
-    assert hash(ReturnValue([1, 2])) == hash(tuple([1, 2]))
-    assert set(ReturnValue([3, 1, 3, 3, 7])) == set([3, 1, 3, 3, 7])
+    assert hash(ReturnValue([1, 2])) == hash((1, 2))
+    assert set(ReturnValue([3, 1, 3, 3, 7])) == {1, 3, 7}
 
 
 def test_decimals(vypertester):

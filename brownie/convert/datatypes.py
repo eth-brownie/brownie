@@ -109,7 +109,7 @@ def _to_wei(value: WeiInputTypes) -> int:
     if value[:2] == "0x":
         return int(value, 16)
     for unit, dec in UNITS.items():
-        if " " + unit not in value:
+        if f" {unit}" not in value:
             continue
         num_str = value.split(" ")[0]
         num = num_str.split(".") if "." in num_str else [num_str, ""]
@@ -246,7 +246,7 @@ class HexString(bytes):
         return not _hex_compare(self.hex(), other)
 
     def __str__(self) -> str:
-        return "0x" + self.hex()
+        return f"0x{self.hex()}"
 
     def __repr__(self) -> str:
         return str(self)
@@ -328,14 +328,10 @@ class ReturnValue(tuple):
 
     def __getitem__(self, key: Any) -> Any:
         if type(key) is slice:
-            abi = None
-            if self._abi is not None:
-                abi = deepcopy(self._abi)[key]  # type: ignore
+            abi = deepcopy(self._abi)[key] if self._abi is not None else None
             result = super().__getitem__(key)
             return ReturnValue(result, abi)
-        if isinstance(key, int):
-            return super().__getitem__(key)
-        return self._dict[key]
+        return super().__getitem__(key) if isinstance(key, int) else self._dict[key]
 
     def __contains__(self, value: Any) -> bool:
         return self.count(value) > 0
@@ -379,7 +375,7 @@ class ReturnValue(tuple):
 
 def _kwargtuple_compare(a: Any, b: Any) -> bool:
     if not isinstance(a, (tuple, list, ReturnValue)):
-        types_ = set([type(a), type(b)])
+        types_ = {type(a), type(b)}
         if types_.intersection([bool, type(None)]):
             return a is b
         if types_.intersection([dict, EthAddress, HexString]):

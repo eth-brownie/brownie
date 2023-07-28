@@ -68,7 +68,7 @@ class Root(tk.Tk):
         self.main.note.set_visible(sorted(build_json["allSourcePaths"].values()))
         self.main.note.set_active(build_json["sourcePath"])
         self.main.oplist.set_opcodes(build_json["pcMap"])
-        self.pcMap = dict((str(k), v) for k, v in build_json["pcMap"].items())
+        self.pcMap = {str(k): v for k, v in build_json["pcMap"].items()}
         self.pathMap = build_json["allSourcePaths"]
         for value in (v for v in self.pcMap.values() if "path" in v):
             if value["path"] not in self.pathMap:

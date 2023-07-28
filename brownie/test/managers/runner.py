@@ -212,7 +212,7 @@ class PytestBrownieRunner(PytestBrownieBase):
             tests.setdefault(path, []).append(i)
 
         isolated_tests = sorted(k for k, v in tests.items() if v)
-        self.isolated = dict((self._path(i), set()) for i in isolated_tests)
+        self.isolated = {self._path(i): set() for i in isolated_tests}
 
         if CONFIG.argv["update"]:
             isolated_tests = sorted(filter(self._check_updated, tests))
@@ -353,10 +353,7 @@ class PytestBrownieRunner(PytestBrownieBase):
             # a previous run, retain the previous data
             txhash = self.tests[path]["txhash"]
 
-        # save module test results
-        isolated = False
-        if path in self.isolated:
-            isolated = sorted(self.isolated[path])
+        isolated = sorted(self.isolated[path]) if path in self.isolated else False
         is_cov = CONFIG.argv["coverage"] or (path in self.tests and self.tests[path]["coverage"])
         self.tests[path] = {
             "sha1": self._get_hash(path),
@@ -420,70 +417,71 @@ class PytestBrownieRunner(PytestBrownieBase):
         call : _pytest.runner.CallInfo
             Result/Exception info for the failed test.
         """
-        if self.config.getoption("interactive") and report.failed:
-            location = self._path(report.location[0])
-            if location not in self.node_map:
-                # if the exception happened prior to collection it is likely a
-                # SyntaxError and we cannot open an interactive debugger
-                return
+        if not self.config.getoption("interactive") or not report.failed:
+            return
+        location = self._path(report.location[0])
+        if location not in self.node_map:
+            # if the exception happened prior to collection it is likely a
+            # SyntaxError and we cannot open an interactive debugger
+            return
 
-            capman = self.config.pluginmanager.get_plugin("capturemanager")
-            if capman:
-                capman.suspend_global_capture(in_=True)
+        capman = self.config.pluginmanager.get_plugin("capturemanager")
+        if capman:
+            capman.suspend_global_capture(in_=True)
 
-            tw = TerminalWriter()
-            report.longrepr.toterminal(tw)
+        tw = TerminalWriter()
+        report.longrepr.toterminal(tw)
 
-            # find the last traceback frame within the active project
-            traceback = call.excinfo.traceback[-1]
-            for tb_frame in call.excinfo.traceback[::-1]:
-                try:
-                    Path(tb_frame.path).relative_to(self.project_path)
-                    traceback = tb_frame
-                    break
-                except ValueError:
-                    pass
-
-            # get global namespace
-            globals_dict = traceback.frame.f_globals
-
-            # filter python internals and pytest internals
-            globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("__")}
-            globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("@")}
-
-            # filter test functions and fixtures
-            test_names = self.node_map[location]
-            globals_dict = {k: v for k, v in globals_dict.items() if k not in test_names}
-            globals_dict = {
-                k: v for k, v in globals_dict.items() if not hasattr(v, "_pytestfixturefunction")
-            }
-
-            # get local namespace
-            locals_dict = traceback.locals
-            locals_dict = {k: v for k, v in locals_dict.items() if not k.startswith("@")}
-
-            namespace = {"_callinfo": call, **globals_dict, **locals_dict}
-            if "tx" not in namespace and brownie.history:
-                # make it easier to look at the most recent transaction
-                namespace["tx"] = brownie.history[-1]
-
+        # find the last traceback frame within the active project
+        traceback = call.excinfo.traceback[-1]
+        for tb_frame in call.excinfo.traceback[::-1]:
             try:
-                CONFIG.argv["cli"] = "console"
-                shell = Console(self.project, extra_locals=namespace, exit_on_continue=True)
-                banner = (
-                    "\nInteractive mode enabled. Type `continue` to"
-                    " resume testing or `quit()` to halt execution."
-                )
-                shell.interact(banner=banner, exitmsg="")
-            except SystemExit as exc:
-                if exc.code != "continue":
-                    pytest.exit("Test execution halted due to SystemExit")
-            finally:
-                CONFIG.argv["cli"] = "test"
+                Path(tb_frame.path).relative_to(self.project_path)
+                traceback = tb_frame
+                break
+            except ValueError:
+                pass
 
-            print("Continuing tests...")
-            if capman:
-                capman.resume_global_capture()
+        # get global namespace
+        globals_dict = traceback.frame.f_globals
+
+        # filter python internals and pytest internals
+        globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("__")}
+        globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("@")}
+
+        # filter test functions and fixtures
+        test_names = self.node_map[location]
+        globals_dict = {k: v for k, v in globals_dict.items() if k not in test_names}
+        globals_dict = {
+            k: v for k, v in globals_dict.items() if not hasattr(v, "_pytestfixturefunction")
+        }
+
+        # get local namespace
+        locals_dict = traceback.locals
+        locals_dict = {k: v for k, v in locals_dict.items() if not k.startswith("@")}
+
+        namespace = {"_callinfo": call, **globals_dict, **locals_dict}
+        if "tx" not in namespace and brownie.history:
+            # make it easier to look at the most recent transaction
+            namespace["tx"] = brownie.history[-1]
+
+        try:
+            CONFIG.argv["cli"] = "console"
+            shell = Console(self.project, extra_locals=namespace, exit_on_continue=True)
+            banner = (
+                "\nInteractive mode enabled. Type `continue` to"
+                " resume testing or `quit()` to halt execution."
+            )
+            shell.interact(banner=banner, exitmsg="")
+        except SystemExit as exc:
+            if exc.code != "continue":
+                pytest.exit("Test execution halted due to SystemExit")
+        finally:
+            CONFIG.argv["cli"] = "test"
+
+        print("Continuing tests...")
+        if capman:
+            capman.resume_global_capture()
 
     def pytest_sessionfinish(self):
         """
@@ -496,8 +494,10 @@ class PytestBrownieRunner(PytestBrownieBase):
 
     def _sessionfinish(self, path):
         # store test results at the given path
-        txhash = set(x for v in self.tests.values() for x in v["txhash"])
-        coverage_eval = dict((k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash)
+        txhash = {x for v in self.tests.values() for x in v["txhash"]}
+        coverage_eval = {
+            k: v for k, v in coverage.get_coverage_eval().items() if k in txhash
+        }
         report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
 
         with self.project._build_path.joinpath(path).open("w") as fp:
@@ -567,5 +567,5 @@ class PytestBrownieXdistRunner(PytestBrownieRunner):
         Stores test results in `build/tests-{workerid}.json`. Each of these files
         is then aggregated in `PytestBrownieMaster.pytest_sessionfinish`.
         """
-        self.tests = dict((k, v) for k, v in self.tests.items() if k in self.results)
+        self.tests = {k: v for k, v in self.tests.items() if k in self.results}
         self._sessionfinish(f"tests-{self.workerid}.json")

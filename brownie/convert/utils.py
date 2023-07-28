@@ -43,4 +43,4 @@ def build_function_signature(abi: Dict) -> str:
 
 def build_function_selector(abi: Dict) -> str:
     sig = build_function_signature(abi)
-    return "0x" + keccak(sig.encode()).hex()[:8]
+    return f"0x{keccak(sig.encode()).hex()[:8]}"

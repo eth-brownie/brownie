@@ -103,10 +103,10 @@ class SubmissionPipeline:
         contracts = {n: d for n, d in self.build.items() if d["type"] == "contract"}
         libraries = {n: d for n, d in self.build.items() if d["type"] == "library"}
 
-        requests = {}
-        for contract, artifact in contracts.items():
-            requests[contract] = self.construct_request_from_artifact(artifact)
-
+        requests = {
+            contract: self.construct_request_from_artifact(artifact)
+            for contract, artifact in contracts.items()
+        }
         # update requests with library dependencies
         for library, artifact in libraries.items():
             library_dependents = set(self.build.get_dependents(library))
@@ -222,9 +222,7 @@ class SubmissionPipeline:
         source_to_name = {d["sourcePath"]: d["contractName"] for _, d in self.build.items()}
         for idx, (contract_name, issue_report) in enumerate(self.reports.items()):
             print(
-                "Generating report for {}{}{} ({}/{})".format(
-                    color("bright blue"), contract_name, color, idx, len(self.reports)
-                )
+                f'Generating report for {color("bright blue")}{contract_name}{color} ({idx}/{len(self.reports)})'
             )
             for report in issue_report.issue_reports:
                 for issue in report:
@@ -243,18 +241,14 @@ class SubmissionPipeline:
                             self.highlight_report["highlights"]["MythX"].setdefault(
                                 contract_name, {filename: []}
                             )
-                            self.highlight_report["highlights"]["MythX"][contract_name][
-                                filename
-                            ].append(
+                            self.highlight_report["highlights"]["MythX"][
+                                contract_name
+                            ][filename].append(
                                 [
                                     comp.offset,
                                     comp.offset + comp.length,
                                     SEVERITY_COLOURS[severity],
-                                    "{}: {}\n{}".format(
-                                        issue.swc_id,
-                                        issue.description_short,
-                                        issue.description_long,
-                                    ),
+                                    f"{issue.swc_id}: {issue.description_short}\n{issue.description_long}",
                                 ]
                             )
 
@@ -290,9 +284,9 @@ def print_console_report(stdout_report) -> None:
         notify("SUCCESS", "No issues found!")
         return
 
-    # display console report
-    total_high_severity = sum(i.get("HIGH", 0) for i in stdout_report.values())
-    if total_high_severity:
+    if total_high_severity := sum(
+        i.get("HIGH", 0) for i in stdout_report.values()
+    ):
         notify(
             "WARNING", f"Found {total_issues} issues including {total_high_severity} high severity!"
         )
@@ -313,7 +307,7 @@ def main():
 
     if CONFIG.argv["mode"] not in ANALYSIS_MODES:
         raise ValidationError(
-            "Invalid analysis mode: Must be one of [{}]".format(", ".join(ANALYSIS_MODES))
+            f'Invalid analysis mode: Must be one of [{", ".join(ANALYSIS_MODES)}]'
         )
 
     project_path = project.check_for_project(".")

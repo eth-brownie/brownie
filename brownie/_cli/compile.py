@@ -53,8 +53,7 @@ def main():
         print("============ Deployment Bytecode Sizes ============")
         codesize = []
         for contract in proj:
-            bytecode = contract._build["deployedBytecode"]
-            if bytecode:
+            if bytecode := contract._build["deployedBytecode"]:
                 codesize.append((contract._name, len(bytecode) // 2))
         indent = max(len(i[0]) for i in codesize)
         for name, size in sorted(codesize, key=lambda k: k[1], reverse=True):

@@ -74,9 +74,7 @@ def disconnect(kill_rpc: bool = True) -> None:
 
 def show_active() -> Optional[str]:
     """Returns the name of the currently active network"""
-    if not web3.provider:
-        return None
-    return CONFIG.active_network["id"]
+    return None if not web3.provider else CONFIG.active_network["id"]
 
 
 def is_connected() -> bool:

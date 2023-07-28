@@ -26,9 +26,7 @@ class _BrownieStateMachine:
         brownie.chain.revert()
         sf.RuleBasedStateMachine.__init__(self)
 
-        # pytest capturemanager plugin, added when accessed via the state_manager fixture
-        capman = getattr(self, "_capman", None)
-        if capman:
+        if capman := getattr(self, "_capman", None):
             with capman.global_and_fixture_disabled():
                 c = color("red" if self._failed else "yellow")
                 sys.stdout.write(f"{c}{marker[0]}\033[1D")

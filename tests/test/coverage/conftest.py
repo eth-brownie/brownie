@@ -31,7 +31,9 @@ def _get_branch_results(build):
 
 def _get_branch(build, idx, jump):
     cov_map = build["coverageMap"]["branches"]["0"]
-    result = next((y for v in cov_map.values() for x, y in v.items() if int(x) == idx), None)
-    if result:
+    if result := next(
+        (y for v in cov_map.values() for x, y in v.items() if int(x) == idx),
+        None,
+    ):
         return result[-1] == jump, list(result[:-1])
     raise ValueError("Branch map index does not exist")

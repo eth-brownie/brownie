@@ -8,15 +8,15 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 if os.environ.get("BROWNIE_LIB", "0") == "1":
-    if sys.platform == "windows":
-        requirements_filename = "requirements-windows.in"
-    else:
-        requirements_filename = "requirements.in"
+    requirements_filename = (
+        "requirements-windows.in"
+        if sys.platform == "windows"
+        else "requirements.in"
+    )
+elif sys.platform == "windows":
+    requirements_filename = "requirements-windows.txt"
 else:
-    if sys.platform == "windows":
-        requirements_filename = "requirements-windows.txt"
-    else:
-        requirements_filename = "requirements.txt"
+    requirements_filename = "requirements.txt"
 
 with open(requirements_filename, "r") as f:
     requirements = list(map(str.strip, f.read().split("\n")))[:-1]

@@ -79,8 +79,7 @@ def pytest_addoption(parser):
 def pytest_load_initial_conftests(early_config):
     capsys = early_config.pluginmanager.get_plugin("capturemanager")
 
-    project_path = _get_project_path()
-    if project_path:
+    if project_path := _get_project_path():
         # suspend stdout capture to display compilation data
         capsys.suspend()
         try:
@@ -97,48 +96,48 @@ def pytest_load_initial_conftests(early_config):
 
 
 def pytest_configure(config):
-    if _get_project_path():
+    if not _get_project_path():
+        return
+    if not config.getoption("showinternal"):
+        # do not include brownie internals in tracebacks
+        base_path = Path(sys.modules["brownie"].__file__).parent.as_posix()
+        for module in [
+            v
+            for v in sys.modules.values()
+            if getattr(v, "__file__", None) and v.__file__.startswith(base_path)
+        ]:
+            module.__tracebackhide__ = True
+            module.__hypothesistracebackhide__ = True
 
-        if not config.getoption("showinternal"):
-            # do not include brownie internals in tracebacks
-            base_path = Path(sys.modules["brownie"].__file__).parent.as_posix()
-            for module in [
-                v
-                for v in sys.modules.values()
-                if getattr(v, "__file__", None) and v.__file__.startswith(base_path)
-            ]:
-                module.__tracebackhide__ = True
-                module.__hypothesistracebackhide__ = True
+    # enable verbose output if stdout capture is disabled
+    if config.getoption("capture") == "no":
+        config.option.verbose = True
 
-        # enable verbose output if stdout capture is disabled
-        if config.getoption("capture") == "no":
-            config.option.verbose = True
+    # if verbose mode is enabled, also enable hypothesis verbose mode
+    if config.option.verbose:
+        _modify_hypothesis_settings({"verbosity": 2}, "brownie-verbose")
 
-        # if verbose mode is enabled, also enable hypothesis verbose mode
-        if config.option.verbose:
-            _modify_hypothesis_settings({"verbosity": 2}, "brownie-verbose")
-
-        if config.getoption("numprocesses"):
-            if config.getoption("interactive"):
-                raise ValueError("Cannot use --interactive mode with xdist")
-            Plugin = PytestBrownieMaster
-        elif hasattr(config, "workerinput"):
-            Plugin = PytestBrownieXdistRunner
-        else:
-            Plugin = PytestBrownieRunner
-
+    if config.getoption("numprocesses"):
         if config.getoption("interactive"):
-            config.option.failfast = True
+            raise ValueError("Cannot use --interactive mode with xdist")
+        Plugin = PytestBrownieMaster
+    elif hasattr(config, "workerinput"):
+        Plugin = PytestBrownieXdistRunner
+    else:
+        Plugin = PytestBrownieRunner
 
-        if config.getoption("failfast"):
-            _modify_hypothesis_settings(
-                {"phases": {"explicit": True, "generate": True, "target": True}}, "brownie-failfast"
-            )
+    if config.getoption("interactive"):
+        config.option.failfast = True
 
-        active_project = project.get_loaded_projects()[0]
-        session = Plugin(config, active_project)
-        config.pluginmanager.register(session, "brownie-core")
+    if config.getoption("failfast"):
+        _modify_hypothesis_settings(
+            {"phases": {"explicit": True, "generate": True, "target": True}}, "brownie-failfast"
+        )
 
-        if not config.getoption("numprocesses"):
-            fixtures = PytestBrownieFixtures(config, active_project)
-            config.pluginmanager.register(fixtures, "brownie-fixtures")
+    active_project = project.get_loaded_projects()[0]
+    session = Plugin(config, active_project)
+    config.pluginmanager.register(session, "brownie-core")
+
+    if not config.getoption("numprocesses"):
+        fixtures = PytestBrownieFixtures(config, active_project)
+        config.pluginmanager.register(fixtures, "brownie-fixtures")

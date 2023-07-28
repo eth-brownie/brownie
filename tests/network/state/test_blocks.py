@@ -52,7 +52,7 @@ def test_mine_timestamp(devnetwork, chain):
     chain.mine(timestamp=999999999999)
 
     assert chain[-1].timestamp == 999999999999
-    assert chain.time() - 999999999999 < 3
+    assert chain.time() < 1000000000002
 
 
 def test_mine_timestamp_next_block(devnetwork, chain):

@@ -203,32 +203,32 @@ def test_revert_string_from_trace(console_mode, tester):
 
 def test_inlined_library_jump(accounts, tester):
     tx = tester.useSafeMath(6, 7)
-    assert max([i["jumpDepth"] for i in tx.trace]) == 1
+    assert max(i["jumpDepth"] for i in tx.trace) == 1
 
 
 def test_internal_jumps(accounts, testproject, tester):
     tx = tester.makeInternalCalls(False, True)
-    assert max([i["depth"] for i in tx.trace]) == 0
-    assert max([i["jumpDepth"] for i in tx.trace]) == 1
+    assert max(i["depth"] for i in tx.trace) == 0
+    assert max(i["jumpDepth"] for i in tx.trace) == 1
     tx = tester.makeInternalCalls(True, False)
-    assert max([i["depth"] for i in tx.trace]) == 0
-    assert max([i["jumpDepth"] for i in tx.trace]) == 2
+    assert max(i["depth"] for i in tx.trace) == 0
+    assert max(i["jumpDepth"] for i in tx.trace) == 2
     tx = tester.makeInternalCalls(True, True)
-    assert max([i["depth"] for i in tx.trace]) == 0
-    assert max([i["jumpDepth"] for i in tx.trace]) == 2
+    assert max(i["depth"] for i in tx.trace) == 0
+    assert max(i["jumpDepth"] for i in tx.trace) == 2
     tx.call_trace()
 
 
 def test_external_jump(accounts, tester, ext_tester):
     tx = tester.makeExternalCall(ext_tester, 4)
-    assert max([i["depth"] for i in tx.trace]) == 1
-    assert max([i["jumpDepth"] for i in tx.trace]) == 0
+    assert max(i["depth"] for i in tx.trace) == 1
+    assert max(i["jumpDepth"] for i in tx.trace) == 0
 
 
 def test_external_jump_to_self(accounts, testproject, tester):
     tx = tester.makeExternalCall(tester, 0)
-    assert max([i["depth"] for i in tx.trace]) == 1
-    assert max([i["jumpDepth"] for i in tx.trace]) == 1
+    assert max(i["depth"] for i in tx.trace) == 1
+    assert max(i["jumpDepth"] for i in tx.trace) == 1
     tx.call_trace()
 
 
@@ -236,8 +236,8 @@ def test_delegatecall_jump(accounts, librarytester):
     accounts[0].deploy(librarytester["TestLib"])
     contract = accounts[0].deploy(librarytester["Unlinked"])
     tx = contract.callLibrary(6, 7)
-    assert max([i["depth"] for i in tx.trace]) == 1
-    assert max([i["jumpDepth"] for i in tx.trace]) == 0
+    assert max(i["depth"] for i in tx.trace) == 1
+    assert max(i["jumpDepth"] for i in tx.trace) == 0
 
 
 def test_unknown_contract(ExternalCallTester, accounts, tester, ext_tester):

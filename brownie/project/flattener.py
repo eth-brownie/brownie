@@ -77,7 +77,11 @@ class Flattener:
         sources = [self.sources[k] for k in toposort_flatten(self.dependencies)]
         # all pragma statements, we already have the license used + know which compiler
         # version is used via the build info
-        pragmas = set((match.strip() for src in sources for match in PRAGMA_PATTERN.findall(src)))
+        pragmas = {
+            match.strip()
+            for src in sources
+            for match in PRAGMA_PATTERN.findall(src)
+        }
         # now we go thorugh and remove all imports/pragmas/license stuff
         wipe = lambda src: PRAGMA_PATTERN.sub(  # noqa: E731
             "", LICENSE_PATTERN.sub("", IMPORT_PATTERN.sub("", src))
@@ -118,10 +122,14 @@ class Flattener:
         Returns:
             str: The import path string correctly remapped.
         """
-        for k, v in self.remappings.items():
-            if import_path.startswith(k):
-                return import_path.replace(k, v, 1)
-        return import_path
+        return next(
+            (
+                import_path.replace(k, v, 1)
+                for k, v in self.remappings.items()
+                if import_path.startswith(k)
+            ),
+            import_path,
+        )
 
     @staticmethod
     def make_import_absolute(import_path: str, source_file_dir: str) -> str:
