@@ -13,7 +13,7 @@ def test_linear_max():
     strat = LinearScalingStrategy(100, 1000)
     generator = strat.get_gas_price()
     last = next(generator)
-    for i in range(20):
+    for _ in range(20):
         if last == 1000:
             assert next(generator) == 1000
         else:
@@ -29,7 +29,7 @@ def test_linear_increment(increment):
 
     last = next(generator)
 
-    for i in range(20):
+    for _ in range(20):
         value = next(generator)
         assert int(last * increment) == value
         last = value
@@ -45,7 +45,7 @@ def test_exponential_max():
     strat = ExponentialScalingStrategy(100, 1000)
     generator = strat.get_gas_price()
     last = next(generator)
-    for i in range(20):
+    for _ in range(20):
         if last == 1000:
             assert next(generator) == 1000
         else:
@@ -58,7 +58,7 @@ def test_exponential_increment():
     strat = ExponentialScalingStrategy(100, 100000000000)
     generator = strat.get_gas_price()
 
-    values = [next(generator) for i in range(20)]
+    values = [next(generator) for _ in range(20)]
 
     diff = values[1] - values[0]
     for i in range(2, 20):

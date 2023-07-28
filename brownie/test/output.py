@@ -38,10 +38,7 @@ def _load_report_exclude_data(settings):
         if not isinstance(exclude, list):
             exclude = [exclude]
         for glob_str in exclude:
-            if Path(glob_str).is_absolute():
-                base_path = Path(glob_str).root
-            else:
-                base_path = Path(".")
+            base_path = Path(glob_str).root if Path(glob_str).is_absolute() else Path(".")
             try:
                 exclude_paths.extend([i.as_posix() for i in base_path.glob(glob_str)])
             except Exception:
@@ -94,7 +91,7 @@ def _build_gas_profile_output():
             padding[k] = max(padding.get(k, 0), len(str(v)))
 
         # group functions with payload by contract name
-        if contract in grouped_by_contract.keys():
+        if contract in grouped_by_contract:
             grouped_by_contract[contract][function] = values
         else:
             grouped_by_contract[contract] = {function: values}
@@ -152,9 +149,12 @@ def _build_coverage_output(coverage_eval):
                 pct = _pct(statement_cov, branch_cov)
                 results.append((fn_name, pct))
 
-            for fn_name, pct in sorted(results, key=lambda k: (-k[1], k[0])):
-                lines.append(f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}")
-
+            lines.extend(
+                f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}"
+                for fn_name, pct in sorted(
+                    results, key=lambda k: (-k[1], k[0])
+                )
+            )
     return lines
 
 
@@ -175,17 +175,14 @@ def _get_totals(build, coverage_eval, exclude_contracts=None):
     if exclude_contracts is None:
         exclude_contracts = []
     coverage_eval = _split_by_fn(build, coverage_eval)
-    results = dict(
-        (
-            i,
-            {
-                "statements": {},
-                "totals": {"statements": 0, "branches": [0, 0]},
-                "branches": {"true": {}, "false": {}},
-            },
-        )
+    results = {
+        i: {
+            "statements": {},
+            "totals": {"statements": 0, "branches": [0, 0]},
+            "branches": {"true": {}, "false": {}},
+        }
         for i in coverage_eval
-    )
+    }
     for contract_name in coverage_eval:
         if contract_name in exclude_contracts:
             del results[contract_name]
@@ -209,29 +206,30 @@ def _get_totals(build, coverage_eval, exclude_contracts=None):
 
 def _split_by_fn(build, coverage_eval):
     # Splits a coverage eval dict so that coverage indexes are stored by function.
-    results = dict(
-        (i, {"statements": {}, "branches": {"true": {}, "false": {}}}) for i in coverage_eval
-    )
+    results = {
+        i: {"statements": {}, "branches": {"true": {}, "false": {}}}
+        for i in coverage_eval
+    }
     for name in coverage_eval:
         try:
             map_ = build.get(name)["coverageMap"]
-            results[name] = dict((k, _split(v, map_, k)) for k, v in coverage_eval[name].items())
+            results[name] = {k: _split(v, map_, k) for k, v in coverage_eval[name].items()}
         except KeyError:
             del results[name]
     return results
 
 
 def _split(coverage_eval, coverage_map, key):
-    results = {}
     branches = coverage_map["branches"][key]
     statements = coverage_map["statements"][key]
-    for fn in branches.keys() & statements.keys():
-        results[fn] = [
+    return {
+        fn: [
             [i for i in statements[fn] if int(i) in coverage_eval[0]],
             [i for i in branches[fn] if int(i) in coverage_eval[1]],
             [i for i in branches[fn] if int(i) in coverage_eval[2]],
         ]
-    return results
+        for fn in branches.keys() & statements.keys()
+    }
 
 
 def _statement_totals(coverage_eval, coverage_map, exclude_contracts):
@@ -280,7 +278,7 @@ def _get_highlights(build, coverage_eval):
 
 
 def _statement_highlights(coverage_eval, coverage_map):
-    results = dict((i, []) for i in coverage_map)
+    results = {i: [] for i in coverage_map}
     for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
         results[path].extend(
             [
@@ -298,7 +296,7 @@ def _statement_color(i, coverage_eval, path):
 
 
 def _branch_highlights(coverage_eval, coverage_map):
-    results = dict((i, []) for i in coverage_map)
+    results = {i: [] for i in coverage_map}
     for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
         results[path].extend(
             [

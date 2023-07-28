@@ -80,7 +80,7 @@ class Rpc(metaclass=_Singleton):
             chain._network_disconnected()
             return
         uri = web3.provider.endpoint_uri if web3.provider else None
-        for i in range(100):
+        for _ in range(100):
             if web3.isConnected():
                 web3.reset_middlewares()
                 self.backend.on_connection()
@@ -158,9 +158,7 @@ class Rpc(metaclass=_Singleton):
 
     def is_child(self) -> bool:
         """Returns True if the Rpc client is active and was launched by Brownie."""
-        if not self.is_active():
-            return False
-        return self.process.parent() == psutil.Process()
+        return self.process.parent() == psutil.Process() if self.is_active() else False
 
     @internal
     def sleep(self, seconds: int) -> int:
@@ -207,12 +205,7 @@ class Rpc(metaclass=_Singleton):
     def _check_net_connections(self, connection: Any, laddr: Tuple) -> bool:
         if connection.pid is None:
             return False
-        if connection.laddr == laddr:
-            return True
-        elif connection.raddr == laddr:
-            return True
-        else:
-            return False
+        return connection.laddr == laddr or connection.raddr == laddr
 
     def _get_pid_from_connections(self, laddr: Tuple) -> int:
         try:

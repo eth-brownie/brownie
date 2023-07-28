@@ -156,7 +156,7 @@ def find_solc_versions(
         pragma_specs[path] = sources.get_pragma_spec(source, path)
         version = pragma_specs[path].select(installed_versions)
 
-        if not version and not (install_needed or install_latest):
+        if not version and not install_needed and not install_latest:
             raise IncompatibleSolcVersion(
                 f"No installed solc version matching '{pragma_specs[path]}' in '{path}'"
             )
@@ -225,7 +225,7 @@ def find_best_solc_version(
     if not available_versions:
         raise IncompatibleSolcVersion("No installable solc version compatible across all sources")
 
-    if not installed_versions and not (install_needed or install_latest):
+    if not installed_versions and not install_needed and not install_latest:
         raise IncompatibleSolcVersion("No installed solc version compatible across all sources")
 
     if max(available_versions) > max(installed_versions, default=Version("0.0.0")):
@@ -305,10 +305,7 @@ def _format_link_references(evm: Dict) -> str:
 
 
 def _remove_metadata(bytecode: str) -> str:
-    if not bytecode:
-        return ""
-    idx = -(int(bytecode[-4:], 16) + 2) * 2
-    return bytecode[:idx]
+    return "" if not bytecode else bytecode[:-(int(bytecode[-4:], 16) + 2) * 2]
 
 
 def _generate_coverage_data(
@@ -335,7 +332,7 @@ def _generate_coverage_data(
 
     # possible branch offsets
     branch_original = {i: branch_nodes[i].copy() for i in source_nodes}
-    branch_nodes = {i: set(i.offset for i in branch_nodes[i]) for i in source_nodes}
+    branch_nodes = {i: {i.offset for i in branch_nodes[i]} for i in source_nodes}
     # currently active branches, awaiting a jumpi
     branch_active: Dict = {i: {} for i in source_nodes}
     # branches that have been set
@@ -346,7 +343,7 @@ def _generate_coverage_data(
     revert_map: Dict = {}
     fallback_hexstr: str = "unassigned"
 
-    optimizer_revert = False if get_version() >= Version("0.8.0") else True
+    optimizer_revert = get_version() < Version("0.8.0")
 
     active_source_node: Optional[NodeBase] = None
     active_fn_node: Optional[NodeBase] = None
@@ -365,10 +362,11 @@ def _generate_coverage_data(
         pc_list.append({"op": opcodes.popleft(), "pc": pc})
 
         if (
-            has_fallback is False
+            not has_fallback
             and fallback_hexstr == "unassigned"
             and pc_list[-1]["op"] == "REVERT"
-            and [i["op"] for i in pc_list[-4:-1]] == ["JUMPDEST", "PUSH1", "DUP1"]
+            and [i["op"] for i in pc_list[-4:-1]]
+            == ["JUMPDEST", "PUSH1", "DUP1"]
         ):
             # flag the REVERT op at the end of the function selector,
             # later reverts may jump to it instead of having their own REVERT op
@@ -389,8 +387,8 @@ def _generate_coverage_data(
                 _find_revert_offset(
                     pc_list, source_map, active_source_node, active_fn_node, active_fn_name
                 )
-            if source[2] == -1:
-                continue
+        if source[2] == -1:
+            continue
 
         # set contract path (-1 means none)
         contract_id = str(source[2])
@@ -410,11 +408,7 @@ def _generate_coverage_data(
         pc_list[-1]["offset"] = offset
 
         if pc_list[-1]["op"] == "REVERT" and not optimizer_revert:
-            # In Solidity >=0.8.0, an optimization is applied to reverts with an error string
-            # such that all reverts appear to happen at the same point in the source code.
-            # We mark this REVERT as the "optimizer revert" so that when it's encountered in
-            # a trace we know to look back to find the actual revert location.
-            fn_node = active_source_node.children(
+            if fn_node := active_source_node.children(
                 include_parents=False,
                 include_children=True,
                 required_offset=offset,
@@ -422,8 +416,7 @@ def _generate_coverage_data(
                     {"nodeType": "FunctionCall", "expression.name": "revert"},
                     {"nodeType": "FunctionCall", "expression.name": "require"},
                 ),
-            )
-            if fn_node:
+            ):
                 args = len(fn_node[0].arguments)
                 if args == 2 or (fn_node[0].expression.name == "revert" and args):
                     optimizer_revert = True
@@ -620,18 +613,17 @@ def _get_nodes(output_json: Dict) -> Tuple[Dict, Dict, Dict]:
 
 
 def _get_statement_nodes(source_nodes: Dict) -> Dict:
-    # Given a list of source nodes, returns a dict of lists of statement nodes
-    statements = {}
-    for node in source_nodes:
-        statements[str(node.contract_id)] = set(
+    return {
+        str(node.contract_id): {
             i.offset
             for i in node.children(
                 include_parents=False,
                 filters={"baseNodeType": "Statement"},
                 exclude_filter={"isConstructor": True},
             )
-        )
-    return statements
+        }
+        for node in source_nodes
+    }
 
 
 def _get_branch_nodes(source_nodes: List) -> Dict:
@@ -677,7 +669,7 @@ def _get_recursive_branches(base_node: Any) -> Set:
         elif node.nodeType == "UnaryOperation":
             node = node.subExpression
         node.jump = jump_is_truthful
-        return set([node])
+        return {node}
 
     # look at children of BinaryOperation nodes to find all possible branches
     binary_branches = set()

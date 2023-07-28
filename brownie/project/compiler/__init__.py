@@ -87,17 +87,19 @@ def compile_and_format(
     build_json: Dict = {}
     compiler_targets = {}
 
-    vyper_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".vy"}
-    if vyper_sources:
+    if vyper_sources := {
+        k: v for k, v in contract_sources.items() if Path(k).suffix == ".vy"
+    }:
         # TODO add `vyper_version` input arg to manually specify, support in config file
         if vyper_version is None:
-            compiler_targets.update(
-                find_vyper_versions(vyper_sources, install_needed=True, silent=silent)
+            compiler_targets |= find_vyper_versions(
+                vyper_sources, install_needed=True, silent=silent
             )
         else:
             compiler_targets[vyper_version] = list(vyper_sources)
-    solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
-    if solc_sources:
+    if solc_sources := {
+        k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"
+    }:
         if solc_version is None:
             compiler_targets.update(
                 find_solc_versions(solc_sources, install_needed=True, silent=silent)
@@ -210,8 +212,9 @@ def _get_solc_remappings(remappings: Optional[list]) -> list:
     remapped_dict = {}
     packages = _get_data_folder().joinpath("packages")
     for path in packages.iterdir():
-        key = next((k for k, v in remap_dict.items() if v.startswith(path.name)), None)
-        if key:
+        if key := next(
+            (k for k, v in remap_dict.items() if v.startswith(path.name)), None
+        ):
             remapped_dict[key] = path.parent.joinpath(remap_dict.pop(key)).as_posix()
         else:
             remapped_dict[path.name] = path.as_posix()

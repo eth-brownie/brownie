@@ -57,7 +57,7 @@ class Build:
             # no pcMap means build artifact is for an interface
             return
         if "0" in build_json["pcMap"]:
-            build_json["pcMap"] = dict((int(k), v) for k, v in build_json["pcMap"].items())
+            build_json["pcMap"] = {int(k): v for k, v in build_json["pcMap"].items()}
         self._generate_revert_map(
             build_json["pcMap"], build_json["allSourcePaths"], build_json["language"]
         )
@@ -74,7 +74,7 @@ class Build:
             for k, v in pcMap.items()
             if v["op"] in ("REVERT", "INVALID") or "jump_revert" in v
         ):
-            if "path" not in data or data["path"] == None:
+            if "path" not in data or data["path"] is None:
                 continue
             path_str = source_map[data["path"]]
 

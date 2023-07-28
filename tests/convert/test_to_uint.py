@@ -13,7 +13,7 @@ def test_success():
 
 def test_overflow():
     for i in range(8, 264, 8):
-        type_ = "uint" + str(i)
+        type_ = f"uint{str(i)}"
         assert to_uint(2**i - 1, type_) == 2**i - 1
         with pytest.raises(OverflowError):
             to_uint(2**i, type_)
@@ -36,6 +36,6 @@ def test_underflow():
 
 def test_type():
     for i in range(8, 264, 8):
-        assert to_uint(0, "uint" + str(i)) == 0
+        assert to_uint(0, f"uint{str(i)}") == 0
         with pytest.raises(ValueError):
-            to_uint(0, "uint" + str(i - 1))
+            to_uint(0, f"uint{str(i - 1)}")

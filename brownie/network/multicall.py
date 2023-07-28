@@ -106,8 +106,7 @@ class Multicall:
     @staticmethod
     def _proxy_call(*args: Tuple, **kwargs: Dict[str, Any]) -> Any:
         """Proxy code which substitutes `ContractCall.__call__"""
-        self = getattr(ContractCall, "__multicall", {}).get(get_ident())
-        if self:
+        if self := getattr(ContractCall, "__multicall", {}).get(get_ident()):
             return self._call_contract(*args, **kwargs)
 
         # standard call we let pass through

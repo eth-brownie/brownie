@@ -112,9 +112,7 @@ class Web3(_Web3):
             self._remove_middlewares()
 
     def isConnected(self) -> bool:
-        if not self.provider:
-            return False
-        return super().isConnected()
+        return False if not self.provider else super().isConnected()
 
     @property
     def supports_traces(self) -> bool:
@@ -126,7 +124,7 @@ class Web3(_Web3):
         # traces are not possible. Any other error code means the endpoint is open.
         if self._supports_traces is None:
             response = self.provider.make_request("debug_traceTransaction", [])
-            self._supports_traces = bool(response["error"]["code"] != -32601)
+            self._supports_traces = response["error"]["code"] != -32601
 
         return self._supports_traces
 

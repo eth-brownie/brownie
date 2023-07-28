@@ -8,10 +8,7 @@ from brownie.network.middlewares import BrownieMiddlewareABC
 class Ganache7MiddleWare(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
-        if w3.clientVersion.lower().startswith("ganache/v7"):
-            return -100
-        else:
-            return None
+        return -100 if w3.clientVersion.lower().startswith("ganache/v7") else None
 
     def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
         result = make_request(method, params)
@@ -22,7 +19,7 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
         # in projects that are still pinned to the old verion, so for now we support
         # both and simply raise a warning of a pending deprecation.
         if (
-            method in ("eth_sendTransaction", "eth_sendRawTransaction")
+            method in {"eth_sendTransaction", "eth_sendRawTransaction"}
             and "error" in result
             and "data" in result["error"]
         ):

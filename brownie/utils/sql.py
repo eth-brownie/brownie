@@ -28,8 +28,7 @@ class Cursor:
     def fetchone(self, cmd, *args):
         with self._lock:
             self._cur.execute(cmd, *args)
-            result = self._cur.fetchone()
-            if result:
+            if result := self._cur.fetchone():
                 return tuple(json.loads(i) if str(i)[:1] in ("[", "{") else i for i in result)
 
     def fetchall(self, cmd, *args):

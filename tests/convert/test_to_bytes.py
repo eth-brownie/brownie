@@ -14,7 +14,7 @@ def test_type_bounds():
 
 def test_length_bounds():
     for i in range(1, 33):
-        type_ = "bytes" + str(i)
+        type_ = f"bytes{str(i)}"
         to_bytes("0x" + "ff" * i, type_)
         with pytest.raises(OverflowError):
             to_bytes("0x" + "ff" * (i + 1), type_)
@@ -34,13 +34,13 @@ def test_hexstring():
 
 def test_left_pad():
     for i in range(1, 33):
-        type_ = "bytes" + str(i)
+        type_ = f"bytes{str(i)}"
         assert to_bytes("0xff", type_).hex() == (i - 1) * "00" + "ff"
 
 
 def test_int_bounds():
     for i in range(1, 33):
-        type_ = "bytes" + str(i)
+        type_ = f"bytes{str(i)}"
         assert to_bytes(2 ** (i * 8) - 1, type_).hex() == "ff" * i
         with pytest.raises(OverflowError):
             to_bytes(2 ** (i * 8), type_)

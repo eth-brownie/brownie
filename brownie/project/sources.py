@@ -68,7 +68,7 @@ class Sources:
             key: contract name or source code path
 
         Returns: source code as a string."""
-        key = str(key)
+        key = key
 
         if key in self._contracts:
             return self._contract_sources[self._contracts[key]]
@@ -191,11 +191,10 @@ def get_contract_names(full_source: str) -> List:
 
     contract_names = []
     for source in contracts:
-        matches = re.findall(
+        if matches := re.findall(
             r"(abstract contract|contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)",
             source,
-        )
-        if matches:
+        ):
             type_, name, _ = matches[0]
             contract_names.append((name, type_))
     return contract_names

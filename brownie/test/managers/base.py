@@ -35,38 +35,41 @@ class PytestBrownieBase:
         self.node_map = {}
         self.isolated = {}
         self.skip = {}
-        self.contracts = dict(
-            (k, v["bytecodeSha1"]) for k, v in project._build.items() if v.get("bytecode")
-        )
+        self.contracts = {
+            k: v["bytecodeSha1"]
+            for k, v in project._build.items()
+            if v.get("bytecode")
+        }
 
         glob = self.project_path.joinpath(self.project._structure["tests"]).glob("**/conftest.py")
-        self.conf_hashes = dict((self._path(i.parent), _get_ast_hash(i)) for i in glob)
+        self.conf_hashes = {self._path(i.parent): _get_ast_hash(i) for i in glob}
         try:
             with self.project._build_path.joinpath("tests.json").open() as fp:
                 hashes = json.load(fp)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             hashes = {"tests": {}, "contracts": {}, "tx": {}}
 
-        self.tests = dict(
-            (k, v)
+        self.tests = {
+            k: v
             for k, v in hashes["tests"].items()
-            if self.project_path.joinpath(k).exists() and self._get_hash(k) == v["sha1"]
-        )
+            if self.project_path.joinpath(k).exists()
+            and self._get_hash(k) == v["sha1"]
+        }
 
-        changed_contracts = set(
+        if changed_contracts := {
             k
             for k, v in hashes["contracts"].items()
             if k not in self.contracts or v != self.contracts[k]
-        )
-        if changed_contracts:
+        }:
             for txhash, coverage_eval in hashes["tx"].items():
                 if not changed_contracts.intersection(coverage_eval.keys()):
                     coverage._add_cached_transaction(txhash, coverage_eval)
-            self.tests = dict(
-                (k, v)
+            self.tests = {
+                k: v
                 for k, v in self.tests.items()
-                if v["isolated"] is not False and not changed_contracts.intersection(v["isolated"])
-            )
+                if v["isolated"] is not False
+                and not changed_contracts.intersection(v["isolated"])
+            }
         else:
             for txhash, coverage_eval in hashes["tx"].items():
                 coverage._add_cached_transaction(txhash, coverage_eval)
@@ -177,9 +180,7 @@ class PytestBrownieBase:
         """
         if report.when == "setup":
             self.skip[report.nodeid] = report.skipped
-            if report.failed:
-                return "error", "E", "ERROR"
-            return "", "", ""
+            return ("error", "E", "ERROR") if report.failed else ("", "", "")
         if report.when == "teardown":
             if report.failed:
                 return "error", "E", "ERROR"

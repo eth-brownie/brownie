@@ -37,10 +37,7 @@ def format_event(event: Dict) -> Any:
         event["data"] = topics + [
             {"type": "bytes", "name": "data", "value": _format_single("bytes", event["data"])}
         ]
-        if "anonymous" in event:
-            event["name"] = "(anonymous)"
-        else:
-            event["name"] = "(unknown)"
+        event["name"] = "(anonymous)" if "anonymous" in event else "(unknown)"
         return event
 
     for e in [i for i in event["data"] if not i["decoded"]]:

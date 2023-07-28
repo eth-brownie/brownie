@@ -178,9 +178,7 @@ class Accounts(metaclass=_Singleton):
             if account not in self._accounts:
                 self._accounts.append(account)
 
-        if count == 1:
-            return new_accounts[0]
-        return new_accounts
+        return new_accounts[0] if count == 1 else new_accounts
 
     def load(self, filename: str = None, password: str = None) -> Union[List, "LocalAccount"]:
         """
@@ -202,7 +200,7 @@ class Accounts(metaclass=_Singleton):
         if not filename:
             return [i.stem for i in base_accounts_path.glob("*.json")]
 
-        filename = str(filename)
+        filename = filename
         json_file = Path(filename).expanduser()
 
         if not json_file.exists() or json_file.is_dir():
@@ -517,7 +515,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             priority_fee,
             data,
             nonce,
-            contract._name + ".constructor",
+            f"{contract._name}.constructor",
             required_confs,
             allow_revert,
             silent,
@@ -853,7 +851,7 @@ class Account(_PrivateKeyAccount):
 
     def _transact(self, tx: Dict, allow_revert: bool) -> Any:
         if allow_revert is None:
-            allow_revert = bool(CONFIG.network_type == "development")
+            allow_revert = CONFIG.network_type == "development"
         if not allow_revert:
             self._check_for_revert(tx)
         return web3.eth.send_transaction(tx)
@@ -890,10 +888,10 @@ class LocalAccount(_PrivateKeyAccount):
         """
         path = _get_data_folder().joinpath("accounts")
         path.mkdir(exist_ok=True)
-        filename = str(filename)
+        filename = filename
         if not filename.endswith(".json"):
             filename += ".json"
-        if not any(i in r"\/" for i in filename):
+        if all(i not in r"\/" for i in filename):
             json_file = path.joinpath(filename).resolve()
         else:
             json_file = Path(filename).expanduser().resolve()
@@ -954,7 +952,7 @@ class LocalAccount(_PrivateKeyAccount):
 
     def _transact(self, tx: Dict, allow_revert: bool) -> None:
         if allow_revert is None:
-            allow_revert = bool(CONFIG.network_type == "development")
+            allow_revert = CONFIG.network_type == "development"
         if not allow_revert:
             self._check_for_revert(tx)
         tx["chainId"] = web3.chain_id
@@ -974,7 +972,7 @@ class ClefAccount(_PrivateKeyAccount):
 
     def _transact(self, tx: Dict, allow_revert: bool) -> None:
         if allow_revert is None:
-            allow_revert = bool(CONFIG.network_type == "development")
+            allow_revert = CONFIG.network_type == "development"
         if not allow_revert:
             self._check_for_revert(tx)
 

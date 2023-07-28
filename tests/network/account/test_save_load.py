@@ -15,8 +15,8 @@ def no_pass(monkeypatch):
 
 def test_save(accounts, tmpdir):
     a = accounts.add(priv_key)
-    a.save(tmpdir + "/temp.json")
-    assert Path(tmpdir + "/temp.json").exists()
+    a.save(f"{tmpdir}/temp.json")
+    assert Path(f"{tmpdir}/temp.json").exists()
     accounts._reset()
 
 
@@ -33,19 +33,19 @@ def test_save_nopath(accounts, tmpdir):
 
 def test_save_overwrite(accounts, tmpdir):
     a = accounts.add(priv_key)
-    a.save(tmpdir + "/temp.json")
+    a.save(f"{tmpdir}/temp.json")
     with pytest.raises(FileExistsError):
-        a.save(tmpdir + "/temp.json")
-    a.save(tmpdir + "/temp.json", True)
+        a.save(f"{tmpdir}/temp.json")
+    a.save(f"{tmpdir}/temp.json", True)
     accounts._reset()
 
 
 def test_load(accounts, tmpdir):
     a = accounts.add(priv_key)
-    a.save(tmpdir + "/temp.json")
+    a.save(f"{tmpdir}/temp.json")
     accounts._reset()
     assert a not in accounts
-    a = accounts.load(tmpdir + "/temp.json")
+    a = accounts.load(f"{tmpdir}/temp.json")
     assert a.address == addr
 
 
@@ -60,6 +60,6 @@ def test_load_nopath(accounts, tmpdir):
 
 def test_load_not_exists(accounts, tmpdir):
     with pytest.raises(FileNotFoundError):
-        accounts.load(tmpdir + "/temp.json")
+        accounts.load(f"{tmpdir}/temp.json")
     with pytest.raises(FileNotFoundError):
         accounts.load("temp")

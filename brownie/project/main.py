@@ -287,7 +287,11 @@ class Project(_ProjectBase):
         for name in [k for k, v in new_hashes.items() if compiled_hashes.get(k, None) != v]:
             self._build._remove_interface(name)
 
-        contracts = set(i for i in self._sources.get_contract_list() if self._compare_build_json(i))
+        contracts = {
+            i
+            for i in self._sources.get_contract_list()
+            if self._compare_build_json(i)
+        }
         for contract_name in list(contracts):
             contracts.update(self._build.get_dependents(contract_name))
 
@@ -296,7 +300,7 @@ class Project(_ProjectBase):
             self._build._remove_contract(name)
 
         # get final list of changed source paths
-        changed_set: Set = set(self._sources.get_source_path(i) for i in contracts)
+        changed_set: Set = {self._sources.get_source_path(i) for i in contracts}
         return {i: self._sources.get(i) for i in changed_set}
 
     def _compare_build_json(self, contract_name: str) -> bool:
@@ -523,10 +527,10 @@ class Project(_ProjectBase):
                     with deployment.open("r") as fp:
                         deployment_artifact = json.load(fp)
                     block_height = deployment_artifact["deployment"]["blockHeight"]
-                    address = deployment_artifact["deployment"]["address"]
-                    contract_name = deployment_artifact["contractName"]
                     if block_height > height:
                         deployment.unlink()
+                        address = deployment_artifact["deployment"]["address"]
+                        contract_name = deployment_artifact["contractName"]
                         try:
                             deployment_map["dev"][contract_name].remove(address)
                         except (KeyError, ValueError):
@@ -624,7 +628,7 @@ def from_brownie_mix(
 
     Returns the path to the project as a string.
     """
-    project_name = str(project_name).lower().replace("-mix", "")
+    project_name = project_name.lower().replace("-mix", "")
     headers = REQUEST_HEADERS.copy()
     headers.update(_maybe_retrieve_github_auth())
     default_branch = _get_mix_default_branch(project_name, headers)
@@ -839,8 +843,7 @@ def _maybe_retrieve_github_auth() -> Dict[str, str]:
 
     Otherwise returns an empty dict if no auth token is present.
     """
-    token = os.getenv("GITHUB_TOKEN")
-    if token:
+    if token := os.getenv("GITHUB_TOKEN"):
         auth = b64encode(token.encode()).decode()
         return {"Authorization": f"Basic {auth}"}
     return {}
@@ -892,9 +895,10 @@ def _install_from_github(package_id: str) -> str:
         if not install_path.joinpath("brownie-config.yaml").exists():
             brownie_config: Dict = {"project_structure": {}}
 
-            contract_paths = set(
-                i.relative_to(install_path).parts[0] for i in install_path.glob("**/*.sol")
-            )
+            contract_paths = {
+                i.relative_to(install_path).parts[0]
+                for i in install_path.glob("**/*.sol")
+            }
             contract_paths.update(
                 i.relative_to(install_path).parts[0] for i in install_path.glob("**/*.vy")
             )
@@ -935,10 +939,8 @@ def _get_download_url_from_tag(org: str, repo: str, version: str, headers: dict)
         f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100", headers=headers
     )
     if response.status_code != 200:
-        msg = "Status {} when getting package versions from Github: '{}'".format(
-            response.status_code, response.json()["message"]
-        )
-        if response.status_code in (403, 404):
+        msg = f"""Status {response.status_code} when getting package versions from Github: '{response.json()["message"]}'"""
+        if response.status_code in {403, 404}:
             msg += (
                 "\n\nMissing or forbidden.\n"
                 "If this issue persists, generate a Github API token and store"
@@ -1084,7 +1086,7 @@ def _get_mix_default_branch(mix_name: str, headers: Dict[str, str] = REQUEST_HEA
     if r.status_code != 200:
         status, repo, message = r.status_code, f"brownie-mix/{mix_name}", r.json()["message"]
         msg = f"Status {status} when retrieving repo {repo} information from GHAPI: '{message}'"
-        if r.status_code in (403, 404):
+        if r.status_code in {403, 404}:
             msg_lines = (
                 msg,
                 "\n\nMissing or forbidden.\n",

@@ -60,13 +60,10 @@ def launch(cmd: str, **kwargs: Dict) -> None:
     print(f"\nLaunching '{' '.join(cmd_list)}'...")
     out = DEVNULL if sys.platform == "win32" else PIPE
 
-    # check parent folders for existence of a hardhat config, so this folder is
-    # considered a hardhat project. if none is found, create one.
-    config_exists = False
-    for path in Path("hardhat.config.js").absolute().parents:
-        if path.joinpath("hardhat.config.js").exists():
-            config_exists = True
-            break
+    config_exists = any(
+        path.joinpath("hardhat.config.js").exists()
+        for path in Path("hardhat.config.js").absolute().parents
+    )
     if not config_exists:
         with Path("hardhat.config.js").open("w") as fp:
             fp.write(HARDHAT_CONFIG)
