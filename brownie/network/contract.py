@@ -85,7 +85,8 @@ _explorer_tokens = {
     "snowtrace": "SNOWTRACE_TOKEN",
     "aurorascan": "AURORASCAN_TOKEN",
     "moonscan": "MOONSCAN_TOKEN",
-    "gnosisscan": "GNOSISSCAN_TOKEN"
+    "gnosisscan": "GNOSISSCAN_TOKEN",
+    "base":  "BASESCAN_TOKEN"
 }
 
 

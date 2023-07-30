@@ -207,6 +207,13 @@ live:
         host: https://zkevm-rpc.com
         id: zkevm-main
         name: Polygon zkEVM mainnet
+  - name: Base
+    networks:
+      - chainid: 8453
+        explorer: https://api.basescan.org/api
+        host: https://mainnet.base.org
+        id: base-main
+        name: Base mainnet
 
 
 
@@ -362,3 +369,15 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: zkevm-main
+  - name: Ganache-CLI Base-Mainnet Fork)
+    id: base-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: base-main
