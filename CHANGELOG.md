@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Polygon zkEVM
 - Optimisim (fixed explorer support)
 - Gnosis Chain
+- Base chain
 
 ## [1.19.3](https://github.com/eth-brownie/brownie/tree/v1.19.3) - 2023-01-29
 ### Added
