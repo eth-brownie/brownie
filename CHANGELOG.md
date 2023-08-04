@@ -45,6 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `StopIteration` when compiling some Vyper `v0.3.3` contracts ([#1547](https://github.com/eth-brownie/brownie/pull/1547))
 
+### Fixed
+- Pass the network host parameter when launching local RPC networks (to enable use with dockerized RPC clients) ([#1534](https://github.com/eth-brownie/brownie/pull/1534))
+
 ## [1.18.2](https://github.com/eth-brownie/brownie/tree/v1.18.2) - 2022-05-15
 ### Added
 - Subscribe to events, with callbacks, using the corresponding contract instance ([#1453](https://github.com/eth-brownie/brownie/pull/1453))

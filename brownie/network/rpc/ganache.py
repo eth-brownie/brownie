@@ -18,6 +18,7 @@ from brownie.network.web3 import web3
 
 CLI_FLAGS = {
     "7": {
+        "host": "--server.host",
         "port": "--server.port",
         "gas_limit": "--miner.blockGasLimit",
         "accounts": "--wallet.totalAccounts",
@@ -35,6 +36,7 @@ CLI_FLAGS = {
         "unlimited_contract_size": "--chain.allowUnlimitedContractSize",
     },
     "<=6": {
+        "host": "--host",
         "port": "--port",
         "gas_limit": "--gasLimit",
         "accounts": "--accounts",
@@ -166,6 +168,7 @@ def _validate_cmd_settings(cmd_settings: dict) -> dict:
     ganache_keys = set(k for f in CLI_FLAGS.values() for k in f.keys())
 
     CMD_TYPES = {
+        "host": str,
         "port": int,
         "gas_limit": int,
         "block_time": int,
