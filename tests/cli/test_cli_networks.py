@@ -20,7 +20,7 @@ def test_list(config, capfd):
     cli_networks._list(verbose=False)
     output = capfd.readouterr()[0]
 
-    assert "chainid" not in output
+    assert "chain_id" not in output
     for key in config.networks:
         assert key in output
 
@@ -29,48 +29,48 @@ def test_list_verbose(config, capfd):
     cli_networks._list(verbose=True)
     output = capfd.readouterr()[0]
 
-    assert "chainid" in output
+    assert "chain_id" in output
     for key in config.networks:
         assert key in output
 
 
 def test_add():
-    cli_networks._add("ethereum", "tester", "host=127.0.0.1", "chainid=42")
+    cli_networks._add("ethereum", "tester", "host=127.0.0.1", "chain_id=42")
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
     assert networks["live"][0]["networks"][-1] == {
         "id": "tester",
         "host": "127.0.0.1",
-        "chainid": 42,
+        "chain_id": 42,
         "name": "tester",
     }
 
 
 def test_add_new_env():
-    cli_networks._add("FooChain", "tester", "host=127.0.0.1", "chainid=42")
+    cli_networks._add("FooChain", "tester", "host=127.0.0.1", "chain_id=42")
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
     assert networks["live"][-1] == {
         "name": "FooChain",
-        "networks": [{"id": "tester", "host": "127.0.0.1", "chainid": 42, "name": "tester"}],
+        "networks": [{"id": "tester", "host": "127.0.0.1", "chain_id": 42, "name": "tester"}],
     }
 
 
 def test_add_exists():
     with pytest.raises(ValueError):
-        cli_networks._add("FooChain", "development", "host=127.0.0.1", "chainid=42")
+        cli_networks._add("FooChain", "development", "host=127.0.0.1", "chain_id=42")
 
 
 def test_add_missing_field():
     with pytest.raises(ValueError):
-        cli_networks._add("FooChain", "tester", "chainid=42")
+        cli_networks._add("FooChain", "tester", "chain_id=42")
 
 
 def test_add_unknown_field():
     with pytest.raises(ValueError):
-        cli_networks._add("FooChain", "tester", "host=127.0.0.1", "chainid=42", "foo=bar")
+        cli_networks._add("FooChain", "tester", "host=127.0.0.1", "chain_id=42", "foo=bar")
 
 
 def test_add_dev():
@@ -94,15 +94,15 @@ def test_add_dev_missing_field():
 
 def test_add_dev_unknown_field():
     with pytest.raises(ValueError):
-        cli_networks._add("development", "tester", "cmd=foo", "host=127.0.0.1", "chainid=411")
+        cli_networks._add("development", "tester", "cmd=foo", "host=127.0.0.1", "chain_id=411")
 
 
 def test_modify():
-    cli_networks._modify("mainnet", "chainid=3")
+    cli_networks._modify("mainnet", "chain_id=3")
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
 
-    assert networks["live"][0]["networks"][0]["chainid"] == 3
+    assert networks["live"][0]["networks"][0]["chain_id"] == 3
 
 
 def test_modify_id():
@@ -219,7 +219,7 @@ def test_import(tmp_path):
                     {
                         "name": "FooChain",
                         "networks": [
-                            {"id": "tester", "host": "127.0.0.1", "chainid": 42, "name": "tester"}
+                            {"id": "tester", "host": "127.0.0.1", "chain_id": 42, "name": "tester"}
                         ],
                     }
                 ]
@@ -234,7 +234,7 @@ def test_import(tmp_path):
 
     assert networks["live"][-1] == {
         "name": "FooChain",
-        "networks": [{"id": "tester", "host": "127.0.0.1", "chainid": 42, "name": "tester"}],
+        "networks": [{"id": "tester", "host": "127.0.0.1", "chain_id": 42, "name": "tester"}],
     }
 
 
@@ -246,7 +246,7 @@ def test_import_id_exists(tmp_path):
                 "live": [
                     {
                         "name": "FooChain",
-                        "networks": [{"id": "mainnet", "host": "127.0.0.1", "chainid": 42}],
+                        "networks": [{"id": "mainnet", "host": "127.0.0.1", "chain_id": 42}],
                     }
                 ]
             },

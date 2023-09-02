@@ -56,10 +56,10 @@ class ConfigContainer:
                 raise ValueError(f"Multiple networks using ID '{key}'")
             self.networks[key] = value
 
-        # make sure chainids are always strings
+        # make sure chain_ids are always strings
         for network, values in self.networks.items():
-            if "chainid" in values:
-                self.networks[network]["chainid"] = str(values["chainid"])
+            if "chain_id" in values:
+                self.networks[network]["chain_id"] = str(values["chain_id"])
 
         self.argv = defaultdict(lambda: None)
         self.settings = _Singleton("settings", (ConfigDict,), {})(base_config)
@@ -86,9 +86,9 @@ class ConfigContainer:
             fork = network["cmd_settings"]["fork"]
             if fork in self.networks:
                 network["cmd_settings"]["fork"] = self.networks[fork]["host"]
-                network["chainid"] = self.networks[fork]["chainid"]
+                network["chain_id"] = self.networks[fork]["chain_id"]
                 if "chain_id" not in network["cmd_settings"]:
-                    network["cmd_settings"]["chain_id"] = int(self.networks[fork]["chainid"])
+                    network["cmd_settings"]["chain_id"] = int(self.networks[fork]["chain_id"])
                 if "explorer" in self.networks[fork]:
                     network["explorer"] = self.networks[fork]["explorer"]
 

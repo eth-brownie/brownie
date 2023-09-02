@@ -816,19 +816,19 @@ class _DeployedContractBase(_ContractBase):
         ):
             return None
 
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
-        path = self._project._build_path.joinpath(f"deployments/{chainid}")
+        chain_id = CONFIG.active_network["chain_id"] if CONFIG.network_type == "live" else "dev"
+        path = self._project._build_path.joinpath(f"deployments/{chain_id}")
         path.mkdir(exist_ok=True)
         return path.joinpath(f"{self.address}.json")
 
     def _save_deployment(self) -> None:
         path = self._deployment_path()
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chain_id = CONFIG.active_network["chain_id"] if CONFIG.network_type == "live" else "dev"
         deployment_build = self._build.copy()
 
         deployment_build["deployment"] = {
             "address": self.address,
-            "chainid": chainid,
+            "chain_id": chain_id,
             "blockHeight": web3.eth.block_number,
         }
         if path:
@@ -1274,7 +1274,7 @@ class Contract(_DeployedContractBase):
         alias: str | None
             An alias to apply. If `None`, any existing alias is removed.
         """
-        if "chainid" not in CONFIG.active_network:
+        if "chain_id" not in CONFIG.active_network:
             raise ValueError("Cannot set aliases in a development environment")
 
         if alias is not None:

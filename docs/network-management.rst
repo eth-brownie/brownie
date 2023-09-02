@@ -75,7 +75,7 @@ Live Networks
 
 Live networks **must** include the following fields:
 
-    * ``chainid``: The chain ID for a network. Live networks with the same chain ID share local data about :ref:`contract deployments <core-contracts-live>`. See `chainid.network <https://chainid.network/>`_ for a list of chain IDs.
+    * ``chain_id``: The chain ID for a network. Live networks with the same chain ID share local data about :ref:`contract deployments <core-contracts-live>`. See `chainid.network <https://chainid.network/>`_ for a list of chain IDs.
 
 The following fields are optional for live networks:
 
