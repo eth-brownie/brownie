@@ -735,6 +735,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
             )
         except ValueError as e:
             raise VirtualMachineError(e) from None
+        
+        min_fee = network_settings.get("min_fee") or Wei(0)
 
         with self._lock:
             # we use a lock here to prevent nonce issues when sending many tx's at once
@@ -749,17 +751,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 tx["to"] = to_address(str(to))
 
             txid = None
-            priority_fee_to_send = (
-                Wei(
-                    Wei("30 gwei") / priority_fee_increment + Wei(1)
-                ) if priority_fee == "auto" else priority_fee)
+            if priority_fee == "auto":
+                priority_fee_to_send = max(Chain().priority_fee, min_fee)
+                
             while True:
-                if priority_fee == "auto":
-                    priority_fee_to_send: Wei = max(
-                        Chain().priority_fee, 
-                        Wei(priority_fee_to_send * priority_fee_increment)
-                    )
-                    
                 try:
                     print(
                         f"""Setting Gas Fee(
@@ -809,6 +804,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         sys.stdout.flush()
                         _marker.rotate(1)
                     time.sleep(1)
+
+                if priority_fee == "auto":
+                    priority_fee_to_send: Wei = max(
+                        Chain().priority_fee,
+                        Wei(priority_fee_to_send * priority_fee_increment)
+                    )
 
         receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
         if receipt.status != 1 and exc is None:
