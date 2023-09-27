@@ -126,7 +126,7 @@ class Web3(_Web3):
         # traces are not possible. Any other error code means the endpoint is open.
         if self._supports_traces is None:
             response = self.provider.make_request("debug_traceTransaction", [])
-            self._supports_traces = bool(response["error"]["code"] != -32601)
+            self._supports_traces = bool(response["error"]["code"] not in [-32601, -32600])
 
         return self._supports_traces
 
