@@ -753,6 +753,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
             txid = None
             if priority_fee == "auto":
                 priority_fee_to_send = max(Chain().priority_fee, min_fee)
+            else:
+                priority_fee_to_send = priority_fee
                 
             while True:
                 try:
