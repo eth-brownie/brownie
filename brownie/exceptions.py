@@ -84,16 +84,17 @@ class VirtualMachineError(Exception):
         self.revert_msg: Optional[str] = None
         self.dev_revert_msg: Optional[str] = None
 
+        e = exc
         try:
             exc = exc.args[0]
         except Exception:
             pass
 
         if not (isinstance(exc, dict) and "message" in exc):
-            raise ValueError(str(exc)) from None
+            raise ValueError(str(exc)) from e
 
         if "data" not in exc:
-            raise ValueError(exc["message"]) from None
+            raise ValueError(exc["message"]) from e
 
         self.message: str = exc["message"].rstrip(".")
 
@@ -103,7 +104,7 @@ class VirtualMachineError(Exception):
                 err_msg = exc["data"]
                 if err_msg.endswith("0x"):
                     err_msg = exc["data"][:-2].strip()
-                raise ValueError(f"{self.message}: {err_msg}") from None
+                raise ValueError(f"{self.message}: {err_msg}") from e
 
             self.revert_type = "revert"
             err_msg = exc["data"][len(ERROR_SIG) :]
@@ -116,7 +117,7 @@ class VirtualMachineError(Exception):
             txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
             self.revert_type = data["error"]
         except StopIteration:
-            raise ValueError(exc["message"]) from None
+            raise ValueError(exc["message"]) from e
 
         self.txid = txid
         self.source = ""
@@ -125,7 +126,7 @@ class VirtualMachineError(Exception):
             self.pc -= 1
 
         self.revert_msg = data.get("reason")
-        self.dev_revert_msg = brownie.project.build._get_dev_revert(self.pc)
+        self.dev_revert_msg = brownie.project.build._get_dev_revert(self.pc)  # @UndefinedVariable
         if self.revert_msg is None and self.revert_type in ("revert", "invalid opcode"):
             self.revert_msg = self.dev_revert_msg
         elif self.revert_msg == "Failed assertion":
@@ -188,9 +189,14 @@ class CompilerError(Exception):
     def __init__(self, e: Type[psutil.Popen], compiler: str = "Compiler") -> None:
         self.compiler = compiler
 
-        err_json = yaml.safe_load(e.stdout_data)
-        err = [i.get("formattedMessage") or i["message"] for i in err_json["errors"]]
-        super().__init__(f"{compiler} returned the following errors:\n\n" + "\n".join(err))
+        raw_error = e.stdout_data
+
+        try:
+            err_json = yaml.safe_load(raw_error)
+            err = [i.get("formattedMessage") or i["message"] for i in err_json["errors"]]
+            super().__init__(f"{compiler} returned the following errors:\n\n" + "\n".join(err))
+        except:
+            super().__init__(f"{compiler} returned the following errors:\n\n{raw_error}")
 
 
 class IncompatibleSolcVersion(Exception):

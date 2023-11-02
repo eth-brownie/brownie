@@ -10,7 +10,9 @@ from wrapt import ObjectProxy
 
 from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.exceptions import ContractNotFound
-from brownie.network import accounts, web3
+# from brownie.network import accounts, web3
+from brownie.network import web3
+from brownie.network.account import accounts
 from brownie.network.contract import Contract, ContractCall
 from brownie.project import compile_source
 
@@ -51,7 +53,7 @@ class Multicall:
         self._contract = None
         self._pending_calls: Dict[int, List[Call]] = defaultdict(list)
 
-        setattr(ContractCall, "__original_call_code", ContractCall.__call__.__code__)
+        setattr(ContractCall, "__original_call_code", ContractCall.__call__.__code__)  # @UndefinedVariable
         setattr(ContractCall, "__proxy_call_code", self._proxy_call.__code__)
         setattr(ContractCall, "__multicall", defaultdict(lambda: None))
         ContractCall.__call__.__code__ = self._proxy_call.__code__
@@ -120,7 +122,7 @@ class Multicall:
         """Enter the Context Manager and substitute `ContractCall.__call__`"""
         # we set the code objects on ContractCall class so we can grab them later
 
-        active_network = CONFIG.active_network
+        active_network = CONFIG.active_network  # @UndefinedVariable
 
         if "multicall2" in active_network:
             self.address = active_network["multicall2"]
@@ -160,5 +162,5 @@ class Multicall:
         """
         project = compile_source(MULTICALL2_SOURCE)
         deployment = project.Multicall2.deploy(tx_params)  # type: ignore
-        CONFIG.active_network["multicall2"] = deployment.address
+        CONFIG.active_network["multicall2"] = deployment.address  # @UndefinedVariable
         return deployment

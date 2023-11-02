@@ -14,7 +14,7 @@ from vyper.exceptions import VyperException
 from brownie._config import CONFIG
 
 if sys.platform == "win32":
-    import colorama
+    import colorama  # @UnresolvedImport
 
     colorama.init()
 

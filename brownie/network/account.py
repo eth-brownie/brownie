@@ -77,7 +77,7 @@ class Accounts(metaclass=_Singleton):
 
         # Check if accounts were manually unlocked and add them
         try:
-            unlocked_accounts = CONFIG.active_network["cmd_settings"]["unlock"]
+            unlocked_accounts = CONFIG.active_network["cmd_settings"]["unlock"]  # @UndefinedVariable
             if not isinstance(unlocked_accounts, list):
                 unlocked_accounts = [unlocked_accounts]
             for address in unlocked_accounts:
@@ -247,7 +247,7 @@ class Accounts(metaclass=_Singleton):
         if acct is None and (address in web3.eth.accounts or force):
             acct = Account(address)
 
-            if CONFIG.network_type == "development" and address not in web3.eth.accounts:
+            if CONFIG.network_type == "development" and address not in web3.eth.accounts:  # @UndefinedVariable
                 rpc.unlock_account(address)
 
             self._accounts.append(acct)
@@ -324,6 +324,8 @@ class Accounts(metaclass=_Singleton):
         Removes all `ClefAccount` objects from the container.
         """
         self._accounts = [i for i in self._accounts if not isinstance(i, ClefAccount)]
+        
+accounts = Accounts()
 
 
 class PublicKeyAccount:
@@ -420,12 +422,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
         gas_buffer: Optional[float],
         data: Optional[str] = None,
     ) -> int:
-        gas_limit = CONFIG.active_network["settings"]["gas_limit"]
+        gas_limit = CONFIG.active_network["settings"]["gas_limit"]  # @UndefinedVariable
         if gas_limit == "max":
             return Chain().block_gas_limit
 
         if isinstance(gas_limit, bool) or gas_limit in (None, "auto"):
-            gas_buffer = gas_buffer or CONFIG.active_network["settings"]["gas_buffer"]
+            gas_buffer = gas_buffer or CONFIG.active_network["settings"]["gas_buffer"]  # @UndefinedVariable
             gas_limit = self.estimate_gas(to, amount, 0, data or "")
             if gas_limit > 21000 and gas_buffer != 1:
                 gas_limit = Wei(gas_limit * gas_buffer)
@@ -436,7 +438,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
     def _gas_price(self, gas_price: Any = None) -> Tuple[Wei, Optional[GasABC], Optional[Iterator]]:
         # returns the gas price, gas strategy object, and active gas strategy iterator
         if gas_price is None:
-            gas_price = CONFIG.active_network["settings"]["gas_price"]
+            gas_price = CONFIG.active_network["settings"]["gas_price"]  # @UndefinedVariable
 
         if isinstance(gas_price, GasABC):
             value = gas_price.get_gas_price()
@@ -594,10 +596,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
         try:
             return web3.eth.estimate_gas(tx)
         except ValueError as exc:
-            revert_gas_limit = CONFIG.active_network["settings"]["reverting_tx_gas_limit"]
+            revert_gas_limit = CONFIG.active_network["settings"]["reverting_tx_gas_limit"]  # @UndefinedVariable
             if revert_gas_limit == "max":
                 revert_gas_limit = web3.eth.get_block("latest")["gasLimit"]
-                CONFIG.active_network["settings"]["reverting_tx_gas_limit"] = revert_gas_limit
+                CONFIG.active_network["settings"]["reverting_tx_gas_limit"] = revert_gas_limit  # @UndefinedVariable
             if revert_gas_limit:
                 return revert_gas_limit
 
@@ -681,6 +683,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         receipt._raise_if_reverted(exc)
         return receipt
+    
+    def _format_gwei(self, value):
+        return value.to("gwei") if isinstance(value, Wei) else value
 
     def _make_transaction(
         self,
@@ -702,17 +707,22 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if gas_limit and gas_buffer:
             raise ValueError("Cannot set gas_limit and gas_buffer together")
         if silent is None:
-            silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
+            silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])  # @UndefinedVariable
 
+        priority_fee_increment = 1.1
+        
         if gas_price is None:
+            network_settings = (
+                CONFIG.settings["networks"][CONFIG.active_network["id"]] # @UndefinedVariable
+                    if CONFIG.active_network["id"] in CONFIG.settings["networks"]  # @UndefinedVariable
+                else CONFIG.active_network["settings"]  # @UndefinedVariable
+            )
             # if gas price is not explicitly set, load the default max fee and priority fee
             if max_fee is None:
-                max_fee = CONFIG.active_network["settings"]["max_fee"] or None
+                max_fee = network_settings.get("max_fee") or None
             if priority_fee is None:
-                priority_fee = CONFIG.active_network["settings"]["priority_fee"] or None
-
-        if priority_fee == "auto":
-            priority_fee = Chain().priority_fee
+                priority_fee = network_settings.get("priority_fee") or None
+            priority_fee_increment = network_settings.get("priority_fee_incr") or 1.1
 
         try:
             # if max fee and priority fee are not set, use gas price
@@ -725,6 +735,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
             )
         except ValueError as e:
             raise VirtualMachineError(e) from None
+        
+        min_fee = network_settings.get("min_fee") or Wei(0)
 
         with self._lock:
             # we use a lock here to prevent nonce issues when sending many tx's at once
@@ -737,10 +749,29 @@ class _PrivateKeyAccount(PublicKeyAccount):
             }
             if to:
                 tx["to"] = to_address(str(to))
-            tx = _apply_fee_to_tx(tx, gas_price, max_fee, priority_fee)
+
             txid = None
+            if priority_fee == "auto":
+                priority_fee_to_send = max(Chain().priority_fee, min_fee)
+            else:
+                priority_fee_to_send = priority_fee
+                
             while True:
                 try:
+                    print(
+                        f"""Setting Gas Fee(
+   nonce={tx['nonce']}, 
+   gas_price={self._format_gwei(gas_price)}, 
+   max_fee={self._format_gwei(max_fee)}, 
+   priority_fee={self._format_gwei(priority_fee_to_send)},
+)"""
+                    )
+                    tx = _apply_fee_to_tx(
+                        tx,
+                        gas_price,
+                        max_fee,
+                        priority_fee_to_send,
+                    )
                     response = self._transact(tx, allow_revert)  # type: ignore
                     exc, revert_data = None, None
                     if txid is None:
@@ -750,8 +781,11 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 except ValueError as e:
                     if txid is None:
                         exc = VirtualMachineError(e)
+                        if exc.message == "replacement transaction underpriced":
+                            print(f"Caught ${exc}, trying again")
+                            continue
                         if not hasattr(exc, "txid"):
-                            raise exc from None
+                            raise exc from e
                         txid = exc.txid
                         print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
                         revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
@@ -772,6 +806,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         sys.stdout.flush()
                         _marker.rotate(1)
                     time.sleep(1)
+
+                if priority_fee == "auto":
+                    priority_fee_to_send: Wei = max(
+                        Chain().priority_fee,
+                        Wei(priority_fee_to_send * priority_fee_increment)
+                    )
 
         receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
         if receipt.status != 1 and exc is None:
@@ -853,7 +893,7 @@ class Account(_PrivateKeyAccount):
 
     def _transact(self, tx: Dict, allow_revert: bool) -> Any:
         if allow_revert is None:
-            allow_revert = bool(CONFIG.network_type == "development")
+            allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
             self._check_for_revert(tx)
         return web3.eth.send_transaction(tx)
@@ -954,7 +994,7 @@ class LocalAccount(_PrivateKeyAccount):
 
     def _transact(self, tx: Dict, allow_revert: bool) -> None:
         if allow_revert is None:
-            allow_revert = bool(CONFIG.network_type == "development")
+            allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
             self._check_for_revert(tx)
         tx["chainId"] = web3.chain_id
@@ -974,7 +1014,7 @@ class ClefAccount(_PrivateKeyAccount):
 
     def _transact(self, tx: Dict, allow_revert: bool) -> None:
         if allow_revert is None:
-            allow_revert = bool(CONFIG.network_type == "development")
+            allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
             self._check_for_revert(tx)
 

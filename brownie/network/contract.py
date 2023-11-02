@@ -59,9 +59,11 @@ from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
 
-from . import accounts, chain
+# from . import accounts, chain
+from .account import accounts
 from .event import _add_deployment_topics, _get_topics, event_watcher
 from .state import (
+    chain,
     _add_contract,
     _add_deployment,
     _find_contract,
@@ -85,7 +87,8 @@ _explorer_tokens = {
     "snowtrace": "SNOWTRACE_TOKEN",
     "aurorascan": "AURORASCAN_TOKEN",
     "moonscan": "MOONSCAN_TOKEN",
-    "gnosisscan": "GNOSISSCAN_TOKEN"
+    "gnosisscan": "GNOSISSCAN_TOKEN",
+    "basescan": "BASESCAN_TOKEN",
 }
 
 
@@ -267,7 +270,7 @@ class ContractContainer(_ContractBase):
         contract._save_deployment()
         _add_contract(contract)
         self._contracts.append(contract)
-        if CONFIG.network_type == "live":
+        if CONFIG.network_type == "live":  # @UndefinedVariable
             if persist:
                 _add_deployment(contract)
 
@@ -336,7 +339,7 @@ class ContractContainer(_ContractBase):
         """Flatten contract and publish source on the selected explorer"""
 
         # Check required conditions for verifying
-        url = CONFIG.active_network.get("explorer")
+        url = CONFIG.active_network.get("explorer")  # @UndefinedVariable
         if url is None:
             raise ValueError("Explorer API not set for this network")
         env_token = next((v for k, v in _explorer_tokens.items() if k in url), None)
@@ -474,10 +477,11 @@ class ContractContainer(_ContractBase):
                 if not silent:
                     print("Verification pending...")
             else:
+                success = (data["message"] == "OK" or data["message"] == "Already Verified")
                 if not silent:
-                    col = "bright green" if data["message"] == "OK" else "bright red"
+                    col = "bright green" if success else "bright red"
                     print(f"Verification complete. Result: {color(col)}{data['result']}{color}")
-                return data["message"] == "OK"
+                return success
             time.sleep(10)
 
     def _slice_source(self, source: str, offset: list) -> str:
@@ -812,18 +816,18 @@ class _DeployedContractBase(_ContractBase):
 
     def _deployment_path(self) -> Optional[Path]:
         if not self._project._path or (
-            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]
+            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]  # @UndefinedVariable
         ):
             return None
 
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
         path = self._project._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         return path.joinpath(f"{self.address}.json")
 
     def _save_deployment(self) -> None:
         path = self._deployment_path()
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
         deployment_build = self._build.copy()
 
         deployment_build["deployment"] = {
@@ -891,8 +895,8 @@ class Contract(_DeployedContractBase):
         if build is None or sources is None:
             if (
                 not address
-                or not CONFIG.settings.get("autofetch_sources")
-                or not CONFIG.active_network.get("explorer")
+                or not CONFIG.settings.get("autofetch_sources")  # @UndefinedVariable
+                or not CONFIG.active_network.get("explorer")  # @UndefinedVariable
             ):
                 if not address:
                     raise ValueError(f"Unknown alias: '{address_or_alias}'")
@@ -1274,7 +1278,7 @@ class Contract(_DeployedContractBase):
         alias: str | None
             An alias to apply. If `None`, any existing alias is removed.
         """
-        if "chainid" not in CONFIG.active_network:
+        if "chainid" not in CONFIG.active_network:  # @UndefinedVariable
             raise ValueError("Cannot set aliases in a development environment")
 
         if alias is not None:
@@ -1736,6 +1740,8 @@ class _ContractMethod:
                 "Final argument must be a dict of transaction parameters that "
                 "includes a `from` field specifying the sender of the transaction"
             )
+        
+        print(f"{tx['from'].address}: calling {self._name}{args}")
 
         return tx["from"].transfer(
             self._address,
@@ -1903,38 +1909,41 @@ class ContractCall(_ContractMethod):
         -------
             Contract method return value(s).
         """
-
-        if not CONFIG.argv["always_transact"] or block_identifier is not None:
-            return self.call(*args, block_identifier=block_identifier, override=override)
-
-        args, tx = _get_tx(self._owner, args)
-        tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
-        pc, revert_msg = None, None
-
         try:
-            self.transact(*args, tx)
-            chain.undo()
-        except VirtualMachineError as exc:
-            pc, revert_msg = exc.pc, exc.revert_msg
-            chain.undo()
-        except Exception:
-            pass
+            if not CONFIG.argv["always_transact"] or block_identifier is not None:
+                return self.call(*args, block_identifier=block_identifier, override=override)
 
-        try:
-            return self.call(*args)
-        except VirtualMachineError as exc:
-            if pc == exc.pc and revert_msg and exc.revert_msg is None:
-                # in case we miss a dev revert string
-                exc.revert_msg = revert_msg
-            raise exc
+            args, tx = _get_tx(self._owner, args)
+            tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
+            pc, revert_msg = None, None
+
+            try:
+                self.transact(*args, tx)
+                chain.undo()
+            except VirtualMachineError as exc:
+                pc, revert_msg = exc.pc, exc.revert_msg
+                chain.undo()
+            except Exception:
+                pass
+
+            try:
+                return self.call(*args)
+            except VirtualMachineError as exc:
+                if pc == exc.pc and revert_msg and exc.revert_msg is None:
+                    # in case we miss a dev revert string
+                    exc.revert_msg = revert_msg
+                raise exc
+        except Exception as ex:
+            print(f"Caught {ex} calling {self.abi['name']}({args}) on {self._address}")
+            raise ex
 
 
 def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
     # set / remove default sender
     if owner is None:
         owner = accounts.default
-    default_owner = CONFIG.active_network["settings"]["default_contract_owner"]
-    if CONFIG.mode == "test" and default_owner is False:
+    default_owner = CONFIG.active_network["settings"]["default_contract_owner"]  # @UndefinedVariable
+    if CONFIG.mode == "test" and default_owner is False:  # @UndefinedVariable
         owner = None
 
     # seperate contract inputs from tx dict and set default tx values
@@ -2040,7 +2049,7 @@ def _print_natspec(natspec: Dict) -> None:
 
 
 def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
-    url = CONFIG.active_network.get("explorer")
+    url = CONFIG.active_network.get("explorer")  # @UndefinedVariable
     if url is None:
         raise ValueError("Explorer API not set for this network")
 

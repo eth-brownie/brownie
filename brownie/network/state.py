@@ -306,7 +306,7 @@ class Chain(metaclass=_Singleton):
         return Wei(web3.eth.max_priority_fee)
 
     def _revert(self, id_: int) -> int:
-        rpc_client = rpc.Rpc()
+        rpc_client = rpc.Rpc()  # @UndefinedVariable
         if web3.isConnected() and not web3.eth.block_number and not self._time_offset:
             _notify_registry(0)
             return rpc_client.snapshot()
@@ -327,7 +327,7 @@ class Chain(metaclass=_Singleton):
                 self._redo_buffer.pop()
             else:
                 self._redo_buffer.clear()
-            self._current_id = rpc.Rpc().snapshot()
+            self._current_id = rpc.Rpc().snapshot()  # @UndefinedVariable
             # ensure the local time offset is correct, in case it was modified by the transaction
             self.sleep(0)
 
@@ -372,11 +372,11 @@ class Chain(metaclass=_Singleton):
         """
         if not isinstance(seconds, int):
             raise TypeError("seconds must be an integer value")
-        self._time_offset = int(rpc.Rpc().sleep(seconds))
+        self._time_offset = int(rpc.Rpc().sleep(seconds))  # @UndefinedVariable
 
         if seconds:
             self._redo_buffer.clear()
-            self._current_id = rpc.Rpc().snapshot()
+            self._current_id = rpc.Rpc().snapshot()  # @UndefinedVariable
 
     def mine(self, blocks: int = 1, timestamp: int = None, timedelta: int = None) -> int:
         """
@@ -418,13 +418,13 @@ class Chain(metaclass=_Singleton):
             params = [[round(now + duration * i)] for i in range(blocks)]
 
         for i in range(blocks):
-            rpc.Rpc().mine(*params[i])
+            rpc.Rpc().mine(*params[i])  # @UndefinedVariable
 
         if timestamp is not None:
             self.sleep(0)
 
         self._redo_buffer.clear()
-        self._current_id = rpc.Rpc().snapshot()
+        self._current_id = rpc.Rpc().snapshot()  # @UndefinedVariable
         return web3.eth.block_number
 
     def snapshot(self) -> None:
@@ -435,7 +435,7 @@ class Chain(metaclass=_Singleton):
         """
         self._undo_buffer.clear()
         self._redo_buffer.clear()
-        self._snapshot_id = self._current_id = rpc.Rpc().snapshot()
+        self._snapshot_id = self._current_id = rpc.Rpc().snapshot()  # @UndefinedVariable
 
     def revert(self) -> int:
         """
@@ -470,7 +470,7 @@ class Chain(metaclass=_Singleton):
         self._undo_buffer.clear()
         self._redo_buffer.clear()
         if self._reset_id is None:
-            self._reset_id = self._current_id = rpc.Rpc().snapshot()
+            self._reset_id = self._current_id = rpc.Rpc().snapshot()  # @UndefinedVariable
             _notify_registry(0)
         else:
             self._reset_id = self._current_id = self._revert(self._reset_id)
@@ -534,6 +534,8 @@ class Chain(metaclass=_Singleton):
             return web3.eth.block_number
 
 
+chain = Chain()
+
 # objects that will update whenever the RPC is reset or reverted must register
 # by calling to this function. The must also include _revert and _reset methods
 # to recieve notifications from this object
@@ -562,7 +564,7 @@ def _find_contract(address: Any) -> Any:
     address = _resolve_address(address)
     if address in _contract_map:
         return _contract_map[address]
-    if "chainid" in CONFIG.active_network:
+    if "chainid" in CONFIG.active_network:  # @UndefinedVariable
         try:
             from brownie.network.contract import Contract
 
@@ -598,7 +600,7 @@ def _get_deployment(
         query = f"alias='{alias}'"
 
     try:
-        name = f"chain{CONFIG.active_network['chainid']}"
+        name = f"chain{CONFIG.active_network['chainid']}"  # @UndefinedVariable
     except KeyError:
         raise BrownieEnvironmentError("Functionality not available in local environment") from None
     try:
@@ -623,11 +625,11 @@ def _get_deployment(
 
 
 def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
-    if "chainid" not in CONFIG.active_network:
+    if "chainid" not in CONFIG.active_network:  # @UndefinedVariable
         return
 
     address = _resolve_address(contract.address)
-    name = f"chain{CONFIG.active_network['chainid']}"
+    name = f"chain{CONFIG.active_network['chainid']}"  # @UndefinedVariable
 
     cur.execute(
         f"CREATE TABLE IF NOT EXISTS {name} "
@@ -659,7 +661,7 @@ def _remove_deployment(
         query = f"alias='{alias}'"
 
     try:
-        name = f"chain{CONFIG.active_network['chainid']}"
+        name = f"chain{CONFIG.active_network['chainid']}"  # @UndefinedVariable
     except KeyError:
         raise BrownieEnvironmentError("Functionality not available in local environment") from None
 

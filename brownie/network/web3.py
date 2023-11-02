@@ -85,7 +85,7 @@ class Web3(_Web3):
             raise ConnectionError("web3 is not currently connected")
         self._remove_middlewares()
 
-        middleware_layers = get_middlewares(self, CONFIG.network_type)
+        middleware_layers = get_middlewares(self, CONFIG.network_type)  # @UndefinedVariable
 
         # middlewares with a layer below zero are injected
         to_inject = sorted((i for i in middleware_layers if i < 0), reverse=True)
@@ -126,14 +126,14 @@ class Web3(_Web3):
         # traces are not possible. Any other error code means the endpoint is open.
         if self._supports_traces is None:
             response = self.provider.make_request("debug_traceTransaction", [])
-            self._supports_traces = bool(response["error"]["code"] != -32601)
+            self._supports_traces = bool(response["error"]["code"] not in [-32601, -32600])
 
         return self._supports_traces
 
     @property
     def _mainnet(self) -> _Web3:
         # a web3 instance connected to the mainnet
-        if self.isConnected() and CONFIG.active_network["id"] == "mainnet":
+        if self.isConnected() and CONFIG.active_network["id"] == "mainnet":  # @UndefinedVariable
             return self
         try:
             mainnet = CONFIG.networks["mainnet"]

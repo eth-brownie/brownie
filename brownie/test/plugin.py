@@ -90,7 +90,7 @@ def pytest_load_initial_conftests(early_config):
             active_project._add_to_main_namespace()
         except Exception as e:
             # prevent pytest INTERNALERROR traceback when project fails to compile
-            print(f"{color.format_tb(e)}\n")
+            print(f"{color.format_tb(e)}\n")  # @UndefinedVariable
             raise pytest.UsageError("Unable to load project")
         finally:
             capsys.resume()

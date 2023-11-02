@@ -69,4 +69,4 @@ def main():
         if "-r" in sys.argv:
             raise e
         else:
-            sys.exit(color.format_tb(e))
+            sys.exit(color.format_tb(e))  # @UndefinedVariable

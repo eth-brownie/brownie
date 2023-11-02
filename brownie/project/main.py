@@ -209,22 +209,22 @@ class Project(_ProjectBase):
                     build_json = json.load(fp)
             except json.JSONDecodeError:
                 build_json = {}
-            if not set(BUILD_KEYS).issubset(build_json):
-                path.unlink()
-                continue
-            if path.stem not in contract_list:
-                potential_dependencies.append((path, build_json))
-                continue
-            if isinstance(build_json["allSourcePaths"], list):
-                # this handles the format change in v1.7.0, it can be removed in a future release
-                path.unlink()
-                test_path = self._build_path.joinpath("tests.json")
-                if test_path.exists():
-                    test_path.unlink()
-                continue
-            if not self._path.joinpath(build_json["sourcePath"]).exists():
-                path.unlink()
-                continue
+            # if not set(BUILD_KEYS).issubset(build_json):
+            #     path.unlink()
+            #     continue
+            # if path.stem not in contract_list:
+            #     potential_dependencies.append((path, build_json))
+            #     continue
+            # if isinstance(build_json["allSourcePaths"], list):
+            #     # this handles the format change in v1.7.0, it can be removed in a future release
+            #     path.unlink()
+            #     test_path = self._build_path.joinpath("tests.json")
+            #     if test_path.exists():
+            #         test_path.unlink()
+            #     continue
+            # if not self._path.joinpath(build_json["sourcePath"]).exists():
+            #     path.unlink()
+            #     continue
             self._build._add_contract(build_json)
 
         for path, build_json in potential_dependencies:
@@ -355,17 +355,18 @@ class Project(_ProjectBase):
         dep_build_path = self._build_path.joinpath("contracts/dependencies/")
         for path in list(dep_build_path.glob("**/*.json")):
             contract_alias = path.relative_to(dep_build_path).with_suffix("").as_posix()
-            if self._build.get_dependents(contract_alias):
-                with path.open() as fp:
-                    build_json = json.load(fp)
-                self._build._add_contract(build_json, contract_alias)
-            else:
-                path.unlink()
+            # if self._build.get_dependents(contract_alias):
+            self._build.get_dependents(contract_alias)
+            with path.open() as fp:
+                build_json = json.load(fp)
+            self._build._add_contract(build_json, contract_alias)
+            # else:
+            #     path.unlink()
 
     def _load_deployments(self) -> None:
-        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
+        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:  # @UndefinedVariable
             return
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
         path = self._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         deployments = list(path.glob("*.json"))
@@ -411,9 +412,9 @@ class Project(_ProjectBase):
             json.dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
 
     def _remove_from_deployment_map(self, contract: ProjectContract) -> None:
-        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
+        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:  # @UndefinedVariable
             return
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
         deployment_map = self._load_deployment_map()
         try:
             deployment_map[chainid][contract._name].remove(contract.address)
@@ -427,10 +428,10 @@ class Project(_ProjectBase):
         self._save_deployment_map(deployment_map)
 
     def _add_to_deployment_map(self, contract: ProjectContract) -> None:
-        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
+        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:  # @UndefinedVariable
             return
 
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
         deployment_map = self._load_deployment_map()
         try:
             deployment_map[chainid][contract._name].remove(contract.address)
@@ -491,7 +492,7 @@ class Project(_ProjectBase):
                 del dict_[key]
 
         # remove contracts
-        for contract in [x for v in self._containers.values() for x in v._contracts]:
+        for contract in {x for v in self._containers.values() for x in v._contracts}:
             _remove_contract(contract)
         for container in self._containers.values():
             container._contracts.clear()
