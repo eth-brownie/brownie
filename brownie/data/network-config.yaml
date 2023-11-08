@@ -140,7 +140,7 @@ live:
         explorer: https://api-moonbeam.moonscan.io/api
         multicall2: "0x1337BedC9D22ecbe766dF105c9623922A27963EC"
       - name: Moonbase Alpha
-        chainid: 1287 
+        chainid: 1287
         id: moonbeam-test
         host: https://moonbeam-alpha.api.onfinality.io/public
         explorer: https://api-moonbase.moonscan.io/api
@@ -195,11 +195,16 @@ live:
         explorer: https://blockscout.com/poa/sokol/api
   - name: Gnosis Chain
     networks:
-      - chainid: 100
-        explorer: https://api.gnosisscan.io/api
-        host: https://rpc.gnosischain.com/
+      - name: Mainnet
+        chainid: 100
         id: gnosis-main
-        name: Mainnet
+        host: https://rpc.gnosischain.com
+        explorer: https://api.gnosisscan.io/api
+      - name: Testnet
+        chainid: 10200
+        id: gnosis-test
+        host: https://rpc.chiadochain.net
+        explorer: https://gnosis-chiado.blockscout.com/api
   - name: Polygon zkEVM
     networks:
       - chainid: 1101
