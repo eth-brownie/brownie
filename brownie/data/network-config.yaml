@@ -200,7 +200,7 @@ live:
         id: gnosis-main
         host: https://rpc.gnosischain.com
         explorer: https://api.gnosisscan.io/api
-      - name: Testnet
+      - name: Chiado
         chainid: 10200
         id: gnosis-test
         host: https://rpc.chiadochain.net
