@@ -136,7 +136,7 @@ live:
       - name: Mainnet
         chainid: 1284
         id: moonbeam-main
-        host: https://moonbeam.unitedbloc.com
+        host: https://rpc.api.moonbeam.network
         explorer: https://api-moonbeam.moonscan.io/api
         multicall2: "0x1337BedC9D22ecbe766dF105c9623922A27963EC"
       - name: Moonbase Alpha
