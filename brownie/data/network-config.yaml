@@ -150,7 +150,7 @@ live:
       - name: Mainnet
         chainid: 1285
         id: moonriver-main
-        host: https://moonriver.unitedbloc.com
+        host: https://rpc.api.moonriver.moonbeam.network
         explorer: https://api-moonriver.moonscan.io/api
         multicall2: "0xaef00a0cf402d9dedd54092d9ca179be6f9e5ce3"
   - name: Optimistic Ethereum
