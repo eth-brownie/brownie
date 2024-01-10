@@ -142,7 +142,7 @@ live:
       - name: Moonbase Alpha
         chainid: 1287 
         id: moonbeam-test
-        host: https://moonbase.unitedbloc.com
+        host: https://rpc.api.moonbase.moonbeam.network
         explorer: https://api-moonbase.moonscan.io/api
         multicall2: "0x37084d0158C68128d6Bc3E5db537Be996f7B6979"
   - name: Moonriver
