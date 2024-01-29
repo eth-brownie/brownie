@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Force using utf-8 for reading contracts
+- Fix verification for same named files ([#1677](https://github.com/eth-brownie/brownie/pull/1677))
 
 ## [1.19.3](https://github.com/eth-brownie/brownie/tree/v1.19.3) - 2023-01-29
 ### Added
