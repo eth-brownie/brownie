@@ -306,8 +306,17 @@ Native EVM-Compatible Chain Integrations
 Brownie natively supports the following collection of EVM-compatible chains:
 
 * Ethereum Classic
+* Arbitrum
+* Avalanche
+* Aurora
 * Binance Smart Chain
+* Boba
 * Fantom Opera
+* Harmony
+* Hedera
+* Moonbeam
+* Moonriver
+* Optimistic Ethereum
 * Polygon Network
 * Gnosis Network
 
