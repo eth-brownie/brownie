@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimisim (fixed explorer support)
 - Gnosis Chain
 
+### Fixed
+- Force using utf-8 for reading contracts
+
 ## [1.19.3](https://github.com/eth-brownie/brownie/tree/v1.19.3) - 2023-01-29
 ### Added
 - Ganache 7.7.x support ([#1652](https://github.com/eth-brownie/brownie/pull/1652))
