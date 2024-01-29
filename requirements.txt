@@ -20,7 +20,7 @@ attrs==22.1.0
     #   pytest
 base58==2.1.1
     # via multiaddr
-bitarray>=2.6.0,<3
+bitarray==2.9.2
     # via eth-account
 black==22.10.0
     # via -r requirements.in
@@ -57,6 +57,7 @@ eth-hash[pycryptodome]==0.3.3
     # via
     #   -r requirements.in
     #   eth-event
+    #   eth-hash
     #   eth-utils
     #   web3
 eth-keyfile==0.5.1
@@ -162,7 +163,7 @@ py-solc-ast==1.2.10
     # via -r requirements.in
 py-solc-x==1.1.1
     # via -r requirements.in
-pycryptodome==3.15.0
+pycryptodome==3.19.1
     # via
     #   eip712
     #   eth-hash
