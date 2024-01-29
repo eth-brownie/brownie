@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Polygon zkEVM
 - Optimisim (fixed explorer support)
 - Gnosis Chain
+- Base chain
 
 ### Fixed
 - Force using utf-8 for reading contracts
