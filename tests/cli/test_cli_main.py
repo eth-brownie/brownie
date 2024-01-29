@@ -193,3 +193,16 @@ def test_no_args_shows_help(cli_tester, capfd):
 
 def test_cli_pm(cli_tester):
     cli_tester.run_and_test_parameters("pm list", None)
+
+def test_cli_console_doesnt_accept_compile(cli_tester):
+    with pytest.raises(SystemExit):
+        cli_tester.run_and_test_parameters('console --compile')
+
+def test_cli_console_accepts_no_compile(cli_tester):
+    cli_tester.monkeypatch.setattr("brownie._cli.console.main", cli_tester.mock_subroutines)
+
+    cli_tester.run_and_test_parameters("console")
+    cli_tester.run_and_test_parameters("console --no-compile")
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == 2

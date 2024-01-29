@@ -180,6 +180,14 @@ def testproject(_project_factory, project, tmp_path):
     os.chdir(path)
     return project.load(path, "TestProject")
 
+# same as function above but doesn't compile
+@pytest.fixture
+def testproject_nocompile(_project_factory, project, tmp_path):
+    path = tmp_path.joinpath("testproject")
+    _copy_all(_project_factory, path)
+    os.chdir(path)
+    return project.load(path, "TestProject", compile=False)
+
 
 @pytest.fixture
 def tp_path(testproject):
