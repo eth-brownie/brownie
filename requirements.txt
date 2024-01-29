@@ -158,7 +158,7 @@ py==1.11.0
     #   -r requirements.in
     #   pytest
     #   pytest-forked
-py-solc-ast==1.2.9
+py-solc-ast==1.2.10
     # via -r requirements.in
 py-solc-x==1.1.1
     # via -r requirements.in

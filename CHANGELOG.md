@@ -6,18 +6,22 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.19.4](https://github.com/eth-brownie/brownie/tree/v1.19.4) - 2024-01-29
 ### Added
-- Added functional support for the following new chains:
-- Sepolia
-- Polygon zkEVM
-- Optimisim (fixed explorer support)
-- Gnosis Chain
-- Chiado (Gnosis testnet)
-- Base chain
+- `viaIR` optimizer support ([#1572](https://github.com/eth-brownie/brownie/pull/1572))
+- Silent transactions when calling a contract ([#1636](https://github.com/eth-brownie/brownie/pull/1636))
+- Include encoded return data in transaction trace ([#1715](https://github.com/eth-brownie/brownie/pull/1715))
+- `--no-compile` flag to avoid project recompilation ([#1507](https://github.com/eth-brownie/brownie/pull/1507))
+- Support for various new EVM chains
+
+### Changed
+- set default vyper EVM version to `paris` ([#1684](https://github.com/eth-brownie/brownie/pull/1684))
 
 ### Fixed
-- Force using utf-8 for reading contracts
+- Force using utf-8 for reading contracts ([#1712](https://github.com/eth-brownie/brownie/pull/1712))
 - Fix verification for same named files ([#1677](https://github.com/eth-brownie/brownie/pull/1677))
+- `KeyError` when removing a contract ([#1689](https://github.com/eth-brownie/brownie/pull/1689))
 
 ## [1.19.3](https://github.com/eth-brownie/brownie/tree/v1.19.3) - 2023-01-29
 ### Added
@@ -27,8 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Anvil support, you can now access trace, events and return_value for anvil transactions ([#1652](https://github.com/eth-brownie/brownie/pull/1652))
 - Removes `eth-abi` depreciation warnings ([#1639](https://github.com/eth-brownie/brownie/pull/1639))
 - Bump web3.py dep to support async provider in threaded applications ([#1664](https://github.com/eth-brownie/brownie/pull/1664))
-
-- Add Hedera network integration ([#1658](https://github.com/eth-brownie/brownie/pull/1658))
 
 ## [1.19.2](https://github.com/eth-brownie/brownie/tree/v1.19.2) - 2022-10-16
 ### Added
