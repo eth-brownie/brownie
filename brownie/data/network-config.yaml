@@ -136,13 +136,13 @@ live:
       - name: Mainnet
         chainid: 1284
         id: moonbeam-main
-        host: https://moonbeam.api.onfinality.io/public
+        host: https://rpc.api.moonbeam.network
         explorer: https://api-moonbeam.moonscan.io/api
         multicall2: "0x1337BedC9D22ecbe766dF105c9623922A27963EC"
       - name: Moonbase Alpha
         chainid: 1287
         id: moonbeam-test
-        host: https://moonbeam-alpha.api.onfinality.io/public
+        host: https://rpc.api.moonbase.moonbeam.network
         explorer: https://api-moonbase.moonscan.io/api
         multicall2: "0x37084d0158C68128d6Bc3E5db537Be996f7B6979"
   - name: Moonriver
@@ -150,7 +150,7 @@ live:
       - name: Mainnet
         chainid: 1285
         id: moonriver-main
-        host: https://moonriver.api.onfinality.io/public
+        host: https://rpc.api.moonriver.moonbeam.network
         explorer: https://api-moonriver.moonscan.io/api
         multicall2: "0xaef00a0cf402d9dedd54092d9ca179be6f9e5ce3"
   - name: Optimistic Ethereum
@@ -200,6 +200,13 @@ live:
         host: https://zkevm-rpc.com
         id: zkevm-main
         name: Polygon zkEVM mainnet
+  - name: Base
+    networks:
+      - chainid: 8453
+        explorer: https://api.basescan.org/api
+        host: https://mainnet.base.org
+        id: base-main
+        name: Base mainnet
 
 
 
@@ -343,3 +350,15 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: zkevm-main
+  - name: Ganache-CLI Base-Mainnet Fork)
+    id: base-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: base-main
