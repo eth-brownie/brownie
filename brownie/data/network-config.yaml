@@ -22,6 +22,12 @@ live:
         explorer: https://api-rinkeby.etherscan.io/api
         multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
         provider: infura
+      - name: Sepolia (Infura)
+        chainid: 11155111
+        id: sepolia
+        host: https://sepolia.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-sepolia.etherscan.io/
+        provider: infura
       - name: Goerli (Infura)
         chainid: 5
         id: goerli
@@ -130,13 +136,13 @@ live:
       - name: Mainnet
         chainid: 1284
         id: moonbeam-main
-        host: https://moonbeam.api.onfinality.io/public
+        host: https://rpc.api.moonbeam.network
         explorer: https://api-moonbeam.moonscan.io/api
         multicall2: "0x1337BedC9D22ecbe766dF105c9623922A27963EC"
       - name: Moonbase Alpha
         chainid: 1287 
         id: moonbeam-test
-        host: https://moonbeam-alpha.api.onfinality.io/public
+        host: https://rpc.api.moonbase.moonbeam.network
         explorer: https://api-moonbase.moonscan.io/api
         multicall2: "0x37084d0158C68128d6Bc3E5db537Be996f7B6979"
   - name: Moonriver
@@ -144,7 +150,7 @@ live:
       - name: Mainnet
         chainid: 1285
         id: moonriver-main
-        host: https://moonriver.api.onfinality.io/public
+        host: https://rpc.api.moonriver.moonbeam.network
         explorer: https://api-moonriver.moonscan.io/api
         multicall2: "0xaef00a0cf402d9dedd54092d9ca179be6f9e5ce3"
   - name: Optimistic Ethereum
@@ -152,7 +158,7 @@ live:
       - name: Mainnet
         chainid: 10
         id: optimism-main
-        host: https://mainnet.optimism.io
+        host:  https://optimism-mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
         explorer: https://api-optimistic.etherscan.io/api
         multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
       - name: Kovan
@@ -187,6 +193,29 @@ live:
         id: xdai-test
         host: https://sokol.poa.network
         explorer: https://blockscout.com/poa/sokol/api
+  - name: Gnosis Chain
+    networks:
+      - chainid: 100
+        explorer: https://api.gnosisscan.io/api
+        host: https://rpc.gnosischain.com/
+        id: gnosis-main
+        name: Mainnet
+  - name: Polygon zkEVM
+    networks:
+      - chainid: 1101
+        explorer: https://api-zkevm.polygonscan.com/api
+        host: https://zkevm-rpc.com
+        id: zkevm-main
+        name: Polygon zkEVM mainnet
+  - name: Base
+    networks:
+      - chainid: 8453
+        explorer: https://api.basescan.org/api
+        host: https://mainnet.base.org
+        id: base-main
+        name: Base mainnet
+
+
 
 development:
   - name: Anvil
@@ -316,3 +345,39 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: aurora-main
+  - name: Ganache-CLI (Gnosis-Mainnet Fork)
+    id: gnosis-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: gnosis-main
+  - name: Ganache-CLI (zkEVM-Mainnet Fork)
+    id: zkevm-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: zkevm-main
+  - name: Ganache-CLI Base-Mainnet Fork)
+    id: base-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: base-main
