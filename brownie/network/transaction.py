@@ -920,6 +920,20 @@ class TransactionReceipt:
                     last["address"], trace[i]["stack"][-2][-40:], trace[i]["stack"][-3]
                 )
 
+            # If the function signature is not available for decoding return data attach
+            # the encoded data.
+            # If the function signature is available this will be overridden by setting
+            # `return_value` a few lines below.
+            if trace[i]["depth"] and opcode == "RETURN":
+                subcall: dict = next(
+                    i for i in self._subcalls[::-1] if i["to"] == last["address"]  # type: ignore
+                )
+
+                if opcode == "RETURN":
+                    returndata = _get_memory(trace[i], -1)
+                    if returndata.hex() not in ("", "0x"):
+                        subcall["returndata"] = returndata.hex()
+
             try:
                 pc = last["pc_map"][trace[i]["pc"]]
             except (KeyError, TypeError):
