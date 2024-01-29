@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Polygon zkEVM
 - Optimisim (fixed explorer support)
 - Gnosis Chain
+- Chiado (Gnosis testnet)
 - Base chain
 
 ### Fixed
