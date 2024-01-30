@@ -182,7 +182,9 @@ class Accounts(metaclass=_Singleton):
             return new_accounts[0]
         return new_accounts
 
-    def load(self, filename: str = None, password: str = None) -> Union[List, "LocalAccount"]:
+    def load(
+        self, filename: str = None, password: str = None, allow_retry: bool = False
+    ) -> Union[List, "LocalAccount"]:
         """
         Load a local account from a keystore file.
 
@@ -193,6 +195,8 @@ class Accounts(metaclass=_Singleton):
         password: str
             Password to unlock the keystore. If `None`, password is entered via
             a getpass prompt.
+        allow_retry: bool
+            If True, allows re-attempt when the given password is incorrect.
 
         Returns
         -------
@@ -218,10 +222,22 @@ class Accounts(metaclass=_Singleton):
                     raise FileNotFoundError(f"Cannot find {json_file}")
 
         with json_file.open() as fp:
-            priv_key = web3.eth.account.decrypt(
-                json.load(fp),
-                password or getpass(f'Enter password for "{json_file.stem}": '),
-            )
+            encrypted = json.load(fp)
+
+        prompt = f'Enter password for "{json_file.stem}": '
+        while True:
+            if password is None:
+                password = getpass(prompt)
+            try:
+                priv_key = web3.eth.account.decrypt(encrypted, password)
+                break
+            except ValueError as e:
+                if allow_retry:
+                    prompt = f"Incorrect password, try again: "
+                    password = None
+                    continue
+                raise e
+
         return self.add(priv_key)
 
     def at(self, address: str, force: bool = False) -> "LocalAccount":
