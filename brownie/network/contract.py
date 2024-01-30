@@ -37,7 +37,12 @@ from web3._utils import filters
 from web3.datastructures import AttributeDict
 from web3.types import LogReceipt
 
-from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS, _load_project_compiler_config
+from brownie._config import (
+    BROWNIE_FOLDER,
+    CONFIG,
+    REQUEST_HEADERS,
+    _load_project_compiler_config,
+)
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
 from brownie.convert.utils import (
@@ -52,6 +57,7 @@ from brownie.exceptions import (
     ContractNotFound,
     UndeployedLibrary,
     VirtualMachineError,
+    parse_errors_from_abi,
 )
 from brownie.project import compiler, ethpm
 from brownie.project.compiler.solidity import SOLIDITY_ERROR_CODES
@@ -86,12 +92,11 @@ _explorer_tokens = {
     "aurorascan": "AURORASCAN_TOKEN",
     "moonscan": "MOONSCAN_TOKEN",
     "gnosisscan": "GNOSISSCAN_TOKEN",
-    "base":  "BASESCAN_TOKEN"
+    "base": "BASESCAN_TOKEN",
 }
 
 
 class _ContractBase:
-
     _dir_color = "bright magenta"
 
     def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
@@ -106,6 +111,7 @@ class _ContractBase:
         self.signatures = {
             i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
         }
+        parse_errors_from_abi(self.abi)
 
     @property
     def abi(self) -> List:
@@ -508,7 +514,6 @@ class ContractContainer(_ContractBase):
 
 
 class ContractConstructor:
-
     _dir_color = "bright magenta"
 
     def __init__(self, parent: "ContractContainer", name: str) -> None:
@@ -562,7 +567,7 @@ class ContractConstructor:
             required_confs=tx["required_confs"],
             allow_revert=tx.get("allow_revert"),
             publish_source=publish_source,
-            silent=silent
+            silent=silent,
         )
 
     @staticmethod
@@ -1621,7 +1626,6 @@ class OverloadedMethod:
 
 
 class _ContractMethod:
-
     _dir_color = "bright magenta"
 
     def __init__(
@@ -1716,7 +1720,7 @@ class _ContractMethod:
             raise ValueError("No data was returned - the call likely reverted")
         return self.decode_output(data)
 
-    def transact(self,  silent: bool = False, *args: Tuple) -> TransactionReceiptType:
+    def transact(self, silent: bool = False, *args: Tuple) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1751,7 +1755,7 @@ class _ContractMethod:
             required_confs=tx["required_confs"],
             data=self.encode_input(*args),
             allow_revert=tx["allow_revert"],
-            silent=silent
+            silent=silent,
         )
 
     def decode_input(self, hexstr: str) -> List:
@@ -1970,7 +1974,6 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
 def _get_method_object(
     address: str, abi: Dict, name: str, owner: Optional[AccountsType], natspec: Dict
 ) -> Union["ContractCall", "ContractTx"]:
-
     if "constant" in abi:
         constant = abi["constant"]
     else:

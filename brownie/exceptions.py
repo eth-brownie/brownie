@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
+import json
 import sys
-from typing import Optional, Type
+from pathlib import Path
+from typing import Dict, List, Optional, Type
 
 import eth_abi
 import psutil
@@ -9,6 +11,8 @@ import yaml
 from hexbytes import HexBytes
 
 import brownie
+from brownie._config import _get_data_folder
+from brownie.convert.utils import build_function_selector, get_type_strings
 
 # network
 
@@ -97,19 +101,9 @@ class VirtualMachineError(Exception):
 
         self.message: str = exc["message"].rstrip(".")
 
-        if isinstance(exc["data"], str):
-            # handle parity exceptions - this logic probably is not perfect
-            if not exc["data"].startswith(ERROR_SIG):
-                err_msg = exc["data"]
-                if err_msg.endswith("0x"):
-                    err_msg = exc["data"][:-2].strip()
-                raise ValueError(f"{self.message}: {err_msg}") from None
-
+        if isinstance(exc["data"], str) and exc["data"].startswith("0x"):
             self.revert_type = "revert"
-            err_msg = exc["data"][len(ERROR_SIG) :]
-            (err_msg,) = eth_abi.decode(["string"], HexBytes(err_msg))
-            self.revert_msg = err_msg
-
+            self.revert_msg = self._decode_custom_error(exc["data"])
             return
 
         try:
@@ -125,6 +119,9 @@ class VirtualMachineError(Exception):
             self.pc -= 1
 
         self.revert_msg = data.get("reason")
+        if isinstance(data.get("reason"), str) and data["reason"].startswith("0x"):
+            self.revert_msg = decode_typed_error(data["reason"])
+
         self.dev_revert_msg = brownie.project.build._get_dev_revert(self.pc)
         if self.revert_msg is None and self.revert_type in ("revert", "invalid opcode"):
             self.revert_msg = self.dev_revert_msg
@@ -239,3 +236,43 @@ class BrownieTestWarning(Warning):
 
 class BrownieConfigWarning(Warning):
     pass
+
+
+def __get_path() -> Path:
+    return _get_data_folder().joinpath("errors.json")
+
+
+def parse_errors_from_abi(abi: List):
+    updated = False
+    for item in [i for i in abi if i.get("type", None) == "error"]:
+        selector = build_function_selector(item)
+        if selector in _errors:
+            continue
+        updated = True
+        _errors[selector] = item
+
+    if updated:
+        with __get_path().open("w") as fp:
+            json.dump(_errors, fp, sort_keys=True, indent=2)
+
+
+_errors: Dict = {ERROR_SIG: {"name": "Error", "inputs": [{"name": "", "type": "string"}]}}
+
+try:
+    with __get_path().open() as fp:
+        _errors.update(json.load(fp))
+except (FileNotFoundError, json.decoder.JSONDecodeError):
+    pass
+
+
+def decode_typed_error(data: str) -> str:
+    selector = data[:10]
+    if selector in _errors:
+        types_list = get_type_strings(_errors[selector]["inputs"])
+        result = eth_abi.decode(types_list, HexBytes(data)[4:])
+        if selector == ERROR_SIG:
+            return result[0]
+        else:
+            return f"{_errors[selector]['name']}: {', '.join(result)}"
+    else:
+        return f"Unknown typed error: {data}"
