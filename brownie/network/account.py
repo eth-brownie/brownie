@@ -728,7 +728,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 priority_fee = CONFIG.active_network["settings"]["priority_fee"] or None
 
         if priority_fee == "auto":
-            priority_fee = Chain().priority_fee
+            try:
+                priority_fee = Chain().priority_fee
+            except ValueError:
+                # fallback to legacy transactions if network does not support EIP1559
+                CONFIG.active_network["settings"]["priority_fee"] = None
+                priority_fee = None
 
         try:
             # if max fee and priority fee are not set, use gas price
