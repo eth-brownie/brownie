@@ -480,9 +480,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
             skip_keys = {"gasPrice", "maxFeePerGas", "maxPriorityFeePerGas"}
             web3.eth.call({k: v for k, v in tx.items() if k not in skip_keys and v})
         except ValueError as exc:
-            msg = exc.args[0]["message"] if isinstance(exc.args[0], dict) else str(exc)
+            exc = VirtualMachineError(exc)
             raise ValueError(
-                f"Execution reverted during call: '{msg}'. This transaction will likely revert. "
+                f"Execution reverted during call: '{exc.revert_msg}'. This transaction will likely revert. "
                 "If you wish to broadcast, include `allow_revert:True` as a transaction parameter.",
             ) from None
 
@@ -617,9 +617,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
             if revert_gas_limit:
                 return revert_gas_limit
 
-            msg = exc.args[0]["message"] if isinstance(exc.args[0], dict) else str(exc)
+            exc = VirtualMachineError(exc)
             raise ValueError(
-                f"Gas estimation failed: '{msg}'. This transaction will likely revert. "
+                f"Gas estimation failed: '{exc.revert_msg}'. This transaction will likely revert. "
                 "If you wish to broadcast, you must set the gas limit manually."
             )
 
