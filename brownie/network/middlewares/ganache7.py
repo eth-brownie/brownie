@@ -39,7 +39,7 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
             # "VM Exception while processing transaction: {reason} {message}"
             msg = result["error"]["message"].split(": ", maxsplit=1)[-1]
             if msg.startswith("revert"):
-                data = {"error": "revert", "reason": msg[7:]}
+                data = {"error": "revert", "reason": result["error"]["data"]}
             else:
                 data = {"error": msg, "reason": None}
             result["error"]["data"] = {"0x": data}
