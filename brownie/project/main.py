@@ -727,7 +727,7 @@ def load(
     project_path: Union[Path, str, None] = None,
     name: Optional[str] = None,
     raise_if_loaded: bool = True,
-    compile: bool = True
+    compile: bool = True,
 ) -> "Project":
     """Loads a project and instantiates various related objects.
 
@@ -1028,7 +1028,7 @@ def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
             continue
         if next((i for i in path.relative_to(project_path).parts if i.startswith("_")), False):
             continue
-        with path.open(encoding='utf-8') as fp:
+        with path.open(encoding="utf-8") as fp:
             source = fp.read()
 
         if hasattr(hooks, "brownie_load_source"):

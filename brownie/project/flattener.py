@@ -39,7 +39,7 @@ class Flattener:
         Note, that sometimes there could be several different files with the same name in a project,
         so these files should keep uniq name to correct verification.
         """
-        return 'contracts/' + pth.split('/contracts/')[1]
+        return "contracts/" + pth.split("/contracts/")[1]
 
     def traverse(self, fp: str) -> None:
         """Traverse a contract source files dependencies.
@@ -66,8 +66,8 @@ class Flattener:
         # replacement function for re.sub, we just sanitize the path
         repl = (  # noqa: E731
             lambda m: f'import{m.group("prefix")}'
-                      + f'"{self.path_to_name(sanitize(m.group("path")))}"'
-                      + f'{m.group("suffix")}'
+            + f'"{self.path_to_name(sanitize(m.group("path")))}"'
+            + f'{m.group("suffix")}'
         )
         self.sources[name] = IMPORT_PATTERN.sub(repl, source)
         if fp_obj.name not in self.dependencies:

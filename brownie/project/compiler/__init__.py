@@ -41,7 +41,6 @@ STANDARD_JSON: Dict = {
 }
 
 
-
 def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
@@ -179,7 +178,9 @@ def generate_input_json(
 
     if evm_version is None:
         _module = solidity if language == "Solidity" else vyper
-        evm_version = next(i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1])
+        evm_version = next(
+            i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1]
+        )
 
     input_json: Dict = deepcopy(STANDARD_JSON)
     input_json["language"] = language
