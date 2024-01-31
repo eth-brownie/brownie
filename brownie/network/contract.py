@@ -37,12 +37,7 @@ from web3._utils import filters
 from web3.datastructures import AttributeDict
 from web3.types import LogReceipt
 
-from brownie._config import (
-    BROWNIE_FOLDER,
-    CONFIG,
-    REQUEST_HEADERS,
-    _load_project_compiler_config,
-)
+from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS, _load_project_compiler_config
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
 from brownie.convert.utils import (
@@ -57,11 +52,10 @@ from brownie.exceptions import (
     ContractNotFound,
     UndeployedLibrary,
     VirtualMachineError,
-    parse_errors_from_abi,
     decode_typed_error,
+    parse_errors_from_abi,
 )
 from brownie.project import compiler, ethpm
-
 from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
