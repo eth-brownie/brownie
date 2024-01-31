@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.19.5](https://github.com/eth-brownie/brownie/tree/v1.19.5) - 2024-01-31
+### Added
+- Support for custom / typed errors ([#1728](https://github.com/eth-brownie/brownie/pull/1728))
+
+### Changed
+- Default to EIP1559-style transactions on live networks ([#1727](https://github.com/eth-brownie/brownie/pull/1727))
+
+### Fixed
+- Readthedocs missing config file ([#1729](https://github.com/eth-brownie/brownie/pull/1729))
+
 ## [1.19.4](https://github.com/eth-brownie/brownie/tree/v1.19.4) - 2024-01-29
 ### Added
 - `viaIR` optimizer support ([#1572](https://github.com/eth-brownie/brownie/pull/1572))
