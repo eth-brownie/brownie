@@ -12,7 +12,7 @@ from semantic_version import Version
 from solcast.nodes import NodeBase, is_inside_offset
 
 from brownie._config import EVM_EQUIVALENTS
-from brownie.exceptions import CompilerError, IncompatibleSolcVersion
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion, SOLIDITY_ERROR_CODES  # noqa
 from brownie.project.compiler.utils import _get_alias, expand_source_map
 
 from . import sources
@@ -32,20 +32,6 @@ EVM_VERSION_MAPPING = [
     ("byzantium", Version("0.4.0")),
 ]
 
-# error codes used in Solidity >=0.8.0
-# docs.soliditylang.org/en/v0.8.0/control-structures.html#panic-via-assert-and-error-via-require
-SOLIDITY_ERROR_CODES = {
-    1: "Failed assertion",
-    17: "Integer overflow",
-    18: "Division or modulo by zero",
-    33: "Conversion to enum out of bounds",
-    24: "Access to storage byte array that is incorrectly encoded",
-    49: "Pop from empty array",
-    50: "Index out of range",
-    65: "Attempted to allocate too much memory",
-    81: "Call to zero-initialized variable of internal function type",
-}
-
 
 def get_version() -> Version:
     return solcx.get_solc_version(with_commit_hash=True)
@@ -54,7 +40,6 @@ def get_version() -> Version:
 def compile_from_input_json(
     input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
 ) -> Dict:
-
     """
     Compiles contracts from a standard input json.
 
@@ -131,7 +116,6 @@ def find_solc_versions(
     install_latest: bool = False,
     silent: bool = True,
 ) -> Dict:
-
     """
     Analyzes contract pragmas and determines which solc version(s) to use.
 
@@ -199,7 +183,6 @@ def find_best_solc_version(
     install_latest: bool = False,
     silent: bool = True,
 ) -> str:
-
     """
     Analyzes contract pragmas and finds the best version compatible with all sources.
 
@@ -217,7 +200,6 @@ def find_best_solc_version(
     available_versions, installed_versions = _get_solc_version_list()
 
     for path, source in contract_sources.items():
-
         pragma_spec = sources.get_pragma_spec(source, path)
         installed_versions = [i for i in installed_versions if i in pragma_spec]
         available_versions = [i for i in available_versions if i in pragma_spec]
@@ -528,7 +510,6 @@ def _find_revert_offset(
     fn_node: NodeBase,
     fn_name: Optional[str],
 ) -> None:
-
     # attempt to infer a source offset for reverts that do not have one
 
     if source_map:
@@ -550,7 +531,6 @@ def _find_revert_offset(
     # get the offset of the next instruction
     next_offset = None
     if source_map and source_map[0][2] != -1:
-
         next_offset = (source_map[0][0], source_map[0][0] + source_map[0][1])
 
     # if the next instruction offset is not equal to the offset of the active function,

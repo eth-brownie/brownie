@@ -58,9 +58,10 @@ from brownie.exceptions import (
     UndeployedLibrary,
     VirtualMachineError,
     parse_errors_from_abi,
+    decode_typed_error,
 )
 from brownie.project import compiler, ethpm
-from brownie.project.compiler.solidity import SOLIDITY_ERROR_CODES
+
 from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
@@ -1704,21 +1705,12 @@ class _ContractMethod:
         except ValueError as e:
             raise VirtualMachineError(e) from None
 
-        selector = HexBytes(data)[:4].hex()
-
-        if selector == "0x08c379a0":
-            revert_str = eth_abi.decode(["string"], HexBytes(data)[4:])[0]
-            raise ValueError(f"Call reverted: {revert_str}")
-        elif selector == "0x4e487b71":
-            error_code = int(HexBytes(data)[4:].hex(), 16)
-            if error_code in SOLIDITY_ERROR_CODES:
-                revert_str = SOLIDITY_ERROR_CODES[error_code]
-            else:
-                revert_str = f"Panic (error code: {error_code})"
-            raise ValueError(f"Call reverted: {revert_str}")
         if self.abi["outputs"] and not data:
             raise ValueError("No data was returned - the call likely reverted")
-        return self.decode_output(data)
+        try:
+            return self.decode_output(data)
+        except:
+            raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
 
     def transact(self, silent: bool = False, *args: Tuple) -> TransactionReceiptType:
         """

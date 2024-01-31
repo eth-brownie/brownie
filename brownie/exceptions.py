@@ -19,6 +19,21 @@ from brownie.convert.utils import build_function_selector, get_type_strings
 ERROR_SIG = "0x08c379a0"
 
 
+# error codes used in Solidity >=0.8.0
+# docs.soliditylang.org/en/v0.8.0/control-structures.html#panic-via-assert-and-error-via-require
+SOLIDITY_ERROR_CODES = {
+    1: "Failed assertion",
+    17: "Integer overflow",
+    18: "Division or modulo by zero",
+    33: "Conversion to enum out of bounds",
+    24: "Access to storage byte array that is incorrectly encoded",
+    49: "Pop from empty array",
+    50: "Index out of range",
+    65: "Attempted to allocate too much memory",
+    81: "Call to zero-initialized variable of internal function type",
+}
+
+
 class UnknownAccount(Exception):
     pass
 
@@ -103,7 +118,7 @@ class VirtualMachineError(Exception):
 
         if isinstance(exc["data"], str) and exc["data"].startswith("0x"):
             self.revert_type = "revert"
-            self.revert_msg = self._decode_custom_error(exc["data"])
+            self.revert_msg = decode_typed_error(exc["data"])
             return
 
         try:
@@ -267,6 +282,10 @@ except (FileNotFoundError, json.decoder.JSONDecodeError):
 
 def decode_typed_error(data: str) -> str:
     selector = data[:10]
+    if selector == "0x4e487b71":
+        # special case, solidity compiler panics
+        error_code = int(data[4:].hex(), 16)
+        return SOLIDITY_ERROR_CODES.get(error_code, f"Unknown compiler Panic: {error_code}")
     if selector in _errors:
         types_list = get_type_strings(_errors[selector]["inputs"])
         result = eth_abi.decode(types_list, HexBytes(data)[4:])
