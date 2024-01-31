@@ -19,13 +19,13 @@ pygments<3
 pytest-xdist<2
 pytest<7
 python-dotenv>=0.16.0,<0.17.0
-pythx<=1.6.1
-pyyaml>=5.3.0,<6
+pythx==1.7.3
+pyyaml>=6,<7
 requests>=2.25.0,<3
 rlp<3
 semantic-version<3
 tqdm<5
-vvm>=0.1.0,<1
+vvm==0.1.0  # 0.2.0 switches to packaging.version which breaks things weirdly
 vyper>=0.2.11,<1
 # web3 versions 5.29.0 thru 5.31.2 have a bug when using the async provider in subthreads. This is relevant for some ecosystem libs downstream from brownie.
 web3>=5.22.0,!=5.29.*,!=5.30.*,!=5.31.1,!=5.31.2,<6
