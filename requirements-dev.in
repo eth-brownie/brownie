@@ -6,6 +6,7 @@ flake8==3.9.1
 isort
 mypy==0.720
 pip-tools
+pygments-lexer-solidity
 pytest-cov
 pytest-mock
 sphinx
