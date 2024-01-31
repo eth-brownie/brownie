@@ -52,9 +52,10 @@ from brownie.exceptions import (
     ContractNotFound,
     UndeployedLibrary,
     VirtualMachineError,
+    decode_typed_error,
+    parse_errors_from_abi,
 )
 from brownie.project import compiler, ethpm
-from brownie.project.compiler.solidity import SOLIDITY_ERROR_CODES
 from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
@@ -86,12 +87,11 @@ _explorer_tokens = {
     "aurorascan": "AURORASCAN_TOKEN",
     "moonscan": "MOONSCAN_TOKEN",
     "gnosisscan": "GNOSISSCAN_TOKEN",
-    "base":  "BASESCAN_TOKEN"
+    "base": "BASESCAN_TOKEN",
 }
 
 
 class _ContractBase:
-
     _dir_color = "bright magenta"
 
     def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
@@ -106,6 +106,7 @@ class _ContractBase:
         self.signatures = {
             i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
         }
+        parse_errors_from_abi(self.abi)
 
     @property
     def abi(self) -> List:
@@ -508,7 +509,6 @@ class ContractContainer(_ContractBase):
 
 
 class ContractConstructor:
-
     _dir_color = "bright magenta"
 
     def __init__(self, parent: "ContractContainer", name: str) -> None:
@@ -562,7 +562,7 @@ class ContractConstructor:
             required_confs=tx["required_confs"],
             allow_revert=tx.get("allow_revert"),
             publish_source=publish_source,
-            silent=silent
+            silent=silent,
         )
 
     @staticmethod
@@ -1621,7 +1621,6 @@ class OverloadedMethod:
 
 
 class _ContractMethod:
-
     _dir_color = "bright magenta"
 
     def __init__(
@@ -1700,23 +1699,14 @@ class _ContractMethod:
         except ValueError as e:
             raise VirtualMachineError(e) from None
 
-        selector = HexBytes(data)[:4].hex()
-
-        if selector == "0x08c379a0":
-            revert_str = eth_abi.decode(["string"], HexBytes(data)[4:])[0]
-            raise ValueError(f"Call reverted: {revert_str}")
-        elif selector == "0x4e487b71":
-            error_code = int(HexBytes(data)[4:].hex(), 16)
-            if error_code in SOLIDITY_ERROR_CODES:
-                revert_str = SOLIDITY_ERROR_CODES[error_code]
-            else:
-                revert_str = f"Panic (error code: {error_code})"
-            raise ValueError(f"Call reverted: {revert_str}")
         if self.abi["outputs"] and not data:
             raise ValueError("No data was returned - the call likely reverted")
-        return self.decode_output(data)
+        try:
+            return self.decode_output(data)
+        except:
+            raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
 
-    def transact(self,  silent: bool = False, *args: Tuple) -> TransactionReceiptType:
+    def transact(self, silent: bool = False, *args: Tuple) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1751,7 +1741,7 @@ class _ContractMethod:
             required_confs=tx["required_confs"],
             data=self.encode_input(*args),
             allow_revert=tx["allow_revert"],
-            silent=silent
+            silent=silent,
         )
 
     def decode_input(self, hexstr: str) -> List:
@@ -1970,7 +1960,6 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
 def _get_method_object(
     address: str, abi: Dict, name: str, owner: Optional[AccountsType], natspec: Dict
 ) -> Union["ContractCall", "ContractTx"]:
-
     if "constant" in abi:
         constant = abi["constant"]
     else:

@@ -41,6 +41,9 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
                     data.update({"error": "revert", "reason": message[7:]})
                 elif "reverted with reason string '" in message:
                     data.update(error="revert", reason=re.findall(".*?'(.*)'$", message)[0])
+                elif "reverted with an unrecognized custom error" in message:
+                    message = message[message.index("0x") : -1]
+                    data.update(error="revert", reason=message)
                 else:
                     data["error"] = message
         return result
