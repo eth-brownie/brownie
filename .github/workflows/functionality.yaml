@@ -18,7 +18,7 @@ jobs:
         job: [plugintest, pmtest]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Cache Solidity Installations
       uses: actions/cache@v2
@@ -29,15 +29,15 @@ jobs:
         key: ${{ runner.os }}-compiler-cache
 
     - name: Setup Node.js
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v4
 
     - name: Install Ganache
-      run: npm install -g ganache@7.0.2
+      run: npm install -g ganache@7.9.2
 
-    - name: Setup Python 3.8
-      uses: actions/setup-python@v2
+    - name: Setup Python 3.10
+      uses: actions/setup-python@v4
       with:
-        python-version: 3.8
+        python-version: "3.10"
 
     - name: Install Tox
       run: pip install tox

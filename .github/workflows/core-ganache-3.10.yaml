@@ -1,4 +1,4 @@
-name: Core Ganache (py10)
+name: Core Ganache (py3.10)
 on: ["push", "pull_request"]
 
 env:
