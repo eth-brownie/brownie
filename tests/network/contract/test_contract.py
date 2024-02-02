@@ -191,7 +191,7 @@ def test_existing_different_chains(network):
         Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
 
     network.disconnect()
-    network.connect("ropsten")
+    network.connect("goerli")
     with pytest.raises(ValueError):
         Contract("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
 
@@ -270,9 +270,9 @@ def test_autofetch_missing(network, config, mocker):
 
 
 def test_as_proxy_for(network):
-    proxy = "0xAfE212AEDf1c8dCd0E470d73B3B4035D32A75Efd"
-    impl = "0x098DCb095318A8B5321c5f2DB3fA04a55A780A20"
-    network.connect("ropsten")
+    proxy = "0x2410B710ecA3818003c091c42E3803cC7D70AeE9"
+    impl = "0x7542fb54dc0c2d71a00d9409b48f5e464b5e9f24"
+    network.connect("goerli")
 
     original = Contract.from_explorer(proxy)
     proxy = Contract.from_explorer(proxy, as_proxy_for=impl)
