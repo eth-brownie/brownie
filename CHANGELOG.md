@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.20.0](https://github.com/eth-brownie/brownie/tree/v1.20.0) - 2024-02-02
+### Changed
+- Add support for Python 3.12, drop support for Python 3.9 ([#1735](https://github.com/eth-brownie/brownie/pull/1735))
+
+### Removed
+- Support for `pythx` ([#1733](https://github.com/eth-brownie/brownie/pull/1733))
+- Support for `ethpm` ([#1734](https://github.com/eth-brownie/brownie/pull/1734))
+
 ## [1.19.5](https://github.com/eth-brownie/brownie/tree/v1.19.5) - 2024-01-31
 ### Added
 - Support for custom / typed errors ([#1728](https://github.com/eth-brownie/brownie/pull/1728))
