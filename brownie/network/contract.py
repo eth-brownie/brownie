@@ -55,7 +55,7 @@ from brownie.exceptions import (
     decode_typed_error,
     parse_errors_from_abi,
 )
-from brownie.project import compiler, ethpm
+from brownie.project import compiler
 from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
@@ -168,7 +168,6 @@ class _ContractBase:
 
 
 class ContractContainer(_ContractBase):
-
     """List-like container class that holds all Contract instances of the same
     type, and is used to deploy new instances of that contract.
 
@@ -859,8 +858,7 @@ class Contract(_DeployedContractBase):
         Recreate a `Contract` object from the local database.
 
         The init method is used to access deployments that have already previously
-        been stored locally. For new deployments use `from_abi`, `from_ethpm` or
-        `from_etherscan`.
+        been stored locally. For new deployments use `from_abi` or `from_etherscan`.
 
         Arguments
         ---------
@@ -874,8 +872,7 @@ class Contract(_DeployedContractBase):
 
         if args or kwargs:
             warnings.warn(
-                "Initializing `Contract` in this manner is deprecated."
-                " Use `from_abi` or `from_ethpm` instead.",
+                "Initializing `Contract` in this manner is deprecated." " Use `from_abi` instead.",
                 DeprecationWarning,
             )
             kwargs["owner"] = owner
@@ -915,27 +912,10 @@ class Contract(_DeployedContractBase):
         manifest_uri: Optional[str] = None,
         owner: Optional[AccountsType] = None,
     ) -> None:
-        if manifest_uri and abi:
-            raise ValueError("Contract requires either abi or manifest_uri, but not both")
-        if manifest_uri is not None:
-            manifest = ethpm.get_manifest(manifest_uri)
-            abi = manifest["contract_types"][name]["abi"]
-            if address is None:
-                address_list = ethpm.get_deployment_addresses(manifest, name)
-                if not address_list:
-                    raise ContractNotFound(
-                        f"'{manifest['package_name']}' manifest does not contain"
-                        f" a deployment of '{name}' on this chain"
-                    )
-                if len(address_list) > 1:
-                    raise ValueError(
-                        f"'{manifest['package_name']}' manifest contains more than one "
-                        f"deployment of '{name}' on this chain, you must specify an address:"
-                        f" {', '.join(address_list)}"
-                    )
-                address = address_list[0]
-            name = manifest["contract_types"][name]["contract_name"]
-        elif not address:
+        if manifest_uri:
+            raise ValueError("ethPM functionality removed")
+
+        if not address:
             raise TypeError("Address cannot be None unless creating object from manifest")
 
         build = {"abi": abi, "contractName": name, "type": "contract"}
@@ -972,64 +952,6 @@ class Contract(_DeployedContractBase):
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build, {})  # type: ignore
         _DeployedContractBase.__init__(self, address, owner, None)
-        if persist:
-            _add_deployment(self)
-        return self
-
-    @classmethod
-    def from_ethpm(
-        cls,
-        name: str,
-        manifest_uri: str,
-        address: Optional[str] = None,
-        owner: Optional[AccountsType] = None,
-        persist: bool = True,
-    ) -> "Contract":
-        """
-        Create a new `Contract` object from an ethPM manifest.
-
-        Arguments
-        ---------
-        name : str
-            Name of the contract.
-        manifest_uri : str
-            erc1319 registry URI where the manifest is located
-        address : str optional
-            Address where the contract is deployed. Only required if the
-            manifest contains more than one deployment with the given name
-            on the active chain.
-        owner : Account, optional
-            Contract owner. If set, transactions without a `from` field
-            will be performed using this account.
-        """
-        manifest = ethpm.get_manifest(manifest_uri)
-
-        if address is None:
-            address_list = ethpm.get_deployment_addresses(manifest, name)
-            if not address_list:
-                raise ContractNotFound(
-                    f"'{manifest['package_name']}' manifest does not contain"
-                    f" a deployment of '{name}' on this chain"
-                )
-            if len(address_list) > 1:
-                raise ValueError(
-                    f"'{manifest['package_name']}' manifest contains more than one "
-                    f"deployment of '{name}' on this chain, you must specify an address:"
-                    f" {', '.join(address_list)}"
-                )
-            address = address_list[0]
-
-        manifest["contract_types"][name]["contract_name"]
-        build = {
-            "abi": manifest["contract_types"][name]["abi"],
-            "contractName": name,
-            "natspec": manifest["contract_types"][name]["natspec"],
-            "type": "contract",
-        }
-
-        self = cls.__new__(cls)
-        _ContractBase.__init__(self, None, build, manifest["sources"])  # type: ignore
-        _DeployedContractBase.__init__(self, address, owner)
         if persist:
             _add_deployment(self)
         return self
@@ -1298,7 +1220,6 @@ class Contract(_DeployedContractBase):
 
 
 class ProjectContract(_DeployedContractBase):
-
     """Methods for interacting with a deployed contract as part of a Brownie project."""
 
     def __init__(
@@ -1861,7 +1782,6 @@ class ContractTx(_ContractMethod):
 
 
 class ContractCall(_ContractMethod):
-
     """
     A public view or pure contract method.
 

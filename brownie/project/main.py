@@ -50,9 +50,8 @@ from brownie.network.contract import (
     ProjectContract,
 )
 from brownie.network.state import _add_contract, _remove_contract, _revert_register
-from brownie.project import compiler, ethpm
+from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
-from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_pragma_spec
 from brownie.utils import notify
 
@@ -164,7 +163,6 @@ class _ProjectBase:
 
 
 class Project(_ProjectBase):
-
     """
     Top level dict-like container that holds data and objects related to
     a brownie project.
@@ -546,7 +544,6 @@ class Project(_ProjectBase):
 
 
 class TempProject(_ProjectBase):
-
     """Simplified Project class used to hold temporary contracts that are
     compiled via project.compile_source"""
 
@@ -643,26 +640,6 @@ def from_brownie_mix(
     _create_gitfiles(project_path)
     _add_to_sys_path(project_path)
     return str(project_path)
-
-
-def from_ethpm(uri: str) -> "TempProject":
-
-    """
-    Generates a TempProject from an ethPM package.
-    """
-
-    manifest = get_manifest(uri)
-    compiler_config = {
-        "evm_version": None,
-        "solc": {"version": None, "optimize": True, "runs": 200},
-        "vyper": {"version": None},
-    }
-    project = TempProject(manifest["package_name"], manifest["sources"], compiler_config)
-    if web3.isConnected():
-        for contract_name in project.keys():
-            for address in get_deployment_addresses(manifest, contract_name):
-                project[contract_name].at(address)
-    return project
 
 
 def compile_source(
@@ -798,42 +775,14 @@ def install_package(package_id: str) -> str:
     Arguments
     ---------
     package_id : str
-        Package ID or ethPM URI.
+        Package ID
 
     Returns
     -------
     str
         ID of the installed package.
     """
-    if urlparse(package_id).scheme in ("erc1319", "ethpm"):
-        return _install_from_ethpm(package_id)
-    else:
-        return _install_from_github(package_id)
-
-
-def _install_from_ethpm(uri: str) -> str:
-    manifest = get_manifest(uri)
-    org = manifest["meta_brownie"]["registry_address"]
-    repo = manifest["package_name"]
-    version = manifest["version"]
-
-    install_path = _get_data_folder().joinpath(f"packages/{org}")
-    install_path.mkdir(exist_ok=True)
-    install_path = install_path.joinpath(f"{repo}@{version}")
-    if install_path.exists():
-        raise FileExistsError("Package is already installed")
-
-    try:
-        new(str(install_path), ignore_existing=True)
-        ethpm.install_package(install_path, uri)
-        Path.touch(install_path / ".env")
-        project = load(install_path)
-        project.close()
-    except Exception as e:
-        shutil.rmtree(install_path)
-        raise e
-
-    return f"{org}/{repo}@{version}"
+    return _install_from_github(package_id)
 
 
 def _maybe_retrieve_github_auth() -> Dict[str, str]:

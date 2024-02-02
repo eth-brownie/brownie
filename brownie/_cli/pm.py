@@ -20,7 +20,7 @@ Commands:
 Options:
   --help -h                     Display this message
 
-Manager for packages installed from ethPM and Github. Installed packages can
+Manager for packages installed from Github. Installed packages can
 be added as dependencies and imported into your own projects.
 
 See https://eth-brownie.readthedocs.io/en/stable/package-manager.html for
