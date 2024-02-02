@@ -194,28 +194,3 @@ To convert these indexes to source offsets, we check the :ref:`coverage map<comp
     }
 
 From this we know that the branch is within the ``add`` function, and that the related source code starts at position 147 and ends at 153. The final boolean indicates whether a jump means the branch evaluated truthfully of falsely - in this case, a jump means it evaluated ``True``.
-
-Installed ethPM Package Data
-============================
-
-The ``build/packages.json`` file holds information about installed ethPM packages. It has the following format:
-
-.. code-block:: javascript
-
-    {
-        "packages": {
-            "package_name": {
-                "manifest_uri": "ipfs://",  // ipfs URI of the package manifest
-                "registry_address": "",  // ethPM registry address the package was installed from
-                "version": ""  // package version string
-            },
-            ...
-        },
-        "sources": {
-            "path/to/ContractFile.sol": {
-                "md5": "",  // md5 hash of the source file at installation
-                "packages": []  // installed packages that include this source file
-            },
-            ...
-        }
-    }

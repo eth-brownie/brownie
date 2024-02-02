@@ -13,8 +13,6 @@ It is important to remember that blockchains are `permanent` and `immutable`. On
     3. Test the script again on one of the `public test networks <https://medium.com/compound-finance/the-beginners-guide-to-using-an-ethereum-test-network-95bbbc85fc1d>`_ and verify that it executed as intended
     4. Use the script to deploy your project to the mainnet
 
-Once deployment is complete you may also :ref:`create an ethPM package<ethpm>` to simplify the process for other developers who wish to interact with your project.
-
 Writing a Deployment Script
 ===========================
 
