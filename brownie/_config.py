@@ -24,7 +24,7 @@ __version__ = "1.19.5"
 BROWNIE_FOLDER = Path(__file__).parent
 DATA_FOLDER = Path.home().joinpath(".brownie")
 
-DATA_SUBFOLDERS = ("accounts", "ethpm", "packages")
+DATA_SUBFOLDERS = ("accounts", "packages")
 
 EVM_EQUIVALENTS = {"atlantis": "byzantium", "agharta": "petersburg"}
 

@@ -23,12 +23,10 @@ _chain_uri_cache: Dict = {}
 
 
 class Web3(_Web3):
-
     """Brownie Web3 subclass"""
 
     def __init__(self) -> None:
         super().__init__(HTTPProvider("null"))
-        self.enable_unstable_package_management_api()
         self.provider = None
         self._mainnet_w3: Optional[_Web3] = None
         self._genesis_hash: Optional[str] = None
@@ -142,7 +140,6 @@ class Web3(_Web3):
         if not self._mainnet_w3:
             uri = _expand_environment_vars(mainnet["host"])
             self._mainnet_w3 = _Web3(HTTPProvider(uri))
-            self._mainnet_w3.enable_unstable_package_management_api()
         return self._mainnet_w3
 
     @property
