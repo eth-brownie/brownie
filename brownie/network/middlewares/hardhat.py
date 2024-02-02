@@ -9,7 +9,7 @@ from brownie.network.middlewares import BrownieMiddlewareABC
 class HardhatMiddleWare(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
-        if w3.clientVersion.lower().startswith("hardhat"):
+        if w3.client_version.lower().startswith("hardhat"):
             return -100
         else:
             return None

@@ -32,7 +32,7 @@ EVM_VERSION_MAPPING = [
     ("shanghai", Version("0.3.9")),
     ("paris", Version("0.3.7")),
     ("berlin", Version("0.2.12")),
-    ("istanbul", Version("0.1.0")),
+    ("istanbul", Version("0.1.0-beta.16")),
 ]
 
 
@@ -108,7 +108,6 @@ def find_vyper_versions(
     install_latest: bool = False,
     silent: bool = True,
 ) -> Dict:
-
     """
     Analyzes contract pragmas and determines which vyper version(s) to use.
 
@@ -176,7 +175,6 @@ def find_best_vyper_version(
     install_latest: bool = False,
     silent: bool = True,
 ) -> str:
-
     """
     Analyze contract pragma and find the best compatible version across multiple sources.
 
@@ -218,7 +216,6 @@ def find_best_vyper_version(
 def compile_from_input_json(
     input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
 ) -> Dict:
-
     """
     Compiles contracts from a standard input json.
 

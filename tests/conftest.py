@@ -7,7 +7,6 @@ import shutil
 import sys
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, List
 
 import pytest
 import solcx

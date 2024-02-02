@@ -31,7 +31,6 @@ WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, None)
 
 
 class Wei(int):
-
     """Integer subclass that converts a value to wei and allows comparison against
     similarly formatted values.
 
@@ -125,7 +124,6 @@ def _return_int(original: Any, value: Any) -> int:
 
 
 class Fixed(Decimal):
-
     """
     Decimal subclass that allows comparison against strings, integers and Wei.
 
@@ -199,7 +197,6 @@ def _to_fixed(value: Any) -> Decimal:
 
 
 class EthAddress(str):
-
     """String subclass that raises TypeError when compared to a non-address."""
 
     def __new__(cls, value: Union[bytes, str]) -> str:
@@ -231,7 +228,6 @@ def _address_compare(a: Any, b: Any) -> bool:
 
 
 class HexString(bytes):
-
     """Bytes subclass for hexstring comparisons. Raises TypeError if compared to
     a non-hexstring. Evaluates True for hexstrings with the same value but differing
     leading zeros or capitalization."""

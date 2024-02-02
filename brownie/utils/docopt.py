@@ -102,12 +102,10 @@ def levenshtein(source: str, target: str) -> int:
 
 
 class DocoptLanguageError(Exception):
-
     """Error in construction of usage-message by developer."""
 
 
 class DocoptExit(SystemExit):
-
     """Exit in case user invoked program with incorrect arguments."""
 
     usage = ""
@@ -168,7 +166,6 @@ TSingleMatch = Tuple[Union[int, None], Union["LeafPattern", None]]
 
 
 class LeafPattern(Pattern):
-
     """Leaf/terminal node of a pattern tree."""
 
     def __repr__(self) -> str:
@@ -190,21 +187,21 @@ class LeafPattern(Pattern):
             return False, left, collected
         left_ = left[:pos] + left[(pos + 1) :]
         same_name = [a for a in collected if a.name == self.name]
-        if type(self.value) == int and len(same_name) > 0:
+        if isinstance(self.value, int) == int and len(same_name) > 0:
             if isinstance(same_name[0].value, int):
                 same_name[0].value += 1
             return True, left_, collected
-        if type(self.value) == int and not same_name:
+        if isinstance(self.value, int) and not same_name:
             match.value = 1
             return True, left_, collected + [match]
-        if same_name and type(self.value) == list:
-            if type(match.value) == str:
+        if same_name and isinstance(self.value, list):
+            if isinstance(match.value, str):
                 increment = [match.value]
             if same_name[0].value is not None and increment is not None:
                 if isinstance(same_name[0].value, type(increment)):
                     same_name[0].value += increment
             return True, left_, collected
-        elif not same_name and type(self.value) == list:
+        elif not same_name and isinstance(self.value, list):
             if isinstance(match.value, str):
                 match.value = [match.value]
             return True, left_, collected + [match]
@@ -212,7 +209,6 @@ class LeafPattern(Pattern):
 
 
 class BranchPattern(Pattern):
-
     """Branch/inner node of a pattern tree."""
 
     def __init__(self, *children) -> None:
@@ -347,7 +343,6 @@ class NotRequired(BranchPattern):
 
 
 class OptionsShortcut(NotRequired):
-
     """Marker/placeholder for [options] shortcut."""
 
 

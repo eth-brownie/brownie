@@ -1361,7 +1361,7 @@ class ContractEvents(_ContractEvents):
         if from_block is None and isinstance(to_block, int):
             from_block = to_block - 10
 
-        event_filter: filters.LogFilter = event_type.createFilter(
+        event_filter: filters.LogFilter = event_type.create_filter(
             fromBlock=from_block, toBlock=to_block
         )
         return event_filter.get_all_entries()
@@ -1624,10 +1624,10 @@ class _ContractMethod:
             raise ValueError("No data was returned - the call likely reverted")
         try:
             return self.decode_output(data)
-        except:
+        except Exception:
             raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
 
-    def transact(self, silent: bool = False, *args: Tuple) -> TransactionReceiptType:
+    def transact(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1778,7 +1778,7 @@ class ContractTx(_ContractMethod):
             Object representing the broadcasted transaction.
         """
 
-        return self.transact(silent, *args)
+        return self.transact(*args, silent=silent)
 
 
 class ContractCall(_ContractMethod):

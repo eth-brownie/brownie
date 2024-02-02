@@ -47,7 +47,7 @@ def run(
         project._add_to_main_namespace()
 
     # modify sys.path to ensure script can be imported
-    if type(script) == WindowsPath:
+    if isinstance(script, WindowsPath):
         # far from elegant but just works
         root_path = str(Path(".").resolve())
         script = script.relative_to(Path("..").resolve())

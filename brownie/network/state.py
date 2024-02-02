@@ -31,7 +31,6 @@ cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
 
 
 class TxHistory(metaclass=_Singleton):
-
     """List-like singleton container that contains TransactionReceipt objects.
     Whenever a transaction is broadcast, the TransactionReceipt is automatically
     added to this container."""
@@ -187,7 +186,6 @@ class TxHistory(metaclass=_Singleton):
 
 
 class Chain(metaclass=_Singleton):
-
     """
     List-like singleton used to access block data, and perform actions such as
     snapshotting, mining, and chain rewinds.

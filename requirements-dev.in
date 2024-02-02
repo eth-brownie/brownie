@@ -1,10 +1,10 @@
 -c requirements.txt
 
+black
 bumpversion
 coverage
-flake8==3.9.1
+flake8
 isort
-mypy==0.720
 pip-tools
 pygments-lexer-solidity
 pytest-cov

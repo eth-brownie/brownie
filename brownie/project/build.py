@@ -37,7 +37,6 @@ _revert_map: Dict = {}
 
 
 class Build:
-
     """Methods for accessing and manipulating a project's contract build data."""
 
     def __init__(self, sources: Sources) -> None:
@@ -74,7 +73,7 @@ class Build:
             for k, v in pcMap.items()
             if v["op"] in ("REVERT", "INVALID") or "jump_revert" in v
         ):
-            if "path" not in data or data["path"] == None:
+            if "path" not in data or data["path"] is None:
                 continue
             path_str = source_map[data["path"]]
 

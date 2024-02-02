@@ -4,26 +4,21 @@ repos:
     hooks:
     -   id: check-yaml
 
--   repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.9.3
+-   repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
     hooks:
       - id: isort
 
 -   repo: https://github.com/psf/black
-    rev: 22.1.0
+    rev: 24.1.1
     hooks:
       - id: black
         name: black
 
--   repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+-   repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
     hooks:
     -   id: flake8
-
--   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.720
-    hooks:
-    -   id: mypy
 
 
 default_language_version:

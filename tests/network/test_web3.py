@@ -71,8 +71,8 @@ def test_genesis_hash(web3, devnetwork):
 def test_genesis_hash_different_networks(devnetwork, web3):
     ganache_hash = web3.genesis_hash
     devnetwork.disconnect()
-    devnetwork.connect("ropsten")
-    assert web3.genesis_hash == "41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d"
+    devnetwork.connect("goerli")
+    assert web3.genesis_hash == "bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a"
     assert web3.genesis_hash != ganache_hash
 
 
@@ -83,9 +83,9 @@ def test_genesis_hash_disconnected(web3):
 
 
 def test_chain_uri(web3, network):
-    network.connect("ropsten")
+    network.connect("goerli")
     assert web3.chain_uri.startswith(
-        "blockchain://41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d/block/"
+        "blockchain://bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a/block"
     )
 
 
@@ -113,8 +113,8 @@ def test_supports_traces_not_connected(web3, network):
 
 
 def test_supports_traces_infura(web3, network):
-    # ropsten should return false (infura, geth)
-    network.connect("ropsten")
+    # goerli should return false (infura, geth)
+    network.connect("goerli")
     assert not web3.supports_traces
 
 
