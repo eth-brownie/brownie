@@ -6,7 +6,6 @@ from brownie.network.middlewares import BrownieMiddlewareABC
 
 
 class TxRevertCatcherMiddleware(BrownieMiddlewareABC):
-
     """
     Middleware to handle reverting transactions, bypasses web3 error formatting.
 

@@ -233,7 +233,7 @@ class Accounts(metaclass=_Singleton):
                 break
             except ValueError as e:
                 if allow_retry:
-                    prompt = f"Incorrect password, try again: "
+                    prompt = "Incorrect password, try again: "
                     password = None
                     continue
                 raise e
@@ -481,8 +481,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
         except ValueError as exc:
             exc = VirtualMachineError(exc)
             raise ValueError(
-                f"Execution reverted during call: '{exc.revert_msg}'. This transaction will likely revert. "
-                "If you wish to broadcast, include `allow_revert:True` as a transaction parameter.",
+                f"Execution reverted during call: '{exc.revert_msg}'. This transaction will likely "
+                "revert. If you wish to broadcast, include `allow_revert:True` as a parameter.",
             ) from None
 
     def deploy(

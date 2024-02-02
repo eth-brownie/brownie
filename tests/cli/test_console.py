@@ -41,6 +41,7 @@ def test_multiple_commands(testproject, accounts, history, console):
     assert len(history) == 2
     assert testproject.BrownieTester[0].owner() == accounts[0]
 
+
 def test_multiple_commands_with_nocompile(testproject_nocompile, accounts, history, console):
     shell = console(testproject_nocompile)
     _run_cmd(

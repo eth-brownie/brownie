@@ -1624,7 +1624,7 @@ class _ContractMethod:
             raise ValueError("No data was returned - the call likely reverted")
         try:
             return self.decode_output(data)
-        except:
+        except Exception:
             raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
 
     def transact(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:

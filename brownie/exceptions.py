@@ -77,7 +77,6 @@ class MainnetUndefined(Exception):
 
 
 class VirtualMachineError(Exception):
-
     """
     Raised when a call to a contract causes an EVM exception.
 

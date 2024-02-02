@@ -14,7 +14,6 @@ from brownie.utils import color
 
 
 class Sources:
-
     """Methods for accessing and manipulating a project's contract source files."""
 
     def __init__(self, contract_sources: Dict, interface_sources: Dict) -> None:
@@ -202,7 +201,6 @@ def get_contract_names(full_source: str) -> List:
 
 
 def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
-
     """
     Extracts pragma information from Solidity source code.
 

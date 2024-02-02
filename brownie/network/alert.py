@@ -11,7 +11,6 @@ _instances = set()
 
 
 class Alert:
-
     """Setup notifications and callbacks based on state changes to the blockchain.
     The alert is immediatly active as soon as the class is insantiated."""
 
@@ -25,7 +24,6 @@ class Alert:
         callback: Callable = None,
         repeat: bool = False,
     ) -> None:
-
         """Creates a new Alert.
 
         Args:

@@ -14,7 +14,7 @@ from io import BytesIO
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
-from urllib.parse import quote, urlparse
+from urllib.parse import quote
 
 import requests
 import yaml
@@ -42,7 +42,6 @@ from brownie.exceptions import (
     ProjectAlreadyLoaded,
     ProjectNotFound,
 )
-from brownie.network import web3
 from brownie.network.contract import (
     Contract,
     ContractContainer,

@@ -8,7 +8,6 @@ from web3 import Web3
 
 
 class BrownieMiddlewareABC(ABC):
-
     """
     Base ABC for all middlewares.
 

@@ -94,7 +94,6 @@ def _new_filter(w3: Web3) -> Any:
 
 
 class RequestCachingMiddleware(BrownieMiddlewareABC):
-
     """
     Web3 middleware for request caching.
     """
