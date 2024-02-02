@@ -93,37 +93,11 @@ def test_contractabi_replace_contract(testproject, tester):
     Contract.from_abi("BrownieTester", tester.address, tester.abi)
 
 
-def test_contract_from_ethpm(ipfs_mock, network):
-    network.connect("ropsten")
-    Contract.from_ethpm("ComplexNothing", manifest_uri="ipfs://testipfs-complex")
-
-
-def test_contract_from_ethpm_multiple_deployments(ipfs_mock, network):
-    network.connect("mainnet")
-    with pytest.raises(ValueError):
-        Contract.from_ethpm("ComplexNothing", manifest_uri="ipfs://testipfs-complex")
-
-
-def test_contract_from_ethpm_no_deployments(ipfs_mock, network):
-    network.connect("kovan")
-    with pytest.raises(ContractNotFound):
-        Contract.from_ethpm("ComplexNothing", manifest_uri="ipfs://testipfs-complex")
-
-
 def test_deprecated_init_abi(tester):
     with pytest.warns(DeprecationWarning):
         old = Contract("BrownieTester", tester.address, tester.abi)
 
     assert old == Contract.from_abi("BrownieTester", tester.address, tester.abi)
-
-
-def test_deprecated_init_ethpm(ipfs_mock, network):
-    network.connect("ropsten")
-
-    with pytest.warns(DeprecationWarning):
-        old = Contract("ComplexNothing", manifest_uri="ipfs://testipfs-complex")
-
-    assert old == Contract.from_ethpm("ComplexNothing", manifest_uri="ipfs://testipfs-complex")
 
 
 def test_from_explorer(network):
