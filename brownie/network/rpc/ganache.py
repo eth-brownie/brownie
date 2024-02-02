@@ -137,7 +137,7 @@ def sleep(seconds: int) -> int:
 def mine(timestamp: Optional[int] = None) -> None:
     params = [timestamp] if timestamp else []
     _request("evm_mine", params)
-    if timestamp and web3.clientVersion.lower().startswith("ganache/v7"):
+    if timestamp and web3.client_version.lower().startswith("ganache/v7"):
         # ganache v7 does not modify the internal time when mining new blocks
         # so we also set the time to maintain consistency with v6 behavior
         _request("evm_setTime", [(timestamp + 1) * 1000])
@@ -152,7 +152,7 @@ def revert(snapshot_id: int) -> None:
 
 
 def unlock_account(address: str) -> None:
-    if web3.clientVersion.lower().startswith("ganache/v7"):
+    if web3.client_version.lower().startswith("ganache/v7"):
         web3.provider.make_request("evm_addAccount", [address, ""])  # type: ignore
         web3.provider.make_request(  # type: ignore
             "personal_unlockAccount",

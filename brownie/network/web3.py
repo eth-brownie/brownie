@@ -7,11 +7,12 @@ from pathlib import Path
 from typing import Dict, Optional, Set
 
 from ens import ENS
+from requests import HTTPError
 from web3 import HTTPProvider, IPCProvider
 from web3 import Web3 as _Web3
 from web3 import WebsocketProvider
-from web3.contract import ContractEvent  # noqa
-from web3.contract import ContractEvents as _ContractEvents  # noqa
+from web3.contract.contract import ContractEvent  # noqa
+from web3.contract.contract import ContractEvents as _ContractEvents  # noqa
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
 
 from brownie._config import CONFIG, _get_data_folder
@@ -112,7 +113,7 @@ class Web3(_Web3):
     def isConnected(self) -> bool:
         if not self.provider:
             return False
-        return super().isConnected()
+        return super().is_connected()
 
     @property
     def supports_traces(self) -> bool:
@@ -123,8 +124,11 @@ class Web3(_Web3):
         # returned is -32601 "endpoint does not exist/is not available" we know
         # traces are not possible. Any other error code means the endpoint is open.
         if self._supports_traces is None:
-            response = self.provider.make_request("debug_traceTransaction", [])
-            self._supports_traces = bool(response["error"]["code"] != -32601)
+            try:
+                response = self.provider.make_request("debug_traceTransaction", [])
+                self._supports_traces = bool(response["error"]["code"] != -32601)
+            except HTTPError:
+                self._supports_traces = False
 
         return self._supports_traces
 
@@ -193,7 +197,7 @@ def _resolve_address(domain: str) -> str:
     domain = domain.lower()
     if domain not in _ens_cache or time.time() - _ens_cache[domain][1] > 86400:
         try:
-            ns = ENS.fromWeb3(web3._mainnet)
+            ns = ENS.from_web3(web3._mainnet)
         except MainnetUndefined as e:
             raise MainnetUndefined(f"Cannot resolve ENS address - {e}") from None
         address = ns.address(domain)

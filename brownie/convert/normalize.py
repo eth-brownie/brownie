@@ -108,6 +108,8 @@ def _check_array(values: Union[List, Tuple], length: Optional[int]) -> None:
 
 
 def _get_abi_types(abi_params: List) -> Sequence[ABIType]:
+    if not abi_params:
+        return []
     type_str = f"({','.join(get_type_strings(abi_params))})"
     tuple_type = parse(type_str)
     return tuple_type.components

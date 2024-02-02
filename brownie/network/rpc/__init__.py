@@ -117,7 +117,7 @@ class Rpc(metaclass=_Singleton):
         self.process = psutil.Process(pid)
 
         for key, module in ATTACH_BACKENDS.items():
-            if web3.clientVersion.lower().startswith(key):
+            if web3.client_version.lower().startswith(key):
                 self.backend = module
                 break
 

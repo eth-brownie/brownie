@@ -81,7 +81,6 @@ class Status(IntEnum):
 
 
 class TransactionReceipt:
-
     """Attributes and methods relating to a broadcasted transaction.
 
     * All ether values are given as integers denominated in wei.
@@ -551,7 +550,7 @@ class TransactionReceipt:
         self.max_fee = tx.get("maxFeePerGas")
         self.priority_fee = tx.get("maxPriorityFeePerGas")
         self.gas_limit = tx["gas"]
-        self.input = tx["input"]
+        self.input = tx["input"].hex()
         self.nonce = tx["nonce"]
         self.type = int(HexBytes(tx.get("type", 0)).hex(), 16)
 
@@ -562,7 +561,7 @@ class TransactionReceipt:
             contract = state._find_contract(tx.get("to"))
             if contract is not None:
                 self.contract_name = contract._name
-                self.fn_name = contract.get_method(tx["input"])
+                self.fn_name = contract.get_method(tx["input"].hex())
         except ContractNotFound:
             # required in case the contract has self destructed
             # other aspects of functionality will be broken, but this way we

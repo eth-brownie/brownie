@@ -1361,7 +1361,7 @@ class ContractEvents(_ContractEvents):
         if from_block is None and isinstance(to_block, int):
             from_block = to_block - 10
 
-        event_filter: filters.LogFilter = event_type.createFilter(
+        event_filter: filters.LogFilter = event_type.create_filter(
             fromBlock=from_block, toBlock=to_block
         )
         return event_filter.get_all_entries()
