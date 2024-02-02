@@ -1627,7 +1627,7 @@ class _ContractMethod:
         except:
             raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
 
-    def transact(self, silent: bool = False, *args: Tuple) -> TransactionReceiptType:
+    def transact(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1778,7 +1778,7 @@ class ContractTx(_ContractMethod):
             Object representing the broadcasted transaction.
         """
 
-        return self.transact(silent, *args)
+        return self.transact(*args, silent=silent)
 
 
 class ContractCall(_ContractMethod):
