@@ -1,8 +1,10 @@
 # Brownie
 
-[![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg)](https://pypi.org/project/eth-brownie/) [![Build Status](https://img.shields.io/github/workflow/status/eth-brownie/brownie/brownie%20workflow)](https://github.com/eth-brownie/brownie/actions) [![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)](https://eth-brownie.readthedocs.io/en/stable/) [![Coverage Status](https://img.shields.io/codecov/c/github/eth-brownie/brownie)](https://codecov.io/gh/eth-brownie/brownie)
+[![Pypi Status](https://img.shields.io/pypi/v/eth-brownie.svg)](https://pypi.org/project/eth-brownie/) [![Docs Status](https://readthedocs.org/projects/eth-brownie/badge/?version=latest)](https://eth-brownie.readthedocs.io/en/stable/)
 
 Brownie is a Python-based development and testing framework for smart contracts targeting the [Ethereum Virtual Machine](https://solidity.readthedocs.io/en/v0.6.0/introduction-to-smart-contracts.html#the-ethereum-virtual-machine).
+
+**Brownie is no longer actively maintained**. Future releases may come sporadically - or never at all. Check out [Ape Framework](https://github.com/ApeWorX/ape) for all your python Ethereum development needs.
 
 ## Features
 
@@ -14,8 +16,10 @@ Brownie is a Python-based development and testing framework for smart contracts 
 
 ## Dependencies
 
-* [python3](https://www.python.org/downloads/release/python-3910/) version 3.7 or greater, python3-dev
-* [ganache](https://github.com/trufflesuite/ganache) - tested with version [7.0.2](https://github.com/trufflesuite/ganache/releases/tag/v7.0.2)
+* [python3](https://www.python.org/downloads/release/python-3910/) version 3.10 or greater, python3-dev
+* [hardhat](https://github.com/NomicFoundation/hardhat) or [ganache](https://github.com/trufflesuite/ganache)
+
+Tested with ganache version [7.9.2](https://github.com/trufflesuite/ganache/releases/tag/v7.0.2), however it is generally recommended to use hardhat because ganache has been sunsetted.
 
 ## Installation
 
