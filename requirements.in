@@ -1,12 +1,11 @@
 black>=20.8b1
-eip712<=0.1.0
-eth-abi<3
-eth-account<0.6.0
-eth-event>=1.2.1,<2
-eth-hash[pycryptodome]<1
-eth-rlp<0.3.0
-eth-utils<2
-hexbytes<1
+eip712
+eth-abi
+eth-account
+eth-event>=1.2.5,<2
+eth-hash[pycryptodome]
+eth-utils
+hexbytes
 hypothesis<6.28.0
 lazy-object-proxy>=1.6.0,<2
 prompt-toolkit<4
@@ -21,11 +20,10 @@ pytest<7
 python-dotenv>=0.16.0,<0.17.0
 pyyaml>=6,<7
 requests>=2.25.0,<3
-rlp<3
+rlp
 semantic-version<3
 tqdm<5
 vvm==0.1.0  # 0.2.0 switches from semantic-version to packaging.version and things break
-vyper==0.3.7  # >=0.3.8 requires python 3.10
-# web3 versions 5.29.0 thru 5.31.2 have a bug when using the async provider in subthreads. This is relevant for some ecosystem libs downstream from brownie.
-web3>=5.22.0,!=5.29.*,!=5.30.*,!=5.31.1,!=5.31.2,<6
+vyper>=0.3.8,<0.4
+web3>=6,<7
 wrapt>=1.12.1,<2
