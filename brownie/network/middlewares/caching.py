@@ -243,4 +243,4 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         self.is_killed = True
         self.block_cache.clear()
         if self.w3.isConnected():
-            self.w3.eth.uninstallFilter(self.block_filter.filter_id)
+            self.w3.eth.uninstall_filter(self.block_filter.filter_id)
