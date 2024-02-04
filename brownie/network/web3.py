@@ -110,10 +110,14 @@ class Web3(_Web3):
             self._chain_id = None
             self._remove_middlewares()
 
-    def isConnected(self) -> bool:
+    def is_connected(self) -> bool:
         if not self.provider:
             return False
         return super().is_connected()
+
+    def isConnected(self) -> bool:
+        # retained to avoid breaking an interface explicitly defined in brownie
+        return self.is_connected()
 
     @property
     def supports_traces(self) -> bool:
@@ -135,7 +139,7 @@ class Web3(_Web3):
     @property
     def _mainnet(self) -> _Web3:
         # a web3 instance connected to the mainnet
-        if self.isConnected() and CONFIG.active_network["id"] == "mainnet":
+        if self.is_connected() and CONFIG.active_network["id"] == "mainnet":
             return self
         try:
             mainnet = CONFIG.networks["mainnet"]
