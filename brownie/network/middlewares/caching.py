@@ -107,19 +107,13 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
         self.lock = threading.Lock()
         self.event = threading.Event()
-        self.start()
+        self.start_block_filter_loop()
 
-    def start(self):
-        latest = self.w3.eth.get_block("latest")
-        self.last_block = latest.hash
-        self.last_block_seen = latest.timestamp
-        self.last_request = time.time()
-        self.block_cache: OrderedDict = OrderedDict()
-        self.block_filter = self.w3.eth.filter("latest")
-
-        self.is_killed = False
+    def start_block_filter_loop(self):
+        self.event.clear()
         self.loop_thread = threading.Thread(target=self.loop_exception_handler, daemon=True)
         self.loop_thread.start()
+        self.event.wait()
 
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
@@ -151,6 +145,16 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             self.is_killed = True
 
     def block_filter_loop(self) -> None:
+        # initialize required state variables within the loop to avoid recursion death
+        latest = self.w3.eth.get_block("latest")
+        self.last_block = latest.hash
+        self.last_block_seen = latest.timestamp
+        self.last_request = time.time()
+        self.block_cache: OrderedDict = OrderedDict()
+        self.block_filter = self.w3.eth.filter("latest")
+        self.is_killed = False
+        self.event.set()
+
         while not self.is_killed:
             # if the last RPC request was > 60 seconds ago, reduce the rate of updates.
             # we eventually settle at one query per minute after 10 minutes of no requests.
@@ -229,7 +233,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
         if not self.loop_thread.is_alive():
             # restart the block filter loop if it has crashed (usually from a ConnectionError)
-            self.start()
+            self.start_block_filter_loop()
 
         with self.lock:
             self.last_request = time.time()
