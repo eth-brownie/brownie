@@ -33,7 +33,7 @@ interactions, or for gas profiling."""
 
 
 def main():
-    args = docopt(__doc__, more_magic=True)
+    args = docopt(__doc__)
     _update_argv_from_docopt(args)
 
     active_project = None
