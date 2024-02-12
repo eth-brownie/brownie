@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.20.1](https://github.com/eth-brownie/brownie/tree/v1.20.1) - 2024-02-12
+### Added
+- verbose option for `multicall` debugging ([#1743](https://github.com/eth-brownie/brownie/pull/1743))
+
+### Fixed
+- handle exceptions within caching middleware ([#1742](https://github.com/eth-brownie/brownie/pull/1742))
+- update `docopt-ng` to support latest python ([#1738](https://github.com/eth-brownie/brownie/pull/1738))
+- `camelCase` to `snake_case` updates ([#1737](https://github.com/eth-brownie/brownie/pull/1737))
+
 ## [1.20.0](https://github.com/eth-brownie/brownie/tree/v1.20.0) - 2024-02-02
 ### Changed
 - Add support for Python 3.12, drop support for Python 3.9 ([#1735](https://github.com/eth-brownie/brownie/pull/1735))
