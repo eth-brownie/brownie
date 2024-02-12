@@ -24,6 +24,7 @@ class Call:
 
     calldata: Tuple[str, bytes]
     decoder: FunctionType
+    readable: str
 
 
 class Result(ObjectProxy):
@@ -48,6 +49,7 @@ class Multicall:
     def __init__(self) -> None:
         self.address = None
         self._block_number = defaultdict(lambda: None)  # type: ignore
+        self._verbose = defaultdict(lambda: None)  # type: ignore
         self._contract = None
         self._pending_calls: Dict[int, List[Call]] = defaultdict(list)
 
@@ -61,10 +63,14 @@ class Multicall:
         return self._block_number[get_ident()]
 
     def __call__(
-        self, address: Optional[str] = None, block_identifier: Union[str, bytes, int, None] = None
+        self,
+        address: Optional[str] = None,
+        block_identifier: Union[str, bytes, int, None] = None,
+        verbose: bool = False,
     ) -> "Multicall":
         self.address = address  # type: ignore
         self._block_number[get_ident()] = block_identifier  # type: ignore
+        self._verbose[get_ident()] = verbose
         return self
 
     def _flush(self, future_result: Result = None) -> Any:
@@ -76,6 +82,11 @@ class Multicall:
             # or this result has already been retrieved
             return future_result
         with self._lock:
+            if self._verbose[get_ident()]:
+                print(f"Multicall: total {len(pending_calls)} calls")
+                for item in pending_calls:
+                    print(f"  {item.readable}")
+                print()
             ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
             results = self._contract.tryAggregate(  # type: ignore
                 False,
@@ -96,7 +107,8 @@ class Multicall:
     def _call_contract(self, call: ContractCall, *args: Tuple, **kwargs: Dict[str, Any]) -> Proxy:
         """Add a call to the buffer of calls to be made"""
         calldata = (call._address, call.encode_input(*args, **kwargs))  # type: ignore
-        call_obj = Call(calldata, call.decode_output)  # type: ignore
+        readable = f"{call._name}({', '.join(str(i) for i in args)})"
+        call_obj = Call(calldata, call.decode_output, readable)  # type: ignore
         # future result
         result = Result(call_obj)
         self._pending_calls[get_ident()].append(result)
