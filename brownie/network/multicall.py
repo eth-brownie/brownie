@@ -13,6 +13,7 @@ from brownie.exceptions import ContractNotFound
 from brownie.network import accounts, web3
 from brownie.network.contract import Contract, ContractCall
 from brownie.project import compile_source
+from brownie.utils import color
 
 DATA_DIR = BROWNIE_FOLDER.joinpath("data")
 MULTICALL2_ABI = json.loads(DATA_DIR.joinpath("interfaces", "Multicall2.json").read_text())
@@ -48,6 +49,7 @@ class Multicall:
 
     def __init__(self) -> None:
         self.address = None
+        self.default_verbosity = False
         self._block_number = defaultdict(lambda: None)  # type: ignore
         self._verbose = defaultdict(lambda: None)  # type: ignore
         self._contract = None
@@ -66,11 +68,11 @@ class Multicall:
         self,
         address: Optional[str] = None,
         block_identifier: Union[str, bytes, int, None] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
     ) -> "Multicall":
         self.address = address  # type: ignore
         self._block_number[get_ident()] = block_identifier  # type: ignore
-        self._verbose[get_ident()] = verbose
+        self._verbose[get_ident()] = verbose if verbose is not None else self.default_verbosity
         return self
 
     def _flush(self, future_result: Result = None) -> Any:
@@ -82,11 +84,18 @@ class Multicall:
             # or this result has already been retrieved
             return future_result
         with self._lock:
-            if self._verbose[get_ident()]:
-                print(f"Multicall: total {len(pending_calls)} calls")
-                for item in pending_calls:
-                    print(f"  {item.readable}")
-                print()
+            if self._verbose.get(get_ident(), self.default_verbosity):
+                message = (
+                    "Multicall:"
+                    f"\n  Thread ID: {get_ident()}"
+                    f"\n  Block number: {self._block_number[get_ident()]}"
+                    f"\n  Calls: {len(pending_calls)}"
+                )
+                for c, item in enumerate(pending_calls, start=1):
+                    u = "\u2514" if c == len(pending_calls) else "\u251c"
+                    message = f"{message}\n    {u}\u2500{item.readable}"
+                print(color.highlight(f"{message}\n"))
+
             ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
             results = self._contract.tryAggregate(  # type: ignore
                 False,
