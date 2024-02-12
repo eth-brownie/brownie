@@ -49,7 +49,7 @@ class Multicall:
 
     def __init__(self) -> None:
         self.address = None
-        self.default_verbosity = False
+        self.default_verbose = False
         self._block_number = defaultdict(lambda: None)  # type: ignore
         self._verbose = defaultdict(lambda: None)  # type: ignore
         self._contract = None
@@ -72,7 +72,7 @@ class Multicall:
     ) -> "Multicall":
         self.address = address  # type: ignore
         self._block_number[get_ident()] = block_identifier  # type: ignore
-        self._verbose[get_ident()] = verbose if verbose is not None else self.default_verbosity
+        self._verbose[get_ident()] = verbose if verbose is not None else self.default_verbose
         return self
 
     def _flush(self, future_result: Result = None) -> Any:
@@ -84,7 +84,7 @@ class Multicall:
             # or this result has already been retrieved
             return future_result
         with self._lock:
-            if self._verbose.get(get_ident(), self.default_verbosity):
+            if self._verbose.get(get_ident(), self.default_verbose):
                 message = (
                     "Multicall:"
                     f"\n  Thread ID: {get_ident()}"

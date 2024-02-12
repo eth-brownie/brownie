@@ -1900,13 +1900,13 @@ Multicall Attributes
         ...     brownie.multicall.block_number
         12733683
 
-.. py:attribute:: Multicall.default_verbosity
+.. py:attribute:: Multicall.default_verbose
 
     Default verbosity setting for multicall. Set to ``False`` by default. If set to ``True``, the content of each batched call is printed to the console. This is useful for debugging, to ensure a multicall is performing as expected.
 
     .. code-block:: python
 
-        >>> multicall.default_verbosity = True
+        >>> multicall.default_verbose = True
 
     You can also enable verbosity for individual multicalls by setting the `verbose` keyword:
 
