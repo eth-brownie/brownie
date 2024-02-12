@@ -162,6 +162,9 @@ class Multicall:
         self.flush()
         getattr(ContractCall, "__multicall")[get_ident()] = None
 
+        self._block_number.pop(get_ident(), None)
+        self._verbose.pop(get_ident(), None)
+
     @staticmethod
     def deploy(tx_params: Dict) -> Contract:
         """Deploy an instance of the `Multicall2` contract.
