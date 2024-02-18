@@ -97,12 +97,14 @@ class Multicall:
                 print(color.highlight(f"{message}\n"))
 
             ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
-            results = self._contract.tryAggregate(  # type: ignore
-                False,
-                [_call.calldata for _call in pending_calls],
-                block_identifier=self._block_number[get_ident()],
-            )
-            ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
+            try:
+                results = self._contract.tryAggregate(  # type: ignore
+                    False,
+                    [_call.calldata for _call in pending_calls],
+                    block_identifier=self._block_number[get_ident()],
+                )
+            finally:
+                ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
 
         for _call, result in zip(pending_calls, results):
             _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None  # type: ignore
@@ -133,8 +135,10 @@ class Multicall:
 
         # standard call we let pass through
         ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
-        result = ContractCall.__call__(*args, **kwargs)  # type: ignore
-        ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
+        try:
+            result = ContractCall.__call__(*args, **kwargs)  # type: ignore
+        finally:
+            ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
         return result
 
     def __enter__(self) -> "Multicall":
