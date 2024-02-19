@@ -231,7 +231,9 @@ def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
 
     Returns: NpmSpec object
     """
-    pragma_match = next(re.finditer(r"(?:\n|^)\s*#\s*@version\s*([^\n]*)", source), None)
+    pragma_match = next(
+        re.finditer(r"(?:\n|^)\s*#\s*(?:pragma version|@version)\s*([^\n]*)", source), None
+    )
     if pragma_match is None:
         if path:
             raise PragmaError(f"No version pragma in '{path}'")
