@@ -47,7 +47,7 @@ coverage[toml]==7.4.1
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cryptography==42.0.2
+cryptography==42.0.4
     # via secretstorage
 distlib==0.3.8
     # via virtualenv
