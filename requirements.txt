@@ -23,7 +23,7 @@ bitarray==2.9.2
     # via eth-account
 black==24.1.1
     # via -r requirements.in
-cbor2==5.6.1
+cbor2==5.6.2
     # via vyper
 certifi==2023.11.17
     # via requests
