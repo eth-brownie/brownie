@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.20.2](https://github.com/eth-brownie/brownie/tree/v1.20.2) - 2024-02-24
+### Added
+- Support for vyper `0.3.10` new pragma format ([#1747](https://github.com/eth-brownie/brownie/pull/1747))
+
+### Changed
+- Loosen package installation restrictions ([#1753](https://github.com/eth-brownie/brownie/pull/1753))
+
+### Fixed
+- Reset `multicall` call code even if call reverts ([#1746](https://github.com/eth-brownie/brownie/pull/1746))
+- `TypeError` when outputting custom errors ([#1751](https://github.com/eth-brownie/brownie/pull/1751))
+
 ## [1.20.1](https://github.com/eth-brownie/brownie/tree/v1.20.1) - 2024-02-12
 ### Added
 - verbose option for `multicall` debugging ([#1743](https://github.com/eth-brownie/brownie/pull/1743))
