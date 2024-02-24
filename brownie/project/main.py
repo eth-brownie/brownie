@@ -855,7 +855,7 @@ def _install_from_github(package_id: str) -> str:
             elif len(contract_paths) == 1:
                 brownie_config["project_structure"]["contracts"] = contract_paths.pop()
             else:
-                raise InvalidPackage(
+                raise Exception(
                     f"{package_id} has no `contracts/` subdirectory, and "
                     "multiple directories containing source files"
                 )
