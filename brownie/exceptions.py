@@ -291,6 +291,6 @@ def decode_typed_error(data: str) -> str:
         if selector == ERROR_SIG:
             return result[0]
         else:
-            return f"{_errors[selector]['name']}: {', '.join(result)}"
+            return f"{_errors[selector]['name']}: {', '.join([str(i) for i in result])}"
     else:
         return f"Unknown typed error: {data}"
