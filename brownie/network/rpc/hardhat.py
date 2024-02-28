@@ -11,6 +11,7 @@ from requests.exceptions import ConnectionError as RequestsConnectionError
 
 from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
 from brownie.network.web3 import web3
+import os
 
 CLI_FLAGS = {
     "port": "--port",
@@ -36,7 +37,7 @@ module.exports = {
     }
 }"""
 
-
+global out_read
 def launch(cmd: str, **kwargs: Dict) -> None:
     """Launches the RPC client.
 
@@ -70,8 +71,13 @@ def launch(cmd: str, **kwargs: Dict) -> None:
     if not config_exists:
         with Path("hardhat.config.js").open("w") as fp:
             fp.write(HARDHAT_CONFIG)
-
-    return psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
+            
+    global out_read
+    out_read, out_write = os.pipe()
+    process =psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out_write, stderr=out,text=True)
+    os.close(out_write)
+    
+    return process
 
 
 def on_connection() -> None:
