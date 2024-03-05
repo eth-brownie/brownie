@@ -35,7 +35,7 @@ dataclassy==0.11.1
     # via eip712
 eip712==0.2.4
     # via -r requirements.in
-eth-abi==5.0.0
+eth-abi==5.0.1
     # via
     #   -r requirements.in
     #   eip712
