@@ -18,6 +18,7 @@ Arguments
 Options:
   --all -a              Recompile all contracts
   --size -s             Show deployed bytecode sizes contracts
+  --disable_collisions  Disable namespace collisions check
   --help -h             Display this message
 
 Compiles the contract source files for this project and saves the results
@@ -37,6 +38,9 @@ def main():
 
     contract_artifact_path = build_path.joinpath("contracts")
     interface_artifact_path = build_path.joinpath("interfaces")
+
+    if args["--disable_collisions"] :
+        brownie._config.disable_namespace_collisions=True
 
     if args["--all"]:
         shutil.rmtree(contract_artifact_path, ignore_errors=True)
