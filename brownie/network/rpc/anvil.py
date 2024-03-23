@@ -14,6 +14,7 @@ from brownie.network.web3 import web3
 CLI_FLAGS = {
     "port": "--port",
     "host": "--host",
+    "evm_version": "--hardfork",
     "fork": "--fork-url",
     "fork_block": "--fork-block-number",
     "chain_id": "--chain-id",
