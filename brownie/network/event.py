@@ -207,7 +207,7 @@ class _EventWatchData:
         self._callbacks_list: List[dict] = []
         self.delay: float = delay
         # Members
-        self._event_filter: filters.LogFilter = event.createFilter(
+        self._event_filter: filters.LogFilter = event.create_filter(
             fromBlock=(web3.eth.block_number - 1)
         )
         self._cooldown_time_over: bool = False

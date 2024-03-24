@@ -122,41 +122,6 @@ def test_cli_run_with_raise_flag(cli_tester):
     assert cli_tester.mock_subroutines.call_count == 1
 
 
-def test_cli_ethpm(cli_tester, testproject):
-    cli_tester.monkeypatch.setattr("brownie._cli.ethpm._list", cli_tester.mock_subroutines)
-
-    args = (testproject._path,)
-    kwargs = {}
-    parameters = (args, kwargs)
-    cli_tester.run_and_test_parameters("ethpm list", parameters)
-    cli_tester.run_and_test_parameters("ethpm foo", parameters)
-
-    assert cli_tester.mock_subroutines.called is True
-    assert cli_tester.mock_subroutines.call_count == 1
-
-
-def test_cli_ethpm_with_projectnotfound_exception(cli_tester):
-    cli_tester.monkeypatch.setattr("brownie._cli.ethpm._list", cli_tester.mock_subroutines)
-
-    with pytest.raises(SystemExit):
-        cli_tester.run_and_test_parameters("ethpm list", parameters=None)
-
-    assert cli_tester.mock_subroutines.called is False
-    assert cli_tester.mock_subroutines.call_count == 0
-
-
-def test_cli_ethpm_with_type_error_exception(cli_tester, testproject):
-    cli_tester.monkeypatch.setattr(
-        "brownie._cli.ethpm._list",
-        lambda project_path: cli_tester.raise_type_error_exception("foobar"),
-    )
-
-    cli_tester.run_and_test_parameters("ethpm list", parameters=None)
-
-    assert cli_tester.mock_subroutines.called is False
-    assert cli_tester.mock_subroutines.call_count == 0
-
-
 def test_test_no_args(cli_tester, testproject):
     cli_tester.monkeypatch.setattr("pytest.main", cli_tester.mock_subroutines)
     params = ([testproject._path.joinpath("tests").as_posix()], ["pytest-brownie"])
@@ -193,3 +158,18 @@ def test_no_args_shows_help(cli_tester, capfd):
 
 def test_cli_pm(cli_tester):
     cli_tester.run_and_test_parameters("pm list", None)
+
+
+def test_cli_console_doesnt_accept_compile(cli_tester):
+    with pytest.raises(SystemExit):
+        cli_tester.run_and_test_parameters("console --compile")
+
+
+def test_cli_console_accepts_no_compile(cli_tester):
+    cli_tester.monkeypatch.setattr("brownie._cli.console.main", cli_tester.mock_subroutines)
+
+    cli_tester.run_and_test_parameters("console")
+    cli_tester.run_and_test_parameters("console --no-compile")
+
+    assert cli_tester.mock_subroutines.called is True
+    assert cli_tester.mock_subroutines.call_count == 2

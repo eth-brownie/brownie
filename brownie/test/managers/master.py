@@ -64,7 +64,7 @@ class PytestBrownieMaster(PytestBrownieBase):
             raise pytest.UsageError(
                 "xdist workers failed to collect tests. Ensure all test cases are "
                 "isolated with the module_isolation or fn_isolation fixtures.\n\n"
-                "https://eth-brownie.readthedocs.io/en/stable/tests.html#isolating-tests"
+                "https://eth-brownie.readthedocs.io/en/stable/tests-pytest-intro.html#pytest-fixtures-isolation"  # noqa e501
             )
         build_path = self.project._build_path
 

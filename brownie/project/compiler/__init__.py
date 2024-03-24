@@ -41,7 +41,6 @@ STANDARD_JSON: Dict = {
 }
 
 
-
 def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
@@ -154,7 +153,6 @@ def generate_input_json(
     optimizer: Optional[Dict] = None,
     viaIR: Optional[bool] = None,
 ) -> Dict:
-
     """Formats contracts to the standard solc input json.
 
     Args:
@@ -179,7 +177,9 @@ def generate_input_json(
 
     if evm_version is None:
         _module = solidity if language == "Solidity" else vyper
-        evm_version = next(i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1])
+        evm_version = next(
+            i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1]
+        )
 
     input_json: Dict = deepcopy(STANDARD_JSON)
     input_json["language"] = language
@@ -215,7 +215,7 @@ def _get_solc_remappings(remappings: Optional[list]) -> list:
             remapped_dict[key] = path.parent.joinpath(remap_dict.pop(key)).as_posix()
         else:
             remapped_dict[path.name] = path.as_posix()
-    for (k, v) in remap_dict.items():
+    for k, v in remap_dict.items():
         if packages.joinpath(v).exists():
             remapped_dict[k] = packages.joinpath(v).as_posix()
 
@@ -237,7 +237,6 @@ def _get_allow_paths(allow_paths: Optional[str], remappings: list) -> str:
 def compile_from_input_json(
     input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
 ) -> Dict:
-
     """
     Compiles contracts from a standard input json.
 

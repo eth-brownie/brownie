@@ -27,9 +27,9 @@ networks:
     live:
         gas_limit: auto
         gas_buffer: 1.1
-        gas_price: auto
+        gas_price: null
         max_fee: null
-        priority_fee: null
+        priority_fee: auto
         reverting_tx_gas_limit: false
         default_contract_owner: false
 

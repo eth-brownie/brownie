@@ -19,12 +19,12 @@ from hypothesis.database import DirectoryBasedExampleDatabase
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
 
-__version__ = "1001.19.3"
+__version__ = "1001.20.2"
 
 BROWNIE_FOLDER = Path(__file__).parent
 DATA_FOLDER = Path.home().joinpath(".brownie")
 
-DATA_SUBFOLDERS = ("accounts", "ethpm", "packages")
+DATA_SUBFOLDERS = ("accounts", "packages")
 
 EVM_EQUIVALENTS = {"atlantis": "byzantium", "agharta": "petersburg"}
 

@@ -52,9 +52,10 @@ from brownie.exceptions import (
     ContractNotFound,
     UndeployedLibrary,
     VirtualMachineError,
+    decode_typed_error,
+    parse_errors_from_abi,
 )
-from brownie.project import compiler, ethpm
-from brownie.project.compiler.solidity import SOLIDITY_ERROR_CODES
+from brownie.project import compiler
 from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
 from brownie.utils import color
@@ -88,12 +89,11 @@ _explorer_tokens = {
     "aurorascan": "AURORASCAN_TOKEN",
     "moonscan": "MOONSCAN_TOKEN",
     "gnosisscan": "GNOSISSCAN_TOKEN",
-    "basescan": "BASESCAN_TOKEN",
+    "base": "BASESCAN_TOKEN",
 }
 
 
 class _ContractBase:
-
     _dir_color = "bright magenta"
 
     def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
@@ -108,6 +108,7 @@ class _ContractBase:
         self.signatures = {
             i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
         }
+        parse_errors_from_abi(self.abi)
 
     @property
     def abi(self) -> List:
@@ -169,7 +170,6 @@ class _ContractBase:
 
 
 class ContractContainer(_ContractBase):
-
     """List-like container class that holds all Contract instances of the same
     type, and is used to deploy new instances of that contract.
 
@@ -511,7 +511,6 @@ class ContractContainer(_ContractBase):
 
 
 class ContractConstructor:
-
     _dir_color = "bright magenta"
 
     def __init__(self, parent: "ContractContainer", name: str) -> None:
@@ -534,7 +533,7 @@ class ContractConstructor:
         return f"<{type(self).__name__} '{self._name}.constructor({_inputs(self.abi)})'>"
 
     def __call__(
-        self, *args: Tuple, publish_source: bool = False
+        self, *args: Tuple, publish_source: bool = False, silent: bool = False
     ) -> Union["Contract", TransactionReceiptType]:
         """Deploys a contract.
 
@@ -565,6 +564,7 @@ class ContractConstructor:
             required_confs=tx["required_confs"],
             allow_revert=tx.get("allow_revert"),
             publish_source=publish_source,
+            silent=silent,
         )
 
     @staticmethod
@@ -861,8 +861,7 @@ class Contract(_DeployedContractBase):
         Recreate a `Contract` object from the local database.
 
         The init method is used to access deployments that have already previously
-        been stored locally. For new deployments use `from_abi`, `from_ethpm` or
-        `from_etherscan`.
+        been stored locally. For new deployments use `from_abi` or `from_etherscan`.
 
         Arguments
         ---------
@@ -876,8 +875,7 @@ class Contract(_DeployedContractBase):
 
         if args or kwargs:
             warnings.warn(
-                "Initializing `Contract` in this manner is deprecated."
-                " Use `from_abi` or `from_ethpm` instead.",
+                "Initializing `Contract` in this manner is deprecated." " Use `from_abi` instead.",
                 DeprecationWarning,
             )
             kwargs["owner"] = owner
@@ -917,27 +915,10 @@ class Contract(_DeployedContractBase):
         manifest_uri: Optional[str] = None,
         owner: Optional[AccountsType] = None,
     ) -> None:
-        if manifest_uri and abi:
-            raise ValueError("Contract requires either abi or manifest_uri, but not both")
-        if manifest_uri is not None:
-            manifest = ethpm.get_manifest(manifest_uri)
-            abi = manifest["contract_types"][name]["abi"]
-            if address is None:
-                address_list = ethpm.get_deployment_addresses(manifest, name)
-                if not address_list:
-                    raise ContractNotFound(
-                        f"'{manifest['package_name']}' manifest does not contain"
-                        f" a deployment of '{name}' on this chain"
-                    )
-                if len(address_list) > 1:
-                    raise ValueError(
-                        f"'{manifest['package_name']}' manifest contains more than one "
-                        f"deployment of '{name}' on this chain, you must specify an address:"
-                        f" {', '.join(address_list)}"
-                    )
-                address = address_list[0]
-            name = manifest["contract_types"][name]["contract_name"]
-        elif not address:
+        if manifest_uri:
+            raise ValueError("ethPM functionality removed")
+
+        if not address:
             raise TypeError("Address cannot be None unless creating object from manifest")
 
         build = {"abi": abi, "contractName": name, "type": "contract"}
@@ -974,64 +955,6 @@ class Contract(_DeployedContractBase):
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build, {})  # type: ignore
         _DeployedContractBase.__init__(self, address, owner, None)
-        if persist:
-            _add_deployment(self)
-        return self
-
-    @classmethod
-    def from_ethpm(
-        cls,
-        name: str,
-        manifest_uri: str,
-        address: Optional[str] = None,
-        owner: Optional[AccountsType] = None,
-        persist: bool = True,
-    ) -> "Contract":
-        """
-        Create a new `Contract` object from an ethPM manifest.
-
-        Arguments
-        ---------
-        name : str
-            Name of the contract.
-        manifest_uri : str
-            erc1319 registry URI where the manifest is located
-        address : str optional
-            Address where the contract is deployed. Only required if the
-            manifest contains more than one deployment with the given name
-            on the active chain.
-        owner : Account, optional
-            Contract owner. If set, transactions without a `from` field
-            will be performed using this account.
-        """
-        manifest = ethpm.get_manifest(manifest_uri)
-
-        if address is None:
-            address_list = ethpm.get_deployment_addresses(manifest, name)
-            if not address_list:
-                raise ContractNotFound(
-                    f"'{manifest['package_name']}' manifest does not contain"
-                    f" a deployment of '{name}' on this chain"
-                )
-            if len(address_list) > 1:
-                raise ValueError(
-                    f"'{manifest['package_name']}' manifest contains more than one "
-                    f"deployment of '{name}' on this chain, you must specify an address:"
-                    f" {', '.join(address_list)}"
-                )
-            address = address_list[0]
-
-        manifest["contract_types"][name]["contract_name"]
-        build = {
-            "abi": manifest["contract_types"][name]["abi"],
-            "contractName": name,
-            "natspec": manifest["contract_types"][name]["natspec"],
-            "type": "contract",
-        }
-
-        self = cls.__new__(cls)
-        _ContractBase.__init__(self, None, build, manifest["sources"])  # type: ignore
-        _DeployedContractBase.__init__(self, address, owner)
         if persist:
             _add_deployment(self)
         return self
@@ -1300,7 +1223,6 @@ class Contract(_DeployedContractBase):
 
 
 class ProjectContract(_DeployedContractBase):
-
     """Methods for interacting with a deployed contract as part of a Brownie project."""
 
     def __init__(
@@ -1442,7 +1364,7 @@ class ContractEvents(_ContractEvents):
         if from_block is None and isinstance(to_block, int):
             from_block = to_block - 10
 
-        event_filter: filters.LogFilter = event_type.createFilter(
+        event_filter: filters.LogFilter = event_type.create_filter(
             fromBlock=from_block, toBlock=to_block
         )
         return event_filter.get_all_entries()
@@ -1623,7 +1545,6 @@ class OverloadedMethod:
 
 
 class _ContractMethod:
-
     _dir_color = "bright magenta"
 
     def __init__(
@@ -1702,23 +1623,14 @@ class _ContractMethod:
         except ValueError as e:
             raise VirtualMachineError(e) from None
 
-        selector = HexBytes(data)[:4].hex()
-
-        if selector == "0x08c379a0":
-            revert_str = eth_abi.decode(["string"], HexBytes(data)[4:])[0]
-            raise ValueError(f"Call reverted: {revert_str}")
-        elif selector == "0x4e487b71":
-            error_code = int(HexBytes(data)[4:].hex(), 16)
-            if error_code in SOLIDITY_ERROR_CODES:
-                revert_str = SOLIDITY_ERROR_CODES[error_code]
-            else:
-                revert_str = f"Panic (error code: {error_code})"
-            raise ValueError(f"Call reverted: {revert_str}")
         if self.abi["outputs"] and not data:
             raise ValueError("No data was returned - the call likely reverted")
-        return self.decode_output(data)
+        try:
+            return self.decode_output(data)
+        except Exception:
+            raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
 
-    def transact(self, *args: Tuple) -> TransactionReceiptType:
+    def transact(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1755,6 +1667,7 @@ class _ContractMethod:
             required_confs=tx["required_confs"],
             data=self.encode_input(*args),
             allow_revert=tx["allow_revert"],
+            silent=silent,
         )
 
     def decode_input(self, hexstr: str) -> List:
@@ -1854,7 +1767,7 @@ class ContractTx(_ContractMethod):
         Bytes4 method signature.
     """
 
-    def __call__(self, *args: Tuple) -> TransactionReceiptType:
+    def __call__(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1870,11 +1783,10 @@ class ContractTx(_ContractMethod):
             Object representing the broadcasted transaction.
         """
 
-        return self.transact(*args)
+        return self.transact(*args, silent=silent)
 
 
 class ContractCall(_ContractMethod):
-
     """
     A public view or pure contract method.
 
@@ -1976,7 +1888,6 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
 def _get_method_object(
     address: str, abi: Dict, name: str, owner: Optional[AccountsType], natspec: Dict
 ) -> Union["ContractCall", "ContractTx"]:
-
     if "constant" in abi:
         constant = abi["constant"]
     else:

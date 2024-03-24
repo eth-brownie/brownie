@@ -24,13 +24,22 @@ class Flattener:
         self.dependencies: DefaultDict[str, Set[str]] = defaultdict(set)
         self.compiler_settings = compiler_settings
         self.contract_name = contract_name
-        self.contract_file = Path(primary_source_fp).name
+        self.contract_file = self.path_to_name(primary_source_fp)
         self.remappings = remappings
 
         self.traverse(primary_source_fp)
 
-        license_search = LICENSE_PATTERN.search(self.sources[Path(primary_source_fp).name])
+        license_search = LICENSE_PATTERN.search(self.path_to_name(primary_source_fp))
         self.license = license_search.group(1) if license_search else "NONE"
+
+    @classmethod
+    def path_to_name(cls, pth: str) -> str:
+        """Turn the full-path of every Solidity file to a unique shorten name.
+
+        Note, that sometimes there could be several different files with the same name in a project,
+        so these files should keep uniq name to correct verification.
+        """
+        return "contracts/" + pth.split("/contracts/")[1]
 
     def traverse(self, fp: str) -> None:
         """Traverse a contract source files dependencies.
@@ -42,8 +51,9 @@ class Flattener:
             fp: The contract source file to traverse, if it's already been traversed, return early.
         """
         # if already traversed file, return early
+        name = self.path_to_name(fp)
         fp_obj = Path(fp)
-        if fp_obj.name in self.sources:
+        if name in self.sources:
             return
 
         # read in the source file
@@ -56,18 +66,17 @@ class Flattener:
         # replacement function for re.sub, we just sanitize the path
         repl = (  # noqa: E731
             lambda m: f'import{m.group("prefix")}'
-            + f'"{Path(sanitize(m.group("path"))).name}"'
+            + f'"{self.path_to_name(sanitize(m.group("path")))}"'
             + f'{m.group("suffix")}'
         )
-
-        self.sources[fp_obj.name] = IMPORT_PATTERN.sub(repl, source)
+        self.sources[name] = IMPORT_PATTERN.sub(repl, source)
         if fp_obj.name not in self.dependencies:
-            self.dependencies[fp_obj.name] = set()
+            self.dependencies[name] = set()
 
         # traverse dependency files - can circular imports happen?
         for m in IMPORT_PATTERN.finditer(source):
             import_path = sanitize(m.group("path"))
-            self.dependencies[fp_obj.name].add(Path(import_path).name)
+            self.dependencies[name].add(self.path_to_name(import_path))
             self.traverse(import_path)
 
     @property

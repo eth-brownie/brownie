@@ -94,7 +94,6 @@ def _new_filter(w3: Web3) -> Any:
 
 
 class RequestCachingMiddleware(BrownieMiddlewareABC):
-
     """
     Web3 middleware for request caching.
     """
@@ -106,17 +105,15 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         self.cur = Cursor(_get_data_folder().joinpath("cache.db"))
         self.cur.execute(f"CREATE TABLE IF NOT EXISTS {self.table_key} (method, params, result)")
 
-        latest = w3.eth.get_block("latest")
-        self.last_block = latest.hash
-        self.last_block_seen = latest.timestamp
-        self.last_request = 0.0
-        self.block_cache: OrderedDict = OrderedDict()
-        self.block_filter = w3.eth.filter("latest")
-
         self.lock = threading.Lock()
         self.event = threading.Event()
-        self.is_killed = False
-        threading.Thread(target=self.block_filter_loop, daemon=True).start()
+        self.start_block_filter_loop()
+
+    def start_block_filter_loop(self):
+        self.event.clear()
+        self.loop_thread = threading.Thread(target=self.loop_exception_handler, daemon=True)
+        self.loop_thread.start()
+        self.event.wait()
 
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
@@ -139,7 +136,25 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
     def time_since(self) -> float:
         return time.time() - self.last_request
 
+    def loop_exception_handler(self) -> None:
+        try:
+            self.block_filter_loop()
+        except Exception:
+            # catch unhandled exceptions to avoid random error messages in the console
+            self.block_cache.clear()
+            self.is_killed = True
+
     def block_filter_loop(self) -> None:
+        # initialize required state variables within the loop to avoid recursion death
+        latest = self.w3.eth.get_block("latest")
+        self.last_block = latest.hash
+        self.last_block_seen = latest.timestamp
+        self.last_request = time.time()
+        self.block_cache: OrderedDict = OrderedDict()
+        self.block_filter = self.w3.eth.filter("latest")
+        self.is_killed = False
+        self.event.set()
+
         while not self.is_killed:
             # if the last RPC request was > 60 seconds ago, reduce the rate of updates.
             # we eventually settle at one query per minute after 10 minutes of no requests.
@@ -216,6 +231,10 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                     data = HexBytes(data)
                 return {"id": "cache", "jsonrpc": "2.0", "result": data}
 
+        if not self.loop_thread.is_alive():
+            # restart the block filter loop if it has crashed (usually from a ConnectionError)
+            self.start_block_filter_loop()
+
         with self.lock:
             self.last_request = time.time()
             self.event.set()
@@ -244,4 +263,4 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         self.is_killed = True
         self.block_cache.clear()
         if self.w3.isConnected():
-            self.w3.eth.uninstallFilter(self.block_filter.filter_id)
+            self.w3.eth.uninstall_filter(self.block_filter.filter_id)

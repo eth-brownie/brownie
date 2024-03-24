@@ -34,6 +34,7 @@ Options:
   --network <name>        Use a specific network (default {CONFIG.settings['networks']['default']})
   --tb -t                 Show entire python traceback on exceptions
   --help -h               Display this message
+  --no-compile            Use previous contracts compilation
 
 Connects to the network and opens the brownie console.
 """

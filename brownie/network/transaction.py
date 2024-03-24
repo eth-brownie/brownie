@@ -20,10 +20,9 @@ from web3.exceptions import TransactionNotFound
 
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
-from brownie.exceptions import ContractNotFound, RPCRequestError
+from brownie.exceptions import ContractNotFound, RPCRequestError, decode_typed_error
 from brownie.project import build
 from brownie.project import main as project_main
-from brownie.project.compiler.solidity import SOLIDITY_ERROR_CODES
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie.utils import color
@@ -82,7 +81,6 @@ class Status(IntEnum):
 
 
 class TransactionReceipt:
-
     """Attributes and methods relating to a broadcasted transaction.
 
     * All ether values are given as integers denominated in wei.
@@ -569,7 +567,7 @@ class TransactionReceipt:
         self.max_fee = tx.get("maxFeePerGas")
         self.priority_fee = tx.get("maxPriorityFeePerGas")
         self.gas_limit = tx["gas"]
-        self.input = tx["input"]
+        self.input = tx["input"].hex()
         self.nonce = tx["nonce"]
         self.type = int(HexBytes(tx.get("type", 0)).hex(), 16)
 
@@ -580,7 +578,7 @@ class TransactionReceipt:
             contract = state._find_contract(tx.get("to"))
             if contract is not None:
                 self.contract_name = contract._name
-                self.fn_name = contract.get_method(tx["input"])
+                self.fn_name = contract.get_method(tx["input"].hex())
         except ContractNotFound:
             # required in case the contract has self destructed
             # other aspects of functionality will be broken, but this way we
@@ -649,8 +647,8 @@ class TransactionReceipt:
         try:
             trace = web3.provider.make_request(  # type: ignore
                 # Set enableMemory to all RPC as anvil return the memory key
-                "debug_traceTransaction", (self.txid, {
-                                           "disableStorage": CONFIG.mode != "console", "enableMemory": True})  # @UndefinedVariable
+                "debug_traceTransaction",
+                (self.txid, {"disableStorage": CONFIG.mode != "console", "enableMemory": True}),
             )
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
             msg = f"Encountered a {type(e).__name__} while requesting "
@@ -696,7 +694,8 @@ class TransactionReceipt:
                     # Check if gasCost is  hex before converting.
                     if isinstance(step["gasCost"], str):
                         step["gasCost"] = int.from_bytes(
-                            HexBytes(step["gasCost"]), "big", signed=True)
+                            HexBytes(step["gasCost"]), "big", signed=True
+                        )
                     if isinstance(step["pc"], str):  # Check if pc is hex before converting.
                         step["pc"] = int(step["pc"], 16)
 
@@ -735,20 +734,7 @@ class TransactionReceipt:
             if step["op"] == "REVERT" and int(step["stack"][-2], 16):
                 # get returned error string from stack
                 data = _get_memory(step, -1)
-
-                selector = data[:4].hex()
-
-                if selector == "0x4e487b71":  # keccak of Panic(uint256)
-                    error_code = int(data[4:].hex(), 16)
-                    if error_code in SOLIDITY_ERROR_CODES:
-                        self._revert_msg = SOLIDITY_ERROR_CODES[error_code]
-                    else:
-                        self._revert_msg = f"Panic (error code: {error_code})"
-                elif selector == "0x08c379a0":  # keccak of Error(string)
-                    self._revert_msg = decode(["string"], data[4:])[0]
-                else:
-                    # TODO: actually parse the data
-                    self._revert_msg = f"typed error: {data.hex()}"
+                self._revert_msg = decode_typed_error(data.hex())
 
             elif self.contract_address:
                 self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
@@ -936,6 +922,20 @@ class TransactionReceipt:
                 self._add_internal_xfer(
                     last["address"], trace[i]["stack"][-2][-40:], trace[i]["stack"][-3]
                 )
+
+            # If the function signature is not available for decoding return data attach
+            # the encoded data.
+            # If the function signature is available this will be overridden by setting
+            # `return_value` a few lines below.
+            if trace[i]["depth"] and opcode == "RETURN":
+                subcall: dict = next(
+                    i for i in self._subcalls[::-1] if i["to"] == last["address"]  # type: ignore
+                )
+
+                if opcode == "RETURN":
+                    returndata = _get_memory(trace[i], -1)
+                    if returndata.hex() not in ("", "0x"):
+                        subcall["returndata"] = returndata.hex()
 
             try:
                 pc = last["pc_map"][trace[i]["pc"]]

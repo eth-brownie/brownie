@@ -13,10 +13,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import eth_account
 import eth_keys
 import rlp
-from eip712.messages import EIP712Message, _hash_eip191_message
+from eip712.messages import EIP712Message
 from eth_account._utils.signing import sign_message_hash
 from eth_account.datastructures import SignedMessage
-from eth_account.messages import defunct_hash_message
+from eth_account.messages import _hash_eip191_message, defunct_hash_message
 from eth_utils import keccak
 from eth_utils.applicators import apply_formatters_to_dict
 from hexbytes import HexBytes
@@ -182,7 +182,9 @@ class Accounts(metaclass=_Singleton):
             return new_accounts[0]
         return new_accounts
 
-    def load(self, filename: str = None, password: str = None) -> Union[List, "LocalAccount"]:
+    def load(
+        self, filename: str = None, password: str = None, allow_retry: bool = False
+    ) -> Union[List, "LocalAccount"]:
         """
         Load a local account from a keystore file.
 
@@ -193,6 +195,8 @@ class Accounts(metaclass=_Singleton):
         password: str
             Password to unlock the keystore. If `None`, password is entered via
             a getpass prompt.
+        allow_retry: bool
+            If True, allows re-attempt when the given password is incorrect.
 
         Returns
         -------
@@ -218,10 +222,22 @@ class Accounts(metaclass=_Singleton):
                     raise FileNotFoundError(f"Cannot find {json_file}")
 
         with json_file.open() as fp:
-            priv_key = web3.eth.account.decrypt(
-                json.load(fp),
-                password or getpass(f'Enter password for "{json_file.stem}": '),
-            )
+            encrypted = json.load(fp)
+
+        prompt = f'Enter password for "{json_file.stem}": '
+        while True:
+            if password is None:
+                password = getpass(prompt)
+            try:
+                priv_key = web3.eth.account.decrypt(encrypted, password)
+                break
+            except ValueError as e:
+                if allow_retry:
+                    prompt = "Incorrect password, try again: "
+                    password = None
+                    continue
+                raise e
+
         return self.add(priv_key)
 
     def at(self, address: str, force: bool = False) -> "LocalAccount":
@@ -390,7 +406,6 @@ class PublicKeyAccount:
 
 
 class _PrivateKeyAccount(PublicKeyAccount):
-
     """Base class for Account and LocalAccount"""
 
     def __init__(self, addr: str) -> None:
@@ -466,10 +481,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
             skip_keys = {"gasPrice", "maxFeePerGas", "maxPriorityFeePerGas"}
             web3.eth.call({k: v for k, v in tx.items() if k not in skip_keys and v})
         except ValueError as exc:
-            msg = exc.args[0]["message"] if isinstance(exc.args[0], dict) else str(exc)
+            exc = VirtualMachineError(exc)
             raise ValueError(
-                f"Execution reverted during call: '{msg}'. This transaction will likely revert. "
-                "If you wish to broadcast, include `allow_revert:True` as a transaction parameter.",
+                f"Execution reverted during call: '{exc.revert_msg}'. This transaction will likely "
+                "revert. If you wish to broadcast, include `allow_revert:True` as a parameter.",
             ) from None
 
     def deploy(
@@ -592,7 +607,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             "data": HexBytes(data or ""),
         }
         if gas_price is not None:
-            tx["gasPrice"] = web3.toHex(gas_price)
+            tx["gasPrice"] = web3.to_hex(gas_price)
         try:
             return web3.eth.estimate_gas(tx)
         except ValueError as exc:
@@ -603,9 +618,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
             if revert_gas_limit:
                 return revert_gas_limit
 
-            msg = exc.args[0]["message"] if isinstance(exc.args[0], dict) else str(exc)
+            exc = VirtualMachineError(exc)
             raise ValueError(
-                f"Gas estimation failed: '{msg}'. This transaction will likely revert. "
+                f"Gas estimation failed: '{exc.revert_msg}'. This transaction will likely revert. "
                 "If you wish to broadcast, you must set the gas limit manually."
             )
 
@@ -744,7 +759,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 "from": self.address,
                 "value": Wei(amount),
                 "nonce": nonce if nonce is not None else self._pending_nonce(),
-                "gas": web3.toHex(gas_limit),
+                "gas": web3.to_hex(gas_limit),
                 "data": HexBytes(data),
             }
             if to:
@@ -752,7 +767,10 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
             txid = None
             if priority_fee == "auto":
-                priority_fee_to_send = max(Chain().priority_fee, min_fee)
+                chain_priority_fee = Chain().priority_fee
+                priority_fee_to_send = (
+                    max(chain_priority_fee, min_fee) if chain_priority_fee else min_fee
+                )
             else:
                 priority_fee_to_send = priority_fee
                 
@@ -884,7 +902,6 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
 
 class Account(_PrivateKeyAccount):
-
     """Class for interacting with an Ethereum account.
 
     Attributes:
@@ -900,7 +917,6 @@ class Account(_PrivateKeyAccount):
 
 
 class LocalAccount(_PrivateKeyAccount):
-
     """Class for interacting with an Ethereum account.
 
     Attributes:
@@ -944,6 +960,7 @@ class LocalAccount(_PrivateKeyAccount):
             password = getpass("Enter the password to encrypt this account with: ")
 
         encrypted = web3.eth.account.encrypt(self.private_key, password)
+        encrypted["address"] = encrypted["address"].lower()
         with json_file.open("w") as fp:
             json.dump(encrypted, fp)
         return str(json_file)
@@ -1003,7 +1020,6 @@ class LocalAccount(_PrivateKeyAccount):
 
 
 class ClefAccount(_PrivateKeyAccount):
-
     """
     Class for interacting with an Ethereum account where signing is handled in Clef.
     """
@@ -1019,10 +1035,10 @@ class ClefAccount(_PrivateKeyAccount):
             self._check_for_revert(tx)
 
         formatters = {
-            "nonce": web3.toHex,
-            "value": web3.toHex,
-            "chainId": web3.toHex,
-            "data": web3.toHex,
+            "nonce": web3.to_hex,
+            "value": web3.to_hex,
+            "chainId": web3.to_hex,
+            "data": web3.to_hex,
             "from": to_address,
         }
         if "to" in tx:
@@ -1048,7 +1064,7 @@ def _apply_fee_to_tx(
     if gas_price is not None:
         if max_fee or priority_fee:
             raise ValueError("gas_price and (max_fee, priority_fee) are mutually exclusive")
-        tx["gasPrice"] = web3.toHex(gas_price)
+        tx["gasPrice"] = web3.to_hex(gas_price)
         return tx
 
     if priority_fee is None:
@@ -1065,7 +1081,7 @@ def _apply_fee_to_tx(
     if priority_fee > max_fee:
         raise InvalidTransaction("priority_fee must not exceed max_fee")
 
-    tx["maxFeePerGas"] = web3.toHex(max_fee)
-    tx["maxPriorityFeePerGas"] = web3.toHex(priority_fee)
-    tx["type"] = web3.toHex(2)
+    tx["maxFeePerGas"] = web3.to_hex(max_fee)
+    tx["maxPriorityFeePerGas"] = web3.to_hex(priority_fee)
+    tx["type"] = web3.to_hex(2)
     return tx

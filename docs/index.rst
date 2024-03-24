@@ -4,6 +4,10 @@ Brownie
 
 Brownie is a Python-based development and testing framework for smart contracts targeting the `Ethereum Virtual Machine <https://solidity.readthedocs.io/en/v0.6.0/introduction-to-smart-contracts.html#the-ethereum-virtual-machine>`_.
 
+.. warning::
+
+    **Brownie is no longer actively maintained**. Future releases may come sporadically - or never at all. Check out `Ape Framework <https://github.com/ApeWorX/ape>`_ for all your python Ethereum development needs.
+
 .. note::
 
     All code starting with ``$`` is meant to be run on your terminal. Code starting with ``>>>`` is meant to run inside the Brownie console.
@@ -20,4 +24,3 @@ Features
 * Property-based and stateful testing via `hypothesis <https://github.com/HypothesisWorks/hypothesis/tree/master/hypothesis-python>`_
 * Powerful debugging tools, including python-style tracebacks and custom error strings
 * Built-in console for quick project interaction
-* Support for `ethPM <https://www.ethpm.com>`_ packages

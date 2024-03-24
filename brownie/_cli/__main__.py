@@ -23,7 +23,6 @@ Commands:
   accounts           Manage local accounts
   networks           Manage network settings
   gui                Load the GUI to view opcodes and test coverage
-  analyze            Find security vulnerabilities using the MythX API
 
 Options:
   --help -h          Display this message
@@ -34,7 +33,6 @@ each command."""
 
 
 def main():
-
     print(f"Brownie v{__version__} - Python development framework for Ethereum\n")
 
     if "--version" in sys.argv:

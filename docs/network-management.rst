@@ -197,7 +197,7 @@ Services such as `Alchemy <https://www.alchemy.com>`_ and `Infura <https://infur
     1. Some RPC endpoints may be unavailable. In particular, Infura does not provide access to the `debug_traceTransaction <https://geth.ethereum.org/docs/rpc/ns-debug#debug_tracetransaction>`_ method. For this reason, Brownie's :ref:`debugging tools<debug>` will not work when connected via Infura.
     2. Hosted nodes do not provide access to accounts - this would be a major security hazard! You will have to manually unlock your own :ref:`local account<local-accounts>` before you can make a transaction.
 
-Brownie allows you to bulk modify the provider you use by setting the `provider` field in the networks, and the associated provider. 
+Brownie allows you to bulk modify the provider you use by setting the `provider` field in the networks, and the associated provider.
 
 ::
 
@@ -240,16 +240,16 @@ And it'll print out all the valid networks to swap to the Alchemy format. If you
 Adding Providers
 ----------------
 
-To add or update a provider, run: 
+To add or update a provider, run:
 
 ::
 
     $ brownie networks update_provider alchemy https://eth-{}.alchemyapi.io/v2/$WEB3_ALCHEMY_PROJECT_ID
 
 
-This URL will allow brownie to swap out the {} with whatever network it's on, and you'll set a `WEB3_ALCHEMY_PROJECT_ID` environment variable as your Alchemy key. 
+This URL will allow brownie to swap out the {} with whatever network it's on, and you'll set a `WEB3_ALCHEMY_PROJECT_ID` environment variable as your Alchemy key.
 
-Using Infura 
+Using Infura
 ************
 
 To Infura you need to `register for an account <https://infura.io/register>`_. Once you have signed up, login and create a new project. You will be provided with a project ID, as well as API URLs that can be leveraged to access the network.
@@ -260,7 +260,7 @@ To connect to Infura using Brownie, store your project ID as an environment vari
 
     $ export WEB3_INFURA_PROJECT_ID=YourProjectID
 
-Or adding `export WEB3_INFURA_PROJECT_ID=YourProjectID` to your `.env` and adding `dotenv: .env` to your `brownie-config.yaml`. 
+Or adding `export WEB3_INFURA_PROJECT_ID=YourProjectID` to your `.env` and adding `dotenv: .env` to your `brownie-config.yaml`.
 
 
 Using Alchemy
@@ -269,16 +269,16 @@ Using Alchemy
 To Alchemy you need to `signup for an account <https://auth.alchemyapi.io/signup>`_. Once you have signed up, login and create a new project. You will be provided with a URL that can be leveraged to access the network.
 
 Hit the `view key` button, and you'll be given a URL. You can just use the section after the last slash as your `WEB3_ALCHEMY_PROJECT_ID`. For example if your full key is: `https://eth-mainnet.alchemyapi.io/v2/1234`, your `WEB3_ALCHEMY_PROJECT_ID` would be `1234`.
-Note, this only works well with ETH networks at the moment, but you can modify your providers list at any time. 
+Note, this only works well with ETH networks at the moment, but you can modify your providers list at any time.
 
 You can set your `WEB3_ALCHEMY_PROJECT_ID` with the following command
 ::
 
     $ export WEB3_ALCHEMY_PROJECT_ID=YourProjectID
 
-Or adding `export WEB3_ALCHEMY_PROJECT_ID=YourProjectID` to your `.env` and adding `dotenv: .env` to your `brownie-config.yaml`. 
+Or adding `export WEB3_ALCHEMY_PROJECT_ID=YourProjectID` to your `.env` and adding `dotenv: .env` to your `brownie-config.yaml`.
 
-To connect with other non-ethereum networks through alchemy, you'll have to follow the normal network adding process. 
+To connect with other non-ethereum networks through alchemy, you'll have to follow the normal network adding process.
 
 .. _network-management-fork:
 
@@ -306,10 +306,19 @@ Native EVM-Compatible Chain Integrations
 Brownie natively supports the following collection of EVM-compatible chains:
 
 * Ethereum Classic
+* Arbitrum
+* Avalanche
+* Aurora
 * Binance Smart Chain
+* Boba
 * Fantom Opera
+* Harmony
+* Hedera
+* Moonbeam
+* Moonriver
+* Optimistic Ethereum
 * Polygon Network
-* XDai Network
+* Gnosis Network
 
 In order to enable native support for an EVM-compatible chain, there are 2 requirements. The chain must have a JSON-RPC endpoint which is publicly accessible (free in cost, sign-up may be required), and it should have a block explorer with API support for fetching contract sources and ABIs.
 

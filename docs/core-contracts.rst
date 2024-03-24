@@ -185,7 +185,7 @@ Contracts Outside of your Project
 
 When working in a :ref:`live environment <network-management-live>` or :ref:`forked development network <network-management-fork>`, you can create :func:`Contract <brownie.network.contract.Contract>` objects to interact with already-deployed contracts.
 
-:func:`Contract <brownie.network.contract.Contract>` objects may be created from interfaces within the ``interfaces/`` folder of your project, or by fetching information from a remote source such as a block explorer or ethPM registry.
+:func:`Contract <brownie.network.contract.Contract>` objects may be created from interfaces within the ``interfaces/`` folder of your project, or by fetching information from a remote source such as a block explorer.
 
 Using Local Interfaces
 ----------------------

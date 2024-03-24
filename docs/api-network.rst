@@ -963,23 +963,6 @@ New ``Contract`` objects are created with one of the following class methods.
         >>> Contract.from_abi("Token", "0x79447c97b6543F6eFBC91613C655977806CB18b0", abi)
         <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
 
-
-.. py:classmethod:: Contract.from_ethpm(name, manifest_uri, address=None, owner=None)
-
-    Create a new ``Contract`` object from an ethPM manifest.
-
-    * ``name``: The name of the contract. Must be present within the manifest.
-    * ``manifest_uri``: EthPM registry manifest uri.
-    * ``address``: Address of the contract. Only Required if more than one deployment named ``name`` is included in the manifest.
-    * ``owner``: An optional :func:`Account <brownie.network.account.Account>` instance. If given, transactions to the contract are sent broadcasted from this account by default.
-
-    .. code-block:: python
-
-        >>> from brownie import network, Contract
-        >>> network.connect('mainnet')
-        >>> Contract("DSToken", manifest_uri="ethpm://erc20.snakecharmers.eth:1/dai-dai@1.0.0")
-        <DSToken Contract object '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359'>
-
 .. py:classmethod:: Contract.from_explorer(address, as_proxy_for=None, owner=None)
 
     Create a new ``Contract`` object from source code fetched from a block explorer such as `EtherScan <https://etherscan.io/>`_ or `Blockscout <https://blockscout.com/>`_.
@@ -1916,6 +1899,21 @@ Multicall Attributes
         >>> with brownie.multicall(block_identifier=12733683):
         ...     brownie.multicall.block_number
         12733683
+
+.. py:attribute:: Multicall.default_verbose
+
+    Default verbosity setting for multicall. Set to ``False`` by default. If set to ``True``, the content of each batched call is printed to the console. This is useful for debugging, to ensure a multicall is performing as expected.
+
+    .. code-block:: python
+
+        >>> multicall.default_verbose = True
+
+    You can also enable verbosity for individual multicalls by setting the `verbose` keyword:
+
+    .. code-block:: python
+
+        >>> with brownie.multicall(verbose=True):
+        ...
 
 Multicall Methods
 *****************
@@ -3099,7 +3097,7 @@ Web3 Internals
 
 .. py:attribute:: Web3._mainnet
 
-    Provides access to a ``Web3`` instance connected to the ``mainnet`` network as defined in the configuration file. Used internally for `ENS <https://ens.domains/>`_ and `ethPM <https://www.ethpm.com/>`_ lookups.
+    Provides access to a ``Web3`` instance connected to the ``mainnet`` network as defined in the configuration file. Used internally for `ENS <https://ens.domains/>`_ lookups.
 
     Raises :func:`MainnetUndefined <brownie.exceptions.MainnetUndefined>` if the ``mainnet`` network is not defined.
 

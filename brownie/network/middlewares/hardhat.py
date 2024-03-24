@@ -9,7 +9,7 @@ from brownie.network.middlewares import BrownieMiddlewareABC
 class HardhatMiddleWare(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
-        if w3.clientVersion.lower().startswith("hardhat"):
+        if w3.client_version.lower().startswith("hardhat"):
             return -100
         else:
             return None
@@ -41,6 +41,9 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
                     data.update({"error": "revert", "reason": message[7:]})
                 elif "reverted with reason string '" in message:
                     data.update(error="revert", reason=re.findall(".*?'(.*)'$", message)[0])
+                elif "reverted with an unrecognized custom error" in message:
+                    message = message[message.index("0x") : -1]
+                    data.update(error="revert", reason=message)
                 else:
                     data["error"] = message
         return result

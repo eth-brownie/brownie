@@ -7,11 +7,12 @@ from pathlib import Path
 from typing import Dict, Optional, Set
 
 from ens import ENS
+from requests import HTTPError
 from web3 import HTTPProvider, IPCProvider
 from web3 import Web3 as _Web3
 from web3 import WebsocketProvider
-from web3.contract import ContractEvent  # noqa
-from web3.contract import ContractEvents as _ContractEvents  # noqa
+from web3.contract.contract import ContractEvent  # noqa
+from web3.contract.contract import ContractEvents as _ContractEvents  # noqa
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
 
 from brownie._config import CONFIG, _get_data_folder
@@ -23,12 +24,10 @@ _chain_uri_cache: Dict = {}
 
 
 class Web3(_Web3):
-
     """Brownie Web3 subclass"""
 
     def __init__(self) -> None:
         super().__init__(HTTPProvider("null"))
-        self.enable_unstable_package_management_api()
         self.provider = None
         self._mainnet_w3: Optional[_Web3] = None
         self._genesis_hash: Optional[str] = None
@@ -111,10 +110,14 @@ class Web3(_Web3):
             self._chain_id = None
             self._remove_middlewares()
 
-    def isConnected(self) -> bool:
+    def is_connected(self) -> bool:
         if not self.provider:
             return False
-        return super().isConnected()
+        return super().is_connected()
+
+    def isConnected(self) -> bool:
+        # retained to avoid breaking an interface explicitly defined in brownie
+        return self.is_connected()
 
     @property
     def supports_traces(self) -> bool:
@@ -125,15 +128,18 @@ class Web3(_Web3):
         # returned is -32601 "endpoint does not exist/is not available" we know
         # traces are not possible. Any other error code means the endpoint is open.
         if self._supports_traces is None:
-            response = self.provider.make_request("debug_traceTransaction", [])
-            self._supports_traces = bool(response["error"]["code"] not in [-32601, -32600])
+            try:
+                response = self.provider.make_request("debug_traceTransaction", [])
+                self._supports_traces = bool(response["error"]["code"] not in [-32601, -32600])
+            except HTTPError:
+                self._supports_traces = False
 
         return self._supports_traces
 
     @property
     def _mainnet(self) -> _Web3:
         # a web3 instance connected to the mainnet
-        if self.isConnected() and CONFIG.active_network["id"] == "mainnet":  # @UndefinedVariable
+        if self.is_connected() and CONFIG.active_network["id"] == "mainnet":
             return self
         try:
             mainnet = CONFIG.networks["mainnet"]
@@ -142,7 +148,6 @@ class Web3(_Web3):
         if not self._mainnet_w3:
             uri = _expand_environment_vars(mainnet["host"])
             self._mainnet_w3 = _Web3(HTTPProvider(uri))
-            self._mainnet_w3.enable_unstable_package_management_api()
         return self._mainnet_w3
 
     @property
@@ -196,7 +201,7 @@ def _resolve_address(domain: str) -> str:
     domain = domain.lower()
     if domain not in _ens_cache or time.time() - _ens_cache[domain][1] > 86400:
         try:
-            ns = ENS.fromWeb3(web3._mainnet)
+            ns = ENS.from_web3(web3._mainnet)
         except MainnetUndefined as e:
             raise MainnetUndefined(f"Cannot resolve ENS address - {e}") from None
         address = ns.address(domain)

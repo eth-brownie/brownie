@@ -8,7 +8,7 @@ from brownie.network.middlewares import BrownieMiddlewareABC
 class Ganache7MiddleWare(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
-        if w3.clientVersion.lower().startswith("ganache/v7"):
+        if w3.client_version.lower().startswith("ganache/v7"):
             return -100
         else:
             return None
@@ -39,7 +39,7 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
             # "VM Exception while processing transaction: {reason} {message}"
             msg = result["error"]["message"].split(": ", maxsplit=1)[-1]
             if msg.startswith("revert"):
-                data = {"error": "revert", "reason": msg[7:]}
+                data = {"error": "revert", "reason": result["error"]["data"]}
             else:
                 data = {"error": msg, "reason": None}
             result["error"]["data"] = {"0x": data}

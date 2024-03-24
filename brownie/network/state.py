@@ -31,7 +31,6 @@ cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
 
 
 class TxHistory(metaclass=_Singleton):
-
     """List-like singleton container that contains TransactionReceipt objects.
     Whenever a transaction is broadcast, the TransactionReceipt is automatically
     added to this container."""
@@ -187,7 +186,6 @@ class TxHistory(metaclass=_Singleton):
 
 
 class Chain(metaclass=_Singleton):
-
     """
     List-like singleton used to access block data, and perform actions such as
     snapshotting, mining, and chain rewinds.
@@ -303,7 +301,11 @@ class Chain(metaclass=_Singleton):
 
     @property
     def priority_fee(self) -> Wei:
-        return Wei(web3.eth.max_priority_fee)
+        try:
+            return Wei(web3.eth.max_priority_fee)
+        except ValueError:
+            # fallback to legacy transactions if network does not support EIP1559
+            return None
 
     def _revert(self, id_: int) -> int:
         rpc_client = rpc.Rpc()  # @UndefinedVariable
@@ -585,7 +587,7 @@ def _add_contract(contract: Any) -> None:
 
 
 def _remove_contract(contract: Any) -> None:
-    del _contract_map[contract.address]
+    _contract_map.pop(contract.address, None)
 
 
 def _get_deployment(
