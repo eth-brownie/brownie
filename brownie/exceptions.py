@@ -283,7 +283,7 @@ def decode_typed_error(data: str) -> str:
     selector = data[:10]
     if selector == "0x4e487b71":
         # special case, solidity compiler panics
-        error_code = int(data[4:].hex(), 16)
+        error_code = int(HexBytes(data[10:]).hex(), 16)
         return SOLIDITY_ERROR_CODES.get(error_code, f"Unknown compiler Panic: {error_code}")
     if selector in _errors:
         types_list = get_type_strings(_errors[selector]["inputs"])
