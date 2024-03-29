@@ -12,7 +12,7 @@ _instances = set()
 
 class Alert:
     """Setup notifications and callbacks based on state changes to the blockchain.
-    The alert is immediatly active as soon as the class is insantiated."""
+    The alert is immediately active as soon as the class is insantiated."""
 
     def __init__(
         self,
