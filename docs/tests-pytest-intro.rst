@@ -135,7 +135,7 @@ Expanding upon our example:
         token.transfer(accounts[1], 100, {'from': accounts[0]})
         assert token.balanceOf(accounts[0]) == 900
 
-By applying a ``module`` scope to the the ``token`` fixture, the contract is only deployed once and the same :func:`Contract <brownie.network.contract.ProjectContract>` instance is used for both ``test_approval`` and ``test_transfer``.
+By applying a ``module`` scope to the ``token`` fixture, the contract is only deployed once and the same :func:`Contract <brownie.network.contract.ProjectContract>` instance is used for both ``test_approval`` and ``test_transfer``.
 
 Fixture of higher-scopes (such as ``session`` or ``module``) are always instantiated before lower-scoped fixtures (such as ``function``). The relative order of fixtures of same scope follows the declared order in the test function and honours dependencies between fixtures. The only exception to this rule is isolation fixtures, which are expained below.
 
