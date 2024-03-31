@@ -244,7 +244,7 @@ class PytestBrownieRunner(PytestBrownieBase):
 
         This is the final hookpoint that executes prior to running tests. If
         the number of tests collected is > 0 and there is not an active network
-        at this point, Brownie connects to the the default network and launches
+        at this point, Brownie connects to the default network and launches
         the RPC client if required.
 
         Arguments
