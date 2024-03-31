@@ -12,7 +12,7 @@ Options:
 Opens the brownie GUI. Basic functionality is as follows:
 
  * Selecting an opcode will highlight the associated source code.
- * Highlighting a section of the source will jump to the most relevent opcode,
+ * Highlighting a section of the source will jump to the most relevant opcode,
    if possible.
  * Opcodes with a darkened background have no associated source code.
  * Type a pc number to jump to that opcode.

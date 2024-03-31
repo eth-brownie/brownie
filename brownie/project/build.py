@@ -154,7 +154,7 @@ def _get_dev_revert(pc: int) -> Optional[str]:
 
 def _get_error_source_from_pc(pc: int, pad: int = 3) -> Tuple:
     # Given the program counter from a stack trace that caused a transaction
-    # to revert, returns the highlighted relevent source code and the method name.
+    # to revert, returns the highlighted relevant source code and the method name.
     if pc not in _revert_map or _revert_map[pc] is False:
         return (None,) * 4
     revert = _revert_map[pc]
