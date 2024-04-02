@@ -84,7 +84,9 @@ def show_active() -> Optional[str]:
 
 def is_connected() -> bool:
     """Returns a bool indicating if the Web3 object is currently connected"""
-    return web3.isConnected()
+    # Ask twice, because if connection has timed out, first attempt will return False 
+    # but will wake up the connection, and the second will return True
+    return web3.isConnected() or web3.isConnected()
 
 
 def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
