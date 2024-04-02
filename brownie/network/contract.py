@@ -102,11 +102,15 @@ class _ContractBase:
         self._sources = sources
         self.topics = _get_topics(self.abi)
         self.selectors = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+            build_function_selector(i): f"{i['type']} {build_function_signature(i)}"
+            for i in self.abi
+            if i["type"] in ("function", "error", "event")
         }
-        # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
+        # JPD fixed: this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
         self.signatures = {
-            i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
+            build_function_signature(i): build_function_selector(i)
+            for i in self.abi
+            if i["type"] in ("function", "error", "event")
         }
         parse_errors_from_abi(self.abi)
 
@@ -153,7 +157,7 @@ class _ContractBase:
             (
                 i
                 for i in self.abi
-                if i["type"] == "function" and build_function_selector(i) == fn_selector
+                if i["type"] in ("function", "error", "event") and build_function_selector(i) == fn_selector
             ),
             None,
         )
@@ -644,7 +648,9 @@ class InterfaceConstructor:
         self._name = name
         self.abi = abi
         self.selectors = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+            build_function_selector(i): build_function_signature(i)
+            for i in self.abi
+            if i["type"] in ("function", "error", "event")
         }
 
     def __call__(self, address: str, owner: Optional[AccountsType] = None) -> "Contract":
@@ -677,7 +683,7 @@ class InterfaceConstructor:
             (
                 i
                 for i in self.abi
-                if i["type"] == "function" and build_function_selector(i) == fn_selector
+                if i["type"] in ("function", "error", "event") and build_function_selector(i) == fn_selector
             ),
             None,
         )
@@ -710,6 +716,7 @@ class _DeployedContractBase(_ContractBase):
         self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
     ) -> None:
         address = _resolve_address(address)
+        web3.isConnected()
         self.bytecode = web3.eth.get_code(address).hex()[2:]
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
@@ -719,8 +726,10 @@ class _DeployedContractBase(_ContractBase):
         self.events = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
 
-        fn_names = [i["name"] for i in self.abi if i["type"] == "function"]
-        for abi in [i for i in self.abi if i["type"] == "function"]:
+        fn_names = [
+            i["name"] for i in self.abi if i["type"] in ("function", "error", "event")
+        ]
+        for abi in [i for i in self.abi if i["type"] in ("function", "error", "event")]:
             name = f"{self._name}.{abi['name']}"
             sig = build_function_signature(abi)
             natspec: Dict = {}
@@ -811,6 +820,7 @@ class _DeployedContractBase(_ContractBase):
 
     def balance(self) -> Wei:
         """Returns the current ether balance of the contract, in wei."""
+        web3.isConnected()
         balance = web3.eth.get_balance(self.address)
         return Wei(balance)
 
@@ -830,6 +840,7 @@ class _DeployedContractBase(_ContractBase):
         chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
         deployment_build = self._build.copy()
 
+        web3.isConnected()
         deployment_build["deployment"] = {
             "address": self.address,
             "chainid": chainid,
@@ -987,6 +998,7 @@ class Contract(_DeployedContractBase):
         address = _resolve_address(address)
         data = _fetch_from_explorer(address, "getsourcecode", silent)
         is_verified = bool(data["result"][0].get("SourceCode"))
+        web3.isConnected()
 
         if is_verified:
             abi = json.loads(data["result"][0]["ABI"])
@@ -1282,6 +1294,7 @@ class ContractEvents(_ContractEvents):
                 event_logbook [dict]: Dictionnary of events of the contract that occured
                 between 'from_block' and 'to_block'.
         """
+        web3.isConnected()
         if to_block is None or to_block > web3.eth.block_number:
             to_block = web3.eth.block_number
 
@@ -1360,6 +1373,7 @@ class ContractEvents(_ContractEvents):
         Retrieves all log receipts from 'event_type' between 'from_block' and 'to_block' blocks
         """
         if to_block is None:
+            web3.isConnected()
             to_block = web3.eth.block_number
         if from_block is None and isinstance(to_block, int):
             from_block = to_block - 10
@@ -1543,8 +1557,7 @@ class OverloadedMethod:
             print(sig)
         _print_natspec(self.natspec)
 
-
-class _ContractMethod:
+class _ContractFragment:
     _dir_color = "bright magenta"
 
     def __init__(
@@ -1563,112 +1576,12 @@ class _ContractMethod:
         self._input_sig = build_function_signature(abi)
         self.natspec = natspec or {}
 
-    def __repr__(self) -> str:
-        pay = "payable " if self.payable else ""
-        return f"<{type(self).__name__} {pay}'{self.abi['name']}({_inputs(self.abi)})'>"
-
-    @property
-    def payable(self) -> bool:
-        if "payable" in self.abi:
-            return self.abi["payable"]
-        else:
-            return self.abi["stateMutability"] == "payable"
-
-    @staticmethod
-    def _autosuggest(obj: "_ContractMethod") -> List:
-        # this is a staticmethod to be compatible with `_call_suggest` and `_transact_suggest`
-        return _contract_method_autosuggest(
-            obj.abi["inputs"], isinstance(obj, ContractTx), obj.payable
-        )
-
     def info(self) -> None:
         """
         Display NatSpec documentation for this method.
         """
         print(f"{self.abi['name']}({_inputs(self.abi)})")
         _print_natspec(self.natspec)
-
-    def call(
-        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
-    ) -> Any:
-        """
-        Call the contract method without broadcasting a transaction.
-
-        Arguments
-        ---------
-        *args
-            Contract method inputs. You can optionally provide a
-            dictionary of transaction properties as the last arg.
-        block_identifier : int | str | bytes, optional
-            A block number or hash that the call is executed at. If not given, the
-            latest block used. Raises `ValueError` if this value is too far in the
-            past and you are not using an archival node.
-        override : dict, optional
-            A mapping from addresses to balance, nonce, code, state, stateDiff
-            overrides for the context of the call.
-
-        Returns
-        -------
-            Contract method return value(s).
-        """
-
-        args, tx = _get_tx(self._owner, args)
-        if tx["from"]:
-            tx["from"] = str(tx["from"])
-        del tx["required_confs"]
-        tx.update({"to": self._address, "data": self.encode_input(*args)})
-
-        try:
-            data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier, override)
-        except ValueError as e:
-            raise VirtualMachineError(e) from None
-
-        if self.abi["outputs"] and not data:
-            raise ValueError("No data was returned - the call likely reverted")
-        try:
-            return self.decode_output(data)
-        except Exception:
-            raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
-
-    def transact(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:
-        """
-        Broadcast a transaction that calls this contract method.
-
-        Arguments
-        ---------
-        *args
-            Contract method inputs. You can optionally provide a
-            dictionary of transaction properties as the last arg.
-
-        Returns
-        -------
-        TransactionReceipt
-            Object representing the broadcasted transaction.
-        """
-
-        args, tx = _get_tx(self._owner, args)
-        if not tx["from"]:
-            raise AttributeError(
-                "Final argument must be a dict of transaction parameters that "
-                "includes a `from` field specifying the sender of the transaction"
-            )
-        
-        print(f"{tx['from'].address}: calling {self._name}{args}")
-
-        return tx["from"].transfer(
-            self._address,
-            tx["value"],
-            gas_limit=tx["gas"],
-            gas_buffer=tx.get("gas_buffer"),
-            gas_price=tx.get("gas_price"),
-            max_fee=tx.get("max_fee"),
-            priority_fee=tx.get("priority_fee"),
-            nonce=tx["nonce"],
-            required_confs=tx["required_confs"],
-            data=self.encode_input(*args),
-            allow_revert=tx["allow_revert"],
-            silent=silent,
-        )
 
     def decode_input(self, hexstr: str) -> List:
         """
@@ -1724,6 +1637,114 @@ class _ContractMethod:
         if len(result) == 1:
             result = result[0]
         return result
+    
+
+class ContractEventError(_ContractFragment):
+    def __repr__(self) -> str:
+        return f"<{self.abi['type']} '{self.abi['name']}({_inputs(self.abi)})'>"
+
+
+class _ContractMethod(_ContractFragment):
+    def __repr__(self) -> str:
+        pay = "payable " if self.payable else ""
+        return f"<{type(self).__name__} {pay}'{self.abi['name']}({_inputs(self.abi)})'>"
+
+    @property
+    def payable(self) -> bool:
+        if "payable" in self.abi:
+            return self.abi["payable"]
+        else:
+            return self.abi["stateMutability"] == "payable"
+
+    @staticmethod
+    def _autosuggest(obj: "_ContractMethod") -> List:
+        # this is a staticmethod to be compatible with `_call_suggest` and `_transact_suggest`
+        return _contract_method_autosuggest(
+            obj.abi["inputs"], isinstance(obj, ContractTx), obj.payable
+        )
+
+    def call(
+        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+    ) -> Any:
+        """
+        Call the contract method without broadcasting a transaction.
+
+        Arguments
+        ---------
+        *args
+            Contract method inputs. You can optionally provide a
+            dictionary of transaction properties as the last arg.
+        block_identifier : int | str | bytes, optional
+            A block number or hash that the call is executed at. If not given, the
+            latest block used. Raises `ValueError` if this value is too far in the
+            past and you are not using an archival node.
+        override : dict, optional
+            A mapping from addresses to balance, nonce, code, state, stateDiff
+            overrides for the context of the call.
+
+        Returns
+        -------
+            Contract method return value(s).
+        """
+
+        args, tx = _get_tx(self._owner, args)
+        if tx["from"]:
+            tx["from"] = str(tx["from"])
+        del tx["required_confs"]
+        tx.update({"to": self._address, "data": self.encode_input(*args)})
+
+        try:
+            web3.isConnected()
+            data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier, override)
+        except ValueError as e:
+            raise VirtualMachineError(e) from None
+
+        if self.abi["outputs"] and not data:
+            raise ValueError("No data was returned - the call likely reverted")
+        try:
+            return self.decode_output(data)
+        except Exception:
+            raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
+
+    def transact(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:
+        """
+        Broadcast a transaction that calls this contract method.
+
+        Arguments
+        ---------
+        *args
+            Contract method inputs. You can optionally provide a
+            dictionary of transaction properties as the last arg.
+
+        Returns
+        -------
+        TransactionReceipt
+            Object representing the broadcasted transaction.
+        """
+
+        args, tx = _get_tx(self._owner, args)
+        if not tx["from"]:
+            raise AttributeError(
+                "Final argument must be a dict of transaction parameters that "
+                "includes a `from` field specifying the sender of the transaction"
+            )
+        
+        print(f"{tx['from'].address}: calling {self._name}{args}")
+
+        return tx["from"].transfer(
+            self._address,
+            tx["value"],
+            gas_limit=tx["gas"],
+            gas_buffer=tx.get("gas_buffer"),
+            gas_price=tx.get("gas_price"),
+            max_fee=tx.get("max_fee"),
+            priority_fee=tx.get("priority_fee"),
+            nonce=tx["nonce"],
+            required_confs=tx["required_confs"],
+            data=self.encode_input(*args),
+            allow_revert=tx["allow_revert"],
+            silent=silent,
+        )
 
     def estimate_gas(self, *args: Tuple) -> int:
         """
@@ -1888,6 +1909,9 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
 def _get_method_object(
     address: str, abi: Dict, name: str, owner: Optional[AccountsType], natspec: Dict
 ) -> Union["ContractCall", "ContractTx"]:
+    if abi["type"] in ("error", "event"):
+        return ContractEventError(address, abi, name, owner, natspec)
+    
     if "constant" in abi:
         constant = abi["constant"]
     else:
@@ -1907,6 +1931,7 @@ def _inputs(abi: Dict) -> str:
 
 
 def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -> bool:
+    web3.isConnected()
     actual_bytecode = web3.eth.get_code(address).hex()[2:]
     expected_bytecode = remove_0x_prefix(expected_bytecode)  # type: ignore
 
@@ -1967,6 +1992,7 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     if address in _unverified_addresses:
         raise ValueError(f"Source for {address} has not been verified")
 
+    web3.isConnected()
     code = web3.eth.get_code(address).hex()[2:]
     # EIP-1167: Minimal Proxy Contract
     if code[:20] == "363d3d373d3d3d363d73" and code[60:] == "5af43d82803e903d91602b57fd5bf3":
