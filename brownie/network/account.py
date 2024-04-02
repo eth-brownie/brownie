@@ -658,6 +658,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             TransactionReceipt object
         """
 
+        web3.isConnected()
         receipt, exc = self._make_transaction(
             to,
             amount,
@@ -749,7 +750,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 to, amount, gas_price or max_fee, gas_buffer, data
             )
         except ValueError as e:
-            raise VirtualMachineError(e) from None
+            raise VirtualMachineError(e) from e
         
         min_fee = network_settings.get("min_fee") or Wei(0)
 
