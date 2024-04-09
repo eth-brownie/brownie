@@ -297,7 +297,7 @@ class Chain(metaclass=_Singleton):
     @property
     def base_fee(self) -> Wei:
         block = web3.eth.get_block("latest")
-        return Wei(block.baseFeePerGas)
+        return Wei(block["baseFeePerGas"])
 
     @property
     def priority_fee(self) -> Wei:
