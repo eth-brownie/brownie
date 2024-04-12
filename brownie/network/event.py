@@ -12,6 +12,7 @@ import eth_event
 from eth_event import EventError
 from web3._utils import filters
 from web3.datastructures import AttributeDict
+from web3.types import LogReceipt
 
 from brownie._config import _get_data_folder
 from brownie._singleton import _Singleton
@@ -462,7 +463,7 @@ def _add_deployment_topics(address: str, abi: List) -> None:
     _deployment_topics[address] = eth_event.get_topic_map(abi)
 
 
-def _decode_logs(logs: List, contracts: Optional[Dict] = None) -> EventDict:
+def _decode_logs(logs: List[LogReceipt], contracts: Optional[Dict] = None) -> EventDict:
     if not logs:
         return EventDict()
 
@@ -479,8 +480,8 @@ def _decode_logs(logs: List, contracts: Optional[Dict] = None) -> EventDict:
 
         topics_map = _deployment_topics.get(address, _topics)
         for item in log_slice:
-            if contracts and contracts[item.address]:
-                note = _decode_ds_note(item, contracts[item.address])
+            if contracts and contracts[item["address"]]:
+                note = _decode_ds_note(item, contracts[item["address"]])
                 if note:
                     events.append(note)
                     continue
@@ -496,13 +497,13 @@ def _decode_logs(logs: List, contracts: Optional[Dict] = None) -> EventDict:
     return EventDict(events)
 
 
-def _decode_ds_note(log, contract):  # type: ignore
+def _decode_ds_note(log: LogReceipt, contract):  # type: ignore
     # ds-note encodes function selector as the first topic
-    selector, tail = log.topics[0][:4], log.topics[0][4:]
+    selector, tail = log["topics"][0][:4], log["topics"][0][4:]
     if selector.hex() not in contract.selectors or sum(tail):
         return
     name = contract.selectors[selector.hex()]
-    data = bytes.fromhex(log.data[2:])
+    data = bytes.fromhex(log["data"][2:])
     # data uses ABI encoding of [uint256, bytes] or [bytes] in different versions
     # instead of trying them all, assume the payload starts from selector
     try:
@@ -511,7 +512,7 @@ def _decode_ds_note(log, contract):  # type: ignore
         return
     return {
         "name": name,
-        "address": log.address,
+        "address": log["address"],
         "decoded": True,
         "data": [
             {"name": abi["name"], "type": abi["type"], "value": arg, "decoded": True}

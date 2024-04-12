@@ -17,6 +17,7 @@ import requests
 from eth_abi import decode
 from hexbytes import HexBytes
 from web3.exceptions import TransactionNotFound
+from web3.types import LogReceipt
 
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
@@ -123,7 +124,7 @@ class TransactionReceipt:
     contract_name = None
     fn_name = None
     gas_used = None
-    logs: Optional[List] = None
+    logs: Optional[List[LogReceipt]] = None
     nonce = None
     sender = None
     txid: str
@@ -234,7 +235,7 @@ class TransactionReceipt:
         if self._events is None:
             if self.status:
                 # relay contract map so we can decode ds-note logs
-                addrs = {log.address for log in self.logs} if self.logs else set()
+                addrs = {log["address"] for log in self.logs} if self.logs else set()
                 contracts = {addr: state._find_contract(addr) for addr in addrs}
                 self._events = _decode_logs(self.logs, contracts=contracts)  # type: ignore
             else:
