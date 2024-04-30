@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Added
-- Support for blast chain contract verification ([#]())
+- Support for blast chain contract verification ([#1765](https://github.com/eth-brownie/brownie/pull/1765))
 
 ## [1.20.2](https://github.com/eth-brownie/brownie/tree/v1.20.2) - 2024-02-24
 ### Added
