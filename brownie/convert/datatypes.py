@@ -303,14 +303,23 @@ class ReturnValue(tuple):
                         values[i] = ReturnValue(values[i], abi[i]["components"])
                     else:
                         # array of tuples
-                        values[i] = ReturnValue(values[i], [abi[i]] * len(values[i]))
+                        inner_abi = abi[i].copy()
+                        inner_abi["type"] = inner_abi["type"].rsplit("[", maxsplit=1)[0]
+                        final_abi = [deepcopy(inner_abi) for i in range(len(values[i]))]
+                        if inner_abi.get("name"):
+                            name = inner_abi["name"]
+                            for x in range(len(final_abi)):
+                                final_abi[x]["name"] = f"{name}[{x}]"
+
+                        values[i] = ReturnValue(values[i], final_abi)
                 else:
                     # array
                     values[i] = ReturnValue(values[i])
 
         self = super().__new__(cls, values)  # type: ignore
         self._abi = abi or []
-        self._dict = {i["name"]: values[c] for c, i in enumerate(self._abi) if i["name"]}
+        self._dict = {i.get("name", "") or f"arg[{c}]": values[c] for c, i in enumerate(self._abi)}
+
         return self
 
     def __hash__(self) -> int:
@@ -349,7 +358,13 @@ class ReturnValue(tuple):
 
     def dict(self) -> Dict:
         """ReturnValue.dict() -> a dictionary of ReturnValue's named items"""
-        return self._dict  # type: ignore
+        response = {}
+        for k, v in self._dict.items():
+            if isinstance(v, ReturnValue) and v._abi:
+                response[k] = v.dict()
+            else:
+                response[k] = v
+        return response
 
     def index(self, value: Any, start: int = 0, stop: Any = None) -> int:
         """ReturnValue.index(value, [start, [stop]]) -> integer -- return first index of value.
