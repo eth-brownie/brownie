@@ -6,8 +6,17 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.20.3](https://github.com/eth-brownie/brownie/tree/v1.20.3) - 2024-05-05
 ### Added
+- Config setting to disable short-term caching ([#1767](https://github.com/eth-brownie/brownie/pull/1767))
 - Support for blast chain contract verification ([#1765](https://github.com/eth-brownie/brownie/pull/1765))
+- Support for additional anvil cmdline args ([#1756](https://github.com/eth-brownie/brownie/pull/1756))
+
+### Fixed
+- Target different blocks for live/dev networks when adding POA middleware ([#1769](https://github.com/eth-brownie/brownie/pull/1769))
+- Dict keys for nested tuples in returndata ([#1768](https://github.com/eth-brownie/brownie/pull/1768))
+- Solidity error code decoding ([#1758](https://github.com/eth-brownie/brownie/pull/1758))
 
 ## [1.20.2](https://github.com/eth-brownie/brownie/tree/v1.20.2) - 2024-02-24
 ### Added
