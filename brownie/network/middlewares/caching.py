@@ -117,7 +117,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
-        if CONFIG.settings['eager_caching'] is False:
+        if CONFIG.settings["eager_caching"] is False:
             # do not cache when user doesn't want it
             return None
         if network_type != "live":
