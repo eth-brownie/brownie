@@ -14,10 +14,16 @@ from brownie.network.web3 import web3
 CLI_FLAGS = {
     "port": "--port",
     "host": "--host",
+    "evm_version": "--hardfork",
     "fork": "--fork-url",
     "fork_block": "--fork-block-number",
     "chain_id": "--chain-id",
     "default_balance": "--balance",
+    "accounts": "--accounts",
+    "mnemonic": "--mnemonic",
+    "block_time": "--block-time",
+    "base_fee": "--block-base-fee-per-gas",
+    "gas_price": "--gas-price",
     "gas_limit": "--gas-limit",
 }
 
