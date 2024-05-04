@@ -390,3 +390,10 @@ Other Settings
     .. code-block:: yaml
 
         dotenv: .env
+
+.. py:attribute:: eager_caching
+    If set to ``false``, brownie will not start the background caching thread and will only call the RPC on an as-needed basis.
+
+    This is useful for always-on services or while using pay-as-you-go private RPCs
+
+    default value: ``true``
