@@ -4,7 +4,7 @@
 #
 #    pip-compile requirements-windows.in
 #
-aiohttp==3.9.3
+aiohttp==3.9.4
     # via
     #   -r requirements.txt
     #   web3
@@ -77,7 +77,6 @@ eth-hash[pycryptodome]==0.6.0
     #   -r requirements.txt
     #   eip712
     #   eth-event
-    #   eth-hash
     #   eth-utils
     #   web3
 eth-keyfile==0.7.0
