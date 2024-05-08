@@ -1021,11 +1021,12 @@ class Contract(_DeployedContractBase):
                 raise exc
             abi = json.loads(data_abi["result"].strip())
             name = "UnknownContractName"
-            warnings.warn(
-                f"{address}: Was able to fetch the ABI but not the source code. "
-                "Some functionality will not be available.",
-                BrownieCompilerWarning,
-            )
+            if not silent:
+                warnings.warn(
+                    f"{address}: Was able to fetch the ABI but not the source code. "
+                    "Some functionality will not be available.",
+                    BrownieCompilerWarning,
+                )
 
         if as_proxy_for is None:
             # always check for an EIP1967 proxy - https://eips.ethereum.org/EIPS/eip-1967
@@ -1146,7 +1147,8 @@ class Contract(_DeployedContractBase):
             if not silent:
                 warnings.warn(
                     f"{address}: Compilation failed due to {type(e).__name__}. Falling back to ABI,"
-                    " some functionality will not be available."
+                    " some functionality will not be available.",
+                    BrownieCompilerWarning,
                 )
             return cls.from_abi(name, address, abi, owner)
 
@@ -1157,10 +1159,11 @@ class Contract(_DeployedContractBase):
         if not _verify_deployed_code(
             address, build_json["deployedBytecode"], build_json["language"]
         ):
-            warnings.warn(
-                f"{address}: Locally compiled and on-chain bytecode do not match!",
-                BrownieCompilerWarning,
-            )
+            if not silent:
+                warnings.warn(
+                    f"{address}: Locally compiled and on-chain bytecode do not match!",
+                    BrownieCompilerWarning,
+                )
             del build_json["pcMap"]
 
         self = cls.__new__(cls)
