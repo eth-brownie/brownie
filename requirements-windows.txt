@@ -77,7 +77,6 @@ eth-hash[pycryptodome]==0.6.0
     #   -r requirements.txt
     #   eip712
     #   eth-event
-    #   eth-hash
     #   eth-utils
     #   web3
 eth-keyfile==0.7.0
@@ -285,7 +284,7 @@ toolz==0.12.1
     # via
     #   -r requirements.txt
     #   cytoolz
-tqdm==4.66.2
+tqdm==4.66.3
     # via -r requirements.txt
 typing-extensions==4.9.0
     # via
