@@ -24,7 +24,7 @@ with open(requirements_filename, "r") as f:
 setup(
     name="eth-brownie",
     packages=find_packages(),
-    version="1.20.3",  # don't change this manually, use bumpversion instead
+    version="1.20.4",  # don't change this manually, use bumpversion instead
     license="MIT",
     description="A Python framework for Ethereum smart contract deployment, testing and interaction.",  # noqa: E501
     long_description=long_description,

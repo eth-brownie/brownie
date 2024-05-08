@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.20.4](https://github.com/eth-brownie/brownie/tree/v1.20.4) - 2024-05-08
+### Fixed
+- Fall back to ABI when `Contract.from_explorer` compilation fails ([#1772](https://github.com/eth-brownie/brownie/pull/1772))
+
 ## [1.20.3](https://github.com/eth-brownie/brownie/tree/v1.20.3) - 2024-05-05
 ### Added
 - Config setting to disable short-term caching ([#1767](https://github.com/eth-brownie/brownie/pull/1767))
