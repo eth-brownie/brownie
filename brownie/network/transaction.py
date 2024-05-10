@@ -217,10 +217,10 @@ class TransactionReceipt:
         # await confirmation of tx in a separate thread which is blocking if
         # required_confs > 0 or tx has already confirmed (`blockNumber` != None)
         confirm_thread = threading.Thread(
-            target=self._await_confirmation, args=(tx["blockNumber"], required_confs), daemon=True
+            target=self._await_confirmation, args=(tx.get("blockNumber"), required_confs), daemon=True
         )
         confirm_thread.start()
-        if is_blocking and (required_confs > 0 or tx["blockNumber"]):
+        if is_blocking and (required_confs > 0 or tx.get("blockNumber")):
             confirm_thread.join()
 
     def __repr__(self) -> str:
