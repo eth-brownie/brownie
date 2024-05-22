@@ -216,10 +216,10 @@ class TransactionReceipt:
         # await confirmation of tx in a separate thread which is blocking if
         # required_confs > 0 or tx has already confirmed (`blockNumber` != None)
         confirm_thread = threading.Thread(
-            target=self._await_confirmation, args=(tx["blockNumber"], required_confs), daemon=True
+            target=self._await_confirmation, args=(tx.get("blockNumber"), required_confs), daemon=True
         )
         confirm_thread.start()
-        if is_blocking and (required_confs > 0 or tx["blockNumber"]):
+        if is_blocking and (required_confs > 0 or tx.get("blockNumber")):
             confirm_thread.join()
 
     def __repr__(self) -> str:
@@ -508,7 +508,7 @@ class TransactionReceipt:
                 # check if tx is still in mempool, this will raise otherwise
                 tx = web3.eth.get_transaction(self.txid)
                 self.block_number = None
-                return self._await_confirmation(tx["blockNumber"], required_confs)
+                return self._await_confirmation(tx.get("blockNumber"), required_confs)
             if required_confs - self.confirmations != remaining_confs:
                 remaining_confs = required_confs - self.confirmations
                 if not self._silent:
