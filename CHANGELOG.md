@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.20.5](https://github.com/eth-brownie/brownie/tree/v1.20.5) - 2024-05-22
+### Fixed
+- Handle missing `blockNumber` while awaiting confirmation ([#1774](https://github.com/eth-brownie/brownie/pull/1774))
+- Search parent paths for file import during source verification ([#1776](https://github.com/eth-brownie/brownie/pull/1776))
+
 ## [1.20.4](https://github.com/eth-brownie/brownie/tree/v1.20.4) - 2024-05-08
 ### Fixed
 - Fall back to ABI when `Contract.from_explorer` compilation fails ([#1772](https://github.com/eth-brownie/brownie/pull/1772))
