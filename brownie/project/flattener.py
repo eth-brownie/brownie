@@ -147,4 +147,11 @@ class Flattener:
         if path.is_absolute():
             return path.as_posix()
 
-        return (Path(source_file_dir) / path).resolve().as_posix()
+        source_file_dir = Path(source_file_dir).resolve()
+        newpath = (source_file_dir / path).resolve()
+        while not newpath.exists():
+            source_file_dir = source_file_dir.parent
+            newpath = (source_file_dir / path).resolve()
+            if source_file_dir == Path("/"):
+                raise FileNotFoundError(f"Cannot determine location of {import_path}")
+        return newpath.as_posix()
