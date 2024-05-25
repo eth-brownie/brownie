@@ -87,7 +87,7 @@ class Flattener:
         # all pragma statements, we already have the license used + know which compiler
         # version is used via the build info
         pragmas = set((match.strip() for src in sources for match in PRAGMA_PATTERN.findall(src)))
-        # now we go thorugh and remove all imports/pragmas/license stuff
+        # now we go through and remove all imports/pragmas/license stuff
         wipe = lambda src: PRAGMA_PATTERN.sub(  # noqa: E731
             "", LICENSE_PATTERN.sub("", IMPORT_PATTERN.sub("", src))
         )
