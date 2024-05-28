@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Any, Callable, Iterable, Optional, Tuple, Union, overload
+from typing import Any, Callable, Iterable, Literal, Optional, Tuple, Union, overload
 
 from eth_abi.grammar import BasicType, TupleType, parse
 from hypothesis import strategies as st
