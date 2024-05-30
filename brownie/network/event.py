@@ -503,7 +503,8 @@ def _decode_ds_note(log: LogReceipt, contract):  # type: ignore
     if selector.hex() not in contract.selectors or sum(tail):
         return
     name = contract.selectors[selector.hex()]
-    data = bytes.fromhex(log["data"][2:])
+    log_data = log["data"]
+    data = bytes.fromhex(log_data[2:]) if isinstance(log_data, str) else log_data
     # data uses ABI encoding of [uint256, bytes] or [bytes] in different versions
     # instead of trying them all, assume the payload starts from selector
     try:
