@@ -224,8 +224,11 @@ def contract_strategy(contract_name: str) -> SearchStrategy:
 
 
 @overload
-def strategy(type_str: Literal["address"], length: Optional[int] = None, include: list = []):
-    ...
+def strategy(
+    type_str: Literal["address"],
+    length: Optional[int] = None,
+    include: list = [],
+) -> SearchStrategy: ...
 
 
 @overload
@@ -233,8 +236,7 @@ def strategy(
     type_str: Union[EvmIntType, EvmUintType],
     min_value: Optional[int] = None,
     max_value: Optional[int] = None,
-):
-    ...
+) -> SearchStrategy: ...
 
 
 def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
