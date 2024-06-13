@@ -67,6 +67,11 @@ def test_ge():
     assert Wei("2 ether") >= "2 ether"
 
 
+def test_div():
+    assert Wei("3 wei") / Wei("2 wei") == "1 wei"
+    assert Wei("3 wei") // Wei("2 wei") == "1 wei"
+
+
 @pytest.mark.parametrize(
     "conversion_tuples",
     (
