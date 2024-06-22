@@ -407,17 +407,22 @@ class TransactionReceipt:
             print(f"This transaction already has {self.confirmations} confirmations.")
             return
 
+        if self.nonce is not None:
+            # if we know the transaction nonce, it's more efficient to watch the tx count
+            # this (i hope) also fixes a longstanding bug that sometimes gave an incorrect
+            # "tx dropped without known replacement" error due to a race condition
+            while web3.eth.get_transaction_count(str(self.sender)) <= self.nonce:
+                time.sleep(1)
+
         while True:
             try:
                 tx: Dict = web3.eth.get_transaction(self.txid)
                 break
             except TransactionNotFound:
                 if self.nonce is not None:
-                    sender_nonce = web3.eth.get_transaction_count(str(self.sender))
-                    if sender_nonce > self.nonce:
-                        self.status = Status(-2)
-                        self._confirmed.set()
-                        return
+                    self.status = Status(-2)
+                    self._confirmed.set()
+                    return
                 time.sleep(1)
 
         self._await_confirmation(tx["blockNumber"], required_confs)
