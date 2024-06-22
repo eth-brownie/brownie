@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.20.6](https://github.com/eth-brownie/brownie/tree/v1.20.6) - 2024-06-22
+### Added
+- `include` kwarg for address strategy, type-dependent strategy overloads ([#1780](https://github.com/eth-brownie/brownie/pull/1780))
+
+### Fixed
+- ds-note decoding ([#1781](https://github.com/eth-brownie/brownie/pull/1781))
+- "Dropped without known replacement" tx race condition ([#1782](https://github.com/eth-brownie/brownie/pull/1782))
+
 ## [1.20.5](https://github.com/eth-brownie/brownie/tree/v1.20.5) - 2024-05-22
 ### Fixed
 - Handle missing `blockNumber` while awaiting confirmation ([#1774](https://github.com/eth-brownie/brownie/pull/1774))
