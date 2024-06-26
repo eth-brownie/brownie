@@ -2188,7 +2188,7 @@ Chain Methods
 
     Mine one or more empty blocks.
 
-    * ``blocks``: Number of blocks to mine. `chain.mine()` will mine a single block.
+    * ``blocks``: Number of blocks to mine. ``chain.mine()`` will mine a single block.
 
     Returns the block height after all new blocks have been mined.
 
