@@ -638,6 +638,12 @@ def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
         f"(address UNIQUE, alias UNIQUE, paths, {', '.join(DEPLOYMENT_KEYS)})"
     )
 
+    if "compiler" not in contract._build:
+        # do not replace full contract artifacts with ABI-only ones
+        row = cur.fetchone(f"SELECT compiler FROM {name} WHERE address=?", (address,))
+        if row and row[0]:
+            return
+
     all_sources = {}
     for key, path in contract._build.get("allSourcePaths", {}).items():
         source = contract._sources.get(path)
