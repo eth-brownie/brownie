@@ -93,7 +93,7 @@ def set_solc_version(version: Union[str, Version]) -> str:
 def install_solc(*versions: Union[Version, str]) -> None:
     """Installs solc versions."""
     for version in versions:
-        solcx.install_solc(version, show_progress=True)
+        solcx.install_solc(version, show_progress=False)
 
 
 def get_abi(contract_source: str, allow_paths: Optional[str] = None) -> Dict:
