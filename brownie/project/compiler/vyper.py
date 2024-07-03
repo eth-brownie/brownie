@@ -99,7 +99,7 @@ def _get_vyper_version_list() -> Tuple[List, List]:
 def install_vyper(*versions: str) -> None:
     """Installs vyper versions."""
     for version in versions:
-        vvm.install_vyper(version, show_progress=True)
+        vvm.install_vyper(version, show_progress=False)
 
 
 def find_vyper_versions(
