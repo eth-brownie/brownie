@@ -99,7 +99,7 @@ def _get_vyper_version_list() -> Tuple[List, List]:
         print(v.__dict__)
         print(v._version)
         print(type(v._version))
-    return AVAILABLE_VYPER_VERSIONS, installed_versions
+    return AVAILABLE_VYPER_VERSIONS, [v._version for v in installed_versions]
 
 
 def install_vyper(*versions: str) -> None:
