@@ -97,6 +97,8 @@ def _get_vyper_version_list() -> Tuple[List, List]:
         print(v)
         print(type(v))
         print(v.__dict__)
+        print(v._version)
+        print(type(v._version))
     return AVAILABLE_VYPER_VERSIONS, installed_versions
 
 
