@@ -66,8 +66,7 @@ def get_abi(contract_source: str, name: str) -> Dict:
         "sources": {name: {"content": contract_source}},
         "settings": {"outputSelection": {"*": {"*": ["abi"]}}},
     }
-    if False:
-    #if _active_version == Version(vyper.__version__):
+    if _active_version == Version(vyper.__version__):
         try:
             compiled = vyper_json.compile_json(input_json)
         except VyperException as exc:
@@ -236,7 +235,8 @@ def compile_from_input_json(
         outputs = input_json["settings"]["outputSelection"]["*"]["*"]
         outputs.remove("userdoc")
         outputs.remove("devdoc")
-    if version == Version(vyper.__version__):
+    #if version == Version(vyper.__version__):
+    if False:
         if allow_paths is not None:
             raise NotImplementedError(allow_paths)
         try:
