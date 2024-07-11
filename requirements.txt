@@ -220,7 +220,7 @@ typing-extensions==4.9.0
     #   web3
 urllib3==2.2.1
     # via requests
-vvm==0.1.0
+vvm==0.2.1
     # via -r requirements.in
 vyper==0.4.0
     # via -r requirements.in
