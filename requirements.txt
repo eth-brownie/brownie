@@ -222,7 +222,7 @@ urllib3==2.2.1
     # via requests
 vvm==0.1.0
     # via -r requirements.in
-vyper==0.3.10
+vyper==0.4.0
     # via -r requirements.in
 wcwidth==0.2.13
     # via prompt-toolkit
