@@ -66,7 +66,8 @@ def get_abi(contract_source: str, name: str) -> Dict:
         "sources": {name: {"content": contract_source}},
         "settings": {"outputSelection": {"*": {"*": ["abi"]}}},
     }
-    if _active_version == Version(vyper.__version__):
+    if False:
+    #if _active_version == Version(vyper.__version__):
         try:
             compiled = vyper_json.compile_json(input_json)
         except VyperException as exc:
