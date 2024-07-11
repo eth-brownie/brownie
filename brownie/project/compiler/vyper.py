@@ -98,7 +98,7 @@ def _get_vyper_version_list() -> Tuple[List, List]:
             print(v)
             print(type(v))
             print(v.__dict__)
-    return AVAILABLE_VYPER_VERSIONS, [v if isinstance(v, Version) else v._version for v in installed_versions]
+    return AVAILABLE_VYPER_VERSIONS, [v if isinstance(v, Version) else Version(v) for v in installed_versions]
 
 
 def install_vyper(*versions: str) -> None:
