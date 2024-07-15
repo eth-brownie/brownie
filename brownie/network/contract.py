@@ -162,7 +162,14 @@ class _ContractBase:
             None,
         )
         if abi is None:
-            raise ValueError("Four byte selector does not match the ABI for this contract")
+            if fn_selector == "0x08c379a0":
+                abi = {
+                    "inputs": [{"name": "message", "type": "string"}],
+                    "name": "Error",
+                    "type": "error",
+                }
+            else:
+                raise ValueError("Four byte selector does not match the ABI for this contract")
 
         function_sig = build_function_signature(abi)
 
