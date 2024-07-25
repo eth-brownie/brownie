@@ -808,29 +808,38 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         txid = exc.txid
                         print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
                         revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
-                try:
-                    receipt = TransactionReceipt(
-                        txid,
-                        self,
-                        silent=silent,
-                        required_confs=required_confs,
-                        is_blocking=False,
-                        name=fn_name,
-                        revert_data=revert_data,
-                    )  # type: ignore
+
+                done = False
+                for _ in range(3):
+                    try:
+                        receipt = TransactionReceipt(
+                            txid,
+                            self,
+                            silent=silent,
+                            required_confs=required_confs,
+                            is_blocking=False,
+                            name=fn_name,
+                            revert_data=revert_data,
+                        )  # type: ignore
+                        done = True
+                        break
+                    except (TransactionNotFound, ValueError):
+                        if not silent:
+                            sys.stdout.write(f"  Awaiting transaction in the mempool... {_marker[0]}\r")
+                            sys.stdout.flush()
+                            _marker.rotate(1)
+                        time.sleep(1)
+                
+                if done:
                     break
-                except (TransactionNotFound, ValueError):
-                    if not silent:
-                        sys.stdout.write(f"  Awaiting transaction in the mempool... {_marker[0]}\r")
-                        sys.stdout.flush()
-                        _marker.rotate(1)
-                    time.sleep(1)
 
                 if priority_fee == "auto":
                     priority_fee_to_send: Wei = max(
                         Chain().priority_fee,
                         Wei(priority_fee_to_send * priority_fee_increment)
                     )
+                    if max_fee is not None:
+                        priority_fee_to_send = min(max_fee, priority_fee_to_send)
 
         receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
         if receipt.status != 1 and exc is None:
