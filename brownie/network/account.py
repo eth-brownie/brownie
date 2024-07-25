@@ -727,12 +727,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         priority_fee_increment = 1.1
         
+        network_settings = (
+            CONFIG.settings["networks"][CONFIG.active_network["id"]] # @UndefinedVariable
+                if CONFIG.active_network["id"] in CONFIG.settings["networks"]  # @UndefinedVariable
+            else CONFIG.active_network["settings"]  # @UndefinedVariable
+        )
         if gas_price is None:
-            network_settings = (
-                CONFIG.settings["networks"][CONFIG.active_network["id"]] # @UndefinedVariable
-                    if CONFIG.active_network["id"] in CONFIG.settings["networks"]  # @UndefinedVariable
-                else CONFIG.active_network["settings"]  # @UndefinedVariable
-            )
             # if gas price is not explicitly set, load the default max fee and priority fee
             if max_fee is None:
                 max_fee = network_settings.get("max_fee") or None
@@ -839,7 +839,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         Wei(priority_fee_to_send * priority_fee_increment)
                     )
                     if max_fee is not None:
-                        priority_fee_to_send = min(max_fee, priority_fee_to_send)
+                        priority_fee_to_send = min(Wei(max_fee), priority_fee_to_send)
 
         receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
         if receipt.status != 1 and exc is None:
@@ -918,7 +918,7 @@ class Account(_PrivateKeyAccount):
         address: Public address of the account.
         nonce: Current nonce of the account."""
 
-    def _transact(self, tx: Dict, allow_revert: bool) -> Any:
+    def _transact(self, tx: Dict, allow_revert: Optional[bool]) -> Any:
         if allow_revert is None:
             allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
@@ -1081,15 +1081,19 @@ def _apply_fee_to_tx(
         raise InvalidTransaction("priority_fee must be defined")
     priority_fee = Wei(priority_fee)
 
+    base_fee = Chain().base_fee
+    
     # no max_fee specified, infer from base_fee
     if max_fee is None:
-        base_fee = Chain().base_fee
         max_fee = base_fee * 2 + priority_fee
     else:
         max_fee = Wei(max_fee)
 
     if priority_fee > max_fee:
         raise InvalidTransaction("priority_fee must not exceed max_fee")
+    
+    if max_fee < base_fee + priority_fee:
+        raise TransactionError("The gas is too damn high")
 
     tx["maxFeePerGas"] = web3.to_hex(max_fee)
     tx["maxPriorityFeePerGas"] = web3.to_hex(priority_fee)
