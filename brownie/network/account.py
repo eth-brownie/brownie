@@ -293,7 +293,7 @@ class Accounts(metaclass=_Singleton):
         """
         self._accounts.clear()
 
-    def connect_to_clef(self, uri: str = None, timeout: int = 120) -> None:
+    def connect_to_clef(self, uri: Optional[str] = None, timeout: int = 120) -> None:
         """
         Connect to Clef and import open accounts.
 
@@ -1019,7 +1019,7 @@ class LocalAccount(_PrivateKeyAccount):
             signature=HexBytes(eth_signature_bytes),
         )
 
-    def _transact(self, tx: Dict, allow_revert: bool) -> None:
+    def _transact(self, tx: Dict, allow_revert: Optional[bool]) -> None:
         if allow_revert is None:
             allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
@@ -1038,7 +1038,7 @@ class ClefAccount(_PrivateKeyAccount):
         self._provider = provider
         super().__init__(address)
 
-    def _transact(self, tx: Dict, allow_revert: bool) -> None:
+    def _transact(self, tx: Dict, allow_revert: Optional[bool]) -> None:
         if allow_revert is None:
             allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
