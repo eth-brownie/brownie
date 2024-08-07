@@ -6,6 +6,7 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+- commented out pragma statements in contracts is now ignored upon compile ([#1552](https://github.com/eth-brownie/brownie/pull/1552))
 
 ## [1.20.6](https://github.com/eth-brownie/brownie/tree/v1.20.6) - 2024-06-22
 ### Added
