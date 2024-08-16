@@ -243,7 +243,8 @@ def compile_from_input_json(
     if version == Version(vyper.__version__):
     #if False:
         if allow_paths is not None:
-            raise NotImplementedError(allow_paths)
+            pass
+            #raise NotImplementedError(allow_paths)
         try:
             return vyper_json.compile_json(input_json)
         except VyperException as exc:
