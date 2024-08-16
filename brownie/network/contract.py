@@ -708,7 +708,9 @@ class _DeployedContractBase(_ContractBase):
         self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
     ) -> None:
         address = _resolve_address(address)
-        self.bytecode = web3.eth.get_code(address).hex()[2:]
+        self.bytecode = (
+            self._build.get("deployedBytecode", None) or web3.eth.get_code(address).hex()[2:]
+        )
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
         self._owner = owner
@@ -948,7 +950,13 @@ class Contract(_DeployedContractBase):
             will be performed using this account.
         """
         address = _resolve_address(address)
-        build = {"abi": abi, "address": address, "contractName": name, "type": "contract"}
+        build = {
+            "abi": abi,
+            "address": address,
+            "contractName": name,
+            "type": "contract",
+            "deployedBytecode": web3.eth.get_code(address).hex()[2:],
+        }
 
         self = cls.__new__(cls)
         _ContractBase.__init__(self, None, build, {})  # type: ignore
