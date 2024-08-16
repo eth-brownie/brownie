@@ -304,9 +304,6 @@ def _generate_coverage_data(
 ) -> Tuple:
     if not opcodes_str:
         return {}, {}, {}
-
-    if not isinstance(source_map_str, str):
-        raise TypeError(source_map_str) from None
         
     source_map = deque(expand_source_map(source_map_str))
     opcodes = deque(opcodes_str.split(" "))
