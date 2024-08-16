@@ -93,12 +93,7 @@ def _get_vyper_version_list() -> Tuple[List, List]:
             if not installed_versions:
                 raise ConnectionError("Vyper not installed and cannot connect to GitHub")
             AVAILABLE_VYPER_VERSIONS = installed_versions
-    for v in installed_versions:
-        if '_version' not in v.__dict__:
-            print(v)
-            print(type(v))
-            print(v.__dict__)
-    return AVAILABLE_VYPER_VERSIONS, [v if isinstance(v, Version) else Version(str(v)) for v in installed_versions]
+    return AVAILABLE_VYPER_VERSIONS, installed_versions
 
 
 def install_vyper(*versions: str) -> None:
