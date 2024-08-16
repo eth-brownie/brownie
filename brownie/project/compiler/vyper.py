@@ -253,7 +253,7 @@ def compile_from_input_json(
             return vvm.compile_standard(input_json, base_path=allow_paths, vyper_version=str(version))
         except vvm.exceptions.VyperError as exc:
             print(version)
-            raise Exception(version, type(version), exc)
+            #raise Exception(version, type(version), exc)
             raise CompilerError(exc, "vyper")
 
 
