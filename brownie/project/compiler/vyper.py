@@ -82,13 +82,13 @@ def get_abi(contract_source: str, name: str) -> Dict:
 
 def _get_vyper_version_list() -> Tuple[List, List]:
     global AVAILABLE_VYPER_VERSIONS
-    installed_versions = vvm.get_installed_vyper_versions()
+    installed_versions = [Version(str(v)) for v in vvm.get_installed_vyper_versions()]
     lib_version = Version(vyper.__version__)
     if lib_version not in installed_versions:
         installed_versions.append(lib_version)
     if AVAILABLE_VYPER_VERSIONS is None:
         try:
-            AVAILABLE_VYPER_VERSIONS = vvm.get_installable_vyper_versions()
+            AVAILABLE_VYPER_VERSIONS = [Version(str(v)) for v in vvm.get_installable_vyper_versions()]
         except ConnectionError:
             if not installed_versions:
                 raise ConnectionError("Vyper not installed and cannot connect to GitHub")
