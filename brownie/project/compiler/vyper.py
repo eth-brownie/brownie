@@ -242,7 +242,7 @@ def compile_from_input_json(
         outputs.remove("devdoc")
     if version == Version(vyper.__version__):
         try:
-            return vyper_json.compile_json(input_json, root_path=allow_paths)
+            return vyper_json.compile_json(input_json, json_path=allow_paths)
         except VyperException as exc:
             raise exc.with_traceback(None)
     else:
