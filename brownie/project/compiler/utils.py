@@ -10,7 +10,7 @@ def expand_source_map(source_map_str: str) -> List:
     # Expands the compressed sourceMap supplied by solc into a list of lists
     
     if isinstance(source_map_str, dict):
-        source_map_str = str(source_map_str)
+        source_map_str = source_map_str["pc_pos_map_compressed"]
     if not isinstance(source_map_str, str):
         raise TypeError(source_map_str) from None
         
