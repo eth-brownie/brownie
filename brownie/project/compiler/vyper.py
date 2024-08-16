@@ -241,10 +241,6 @@ def compile_from_input_json(
         outputs.remove("userdoc")
         outputs.remove("devdoc")
     if version == Version(vyper.__version__):
-    #if False:
-        if allow_paths is not None:
-            pass
-            #raise NotImplementedError(allow_paths)
         try:
             return vyper_json.compile_json(input_json)
         except VyperException as exc:
@@ -253,9 +249,6 @@ def compile_from_input_json(
         try:
             return vvm.compile_standard(input_json, base_path=allow_paths, vyper_version=str(version))
         except vvm.exceptions.VyperError as exc:
-            print(version)
-            raise exc
-            #raise Exception(version, type(version), exc)
             raise CompilerError(exc, "vyper")
 
 
