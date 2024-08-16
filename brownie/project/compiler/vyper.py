@@ -46,7 +46,7 @@ def set_vyper_version(version: Union[str, Version]) -> str:
     if isinstance(version, str):
         version = Version(version)
     if version != Version(vyper.__version__):
-        raise Exception(version)
+        raise Exception(version, type(version), vyper.__version__)
         try:
             vvm.set_vyper_version(version, silent=True)
         except vvm.exceptions.VyperNotInstalled:
