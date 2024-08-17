@@ -263,8 +263,8 @@ def _get_unique_build_json(
         ast = ast_json
 
     source_map = output_evm["deployedBytecode"]["sourceMap"]
-    if not isinstance(source_map, str):
-        raise TypeError(source_map.keys(), source_map)
+    #if not isinstance(source_map, str):
+    #    raise TypeError(source_map.keys(), source_map)
     
     pc_map, statement_map, branch_map = _generate_coverage_data(
         source_map,
