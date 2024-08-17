@@ -406,7 +406,7 @@ def _generate_coverage_data(
 
         if node["ast_type"] in ("Assert", "If") or (
             node["ast_type"] == "Expr"
-            and node["value"]["func"].get("id", None) == "assert_modifiable"
+            and node["value"].get("func", {}).get("id", None) == "assert_modifiable"
         ):
             # branch coverage
             pc_list[-1]["branch"] = count
