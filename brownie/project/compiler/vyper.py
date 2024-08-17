@@ -47,7 +47,7 @@ def set_vyper_version(version: Union[str, Version]) -> str:
     if isinstance(version, str):
         version = Version(version)
     if version != Version(vyper.__version__):
-        # NOTE: vvm uses `packaging.version.Version` which is not compatible with 
+        # NOTE: vvm uses `packaging.version.Version` which is not compatible with
         #       `semantic_version.Version` so we first must cast it as a string
         version_str = str(version)
         try:
@@ -246,7 +246,7 @@ def compile_from_input_json(
             raise exc.with_traceback(None)
     else:
         try:
-            # NOTE: vvm uses `packaging.version.Version` which is not compatible with 
+            # NOTE: vvm uses `packaging.version.Version` which is not compatible with
             #       `semantic_version.Version` so we first must cast it as a string
             version = str(version)
             return vvm.compile_standard(input_json, base_path=allow_paths, vyper_version=version)
