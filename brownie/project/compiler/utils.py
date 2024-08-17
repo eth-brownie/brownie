@@ -8,6 +8,10 @@ from brownie._config import _get_data_folder
 
 def expand_source_map(source_map_str: str) -> List:
     # Expands the compressed sourceMap supplied by solc into a list of lists
+    
+    if not isinstance(source_map_str, str):
+        raise TypeError(source_map_str) from None
+        
     source_map: List = [_expand_row(i) if i else None for i in source_map_str.split(";")]
     for i, value in enumerate(source_map[1:], 1):
         if value is None:

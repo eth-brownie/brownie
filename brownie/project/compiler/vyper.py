@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import vvm
 import vyper
+from packaging.version import Version as PVersion
 from requests.exceptions import ConnectionError
 from semantic_version import Version
 from vyper.cli import vyper_json
@@ -46,6 +47,8 @@ def set_vyper_version(version: Union[str, Version]) -> str:
     if isinstance(version, str):
         version = Version(version)
     if version != Version(vyper.__version__):
+        # NOTE: vvm uses packaging.version.Version which is not compatible with semantic_version.Version so we first must cast it as a string
+        version = str(version)
         try:
             vvm.set_vyper_version(version, silent=True)
         except vvm.exceptions.VyperNotInstalled:
@@ -82,13 +85,13 @@ def get_abi(contract_source: str, name: str) -> Dict:
 
 def _get_vyper_version_list() -> Tuple[List, List]:
     global AVAILABLE_VYPER_VERSIONS
-    installed_versions = vvm.get_installed_vyper_versions()
+    installed_versions = _convert_to_semver(vvm.get_installed_vyper_versions())
     lib_version = Version(vyper.__version__)
     if lib_version not in installed_versions:
         installed_versions.append(lib_version)
     if AVAILABLE_VYPER_VERSIONS is None:
         try:
-            AVAILABLE_VYPER_VERSIONS = vvm.get_installable_vyper_versions()
+            AVAILABLE_VYPER_VERSIONS = _convert_to_semver(vvm.get_installable_vyper_versions())
         except ConnectionError:
             if not installed_versions:
                 raise ConnectionError("Vyper not installed and cannot connect to GitHub")
@@ -237,11 +240,13 @@ def compile_from_input_json(
         outputs.remove("devdoc")
     if version == Version(vyper.__version__):
         try:
-            return vyper_json.compile_json(input_json, root_path=allow_paths)
+            return vyper_json.compile_json(input_json)
         except VyperException as exc:
             raise exc.with_traceback(None)
     else:
         try:
+            # NOTE: vvm uses packaging.version.Version which is not compatible with semantic_version.Version so we first must cast it as a string
+            version = str(version)
             return vvm.compile_standard(input_json, base_path=allow_paths, vyper_version=version)
         except vvm.exceptions.VyperError as exc:
             raise CompilerError(exc, "vyper")
@@ -449,3 +454,12 @@ def _get_statement_nodes(ast_json: List) -> List:
         else:
             stmt_nodes.append(node)
     return stmt_nodes
+
+
+def _convert_to_semver(versions: List[PVersion]) -> List[Version]:
+    """
+    Converts a list of packaging.version.Version objects to a list of semantic_version.Version objects.
+    vvm 0.2.0 switched to packaging.version but we are not ready to migrate brownie off of semantic-version.
+    This function serves as a stopgap.
+    """
+    return [Version(major=version.major, minor=version.minor, patch=version.micro, prerelease=''.join(str(x) for x in version.pre)) for version in versions]
