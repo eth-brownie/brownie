@@ -11,7 +11,7 @@ def expand_source_map(source_map_str: str) -> List:
     
     if not isinstance(source_map_str, str):
         # NOTE: why do we need this?
-        source_map_str = source_map_str["ps_pos_map_compressed"]
+        source_map_str = source_map_str["pc_pos_map_compressed"]
         raise TypeError(source_map_str) from None
         
     source_map: List = [_expand_row(i) if i else None for i in source_map_str.split(";")]
