@@ -262,12 +262,8 @@ def _get_unique_build_json(
     else:
         ast = ast_json
 
-    source_map = output_evm["deployedBytecode"]["sourceMap"]
-    #if not isinstance(source_map, str):
-    #    raise TypeError(source_map.keys(), source_map)
-    
     pc_map, statement_map, branch_map = _generate_coverage_data(
-        source_map,
+        output_evm["deployedBytecode"]["sourceMap"],
         output_evm["deployedBytecode"]["opcodes"],
         contract_name,
         ast,
@@ -466,4 +462,12 @@ def _convert_to_semver(versions: List[PVersion]) -> List[Version]:
     vvm 0.2.0 switched to packaging.version but we are not ready to migrate brownie off of semantic-version.
     This function serves as a stopgap.
     """
-    return [Version(major=version.major, minor=version.minor, patch=version.micro, prerelease=''.join(str(x) for x in version.pre) if version.pre else None) for version in versions]
+    return [
+        Version(
+            major=version.major,
+            minor=version.minor,
+            patch=version.micro,
+            prerelease="".join(str(x) for x in version.pre) if version.pre else None,
+        )
+        for version in versions
+    ]
