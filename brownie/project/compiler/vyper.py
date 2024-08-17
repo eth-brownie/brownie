@@ -48,12 +48,12 @@ def set_vyper_version(version: Union[str, Version]) -> str:
         version = Version(version)
     if version != Version(vyper.__version__):
         # NOTE: vvm uses packaging.version.Version which is not compatible with semantic_version.Version so we first must cast it as a string
-        version = str(version)
+        version_str = str(version)
         try:
-            vvm.set_vyper_version(version, silent=True)
+            vvm.set_vyper_version(version_str, silent=True)
         except vvm.exceptions.VyperNotInstalled:
             install_vyper(version)
-            vvm.set_vyper_version(version, silent=True)
+            vvm.set_vyper_version(version_str, silent=True)
     _active_version = version
     return str(_active_version)
 
