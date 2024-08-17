@@ -47,7 +47,8 @@ def set_vyper_version(version: Union[str, Version]) -> str:
     if isinstance(version, str):
         version = Version(version)
     if version != Version(vyper.__version__):
-        # NOTE: vvm uses packaging.version.Version which is not compatible with semantic_version.Version so we first must cast it as a string
+        # NOTE: vvm uses `packaging.version.Version` which is not compatible with 
+        #       `semantic_version.Version` so we first must cast it as a string
         version_str = str(version)
         try:
             vvm.set_vyper_version(version_str, silent=True)
@@ -245,7 +246,8 @@ def compile_from_input_json(
             raise exc.with_traceback(None)
     else:
         try:
-            # NOTE: vvm uses packaging.version.Version which is not compatible with semantic_version.Version so we first must cast it as a string
+            # NOTE: vvm uses `packaging.version.Version` which is not compatible with 
+            #       `semantic_version.Version` so we first must cast it as a string
             version = str(version)
             return vvm.compile_standard(input_json, base_path=allow_paths, vyper_version=version)
         except vvm.exceptions.VyperError as exc:
@@ -458,8 +460,12 @@ def _get_statement_nodes(ast_json: List) -> List:
 
 def _convert_to_semver(versions: List[PVersion]) -> List[Version]:
     """
-    Converts a list of packaging.version.Version objects to a list of semantic_version.Version objects.
-    vvm 0.2.0 switched to packaging.version but we are not ready to migrate brownie off of semantic-version.
+    Converts a list of `packaging.version.Version` objects to a list of
+    `semantic_version.Version` objects.
+
+    vvm 0.2.0 switched to packaging.version but we are not ready to
+    migrate brownie off of semantic-version.
+
     This function serves as a stopgap.
     """
     return [
