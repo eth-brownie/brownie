@@ -10,9 +10,10 @@ from brownie.network.middlewares import BrownieMiddlewareABC
 class GethPOAMiddleware(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
-        block_ident = "latest" if network_type == "live" else 0
+        block_idents = ["latest"] if network_type == "live" else [0, "latest"]
         try:
-            w3.eth.get_block(block_ident)
+            for block_ident in block_idents:
+                w3.eth.get_block(block_ident)
             return None
         except ExtraDataLengthError:
             return -1
