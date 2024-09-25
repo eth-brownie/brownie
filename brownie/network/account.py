@@ -752,7 +752,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         except ValueError as e:
             raise VirtualMachineError(e) from e
         
-        min_fee = network_settings.get("min_fee") or Wei(0)
+        min_fee = Wei(network_settings.get("min_fee") or 0)
 
         with self._lock:
             # we use a lock here to prevent nonce issues when sending many tx's at once
