@@ -663,6 +663,9 @@ class TransactionReceipt:
             self._trace_exc = RPCRequestError(trace["error"]["message"])
             raise self._trace_exc
 
+        if "result" not in trace:
+            return
+        
         self._raw_trace = trace = trace["result"]["structLogs"]
         if not trace:
             self._modified_state = False
