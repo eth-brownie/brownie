@@ -8,7 +8,7 @@ from brownie._config import _get_data_folder
 
 def expand_source_map(source_map_str: str) -> List:
     # Expands the compressed sourceMap supplied by solc into a list of lists
-'
+
     if isinstance(source_map_str, dict):
         # NOTE: vyper >= 0.4 gives us a dict that contains the source map
         source_map_str = source_map_str["pc_pos_map_compressed"]
