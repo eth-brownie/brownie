@@ -17,7 +17,6 @@ attrs==23.2.0
     #   aiohttp
     #   hypothesis
     #   jsonschema
-    #   pytest
     #   referencing
 bitarray==2.9.2
     # via eth-account
@@ -85,6 +84,8 @@ eth-utils==2.3.1
     #   eth-rlp
     #   rlp
     #   web3
+exceptiongroup==1.2.2
+    # via pytest
 execnet==2.0.2
     # via pytest-xdist
 frozenlist==1.4.1
@@ -145,7 +146,6 @@ psutil==5.9.8
 py==1.11.0
     # via
     #   -r requirements.in
-    #   pytest
     #   pytest-forked
 py-solc-ast==1.2.10
     # via -r requirements.in
@@ -162,14 +162,14 @@ pygments==2.17.2
     #   pygments-lexer-solidity
 pygments-lexer-solidity==0.7.0
     # via -r requirements.in
-pytest==6.2.5
+pytest==7.4.4
     # via
     #   -r requirements.in
     #   pytest-forked
     #   pytest-xdist
 pytest-forked==1.6.0
     # via pytest-xdist
-pytest-xdist==1.34.0
+pytest-xdist==2.5.0
     # via -r requirements.in
 python-dotenv==0.16.0
     # via -r requirements.in
@@ -204,15 +204,13 @@ semantic-version==2.10.0
     #   py-solc-x
     #   vvm
 six==1.16.0
-    # via
-    #   asttokens
-    #   pytest-xdist
+    # via asttokens
 sortedcontainers==2.4.0
     # via hypothesis
-toml==0.10.2
-    # via pytest
 tomli==2.0.2
-    # via black
+    # via
+    #   black
+    #   pytest
 toolz==0.12.1
     # via cytoolz
 tqdm==4.66.2

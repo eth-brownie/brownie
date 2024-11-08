@@ -15,8 +15,8 @@ py-solc-x>=1.1.0,<2
 py>=1.5.0,<2
 pygments-lexer-solidity<1
 pygments<3
-pytest-xdist<2
-pytest<7
+pytest-xdist>=2,<3
+pytest>=7,<8
 python-dotenv>=0.16.0,<0.17.0
 pyyaml>=6,<7
 requests>=2.25.0,<3
