@@ -38,6 +38,9 @@ setup(
         "console_scripts": ["brownie=brownie._cli.__main__:main"],
         "pytest11": ["pytest-brownie=brownie.test.plugin"],
     },
+    package_data={
+        "brownie": ["py.typed"],
+    },
     include_package_data=True,
     python_requires=">=3.10,<4",
     classifiers=[
