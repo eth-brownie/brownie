@@ -211,7 +211,7 @@ def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     Returns: NpmSpec object
     """
 
-    pragma_match = next(re.finditer(r"pragma +solidity([^;]*);", source), None)
+    pragma_match = next(re.finditer(r"(?:\n|^)pragma +solidity([^;]*);", source), None)
     if pragma_match is not None:
         pragma_string = pragma_match.groups()[0]
         pragma_string = " ".join(pragma_string.split())
