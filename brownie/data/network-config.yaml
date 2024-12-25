@@ -26,7 +26,7 @@ live:
         chainid: 11155111
         id: sepolia
         host: https://sepolia.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-        explorer: https://api-sepolia.etherscan.io/
+        explorer: https://api-sepolia.etherscan.io/api
         provider: infura
       - name: Goerli (Infura)
         chainid: 5
