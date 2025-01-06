@@ -150,7 +150,7 @@ def find_vyper_versions(
             )
 
         if not version or (install_latest and latest > version):
-            to_install.add(latest)
+            to_install.add(str(latest))
         elif latest and latest > version:
             new_versions.add(str(version))
 
