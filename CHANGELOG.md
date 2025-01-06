@@ -6,6 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Added
+- `py.typed` marker
 
 ## [1.20.6](https://github.com/eth-brownie/brownie/tree/v1.20.6) - 2024-06-22
 ### Added
