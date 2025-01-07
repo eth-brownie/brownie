@@ -6,8 +6,17 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.20.7](https://github.com/eth-brownie/brownie/tree/v1.20.7) - 2025-01-07
 ### Added
-- `py.typed` marker
+- Support for vyper `0.4.0` ([#1793](https://github.com/eth-brownie/brownie/pull/1793))
+- `py.typed` marker ([#1794](https://github.com/eth-brownie/brownie/pull/1794))
+
+### Fixed
+- Improvements to caching ([#1786](https://github.com/eth-brownie/brownie/pull/1786))
+
+### Removed
+- `tqdm` progress bars during compiler installation ([#1785](https://github.com/eth-brownie/brownie/pull/1785))
 
 ## [1.20.6](https://github.com/eth-brownie/brownie/tree/v1.20.6) - 2024-06-22
 ### Added
