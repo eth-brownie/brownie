@@ -77,7 +77,7 @@ def get_abi(contract_source: str, name: str) -> Dict:
             raise exc.with_traceback(None)
     else:
         try:
-            compiled = vvm.compile_standard(input_json, vyper_version=_active_version)
+            compiled = vvm.compile_standard(input_json, vyper_version=str(_active_version))
         except vvm.exceptions.VyperError as exc:
             raise CompilerError(exc, "vyper")
 
@@ -103,7 +103,7 @@ def _get_vyper_version_list() -> Tuple[List, List]:
 def install_vyper(*versions: str) -> None:
     """Installs vyper versions."""
     for version in versions:
-        vvm.install_vyper(version, show_progress=False)
+        vvm.install_vyper(str(version), show_progress=False)
 
 
 def find_vyper_versions(
@@ -150,7 +150,7 @@ def find_vyper_versions(
             )
 
         if not version or (install_latest and latest > version):
-            to_install.add(latest)
+            to_install.add(str(latest))
         elif latest and latest > version:
             new_versions.add(str(version))
 
