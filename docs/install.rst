@@ -114,9 +114,9 @@ If you have updated your brownie version from older versions, hardhat networks w
 Using Brownie with Anvil
 ==========================
 
-`Anvil <https://github.com/foundry-rs/foundry/tree/master/anvil>`_ is a blazing-fast local testnet node implementation in Rust. Anvil may be used as an alternative to Ganache within Brownie.
+`Anvil <https://github.com/foundry-rs/foundry/tree/master/crates/anvil>`_ is a blazing-fast local testnet node implementation in Rust. Anvil may be used as an alternative to Ganache within Brownie.
 
-To use Anvil with Brownie, you must first `follow their steps to install Anvil <https://github.com/foundry-rs/foundry/tree/master/anvil#installation>`_.
+To use Anvil with Brownie, you must first `follow their steps to install Anvil <https://github.com/foundry-rs/foundry/tree/master/crates/anvil#installation>`_.
 
 Once installed, include the ``--network anvil`` or ``--network anvil-fork`` flag to run Brownie with Anvil. For example, to launch the console:
 
