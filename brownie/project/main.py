@@ -811,7 +811,7 @@ def _install_from_github(package_id: str) -> str:
     install_path.mkdir(exist_ok=True)
     install_path = install_path.joinpath(f"{repo}@{version}")
     if install_path.exists():
-        raise FileExistsError("Package is aleady installed")
+        raise FileExistsError("Package is already installed")
 
     headers = REQUEST_HEADERS.copy()
     headers.update(_maybe_retrieve_github_auth())
