@@ -46,7 +46,7 @@ To upgrade to the latest version:
 pipx upgrade eth-brownie
 ```
 
-To use lastest master or another branch as version:
+To use latest master or another branch as version:
 ```bash
 pipx install git+https://github.com/eth-brownie/brownie.git@master
 ```
