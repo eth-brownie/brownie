@@ -9,6 +9,7 @@ try:
 except ImportError:
     DecimalOverrideException = BaseException  # regular catch blocks shouldn't catch
 
+import cchecksum
 import eth_utils
 from hexbytes import HexBytes
 
@@ -205,7 +206,7 @@ class EthAddress(str):
             converted_value = HexBytes(value).hex()
         converted_value = eth_utils.add_0x_prefix(str(converted_value))  # type: ignore
         try:
-            converted_value = eth_utils.to_checksum_address(converted_value)
+            converted_value = cchecksum.to_checksum_address(converted_value)
         except ValueError:
             raise ValueError(f"'{value}' is not a valid ETH address") from None
         return super().__new__(cls, converted_value)  # type: ignore
