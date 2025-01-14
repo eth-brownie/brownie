@@ -77,7 +77,6 @@ eth-hash[pycryptodome]==0.6.0
     #   -r requirements.txt
     #   eip712
     #   eth-event
-    #   eth-hash
     #   eth-utils
     #   web3
 eth-keyfile==0.7.0
@@ -173,6 +172,7 @@ packaging==23.2
     #   -r requirements.txt
     #   black
     #   pytest
+    #   vvm
     #   vyper
 parsimonious==0.9.0
     # via
@@ -267,7 +267,6 @@ semantic-version==2.10.0
     # via
     #   -r requirements.txt
     #   py-solc-x
-    #   vvm
 six==1.16.0
     # via
     #   -r requirements.txt
@@ -297,9 +296,9 @@ urllib3==2.2.1
     # via
     #   -r requirements.txt
     #   requests
-vvm==0.1.0
+vvm==0.2.1
     # via -r requirements.txt
-vyper==0.3.10
+vyper==0.4.0
     # via -r requirements.txt
 wcwidth==0.2.13
     # via
