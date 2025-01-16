@@ -4,6 +4,7 @@ import asyncio
 import io
 import json
 import os
+import random
 import re
 import time
 import warnings
@@ -86,6 +87,7 @@ _explorer_tokens = {
     "ftmscan": "FTMSCAN_TOKEN",
     "arbiscan": "ARBISCAN_TOKEN",
     "snowtrace": "SNOWTRACE_TOKEN",
+    "snowscan": "SNOWTRACE_TOKEN",
     "aurorascan": "AURORASCAN_TOKEN",
     "moonscan": "MOONSCAN_TOKEN",
     "gnosisscan": "GNOSISSCAN_TOKEN",
@@ -94,6 +96,7 @@ _explorer_tokens = {
     "zksync": "ZKSYNCSCAN_TOKEN",
 }
 
+_rng = random.Random()
 
 class _ContractBase:
     _dir_color = "bright magenta"
@@ -1692,7 +1695,7 @@ class _ContractMethod(_ContractFragment):
         )
 
     def call(
-        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None, max_retries=5
     ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
@@ -1715,24 +1718,31 @@ class _ContractMethod(_ContractFragment):
             Contract method return value(s).
         """
 
-        args, tx = _get_tx(self._owner, args)
-        if tx["from"]:
-            tx["from"] = str(tx["from"])
-        del tx["required_confs"]
-        tx.update({"to": self._address, "data": self.encode_input(*args)})
-
         try:
-            web3.isConnected()
-            data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier, override)
-        except ValueError as e:
-            raise VirtualMachineError(e) from None
+            args, tx = _get_tx(self._owner, args)
+            if tx["from"]:
+                tx["from"] = str(tx["from"])
+            del tx["required_confs"]
+            tx.update({"to": self._address, "data": self.encode_input(*args)})
 
-        if self.abi["outputs"] and not data:
-            raise ValueError("No data was returned - the call likely reverted")
-        try:
-            return self.decode_output(data)
+            try:
+                web3.isConnected()
+                data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier, override)
+            except ValueError as e:
+                raise VirtualMachineError(e) from None
+
+            if self.abi["outputs"] and not data:
+                raise ValueError("No data was returned - the call likely reverted")
+            try:
+                return self.decode_output(data)
+            except Exception:
+                raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
         except Exception:
-            raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
+            if max_retries <= 0:
+                raise
+
+            time.sleep(_rng.random() * 0.4 + 0.1)
+            return self.call(*args, block_identifier=block_identifier, override=override, max_retries=max_retries-1)
 
     def transact(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:
         """
@@ -1772,6 +1782,8 @@ class _ContractMethod(_ContractFragment):
             data=self.encode_input(*args),
             allow_revert=tx["allow_revert"],
             silent=silent,
+            test_function=tx.get("test_function"),
+            max_retries=tx.get("max_retries", 5),
         )
 
     def estimate_gas(self, *args: Tuple) -> int:

@@ -80,6 +80,23 @@ class Status(IntEnum):
     Reverted = 0
     Confirmed = 1
 
+def load_transaction(tx_id: str, max_retries: 5, required_confs: int = 3):
+    attempt = 1
+    sleep_time = 1.0
+
+    while attempt <= max_retries:
+        time.sleep(sleep_time)
+        tx: TransactionReceipt = TransactionReceipt(
+            tx_id,
+            is_blocking=True,
+            required_confs=required_confs,
+        )
+        if tx.timestamp:
+            return tx
+
+        sleep_time *= 1.5
+
+    return None
 
 class TransactionReceipt:
     """Attributes and methods relating to a broadcasted transaction.

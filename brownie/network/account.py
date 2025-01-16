@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import json
+import re
 import sys
 import threading
 import time
@@ -8,7 +9,7 @@ from collections import deque
 from collections.abc import Iterator
 from getpass import getpass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import eth_account
 import eth_keys
@@ -37,7 +38,7 @@ from brownie.utils import color
 from .gas.bases import GasABC
 from .rpc import Rpc
 from .state import Chain, TxHistory, _revert_register
-from .transaction import TransactionReceipt
+from .transaction import TransactionReceipt, load_transaction
 from .web3 import _resolve_address, web3
 
 history = TxHistory()
@@ -45,6 +46,11 @@ rpc = Rpc()
 
 eth_account.Account.enable_unaudited_hdwallet_features()
 _marker = deque("-/|\\-/|\\")
+
+_dropped_tx_pattern = re.compile(
+    r"Tx dropped without known replacement: (0x[0-9a-f]{64})"
+)
+_lost_tx_pattern = re.compile(r"Transaction with hash: '(0x[0-9a-f]{64})' not found")
 
 
 class Accounts(metaclass=_Singleton):
@@ -666,6 +672,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
         required_confs: int = 1,
         allow_revert: bool = None,
         silent: bool = None,
+        test_function: Optional[Callable[[], bool]] = None,
+        max_retries: int = 5,
+        **kwargs,
     ) -> TransactionReceipt:
         """
         Broadcast a transaction from this account.
@@ -686,47 +695,125 @@ class _PrivateKeyAccount(PublicKeyAccount):
             TransactionReceipt object
         """
 
-        web3.isConnected()
-        receipt, exc = self._make_transaction(
-            to,
-            amount,
-            gas_limit,
-            gas_buffer,
-            gas_price,
-            max_fee,
-            priority_fee,
-            data or "",
-            nonce,
-            "",
-            required_confs,
-            allow_revert,
-            silent,
-        )
-
-        if rpc.is_active():
-            undo_thread = threading.Thread(
-                target=Chain()._add_to_undo_buffer,
-                args=(
-                    receipt,
-                    self.transfer,
-                    [],
-                    {
-                        "to": to,
-                        "amount": amount,
-                        "gas_limit": gas_limit,
-                        "gas_buffer": gas_buffer,
-                        "gas_price": gas_price,
-                        "max_fee": max_fee,
-                        "priority_fee": priority_fee,
-                        "data": data,
-                    },
-                ),
-                daemon=True,
+        receipt: Optional[TransactionReceipt] = None
+        try:
+            web3.isConnected()
+            receipt, exc = self._make_transaction(
+                to,
+                amount,
+                gas_limit,
+                gas_buffer,
+                gas_price,
+                max_fee,
+                priority_fee,
+                data or "",
+                nonce,
+                "",
+                required_confs,
+                allow_revert,
+                silent,
             )
-            undo_thread.start()
 
-        receipt._raise_if_reverted(exc)
-        return receipt
+            if rpc.is_active():
+                undo_thread = threading.Thread(
+                    target=Chain()._add_to_undo_buffer,
+                    args=(
+                        receipt,
+                        self.transfer,
+                        [],
+                        {
+                            "to": to,
+                            "amount": amount,
+                            "gas_limit": gas_limit,
+                            "gas_buffer": gas_buffer,
+                            "gas_price": gas_price,
+                            "max_fee": max_fee,
+                            "priority_fee": priority_fee,
+                            "data": data,
+                        },
+                    ),
+                    daemon=True,
+                )
+                undo_thread.start()
+
+            receipt._raise_if_reverted(exc)
+            self.wait_for_complete(
+                receipt,
+                test_function=test_function,
+                max_retries=max_retries,
+                required_confs=required_confs,
+            )
+            return receipt
+        except Exception as ex:
+            if max_retries <= 0 or test_function is None:
+                raise ex
+            
+            ex_string = str(ex)
+            lost_tx_match = _dropped_tx_pattern.match(
+                ex_string
+            ) or _lost_tx_pattern.match(ex_string)
+
+            if test_function():
+                print(f"{type(ex).__name__}({ex}) thrown despite successful completion: {ex.__dict__}")
+                if lost_tx_match:
+                    tx_id = lost_tx_match.group(1)
+                    if tx_id:
+                        try:
+                            return load_transaction(
+                                tx_id,
+                                max_retries=max_retries,
+                                required_confs=required_confs,
+                            )
+                        except Exception as ex1:
+                            print(
+                                f"Could not load transaction {tx_id}: {type(ex1).__name__}({ex1})"
+                            )
+                if (
+                    receipt is not None
+                    and receipt.txid is not None
+                    and receipt.timestamp is None
+                ):
+                    reloaded_receipt = load_transaction(
+                        receipt.txid,
+                        max_retries=max_retries,
+                        required_confs=required_confs,
+                    )
+                return reloaded_receipt or receipt
+
+    def wait_for_complete(
+        self,
+        receipt: TransactionReceipt,
+        test_function: Optional[Callable[[], bool]] = None,
+        max_retries: int = 5,
+        required_confs: int = 1,
+    ) -> TransactionReceipt:
+        attempt = 0
+        sleep_time = 1.0
+
+        test_passed = test_function is None or test_function()
+
+        while True:
+            attempt += 1
+            if test_passed or attempt >= max_retries:
+                if not receipt.timestamp:
+                    try:
+                        reloaded_receipt = load_transaction(
+                            receipt.txid,
+                            max_retries=max_retries,
+                            required_confs=required_confs,
+                        )                        
+                        if reloaded_receipt:
+                            return reloaded_receipt
+                    except Exception as ex1:
+                        print(
+                            f"Could not load transaction {receipt.txid}: {type(ex1).__name__}({ex1})"
+                        )
+
+                if attempt >= max_retries:
+                        return receipt
+
+                time.sleep(sleep_time)
+                sleep_time *= 1.5
 
     def _format_gwei(self, value):
         return value.to("gwei") if isinstance(value, Wei) else value
