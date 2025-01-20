@@ -749,25 +749,24 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 raise ex
             
             ex_string = str(ex)
-            lost_tx_match = _dropped_tx_pattern.match(
+            lost_tx_match = _dropped_tx_pattern.search(
                 ex_string
-            ) or _lost_tx_pattern.match(ex_string)
+            ) or _lost_tx_pattern.search(ex_string)
+
+            if lost_tx_match:
+                tx_id = lost_tx_match.group(1)
+                receipt = self.wait_for_complete(
+                    tx_id,
+                    test_function=test_function,
+                    max_retries=max_retries,
+                    required_confs=required_confs,
+                )
+                if receipt:
+                    print(f"{type(ex).__name__}({ex}) thrown despite successful completion: {ex.__dict__}")
+                    return receipt
 
             if test_function():
                 print(f"{type(ex).__name__}({ex}) thrown despite successful completion: {ex.__dict__}")
-                if lost_tx_match:
-                    tx_id = lost_tx_match.group(1)
-                    if tx_id:
-                        try:
-                            return load_transaction(
-                                tx_id,
-                                max_retries=max_retries,
-                                required_confs=required_confs,
-                            )
-                        except Exception as ex1:
-                            print(
-                                f"Could not load transaction {tx_id}: {type(ex1).__name__}({ex1})"
-                            )
                 if (
                     receipt is not None
                     and receipt.txid is not None
@@ -779,10 +778,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         required_confs=required_confs,
                     )
                 return reloaded_receipt or receipt
+            
+            raise
 
     def wait_for_complete(
         self,
-        receipt: TransactionReceipt,
+        receipt: TransactionReceipt | str,
         test_function: Optional[Callable[[], bool]] = None,
         max_retries: int = 5,
         required_confs: int = 1,
@@ -791,14 +792,20 @@ class _PrivateKeyAccount(PublicKeyAccount):
         sleep_time = 1.0
 
         test_passed = test_function is None or test_function()
+        txid = receipt if isinstance(receipt, str) else receipt.txid
+        try:
+            receipt_timestamp = receipt.timestamp
+        except Exception:
+            receipt_timestamp = None
 
         while True:
             attempt += 1
             if test_passed or attempt >= max_retries:
-                if not receipt.timestamp:
+
+                if not receipt_timestamp:
                     try:
                         reloaded_receipt = load_transaction(
-                            receipt.txid,
+                            txid,
                             max_retries=max_retries,
                             required_confs=required_confs,
                         )                        
@@ -810,7 +817,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         )
 
                 if attempt >= max_retries:
-                        return receipt
+                        return receipt if isinstance(receipt, TransactionReceipt) else None
 
                 time.sleep(sleep_time)
                 sleep_time *= 1.5
