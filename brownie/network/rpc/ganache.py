@@ -6,7 +6,7 @@ import sys
 import warnings
 from subprocess import DEVNULL, PIPE
 from typing import Dict, List, Optional
-
+import os
 import psutil
 from hexbytes import HexBytes
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -55,7 +55,7 @@ CLI_FLAGS = {
 EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
 EVM_DEFAULT = "istanbul"
 
-
+global out_read
 def launch(cmd: str, **kwargs: Dict) -> None:
     """Launches the RPC client.
 
@@ -103,8 +103,13 @@ def launch(cmd: str, **kwargs: Dict) -> None:
                 )
     print(f"\nLaunching '{' '.join(cmd_list)}'...")
     out = DEVNULL if sys.platform == "win32" else PIPE
-
-    return psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
+    
+    global out_read
+    out_read, out_write = os.pipe()
+    process =psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out_write, stderr=out,text=True)
+    os.close(out_write)
+    
+    return process
 
 
 def get_ganache_version(ganache_executable: str) -> int:
