@@ -9,6 +9,26 @@ from semantic_version import Version
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
 from brownie.project import build, compiler
+from brownie.project.compiler.solidity import find_best_solc_version
+
+UGLY_PRAGMAS = """
+// pragma solidity 0.6.14;
+/// pragma solidity 0.6.12;
+/*
+    pragma solidity 0.8.0;
+*/
+/**
+    pragma solidity 0.8.1;
+*/
+
+pragma solidity 0.7.4;
+
+contract TestContract {
+    function doTestStuff(uint256 stuff) external returns (uint256) {
+        return stuff;
+    }
+}
+"""
 
 
 @pytest.fixture
@@ -225,3 +245,9 @@ contract Foo {{ function foo() external returns (bool) {{
 }}"""
     compiler.compile_and_format({"foo.sol": code})
     assert "exceeds EIP-170 limit of 24577" in capfd.readouterr()[0]
+
+
+def test_find_best_solc_version():
+    source = UGLY_PRAGMAS
+    version = find_best_solc_version({"<stdin>": source}, install_needed=True, silent=False)
+    assert version == "0.7.4"
