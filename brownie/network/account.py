@@ -777,7 +777,8 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         max_retries=max_retries,
                         required_confs=required_confs,
                     )
-                return reloaded_receipt or receipt
+                    return reloaded_receipt or receipt
+                return receipt
             
             raise
 
