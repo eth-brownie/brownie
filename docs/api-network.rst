@@ -1642,7 +1642,7 @@ Internal Methods
 
 .. py:method:: brownie.network.event._get_topics(abi)
 
-    Generates encoded topics from the given ABI, merges them with those already known in ``topics.json``, and returns a dictioary in the form of ``{'Name': "encoded topic hexstring"}``.
+    Generates encoded topics from the given ABI, merges them with those already known in ``topics.json``, and returns a dictionary in the form of ``{'Name': "encoded topic hexstring"}``.
 
     .. code-block:: python
 
