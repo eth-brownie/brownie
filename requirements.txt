@@ -4,7 +4,9 @@
 #
 #    pip-compile requirements.in
 #
-aiohttp==3.9.3
+aiohappyeyeballs==2.6.1
+    # via aiohttp
+aiohttp==3.11.0b0
     # via web3
 aiosignal==1.3.1
     # via aiohttp
@@ -141,6 +143,10 @@ pluggy==1.4.0
     # via pytest
 prompt-toolkit==3.0.43
     # via -r requirements.in
+propcache==0.3.0
+    # via
+    #   aiohttp
+    #   yarl
 protobuf==4.25.3
     # via web3
 psutil==5.9.8
@@ -238,7 +244,7 @@ wheel==0.42.0
     # via vyper
 wrapt==1.16.0
     # via -r requirements.in
-yarl==1.9.4
+yarl==1.18.3
     # via aiohttp
 zipp==3.17.0
     # via importlib-metadata

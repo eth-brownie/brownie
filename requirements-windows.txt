@@ -4,7 +4,11 @@
 #
 #    pip-compile requirements-windows.in
 #
-aiohttp==3.9.3
+aiohappyeyeballs==2.6.1
+    # via
+    #   -r requirements.txt
+    #   aiohttp
+aiohttp==3.11.0b0
     # via
     #   -r requirements.txt
     #   web3
@@ -34,6 +38,8 @@ cbor2==5.6.2
     # via
     #   -r requirements.txt
     #   vyper
+cchecksum==0.0.7
+    # via -r requirements.txt
 certifi==2024.2.2
     # via
     #   -r requirements.txt
@@ -95,6 +101,7 @@ eth-rlp==1.0.1
 eth-typing==3.5.2
     # via
     #   -r requirements.txt
+    #   cchecksum
     #   eip712
     #   eth-abi
     #   eth-keys
@@ -103,6 +110,7 @@ eth-typing==3.5.2
 eth-utils==2.3.1
     # via
     #   -r requirements.txt
+    #   cchecksum
     #   eip712
     #   eth-abi
     #   eth-account
@@ -192,6 +200,11 @@ pluggy==1.4.0
     #   pytest
 prompt-toolkit==3.0.43
     # via -r requirements.txt
+propcache==0.3.0
+    # via
+    #   -r requirements.txt
+    #   aiohttp
+    #   yarl
 protobuf==4.25.3
     # via
     #   -r requirements.txt
@@ -316,7 +329,7 @@ wheel==0.42.0
     #   vyper
 wrapt==1.16.0
     # via -r requirements.txt
-yarl==1.9.4
+yarl==1.18.3
     # via
     #   -r requirements.txt
     #   aiohttp
