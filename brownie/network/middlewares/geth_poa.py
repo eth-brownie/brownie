@@ -10,6 +10,7 @@ from brownie.network.middlewares import BrownieMiddlewareABC
 class GethPOAMiddleware(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
+        # On Polygon networks, anvil in forked development mode doesn't throw ExtraDataLengthError on the first block.
         block_idents = ("latest",) if network_type == "live" else (0, "latest")
         try:
             for block_ident in block_idents:
