@@ -221,7 +221,7 @@ urllib3==2.2.1
     #   -c requirements.txt
     #   requests
     #   twine
-virtualenv==20.25.1
+virtualenv==20.26.6
     # via tox
 wheel==0.42.0
     # via
