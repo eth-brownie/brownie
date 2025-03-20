@@ -215,7 +215,7 @@ toml==0.10.2
     # via pytest
 toolz==0.12.1
     # via cytoolz
-tqdm==4.66.2
+tqdm==4.66.3
     # via -r requirements.in
 typing-extensions==4.9.0
     # via
