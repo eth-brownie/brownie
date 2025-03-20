@@ -25,6 +25,8 @@ black==24.2.0
     # via -r requirements.in
 cbor2==5.6.2
     # via vyper
+cchecksum==0.0.7
+    # via -r requirements.in
 certifi==2024.2.2
     # via requests
 charset-normalizer==3.3.2
@@ -68,6 +70,7 @@ eth-rlp==1.0.1
     # via eth-account
 eth-typing==3.5.2
     # via
+    #   cchecksum
     #   eip712
     #   eth-abi
     #   eth-keys
@@ -76,6 +79,7 @@ eth-typing==3.5.2
 eth-utils==2.3.1
     # via
     #   -r requirements.in
+    #   cchecksum
     #   eip712
     #   eth-abi
     #   eth-account
