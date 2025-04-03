@@ -225,12 +225,11 @@ def _split(coverage_eval, coverage_map, key):
     results = {}
     branches = coverage_map["branches"][key]
     statements = coverage_map["statements"][key]
-    for fn in branches.keys() & statements.keys():
-        results[fn] = [
-            [i for i in statements[fn] if int(i) in coverage_eval[0]],
-            [i for i in branches[fn] if int(i) in coverage_eval[1]],
-            [i for i in branches[fn] if int(i) in coverage_eval[2]],
-        ]
+    for fn, map_ in statements.items():
+        results[fn] = [[i for i in map_ if int(i) in coverage_eval[0]], [], []]
+    for fn, map_ in branches.items():
+        results[fn][1] = [i for i in map_ if int(i) in coverage_eval[1]]
+        results[fn][2] = [i for i in map_ if int(i) in coverage_eval[2]]
     return results
 
 
