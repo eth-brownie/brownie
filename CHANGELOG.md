@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - API endpoint of Sepolia-ETH (Infura) changed to `https://api-sepolia.etherscan.io/api` (with `/api` suffix)
 
+### Changed
+- replace `eth_utils.to_checksum_address` with `cchecksum.to_checksum_address` for ~2x faster checksumming ([#1796](https://github.com/eth-brownie/brownie/pull/1796))
+
+## [1.20.7](https://github.com/eth-brownie/brownie/tree/v1.20.7) - 2025-01-07
+### Added
+- Support for vyper `0.4.0` ([#1793](https://github.com/eth-brownie/brownie/pull/1793))
+- `py.typed` marker ([#1794](https://github.com/eth-brownie/brownie/pull/1794))
+
+### Fixed
+- Improvements to caching ([#1786](https://github.com/eth-brownie/brownie/pull/1786))
+
+### Removed
+- `tqdm` progress bars during compiler installation ([#1785](https://github.com/eth-brownie/brownie/pull/1785))
+
 ## [1.20.6](https://github.com/eth-brownie/brownie/tree/v1.20.6) - 2024-06-22
 ### Added
 - `include` kwarg for address strategy, type-dependent strategy overloads ([#1780](https://github.com/eth-brownie/brownie/pull/1780))
@@ -117,7 +131,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.19.0](https://github.com/eth-brownie/brownie/tree/v1.19.0) - 2022-05-29
 ### Added
-- Initial support for [Anvil](https://github.com/foundry-rs/foundry/tree/master/anvil), a blazing-fast local testnet node implementation in Rust ([#1541](https://github.com/eth-brownie/brownie/pull/1541))
+- Initial support for [Anvil](https://github.com/foundry-rs/foundry/tree/master/crates/anvil), a blazing-fast local testnet node implementation in Rust ([#1541](https://github.com/eth-brownie/brownie/pull/1541))
 - Support configurable initial wallet balance, chain id, and gas limit.
 
 ### Fixed

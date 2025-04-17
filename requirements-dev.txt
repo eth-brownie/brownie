@@ -47,7 +47,7 @@ coverage[toml]==7.4.3
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cryptography==42.0.5
+cryptography==44.0.1
     # via secretstorage
 distlib==0.3.8
     # via virtualenv
@@ -85,7 +85,7 @@ jeepney==0.8.0
     # via
     #   keyring
     #   secretstorage
-jinja2==3.1.3
+jinja2==3.1.6
     # via sphinx
 keyring==24.3.0
     # via twine
@@ -221,7 +221,7 @@ urllib3==2.2.1
     #   -c requirements.txt
     #   requests
     #   twine
-virtualenv==20.25.1
+virtualenv==20.26.6
     # via tox
 wheel==0.42.0
     # via

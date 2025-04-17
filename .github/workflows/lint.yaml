@@ -2,6 +2,11 @@ on: ["push", "pull_request"]
 
 name: linting
 
+# This limits the workflow to 1 active run at any given time for a specific branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   ETHERSCAN_TOKEN: 9MKURTHE8FNA9NRUUJBHMUEVY6IQ5K1EGY
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

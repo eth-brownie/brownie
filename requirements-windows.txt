@@ -4,7 +4,11 @@
 #
 #    pip-compile requirements-windows.in
 #
-aiohttp==3.9.3
+aiohappyeyeballs==2.6.1
+    # via
+    #   -r requirements.txt
+    #   aiohttp
+aiohttp==3.11.0b0
     # via
     #   -r requirements.txt
     #   web3
@@ -34,6 +38,8 @@ cbor2==5.6.2
     # via
     #   -r requirements.txt
     #   vyper
+cchecksum==0.0.7
+    # via -r requirements.txt
 certifi==2024.2.2
     # via
     #   -r requirements.txt
@@ -58,7 +64,7 @@ dataclassy==0.11.1
     #   eip712
 eip712==0.2.4
     # via -r requirements.txt
-eth-abi==5.0.0
+eth-abi==5.0.1
     # via
     #   -r requirements.txt
     #   eip712
@@ -77,7 +83,6 @@ eth-hash[pycryptodome]==0.6.0
     #   -r requirements.txt
     #   eip712
     #   eth-event
-    #   eth-hash
     #   eth-utils
     #   web3
 eth-keyfile==0.7.0
@@ -96,6 +101,7 @@ eth-rlp==1.0.1
 eth-typing==3.5.2
     # via
     #   -r requirements.txt
+    #   cchecksum
     #   eip712
     #   eth-abi
     #   eth-keys
@@ -104,6 +110,7 @@ eth-typing==3.5.2
 eth-utils==2.3.1
     # via
     #   -r requirements.txt
+    #   cchecksum
     #   eip712
     #   eth-abi
     #   eth-account
@@ -173,6 +180,7 @@ packaging==23.2
     #   -r requirements.txt
     #   black
     #   pytest
+    #   vvm
     #   vyper
 parsimonious==0.9.0
     # via
@@ -192,6 +200,11 @@ pluggy==1.4.0
     #   pytest
 prompt-toolkit==3.0.43
     # via -r requirements.txt
+propcache==0.3.0
+    # via
+    #   -r requirements.txt
+    #   aiohttp
+    #   yarl
 protobuf==4.25.3
     # via
     #   -r requirements.txt
@@ -267,7 +280,6 @@ semantic-version==2.10.0
     # via
     #   -r requirements.txt
     #   py-solc-x
-    #   vvm
 six==1.16.0
     # via
     #   -r requirements.txt
@@ -285,7 +297,7 @@ toolz==0.12.1
     # via
     #   -r requirements.txt
     #   cytoolz
-tqdm==4.66.2
+tqdm==4.66.3
     # via -r requirements.txt
 typing-extensions==4.9.0
     # via
@@ -297,9 +309,9 @@ urllib3==2.2.1
     # via
     #   -r requirements.txt
     #   requests
-vvm==0.1.0
+vvm==0.2.1
     # via -r requirements.txt
-vyper==0.3.10
+vyper==0.4.0
     # via -r requirements.txt
 wcwidth==0.2.13
     # via
@@ -317,7 +329,7 @@ wheel==0.42.0
     #   vyper
 wrapt==1.16.0
     # via -r requirements.txt
-yarl==1.9.4
+yarl==1.18.3
     # via
     #   -r requirements.txt
     #   aiohttp

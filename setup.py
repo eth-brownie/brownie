@@ -24,7 +24,7 @@ with open(requirements_filename, "r") as f:
 setup(
     name="eth-brownie",
     packages=find_packages(),
-    version="1.20.6",  # don't change this manually, use bumpversion instead
+    version="1.20.7",  # don't change this manually, use bumpversion instead
     license="MIT",
     description="A Python framework for Ethereum smart contract deployment, testing and interaction.",  # noqa: E501
     long_description=long_description,
@@ -37,6 +37,9 @@ setup(
     entry_points={
         "console_scripts": ["brownie=brownie._cli.__main__:main"],
         "pytest11": ["pytest-brownie=brownie.test.plugin"],
+    },
+    package_data={
+        "brownie": ["py.typed"],
     },
     include_package_data=True,
     python_requires=">=3.10,<4",
