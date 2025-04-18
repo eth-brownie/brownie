@@ -91,7 +91,7 @@ class EventDict:
 
     def count(self, name: str) -> int:
         """EventDict.count(name) -> integer -- return number of occurrences of name"""
-        return len([None for i in self._ordered if i.name == name])
+        return sum(i.name == name for i in self._ordered)
 
     def items(self) -> List:
         """EventDict.items() -> a list object providing a view on EventDict's items"""
