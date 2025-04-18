@@ -492,8 +492,7 @@ def _decode_logs(logs: List, contracts: Optional[Dict] = None) -> EventDict:
         if log_slice[-1] == logs[-1]:
             break
 
-    events = map(format_event, events)
-    return EventDict(events)
+    return EventDict(map(format_event, events))
 
 
 def _decode_ds_note(log, contract):  # type: ignore
@@ -527,8 +526,7 @@ def _decode_trace(trace: Sequence, initial_address: str) -> EventDict:
     events = eth_event.decode_traceTransaction(
         trace, _topics, allow_undecoded=True, initial_address=initial_address
     )
-    events = map(format_event, events)
-    return EventDict(events)
+    return EventDict(map(format_event, events))
 
 
 # dictionary of event topic ABIs specific to a single contract deployment
