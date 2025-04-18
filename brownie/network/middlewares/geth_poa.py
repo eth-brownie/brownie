@@ -10,8 +10,10 @@ from brownie.network.middlewares import BrownieMiddlewareABC
 class GethPOAMiddleware(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
-        # NOTE: 0 because Ganache sometimes injects a block of their own. It doesn't have the extra data that we are checking for.
-        # "latest" because On Polygon networks, anvil in forked development mode doesn't throw ExtraDataLengthError on the first block.
+        # NOTE: We check `0` because Ganache sometimes injects a block of their own.
+        # It doesn't have the extra data that we are checking for.
+        # We also check `"latest"` because On Polygon networks, anvil in forked
+        # development mode doesn't throw ExtraDataLengthError on the first block.
         block_idents = ("latest",) if network_type == "live" else (0, "latest")
         try:
             for block_ident in block_idents:
