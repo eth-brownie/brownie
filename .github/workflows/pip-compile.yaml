@@ -4,10 +4,10 @@ on:
   pull_request:
     branches:
       - master
-    paths:
-      - 'requirements.in'
-      - 'requirements-windows.in'
-      - 'requirements-dev.in'
+      
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   format:
@@ -28,7 +28,7 @@ jobs:
       run: pip install pip-tools
 
     - name: Run Pip Compile
-      run: pip-compile
+      run: pip-compile -U
 
     - name: Check for changes
       id: changes
