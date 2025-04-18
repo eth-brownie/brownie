@@ -1078,7 +1078,7 @@ class Contract(_DeployedContractBase):
         elif data["result"][0]["OptimizationUsed"] in ("true", "false"):
             if not silent:
                 warnings.warn(
-                    f"Blockscout explorer API has limited support by Brownie. "  # noqa
+                    "Blockscout explorer API has limited support by Brownie. "  # noqa
                     "Some debugging functionality will not be available.",
                     BrownieCompilerWarning,
                 )

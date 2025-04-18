@@ -445,7 +445,7 @@ class TransactionReceipt:
             if contract:
                 marker = "//" if contract._build["language"] == "Solidity" else "#"
                 line = self._traceback_string().split("\n")[-1]
-                if marker + " dev: " in line:
+                if f"{marker} dev: " in line:
                     self._dev_revert_msg = line[line.index(marker) + len(marker) : -5].strip()
 
         raise exc._with_attr(

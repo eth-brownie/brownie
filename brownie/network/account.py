@@ -532,7 +532,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             priority_fee,
             data,
             nonce,
-            contract._name + ".constructor",
+            f"{contract._name}.constructor",
             required_confs,
             allow_revert,
             silent,
