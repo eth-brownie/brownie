@@ -132,20 +132,18 @@ def _transform(pattern: _BranchPattern) -> _Either:
     groups = [[pattern]]
     while groups:
         children = groups.pop(0)
-        parents = [_Required, _NotRequired, _OptionsShortcut, _Either, _OneOrMore]
-        if any(t in map(type, children) for t in parents):
-            child = [c for c in children if type(c) in parents][0]
+        if any(t in map(type, children) for t in PARENTS):
+            child = [c for c in children if type(c) in PARENTS][0]
             children.remove(child)
             if type(child) is _Either:
-                for c in child.children:
-                    groups.append([c] + children)
+                groups.extend([c] + children for c in child.children)
             elif type(child) is _OneOrMore:
                 groups.append(child.children * 2 + children)
             else:
                 groups.append(child.children + children)
         else:
             result.append(children)
-    return _Either(*[_Required(*e) for e in result])
+    return _Either(*(_Required(*e) for e in result))
 
 
 _SingleMatch = Union[Tuple[int, "_LeafPattern"], Tuple[None, None]]
@@ -173,11 +171,11 @@ class _LeafPattern(_Pattern):
             return False, left, collected
         left_ = left[:pos] + left[(pos + 1) :]
         same_name = [a for a in collected if a.name == self.name]
-        if isinstance(self.value, int) and len(same_name) > 0:
+        if isinstance(self.value, int) and same_name:
             if isinstance(same_name[0].value, int):
                 same_name[0].value += 1
             return True, left_, collected
-        if isinstance(self.value, int) and not same_name:
+        if isinstance(self.value, int):
             match.value = 1
             return True, left_, collected + [match]
         if same_name and isinstance(self.value, list):
@@ -222,9 +220,8 @@ class _BranchPattern(_Pattern):
 
     def fix_repeating_arguments(self) -> _BranchPattern:
         """Fix elements that should accumulate/increment values."""
-        either = [list(child.children) for child in _transform(self).children]
-        for case in either:
-            for e in [child for child in case if case.count(child) > 1]:
+        for case in (list(child.children) for child in _transform(self).children):
+            for e in (child for child in case if case.count(child) > 1):
                 if type(e) is _Argument or type(e) is _Option and e.argcount:
                     if e.value is None:
                         e.value = []
@@ -241,7 +238,7 @@ class _BranchPattern(_Pattern):
     def flat(self, *types) -> Any:
         if type(self) in types:
             return [self]
-        return sum([child.flat(*types) for child in self.children], [])
+        return sum((child.flat(*types) for child in self.children), [])
 
 
 class _Argument(_LeafPattern):
@@ -379,10 +376,7 @@ class _Tokens(list):
         source: list[str] | str,
         error: Type[DocoptExit] | Type[DocoptLanguageError] = DocoptExit,
     ) -> None:
-        if isinstance(source, list):
-            self += source
-        else:
-            self += source.split()
+        self += source if isinstance(source, list) else source.split()
         self.error = error
 
     @staticmethod
@@ -409,10 +403,7 @@ def _parse_longer(
     if current_token is None or not current_token.startswith("--"):
         raise ValueError(f"parse_longer got what appears to be an invalid token: {current_token}")
     longer, maybe_eq, maybe_value = current_token.partition("=")
-    if maybe_eq == maybe_value == "":
-        value = None
-    else:
-        value = maybe_value
+    value = None if maybe_eq == maybe_value == "" else maybe_value
     similar = [o for o in options if o.longer and longer == o.longer]
     start_collision = (
         len([o for o in options if o.longer and longer in o.longer and o.longer.startswith(longer)])
@@ -432,7 +423,7 @@ def _parse_longer(
         similar = [correct for (original, correct) in corrected]
     if len(similar) > 1:
         raise DocoptLanguageError(f"{longer} is not a unique prefix: {similar}?")
-    elif len(similar) < 1:
+    elif not similar:
         argcount = 1 if maybe_eq == "=" else 0
         o = _Option(None, longer, argcount)
         options.append(o)
@@ -442,12 +433,11 @@ def _parse_longer(
         o = _Option(similar[0].short, similar[0].longer, similar[0].argcount, similar[0].value)
         if o.argcount == 0:
             if value is not None:
-                raise tokens.error("%s must not have an argument" % o.longer)
-        else:
-            if value is None:
-                if tokens.current() in [None, "--"]:
-                    raise tokens.error("%s requires argument" % o.longer)
-                value = tokens.move()
+                raise tokens.error(f"{o.longer} must not have an argument")
+        elif value is None:
+            if tokens.current() in [None, "--"]:
+                raise tokens.error(f"{o.longer} requires argument")
+            value = tokens.move()
         if tokens.error is DocoptExit:
             o.value = value if value is not None else True
     return [o]
@@ -473,7 +463,7 @@ def _parse_shorts(
         similar: list[_Option] = []
         de_abbreviated = False
         for transform_name, transform in transformations.items():
-            transformed = list(set([transform(o.short) for o in options if o.short]))
+            transformed = list(set(map(transform, (o.short for o in options if o.short))))
             no_collisions = len(
                 [o for o in options if o.short and transformed.count(transform(o.short)) == 1]
             )  # == len(transformed)
@@ -520,10 +510,7 @@ def _parse_shorts(
             if tokens.error is DocoptExit:
                 o = _Option(short, None, 0, True)
         else:
-            if de_abbreviated:
-                option_short_value = None
-            else:
-                option_short_value = transform(short)
+            option_short_value = None if de_abbreviated else transform(short)
             o = _Option(
                 option_short_value,
                 similar[0].longer,
@@ -535,7 +522,7 @@ def _parse_shorts(
             if o.argcount != 0:
                 if left == "":
                     if current_token is None or current_token == "--":
-                        raise tokens.error("%s requires argument" % short)
+                        raise tokens.error(f"{short} requires argument")
                     else:
                         value = tokens.move()
                 else:
@@ -568,10 +555,7 @@ def _parse_expr(tokens: _Tokens, options: list[_Option]) -> list[_Pattern]:
     while tokens.current() == "|":
         tokens.move()
         seq_1 = _parse_seq(tokens, options)
-        if len(seq_1) > 1:
-            result += [_Required(*seq_1)]
-        else:
-            result += seq_1
+        result += [_Required(*seq_1)] if len(seq_1) > 1 else seq_1
     return [_Either(*result)]
 
 
@@ -600,7 +584,7 @@ def _parse_atom(tokens: _Tokens, options: list[_Option]) -> list[_Pattern]:
         pattern = {"(": _Required, "[": _NotRequired}[token]
         matched_pattern = pattern(*_parse_expr(tokens, options))
         if tokens.move() != matching:
-            raise tokens.error("unmatched '%s'" % token)
+            raise tokens.error(f"unmatched '{token}'")
         return [matched_pattern]
     elif token == "options":
         tokens.move()
@@ -723,7 +707,7 @@ def _parse_options(docstring: str) -> list[_Option]:
     (-\S)
     """
     parts = re.split(option_start, docstring, flags=re.M | re.I | re.VERBOSE)[1:]
-    return [_Option.parse(start + rest) for (start, rest) in zip(parts[0::2], parts[1::2])]
+    return list(map(_Option.parse, map(sum, zip(parts[::2], parts[1::2]))))
 
 
 def _lint_docstring(sections: _DocSections):
@@ -857,3 +841,5 @@ def docopt(
     if left:
         raise DocoptExit(f"Warning: found unmatched (duplicate?) arguments {left}")
     raise DocoptExit(collected=collected, left=left)
+
+PARENTS = [_Required, _NotRequired, _OptionsShortcut, _Either, _OneOrMore]
