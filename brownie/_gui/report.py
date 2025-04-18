@@ -18,11 +18,11 @@ class ReportSelect(SelectBox):
 
     def set_values(self, contract):
         reports = self._root().reports
-        values = []
-        for report in sorted(reports):
-            if contract in reports[report][report]:
-                values.append(report)
-
+        values = [
+            report
+            for report in sorted(reports)
+            if contract in reports[report][report]
+        ]
         if not values:
             self.set("(No Reports)")
             self.config(state="disabled")
