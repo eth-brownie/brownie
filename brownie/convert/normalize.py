@@ -30,28 +30,28 @@ def format_output(abi: Dict, outputs: Union[List, Tuple]) -> ReturnValue:
 def format_event(event: Dict) -> Any:
     # Format event data based on ABI types
     if not event["decoded"]:
-        topics = [
-            {"type": "bytes32", "name": f"topic{c}", "value": i}
-            for c, i in enumerate(event.get("topics", []), start=1)
-        ]
-        event["data"] = topics + [
+        topics = (
+            {"type": "bytes32", "name": c, "value": i}
+            for c, i in zip(("topic1", "topic2", "topic3"), event.get("topics", ()))
+        )
+        event["data"] = [
+            *topics,
             {"type": "bytes", "name": "data", "value": _format_single("bytes", event["data"])}
         ]
-        if "anonymous" in event:
-            event["name"] = "(anonymous)"
-        else:
-            event["name"] = "(unknown)"
+        event["name"] = "(anonymous)" if "anonymous" in event else "(unknown)"
         return event
 
-    for e in [i for i in event["data"] if not i["decoded"]]:
-        e["type"] = "bytes32"
-        e["name"] += " (indexed)"
-    abi_types = _get_abi_types(event["data"])
+    data = event["data"]
+    for e in data:
+        if not e["decoded"]:
+            e["type"] = "bytes32"
+            e["name"] += " (indexed)"
+    abi_types = _get_abi_types(data)
     values = ReturnValue(
-        _format_tuple(abi_types, [i["value"] for i in event["data"]]), event["data"]
+        _format_tuple(abi_types, [i["value"] for i in data]), data
     )
-    for i in range(len(event["data"])):
-        event["data"][i]["value"] = values[i]
+    for e, value in zip(data, values):
+        e["value"] = value
     return event
 
 
@@ -72,7 +72,7 @@ def _format_tuple(abi_types: Sequence[ABIType], values: Union[List, Tuple]) -> L
 
 
 def _format_array(abi_type: ABIType, values: Union[List, Tuple]) -> List:
-    _check_array(values, None if not len(abi_type.arrlist[-1]) else abi_type.arrlist[-1][0])
+    _check_array(values, abi_type.arrlist[-1][0] if abi_type.arrlist[-1] else None)
     item_type = abi_type.item_type
     if item_type.is_array:
         return [_format_array(item_type, i) for i in values]
