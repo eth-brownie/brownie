@@ -36,7 +36,7 @@ def format_event(event: Dict) -> Any:
         )
         event["data"] = [
             *topics,
-            {"type": "bytes", "name": "data", "value": _format_single("bytes", event["data"])}
+            {"type": "bytes", "name": "data", "value": _format_single("bytes", event["data"])},
         ]
         event["name"] = "(anonymous)" if "anonymous" in event else "(unknown)"
         return event
@@ -47,9 +47,7 @@ def format_event(event: Dict) -> Any:
             e["type"] = "bytes32"
             e["name"] += " (indexed)"
     abi_types = _get_abi_types(data)
-    values = ReturnValue(
-        _format_tuple(abi_types, [i["value"] for i in data]), data
-    )
+    values = ReturnValue(_format_tuple(abi_types, [i["value"] for i in data]), data)
     for e, value in zip(data, values):
         e["value"] = value
     return event
