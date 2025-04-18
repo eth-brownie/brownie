@@ -6,13 +6,13 @@
 #
 alabaster==0.7.16
     # via sphinx
-attrs==23.2.0
+attrs==25.3.0
     # via
     #   -c requirements.txt
     #   pytest
 babel==2.14.0
     # via sphinx
-black==24.2.0
+black==25.1.0
     # via
     #   -c requirements.txt
     #   -r requirements-dev.in
@@ -24,7 +24,7 @@ bumpversion==0.6.0
     # via -r requirements-dev.in
 cachetools==5.3.2
     # via tox
-certifi==2024.2.2
+certifi==2025.1.31
     # via
     #   -c requirements.txt
     #   requests
@@ -32,11 +32,11 @@ cffi==1.16.0
     # via cryptography
 chardet==5.2.0
     # via tox
-charset-normalizer==3.3.2
+charset-normalizer==3.4.1
     # via
     #   -c requirements.txt
     #   requests
-click==8.1.7
+click==8.1.8
     # via
     #   -c requirements.txt
     #   black
@@ -62,18 +62,18 @@ filelock==3.13.1
     #   virtualenv
 flake8==7.0.0
     # via -r requirements-dev.in
-idna==3.6
+idna==3.10
     # via
     #   -c requirements.txt
     #   requests
 imagesize==1.4.1
     # via sphinx
-importlib-metadata==7.0.1
+importlib-metadata==8.6.1
     # via
     #   -c requirements.txt
     #   keyring
     #   twine
-iniconfig==2.0.0
+iniconfig==2.1.0
     # via
     #   -c requirements.txt
     #   pytest
@@ -122,13 +122,13 @@ pip-tools==7.4.0
     # via -r requirements-dev.in
 pkginfo==1.9.6
     # via twine
-platformdirs==4.2.0
+platformdirs==4.3.7
     # via
     #   -c requirements.txt
     #   black
     #   tox
     #   virtualenv
-pluggy==1.4.0
+pluggy==1.5.0
     # via
     #   -c requirements.txt
     #   pytest
@@ -143,7 +143,7 @@ pycparser==2.21
     # via cffi
 pyflakes==3.2.0
     # via flake8
-pygments==2.17.2
+pygments==2.19.1
     # via
     #   -c requirements.txt
     #   pygments-lexer-solidity
@@ -171,7 +171,7 @@ pytest-mock==3.12.0
     # via -r requirements-dev.in
 readme-renderer==42.0
     # via twine
-requests==2.31.0
+requests==2.32.2
     # via
     #   -c requirements.txt
     #   requests-toolbelt
@@ -216,19 +216,19 @@ tox==4.13.0
     # via -r requirements-dev.in
 twine==5.0.0
     # via -r requirements-dev.in
-urllib3==2.2.1
+urllib3==2.4.0
     # via
     #   -c requirements.txt
     #   requests
     #   twine
 virtualenv==20.26.6
     # via tox
-wheel==0.42.0
+wheel==0.45.1
     # via
     #   -c requirements.txt
     #   -r requirements-dev.in
     #   pip-tools
-zipp==3.17.0
+zipp==3.21.0
     # via
     #   -c requirements.txt
     #   importlib-metadata
