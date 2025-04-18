@@ -274,7 +274,7 @@ class _Option(_LeafPattern):
         argcount: int = 0,
         value: list[str] | str | int | None = False,
     ) -> None:
-        assert argcount in (0, 1)
+        assert argcount in {0, 1}
         self.short, self.longer, self.argcount = short, longer, argcount
         self.value = None if value is False and argcount else value
 

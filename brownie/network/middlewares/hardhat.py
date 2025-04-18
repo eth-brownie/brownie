@@ -19,7 +19,7 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
 
         # modify Hardhat transaction error to mimick the format that Ganache uses
         if (
-            method in ("eth_call", "eth_sendTransaction", "eth_sendRawTransaction")
+            method in {"eth_call", "eth_sendTransaction", "eth_sendRawTransaction"}
             and "error" in result
         ):
             message = result["error"]["message"]

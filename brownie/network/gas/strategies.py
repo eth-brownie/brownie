@@ -131,7 +131,7 @@ class GasNowStrategy(SimpleGasStrategy):
     """
 
     def __init__(self, speed: str = "fast"):
-        if speed not in ("rapid", "fast", "standard", "slow"):
+        if speed not in {"rapid", "fast", "standard", "slow"}:
             raise ValueError("`speed` must be one of: rapid, fast, standard, slow")
         self.speed = speed
 
