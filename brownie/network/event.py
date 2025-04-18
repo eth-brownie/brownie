@@ -87,7 +87,7 @@ class EventDict:
         return len(self._ordered)
 
     def __str__(self) -> str:
-        return str(dict((k, [i[0] for i in v._ordered]) for k, v in self._dict.items()))
+        return str({k: [i[0] for i in v._ordered] for k, v in self._dict.items()})
 
     def count(self, name: str) -> int:
         """EventDict.count(name) -> integer -- return number of occurrences of name"""
@@ -354,7 +354,7 @@ class EventWatcher(metaclass=_Singleton):
         self.target_list_lock.acquire()  # lock
         # Key refering to this specific event (event.address is the address
         # of the contract to which the event is linked)
-        event_watch_data_key = str(event.address) + "+" + event.event_name
+        event_watch_data_key = f"{str(event.address)}+{event.event_name}"
         if self.target_events_watch_data.get(event_watch_data_key) is None:
             # If the _EventWatchData for 'event' does not exist, creates it.
             self.target_events_watch_data[event_watch_data_key] = _EventWatchData(
@@ -423,9 +423,7 @@ class EventWatcher(metaclass=_Singleton):
             worker_instance.join(timeout=30)
             if worker_instance.is_alive():
                 warnings.warn(
-                    message="Callback execution ({}) could not be joined.".format(
-                        worker_instance.getName()
-                    ),
+                    message=f"Callback execution ({worker_instance.getName()}) could not be joined.",
                     category=RuntimeWarning,
                 )
 
@@ -480,8 +478,7 @@ def _decode_logs(logs: List, contracts: Optional[Dict] = None) -> EventDict:
         topics_map = _deployment_topics.get(address, _topics)
         for item in log_slice:
             if contracts and contracts[item.address]:
-                note = _decode_ds_note(item, contracts[item.address])
-                if note:
+                if note := _decode_ds_note(item, contracts[item.address]):
                     events.append(note)
                     continue
             try:
