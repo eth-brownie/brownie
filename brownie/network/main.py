@@ -22,7 +22,7 @@ def connect(network: str = None, launch_rpc: bool = True) -> None:
     """Connects to the network.
 
     Args:
-        network: string of of the name of the network to connect to
+        network: string of the name of the network to connect to
 
     Network information is retrieved from brownie-config.json"""
     if is_connected():
