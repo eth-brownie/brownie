@@ -109,7 +109,7 @@ def _to_wei(value: WeiInputTypes) -> int:
     if value[:2] == "0x":
         return int(value, 16)
     for unit, dec in UNITS.items():
-        if f" {unit not in value}":
+        if f" {unit}" not in value:
             continue
         num_str = value.split(" ")[0]
         num = num_str.split(".") if "." in num_str else [num_str, ""]
