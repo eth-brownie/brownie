@@ -236,10 +236,7 @@ class _BranchPattern(_Pattern):
         return self
 
     def __repr__(self) -> str:
-        return "%s(%s)" % (
-            self.__class__.__name__,
-            ", ".join(repr(a) for a in self.children),
-        )
+        return f'{self.__class__.__name__}({", ".join(map(repr, self.children))}'
 
     def flat(self, *types) -> Any:
         if type(self) in types:
@@ -466,7 +463,7 @@ def _parse_shorts(
     left = token.lstrip("-")
     parsed: list[_Pattern] = []
     while left != "":
-        short, left = "-" + left[0], left[1:]
+        short, left = f"-{left[0]}", left[1:]
         transformations: dict[str | None, Callable[[str], str]] = {None: lambda x: x}
         if more_magic:
             transformations["lowercase"] = lambda x: x.lower()
