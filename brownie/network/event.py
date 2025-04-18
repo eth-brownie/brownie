@@ -91,7 +91,7 @@ class EventDict:
 
     def count(self, name: str) -> int:
         """EventDict.count(name) -> integer -- return number of occurrences of name"""
-        return len([i.name for i in self._ordered if i.name == name])
+        return sum(i.name == name for i in self._ordered)
 
     def items(self) -> List:
         """EventDict.items() -> a list object providing a view on EventDict's items"""
@@ -492,8 +492,7 @@ def _decode_logs(logs: List, contracts: Optional[Dict] = None) -> EventDict:
         if log_slice[-1] == logs[-1]:
             break
 
-    events = [format_event(i) for i in events]
-    return EventDict(events)
+    return EventDict(map(format_event, events))
 
 
 def _decode_ds_note(log, contract):  # type: ignore
@@ -527,8 +526,7 @@ def _decode_trace(trace: Sequence, initial_address: str) -> EventDict:
     events = eth_event.decode_traceTransaction(
         trace, _topics, allow_undecoded=True, initial_address=initial_address
     )
-    events = [format_event(i) for i in events]
-    return EventDict(events)
+    return EventDict(map(format_event, events))
 
 
 # dictionary of event topic ABIs specific to a single contract deployment
