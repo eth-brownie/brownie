@@ -551,7 +551,7 @@ class TransactionReceipt:
     def _set_from_tx(self, tx: Dict) -> None:
         if not self.sender:
             self.sender = EthAddress(tx["from"])
-        self.receiver = EthAddress(tx["to"]) if tx.get("to", None) else None
+        self.receiver = EthAddress(tx["to"]) if tx.get("to") else None
         self.value = Wei(tx["value"])
         self.gas_price = tx.get("gasPrice")
         self.max_fee = tx.get("maxFeePerGas")
@@ -1319,7 +1319,7 @@ def _step_internal(
     if last_step["op"] in {"REVERT", "INVALID"} and _step_compare(step, last_step):
         contract_color = color("bright red")
     else:
-        contract_color = color("bright cyan") if not step["jumpDepth"] else color()
+        contract_color = color() if step["jumpDepth"] else color("bright cyan")
     key = f"{color('dark white')}{contract_color}{step['fn']}  {color('dark white')}"
 
     left_bracket = f"{color('dark white')}["
