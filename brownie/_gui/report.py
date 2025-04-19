@@ -17,12 +17,11 @@ class ReportSelect(SelectBox):
         self.grid_remove()
 
     def set_values(self, contract):
-        reports = self._root().reports
-        values = [
+        values = sorted(
             report
-            for report in sorted(reports)
+            for report in self._root().reports
             if contract in reports[report][report]
-        ]
+        )
         if not values:
             self.set("(No Reports)")
             self.config(state="disabled")
