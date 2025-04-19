@@ -2,6 +2,7 @@
 
 import json
 import tkinter as tk
+from eth_utils.toolz import keymap
 from tkinter import ttk
 
 from brownie.project import get_loaded_projects
@@ -65,14 +66,17 @@ class Root(tk.Tk):
 
     def set_active_contract(self, contract_name):
         build_json = self.active_project._build.get(contract_name)
-        self.main.note.set_visible(sorted(build_json["allSourcePaths"].values()))
+        self.pathMap = pathMap = build_json["allSourcePaths"]
+        self.main.note.set_visible(sorted(pathMap.values()))
         self.main.note.set_active(build_json["sourcePath"])
-        self.main.oplist.set_opcodes(build_json["pcMap"])
-        self.pcMap = dict((str(k), v) for k, v in build_json["pcMap"].items())
-        self.pathMap = build_json["allSourcePaths"]
-        for value in (v for v in self.pcMap.values() if "path" in v):
-            if value["path"] not in self.pathMap:
-                value["path"] = self.pathMap[value["path"]]
+        pcMap = build_json["pcMap"]
+        self.main.oplist.set_opcodes(pcMap)
+        self.pcMap = keymap(str, pcMap)
+        for value in (v for v in pcMap.values() if "path" in v):
+            value_path = value["path"]
+            if value_path not in pathMap:
+                value_path = pathMap[value_path]
+                
         self.toolbar.report.show()
         self.toolbar.report.set_values(contract_name)
 
