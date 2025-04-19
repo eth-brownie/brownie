@@ -132,8 +132,8 @@ def _transform(pattern: _BranchPattern) -> _Either:
     groups = [[pattern]]
     while groups:
         children = groups.pop(0)
-        if any(t in map(type, children) for t in PARENTS):
-            child = [c for c in children if type(c) in PARENTS][0]
+        if any(t in map(type, children) for t in _PARENTS):
+            child = [c for c in children if type(c) in _PARENTS][0]
             children.remove(child)
             if type(child) is _Either:
                 groups.extend([c] + children for c in child.children)
@@ -843,4 +843,4 @@ def docopt(
         raise DocoptExit(f"Warning: found unmatched (duplicate?) arguments {left}")
     raise DocoptExit(collected=collected, left=left)
 
-PARENTS = [_Required, _NotRequired, _OptionsShortcut, _Either, _OneOrMore]
+_PARENTS = [_Required, _NotRequired, _OptionsShortcut, _Either, _OneOrMore]
