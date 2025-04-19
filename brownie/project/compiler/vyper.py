@@ -278,20 +278,23 @@ def _get_unique_build_json(
     }
 
 
-def _get_dependencies(ast_json: List) -> List:
-    import_nodes = chain(
-        (i for i in ast_json if i["ast_type"] == "Import"),
-        (i for i in ast_json if i["ast_type"] == "ImportFrom" if i["module"] != "vyper.interfaces"),
+def _get_dependencies(ast_json: List[dict]) -> List[str]:
+    return sorted(
+        {
+            i["name"].split(".")[-1] 
+            for i in ast_json 
+            if i["ast_type"] == "Import"
+            or (i["ast_type"] == "ImportFrom" and i["module"] != "vyper.interfaces")
+        }
     )
-    return sorted({i["name"].split(".")[-1] for i in import_nodes})
 
 
-def _is_revert_jump(pc_list: List, revert_pc: int) -> bool:
+def _is_revert_jump(pc_list: List[dict], revert_pc: int) -> bool:
     return pc_list[-1]["op"] == "JUMPI" and int(pc_list[-2].get("value", "0"), 16) == revert_pc
 
 
 def _generate_coverage_data(
-    source_map_str: str, opcodes_str: str, contract_name: str, ast_json: List
+    source_map_str: str, opcodes_str: str, contract_name: str, ast_json: List[dict]
 ) -> Tuple:
     if not opcodes_str:
         return {}, {}, {}
