@@ -83,19 +83,19 @@ class Flattener:
     def flattened_source(self) -> str:
         """The flattened source code for use verifying."""
         # all source files in the correct order for concatenation
-        sources = [self.sources[k] for k in toposort_flatten(self.dependencies)]
+        sources = list(map(self.sources.__getitem__, toposort_flatten(self.dependencies)))
         # all pragma statements, we already have the license used + know which compiler
         # version is used via the build info
-        pragmas = set((match.strip() for src in sources for match in PRAGMA_PATTERN.findall(src)))
+        pragmas = {match.strip() for src in sources for match in PRAGMA_PATTERN.findall(src)}
         # now we go through and remove all imports/pragmas/license stuff
         wipe = lambda src: PRAGMA_PATTERN.sub(  # noqa: E731
             "", LICENSE_PATTERN.sub("", IMPORT_PATTERN.sub("", src))
         )
 
-        sources = [
+        sources = (
             f"// File: {file}\n\n{wipe(src)}"
             for src, file in zip(sources, toposort_flatten(self.dependencies))
-        ]
+        )
 
         flat = (
             "\n".join([pragma for pragma in pragmas if "pragma solidity" not in pragma])

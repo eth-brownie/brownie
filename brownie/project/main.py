@@ -11,6 +11,7 @@ import zipfile
 from base64 import b64encode
 from hashlib import sha1
 from io import BytesIO
+from itertools import chain
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
@@ -282,20 +283,20 @@ class Project(_ProjectBase):
         # get list of changed interfaces and contracts
         new_hashes = self._sources.get_interface_hashes()
         # remove outdated build artifacts
-        for name in [k for k, v in new_hashes.items() if compiled_hashes.get(k, None) != v]:
+        for name in (k for k, v in new_hashes.items() if compiled_hashes.get(k) != v):
             self._build._remove_interface(name)
 
-        contracts = set(i for i in self._sources.get_contract_list() if self._compare_build_json(i))
-        for contract_name in list(contracts):
-            contracts.update(self._build.get_dependents(contract_name))
+        contracts = set(filter(self._compare_build_json, self._sources.get_contract_list()))
+        for dependents in map(self._build.get_dependents, contracts):
+            contracts.update(dependents)
 
         # remove outdated build artifacts
         for name in contracts:
             self._build._remove_contract(name)
 
         # get final list of changed source paths
-        changed_set: Set = set(self._sources.get_source_path(i) for i in contracts)
-        return {i: self._sources.get(i) for i in changed_set}
+        changed_set: Set = set(map(self._sources.get_source_path, contracts))
+        return dict(zip(changed_set, map(self._sources.get, changed_set)))
 
     def _compare_build_json(self, contract_name: str) -> bool:
         config = self._compiler_config
@@ -329,7 +330,7 @@ class Project(_ProjectBase):
         changed_paths = [
             self._sources.get_source_path(k, True)
             for k, v in new_hashes.items()
-            if compiled_hashes.get(k, None) != v
+            if compiled_hashes.get(k) != v
         ]
         if not changed_paths:
             return
@@ -521,10 +522,10 @@ class Project(_ProjectBase):
                     with deployment.open("r") as fp:
                         deployment_artifact = json.load(fp)
                     block_height = deployment_artifact["deployment"]["blockHeight"]
-                    address = deployment_artifact["deployment"]["address"]
-                    contract_name = deployment_artifact["contractName"]
                     if block_height > height:
                         deployment.unlink()
+                        address = deployment_artifact["deployment"]["address"]
+                        contract_name = deployment_artifact["contractName"]
                         try:
                             deployment_map["dev"][contract_name].remove(address)
                         except (KeyError, ValueError):
@@ -789,8 +790,7 @@ def _maybe_retrieve_github_auth() -> Dict[str, str]:
 
     Otherwise returns an empty dict if no auth token is present.
     """
-    token = os.getenv("GITHUB_TOKEN")
-    if token:
+    if token := os.getenv("GITHUB_TOKEN"):
         auth = b64encode(token.encode()).decode()
         return {"Authorization": f"Basic {auth}"}
     return {}
@@ -842,12 +842,10 @@ def _install_from_github(package_id: str) -> str:
         if not install_path.joinpath("brownie-config.yaml").exists():
             brownie_config: Dict = {"project_structure": {}}
 
-            contract_paths = set(
-                i.relative_to(install_path).parts[0] for i in install_path.glob("**/*.sol")
-            )
-            contract_paths.update(
-                i.relative_to(install_path).parts[0] for i in install_path.glob("**/*.vy")
-            )
+            contract_paths = {
+                i.relative_to(install_path).parts[0]
+                for i in chain(*map(install_path.glob, ("**/*.sol", "**/*.vy")))
+            }
             if not contract_paths:
                 raise InvalidPackage(f"{package_id} does not contain any .sol or .vy files")
             if install_path.joinpath("contracts").is_dir():
@@ -1032,7 +1030,7 @@ def _get_mix_default_branch(mix_name: str, headers: Dict[str, str] = REQUEST_HEA
     if r.status_code != 200:
         status, repo, message = r.status_code, f"brownie-mix/{mix_name}", r.json()["message"]
         msg = f"Status {status} when retrieving repo {repo} information from GHAPI: '{message}'"
-        if r.status_code in (403, 404):
+        if r.status_code in {403, 404}:
             msg_lines = (
                 msg,
                 "\n\nMissing or forbidden.\n",
