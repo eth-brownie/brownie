@@ -36,7 +36,7 @@ def run(
     Returns: return value from called method
     """
     if args is None:
-        args = tuple()
+        args = ()
     if kwargs is None:
         kwargs = {}
 

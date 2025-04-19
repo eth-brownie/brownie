@@ -2,6 +2,8 @@
 
 from typing import Dict, ItemsView, List, Optional, Tuple, Union
 
+from eth_utils.toolz import keymap
+
 from .sources import Sources, highlight_source
 
 INTERFACE_KEYS = ["abi", "contractName", "sha1", "type"]
@@ -56,7 +58,7 @@ class Build:
             # no pcMap means build artifact is for an interface
             return
         if "0" in build_json["pcMap"]:
-            build_json["pcMap"] = dict((int(k), v) for k, v in build_json["pcMap"].items())
+            build_json["pcMap"] = keymap(int, build_json["pcMap"])
         self._generate_revert_map(
             build_json["pcMap"], build_json["allSourcePaths"], build_json["language"]
         )
