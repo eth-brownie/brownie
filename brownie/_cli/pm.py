@@ -47,7 +47,7 @@ def _list():
     for path in _get_data_folder().joinpath("packages").iterdir():
         if not path.is_dir():
             continue
-        elif not list(i for i in path.iterdir() if i.is_dir() and "@" in i.name):
+        elif not [i for i in path.iterdir() if i.is_dir() and "@" in i.name]:
             shutil.rmtree(path)
         else:
             org_names.append(path)

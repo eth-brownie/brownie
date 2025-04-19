@@ -140,7 +140,7 @@ class Console(code.InteractiveConsole):
         """
         console_settings = CONFIG.settings["console"]
 
-        locals_dict = dict((i, getattr(brownie, i)) for i in brownie.__all__)
+        locals_dict = {i: getattr(brownie, i) for i in brownie.__all__}
         locals_dict.update(
             _dir=dir, dir=self._dir, exit=_Quitter("exit"), quit=_Quitter("quit"), _console=self
         )
@@ -317,9 +317,9 @@ class Console(code.InteractiveConsole):
 def _dir_color(obj):
     if type(obj).__name__ == "module":
         return color("brownie blue")
-    if hasattr(obj, "_dir_color"):
+    elif hasattr(obj, "_dir_color"):
         return color(obj._dir_color)
-    if not callable(obj):
+    elif not callable(obj):
         return color("bright blue")
     return color("bright cyan")
 

@@ -406,15 +406,12 @@ def _print_verbose_network_description(network_dict, is_last, indent=0):
 
 
 def _validate_network(network, required):
-    missing = [i for i in required if i not in network]
-    if missing:
+    if missing := [i for i in required if i not in network]:
         raise ValueError(f"Network is missing required field(s): {', '.join(missing)}")
 
-    unknown = [i for i in network if i not in required + OPTIONAL]
-    if unknown:
+    if unknown := [i for i in network if i not in required + OPTIONAL]:
         raise ValueError(f"Unknown field(s): {', '.join(unknown)}")
 
     if "cmd_settings" in network:
-        unknown = [i for i in network["cmd_settings"] if i not in DEV_CMD_SETTINGS]
-        if unknown:
+        if unknown := [i for i in network["cmd_settings"] if i not in DEV_CMD_SETTINGS]:
             raise ValueError(f"Unknown field(s): {', '.join(unknown)}")
