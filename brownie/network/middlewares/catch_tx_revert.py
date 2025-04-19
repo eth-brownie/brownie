@@ -21,7 +21,6 @@ class TxRevertCatcherMiddleware(BrownieMiddlewareABC):
     def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
         """Raise a ValueError when RPC.eth_call or RPC.eth_estimateGas errors."""
         result = make_request(method, params)
-        if method in {"eth_call", "eth_estimateGas"}:
-            if "error" in result:
-                raise ValueError(result["error"])
+        if method in {"eth_call", "eth_estimateGas"} and "error" in result:
+            raise ValueError(result["error"])
         return result
