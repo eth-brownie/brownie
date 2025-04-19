@@ -171,13 +171,14 @@ class _LeafPattern(_Pattern):
             return False, left, collected
         left_ = left[:pos] + left[(pos + 1) :]
         same_name = [a for a in collected if a.name == self.name]
-        if isinstance(self.value, int) and same_name:
-            if isinstance(same_name[0].value, int):
-                same_name[0].value += 1
-            return True, left_, collected
         if isinstance(self.value, int):
-            match.value = 1
-            return True, left_, collected + [match]
+            if same_name:
+                if isinstance(same_name[0].value, int):
+                    same_name[0].value += 1
+                return True, left_, collected
+            else:
+                match.value = 1
+                return True, left_, collected + [match]
         if same_name and isinstance(self.value, list):
             if isinstance(match.value, str):
                 increment = [match.value]
