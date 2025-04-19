@@ -17,9 +17,10 @@ class ReportSelect(SelectBox):
         self.grid_remove()
 
     def set_values(self, contract):
+        reports = self._root().reports
         values = sorted(
             report
-            for report in self._root().reports
+            for report in reports
             if contract in reports[report][report]
         )
         if not values:
