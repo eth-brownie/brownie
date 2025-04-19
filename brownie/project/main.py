@@ -287,7 +287,7 @@ class Project(_ProjectBase):
             self._build._remove_interface(name)
 
         contracts = set(filter(self._compare_build_json, self._sources.get_contract_list()))
-        for dependents in map(self._build.get_dependents, contracts):
+        for dependents in map(self._build.get_dependents, list(contracts)):
             contracts.update(dependents)
 
         # remove outdated build artifacts
