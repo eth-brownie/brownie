@@ -221,7 +221,7 @@ class _BranchPattern(_Pattern):
 
     def fix_repeating_arguments(self) -> _BranchPattern:
         """Fix elements that should accumulate/increment values."""
-        for case in (list(child.children) for child in _transform(self).children):
+        for case in map(list, (child.children for child in _transform(self).children)):
             for e in (child for child in case if case.count(child) > 1):
                 if type(e) is _Argument or type(e) is _Option and e.argcount:
                     if e.value is None:
