@@ -3,6 +3,7 @@
 import logging
 from collections import deque
 from hashlib import sha1
+from itertools import chain
 from typing import Dict, List, Optional, Tuple, Union
 
 import vvm
@@ -136,7 +137,7 @@ def find_vyper_versions(
         pragma_specs[path] = sources.get_vyper_pragma_spec(source, path)
         version = pragma_specs[path].select(installed_versions)
 
-        if not version and not (install_needed or install_latest):
+        if not version and not install_needed and not install_latest:
             raise IncompatibleVyperVersion(
                 f"No installed vyper version matching '{pragma_specs[path]}' in '{path}'"
             )
@@ -204,7 +205,7 @@ def find_best_vyper_version(
     if not available_versions:
         raise IncompatibleVyperVersion("No installable vyper version compatible across all sources")
 
-    if not installed_versions and not (install_needed or install_latest):
+    if not installed_versions and not install_needed and not install_latest:
         raise IncompatibleVyperVersion("No installed vyper version compatible across all sources")
 
     if max(available_versions) > max(installed_versions, default=Version("0.0.0")):
@@ -258,12 +259,7 @@ def _get_unique_build_json(
     output_evm: Dict, path_str: str, contract_name: str, ast_json: Union[Dict, List], offset: Tuple
 ) -> Dict:
 
-    ast: List
-    if isinstance(ast_json, dict):
-        ast = ast_json["body"]
-    else:
-        ast = ast_json
-
+    ast: List = ast_json["body"] if isinstance(ast_json, dict) else ast_json
     pc_map, statement_map, branch_map = _generate_coverage_data(
         output_evm["deployedBytecode"]["sourceMap"],
         output_evm["deployedBytecode"]["opcodes"],
@@ -282,20 +278,23 @@ def _get_unique_build_json(
     }
 
 
-def _get_dependencies(ast_json: List) -> List:
-    import_nodes = [i for i in ast_json if i["ast_type"] == "Import"]
-    import_nodes += [
-        i for i in ast_json if i["ast_type"] == "ImportFrom" if i["module"] != "vyper.interfaces"
-    ]
-    return sorted(set([i["name"].split(".")[-1] for i in import_nodes]))
+def _get_dependencies(ast_json: List[dict]) -> List[str]:
+    return sorted(
+        {
+            i["name"].split(".")[-1] 
+            for i in ast_json 
+            if i["ast_type"] == "Import"
+            or (i["ast_type"] == "ImportFrom" and i["module"] != "vyper.interfaces")
+        }
+    )
 
 
-def _is_revert_jump(pc_list: List, revert_pc: int) -> bool:
+def _is_revert_jump(pc_list: List[dict], revert_pc: int) -> bool:
     return pc_list[-1]["op"] == "JUMPI" and int(pc_list[-2].get("value", "0"), 16) == revert_pc
 
 
 def _generate_coverage_data(
-    source_map_str: str, opcodes_str: str, contract_name: str, ast_json: List
+    source_map_str: str, opcodes_str: str, contract_name: str, ast_json: List[dict]
 ) -> Tuple:
     if not opcodes_str:
         return {}, {}, {}
@@ -304,8 +303,8 @@ def _generate_coverage_data(
     opcodes = deque(opcodes_str.split(" "))
 
     fn_nodes = [i for i in ast_json if i["ast_type"] == "FunctionDef"]
-    fn_offsets = dict((i["name"], _convert_src(i["src"])) for i in fn_nodes)
-    stmt_nodes = set(_convert_src(i["src"]) for i in _get_statement_nodes(fn_nodes))
+    fn_offsets = {i["name"]: _convert_src(i["src"]) for i in fn_nodes}
+    stmt_nodes = {_convert_src(i["src"]) for i in _get_statement_nodes(fn_nodes)}
 
     statement_map: Dict = {}
     branch_map: Dict = {}
@@ -420,7 +419,7 @@ def _generate_coverage_data(
     if revert_pc != -1:
         pc_list[-1]["optimizer_revert"] = True
 
-    pc_map = dict((i.pop("pc"), i) for i in pc_list)
+    pc_map = {i.pop("pc"): i for i in pc_list}
 
     return pc_map, {"0": statement_map}, {"0": branch_map}
 
@@ -450,8 +449,7 @@ def _find_node_by_offset(ast_json: List, offset: Tuple) -> Optional[Dict]:
 def _get_statement_nodes(ast_json: List) -> List:
     stmt_nodes: List = []
     for node in ast_json:
-        children = [x for v in node.values() if isinstance(v, list) for x in v]
-        if children:
+        if children := [x for v in node.values() if isinstance(v, list) for x in v]:
             stmt_nodes += _get_statement_nodes(children)
         else:
             stmt_nodes.append(node)

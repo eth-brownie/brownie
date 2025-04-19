@@ -25,7 +25,7 @@ black==25.1.0
     # via -r requirements.in
 cbor2==5.6.5
     # via vyper
-cchecksum==0.1.2
+cchecksum==0.2.0
     # via -r requirements.in
 certifi==2025.1.31
     # via requests
