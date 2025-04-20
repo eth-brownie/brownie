@@ -3,6 +3,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Dict, Set
 
+from eth_utils.toolz import concat
+
 from brownie.utils.toposort import toposort_flatten
 
 # Patten matching Solidity `import-directive`, capturing path component
@@ -87,7 +89,7 @@ class Flattener:
         sources = list(map(self.sources.__getitem__, flattened_deps)
         # all pragma statements, we already have the license used + know which compiler
         # version is used via the build info
-        pragmas = set(map(str.strip, chain.from_iterable(map(PRAGMA_PATTERN.findall, sources))
+        pragmas = set(map(str.strip, concat(map(PRAGMA_PATTERN.findall, sources))
         # now we go through and remove all imports/pragmas/license stuff
         wipe = lambda src: PRAGMA_PATTERN.sub(  # noqa: E731
             "", LICENSE_PATTERN.sub("", IMPORT_PATTERN.sub("", src))
