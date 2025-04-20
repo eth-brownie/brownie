@@ -3,6 +3,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import DefaultDict, Dict, Set
 
+from eth_utils.toolz import mapcat
+
 from brownie.utils.toposort import toposort_flatten
 
 # Patten matching Solidity `import-directive`, capturing path component
@@ -82,23 +84,23 @@ class Flattener:
     @property
     def flattened_source(self) -> str:
         """The flattened source code for use verifying."""
+        flattened_deps = toposort_flatten(self.dependencies)
         # all source files in the correct order for concatenation
-        sources = [self.sources[k] for k in toposort_flatten(self.dependencies)]
+        sources = list(map(self.sources.__getitem__, flattened_deps))
         # all pragma statements, we already have the license used + know which compiler
         # version is used via the build info
-        pragmas = set((match.strip() for src in sources for match in PRAGMA_PATTERN.findall(src)))
+        pragmas = set(map(str.strip, mapcat(PRAGMA_PATTERN.findall, sources)))
         # now we go through and remove all imports/pragmas/license stuff
         wipe = lambda src: PRAGMA_PATTERN.sub(  # noqa: E731
             "", LICENSE_PATTERN.sub("", IMPORT_PATTERN.sub("", src))
         )
 
-        sources = [
-            f"// File: {file}\n\n{wipe(src)}"
-            for src, file in zip(sources, toposort_flatten(self.dependencies))
-        ]
+        sources = (
+            f"// File: {file}\n\n{wipe(src)}" for src, file in zip(sources, flattened_deps)
+        )
 
         flat = (
-            "\n".join([pragma for pragma in pragmas if "pragma solidity" not in pragma])
+            "\n".join(pragma for pragma in pragmas if "pragma solidity" not in pragma)
             + "\n\n"
             + "\n".join(sources)
         )
