@@ -8,10 +8,7 @@ from brownie.network.middlewares import BrownieMiddlewareABC
 class Ganache7MiddleWare(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
-        if w3.client_version.lower().startswith("ganache/v7"):
-            return -100
-        else:
-            return None
+        return -100 if w3.client_version.lower().startswith("ganache/v7") else None
 
     def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
         result = make_request(method, params)
