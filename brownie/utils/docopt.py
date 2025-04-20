@@ -464,7 +464,7 @@ def _parse_shorts(
         similar: list[_Option] = []
         de_abbreviated = False
         for transform_name, transform in transformations.items():
-            transformed = list(set(map(transform, (o.short for o in options if o.short))))
+            transformed = list(set(map(transform, filter(None, (o.short for o in options)))))
             no_collisions = len(
                 [o for o in options if o.short and transformed.count(transform(o.short)) == 1]
             )  # == len(transformed)
