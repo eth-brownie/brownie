@@ -709,7 +709,7 @@ def _parse_options(docstring: str) -> list[_Option]:
     (-\S)
     """
     parts = re.split(option_start, docstring, flags=re.M | re.I | re.VERBOSE)[1:]
-    return list(map(_Option.parse, map(sum, zip(parts[::2], parts[1::2]))))
+    return list(map(_Option.parse, map("".join, zip(parts[::2], parts[1::2]))))
 
 
 def _lint_docstring(sections: _DocSections):
