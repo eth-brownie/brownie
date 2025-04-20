@@ -3,7 +3,6 @@
 import logging
 from collections import deque
 from hashlib import sha1
-from itertools import chain
 from typing import Dict, List, Optional, Tuple, Union
 
 import vvm
