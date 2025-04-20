@@ -465,8 +465,8 @@ def _parse_shorts(
         de_abbreviated = False
         for transform_name, transform in transformations.items():
             transformed = list(set(map(transform, filter(None, (o.short for o in options)))))
-            no_collisions = len(
-                [o for o in options if o.short and transformed.count(transform(o.short)) == 1]
+            no_collisions = sum(
+                filter(lambda ct: ct == 1, map(transformed.count, transformed))
             )  # == len(transformed)
             if no_collisions:
                 similar = [o for o in options if o.short and transform(o.short) == transform(short)]
