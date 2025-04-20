@@ -32,25 +32,23 @@ certifi==2025.1.31
 charset-normalizer==3.4.1
     # via requests
 ckzg==1.0.2
-    # via
-    #   eth-account
-    #   web3
+    # via web3
 click==8.1.8
     # via black
 cytoolz==1.0.1
     # via eth-utils
 dataclassy==0.11.1
     # via eip712
-eip712==0.2.11
+eip712==0.2.4
     # via -r requirements.in
-eth-abi==5.2.0
+eth-abi==5.0.1
     # via
     #   -r requirements.in
     #   eip712
     #   eth-account
     #   eth-event
     #   web3
-eth-account==0.11.3
+eth-account==0.10.0
     # via
     #   -r requirements.in
     #   eip712
@@ -60,6 +58,7 @@ eth-event==1.2.5
 eth-hash[pycryptodome]==0.7.1
     # via
     #   -r requirements.in
+    #   eip712
     #   eth-event
     #   eth-utils
     #   web3
@@ -71,7 +70,7 @@ eth-keys==0.7.0
     #   eth-keyfile
 eth-rlp==1.0.1
     # via eth-account
-eth-typing==4.4.0
+eth-typing==3.5.2
     # via
     #   cchecksum
     #   eip712
@@ -80,7 +79,7 @@ eth-typing==4.4.0
     #   eth-utils
     #   py-ecc
     #   web3
-eth-utils==3.0.0
+eth-utils==2.3.2
     # via
     #   -r requirements.in
     #   cchecksum
@@ -140,7 +139,7 @@ packaging==23.2
     #   pytest
     #   vvm
     #   vyper
-parsimonious==0.10.0
+parsimonious==0.9.0
     # via eth-abi
 pathspec==0.12.1
     # via black
