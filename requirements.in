@@ -1,7 +1,7 @@
 black>=20.8b1
 cchecksum>=0.1.0
 eip712
-eth-abi
+eth-abi>=5.0,<5.1
 eth-account
 eth-event>=1.2.5,<2
 eth-hash[pycryptodome]
