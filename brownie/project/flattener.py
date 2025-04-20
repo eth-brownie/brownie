@@ -86,7 +86,7 @@ class Flattener:
         """The flattened source code for use verifying."""
         flattened_deps = toposort_flatten(self.dependencies)
         # all source files in the correct order for concatenation
-        sources = list(map(self.sources.__getitem__, flattened_deps)
+        sources = list(map(self.sources.__getitem__, flattened_deps))
         # all pragma statements, we already have the license used + know which compiler
         # version is used via the build info
         pragmas = set(map(str.strip, mapcat(PRAGMA_PATTERN.findall, sources)))
