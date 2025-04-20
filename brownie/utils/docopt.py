@@ -464,9 +464,10 @@ def _parse_shorts(
         similar: list[_Option] = []
         de_abbreviated = False
         for transform_name, transform in transformations.items():
-            transformed = list(set(map(transform, filter(None, (o.short for o in options)))))
+            shortened = list(filter(None, (o.short for o in options)))
+            transformed = list(set(map(transform, shortened)))
             no_collisions = sum(
-                filter(lambda ct: ct == 1, map(transformed.count, transformed))
+                filter(lambda ct: ct == 1, map(transformed.count, map(transform, shortened)))
             )  # == len(transformed)
             if no_collisions:
                 similar = [o for o in options if o.short and transform(o.short) == transform(short)]
