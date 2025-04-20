@@ -11,7 +11,6 @@ import zipfile
 from base64 import b64encode
 from hashlib import sha1
 from io import BytesIO
-from itertools import chain
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
@@ -19,6 +18,7 @@ from urllib.parse import quote
 
 import requests
 import yaml
+from eth_utils.toolz import mapcat
 from semantic_version import Version
 from solcx.exceptions import SolcNotInstalled
 from tqdm import tqdm
@@ -844,7 +844,7 @@ def _install_from_github(package_id: str) -> str:
 
             contract_paths = {
                 i.relative_to(install_path).parts[0]
-                for i in chain(*map(install_path.glob, ("**/*.sol", "**/*.vy")))
+                for i in mapcat(install_path.glob, ("**/*.sol", "**/*.vy"))
             }
             if not contract_paths:
                 raise InvalidPackage(f"{package_id} does not contain any .sol or .vy files")
