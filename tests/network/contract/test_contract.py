@@ -269,7 +269,7 @@ def test_autofetch_missing(network, config, mocker):
     assert requests.get.call_count == 2
 
 
-""" TODO: maybe fix this with another network
+@pytest.mark.skip("TODO: maybe fix this with another network")
 def test_as_proxy_for(network):
     proxy = "0x2410B710ecA3818003c091c42E3803cC7D70AeE9"
     impl = "0x7542fb54dc0c2d71a00d9409b48f5e464b5e9f24"
@@ -284,7 +284,6 @@ def test_as_proxy_for(network):
 
     assert proxy.abi == implementation.abi
     assert proxy.address != implementation.address
-"""
 
 
 def test_solc_use_latest_patch_true(testproject, network):
