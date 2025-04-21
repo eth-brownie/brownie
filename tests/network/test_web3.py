@@ -68,14 +68,13 @@ def test_genesis_hash(web3, devnetwork):
     assert web3.genesis_hash == web3.eth.get_block(0)["hash"].hex()[2:]
 
 
-""" TODO: fix me
+@pytest.mark.skip("TODO: maybe fix this with another network")
 def test_genesis_hash_different_networks(devnetwork, web3):
     ganache_hash = web3.genesis_hash
     devnetwork.disconnect()
     devnetwork.connect("goerli")
     assert web3.genesis_hash == "bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a"
     assert web3.genesis_hash != ganache_hash
-"""
 
 
 def test_genesis_hash_disconnected(web3):
@@ -84,13 +83,12 @@ def test_genesis_hash_disconnected(web3):
         web3.genesis_hash
 
 
-""" TODO: fix me
+@pytest.mark.skip("TODO: maybe fix this with another network")
 def test_chain_uri(web3, network):
     network.connect("goerli")
     assert web3.chain_uri.startswith(
         "blockchain://bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a/block"
     )
-"""
 
 
 def test_chain_uri_disconnected(web3):
