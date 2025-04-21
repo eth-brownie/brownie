@@ -110,10 +110,7 @@ class ConfigContainer:
     def network_type(self):
         if self._active_network is None:
             return None
-        if "cmd" in self._active_network:
-            return "development"
-        else:
-            return "live"
+        return "development" if "cmd" in self._active_network else "live"
 
     @property
     def mode(self):
@@ -166,9 +163,7 @@ def _get_project_config_path(project_path: Path):
     else:
         path = project_path
     suffix = next((i for i in (".yml", ".yaml", ".json") if path.with_suffix(i).exists()), None)
-    if suffix is not None:
-        return path.with_suffix(suffix)
-    return None
+    return None if suffix is None else path.with_suffix(suffix)
 
 
 def _load_config(project_path: Path) -> Dict:
@@ -314,7 +309,7 @@ def _recursive_update(original: Dict, new: Dict) -> None:
 
 
 def _update_argv_from_docopt(args: Dict) -> None:
-    CONFIG.argv.update(dict((k.lstrip("-"), v) for k, v in args.items()))
+    CONFIG.argv.update({k.lstrip("-"): v for k, v in args.items()})
 
 
 def _get_data_folder() -> Path:

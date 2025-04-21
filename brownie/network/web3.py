@@ -111,9 +111,7 @@ class Web3(_Web3):
             self._remove_middlewares()
 
     def is_connected(self) -> bool:
-        if not self.provider:
-            return False
-        return super().is_connected()
+        return super().is_connected() if self.provider else False
 
     def isConnected(self) -> bool:
         # retained to avoid breaking an interface explicitly defined in brownie
@@ -130,7 +128,7 @@ class Web3(_Web3):
         if self._supports_traces is None:
             try:
                 response = self.provider.make_request("debug_traceTransaction", [])
-                self._supports_traces = bool(response["error"]["code"] != -32601)
+                self._supports_traces = response["error"]["code"] != -32601
             except HTTPError:
                 self._supports_traces = False
 
