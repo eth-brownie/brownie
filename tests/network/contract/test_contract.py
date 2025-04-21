@@ -381,7 +381,9 @@ def test_from_explorer_deployment_disabled(network):
 
 
 def test_remove_deployment(network):
-    network.connect("mainnet")
+    if not network.is_connected():
+        # NOTE: why is this failing here but not for other tests?
+        network.connect("mainnet")
     address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
     Contract.from_explorer(address)
     Contract.remove_deployment(address)
