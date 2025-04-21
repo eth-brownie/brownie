@@ -253,7 +253,7 @@ def test_contractabi(ExternalCallTester, accounts, tester, ext_tester):
     tx.call_trace()
 
 
-""" TODO: maybe fix this with another network
+@pytest.mark.skip("TODO: maybe fix this with another network")
 def test_traces_not_supported(network, chain):
     network.connect("goerli")
 
@@ -266,4 +266,3 @@ def test_traces_not_supported(network, chain):
     # querying the revert message should raise
     with pytest.raises(RPCRequestError):
         tx.revert_msg
-"""
