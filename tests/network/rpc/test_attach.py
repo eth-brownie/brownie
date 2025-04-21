@@ -31,7 +31,7 @@ def test_attach(attachable_rpc, temp_port):
 
 
 def test_no_docker(rpc):
-    with patch("brownie.network.rpc._get_pid_from_connections", MagicMock(value=1337)):
+    with patch("brownie.network.Rpc._get_pid_from_connections", MagicMock(value=1337)):
         with patch(
             "brownie.network.rpc._get_pid_from_net_connections"
         ) as _get_pid_from_net_connections_call:
@@ -41,7 +41,7 @@ def test_no_docker(rpc):
 
 def test_dockerized_rpc_osx(rpc):
     with patch(
-        "brownie.network.rpc._get_pid_from_connections", MagicMock(side_effect=ProcessLookupError)
+        "brownie.network.Rpc._get_pid_from_connections", MagicMock(side_effect=ProcessLookupError)
     ):
         with patch("platform.system", MagicMock(return_value="Darwin")):
             with patch("brownie.network.rpc._find_proc_by_name") as find_proc_by_name_call:
@@ -51,7 +51,7 @@ def test_dockerized_rpc_osx(rpc):
 
 def test_dockerized_rpc(rpc):
     with patch(
-        "brownie.network.rpc._get_pid_from_connections", MagicMock(side_effect=ProcessLookupError)
+        "brownie.network.Rpc._get_pid_from_connections", MagicMock(side_effect=ProcessLookupError)
     ):
         with patch("platform.system", MagicMock(return_value="Not Darwin")):
             with patch("brownie.network.rpc._check_net_connections") as check_net_connections_call:
