@@ -68,6 +68,7 @@ def test_genesis_hash(web3, devnetwork):
     assert web3.genesis_hash == web3.eth.get_block(0)["hash"].hex()[2:]
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_genesis_hash_different_networks(devnetwork, web3):
     ganache_hash = web3.genesis_hash
     devnetwork.disconnect()
@@ -82,6 +83,7 @@ def test_genesis_hash_disconnected(web3):
         web3.genesis_hash
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_chain_uri(web3, network):
     network.connect("goerli")
     assert web3.chain_uri.startswith(
@@ -95,6 +97,7 @@ def test_chain_uri_disconnected(web3):
         web3.chain_uri
 
 
+@pytest.mark.skip("rinkeby is dead, maybe fix this with another network")
 def test_rinkeby(web3, network):
     network.connect("rinkeby")
 

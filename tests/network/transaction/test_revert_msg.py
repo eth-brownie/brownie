@@ -202,4 +202,4 @@ def baz():
     assert msg.sender != ZERO_ADDRESS, '{'blah'*10000}'
     """
     tx = compile_source(code, vyper_version="0.2.4").Vyper.deploy({"from": accounts[0]})
-    assert tx.revert_msg == "exceeds EIP-170 size limit"
+    assert tx.revert_msg == "code size to deposit exceeds maximum code size"

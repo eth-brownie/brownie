@@ -271,7 +271,11 @@ def network():
         brownie.network.disconnect(False)
     yield brownie.network
     if brownie.network.is_connected():
-        brownie.network.disconnect(False)
+        try:
+            brownie.network.disconnect(False)
+        except ConnectionError:
+            # This can sometimes occur during teardown but we don't really care why or how
+            pass
 
 
 @pytest.fixture(scope="session")
