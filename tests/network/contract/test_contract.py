@@ -320,7 +320,9 @@ def test_solc_use_latest_patch_missing(testproject, network):
 
 
 def test_solc_use_latest_patch_specific_not_included(testproject, network):
-    network.connect("mainnet")
+    # TODO: debug why this happens, probably a race condition from multithreading
+    if not network.is_connected():
+        network.connect("mainnet")
     solc_config = {
         "compiler": {"solc": {"use_latest_patch": ["0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e"]}}
     }
